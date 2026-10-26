@@ -76,7 +76,7 @@ describe("AiQuotaService", () => {
     const fixture = createAiQuotaFixture({ subscriptionStatus: "ACTIVE", count: 5 });
     await fixture.quota.read(fixture.userId);
     const state = await fixture.repository.findQuotaState(fixture.userId);
-    if (state === null) throw new Error("fixture user missing");
+    if (state == null) throw new Error("fixture user missing");
     fixture.repository.users.set(fixture.userId, { ...state, subscriptionStatus: "FREE" });
     // When
     const execution = fixture.quota.reserve(fixture.userId);

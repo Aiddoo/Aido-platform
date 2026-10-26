@@ -73,7 +73,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
     const row = decodeRecord("Todo", await this.todos.where({ id, userId }).first());
-    return row === null ? null : PrismaTodoRepository.toDomain(row);
+    return row == null ? null : PrismaTodoRepository.toDomain(row);
   }
 
   async create(data: TodoCreationPlan): Promise<Todo> {
@@ -195,8 +195,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
     })).where((fields, functions) =>
       functions.and(functions.eq(fields.userId, userId), functions.gte(fields.sortOrder, from)),
     );
-    if (to !== null)
-      query = query.where((fields, functions) => functions.lte(fields.sortOrder, to));
+    if (to != null) query = query.where((fields, functions) => functions.lte(fields.sortOrder, to));
     await this.client.execute(query.build());
   }
 

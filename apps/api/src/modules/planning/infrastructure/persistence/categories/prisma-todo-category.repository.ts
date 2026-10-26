@@ -129,7 +129,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
         and(row.id.eq(id), row.userId.eq(userId)),
       ).first(),
     );
-    return row === null ? null : PrismaTodoCategoryRepository.toEntity(row);
+    return row == null ? null : PrismaTodoCategoryRepository.toEntity(row);
   }
 
   async findByIdWithCount(id: number): Promise<TodoCategoryWithCountView | null> {
@@ -139,7 +139,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
         .include("todos", (todos) => todos.count())
         .first(),
     );
-    return row === null ? null : PrismaTodoCategoryRepository.toView(row);
+    return row == null ? null : PrismaTodoCategoryRepository.toView(row);
   }
 
   async findManyByUserId(userId: string): Promise<TodoCategoryWithCountView[]> {
@@ -166,11 +166,11 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
         and(
           row.userId.eq(userId),
           row.name.eq(varchar(name, 50)),
-          excludeId === undefined ? all() : row.id.neq(excludeId),
+          excludeId == null ? all() : row.id.neq(excludeId),
         ),
       ).first(),
     );
-    return row !== null;
+    return row != null;
   }
 
   async getMaxSortOrder(userId: string): Promise<number> {
@@ -194,7 +194,7 @@ export class PrismaTodoCategoryRepository implements TodoCategoryRepositoryPort 
         functions.and(
           functions.eq(fields.userId, userId),
           functions.gte(fields.sortOrder, fromSortOrder),
-          toSortOrder === null
+          toSortOrder == null
             ? this.client.raw.sql`TRUE`.returns("pg/bool@1")
             : functions.lte(fields.sortOrder, toSortOrder),
         ),

@@ -144,7 +144,7 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
 function hasVariants(value: unknown): value is { readonly variants: readonly unknown[] } {
   return (
     typeof value === "object" &&
-    value !== null &&
+    value != null &&
     "variants" in value &&
     Array.isArray(value.variants)
   );

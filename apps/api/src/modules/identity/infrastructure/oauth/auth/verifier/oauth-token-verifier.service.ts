@@ -101,14 +101,14 @@ export class OAuthTokenVerifierService {
   // @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
   async verifyAppleToken(idToken: string, expectedNonce?: string): Promise<VerifiedProfile> {
     try {
-      if (this.#appleJWKS === null) {
+      if (this.#appleJWKS == null) {
         const jwksUrl =
           this.configService.get<string>("APPLE_JWKS_URL") ??
           OAuthTokenVerifierService.APPLE_JWKS_URL;
         const cooldownDuration = this.configService.get<number>("APPLE_JWKS_COOLDOWN_DURATION_MS");
         this.#appleJWKS = createRemoteJWKSet(
           new URL(jwksUrl),
-          cooldownDuration === undefined ? undefined : { cooldownDuration },
+          cooldownDuration == null ? undefined : { cooldownDuration },
         );
       }
 

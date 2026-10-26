@@ -78,7 +78,7 @@ export class SendCheer {
         quotaWindow.startsAt,
         quotaWindow.endsAt,
       );
-      if (dailyLimit !== null && used >= dailyLimit) {
+      if (dailyLimit != null && used >= dailyLimit) {
         throw new ApplicationException(ErrorCode.CHEER_1201, {
           limit: dailyLimit,
         });
@@ -88,7 +88,7 @@ export class SendCheer {
         senderId,
         receiverId,
       );
-      if (lastCheer !== null) {
+      if (lastCheer != null) {
         const cooldown = evaluateCheerCooldown(lastCheer.createdAt);
         if (cooldown.isActive) {
           throw new ApplicationException(ErrorCode.CHEER_1202, {

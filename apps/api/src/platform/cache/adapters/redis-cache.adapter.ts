@@ -158,6 +158,7 @@ export class RedisCacheAdapter implements ICacheService {
   ): Promise<T> {
     // get/set이 fail-open이므로 Redis 장애 시 자동으로 factory 직행 (DB 폴백)
     const cached = await this.get(key, schema);
+    // nullish-strict: undefined는 cache miss, null은 저장해 둔 값이다
     if (cached !== undefined) {
       return cached;
     }

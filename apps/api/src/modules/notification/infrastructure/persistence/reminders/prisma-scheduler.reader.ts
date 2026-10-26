@@ -690,7 +690,7 @@ export class PrismaSchedulerReader
       )
       .select("id")
       .first();
-    return existing !== null;
+    return existing != null;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -706,7 +706,7 @@ export class PrismaSchedulerReader
           (aggregate) => ({ count: aggregate.count() }),
         );
         return rows.flatMap((row) =>
-          normalizeIanaTimezone(row.timezone) !== null ? [row.timezone] : [],
+          normalizeIanaTimezone(row.timezone) != null ? [row.timezone] : [],
         );
       },
       REMINDER_CACHE_TTL_MS,

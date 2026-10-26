@@ -44,19 +44,19 @@ export class GetNudgeThanksPreview {
       input.todoId,
       input.userId,
     );
-    if (todo === null) {
+    if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801);
     }
     if (!todo.completed) {
       throw new ApplicationException(ErrorCode.NUDGE_1110);
     }
 
-    if (input.throughNudgeId !== undefined) {
+    if (input.throughNudgeId != null) {
       const cutoff = await this.#dependencies.nudgeRepository.findInteractionById(
         input.throughNudgeId,
         input.userId,
       );
-      if (cutoff === null || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
+      if (cutoff == null || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
     }
@@ -82,7 +82,7 @@ export class GetNudgeThanksPreview {
       };
     }
     const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId);
-    if (input.limit !== undefined) {
+    if (input.limit != null) {
       const page = await this.#dependencies.nudgeRepository.findThanksCandidatePage({
         userId: input.userId,
         todoId: input.todoId,

@@ -58,7 +58,7 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
         )
         .first(),
     );
-    return row === null ? null : Subscription.reconstitute(row);
+    return row == null ? null : Subscription.reconstitute(row);
   }
 
   /**

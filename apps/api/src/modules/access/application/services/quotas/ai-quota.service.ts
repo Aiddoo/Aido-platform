@@ -85,14 +85,14 @@ export class AiQuotaService implements AiQuotaPort {
         const { userMutationLock, repository } = this.#dependencies;
         if (!(await userMutationLock.lockById(reservation.userId))) return false;
         const state = await repository.findQuotaState(reservation.userId);
-        if (state === null) return false;
+        if (state == null) return false;
         const usage = AiQuotaUsage.reconstitute({
           userId: reservation.userId,
           count: state.count,
           resetAt: state.resetAt,
         });
         const release = usage.release(reservation.periodId);
-        if (release === null) return false;
+        if (release == null) return false;
         return repository.releaseUsage(reservation.userId, release);
       });
       if (released) {
@@ -112,7 +112,7 @@ export class AiQuotaService implements AiQuotaPort {
 
   async #findQuotaState(userId: string): Promise<AiQuotaState> {
     const state = await this.#dependencies.repository.findQuotaState(userId);
-    if (state === null) throw new ApplicationException(ErrorCode.USER_0601, { userId });
+    if (state == null) throw new ApplicationException(ErrorCode.USER_0601, { userId });
     return state;
   }
 }

@@ -167,7 +167,7 @@ export class ExpoPushProvider implements PushProvider {
         total: payloads.length,
         successCount: 0,
         failureCount: payloads.length,
-        results: orderedResults.filter((result) => result !== undefined),
+        results: orderedResults.filter((result) => result != null),
         invalidTokens,
       };
     }
@@ -234,7 +234,7 @@ export class ExpoPushProvider implements PushProvider {
       }
     }
 
-    const results = orderedResults.filter((result) => result !== undefined);
+    const results = orderedResults.filter((result) => result != null);
     const successCount = results.filter((r) => r.success).length;
 
     return {

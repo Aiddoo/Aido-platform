@@ -42,7 +42,7 @@ export class AddTodoItem {
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
 
@@ -55,7 +55,7 @@ export class AddTodoItem {
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, userId);
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     return response;

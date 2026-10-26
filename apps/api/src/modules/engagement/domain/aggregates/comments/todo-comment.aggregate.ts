@@ -31,11 +31,11 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
         path: props.path,
       }),
       content:
-        props.content === null || props.content.length === 0
+        props.content == null || props.content.length === 0
           ? null
           : TodoCommentContent.create(props.content),
-      deletedAt: props.deletedAt === null ? null : new Date(props.deletedAt),
-      editedAt: props.editedAt === null ? null : new Date(props.editedAt),
+      deletedAt: props.deletedAt == null ? null : new Date(props.deletedAt),
+      editedAt: props.editedAt == null ? null : new Date(props.editedAt),
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
     });
@@ -68,7 +68,7 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
   }
 
   get isDeleted(): boolean {
-    return this.props.deletedAt !== null;
+    return this.props.deletedAt != null;
   }
 
   get content(): string | null {
@@ -76,11 +76,11 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
   }
 
   get deletedAt(): Date | null {
-    return this.props.deletedAt === null ? null : new Date(this.props.deletedAt);
+    return this.props.deletedAt == null ? null : new Date(this.props.deletedAt);
   }
 
   get editedAt(): Date | null {
-    return this.props.editedAt === null ? null : new Date(this.props.editedAt);
+    return this.props.editedAt == null ? null : new Date(this.props.editedAt);
   }
 
   get snapshot(): TodoCommentState {

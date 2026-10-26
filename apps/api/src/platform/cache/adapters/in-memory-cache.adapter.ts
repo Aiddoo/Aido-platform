@@ -99,7 +99,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
       }
     }
 
-    const ttlMs = ttl !== undefined ? parseTtl(ttl) : this.#defaultTtlMs;
+    const ttlMs = ttl != null ? parseTtl(ttl) : this.#defaultTtlMs;
     const expiresAt = Date.now() + ttlMs;
     this.#cache.set(key, { value, expiresAt });
     this.#logger.debug(`SET ${key} (TTL: ${ttlMs}ms)`);
@@ -151,6 +151,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     ttl?: TtlValue,
   ): Promise<T> {
     const cached = await this.get(key, schema);
+    // nullish-strict: undefined는 cache miss, null은 저장해 둔 값이다
     if (cached !== undefined) {
       return cached;
     }

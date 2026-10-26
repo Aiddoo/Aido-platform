@@ -136,7 +136,7 @@ describe("getReportAiResponseSchema", () => {
 describe("단일 분석축과 기록 없음 안내", () => {
   function readContext(prompt: string) {
     const json = prompt.match(/<context_json>\n([\s\S]*?)\n<\/context_json>/)?.[1];
-    if (json === undefined) throw new Error("context_json missing");
+    if (json == null) throw new Error("context_json missing");
     return JSON.parse(json);
   }
 

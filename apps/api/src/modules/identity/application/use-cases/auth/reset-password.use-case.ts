@@ -52,7 +52,7 @@ export class ResetPassword {
   async execute(input: ResetPasswordInput): Promise<{ message: string }> {
     const { email, code, newPassword } = input;
     const user = await this.#dependencies.userRepository.findByEmail(email);
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
     assertNotDeleted(user);
@@ -61,7 +61,7 @@ export class ResetPassword {
       user.id,
       "CREDENTIAL",
     );
-    if (account === null) {
+    if (account == null) {
       throw new ApplicationException(ErrorCode.USER_0613, { userId: user.id });
     }
 

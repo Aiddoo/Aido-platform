@@ -76,7 +76,7 @@ export class SendNudge {
       ]);
 
       const todoRow = await this.#dependencies.nudgeRepository.findTargetTodo(todoId);
-      if (todoRow === null) {
+      if (todoRow == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
 
@@ -98,7 +98,7 @@ export class SendNudge {
         quotaWindow.startsAt,
         quotaWindow.endsAt,
       );
-      if (dailyLimit !== null && used >= dailyLimit) {
+      if (dailyLimit != null && used >= dailyLimit) {
         throw new ApplicationException(ErrorCode.NUDGE_1101, {
           limit: dailyLimit,
         });
@@ -108,7 +108,7 @@ export class SendNudge {
         senderId,
         todoId,
       );
-      if (lastNudge !== null) {
+      if (lastNudge != null) {
         const cooldown = evaluateNudgeCooldown(lastNudge.createdAt);
         if (cooldown.isActive) {
           throw new ApplicationException(ErrorCode.NUDGE_1102, {

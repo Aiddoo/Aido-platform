@@ -41,14 +41,14 @@ export class SendNotificationWithDedup {
   async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
     const strategy = resolveDedupStrategy(data.type);
 
-    if (strategy === undefined) {
+    if (strategy == null) {
       return this.#dependencies.sendNotification.execute(data);
     }
 
     const dedupKey = buildDedupKey(data, strategy);
     const release = await this.#dependencies.dedupLock.acquire(dedupKey);
 
-    if (release === null) {
+    if (release == null) {
       this.#dependencies.logger.debug({
         event: NotificationDeliveryLogEvent.SEND_NOTIFICATION_WITH_DEDUP_LOCK_BUSY,
         type: data.type,

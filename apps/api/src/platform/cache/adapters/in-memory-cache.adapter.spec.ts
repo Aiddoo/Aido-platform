@@ -117,7 +117,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       for (const { key, value } of testCases) {
         await cache.set(key, value);
         const result = await cache.get(key, z.unknown());
-        if (value === null) {
+        if (value == null) {
           expect(result).toBeNull();
         } else {
           expect(result).toEqual(value);

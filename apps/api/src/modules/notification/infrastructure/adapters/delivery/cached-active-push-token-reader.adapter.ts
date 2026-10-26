@@ -48,7 +48,7 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
 
     for (const [index, userId] of userIds.entries()) {
       const tokens = cachedTokens[index];
-      if (tokens === undefined) {
+      if (tokens == null) {
         missedUserIds.push(userId);
       } else if (tokens.length > 0) {
         tokensByUserId.set(userId, tokens);

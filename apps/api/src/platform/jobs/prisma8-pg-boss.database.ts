@@ -18,6 +18,7 @@ export function nativeJobDatabase(tx: Prisma8Transaction, result: "id" | "count"
         const encoded = Array.isArray(value)
           ? `{${z.array(z.uuid()).parse(value).join(",")}}`
           : value;
+        // nullish-strict: undefined 파라미터는 빠뜨린 값이라 NULL로 묶지 않고 거부한다
         if (
           encoded !== null &&
           typeof encoded !== "string" &&
@@ -26,7 +27,7 @@ export function nativeJobDatabase(tx: Prisma8Transaction, result: "id" | "count"
         ) {
           throw new TypeError("Unsupported pg-boss SQL parameter");
         }
-        parameters.push(param(encoded === null ? null : String(encoded), { codecId: "pg/text@1" }));
+        parameters.push(param(encoded == null ? null : String(encoded), { codecId: "pg/text@1" }));
         offset = match.index + match[0].length;
       }
       strings.push(text.slice(offset));

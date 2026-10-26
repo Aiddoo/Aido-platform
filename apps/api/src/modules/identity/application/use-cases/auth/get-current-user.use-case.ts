@@ -32,7 +32,7 @@ export class GetCurrentUser {
       userId,
       async () => {
         const user = await this.#dependencies.userRepository.findByIdWithProfile(userId);
-        if (user === null) {
+        if (user == null) {
           return undefined;
         }
         // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
@@ -61,7 +61,7 @@ export class GetCurrentUser {
       },
     );
 
-    if (cachedProfile === undefined) {
+    if (cachedProfile == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
 

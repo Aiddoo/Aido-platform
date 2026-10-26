@@ -11,7 +11,7 @@ export function todoDatePredicate(
   endDate?: Date,
 ) {
   const effectiveStart = startDate ?? endDate;
-  if (effectiveStart === undefined) return all();
+  if (effectiveStart == null) return all();
   const start = databaseDate(effectiveStart);
   const end = databaseDate(endDate ?? effectiveStart);
   return or(

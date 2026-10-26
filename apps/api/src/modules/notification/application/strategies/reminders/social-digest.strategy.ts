@@ -132,13 +132,13 @@ export class SocialDigestStrategy implements TimezoneReminderStrategy {
     for (const user of candidates) {
       const userFriendIds = friendIdMap.get(user.id);
 
-      if (userFriendIds === undefined || userFriendIds.size === 0) {
+      if (userFriendIds == null || userFriendIds.size === 0) {
         continue;
       }
 
       const completedFriends = [...userFriendIds]
         .map((id) => completedFriendMap.get(id))
-        .filter((f): f is { name: string | null } => f !== undefined);
+        .filter((f): f is { name: string | null } => f != null);
 
       if (completedFriends.length === 0) {
         continue;

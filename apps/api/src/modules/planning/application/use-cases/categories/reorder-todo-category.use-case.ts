@@ -56,7 +56,7 @@ export class ReorderTodoCategory {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
 
       const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
-      if (category === null) {
+      if (category == null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId,
         });
@@ -67,12 +67,12 @@ export class ReorderTodoCategory {
       }
 
       let plan: ReturnType<typeof planReorderRelativeTo>;
-      if (targetCategoryId !== undefined) {
+      if (targetCategoryId != null) {
         const target = await this.#dependencies.repository.findByIdAndUserId(
           targetCategoryId,
           userId,
         );
-        if (target === null) {
+        if (target == null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
             categoryId: targetCategoryId,
           });

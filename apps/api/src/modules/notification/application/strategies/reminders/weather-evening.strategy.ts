@@ -76,7 +76,7 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
     });
 
     const usersWithLocation = users.filter(
-      (u): u is VerifiedUserWithLocation => u.location !== null,
+      (u): u is VerifiedUserWithLocation => u.location != null,
     );
     if (usersWithLocation.length === 0) {
       return 0;
@@ -96,7 +96,7 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
     const gridGroups = this.#groupByGrid(filtered);
     const gridInputs = [...gridGroups.values()].flatMap((group) => {
       const first = group[0];
-      if (first === undefined) {
+      if (first == null) {
         return [];
       }
       return [
@@ -118,7 +118,7 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
         const loc = user.location;
         const key = `${loc.gridX}:${loc.gridY}`;
         const forecast = forecasts.get(key);
-        if (forecast === undefined) {
+        if (forecast == null) {
           return null;
         }
 
@@ -142,7 +142,7 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
           notificationDate: today,
         };
       })
-      .filter((n): n is NonNullable<typeof n> => n !== null);
+      .filter((n): n is NonNullable<typeof n> => n != null);
 
     if (notifications.length === 0) {
       return 0;

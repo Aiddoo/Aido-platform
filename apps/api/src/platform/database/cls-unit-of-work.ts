@@ -51,7 +51,7 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
     }
 
     const scope = this.cls.get<AfterCommitTaskScope>(AFTER_COMMIT_TASK_SCOPE);
-    if (scope === undefined) {
+    if (scope == null) {
       throw new Error("After-commit task scope is missing for an active transaction");
     }
 

@@ -18,7 +18,7 @@ export class IdentityUser extends AggregateRoot<IdentityUserProps> {
     return new IdentityUser({
       id: props.id,
       status: props.status,
-      deletedAt: props.deletedAt !== null ? new Date(props.deletedAt) : null,
+      deletedAt: props.deletedAt != null ? new Date(props.deletedAt) : null,
     });
   }
 
@@ -31,11 +31,11 @@ export class IdentityUser extends AggregateRoot<IdentityUserProps> {
   }
 
   get deletedAt(): Date | null {
-    return this.props.deletedAt !== null ? new Date(this.props.deletedAt) : null;
+    return this.props.deletedAt != null ? new Date(this.props.deletedAt) : null;
   }
 
   requiresRestoration(at: Date): boolean {
-    if (this.props.deletedAt === null) {
+    if (this.props.deletedAt == null) {
       return false;
     }
 
@@ -47,7 +47,7 @@ export class IdentityUser extends AggregateRoot<IdentityUserProps> {
   }
 
   requestDeletion(at: Date): void {
-    if (this.props.deletedAt !== null) {
+    if (this.props.deletedAt != null) {
       throw new DomainException(ErrorCode.USER_0606, { userId: this.id });
     }
 
@@ -66,7 +66,7 @@ export class IdentityUser extends AggregateRoot<IdentityUserProps> {
 
   isPurgeEligibleAt(at: Date): boolean {
     return (
-      this.props.deletedAt !== null &&
+      this.props.deletedAt != null &&
       this.props.deletedAt < subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS, at)
     );
   }

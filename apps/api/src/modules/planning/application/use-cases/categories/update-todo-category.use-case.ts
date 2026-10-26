@@ -49,13 +49,13 @@ export class UpdateTodoCategory {
     const { updated, events } = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
       const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
-      if (category === null) {
+      if (category == null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId: id,
         });
       }
 
-      if (data.name !== undefined && data.name !== category.name) {
+      if (data.name != null && data.name !== category.name) {
         const duplicate = await this.#dependencies.repository.existsByUserIdAndName(
           userId,
           data.name,
@@ -71,8 +71,8 @@ export class UpdateTodoCategory {
       category.updateDetails(data);
 
       const updated = await this.#dependencies.repository.update(id, {
-        name: data.name === undefined ? undefined : category.name,
-        color: data.color === undefined ? undefined : category.color,
+        name: data.name == null ? undefined : category.name,
+        color: data.color == null ? undefined : category.color,
       });
       return { updated, events: category.pullDomainEvents() };
     });

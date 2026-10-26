@@ -76,7 +76,7 @@ export class StreakAtRiskStrategy implements TimezoneReminderStrategy {
             }
           : null;
       })
-      .filter((u): u is NonNullable<typeof u> => u !== null);
+      .filter((u): u is NonNullable<typeof u> => u != null);
 
     if (atRiskUsers.length === 0) {
       return { sent: 0 };

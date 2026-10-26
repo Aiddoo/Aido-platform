@@ -13,7 +13,7 @@ export class UserPreference extends AggregateRoot<StreakState> {
       currentStreak: preference.currentStreak,
       longestStreak: preference.longestStreak,
       lastCompletedDate:
-        preference.lastCompletedDate === null ? null : new Date(preference.lastCompletedDate),
+        preference.lastCompletedDate == null ? null : new Date(preference.lastCompletedDate),
     });
   }
 
@@ -27,7 +27,7 @@ export class UserPreference extends AggregateRoot<StreakState> {
       currentStreak: this.props.currentStreak,
       longestStreak: this.props.longestStreak,
       lastCompletedDate:
-        this.props.lastCompletedDate === null ? null : new Date(this.props.lastCompletedDate),
+        this.props.lastCompletedDate == null ? null : new Date(this.props.lastCompletedDate),
     };
   }
 

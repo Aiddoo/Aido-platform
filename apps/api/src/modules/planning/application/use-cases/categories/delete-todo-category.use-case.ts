@@ -55,7 +55,7 @@ export class DeleteTodoCategory {
       ]);
 
       const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
-      if (category === null) {
+      if (category == null) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
           categoryId,
         });
@@ -68,7 +68,7 @@ export class DeleteTodoCategory {
 
       const todoCount = await this.#dependencies.repository.getTodoCount(categoryId);
       if (todoCount > 0) {
-        if (moveToCategoryId === undefined) {
+        if (moveToCategoryId == null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
             categoryId,
             todoCount,
@@ -85,7 +85,7 @@ export class DeleteTodoCategory {
           moveToCategoryId,
           userId,
         );
-        if (moveTarget === null) {
+        if (moveTarget == null) {
           throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
             categoryId: moveToCategoryId,
           });

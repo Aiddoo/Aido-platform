@@ -464,7 +464,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 function hasAffectedCount(result: unknown): result is { readonly affected: number } {
   return (
     typeof result === "object" &&
-    result !== null &&
+    result != null &&
     "affected" in result &&
     typeof result.affected === "number"
   );
@@ -489,7 +489,7 @@ function toPgBossJobOptions(queue: string, options: EnqueueJobOptions): Omit<Job
 
 function uniqueDeadLetters(jobs: readonly EnqueueJobRequest[]): DeadLetterQueue[] {
   const deadLetters = jobs.flatMap(({ options }) =>
-    options.deadLetter === undefined ? [] : [options.deadLetter],
+    options.deadLetter == null ? [] : [options.deadLetter],
   );
   return uniqBy(deadLetters, (deadLetter) => resolveDeadLetterQueue(deadLetter));
 }

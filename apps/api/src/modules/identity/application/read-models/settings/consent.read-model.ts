@@ -13,7 +13,7 @@ import { resolveAiDataSharingDecision } from "../../../domain/services/settings/
 
 /** 약관 동의 응답 뷰. 기록이 없으면 전부 null(기존 사용자 호환). */
 export function buildConsentView(consent: UserConsentRecord | null): ConsentResponse {
-  if (consent === null) {
+  if (consent == null) {
     return {
       termsAgreedAt: null,
       privacyAgreedAt: null,

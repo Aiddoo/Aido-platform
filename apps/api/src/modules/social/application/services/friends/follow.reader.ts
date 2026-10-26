@@ -25,7 +25,7 @@ export class FollowReader implements FollowReaderPort {
       userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
 
     const cached = await this.#dependencies.cache.getMutualFriend(smallerId, largerId);
-    if (cached !== undefined) {
+    if (cached != null) {
       return cached;
     }
 

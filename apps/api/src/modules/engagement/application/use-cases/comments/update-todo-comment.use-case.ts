@@ -49,7 +49,7 @@ export class UpdateTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
@@ -62,7 +62,7 @@ export class UpdateTodoComment {
         input.todoId,
         input.commentId,
       );
-      if (updatedComment === null) {
+      if (updatedComment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 

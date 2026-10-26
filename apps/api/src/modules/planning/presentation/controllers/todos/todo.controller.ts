@@ -448,8 +448,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       completed: query.completed,
       categoryId: query.categoryId,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate === undefined ? undefined : parseDateOnly(query.startDate),
-      endDate: query.endDate === undefined ? undefined : parseDateOnly(query.endDate),
+      startDate: query.startDate == null ? undefined : parseDateOnly(query.startDate),
+      endDate: query.endDate == null ? undefined : parseDateOnly(query.endDate),
     });
 
     return {
@@ -530,8 +530,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       cursor: query.cursor,
       size: query.size,
       // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-      startDate: query.startDate === undefined ? undefined : parseDateOnly(query.startDate),
-      endDate: query.endDate === undefined ? undefined : parseDateOnly(query.endDate),
+      startDate: query.startDate == null ? undefined : parseDateOnly(query.startDate),
+      endDate: query.endDate == null ? undefined : parseDateOnly(query.endDate),
     });
 
     return {
@@ -571,7 +571,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       data: {
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: dto.startDate === undefined ? undefined : parseDateOnly(dto.startDate),
+        startDate: dto.startDate == null ? undefined : parseDateOnly(dto.startDate),
+        // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
         endDate:
           dto.endDate === undefined
             ? undefined

@@ -60,11 +60,11 @@ function getAnchor(
   input: GetTodoConversationInput,
   cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
 ): ConversationAnchor {
-  if (input.focusCommentId !== undefined) {
+  if (input.focusCommentId != null) {
     return { mode: "FOCUS", scope: "THREAD", commentId: input.focusCommentId };
   }
 
-  if (input.before !== undefined) {
+  if (input.before != null) {
     const cursor = decodeCursor(input.before, input.sort, input.todoId, cursorCodec);
     return {
       mode: "BEFORE",
@@ -75,7 +75,7 @@ function getAnchor(
     };
   }
 
-  if (input.after !== undefined) {
+  if (input.after != null) {
     const cursor = decodeCursor(input.after, input.sort, input.todoId, cursorCodec);
     return {
       mode: "AFTER",
@@ -131,12 +131,12 @@ export class GetTodoConversation {
       window?.anchorIndex == null ? undefined : window.items[window.anchorIndex];
     if (
       anchor.mode === "FOCUS" &&
-      (window === null || focusedRecord === undefined || focusedRecord.id !== anchor.commentId)
+      (window == null || focusedRecord == null || focusedRecord.id !== anchor.commentId)
     ) {
       return this.toEmptyResponse(input.size);
     }
 
-    if (window === null) {
+    if (window == null) {
       throw new ApplicationException(ErrorCode.SYS_0002);
     }
 
@@ -179,7 +179,7 @@ export class GetTodoConversation {
         hasPrevious: window.hasPrevious,
         hasNext: window.hasNext,
         previousCursor:
-          window.hasPrevious && firstRecord !== undefined
+          window.hasPrevious && firstRecord != null
             ? this.#dependencies.cursorCodec.encodeConversation(
                 firstRecord,
                 input.sort,
@@ -187,7 +187,7 @@ export class GetTodoConversation {
               )
             : null,
         nextCursor:
-          window.hasNext && lastRecord !== undefined
+          window.hasNext && lastRecord != null
             ? this.#dependencies.cursorCodec.encodeConversation(
                 lastRecord,
                 input.sort,
@@ -207,13 +207,13 @@ export class GetTodoConversation {
       return null;
     }
 
-    const record = anchorIndex === null ? undefined : items[anchorIndex];
+    const record = anchorIndex == null ? undefined : items[anchorIndex];
 
-    if (record === undefined || record.id !== anchor.commentId) {
+    if (record == null || record.id !== anchor.commentId) {
       throw new ApplicationException(ErrorCode.TODO_0831, { commentId: anchor.commentId });
     }
 
-    return record.deletedAt === null ? record : null;
+    return record.deletedAt == null ? record : null;
   }
 
   private toEmptyResponse(size: number): TodoConversationResponse {
@@ -235,7 +235,7 @@ export class GetTodoConversation {
     focusRecord: TodoCommentRecord | null,
     pageRecords: readonly TodoCommentRecord[],
   ): Promise<FocusAncestorContext> {
-    if (focusRecord === null) {
+    if (focusRecord == null) {
       return { records: [], omittedCount: 0 };
     }
 
@@ -260,7 +260,7 @@ export class GetTodoConversation {
     likedCommentIds: ReadonlySet<string>,
     blockedAuthorIds: ReadonlySet<string>,
   ): TodoConversationFocus | null {
-    if (focusRecord === null || itemIndex === null) {
+    if (focusRecord == null || itemIndex == null) {
       return null;
     }
 

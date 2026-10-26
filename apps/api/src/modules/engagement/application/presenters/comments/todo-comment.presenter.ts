@@ -48,11 +48,11 @@ export function toTodoCommentResponse(
     content: isHidden ? null : record.content,
     isDeleted: isHidden,
     isAuthorBlocked,
-    isEdited: record.editedAt !== null,
+    isEdited: record.editedAt != null,
     likeCount: isHidden ? 0 : record.likeCount,
     replyCount: record.replyCount,
     replyTo:
-      record.parentId === null
+      record.parentId == null
         ? null
         : {
             commentId: record.parentId,

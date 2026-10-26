@@ -7,7 +7,7 @@ export function requirePurchasedAt(
   eventType: string,
   reason: string,
 ): Date {
-  if (value === undefined || value === 0) {
+  if (value == null || value === 0) {
     throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, { reason, eventType });
   }
   return new Date(value);
@@ -19,7 +19,7 @@ export function requireExpiresAt(
   reason: string,
 ): Date {
   const expiresAt = optionalExpiresAt(value);
-  if (expiresAt === undefined) {
+  if (expiresAt == null) {
     throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, { reason, eventType });
   }
   return expiresAt;

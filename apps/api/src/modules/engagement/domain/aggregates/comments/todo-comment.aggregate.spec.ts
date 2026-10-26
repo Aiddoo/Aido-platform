@@ -182,8 +182,8 @@ describe("TodoComment — 댓글 Aggregate", () => {
     const snapshot = comment.snapshot;
 
     // When
-    if (snapshot.deletedAt !== null) snapshot.deletedAt.setUTCFullYear(2030);
-    if (snapshot.editedAt !== null) snapshot.editedAt.setUTCFullYear(2030);
+    if (snapshot.deletedAt != null) snapshot.deletedAt.setUTCFullYear(2030);
+    if (snapshot.editedAt != null) snapshot.editedAt.setUTCFullYear(2030);
     snapshot.createdAt.setUTCFullYear(2030);
     snapshot.updatedAt.setUTCFullYear(2030);
 

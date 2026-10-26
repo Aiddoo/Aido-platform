@@ -67,7 +67,7 @@ export abstract class NudgeMapper {
       dailyLimit: limitInfo.dailyLimit,
       usedToday: limitInfo.used,
       remainingToday: limitInfo.remaining,
-      isUnlimited: limitInfo.dailyLimit === null,
+      isUnlimited: limitInfo.dailyLimit == null,
     };
   }
 }

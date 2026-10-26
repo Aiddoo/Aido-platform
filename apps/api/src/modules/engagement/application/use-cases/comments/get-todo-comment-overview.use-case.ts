@@ -53,12 +53,12 @@ function getAnchor(
   input: GetTodoCommentOverviewInput,
   cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview">,
 ): OverviewAnchor {
-  if (input.before !== undefined) {
+  if (input.before != null) {
     const cursor = decodeCursor(input.before, input.sort, input.todoId, cursorCodec);
     return { mode: "BEFORE", rootId: cursor.rootId, position: cursor.position };
   }
 
-  if (input.after !== undefined) {
+  if (input.after != null) {
     const cursor = decodeCursor(input.after, input.sort, input.todoId, cursorCodec);
     return { mode: "AFTER", rootId: cursor.rootId, position: cursor.position };
   }
@@ -94,7 +94,7 @@ export class GetTodoCommentOverview {
       anchorPosition: anchor.position,
     });
 
-    if (window === null) {
+    if (window == null) {
       throw new ApplicationException(ErrorCode.SYS_0002);
     }
 
@@ -131,11 +131,11 @@ export class GetTodoCommentOverview {
         hasPrevious: window.hasPrevious,
         hasNext: window.hasNext,
         previousCursor:
-          window.hasPrevious && firstRecord !== undefined
+          window.hasPrevious && firstRecord != null
             ? this.#dependencies.cursorCodec.encodeOverview(firstRecord, input.sort)
             : null,
         nextCursor:
-          window.hasNext && lastRecord !== undefined
+          window.hasNext && lastRecord != null
             ? this.#dependencies.cursorCodec.encodeOverview(lastRecord, input.sort)
             : null,
       }),

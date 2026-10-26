@@ -41,7 +41,7 @@ export class UpsertLocation {
     const saved = await this.#dependencies.weatherLocationRepository.upsert(location);
 
     // 격자가 변경되면 구 격자의 캐시 무효화
-    if (oldLocation !== null && !oldLocation.grid.equals(saved.grid)) {
+    if (oldLocation != null && !oldLocation.grid.equals(saved.grid)) {
       await this.#dependencies.weatherCache.invalidateGrid(oldLocation.gridX, oldLocation.gridY);
     }
 

@@ -63,7 +63,7 @@ function normalizeCommand(input: WriteTodoCommentChainInput): TodoCommentChainCo
 
 function requireFirst(records: readonly TodoCommentRecord[]): TodoCommentRecord {
   const first = records[0];
-  if (first === undefined) {
+  if (first == null) {
     throw new ApplicationException(ErrorCode.SYS_0003);
   }
 
@@ -129,7 +129,7 @@ export class WriteTodoCommentChain {
               todoId: input.todoId,
               commentId: first.id,
               threadRootId: outcome.threadRootId,
-              isReply: input.parentId !== null,
+              isReply: input.parentId != null,
               commentCount: outcome.addedCount,
             }),
         },
@@ -164,22 +164,22 @@ export class WriteTodoCommentChain {
       const lockKeys = command.items.map((item) =>
         MutationLockKeys.todoCommentRequest(command.authorId, item.clientRequestId),
       );
-      if (command.parentId !== null) {
+      if (command.parentId != null) {
         lockKeys.push(MutationLockKeys.todoComment(command.parentId));
       }
 
       await this.#dependencies.mutationLock.acquire(lockKeys);
       await assertTodoCommentAccess(this.#dependencies.reader, command.todoId, command.authorId);
       const replayIds = await this.#dependencies.repository.findCommentChainReplay(command);
-      if (replayIds !== null) {
+      if (replayIds != null) {
         return this.loadReplay(command, replayIds);
       }
 
       const parent =
-        command.parentId === null
+        command.parentId == null
           ? null
           : await this.#dependencies.repository.findComment(command.todoId, command.parentId);
-      if (command.parentId !== null && parent === null) {
+      if (command.parentId != null && parent == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: command.parentId });
       }
       if (parent != null) {
@@ -189,7 +189,7 @@ export class WriteTodoCommentChain {
       const chain = await this.#dependencies.repository.createCommentChain({
         todoId: command.todoId,
         authorId: command.authorId,
-        placement: parent === null ? ThreadPlacement.topLevel() : parent.placeReply(),
+        placement: parent == null ? ThreadPlacement.topLevel() : parent.placeReply(),
         items: command.items,
       });
       await this.#dependencies.repository.increaseTodoCommentCount(
@@ -198,7 +198,7 @@ export class WriteTodoCommentChain {
       );
 
       if (
-        parent !== null &&
+        parent != null &&
         !(await this.#dependencies.repository.incrementReplyCount(parent.id.getValue()))
       ) {
         throw new ApplicationException(ErrorCode.SYS_0003, {
@@ -219,8 +219,8 @@ export class WriteTodoCommentChain {
         written,
         likedCommentIds: new Set<string>(),
         addedCount: chain.createdCount,
-        recipientId: parent === null ? first.todoOwnerId : parent.authorId,
-        threadRootId: parent === null ? first.id : parent.threadRootId.getValue(),
+        recipientId: parent == null ? first.todoOwnerId : parent.authorId,
+        threadRootId: parent == null ? first.id : parent.threadRootId.getValue(),
       };
     });
   }
@@ -230,7 +230,7 @@ export class WriteTodoCommentChain {
     return this.#dependencies.unitOfWork.run(async () => {
       await assertTodoCommentAccess(this.#dependencies.reader, command.todoId, command.authorId);
       const replayIds = await this.#dependencies.repository.findCommentChainReplay(command);
-      if (replayIds === null) {
+      if (replayIds == null) {
         throw new ApplicationException(ErrorCode.SYS_0003);
       }
 

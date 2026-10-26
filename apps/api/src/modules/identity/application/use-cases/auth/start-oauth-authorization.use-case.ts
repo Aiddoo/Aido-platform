@@ -36,7 +36,7 @@ export class StartOAuthAuthorization {
 
   async execute(input: StartOAuthAuthorizationInput): Promise<string> {
     const strategy = this.#dependencies.registry.get(input.provider);
-    if (strategy === undefined)
+    if (strategy == null)
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
         provider: input.provider,
         reason: `Unsupported provider: ${input.provider}`,
@@ -49,13 +49,13 @@ export class StartOAuthAuthorization {
       persistState: (provider, redirectUri, options) =>
         this.#dependencies.oauthStateRepository.create(input.state, provider, redirectUri, options),
     });
-    if (url === null || url === "") throw new ApplicationException(ErrorCode.USER_0602);
+    if (url == null || url === "") throw new ApplicationException(ErrorCode.USER_0602);
     return url;
   }
 
   #resolveRedirectUri(redirectUri?: string): string {
     const defaultRedirectUri = "aido://auth/callback";
-    if (redirectUri === undefined || redirectUri === "") return defaultRedirectUri;
+    if (redirectUri == null || redirectUri === "") return defaultRedirectUri;
     const patterns = [
       /^aido:\/\/auth(\/.*)?$/,
       /^aido:\/\/\/auth(\/.*)?$/,

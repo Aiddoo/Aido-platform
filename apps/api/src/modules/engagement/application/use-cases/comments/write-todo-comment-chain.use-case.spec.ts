@@ -44,7 +44,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     const result = await useCase.execute(input());
     // Then
     const comment = result.comments[0];
-    if (comment === undefined) throw new Error("댓글 응답 fixture가 비어 있습니다.");
+    if (comment == null) throw new Error("댓글 응답 fixture가 비어 있습니다.");
     expect(comment.content).toBe("함께 해요");
     expect(fixture.repository.comments.get(comment.id)?.content).toBe("함께 해요");
     expect(fixture.repository.commentCounts.get(1)).toBe(1);
@@ -152,7 +152,7 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     const useCase = new WriteTodoCommentChain(fixture);
     const original = await useCase.execute(input());
     const commentId = original.comments[0]?.id;
-    if (commentId === undefined) throw new Error("댓글 fixture가 비어 있습니다.");
+    if (commentId == null) throw new Error("댓글 fixture가 비어 있습니다.");
     await fixture.repository.setLike(1, commentId, ENGAGEMENT_VIEWER_ID);
     // When
     const result = await useCase.execute(input());

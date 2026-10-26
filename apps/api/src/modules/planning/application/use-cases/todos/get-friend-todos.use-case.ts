@@ -37,8 +37,8 @@ export class GetFriendTodos {
     const { userId, friendUserId } = input;
 
     if (
-      input.startDate !== undefined &&
-      input.endDate !== undefined &&
+      input.startDate != null &&
+      input.endDate != null &&
       isAfter(input.startDate, input.endDate)
     ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
@@ -62,9 +62,9 @@ export class GetFriendTodos {
       },
     );
 
-    const isFirstPage = cursor === undefined;
-    const startDateKey = input.startDate !== undefined ? toDateString(input.startDate) : "-";
-    const endDateKey = input.endDate !== undefined ? toDateString(input.endDate) : "-";
+    const isFirstPage = cursor == null;
+    const startDateKey = input.startDate != null ? toDateString(input.startDate) : "-";
+    const endDateKey = input.endDate != null ? toDateString(input.endDate) : "-";
     let cacheGeneration: string | undefined;
 
     if (isFirstPage) {
@@ -75,7 +75,7 @@ export class GetFriendTodos {
         size,
       );
       cacheGeneration = cached.generation;
-      if (cached.page !== undefined) {
+      if (cached.page != null) {
         return cached.page;
       }
     }
@@ -98,7 +98,7 @@ export class GetFriendTodos {
       size,
     });
 
-    if (isFirstPage && cacheGeneration !== undefined) {
+    if (isFirstPage && cacheGeneration != null) {
       await this.#dependencies.todoCache.storeFriendTodosFirstPageIfCurrent(
         friendUserId,
         startDateKey,

@@ -84,7 +84,7 @@ export class OAuthStateRepository implements AuthOAuthStateRepositoryPort {
         ),
       ).first(),
     );
-    if (state === null) {
+    if (state == null) {
       return null;
     }
     return {
@@ -96,11 +96,11 @@ export class OAuthStateRepository implements AuthOAuthStateRepositoryPort {
       initiatingUserId: state.initiatingUserId,
       exchangeCode: state.exchangeCode,
       accessToken:
-        state.accessToken !== null && state.accessToken !== ""
+        state.accessToken != null && state.accessToken !== ""
           ? this.encryptionService.decryptSafe(state.accessToken)
           : null,
       refreshToken:
-        state.refreshToken !== null && state.refreshToken !== ""
+        state.refreshToken != null && state.refreshToken !== ""
           ? this.encryptionService.decryptSafe(state.refreshToken)
           : null,
       userId: state.userId,

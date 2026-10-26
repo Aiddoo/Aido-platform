@@ -33,13 +33,11 @@ export class PrismaAdminUserDirectoryAdapter implements AdminUserDirectoryPort {
       .limit(BROADCAST_BATCH_SIZE);
     let cursor: string | undefined;
     for (;;) {
-      const rows = await users
-        .where((user) => (cursor !== undefined ? user.id.gt(cursor) : all()))
-        .all();
+      const rows = await users.where((user) => (cursor != null ? user.id.gt(cursor) : all())).all();
       if (rows.length === 0) break;
       yield rows.map((row) => row.id);
       const last = rows.at(-1);
-      if (rows.length < BROADCAST_BATCH_SIZE || last === undefined) break;
+      if (rows.length < BROADCAST_BATCH_SIZE || last == null) break;
       cursor = last.id;
     }
   }

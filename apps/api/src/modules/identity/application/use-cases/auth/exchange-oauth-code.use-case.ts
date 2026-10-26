@@ -31,16 +31,16 @@ export class ExchangeOAuthCode {
   async execute(input: ExchangeOAuthCodeInput): Promise<ExchangeCodeResult> {
     const at = now();
     const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(input.code, at);
-    if (state === null) throw this.#invalidCode();
+    if (state == null) throw this.#invalidCode();
     const authorization = AuthOAuthState.reconstitute(state);
     if (authorization.validityAt(at) !== "valid") throw this.#invalidCode();
     const { accessToken, refreshToken, userId } = state;
     if (
-      accessToken === null ||
+      accessToken == null ||
       accessToken === "" ||
-      refreshToken === null ||
+      refreshToken == null ||
       refreshToken === "" ||
-      userId === null ||
+      userId == null ||
       userId === ""
     )
       throw this.#invalidCode();

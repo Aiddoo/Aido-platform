@@ -179,7 +179,7 @@ function countConsecutiveWeeks(sortedWeeks: number[]): number {
   for (let i = sortedWeeks.length - 1; i > 0; i--) {
     const current = sortedWeeks[i];
     const prev = sortedWeeks[i - 1];
-    if (current !== undefined && prev !== undefined && current - prev === 1) {
+    if (current != null && prev != null && current - prev === 1) {
       count++;
     } else {
       break;

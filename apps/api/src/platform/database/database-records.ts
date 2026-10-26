@@ -142,7 +142,7 @@ function decodeRecordValue(model: string, row: unknown): unknown {
   if (Array.isArray(row)) return row.map((item) => decodeRecordValue(model, item));
   if (!isPlainObject(row)) throw new TypeError(`Invalid ${model} database record`);
   const metadata = models.get(model);
-  if (metadata === undefined) throw new TypeError(`Unknown database model: ${model}`);
+  if (metadata == null) throw new TypeError(`Unknown database model: ${model}`);
   const fields = metadata.fields;
   const relations = metadata.relations;
   return Object.fromEntries(
@@ -163,7 +163,7 @@ function decodeRecordValue(model: string, row: unknown): unknown {
         }
       }
       const relation = relations.get(key);
-      const nested = relation !== undefined && (Array.isArray(value) || isPlainObject(value));
+      const nested = relation != null && (Array.isArray(value) || isPlainObject(value));
       return [
         key === "_type" ? "type" : key,
         nested ? decodeRecordValue(relation.to.model, value) : value,
@@ -203,15 +203,16 @@ export function encodePatch(model: ModelName, input: object): unknown {
 /** Omitted fields stay omitted; null explicitly clears a nullable field. JSON is passed through. */
 function encodeValues(model: ModelName, input: object): Record<string, unknown> {
   const metadata = models.get(model);
-  if (metadata === undefined) throw new TypeError(`Unknown database model: ${model}`);
+  if (metadata == null) throw new TypeError(`Unknown database model: ${model}`);
   const fields = metadata.fields;
   const values: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input)) {
+    // nullish-strict: ORM 쓰기에서 undefined는 바꾸지 않음, null은 비우기라 따로 본다
     if (value === undefined) continue;
     const databaseKey = key === "type" && fields.has("_type") ? "_type" : key;
     const field = fields.get(databaseKey);
-    if (field === undefined) throw new TypeError(`Unknown scalar field: ${model}.${key}`);
-    if (value === null) {
+    if (field == null) throw new TypeError(`Unknown scalar field: ${model}.${key}`);
+    if (value == null) {
       if (!field.nullable) throw new TypeError(`${model}.${key} cannot be null`);
       values[databaseKey] = null;
       continue;

@@ -39,7 +39,7 @@ export class PrismaNotificationReader
       and(
         row.userId.eq(userId),
         unreadOnly === true ? row.isRead.eq(false) : all(),
-        types !== undefined ? row._type.in([...types]) : all(),
+        types != null ? row._type.in([...types]) : all(),
       ),
     )
       .orderBy((row) => row.createdAt.desc())
@@ -49,7 +49,7 @@ export class PrismaNotificationReader
       const anchor = await this.client.orm.public.Notification.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       notifications = notifications.cursor(anchor);
     }
     return decodeRecord("Notification", await notifications.all());
@@ -69,15 +69,15 @@ export class PrismaNotificationReader
         row.userId.eq(query.userId),
         row._type.eq(query.type),
         row.createdAt.gte(databaseTimestamp(query.since)),
-        query.friendId !== undefined ? row.friendId.eq(query.friendId) : all(),
-        query.todoId !== undefined ? row.todoId.eq(query.todoId) : all(),
-        query.nudgeId !== undefined ? row.nudgeId.eq(query.nudgeId) : all(),
-        query.cheerId !== undefined ? row.cheerId.eq(query.cheerId) : all(),
+        query.friendId != null ? row.friendId.eq(query.friendId) : all(),
+        query.todoId != null ? row.todoId.eq(query.todoId) : all(),
+        query.nudgeId != null ? row.nudgeId.eq(query.nudgeId) : all(),
+        query.cheerId != null ? row.cheerId.eq(query.cheerId) : all(),
       ),
     )
       .select("id")
       .first();
-    return row !== null;
+    return row != null;
   }
 
   async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
@@ -86,7 +86,7 @@ export class PrismaNotificationReader
         row.userId.in(query.userIds),
         row._type.eq(query.type),
         row.notificationDate.eq(databaseDate(query.notificationDate)),
-        query.friendId !== undefined ? row.friendId.eq(query.friendId) : all(),
+        query.friendId != null ? row.friendId.eq(query.friendId) : all(),
       ),
     )
       .groupBy("userId")
@@ -106,6 +106,6 @@ export class PrismaNotificationReader
       )
       .select("id")
       .first();
-    return row !== null;
+    return row != null;
   }
 }

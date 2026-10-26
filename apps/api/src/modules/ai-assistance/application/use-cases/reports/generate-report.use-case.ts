@@ -255,7 +255,7 @@ export class GenerateReport {
         promptVersion: content.promptVersion,
       });
     });
-    if (report === null) {
+    if (report == null) {
       this.#dependencies.logger.debug({
         event: AiReportLogEvent.SKIPPED,
         userId,

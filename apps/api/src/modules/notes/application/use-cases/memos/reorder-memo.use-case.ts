@@ -48,7 +48,7 @@ export class ReorderMemo {
     return this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.memoSortOrder(input.userId)]);
       const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (memo === null) {
+      if (memo == null) {
         throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       }
 
@@ -82,9 +82,9 @@ export class ReorderMemo {
   async #planReorder(currentSortOrder: number, input: ReorderMemoInput): Promise<ReorderPlan> {
     const { userId, targetMemoId, position } = input;
 
-    if (targetMemoId !== undefined) {
+    if (targetMemoId != null) {
       const target = await this.#dependencies.repository.findByIdAndUserId(targetMemoId, userId);
-      if (target === null) {
+      if (target == null) {
         throw new ApplicationException(ErrorCode.MEMO_2002, { targetMemoId });
       }
       return planReorderRelativeTo(currentSortOrder, target.sortOrder, position);

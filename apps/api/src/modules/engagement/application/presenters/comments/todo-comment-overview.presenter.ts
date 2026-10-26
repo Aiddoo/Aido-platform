@@ -9,7 +9,7 @@ export function toTodoCommentOverviewItem(input: {
   likedCommentIds: ReadonlySet<string>;
   blockedAuthorIds: ReadonlySet<string>;
 }): TodoCommentOverviewItem {
-  const previewCount = input.record.previewReply === null ? 0 : 1;
+  const previewCount = input.record.previewReply == null ? 0 : 1;
   const hiddenCount = Math.max(0, input.record.totalCount - previewCount);
 
   return {
@@ -20,7 +20,7 @@ export function toTodoCommentOverviewItem(input: {
       input.blockedAuthorIds,
     ),
     previewReply:
-      input.record.previewReply === null
+      input.record.previewReply == null
         ? null
         : toTodoCommentResponse(
             input.record.previewReply,

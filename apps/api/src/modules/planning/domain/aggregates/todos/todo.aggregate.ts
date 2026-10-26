@@ -99,7 +99,7 @@ export class Todo extends AggregateRoot<TodoProps> {
       categoryId: props.categoryId,
       sortOrder: props.sortOrder,
       completed: props.completed,
-      completedAt: props.completedAt === null ? null : new Date(props.completedAt),
+      completedAt: props.completedAt == null ? null : new Date(props.completedAt),
       schedule: props.schedule,
       visibility: props.visibility,
       recurrenceGroupId: props.recurrenceGroupId,
@@ -157,40 +157,43 @@ export class Todo extends AggregateRoot<TodoProps> {
   }
 
   updateDetails(patch: TodoDetailsPatch): void {
+    // nullish-strict: PATCH에서 null(비우기)도 변경이다
     if (Object.values(patch).every((value) => value === undefined)) {
       return;
     }
 
     // 검증을 모두 통과한 뒤에만 상태를 변경합니다 (부분 변경 방지)
-    if (patch.title !== undefined) {
+    if (patch.title != null) {
       TodoTitle.create(patch.title);
     }
     const schedulePatch: Partial<TodoScheduleProps> = {};
-    if (patch.startDate !== undefined) {
+    if (patch.startDate != null) {
       schedulePatch.startDate = patch.startDate;
     }
+    // nullish-strict: endDate null은 종료일 지우기다
     if (patch.endDate !== undefined) {
       schedulePatch.endDate = patch.endDate;
     }
+    // nullish-strict: scheduledTime null은 시간 지우기다
     if (patch.scheduledTime !== undefined) {
       schedulePatch.scheduledTime = patch.scheduledTime;
     }
-    if (patch.isAllDay !== undefined) {
+    if (patch.isAllDay != null) {
       schedulePatch.isAllDay = patch.isAllDay;
     }
     const nextSchedule =
       Object.keys(schedulePatch).length > 0 ? this.props.schedule.patch(schedulePatch) : null;
 
-    if (patch.title !== undefined) {
+    if (patch.title != null) {
       this.props.title = patch.title;
     }
-    if (patch.categoryId !== undefined) {
+    if (patch.categoryId != null) {
       this.props.categoryId = patch.categoryId;
     }
     if (nextSchedule) {
       this.props.schedule = nextSchedule;
     }
-    if (patch.visibility !== undefined) {
+    if (patch.visibility != null) {
       this.props.visibility = patch.visibility;
     }
     this.applyCompletionPatch(patch.completed);
@@ -201,7 +204,7 @@ export class Todo extends AggregateRoot<TodoProps> {
   }
 
   private applyCompletionPatch(requestedCompletion: boolean | undefined): void {
-    if (requestedCompletion === undefined || requestedCompletion === this.props.completed) {
+    if (requestedCompletion == null || requestedCompletion === this.props.completed) {
       return;
     }
 
@@ -258,10 +261,10 @@ export class Todo extends AggregateRoot<TodoProps> {
 
   updateItem(itemId: number, patch: { title?: string; completed?: boolean }): TodoItem {
     const item = this.#requireItem(itemId);
-    if (patch.title !== undefined) {
+    if (patch.title != null) {
       item.rename(patch.title);
     }
-    if (patch.completed !== undefined) {
+    if (patch.completed != null) {
       item.setCompleted(patch.completed);
     }
     return item.clone();

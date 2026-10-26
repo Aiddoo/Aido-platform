@@ -14,7 +14,7 @@ const userMutationLockProvider: FactoryProvider<UserMutationLockPort> = {
   inject: [UserRepository],
   useFactory: (users: UserRepository) => ({
     async lockById(userId) {
-      return (await users.findByIdForUpdate(userId)) !== null;
+      return (await users.findByIdForUpdate(userId)) != null;
     },
   }),
 };

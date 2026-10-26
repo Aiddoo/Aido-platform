@@ -116,13 +116,13 @@ export class HandleWebhookEvent {
       eventId: event.id,
     });
     const release = await webhookLock.acquire(event.app_user_id);
-    if (release === null) {
+    if (release == null) {
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1605, { appUserId: event.app_user_id });
     }
 
     try {
       const user = await subscriptionRepository.findUserByAppUserId(event.app_user_id);
-      if (user === null) {
+      if (user == null) {
         throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
           appUserId: event.app_user_id,
         });
@@ -145,7 +145,7 @@ export class HandleWebhookEvent {
         }
         // 처리 원장은 업무 변경과 함께 커밋한다. 실패한 트랜잭션은 다시 처리할 수 있다.
         if (
-          eventId !== undefined &&
+          eventId != null &&
           !(await receiptRepository.claim({
             eventId,
             eventType: event.type,
@@ -163,15 +163,15 @@ export class HandleWebhookEvent {
 
         const transactionId = event.original_transaction_id ?? event.transaction_id;
         const subscription =
-          transactionId !== undefined && transactionId !== ""
+          transactionId != null && transactionId !== ""
             ? await subscriptionRepository.findByRevenueCatId(transactionId)
             : null;
         // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다.
-        if (eventId !== undefined && subscription?.wasProcessedWith(eventId)) return null;
+        if (eventId != null && subscription?.wasProcessedWith(eventId)) return null;
         return this.#applyEvent(user, event, subscription, eventId);
       });
 
-      if (eventPayload === null) {
+      if (eventPayload == null) {
         this.#dependencies.logger.debug({
           event: BillingLogEvent.WEBHOOK_NO_CHANGE,
           eventType: event.type,
@@ -243,7 +243,7 @@ export class HandleWebhookEvent {
             "Missing expiration_at_ms for RENEWAL",
           )
         : undefined;
-    if (subscription === null) {
+    if (subscription == null) {
       throw new ApplicationException(
         ErrorCode.SUBSCRIPTION_1604,
         event.type === "RENEWAL"
@@ -266,7 +266,7 @@ export class HandleWebhookEvent {
       eventId,
       renewalExpiresAt,
     );
-    if (transition === null) return null;
+    if (transition == null) return null;
     await subscriptionRepository.updateStatus(transactionId, subscription.persistenceState);
     await this.#projectUser(user.id, transactionId, transition.userState, transition.chainState);
     return transition.payload;
@@ -325,7 +325,7 @@ export class HandleWebhookEvent {
       event.type,
       "Missing expiration_at_ms for INITIAL_PURCHASE",
     );
-    if (existing !== null) return null;
+    if (existing != null) return null;
     const { subscriptionRepository } = this.#dependencies;
     await subscriptionRepository.create({
       userId: user.id,
@@ -334,7 +334,7 @@ export class HandleWebhookEvent {
       status: "ACTIVE",
       startedAt,
       expiresAt,
-      ...(eventId !== undefined && { lastProcessedEventId: eventId }),
+      ...(eventId != null && { lastProcessedEventId: eventId }),
     });
     await this.#projectUser(user.id, transactionId, {
       subscriptionStatus: "ACTIVE",
@@ -362,16 +362,15 @@ export class HandleWebhookEvent {
     const expiresAt = optionalExpiresAt(event.expiration_at_ms);
     const activeUserState: UpdateUserSubscriptionStatusData = {
       subscriptionStatus: "ACTIVE",
-      ...(expiresAt !== undefined && { subscriptionExpiresAt: expiresAt }),
+      ...(expiresAt != null && { subscriptionExpiresAt: expiresAt }),
     };
     const payloadWithExpiry = (): SubscriptionEventPayload => ({
       ...payload,
-      expiresAt: expiresAt === undefined ? undefined : toISOString(expiresAt),
+      expiresAt: expiresAt == null ? undefined : toISOString(expiresAt),
     });
     return match(event.type)
       .with("RENEWAL", () => {
-        if (renewalExpiresAt === undefined || !subscription.renew(renewalExpiresAt, eventId))
-          return null;
+        if (renewalExpiresAt == null || !subscription.renew(renewalExpiresAt, eventId)) return null;
         return {
           userState: { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: renewalExpiresAt },
           payload: {

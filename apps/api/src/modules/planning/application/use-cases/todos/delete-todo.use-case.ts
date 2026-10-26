@@ -43,7 +43,7 @@ export class DeleteTodo {
         MutationLockKeys.todo(id),
       ]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 

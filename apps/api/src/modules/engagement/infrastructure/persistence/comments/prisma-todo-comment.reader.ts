@@ -129,7 +129,7 @@ interface OverviewSummaryRecord {
 }
 
 function requireValue<T>(value: T | null, field: string): T {
-  if (value === null) {
+  if (value == null) {
     throw new Error(`댓글 대화 조회 결과에 ${field} 값이 없습니다.`);
   }
 
@@ -170,7 +170,7 @@ function toRecord(row: CommentRow): TodoCommentRecord {
 }
 
 function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord | null {
-  if (row.commentId === null) {
+  if (row.commentId == null) {
     return null;
   }
 
@@ -206,7 +206,7 @@ function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord
 }
 
 function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRootRecord | null {
-  if (row.commentId === null) {
+  if (row.commentId == null) {
     return null;
   }
 
@@ -238,7 +238,7 @@ function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRoo
 }
 
 function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecord | null {
-  if (row.previewCommentId === null) {
+  if (row.previewCommentId == null) {
     return null;
   }
 
@@ -268,7 +268,7 @@ function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecor
 function toParticipantAuthor(
   row: OverviewSummaryQueryRow,
 ): TodoCommentParticipantAuthorRecord | null {
-  if (row.participantAuthorId === null) {
+  if (row.participantAuthorId == null) {
     return null;
   }
 
@@ -304,7 +304,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    return friendship !== null;
+    return friendship != null;
   }
 
   async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
@@ -344,7 +344,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .include("user", (user) => user.include("profile"))
         .first(),
     );
-    if (row === null) return null;
+    if (row == null) return null;
     const isOwner = row.userId === viewerId;
     const canAccess =
       isOwner ||
@@ -378,7 +378,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    return row === null ? null : toRecord(row);
+    return row == null ? null : toRecord(row);
   }
 
   async findCommentRecords(
@@ -405,7 +405,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     return commentIds.flatMap((commentId) => {
       const row = rowsById.get(commentId);
-      return row === undefined ? [] : [toRecord(row)];
+      return row == null ? [] : [toRecord(row)];
     });
   }
 
@@ -414,7 +414,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     params: ListTodoCommentOverviewParams,
   ): Promise<TodoCommentOverviewWindow | null> {
     const rootWindow = await this.listOverviewRoots(params);
-    if (rootWindow === null) {
+    if (rootWindow == null) {
       return null;
     }
 
@@ -469,19 +469,16 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     });
 
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
-    if (
-      isCursorPage &&
-      (params.anchorRootId === undefined || params.anchorPosition === undefined)
-    ) {
+    if (isCursorPage && (params.anchorRootId == null || params.anchorPosition == null)) {
       return null;
     }
 
     const boundaryLikeCount =
-      params.anchorPosition === undefined
+      params.anchorPosition == null
         ? sql`anchor."likeCount"`
         : sql`${params.anchorPosition.rootLikeCount}`;
     const boundaryReplyCount =
-      params.anchorPosition === undefined
+      params.anchorPosition == null
         ? sql`anchor."replyCount"`
         : sql`${params.anchorPosition.rootReplyCount}`;
     const rootOrder =
@@ -651,7 +648,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     const markedRecords = rows.flatMap((row) => {
       const record = toOverviewRootRecord(row);
-      return record === null ? [] : [{ marker: row.marker, record }];
+      return record == null ? [] : [{ marker: row.marker, record }];
     });
     return this.toOverviewRootWindow(markedRecords, params);
   }
@@ -874,16 +871,16 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       const existing = summaries.get(row.rootId);
       const participant = toParticipantAuthor(row);
 
-      if (existing === undefined) {
+      if (existing == null) {
         summaries.set(row.rootId, {
           previewReply: toOverviewPreviewRecord(row),
           totalCount: toSafeCount(row.totalCount, "totalCount"),
-          participantAuthors: participant === null ? [] : [participant],
+          participantAuthors: participant == null ? [] : [participant],
         });
         continue;
       }
 
-      if (participant !== null) {
+      if (participant != null) {
         existing.participantAuthors.push(participant);
       }
     }
@@ -927,15 +924,15 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
     if (
       isCursorPage &&
-      (params.anchorCommentId === undefined ||
-        params.anchorThreadId === undefined ||
-        params.anchorPosition === undefined)
+      (params.anchorCommentId == null ||
+        params.anchorThreadId == null ||
+        params.anchorPosition == null)
     ) {
       return null;
     }
 
     const snapshotBoundary =
-      params.anchorPosition === undefined
+      params.anchorPosition == null
         ? null
         : {
             position: params.anchorPosition,
@@ -943,11 +940,11 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
           };
     const boundaryThreadId = sql`anchor."threadId"`;
     const boundaryRootLikeCount =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`anchor."rootLikeCount"`
         : sql`${snapshotBoundary.position.rootLikeCount}`;
     const boundaryRootReplyCount =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`anchor."rootReplyCount"`
         : sql`${snapshotBoundary.position.rootReplyCount}`;
     const boundaryRootCreatedAt = sql`anchor."rootCreatedAt"`;
@@ -959,7 +956,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         ? sql`(tree."deletedAt" IS NULL OR tree."replyCount" > 0)`
         : sql`TRUE`;
     const candidateRootLikeCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`candidate."rootLikeCount"`
         : sql`
 				CASE
@@ -969,7 +966,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				END
 			`;
     const candidateRootReplyCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`candidate."rootReplyCount"`
         : sql`
 				CASE
@@ -979,7 +976,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				END
 			`;
     const selectedRootLikeCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`selected."rootLikeCount"`
         : sql`
 				CASE
@@ -989,7 +986,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				END
 			`;
     const selectedRootReplyCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`selected."rootReplyCount"`
         : sql`
 				CASE
@@ -1230,7 +1227,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     const markedRecords = rows.flatMap((row) => {
       const record = toConversationRecord(row);
-      return record === null ? [] : [{ marker: row.marker, record }];
+      return record == null ? [] : [{ marker: row.marker, record }];
     });
     return this.toConversationWindow(markedRecords, params);
   }
@@ -1291,7 +1288,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       .filter(({ marker }) => marker === "AFTER")
       .map(({ record }) => record);
     const focus = markedRecords.find(({ marker }) => marker === "FOCUS")?.record;
-    if (focus === undefined) {
+    if (focus == null) {
       return {
         items: [],
         anchorIndex: null,

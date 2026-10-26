@@ -35,7 +35,7 @@ export class SendMilestoneNotification {
     const release = await this.#dependencies.notificationDedupLock.acquire(
       `milestone:${input.userId}:${input.milestone}`,
     );
-    if (release === null) {
+    if (release == null) {
       this.#dependencies.logger.debug({
         event: NotificationDeliveryLogEvent.SEND_MILESTONE_NOTIFICATION_LOCK_BUSY,
         userId: input.userId,

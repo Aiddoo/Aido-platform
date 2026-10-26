@@ -24,7 +24,7 @@ export class GetTodoResourceLimit {
   }
 
   async execute(input: GetTodoResourceLimitInput): Promise<TodoResourceLimitResult> {
-    if (input.categoryId !== undefined) {
+    if (input.categoryId != null) {
       const activeCount = await this.#dependencies.todoReadRepository.countActiveByCategory(
         input.userId,
         input.categoryId,

@@ -115,21 +115,21 @@ export class NudgeSuggestStrategy implements TimezoneReminderStrategy {
     for (const user of candidates) {
       const friends = friendMap.get(user.id);
 
-      if (friends === undefined || friends.length === 0) {
+      if (friends == null || friends.length === 0) {
         continue;
       }
 
       const eligibleFriends = friends
         .filter((f) => !sentPairs.has(`${user.id}:${f.id}`))
         .sort((a, b) => {
-          const daysA = a.lastActiveAt !== null ? diffInDays(today, a.lastActiveAt) : 0;
-          const daysB = b.lastActiveAt !== null ? diffInDays(today, b.lastActiveAt) : 0;
+          const daysA = a.lastActiveAt != null ? diffInDays(today, a.lastActiveAt) : 0;
+          const daysB = b.lastActiveAt != null ? diffInDays(today, b.lastActiveAt) : 0;
           return daysB - daysA;
         });
 
       const target = eligibleFriends[0];
 
-      if (target === undefined || target.lastActiveAt === null) {
+      if (target == null || target.lastActiveAt == null) {
         continue;
       }
 

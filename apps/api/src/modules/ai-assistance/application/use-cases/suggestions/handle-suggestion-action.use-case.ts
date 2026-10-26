@@ -72,7 +72,7 @@ export class HandleSuggestionAction {
         input.suggestionId,
         input.userId,
       );
-      if (suggestion === null) {
+      if (suggestion == null) {
         throw new ApplicationException(ErrorCode.AI_1305, { suggestionId: input.suggestionId });
       }
       const at = now();
@@ -87,7 +87,7 @@ export class HandleSuggestionAction {
 
       // 상태·만료 오류가 요청의 수락 데이터 오류보다 먼저 반환되는 계약을 유지한다.
       suggestion.accept(at);
-      if (input.categoryId === undefined || input.categoryId === 0) {
+      if (input.categoryId == null || input.categoryId === 0) {
         throw new ApplicationException(ErrorCode.SYS_0002, {
           field: "categoryId",
           reason: "수락 시 categoryId는 필수입니다",
@@ -129,7 +129,7 @@ export class HandleSuggestionAction {
         createdTodosCount: created.count,
       };
     });
-    if (result.createdTodosCount !== undefined) {
+    if (result.createdTodosCount != null) {
       this.#dependencies.logger.log({
         event: AiSuggestionLogEvent.ACCEPTED,
         suggestionId: input.suggestionId,

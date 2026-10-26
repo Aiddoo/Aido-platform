@@ -9,7 +9,7 @@ export function getAiQuotaPeriodId(at: Date): string {
 }
 
 export function isCurrentAiQuotaPeriod(resetAt: Date | null, at: Date): boolean {
-  return resetAt !== null && getAiQuotaPeriodId(resetAt) === getAiQuotaPeriodId(at);
+  return resetAt != null && getAiQuotaPeriodId(resetAt) === getAiQuotaPeriodId(at);
 }
 
 export function getNextAiQuotaResetAt(at: Date): Date {

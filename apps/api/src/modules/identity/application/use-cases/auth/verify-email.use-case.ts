@@ -53,14 +53,14 @@ export class VerifyEmail {
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
     const user = await this.#dependencies.userRepository.findByEmail(email);
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.EMAIL_0502, { email });
     }
 
     assertNotDeleted(user);
 
     if (user.status !== "PENDING_VERIFY") {
-      if (user.emailVerifiedAt !== null) {
+      if (user.emailVerifiedAt != null) {
         throw new ApplicationException(ErrorCode.USER_0604, {
           email,
           message: "이미 인증이 완료된 계정입니다.",

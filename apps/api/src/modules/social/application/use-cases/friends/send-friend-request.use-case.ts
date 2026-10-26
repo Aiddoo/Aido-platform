@@ -101,7 +101,7 @@ export class SendFriendRequest {
       if (existingFollow?.isAccepted()) {
         throw new ApplicationException(ErrorCode.FOLLOW_0902, { targetUserId });
       }
-      if (existingFollow !== null) {
+      if (existingFollow != null) {
         throw new ApplicationException(ErrorCode.FOLLOW_0901, { targetUserId });
       }
       const reverseFollow = await this.#dependencies.followRepository.findByFollowerAndFollowing(

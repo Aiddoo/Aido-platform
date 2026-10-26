@@ -63,8 +63,8 @@ export class GetReportStatus {
       nextMonthlyAt: readyAt(nextMonthlyDate).toISOString(),
       daysUntilWeekly: nextWeeklyDate.diff(localToday, "day"),
       daysUntilMonthly: nextMonthlyDate.diff(localToday, "day"),
-      latestWeekly: latestWeekly === null ? null : toAiReportView(latestWeekly),
-      latestMonthly: latestMonthly === null ? null : toAiReportView(latestMonthly),
+      latestWeekly: latestWeekly == null ? null : toAiReportView(latestWeekly),
+      latestMonthly: latestMonthly == null ? null : toAiReportView(latestMonthly),
     };
   }
 }

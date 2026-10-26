@@ -218,7 +218,7 @@ export class PushNotificationDeliveryService {
     const resultsByDispatch = new Map<number, PushResult[]>();
     for (const [index, pushResult] of result.results.entries()) {
       const dispatchId = prepared.dispatchIds[index];
-      if (dispatchId === undefined) continue;
+      if (dispatchId == null) continue;
       const current = resultsByDispatch.get(dispatchId) ?? [];
       current.push(pushResult);
       resultsByDispatch.set(dispatchId, current);

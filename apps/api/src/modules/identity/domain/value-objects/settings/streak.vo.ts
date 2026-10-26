@@ -32,7 +32,7 @@ export class Streak {
     return new Streak(
       state.currentStreak,
       state.longestStreak,
-      state.lastCompletedDate === null ? null : new Date(state.lastCompletedDate),
+      state.lastCompletedDate == null ? null : new Date(state.lastCompletedDate),
     );
   }
 
@@ -45,12 +45,12 @@ export class Streak {
   }
 
   get lastCompletedDate(): Date | null {
-    return this._lastCompletedDate === null ? null : new Date(this._lastCompletedDate);
+    return this._lastCompletedDate == null ? null : new Date(this._lastCompletedDate);
   }
 
   /** 오늘 완료가 이미 반영되어 있는지 */
   isCompletedOn(today: Date): boolean {
-    return this._lastCompletedDate !== null && isSameDay(this._lastCompletedDate, today);
+    return this._lastCompletedDate != null && isSameDay(this._lastCompletedDate, today);
   }
 
   /**
@@ -58,13 +58,13 @@ export class Streak {
    * 이미 오늘 반영되었으면 null(무변경).
    */
   planCompletion(today: Date): StreakCompletionPlan | null {
-    if (this._lastCompletedDate !== null && isSameDay(this._lastCompletedDate, today)) {
+    if (this._lastCompletedDate != null && isSameDay(this._lastCompletedDate, today)) {
       return null;
     }
 
     const yesterday = subtractDays(1, today);
     const isConsecutive =
-      this._lastCompletedDate !== null && isSameDay(this._lastCompletedDate, yesterday);
+      this._lastCompletedDate != null && isSameDay(this._lastCompletedDate, yesterday);
 
     const newStreak = isConsecutive ? this._currentStreak + 1 : 1;
     const newLongest = Math.max(this._longestStreak, newStreak);
@@ -84,7 +84,7 @@ export class Streak {
    * 오늘 완료 반영이 없었으면 null(무변경).
    */
   planUncompletion(today: Date, hadYesterdayCompletion: boolean): StreakState | null {
-    if (this._lastCompletedDate === null || !isSameDay(this._lastCompletedDate, today)) {
+    if (this._lastCompletedDate == null || !isSameDay(this._lastCompletedDate, today)) {
       return null;
     }
 

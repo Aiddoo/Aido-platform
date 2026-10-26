@@ -61,7 +61,7 @@ export class ConvertMemoToTodo {
         MutationLockKeys.todoSortOrder(userId),
       ]);
       const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (memo === null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      if (memo == null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       const staged = await this.#dependencies.todoCreator.stageTodo({
         userId,
         title: memo.toTodoTitle(),
@@ -74,7 +74,7 @@ export class ConvertMemoToTodo {
         items: data.items,
       });
       const createdTodo = staged.todos.at(0);
-      if (createdTodo === undefined) {
+      if (createdTodo == null) {
         throw new ApplicationException(ErrorCode.SYS_0001, {
           detail: "Staged todo creation returned no todo",
         });

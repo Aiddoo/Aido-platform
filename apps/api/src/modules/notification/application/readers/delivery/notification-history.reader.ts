@@ -37,7 +37,7 @@ export class NotificationHistoryReader {
       params.notificationDate,
       params.userIds,
     );
-    if (knownRecipients !== null) {
+    if (knownRecipients != null) {
       return knownRecipients;
     }
 

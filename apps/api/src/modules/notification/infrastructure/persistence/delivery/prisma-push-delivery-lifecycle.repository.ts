@@ -24,7 +24,7 @@ import type {
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
 
 function toNotificationMetadata(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  if (typeof value !== "object" || value == null || Array.isArray(value)) return null;
   return Object.fromEntries(Object.entries(value));
 }
 
@@ -149,9 +149,9 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
     const claimedRows = ownershipRows.flatMap((row) => {
       if (
-        row.dispatchId === null ||
-        row.deliveryAttemptCount === null ||
-        row.publishAttempt === null
+        row.dispatchId == null ||
+        row.deliveryAttemptCount == null ||
+        row.publishAttempt == null
       ) {
         return [];
       }

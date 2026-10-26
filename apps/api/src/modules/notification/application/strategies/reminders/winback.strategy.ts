@@ -68,7 +68,7 @@ export class WinbackStrategy implements TimezoneReminderStrategy {
     // 단계별 중복 방지: per-user Redis SISMEMBER 병렬 확인
     const checks = await Promise.all(
       filteredUsers.map(async (user) => {
-        if (user.lastActiveAt === null) return null;
+        if (user.lastActiveAt == null) return null;
 
         const inactiveDays = diffInDays(today, user.lastActiveAt);
         const stage = resolveWinbackStage(inactiveDays);

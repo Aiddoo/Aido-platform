@@ -160,7 +160,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       "Nudge",
       await this.client.orm.public.Nudge.where((row) => row.id.eq(id)).first(),
     );
-    return row === null ? null : PrismaNudgeRepository.toNudge(row);
+    return row == null ? null : PrismaNudgeRepository.toNudge(row);
   }
 
   async findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null> {
@@ -172,7 +172,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row === null ? null : PrismaNudgeRepository.toNudge(row);
+    return row == null ? null : PrismaNudgeRepository.toNudge(row);
   }
 
   async findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null> {
@@ -184,7 +184,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row === null ? null : PrismaNudgeRepository.toNudge(row);
+    return row == null ? null : PrismaNudgeRepository.toNudge(row);
   }
 
   async findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null> {
@@ -196,7 +196,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row === null ? null : PrismaNudgeRepository.toReminderNudge(row);
+    return row == null ? null : PrismaNudgeRepository.toReminderNudge(row);
   }
 
   async findTargetTodo(todoId: number): Promise<TargetTodoRecord | null> {
@@ -206,7 +206,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .select("userId", "visibility", "startDate", "endDate")
         .first(),
     );
-    if (row === null) {
+    if (row == null) {
       return null;
     }
     return {
@@ -270,7 +270,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         )
         .first(),
     );
-    return row === null ? null : PrismaNudgeRepository.toInteraction(row);
+    return row == null ? null : PrismaNudgeRepository.toInteraction(row);
   }
 
   async findInteractions(
@@ -290,7 +290,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
                   nudge.senderId.eq(params.userId),
                   nudge.receiver.some((receiver) => hasNoBlockWith(receiver, params.userId)),
                 ),
-            params.cursor !== undefined ? nudge.id.lt(params.cursor) : all(),
+            params.cursor != null ? nudge.id.lt(params.cursor) : all(),
           ),
         )
         .orderBy((nudge) => nudge.id.desc())
@@ -342,7 +342,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   ): Promise<NudgeThanksCandidatePage> {
     const ids = await this.#findThanksCandidateIds(input);
     const { cursor } = input;
-    const remainingIds = cursor === undefined ? ids : ids.filter((id) => id < cursor);
+    const remainingIds = cursor == null ? ids : ids.filter((id) => id < cursor);
     const pageIds = remainingIds.slice(0, input.size);
     const hasNext = remainingIds.length > pageIds.length;
     return {
@@ -431,7 +431,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       const anchor = await this.client.orm.public.Nudge.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       nudges = nudges.cursor(anchor);
     }
     const rows = decodeRecord("Nudge", await nudges.all());
@@ -454,7 +454,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       const anchor = await this.client.orm.public.Nudge.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       nudges = nudges.cursor(anchor);
     }
     const rows = decodeRecord("Nudge", await nudges.all());

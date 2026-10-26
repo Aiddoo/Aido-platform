@@ -43,7 +43,7 @@ export class UpdateTodoItem {
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(todoId)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
       }
 
@@ -51,10 +51,10 @@ export class UpdateTodoItem {
 
       const snapshot = item.toPersistence();
       const patch: { title?: string; completed?: boolean } = {};
-      if (data.title !== undefined) {
+      if (data.title != null) {
         patch.title = snapshot.title;
       }
-      if (data.completed !== undefined) {
+      if (data.completed != null) {
         patch.completed = snapshot.completed;
       }
       await this.#dependencies.todoRepository.updateItem(itemId, patch);
@@ -70,7 +70,7 @@ export class UpdateTodoItem {
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, userId);
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
     }
     return response;

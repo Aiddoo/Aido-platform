@@ -43,7 +43,7 @@ export class UnlikeTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 

@@ -86,7 +86,7 @@ export function hasPremiumEntitlement(role: string, subscriptionStatus: string):
 }
 
 export function calculateRemainingLimit(limit: number | null, used: number): number | null {
-  return limit === null ? null : Math.max(0, limit - used);
+  return limit == null ? null : Math.max(0, limit - used);
 }
 
 export interface PremiumAccessDeadlineInput {

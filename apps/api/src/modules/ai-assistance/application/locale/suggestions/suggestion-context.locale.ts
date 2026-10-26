@@ -41,7 +41,7 @@ export const suggestionContextTranslations: Readonly<
     streak: (current, longest) => `현재 ${current}일 연속, 최장 ${longest}일`,
     reportInsight: (rate, streak) => `최근 주간 달성률: ${rate}%, 스트릭: ${streak}일`,
     weather: (description, min, max, probability) =>
-      probability === undefined
+      probability == null
         ? `${description}, ${min}~${max}°C`
         : `${description}(강수확률 ${probability}%), ${min}~${max}°C`,
     currentDate: (date, day, month, dayOfMonth) =>
@@ -59,7 +59,7 @@ export const suggestionContextTranslations: Readonly<
     streak: (current, longest) => `Current streak: ${current} days; longest: ${longest} days`,
     reportInsight: (rate, streak) => `Latest weekly completion: ${rate}%; streak: ${streak} days`,
     weather: (description, min, max, probability) =>
-      probability === undefined
+      probability == null
         ? `${description}, ${min}–${max}°C`
         : `${description} (${probability}% precipitation probability), ${min}–${max}°C`,
     currentDate: (date, day, month, dayOfMonth) =>

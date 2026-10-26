@@ -37,7 +37,7 @@ export class SendTargetedNotification {
 
   async execute(input: SendTargetedNotificationInput): Promise<BroadcastResult> {
     const content = BroadcastContent.create(input);
-    const action = input.action === undefined ? undefined : { ...input.action };
+    const action = input.action == null ? undefined : { ...input.action };
     const userIds = [...input.userIds];
     const force = input.force ?? false;
     const existingUserIds = await this.#dependencies.userDirectory.findExistingUserIds(userIds);

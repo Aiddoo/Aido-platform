@@ -373,9 +373,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
               active: counts.active,
               failed: counts.failed,
               oldestAgeSeconds:
-                oldestTimestamp === null
-                  ? null
-                  : Math.max(0, (Date.now() - oldestTimestamp) / 1000),
+                oldestTimestamp == null ? null : Math.max(0, (Date.now() - oldestTimestamp) / 1000),
             },
           ] as const;
         }),
@@ -456,7 +454,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
       data.__aidoJobRuntime === 1 &&
       "data" in data &&
       typeof data.data === "object" &&
-      data.data !== null
+      data.data != null
     ) {
       return {
         __aidoJobRuntime: 1,
@@ -531,7 +529,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 }
 
 function isJobRetryPolicy(value: unknown): value is JobRetryPolicy {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== "object" || value == null) return false;
   return (
     "retryLimit" in value &&
     typeof value.retryLimit === "number" &&

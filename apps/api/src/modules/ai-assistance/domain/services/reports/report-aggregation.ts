@@ -87,7 +87,7 @@ export function computeTimePatterns(
   const hourCounts = new Map<number, number>();
 
   for (const todo of completedTodos) {
-    if (todo.completedAt !== null) {
+    if (todo.completedAt != null) {
       const hour = dayjs(todo.completedAt).tz(timezone).hour();
       hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
     }

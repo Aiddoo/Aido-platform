@@ -56,7 +56,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
         and(row.id.eq(memoId), row.userId.eq(userId)),
       ).first(),
     );
-    return row === null ? null : PrismaMemoRepository.toDomain(row);
+    return row == null ? null : PrismaMemoRepository.toDomain(row);
   }
 
   async findManyByUserId(params: FindMemosParams): Promise<Memo[]> {
@@ -73,7 +73,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
     const anchor = await this.client.orm.public.Memo.where({ id: cursor, userId })
       .select("id", "isPinned", "sortOrder")
       .first();
-    if (anchor === null) return [];
+    if (anchor == null) return [];
     const rows = decodeRecord(
       "Memo",
       await collection
@@ -134,7 +134,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
           functions.eq(fields.userId, userId),
           functions.gte(fields.sortOrder, fromSortOrder),
         ];
-        if (toSortOrder !== null) conditions.push(functions.lte(fields.sortOrder, toSortOrder));
+        if (toSortOrder != null) conditions.push(functions.lte(fields.sortOrder, toSortOrder));
         return functions.and(...conditions);
       })
       .build();

@@ -46,7 +46,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.runtime === undefined) return;
+    if (this.runtime == null) return;
     await this.runtime.work(
       AI_SUGGESTION_QUEUE,
       async (jobs) => {

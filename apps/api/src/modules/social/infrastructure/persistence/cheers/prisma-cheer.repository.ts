@@ -78,7 +78,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       "Cheer",
       await this.client.orm.public.Cheer.where((row) => row.id.eq(id)).first(),
     );
-    return row === null ? null : PrismaCheerRepository.toCheer(row);
+    return row == null ? null : PrismaCheerRepository.toCheer(row);
   }
 
   async findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null> {
@@ -90,7 +90,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row === null ? null : PrismaCheerRepository.toCheer(row);
+    return row == null ? null : PrismaCheerRepository.toCheer(row);
   }
 
   async saveRead(cheer: Cheer): Promise<void> {
@@ -131,7 +131,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       const anchor = await this.client.orm.public.Cheer.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       cheers = cheers.cursor(anchor);
     }
     const rows = decodeRecord("Cheer", await cheers.all());
@@ -163,7 +163,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       const anchor = await this.client.orm.public.Cheer.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       cheers = cheers.cursor(anchor);
     }
     const rows = decodeRecord("Cheer", await cheers.all());

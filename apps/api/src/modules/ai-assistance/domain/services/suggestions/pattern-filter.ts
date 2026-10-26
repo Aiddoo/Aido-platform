@@ -75,7 +75,7 @@ export function filterWeakPatterns(
     titleCounts.set(todo.title, (titleCounts.get(todo.title) ?? 0) + 1);
 
   return patterns.filter((pattern) => {
-    if (context.weather === null && isWeatherRelated(pattern.reason)) return false;
+    if (context.weather == null && isWeatherRelated(pattern.reason)) return false;
     if (pattern.matchedTitles.length === 0) return true;
 
     // 모델이 제시한 근거는 실제 기록의 제목과 개수를 넘을 수 없다.
@@ -88,7 +88,7 @@ export function filterWeakPatterns(
     if (claimedCounts.size > 1) return pattern.matchedTitles.length >= 2;
     const repeatedTitle = pattern.matchedTitles[0];
     // 반복형은 기록의 활동을 알아볼 수 있어야 한다. 의미 전체를 검증하는 규칙은 아니다.
-    if (repeatedTitle === undefined || !hasRecordedActivityTitle(pattern.title, repeatedTitle))
+    if (repeatedTitle == null || !hasRecordedActivityTitle(pattern.title, repeatedTitle))
       return false;
 
     const count = titleCounts.get(repeatedTitle) ?? 0;
@@ -106,7 +106,7 @@ function findRecordedActivity(
   activities: readonly RecordedActivityEvidence[],
 ): RecordedActivityEvidence | undefined {
   const exact = activities.find((activity) => activity.title === title);
-  if (exact !== undefined) return exact;
+  if (exact != null) return exact;
   return activities
     .filter((activity) => hasRecordedActivityTitle(title, activity.title))
     .sort(
@@ -128,9 +128,9 @@ export function normalizeStarterSuggestions(
 ): StarterPatternCandidate[] {
   const activities = collectRecordedActivities(context.todos);
   return patterns.flatMap((pattern) => {
-    if (context.weather === null && isWeatherRelated(pattern.reason)) return [];
+    if (context.weather == null && isWeatherRelated(pattern.reason)) return [];
     const activity = findRecordedActivity(pattern.title, activities);
-    if (activity === undefined) return [];
+    if (activity == null) return [];
     return [
       {
         pattern: {
@@ -139,7 +139,7 @@ export function normalizeStarterSuggestions(
           daysOfWeek: selectRecordedDays(activity),
           confidence: Math.min(pattern.confidence, 0.6),
           scheduledTime:
-            pattern.scheduledTime !== null && activity.recordedTimes.includes(pattern.scheduledTime)
+            pattern.scheduledTime != null && activity.recordedTimes.includes(pattern.scheduledTime)
               ? pattern.scheduledTime
               : null,
           matchedTitles: [],
@@ -185,7 +185,7 @@ export function dedupeByTitlePrefixAndDays(patterns: Pattern[]): Pattern[] {
     const daysKey = [...p.daysOfWeek].sort().join(",");
     const key = `${firstTwoWords}|${daysKey}`;
     const existing = seen.get(key);
-    if (existing === undefined || p.confidence > existing.confidence) {
+    if (existing == null || p.confidence > existing.confidence) {
       seen.set(key, p);
     }
   }
@@ -211,22 +211,22 @@ export function groundPatternCandidates(
     const matchedTitles = uniq(pattern.matchedTitles);
     const matchedActivities = matchedTitles.flatMap((title) => {
       const activity = evidenceByTitle.get(title);
-      return activity === undefined ? [] : [activity];
+      return activity == null ? [] : [activity];
     });
     const evidence = findRecordedActivity(pattern.title, matchedActivities);
-    if (matchedTitles.length > 0 && evidence === undefined) return [];
+    if (matchedTitles.length > 0 && evidence == null) return [];
     const relatedActivity =
       matchedTitles.length === 0
         ? findRecordedActivity(pattern.title, [...evidenceByTitle.values()])
         : undefined;
-    if (relatedActivity !== undefined && pattern.title !== relatedActivity.title) return [];
-    if (excluded.has(pattern.title) || (evidence !== undefined && excluded.has(evidence.title))) {
+    if (relatedActivity != null && pattern.title !== relatedActivity.title) return [];
+    if (excluded.has(pattern.title) || (evidence != null && excluded.has(evidence.title))) {
       return [];
     }
     const timeEvidence = evidence ?? relatedActivity;
     const scheduledTime =
-      pattern.scheduledTime !== null &&
-      (timeEvidence !== undefined
+      pattern.scheduledTime != null &&
+      (timeEvidence != null
         ? timeEvidence.recordedTimes.includes(pattern.scheduledTime)
         : context.todos.some((todo) => todo.scheduledTime === pattern.scheduledTime))
         ? pattern.scheduledTime
@@ -235,7 +235,7 @@ export function groundPatternCandidates(
       {
         pattern: {
           ...pattern,
-          ...(evidence !== undefined
+          ...(evidence != null
             ? {
                 title: evidence.title,
                 daysOfWeek: selectRecordedDays(evidence),

@@ -267,6 +267,7 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
             profileImage: data.profileImage ?? null,
           }),
           update: encodePatch("UserProfile", {
+            // nullish-strict: PATCH라 undefined는 그대로 두고 null은 비운다
             ...(data.name !== undefined && { name: data.name }),
             ...(data.profileImage !== undefined && {
               profileImage: data.profileImage,
@@ -304,7 +305,7 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
         .all(),
     );
     return rows.filter(
-      (row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt !== null,
+      (row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt != null,
     );
   }
 

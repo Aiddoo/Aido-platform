@@ -30,7 +30,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
       status: props.status,
       startedAt: new Date(props.startedAt),
       expiresAt: new Date(props.expiresAt),
-      cancelledAt: props.cancelledAt === null ? null : new Date(props.cancelledAt),
+      cancelledAt: props.cancelledAt == null ? null : new Date(props.cancelledAt),
       lastProcessedEventId: props.lastProcessedEventId,
     });
   }
@@ -54,7 +54,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
     return new Date(this.props.expiresAt);
   }
   get cancelledAt(): Date | null {
-    return this.props.cancelledAt === null ? null : new Date(this.props.cancelledAt);
+    return this.props.cancelledAt == null ? null : new Date(this.props.cancelledAt);
   }
   get lastProcessedEventId(): string | null {
     return this.props.lastProcessedEventId;
@@ -65,7 +65,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
       productId: this.props.productId,
       status: this.props.status,
       expiresAt: new Date(this.props.expiresAt),
-      cancelledAt: this.props.cancelledAt === null ? null : new Date(this.props.cancelledAt),
+      cancelledAt: this.props.cancelledAt == null ? null : new Date(this.props.cancelledAt),
       lastProcessedEventId: this.props.lastProcessedEventId,
     };
   }
@@ -105,7 +105,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
 
   expire(expirationAt: Date | null, eventId?: string): boolean {
-    if (expirationAt !== null && expirationAt.getTime() < this.props.expiresAt.getTime())
+    if (expirationAt != null && expirationAt.getTime() < this.props.expiresAt.getTime())
       return false;
     this.props.status = "EXPIRED";
     this.#recordEvent(eventId);
@@ -125,10 +125,10 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
 
   #changeExpiry(expiresAt: Date | undefined): void {
-    if (expiresAt !== undefined) this.props.expiresAt = new Date(expiresAt);
+    if (expiresAt != null) this.props.expiresAt = new Date(expiresAt);
   }
 
   #recordEvent(eventId: string | undefined): void {
-    if (eventId !== undefined && eventId !== "") this.props.lastProcessedEventId = eventId;
+    if (eventId != null && eventId !== "") this.props.lastProcessedEventId = eventId;
   }
 }

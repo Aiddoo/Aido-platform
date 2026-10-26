@@ -51,7 +51,7 @@ export abstract class AiSuggestionMapper {
     return {
       message: result.message,
       suggestion: AiSuggestionMapper.toResponse(result.suggestion),
-      ...(result.createdTodosCount !== undefined && {
+      ...(result.createdTodosCount != null && {
         createdTodosCount: result.createdTodosCount,
       }),
     };

@@ -32,7 +32,7 @@ export class AuthSession extends AggregateRoot<AuthSessionProps> {
       ...props,
       lastUsedAt: new Date(props.lastUsedAt),
       expiresAt: new Date(props.expiresAt),
-      revokedAt: props.revokedAt !== null ? new Date(props.revokedAt) : null,
+      revokedAt: props.revokedAt != null ? new Date(props.revokedAt) : null,
     });
   }
 
@@ -61,7 +61,7 @@ export class AuthSession extends AggregateRoot<AuthSessionProps> {
   }
 
   isRevoked(): boolean {
-    return this.props.revokedAt !== null;
+    return this.props.revokedAt != null;
   }
 
   validityAt(at: Date): SessionValidity {

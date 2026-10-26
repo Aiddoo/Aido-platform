@@ -33,7 +33,7 @@ export class SecurityLogRepository {
         event: data.event,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
-        metadata: data.metadata === undefined ? undefined : toInputJson(data.metadata),
+        metadata: data.metadata == null ? undefined : toInputJson(data.metadata),
       }),
     ).then((row) => decodeRecord("SecurityLog", row));
   }
@@ -114,7 +114,7 @@ export class SecurityLogRepository {
     return this.client.orm.public.SecurityLog.where((row) =>
       and(
         row.createdAt.gte(databaseTimestamp(since)),
-        until === undefined ? all() : row.createdAt.lte(databaseTimestamp(until)),
+        until == null ? all() : row.createdAt.lte(databaseTimestamp(until)),
       ),
     )
       .groupBy("event")

@@ -362,7 +362,7 @@ export class MemoController {
           visibility: todo.visibility,
           isRecurring: todo.isRecurring,
           recurrence:
-            todo.recurrence !== undefined
+            todo.recurrence != null
               ? {
                   daysOfWeek: todo.recurrence.daysOfWeek,
                   endDate: parseDateOnly(todo.recurrence.endDate),

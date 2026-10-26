@@ -27,7 +27,7 @@ export class GetTodoById {
       input.userId,
     );
 
-    if (todo === null) {
+    if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.id });
     }
 

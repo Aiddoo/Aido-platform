@@ -34,7 +34,7 @@ export class PrismaWeeklyAchievementRepository implements WeeklyAchievementRepos
       and(
         row.userId.eq(userId),
         row.year.eq(year),
-        cursor === undefined
+        cursor == null
           ? all()
           : and(
               row.week.lt(cursor),

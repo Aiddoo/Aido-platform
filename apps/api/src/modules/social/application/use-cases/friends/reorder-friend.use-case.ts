@@ -55,7 +55,7 @@ export class ReorderFriend {
         followId,
         userId,
       );
-      if (follow === null) {
+      if (follow == null) {
         throw new ApplicationException(ErrorCode.FOLLOW_0910, {
           targetFollowId: followId,
         });
@@ -63,7 +63,7 @@ export class ReorderFriend {
 
       if (targetFollowId === followId) {
         const withUser = await this.#dependencies.followRepository.findByIdWithUser(followId);
-        if (withUser === null) {
+        if (withUser == null) {
           throw new ApplicationException(ErrorCode.FOLLOW_0910, {
             targetFollowId: followId,
           });
@@ -72,12 +72,12 @@ export class ReorderFriend {
       }
 
       let plan: ReorderPlan;
-      if (targetFollowId !== undefined) {
+      if (targetFollowId != null) {
         const target = await this.#dependencies.followRepository.findAcceptedByIdAndFollowerId(
           targetFollowId,
           userId,
         );
-        if (target === null) {
+        if (target == null) {
           throw new ApplicationException(ErrorCode.FOLLOW_0910, {
             targetFollowId,
           });

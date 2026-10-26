@@ -55,7 +55,7 @@ export class SetPassword {
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
     const user = await this.#dependencies.userRepository.findById(userId);
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
     assertNotDeleted(user);
@@ -64,7 +64,7 @@ export class SetPassword {
       userId,
       "CREDENTIAL",
     );
-    if (existingAccount !== null) {
+    if (existingAccount != null) {
       throw new ApplicationException(ErrorCode.USER_0614, { userId });
     }
 
@@ -72,7 +72,7 @@ export class SetPassword {
 
     await this.#dependencies.unitOfWork.run(async () => {
       const lockedUser = await this.#dependencies.userRepository.findByIdForUpdate(userId);
-      if (lockedUser === null) {
+      if (lockedUser == null) {
         throw new ApplicationException(ErrorCode.USER_0601, { userId });
       }
       assertNotDeleted(lockedUser);
@@ -80,7 +80,7 @@ export class SetPassword {
         userId,
         "CREDENTIAL",
       );
-      if (currentAccount !== null) {
+      if (currentAccount != null) {
         throw new ApplicationException(ErrorCode.USER_0614, { userId });
       }
       await this.#dependencies.verificationService.verifyCode(userId, code, "PASSWORD_SETUP");

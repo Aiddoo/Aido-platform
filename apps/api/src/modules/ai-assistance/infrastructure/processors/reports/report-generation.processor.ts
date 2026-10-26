@@ -30,7 +30,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.runtime === undefined) return;
+    if (this.runtime == null) return;
     await this.runtime.work(
       AI_REPORT_QUEUE,
       async (jobs) => {
@@ -101,7 +101,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
       isFinalAttempt: isFinalReportAttempt(attempt),
     });
 
-    if (report === null) {
+    if (report == null) {
       this.#logger.debug({
         event: AiJobLogEvent.SKIPPED,
         queueName: AI_REPORT_QUEUE,

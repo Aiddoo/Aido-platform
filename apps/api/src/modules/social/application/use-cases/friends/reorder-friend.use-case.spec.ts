@@ -89,7 +89,7 @@ describe("친구 목록 정렬", () => {
     // When
     await new ReorderFriend(fixture).execute({
       followId: source.id,
-      targetFollowId: input.target === undefined ? undefined : fixture.friends[input.target]?.id,
+      targetFollowId: input.target == null ? undefined : fixture.friends[input.target]?.id,
       userId: "me",
       position: input.position,
     });

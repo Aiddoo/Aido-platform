@@ -32,7 +32,7 @@ export class GetWeeklyAchievement {
 
     const row = await this.#dependencies.repository.findByYearAndWeek(userId, year, week);
 
-    if (row === null) {
+    if (row == null) {
       throw new ApplicationException(ErrorCode.ACHIEVEMENT_1801, {
         year,
         week,

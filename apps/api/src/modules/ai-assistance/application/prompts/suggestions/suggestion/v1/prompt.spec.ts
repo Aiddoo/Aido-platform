@@ -181,7 +181,7 @@ describe("원본 분량을 보존하는 시작 제안", () => {
     // When: 실제 분석 인수2로 프롬프트와 서버 안내 문구를 만든다.
     const { system, prompt } = buildSuggestionPrompt(context, 2, locale);
     const json = prompt.match(/<context_json>\n([\s\S]*?)\n<\/context_json>/)?.[1];
-    if (json === undefined) throw new Error("context_json missing");
+    if (json == null) throw new Error("context_json missing");
     const data = JSON.parse(json);
     const reason = suggestionPromptCatalog[locale].starterReason(1, data.recordedActivities[0], [
       "WED",

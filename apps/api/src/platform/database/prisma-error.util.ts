@@ -72,7 +72,7 @@ export function isTransactionWriteConflict(error: unknown): boolean {
 export function uniqueConstraintTargets(error: unknown): string[] | undefined {
   const metadata = resolveDatabaseError(error);
   const name = metadata?.constraint;
-  if (metadata?.sqlState === "23505" && name !== undefined) {
+  if (metadata?.sqlState === "23505" && name != null) {
     for (const table of Object.values(contractJson.storage.namespaces.public.entries.table)) {
       if (!("uniques" in table)) continue;
       for (const constraint of table.uniques) {

@@ -75,7 +75,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           timestamp: Date.now(),
         };
       }
-    } else if (databaseSqlState(exception) !== undefined || isRecordNotFoundError(exception)) {
+    } else if (databaseSqlState(exception) != null || isRecordNotFoundError(exception)) {
       // Database 에러 처리
       const businessException = this.#mapDatabaseError(exception);
       ({ statusCode, errorResponse } = this.#toRestErrorResponse(businessException));
@@ -169,6 +169,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           code: exception.errorCode,
           message: exception.message || definition.message,
           // undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
+          // nullish-strict: undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
           ...(details !== undefined && { details }),
         },
         timestamp: Date.now(),

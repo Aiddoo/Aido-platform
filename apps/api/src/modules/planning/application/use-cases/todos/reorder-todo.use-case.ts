@@ -52,10 +52,10 @@ export class ReorderTodo {
       await this.#dependencies.mutationLock.acquire([
         MutationLockKeys.todoSortOrder(userId),
         MutationLockKeys.todo(id),
-        ...(targetTodoId === undefined ? [] : [MutationLockKeys.todo(targetTodoId)]),
+        ...(targetTodoId == null ? [] : [MutationLockKeys.todo(targetTodoId)]),
       ]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
@@ -64,12 +64,12 @@ export class ReorderTodo {
       }
 
       let plan: ReorderPlan;
-      if (targetTodoId !== undefined) {
+      if (targetTodoId != null) {
         const targetTodo = await this.#dependencies.todoRepository.findByIdAndUserId(
           targetTodoId,
           userId,
         );
-        if (targetTodo === null) {
+        if (targetTodo == null) {
           throw new ApplicationException(ErrorCode.TODO_0810, {
             targetTodoId,
           });
@@ -99,7 +99,7 @@ export class ReorderTodo {
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

@@ -10,10 +10,10 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
  */
 export const ReminderTime = {
   assertValidRanges(input: { morningReminderHour?: number; eveningReminderHour?: number }): void {
-    if (input.morningReminderHour !== undefined && input.morningReminderHour > 11) {
+    if (input.morningReminderHour != null && input.morningReminderHour > 11) {
       throw new DomainException(ErrorCode.PREFERENCE_1702);
     }
-    if (input.eveningReminderHour !== undefined && input.eveningReminderHour < 12) {
+    if (input.eveningReminderHour != null && input.eveningReminderHour < 12) {
       throw new DomainException(ErrorCode.PREFERENCE_1702);
     }
   },

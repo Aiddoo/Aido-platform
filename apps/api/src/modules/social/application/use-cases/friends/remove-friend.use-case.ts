@@ -45,7 +45,7 @@ export class RemoveFriend {
         userId,
         targetUserId,
       );
-      if (myFollow === null) {
+      if (myFollow == null) {
         throw new ApplicationException(ErrorCode.FOLLOW_0907, { targetUserId });
       }
 
@@ -55,7 +55,7 @@ export class RemoveFriend {
         targetUserId,
         userId,
       );
-      if (theirFollow !== null) {
+      if (theirFollow != null) {
         await this.#dependencies.followRepository.delete(theirFollow.id);
       }
     });

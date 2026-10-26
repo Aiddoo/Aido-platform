@@ -119,7 +119,7 @@ describe("PrismaNotificationRepository", () => {
 
     await expect(repository.markAsOpened(7, "user-1")).resolves.toBe(true);
     const notificationUpdate = asMock(db.orm.public.Notification.updateAndCount).mock.calls[0]?.[0];
-    if (typeof notificationUpdate !== "object" || notificationUpdate === null)
+    if (typeof notificationUpdate !== "object" || notificationUpdate == null)
       throw new TypeError("Missing notification update");
     const openedAt = Reflect.get(notificationUpdate, "openedAt");
     expect(openedAt).toEqual(expect.any(String));

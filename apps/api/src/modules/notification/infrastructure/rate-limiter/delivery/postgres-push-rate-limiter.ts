@@ -95,7 +95,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           const userIds = requests.map((request) => request.userId);
           const generalWindowStart = databaseTimestamp(new Date(Date.now() - GENERAL.WINDOW_MS));
           const engagementDates = requests.flatMap((request) =>
-            request.engagementLocalDate !== undefined
+            request.engagementLocalDate != null
               ? [databaseDate(this.#toDate(request.engagementLocalDate))]
               : [],
           );
@@ -135,9 +135,9 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           const engagementStats = engagementRows.map((row) => ({
             userId: row.userId,
             count: row.count,
-            localDate: row.localDate === null ? null : applicationDate(row.localDate),
+            localDate: row.localDate == null ? null : applicationDate(row.localDate),
             lastReservedAt:
-              row.lastReservedAt === null ? null : applicationTimestamp(row.lastReservedAt),
+              row.lastReservedAt == null ? null : applicationTimestamp(row.lastReservedAt),
           }));
           this.#assertDispatchOwnership(requests, dispatches);
           const decisions = this.#decide(requests, existing, generalStats, engagementStats);
@@ -190,7 +190,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
         (request.reserveGeneral &&
           !generalReserved &&
           (generalByUser.get(request.userId) ?? 0) >= GENERAL.MAX) ||
-        (localDate !== null &&
+        (localDate != null &&
           !engagementReserved &&
           ((engagement?.count ?? 0) >= ENGAGEMENT.DAILY_MAX ||
             (engagement?.lastReservedAt != null &&
@@ -258,7 +258,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
   }
 
   #requiredDecision(value: boolean | undefined, dispatchId: number): boolean {
-    if (value === undefined) {
+    if (value == null) {
       throw new Error(`Push rate limit reservation result missing: dispatchId=${dispatchId}`);
     }
     return value;

@@ -40,10 +40,10 @@ export class UpdatePreference {
   async execute(input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> {
     const { userId } = input;
     const changesReminder =
-      input.morningReminderHour !== undefined ||
-      input.morningReminderMinute !== undefined ||
-      input.eveningReminderHour !== undefined ||
-      input.eveningReminderMinute !== undefined;
+      input.morningReminderHour != null ||
+      input.morningReminderMinute != null ||
+      input.eveningReminderHour != null ||
+      input.eveningReminderMinute != null;
 
     if (changesReminder) {
       const hasPremium = await this.#dependencies.entitlement.hasPremiumAccess(userId);
@@ -54,9 +54,8 @@ export class UpdatePreference {
 
     ReminderTime.assertValidRanges(input);
 
-    const timezone =
-      input.timezone === undefined ? undefined : normalizeIanaTimezone(input.timezone);
-    if (input.timezone !== undefined && timezone === null) {
+    const timezone = input.timezone == null ? undefined : normalizeIanaTimezone(input.timezone);
+    if (input.timezone != null && timezone == null) {
       throw new ApplicationException(ErrorCode.SYS_0002, {
         field: "timezone",
       });
@@ -80,7 +79,7 @@ export class UpdatePreference {
     });
     await this.#dependencies.cache.invalidateUserPreference(userId);
 
-    if (input.timezone !== undefined || input.pushEnabled !== undefined) {
+    if (input.timezone != null || input.pushEnabled != null) {
       await this.#dependencies.reminderTimezoneCache.invalidateActiveTimezones();
     }
 

@@ -55,7 +55,7 @@ export class LikeTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
@@ -97,7 +97,7 @@ export class LikeTodoComment {
         input.commentId,
         input.userId,
       );
-      if (pending === null) {
+      if (pending == null) {
         return;
       }
 

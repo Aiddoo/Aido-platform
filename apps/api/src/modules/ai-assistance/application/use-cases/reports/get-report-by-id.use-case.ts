@@ -27,7 +27,7 @@ export class GetReportById {
 
     const report = await this.#dependencies.aiReportRepository.findByIdAndUserId(id, userId);
 
-    if (report === null) {
+    if (report == null) {
       throw new ApplicationException(ErrorCode.AI_1304, { reportId: id });
     }
 

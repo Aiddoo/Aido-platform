@@ -54,7 +54,7 @@ export class SendNudgeThanks {
         input.todoId,
         input.userId,
       );
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801);
       }
       if (!todo.completed) {
@@ -69,7 +69,7 @@ export class SendNudgeThanks {
         input.userId,
       );
       if (
-        cutoffNudge === null ||
+        cutoffNudge == null ||
         cutoffNudge.receiverId !== input.userId ||
         cutoffNudge.todoId !== input.todoId
       ) {

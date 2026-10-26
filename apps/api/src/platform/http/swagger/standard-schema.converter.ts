@@ -16,7 +16,7 @@ function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
 
   const nonNullAlternatives = converted.anyOf?.filter((alternative) => alternative.type !== "null");
   const isNullableUnion =
-    nonNullAlternatives !== undefined && nonNullAlternatives.length !== converted.anyOf?.length;
+    nonNullAlternatives != null && nonNullAlternatives.length !== converted.anyOf?.length;
   if (isNullableUnion && nonNullAlternatives) {
     delete converted.anyOf;
     const sole = nonNullAlternatives.length === 1 ? nonNullAlternatives[0] : undefined;
@@ -39,6 +39,7 @@ function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
       converted.exclusiveMaximum = true;
     }
   }
+  // nullish-strict: JSON Schema const는 null도 값이다
   if (converted.const !== undefined) {
     converted.enum = [converted.const];
     delete converted.const;

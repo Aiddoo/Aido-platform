@@ -25,7 +25,7 @@ export class TodoCategoryReader implements TodoCategoryReaderPort {
 
   async validateOwnership(id: number, userId: string): Promise<void> {
     const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
-    if (category === null) {
+    if (category == null) {
       throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
         categoryId: id,
       });

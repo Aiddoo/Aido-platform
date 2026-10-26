@@ -38,7 +38,7 @@ export class RequestPasswordReset {
 
     const user = await this.#dependencies.userRepository.findByEmail(email);
 
-    if (user !== null && user.deletedAt === null) {
+    if (user != null && user.deletedAt == null) {
       await this.#dependencies.verificationService.createAndSendPasswordReset(user.id, email);
 
       await this.#dependencies.securityLogRepository.create({

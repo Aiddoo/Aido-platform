@@ -42,7 +42,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
     const user = request.user;
     const timezone = normalizeIanaTimezone(request.headers?.["x-timezone"]);
 
-    if (user?.userId && timezone !== null) {
+    if (user?.userId && timezone != null) {
       this.#heal(user.userId, timezone);
     }
 

@@ -13,14 +13,14 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   private constructor(props: TodoScheduleProps) {
     super({
       startDate: new Date(props.startDate),
-      endDate: props.endDate === null ? null : new Date(props.endDate),
-      scheduledTime: props.scheduledTime === null ? null : new Date(props.scheduledTime),
+      endDate: props.endDate == null ? null : new Date(props.endDate),
+      scheduledTime: props.scheduledTime == null ? null : new Date(props.scheduledTime),
       isAllDay: props.isAllDay,
     });
   }
 
   static create(props: TodoScheduleProps): TodoSchedule {
-    if (props.endDate !== null && props.endDate < props.startDate) {
+    if (props.endDate != null && props.endDate < props.startDate) {
       throw new DomainException(
         ErrorCode.SYS_0002,
         { startDate: props.startDate, endDate: props.endDate },
@@ -37,13 +37,15 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   patch(partial: Partial<TodoScheduleProps>): TodoSchedule {
     const merged: TodoScheduleProps = {
       startDate: partial.startDate ?? this.getStartDate(),
+      // nullish-strict: PATCH라 undefined는 기존 값 유지, null은 지우기다
       endDate: partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
       scheduledTime:
         partial.scheduledTime !== undefined ? partial.scheduledTime : this.getScheduledTime(),
       isAllDay: partial.isAllDay ?? this.value.isAllDay,
     };
 
-    const touchesDates = partial.startDate !== undefined || partial.endDate !== undefined;
+    // nullish-strict: endDate null은 종료일 지우기라 날짜 변경이다
+    const touchesDates = partial.startDate != null || partial.endDate !== undefined;
     if (touchesDates) {
       return TodoSchedule.create(merged);
     }

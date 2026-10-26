@@ -54,7 +54,7 @@ export class DeleteTodoComment {
         input.commentId,
       );
 
-      if (snapshot === null) {
+      if (snapshot == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
@@ -67,7 +67,7 @@ export class DeleteTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 

@@ -86,7 +86,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
         and(row.id.eq(id), row.userId.eq(userId)),
       ).first(),
     );
-    return row === null ? null : PrismaAiSuggestionRepository.toEntity(row);
+    return row == null ? null : PrismaAiSuggestionRepository.toEntity(row);
   }
 
   async updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion> {
@@ -152,7 +152,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
     for (const c of completions) {
       const dayName = dayIndexToDayOfWeek(dayjs.utc(c.date).day());
       const entry = dayMap.get(dayName);
-      if (entry === undefined) continue;
+      if (entry == null) continue;
       entry.total += c.totalTodos;
       entry.completed += c.completedTodos;
     }
@@ -192,7 +192,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
     let afternoon = 0;
 
     for (const t of todos) {
-      if (t.completedAt === null) continue;
+      if (t.completedAt == null) continue;
       const hour = dayjs(t.completedAt).tz(timezone).hour();
       if (hour < 12) {
         morning++;
@@ -262,7 +262,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
         .first(),
     );
 
-    if (pref === null) return null;
+    if (pref == null) return null;
 
     return {
       currentStreak: pref.currentStreak,
@@ -298,7 +298,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
       title: t.title,
       startDate: toDateString(t.startDate),
       scheduledTime:
-        t.scheduledTime === null ? null : dayjs(t.scheduledTime).tz(timezone).format("HH:mm"),
+        t.scheduledTime == null ? null : dayjs(t.scheduledTime).tz(timezone).format("HH:mm"),
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.category).name,

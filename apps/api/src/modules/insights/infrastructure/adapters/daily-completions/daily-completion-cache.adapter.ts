@@ -127,7 +127,7 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
   private async getGeneration(userId: string): Promise<string> {
     const key = DailyCompletionCacheKey.generation(userId);
     const cachedGeneration = await this.cacheService.get(key, z.string());
-    if (cachedGeneration !== undefined) {
+    if (cachedGeneration != null) {
       return cachedGeneration;
     }
 

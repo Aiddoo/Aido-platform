@@ -17,6 +17,6 @@ export function baseEventPayload(
     eventType: event.type,
     productId: event.product_id,
     store: event.store,
-    ...(transactionId !== undefined && { transactionId }),
+    ...(transactionId != null && { transactionId }),
   };
 }

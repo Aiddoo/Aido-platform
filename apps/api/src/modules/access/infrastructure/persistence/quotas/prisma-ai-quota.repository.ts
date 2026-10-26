@@ -33,7 +33,7 @@ export class PrismaAiQuotaRepository implements AiQuotaRepositoryPort {
         )
         .first(),
     );
-    return row === null
+    return row == null
       ? null
       : {
           role: row.role,
