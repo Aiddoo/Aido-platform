@@ -23,7 +23,7 @@ export const useVerifyEmailMutationOptions = () => {
     onError: (error) => {
       notifyError();
 
-      toast.error(error, { fallback: t('auth:toasts.codeInvalidFormal') });
+      toast.error(error, { fallback: t('auth:toasts.codeInvalid') });
     },
   });
 };
