@@ -121,6 +121,7 @@ function AiReviewScreen() {
         onPress={() => handleConfirm()}
         isDisabled={!isValid}
         isLoading={convertMutation.isPending}
+        testID="ai-review-submit"
       >
         {t('aiReview.createCount', { count: fields.length })}
       </KeyboardAdaptiveButton>

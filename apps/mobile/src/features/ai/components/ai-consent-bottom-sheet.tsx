@@ -60,6 +60,7 @@ export function AiConsentBottomSheet({
               display="full"
               onPress={() => onOpenChange(false)}
               isDisabled={updateConsent.isPending}
+              testID="ai-consent-later"
             >
               {t('consent.later')}
             </Button>
@@ -71,6 +72,7 @@ export function AiConsentBottomSheet({
               display="full"
               onPress={handleAgree}
               isLoading={updateConsent.isPending}
+              testID="ai-consent-agree"
             >
               {t('consent.agree')}
             </Button>
@@ -78,7 +80,7 @@ export function AiConsentBottomSheet({
         />
       }
     >
-      <VStack gap={20}>
+      <VStack gap={20} testID="ai-consent-sheet">
         <VStack gap={12} align="center">
           <Image
             source={require('@assets/images/ido_cat_suggestion.webp')}

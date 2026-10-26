@@ -126,12 +126,16 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
         </ConfirmDialog.Description>
       }
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={close}>
+        <ConfirmDialog.CancelButton testID="memo-ai-close" onPress={close}>
           {t('common:actions.close')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={handleStart} isLoading={parseMutation.isPending}>
+        <ConfirmDialog.ConfirmButton
+          testID="memo-ai-start"
+          onPress={handleStart}
+          isLoading={parseMutation.isPending}
+        >
           {t('memo:aiDialog.start')}
         </ConfirmDialog.ConfirmButton>
       }

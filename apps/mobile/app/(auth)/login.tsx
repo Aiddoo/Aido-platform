@@ -121,7 +121,7 @@ function LoginScreen() {
 
           <Separator orientation="vertical" className="h-3 bg-gray-6" />
 
-          <TextButton size="medium" onPress={() => push('/email-login')}>
+          <TextButton size="medium" onPress={() => push('/email-login')} testID="login-email-entry">
             {t('login.emailLogin')}
           </TextButton>
         </HStack>

@@ -71,7 +71,7 @@ function NudgeDetailScreen() {
     <>
       {isReceived && <NudgeModerationToolbar nudge={nudge} />}
       <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-        <VStack gap={24}>
+        <VStack gap={24} testID="nudge-detail">
           <HStack gap={12} align="center">
             <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
             <VStack flex={1} gap={4}>

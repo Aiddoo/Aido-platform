@@ -21,7 +21,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { type ReactNode, useEffect } from 'react';
+import { type ComponentProps, type ReactNode, useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { InvitePreviewPolicy } from '../domains/invite-preview.model';
@@ -99,6 +99,7 @@ InvitePreviewCard.Empty = function Empty() {
       icon={<SearchIcon width={40} height={40} colorClassName="text-main" />}
       title={t('result.notFound.title')}
       description={t('result.notFound.description')}
+      testID="invite-result-not-found"
       button={<EnterCodeButton />}
     />
   );
@@ -136,6 +137,7 @@ InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallba
         icon={<RefreshIcon width={40} height={40} colorClassName="text-main" />}
         title={t('result.rotated.title')}
         description={t('result.rotated.description')}
+        testID="invite-result-rotated"
         button={<EnterCodeButton />}
       />
     ))
@@ -144,6 +146,7 @@ InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallba
         icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
         title={t('result.disabled.title')}
         description={t('result.disabled.description')}
+        testID="invite-result-disabled"
       />
     ))
     .with(P.string.or(P.nullish), () => (
@@ -160,7 +163,7 @@ InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallba
     .exhaustive();
 };
 
-interface InviteResultProps {
+interface InviteResultProps extends Pick<ComponentProps<typeof Result>, 'testID'> {
   icon?: ReactNode;
   title: string;
   description: string;
@@ -168,7 +171,7 @@ interface InviteResultProps {
 }
 
 /** 초대 카드의 빈·실패 상태. 화면 가운데에 둔다 */
-function InviteResult({ icon, title, description, button }: InviteResultProps) {
+function InviteResult({ icon, title, description, button, testID }: InviteResultProps) {
   return (
     <Flex flex={1} justify="center" align="center" className="min-h-[420px]">
       <Result
@@ -182,6 +185,7 @@ function InviteResult({ icon, title, description, button }: InviteResultProps) {
         title={title}
         description={description}
         button={button}
+        testID={testID}
       />
     </Flex>
   );

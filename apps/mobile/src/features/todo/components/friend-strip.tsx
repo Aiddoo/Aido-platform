@@ -160,6 +160,7 @@ FriendStrip.Item = memo(function Item({
         friendId == null ? t('friendStrip.meLabel') : t('friendStrip.friendLabel', { name })
       }
       accessibilityState={{ selected: isSelected }}
+      testID={friendId == null ? 'friend-strip-me' : `friend-strip-item-${friendId}`}
       onPress={() => {
         if (isSelected) {
           return;

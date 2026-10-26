@@ -164,6 +164,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
       body={notification.body}
       createdAt={notification.createdAt}
       isUnread={!notification.isRead}
+      testID={`notification-item-${notification.type}`}
       onPress={handlePress}
       onLongPress={handleReportCheer}
       accessibilityActions={

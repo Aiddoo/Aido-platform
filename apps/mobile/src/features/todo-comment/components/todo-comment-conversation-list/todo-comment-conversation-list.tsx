@@ -611,7 +611,7 @@ TodoCommentConversationList.Empty = function Empty() {
   const { t } = useTranslation('todoComment');
   const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   return (
-    <Box py={48}>
+    <Box py={48} testID="todo-comment-missing">
       <Result
         icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
         title={t('list.missingTitle')}

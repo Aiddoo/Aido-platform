@@ -168,6 +168,7 @@ function AiDataSharingConsentCard() {
         confirmLabel: t('settings:terms.aiDataSharing.withdrawConfirm'),
         confirmColor: 'danger',
         cancelLabel: t('common:actions.cancel'),
+        confirmTestID: 'ai-data-sharing-withdraw-confirm',
       });
       if (!isConfirmed) {
         return;
@@ -184,6 +185,7 @@ function AiDataSharingConsentCard() {
         isSelected={isAgreed}
         onSelectedChange={handleSelectedChange}
         isDisabled={updateConsent.isPending}
+        testID="ai-data-sharing-toggle"
       />
       {match(consent)
         .with(
@@ -212,6 +214,7 @@ function AiDataSharingConsentCard() {
               variant="underline"
               isDisabled={updateConsent.isPending}
               onPress={() => updateConsent.mutate({ agreed: false })}
+              testID="ai-data-sharing-decline"
             >
               {t('settings:terms.aiDataSharing.decline')}
             </TextButton>

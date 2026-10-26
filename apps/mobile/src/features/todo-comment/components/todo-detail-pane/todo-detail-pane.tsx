@@ -82,7 +82,11 @@ TodoDetailPane.Unavailable = function Unavailable({ onClose }: { onClose: () => 
   const { t } = useTranslation(['todo', 'common']);
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background px-8">
+    <StyledSafeAreaView
+      edges={['left', 'right']}
+      className="flex-1 bg-background px-8"
+      testID="todo-unavailable"
+    >
       <Result
         icon={<DocsIcon width={72} height={72} />}
         title={t('todo:detail.unavailableTitle')}
@@ -152,7 +156,13 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
           style={styles.keyboardGestureArea}
           textInputNativeID={TODO_COMMENT_INPUT_NATIVE_ID}
         >
-          <Box flex={1}>
+          <Box
+            flex={1}
+            testID={match(commentRoute.view)
+              .with('overview', () => 'todo-comment-overview')
+              .with('conversation', () => 'todo-comment-thread')
+              .exhaustive()}
+          >
             <QueryErrorBoundary
               resetKeys={[todoId, commentRoute.view, commentRoute.sort, selectedCommentId]}
               fallback={(props) => (
@@ -197,7 +207,11 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   if (isPane) {
     return (
       <KeyboardBottomGapProvider>
-        <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background">
+        <StyledSafeAreaView
+          edges={['left', 'right']}
+          className="flex-1 bg-background"
+          testID="todo-detail"
+        >
           {content}
         </StyledSafeAreaView>
       </KeyboardBottomGapProvider>
@@ -208,7 +222,11 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
     <>
       <Stack.Screen options={{ gestureEnabled: isNativeBackGestureEnabled }} />
 
-      <StyledSafeAreaView className="flex-1 bg-background" edges={['left', 'right']}>
+      <StyledSafeAreaView
+        className="flex-1 bg-background"
+        edges={['left', 'right']}
+        testID="todo-detail"
+      >
         {content}
       </StyledSafeAreaView>
     </>

@@ -222,6 +222,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                 onPress={handleTogglePin}
               />
               <MemoActionButton
+                testID="memo-ai-review"
                 onPress={aiParse.handlePress}
                 accessibilityLabel={t('memo:titles.aiReview')}
                 isDisabled={aiParse.isDisabled}
@@ -234,6 +235,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
                 }
               />
               <MemoActionButton
+                testID="memo-convert-to-todo"
                 onPress={convertToTodo.handlePress}
                 accessibilityLabel={t('memo:detail.convertToTodo')}
                 isDisabled={convertToTodo.isDisabled}

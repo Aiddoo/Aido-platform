@@ -55,6 +55,7 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
           accessibilityLabel={t('actions.openConversation')}
           accessibilityState={{ selected: isFocused }}
           className="min-h-11 min-w-0 justify-center overflow-visible rounded-xl"
+          testID={`todo-comment-open-conversation-${comment.id}`}
         >
           <PressableFeedback.Highlight className="rounded-xl" />
           <VStack gap={3}>
@@ -66,9 +67,10 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
         {isActive && (
           <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
             <HStack align="center">
-              <CommentLikeButton comment={comment} />
+              <CommentLikeButton comment={comment} testID={`todo-comment-like-${comment.id}`} />
               <CommentReplyButton
                 comment={comment}
+                testID={`todo-comment-reply-${comment.id}`}
                 isPreparing={navigation.isPreparing}
                 canOpenReply={navigation.canStartReply}
                 onPress={navigation.startReply}
@@ -183,7 +185,13 @@ function CommentBody({ comment }: { comment: TodoComment }) {
 
   if (comment.isDeleted) {
     return (
-      <Text size="b4" shade={6}>
+      <Text
+        size="b4"
+        shade={6}
+        testID={
+          comment.isAuthorBlocked ? `todo-comment-blocked-placeholder-${comment.id}` : undefined
+        }
+      >
         {comment.isAuthorBlocked ? t('list.blockedAuthor') : t('list.deleted')}
       </Text>
     );
@@ -252,6 +260,7 @@ function CommentActionMenu({
           hitSlop={10}
           className="min-h-11 min-w-11 items-center justify-center py-1"
           isDisabled={deleteComment.isPending}
+          testID={`todo-comment-more-${comment.id}`}
           accessibilityRole="button"
           accessibilityLabel={t('actions.more')}
           accessibilityState={{
@@ -285,6 +294,7 @@ function CommentActionMenu({
           {TodoCommentPolicy.canReport(comment) && (
             <Menu.Item
               onPress={() => push(commentReportSheetHref({ todoId, commentId: comment.id }))}
+              testID="todo-comment-report"
             >
               <Menu.ItemTitle>{t('actions.report')}</Menu.ItemTitle>
             </Menu.Item>
@@ -292,6 +302,7 @@ function CommentActionMenu({
           {author != null && TodoCommentPolicy.canBlockAuthor(comment) && (
             <Menu.Item
               variant="danger"
+              testID="todo-comment-block"
               onPress={() =>
                 push(
                   blockUserConfirmHref({

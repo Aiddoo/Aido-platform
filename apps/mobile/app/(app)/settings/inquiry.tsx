@@ -105,7 +105,12 @@ function InquiryScreen() {
                     className="bg-white rounded-2xl overflow-hidden gap-0"
                   >
                     {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                      <IconRadioItem key={key} value={key} label={tGlobal(labelKey)} />
+                      <IconRadioItem
+                        key={key}
+                        value={key}
+                        label={tGlobal(labelKey)}
+                        testID={`inquiry-category-${key}`}
+                      />
                     ))}
                   </RadioGroup>
                 )}
@@ -118,6 +123,7 @@ function InquiryScreen() {
               {({ onChange, value }, { error }) => (
                 <VStack gap={4}>
                   <TextArea
+                    testID="inquiry-content-input"
                     label={t('form.contentLabel')}
                     placeholder={t('form.contentPlaceholder')}
                     value={value}
@@ -146,6 +152,7 @@ function InquiryScreen() {
           onPress={() => handleSubmit(handleSubmitInquiry)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
+          testID="inquiry-submit"
         >
           {t('form.submit')}
         </KeyboardAdaptiveButton>

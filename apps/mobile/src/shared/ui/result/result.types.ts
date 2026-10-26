@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { ViewProps } from 'react-native';
 
 import type { ButtonProps } from '../button/button.types';
 
@@ -13,6 +14,7 @@ export interface ResultProps {
   button?: ReactNode;
   /** 추가 className */
   className?: string;
+  testID?: ViewProps['testID'];
 }
 
 export interface ResultButtonProps extends Omit<ButtonProps, 'size' | 'display'> {}

@@ -207,7 +207,7 @@ function PaywallPane() {
   };
 
   return (
-    <Box className="flex-1">
+    <Box className="flex-1" testID="subscription-paywall">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={16} />
@@ -334,6 +334,7 @@ function SubscriptionFailureResult({ failure, onRetry }: SubscriptionFailureResu
           icon={<DocsIcon width={72} height={72} />}
           title={title}
           description={description}
+          testID="subscription-load-failure"
           button={
             <VStack gap={12} align="center">
               {onRetry != null && (
@@ -363,7 +364,7 @@ function SubscriptionReceipt() {
     <ScallopedContainer>
       {variant === 'reward' && <InvitePawPrintBoard.Stamp className="absolute right-4 top-4" />}
 
-      <Box className="px-5 pt-5">
+      <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>
         <HStack gap={16} className="items-center">
           <FillTicketIcon width={40} height={40} />
 
@@ -501,6 +502,7 @@ function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
   return (
     <ListRow
       verticalPadding="small"
+      testID={`subscription-receipt-row-${row.type}`}
       contents={
         <Text size="b4" shade={6}>
           {label}
@@ -557,6 +559,7 @@ function PremiumEndingNotice() {
         align="center"
         accessibilityRole="summary"
         className="rounded-2xl bg-main/10 px-3.5 py-3"
+        testID="subscription-ending-notice"
       >
         <Box className="rounded-full bg-main px-2 py-0.5">
           <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">

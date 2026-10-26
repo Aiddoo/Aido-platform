@@ -88,6 +88,7 @@ export function FeatureDiscoveryBottomSheet({
             onPress={() => onOpenChange(false)}
             accessibilityRole="button"
             accessibilityLabel={t('hub.closeLabel')}
+            testID="feature-discovery-close"
           >
             {t('common:actions.close')}
           </TextButton>

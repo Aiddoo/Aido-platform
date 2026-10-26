@@ -34,10 +34,21 @@ function LanguageSettingsScreen() {
               label={t('language.system')}
               description={t('language.systemDescription')}
               Icon={DeviceIcon}
+              testID="language-option-system"
             />
             {/* 언어 이름은 해당 언어로 고정 표기한다 (번역하지 않음) */}
-            <IconRadioItem value="ko" label="한국어" Icon={KoreanIcon} />
-            <IconRadioItem value="en" label="English" Icon={EnglishIcon} />
+            <IconRadioItem
+              value="ko"
+              label="한국어"
+              Icon={KoreanIcon}
+              testID="language-option-ko"
+            />
+            <IconRadioItem
+              value="en"
+              label="English"
+              Icon={EnglishIcon}
+              testID="language-option-en"
+            />
           </RadioGroup>
         </StyledSafeAreaView>
       </ScrollView>

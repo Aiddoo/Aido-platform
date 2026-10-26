@@ -57,6 +57,7 @@ BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser
       description: t('moderation:unblock.confirmDescription'),
       confirmLabel: t('moderation:unblock.confirm'),
       cancelLabel: t('common:actions.cancel'),
+      confirmTestID: 'blocked-user-unblock-confirm',
     });
     if (!isConfirmed) {
       return;
@@ -81,6 +82,7 @@ BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser
           hitSlop={UNBLOCK_BUTTON_HIT_SLOP}
           isLoading={unblockUser.isPending}
           onPress={handleUnblock}
+          testID={`blocked-user-unblock-${blockedUser.id}`}
         >
           {t('moderation:unblock.action')}
         </Button>
@@ -109,6 +111,7 @@ BlockedUserList.Empty = function Empty() {
       icon={<DocsIcon width={72} height={72} />}
       title={t('blockedUsers.emptyTitle')}
       description={t('blockedUsers.emptyDescription')}
+      testID="blocked-users-empty"
     />
   );
 };

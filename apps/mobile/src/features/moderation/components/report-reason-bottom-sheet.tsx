@@ -105,7 +105,7 @@ export function ReportReasonBottomSheet({
   return (
     <FormProvider {...formMethods}>
       <KeyboardBottomSheet {...sheetProps} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-        <VStack gap={16} pb={16}>
+        <VStack gap={16} pb={16} testID="report-reason-sheet">
           <VStack gap={2}>
             <Text size="b3" shade={7}>
               {t(TARGET_CAPTION_KEYS[target.targetType])}
@@ -139,11 +139,27 @@ function ReasonField() {
     <FormField control={control} name="reason">
       {({ onChange, value }) => (
         <RadioGroup value={value} onValueChange={onChange} className="gap-0 overflow-hidden">
-          <IconRadioItem value="SPAM" label={t('report.reason.SPAM')} />
-          <IconRadioItem value="HARASSMENT" label={t('report.reason.HARASSMENT')} />
-          <IconRadioItem value="INAPPROPRIATE" label={t('report.reason.INAPPROPRIATE')} />
-          <IconRadioItem value="IMPERSONATION" label={t('report.reason.IMPERSONATION')} />
-          <IconRadioItem value="OTHER" label={t('report.reason.OTHER')} />
+          <IconRadioItem value="SPAM" label={t('report.reason.SPAM')} testID="report-reason-SPAM" />
+          <IconRadioItem
+            value="HARASSMENT"
+            label={t('report.reason.HARASSMENT')}
+            testID="report-reason-HARASSMENT"
+          />
+          <IconRadioItem
+            value="INAPPROPRIATE"
+            label={t('report.reason.INAPPROPRIATE')}
+            testID="report-reason-INAPPROPRIATE"
+          />
+          <IconRadioItem
+            value="IMPERSONATION"
+            label={t('report.reason.IMPERSONATION')}
+            testID="report-reason-IMPERSONATION"
+          />
+          <IconRadioItem
+            value="OTHER"
+            label={t('report.reason.OTHER')}
+            testID="report-reason-OTHER"
+          />
         </RadioGroup>
       )}
     </FormField>
@@ -166,6 +182,7 @@ function DetailField() {
           errorMessage={error?.message}
           maxLength={USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}
           className="h-[88px] min-h-0"
+          testID="report-detail-input"
         />
       )}
     </FormField>
@@ -200,6 +217,7 @@ function SubmitButton({ onPress }: Pick<ComponentProps<typeof Button>, 'onPress'
       onPress={onPress}
       isDisabled={reason == null}
       isLoading={isSubmitting}
+      testID="report-submit"
     >
       {t('report.submit')}
     </Button>

@@ -26,7 +26,12 @@ export function AiConsentNotice({ children }: PropsWithChildren) {
       <Text size="b3" weight="medium" shade={8} className="flex-1">
         {children}
       </Text>
-      <TextButton size="medium" variant="arrow" onPress={() => aiConsent.requestAgreement()}>
+      <TextButton
+        size="medium"
+        variant="arrow"
+        onPress={() => aiConsent.requestAgreement()}
+        testID="ai-consent-notice-action"
+      >
         {t('consent.notice.action')}
       </TextButton>
     </HStack>

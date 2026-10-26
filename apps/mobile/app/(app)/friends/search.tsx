@@ -15,6 +15,7 @@ export default function SearchFriendScreen() {
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background">
       <Box px={16} py={12}>
         <Input
+          testID="friend-search-input"
           leftContent={<SearchIcon width={20} height={20} colorClassName="text-gray-5" />}
           placeholder={t('search.placeholder')}
           value={query}

@@ -414,7 +414,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           isClosingRef.current = true;
         }}
       >
-        <VStack gap={12}>
+        <VStack gap={12} testID="todo-add-sheet">
           <FormField control={methods.control} name="title">
             {({ onChange, value }) => (
               <BottomSheetInput
@@ -631,6 +631,7 @@ const AiFeatureTooltip = () => {
         <PressableFeedback
           onPress={() => setIsTooltipOpen(true)}
           className="items-center justify-center"
+          testID="todo-ai-feature-tooltip"
         >
           <HStack gap={4} align="center">
             <Text size="e2" weight="medium" shade={6}>

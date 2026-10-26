@@ -5,9 +5,9 @@ import { Text } from '../text/text';
 import { VStack } from '../v-stack/v-stack';
 import type { ResultButtonProps, ResultProps } from './result.types';
 
-export function Result({ icon, title, description, button, className }: ResultProps) {
+export function Result({ icon, title, description, button, className, testID }: ResultProps) {
   return (
-    <VStack align="center" justify="center" className={className} flex={1}>
+    <VStack align="center" justify="center" className={className} flex={1} testID={testID}>
       {icon && (
         <>
           <Box accessible={false} importantForAccessibility="no">

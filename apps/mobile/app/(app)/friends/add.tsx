@@ -86,6 +86,7 @@ function AddFriendScreen() {
             <FormField control={control} name="userTag">
               {({ onChange, value }, { error }) => (
                 <Input
+                  testID="friend-tag-input"
                   label={t('add.tagLabel')}
                   placeholder="ABC12345"
                   value={value}
@@ -123,6 +124,7 @@ function AddFriendScreen() {
           onPress={() => handleSubmit(handleSubmitFriendRequest)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
+          testID="friend-tag-submit"
         >
           {t('add.submit')}
         </KeyboardAdaptiveButton>
