@@ -6,9 +6,14 @@ import { t } from '@src/shared/i18n';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from './todo-cache';
+import {
+  cancelTodoListQuery,
+  invalidateTodoInList,
+  restoreTodo,
+  snapshotTodo,
+  updateTodoInList,
+} from './todo-cache';
 
 interface DeleteSubTodoParams {
   todoId: number;
@@ -45,11 +50,9 @@ export const useDeleteSubTodoMutationOptions = () => {
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
       }
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
-    // 상세 카드는 별도 캐시라 목록과 같은 항목·진행 개수를 보이게 다시 불러온다
-    onSettled: (_data, _error, { todoId }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+    onSettled: (_data, _error, { todoId, startDate }) => {
+      invalidateTodoInList(queryClient, { date: startDate, todoId });
     },
   });
 };

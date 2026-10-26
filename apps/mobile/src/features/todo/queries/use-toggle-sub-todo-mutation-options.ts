@@ -4,9 +4,14 @@ import { unwrap } from '@src/shared/errors/result';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from './todo-cache';
+import {
+  cancelTodoListQuery,
+  invalidateTodoInList,
+  restoreTodo,
+  snapshotTodo,
+  updateTodoInList,
+} from './todo-cache';
 
 interface ToggleSubTodoParams {
   todoId: number;
@@ -48,10 +53,9 @@ export const useToggleSubTodoMutationOptions = () => {
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
       }
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
-    onSettled: (_data, _error, { todoId }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+    onSettled: (_data, _error, { todoId, startDate }) => {
+      invalidateTodoInList(queryClient, { date: startDate, todoId });
     },
   });
 };

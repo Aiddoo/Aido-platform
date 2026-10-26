@@ -106,6 +106,22 @@ export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { to
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
 }
 
+/** 할 일 하나(또는 그 서브투두)가 바뀐 뒤 그 날짜 목록과 상세를 서버 값으로 맞춘다. */
+export function invalidateTodoInList(
+  queryClient: QueryClient,
+  { date, todoId }: { date: string; todoId: number },
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }) }),
+    invalidateTodoDetails(queryClient, { todoId }),
+  ]);
+}
+
+/** 완료 여부가 바뀌어 달력 점·진행률 같은 완료 기록도 다시 불러온다. */
+export function invalidateTodoCompletions(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+}
+
 /** 댓글 수처럼 목록·친구 목록·상세에 함께 보이는 할 일 요약 값을 다시 불러온다. */
 export async function invalidateTodoSummaries(
   queryClient: QueryClient,
