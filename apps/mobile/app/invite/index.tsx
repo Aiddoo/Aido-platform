@@ -158,8 +158,8 @@ function InviteCodeEntryScreen() {
                       }
                     },
                     accessibilityLabel: t('codeEntry.inputLabel'),
-                    testID: 'invite-code-input',
                   }}
+                  testID="invite-code-input"
                 />
               )}
             </FormField>

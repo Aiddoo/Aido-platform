@@ -51,6 +51,11 @@ interface InviteCodeInputProps extends Omit<
   invalidIndexes?: readonly number[];
   /** 제출 횟수. 고치지 않고 다시 제출해 같은 오류가 남아도 바뀔 때마다 다시 흔든다 */
   submitCount?: number;
+  /**
+   * 숨은 입력과 칸 묶음에 함께 단다. Android는 투명도 0인 숨은 입력을 화면 트리에서 빼므로 칸 묶음으로 찾고,
+   * iOS는 숨은 입력으로 찾는다.
+   */
+  testID?: string;
 }
 
 /** 6자리 초대 코드 입력. 붙여 넣거나 소문자로 쳐도 서버와 같은 형태로 맞춘다 */
@@ -61,6 +66,7 @@ export function InviteCodeInput({
   invalidIndexes = [],
   submitCount = 0,
   textInputProps,
+  testID,
   ...props
 }: InviteCodeInputProps) {
   const shouldShake = isInvalid || invalidIndexes.length > 0;
@@ -86,7 +92,7 @@ export function InviteCodeInput({
   }, [shouldShake, submitCount, translateX]);
 
   return (
-    <Animated.View style={shakeStyle}>
+    <Animated.View style={shakeStyle} testID={testID} collapsable={false}>
       <InputOTP
         maxLength={INVITE_CODE.LENGTH}
         value={value}
@@ -94,7 +100,7 @@ export function InviteCodeInput({
         pasteTransformer={toInviteCodeDraft}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         isInvalid={isInvalid}
-        textInputProps={{ ...CODE_TEXT_INPUT_PROPS, ...textInputProps }}
+        textInputProps={{ ...CODE_TEXT_INPUT_PROPS, testID, ...textInputProps }}
         {...props}
       >
         <InputOTP.Group className="w-full gap-2">
