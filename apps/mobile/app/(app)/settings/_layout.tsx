@@ -5,6 +5,8 @@ import { Stack } from 'expo-router';
 
 export default function SettingsLayout() {
   const screenOptions = useStackScreenOptions();
+  // 차단한 사용자는 친구 관리처럼 사람 목록이라 같은 흰 바탕 헤더를 쓴다(다른 설정은 회색 그룹 화면)
+  const listScreenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
   const backToolbar = useStackBackToolbar();
   const { t } = useTranslation('settings');
 
@@ -50,7 +52,10 @@ export default function SettingsLayout() {
       <Stack.Screen name="category-settings" options={{ title: t('titles.categorySettings') }}>
         {backToolbar}
       </Stack.Screen>
-      <Stack.Screen name="blocked-users" options={{ title: t('titles.blockedUsers') }}>
+      <Stack.Screen
+        name="blocked-users"
+        options={{ ...listScreenOptions, title: t('titles.blockedUsers') }}
+      >
         {backToolbar}
       </Stack.Screen>
     </Stack>
