@@ -75,9 +75,10 @@
       "confirm": "Make a new link"
     },
     "notice": {
-      "qualification_one": "You get a paw print when your friend completes to-dos on {{count}} day within {{days}} days of joining",
-      "qualification_other": "You get a paw print when your friend completes to-dos on {{count}} different days within {{days}} days of joining",
-      "cap": "You can get up to {{monthly}} days of Premium in any {{windowDays}} days, {{total}} days in total",
+      "title": "Good to know",
+      "qualification_one": "You get a paw print when your friend completes to-dos on {{count}} day within {{days}} days of signing up",
+      "qualification_other": "You get a paw print when your friend completes to-dos on {{count}} days within {{days}} days of signing up. Several to-dos on the same day count as 1 day",
+      "cap": "You can earn up to {{monthly}} days of Premium every {{windowDays}} days, and up to {{total}} days in total",
       "subscription": "If you're subscribed, your reward Premium starts after your subscription ends"
     },
     "unavailable": {
@@ -87,8 +88,8 @@
   },
   "pawPrintBoard": {
     "title": "Collect paw prints",
-    "rewardRule_one": "When a friend completes to-dos on {{activeDays}} different days, you get a paw print, {{days}} days of Premium, and {{slots}} friend slot",
-    "rewardRule_other": "When a friend completes to-dos on {{activeDays}} different days, you get a paw print, {{days}} days of Premium, and {{slots}} friend slots",
+    "rewardRule_one": "When a friend completes to-dos on {{activeDays}} days, each paw print gives you {{days}} days of Premium and {{slots}} more friend slot",
+    "rewardRule_other": "When a friend completes to-dos on {{activeDays}} days, each paw print gives you {{days}} days of Premium and {{slots}} more friend slots",
     "cellLabel": "Paw print {{number}}, {{state}}",
     "state": {
       "stamped": "added",
@@ -98,13 +99,13 @@
     },
     "progress": {
       "notStarted": "Invite your first friend. You'll be friends as soon as they join",
-      "monthlyCapReached": "You've reached the {{days}}-day Premium limit for the last {{windowDays}} days. You can keep collecting paw prints and friend slots",
+      "monthlyCapReached": "You've earned the most Premium for this {{windowDays}}-day period ({{days}} days). You can still collect paw prints and friend slots",
       "next_one": "{{count}} more friend to your next reward",
       "next_other": "{{count}} more friends to your next reward"
     },
     "header_one": "Board {{boardNumber}} · {{total}} paw print so far",
     "header_other": "Board {{boardNumber}} · {{total}} paw prints so far",
-    "firstHint": "Your first paw print lands here once a friend completes to-dos on {{activeDays}} different days",
+    "firstHint": "Your first paw print appears here once a friend completes to-dos on {{activeDays}} days",
     "complete": "You filled board {{boardNumber}}! A new board opens next time",
     "rewardsSummary_one": "Premium {{count}} day · Friend slots {{slots}}",
     "rewardsSummary_other": "Premium {{count}} days · Friend slots {{slots}}",
@@ -113,10 +114,10 @@
   "friendList": {
     "title": "Invited friends",
     "stamped": "Left a paw print on {{date}}",
-    "waiting": "Finished to-dos on {{done}} of {{required}} days",
+    "waiting": "To-dos done on {{done}} of {{required}} days",
     "excluded": "This one didn't get a paw print",
-    "excludedExpired": "{{days}} days passed after joining, so no paw print this time",
-    "excludedMonthlyCap": "The reward limit was reached, so no paw print this time",
+    "excludedExpired": "More than {{days}} days passed since they joined, so no paw print this time",
+    "excludedMonthlyCap": "You'd reached the reward limit, so no paw print this time",
     "joined": "Joined on {{date}}",
     "chipDone": "Added",
     "chipDoneLabel": "Paw print added",
@@ -158,7 +159,7 @@
     "inviteFriends": "Invite a friend",
     "findByTag": "Find by tag",
     "friendsEmptyDescription": "Invite a friend with a single link.\nThey get {{days}} days of Premium as soon as they join",
-    "friendLimitDescription": "You can have up to {{limit}} friends right now.\nYou get one more friend slot for each invited friend who completes to-dos on {{activeDays}} different days",
+    "friendLimitDescription": "You can have up to {{limit}} friends right now.\nYou get 1 more friend slot for each invited friend who completes to-dos on {{activeDays}} days",
     "growFriendSlots": "Invite friends for more friend slots",
     "mypageTitle_one": "Invites · {{count}} paw print",
     "mypageTitle_other": "Invites · {{count}} paw prints",

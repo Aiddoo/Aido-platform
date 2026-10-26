@@ -162,21 +162,27 @@ function InviteRewardNotice() {
   const { t } = useTranslation('invite');
 
   return (
-    <VStack gap={4} px={2} accessibilityRole="list">
-      <NoticeRow>
-        {t('myInvite.notice.qualification', {
-          count: InvitedFriendPolicy.requiredActiveDays(),
-          days: InvitedFriendPolicy.qualificationWindowDays(),
-        })}
-      </NoticeRow>
-      <NoticeRow>
-        {t('myInvite.notice.cap', {
-          windowDays: InvitePolicy.premiumCapWindowDays(),
-          monthly: InvitePolicy.monthlyPremiumCapDays(),
-          total: InvitePolicy.totalPremiumCapDays(),
-        })}
-      </NoticeRow>
-      <NoticeRow>{t('myInvite.notice.subscription')}</NoticeRow>
+    <VStack gap={4} px={2}>
+      <Text size="b4" weight="semibold" shade={7} accessibilityRole="header">
+        {t('myInvite.notice.title')}
+      </Text>
+      <Spacing size={2} />
+      <VStack gap={4} accessibilityRole="list">
+        <NoticeRow>
+          {t('myInvite.notice.qualification', {
+            count: InvitedFriendPolicy.requiredActiveDays(),
+            days: InvitedFriendPolicy.qualificationWindowDays(),
+          })}
+        </NoticeRow>
+        <NoticeRow>
+          {t('myInvite.notice.cap', {
+            windowDays: InvitePolicy.premiumCapWindowDays(),
+            monthly: InvitePolicy.monthlyPremiumCapDays(),
+            total: InvitePolicy.totalPremiumCapDays(),
+          })}
+        </NoticeRow>
+        <NoticeRow>{t('myInvite.notice.subscription')}</NoticeRow>
+      </VStack>
     </VStack>
   );
 }
