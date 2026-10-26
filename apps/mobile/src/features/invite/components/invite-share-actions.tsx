@@ -1,5 +1,6 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   Box,
   Button,
@@ -117,8 +118,8 @@ function InviteShareButtons({
         </HStack>
       </Button>
 
-      <Grid columns={2} columnGap={10}>
-        <GridItem>
+      <SecondaryShareActions
+        copyLink={
           <InviteSecondaryShareButton
             icon={
               isCopied ? (
@@ -132,8 +133,8 @@ function InviteShareButtons({
             isDisabled={isDisabled}
             onPress={() => onShare('copy_link')}
           />
-        </GridItem>
-        <GridItem>
+        }
+        system={
           <InviteSecondaryShareButton
             icon={<ShareIcon width={18} height={18} colorClassName="text-gray-8" />}
             testID="invite-share-system"
@@ -141,9 +142,30 @@ function InviteShareButtons({
             isDisabled={isDisabled}
             onPress={() => onShare('system')}
           />
-        </GridItem>
-      </Grid>
+        }
+      />
     </VStack>
+  );
+}
+
+/** 가장 큰 글자 크기에서는 반폭 두 버튼에 라벨이 들어가지 않아 전체 폭으로 세로로 쌓는다 */
+function SecondaryShareActions({ copyLink, system }: { copyLink: ReactNode; system: ReactNode }) {
+  const { fontScale } = useFontScale();
+
+  if (fontScale === 'xlarge') {
+    return (
+      <VStack gap={10}>
+        {copyLink}
+        {system}
+      </VStack>
+    );
+  }
+
+  return (
+    <Grid columns={2} columnGap={10}>
+      <GridItem>{copyLink}</GridItem>
+      <GridItem>{system}</GridItem>
+    </Grid>
   );
 }
 
