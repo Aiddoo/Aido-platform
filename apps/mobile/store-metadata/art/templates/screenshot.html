@@ -384,7 +384,8 @@
       // 기기별 화면 비율과 틀 두께(틀 너비 대비). card는 캡처를 잘라 낸 비율(screen.aspect)을 쓴다.
       const FRAMES = {
         iphone: { aspect: 1206 / 2622, rim: 0.012, bezel: 0.03, radius: 0.155, island: true },
-        'duo-closed': { aspect: 1398 / 2034, rim: 0.012, bezel: 0.03, radius: 0.13, island: true },
+        // Duo 접힘 화면은 상태 표시가 오른쪽 세로줄에 있어(시뮬레이터 캡처 기준) 위쪽 Dynamic Island를 그리지 않는다.
+        'duo-closed': { aspect: 1398 / 2034, rim: 0.012, bezel: 0.03, radius: 0.13 },
         'duo-open': { aspect: 2007 / 2853, rim: 0.008, bezel: 0.022, radius: 0.075, crease: true },
         ipad: { aspect: 2064 / 2752, rim: 0.007, bezel: 0.026, radius: 0.06 },
         card: { aspect: 1080 / 2400, rim: 0, bezel: 0, radius: 0.075 },

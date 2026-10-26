@@ -30,7 +30,7 @@ pnpm --filter @aido/mobile test:store-art
 | 출력 대상          | 크기(px)  | 기기 폴더                                      | 틀                     |
 | ------------------ | --------- | ---------------------------------------------- | ---------------------- |
 | `iphone-6.3`       | 1206×2622 | `iPhone 17 Pro`                                | iPhone(Dynamic Island) |
-| `iphone-6.9`       | 1320×2868 | `iPhone 17 Pro Max`(없으면 `iPhone 17 Pro`)    | iPhone                 |
+| `iphone-6.9`       | 1320×2868 | `iPhone 6.9 원본`(없으면 `iPhone 17 Pro`)      | iPhone                 |
 | `iphone-duo`       | 2007×2853 | `iPhone Duo 펼침`(+ `iPhone Duo 접힘` 쌍 배치) | Duo 펼침·접힘          |
 | `iphone-duo-outer` | 1398×2034 | `iPhone Duo 접힘`                              | Duo 접힘               |
 | `ipad-13`          | 2064×2752 | `iPad Pro 13`                                  | iPad                   |

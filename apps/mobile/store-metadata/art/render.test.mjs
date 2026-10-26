@@ -121,7 +121,7 @@ test('Play 이미지는 기기 틀 없이 iOS 막대를 잘라 낸 화면 카드
 
 test('App Store 화면은 같은 종류 기기의 캡처를 쓴다', () => {
   assert.equal(TARGETS['ipad-13'].device, 'iPad Pro 13');
-  assert.deepEqual(TARGETS['iphone-6.9'].device, ['iPhone 17 Pro Max', 'iPhone 17 Pro']);
+  assert.deepEqual(TARGETS['iphone-6.9'].device, ['iPhone 6.9 원본', 'iPhone 17 Pro']);
   assert.equal(TARGETS['iphone-duo'].device, 'iPhone Duo 펼침');
   assert.equal(TARGETS['iphone-duo-outer'].device, 'iPhone Duo 접힘');
 });

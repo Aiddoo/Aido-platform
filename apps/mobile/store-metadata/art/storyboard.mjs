@@ -25,7 +25,7 @@ export const TARGETS = {
     height: 2868,
     frame: 'iphone',
     // 6.9″ 실제 캡처(1320×2868)를 먼저 쓰고, 없으면 6.3″ 캡처를 키워 쓴다.
-    device: ['iPhone 17 Pro Max', 'iPhone 17 Pro'],
+    device: ['iPhone 6.9 원본', 'iPhone 17 Pro'],
     folder: 'iphone-6.9_1320x2868',
     badge: true,
   },
@@ -109,7 +109,7 @@ export const TARGETS = {
 // iPhone은 3배(상태 막대 62pt·홈 인디케이터 34pt), iPad는 2배(24pt·20pt).
 export const CAPTURE_DEVICES = {
   'iPhone 17 Pro': { statusBar: 186, homeIndicator: 102 },
-  'iPhone 17 Pro Max': { statusBar: 186, homeIndicator: 102 },
+  'iPhone 6.9 원본': { statusBar: 186, homeIndicator: 102 },
   'iPad Pro 13': { statusBar: 48, homeIndicator: 40 },
 };
 
