@@ -5,7 +5,6 @@ import {
   CopyIcon,
   HStack,
   PauseIcon,
-  type QueryErrorFallbackProps,
   Result,
   Text,
   TextButton,
@@ -19,7 +18,6 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { createInviteShareContent } from '../domains/invite-share.model';
-import { isInviteDisabledError } from '../domains/invite.error';
 import { InvitePolicy } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
 import { useRotateInviteCodeMutationOptions } from '../queries/use-rotate-invite-code-mutation-options';
@@ -120,23 +118,6 @@ InviteLinkCard.Loading = function Loading() {
         <Skeleton className="h-10 w-[72px] rounded-lg" />
       </HStack>
       <TextSkeleton size="b3" className="w-36" />
-    </InviteLinkCardFrame>
-  );
-};
-
-InviteLinkCard.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('invite');
-
-  if (isInviteDisabledError(error)) {
-    return <InviteLinkCard.Unavailable />;
-  }
-
-  return (
-    <InviteLinkCardFrame className="min-h-[136px] justify-center">
-      <Result
-        title={t('result.loadFailed.title')}
-        button={<Result.Button onPress={reset}>{t('result.retry')}</Result.Button>}
-      />
     </InviteLinkCardFrame>
   );
 };

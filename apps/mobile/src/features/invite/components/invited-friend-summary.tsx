@@ -1,23 +1,11 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  Box,
-  H4,
-  HStack,
-  PawIcon,
-  type QueryErrorFallbackProps,
-  Result,
-  TextButton,
-  TextSkeleton,
-  VStack,
-} from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
+import { Box, H4, HStack, PawIcon, Result, TextButton, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
-import { isInviteDisabledError } from '../domains/invite.error';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/get-invited-friends-infinite-query-options';
 import { invitedFriendsHref } from '../utils/navigation/invite-href';
 import { InvitedFriendRow } from './invited-friend-row';
@@ -73,23 +61,6 @@ InvitedFriendSummary.Loading = function Loading() {
   );
 };
 
-InvitedFriendSummary.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('invite');
-
-  if (isInviteDisabledError(error)) {
-    return <InvitedFriendSummary.Unavailable />;
-  }
-
-  return (
-    <InvitedFriendSummaryFrame className="min-h-[200px] justify-center">
-      <Result
-        title={t('result.loadFailed.title')}
-        button={<Result.Button onPress={reset}>{t('result.retry')}</Result.Button>}
-      />
-    </InvitedFriendSummaryFrame>
-  );
-};
-
 InvitedFriendSummary.Unavailable = function Unavailable() {
   const { t } = useTranslation('invite');
 
@@ -114,6 +85,7 @@ InvitedFriendSummary.Empty = function Empty() {
   );
 };
 
-function InvitedFriendSummaryFrame({ className, ...props }: ComponentProps<typeof VStack>) {
-  return <VStack gap={8} className={cn('-mx-4', className)} {...props} />;
+/** 친구 행이 화면 끝까지 닿도록 Screen이 바깥 여백을 걷어 내고 둔다. 제목·빈 상태는 행과 같은 안쪽 여백을 쓴다 */
+function InvitedFriendSummaryFrame(props: ComponentProps<typeof VStack>) {
+  return <VStack gap={8} {...props} />;
 }
