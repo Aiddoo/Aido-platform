@@ -165,6 +165,7 @@ function InviteHeroBanner() {
   const { t } = useTranslation('invite');
   const inviteeDays = InviteRewardPolicy.welcomePremiumDays();
   const inviterDays = InviteRewardPolicy.inviterPremiumDays();
+  const activeDays = InvitedFriendPolicy.requiredActiveDays();
 
   return (
     <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
@@ -179,8 +180,8 @@ function InviteHeroBanner() {
       <Box className="self-start rounded-full bg-white px-3 py-1">
         <Text size="b4" weight="semibold" tone="brand">
           {inviteeDays === inviterDays
-            ? t('myInvite.heroChip', { days: inviteeDays })
-            : t('myInvite.heroChipSeparate', { inviteeDays, inviterDays })}
+            ? t('myInvite.heroChip', { days: inviteeDays, activeDays })
+            : t('myInvite.heroChipSeparate', { inviteeDays, inviterDays, activeDays })}
         </Text>
       </Box>
 

@@ -262,7 +262,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       .select("userId", "body")
       .all();
     expect(rewardedNotices).toEqual([
-      { userId: inviterId, body: "프리미엄 7일과 친구 자리 1개를 받았어" },
+      { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어" },
     ]);
   });
 
@@ -615,7 +615,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Then
     expect(afterFirst).toEqual([]);
     expect(await rewardedNotices()).toEqual([
-      { userId: inviterId, body: "프리미엄 7일과 친구 자리 1개를 받았어" },
+      { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어" },
     ]);
   });
 

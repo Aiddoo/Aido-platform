@@ -7,7 +7,7 @@
  *                 gitignore된 `.env.maestro`에만 쓴다(출력하지 않는다).
  * - reset         B의 초대 수락·친구 관계·보상·프리미엄·기기 보상 기록을 지워 초대 흐름을 다시 돌릴 수 있게 한다.
  * - delete        A, B와 이 스크립트가 만든 더미 친구를 지운다. `.env.maestro`의 계정 키도 비운다.
- * - fill-friends  지정한 계정(a|b)의 친구 자리를 한도까지 더미 친구로 채운다(2106/REQUESTED 확인용).
+ * - fill-friends  지정한 계정(a|b)의 친구 수를 한도까지 더미 친구로 채운다(2106/REQUESTED 확인용).
  * - clear-friends 더미 친구만 지운다.
  *
  * 안전장치: API_BASE_URL과 DATABASE_URL의 host가 로컬(localhost, 127.0.0.1, ::1, db, api,

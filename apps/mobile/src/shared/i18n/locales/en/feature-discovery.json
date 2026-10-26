@@ -14,7 +14,7 @@
   "cards": {
     "friendInvite": {
       "title": "Invite friends and\ncollect paw prints",
-      "description": "Send a link on KakaoTalk. Your friend gets {{inviteeDays}} days of Premium on joining, and you get {{inviterDays}} days once they complete to-dos on {{activeDays}} different days",
+      "description": "Send a link on KakaoTalk. Your friend gets {{inviteeDays}} days of Premium right when they join. You get {{inviterDays}} days of Premium and can add 1 more friend once they complete to-dos on {{activeDays}} different days",
       "cta": "Start inviting",
       "ctaLabel": "Open Invite friends"
     }

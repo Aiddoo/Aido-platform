@@ -158,7 +158,7 @@
   "INVITE_2103": "This is your own invite code",
   "INVITE_2104": "You've already accepted another invite",
   "INVITE_2105": "Invites aren't available right now",
-  "INVITE_2106": "Your friend slots are full, so you can't add this friend",
+  "INVITE_2106": "Friend limit reached, so you can't become friends",
   "BLOCK_2201": "You can't block yourself",
   "BLOCK_2202": "We couldn't find this user",
   "BLOCK_2203": "You blocked this user. Unblock them and try again",

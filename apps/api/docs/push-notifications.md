@@ -81,7 +81,7 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 | `WEATHER_EVENING`      | 내일 날씨 또는 위치 설정 안내                                                            | 서비스       | 피드                                   |
 | `PREMIUM_GRANT_ENDING` | 보상 기간 종료 24시간 전 (1.13.0+)                                                       | 참여         | 구독 화면                              |
 | `INVITE_JOINED`        | 초대받은 사람이 수락해 친구가 됨 (1.13.0+)                                               | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
-| `INVITE_REWARDED`      | 초대한 사람의 발자국 보상 적용 (수락 1건에 1회, 프리미엄·친구 자리를 함께 적음, 1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
+| `INVITE_REWARDED`      | 초대한 사람의 발자국 보상 적용 (수락 1건에 1회, 프리미엄·친구 한도를 함께 적음, 1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
 
 `BROWSER`, `WEBVIEW`, `NONE` action은 표의 기본 이동보다 우선한다. `DEEP_LINK`에 URL이 있으면 해당 내부 경로를 우선한다.
 

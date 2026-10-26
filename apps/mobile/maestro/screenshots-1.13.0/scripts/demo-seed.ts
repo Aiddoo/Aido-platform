@@ -1202,7 +1202,7 @@ async function ensureInvite(ctx: Context, owner: Owner): Promise<{ id: string; c
 
 /**
  * 초대 보상 상태를 실제 지급 결과와 같은 행으로 만든다. 활동일은 지난 날짜라 API로 기록할 수 없다.
- * - rewarded: 수락 → 2일 활동 → 초대자 프리미엄 7일(구독 중이라 BANKED)·친구 자리 1, 초대받은 사람 프리미엄 7일
+ * - rewarded: 수락 → 2일 활동 → 초대자 프리미엄 7일(구독 중이라 BANKED)·친구 한도 +1, 초대받은 사람 프리미엄 7일
  * - waiting: 수락 후 활동 1일(D-1)
  */
 async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Promise<void> {

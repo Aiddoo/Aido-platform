@@ -244,11 +244,15 @@ export const SOCIAL_TEMPLATES = {
   },
   INVITE_REWARDED: {
     copy: ({ premiumDays, friendSlots }) => {
-      const rewards = [
-        premiumDays > 0 ? `${countLabel(premiumDays, "day")} of Premium` : null,
-        friendSlots > 0 ? countLabel(friendSlots, "more friend slot") : null,
-      ].filter((reward) => reward != null);
-      return copy("You got a paw print 🐾", `You got ${rewards.join(" and ")}`);
+      const premium = `You got ${countLabel(premiumDays, "day")} of Premium`;
+      const friends = countLabel(friendSlots, "more friend");
+      if (premiumDays > 0 && friendSlots > 0) {
+        return copy("You got a paw print 🐾", `${premium} and can add ${friends}`);
+      }
+      return copy(
+        "You got a paw print 🐾",
+        premiumDays > 0 ? premium : `You can now add ${friends}`,
+      );
     },
   },
   NUDGE_RECEIVED: {
