@@ -1,7 +1,6 @@
-Invite friends and earn Premium together. AI gets dates right, and widgets roll over after midnight.
+Invite friends with a link and earn Premium together. You can also report or block people, and AI and dates are more accurate.
 
 - Share invites on KakaoTalk and more. Friends who joined within 7 days get 7 days of Premium.
-- You get 7 days and 1 friend slot when they finish to-dos on 2 separate days within 14 days of joining.
-- Track rewards in “Collect paw prints” and Subscription.
-- Widgets show the new day after midnight and follow language and time zone changes.
-- Fixed blank cat profiles and cut-off widget dates.
+- You get 7 days and 1 friend slot when they finish to-dos on 2 days within 14 days of joining.
+- Report or block people. We ask for your consent before sending data to AI.
+- AI reads to-dos and dates in notes more accurately, and widgets roll over after midnight.
