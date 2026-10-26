@@ -14,7 +14,7 @@
   },
   "premium": {
     "unlimitedFriends": "Subscribe to Premium to add unlimited friends",
-    "friendLimitTitle": "Your friend slots are full"
+    "friendLimitTitle": "You've reached your friend limit"
   },
   "deleteDialog": {
     "title": "Remove this friend?",

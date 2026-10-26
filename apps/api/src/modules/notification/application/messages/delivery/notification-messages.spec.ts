@@ -233,18 +233,18 @@ describe("알림 문구 생성", () => {
   it.each([
     {
       rewards: { premiumDays: 7, friendSlots: 1 },
-      ko: "프리미엄 7일과 친구 자리 1개를 받았어",
-      en: "You got 7 days of Premium and 1 more friend slot",
+      ko: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어",
+      en: "You got 7 days of Premium and can add 1 more friend",
     },
     {
       rewards: { premiumDays: 2, friendSlots: 1 },
-      ko: "프리미엄 2일과 친구 자리 1개를 받았어",
-      en: "You got 2 days of Premium and 1 more friend slot",
+      ko: "프리미엄 2일을 받았고, 친구도 1명 더 추가할 수 있어",
+      en: "You got 2 days of Premium and can add 1 more friend",
     },
     {
       rewards: { premiumDays: 0, friendSlots: 2 },
-      ko: "친구 자리 2개를 받았어",
-      en: "You got 2 more friend slots",
+      ko: "이제 친구를 2명 더 추가할 수 있어",
+      en: "You can now add 2 more friends",
     },
     {
       rewards: { premiumDays: 1, friendSlots: 0 },

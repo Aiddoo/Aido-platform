@@ -1,5 +1,5 @@
 appId: com.aido.mobile
-name: 두 사람 모두 친구 자리가 꽉 차면 수락이 거절되고 카드에 남는다(INVITE_2106)
+name: 두 사람 모두 친구 한도가 꽉 차면 수락이 거절되고 카드에 남는다(INVITE_2106)
 tags:
   - failure
   - full
@@ -23,7 +23,7 @@ onFlowStart:
 # Then: 오류 안내가 보이고 환영 시트로 가지 않는다
 - extendedWaitUntil:
     label: INVITE_2106 안내
-    visible: '친구 자리가 꽉 차서 친구를 맺을 수 없어요.*|.*friend limit.*|.*친구 자리가 꽉.*'
+    visible: '친구 수가 한도에 다 차서 친구를 맺을 수 없어요.*|.*[Ff]riend limit.*'
     timeout: 10000
 - assertNotVisible:
     id: invite-welcome-sheet

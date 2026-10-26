@@ -255,11 +255,15 @@ export const SOCIAL_TEMPLATES = {
   },
   INVITE_REWARDED: {
     copy: ({ premiumDays, friendSlots }) => {
-      const rewards = [
-        premiumDays > 0 ? `프리미엄 ${premiumDays}일` : null,
-        friendSlots > 0 ? `친구 자리 ${friendSlots}개` : null,
-      ].filter((reward) => reward != null);
-      return copy("발자국이 찍혔어 🐾", `${attachJosa(rewards.join("과 "), "을/를")} 받았어`);
+      const premium = `프리미엄 ${premiumDays}일`;
+      const friends = `${friendSlots}명 더 추가할 수 있어`;
+      if (premiumDays > 0 && friendSlots > 0) {
+        return copy("발자국이 찍혔어 🐾", `${premium}을 받았고, 친구도 ${friends}`);
+      }
+      return copy(
+        "발자국이 찍혔어 🐾",
+        premiumDays > 0 ? `${premium}을 받았어` : `이제 친구를 ${friends}`,
+      );
     },
   },
   NUDGE_RECEIVED: {
