@@ -139,7 +139,11 @@
     "waiting_one": "Off to a good start! {{count}} more day of to-dos to get a paw print",
     "waiting_other": "Off to a good start! {{count}} more days of to-dos to get a paw print",
     "waitingNotStarted_one": "Completes to-dos on {{count}} day to get you a paw print",
-    "waitingNotStarted_other": "Completes to-dos on {{count}} days to get you a paw print"
+    "waitingNotStarted_other": "Completes to-dos on {{count}} days to get you a paw print",
+    "nudge": "Nudge",
+    "nudged": "Nudged",
+    "nudgeLabel": "Go nudge {{name}}",
+    "nudgedLabel": "You already nudged {{name}} today"
   },
   "share": {
     "kakao": "Invite via KakaoTalk",
