@@ -2,7 +2,7 @@ Aido 1.13.0
 
 New
 - Invite friends with a link. They get 7 days of Premium.
-- When they finish to-dos on 2 days, you get 7 days of Premium plus a friend slot.
+- When they complete to-dos on 2 days, you get 7 days of Premium plus a friend slot.
 - Report to-dos, comments, or nudges and block the sender.
 
 Improvements
