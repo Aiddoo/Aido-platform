@@ -20,7 +20,7 @@ import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useId, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -44,8 +44,9 @@ import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
 import {
   calculatePawPrintBoardWidth,
-  calculatePawPrintColumns,
+  calculatePawPrintGrid,
   createPawPrintBoard,
+  PAW_PRINT_BOARD_SIZE,
   type PawPrintBoard,
   type PawPrintCell,
   type PawPrintState,
@@ -62,10 +63,11 @@ const PAW_PRINT_PRESS_SPRING = {
   reduceMotion: ReduceMotion.System,
 };
 const NEW_PAW_PRINT_STAGGER_MS = 160;
+const MIN_CONNECTOR_LENGTH = 12;
 
 /**
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
- * 지금 판(두 줄)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
+ * 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
  */
 export function InvitePawPrintBoard({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation('invite');
@@ -79,17 +81,18 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   const { left: insetLeft, right: insetRight } = useSafeAreaInsets();
   // 처음 그릴 때 본 수를 고정해 두어야 저장한 뒤에도 이번 화면에서는 애니메이션이 이어진다
   const [celebratedCount] = useState(() => inviteService.getCelebratedPawPrintCount(userId));
-  const board = createPawPrintBoard(myInvite, {
-    columns: calculatePawPrintColumns(
+  // 창 폭으로 어림한 폭은 첫 그림에만 쓰고, 그 뒤로는 판이 실제로 받은 폭으로 격자를 다시 만든다
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+  const grid = calculatePawPrintGrid(
+    measuredWidth ??
       calculatePawPrintBoardWidth({
         frameWidth,
         insetLeft,
         insetRight,
         maxContentWidth: READABLE_CONTENT_MAX_WIDTH,
       }),
-    ),
-    celebratedCount,
-  });
+  );
+  const board = createPawPrintBoard(myInvite, { columns: grid.columns, celebratedCount });
   const hasNewPawPrint = myInvite.qualifiedCount > celebratedCount;
 
   useEffect(() => {
@@ -102,6 +105,10 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
       notifySuccess();
     }
   }, [celebratedCount, hasNewPawPrint, inviteService, myInvite.qualifiedCount, userId]);
+
+  const handleBoardLayout = (event: LayoutChangeEvent) => {
+    setMeasuredWidth(event.nativeEvent.layout.width);
+  };
 
   return (
     <VStack className={cn('gap-4', className)} {...props}>
@@ -122,24 +129,34 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
         })}
       </Text>
 
-      <VStack accessibilityRole="list">
+      {/* 줄마다 칸·생선 뼈 폭을 같은 pt로 정해 모든 줄이 같은 열에 놓인다. flex로 나누지 않는다 */}
+      <VStack accessibilityRole="list" align="center" onLayout={handleBoardLayout}>
         {board.rows.map((row, rowIndex) => (
-          <VStack key={rowIndex}>
+          // 열 수가 바뀌면(Duo 접기·펼치기, iPad 창 크기) 칸이 다른 줄·자리로 옮겨 간다.
+          // 옮겨 간 칸을 재사용하면 이전 격자 배치가 남으므로 열 수마다 줄을 새로 그린다
+          <VStack key={`${grid.columns}-${rowIndex}`} style={{ width: grid.rowWidth }}>
             <HStack align="center">
-              {row.cells.map((cell, position) => (
-                <HStack key={cell.index} align="center" className={cn(position > 0 && 'flex-1')}>
+              {row.cells.map((cell) => (
+                <HStack key={cell.index} align="center">
                   {cell.connectorBefore != null && (
-                    <InvitePawPrintBoard.Connector isFilled={cell.connectorBefore.isFilled} />
+                    <InvitePawPrintBoard.Connector
+                      isFilled={cell.connectorBefore.isFilled}
+                      length={grid.connectorLength}
+                    />
                   )}
                   <InvitePawPrintBoard.PawPrint
                     cell={cell}
+                    size={grid.cellSize}
                     newPawPrintOrder={cell.index - celebratedCount}
                   />
                 </HStack>
               ))}
             </HStack>
             {row.turn != null && (
-              <HStack justify={row.turn.side === 'end' ? 'end' : 'start'} className="px-[22px]">
+              <HStack
+                justify={row.turn.side === 'end' ? 'end' : 'start'}
+                style={{ paddingHorizontal: grid.turnInset }}
+              >
                 <InvitePawPrintBoard.Connector
                   isFilled={row.turn.isFilled}
                   orientation="vertical"
@@ -190,11 +207,13 @@ InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard
 
 interface PawPrintProps {
   cell: PawPrintCell;
+  /** 칸 지름(pt). 판 격자가 정한다 */
+  size: number;
   /** 새로 찍힌 발자국 중 몇 번째인지. 차례로 찍히게 지연한다 */
   newPawPrintOrder: number;
 }
 
-InvitePawPrintBoard.PawPrint = function PawPrint({ cell, newPawPrintOrder }: PawPrintProps) {
+InvitePawPrintBoard.PawPrint = function PawPrint({ cell, size, newPawPrintOrder }: PawPrintProps) {
   const { t } = useTranslation('invite');
   const label = t('pawPrintBoard.cellLabel', {
     number: cell.index + 1,
@@ -202,7 +221,12 @@ InvitePawPrintBoard.PawPrint = function PawPrint({ cell, newPawPrintOrder }: Paw
   });
 
   return (
-    <Box accessible accessibilityRole="image" accessibilityLabel={label}>
+    <Box
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label}
+      style={{ width: size, height: size }}
+    >
       {match({ state: cell.state, isNew: cell.isNew })
         .with({ state: 'stamped', isNew: true }, () => (
           <PressedPawPrint delay={newPawPrintOrder * NEW_PAW_PRINT_STAGGER_MS} />
@@ -247,12 +271,15 @@ InvitePawPrintBoard.Milestone = function Milestone() {
 interface ConnectorProps {
   isFilled: boolean;
   orientation?: 'horizontal' | 'vertical';
+  /** 가로 생선 뼈 길이(pt). 판 격자가 정한다 */
+  length?: number;
 }
 
 /** 발자국 사이를 잇는 생선 뼈. 찍힌 발자국 사이만 main 색으로 채운다 */
 InvitePawPrintBoard.Connector = function Connector({
   isFilled,
   orientation = 'horizontal',
+  length = MIN_CONNECTOR_LENGTH,
 }: ConnectorProps) {
   const patternId = useId();
   const { color } = useResolveClassNames(fishBoneVariants({ isFilled }));
@@ -262,7 +289,8 @@ InvitePawPrintBoard.Connector = function Connector({
     <Box
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className={cn(isHorizontal ? 'h-3 min-w-3 flex-1' : 'h-[22px] w-3')}
+      className={isHorizontal ? 'h-3' : 'h-[22px] w-3'}
+      style={isHorizontal ? { width: length } : undefined}
     >
       <Svg width="100%" height="100%">
         <Defs>
@@ -295,21 +323,35 @@ InvitePawPrintBoard.Connector = function Connector({
 };
 
 InvitePawPrintBoard.Loading = function Loading() {
+  const { width: frameWidth } = useSafeAreaFrame();
+  const { left: insetLeft, right: insetRight } = useSafeAreaInsets();
+  // 불러온 판과 같은 격자로 자리를 잡아 내용이 들어와도 높이가 튀지 않는다
+  const grid = calculatePawPrintGrid(
+    calculatePawPrintBoardWidth({
+      frameWidth,
+      insetLeft,
+      insetRight,
+      maxContentWidth: READABLE_CONTENT_MAX_WIDTH,
+    }),
+  );
+
   return (
     <VStack gap={16} accessibilityState={{ busy: true }}>
       <TextSkeleton size="b4" className="w-44" />
       <TextSkeleton size="b3" className="w-64" />
-      <HStack justify="between">
-        {times(4, (index) => (
-          <Skeleton key={index} className="size-14 rounded-full" />
+      <VStack align="center" gap={22}>
+        {times(PAW_PRINT_BOARD_SIZE / grid.columns, (rowIndex) => (
+          <HStack key={rowIndex} style={{ width: grid.rowWidth, gap: grid.connectorLength }}>
+            {times(grid.columns, (index) => (
+              <Skeleton
+                key={index}
+                className="rounded-full"
+                style={{ width: grid.cellSize, height: grid.cellSize }}
+              />
+            ))}
+          </HStack>
         ))}
-      </HStack>
-      <Box className="h-[22px]" />
-      <HStack justify="between">
-        {times(4, (index) => (
-          <Skeleton key={index} className="size-14 rounded-full" />
-        ))}
-      </HStack>
+      </VStack>
       <Box className="h-5" />
       <Skeleton className="h-[66px] rounded-2xl" />
     </VStack>
@@ -325,6 +367,10 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
     </Box>
   );
 };
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+});
 
 const PAW_PRINT_STATE_LABEL_KEYS = {
   stamped: 'pawPrintBoard.state.stamped',
@@ -383,11 +429,11 @@ function PressedPawPrint({ delay }: { delay: number }) {
   }));
 
   return (
-    <Box>
+    <Box className="flex-1">
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, burstStyle]}>
         <Box className="flex-1 rounded-full border-2 border-main" />
       </Animated.View>
-      <Animated.View style={pawPrintStyle}>
+      <Animated.View style={[styles.fill, pawPrintStyle]}>
         <StaticPawPrint state="stamped" />
       </Animated.View>
     </Box>
@@ -425,7 +471,7 @@ function WaitingPawPrint() {
   }));
 
   return (
-    <Animated.View style={wiggleStyle}>
+    <Animated.View style={[styles.fill, wiggleStyle]}>
       <StaticPawPrint state="waiting" />
     </Animated.View>
   );
