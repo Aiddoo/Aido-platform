@@ -63,13 +63,13 @@ function comparePrerelease(
   current: readonly string[] | null,
   minimum: readonly string[] | null,
 ): number {
-  if (current === null && minimum === null) {
+  if (current == null && minimum == null) {
     return 0;
   }
-  if (current === null) {
+  if (current == null) {
     return 1;
   }
-  if (minimum === null) {
+  if (minimum == null) {
     return -1;
   }
 
@@ -78,10 +78,10 @@ function comparePrerelease(
     const currentIdentifier = current[index];
     const minimumIdentifier = minimum[index];
 
-    if (currentIdentifier === undefined) {
+    if (currentIdentifier == null) {
       return -1;
     }
-    if (minimumIdentifier === undefined) {
+    if (minimumIdentifier == null) {
       return 1;
     }
     if (currentIdentifier === minimumIdentifier) {

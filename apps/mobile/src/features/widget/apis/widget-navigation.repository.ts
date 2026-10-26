@@ -28,7 +28,7 @@ export function createWidgetNavigationRepository(
 
     cachedRaw = raw;
     cachedCommand = null;
-    if (raw === undefined) {
+    if (raw == null) {
       return null;
     }
 
@@ -60,9 +60,9 @@ export function createWidgetNavigationRepository(
     clearIfCurrent: (command) => {
       const current = getPendingCommand();
       if (
-        command === null
-          ? current !== null || cachedRaw === undefined
-          : current === null || !WidgetNavigationPolicy.isSameCommand(command, current)
+        command == null
+          ? current != null || cachedRaw == null
+          : current == null || !WidgetNavigationPolicy.isSameCommand(command, current)
       ) {
         return false;
       }

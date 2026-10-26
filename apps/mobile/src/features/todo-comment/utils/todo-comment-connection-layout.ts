@@ -86,7 +86,7 @@ export function getTodoCommentConnectionLayout(
   const branchEndX = avatarLeft - TODO_COMMENT_CONNECTION_GEOMETRY.avatarGap;
   const branchWidth = incomingFromX == null ? 0 : branchEndX - incomingFromX;
   const incomingBranch =
-    !hasVisibleIncomingBranch || incomingFromX === null || branchWidth <= 0
+    !hasVisibleIncomingBranch || incomingFromX == null || branchWidth <= 0
       ? null
       : {
           left: incomingFromX,

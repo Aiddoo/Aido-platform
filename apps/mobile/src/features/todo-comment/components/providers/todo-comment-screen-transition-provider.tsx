@@ -214,6 +214,7 @@ export function useTodoCommentScreenTransitionActions(): TodoCommentScreenTransi
 export function usePendingTodoCommentTransition(): PendingTodoCommentTransition | null {
   const pendingTransition = useContext(TodoCommentPendingTransitionContext);
 
+  // nullish-strict: undefined는 Provider 밖, null은 대기 중인 전환이 없음이다
   if (pendingTransition === undefined) {
     throw new Error(
       '댓글 화면 전환 상태는 TodoCommentScreenTransitionProvider 안에서 사용해 주세요.',

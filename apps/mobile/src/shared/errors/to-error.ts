@@ -15,7 +15,7 @@
 const stringify = (value: unknown): string => {
   try {
     const json = JSON.stringify(value);
-    if (json !== undefined && json !== '{}') {
+    if (json != null && json !== '{}') {
       return json;
     }
   } catch {

@@ -93,8 +93,8 @@ function getFormReturnView(route: TodoCommentRoute): TodoCommentView {
 export function parseTodoCommentRoute(params: unknown): TodoCommentRoute {
   const rawRoute = rawTodoCommentRouteSchema.parse(params);
   const sort = todoCommentSortSchema.parse(rawRoute.sort);
-  const hasComment = rawRoute.comment !== undefined;
-  const hasIntent = rawRoute.intent !== undefined;
+  const hasComment = rawRoute.comment != null;
+  const hasIntent = rawRoute.intent != null;
 
   if (!hasComment && !hasIntent) {
     return createOverviewRoute(sort);

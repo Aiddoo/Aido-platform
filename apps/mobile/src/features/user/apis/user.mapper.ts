@@ -19,7 +19,7 @@ export const toUser = (dto: CurrentUser): User => ({
   premiumAccess: {
     source: dto.premiumSource ?? null,
     endsAt: toNullableDate(dto.premiumEndsAt),
-    // 생략(undefined)은 이 필드 전 서버라는 뜻이고, 그 서버의 premiumEndsAt이 지금 기간의 끝이었다.
+    // nullish-strict: 생략(undefined)은 이 필드 전 서버라는 뜻이고, 그 서버의 premiumEndsAt이 지금 기간의 끝이었다.
     // null은 프리미엄이 아니라는 서버 값이라 그대로 둔다
     periodEndsAt:
       dto.premiumPeriodEndsAt === undefined

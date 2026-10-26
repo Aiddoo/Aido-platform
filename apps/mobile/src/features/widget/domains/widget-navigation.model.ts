@@ -49,7 +49,7 @@ export function parseWidgetNavigationUri(uri: string | null): WidgetNavigationDe
 
 export const widgetNavigationCommandSchema = z.object({
   id: z.string().min(1),
-  uri: z.string().refine((uri) => parseWidgetNavigationUri(uri) !== null),
+  uri: z.string().refine((uri) => parseWidgetNavigationUri(uri) != null),
   userId: z.string().min(1),
   createdAt: z.number().int().nonnegative(),
 });

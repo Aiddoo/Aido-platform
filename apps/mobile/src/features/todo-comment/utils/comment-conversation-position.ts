@@ -139,7 +139,7 @@ export function toInitialConversationWindow<TPage, TPageParam extends Conversati
   const initialPage = data.pages[initialIndex];
   const initialPageParam = data.pageParams[initialIndex];
 
-  if (initialPage === undefined || initialPageParam === undefined) {
+  if (initialPage == null || initialPageParam == null) {
     return null;
   }
 

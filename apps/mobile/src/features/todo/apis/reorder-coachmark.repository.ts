@@ -21,7 +21,7 @@ export function createReorderCoachmarkRepository(storage: SyncStorage): ReorderC
     claim(input) {
       try {
         const key = reorderCoachmarkKey(input);
-        if (storage.getString(key) !== undefined) {
+        if (storage.getString(key) != null) {
           return false;
         }
         storage.set(key, new Date().toISOString());

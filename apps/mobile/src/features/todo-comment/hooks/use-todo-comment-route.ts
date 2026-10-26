@@ -35,7 +35,7 @@ export function useTodoCommentRoute(): UseTodoCommentRouteResult {
   const commentRoute = useMemo(
     () =>
       parseTodoCommentRoute(
-        commentId === undefined
+        commentId == null
           ? { sort, comment, intent, returnTo }
           : // 대화 화면은 항상 대화를 보여 준다. 작성기 intent만 search로 받는다.
             {

@@ -54,7 +54,7 @@ export const toTodoCommentOverviewItem = (
   dto: TodoCommentOverviewItemDTO,
 ): TodoCommentOverviewItem => ({
   comment: toTodoComment(dto.comment),
-  previewReply: dto.previewReply === null ? null : toTodoComment(dto.previewReply),
+  previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),
   replySummary: dto.replySummary,
 });
 
@@ -74,7 +74,7 @@ export const toTodoConversationItem = (dto: TodoConversationItemDTO): TodoConver
 export const toTodoConversationPage = (dto: TodoConversationResponse): TodoConversationPage => ({
   items: dto.items.map(toTodoConversationItem),
   focus:
-    dto.focus === null
+    dto.focus == null
       ? null
       : {
           ...dto.focus,

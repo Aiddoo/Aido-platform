@@ -27,6 +27,7 @@ export function usePrepareTodoCommentConversation() {
       const initialWindow =
         cachedData == null ? undefined : toInitialConversationWindow(cachedData);
 
+      // nullish-strict: undefined는 캐시 없음, null은 쓸 수 없는 캐시라 지운다
       if (initialWindow === null) {
         queryClient.removeQueries({ queryKey: queryOptions.queryKey, exact: true });
       } else if (initialWindow != null && initialWindow !== cachedData) {

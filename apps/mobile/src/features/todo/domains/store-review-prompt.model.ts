@@ -57,9 +57,9 @@ const hasEnoughCompletions = (state: StoreReviewPromptState): boolean =>
 const hasEnoughCompletionDays = (state: StoreReviewPromptState): boolean =>
   new Set(state.completions.map(({ localDate }) => localDate)).size >= 2;
 const hasNotRequestedReview = (state: StoreReviewPromptState): boolean =>
-  state.reviewRequestedAt === null;
+  state.reviewRequestedAt == null;
 const hasDismissalCooldownElapsed = (state: StoreReviewPromptState, now: Date): boolean =>
-  state.dismissedAt === null ||
+  state.dismissedAt == null ||
   now.getTime() - state.dismissedAt.getTime() >= STORE_REVIEW_DISMISSAL_COOLDOWN_MS;
 const shouldPrompt = (state: StoreReviewPromptState, now: Date): boolean =>
   hasNotRequestedReview(state) &&

@@ -31,7 +31,7 @@ function toNotificationRouting(metadata: unknown): NotificationRouting | undefin
     return undefined;
   }
 
-  const hasRoutingValue = Object.values(parsed.data).some((value) => value !== undefined);
+  const hasRoutingValue = Object.values(parsed.data).some((value) => value != null);
   return hasRoutingValue ? parsed.data : undefined;
 }
 

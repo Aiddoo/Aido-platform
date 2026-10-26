@@ -113,7 +113,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);
 
-    if (draftStorageBootstrap.failure !== undefined) {
+    if (draftStorageBootstrap.failure != null) {
       errorReporter.captureException(toError(draftStorageBootstrap.failure), { feature: 'draft' });
     }
 
