@@ -32,9 +32,9 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useCallback } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function InviteCardScreen() {
@@ -254,10 +254,13 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
   const inviterName = InvitePreviewPolicy.inviterName(preview, t('card.unnamedInviter'));
   const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, new Date());
 
-  // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다
-  useEffect(() => {
-    inviteService.clearPendingRedemption();
-  }, [inviteService]);
+  // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다.
+  // 로그인 화면 아래에 남은 카드는 로그인 순간 보이지 않으므로 지우지 않고, 로그인 뒤 이어서 연 카드가 지운다
+  useFocusEffect(
+    useCallback(() => {
+      inviteService.clearPendingRedemption();
+    }, [inviteService]),
+  );
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
