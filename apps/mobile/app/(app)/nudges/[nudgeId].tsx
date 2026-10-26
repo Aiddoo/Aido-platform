@@ -141,7 +141,7 @@ function NudgeDetailScreen() {
                   </Text>
                 )}
                 {status !== 'THANKED' && (
-                  <QueryErrorBoundary resetKeys={[nudge.todoId]} fallback={() => null}>
+                  <QueryErrorBoundary resetKeys={[nudge.todoId]} fallback={ThanksSummaryRow.Error}>
                     <Suspense fallback={<ThanksSummaryRow.Loading />}>
                       <ThanksSummaryRow
                         todoId={nudge.todoId}

@@ -235,6 +235,7 @@
     "thanked": "완료 소식과 고마운 마음을 전했어요",
     "thanksPendingTitle": "콕 찔러 준 친구 {{count}}명",
     "thanksPendingDescription": "완료 소식과 함께 고마움을 전해요",
+    "thanksLoadFailed": "고마움 현황을 불러오지 못했어요",
     "thanksNewPendingDescription": "새로 콕 찔러 준 친구 {{count}}명이 있어요",
     "thanksSentTitle": "친구 {{count}}명에게 고마움을 전했어요",
     "thanksQuickAction": "고마워요",

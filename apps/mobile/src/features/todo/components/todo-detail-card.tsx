@@ -184,7 +184,7 @@ function TodoDetailThanksSummary({ detail }: TodoDetailSectionProps) {
   }
 
   return (
-    <QueryErrorBoundary resetKeys={[detail.todo.id]} fallback={() => null}>
+    <QueryErrorBoundary resetKeys={[detail.todo.id]} fallback={ThanksSummaryRow.Error}>
       <Suspense fallback={<ThanksSummaryRow.Loading />}>
         <ThanksSummaryRow
           todoId={detail.todo.id}
