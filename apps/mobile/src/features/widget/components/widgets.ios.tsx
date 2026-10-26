@@ -31,7 +31,7 @@ import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ReactElement } from 'react';
 
 import type { WidgetProps } from '../domains/widget-props.model';
-import { createInitialWidgetProps } from '../utils/widget-initial-props';
+import { createRegisteredWidgetProps } from '../utils/widget-initial-props';
 
 // Widget layouts execute in isolation; helpers and palette must stay inside this function.
 function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment) {
@@ -460,12 +460,10 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
   );
 }
 
-// initialProps는 빌드 시점에 layout registry로 고정된다. 첫 동기화 전 문구는 영어를 키로 넘기고
-// 위젯 번들의 Localizable.strings가 한국어 기기에서만 한국어로 바꾼다. SwiftUI Text는 환경 locale의
-// lproj를 찾고 없으면 키를 그대로 보여 주므로, 영어 키여야 ko·en 외 언어도 영어로 표시된다.
-export const aidoTodayListWidget = createWidget<WidgetProps>('AidoTodayList', AidoTodayListLayout, {
-  ...createInitialWidgetProps('en'),
-  localizeStateCopy: true,
-});
+export const aidoTodayListWidget = createWidget<WidgetProps>(
+  'AidoTodayList',
+  AidoTodayListLayout,
+  createRegisteredWidgetProps(),
+);
 
 export const AIDO_WIDGETS = [{ widget: aidoTodayListWidget, maxRows: 4 }];
