@@ -13,7 +13,6 @@ import enMemo from './locales/en/memo.json';
 import enModeration from './locales/en/moderation.json';
 import enNotification from './locales/en/notification.json';
 import enSettings from './locales/en/settings.json';
-import enStoreReview from './locales/en/store-review.json';
 import enSubscription from './locales/en/subscription.json';
 import enTodoComment from './locales/en/todo-comment.json';
 import enTodo from './locales/en/todo.json';
@@ -36,7 +35,6 @@ import koMemo from './locales/ko/memo.json';
 import koModeration from './locales/ko/moderation.json';
 import koNotification from './locales/ko/notification.json';
 import koSettings from './locales/ko/settings.json';
-import koStoreReview from './locales/ko/store-review.json';
 import koSubscription from './locales/ko/subscription.json';
 import koTodoComment from './locales/ko/todo-comment.json';
 import koTodo from './locales/ko/todo.json';
@@ -70,7 +68,6 @@ export const resources = {
     appVersion: koAppVersion,
     widget: koWidget,
     featureDiscovery: koFeatureDiscovery,
-    storeReview: koStoreReview,
   },
   en: {
     common: enCommon,
@@ -95,7 +92,6 @@ export const resources = {
     appVersion: enAppVersion,
     widget: enWidget,
     featureDiscovery: enFeatureDiscovery,
-    storeReview: enStoreReview,
   },
 } as const;
 

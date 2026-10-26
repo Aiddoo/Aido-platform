@@ -2,14 +2,17 @@ import type { ToggleTodoCompleteInput } from '@aido/api';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCompletionForActivation } from '@src/features/activation/queries/activation-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
+import { useStoreReviewMoment } from '@src/features/store-review/hooks/use-store-review-moment';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { useStoreReviewPrompt } from '../hooks/use-store-review-prompt';
+import { TodoPolicy } from '../domains/todo.model';
 import {
   cancelTodoListQuery,
+  getCachedTodosByDate,
   invalidateTodoCompletions,
   invalidateTodoInList,
   snapshotTodo,
@@ -27,7 +30,8 @@ export const useToggleTodoMutationOptions = () => {
   const activationService = useActivationService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const { promptAfterSuccessfulCompletion } = useStoreReviewPrompt();
+  const todayKey = useTodayKey();
+  const { recordActiveDay, requestReviewAt } = useStoreReviewMoment();
 
   return mutationOptions({
     mutationFn: async ({ todoId, body }: ToggleTodoMutationParams) => {
@@ -57,8 +61,15 @@ export const useToggleTodoMutationOptions = () => {
       if (activationEvent) {
         trackEvent('activation_completed', activationEvent);
       }
-      if (variables.body.completed) {
-        promptAfterSuccessfulCompletion(variables.todoId);
+      if (!variables.body.completed) {
+        return;
+      }
+      recordActiveDay();
+      // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
+      const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];
+      const isTodayTodo = todayTodos.some((todo) => todo.id === variables.todoId);
+      if (isTodayTodo && TodoPolicy.areAllCompleted(todayTodos)) {
+        requestReviewAt('all_todos_done');
       }
     },
     onError: (_error, variables, context) => {

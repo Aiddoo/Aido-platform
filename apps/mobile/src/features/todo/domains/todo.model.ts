@@ -76,7 +76,13 @@ export function hasSubTodos(todo: Todo): boolean {
   return todo.subTodoStats.total > 0;
 }
 
+/** 그날 할 일이 하나 이상 있고 모두 끝냈는지. 할 일이 하나뿐인 날도 다 끝낸 날이다 */
+export function areAllTodosCompleted(todos: readonly Todo[]): boolean {
+  return todos.length > 0 && todos.every((todo) => todo.completed);
+}
+
 export const TodoPolicy = {
   isRecurring: isRecurringTodo,
   hasSubTodos,
+  areAllCompleted: areAllTodosCompleted,
 } as const;
