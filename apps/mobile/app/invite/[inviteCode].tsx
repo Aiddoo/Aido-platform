@@ -9,6 +9,7 @@ import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-rout
 import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
 import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
 import { useRedeemInviteMutationOptions } from '@src/features/invite/queries/use-redeem-invite-mutation-options';
+import { ReceiptBenefitRow } from '@src/features/subscription/components/receipt-benefit-row';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -16,7 +17,6 @@ import {
   Box,
   Button,
   DashedDivider,
-  FillCheckIcon,
   FillTicketIcon,
   HStack,
   ListRow,
@@ -117,9 +117,12 @@ function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }
         <DashedDivider />
 
         <VStack>
-          <ReceiptBenefitRow title={t('card.receipt.benefitFriend', { name: inviterName })} />
-          <ReceiptBenefitRow title={t('card.receipt.benefitAi')} />
-          <ReceiptBenefitRow title={t('card.receipt.benefitFriends')} />
+          <ReceiptBenefitRow
+            shade={9}
+            title={t('card.receipt.benefitFriend', { name: inviterName })}
+          />
+          <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitAi')} />
+          <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitFriends')} />
         </VStack>
 
         <DashedDivider />
@@ -176,24 +179,6 @@ function InviteBenefitReceiptLoading() {
         <Skeleton className="mx-9 h-8 rounded" />
       </VStack>
     </ScallopedContainer>
-  );
-}
-
-function ReceiptBenefitRow({ title }: { title: string }) {
-  return (
-    <ListRow
-      verticalPadding="small"
-      left={
-        <Box className="size-5 items-center justify-center rounded-full bg-main">
-          <FillCheckIcon width={12} height={12} colorClassName="text-white dark:text-gray-1" />
-        </Box>
-      }
-      contents={
-        <Text size="b3" shade={9}>
-          {title}
-        </Text>
-      }
-    />
   );
 }
 
