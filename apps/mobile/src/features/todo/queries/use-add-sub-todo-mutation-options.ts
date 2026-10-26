@@ -65,8 +65,9 @@ export const useAddSubTodoMutationOptions = () => {
         restoreTodo(queryClient, context.snapshot);
       }
     },
-    onSettled: (_data, _error, { startDate }) => {
+    onSettled: (_data, _error, { todoId, startDate }) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
     },
   });
 };

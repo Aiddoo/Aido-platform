@@ -50,5 +50,9 @@ export const useUpdateSubTodoMutationOptions = () => {
       }
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
+    // 상세 카드는 별도 캐시라 목록과 같은 항목·진행 개수를 보이게 다시 불러온다
+    onSettled: (_data, _error, { todoId }) => {
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+    },
   });
 };
