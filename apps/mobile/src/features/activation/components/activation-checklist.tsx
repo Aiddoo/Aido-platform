@@ -103,8 +103,9 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
       >
         {label}
       </Text>
+      {/* 보상 문구가 길어도 단계 이름이 글자 단위로 꺾이지 않게 행의 절반까지만 쓰고 줄바꿈한다 */}
       {reward != null && !isCompleted && (
-        <Text size="e1" weight="bold" tone="brand">
+        <Text size="e1" weight="bold" tone="brand" align="right" className="max-w-[50%] shrink">
           {reward}
         </Text>
       )}
