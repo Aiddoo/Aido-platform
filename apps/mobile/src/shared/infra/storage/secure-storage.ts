@@ -1,6 +1,7 @@
 import type { Storage } from '@src/core/ports/storage';
 import { errorMessageOf, KeychainLockedError } from '@src/shared/errors';
 import * as ExpoSecureStore from 'expo-secure-store';
+import type { z } from 'zod';
 
 // AFTER_FIRST_UNLOCK: 첫 잠금해제 후 접근 가능(잠금 중 백그라운드 접근 throw 방지), 재설치해도 유지.
 // DeviceIdRepository와 동일한 회복력 정책으로 정렬한다.
@@ -31,7 +32,7 @@ const isLockedKeychain = (error: unknown): boolean =>
   errorMessageOf(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
 
 export class SecureStorage implements Storage {
-  async get<T>(key: string): Promise<T | null> {
+  async get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {
     let item: string | null;
     try {
       item = await ExpoSecureStore.getItemAsync(key, SECURE_STORE_OPTIONS);
@@ -47,11 +48,15 @@ export class SecureStorage implements Storage {
       return null;
     }
 
+    let storedValue: unknown;
     try {
-      return JSON.parse(item) as T;
+      storedValue = JSON.parse(item);
     } catch {
       return null;
     }
+
+    const parsed = schema.safeParse(storedValue);
+    return parsed.success ? parsed.data : null;
   }
 
   async set<T>(key: string, value: T): Promise<void> {

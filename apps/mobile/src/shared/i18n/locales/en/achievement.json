@@ -20,14 +20,15 @@
     "perfectCount_other": "{{count}} times",
     "streakWeeks_one": "{{count}} week",
     "streakWeeks_other": "{{count}} weeks",
-    "eyebrow": "WEEKLY BADGE"
+    "eyebrow": "WEEKLY BADGE",
+    "weekWithPeriod": "{{weekLabel}} ({{period}})"
   },
   "list": {
     "sectionTitle": "History",
-    "completedRatio": "{{completed}}/{{total}} done",
     "emptyTitle": "Complete this week's to-dos\nand your first badge will appear here",
     "startNow": "Start Now",
     "emptyRecordTitle": "Collect badges to build your history",
-    "emptyRecordDescription": "Your weekly completed to-dos are recorded here"
+    "emptyRecordDescription": "Your weekly completed to-dos are recorded here",
+    "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} done"
   }
 }

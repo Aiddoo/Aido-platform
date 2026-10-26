@@ -11,6 +11,8 @@ export interface ConfirmDialogOptions {
   confirmColor?: ComponentProps<typeof ConfirmDialog.ConfirmButton>['color'];
   /** 생략하면 확인 버튼만 오른쪽에 보여 준다. */
   cancelLabel?: string;
+  /** E2E(Maestro)가 확인 버튼을 찾는 testID */
+  confirmTestID?: string;
 }
 
 /** 확인 다이얼로그를 띄우고 사용자가 확인했는지 돌려준다. 닫기·취소는 false다. */
@@ -25,6 +27,7 @@ export function useConfirmDialog() {
         confirmLabel,
         confirmColor,
         cancelLabel,
+        confirmTestID,
       }: ConfirmDialogOptions) =>
         overlay.open<boolean>(({ isOpen, close, exit }) => {
           const finish = (isConfirmed: boolean) => {
@@ -54,7 +57,11 @@ export function useConfirmDialog() {
                 )
               }
               confirmButton={
-                <ConfirmDialog.ConfirmButton color={confirmColor} onPress={() => finish(true)}>
+                <ConfirmDialog.ConfirmButton
+                  testID={confirmTestID}
+                  color={confirmColor}
+                  onPress={() => finish(true)}
+                >
                   {confirmLabel}
                 </ConfirmDialog.ConfirmButton>
               }

@@ -82,7 +82,7 @@ export function computeStreak(records: readonly WeeklyAchievementRecord[]): Stre
   for (let i = 1; i < records.length; i++) {
     const prev = records[i - 1];
     const curr = records[i];
-    if (prev !== undefined && curr !== undefined && isConsecutiveWeek(prev, curr)) {
+    if (prev != null && curr != null && isConsecutiveWeek(prev, curr)) {
       streak++;
     } else {
       streak = 1;

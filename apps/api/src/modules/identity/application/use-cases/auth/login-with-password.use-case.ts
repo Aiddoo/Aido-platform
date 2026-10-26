@@ -89,7 +89,7 @@ export class LoginWithPassword {
     }
 
     const user = await this.#dependencies.userRepository.findByEmail(email);
-    if (user === null) {
+    if (user == null) {
       await this.#recordFailure({
         ...attemptContext,
         failureReason: LOGIN_FAILURE_REASON.USER_NOT_FOUND,
@@ -101,7 +101,7 @@ export class LoginWithPassword {
       user.id,
       "CREDENTIAL",
     );
-    if (account === null || account.password === null || account.password === "") {
+    if (account == null || account.password == null || account.password === "") {
       await this.#recordFailure({
         ...attemptContext,
         failureReason: LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT,

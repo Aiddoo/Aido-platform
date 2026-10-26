@@ -19,12 +19,13 @@ const PushDeliveryPublicationBatchSchema = z
   .array(PushDeliveryPublicationSchema)
   .min(1)
   .max(100)
-  .superRefine((publications, context) => {
+  .check(({ value: publications, issues }) => {
     const dispatchIds = new Set<number>();
     for (const publication of publications) {
       if (dispatchIds.has(publication.dispatchId)) {
-        context.addIssue({
+        issues.push({
           code: "custom",
+          input: publications,
           message: `Duplicate dispatchId: ${publication.dispatchId}`,
         });
       }

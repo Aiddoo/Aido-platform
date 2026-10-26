@@ -17,6 +17,7 @@ import { PrismaTodoCommentReader } from "#api/modules/engagement/infrastructure/
 import { PrismaTodoCommentRepository } from "#api/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment.repository";
 import { buildTodoConversationTreeCtes } from "#api/modules/engagement/infrastructure/persistence/comments/todo-conversation-tree.sql";
 import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/infrastructure/security/comments/hmac-todo-comment-cursor.codec";
+import { PrismaUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/prisma-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
@@ -73,6 +74,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let prisma: TestDatabaseClient;
   let reader: PrismaTodoCommentReader;
+  let blockRepository: PrismaUserBlockRepository;
   let repository: PrismaTodoCommentRepository;
   let cursorCodec: TodoCommentCursorCodecPort;
   let cursorModule: TestingModule;
@@ -83,6 +85,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     prisma = await testDatabase.start();
     const { txHost } = createDatabaseTransactionFixture(prisma);
     reader = new PrismaTodoCommentReader(txHost);
+    blockRepository = new PrismaUserBlockRepository(txHost);
     repository = new PrismaTodoCommentRepository(txHost);
     cursorModule = await Test.createTestingModule({
       providers: [
@@ -443,6 +446,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       const useCase = new GetTodoCommentOverview({
         reader: reader,
         cursorCodec: cursorCodec,
+        blockReader: blockRepository,
       });
       const firstPage = await useCase.execute({
         todoId,
@@ -477,7 +481,11 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   );
 
   it("overview cursor의 root가 soft-delete되어도 불변 root 위치로 계속 읽는다", async () => {
-    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoCommentOverview({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: blockRepository,
+    });
     const firstPage = await useCase.execute({
       todoId,
       viewerId: "conversation-owner",
@@ -917,7 +925,11 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         ),
       ),
     );
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: blockRepository,
+    });
 
     const response = await useCase.execute({
       todoId,
@@ -951,7 +963,11 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         ),
       ),
     );
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: blockRepository,
+    });
 
     const response = await useCase.execute({
       todoId,

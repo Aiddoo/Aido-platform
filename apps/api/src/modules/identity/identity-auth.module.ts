@@ -1,8 +1,9 @@
 import { Module } from "@nestjs/common";
 import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
-import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
+import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
+import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
@@ -119,9 +120,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
       inject: [TypedConfigService],
       useFactory: (configService: TypedConfigService) => ({
         secret: configService.get("JWT_SECRET"),
-        signOptions: {
-          expiresIn: configService.get("JWT_EXPIRES_IN"),
-        } as JwtSignOptions,
       }),
     }),
     OperationsNotificationsModule,
@@ -132,6 +130,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     PlanningCategoriesModule,
     NotificationRetentionModule,
     EngagementCommentsModule,
+    BillingSubscriptionsModule,
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [

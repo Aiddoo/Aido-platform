@@ -55,7 +55,7 @@ export class CreateTodoCategory {
 
       const maxCount = await this.#dependencies.limitReader.getMaxCountInTx(userId);
       const categoryCount = await this.#dependencies.repository.countByUserId(userId);
-      if (maxCount !== null && categoryCount >= maxCount) {
+      if (maxCount != null && categoryCount >= maxCount) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0857, {
           current: categoryCount,
           limit: maxCount,

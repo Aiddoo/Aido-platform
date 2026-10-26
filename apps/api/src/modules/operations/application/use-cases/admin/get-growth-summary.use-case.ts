@@ -40,13 +40,13 @@ export class GetGrowthSummary {
       cohortTo,
       asOf,
     });
-    const hasMeasurement = summary.measurementStartedAt !== null;
+    const hasMeasurement = summary.measurementStartedAt != null;
 
     return {
       cohortFrom,
       cohortTo,
       measurementStartedAt:
-        summary.measurementStartedAt === null ? null : new Date(summary.measurementStartedAt),
+        summary.measurementStartedAt == null ? null : new Date(summary.measurementStartedAt),
       totalActiveUsers: summary.totalActiveUsers,
       signups: summary.signups,
       dau: summary.dau,

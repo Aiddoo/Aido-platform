@@ -7,8 +7,8 @@ jest.mock('@sentry/react-native', () => ({
   captureException: jest.fn(),
 }));
 
-const addBreadcrumb = Sentry.addBreadcrumb as jest.Mock;
-const captureException = Sentry.captureException as jest.Mock;
+const addBreadcrumb = jest.mocked(Sentry.addBreadcrumb);
+const captureException = jest.mocked(Sentry.captureException);
 
 describe('createSentryLogger', () => {
   beforeEach(() => {

@@ -6,7 +6,7 @@ Stack 화면은 Expo Router의 **네이티브 헤더**를 씁니다. iOS가 뒤�
 
 헤더 버튼은 `Stack.Toolbar`의 네이티브 항목(`Stack.Toolbar.Button`, `Stack.Toolbar.Menu`)으로 둡니다.
 iOS는 커스텀 뷰(`headerLeft`/`headerRight`, `Stack.Toolbar.View`)를 레일에 넣지 않습니다.
-제목은 커스텀 뷰여도 됩니다(`ScreenTitleBar.Title`).
+제목은 커스텀 뷰여도 됩니다(`headerTitle`, 예: 할 일 상세의 제목 + 조회수).
 
 ## useStackScreenOptions
 
@@ -44,6 +44,8 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
 ## 화면별 버튼
 
 데이터나 폼 상태에 따라 바뀌는 버튼은 화면 컴포넌트에서 `Stack.Toolbar`를 렌더합니다. 화면에서 렌더한
+오른쪽 ⋯ 메뉴는 `STACK_MORE_ICON`을 `Stack.Toolbar.Menu`의 `icon`으로 씁니다.
+
 툴바는 레이아웃 옵션보다 우선합니다. 뒤로가기를 가로채야 하는 화면(저장 후 나가기 등)은 `STACK_BACK_ICON`으로
 왼쪽 버튼을 직접 둡니다. 조건부로 보일 버튼은 렌더 여부 대신 `hidden`으로 감춥니다.
 
@@ -63,7 +65,7 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
 - 아이콘: iOS는 SF Symbol 이름, Android는 `@expo/material-symbols/{name}.xml`을 `process.env.EXPO_OS`로 고릅니다.
 - 글자 버튼(완료·편집·저장)은 라벨을 자식으로 둡니다. Android 툴바는 라벨을 그리지 않으므로 Android에만 아이콘을 줍니다.
 - `AdaptivePane` 안의 pane은 Stack 화면이 아니므로 `Stack.Toolbar`를 쓰지 않습니다(바깥 화면 헤더에 붙는다).
-  pane 꼭대기는 [`ScreenTitleBar`](../screen-title-bar/screen-title-bar.md) 같은 JS 바를 씁니다.
+  pane 꼭대기는 피처의 JS 바를 씁니다([`adaptive-pane.md`](../adaptive-pane/adaptive-pane.md#상세-pane-헤더)).
 
 ## 파일 구조
 

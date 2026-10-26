@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
 import type { CurrentUserResult } from "#api/modules/identity/application/types/auth/index";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -15,6 +16,7 @@ export interface GetCurrentUserInput {
 interface GetCurrentUserDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
+  readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
 }
 
 export class GetCurrentUser {
@@ -30,9 +32,12 @@ export class GetCurrentUser {
       userId,
       async () => {
         const user = await this.#dependencies.userRepository.findByIdWithProfile(userId);
-        if (user === null) {
+        if (user == null) {
           return undefined;
         }
+        // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
+        const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);
+
         return {
           id: user.id,
           email: user.email,
@@ -46,11 +51,17 @@ export class GetCurrentUser {
           profileImage: user.profile?.profileImage ?? null,
           createdAt: toISOString(user.createdAt),
           providers: user.accounts.map((a) => a.provider),
+          premiumSource: premiumAccess.source,
+          premiumEndsAt: toISOStringOrNull(premiumAccess.endsAt),
+          premiumPeriodEndsAt: toISOStringOrNull(premiumAccess.periodEndsAt),
+          willRenew: premiumAccess.willRenew,
+          bankedPremiumDays: premiumAccess.bankedDays,
+          premiumGrantEndedAt: toISOStringOrNull(premiumAccess.recentGrantEndedAt),
         };
       },
     );
 
-    if (cachedProfile === undefined) {
+    if (cachedProfile == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
 
@@ -68,6 +79,12 @@ export class GetCurrentUser {
       profileImage: cachedProfile.profileImage,
       createdAt: cachedProfile.createdAt,
       providers: cachedProfile.providers,
+      premiumSource: cachedProfile.premiumSource,
+      premiumEndsAt: cachedProfile.premiumEndsAt,
+      premiumPeriodEndsAt: cachedProfile.premiumPeriodEndsAt,
+      willRenew: cachedProfile.willRenew,
+      bankedPremiumDays: cachedProfile.bankedPremiumDays,
+      premiumGrantEndedAt: cachedProfile.premiumGrantEndedAt,
     };
   }
 }

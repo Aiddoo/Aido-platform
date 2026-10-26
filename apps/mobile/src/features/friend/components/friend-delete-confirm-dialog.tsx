@@ -30,7 +30,11 @@ export function FriendDeleteConfirmDialog({
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
-        <ConfirmDialog.ConfirmButton color="danger" onPress={onConfirm}>
+        <ConfirmDialog.ConfirmButton
+          testID="friend-delete-confirm"
+          color="danger"
+          onPress={onConfirm}
+        >
           {t('common:actions.delete')}
         </ConfirmDialog.ConfirmButton>
       }

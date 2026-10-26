@@ -1,8 +1,22 @@
 {
   "ios": {
-    "NSMicrophoneUsageDescription": "Aido needs microphone access for voice input.",
-    "NSFaceIDUsageDescription": "Aido uses Face ID to unlock the app.",
-    "NSSpeechRecognitionUsageDescription": "Aido needs speech recognition access for voice input.",
-    "NSPhotoLibraryUsageDescription": "Aido needs photo library access to load images."
+    "NSMicrophoneUsageDescription": "Aido uses the microphone so you can add to-dos by voice.",
+    "NSSpeechRecognitionUsageDescription": "Aido turns what you say into text so you can add to-dos by voice. Your voice may be processed by Apple speech recognition.",
+    "NSPhotoLibraryAddUsageDescription": "Aido saves images you share to your photo library.",
+    "NSLocationWhenInUseUsageDescription": "Aido uses your location to show the weather where you are.",
+    "Localizable.strings": {
+      "오늘 할 일": "Today's to-dos",
+      "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "Check today's to-dos and what's done right on your Home Screen",
+      "Sign in to get started": "Sign in to get started",
+      "Tap to sign in": "Tap to sign in"
+    }
+  },
+  "android": {
+    "widget_aidotodaysummary_label": "Today's progress",
+    "widget_aidotodaysummary_description": "See today's to-do progress and your streak at a glance",
+    "widget_aidotodaylist_label": "Today's to-dos",
+    "widget_aidotodaylist_description": "Check today's to-dos and what's done right on your home screen",
+    "widget_aidotodaylarge_label": "Today's to-dos (large)",
+    "widget_aidotodaylarge_description": "See your week's paw prints and today's to-dos, and add one right away"
   }
 }

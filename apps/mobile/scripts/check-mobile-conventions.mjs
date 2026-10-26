@@ -1,13 +1,31 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
-
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPOSITORY_ROOT = resolve(MOBILE_ROOT, '../..');
+
+/**
+ * 서버만 바뀐 CI는 모바일 의존성을 설치하지 않는다(`install-scope: api`).
+ * 같은 lockfile의 typescript를 서버 패키지에서 찾아 서버·공유 계약만 바뀐 PR에서도 이 검사가 돈다.
+ */
+function loadTypeScript() {
+  for (const packageJson of ['apps/mobile/package.json', 'apps/api/package.json']) {
+    try {
+      return createRequire(resolve(REPOSITORY_ROOT, packageJson))('typescript');
+    } catch {
+      // 이 패키지의 의존성이 설치되지 않은 범위다. 다음 패키지에서 찾는다.
+    }
+  }
+  throw new Error(
+    'typescript를 찾을 수 없습니다. pnpm install로 모바일 또는 서버 의존성을 설치하세요.',
+  );
+}
+
+const ts = loadTypeScript();
 const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
 const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/components`;
 const TODO_COMMENT_TEST_ROOTS = [
@@ -26,10 +44,19 @@ const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   'react-native',
 ];
 const TODO_ROUTE_ROOT = 'apps/mobile/app/(app)/todo/[todoId]';
+// 댓글은 개요(`/todo/[todoId]`)와 대화(`comments/[commentId].tsx`) 두 단계만 Stack에 쌓는다.
+// 대화 안의 focus·작성기는 같은 화면의 search로 바꾸므로 그 아래 route나 전용 layout을 두지 않는다.
 const FORBIDDEN_ROUTE_PATHS = [
   'apps/mobile/app/(app)/todo/[todoId]/_layout.tsx',
   'apps/mobile/app/(app)/todo/[todoId]/comment',
+  'apps/mobile/app/(app)/todo/[todoId]/comments/_layout.tsx',
+  'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]',
 ];
+// 대화 위에 뜨는 신고 시트는 댓글 단계가 아니라 moderation sheet route라 대화 아래에 둔다.
+const ALLOWED_TODO_COMMENT_ROUTE_FILES = new Set([
+  'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]/report.tsx',
+]);
+const TODO_COMMENT_NAVIGATION_OWNER = `${TODO_COMMENT_ROOT}/hooks/use-todo-comment-route.ts`;
 const ROUTE_IDENTIFIER_PROP_NAMES = new Set([
   'anchorCommentId',
   'commentId',
@@ -44,6 +71,13 @@ const QUERY_HOOK_NAMES = new Set([
   'useMutation',
   'useQuery',
   'useSuspenseQuery',
+]);
+
+const STRICT_NULLISH_ROOTS = ['apps/api/src', 'apps/mobile/src', 'apps/mobile/app'];
+const STRICT_NULLISH_ALLOW_MARKER = 'nullish-strict:';
+const STRICT_EQUALITY_OPERATORS = new Set([
+  ts.SyntaxKind.EqualsEqualsEqualsToken,
+  ts.SyntaxKind.ExclamationEqualsEqualsToken,
 ]);
 
 function getSourceFiles(root, relativeDirectory) {
@@ -375,10 +409,11 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
       ts.isPropertyAccessExpression(node.expression) &&
       ts.isIdentifier(node.expression.expression) &&
       node.expression.expression.text === 'router' &&
-      node.expression.name.text === 'push'
+      node.expression.name.text === 'push' &&
+      relative(repositoryRoot, sourceFile.fileName) !== TODO_COMMENT_NAVIGATION_OWNER
     ) {
       errors.push(
-        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 답글은 새 화면을 push하지 않습니다. 같은 할 일 화면에서 작성 대상만 바꾸세요.`,
+        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 화면은 직접 push하지 않습니다. 개요에서 대화로 가는 한 단계 push는 use-todo-comment-route의 전이 resolver만 소유합니다.`,
       );
     }
 
@@ -417,16 +452,94 @@ function checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors) {
   }
 }
 
+function getPackageSourceRoots(repositoryRoot) {
+  const packagesDirectory = resolve(repositoryRoot, 'packages');
+  if (!existsSync(packagesDirectory)) {
+    return [];
+  }
+  return readdirSync(packagesDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `packages/${entry.name}/src`);
+}
+
+function isNullishLiteral(node) {
+  return (
+    node.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(node) && node.text === 'undefined')
+  );
+}
+
+function isCommentLine(line) {
+  const trimmed = line.trim();
+  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
+}
+
+function getEnclosingStatement(node) {
+  let current = node;
+  while (
+    current.parent !== undefined &&
+    !ts.isSourceFile(current.parent) &&
+    !ts.isBlock(current.parent) &&
+    !ts.isModuleBlock(current.parent) &&
+    !ts.isCaseClause(current.parent) &&
+    !ts.isDefaultClause(current.parent) &&
+    !ts.isClassElement(current)
+  ) {
+    current = current.parent;
+  }
+  return current;
+}
+
+/**
+ * 허용 표시는 비교가 있는 문장 바로 위 주석부터 비교가 있는 줄 사이에 둔다.
+ * 문장 하나 안의 여러 PATCH 필드는 그 위 표시 하나로 설명할 수 있다.
+ */
+function hasStrictNullishAllowComment(sourceFile, lines, node, comparisonLine) {
+  const statement = getEnclosingStatement(node);
+  let firstLine = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile)).line;
+  while (firstLine > 0 && isCommentLine(lines[firstLine - 1])) {
+    firstLine -= 1;
+  }
+  return lines
+    .slice(firstLine, comparisonLine + 1)
+    .some((line) => line.includes(STRICT_NULLISH_ALLOW_MARKER));
+}
+
+function checkStrictNullishComparisons(sourceFile, repositoryRoot, errors) {
+  const lines = sourceFile.text.split('\n');
+
+  function visit(node) {
+    if (
+      ts.isBinaryExpression(node) &&
+      STRICT_EQUALITY_OPERATORS.has(node.operatorToken.kind) &&
+      (isNullishLiteral(node.left) || isNullishLiteral(node.right))
+    ) {
+      const { line } = sourceFile.getLineAndCharacterOfPosition(
+        node.operatorToken.getStart(sourceFile),
+      );
+      if (!hasStrictNullishAllowComment(sourceFile, lines, node, line)) {
+        errors.push(
+          `${getLocation(sourceFile, node.operatorToken, repositoryRoot)} "없음" 판단은 == null / != null로 쓰세요. null과 undefined의 뜻이 달라 엄격하게 비교해야 하면 비교가 있는 문장 바로 위나 같은 줄에 // ${STRICT_NULLISH_ALLOW_MARKER} <이유>를 남기세요. (docs/conventions/nullish.md)`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   const errors = [];
 
   for (const forbiddenPath of FORBIDDEN_ROUTE_PATHS) {
     const hasForbiddenRoute = forbiddenPath.endsWith('.tsx')
       ? existsSync(resolve(repositoryRoot, forbiddenPath))
-      : getSourceFiles(repositoryRoot, forbiddenPath).length > 0;
+      : getSourceFiles(repositoryRoot, forbiddenPath).some(
+          (file) => !ALLOWED_TODO_COMMENT_ROUTE_FILES.has(relative(repositoryRoot, file)),
+        );
     if (hasForbiddenRoute) {
       errors.push(
-        `${forbiddenPath} 댓글은 할 일 화면 하나에서 이어집니다. 댓글마다 Stack route를 만들지 마세요.`,
+        `${forbiddenPath} 댓글은 개요와 대화 두 화면에서 이어집니다. 댓글마다 Stack route를 만들지 마세요.`,
       );
     }
   }
@@ -465,6 +578,21 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     );
     checkTodoCheckboxProps(sourceFile, repositoryRoot, errors);
     checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
+  }
+
+  const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];
+  for (const file of nullishRoots.flatMap((root) => getSourceFiles(repositoryRoot, root))) {
+    if (file.endsWith('.d.ts') || file.includes('/generated/')) {
+      continue;
+    }
+    const sourceFile = ts.createSourceFile(
+      file,
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+    checkStrictNullishComparisons(sourceFile, repositoryRoot, errors);
   }
 
   return errors;

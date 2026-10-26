@@ -21,6 +21,8 @@ namespace public {
     lastLoginAt                    TimestampString(3)?
     deletedAt                      TimestampString(3)?
     lastActiveAt                   TimestampString(3)?
+    lastSeenAppVersion             VarChar(30)?
+    lastSeenAppVersionAt           TimestampString(3)?
     accounts                       Account[]
     aiReports                      AiReport[]
     dailyCompletions               DailyCompletion[]
@@ -54,6 +56,16 @@ namespace public {
     sentNudges                    Nudge[]                         @relation(name: "Nudge_senderId_fkey")
     receivedRemindNudges                 ReminderNudge[]                 @relation(name: "ReminderNudge_receiverId_fkey")
     sentRemindNudges    ReminderNudge[]                 @relation(name: "ReminderNudge_senderId_fkey")
+    invites                        Invite[]
+    inviterRedemptions             InviteRedemption[]              @relation(name: "InviteRedemption_inviterId_fkey")
+    inviteeRedemption              InviteRedemption?               @relation(name: "InviteRedemption_inviteeId_fkey")
+    rewardGrants                   RewardGrant[]
+    premiumGrants                  PremiumGrant[]
+    resourceBonuses                ResourceBonus[]
+    initiatedBlocks             UserBlock[]                     @relation(name: "UserBlock_blockerId_fkey")
+    receivedBlocks              UserBlock[]                     @relation(name: "UserBlock_blockedId_fkey")
+    filedReports                UserReport[]                    @relation(name: "UserReport_reporterId_fkey")
+    receivedReports             UserReport[]                    @relation(name: "UserReport_targetUserId_fkey")
 
     @@index([deletedAt, createdAt], map: "User_deletedAt_createdAt_idx")
     @@index([deletedAt], map: "User_deletedAt_idx")
@@ -100,6 +112,8 @@ namespace public {
     generatedAt       TimestampString(3)
     createdAt         TimestampString(3)        @default(now())
     locale            VarChar(10)         @default("ko")
+    contentSource     VarChar(16)?
+    promptVersion     VarChar(40)?
     user              User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "AiReport_userId_fkey", index: false)
 
     @@index([userId, _type, generatedAt], map: "AiReport_userId_type_generatedAt_idx")
@@ -691,6 +705,41 @@ namespace public {
     @@unique([userId, localDate], map: "UserActivityDay_userId_localDate_key")
   }
 
+  model UserBlock {
+    id        String             @id(map: "UserBlock_pkey")
+    blockerId String
+    blockedId String
+    createdAt TimestampString(3) @default(now())
+    blocker   User               @relation(name: "UserBlock_blockerId_fkey", fields: [blockerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserBlock_blockerId_fkey", index: false)
+    blocked   User               @relation(name: "UserBlock_blockedId_fkey", fields: [blockedId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserBlock_blockedId_fkey", index: false)
+
+    @@unique([blockerId, blockedId], map: "UserBlock_blockerId_blockedId_key")
+    @@index([blockedId, blockerId], map: "UserBlock_blockedId_blockerId_idx")
+    @@index([blockerId, createdAt, id], map: "UserBlock_blockerId_createdAt_id_idx")
+  }
+
+  model UserReport {
+    id           String                         @id(map: "UserReport_pkey")
+    reporterId   String
+    targetUserId String
+    targetType   pg.enum(UserReportTargetType)
+    targetId     VarChar(64)?
+    reason       pg.enum(UserReportReason)
+    detail       VarChar(500)?
+    status       pg.enum(UserReportStatus)      @default("OPEN")
+    createdAt    TimestampString(3)             @default(now())
+    resolvedAt     TimestampString(3)?
+    resolvedById   String?
+    resolutionNote VarChar(500)?
+    reporter     User                           @relation(name: "UserReport_reporterId_fkey", fields: [reporterId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserReport_reporterId_fkey", index: false)
+    targetUser   User                           @relation(name: "UserReport_targetUserId_fkey", fields: [targetUserId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserReport_targetUserId_fkey", index: false)
+
+    @@index([reporterId, createdAt], map: "UserReport_reporterId_createdAt_idx")
+    @@index([reporterId, targetUserId, targetType, createdAt], map: "UserReport_reporterId_target_createdAt_idx")
+    @@index([targetUserId, createdAt], map: "UserReport_targetUserId_createdAt_idx")
+    @@index([status, createdAt], map: "UserReport_status_createdAt_idx")
+  }
+
   model UserConsent {
     id                    String        @id(map: "UserConsent_pkey")
     userId                String
@@ -699,6 +748,8 @@ namespace public {
     agreedTermsVersion    VarChar(20)?
     marketingAgreedAt     TimestampString(3)?
     marketingPushAgreedAt TimestampString(3)?
+    aiDataSharingAgreedAt TimestampString(3)?
+    aiDataSharingVersion  VarChar(20)?
     user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserConsent_userId_fkey")
 
     @@unique([userId], map: "UserConsent_userId_key")
@@ -789,6 +840,117 @@ namespace public {
     @@index([year, week], map: "WeeklyAchievement_year_week_idx")
   }
 
+  model Invite {
+    id          String                @id(map: "Invite_pkey")
+    inviterId   String
+    code        VarChar(6)
+    status      pg.enum(InviteStatus) @default("ACTIVE")
+    createdAt   TimestampString(3)    @default(now())
+    updatedAt   temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    revokedAt   TimestampString(3)?
+    redemptions InviteRedemption[]
+    inviter     User                  @relation(fields: [inviterId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Invite_inviterId_fkey", index: false)
+
+    @@unique([code], map: "Invite_code_key")
+    @@index([inviterId, status], map: "Invite_inviterId_status_idx")
+    @@index([inviterId], map: "Invite_inviterId_active_key", where: sql`(status = 'ACTIVE'::"InviteStatus")`, unique: true)
+  }
+
+  model InviteRedemption {
+    id              String                                     @id(map: "InviteRedemption_pkey")
+    inviteId        String?
+    inviterId       String?
+    inviteeId       String
+    status          pg.enum(InviteRedemptionStatus)            @default("JOINED")
+    rejectionReason pg.enum(InviteRejectionReason)?
+    timezone        VarChar(50)
+    inviterRewardEligible Boolean                              @default(true)
+    joinedAt        TimestampString(3)
+    qualifiedAt     TimestampString(3)?
+    rewardedAt      TimestampString(3)?
+    rejectedAt      TimestampString(3)?
+    expiresAt       TimestampString(3)
+    createdAt       TimestampString(3)                         @default(now())
+    updatedAt       temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    activeDays      InviteActiveDay[]
+    invite          Invite?                                    @relation(fields: [inviteId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "InviteRedemption_inviteId_fkey", index: false)
+    inviter         User?                                      @relation(name: "InviteRedemption_inviterId_fkey", fields: [inviterId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "InviteRedemption_inviterId_fkey", index: false)
+    invitee         User                                       @relation(name: "InviteRedemption_inviteeId_fkey", fields: [inviteeId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "InviteRedemption_inviteeId_fkey", index: false)
+
+    @@unique([inviteeId], map: "InviteRedemption_inviteeId_key")
+    @@index([inviteId], map: "InviteRedemption_inviteId_idx")
+    @@index([inviterId, status, joinedAt, id], map: "InviteRedemption_inviterId_status_joinedAt_id_idx")
+    @@index([inviterId, joinedAt, id], map: "InviteRedemption_inviterId_joinedAt_id_idx")
+    @@index([status, expiresAt], map: "InviteRedemption_status_expiresAt_idx")
+  }
+
+  model InviteActiveDay {
+    redemptionId String
+    localDate    DateString
+    createdAt    TimestampString(3) @default(now())
+    redemption   InviteRedemption   @relation(fields: [redemptionId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "InviteActiveDay_redemptionId_fkey", index: false)
+
+    @@id([redemptionId, localDate], map: "InviteActiveDay_pkey")
+  }
+
+  model RewardGrant {
+    id            String                       @id(map: "RewardGrant_pkey")
+    recipientId   String
+    sourceType    pg.enum(RewardSourceType)
+    sourceId      VarChar(64)
+    rewardType    pg.enum(RewardType)
+    quantity      Int
+    status        pg.enum(RewardGrantStatus)   @default("PENDING")
+    attempts      Int                          @default(0)
+    lastErrorCode VarChar(100)?
+    createdAt     TimestampString(3)           @default(now())
+    updatedAt     temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    appliedAt     TimestampString(3)?
+    recipient     User                         @relation(fields: [recipientId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RewardGrant_recipientId_fkey", index: false)
+
+    @@unique([sourceType, sourceId, recipientId, rewardType], map: "RewardGrant_sourceType_sourceId_recipientId_rewardType_key")
+    @@index([recipientId, rewardType, createdAt], map: "RewardGrant_recipientId_rewardType_createdAt_idx")
+    @@index([status, createdAt], map: "RewardGrant_status_createdAt_idx")
+  }
+
+  model RewardClaim {
+    claimHash      Char(64)                 @id(map: "RewardClaim_pkey")
+    claimKind      pg.enum(RewardClaimKind)
+    firstClaimedAt TimestampString(3)       @default(now())
+  }
+
+  model PremiumGrant {
+    id               String                       @id(map: "PremiumGrant_pkey")
+    userId           String
+    source           pg.enum(PremiumGrantSource)
+    sourceKey        VarChar(128)
+    durationDays     Int
+    status           pg.enum(PremiumGrantStatus)
+    startsAt         TimestampString(3)?
+    endsAt           TimestampString(3)?
+    endingNotifiedAt TimestampString(3)?
+    createdAt        TimestampString(3)           @default(now())
+    updatedAt        temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    user             User                         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PremiumGrant_userId_fkey", index: false)
+
+    @@unique([sourceKey], map: "PremiumGrant_sourceKey_key")
+    @@index([userId, status], map: "PremiumGrant_userId_status_idx")
+    @@index([status, endsAt], map: "PremiumGrant_status_endsAt_idx")
+  }
+
+  model ResourceBonus {
+    id        String                        @id(map: "ResourceBonus_pkey")
+    userId    String
+    resource  pg.enum(ResourceType)
+    quantity  Int
+    sourceKey VarChar(128)
+    createdAt TimestampString(3)            @default(now())
+    user      User                          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ResourceBonus_userId_fkey", index: false)
+
+    @@unique([sourceKey], map: "ResourceBonus_sourceKey_key")
+    @@index([userId, resource], map: "ResourceBonus_userId_resource_idx")
+  }
+
   native_enum AccountProvider {
     CREDENTIAL = "CREDENTIAL"
     KAKAO = "KAKAO"
@@ -800,6 +962,23 @@ namespace public {
   native_enum FollowStatus {
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
+  }
+
+  native_enum InviteRedemptionStatus {
+    JOINED = "JOINED"
+    QUALIFIED = "QUALIFIED"
+    REWARDED = "REWARDED"
+    REJECTED = "REJECTED"
+  }
+
+  native_enum InviteRejectionReason {
+    EXPIRED = "EXPIRED"
+    INVITER_MONTHLY_CAP = "INVITER_MONTHLY_CAP"
+  }
+
+  native_enum InviteStatus {
+    ACTIVE = "ACTIVE"
+    REVOKED = "REVOKED"
   }
 
   native_enum NotificationActionType {
@@ -842,6 +1021,9 @@ namespace public {
     WEATHER_EVENING = "WEATHER_EVENING"
     NUDGE_REPLIED = "NUDGE_REPLIED"
     NUDGE_THANKED = "NUDGE_THANKED"
+    INVITE_JOINED = "INVITE_JOINED"
+    INVITE_REWARDED = "INVITE_REWARDED"
+    PREMIUM_GRANT_ENDING = "PREMIUM_GRANT_ENDING"
   }
 
   native_enum NudgeReplyKind {
@@ -853,6 +1035,17 @@ namespace public {
   native_enum Platform {
     IOS = "IOS"
     ANDROID = "ANDROID"
+  }
+
+  native_enum PremiumGrantSource {
+    INVITE = "INVITE"
+  }
+
+  native_enum PremiumGrantStatus {
+    BANKED = "BANKED"
+    ACTIVE = "ACTIVE"
+    ENDED = "ENDED"
+    REVOKED = "REVOKED"
   }
 
   native_enum PushDeliveryMode {
@@ -893,6 +1086,10 @@ namespace public {
     MONTHLY = "MONTHLY"
   }
 
+  native_enum ResourceType {
+    FRIEND = "FRIEND"
+  }
+
   native_enum RetentionExperimentStageName {
     D0 = "D0"
     D1 = "D1"
@@ -917,6 +1114,26 @@ namespace public {
     PROCESSING = "PROCESSING"
     PUBLISHED = "PUBLISHED"
     FAILED = "FAILED"
+  }
+
+  native_enum RewardClaimKind {
+    INSTALLATION = "INSTALLATION"
+    IDENTITY = "IDENTITY"
+  }
+
+  native_enum RewardGrantStatus {
+    PENDING = "PENDING"
+    APPLIED = "APPLIED"
+    FAILED = "FAILED"
+  }
+
+  native_enum RewardSourceType {
+    INVITE_REDEMPTION = "INVITE_REDEMPTION"
+  }
+
+  native_enum RewardType {
+    PREMIUM_DAYS = "PREMIUM_DAYS"
+    FRIEND_SLOT = "FRIEND_SLOT"
   }
 
   native_enum SecurityEvent {
@@ -967,6 +1184,27 @@ namespace public {
   native_enum TodoVisibility {
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
+  }
+
+  native_enum UserReportReason {
+    SPAM = "SPAM"
+    HARASSMENT = "HARASSMENT"
+    INAPPROPRIATE = "INAPPROPRIATE"
+    IMPERSONATION = "IMPERSONATION"
+    OTHER = "OTHER"
+  }
+
+  native_enum UserReportStatus {
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+  }
+
+  native_enum UserReportTargetType {
+    PROFILE = "PROFILE"
+    TODO = "TODO"
+    COMMENT = "COMMENT"
+    NUDGE_MESSAGE = "NUDGE_MESSAGE"
+    CHEER_MESSAGE = "CHEER_MESSAGE"
   }
 
   native_enum UserRole {

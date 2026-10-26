@@ -82,7 +82,7 @@ export class SendRemindNudge {
         senderId,
         receiverId,
       );
-      if (lastRemind !== null) {
+      if (lastRemind != null) {
         const cooldown = evaluateRemindNudgeCooldown(lastRemind.createdAt);
         if (cooldown.isActive) {
           throw new ApplicationException(ErrorCode.NUDGE_1108, {

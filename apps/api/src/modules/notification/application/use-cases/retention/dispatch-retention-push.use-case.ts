@@ -59,7 +59,7 @@ export class DispatchRetentionPush {
       if (input.isFinalAttempt) await this.#recoverFinalClaimFailure(input, claimError);
       throw claimError;
     }
-    if (candidate === null) return;
+    if (candidate == null) return;
     try {
       const now = new Date();
       if (!this.#dependencies.sender.isEligible(candidate, now)) {

@@ -24,7 +24,7 @@ export class WeeklyReportReaderAdapter implements WeeklyReportReaderPort {
 
   async findLatestWeekly(userId: string): Promise<WeeklyReportView | null> {
     const stats = await this.latestReportStatsReader.findLatestWeekly(userId);
-    if (stats === null) {
+    if (stats == null) {
       return null;
     }
     return { stats };

@@ -12,6 +12,7 @@
  * 4. 읽음 처리
  */
 
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -267,6 +268,20 @@ describe("응원 E2E", () => {
         // Then - 쿨다운 상태 검증
         expect(response.body.success).toBe(true);
         expect(typeof response.body.data.canCheer).toBe("boolean");
+      });
+
+      it("CUID가 아닌 userId는 400 SYS_0002를 반환한다", async () => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser("cheer-cd-invalid@test.com", password);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .get("/v1/cheers/cooldown/not-a-cuid")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(400);
+
+        // Then
+        expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {

@@ -38,7 +38,8 @@
   "premiumDialog": {
     "title": "프리미엄 기능",
     "close": "닫기",
-    "subscribe": "구독하기"
+    "subscribe": "구독하기",
+    "subscribeUnlimited": "프리미엄으로 무제한 쓰기"
   },
   "errorBoundary": {
     "title": "오류가 발생했어요",
@@ -95,11 +96,6 @@
     "todo": "할 일",
     "memo": "메모",
     "mypage": "마이"
-  },
-  "webview": {
-    "invalidUrl": "유효하지 않은 URL입니다",
-    "title": "웹페이지",
-    "back": "뒤로"
   },
   "infraErrors": {
     "network": "네트워크 연결을 확인해주세요",

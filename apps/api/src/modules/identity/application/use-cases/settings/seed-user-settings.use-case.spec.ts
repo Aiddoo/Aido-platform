@@ -25,6 +25,8 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
       ...consent,
       marketingAgreedAt: null,
       marketingPushAgreedAt: null,
+      aiDataSharingAgreedAt: null,
+      aiDataSharingVersion: null,
     });
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
       pushEnabled: true,
@@ -45,6 +47,8 @@ describe("SeedUserSettings — 가입 시 필수 동의와 기본 푸시 설정"
       agreedTermsVersion: null,
       marketingAgreedAt: null,
       marketingPushAgreedAt: null,
+      aiDataSharingAgreedAt: null,
+      aiDataSharingVersion: null,
     });
     expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
       pushEnabled: true,

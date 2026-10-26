@@ -1,0 +1,35 @@
+appId: com.aido.mobile
+name: 유효한 초대 코드를 직접 입력하면 초대 카드로 이동한다
+tags:
+  - smoke
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+- openLink: ${QA_SCHEME}://invite
+- extendedWaitUntil:
+    visible: '영문과 숫자 6자리예요.*|It.s 6 letters and numbers.*'
+    timeout: 15000
+# 붙여넣기 칩은 클립보드에 글자가 있을 때만 나타난다(조건부 요소라 optional)
+- tapOn:
+    id: invite-code-paste
+    optional: true
+- tapOn:
+    id: invite-code-input
+- eraseText: 10
+- inputText: ${output.code}
+- hideKeyboard
+- tapOn:
+    id: invite-code-submit
+- extendedWaitUntil:
+    label: 초대 카드
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invite-code-valid

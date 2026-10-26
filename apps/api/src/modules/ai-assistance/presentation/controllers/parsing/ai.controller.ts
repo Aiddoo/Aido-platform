@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
@@ -8,19 +9,21 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Locale, Timezone } from "#api/platform/http/decorators/index";
 import {
-  ApiBadRequestError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiServiceUnavailableError,
+  ApiForbiddenError,
   ApiSuccessResponse,
-  ApiTooManyRequestsError,
   ApiUnauthorizedError,
   ApiUnprocessableError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetAiUsage } from "../../../application/use-cases/parsing/get-ai-usage.use-case.js";
 import { ParseMemo } from "../../../application/use-cases/parsing/parse-memo.use-case.js";
 import { ParseTodo } from "../../../application/use-cases/parsing/parse-todo.use-case.js";
+import { AiDataSharingConsentGuard } from "../../../infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "../../../infrastructure/guards/parsing/ai-usage.guard.js";
 import {
   AiUsageResponseDto,
@@ -68,11 +71,16 @@ export class AiController {
    */
   @Post("parse-todo")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AiUsageGuard)
+  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+  })
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -106,25 +114,34 @@ export class AiController {
 | \`processingTimeMs\` | number | 처리 시간 (ms) |
 | \`tokenUsage.input\` | number | 입력 토큰 수 |
 | \`tokenUsage.output\` | number | 출력 토큰 수 |
+| \`promptVersion\` | string (선택) | 응답을 만든 프롬프트 버전 (예: \`parse-todo@v2\`). 구 서버 응답에는 없을 수 있습니다. |
 
-## ⏰ 스마트 시간 해석 규칙
+## ⏰ 날짜·시간 해석 규칙
+AI는 문장에서 날짜·시각 표현의 종류만 읽고, 실제 날짜·요일·시각은 서버가 사용자 시간대(\`X-Timezone\`, 없으면 저장된 사용자 시간대) 기준으로 계산합니다.
 
-### 1. 명시적 시간대
-- "오전", "아침" → AM (00:00-11:59)
-- "오후", "저녁", "밤" → PM (12:00-23:59)
+### 1. 오전/오후를 말한 경우
+- "오전", "아침", "새벽" → AM, "오후", "저녁", "밤" → PM
 
-### 2. 시간만 언급된 경우
-- 현재 시간 기준 가장 가까운 미래 시간으로 해석
-- 예: 현재 14:30에 "11시" → 23:00 (오전 11시는 지남)
+### 2. 오전/오후 없이 시각만 말한 경우
+- 날짜를 말하지 않았으면 오늘 남은 시각 중 가장 이른 시각으로 정합니다. 예: 현재 14:30에 "11시" → 23:00, 현재 10:00에 "3시" → 15:00
+- 오늘 두 시각이 모두 지났거나 날짜를 말했으면 1~6시는 오후, 7~11시는 오전으로 정합니다.
+- 날짜 없이 말한 시각이 이미 지났으면 내일로 정합니다.
 
-### 3. 상대적 날짜
-- "내일" → 다음 날
-- "모레" → 이틀 후
-- "다음주 월요일" → 다음 주 월요일
-- "이번주 금요일" → 이번 주 금요일
+### 3. 때만 말한 경우
+- 아침 09:00, 점심 12:00, 오후 15:00, 저녁 19:00, 밤 21:00, 자정은 다음 날 00:00으로 정합니다.
 
-### 4. 기간 일정
+### 4. 날짜·요일
+- "내일" → 다음 날, "모레" → 이틀 후
+- 요일만 말하면 오늘을 포함한 가장 가까운 그 요일입니다(금요일에 "금요일" → 오늘). "this Friday"도 같습니다.
+- "다음 주 금요일", "next Friday" → 다음 ISO 주(월~일)의 금요일
+- "M월 D일"이 이미 지났으면 내년, "N일"이 지났으면 다음 달입니다.
+
+### 5. 기간·반복
 - "월요일부터 금요일까지" → startDate + endDate 모두 설정
+- 반복 종료를 말하지 않은 반복은 4주 뒤에 끝납니다. 격주·매월처럼 지원하지 않는 반복은 비반복으로 만듭니다.
+
+### 6. 할 일이 아닌 입력
+- 모델을 겨냥한 명령만 있는 입력은 제목 "입력 확인 필요"(en: "Needs review")의 오늘 종일 할 일로 응답하며 사용량을 차감하지 않습니다.
 
 ## 🚫 사용량 제한
 - 무료 유저: **월 5회** (Todo 파싱과 메모 파싱 합산)
@@ -137,7 +154,7 @@ export class AiController {
 | \`내일 오후 3시에 팀 미팅\` | title: "팀 미팅", startDate: 내일, scheduledTime: "15:00" |
 | \`11시에 공부하기\` | title: "공부하기", scheduledTime: 현재시간 기반 AM/PM |
 | \`다음주 월요일부터 금요일까지 출장\` | title: "출장", startDate~endDate |
-| \`저녁에 운동\` | title: "운동", scheduledTime: "19:00" |
+| \`저녁에 운동\` | title: "운동", scheduledTime: "19:00" (오늘 19시가 지났으면 내일) |
 
 ## 📱 클라이언트 통합 가이드
 
@@ -171,28 +188,29 @@ if (confirmed) {
   })
   @ApiSuccessResponse({ type: ParseTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiUnprocessableError(ErrorCode.AI_1302)
-  @ApiTooManyRequestsError(ErrorCode.AI_1303)
+  @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
+  @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",
-    description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+    description:
+      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
     required: false,
     example: "ko",
   })
   async parseTodo(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
-    @Timezone() tz: string,
-    @Locale() locale: "ko" | "en" | undefined,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
+    @Locale() locale: SupportedLocale | undefined,
   ): Promise<ParseTodoResponseDto> {
     const result = await this.parseTodoUseCase.execute({
       text: dto.text,
       userId: user.userId,
       timezone: tz,
       categoryId: dto.categoryId,
-      locale: locale ?? "ko",
+      locale,
     });
 
     return {
@@ -252,18 +270,25 @@ if (confirmed) {
    *   "meta": {
    *     "model": "google:gemini-3.1-flash-lite",
    *     "processingTimeMs": 350,
-   *     "tokenUsage": { "input": 450, "output": 280 }
+   *     "tokenUsage": { "input": 450, "output": 280 },
+   *     "promptVersion": "parse-memo@v2.1",
+   *     "omittedTodoCount": 0
    *   }
    * }
    * ```
    */
   @Post("parse-memo")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AiUsageGuard)
+  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+  })
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -288,10 +313,16 @@ if (confirmed) {
 | \`isRecurring\` | boolean | 반복 일정 여부 |
 | \`recurrence\` | object \\| null | 반복 설정 |
 | \`categoryId\` | number | 카테고리 ID (요청에서 주입) |
-| \`items\` | array | 서브투두 목록 (0-5개) |
+| \`items\` | array | 서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개) |
+
+## 📊 메타데이터 (\`meta\`)
+\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`), \`omittedTodoCount\`(${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개를 넘어 만들지 않은 할 일 수)를 반환합니다.
 
 ## 🧠 AI 파싱 규칙
-- **별개 맥락/주제** → 별도 Todo로 분리 (최대 5개)
+- **별개 맥락/주제** → 별도 Todo로 분리합니다. 할 일은 합치지 않고 입력 순서대로 앞의 ${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개까지 만들며, 나머지 수는 \`meta.omittedTodoCount\`로 알립니다. 메모 원문은 그대로 남습니다
+- **서브투두가 ${AI_PARSE_LIMITS.MEMO_MAX_ITEMS + 1}개 이상** → 합치지 않고 입력 순서대로 앞의 ${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개만 남깁니다
+- **날짜·시각** → parse-todo와 같은 규칙으로 서버가 사용자 시간대 기준으로 계산합니다
+- **모델 대상 명령만 있는 메모** → "입력 확인 필요" 할 일 1개로 응답하며 사용량을 차감하지 않습니다
 - **하나의 큰 작업 + 세부 단계** → 1개 Todo + 여러 items (서브투두)
 - **날짜/시간 힌트 없음** → 오늘 + 종일
 - **반복 표현** (매주, 매일 등) → isRecurring + recurrence 설정
@@ -318,28 +349,29 @@ if (confirmed) {
   })
   @ApiSuccessResponse({ type: ParseMemoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiUnprocessableError(ErrorCode.AI_1302)
-  @ApiTooManyRequestsError(ErrorCode.AI_1303)
+  @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
+  @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",
-    description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+    description:
+      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
     required: false,
     example: "ko",
   })
   async parseMemo(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
-    @Timezone() tz: string,
-    @Locale() locale: "ko" | "en" | undefined,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
+    @Locale() locale: SupportedLocale | undefined,
   ): Promise<ParseMemoResponseDto> {
     const result = await this.parseMemoUseCase.execute({
       content: dto.content,
       userId: user.userId,
       timezone: tz,
       categoryId: dto.categoryId,
-      locale: locale ?? "ko",
+      locale,
     });
 
     return {

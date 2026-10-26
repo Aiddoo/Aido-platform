@@ -6,12 +6,7 @@ import {
 } from "#api/modules/notification/notification-delivery.public";
 import { decodeRecord } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { fromLegacyJob, type NamedJob } from "#api/platform/jobs/named-job";
-import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { AnalyzeAndCreateSuggestions } from "../../../application/use-cases/suggestions/analyze-and-create-suggestions.use-case.js";
@@ -20,17 +15,10 @@ import {
   AI_SUGGESTION_LEGACY_QUEUE,
   AI_SUGGESTION_QUEUE,
   AI_SUGGESTION_WORKER_POLICY,
-  type AiSuggestionJobMap,
   AiSuggestionJobName,
   AiSuggestionRuntimeJobSchema,
 } from "../../jobs/suggestions/ai-suggestion-queue.js";
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
-
-type AiSuggestionJob = NamedJob<AiSuggestionJobMap>;
-type AiSuggestionJobLike = {
-  readonly name: string;
-  readonly data: JobData;
-};
 
 /** AI 제안 푸시의 카피 성과를 이전 문구와 분리한다. */
 const AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY = "ai_suggestion_v2";
@@ -58,18 +46,18 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.runtime === undefined) return;
-    await this.runtime.work<AiSuggestionJob>(
+    if (this.runtime == null) return;
+    await this.runtime.work(
       AI_SUGGESTION_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.process(job.data);
       },
       AI_SUGGESTION_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       AI_SUGGESTION_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(fromLegacyJob<AiSuggestionJobMap>(job));
+        for (const job of jobs) await this.process({ name: job.name, data: job.data });
       },
       AI_SUGGESTION_WORKER_POLICY,
     );
@@ -96,7 +84,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     });
   }
 
-  async process(untrustedJob: AiSuggestionJobLike): Promise<void> {
+  async process(untrustedJob: unknown): Promise<void> {
     const parsedJob = AiSuggestionRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({ event: AiJobLogEvent.INVALID, queueName: AI_SUGGESTION_QUEUE });

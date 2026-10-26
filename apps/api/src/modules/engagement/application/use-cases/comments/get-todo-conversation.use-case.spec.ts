@@ -7,6 +7,7 @@ import {
   createEngagementCommentReader,
   StubEngagementCursorCodec,
 } from "#test/fixtures/engagement-comment.fixture";
+import { StubTodoCommentBlockReader } from "#test/mocks/ports/engagement-comment.stub";
 
 import type { TodoConversationRecord } from "../../models/comments/todo-comment.types.js";
 import { GetTodoConversation } from "./get-todo-conversation.use-case.js";
@@ -54,7 +55,11 @@ describe("GetTodoConversation", () => {
     };
     reader.likedCommentIds = new Set([CHILD_ID]);
     cursorCodec.encodedConversations = ["previous", "next"];
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     const response = await useCase.execute({
@@ -125,7 +130,11 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     const response = await useCase.execute({
@@ -198,7 +207,11 @@ describe("GetTodoConversation", () => {
     };
     reader.ancestors = ancestors;
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     const response = await useCase.execute({
@@ -242,7 +255,11 @@ describe("GetTodoConversation", () => {
 
     const cursorCodec = new StubEngagementCursorCodec();
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
     const cursor = "other-todo-cursor";
     const anchor = createRecord({ todoId: 2 });
     cursorCodec.decodedConversation = {
@@ -301,7 +318,11 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     await useCase.execute({
       todoId: TODO_ID,
@@ -332,7 +353,11 @@ describe("GetTodoConversation", () => {
     const cursorCodec = new StubEngagementCursorCodec();
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     reader.conversationWindow = null;
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     await expect(
@@ -389,7 +414,11 @@ describe("GetTodoConversation", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     await expect(

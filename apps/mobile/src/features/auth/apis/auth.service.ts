@@ -18,8 +18,10 @@ import {
   registerResponseSchema,
   resendVerificationResponseSchema,
   resetPasswordResponseSchema,
+  type UpdateAiDataSharingConsentInput,
   type UpdateMarketingConsentInput,
   type UpdateMarketingPushConsentInput,
+  updateAiDataSharingConsentResponseSchema,
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
   type VerifyEmailInput,
@@ -49,6 +51,7 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
+  UpdateAiDataSharingConsentResult,
   UpdateMarketingConsentResult,
   UpdateMarketingPushConsentResult,
 } from '../domains/auth.model';
@@ -69,6 +72,7 @@ import {
   toRegisterResult,
   toResendVerificationResult,
   toResetPasswordResult,
+  toUpdateAiDataSharingConsentResult,
   toUpdateMarketingConsentResult,
   toUpdateMarketingPushConsentResult,
 } from './auth.mapper';
@@ -400,6 +404,24 @@ export class AuthService {
       );
     }
     return ok(toUpdateMarketingPushConsentResult(parsed.data));
+  };
+
+  updateAiDataSharingConsent = async (
+    input: UpdateAiDataSharingConsentInput,
+  ): Promise<Result<UpdateAiDataSharingConsentResult, ApiError>> => {
+    const result = await this.#authHttpClient.patch('v1/auth/consent/ai-data-sharing', input);
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = updateAiDataSharingConsentResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[AuthService] Invalid updateAiDataSharingConsent response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toUpdateAiDataSharingConsentResult(parsed.data));
   };
 
   register = async (input: RegisterInput): Promise<Result<RegisterResult, ApiError>> => {

@@ -85,6 +85,8 @@ export interface SocialCopyVariablesByKey {
   readonly NUDGE_THANKED: { readonly senderName: string; readonly todoTitle: string };
   readonly FOLLOW_NEW: { readonly senderName: string };
   readonly FOLLOW_ACCEPTED: { readonly senderName: string };
+  readonly INVITE_JOINED: { readonly inviteeName: string };
+  readonly INVITE_REWARDED: { readonly premiumDays: number; readonly friendSlots: number };
   readonly NUDGE_RECEIVED: {
     readonly senderName: string;
     readonly todoTitle: string | null;
@@ -127,6 +129,7 @@ export interface SystemCopyVariablesByKey {
   readonly MONTHLY_REPORT: undefined;
   readonly AI_SUGGESTION: undefined;
   readonly BILLING_ISSUE: undefined;
+  readonly PREMIUM_GRANT_ENDING: undefined;
   readonly ONBOARDING_DAY0: undefined;
   readonly ONBOARDING_DAY1: undefined;
   readonly ONBOARDING_DAY2: undefined;

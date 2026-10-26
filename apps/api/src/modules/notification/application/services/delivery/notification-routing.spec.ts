@@ -15,6 +15,20 @@ describe("toNotificationRouting", () => {
     ).toEqual({
       commentId: COMMENT_ID,
       activityKind: "COMMENT",
+      senderId: "sender-1",
+    });
+  });
+
+  it("응원 알림은 보낸 사람을 routing에 싣고, 모양이 다른 보낸 사람 값은 버린다", () => {
+    expect(
+      toNotificationRouting({
+        senderId: "cmsender0000000000000001",
+        senderName: "지윤",
+        message: "힘내",
+      }),
+    ).toEqual({ senderId: "cmsender0000000000000001", senderName: "지윤" });
+    expect(toNotificationRouting({ commentId: COMMENT_ID, senderName: 42 })).toEqual({
+      commentId: COMMENT_ID,
     });
   });
 
@@ -25,5 +39,18 @@ describe("toNotificationRouting", () => {
         activityKind: "REPLY",
       }),
     ).toBeUndefined();
+  });
+
+  it("할 일 주인과 날짜를 싣고, 형식이 틀린 날짜는 그 필드만 버린다", () => {
+    expect(
+      toNotificationRouting({
+        commentId: COMMENT_ID,
+        todoOwnerId: "owner-1",
+        todoDate: "2026-10-27",
+      }),
+    ).toEqual({ commentId: COMMENT_ID, todoOwnerId: "owner-1", todoDate: "2026-10-27" });
+    expect(
+      toNotificationRouting({ commentId: COMMENT_ID, todoOwnerId: "owner-1", todoDate: "10/27" }),
+    ).toEqual({ commentId: COMMENT_ID, todoOwnerId: "owner-1" });
   });
 });

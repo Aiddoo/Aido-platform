@@ -1,7 +1,14 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import {
+  AI_CLIENT_APP_VERSION_READER,
+  AI_DATA_SHARING_CONSENT_DECISION_READER,
+  AI_PROVIDER,
+  AI_TASK_SETTINGS,
+  type AiTaskSettingsMap,
+  USER_LOCALE_PREFERENCE_READER,
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
 import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
@@ -37,14 +44,23 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
   inject: [
     AI_SUGGESTION_REPOSITORY,
     AI_PROVIDER,
+    AI_DATA_SHARING_CONSENT_DECISION_READER,
+    AI_CLIENT_APP_VERSION_READER,
     UNIT_OF_WORK,
     SuggestionContextBuilder,
     ENTITLEMENT_READER,
     USER_MUTATION_LOCK,
+    AI_TASK_SETTINGS,
   ],
   useFactory: (
     repository: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["repository"],
     aiProvider: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["aiProvider"],
+    aiDataSharingConsent: ConstructorParameters<
+      typeof AnalyzeAndCreateSuggestions
+    >[0]["aiDataSharingConsent"],
+    clientAppVersion: ConstructorParameters<
+      typeof AnalyzeAndCreateSuggestions
+    >[0]["clientAppVersion"],
     unitOfWork: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["unitOfWork"],
     contextBuilder: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["contextBuilder"],
     entitlementReader: ConstructorParameters<
@@ -53,14 +69,18 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
     userMutationLock: ConstructorParameters<
       typeof AnalyzeAndCreateSuggestions
     >[0]["userMutationLock"],
+    settings: AiTaskSettingsMap,
   ) =>
     new AnalyzeAndCreateSuggestions({
       repository,
       aiProvider,
+      aiDataSharingConsent,
+      clientAppVersion,
       unitOfWork,
       contextBuilder,
       entitlementReader,
       userMutationLock,
+      settings: settings.suggestion,
       logger: new Logger(AnalyzeAndCreateSuggestions.name),
     }),
 };
@@ -87,6 +107,7 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
     ENTITLEMENT_READER,
     UNIT_OF_WORK,
     USER_MUTATION_LOCK,
+    USER_LOCALE_PREFERENCE_READER,
   ],
   useFactory: (
     repository: ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"],
@@ -96,6 +117,9 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
     entitlementReader: ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"],
     unitOfWork: ConstructorParameters<typeof HandleSuggestionAction>[0]["unitOfWork"],
     userMutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["userMutationLock"],
+    localePreferenceReader: ConstructorParameters<
+      typeof HandleSuggestionAction
+    >[0]["localePreferenceReader"],
   ) =>
     new HandleSuggestionAction({
       repository,
@@ -103,6 +127,7 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
       entitlementReader,
       unitOfWork,
       userMutationLock,
+      localePreferenceReader,
       logger: new Logger(HandleSuggestionAction.name),
     }),
 };

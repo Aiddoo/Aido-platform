@@ -87,7 +87,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       fetchPage: (cursor, take) =>
         this.database.db.orm.public.User.where((row) =>
           and(
-            cursor !== undefined ? row.id.gt(cursor) : all(),
+            cursor != null ? row.id.gt(cursor) : all(),
             or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
             row.status.eq("ACTIVE"),
             row.deletedAt.isNull(),

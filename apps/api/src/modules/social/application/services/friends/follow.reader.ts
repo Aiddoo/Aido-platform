@@ -25,7 +25,7 @@ export class FollowReader implements FollowReaderPort {
       userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
 
     const cached = await this.#dependencies.cache.getMutualFriend(smallerId, largerId);
-    if (cached !== undefined) {
+    if (cached != null) {
       return cached;
     }
 
@@ -48,6 +48,10 @@ export class FollowReader implements FollowReaderPort {
     return this.#dependencies.cache.wrapMutualFriendIds(userId, () =>
       this.#dependencies.followRepository.getMutualFriendIds(userId),
     );
+  }
+
+  isCurrentMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
+    return this.#dependencies.followRepository.isMutualFriend(userId, targetUserId);
   }
 
   /** 권한을 판단하는 쓰기 경로는 캐시 대신 현재 친구 관계를 조회한다. */

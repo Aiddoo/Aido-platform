@@ -5,8 +5,8 @@ import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
+  type WidgetDaySummaries,
   type WidgetSnapshotContext,
-  type WidgetSummaryInput,
 } from './widget-snapshot.mapper';
 
 export class WidgetSyncService {
@@ -21,11 +21,12 @@ export class WidgetSyncService {
     this.#errorReporter = errorReporter;
   }
 
-  syncSummary(summary: WidgetSummaryInput, context: WidgetSnapshotContext): Promise<void> {
+  syncSummary(summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> {
     return this.#scheduleWrite(
-      () => toWidgetSnapshot(summary, context),
+      () => toWidgetSnapshot(summaries, context),
       'syncSummary',
       context.userId ?? null,
+      context.timeZone,
     );
   }
 
@@ -34,6 +35,7 @@ export class WidgetSyncService {
       () => toLoggedOutWidgetSnapshot(localDate, context),
       'syncLoggedOut',
       null,
+      context.timeZone,
     );
   }
 
@@ -41,6 +43,7 @@ export class WidgetSyncService {
     createSnapshot: () => WidgetSnapshot,
     method: string,
     userId: string | null,
+    timeZone: string,
   ): Promise<void> {
     const generation = ++this.#generation;
 
@@ -52,7 +55,12 @@ export class WidgetSyncService {
 
       try {
         const snapshot = createSnapshot();
-        const snapshotKey = JSON.stringify({ snapshot: { ...snapshot, updatedAtIso: '' }, userId });
+        // 시간대가 바뀌면 같은 내용이어도 iOS timeline의 자정 경계가 달라지므로 다시 쓴다.
+        const snapshotKey = JSON.stringify({
+          snapshot: { ...snapshot, updatedAtIso: '' },
+          userId,
+          timeZone,
+        });
         if (snapshotKey === this.#lastSnapshotKey) {
           return;
         }
@@ -62,7 +70,12 @@ export class WidgetSyncService {
         this.#errorReporter.addBreadcrumb({
           category: 'widget',
           message: 'widget snapshot synced',
-          data: { date: snapshot.date, state: snapshot.state, total: snapshot.totalTodos },
+          data: {
+            date: snapshot.days[0].date,
+            state: snapshot.days[0].state,
+            total: snapshot.days[0].totalTodos,
+            dayCount: snapshot.days.length,
+          },
         });
       } catch (error) {
         this.#report(error, method);

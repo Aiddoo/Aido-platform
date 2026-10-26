@@ -77,7 +77,7 @@ describe("IssueLogin — 세션 발급과 로그인 성공 기록", () => {
           event: "LOGIN_SUCCESS",
           ipAddress: input.ip,
           userAgent: input.userAgent,
-          ...(securityMetadata === undefined ? {} : { metadata: securityMetadata }),
+          ...(securityMetadata == null ? {} : { metadata: securityMetadata }),
         },
       ]);
     },

@@ -175,6 +175,11 @@ export class TypedConfigService {
   // Email Config Helpers
   // ============================================
 
+  /** 외부에서 이 API에 닿는 기준 주소. 끝의 / 는 뗀다 */
+  get apiPublicUrl(): string | undefined {
+    return this.get("API_PUBLIC_URL")?.replace(/\/+$/, "");
+  }
+
   get email() {
     return {
       apiKey: this.get("RESEND_API_KEY"),
@@ -247,10 +252,6 @@ export class TypedConfigService {
   // AI Config Helpers
   // ============================================
 
-  get aiDailyLimit(): number {
-    return this.get("AI_DAILY_LIMIT");
-  }
-
   get googleGenerativeAiApiKey(): string | undefined {
     return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
   }
@@ -265,7 +266,7 @@ export class TypedConfigService {
 
   get cache() {
     return {
-      type: this.get("CACHE_TYPE") as "memory" | "redis",
+      type: this.get("CACHE_TYPE"),
       defaultTtlMs: this.get("CACHE_DEFAULT_TTL_MS"),
       maxItems: this.get("CACHE_MAX_ITEMS"),
       cleanupIntervalMs: this.get("CACHE_CLEANUP_INTERVAL_MS"),

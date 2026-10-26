@@ -74,6 +74,7 @@ describe('toNotification', () => {
     expect(result.routing).toEqual({
       commentId: COMMENT_ID,
       activityKind: 'REPLY',
+      senderId: 'sender-1',
     });
     expect(result).not.toHaveProperty('metadata');
   });

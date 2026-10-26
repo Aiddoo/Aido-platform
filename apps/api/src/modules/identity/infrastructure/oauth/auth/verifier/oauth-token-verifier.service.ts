@@ -7,12 +7,42 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { OAuth2Client } from "google-auth-library";
 import { createRemoteJWKSet, errors, jwtVerify, type RemoteJWKSet } from "jose";
 import { match } from "ts-pattern";
+import { z } from "zod";
 
 import type { VerifiedProfile } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { readJson } from "#api/platform/http/read-json";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 export type { VerifiedProfile };
+
+const KAKAO_USER_INFO_SCHEMA = z.object({
+  id: z.number(),
+  kakao_account: z
+    .object({
+      email: z.string().nullish(),
+      is_email_verified: z.boolean().nullish(),
+      profile: z
+        .object({
+          nickname: z.string().nullish(),
+          profile_image_url: z.string().nullish(),
+        })
+        .nullish(),
+    })
+    .nullish(),
+});
+
+const NAVER_USER_INFO_SCHEMA = z.object({
+  resultcode: z.string(),
+  response: z
+    .object({
+      id: z.string(),
+      email: z.string().nullish(),
+      name: z.string().nullish(),
+      nickname: z.string().nullish(),
+      profile_image: z.string().nullish(),
+    })
+    .nullish(),
+});
 
 interface AppleIdTokenClaims {
   iss: string;
@@ -71,14 +101,14 @@ export class OAuthTokenVerifierService {
   // @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
   async verifyAppleToken(idToken: string, expectedNonce?: string): Promise<VerifiedProfile> {
     try {
-      if (this.#appleJWKS === null) {
+      if (this.#appleJWKS == null) {
         const jwksUrl =
           this.configService.get<string>("APPLE_JWKS_URL") ??
           OAuthTokenVerifierService.APPLE_JWKS_URL;
         const cooldownDuration = this.configService.get<number>("APPLE_JWKS_COOLDOWN_DURATION_MS");
         this.#appleJWKS = createRemoteJWKSet(
           new URL(jwksUrl),
-          cooldownDuration === undefined ? undefined : { cooldownDuration },
+          cooldownDuration == null ? undefined : { cooldownDuration },
         );
       }
 
@@ -208,19 +238,14 @@ export class OAuthTokenVerifierService {
         });
       }
 
-      const data = await readJson<{
-        id: number;
-        kakao_account?: {
-          email?: string;
-          is_email_valid?: boolean;
-          is_email_verified?: boolean;
-          profile?: {
-            nickname?: string;
-            profile_image_url?: string;
-          };
-        };
-      }>(response);
+      const parsed = await readJson(response, KAKAO_USER_INFO_SCHEMA);
+      if (!parsed.success) {
+        throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+          provider: "KAKAO",
+        });
+      }
 
+      const data = parsed.data;
       const kakaoAccount = data.kakao_account;
 
       this.#logger.debug(`Kakao token verified for user: ${data.id}`);
@@ -229,8 +254,8 @@ export class OAuthTokenVerifierService {
         id: String(data.id),
         email: kakaoAccount?.email ?? null,
         emailVerified: kakaoAccount?.is_email_verified ?? false,
-        name: kakaoAccount?.profile?.nickname,
-        picture: kakaoAccount?.profile?.profile_image_url,
+        name: kakaoAccount?.profile?.nickname ?? undefined,
+        picture: kakaoAccount?.profile?.profile_image_url ?? undefined,
       };
     } catch (error) {
       this.#logger.error(`Kakao token verification failed: ${error}`);
@@ -272,18 +297,14 @@ export class OAuthTokenVerifierService {
         });
       }
 
-      const data = await readJson<{
-        resultcode: string;
-        message: string;
-        response?: {
-          id: string;
-          email?: string;
-          name?: string;
-          nickname?: string;
-          profile_image?: string;
-        };
-      }>(response);
+      const parsed = await readJson(response, NAVER_USER_INFO_SCHEMA);
+      if (!parsed.success) {
+        throw new ApplicationException(ErrorCode.SOCIAL_0202, {
+          provider: "NAVER",
+        });
+      }
 
+      const data = parsed.data;
       if (data.resultcode !== "00" || !data.response) {
         throw new ApplicationException(ErrorCode.SOCIAL_0202, {
           provider: "NAVER",
@@ -300,8 +321,8 @@ export class OAuthTokenVerifierService {
         id: naverUser.id,
         email: naverUser.email ?? null,
         emailVerified: false,
-        name: naverUser.name || naverUser.nickname,
-        picture: naverUser.profile_image,
+        name: naverUser.name || (naverUser.nickname ?? undefined),
+        picture: naverUser.profile_image ?? undefined,
       };
     } catch (error) {
       this.#logger.error(`Naver token verification failed: ${error}`);

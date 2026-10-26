@@ -16,8 +16,11 @@ export function computeDateRange(
   period: number,
 ): { startDate: string; endDate: string } {
   if (type === "WEEKLY") {
-    // ISO week: 해당 연도, 해당 주차의 월요일 ~ 일요일
-    const monday = dayjs.utc().year(year).isoWeek(period).startOf("isoWeek");
+    // ISO 1주차는 1월 4일이 속한 주다. 현재 시각에 기대면 연초·연말에 주가 어긋난다.
+    const monday = dayjs
+      .utc(Date.UTC(year, 0, 4))
+      .startOf("isoWeek")
+      .add(period - 1, "week");
     const sunday = monday.endOf("isoWeek");
     return {
       startDate: toDateString(monday.toDate()),
@@ -26,11 +29,7 @@ export function computeDateRange(
   }
 
   // MONTHLY: 해당 월 1일 ~ 마지막 날
-  const monthStart = dayjs
-    .utc()
-    .year(year)
-    .month(period - 1)
-    .startOf("month");
+  const monthStart = dayjs.utc(Date.UTC(year, period - 1, 1));
   const monthEnd = monthStart.endOf("month");
   return {
     startDate: toDateString(monthStart.toDate()),

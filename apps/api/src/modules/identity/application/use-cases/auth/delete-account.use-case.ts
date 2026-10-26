@@ -52,14 +52,14 @@ export class DeleteAccount {
 
   async execute(input: DeleteAccountInput): Promise<DeleteAccountResult> {
     const user = await this.#dependencies.userRepository.findById(input.userId);
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
     }
     assertNotDeleted(user);
 
     const accounts = await this.#dependencies.accountRepository.findAllByUserId(input.userId);
     const credentialAccount = accounts.find((account) => account.provider === "CREDENTIAL");
-    if (credentialAccount !== undefined) {
+    if (credentialAccount != null) {
       if (!input.password) {
         throw new ApplicationException(ErrorCode.USER_0612);
       }

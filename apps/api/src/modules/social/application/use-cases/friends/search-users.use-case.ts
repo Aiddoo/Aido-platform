@@ -43,7 +43,7 @@ export class SearchUsers {
       size: input.size,
     });
 
-    const cursor = input.cursor !== undefined ? decodeSearchCursor(input.cursor) : undefined;
+    const cursor = input.cursor != null ? decodeSearchCursor(input.cursor) : undefined;
 
     const [rows, totalCount] = await Promise.all([
       this.#dependencies.followRepository.searchUsers({
@@ -64,7 +64,7 @@ export class SearchUsers {
     const items = hasMore ? rows.slice(0, size) : rows;
     const last = items.at(-1);
     const nextCursor =
-      hasMore && last !== undefined ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
+      hasMore && last != null ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
 
     this.#dependencies.logger.debug({
       event: SocialFriendLogEvent.SEARCHED,

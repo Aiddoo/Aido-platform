@@ -1,5 +1,6 @@
 import { FlashList, type FlashListProps } from '@shopify/flash-list';
 import { useTrack } from '@src/shared/analytics';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -16,6 +17,7 @@ import {
   type QueryErrorFallbackProps,
   Box,
 } from '@src/shared/ui';
+import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
@@ -78,6 +80,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   const push = useSingleTap(router.push);
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
+  const dateFormatContext = useDateFormatContext();
   const badgeType = AchievementPolicy.badgeType(achievement);
 
   const handlePress = () => {
@@ -102,7 +105,12 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
             type="2RowTypeA"
             top={achievement.weekLabel}
             topProps={{ weight: 'semibold', shade: 8 }}
-            bottom={t('list.completedRatio', {
+            bottom={t('list.periodWithCompletedRatio', {
+              period: formatDateKeyRange(
+                achievement.dateRange.startDate,
+                achievement.dateRange.endDate,
+                dateFormatContext,
+              ),
               completed: achievement.completedTodos,
               total: achievement.totalTodos,
             })}

@@ -22,7 +22,7 @@ export class PrismaWeatherLocationRepository implements WeatherLocationRepositor
         .select("userId", "latitude", "longitude", "gridX", "gridY")
         .first(),
     );
-    return row === null ? null : UserLocation.reconstitute(row);
+    return row == null ? null : UserLocation.reconstitute(row);
   }
 
   async upsert(location: UserLocation): Promise<UserLocation> {

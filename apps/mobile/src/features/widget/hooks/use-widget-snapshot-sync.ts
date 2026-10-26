@@ -5,11 +5,16 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { getWeekRange } from '@src/shared/utils/date';
-import { useQuery } from '@tanstack/react-query';
+import { getCalendarWeekOfDateKey } from '@src/shared/utils/calendar-week';
+import { addDaysToDateKey } from '@src/shared/utils/date-key';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
-import type { WidgetSnapshotContext, WidgetTranslateFn } from '../apis/widget-snapshot.mapper';
+import type {
+  WidgetSnapshotContext,
+  WidgetSummaryInput,
+  WidgetTranslateFn,
+} from '../apis/widget-snapshot.mapper';
 import type { WidgetSyncService } from '../apis/widget-sync.service';
 
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
@@ -17,6 +22,7 @@ export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolvi
 const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
 
 function buildContext(
+  timeZone: string,
   weekCompletions?: WidgetSnapshotContext['weekCompletions'],
   userId?: string,
 ): WidgetSnapshotContext {
@@ -24,6 +30,7 @@ function buildContext(
     t: translate,
     locale: toResolvedLanguage(i18n.language),
     now: new Date(),
+    timeZone,
     weekCompletions,
     userId,
   };
@@ -33,13 +40,16 @@ interface LatestWidgetSnapshot {
   authState: WidgetSyncAuthState;
   userId?: string;
   date: string;
-  data?: Parameters<WidgetSyncService['syncSummary']>[0];
+  timeZone: string;
+  tomorrowDate: string;
+  data?: WidgetSummaryInput;
+  tomorrowData?: WidgetSummaryInput;
   completions?: Record<string, NonNullable<WidgetSnapshotContext['weekCompletions']>[number]>;
 }
 
 function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSnapshot): void {
   if (latest.authState === 'unauthenticated') {
-    widgetSyncService.syncLoggedOut(latest.date, buildContext());
+    widgetSyncService.syncLoggedOut(latest.date, buildContext(latest.timeZone));
     return;
   }
   if (
@@ -48,8 +58,14 @@ function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSn
     latest.data?.date === latest.date
   ) {
     widgetSyncService.syncSummary(
-      latest.data,
+      {
+        today: latest.data,
+        // 서버가 아직 같은 날짜를 돌려주지 않으면 내일 day 없이 쓰고 자정부터 stale을 보인다.
+        tomorrow:
+          latest.tomorrowData?.date === latest.tomorrowDate ? latest.tomorrowData : undefined,
+      },
       buildContext(
+        latest.timeZone,
         latest.completions ? Object.values(latest.completions) : undefined,
         latest.userId,
       ),
@@ -59,47 +75,80 @@ function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSn
 
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
-  const {
-    currentLocalDate,
-    currentLocalDateKey: date,
-    currentTimeZone,
-    currentUtcOffsetMinutes,
-  } = useLocalDate();
-  const { rangeStart, rangeEnd } = getWeekRange(currentLocalDate);
+  const { currentLocalDateKey: date, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
+  const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeekOfDateKey(date);
   const { data: user } = useQuery({
     ...useGetMeQueryOptions(),
     enabled: authState === 'authenticated',
     throwOnError: false,
   });
   const userId = user?.id;
-  const { data } = useQuery({
-    ...useGetTodoSummaryQueryOptions({ date, userId }),
-    enabled: authState === 'authenticated' && userId != null,
-    throwOnError: false,
+  const tomorrowDate = addDaysToDateKey(date, 1);
+  const isUserDataEnabled = authState === 'authenticated' && userId != null;
+  const todayQueryOptions = useGetTodoSummaryQueryOptions({ date, todayDate: date, userId });
+  const tomorrowQueryOptions = useGetTodoSummaryQueryOptions({
+    date: tomorrowDate,
+    todayDate: date,
+    userId,
+  });
+  const [{ data }, { data: tomorrowData }] = useQueries({
+    queries: [
+      { ...todayQueryOptions, enabled: isUserDataEnabled, throwOnError: false },
+      { ...tomorrowQueryOptions, enabled: isUserDataEnabled, throwOnError: false },
+    ],
   });
   const { data: completions } = useQuery({
     ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd, userId }),
-    enabled: authState === 'authenticated' && userId != null,
+    enabled: isUserDataEnabled,
     throwOnError: false,
   });
 
   useEffect(() => {
-    syncLatest(widgetSyncService, { authState, userId, date, data, completions });
+    syncLatest(widgetSyncService, {
+      authState,
+      userId,
+      date,
+      timeZone: currentTimeZone,
+      tomorrowDate,
+      data,
+      tomorrowData,
+      completions,
+    });
   }, [
     authState,
     data,
+    tomorrowData,
     completions,
     date,
+    tomorrowDate,
     currentTimeZone,
     currentUtcOffsetMinutes,
     userId,
     widgetSyncService,
   ]);
 
-  const latestRef = useRef<LatestWidgetSnapshot>({ data, completions, authState, userId, date });
+  const latestRef = useRef<LatestWidgetSnapshot>({
+    data,
+    tomorrowData,
+    completions,
+    authState,
+    userId,
+    date,
+    timeZone: currentTimeZone,
+    tomorrowDate,
+  });
   useEffect(() => {
-    latestRef.current = { data, completions, authState, userId, date };
-  }, [data, completions, authState, userId, date]);
+    latestRef.current = {
+      data,
+      tomorrowData,
+      completions,
+      authState,
+      userId,
+      date,
+      timeZone: currentTimeZone,
+      tomorrowDate,
+    };
+  }, [data, tomorrowData, completions, authState, userId, date, currentTimeZone, tomorrowDate]);
 
   useEffect(() => {
     const handleLanguageChanged = () => {

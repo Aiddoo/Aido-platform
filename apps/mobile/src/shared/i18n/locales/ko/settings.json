@@ -12,7 +12,8 @@
     "changePassword": "비밀번호 변경",
     "deleteAccount": "회원 탈퇴",
     "subscription": "구독 관리",
-    "categorySettings": "카테고리"
+    "categorySettings": "카테고리",
+    "blockedUsers": "차단한 사용자"
   },
   "language": {
     "system": "시스템 설정",
@@ -40,7 +41,18 @@
     "marketing": "마케팅 수신 동의",
     "marketingDescription": "이벤트 및 프로모션 정보를 받습니다",
     "marketingPush": "광고성 앱 푸시 수신 동의",
-    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받습니다"
+    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받습니다",
+    "aiDataSharing": {
+      "label": "AI 기능 데이터 제공",
+      "description": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",
+      "agreedOn": "{{date}} 동의",
+      "withdrawTitle": "동의를 철회할까요?",
+      "withdrawDescription": "AI로 할 일 정리·리포트·제안을 쓸 수 없어요. 이미 만든 할 일은 그대로 남아요.",
+      "withdrawConfirm": "철회하기",
+      "declinedStatus": "사용 안 함으로 설정했어요. 켜면 AI 기능을 다시 쓸 수 있어요.",
+      "undecidedStatus": "아직 선택하지 않았어요. AI 기능을 처음 쓸 때 물어봐요.",
+      "decline": "사용 안 함"
+    }
   },
   "categorySettings": {
     "header": "카테고리를 편집하거나\n순서를 바꿀 수 있어요",

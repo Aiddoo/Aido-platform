@@ -1,0 +1,53 @@
+{
+  "fallbackName": "Unknown user",
+  "report": {
+    "caption": {
+      "PROFILE": "Report profile",
+      "TODO": "Report to-do",
+      "COMMENT": "Report comment",
+      "NUDGE_MESSAGE": "Report nudge message",
+      "CHEER_MESSAGE": "Report cheer message"
+    },
+    "title": "Why are you reporting this?",
+    "reason": {
+      "SPAM": "Spam or ads",
+      "HARASSMENT": "Harassment or abuse",
+      "INAPPROPRIATE": "Inappropriate content",
+      "IMPERSONATION": "Impersonation",
+      "OTHER": "Something else"
+    },
+    "detailLabel": "Details (optional)",
+    "detailPlaceholder": "Tell us what's wrong",
+    "notice": "Only our team sees reports. We won't tell the other person.",
+    "submit": "Report",
+    "toast": "Report sent",
+    "toastDescription": "We'll review it",
+    "toastBlockAction": "Block"
+  },
+  "block": {
+    "action": "Block",
+    "confirmTitle": "Block {{name}}?",
+    "confirmDescription": "You'll be removed from each other's friends, and you won't see each other's to-dos, nudges, or comments. They won't be notified.",
+    "confirm": "Block",
+    "toast": "You blocked {{name}}"
+  },
+  "unblock": {
+    "action": "Unblock",
+    "confirmTitle": "Unblock {{name}}?",
+    "confirmDescription": "You'll need to send a new friend request.",
+    "confirm": "Unblock",
+    "toast": "Unblocked"
+  },
+  "blockedUsers": {
+    "totalCount": "{{count}} total",
+    "subtitle": "#{{userTag}} · Blocked {{date}}",
+    "emptyTitle": "No blocked users",
+    "emptyDescription": "Blocked people can't see your to-dos or comments"
+  },
+  "menu": {
+    "report": "Report",
+    "more": "More",
+    "moreFor": "More options for {{name}}",
+    "reportCheer": "Report cheer message"
+  }
+}

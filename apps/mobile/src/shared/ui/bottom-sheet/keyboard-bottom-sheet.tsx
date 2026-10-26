@@ -1,6 +1,8 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
+  BottomSheetFooter,
+  type BottomSheetFooterProps,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import {
@@ -9,7 +11,9 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
+  useState,
 } from 'react';
 import {
   AppState,
@@ -18,9 +22,12 @@ import {
   Platform,
   StyleSheet,
   useWindowDimensions,
+  View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
 import { HANDLE_HEIGHT, SHEET_INDEX } from './constants';
@@ -34,6 +41,8 @@ interface KeyboardBottomSheetProps {
   /** 시트 닫기 애니메이션 시작 시 호출 (backdrop 탭, 스와이프 등) */
   onCloseStart?: () => void;
   children: ReactNode;
+  /** 내용이 길어 스크롤돼도 시트 아래(키보드 위)에 고정되는 영역. 주 동작 버튼을 둔다. */
+  footer?: ReactNode;
 }
 
 /**
@@ -49,6 +58,7 @@ export const KeyboardBottomSheet = ({
   onOpenChange,
   onCloseStart,
   children,
+  footer,
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
@@ -64,6 +74,9 @@ export const KeyboardBottomSheet = ({
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
   const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
+  const bottomPadding = (insets.bottom || 20) + 4;
+  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다
+  const [footerHeight, setFooterHeight] = useState(0);
 
   const closeSheet = useCallback(() => {
     isClosingRef.current = true;
@@ -202,18 +215,44 @@ export const KeyboardBottomSheet = ({
     isClosingRef.current = false;
   };
 
+  // gorhom 기본 press 동작(close/collapse)은 forceClose와 겹치므로 탭은 closeSheet만 실행한다.
+  const backdropTapGesture = useMemo(
+    () =>
+      Gesture.Tap().onEnd(() => {
+        scheduleOnRN(closeSheet);
+      }),
+    [closeSheet],
+  );
+
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={SHEET_INDEX.CLOSED}
-        appearsOnIndex={SHEET_INDEX.OPEN}
-        opacity={0.5}
-        pressBehavior={'override' as 'none'}
-        onPress={closeSheet}
-      />
+      <GestureDetector gesture={backdropTapGesture}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={SHEET_INDEX.CLOSED}
+            appearsOnIndex={SHEET_INDEX.OPEN}
+            opacity={0.5}
+            pressBehavior="none"
+          />
+        </View>
+      </GestureDetector>
     ),
-    [closeSheet],
+    [backdropTapGesture],
+  );
+
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) => (
+      <BottomSheetFooter {...props}>
+        <View
+          onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          style={[styles.footer, backgroundStyle, { paddingBottom: bottomPadding }]}
+        >
+          {footer}
+        </View>
+      </BottomSheetFooter>
+    ),
+    [backgroundStyle, bottomPadding, footer],
   );
 
   const handleContentSizeChange = (_width: number, height: number) => {
@@ -251,10 +290,14 @@ export const KeyboardBottomSheet = ({
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
+      footerComponent={footer == null ? undefined : renderFooter}
     >
       <BottomSheetScrollView
         onContentSizeChange={handleContentSizeChange}
-        contentContainerStyle={[styles.content, { paddingBottom: (insets.bottom || 20) + 4 }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: footer == null ? bottomPadding : footerHeight + 4 },
+        ]}
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -271,6 +314,10 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  footer: {
+    paddingTop: 12,
     paddingHorizontal: 20,
   },
 });

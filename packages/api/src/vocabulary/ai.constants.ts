@@ -1,6 +1,12 @@
 export const AI_PARSE_LIMITS = {
   /** 무료 사용자 월간 AI 파싱 제한 (KST 기준 매월 1일 00:00 리셋) */
   FREE_MONTHLY_LIMIT: 5,
+  /** parse-todo 입력 최대 길이. 요청 검증과 프롬프트 입력이 같은 값을 쓴다. */
+  TODO_TEXT_MAX_LENGTH: 500,
+  /** parse-memo가 만드는 할 일 최대 수. 넘친 수는 meta.omittedTodoCount로 알린다. */
+  MEMO_MAX_TODOS: 5,
+  /** parse-memo 할 일 하나의 서브투두 최대 수 */
+  MEMO_MAX_ITEMS: 5,
 } as const;
 
 export const SUBSCRIPTION_AI_PARSE_LIMITS = {
@@ -10,6 +16,11 @@ export const SUBSCRIPTION_AI_PARSE_LIMITS = {
   CANCELLED: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
 } as const;
 
+// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤 사용하지 않는 AI_REPORT_LIMITS를 제거한다
+/**
+ * @deprecated 어디에서도 쓰지 않고 실제 디스패치(매시, 사용자 로컬 월요일·1일)와도 다르다.
+ * 외부 소비 확인 뒤 제거한다.
+ */
 export const AI_REPORT_LIMITS = {
   WEEKLY_CRON_HOUR_UTC: 22,
   WEEKLY_CRON_DAY: 0,
@@ -28,6 +39,8 @@ export const AI_SUGGESTION_LIMITS = {
   /** 3회 이상 반복 패턴에 요구되는 최소 신뢰도 */
   CONFIDENCE_GATE_MULTI_OCC: 0.6,
   ANALYSIS_WEEKS: 2,
+  /** 분석에 읽는 최근 할 일 상한. 입력 토큰과 응답 잘림을 막는다. */
+  MAX_ANALYSIS_TODOS: 300,
   CONTEXT_WEEKS: 4,
   MAX_SUGGESTIONS_PER_USER: 5,
   SUGGESTION_EXPIRY_DAYS: 14,

@@ -1,5 +1,6 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -18,6 +19,7 @@ import {
   type QueryErrorFallbackProps,
   Box,
 } from '@src/shared/ui';
+import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import {
   usePrefetchQuery,
   useSuspenseInfiniteQuery,
@@ -48,6 +50,7 @@ export function AchievementSummaryCard() {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
+  const dateFormatContext = useDateFormatContext();
   const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
   const latest = weeklyAchievements.items[0];
@@ -118,7 +121,14 @@ export function AchievementSummaryCard() {
             textBreakStrategy="highQuality"
           >
             {t('card.certificate', {
-              weekLabel: latest.weekLabel,
+              weekLabel: t('card.weekWithPeriod', {
+                weekLabel: latest.weekLabel,
+                period: formatDateKeyRange(
+                  latest.dateRange.startDate,
+                  latest.dateRange.endDate,
+                  dateFormatContext,
+                ),
+              }),
               total: latest.totalTodos,
               completed: latest.completedTodos,
               rate: latest.completionRate,

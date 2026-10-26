@@ -1,0 +1,730 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- 제품 페이지 헤더·검색 결과·Play 그래픽 이미지·인앱 이벤트 미디어. render.mjs가 window.renderJob(job)을 부른다.
+     디자인은 CSS 픽셀(design)로 하고 scale배로 저장한다. 참고: Aido-Landing scripts/invite-share/template.html -->
+    <style>
+      @font-face {
+        font-family: 'Jua Subset';
+        src: url(../fonts/jua-subset.woff2) format('woff2');
+      }
+      @font-face {
+        font-family: 'Aido Hand Subset';
+        src: url(../fonts/hand-subset.woff2) format('woff2');
+      }
+      @font-face {
+        font-family: 'Wanted Sans';
+        font-weight: 600;
+        src: url(../../../assets/fonts/WantedSans-SemiBold.ttf);
+      }
+      @font-face {
+        font-family: 'Wanted Sans';
+        font-weight: 700;
+        src: url(../../../assets/fonts/WantedSans-Bold.ttf);
+      }
+
+      /* hex만 쓴다(lib/contrast.mjs). 앱 라이트 테마 --main ≈ #ff6b43 */
+      :root {
+        --brand: #ff6b43;
+        --brand-deep: #c2410c;
+        --em: #e8552b;
+        --ink: #222222;
+        --ink-warm: #2a1a12;
+        --cream: #fffaf5;
+        --muted: #8a8a8a;
+        --line: #ececec;
+        --fish: #23a2ff;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        font-family: 'Wanted Sans', sans-serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      body.cream {
+        background:
+          radial-gradient(42% 60% at 6% 0%, #ffe9dc 0%, transparent 70%),
+          radial-gradient(40% 55% at 100% 100%, #fff1d6 0%, transparent 70%), var(--cream);
+      }
+      body.cream::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgb(255 107 67 / 0.12) 1.4px, transparent 1.6px);
+        background-size: var(--dot, 26px) var(--dot, 26px);
+      }
+      body.orange {
+        background: var(--brand);
+      }
+      body.orange::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgb(255 255 255 / 0.12) 1.6px, transparent 1.8px);
+        background-size: var(--dot, 30px) var(--dot, 30px);
+      }
+      .abs {
+        position: absolute;
+      }
+
+      .tagline {
+        position: absolute;
+        font-family: 'Aido Hand Subset', cursive;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      .tagline.swash::after {
+        content: '';
+        position: absolute;
+        left: 2%;
+        right: -2%;
+        bottom: -0.24em;
+        height: 0.28em;
+        background: no-repeat center / 100% 100%
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 10' preserveAspectRatio='none'%3E%3Cpath d='M2 7 C 50 2, 120 2, 198 5' fill='none' stroke='%23ff6b43' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+      }
+      .headline {
+        position: absolute;
+        font-family: 'Jua Subset', sans-serif;
+        line-height: 1.16;
+        letter-spacing: -0.01em;
+        white-space: pre;
+      }
+      .headline em {
+        font-style: normal;
+        color: var(--em);
+      }
+
+      .brand {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .brand img {
+        border-radius: 24%;
+      }
+
+      .cat {
+        position: absolute;
+        filter: drop-shadow(0 12px 22px rgb(120 60 20 / 0.16));
+      }
+      .tile {
+        position: absolute;
+        border-radius: 24%;
+        box-shadow: 0 18px 40px -12px rgb(120 60 20 / 0.35);
+      }
+
+      .card {
+        position: absolute;
+        background: #ffffff;
+        border-radius: 1.6em;
+        padding: 1em 1.15em 1.15em;
+        box-shadow:
+          0 1px 0 rgb(0 0 0 / 0.03),
+          0 1.2em 2.6em -0.8em rgb(255 107 67 / 0.3),
+          0 0.25em 0.9em rgb(0 0 0 / 0.05);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 0.62em;
+        height: 2.6em;
+      }
+      .row + .row {
+        margin-top: 0.36em;
+      }
+      .avatar {
+        width: 2.1em;
+        height: 2.1em;
+        border-radius: 50%;
+        object-fit: cover;
+        flex: none;
+      }
+      .todo {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+      }
+      .todo.done {
+        flex: 1;
+        color: var(--muted);
+        text-decoration: line-through;
+      }
+      .check {
+        display: grid;
+        place-items: center;
+        width: 1.5em;
+        height: 1.5em;
+        border-radius: 0.44em;
+        border: 0.13em solid var(--brand);
+        flex: none;
+      }
+      .check.done {
+        background: var(--brand);
+      }
+      .poke {
+        margin-right: auto;
+        padding: 0.3em 0.7em 0.3em 0.55em;
+        border-radius: 999px;
+        background: var(--brand);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.86em;
+        display: flex;
+        align-items: center;
+        gap: 0.25em;
+        transform: rotate(-5deg);
+        box-shadow: 0 0.4em 0.9em -0.25em rgb(255 107 67 / 0.55);
+      }
+      .divider {
+        height: 1px;
+        margin: 0.75em 0;
+        background: var(--line);
+      }
+      .board {
+        display: flex;
+        gap: 0.6em;
+        align-items: center;
+      }
+      .stamp {
+        display: grid;
+        place-items: center;
+        width: 2.5em;
+        height: 2.5em;
+        border-radius: 50%;
+        flex: none;
+      }
+      .stamp svg {
+        width: 1.38em;
+        height: 1.38em;
+      }
+      .stamp.on {
+        background: var(--brand);
+        color: #ffffff;
+        transform: rotate(-6deg);
+      }
+      .stamp.on + .stamp.on {
+        transform: rotate(8deg);
+      }
+      .stamp.wait {
+        border: 0.1em dashed var(--brand);
+        background: rgb(255 107 67 / 0.1);
+        color: var(--brand);
+      }
+      .stamp.wait svg {
+        opacity: 0.4;
+      }
+      .stamp.off {
+        background: #fff1eb;
+        color: #ffffff;
+      }
+      .stamp.fish {
+        border: 1px solid var(--fish);
+        background: #e9f6ff;
+        color: var(--fish);
+      }
+      .stamp.fish svg {
+        width: 1.5em;
+        height: 0.94em;
+      }
+      .condition {
+        display: block;
+        margin-top: 0.35em;
+        color: #6b6b6b;
+        font-weight: 600;
+        font-size: 0.56em;
+      }
+      .reward {
+        display: inline-block;
+        margin-top: 0.8em;
+        padding: 0.42em 0.8em;
+        border-radius: 999px;
+        background: #fff0e8;
+        color: var(--brand-deep);
+        font-weight: 700;
+        font-size: 0.8em;
+        white-space: nowrap;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.7em;
+      }
+      .grid .stamp {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1;
+      }
+      .grid .stamp svg {
+        width: 52%;
+        height: 52%;
+      }
+      .grid .stamp.fish svg {
+        width: 58%;
+        height: 36%;
+      }
+
+      .motif {
+        position: absolute;
+      }
+      .motif svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <path
+          id="paw"
+          d="M19.3629 7.76445C19.1461 7.24922 18.7859 6.87773 18.3211 6.69062L18.3148 6.68828C18.1033 6.60545 17.878 6.56305 17.6508 6.56328H17.6258C16.5617 6.5793 15.4754 7.48359 14.923 8.81367C14.518 9.78633 14.4715 10.8324 14.7988 11.6121C15.0152 12.1277 15.3762 12.4992 15.843 12.6863L15.848 12.6883C16.0596 12.7711 16.2849 12.8135 16.5121 12.8133C17.5863 12.8133 18.684 11.909 19.2465 10.5613C19.6465 9.58984 19.6906 8.54453 19.3629 7.76445ZM15.1113 13.5012C14.4977 13.1324 13.9176 12.7836 13.5387 12.157C12.4934 10.4227 11.8621 9.37578 10.207 9.37578C8.55195 9.37578 7.91914 10.4227 6.87148 12.157C6.4918 12.7844 5.91055 13.1336 5.29492 13.5039C4.58906 13.9281 3.85977 14.3664 3.54492 15.2289C3.4225 15.5398 3.36084 15.8713 3.36328 16.2055C3.36328 17.6098 4.45703 18.7523 5.80078 18.7523C6.49414 18.7523 7.23203 18.5121 8.01289 18.2578C8.76367 18.0133 9.53984 17.7605 10.2109 17.7605C10.882 17.7605 11.6562 18.0133 12.4043 18.2578C13.1836 18.5105 13.918 18.7508 14.6133 18.7508C15.9551 18.7508 17.0469 17.6082 17.0469 16.2039C17.048 15.8695 16.985 15.538 16.8613 15.2273C16.5465 14.3641 15.8168 13.9254 15.1113 13.5012ZM6.06641 8.00273C6.53125 8.58594 7.12109 8.90703 7.72734 8.90703C7.81011 8.90701 7.89275 8.90088 7.97461 8.88867C9.23906 8.70273 10.027 7.15977 9.76836 5.37305C9.66016 4.62188 9.37109 3.92227 8.95703 3.40352C8.49297 2.82148 7.90234 2.50078 7.29648 2.50078C7.21372 2.5008 7.13108 2.50694 7.04922 2.51914C5.78477 2.70508 4.99688 4.24805 5.25547 6.03477C5.36328 6.78477 5.65234 7.48359 6.06641 8.00273ZM12.4398 8.88867C12.5217 8.90088 12.6043 8.90701 12.6871 8.90703C13.2937 8.90703 13.8832 8.58594 14.348 8.00273C14.7617 7.48359 15.0492 6.78477 15.1586 6.03398C15.4172 4.24805 14.6293 2.70508 13.3648 2.51836C13.283 2.50616 13.2003 2.50002 13.1176 2.5C12.5117 2.50078 11.9211 2.82148 11.457 3.40352C11.043 3.92227 10.7539 4.62188 10.6461 5.37383C10.3875 7.15977 11.1754 8.70273 12.4398 8.88867ZM4.56602 12.6883L4.57148 12.6863C5.0375 12.4992 5.39805 12.1281 5.61406 11.6129C5.94141 10.8316 5.89531 9.78672 5.49102 8.81406C4.93125 7.46797 3.83398 6.56328 2.76094 6.56328C2.53371 6.56295 2.30844 6.60536 2.09688 6.68828L2.09141 6.69023C1.62656 6.87578 1.26602 7.24844 1.05 7.76367C0.722657 8.54492 0.768751 9.58984 1.17305 10.5625C1.73281 11.9086 2.83008 12.8133 3.90313 12.8133C4.12996 12.8135 4.35482 12.7711 4.56602 12.6883Z"
+          fill="currentColor"
+        />
+        <path
+          id="fish"
+          d="M9.73828 0C13.5125 6.56547e-06 17.1946 2.30511 18.5498 4.99414C19.8313 3.14895 22.2853 1.40268 23.417 1.40234C24.9865 1.40234 22.8867 4.76299 22.8867 7.08594C22.8867 9.40889 24.9866 12.6943 23.417 12.6943C22.2918 12.694 19.8597 11.0058 18.5723 9.19434C17.2364 11.8742 13.5343 14.1338 9.73828 14.1338C4.98784 14.1338 0.000215724 10.5979 0 7.12402C0 3.65006 4.98774 0 9.73828 0Z"
+          fill="currentColor"
+        />
+        <path
+          id="bone"
+          d="M7 1a4.5 4.5 0 0 1 4.3 3.2h17.4A4.5 4.5 0 1 1 33 9a4.5 4.5 0 1 1-4.3 5.8H11.3A4.5 4.5 0 1 1 7 9a4.5 4.5 0 1 1 0-8z"
+          fill="currentColor"
+        />
+        <path
+          id="check"
+          d="M5 10.5l3.2 3.2L15 6.8"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </defs>
+    </svg>
+    <script>
+      const ICON = {
+        paw: '<svg viewBox="0 0 20 20"><use href="#paw"/></svg>',
+        fish: '<svg viewBox="0 0 24 15"><use href="#fish"/></svg>',
+        bone: '<svg viewBox="0 0 38 18"><use href="#bone"/></svg>',
+        check:
+          '<svg viewBox="0 0 20 20" style="width:1em;height:1em;color:#fff"><use href="#check"/></svg>',
+      };
+
+      function el(tag, className, style = {}, parent = document.body) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        for (const [key, value] of Object.entries(style))
+          node.style[key] = typeof value === 'number' ? `${value}px` : value;
+        parent.append(node);
+        return node;
+      }
+
+      function setRich(node, text) {
+        for (const [index, line] of text.split('\n').entries()) {
+          if (index > 0) node.append(document.createElement('br'));
+          for (const part of line.split(/(\[[^\]]+\])/)) {
+            if (!part) continue;
+            if (part.startsWith('[')) {
+              const em = document.createElement('em');
+              em.textContent = part.slice(1, -1);
+              node.append(em);
+            } else node.append(part);
+          }
+        }
+      }
+
+      function contrastTag(node, level, background) {
+        node.dataset.contrast = level;
+        node.dataset.bg = background;
+      }
+
+      // 장식: 발자국 길, 생선, 뼈다귀(낮은 불투명도)
+      function motif(kind, x, y, size, { rotate = 0, opacity = 0.2, color = '#ff6b43' } = {}) {
+        const node = el('div', 'motif', {
+          left: x,
+          top: y,
+          width: size,
+          height: kind === 'paw' ? size : size * 0.5,
+          opacity: String(opacity),
+          color,
+          transform: `rotate(${rotate}deg)`,
+        });
+        node.innerHTML = ICON[kind];
+        return node;
+      }
+      function pawTrail(points, size, color, from = 0.12, to = 0.45) {
+        points.forEach(([x, y, rotate], index) =>
+          motif('paw', x, y, size, {
+            rotate,
+            color,
+            opacity: from + ((to - from) * index) / Math.max(1, points.length - 1),
+          }),
+        );
+      }
+
+      // 보상 칩 + 조건 안내(초대한 사람의 보상은 친구 활동 조건이 있다)
+      function rewardHtml(copy) {
+        return `<span class="reward" data-contrast="normal" data-bg="#fff0e8">${copy.reward}</span><span class="condition" data-contrast="normal" data-bg="#ffffff">${copy.condition}</span>`;
+      }
+
+      // 친구 할 일·콕·발자국 카드. fontSize가 카드 크기를 정한다.
+      function card(x, y, width, fontSize, copy, assets, { reward = true, inline = false } = {}) {
+        // 너비는 최소값이고, 영어처럼 긴 문구는 카드가 늘어나 줄이 카드 밖으로 넘치지 않는다.
+        const node = el('div', 'card', {
+          left: x,
+          top: y,
+          minWidth: width,
+          width: 'max-content',
+          fontSize,
+        });
+        node.innerHTML = `
+    <div class="row"><img class="avatar" src="${assets.avatars[0]}"><span class="todo done">${copy.rows[0]}</span><span class="check done">${ICON.check}</span></div>
+    <div class="row"><img class="avatar" src="${assets.avatars[1]}"><span class="todo" data-contrast="normal" data-bg="#ffffff">${copy.rows[1]}</span>
+      <span class="poke"><span style="display:inline-block;width:.95em;height:.95em">${ICON.paw}</span>${copy.nudge}</span><span class="check"></span></div>
+    <div class="divider"></div>
+    <div class="board"><span class="stamp on">${ICON.paw}</span><span class="stamp on">${ICON.paw}</span><span class="stamp wait">${ICON.paw}</span><span class="stamp fish">${ICON.fish}</span>
+      ${reward && inline ? `<span style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end">${rewardHtml(copy)}</span>` : ''}</div>
+    ${reward && !inline ? rewardHtml(copy) : ''}`;
+        return node;
+      }
+
+      // 글자 없는 발자국 판(이벤트 상세)
+      function board(x, y, width, fontSize) {
+        const node = el('div', 'card', { left: x, top: y, width, fontSize, padding: '1.4em' });
+        const cells = [
+          'on',
+          'on',
+          'on',
+          'fish',
+          'on',
+          'wait',
+          'off',
+          'off',
+          'off',
+          'off',
+          'off',
+          'fish',
+        ];
+        node.innerHTML = `<div class="grid">${cells.map((cell) => `<span class="stamp ${cell}">${cell === 'fish' ? ICON.fish : ICON.paw}</span>`).join('')}</div>`;
+        return node;
+      }
+
+      // 친구 고양이 프로필과 찍힌 발자국 두 개(글자 없음)
+      function friendCard(x, y, width, assets, rotate = 5) {
+        const node = el('div', 'card', {
+          left: x,
+          top: y,
+          width,
+          fontSize: width / 11,
+          padding: '0.9em',
+          transform: `rotate(${rotate}deg)`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.7em',
+        });
+        node.innerHTML = `<img src="${assets.friend}" style="width:100%;border-radius:22%">
+    <div class="board" style="justify-content:center"><span class="stamp on">${ICON.paw}</span><span class="stamp on">${ICON.paw}</span><span class="stamp wait">${ICON.paw}</span></div>`;
+        return node;
+      }
+
+      // 줄이 maxWidth를 넘으면 글자를 줄인다.
+      function fit(node, maxWidth) {
+        let size = parseFloat(node.style.fontSize);
+        node.style.whiteSpace = 'pre';
+        const measure = () =>
+          Math.max(...[...node.getClientRects()].map((rect) => rect.width), node.scrollWidth);
+        while (measure() > maxWidth && size > 10) {
+          size -= 2;
+          node.style.fontSize = `${size}px`;
+        }
+      }
+
+      function brand(x, y, size, name, icon) {
+        const node = el('div', 'brand', { left: x, top: y, fontSize: size, gap: size * 0.32 });
+        node.innerHTML = `<img src="${icon}" style="width:${size * 1.45}px;height:${size * 1.45}px">${name}`;
+        return node;
+      }
+
+      const SCENES = {
+        header({ copy, card: cardCopy, assets, name }) {
+          document.body.className = 'cream';
+          const tagline = el('p', 'tagline swash', {
+            left: 330,
+            top: 236,
+            fontSize: 60,
+            color: '#c2410c',
+            transform: 'rotate(-2deg)',
+            transformOrigin: 'left center',
+          });
+          tagline.textContent = copy.tagline;
+          contrastTag(tagline, 'normal', '#fffaf5');
+          const headline = el('h1', 'headline', {
+            left: 326,
+            top: 330,
+            fontSize: 128,
+            color: '#222222',
+          });
+          setRich(headline, copy.headline);
+          fit(headline, 720);
+          contrastTag(headline, 'large', '#fffaf5');
+          brand(332, 690, 30, name, assets.icon);
+          pawTrail(
+            [
+              [760, 700, 74],
+              [830, 664, 66],
+              [900, 700, 70],
+              [970, 650, 60],
+              [1040, 676, 64],
+            ],
+            34,
+            '#ff6b43',
+          );
+          const cardNode = card(1090, 352, 540, 27, cardCopy, assets);
+          el('img', 'cat', { left: 1170, top: 30, width: 410, zIndex: 0 }).src = assets.cat;
+          cardNode.style.zIndex = 1;
+          motif('fish', 1690, 220, 70, { rotate: -14, color: '#23a2ff', opacity: 0.35 });
+          motif('bone', 1700, 600, 84, { rotate: 18, color: '#f2b680', opacity: 0.55 });
+          motif('fish', 230, 110, 54, { rotate: 12, color: '#23a2ff', opacity: 0.22 });
+          motif('bone', 220, 720, 64, { rotate: -16, color: '#f2b680', opacity: 0.45 });
+        },
+        search({ copy, card: cardCopy, assets }) {
+          document.body.className = 'orange';
+          const tagline = el('p', 'tagline', {
+            left: 0,
+            width: 1920,
+            top: 96,
+            fontSize: 66,
+            color: '#2a1a12',
+            textAlign: 'center',
+          });
+          tagline.textContent = copy.tagline;
+          contrastTag(tagline, 'normal', '#ff6b43');
+          const headline = el('h1', 'headline', {
+            left: 160,
+            width: 1600,
+            top: 186,
+            fontSize: 132,
+            color: '#2a1a12',
+            textAlign: 'center',
+          });
+          setRich(headline, copy.headline);
+          fit(headline, 1600);
+          contrastTag(headline, 'large', '#ff6b43');
+          const cardNode = card(260, 760, 1400, 42, cardCopy, assets, { inline: true });
+          el('img', 'cat', { left: 680, top: 340, width: 560, zIndex: 0 }).src = assets.cat;
+          cardNode.style.zIndex = 1;
+          pawTrail(
+            [
+              [150, 1100, 70],
+              [220, 1040, 62],
+              [170, 960, 66],
+              [240, 900, 58],
+            ],
+            54,
+            '#ffffff',
+            0.2,
+            0.42,
+          );
+          pawTrail(
+            [
+              [1700, 520, -60],
+              [1640, 600, -66],
+              [1710, 680, -58],
+              [1650, 760, -64],
+            ],
+            54,
+            '#ffffff',
+            0.2,
+            0.42,
+          );
+          motif('fish', 1610, 1060, 120, { rotate: -12, color: '#ffffff', opacity: 0.35 });
+          motif('bone', 200, 560, 130, { rotate: 16, color: '#ffffff', opacity: 0.32 });
+        },
+        'feature-graphic'({ copy, card: cardCopy, assets }) {
+          document.body.className = 'orange';
+          document.body.style.setProperty('--dot', '22px');
+          const tagline = el('p', 'tagline', {
+            left: 92,
+            top: 118,
+            fontSize: 34,
+            color: '#2a1a12',
+          });
+          tagline.textContent = copy.tagline;
+          contrastTag(tagline, 'normal', '#ff6b43');
+          const headline = el('h1', 'headline', {
+            left: 90,
+            top: 172,
+            fontSize: 64,
+            color: '#2a1a12',
+          });
+          setRich(headline, copy.headline);
+          fit(headline, 440);
+          contrastTag(headline, 'large', '#ff6b43');
+          const cardNode = card(548, 262, 420, 20, cardCopy, assets, { reward: false });
+          el('img', 'cat', { left: 628, top: 26, width: 300, zIndex: 0 }).src = assets.cat;
+          cardNode.style.zIndex = 1;
+          motif('fish', 470, 70, 46, { rotate: -12, color: '#ffffff', opacity: 0.35 });
+          motif('bone', 120, 410, 56, { rotate: 14, color: '#ffffff', opacity: 0.3 });
+        },
+        'feature-graphic-invite'({ assets }) {
+          document.body.className = 'cream';
+          document.body.style.setProperty('--dot', '20px');
+          el('img', 'cat', { left: 60, top: 70, width: 440 }).src = assets.cat;
+          friendCard(690, 70, 230, assets);
+          pawTrail(
+            [
+              [470, 420, 76],
+              [540, 388, 66],
+              [610, 425, 72],
+            ],
+            40,
+            '#ff6b43',
+            0.35,
+            0.95,
+          );
+          motif('fish', 590, 60, 64, { rotate: -14, color: '#23a2ff', opacity: 0.5 });
+          motif('bone', 940, 380, 64, { rotate: 16, color: '#f2b680', opacity: 0.8 });
+        },
+        'event-card'({ assets }) {
+          document.body.className = 'cream';
+          document.body.style.setProperty('--dot', '30px');
+          el('img', 'cat', { left: 300, top: 250, width: 860 }).src = assets.cat;
+          friendCard(1180, 200, 420, assets);
+          pawTrail(
+            [
+              [1010, 930, 74],
+              [1110, 880, 64],
+              [1210, 940, 72],
+            ],
+            76,
+            '#ff6b43',
+            0.5,
+            0.95,
+          );
+          motif('fish', 1660, 130, 140, { rotate: -14, color: '#23a2ff', opacity: 0.5 });
+          motif('bone', 960, 150, 150, { rotate: 18, color: '#f2b680', opacity: 0.9 });
+          motif('fish', 160, 300, 120, { rotate: 12, color: '#23a2ff', opacity: 0.35 });
+          motif('bone', 1680, 800, 130, { rotate: -16, color: '#f2b680', opacity: 0.7 });
+        },
+        'event-detail'({ assets }) {
+          document.body.className = 'cream';
+          document.body.style.setProperty('--dot', '30px');
+          board(150, 300, 780, 40);
+          el('img', 'cat', { left: -20, top: 1060, width: 880 }).src = assets.cat;
+          friendCard(640, 1040, 380, assets, 6);
+          pawTrail(
+            [
+              [300, 960, 20],
+              [380, 900, 14],
+              [300, 830, 22],
+            ],
+            64,
+            '#ff6b43',
+            0.3,
+            0.7,
+          );
+          motif('fish', 820, 140, 140, { rotate: -14, color: '#23a2ff', opacity: 0.5 });
+          motif('bone', 110, 160, 140, { rotate: 18, color: '#f2b680', opacity: 0.85 });
+          motif('fish', 850, 1580, 110, { rotate: 12, color: '#23a2ff', opacity: 0.4 });
+        },
+      };
+
+      // Play 프로모션 콘텐츠는 이벤트 카드와 같은 16:9 구도(안전 영역 안)
+      SCENES['play-promo'] = SCENES['event-card'];
+
+      window.renderJob = async (job) => {
+        const [width, height] = job.design;
+        document.documentElement.style.width = `${width}px`;
+        document.documentElement.style.height = `${height}px`;
+        document.body.style.width = `${width}px`;
+        document.body.style.height = `${height}px`;
+        for (const node of [...document.body.children])
+          if (node.tagName !== 'svg' && node.tagName !== 'SCRIPT') node.remove();
+        SCENES[job.scene](job);
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((image) =>
+            image.complete
+              ? null
+              : new Promise((resolve) => {
+                  image.onload = resolve;
+                  image.onerror = resolve;
+                }),
+          ),
+        );
+        const broken = [...document.images]
+          .filter((image) => !image.naturalWidth)
+          .map((image) => image.src);
+        const contrast = [...document.querySelectorAll('[data-contrast]')].flatMap((node) => {
+          const items = [
+            {
+              name: node.className || node.tagName,
+              color: getComputedStyle(node).color,
+              background: node.dataset.bg,
+              level: node.dataset.contrast,
+            },
+          ];
+          for (const em of node.querySelectorAll('em'))
+            items.push({
+              name: 'em',
+              color: getComputedStyle(em).color,
+              background: node.dataset.bg,
+              level: node.dataset.contrast,
+            });
+          return items;
+        });
+        const fonts = [...document.fonts]
+          .filter((font) => font.status === 'error')
+          .map((font) => font.family);
+        // 글자가 화면 밖으로 넘치지 않는지
+        const overflow = [...document.querySelectorAll('.headline, .tagline')].some((node) => {
+          const box = node.getBoundingClientRect();
+          return (
+            box.left < 0 ||
+            box.right > width ||
+            box.bottom > height ||
+            (node.classList.contains('headline') && node.scrollWidth > node.clientWidth + 1)
+          );
+        });
+        // 카드 안 요소가 카드 밖으로, 카드가 화면 밖으로 나가지 않는지
+        const cardOverflow = [...document.querySelectorAll('.card')].flatMap((cardNode) => {
+          const box = cardNode.getBoundingClientRect();
+          const outside = [...cardNode.querySelectorAll('*')]
+            .filter((child) => {
+              const rect = child.getBoundingClientRect();
+              return (
+                rect.width > 0 &&
+                (rect.left < box.left - 1 ||
+                  rect.right > box.right + 1 ||
+                  rect.top < box.top - 1 ||
+                  rect.bottom > box.bottom + 1)
+              );
+            })
+            .map((child) => child.className.baseVal ?? child.className);
+          if (box.left < 0 || box.right > width || box.top < 0 || box.bottom > height) {
+            outside.push('card');
+          }
+          return outside;
+        });
+        const text = [...document.querySelectorAll('.headline, .tagline')]
+          .map((node) => node.textContent)
+          .join('');
+        return { contrast, broken, fonts, overflow, text, cardOverflow };
+      };
+    </script>
+  </body>
+</html>

@@ -13,4 +13,6 @@ export const TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY = {
   CHEER_RECEIVED: "cheer_received_v1",
   FRIEND_COMPLETED: "friend_completed_v1",
   TODO_COMMENT_ACTIVITY: "todo_comment_activity_v1",
+  INVITE_JOINED: "invite_joined_v1",
+  INVITE_REWARDED: "invite_rewarded_v1",
 } as const;

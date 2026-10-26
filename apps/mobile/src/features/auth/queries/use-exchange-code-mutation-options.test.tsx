@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
 
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
@@ -30,6 +31,8 @@ jest.mock('@src/shared/i18n', () => ({
 
 jest.mock('@src/shared/utils/haptics');
 
+const MUTATION_CONTEXT = { client: new QueryClient(), meta: undefined };
+
 describe('useExchangeCodeMutationOptions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -39,14 +42,20 @@ describe('useExchangeCodeMutationOptions', () => {
   it('OAuth 성공은 인증만 완료하고 푸시 결정은 공용 게이트에 맡긴다', async () => {
     // Given
     const { result } = await renderHook(() => useExchangeCodeMutationOptions());
-    const onSuccess = result.current.onSuccess as (...args: unknown[]) => Promise<void> | void;
 
     // When
-    await onSuccess(
-      { accountRestored: false },
+    await result.current.onSuccess?.(
+      {
+        userId: 'user-1',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        userName: null,
+        userProfileImage: null,
+        accountRestored: false,
+      },
       { code: 'exchange-code', provider: 'google' },
       undefined,
-      undefined,
+      MUTATION_CONTEXT,
     );
 
     // Then

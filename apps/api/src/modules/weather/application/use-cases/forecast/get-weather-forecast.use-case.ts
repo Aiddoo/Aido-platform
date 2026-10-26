@@ -35,7 +35,7 @@ export class GetWeatherForecast {
 
   async execute(input: GetWeatherForecastInput): Promise<WeatherForecastWithLocation> {
     const location = await this.#dependencies.weatherLocationRepository.findByUserId(input.userId);
-    if (location === null) {
+    if (location == null) {
       throw new ApplicationException(ErrorCode.WEATHER_1902);
     }
 

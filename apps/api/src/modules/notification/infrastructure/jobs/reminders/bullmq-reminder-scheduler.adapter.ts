@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { z } from "zod";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -16,15 +17,13 @@ export const TODO_REMINDER_QUEUE = "todo-reminder.v1";
 export const TODO_REMINDER_LEGACY_QUEUE = "todo-reminder";
 export const TODO_REMINDER_JOB_NAME = "send-reminder";
 
-export interface ReminderJobData {
-  todoId: number;
-  userId: string;
-  stageLabel: string;
-}
+export const reminderJobDataSchema = z.object({
+  todoId: z.number(),
+  userId: z.string(),
+  stageLabel: z.string(),
+});
 
-export interface TodoReminderJobMap {
-  [TODO_REMINDER_JOB_NAME]: ReminderJobData;
-}
+export type ReminderJobData = z.infer<typeof reminderJobDataSchema>;
 
 /**
  * BullMQ 리마인더 스케줄러 어댑터.

@@ -17,7 +17,7 @@ export function buildBroadcastMessages(
     type,
     title: content.title,
     body: content.body,
-    action: action === undefined ? undefined : { ...action },
+    action: action == null ? undefined : { ...action },
     metadata: action?.url ? { externalUrl: action.url } : undefined,
     force,
   }));

@@ -1,7 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and } from "@prisma/orm-postgres/orm-client";
-import { groupBy, sumBy } from "es-toolkit";
+import { groupBy, sumBy, uniq } from "es-toolkit";
 
 import { decodeRecord } from "#api/platform/database/database-records";
 import { applicationDate, databaseDate } from "#api/platform/database/database-values";
@@ -45,7 +45,7 @@ export class PrismaTodoCompletionRepository implements TodoCompletionRepositoryP
     const categories = decodeRecord(
       "TodoCategory",
       await client.orm.public.TodoCategory.where((category) =>
-        category.id.in([...new Set(groups.map((group) => group.categoryId))]),
+        category.id.in(uniq(groups.map((group) => group.categoryId))),
       )
         .select("id", "color")
         .all(),
@@ -55,14 +55,12 @@ export class PrismaTodoCompletionRepository implements TodoCompletionRepositoryP
       date: applicationDate(date),
       total: sumBy(rows, (row) => row.count),
       completed: sumBy(rows, (row) => (row.completed ? row.count : 0)),
-      categoryColors: [
-        ...new Set(
-          rows.flatMap((row) => {
-            const color = colors.get(row.categoryId);
-            return color === undefined ? [] : [color];
-          }),
-        ),
-      ],
+      categoryColors: uniq(
+        rows.flatMap((row) => {
+          const color = colors.get(row.categoryId);
+          return color == null ? [] : [color];
+        }),
+      ),
     }));
   }
 }

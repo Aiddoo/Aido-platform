@@ -1,0 +1,44 @@
+appId: com.aido.mobile
+name: 화면을 떠났다 돌아와도 아바타가 유지되고 날짜 이동 뒤 오늘로 돌아온다
+tags:
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-inviter.yaml
+- openLink: ${QA_SCHEME}://feed?date=today
+- extendedWaitUntil:
+    visible: '나 프로필.*|Me profile.*'
+    timeout: 20000
+- takeScreenshot: 1.13.0-avatar-before
+# 다른 화면으로 갔다가 돌아온다
+- openLink: ${QA_SCHEME}://mypage
+- extendedWaitUntil:
+    visible: '마이|Me'
+    timeout: 10000
+- openLink: ${QA_SCHEME}://friends
+- extendedWaitUntil:
+    visible: '친구|Friends'
+    timeout: 10000
+- openLink: ${QA_SCHEME}://feed?date=today
+- extendedWaitUntil:
+    label: 아바타가 다시 마운트된다
+    visible: '나 프로필.*|Me profile.*'
+    timeout: 20000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-avatar-after
+# 날짜 이동 후 오늘 복귀. 어제 날짜는 JS로 계산한다
+- evalScript: ${output.prevIso = (function () { var d = new Date(Date.now() - 86400000); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })()}
+- openLink: ${QA_SCHEME}://feed?date=${output.prevIso}
+- extendedWaitUntil:
+    visible: 'Today|오늘'
+    timeout: 15000
+- tapOn: 'Today|오늘'
+- extendedWaitUntil:
+    visible: '나 프로필.*|Me profile.*'
+    timeout: 15000

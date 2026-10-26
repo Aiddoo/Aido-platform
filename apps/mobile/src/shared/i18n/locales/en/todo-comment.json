@@ -1,6 +1,6 @@
 {
   "screen": {
-    "replyTitle": "Reply",
+    "threadTitle": "Thread",
     "backToOverview": "Back to comments",
     "backToThread": "Back to conversation",
     "closeForm": "Close comment form"
@@ -12,6 +12,9 @@
     "unknownUser": "Unknown",
     "emptyTitle": "No comments yet",
     "emptyDescription": "Be the first to comment",
+    "missingTitle": "Comment not found",
+    "missingDescription": "It was deleted or is no longer available",
+    "showAllComments": "View all comments",
     "loadFailed": "Couldn't load comments",
     "focusedAnnouncement": "Moved to the selected comment",
     "repliedTo": "Reply to {{name}}",
@@ -20,7 +23,8 @@
     "sending": "Sending...",
     "sendingAnnouncement": "Sending your comment",
     "loadingEarlier": "Loading earlier comments",
-    "loadingMore": "Loading more comments"
+    "loadingMore": "Loading more comments",
+    "blockedAuthor": "This comment is from a blocked user"
   },
   "overview": {
     "viewReplies_one": "View {{count}} reply",
@@ -45,11 +49,13 @@
     "delete": "Delete",
     "save": "Save",
     "cancel": "Cancel",
-    "openConversation": "Open comment conversation",
+    "openConversation": "Opens the comment conversation",
     "replyWithCount": "Reply to {{name}}, {{count}} replies",
     "likeWithCount": "Like, {{count}} likes",
     "unlikeWithCount": "Unlike, {{count}} likes",
-    "more": "More comment actions"
+    "more": "More comment actions",
+    "report": "Report",
+    "block": "Block"
   },
   "form": {
     "commentTitle": "Comment",
@@ -70,5 +76,10 @@
     "openConversationFailed": "Couldn't open this conversation. Please tap it again in a moment",
     "finishFormFirst": "Post or cancel the comment you're writing before moving",
     "draftOutdated": "This comment was changed elsewhere, so your unsaved edit was discarded"
+  },
+  "deleteOthersConfirm": {
+    "title": "Delete this comment?",
+    "description": "You can remove comments on your own to-do. It will be removed for everyone and can't be undone.",
+    "confirm": "Delete"
   }
 }

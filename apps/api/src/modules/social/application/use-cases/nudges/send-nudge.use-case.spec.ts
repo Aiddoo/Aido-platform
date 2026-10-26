@@ -1,3 +1,5 @@
+import { assert } from "vitest";
+
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
@@ -24,7 +26,8 @@ describe("친구의 할 일에 콕 보내기", () => {
     // Given
     const fixture = createSocialInteractionFixture();
     const todo = fixture.addTodo();
-    const record = fixture.nudgeRepository.todos.get(todo.id)!;
+    const record = fixture.nudgeRepository.todos.get(todo.id);
+    assert.exists(record);
     if (input.change === "missing") fixture.nudgeRepository.todos.delete(todo.id);
     if (input.change === "owner") record.ownerId = "other";
     if (input.change === "private") record.visibility = "PRIVATE";

@@ -18,7 +18,13 @@ const CONVERSATION_ROUTE: TodoCommentRoute = {
 
 describe('getTodoCommentBackResult', () => {
   test('댓글 개요에서만 native stack을 pop한다', () => {
-    expect(getTodoCommentBackResult({ route: OVERVIEW_ROUTE, isSubmitting: false })).toEqual({
+    expect(
+      getTodoCommentBackResult({
+        route: OVERVIEW_ROUTE,
+        isSubmitting: false,
+        presentation: 'pane',
+      }),
+    ).toEqual({
       status: 'native',
     });
   });
@@ -28,6 +34,7 @@ describe('getTodoCommentBackResult', () => {
       getTodoCommentBackResult({
         route: { ...OVERVIEW_ROUTE, form: { type: 'new' } },
         isSubmitting: false,
+        presentation: 'pane',
       }),
     ).toEqual({
       status: 'navigate',
@@ -36,8 +43,45 @@ describe('getTodoCommentBackResult', () => {
     });
   });
 
-  test('대화는 댓글 개요로 돌아간다', () => {
-    expect(getTodoCommentBackResult({ route: CONVERSATION_ROUTE, isSubmitting: false })).toEqual({
+  test('Stack 화면의 대화와 개요에서 연 작성기는 pop으로 개요에 돌아간다', () => {
+    expect(
+      getTodoCommentBackResult({
+        route: CONVERSATION_ROUTE,
+        isSubmitting: false,
+        presentation: 'screen',
+      }),
+    ).toEqual({ status: 'native' });
+    expect(
+      getTodoCommentBackResult({
+        route: { ...CONVERSATION_ROUTE, form: { type: 'reply', returnView: 'overview' } },
+        isSubmitting: false,
+        presentation: 'screen',
+      }),
+    ).toEqual({ status: 'native' });
+  });
+
+  test('Stack 화면의 대화에서 연 작성기는 같은 대화로 닫는다', () => {
+    expect(
+      getTodoCommentBackResult({
+        route: { ...CONVERSATION_ROUTE, form: { type: 'edit', returnView: 'conversation' } },
+        isSubmitting: false,
+        presentation: 'screen',
+      }),
+    ).toEqual({
+      status: 'navigate',
+      destination: 'conversation',
+      labelKey: 'screen.backToThread',
+    });
+  });
+
+  test('pane의 대화는 같은 자리에서 댓글 개요로 돌아간다', () => {
+    expect(
+      getTodoCommentBackResult({
+        route: CONVERSATION_ROUTE,
+        isSubmitting: false,
+        presentation: 'pane',
+      }),
+    ).toEqual({
       status: 'navigate',
       destination: 'overview',
       labelKey: 'screen.backToOverview',
@@ -52,6 +96,7 @@ describe('getTodoCommentBackResult', () => {
           form: { type, returnView: 'overview' },
         },
         isSubmitting: false,
+        presentation: 'pane',
       }),
     ).toEqual({
       status: 'navigate',
@@ -66,6 +111,7 @@ describe('getTodoCommentBackResult', () => {
           form: { type, returnView: 'conversation' },
         },
         isSubmitting: false,
+        presentation: 'pane',
       }),
     ).toEqual({
       status: 'navigate',
@@ -81,10 +127,12 @@ describe('getTodoCommentBackResult', () => {
     { ...CONVERSATION_ROUTE, form: { type: 'reply', returnView: 'overview' } },
     { ...CONVERSATION_ROUTE, form: { type: 'edit', returnView: 'conversation' } },
   ] satisfies TodoCommentRoute[])('전송 중에는 route를 변경하지 않는다', (route) => {
-    expect(getTodoCommentBackResult({ route, isSubmitting: true })).toEqual({
-      status: 'blocked',
-      reason: 'comment-submitting',
-    });
+    expect(getTodoCommentBackResult({ route, isSubmitting: true, presentation: 'screen' })).toEqual(
+      {
+        status: 'blocked',
+        reason: 'comment-submitting',
+      },
+    );
   });
 });
 

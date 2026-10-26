@@ -17,9 +17,11 @@ const record: TodoConversationRecord = {
   rootId: null,
   path: [],
   depth: 0,
+  parentAuthorId: null,
   parentAuthorName: null,
   authorId: "cm1author0000000000000001",
   authorName: "작성자",
+  authorUserTag: null,
   authorProfileImage: null,
   todoOwnerId: "cm1author0000000000000001",
   content: "댓글",
@@ -41,7 +43,7 @@ function replacePayload(
   update: (payload: Record<string, unknown>) => void,
 ): string {
   const [encodedPayload, signature] = cursor.split(".");
-  if (encodedPayload === undefined || signature === undefined) {
+  if (encodedPayload == null || signature == null) {
     throw new Error("테스트 cursor 형식이 올바르지 않습니다.");
   }
 
@@ -110,11 +112,11 @@ describe("HmacTodoCommentCursorCodec", () => {
   it("서명 한 글자를 변경하면 거부한다", () => {
     const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST);
     const [payload, signature] = cursor.split(".");
-    if (payload === undefined || signature === undefined) {
+    if (payload == null || signature == null) {
       throw new Error("테스트 cursor 형식이 올바르지 않습니다.");
     }
     const first = signature.at(0);
-    if (first === undefined) {
+    if (first == null) {
       throw new Error("테스트 cursor 서명이 비어 있습니다.");
     }
     const tampered = `${payload}.${first === "a" ? "b" : "a"}${signature.slice(1)}`;

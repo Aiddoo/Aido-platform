@@ -268,8 +268,51 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.10.1: 선택 X-App-Version 헤더와 입력 아이콘 enum 3종만 추가. 구버전 응답은 기존 키로 매핑한다. */
 	preProfileIconsSchemasFingerprint: "7d54df326aea8812a463f4a7ea5e842fc333c6823276a14e29e58f8a8d3b992b",
 	preProfileIconsPathsFingerprint: "ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
-	schemasFingerprint:
+	/** 1.13.0: zod 4.6 업그레이드로 cuid pattern과 union 쿼리 스키마의 JSON Schema 표현만 달라졌다. 라우트·필드·상태 코드는 같다. */
+	preZod46SchemasFingerprint:
 		"661496b690bb1981dc09130a644d779d135f663e218db04b0dd8724d25eab20e",
+	preZod46PathsFingerprint: "12d563b0191e60a54f20cd08208334321e67f67831e3f77cf0d6add48b1f3b22",
+	/** 1.13.0: /me(CurrentUserDto)에 optional premiumSource·premiumEndsAt·premiumPeriodEndsAt·willRenew·bankedPremiumDays·premiumGrantEndedAt만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	prePremiumAccessSchemasFingerprint:
+		"b6581fa057475468f18183df29e42adadba747271d19630de9a6fa81ca7ab6a7",
+	/** 1.13.0: 문의 요청 category enum에 PAYMENT(결제·구독)만 추가. 구버전 앱은 기존 값만 보내고 서버는 그 값을 그대로 받는다. */
+	prePaymentInquirySchemasFingerprint:
+		"ae2f4dbfd3ce0a76907e35a7ad9011081862d306d24ca4313c6dfafb83c8b724",
+	/** 1.13.0: AI 파싱 응답 meta에 optional promptVersion만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preAiPromptVersionSchemasFingerprint:
+		"a09fce15d21a052da513d5296d013ef530cbdbec1eb027d3ad21cf088d872aa9",
+	/** 1.13.0: parse-memo 응답 meta에 optional omittedTodoCount만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preMemoOmittedTodoCountSchemasFingerprint:
+		"b16122342ef5475cc9fb6ffbc7a3da96d27830a04d2ae42c284dea792e94dbe7",
+	/** 1.13.0: 약관 동의 응답(ConsentResponseDto)에 optional aiDataSharingDecision·aiDataSharingAgreedAt·aiDataSharingConsentVersion만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preAiDataSharingConsentSchemasFingerprint:
+		"8e924ba837a2727c5c6198c3f34d09f8ac3158a88b2de4ec58fc299c8db2c7b4",
+	schemasFingerprint:
+		"3e9c8aa0825e84970bd63164bc03cd7be96db5e5b65c9ab4b8d71356a11b347b",
+	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
+	preTodoSummaryDatePathsFingerprint:
+		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
+	/** 1.13.0: parse-todo·parse-memo 429 응답의 error.code를 AI_1303·AI_1310 enum으로 선언했다. 서버는 이미 공급자 요청 과다를 AI_1310(429)로 보내고 있었고 문서만 AI_1303 하나로 덮여 있었다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
+	preAiRateLimitCodesPathsFingerprint:
+		"232a008adbbdf9383aeff8f4c29179a123296b70629af0b2baa5b948c50b7f4a",
+	/** 1.13.0: ApiDoc 공통 400·500이 엔드포인트가 선언한 오류 응답을 덮어 content는 ErrorResponseSchema $ref, 선언한 schema는 content 밖에 떠 있던 문서 결함을 고쳤다. 선언한 상태는 그 오류 코드의 inline schema(같은 success·error·timestamp envelope)로 문서화된다. 실제 응답·상태 코드는 같다. */
+	preApiDocCommonErrorsPathsFingerprint:
+		"58f3786d1627480a9402dbb9bcdbf4e456e375f3f66f566644def66dffe1b843",
+	/** 1.13.0: 같은 상태 코드의 오류 데코레이터가 겹쳐 하나만 남던 응답(oauth link 401·409, auth 401, todo·todo-category·memo·nudge·follow·admin의 400·404·409)을 error.code enum으로 모두 선언했다. 서버가 보내는 코드·응답 shape·상태 코드는 같고 문서만 빠진 코드를 채웠다. */
+	preAllErrorCodesPathsFingerprint:
+		"2b9f3e37c745c5f235a0dd952e738b5a64c9f5ffc29246412e5aca24c8f00b71",
+	/** 1.13.0: Zod로 path·query·body를 검증하는 엔드포인트의 400에 입력 검증 실패 SYS_0002를 자동으로 선언했다. 공통 400(ErrorResponseSchema $ref)은 SYS_0002 오류 schema로, 특정 400 코드만 있던 응답은 그 코드와 SYS_0002의 enum으로 바뀐다. 여러 코드 enum은 코드 순으로 정렬한다. 전역 검증 pipe가 이미 보내던 코드라 실제 응답·상태 코드는 같다. */
+	preValidationErrorCodePathsFingerprint:
+		"5a93deaf2d8ffae218c9f896e01878cb8bcc0378e24f4e234ef5894a9f3a884b",
+	/** 1.13.0: 원시 값을 받던 path·query를 @aido/api schema로 검증한다. DELETE /auth/sessions/{sessionId}(CUID), DELETE /auth/linked-accounts/{provider}(APPLE·GOOGLE·KAKAO·NAVER), DELETE /notifications/token?deviceId(1-100자), cheers·nudges·nudges/remind cooldown/{userId}(CUID). 배포 앱은 대문자 provider, 등록한 기기 ID, 친구의 CUID만 보내 같은 응답을 받고, 형식이 틀린 입력만 404·500 대신 400 SYS_0002가 된다. */
+	preRawInputValidationPathsFingerprint:
+		"fabcdf859e45127d31cf8a9a4274561a1d4c83a60f4089cbf128b8f793cecc60",
+	/** 1.13.0: 차단·신고 추가로 POST /follows/{userTag} 403의 error.code를 BLOCK_2203(차단한 사용자)·FOLLOW_0909(친구 한도) enum으로 선언했다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
+	preFriendSafetyPathsFingerprint:
+		"91b4fe4e03952e2bb9867293b3fd1946baed7640bcda5c95f2a4e42d94bbca2a",
+	/** 1.13.0: AI 할 일·메모 정리 라우트에만 선택 x-app-version 헤더와 403 AI_1311을 추가. 리포트·제안 조회·처리는 그대로다. 헤더가 없거나 1.13.0 미만이면 동의 없이도 기존처럼 처리한다. */
+	preAiDataSharingConsentPathsFingerprint:
+		"7c517f2efce3afa4832d61055fb28954d8d108c5c5426848532aa4e02f154506",
 	pathsFingerprint:
-		"12d563b0191e60a54f20cd08208334321e67f67831e3f77cf0d6add48b1f3b22",
+		"5a0384f8da8af27e97e2607f372d505cae3bffb6be2dc66658af6886adace8a9",
 } as const;

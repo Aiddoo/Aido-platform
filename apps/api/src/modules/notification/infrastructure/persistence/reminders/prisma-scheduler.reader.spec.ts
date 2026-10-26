@@ -12,7 +12,6 @@ import {
   createMockDatabaseContext,
   nativeRows,
   type MockDatabaseContext,
-  projectedResult,
 } from "#test/mocks/database.mock";
 import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
@@ -29,7 +28,7 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 
   function reader(enabled: boolean): PrismaSchedulerReader {
     const cache = mock<CacheService>();
-    cache.wrap.mockImplementation((_key, loader) => loader());
+    cache.wrap.mockImplementation((_key, _schema, loader) => loader());
     const config = mock<TypedConfigService>();
     Object.defineProperty(config, "retentionOnboardingV2", {
       value: { enabled, treatmentPercent: 50 },
@@ -97,20 +96,18 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
   });
 
   it("잘못 저장된 타임존은 스케줄러 활성 타임존에서 제외한다", async () => {
-    asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue(
-      projectedResult([
-        { timezone: varchar("Asia/Seoul", 50), count: 1 },
-        { timezone: varchar("Invalid/Timezone", 50), count: 1 },
-        { timezone: varchar("UTC", 50), count: 1 },
-      ]),
-    );
+    asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue([
+      { timezone: varchar("Asia/Seoul", 50), count: 1 },
+      { timezone: varchar("Invalid/Timezone", 50), count: 1 },
+      { timezone: varchar("UTC", 50), count: 1 },
+    ]);
     await expect(reader(false).findActiveTimezones()).resolves.toEqual(["Asia/Seoul", "UTC"]);
   });
 
   it("유효한 레거시 타임존 별칭은 저장값 그대로 반환해 기존 사용자를 누락하지 않는다", async () => {
     const timezones = ["UTC", "Etc/UTC", "Asia/Kolkata", "Asia/Calcutta"];
     asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue(
-      projectedResult(timezones.map((timezone) => ({ timezone: varchar(timezone, 50), count: 1 }))),
+      timezones.map((timezone) => ({ timezone: varchar(timezone, 50), count: 1 })),
     );
     await expect(reader(false).findActiveTimezones()).resolves.toEqual(timezones);
   });

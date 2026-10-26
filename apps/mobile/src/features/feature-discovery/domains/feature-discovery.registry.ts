@@ -1,24 +1,18 @@
-export const FEATURE_DISCOVERY_CAMPAIGN_ID = 'feature-discovery-2026-08';
-export const FEATURE_DISCOVERY_CAMPAIGN_LAUNCHED_AT = '2026-08-01T00:00:00.000Z';
+export const FEATURE_DISCOVERY_CAMPAIGN_ID = 'feature-discovery-2026-11';
+/** 1.9.0에 시작한 이전 캠페인. 그때 가입한 사용자의 시작 체크리스트가 이 id로 이어진다 */
+export const LEGACY_FEATURE_DISCOVERY_CAMPAIGN_ID = 'feature-discovery-2026-08';
 
-export const FEATURE_DISCOVERY_CARD_IDS = [
-  'memo_ai',
-  'friend_search',
-  'drag_reorder',
-  'todo_creation',
-] as const;
+export const FEATURE_DISCOVERY_CARD_IDS = ['friend_invite'] as const;
 
 export type FeatureDiscoveryCardId = (typeof FEATURE_DISCOVERY_CARD_IDS)[number];
 
-export type FeatureDiscoveryRoute =
-  | '/memo/create'
-  | '/friends/search'
-  | '/settings/category-settings'
-  | '/feed';
+export type FeatureDiscoveryRoute = '/friends/invite';
 
 export interface FeatureDiscoveryCard {
   id: FeatureDiscoveryCardId;
   route: FeatureDiscoveryRoute;
+  /** 이 카드가 소개하는 기능이 운영 플래그로 꺼질 수 있으면 그 플래그 */
+  requires: 'invite' | null;
 }
 
 export interface FeatureDiscoveryCampaign {
@@ -28,16 +22,24 @@ export interface FeatureDiscoveryCampaign {
 
 const FEATURE_DISCOVERY_CAMPAIGN: FeatureDiscoveryCampaign = {
   id: FEATURE_DISCOVERY_CAMPAIGN_ID,
-  cards: [
-    { id: 'memo_ai', route: '/memo/create' },
-    { id: 'friend_search', route: '/friends/search' },
-    { id: 'drag_reorder', route: '/settings/category-settings' },
-    { id: 'todo_creation', route: '/feed' },
-  ],
+  cards: [{ id: 'friend_invite', route: '/friends/invite', requires: 'invite' }],
 };
 
 export function getBundledFeatureDiscoveryCampaign(
   campaignId: string,
 ): FeatureDiscoveryCampaign | null {
   return campaignId === FEATURE_DISCOVERY_CAMPAIGN_ID ? FEATURE_DISCOVERY_CAMPAIGN : null;
+}
+
+/** 꺼진 기능의 카드를 걸러 낸다. 남는 카드가 없으면 소개할 것이 없어 null이다 */
+export function filterAvailableCampaign(
+  campaign: FeatureDiscoveryCampaign | null,
+  { isInviteAvailable }: { isInviteAvailable: boolean },
+): FeatureDiscoveryCampaign | null {
+  if (campaign == null) {
+    return null;
+  }
+
+  const cards = campaign.cards.filter((card) => card.requires !== 'invite' || isInviteAvailable);
+  return cards.length === 0 ? null : { ...campaign, cards };
 }

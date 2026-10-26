@@ -535,10 +535,11 @@ function createTransactionHarness(prisma: TestDatabaseClient): {
 } {
   const storage = new AsyncLocalStorage<TransactionClient>();
   const cls = new ClsService(new AsyncLocalStorage());
-  const txHost = {
-    get tx(): TransactionClient {
-      return storage.getStore() ?? createDatabaseContext(prisma);
-    },
+  const txHost = mock<TransactionHost<Prisma8TransactionalAdapter>>();
+  Object.defineProperty(txHost, "tx", {
+    get: (): TransactionClient => storage.getStore() ?? createDatabaseContext(prisma),
+  });
+  Object.assign(txHost, {
     isTransactionActive(): boolean {
       return storage.getStore() !== undefined;
     },
@@ -550,11 +551,10 @@ function createTransactionHarness(prisma: TestDatabaseClient): {
         storage.run(tx, () => cls.run({ ifNested: "inherit" }, work)),
       );
     },
-  };
-  const typedTxHost = txHost as unknown as TransactionHost<Prisma8TransactionalAdapter>;
+  });
   return {
-    txHost: typedTxHost,
-    uow: new ClsUnitOfWork(typedTxHost, cls),
+    txHost,
+    uow: new ClsUnitOfWork(txHost, cls),
   };
 }
 

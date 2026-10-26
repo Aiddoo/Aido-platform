@@ -23,7 +23,7 @@ SOLID를 새 Base class나 계층을 만드는 이유로 사용하지 않는다.
 - 파일·폴더는 kebab-case, 클래스·타입은 PascalCase, 변수·필드는 camelCase다. ESM 상대 import는 `.js`, 별칭은 `#api/*`/`#test/*`를 사용한다.
 - 순수 Application은 생성자 객체로 의존성을 받고 `readonly #dependencies`에 보관한다. 입력의 재할당 없는 속성도 readonly로 표현한다. 가변 Domain 상태를 기계적으로 readonly로 만들지는 않는다.
 - 의존성 타입은 전체 공급자 API보다 실제 사용하는 `Pick`이 명확할 수 있다. 단일 메서드 Port는 그 자체로 최소 계약일 수 있으므로 Pick을 반복할 필요는 없다.
-- null/undefined presence는 의미를 드러내는 비교를 사용한다. boolean은 `!flag`로 검사할 수 있지만 `0`·`false`·빈 문자열을 입력 누락으로 바꾸지 않는다.
+- 비교·null/undefined·기본값은 [공통 nullish 규칙](../../../docs/conventions/nullish.md)을 따른다: 값 비교는 `===`, "없음"은 `== null`, 엄격한 null/undefined 비교는 PATCH처럼 뜻이 다를 때만 `// nullish-strict: <이유>`와 함께 쓰고(`check:conventions`가 검사), 기본값은 `??`다. boolean은 `!flag`로 검사할 수 있지만 `0`·`false`·빈 문자열을 입력 누락으로 바꾸지 않는다.
 - PATCH의 `undefined`는 미제공, 허용된 `null`은 초기화다. 초기화 가능한 필드에 `input.field ?? existing.field`를 쓰지 않는다.
 - Repository의 조회 실패, cache miss 등은 각 Port의 기존 null/undefined 계약을 따른다. 값을 확인하지 않고 cast/non-null assertion으로 넘기지 않는다.
 - snapshot의 Date/배열/중첩 가변 값은 필요한 깊이만큼 방어적으로 복사한다. `readonly`만으로 외부 mutation이 차단되지는 않는다.
@@ -55,7 +55,7 @@ UseCase는 `<Verb><Object>` 이름과 `execute` 진입점을 사용한다. 한 e
 ```ts
 async execute(input: GetMemoInput): Promise<GetMemoResult> {
   const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
-  if (memo === null) {
+  if (memo == null) {
     throw new ApplicationException(ErrorCode.MEMO_2001, {
       memoId: input.memoId,
     });
@@ -99,6 +99,8 @@ export const getMemoProvider: FactoryProvider<GetMemo> = {
 
 ## 저장·효과·캐시
 
+DB 접근은 Prisma ORM을 기본으로 하고 raw SQL은 [Prisma 문서의 유지 목록](prisma.md#orm-전환-기준과-유지하는-raw-sql-rc20)처럼 ORM이 표현하지 못하는 원자성에만 쓴다. 목록·집계에서 행마다 다시 조회하는 N+1을 만들지 않는다. 필요한 id를 모아 한 번에 읽고(`where in`·relation projection) `keyBy`/`groupBy`로 붙인다.
+
 업무 원자성은 UoW와 실제 DB lock/constraint/conditional write로 구현한다. 활성 transaction은 CLS에서 읽고 tx 인자를 계층마다 전달하지 않는다. 실패 기록, commit 뒤 publish/queue, best-effort cache settle은 각 흐름의 기존 의미를 따른다. 외부 AI·push·email 호출은 긴 DB transaction 밖에 둔다.
 
 캐시에는 의미 기반 Port를 사용한다. raw key·TTL·pattern·Redis command는 Infrastructure keyspace에 둔다. queue name/payload/attempt/backoff/재시도 의미도 소유 Context에 응집한다. 제거하거나 바꾸려면 실제 운영 소비자와 전환 범위를 함께 처리한다.
@@ -117,6 +119,6 @@ Object.entries(groupBy(todos, (todo) => todo.title));
 
 ## 오류와 확인
 
-Domain invariant는 DomainException, Application 거부는 ApplicationException과 기존 ErrorCode를 사용한다. HTTP 변환은 platform filter가 담당한다. 원문 개인정보·prompt·공급자 error를 로그에 전달하지 않는다. [logging-guide.md](logging-guide.md)에 형식과 실제 사례가 있다.
+Domain invariant는 DomainException, Application 거부는 ApplicationException과 기존 ErrorCode를 사용한다. HTTP 변환은 platform filter가 담당한다. 응답·오류 계약과 Swagger 문구는 [공통 오류 규칙](../../../docs/conventions/errors.md)을 따른다. 원문 개인정보·prompt·공급자 error를 로그에 전달하지 않는다. [logging-guide.md](logging-guide.md)에 형식과 실제 사례가 있다.
 
 코드·문서 변경 위험에 맞는 검증을 [testing-guide.md](testing-guide.md)에서 선택한다. 구조 검토에서는 실제 consumer/module 연결을, transaction 검토에서는 native DB 증거를, HTTP 변경에서는 계약 테스트를 확인한다. 통과한 전체 검사를 파일마다 반복하거나 구현과 같은 소스 파싱 테스트를 새로 만들지 않는다.

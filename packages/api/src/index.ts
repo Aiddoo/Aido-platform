@@ -8,6 +8,7 @@ export * from "./contracts/cheer/index.js";
 export * from "./contracts/daily-completion/index.js";
 export * from "./contracts/follow/index.js";
 export * from "./contracts/inquiry/index.js";
+export * from "./contracts/invite/index.js";
 export * from "./contracts/memo/index.js";
 export * from "./contracts/notification/index.js";
 export * from "./contracts/nudge/index.js";
@@ -15,8 +16,10 @@ export * from "./contracts/subscription/index.js";
 export * from "./contracts/todo/index.js";
 export * from "./contracts/todo-comment/index.js";
 export * from "./contracts/todo-category/index.js";
+export * from "./contracts/user-block/index.js";
 export * from "./contracts/user-consent/index.js";
 export * from "./contracts/user-preference/index.js";
+export * from "./contracts/user-report/index.js";
 export * from "./contracts/weather/index.js";
 export * from "./contracts/weekly-achievement/index.js";
 

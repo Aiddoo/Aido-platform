@@ -8,6 +8,11 @@ export const todoCommentAuthorSchema = z
   .object({
     id: z.cuid().describe("댓글 작성자 ID (CUID)"),
     name: z.string().nullable().describe("댓글 작성자 이름 (미설정 시 null)"),
+    userTag: z
+      .string()
+      .length(8)
+      .optional()
+      .describe("댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)"),
     profileImage: z.string().nullable().describe("댓글 작성자 프로필 이미지 URL (미설정 시 null)"),
     isTodoOwner: z.boolean().describe("할 일 작성자 여부"),
   })
@@ -26,6 +31,16 @@ export const todoCommentViewerSchema = z
     canEdit: z.boolean().describe("현재 사용자의 수정 가능 여부"),
     canDelete: z.boolean().describe("현재 사용자의 삭제 가능 여부"),
     canReply: z.boolean().describe("현재 사용자의 답글 작성 가능 여부"),
+    canReport: z
+      .boolean()
+      .optional()
+      .describe(
+        "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
+      ),
+    canBlock: z
+      .boolean()
+      .optional()
+      .describe("현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)"),
   })
   .describe("현재 사용자의 댓글 권한과 상태");
 
@@ -44,6 +59,12 @@ export const todoCommentSchema = z
       .describe("댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)"),
     content: z.string().nullable().describe("댓글 내용 (삭제된 댓글이면 null)"),
     isDeleted: z.boolean().describe("댓글 삭제 여부"),
+    isAuthorBlocked: z
+      .boolean()
+      .optional()
+      .describe(
+        "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+      ),
     isEdited: z.boolean().describe("댓글 수정 여부"),
     likeCount: z.number().int().nonnegative().describe("활성 좋아요 수"),
     /** 직계 답글 수 (자손 총합이 아니다) */
@@ -100,7 +121,7 @@ const todoConversationLaneDepthsSchema = z.array(z.number().int().nonnegative())
   (depths) =>
     depths.every((depth, index) => {
       const previousDepth = depths[index - 1];
-      return previousDepth === undefined || depth > previousDepth;
+      return previousDepth == null || depth > previousDepth;
     }),
   "연결선 depth는 중복 없이 오름차순이어야 합니다.",
 );
@@ -132,36 +153,39 @@ export const todoConversationConnectionSchema = z
       .nullable()
       .describe("답글이면 부모 lane에서 아바타로 이어지는 branch, root면 null"),
   })
-  .superRefine((connection, context) => {
+  .check(({ value: connection, issues }) => {
     const expectedBranch =
       connection.visualDepth === 0
         ? null
         : { fromDepth: connection.visualDepth - 1, toDepth: connection.visualDepth };
 
     if (
-      (expectedBranch === null && connection.incomingBranch !== null) ||
-      (expectedBranch !== null &&
+      (expectedBranch == null && connection.incomingBranch != null) ||
+      (expectedBranch != null &&
         (connection.incomingBranch?.fromDepth !== expectedBranch.fromDepth ||
           connection.incomingBranch.toDepth !== expectedBranch.toDepth))
     ) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: connection,
         path: ["incomingBranch"],
         message: "incoming branch는 visualDepth의 직계 부모 lane과 일치해야 합니다.",
       });
     }
 
     if (connection.upperLaneDepths.some((depth) => depth >= connection.visualDepth)) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: connection,
         path: ["upperLaneDepths"],
         message: "상단 lane은 현재 visualDepth보다 앞선 조상 depth만 담아야 합니다.",
       });
     }
 
     if (connection.lowerLaneDepths.some((depth) => depth > connection.visualDepth)) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: connection,
         path: ["lowerLaneDepths"],
         message: "하단 lane은 현재 visualDepth보다 깊을 수 없습니다.",
       });

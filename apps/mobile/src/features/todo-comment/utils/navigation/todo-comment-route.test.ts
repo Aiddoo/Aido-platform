@@ -2,7 +2,9 @@ import { TODO_COMMENT_SORT } from '@aido/api';
 
 import {
   areTodoCommentRoutesEqual,
+  createTodoCommentScreenHrefs,
   parseTodoCommentRoute,
+  resolveTodoCommentRouteNavigation,
   reduceTodoCommentRoute,
   serializeTodoCommentRoute,
   type TodoCommentRoute,
@@ -177,5 +179,172 @@ describe('areTodoCommentRoutesEqual', () => {
         sort: TODO_COMMENT_SORT.POPULAR,
       }),
     ).toBe(false);
+  });
+});
+
+describe('reduceTodoCommentRoute의 게시 완료 focus', () => {
+  test('답글을 게시하면 새 답글을 focus한 대화에 남는다', () => {
+    expect(
+      reduceTodoCommentRoute(
+        { ...CONVERSATION_ROUTE, form: { type: 'reply', returnView: 'overview' } },
+        { type: 'completeForm', focusCommentId: SECOND_COMMENT_ID },
+      ),
+    ).toEqual({ ...CONVERSATION_ROUTE, commentId: SECOND_COMMENT_ID });
+  });
+});
+
+describe('resolveTodoCommentRouteNavigation', () => {
+  const TODO_ID = 42;
+
+  test('화면의 개요에서 대화를 열면 대화 화면을 한 단계 push한다', () => {
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: OVERVIEW_ROUTE,
+        action: { type: 'openConversation', commentId: COMMENT_ID },
+        presentation: 'screen',
+      }),
+    ).toEqual({
+      type: 'push',
+      href: {
+        pathname: '/todo/[todoId]/comments/[commentId]',
+        params: {
+          todoId: TODO_ID,
+          commentId: COMMENT_ID,
+          sort: TODO_COMMENT_SORT.LATEST,
+          intent: undefined,
+          returnTo: undefined,
+        },
+      },
+    });
+  });
+
+  test('화면의 개요에서 답글을 시작하면 작성기를 연 대화를 push하고 개요를 복귀 문맥으로 둔다', () => {
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: OVERVIEW_ROUTE,
+        action: { type: 'startReply', commentId: COMMENT_ID },
+        presentation: 'screen',
+      }),
+    ).toMatchObject({
+      type: 'push',
+      href: { params: { commentId: COMMENT_ID, intent: 'reply', returnTo: 'overview' } },
+    });
+  });
+
+  test('화면의 대화에서 개요로 돌아가면 history를 늘리지 않고 pop한다', () => {
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: CONVERSATION_ROUTE,
+        action: { type: 'showOverview' },
+        presentation: 'screen',
+      }),
+    ).toEqual({ type: 'back' });
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: { ...CONVERSATION_ROUTE, form: { type: 'reply', returnView: 'overview' } },
+        action: { type: 'cancelForm' },
+        presentation: 'screen',
+      }),
+    ).toEqual({ type: 'back' });
+  });
+
+  test('화면의 대화 안 focus 이동은 같은 화면의 path param만 바꾼다', () => {
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: CONVERSATION_ROUTE,
+        action: { type: 'startReply', commentId: SECOND_COMMENT_ID },
+        presentation: 'screen',
+      }),
+    ).toEqual({
+      type: 'setParams',
+      params: {
+        commentId: SECOND_COMMENT_ID,
+        sort: TODO_COMMENT_SORT.LATEST,
+        intent: 'reply',
+        returnTo: 'thread',
+      },
+    });
+  });
+
+  test('pane은 Stack이 없어 모든 전이를 search로 처리한다', () => {
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: OVERVIEW_ROUTE,
+        action: { type: 'openConversation', commentId: COMMENT_ID },
+        presentation: 'pane',
+      }),
+    ).toEqual({
+      type: 'setParams',
+      params: serializeTodoCommentRoute(CONVERSATION_ROUTE),
+    });
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: CONVERSATION_ROUTE,
+        action: { type: 'showOverview' },
+        presentation: 'pane',
+      }),
+    ).toEqual({ type: 'setParams', params: serializeTodoCommentRoute(OVERVIEW_ROUTE) });
+  });
+
+  test('바뀌는 것이 없으면 이동하지 않는다', () => {
+    expect(
+      resolveTodoCommentRouteNavigation({
+        todoId: TODO_ID,
+        route: CONVERSATION_ROUTE,
+        action: { type: 'openConversation', commentId: COMMENT_ID },
+        presentation: 'screen',
+      }),
+    ).toEqual({ type: 'none' });
+  });
+});
+
+describe('createTodoCommentScreenHrefs', () => {
+  test('대화는 개요 위에 쌓아 뒤로가기가 그 할 일의 댓글 개요로 올라간다', () => {
+    expect(
+      createTodoCommentScreenHrefs({
+        todoId: 42,
+        route: { ...CONVERSATION_ROUTE, sort: TODO_COMMENT_SORT.POPULAR },
+      }),
+    ).toEqual({
+      overviewHref: {
+        pathname: '/todo/[todoId]',
+        params: {
+          todoId: 42,
+          sort: TODO_COMMENT_SORT.POPULAR,
+          comment: undefined,
+          intent: undefined,
+          returnTo: undefined,
+        },
+      },
+      threadHref: {
+        pathname: '/todo/[todoId]/comments/[commentId]',
+        params: {
+          todoId: 42,
+          commentId: COMMENT_ID,
+          sort: TODO_COMMENT_SORT.POPULAR,
+          intent: undefined,
+          returnTo: undefined,
+        },
+      },
+    });
+  });
+
+  test('개요의 새 댓글 작성기는 개요 화면 하나로 넘긴다', () => {
+    expect(
+      createTodoCommentScreenHrefs({
+        todoId: 42,
+        route: { ...OVERVIEW_ROUTE, form: { type: 'new' } },
+      }),
+    ).toMatchObject({
+      overviewHref: { params: { intent: 'create' } },
+      threadHref: null,
+    });
   });
 });

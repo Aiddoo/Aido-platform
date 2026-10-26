@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { ModelAccessor } from "@prisma/orm-postgres/orm-client";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";
+import { z } from "zod";
 
 import {
   ReminderCacheKey,
@@ -689,7 +690,7 @@ export class PrismaSchedulerReader
       )
       .select("id")
       .first();
-    return existing !== null;
+    return existing != null;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -699,12 +700,13 @@ export class PrismaSchedulerReader
   async findActiveTimezones(): Promise<string[]> {
     return this.cacheService.wrap(
       ReminderCacheKey.activeTimezones(),
-      async () => {
+      z.array(z.string()),
+      async (): Promise<string[]> => {
         const rows = await this.database.db.orm.public.UserPreference.groupBy("timezone").aggregate(
           (aggregate) => ({ count: aggregate.count() }),
         );
         return rows.flatMap((row) =>
-          normalizeIanaTimezone(row.timezone) !== null ? [row.timezone] : [],
+          normalizeIanaTimezone(row.timezone) != null ? [row.timezone] : [],
         );
       },
       REMINDER_CACHE_TTL_MS,

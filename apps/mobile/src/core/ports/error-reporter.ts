@@ -1,22 +1,10 @@
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { Severity } from '@src/core/ports/severity';
-
-export type ErrorReporterFeature =
-  | 'app_icon'
-  | 'app_version'
-  | 'auth'
-  | 'auth_cold_start'
-  | 'draft'
-  | 'error_boundary'
-  | 'lifecycle'
-  | 'todo_comment'
-  | 'todo_nudge'
-  | 'weather_location'
-  | 'widget';
+import type { SentryFeature } from '@src/shared/observability/telemetry-keys';
 
 export interface ErrorReporterContext {
   endpoint?: string;
-  feature?: ErrorReporterFeature;
+  feature?: SentryFeature;
   method?: string;
   /** 클라이언트가 판단한 사유. */
   errorCode?: string;

@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
+import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
+import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
@@ -8,9 +10,10 @@ import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ActionChip,
@@ -37,7 +40,9 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
@@ -54,7 +59,6 @@ import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
-import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
@@ -353,7 +357,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               methods.setValue('repeatEndDate', value.repeatEndDate);
               methods.setValue('startDate', value.startDate);
             })
-            .otherwise(() => {});
+            .otherwise(noop);
           focusTodoInput();
         }}
       >
@@ -410,7 +414,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           isClosingRef.current = true;
         }}
       >
-        <VStack gap={12}>
+        <VStack gap={12} testID="todo-add-sheet">
           <FormField control={methods.control} name="title">
             {({ onChange, value }) => (
               <BottomSheetInput
@@ -480,8 +484,14 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 const DateChip = ({ onPress }: { onPress: () => void }) => {
   const actionChipIconSize = useActionChipIconSize();
   const startDate = useWatch<AddTodoFormValues, 'startDate'>({ name: 'startDate' });
-  const today = useToday();
-  const label = formatTodoDateLabel({ startDate, scheduledTime: null, isAllDay: true, today });
+  const { t } = useTranslation('common');
+  const todayDateKey = useTodayKey();
+  const dateFormatContext = useDateFormatContext();
+  const startDateKey = formatDate(startDate);
+  const label =
+    startDateKey === todayDateKey
+      ? t('dateSections.today')
+      : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext);
 
   return (
     <ActionChip
@@ -621,6 +631,7 @@ const AiFeatureTooltip = () => {
         <PressableFeedback
           onPress={() => setIsTooltipOpen(true)}
           className="items-center justify-center"
+          testID="todo-ai-feature-tooltip"
         >
           <HStack gap={4} align="center">
             <Text size="e2" weight="medium" shade={6}>
@@ -681,17 +692,28 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
   const isAiLimitReached = aiUsage != null && AiUsagePolicy.isLimitReached(aiUsage);
 
   const parseMutation = useMutation(useParseTodoMutationOptions());
+  const aiConsent = useAiDataSharingConsentGate();
+  // 이번 녹음에서 동의 안내를 이미 띄웠는지. 한 번의 시도에서 안내를 두 번 띄우지 않는다
+  const hasAskedConsentRef = useRef(false);
 
-  const handleRecognitionEnd = () => {
-    const currentTitle = methods.getValues('title');
-    const currentCategoryId = methods.getValues('categoryId');
-    if (!currentTitle?.trim()) {
-      return;
-    }
-
+  const parseTitle = (text: string, categoryId?: number) => {
     parseMutation.mutate(
-      { text: currentTitle.trim(), categoryId: currentCategoryId },
+      { text, categoryId },
       {
+        // 서버에 동의가 없으면(다른 기기에서 철회 등) 한 번만 다시 묻고, 동의하면 받아 적은 문장 그대로 정리한다
+        onError: async (error) => {
+          if (!isAiDataSharingConsentRequiredError(error)) {
+            return;
+          }
+          if (hasAskedConsentRef.current) {
+            toast.error(error.message);
+            return;
+          }
+          hasAskedConsentRef.current = true;
+          if (await aiConsent.requestAgreement()) {
+            parseTitle(text, categoryId);
+          }
+        },
         onSuccess: (result) => {
           const { data: parsedTodo } = result;
           methods.reset(
@@ -714,6 +736,14 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
     );
   };
 
+  const handleRecognitionEnd = () => {
+    const currentTitle = methods.getValues('title');
+    if (!currentTitle?.trim()) {
+      return;
+    }
+    parseTitle(currentTitle.trim(), methods.getValues('categoryId'));
+  };
+
   const { isRecognizing, start, stop } = useSpeechRecognition({
     onResult: (text) => {
       methods.setValue('title', text);
@@ -722,7 +752,7 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
     onError: toast.error,
   });
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (isRecognizing) {
       stop();
       return;
@@ -737,7 +767,13 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
       return;
     }
 
+    // 동의 시트가 키보드에 가리지 않게 먼저 내린다. 동의하지 않으면 직접 입력을 이어간다
     Keyboard.dismiss();
+    const consent = await aiConsent.ensureAgreed();
+    hasAskedConsentRef.current = consent.wasAsked;
+    if (!consent.isAgreed) {
+      return;
+    }
     start();
   };
 

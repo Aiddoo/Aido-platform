@@ -56,7 +56,7 @@ export class ChangePassword {
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
     const user = await this.#dependencies.userRepository.findById(userId);
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
     assertNotDeleted(user);
@@ -65,7 +65,7 @@ export class ChangePassword {
       userId,
       "CREDENTIAL",
     );
-    if (account === null || account.password === null || account.password === "") {
+    if (account == null || account.password == null || account.password === "") {
       throw new ApplicationException(ErrorCode.USER_0613, { userId });
     }
 

@@ -116,15 +116,17 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
     });
 
     describe("subscription", () => {
-      it("구독 상태 키를 생성한다", () => {
+      it("리소스 보너스를 담는 v2 구독 상태 키와 전환 중 지울 이전 키를 생성한다", () => {
         // Given
         const userId = "user_1";
 
         // When
         const key = EntitlementCacheKey.subscription(userId);
+        const legacyKey = EntitlementCacheKey.legacySubscription(userId);
 
         // Then
-        expect(key).toBe("aido:v1:subscription:status:user_1");
+        expect(key).toBe("aido:v1:subscription:status:v2:user_1");
+        expect(legacyKey).toBe("aido:v1:subscription:status:user_1");
       });
     });
 

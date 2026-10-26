@@ -16,7 +16,7 @@ export class AuthVerification extends AggregateRoot<AuthVerificationProps> {
     return new AuthVerification({
       id: props.id,
       expiresAt: new Date(props.expiresAt),
-      usedAt: props.usedAt !== null ? new Date(props.usedAt) : null,
+      usedAt: props.usedAt != null ? new Date(props.usedAt) : null,
       attempts: props.attempts,
     });
   }
@@ -26,11 +26,11 @@ export class AuthVerification extends AggregateRoot<AuthVerificationProps> {
   }
 
   get usedAt(): Date | null {
-    return this.props.usedAt !== null ? new Date(this.props.usedAt) : null;
+    return this.props.usedAt != null ? new Date(this.props.usedAt) : null;
   }
 
   validityAt(at: Date): AuthVerificationValidity {
-    if (this.props.usedAt !== null) {
+    if (this.props.usedAt != null) {
       return "used";
     }
     if (this.props.expiresAt <= at) {

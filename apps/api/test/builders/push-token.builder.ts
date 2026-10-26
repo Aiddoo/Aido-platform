@@ -27,7 +27,7 @@ export class PushTokenBuilder {
       userId,
       token: `ExponentPushToken[test-token-${PushTokenBuilder.idCounter}]`,
       deviceId: `device-${PushTokenBuilder.idCounter}`,
-      platform: "IOS" as Platform,
+      platform: "IOS",
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -73,12 +73,12 @@ export class PushTokenBuilder {
   }
 
   asIos(): PushTokenBuilder {
-    this.data.platform = "IOS" as Platform;
+    this.data.platform = "IOS";
     return this;
   }
 
   asAndroid(): PushTokenBuilder {
-    this.data.platform = "ANDROID" as Platform;
+    this.data.platform = "ANDROID";
     return this;
   }
 

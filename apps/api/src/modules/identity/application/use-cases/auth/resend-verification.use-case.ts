@@ -33,14 +33,14 @@ export class ResendVerification {
   async execute(input: ResendVerificationInput): Promise<{ message: string }> {
     const { email } = input;
     const user = await this.#dependencies.userRepository.findByEmail(email);
-    if (user === null) {
+    if (user == null) {
       return {
         message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",
       };
     }
 
     if (user.status !== "PENDING_VERIFY") {
-      if (user.emailVerifiedAt !== null) {
+      if (user.emailVerifiedAt != null) {
         throw new ApplicationException(ErrorCode.USER_0604, {
           email,
           message: "이미 인증이 완료된 계정입니다.",

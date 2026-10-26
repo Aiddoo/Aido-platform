@@ -7,6 +7,8 @@ export type TodoCommentSort = z.infer<typeof todoCommentSortSchema>;
 export const todoCommentAuthorSchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
+  /** 1.13.0 이전 서버는 보내지 않는다 */
+  userTag: z.string().optional(),
   profileImage: z.string().nullable(),
   isTodoOwner: z.boolean(),
 });
@@ -17,6 +19,8 @@ export const todoCommentViewerSchema = z.object({
   canEdit: z.boolean(),
   canDelete: z.boolean(),
   canReply: z.boolean(),
+  canReport: z.boolean(),
+  canBlock: z.boolean(),
 });
 export type TodoCommentViewer = z.infer<typeof todoCommentViewerSchema>;
 
@@ -34,6 +38,8 @@ export const todoCommentSchema = z.object({
   author: todoCommentAuthorSchema.nullable(),
   content: z.string().nullable(),
   isDeleted: z.boolean(),
+  /** 차단 관계라 서버가 가린 댓글. 가린 댓글도 isDeleted는 true다 */
+  isAuthorBlocked: z.boolean(),
   isEdited: z.boolean(),
   likeCount: z.number(),
   replyCount: z.number(),
@@ -139,8 +145,30 @@ export function canDeleteComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canDelete;
 }
 
-export function canManageComment(comment: TodoComment) {
-  return canEditComment(comment) || canDeleteComment(comment);
+/**
+ * 할 일 주인이 남의 댓글을 지우는 경우. 수정은 작성자만 할 수 있어 지울 수만 있으면 남의 댓글이다.
+ * 모두에게서 사라진다는 결과를 확인받는다.
+ */
+export function isDeletingOthersComment(comment: TodoComment) {
+  return canDeleteComment(comment) && !comment.viewer.canEdit;
+}
+
+export function canReportComment(comment: TodoComment) {
+  return isActiveComment(comment) && comment.viewer.canReport;
+}
+
+export function canBlockCommentAuthor(comment: TodoComment) {
+  return isActiveComment(comment) && comment.author != null && comment.viewer.canBlock;
+}
+
+/** ⋯ 메뉴에 둘 동작이 하나라도 있는지. 없으면 메뉴 자리만 비워 둔다 */
+export function hasCommentActions(comment: TodoComment) {
+  return (
+    canEditComment(comment) ||
+    canDeleteComment(comment) ||
+    canReportComment(comment) ||
+    canBlockCommentAuthor(comment)
+  );
 }
 
 export function hasCommentDraftCapacity(itemCount: number) {
@@ -153,7 +181,10 @@ export const TodoCommentPolicy = {
   canReply: canReplyToComment,
   canEdit: canEditComment,
   canDelete: canDeleteComment,
-  canManage: canManageComment,
+  isDeletingOthers: isDeletingOthersComment,
+  canReport: canReportComment,
+  canBlockAuthor: canBlockCommentAuthor,
+  hasActions: hasCommentActions,
 } as const;
 
 export const TodoCommentDraftPolicy = { hasCapacity: hasCommentDraftCapacity } as const;

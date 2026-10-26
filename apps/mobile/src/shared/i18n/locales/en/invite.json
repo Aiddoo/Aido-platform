@@ -1,0 +1,199 @@
+{
+  "codeEntry": {
+    "title": "Enter invite code",
+    "headline": "Enter the invite code\nyour friend sent you",
+    "description": "It's 6 characters (letters and numbers), without look-alikes like 0, O, 1, I, or L",
+    "inputLabel": "Invite code",
+    "paste": "Paste copied code",
+    "submit": "Continue",
+    "retry": "Check again",
+    "invalidCharacter": {
+      "confusable_one": "{{characters}} isn't used in invite codes.\nWe skip look-alikes like 0, O, 1, I, and L",
+      "confusable_other": "{{characters}} aren't used in invite codes.\nWe skip look-alikes like 0, O, 1, I, and L",
+      "unused_one": "{{characters}} isn't used in invite codes.\nPlease check the code again",
+      "unused_other": "{{characters}} aren't used in invite codes.\nPlease check the code again",
+      "more": "{{characters}}, and others"
+    }
+  },
+  "card": {
+    "inviterAvatar": "{{name}}'s cat profile",
+    "title": "{{name}} invited you\nto Aido",
+    "subtitle": "Become friends and cheer on each other's to-dos",
+    "receipt": {
+      "title_one": "Get {{count}} day of Premium when you join",
+      "title_other": "Get {{count}} days of Premium when you join",
+      "description": "Make to-dos with AI and add friends as much as you like",
+      "benefitFriend": "You'll be friends with {{name}} right away",
+      "benefitAi": "Unlimited AI to-dos",
+      "benefitFriends": "Unlimited friends and nudges",
+      "codeLabel": "Invite code"
+    },
+    "signUp": "Join and become friends",
+    "login": "I have an account · Log in",
+    "unnamedInviter": "Your friend",
+    "existingAccountNote": "You already use Aido, so you'll become friends right away. Premium rewards go to friends who just joined",
+    "redeemWithReward_one": "Become friends and get {{count}} day of Premium",
+    "redeemWithReward_other": "Become friends and get {{count}} days of Premium",
+    "connect": "Become friends with {{name}}",
+    "alreadyAccepted": "You've already accepted this invite"
+  },
+  "result": {
+    "notFound": {
+      "title": "We couldn't find this invite code",
+      "description": "Check the code again or ask your friend for a new link"
+    },
+    "rotated": {
+      "title": "This invite link has changed",
+      "description": "Your friend made a new link.\nAsk for the new one and open it again"
+    },
+    "disabled": {
+      "title": "Invites aren't available right now",
+      "description": "Please try again later.\nYour link will still work"
+    },
+    "loadFailed": {
+      "title": "Couldn't load the invite",
+      "description": "Check your connection and try again"
+    },
+    "enterCode": "Enter code instead",
+    "retry": "Try again"
+  },
+  "errors": {
+    "invalidCode": "Invite codes are 6 characters (letters and numbers)"
+  },
+  "myInvite": {
+    "title": "Invite friends",
+    "heroChip": "{{days}} days of Premium for both of you",
+    "heroChipSeparate": "{{inviteeDays}} days of Premium for your friend, {{inviterDays}} for you",
+    "heroTitle": "Invite a friend and\ncheer each other on",
+    "codeLabel": "My invite code",
+    "copy": "Copy",
+    "copyLink": "Copy invite link",
+    "rotate": {
+      "button": "Make a new link",
+      "title": "Make a new link?",
+      "description": "Your current link will stop working",
+      "confirm": "Make a new link"
+    },
+    "notice": {
+      "qualification_one": "You get a paw print when your friend completes to-dos on {{count}} day within {{days}} days of joining",
+      "qualification_other": "You get a paw print when your friend completes to-dos on {{count}} different days within {{days}} days of joining",
+      "cap": "You can get up to {{monthly}} days of Premium in any {{windowDays}} days, {{total}} days in total",
+      "subscription": "If you're subscribed, your reward Premium starts after your subscription ends"
+    },
+    "unavailable": {
+      "title": "Invites aren't available right now",
+      "description": "Please try again later.\nRewards you've received stay with you"
+    }
+  },
+  "pawPrintBoard": {
+    "title": "Collect paw prints",
+    "rewardRule_one": "When a friend completes to-dos on {{activeDays}} different days, you get a paw print, {{days}} days of Premium, and {{slots}} friend slot",
+    "rewardRule_other": "When a friend completes to-dos on {{activeDays}} different days, you get a paw print, {{days}} days of Premium, and {{slots}} friend slots",
+    "cellLabel": "Paw print {{number}}, {{state}}",
+    "state": {
+      "stamped": "added",
+      "waiting": "almost there",
+      "empty": "empty",
+      "milestone": "fish reward"
+    },
+    "progress": {
+      "notStarted": "Invite your first friend. You'll be friends as soon as they join",
+      "monthlyCapReached": "You've reached the {{days}}-day Premium limit for the last {{windowDays}} days. You can keep collecting paw prints and friend slots",
+      "next_one": "{{count}} more friend to your next reward",
+      "next_other": "{{count}} more friends to your next reward"
+    },
+    "header_one": "Board {{boardNumber}} · {{total}} paw print so far",
+    "header_other": "Board {{boardNumber}} · {{total}} paw prints so far",
+    "firstHint": "Your first paw print lands here once a friend completes to-dos on {{activeDays}} different days",
+    "complete": "You filled board {{boardNumber}}! A new board opens next time",
+    "rewardsSummary_one": "Premium {{count}} day · Friend slots {{slots}}",
+    "rewardsSummary_other": "Premium {{count}} days · Friend slots {{slots}}",
+    "unavailable": "You can keep collecting paw prints when invites are back"
+  },
+  "friendList": {
+    "title": "Invited friends",
+    "stamped": "Left a paw print on {{date}}",
+    "waiting": "Finished to-dos on {{done}} of {{required}} days",
+    "excluded": "This one didn't get a paw print",
+    "excludedExpired": "{{days}} days passed after joining, so no paw print this time",
+    "excludedMonthlyCap": "The reward limit was reached, so no paw print this time",
+    "joined": "Joined on {{date}}",
+    "chipDone": "Added",
+    "chipDoneLabel": "Paw print added",
+    "chipWaiting_one": "{{count}} more day",
+    "chipWaiting_other": "{{count}} more days",
+    "chipWaitingLabel_one": "One more day to get a paw print",
+    "chipWaitingLabel_other": "{{count}} more days to get a paw print",
+    "emptyTitle": "No invited friends yet",
+    "emptyDescription": "Friends you invite will show up here",
+    "tab": {
+      "all": "All {{count}}",
+      "waiting": "Waiting {{count}}"
+    },
+    "seeAll": "See all {{count}}",
+    "emptyWaitingTitle": "No friends waiting for a paw print",
+    "emptyWaitingDescription": "Friends show up here while they work toward a paw print",
+    "unavailable": "You'll see the friends you invited when invites are back"
+  },
+  "share": {
+    "kakao": "Invite via KakaoTalk",
+    "copyLink": "Copy link",
+    "system": "Share",
+    "toolbarLabel": "Share invite link",
+    "kakaoTitle": "{{name}} invited you to Aido",
+    "kakaoDescription": "Join to become friends and get {{days}} days of Premium",
+    "kakaoButton": "Accept invite",
+    "message_one": "Let's do our to-dos together on Aido! Join and get {{count}} day of Premium.",
+    "message_other": "Let's do our to-dos together on Aido! Join and get {{count}} days of Premium.",
+    "dialogTitle": "Send invite link"
+  },
+  "toast": {
+    "linkCopied": "Link copied",
+    "rotated": "New invite link created",
+    "shareFailed": "Couldn't share. Please try again later"
+  },
+  "entry": {
+    "haveInviteCode": "Have an invite code?",
+    "inviteCodeShort": "Invite code",
+    "inviteFriends": "Invite a friend",
+    "findByTag": "Find by tag",
+    "friendsEmptyDescription": "Invite a friend with a single link.\nThey get {{days}} days of Premium as soon as they join",
+    "friendLimitDescription": "You can have up to {{limit}} friends right now.\nYou get one more friend slot for each invited friend who completes to-dos on {{activeDays}} different days",
+    "growFriendSlots": "Invite friends for more friend slots",
+    "mypageTitle_one": "Invites · {{count}} paw print",
+    "mypageTitle_other": "Invites · {{count}} paw prints",
+    "mypageStart": "Get your first paw print",
+    "mypageNext_one": "{{count}} more friend to your next reward",
+    "mypageNext_other": "{{count}} more friends to your next reward",
+    "mypageKeepGoing": "Keep cheering each other on",
+    "checklistStep": "Invite 1 friend",
+    "checklistReward": "{{days}} days of Premium for your friend",
+    "allDoneDescription": "Keep it going longer with a friend",
+    "allDoneDismiss": "Hide for today",
+    "friendsEmptyTitle": "Invite your first friend",
+    "allDoneTitlePrefix": "You finished",
+    "allDoneTitleHighlight": "everything today"
+  },
+  "welcome": {
+    "friendsTitle": "You're now friends with {{name}}",
+    "requestedTitle": "Friend request sent to {{name}}",
+    "friendsDescription": "Now you can see and cheer on each other's to-dos",
+    "requestedDescription": "{{name}}'s friend slots are full.\nYou'll be friends once they accept",
+    "alreadyClaimedDescription": "This device already received an invite reward, so you're just friends this time",
+    "existingAccountDescription": "Since you already use Aido, you're friends now without a reward",
+    "rewardTitle_one": "You got {{count}} day of Premium",
+    "rewardTitle_other": "You got {{count}} days of Premium",
+    "rewardDescription_one": "Enjoy all features for {{count}} day",
+    "rewardDescription_other": "Enjoy all features for {{count}} days",
+    "rewardAfterSubscription_one": "Your {{count}} reward day starts when your subscription ends",
+    "rewardAfterSubscription_other": "Your {{count}} reward days start when your subscription ends",
+    "rewardAfterCurrentReward_one": "Your {{count}} day starts right after your current reward ends",
+    "rewardAfterCurrentReward_other": "Your {{count}} days start right after your current reward ends",
+    "notificationContext": "We'll let you know when your friend finishes a to-do",
+    "notificationButton": "Turn on",
+    "notificationOn": "Friend updates are on",
+    "createFirstTodo": "Make your first to-do",
+    "openFriendFeed": "See {{name}}'s to-dos first",
+    "later": "Maybe later"
+  }
+}

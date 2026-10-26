@@ -1,4 +1,5 @@
 import { reportTypeSchema } from '@aido/api';
+import { AiConsentNotice } from '@src/features/ai/components/ai-consent-notice';
 import { ReportCard } from '@src/features/ai/components/report-card';
 import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
 import { REPORT_TYPE_LABEL_KEYS } from '@src/features/ai/constants/report-type';
@@ -53,70 +54,74 @@ function ReportsScreen() {
       <StyledSafeAreaView edges={['left', 'right']}>
         <Spacing size={16} />
 
-        <ScallopedContainer>
-          <Box className="items-center px-5 pt-4">
-            <Image
-              source={require('@assets/images/ido_cat_suggestion.webp')}
-              style={{ width: 100, height: 100 }}
-              resizeMode="contain"
-            />
-            <Spacing size={8} />
-            <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-              {isPremium ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
-            </H4>
-            <Text size="b4" shade={6} align="center">
-              {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
-            </Text>
-          </Box>
+        <VStack gap={12}>
+          {isPremium && <AiConsentNotice>{t('consent.notice.reports')}</AiConsentNotice>}
 
-          <Spacing size={16} />
-
-          {isPremium && (
-            <Box className="px-4">
-              <QueryErrorBoundary>
-                <Suspense fallback={<ReportStatusBanner.Loading />}>
-                  <ReportStatusBanner />
-                </Suspense>
-              </QueryErrorBoundary>
+          <ScallopedContainer>
+            <Box className="items-center px-5 pt-4">
+              <Image
+                source={require('@assets/images/ido_cat_suggestion.webp')}
+                style={{ width: 100, height: 100 }}
+                resizeMode="contain"
+              />
+              <Spacing size={8} />
+              <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+                {isPremium ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
+              </H4>
+              <Text size="b4" shade={6} align="center">
+                {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
+              </Text>
             </Box>
-          )}
 
-          <Spacing size={12} />
+            <Spacing size={16} />
 
-          <Box className="px-4">
-            <Tabs
-              value={reportType}
-              onValueChange={(value) => {
-                const parsed = reportTypeSchema.safeParse(value);
-                if (parsed.success) {
-                  setReportType(parsed.data);
-                }
-              }}
-              variant="primary"
-            >
-              <Tabs.List>
-                <Tabs.Indicator />
-                <ReportTypeTab type="WEEKLY" />
-                <ReportTypeTab type="MONTHLY" />
-              </Tabs.List>
-            </Tabs>
-          </Box>
-
-          <Spacing size={8} />
-
-          <Box className="px-4 pb-4">
-            {match(isPremium)
-              .with(true, () => (
-                <QueryErrorBoundary resetKeys={[reportType]}>
-                  <Suspense fallback={<ReportCard.Loading />}>
-                    <ReportList />
+            {isPremium && (
+              <Box className="px-4">
+                <QueryErrorBoundary>
+                  <Suspense fallback={<ReportStatusBanner.Loading />}>
+                    <ReportStatusBanner />
                   </Suspense>
                 </QueryErrorBoundary>
-              ))
-              .with(false, () => <FreeReportPreview />)
-              .exhaustive()}
-          </Box>
-        </ScallopedContainer>
+              </Box>
+            )}
+
+            <Spacing size={12} />
+
+            <Box className="px-4">
+              <Tabs
+                value={reportType}
+                onValueChange={(value) => {
+                  const parsed = reportTypeSchema.safeParse(value);
+                  if (parsed.success) {
+                    setReportType(parsed.data);
+                  }
+                }}
+                variant="primary"
+              >
+                <Tabs.List>
+                  <Tabs.Indicator />
+                  <ReportTypeTab type="WEEKLY" />
+                  <ReportTypeTab type="MONTHLY" />
+                </Tabs.List>
+              </Tabs>
+            </Box>
+
+            <Spacing size={8} />
+
+            <Box className="px-4 pb-4">
+              {match(isPremium)
+                .with(true, () => (
+                  <QueryErrorBoundary resetKeys={[reportType]}>
+                    <Suspense fallback={<ReportCard.Loading />}>
+                      <ReportList />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                ))
+                .with(false, () => <FreeReportPreview />)
+                .exhaustive()}
+            </Box>
+          </ScallopedContainer>
+        </VStack>
 
         <Spacing size={32} />
       </StyledSafeAreaView>

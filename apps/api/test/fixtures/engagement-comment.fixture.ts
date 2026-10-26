@@ -13,6 +13,7 @@ import {
   StubEngagementCommentRepository,
   StubEngagementCommentReader,
   StubEngagementCommentNotification,
+  StubTodoCommentBlockReader,
 } from "#test/mocks/ports/engagement-comment.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
@@ -30,9 +31,11 @@ export function createCommentRecordFixture(
     rootId: null,
     path: [],
     depth: 0,
+    parentAuthorId: null,
     parentAuthorName: null,
     authorId: ENGAGEMENT_OWNER_ID,
     authorName: "작성자",
+    authorUserTag: null,
     authorProfileImage: null,
     todoOwnerId: ENGAGEMENT_OWNER_ID,
     content: "댓글",
@@ -64,6 +67,7 @@ export function createEngagementCommentFixture() {
   reader.names.set(ENGAGEMENT_OWNER_ID, "작성자");
   reader.names.set(ENGAGEMENT_VIEWER_ID, "방문자");
   const notification = new StubEngagementCommentNotification();
+  const blockReader = new StubTodoCommentBlockReader();
   const invalidatedTodoIds: number[] = [];
   const todoViewCache: TodoViewCachePort = {
     async invalidateForTodo(todoId) {
@@ -101,6 +105,7 @@ export function createEngagementCommentFixture() {
     repository,
     reader,
     notification,
+    blockReader,
     todoViewCache,
     mutationLock,
     unitOfWork,

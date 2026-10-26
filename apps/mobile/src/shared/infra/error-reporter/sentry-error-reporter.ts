@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react-native';
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
 import type { Severity } from '@src/core/ports/severity';
+import { SENTRY_TAGS } from '@src/shared/observability/telemetry-keys';
 import { mapValues, omitBy } from 'es-toolkit';
 
 /**
@@ -16,12 +17,23 @@ const severityToSentryLevel: Record<Severity, Sentry.SeverityLevel> = {
   fatal: 'fatal',
 };
 
+type ErrorReporterTagField = Exclude<keyof ErrorReporterContext, 'severity'>;
+
 /** ErrorReporterContext에서 severity를 제외한 나머지를 Sentry tags로 변환(undefined 제거, 문자열화). */
-const toTags = (context?: ErrorReporterContext): Record<string, string> =>
-  mapValues(
-    omitBy(context ?? {}, (value, key) => key === 'severity' || value == null),
+const toTags = (context: ErrorReporterContext = {}): Record<string, string> => {
+  const tags = {
+    [SENTRY_TAGS.FEATURE]: context.feature,
+    [SENTRY_TAGS.ERROR_CODE]: context.errorCode,
+    [SENTRY_TAGS.SERVER_ERROR_CODE]: context.serverErrorCode,
+    [SENTRY_TAGS.METHOD]: context.method,
+    [SENTRY_TAGS.ENDPOINT]: context.endpoint,
+    [SENTRY_TAGS.STATUS_CODE]: context.statusCode,
+  } satisfies Record<ErrorReporterTagField, ErrorReporterContext[ErrorReporterTagField]>;
+  return mapValues(
+    omitBy(tags, (value) => value == null),
     (value) => String(value),
   );
+};
 
 /**
  * Sentry 기반 ErrorReporter 어댑터.

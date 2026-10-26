@@ -3,6 +3,7 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 import { UNIT_OF_WORK, MUTATION_LOCK } from "#api/shared/application/ports/index";
 
 import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "./application/ports/comments/todo-comment-account-cleanup.store.port.js";
+import { TODO_COMMENT_BLOCK_READER } from "./application/ports/comments/todo-comment-block-reader.port.js";
 import { TODO_COMMENT_CURSOR_CODEC } from "./application/ports/comments/todo-comment-cursor-codec.port.js";
 import { TODO_COMMENT_NOTIFICATION } from "./application/ports/comments/todo-comment-notification.port.js";
 import { TODO_COMMENT_READER } from "./application/ports/comments/todo-comment.reader.port.js";
@@ -20,20 +21,22 @@ import { WriteTodoCommentChain } from "./application/use-cases/comments/write-to
 
 export const getTodoCommentOverviewProvider: FactoryProvider<GetTodoCommentOverview> = {
   provide: GetTodoCommentOverview,
-  inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC],
+  inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
   useFactory: (
     reader: ConstructorParameters<typeof GetTodoCommentOverview>[0]["reader"],
     cursorCodec: ConstructorParameters<typeof GetTodoCommentOverview>[0]["cursorCodec"],
-  ) => new GetTodoCommentOverview({ reader, cursorCodec }),
+    blockReader: ConstructorParameters<typeof GetTodoCommentOverview>[0]["blockReader"],
+  ) => new GetTodoCommentOverview({ reader, cursorCodec, blockReader }),
 };
 
 export const getTodoConversationProvider: FactoryProvider<GetTodoConversation> = {
   provide: GetTodoConversation,
-  inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC],
+  inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
   useFactory: (
     reader: ConstructorParameters<typeof GetTodoConversation>[0]["reader"],
     cursorCodec: ConstructorParameters<typeof GetTodoConversation>[0]["cursorCodec"],
-  ) => new GetTodoConversation({ reader, cursorCodec }),
+    blockReader: ConstructorParameters<typeof GetTodoConversation>[0]["blockReader"],
+  ) => new GetTodoConversation({ reader, cursorCodec, blockReader }),
 };
 
 export const getTodoDetailsProvider: FactoryProvider<GetTodoDetails> = {
@@ -99,6 +102,7 @@ export const likeTodoCommentProvider: FactoryProvider<LikeTodoComment> = {
     TODO_COMMENT_READER,
     TODO_COMMENT_REPOSITORY,
     TODO_COMMENT_NOTIFICATION,
+    TODO_COMMENT_BLOCK_READER,
     MUTATION_LOCK,
     UNIT_OF_WORK,
   ],
@@ -106,6 +110,7 @@ export const likeTodoCommentProvider: FactoryProvider<LikeTodoComment> = {
     reader: ConstructorParameters<typeof LikeTodoComment>[0]["reader"],
     repository: ConstructorParameters<typeof LikeTodoComment>[0]["repository"],
     notification: ConstructorParameters<typeof LikeTodoComment>[0]["notification"],
+    blockReader: ConstructorParameters<typeof LikeTodoComment>[0]["blockReader"],
     mutationLock: ConstructorParameters<typeof LikeTodoComment>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof LikeTodoComment>[0]["unitOfWork"],
   ) =>
@@ -113,6 +118,7 @@ export const likeTodoCommentProvider: FactoryProvider<LikeTodoComment> = {
       reader,
       repository,
       notification,
+      blockReader,
       mutationLock,
       unitOfWork,
       logger: new Logger(LikeTodoComment.name),
@@ -159,6 +165,7 @@ export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChai
     TODO_COMMENT_READER,
     TODO_COMMENT_REPOSITORY,
     TODO_COMMENT_NOTIFICATION,
+    TODO_COMMENT_BLOCK_READER,
     TODO_VIEW_CACHE,
     MUTATION_LOCK,
     UNIT_OF_WORK,
@@ -167,6 +174,7 @@ export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChai
     reader: ConstructorParameters<typeof WriteTodoCommentChain>[0]["reader"],
     repository: ConstructorParameters<typeof WriteTodoCommentChain>[0]["repository"],
     notification: ConstructorParameters<typeof WriteTodoCommentChain>[0]["notification"],
+    blockReader: ConstructorParameters<typeof WriteTodoCommentChain>[0]["blockReader"],
     todoViewCache: ConstructorParameters<typeof WriteTodoCommentChain>[0]["todoViewCache"],
     mutationLock: ConstructorParameters<typeof WriteTodoCommentChain>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof WriteTodoCommentChain>[0]["unitOfWork"],
@@ -175,6 +183,7 @@ export const writeTodoCommentChainProvider: FactoryProvider<WriteTodoCommentChai
       reader,
       repository,
       notification,
+      blockReader,
       todoViewCache,
       mutationLock,
       unitOfWork,

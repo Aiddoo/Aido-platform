@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import {
   USER_SETTINGS_CACHE,
@@ -7,7 +8,10 @@ import {
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { NotificationCachePort } from "../../../application/ports/delivery/notification-cache.port.js";
-import type { NotificationInboxScope } from "../../../domain/services/delivery/notification-client-capability.js";
+import {
+  notificationInboxScopes,
+  type NotificationInboxScope,
+} from "../../../domain/services/delivery/notification-client-capability.js";
 import {
   NotificationCacheKey,
   NOTIFICATION_CACHE_TTL_MS,
@@ -29,16 +33,18 @@ export class NotificationCacheAdapter implements NotificationCachePort {
   ): Promise<number> {
     return this.cacheService.wrap(
       NotificationCacheKey.unreadCount(userId, scope),
+      z.number(),
       factory,
       NOTIFICATION_CACHE_TTL_MS.UNREAD_COUNT,
     );
   }
 
   async invalidateUnreadCount(userId: string): Promise<void> {
-    await Promise.all([
-      this.cacheService.del(NotificationCacheKey.unreadCount(userId)),
-      this.cacheService.del(NotificationCacheKey.unreadCount(userId, "legacy")),
-    ]);
+    await Promise.all(
+      notificationInboxScopes().map((scope) =>
+        this.cacheService.del(NotificationCacheKey.unreadCount(userId, scope)),
+      ),
+    );
   }
 
   invalidatePushTokens(userId: string): Promise<void> {

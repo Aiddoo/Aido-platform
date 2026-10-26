@@ -1,13 +1,10 @@
-import {
-  type CreateInquiryInput,
-  createInquirySchema,
-  INQUIRY_CATEGORY,
-  INQUIRY_CONTENT_LIMITS,
-} from '@aido/api';
+import { type CreateInquiryInput, createInquirySchema, INQUIRY_CONTENT_LIMITS } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/constants/inquiry-category-labels';
+import { useInquiryScreenParams } from '@src/features/inquiry/hooks/use-inquiry-screen-params';
 import { useCreateInquiryMutationOptions } from '@src/features/inquiry/queries/use-create-inquiry-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -24,7 +21,6 @@ import {
   Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
 import { RadioGroup } from 'heroui-native';
@@ -38,8 +34,10 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 function InquiryScreen() {
   const { showBoundary } = useErrorBoundary();
+  const initialValues = useInquiryScreenParams();
 
   const { t } = useTranslation('inquiry');
+  const { locale } = useDateFormatContext();
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
   const contentHeight = useSharedValue(0);
   const hasScrolled = useSharedValue(false);
@@ -62,7 +60,7 @@ function InquiryScreen() {
 
   const formMethods = useForm({
     resolver: zodResolver(createInquirySchema),
-    defaultValues: { category: INQUIRY_CATEGORY.BUG_REPORT, content: '' },
+    defaultValues: initialValues,
     mode: 'onChange',
   });
   const {
@@ -107,7 +105,12 @@ function InquiryScreen() {
                     className="bg-white rounded-2xl overflow-hidden gap-0"
                   >
                     {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                      <IconRadioItem key={key} value={key} label={tGlobal(labelKey)} />
+                      <IconRadioItem
+                        key={key}
+                        value={key}
+                        label={tGlobal(labelKey)}
+                        testID={`inquiry-category-${key}`}
+                      />
                     ))}
                   </RadioGroup>
                 )}
@@ -120,6 +123,7 @@ function InquiryScreen() {
               {({ onChange, value }, { error }) => (
                 <VStack gap={4}>
                   <TextArea
+                    testID="inquiry-content-input"
                     label={t('form.contentLabel')}
                     placeholder={t('form.contentPlaceholder')}
                     value={value}
@@ -134,11 +138,8 @@ function InquiryScreen() {
                   />
                   <HStack justify="end" className="-mt-4">
                     <Text size="e1" weight="medium" className="text-gray-5">
-                      {formatCount(value.length, getDateFormatContext().locale)}/
-                      {formatCount(
-                        INQUIRY_CONTENT_LIMITS.MAX_LENGTH,
-                        getDateFormatContext().locale,
-                      )}
+                      {formatCount(value.length, locale)}/
+                      {formatCount(INQUIRY_CONTENT_LIMITS.MAX_LENGTH, locale)}
                     </Text>
                   </HStack>
                 </VStack>
@@ -151,6 +152,7 @@ function InquiryScreen() {
           onPress={() => handleSubmit(handleSubmitInquiry)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
+          testID="inquiry-submit"
         >
           {t('form.submit')}
         </KeyboardAdaptiveButton>

@@ -1,4 +1,3 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
 import sql from "sql-template-tag";
 import { vi } from "vitest";
 
@@ -7,8 +6,8 @@ import { PrismaAdminGrowthMetricsAdapter } from "#api/modules/operations/infrast
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
+import { createMockTransactionHost } from "#test/mocks/database.mock";
 import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -23,9 +22,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   beforeAll(async () => {
     testDb = new TestDatabase();
     prisma = await testDb.start();
-    const txHost = {
-      tx: createDatabaseContext(prisma),
-    } as unknown as TransactionHost<Prisma8TransactionalAdapter>;
+    const txHost = createMockTransactionHost(createDatabaseContext(prisma));
     activityWriter = new UserRepository(txHost);
     growthMetrics = new PrismaAdminGrowthMetricsAdapter(createTestDatabaseService(prisma));
   }, 60_000);
@@ -303,9 +300,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 });
 
 function createActivityWriter(prisma: TestDatabaseClient): UserRepository {
-  const txHost = {
-    tx: createDatabaseContext(prisma),
-  } as unknown as TransactionHost<Prisma8TransactionalAdapter>;
+  const txHost = createMockTransactionHost(createDatabaseContext(prisma));
   return new UserRepository(txHost);
 }
 

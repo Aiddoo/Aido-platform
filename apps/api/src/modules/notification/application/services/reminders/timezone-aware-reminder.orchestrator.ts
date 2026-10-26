@@ -151,7 +151,7 @@ export class TimezoneAwareReminderOrchestrator {
 
       const morningMinute = payload.morningReminderMinute ?? 0;
       if (
-        payload.morningReminderHour !== undefined &&
+        payload.morningReminderHour != null &&
         payload.morningReminderHour === localHour &&
         morningMinute === localMinute
       ) {
@@ -166,7 +166,7 @@ export class TimezoneAwareReminderOrchestrator {
 
       const eveningMinute = payload.eveningReminderMinute ?? 0;
       if (
-        payload.eveningReminderHour !== undefined &&
+        payload.eveningReminderHour != null &&
         payload.eveningReminderHour === localHour &&
         eveningMinute === localMinute
       ) {

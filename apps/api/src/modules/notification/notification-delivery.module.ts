@@ -7,6 +7,7 @@ import { DatabaseService } from "#api/platform/database/database.service";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 
 import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/delivery/active-push-token.reader.port.js";
+import { CLIENT_APP_VERSION_READER } from "./application/ports/delivery/client-app-version.reader.port.js";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/delivery/marketing-push-opt-out-token.port.js";
 import { NOTIFICATION_CACHE } from "./application/ports/delivery/notification-cache.port.js";
 import {
@@ -17,12 +18,14 @@ import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notifi
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/delivery/push-delivery-outbox.repository.port.js";
 import { PUSH_DISPATCH_STAGING } from "./application/ports/delivery/push-dispatch-staging.repository.port.js";
 import { PUSH_PROVIDER } from "./application/ports/delivery/push-provider.port.js";
+import { PUSH_QUIET_HOURS_READER } from "./application/ports/delivery/push-quiet-hours.reader.port.js";
 import {
   PUSH_RATE_LIMITER,
   type PushRateLimiterPort,
@@ -33,6 +36,7 @@ import { USER_NOTIFICATION_SETTINGS } from "./application/ports/delivery/user-no
 import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
 import { NotificationAccountCleanup } from "./application/services/delivery/notification-account-cleanup.js";
+import { PushQuietHoursReader } from "./application/services/delivery/push-quiet-hours.reader.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/delivery/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/delivery/notification-cache.adapter.js";
@@ -43,6 +47,8 @@ import { NotificationQueueModule } from "./infrastructure/jobs/delivery/notifica
 import { NotificationQueueProcessor } from "./infrastructure/jobs/delivery/notification-queue.processor.js";
 import { PushDeliveryQueueProcessor } from "./infrastructure/jobs/delivery/push-delivery-queue.processor.js";
 import { PushDeliveryQueueService } from "./infrastructure/jobs/delivery/push-delivery-queue.service.js";
+import { PrismaClientAppVersionReader } from "./infrastructure/persistence/delivery/prisma-client-app-version.reader.js";
+import { PrismaNotificationTodoTargetReader } from "./infrastructure/persistence/delivery/prisma-notification-todo-target.reader.js";
 import { PrismaNotificationReader } from "./infrastructure/persistence/delivery/prisma-notification.reader.js";
 import { PrismaNotificationRepository } from "./infrastructure/persistence/delivery/prisma-notification.repository.js";
 import { PrismaPushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository.js";
@@ -69,6 +75,7 @@ import {
   publishPushDeliveryOutboxProvider,
   pushDeliveryAfterCommitPublisherProvider,
   pushDeliveryEligibilityServiceProvider,
+  pushQuietHoursReaderProvider,
   pushNotificationDeliveryServiceProvider,
   pushNotificationPayloadFactoryProvider,
   reconcilePushReceiptsProvider,
@@ -126,6 +133,8 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     PrismaNotificationReader,
     { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
     { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+    PrismaNotificationTodoTargetReader,
+    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: PrismaNotificationTodoTargetReader },
     PrismaPushTokenRepository,
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
     PrismaPushReceiptRepository,
@@ -179,9 +188,12 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
       provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
       useExisting: CachedNotificationRecipientPreferenceAdapter,
     },
+    { provide: CLIENT_APP_VERSION_READER, useClass: PrismaClientAppVersionReader },
     // application 전달 정책 + durable outbox/queue 경계
     pushDeliveryAfterCommitPublisherProvider,
     pushDeliveryEligibilityServiceProvider,
+    pushQuietHoursReaderProvider,
+    { provide: PUSH_QUIET_HOURS_READER, useExisting: PushQuietHoursReader },
     pushNotificationDeliveryServiceProvider,
     pushNotificationPayloadFactoryProvider,
     deliverPushNotificationsProvider,
@@ -224,6 +236,8 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     NotificationPublisher,
     NotificationHistoryReader,
     NOTIFICATION_RECIPIENT_LOCALE_READER,
+    CLIENT_APP_VERSION_READER,
+    PUSH_QUIET_HOURS_READER,
     NotificationAccountCleanup,
     NotificationQueueModule,
     PUSH_PROVIDER,

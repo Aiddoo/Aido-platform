@@ -32,9 +32,15 @@ import { OperationsAdminModule } from "#api/modules/operations/operations-admin.
 import { OperationsNotificationsModule } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
+import { SocialInvitesModule } from "#api/modules/social/social-invites.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
+import {
+  SocialReportsAdminModule,
+  SocialReportsModule,
+} from "#api/modules/social/social-reports.public";
 import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
@@ -52,7 +58,11 @@ import { LoggerModule } from "#api/platform/logging/index";
 import { PaginationModule } from "#api/platform/pagination/pagination.module";
 import { RedisModule } from "#api/platform/redis/index";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
-import { THROTTLER_STORAGE, ThrottleModule } from "#api/platform/throttle/index";
+import {
+  THROTTLER_STORAGE,
+  ThrottleModule,
+  UserAwareThrottlerGuard,
+} from "#api/platform/throttle/index";
 
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
@@ -112,6 +122,7 @@ import { AppService } from "./app.service.js";
     AiAssistanceReportsModule,
     AiAssistanceSuggestionsModule,
     IdentityAuthModule,
+    SocialBlocksModule,
     SocialCheersModule,
     InsightsDailyCompletionsModule,
     SocialFriendsModule,
@@ -120,6 +131,9 @@ import { AppService } from "./app.service.js";
     NotesMemosModule,
     NotificationDeliveryModule,
     SocialNudgesModule,
+    SocialInvitesModule,
+    SocialReportsModule,
+    SocialReportsAdminModule,
     NotificationRemindersModule,
     BillingSubscriptionsModule,
     PlanningTodosModule,
@@ -133,7 +147,8 @@ import { AppService } from "./app.service.js";
 
   providers: [
     AppService,
-    ThrottlerGuard,
+    // 테스트가 ThrottlerGuard 토큰으로 우회하므로 같은 토큰에 사용자 기준 tracker를 붙인 구현을 둔다
+    { provide: ThrottlerGuard, useClass: UserAwareThrottlerGuard },
 
     {
       provide: APP_GUARD,

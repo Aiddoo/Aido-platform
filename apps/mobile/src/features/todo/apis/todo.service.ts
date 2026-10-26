@@ -236,9 +236,12 @@ export class TodoService {
     return ok(toDailyCompletionsResult(parsed.data));
   };
 
-  /** 오늘의 할 일 요약 (홈 위젯 스냅샷) — 진행률·스트릭·상위 할 일을 한 번에 */
-  getTodoSummary = async (signal?: AbortSignal): Promise<Result<TodoSummary, ApiError>> => {
-    const result = await this.#httpClient.get('v1/todos/summary', { signal });
+  /** 하루의 할 일 요약 (홈 위젯 스냅샷) — 서버는 기기 시간대 기준 오늘·내일만 허용한다 */
+  getTodoSummary = async (
+    date: string,
+    signal?: AbortSignal,
+  ): Promise<Result<TodoSummary, ApiError>> => {
+    const result = await this.#httpClient.get('v1/todos/summary', { signal, params: { date } });
 
     if (!result.ok) {
       return result;

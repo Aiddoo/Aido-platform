@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/api/errors";
 import { all } from "@prisma/orm-postgres/orm-client";
 import request from "supertest";
 /**
@@ -1896,6 +1897,26 @@ describe("인증 E2E", () => {
 
       ctx.fakeOAuthTokenVerifierService.clear();
     });
+
+    it.each(["/v1/auth/linked-accounts/google", "/v1/auth/sessions/not-a-cuid"])(
+      "형식이 틀린 path(%s)는 400 SYS_0002를 반환한다",
+      async (path) => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser(
+          `auth-invalid-path-${path.length}@test.com`,
+          "Password123!",
+        );
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .delete(path)
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(400);
+
+        // Then
+        expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
+      },
+    );
 
     it("미인증 요청은 401을 반환한다", async () => {
       // Given - 토큰 없음

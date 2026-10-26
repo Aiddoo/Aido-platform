@@ -6,6 +6,7 @@ import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
@@ -29,18 +30,20 @@ function describeHealthResponse(status: "ok" | "error"): SchemaObject {
   };
 }
 
-const INSTANCE_ID = process.env.INSTANCE_ID ?? randomUUID().slice(0, 8);
-
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
 @Controller("health")
 export class HealthController {
   readonly #logger = new Logger(HealthController.name);
+  readonly #instanceId: string;
 
   constructor(
     private readonly health: HealthCheckService,
     private readonly databaseHealth: DatabaseHealthIndicator,
     private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
-  ) {}
+    config: TypedConfigService,
+  ) {
+    this.#instanceId = config.get("INSTANCE_ID") ?? randomUUID().slice(0, 8);
+  }
 
   @Get()
   @Public()
@@ -121,6 +124,6 @@ curl https://api.aido.com/health
       () => this.jobRuntimeHealth.isHealthy("queues"),
     ]);
     this.#logger.log(`헬스 체크 완료: ${result.status}`);
-    return { ...result, instanceId: INSTANCE_ID };
+    return { ...result, instanceId: this.#instanceId };
   }
 }

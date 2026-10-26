@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react-native';
-import { useWindowDimensions } from 'react-native';
+import { type ScaledSize, useWindowDimensions } from 'react-native';
 
 import { useFontScaledSize } from './use-font-scaled-size';
 
@@ -12,12 +12,19 @@ jest.mock('react-native', () => ({
   useWindowDimensions: jest.fn(),
 }));
 
-const mockUseWindowDimensions = useWindowDimensions as jest.Mock;
+const mockUseWindowDimensions = jest.mocked(useWindowDimensions);
+
+const createWindowDimensions = (fontScale: number): ScaledSize => ({
+  width: 390,
+  height: 844,
+  scale: 3,
+  fontScale,
+});
 
 describe('useFontScaledSize', () => {
   it('윈도우의 글꼴 배율로 크기를 스케일링한다', async () => {
     // Given
-    mockUseWindowDimensions.mockReturnValue({ fontScale: 1.5 });
+    mockUseWindowDimensions.mockReturnValue(createWindowDimensions(1.5));
     const { result } = await renderHook(() => useFontScaledSize());
 
     // When
@@ -29,11 +36,11 @@ describe('useFontScaledSize', () => {
 
   it('글꼴 배율이 바뀌면 새 배율로 계산한다', async () => {
     // Given
-    mockUseWindowDimensions.mockReturnValue({ fontScale: 1 });
+    mockUseWindowDimensions.mockReturnValue(createWindowDimensions(1));
     const { result, rerender } = await renderHook(() => useFontScaledSize());
 
     // When
-    mockUseWindowDimensions.mockReturnValue({ fontScale: 2 });
+    mockUseWindowDimensions.mockReturnValue(createWindowDimensions(2));
     await rerender(undefined);
 
     // Then

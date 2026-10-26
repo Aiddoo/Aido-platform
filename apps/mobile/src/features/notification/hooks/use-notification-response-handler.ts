@@ -1,8 +1,10 @@
 import type { PushNotificationData } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
@@ -25,6 +27,7 @@ export function useNotificationResponseHandler() {
   const { trackEvent } = useTrack();
   const logger = useLogger();
   const today = useTodayKey();
+  const windowSizeClass = useWindowSizeClass();
 
   return useCallback(
     async ({
@@ -62,7 +65,13 @@ export function useNotificationResponseHandler() {
         return 'discarded';
       }
 
-      await navigate(resolveNotificationDestination(data, { today }));
+      await navigate(
+        resolveNotificationDestination(data, {
+          today,
+          windowSizeClass,
+          viewerId: getCachedMe(queryClient)?.id,
+        }),
+      );
 
       try {
         trackEvent('push_notification_opened', {
@@ -97,6 +106,6 @@ export function useNotificationResponseHandler() {
       }
       return 'handled';
     },
-    [logger, navigate, notificationService, queryClient, today, trackEvent],
+    [logger, navigate, notificationService, queryClient, today, trackEvent, windowSizeClass],
   );
 }

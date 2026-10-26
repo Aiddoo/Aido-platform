@@ -60,7 +60,7 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
         row.userId.eq(userId),
         row.currentStreak.eq(expected.currentStreak),
         row.longestStreak.eq(expected.longestStreak),
-        expected.lastCompletedDate === null
+        expected.lastCompletedDate == null
           ? row.lastCompletedDate.isNull()
           : row.lastCompletedDate.eq(databaseDate(expected.lastCompletedDate)),
       ),

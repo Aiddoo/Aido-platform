@@ -3,7 +3,7 @@
 # DB는 로컬 Docker 컨테이너, API는 DATABASE_URL로 연결
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine
     ports:
       - '${DB_PORT:-5433}:5432'
     environment:

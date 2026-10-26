@@ -83,7 +83,7 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
       // Then
       await expect(pending).rejects.toMatchObject({
         errorCode,
-        ...(details === undefined ? {} : { details }),
+        ...(details == null ? {} : { details }),
       });
       expect(fixture.accountRepository.accounts).toHaveLength(1);
       expect(fixture.securityLogRepository.entries).toEqual([]);

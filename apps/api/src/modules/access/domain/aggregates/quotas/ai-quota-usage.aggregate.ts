@@ -34,7 +34,7 @@ export class AiQuotaUsage extends AggregateRoot<AiQuotaUsageProps> {
     return new AiQuotaUsage({
       userId: props.userId,
       count: props.count,
-      resetAt: props.resetAt === null ? null : new Date(props.resetAt),
+      resetAt: props.resetAt == null ? null : new Date(props.resetAt),
     });
   }
 
@@ -45,7 +45,7 @@ export class AiQuotaUsage extends AggregateRoot<AiQuotaUsageProps> {
   get snapshot(): AiQuotaUsageSnapshot {
     return {
       count: this.props.count,
-      resetAt: this.props.resetAt === null ? null : new Date(this.props.resetAt),
+      resetAt: this.props.resetAt == null ? null : new Date(this.props.resetAt),
     };
   }
 
@@ -55,7 +55,7 @@ export class AiQuotaUsage extends AggregateRoot<AiQuotaUsageProps> {
 
   reserve(input: { readonly at: Date; readonly limit: number | null }): AiQuotaReservationDecision {
     const used = this.usedAt(input.at);
-    if (input.limit !== null && used >= input.limit) {
+    if (input.limit != null && used >= input.limit) {
       return { status: "exceeded", used, limit: input.limit };
     }
 
@@ -75,7 +75,7 @@ export class AiQuotaUsage extends AggregateRoot<AiQuotaUsageProps> {
 
   release(periodId: string): AiQuotaRelease | null {
     if (
-      this.props.resetAt === null ||
+      this.props.resetAt == null ||
       getAiQuotaPeriodId(this.props.resetAt) !== periodId ||
       this.props.count <= 0
     ) {

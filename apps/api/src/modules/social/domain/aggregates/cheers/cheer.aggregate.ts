@@ -16,7 +16,7 @@ export class Cheer extends AggregateRoot<CheerProps> {
       senderId: props.senderId,
       receiverId: props.receiverId,
       message: props.message,
-      readAt: props.readAt !== null ? new Date(props.readAt) : null,
+      readAt: props.readAt != null ? new Date(props.readAt) : null,
       createdAt: new Date(props.createdAt),
     });
   }
@@ -38,7 +38,7 @@ export class Cheer extends AggregateRoot<CheerProps> {
   }
 
   get readAt(): Date | null {
-    return this.props.readAt !== null ? new Date(this.props.readAt) : null;
+    return this.props.readAt != null ? new Date(this.props.readAt) : null;
   }
 
   get createdAt(): Date {
@@ -46,7 +46,7 @@ export class Cheer extends AggregateRoot<CheerProps> {
   }
 
   isRead(): boolean {
-    return this.props.readAt !== null;
+    return this.props.readAt != null;
   }
 
   markRead(at: Date): boolean {

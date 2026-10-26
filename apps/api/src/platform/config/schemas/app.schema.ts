@@ -12,7 +12,11 @@ export const appSchema = z.object({
    * 미설정 시 NODE_ENV 기준 폴백 (config.service.appEnv 참조).
    */
   APP_ENV: z.enum(["development", "staging", "production"]).optional(),
+  /** 헬스 체크 응답에 노출할 인스턴스 식별자. 미설정 시 기동마다 임의 값을 생성한다. */
+  INSTANCE_ID: z.string().min(1).optional(),
   PORT: z.coerce.number().int().positive().default(8080),
+  /** 운영자 이메일에 넣는 관리자 API 문서 링크의 기준 주소 (예: https://api.aido.kr). 없으면 경로만 적는다 */
+  API_PUBLIC_URL: z.url().optional(),
   LOG_LEVEL: z.enum(["silent", "fatal", "error", "warn", "info", "debug", "trace"]).optional(),
 });
 

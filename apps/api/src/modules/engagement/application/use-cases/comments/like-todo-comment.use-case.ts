@@ -10,9 +10,11 @@ import {
 import { ApplicationException } from "#api/shared/domain/index";
 
 import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
+import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
 import { type TodoCommentNotificationPort } from "../../ports/comments/todo-comment-notification.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-comment.repository.port.js";
+import { assertNotBlocked } from "../../services/comments/assert-not-blocked.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
 
@@ -23,12 +25,13 @@ export interface LikeTodoCommentInput {
 }
 
 interface LikeTodoCommentDependencies {
-  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo" | "findUserDisplayName">;
+  readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId" | "findUserDisplayName">;
   readonly repository: Pick<
     TodoCommentRepositoryPort,
     "findComment" | "setLike" | "findPendingLikeNotification" | "markLikeNotified"
   >;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentLiked">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
@@ -52,11 +55,12 @@ export class LikeTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
       comment.assertCanReceiveInteraction();
+      await assertNotBlocked(this.#dependencies.blockReader, input.userId, comment.authorId);
       const senderName = await this.#dependencies.reader.findUserDisplayName(input.userId);
       const transition = await this.#dependencies.repository.setLike(
         input.todoId,
@@ -93,7 +97,7 @@ export class LikeTodoComment {
         input.commentId,
         input.userId,
       );
-      if (pending === null) {
+      if (pending == null) {
         return;
       }
 

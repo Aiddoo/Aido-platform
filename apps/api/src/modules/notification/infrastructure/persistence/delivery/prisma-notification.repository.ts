@@ -1,6 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and } from "@prisma/orm-postgres/orm-client";
+import { uniq } from "es-toolkit";
 import sql from "sql-template-tag";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -156,7 +157,7 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
 
     return {
       count: deletedRows.length,
-      affectedUserIds: [...new Set(deletedRows.map((row) => row.userId))],
+      affectedUserIds: uniq(deletedRows.map((row) => row.userId)),
     };
   }
 }

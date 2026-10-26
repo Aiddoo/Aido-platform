@@ -29,7 +29,7 @@ export class NotificationBuilder {
     this.data = {
       id: NotificationBuilder.idCounter,
       userId,
-      type: "FOLLOW_NEW" as NotificationType,
+      type: "FOLLOW_NEW",
       title: "새로운 알림",
       body: "알림 내용입니다",
       isRead: false,
@@ -133,7 +133,7 @@ export class NotificationBuilder {
   // === 알림 타입별 편의 메서드 ===
 
   asFollowNew(friendId: string): NotificationBuilder {
-    this.data.type = "FOLLOW_NEW" as NotificationType;
+    this.data.type = "FOLLOW_NEW";
     this.data.friendId = friendId;
     this.data.title = "새로운 친구 요청";
     this.data.body = "누군가 친구가 되고 싶어해요";
@@ -141,21 +141,21 @@ export class NotificationBuilder {
   }
 
   asMorningReminder(): NotificationBuilder {
-    this.data.type = "MORNING_REMINDER" as NotificationType;
+    this.data.type = "MORNING_REMINDER";
     this.data.title = "좋은 아침이에요!";
     this.data.body = "미루면 저녁의 내가 울어";
     return this;
   }
 
   asEveningReminder(): NotificationBuilder {
-    this.data.type = "EVENING_REMINDER" as NotificationType;
+    this.data.type = "EVENING_REMINDER";
     this.data.title = "오늘 하루 수고했어요!";
     this.data.body = "내일 할일을 미리 확인해보세요";
     return this;
   }
 
   asNudgeReceived(friendId: string, nudgeId: number): NotificationBuilder {
-    this.data.type = "NUDGE_RECEIVED" as NotificationType;
+    this.data.type = "NUDGE_RECEIVED";
     this.data.friendId = friendId;
     this.data.nudgeId = nudgeId;
     this.data.title = "콕 찌르기!";
@@ -164,7 +164,7 @@ export class NotificationBuilder {
   }
 
   asCheerReceived(friendId: string, cheerId: number): NotificationBuilder {
-    this.data.type = "CHEER_RECEIVED" as NotificationType;
+    this.data.type = "CHEER_RECEIVED";
     this.data.friendId = friendId;
     this.data.cheerId = cheerId;
     this.data.title = "응원 메시지!";
@@ -173,7 +173,7 @@ export class NotificationBuilder {
   }
 
   asSystemNotice(): NotificationBuilder {
-    this.data.type = "SYSTEM_NOTICE" as NotificationType;
+    this.data.type = "SYSTEM_NOTICE";
     this.data.title = "시스템 공지";
     this.data.body = "서비스 점검 예정";
     return this;

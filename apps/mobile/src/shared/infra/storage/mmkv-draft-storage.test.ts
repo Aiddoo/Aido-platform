@@ -1,10 +1,15 @@
 import { createMockStorage } from '@src/shared/__tests__';
-import { createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
+import { type createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
 
 import { disabledDraftStorage, openMmkvDraftStorage } from './mmkv-draft-storage';
 
+type MmkvConfig = Parameters<typeof createMMKV>[0];
+
+const mockCreateMMKV = jest.fn<FakeMmkv, [MmkvConfig]>();
+
+// 모듈 mock은 실제 MMKV 타입을 요구하지 않으므로 어댑터가 쓰는 메서드만 가진 fake를 돌려준다.
 jest.mock('react-native-mmkv', () => ({
-  createMMKV: jest.fn(),
+  createMMKV: (config: MmkvConfig) => mockCreateMMKV(config),
   deleteMMKV: jest.fn(),
   existsMMKV: jest.fn(),
 }));
@@ -14,6 +19,8 @@ jest.mock('expo-crypto', () => ({
 }));
 
 const GENERATED_KEY = 'ab'.repeat(16);
+
+type FakeMmkv = ReturnType<typeof createFakeMmkv>;
 
 function createFakeMmkv(entries: Record<string, string> = {}) {
   const values = new Map(Object.entries(entries));
@@ -30,7 +37,7 @@ function createFakeMmkv(entries: Record<string, string> = {}) {
 describe('openMmkvDraftStorage', () => {
   beforeEach(() => {
     jest.mocked(existsMMKV).mockReturnValue(false);
-    jest.mocked(createMMKV).mockImplementation(() => createFakeMmkv() as never);
+    mockCreateMMKV.mockImplementation(() => createFakeMmkv());
   });
 
   it('처음에는 난수 키를 만들어 보안 저장소에 보관하고 AES-256 인스턴스를 연다', async () => {
@@ -42,7 +49,7 @@ describe('openMmkvDraftStorage', () => {
     expect(result.failure).toBeUndefined();
     expect(secureStorage.set).toHaveBeenCalledWith('aido_draft_encryption_key', GENERATED_KEY);
     expect(deleteMMKV).toHaveBeenCalledWith('aido.drafts.encrypted');
-    expect(createMMKV).toHaveBeenCalledWith({
+    expect(mockCreateMMKV).toHaveBeenCalledWith({
       id: 'aido.drafts.encrypted',
       encryptionKey: GENERATED_KEY,
       encryptionType: 'AES-256',
@@ -57,7 +64,7 @@ describe('openMmkvDraftStorage', () => {
 
     expect(secureStorage.set).not.toHaveBeenCalled();
     expect(deleteMMKV).not.toHaveBeenCalled();
-    expect(createMMKV).toHaveBeenCalledWith(
+    expect(mockCreateMMKV).toHaveBeenCalledWith(
       expect.objectContaining({ encryptionKey: 'cd'.repeat(16) }),
     );
   });
@@ -66,14 +73,11 @@ describe('openMmkvDraftStorage', () => {
     const secureStorage = createMockStorage();
     secureStorage.get.mockResolvedValue('cd'.repeat(16));
     jest.mocked(existsMMKV).mockReturnValue(true);
-    jest
-      .mocked(createMMKV)
-      .mockImplementation(
-        (config) =>
-          createFakeMmkv(
-            config?.id === 'aido.drafts' ? { 'aido_draft_v1:user-1:memo:create': '{"v":1}' } : {},
-          ) as never,
-      );
+    mockCreateMMKV.mockImplementation((config) =>
+      createFakeMmkv(
+        config?.id === 'aido.drafts' ? { 'aido_draft_v1:user-1:memo:create': '{"v":1}' } : {},
+      ),
+    );
 
     const { storage } = await openMmkvDraftStorage(secureStorage);
 

@@ -1,4 +1,8 @@
+import type { AiDataSharingDecision } from "@aido/api/vocabulary";
+
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { AiDataSharingConsentDecisionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/ai-data-sharing-consent.reader.port";
+import type { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/client-app-version.reader.port";
 import type {
   AiReportRepositoryPort,
   CreateAiReportInput,
@@ -228,5 +232,23 @@ export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
     this.calls += 1;
     if (this.failure) throw this.failure;
     return this.forecasts;
+  }
+}
+
+/** 사용자의 AI 데이터 처리 동의 상태를 테스트에서 바꿀 수 있는 reader */
+export class StubAiDataSharingConsent implements AiDataSharingConsentDecisionReaderPort {
+  decision: AiDataSharingDecision = "UNDECIDED";
+
+  async findAiDataSharingDecision(): Promise<AiDataSharingDecision> {
+    return this.decision;
+  }
+}
+
+/** 예약 작업이 읽는 사용자의 앱 버전. 기본은 버전을 알 수 없는 사용자(오래된 앱과 같게 처리)다 */
+export class StubAiClientAppVersion implements AiClientAppVersionReaderPort {
+  latestAppVersion: string | null = null;
+
+  async findLatestAppVersion(): Promise<string | null> {
+    return this.latestAppVersion;
   }
 }

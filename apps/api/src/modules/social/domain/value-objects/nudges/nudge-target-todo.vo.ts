@@ -14,7 +14,7 @@ export class NudgeTargetTodo {
     return new NudgeTargetTodo({
       ...props,
       startDate: new Date(props.startDate),
-      endDate: props.endDate !== null ? new Date(props.endDate) : null,
+      endDate: props.endDate != null ? new Date(props.endDate) : null,
     });
   }
 
@@ -27,7 +27,7 @@ export class NudgeTargetTodo {
   }
 
   isActiveOn(today: Date): boolean {
-    if (this.props.endDate !== null) {
+    if (this.props.endDate != null) {
       return this.props.startDate <= today && today <= this.props.endDate;
     }
     return isSameDay(this.props.startDate, today);

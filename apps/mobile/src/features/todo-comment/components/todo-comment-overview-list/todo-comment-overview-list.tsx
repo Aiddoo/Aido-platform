@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   Box,
   ChatBubbleIcon,
+  Flex,
   HStack,
   Result,
   Text,
@@ -42,6 +43,8 @@ const keyExtractor = (item: TodoCommentOverviewItem) => item.comment.id;
 const renderItem = ({ item }: { item: TodoCommentOverviewItem }) => (
   <OverviewCommentRow item={item} />
 );
+
+const contentContainerStyle = { flexGrow: 1 };
 
 type OverviewFlashListProps = ComponentProps<typeof FlashList<TodoCommentOverviewItem>>;
 
@@ -105,6 +108,7 @@ export function TodoCommentOverviewList({
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       renderScrollComponent={renderKeyboardScrollView}
+      contentContainerStyle={contentContainerStyle}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={
         overviewQuery.isPending ? TodoCommentOverviewList.Loading : TodoCommentOverviewList.Empty
@@ -149,10 +153,12 @@ TodoCommentOverviewList.Error = function ErrorFallback({ reset }: QueryErrorFall
   const { t } = useTranslation(['todoComment', 'common']);
 
   return (
-    <Result
-      title={t('todoComment:list.loadFailed')}
-      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        title={t('todoComment:list.loadFailed')}
+        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+      />
+    </Flex>
   );
 };
 
@@ -160,13 +166,13 @@ TodoCommentOverviewList.Empty = function Empty() {
   const { t } = useTranslation('todoComment');
 
   return (
-    <Box py={48}>
+    <Flex flex={1} justify="center" align="center">
       <Result
         icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
         title={t('list.emptyTitle')}
         description={t('list.emptyDescription')}
       />
-    </Box>
+    </Flex>
   );
 };
 

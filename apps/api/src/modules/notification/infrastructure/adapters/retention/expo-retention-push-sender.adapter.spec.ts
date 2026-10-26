@@ -1,3 +1,5 @@
+import { mock } from "vitest-mock-extended";
+
 import { InMemoryPushRateLimiter } from "#api/modules/notification/infrastructure/rate-limiter/delivery/in-memory-push-rate-limiter";
 
 import type { MarketingPushOptOutTokenPort } from "../../../application/ports/delivery/marketing-push-opt-out-token.port.js";
@@ -39,9 +41,9 @@ describe("ExpoRetentionPushSenderAdapter", () => {
   it("동일 dispatch retry는 retention 전용 reservation으로 general+engagement quota를 재소비하지 않는다", async () => {
     const limiter = new InMemoryPushRateLimiter();
     const adapter = new ExpoRetentionPushSenderAdapter(
-      {} as PushProvider,
+      mock<PushProvider>(),
       limiter,
-      {} as MarketingPushOptOutTokenPort,
+      mock<MarketingPushOptOutTokenPort>(),
     );
     const now = new Date("2026-08-29T03:00:00.000Z");
 
@@ -53,9 +55,9 @@ describe("ExpoRetentionPushSenderAdapter", () => {
 
   it("rate reservation과 무관하게 현재 push 설정과 marketing opt-out을 매번 반영한다", () => {
     const adapter = new ExpoRetentionPushSenderAdapter(
-      {} as PushProvider,
-      {} as InMemoryPushRateLimiter,
-      {} as MarketingPushOptOutTokenPort,
+      mock<PushProvider>(),
+      mock<InMemoryPushRateLimiter>(),
+      mock<MarketingPushOptOutTokenPort>(),
     );
     const now = new Date("2026-08-29T03:00:00.000Z");
 

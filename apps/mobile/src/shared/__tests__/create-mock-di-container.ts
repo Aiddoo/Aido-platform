@@ -18,14 +18,139 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
       consume: jest.fn().mockReturnValue(null),
     },
   };
-  const dependencies = { ...defaults, ...overrides };
+  const dependencies: Partial<DIContainer> = { ...defaults, ...overrides };
 
-  return new Proxy(dependencies as DIContainer, {
-    get(target, prop) {
-      if (prop in target) {
-        return target[prop as keyof DIContainer];
-      }
-      throw new Error(`테스트 DI 컨테이너에 '${String(prop)}'가 주입되지 않았습니다`);
+  const dependency = <TKey extends keyof DIContainer>(key: TKey): DIContainer[TKey] => {
+    const value = dependencies[key];
+    if (value == null) {
+      throw new Error(`테스트 DI 컨테이너에 '${key}'가 주입되지 않았습니다`);
+    }
+    return value;
+  };
+
+  return {
+    get storage() {
+      return dependency('storage');
     },
-  });
+    get locationGateway() {
+      return dependency('locationGateway');
+    },
+    get clipboard() {
+      return dependency('clipboard');
+    },
+    get logger() {
+      return dependency('logger');
+    },
+    get analytics() {
+      return dependency('analytics');
+    },
+    get errorReporter() {
+      return dependency('errorReporter');
+    },
+    get tokenStore() {
+      return dependency('tokenStore');
+    },
+    get sessionManager() {
+      return dependency('sessionManager');
+    },
+    get tokenRefresher() {
+      return dependency('tokenRefresher');
+    },
+    get featureAttribution() {
+      return dependency('featureAttribution');
+    },
+    get draftService() {
+      return dependency('draftService');
+    },
+    get achievementService() {
+      return dependency('achievementService');
+    },
+    get aiService() {
+      return dependency('aiService');
+    },
+    get authService() {
+      return dependency('authService');
+    },
+    get preferenceService() {
+      return dependency('preferenceService');
+    },
+    get activationService() {
+      return dependency('activationService');
+    },
+    get appVersionService() {
+      return dependency('appVersionService');
+    },
+    get appIconService() {
+      return dependency('appIconService');
+    },
+    get friendService() {
+      return dependency('friendService');
+    },
+    get inviteService() {
+      return dependency('inviteService');
+    },
+    get inviteShareService() {
+      return dependency('inviteShareService');
+    },
+    get featureDiscoveryService() {
+      return dependency('featureDiscoveryService');
+    },
+    get featureDiscoveryStateService() {
+      return dependency('featureDiscoveryStateService');
+    },
+    get inquiryService() {
+      return dependency('inquiryService');
+    },
+    get memoService() {
+      return dependency('memoService');
+    },
+    get moderationService() {
+      return dependency('moderationService');
+    },
+    get subTodoService() {
+      return dependency('subTodoService');
+    },
+    get todoService() {
+      return dependency('todoService');
+    },
+    get todoCommentService() {
+      return dependency('todoCommentService');
+    },
+    get todoCategoryService() {
+      return dependency('todoCategoryService');
+    },
+    get notificationService() {
+      return dependency('notificationService');
+    },
+    get todoNudgeService() {
+      return dependency('todoNudgeService');
+    },
+    get reorderCoachmarkService() {
+      return dependency('reorderCoachmarkService');
+    },
+    get storeReviewPromptService() {
+      return dependency('storeReviewPromptService');
+    },
+    get userService() {
+      return dependency('userService');
+    },
+    get revenueCatSdkManager() {
+      return dependency('revenueCatSdkManager');
+    },
+    get subscriptionService() {
+      return dependency('subscriptionService');
+    },
+    get weatherService() {
+      return dependency('weatherService');
+    },
+    get weatherLocationStateService() {
+      return dependency('weatherLocationStateService');
+    },
+    get widgetSyncService() {
+      return dependency('widgetSyncService');
+    },
+    get widgetNavigationRepository() {
+      return dependency('widgetNavigationRepository');
+    },
+  };
 }

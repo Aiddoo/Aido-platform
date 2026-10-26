@@ -5,10 +5,11 @@ import { ErrorCode, Errors } from "@aido/api/errors";
  *
  * Prisma SQLSTATE 23505 매핑, 업무 오류, HttpException, 알 수 없는 에러 처리 검증
  */
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { type ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
-import { PinoLogger } from "nestjs-pino";
-import { vi, type Mock, type Mocked } from "vitest";
+import type { PinoLogger } from "nestjs-pino";
+import { vi, type Mock } from "vitest";
+import { mock, type MockProxy } from "vitest-mock-extended";
 
 import type { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
@@ -29,27 +30,23 @@ vi.mock("@sentry/nestjs", () => ({
   }),
 }));
 
+type HttpArgumentsHost = ReturnType<ArgumentsHost["switchToHttp"]>;
+
 describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let filter: GlobalExceptionFilter;
-  let mockLogger: Mocked<PinoLogger>;
+  let mockLogger: MockProxy<PinoLogger>;
   let mockConfigService: TypedConfigService;
   let mockResponse: { status: Mock; json: Mock };
   let mockRequest: { method: string; url: string; user?: { userId: string } };
-  let mockHost: { switchToHttp: Mock };
+  let mockHost: MockProxy<ArgumentsHost>;
 
   const createFilter = (isDevelopment = true) => {
-    mockConfigService = {
-      isDevelopment,
-    } as unknown as TypedConfigService;
+    mockConfigService = mock<TypedConfigService>({ isDevelopment });
     return new GlobalExceptionFilter(mockLogger, mockConfigService);
   };
 
   beforeEach(() => {
-    mockLogger = {
-      setContext: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-    } as unknown as Mocked<PinoLogger>;
+    mockLogger = mock<PinoLogger>();
 
     mockResponse = {
       status: vi.fn().mockReturnThis(),
@@ -61,12 +58,11 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       url: "/test",
     };
 
-    mockHost = {
-      switchToHttp: vi.fn().mockReturnValue({
-        getResponse: () => mockResponse,
-        getRequest: () => mockRequest,
-      }),
-    };
+    const httpHost = mock<HttpArgumentsHost>();
+    httpHost.getResponse.mockImplementation(() => mockResponse);
+    httpHost.getRequest.mockImplementation(() => mockRequest);
+    mockHost = mock<ArgumentsHost>();
+    mockHost.switchToHttp.mockReturnValue(httpHost);
 
     filter = createFilter(true);
   });
@@ -77,7 +73,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23505", "User_email_key");
 
       // When
-      filter.catch(error, mockHost as never);
+      filter.catch(error, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
@@ -90,7 +86,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23505", "TodoCategory_userId_name_key");
 
       // When
-      filter.catch(error, mockHost as never);
+      filter.catch(error, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
@@ -103,7 +99,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23505", "Follow_followerId_followingId_key");
 
       // When
-      filter.catch(error, mockHost as never);
+      filter.catch(error, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
@@ -116,7 +112,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23505");
 
       // When
-      filter.catch(error, mockHost as never);
+      filter.catch(error, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
@@ -132,7 +128,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("23503");
 
       // When
-      filter.catch(error, mockHost as never);
+      filter.catch(error, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
@@ -145,7 +141,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const error = sqlQueryError("XX000");
 
       // When
-      filter.catch(error, mockHost as never);
+      filter.catch(error, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -160,7 +156,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = ApplicationExceptions.todoCategoryNotFound(1);
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(Errors[exception.errorCode].httpStatus);
@@ -173,7 +169,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new HttpException({ message: "Bad Request" }, HttpStatus.BAD_REQUEST);
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
@@ -186,7 +182,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected error");
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -201,7 +197,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected server error");
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       expect(Sentry.withScope).toHaveBeenCalledTimes(1);
@@ -213,7 +209,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new HttpException({ message: "Bad Request" }, HttpStatus.BAD_REQUEST);
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       expect(Sentry.withScope).not.toHaveBeenCalled();
@@ -225,7 +221,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = ApplicationExceptions.todoCategoryNotFound(1);
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       expect(Sentry.withScope).not.toHaveBeenCalled();
@@ -243,7 +239,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       );
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -259,7 +255,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       );
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -272,11 +268,41 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected error");
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.details).toBe("unexpected error");
+    });
+
+    it("production 환경에서도 친구 한도 초과는 공개 상세(current·limit)만 싣는다", () => {
+      // Given
+      filter = createFilter(false);
+      const exception = new ApplicationException(ErrorCode.FOLLOW_0909, {
+        current: 6,
+        limit: 6,
+        userId: "user-123",
+      });
+
+      // When
+      filter.catch(exception, mockHost);
+
+      // Then
+      const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+      expect(jsonArg?.error.details).toEqual({ current: 6, limit: 6 });
+    });
+
+    it("production 환경에서 공개 상세가 없는 업무 오류의 details는 싣지 않는다", () => {
+      // Given
+      filter = createFilter(false);
+      const exception = new ApplicationException(ErrorCode.USER_0601, { userId: "user-123" });
+
+      // When
+      filter.catch(exception, mockHost);
+
+      // Then
+      const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+      expect(jsonArg?.error).not.toHaveProperty("details");
     });
 
     it("production 환경에서 알 수 없는 에러의 details가 포함되지 않는다", () => {
@@ -285,7 +311,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new Error("unexpected error");
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -302,7 +328,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const expected = ApplicationExceptions.todoNotFound(1);
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then - 동일 ErrorCode의 업무 오류과 상태/바디가 동일
       expect(mockResponse.status).toHaveBeenCalledWith(Errors[expected.errorCode].httpStatus);
@@ -320,7 +346,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       });
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -333,7 +359,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       const exception = new DomainException(ErrorCode.TODO_0801, undefined, "커스텀 도메인 메시지");
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -348,7 +374,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       });
 
       // When
-      filter.catch(exception, mockHost as never);
+      filter.catch(exception, mockHost);
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
@@ -361,7 +387,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     const exception = new Error("Provider rejected secret-token");
 
     // When
-    filter.catch(exception, mockHost as never);
+    filter.catch(exception, mockHost);
 
     // Then
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -394,7 +420,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
       for (const isDevelopment of [true, false]) {
-        createFilter(isDevelopment).catch(create(), mockHost as never);
+        createFilter(isDevelopment).catch(create(), mockHost);
         const body = mockResponse.json.mock.lastCall?.[0];
         expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
       }

@@ -51,15 +51,14 @@ export function useWidgetAppEntry() {
       const currentCommand = widgetNavigationRepository.getPendingCommand();
       if (
         command
-          ? currentCommand === null ||
-            !WidgetNavigationPolicy.isSameCommand(command, currentCommand)
-          : currentCommand !== null
+          ? currentCommand == null || !WidgetNavigationPolicy.isSameCommand(command, currentCommand)
+          : currentCommand != null
       ) {
         return;
       }
       if (command) {
         const currentUserId = getCachedMe(queryClient)?.id;
-        if (currentUserId === undefined) {
+        if (currentUserId == null) {
           return;
         }
         if (
@@ -124,7 +123,7 @@ export function useWidgetAppEntry() {
     if (status !== 'authenticated' || !isAuthenticatedRouteMounted) {
       return;
     }
-    if (pendingCommand && meQuery.data === undefined) {
+    if (pendingCommand && meQuery.data == null) {
       return;
     }
     if (pendingCommand && !WidgetNavigationPolicy.isOwnedBy(pendingCommand, meQuery.data ?? '')) {

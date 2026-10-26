@@ -2,6 +2,7 @@ import type { Prisma8Transaction } from "#api/platform/database/prisma8-transact
 
 import {
   createMockDatabaseContext,
+  mockTransactionOf,
   resetMockDatabaseContext,
   type MockDatabaseContext,
 } from "./database.mock.js";
@@ -13,7 +14,7 @@ export function createMockTxClient(): MockTransactionClient {
 }
 
 export function asTxClient(mock: MockTransactionClient): Prisma8Transaction {
-  return mock as unknown as Prisma8Transaction;
+  return mockTransactionOf(mock);
 }
 
 export function resetTxClientMocks(client: MockTransactionClient): void {

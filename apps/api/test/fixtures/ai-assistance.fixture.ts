@@ -11,8 +11,14 @@ import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import {
+  TEST_AI_TASK_SETTINGS,
+  TEST_AI_TASK_SETTINGS_V1,
+} from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
+  StubAiDataSharingConsent,
+  StubAiClientAppVersion,
   StubAiGenerationAccess,
   StubAiGenerationUnitOfWork,
   StubAiReportRepository,
@@ -81,6 +87,8 @@ export function createAiAssistanceFixture() {
   const weatherForecastReader = new StubAiWeatherForecastReader();
   const reportReader = new StubAiWeeklyReportReader();
   const aiProvider = new GatedFakeAiProvider();
+  const aiDataSharingConsent = new StubAiDataSharingConsent();
+  const clientAppVersion = new StubAiClientAppVersion();
   const logger = mock<ApplicationLogger>();
   const contextBuilder = new SuggestionContextBuilder({
     repository,
@@ -91,20 +99,39 @@ export function createAiAssistanceFixture() {
   const analyze = new AnalyzeAndCreateSuggestions({
     repository,
     aiProvider,
+    aiDataSharingConsent,
+    clientAppVersion,
     unitOfWork,
     contextBuilder,
     logger,
     entitlementReader: access,
     userMutationLock: access,
+    // 기존 제안 시나리오는 v1 응답 모양이라 v1 롤백 경로로 검증한다.
+    settings: TEST_AI_TASK_SETTINGS_V1,
+  });
+  const analyzeV2 = new AnalyzeAndCreateSuggestions({
+    repository,
+    aiProvider,
+    aiDataSharingConsent,
+    clientAppVersion,
+    unitOfWork,
+    contextBuilder,
+    logger,
+    entitlementReader: access,
+    userMutationLock: access,
+    settings: TEST_AI_TASK_SETTINGS,
   });
   const generateReport = new GenerateReport({
     aiReportRepository: reportRepository,
     todoStatsReader,
     aiProvider,
+    aiDataSharingConsent,
+    clientAppVersion,
     logger,
     entitlementReader: access,
     unitOfWork,
     userMutationLock: access,
+    settings: TEST_AI_TASK_SETTINGS,
   });
   return {
     userId,
@@ -116,9 +143,12 @@ export function createAiAssistanceFixture() {
     weatherForecastReader,
     reportReader,
     aiProvider,
+    aiDataSharingConsent,
+    clientAppVersion,
     logger,
     contextBuilder,
     analyze,
+    analyzeV2,
     generateReport,
   };
 }
@@ -131,12 +161,23 @@ export function usePatternResponse(
   return fixture;
 }
 
+/** 리포트 기간에 할 일 4개 중 3개 완료 기록을 넣는다. 활동이 없으면 LLM을 부르지 않는다. */
+export function useReportActivity(fixture: ReturnType<typeof createAiAssistanceFixture>) {
+  const startDate = new Date("2026-03-10T00:00:00Z");
+  fixture.todoStatsReader.inputs = {
+    ...fixture.todoStatsReader.inputs,
+    dailyTotalGroups: [{ startDate, _count: { id: 4 } }],
+    dailyCompletedGroups: [{ startDate, _count: { id: 3 } }],
+  };
+  return fixture;
+}
+
 export function useReportResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   locale: "ko" | "en" = "ko",
 ) {
   fixture.aiProvider.setRawResponse(createReportAiResponse(locale));
-  return fixture;
+  return useReportActivity(fixture);
 }
 
 export function seedPendingSuggestion(

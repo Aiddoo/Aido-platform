@@ -1,3 +1,5 @@
+import { NOTICE_DEEP_LINK_PATH } from "@aido/api/vocabulary";
+
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import { createBillingIssueNotificationMessage } from "../../messages/delivery/notification-messages.js";
@@ -30,6 +32,7 @@ export class SendBillingIssueNotification {
       type: "SYSTEM_NOTICE",
       title: message.title,
       body: message.body,
+      action: { type: "DEEP_LINK", url: NOTICE_DEEP_LINK_PATH.SUBSCRIPTION },
     });
     this.#dependencies.logger.log({
       event: NotificationDeliveryLogEvent.SEND_BILLING_ISSUE_NOTIFICATION_SENT,

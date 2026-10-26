@@ -15,11 +15,11 @@ describe("EmailMessage", () => {
   it("입력 및 반환 태그의 변경이 검증된 메시지 snapshot을 바꾸지 않는다", () => {
     const tags = [{ name: "type", value: "verification" }];
     const message = EmailMessage.create({ ...props, tags });
-    if (tags[0] !== undefined) {
+    if (tags[0] != null) {
       tags[0].value = "changed";
     }
     const output = message.tags;
-    if (output[0] !== undefined) {
+    if (output[0] != null) {
       Object.assign(output[0], { value: "changed-again" });
     }
     expect(message.tags).toEqual([{ name: "type", value: "verification" }]);

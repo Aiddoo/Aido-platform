@@ -91,20 +91,19 @@ describe("classifyHabit", () => {
 
 describe("analyzeHabitFormation", () => {
   const TZ = "Asia/Seoul";
+  const LA = "America/Los_Angeles";
+  // 서울 2026-03-24(화)
+  const AS_OF = new Date("2026-03-24T00:00:00+09:00");
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-24T00:00:00+09:00"));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  function makeTodo(title: string, date: string, completed: boolean): HabitTrackerInput {
+  function makeTodo(
+    title: string,
+    date: string,
+    completed: boolean,
+    timeZone: string = TZ,
+  ): HabitTrackerInput {
     return {
       title,
-      startDate: dayjs.tz(date, TZ).toDate(),
+      startDate: dayjs.tz(date, timeZone).toDate(),
       completed,
     };
   }
@@ -114,7 +113,7 @@ describe("analyzeHabitFormation", () => {
     const todos = [makeTodo("운동", "2026-03-16", true), makeTodo("운동", "2026-03-23", true)];
 
     // When
-    const result = analyzeHabitFormation(todos, TZ);
+    const result = analyzeHabitFormation(todos, TZ, AS_OF);
 
     // Then
     expect(result.forming).toEqual(
@@ -127,7 +126,7 @@ describe("analyzeHabitFormation", () => {
     const todos = [makeTodo("독서", "2026-03-16", true)];
 
     // When
-    const result = analyzeHabitFormation(todos, TZ);
+    const result = analyzeHabitFormation(todos, TZ, AS_OF);
 
     // Then
     expect(result.forming).toHaveLength(0);
@@ -140,7 +139,7 @@ describe("analyzeHabitFormation", () => {
     const todos: HabitTrackerInput[] = [];
 
     // When
-    const result = analyzeHabitFormation(todos, TZ);
+    const result = analyzeHabitFormation(todos, TZ, AS_OF);
 
     // Then
     expect(result).toEqual({
@@ -148,5 +147,82 @@ describe("analyzeHabitFormation", () => {
       established: [],
       atRisk: [],
     });
+  });
+
+  it("호출 시각과 관계없이 기준 시각의 주차로 놓친 주를 센다", () => {
+    // Given — 3주 연속 뒤 2주를 쉬었고, 호출 시각은 반년 뒤다
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-01T00:00:00Z"));
+    const todos = ["2026-02-16", "2026-02-23", "2026-03-02"].map((date) =>
+      makeTodo("운동", date, true),
+    );
+
+    // When
+    const result = analyzeHabitFormation(todos, TZ, AS_OF);
+    vi.useRealTimers();
+
+    // Then — 3/2 주에서 3/23 주까지 3주 지났다
+    expect(result.atRisk).toEqual([{ title: "운동", missedWeeks: 3 }]);
+  });
+
+  it("ISO 53주(2026-W53)에서 다음 해 1주(2027-W01)로 이어지는 기록을 연속으로 센다", () => {
+    // Given — 2026-12-21(W52), 2026-12-28(W53), 2027-01-04(W01)
+    const todos = ["2026-12-21", "2026-12-28", "2027-01-04"].map((date) =>
+      makeTodo("영어", date, true),
+    );
+
+    // When
+    const result = analyzeHabitFormation(todos, TZ, new Date("2027-01-06T12:00:00+09:00"));
+
+    // Then
+    expect(result.established).toEqual([{ title: "영어", weekCount: 3 }]);
+    expect(result.atRisk).toEqual([]);
+  });
+
+  it("연말 기록 뒤 해가 바뀌어도 놓친 주를 음수가 아니라 실제 주 수로 센다", () => {
+    // Given — 2026-W48~W50 기록, 기준은 2027-W01
+    const todos = ["2026-11-23", "2026-11-30", "2026-12-07"].map((date) =>
+      makeTodo("명상", date, true),
+    );
+
+    // When
+    const result = analyzeHabitFormation(todos, TZ, new Date("2027-01-06T12:00:00+09:00"));
+
+    // Then — W51·W52·W53·W01
+    expect(result.atRisk).toEqual([{ title: "명상", missedWeeks: 4 }]);
+  });
+
+  it("윤년 2월 29일을 지나는 주도 연속으로 센다", () => {
+    // Given — 2028-02-21, 2028-02-29(화), 2028-03-06
+    const todos = ["2028-02-21", "2028-02-29", "2028-03-06"].map((date) =>
+      makeTodo("러닝", date, true),
+    );
+
+    // When
+    const result = analyzeHabitFormation(todos, TZ, new Date("2028-03-07T12:00:00+09:00"));
+
+    // Then
+    expect(result.established).toEqual([{ title: "러닝", weekCount: 3 }]);
+  });
+
+  it("LA DST 시작·종료 주에도 사용자 현지 날짜의 주로 묶는다", () => {
+    // Given — DST 시작(2026-03-08 일) 직전 밤과 직후 월요일, DST 종료(2026-11-01 일) 밤
+    const spring = [
+      makeTodo("산책", "2026-03-01 23:30", true, LA),
+      makeTodo("산책", "2026-03-08 23:30", true, LA),
+      makeTodo("산책", "2026-03-09 00:30", true, LA),
+    ];
+    const fall = [
+      makeTodo("요가", "2026-10-25 23:30", true, LA),
+      makeTodo("요가", "2026-11-01 23:30", true, LA),
+    ];
+
+    // When
+    const springResult = analyzeHabitFormation(spring, LA, new Date("2026-03-10T12:00:00Z"));
+    const fallResult = analyzeHabitFormation(fall, LA, new Date("2026-11-02T20:00:00Z"));
+
+    // Then — 3/1(W09)·3/8(W10)·3/9(W11)은 서로 다른 3주, 10/25·11/1은 연속 2주
+    expect(springResult.established).toEqual([{ title: "산책", weekCount: 3 }]);
+    expect(fallResult.forming).toEqual([{ title: "요가", weekCount: 2, completionRate: 100 }]);
   });
 });

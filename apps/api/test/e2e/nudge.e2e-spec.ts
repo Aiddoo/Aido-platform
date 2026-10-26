@@ -12,6 +12,7 @@
  * 4. 읽음 처리
  */
 
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -344,6 +345,26 @@ describe("찔러보기 E2E", () => {
             typeof response.body.data.remainingSeconds === "number",
         ).toBe(true);
       });
+
+      it.each(["/v1/nudges/cooldown/not-a-cuid", "/v1/nudges/remind/cooldown/not-a-cuid"])(
+        "CUID가 아닌 userId(%s)는 400 SYS_0002를 반환한다",
+        async (path) => {
+          // Given
+          const user = await ctx.helpers.createVerifiedUser(
+            `nudge-cd-invalid-${path.length}@test.com`,
+            password,
+          );
+
+          // When
+          const response = await request(ctx.app.getHttpServer())
+            .get(path)
+            .set("Authorization", `Bearer ${user.accessToken}`)
+            .expect(400);
+
+          // Then
+          expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
+        },
+      );
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // Given - 인증 토큰 없음

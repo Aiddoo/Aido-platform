@@ -6,6 +6,7 @@ import type {
 import type {
   EmailSendResult,
   InquiryTemplateData,
+  UserReportTemplateData,
 } from "#api/modules/notification/notification-email.public";
 
 interface SentEmail extends VerificationEmailData {
@@ -21,11 +22,18 @@ interface SentInquiry {
   sentAt: Date;
 }
 
+interface SentUserReport {
+  to: string;
+  data: UserReportTemplateData;
+  sentAt: Date;
+}
+
 type VerificationEmailData = Parameters<AuthEmailSenderPort["sendVerificationCode"]>[1];
 
 export class FakeEmailService implements AuthEmailSenderPort {
   readonly #sentEmails = new Map<string, SentEmail>();
   #sentInquiries: SentInquiry[] = [];
+  #sentUserReports: SentUserReport[] = [];
   readonly #idempotencyKeys = new Set<string>();
   #failureCount = 0;
   #maximumFailures = 0;
@@ -58,6 +66,13 @@ export class FakeEmailService implements AuthEmailSenderPort {
     const failure = this.#failureResult();
     if (failure !== null) return failure;
     this.#sentInquiries.push({ to, data, sentAt: new Date() });
+    return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
+  }
+
+  async sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailSendResult> {
+    const failure = this.#failureResult();
+    if (failure !== null) return failure;
+    this.#sentUserReports.push({ to, data, sentAt: new Date() });
     return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
   }
 
@@ -99,6 +114,7 @@ export class FakeEmailService implements AuthEmailSenderPort {
   clear(): void {
     this.#sentEmails.clear();
     this.#sentInquiries = [];
+    this.#sentUserReports = [];
     this.#idempotencyKeys.clear();
     this.resetFailureSimulation();
   }
@@ -129,6 +145,10 @@ export class FakeEmailService implements AuthEmailSenderPort {
 
   getLastInquiry(): SentInquiry | undefined {
     return this.#sentInquiries[this.#sentInquiries.length - 1];
+  }
+
+  getSentUserReports(): readonly SentUserReport[] {
+    return [...this.#sentUserReports];
   }
 
   getInquiryCount(): number {

@@ -21,7 +21,10 @@ import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure
 import { PrismaAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/prisma-ai-suggestion.repository";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
+import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
+import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -29,9 +32,14 @@ import { createEntityId, varchar } from "#api/platform/database/database-values"
 import type { User } from "#api/platform/database/database.types";
 import { databaseSqlState } from "#api/platform/database/prisma-error.util";
 import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai-response.fixture";
+import {
+  TEST_AI_TASK_SETTINGS,
+  TEST_AI_TASK_SETTINGS_V1,
+} from "#test/fixtures/ai-task-settings.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-quota.stub";
 import {
   createDatabaseTransactionFixture,
   createTestClient,
@@ -132,6 +140,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   function generation(provider: FakeAiProvider, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
     const service = createTestDatabaseService(client);
+    const consentReader = new AiDataSharingConsentReader({
+      consentRepository: new UserConsentRepository(fixture.txHost),
+    });
     const contextBuilder = new SuggestionContextBuilder({
       repository,
       weatherForecastReader: { getForecastsByGridBatch: async () => new Map() },
@@ -141,20 +152,27 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const analyze = new AnalyzeAndCreateSuggestions({
       repository,
       aiProvider: provider,
+      aiDataSharingConsent: consentReader,
+      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
+      // 이 파일의 제안 응답 fixture는 v1 모양이다.
+      settings: TEST_AI_TASK_SETTINGS_V1,
     });
     const report = new GenerateReport({
       aiReportRepository: reports,
       todoStatsReader: new PrismaTodoStatsReader(fixture.txHost, service),
       aiProvider: provider,
+      aiDataSharingConsent: consentReader,
+      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
+      settings: TEST_AI_TASK_SETTINGS,
     });
     const notifications: { userId: string }[] = [];
     const reportProcessor = new ReportGenerationProcessor(report);
@@ -300,6 +318,27 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         kind === "report" ? { reports: 1, suggestions: 0 } : { reports: 0, suggestions: 1 },
       );
       expect(flow.notifications).toHaveLength(kind === "suggestion" ? 1 : 0);
+    },
+  );
+
+  it.each([
+    { kind: "report" as const, offsetMs: -1, expected: { reports: 1, suggestions: 0 } },
+    { kind: "report" as const, offsetMs: 0, expected: { reports: 0, suggestions: 0 } },
+    { kind: "suggestion" as const, offsetMs: -1, expected: { reports: 0, suggestions: 1 } },
+    { kind: "suggestion" as const, offsetMs: 0, expected: { reports: 0, suggestions: 0 } },
+  ])(
+    "보상 기간만 있는 사용자의 $kind worker는 끝나는 시각 $offsetMs ms에 sweep 전이라도 끝 시각부터 저장하지 않는다",
+    async ({ kind, offsetMs, expected }) => {
+      // Given
+      // 보상 기간 projection은 User를 ACTIVE·만료 = 보상 끝으로 쓰고 sweep 전까지 raw 상태를 그대로 둔다
+      const grantEndsAt = new Date(CURRENT_TIME.getTime() + 60_000);
+      await patchUser({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: grantEndsAt });
+      vi.setSystemTime(new Date(grantEndsAt.getTime() + offsetMs));
+      const provider = new FakeAiProvider();
+      // When
+      await executeWorker(kind, provider);
+      // Then
+      expect(await counts()).toEqual(expected);
     },
   );
 
@@ -513,6 +552,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       logger: new Logger("AiActionIntegration"),
       unitOfWork: fixture.uow,
       userMutationLock,
+      localePreferenceReader: new StubUserLocalePreferenceReader(),
     });
   }
 

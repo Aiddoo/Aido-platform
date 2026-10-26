@@ -46,6 +46,8 @@ const generateConsent = (): Consent => ({
   agreedTermsVersion: '1.0.0',
   marketingAgreedAt: new Date('2026-02-01T00:00:00.000Z'),
   marketingPushAgreedAt: null,
+  aiDataSharingDecision: 'UNDECIDED',
+  aiDataSharingAgreedAt: null,
 });
 
 export const createConsent = (overrides?: Partial<Consent>): Consent => ({

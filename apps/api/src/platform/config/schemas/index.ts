@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { type AiConfig, aiSchema } from "./ai.schema.js";
 import {
   type AppVersionConfig,
   appVersionSchema,
@@ -15,6 +16,7 @@ import {
   featureDiscoverySchema,
   validateFeatureDiscoveryConfig,
 } from "./feature-discovery.schema.js";
+import { type InviteConfig, inviteSchema, validateInviteConfig } from "./invite.schema.js";
 import { type JobConfig, jobSchema } from "./job.schema.js";
 import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
 import { type NudgeConfig, nudgeSchema } from "./nudge.schema.js";
@@ -25,6 +27,7 @@ import { type SecurityConfig, securitySchema } from "./security.schema.js";
 import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 
 // 스키마 재export
+export * from "./ai.schema.js";
 export * from "./app.schema.js";
 export * from "./app-version.schema.js";
 export * from "./cache.schema.js";
@@ -32,6 +35,7 @@ export * from "./database.schema.js";
 export * from "./email.schema.js";
 export * from "./external.schema.js";
 export * from "./feature-discovery.schema.js";
+export * from "./invite.schema.js";
 export * from "./job.schema.js";
 export * from "./jwt.schema.js";
 export * from "./nudge.schema.js";
@@ -59,11 +63,14 @@ export const envSchema = z
     ...pushSchema.shape,
     ...retentionSchema.shape,
     ...externalSchema.shape,
+    ...aiSchema.shape,
     ...webhookSchema.shape,
     ...featureDiscoverySchema.shape,
+    ...inviteSchema.shape,
   })
-  .superRefine(validateFeatureDiscoveryConfig)
-  .superRefine(validateAppVersionConfig);
+  .check(validateFeatureDiscoveryConfig)
+  .check(validateAppVersionConfig)
+  .check(validateInviteConfig);
 
 /**
  * 환경변수 전체 타입
@@ -81,8 +88,10 @@ export type EnvConfig = AppConfig &
   PushConfig &
   RetentionConfig &
   ExternalConfig &
+  AiConfig &
   WebhookConfig &
-  FeatureDiscoveryConfig;
+  FeatureDiscoveryConfig &
+  InviteConfig;
 
 /**
  * 환경변수 검증 함수
@@ -116,5 +125,5 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
     }
   }
 
-  return validatedConfig as EnvConfig;
+  return validatedConfig;
 }

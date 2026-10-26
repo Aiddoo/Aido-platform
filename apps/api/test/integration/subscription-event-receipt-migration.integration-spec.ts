@@ -3,10 +3,14 @@ import { resolve } from "node:path";
 
 import postgres from "@prisma/orm-postgres/runtime";
 import { contractFromJson } from "@prisma/orm-postgres/static";
+import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import {
+  USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS,
+  UserFixture,
+} from "#test/fixtures/user.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { withTextTimestampGenerators } from "#test/setup/historical-contract";
 import { startManagedTestDatabase } from "#test/setup/managed-test-database";
@@ -62,7 +66,9 @@ describe("구독 처리 원장 additive migration (실제 PostgreSQL)", () => {
         createdAt: at,
         updatedAt: at,
       });
-      await previous.orm.public.User.create(encodeCreate("User", user));
+      await previous.orm.public.User.create(
+        encodeCreate("User", omit(user, USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS)),
+      );
       const subscription = await previous.orm.public.Subscription.create(
         encodeCreate("Subscription", {
           userId: user.id,

@@ -10,6 +10,7 @@ export * from "./todo.response.dto.js";
 export * from "./todo-id-param.request.dto.js";
 export * from "./todo-item-id-param.request.dto.js";
 export * from "./todo-resource-limit-query.request.dto.js";
+export * from "./todo-summary-query.request.dto.js";
 export * from "./toggle-complete.request.dto.js";
 export * from "./update-schedule.request.dto.js";
 export * from "./update-title.request.dto.js";

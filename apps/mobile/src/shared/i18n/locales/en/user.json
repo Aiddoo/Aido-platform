@@ -17,7 +17,8 @@
       "appIcon": "App Icon",
       "subscription": "Manage Subscription",
       "inquiry": "Contact Us",
-      "terms": "Terms & Policies"
+      "terms": "Terms & Policies",
+      "blockedUsers": "Blocked users"
     }
   },
   "logout": {

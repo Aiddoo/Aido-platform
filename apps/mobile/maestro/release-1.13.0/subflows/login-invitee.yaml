@@ -1,0 +1,8 @@
+appId: com.aido.mobile
+name: 초대받는 계정 B로 로그인한다
+---
+- runFlow:
+    file: login.yaml
+    env:
+      QA_EMAIL: ${output.b.email}
+      QA_PASSWORD: ${output.b.password}

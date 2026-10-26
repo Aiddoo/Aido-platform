@@ -191,7 +191,7 @@ export async function createAuthTestModule(
         provide: CacheService,
         useFactory: () => {
           const cache = createMockCacheService();
-          cache.wrap.mockImplementation((_key, factory) => factory());
+          cache.wrap.mockImplementation((_key, _schema, factory) => factory());
           return cache;
         },
       },

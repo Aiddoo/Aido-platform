@@ -238,6 +238,19 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("One more friend in Aido", `Say hello to ${senderName} 🐾`),
     ],
   },
+  INVITE_JOINED: {
+    copy: ({ inviteeName }) =>
+      copy(`${inviteeName} accepted your invite 🐾`, "You’re now friends. Cheer each other on"),
+  },
+  INVITE_REWARDED: {
+    copy: ({ premiumDays, friendSlots }) => {
+      const rewards = [
+        premiumDays > 0 ? `${countLabel(premiumDays, "day")} of Premium` : null,
+        friendSlots > 0 ? countLabel(friendSlots, "more friend slot") : null,
+      ].filter((reward) => reward != null);
+      return copy("You got a paw print 🐾", `You got ${rewards.join(" and ")}`);
+    },
+  },
   NUDGE_RECEIVED: {
     variants: [
       ({ senderName, todoTitle }) =>
@@ -479,6 +492,9 @@ export const SYSTEM_TEMPLATES = {
   },
   BILLING_ISSUE: {
     copy: staticCopy("Check your payment details", "Update payment to keep your plan active."),
+  },
+  PREMIUM_GRANT_ENDING: {
+    copy: staticCopy("Your Premium ends tomorrow", "Subscribe to keep Premium going"),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("Let’s make your first to-do 🌱", "One small thing is enough to start"),

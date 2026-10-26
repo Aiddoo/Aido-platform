@@ -73,13 +73,13 @@ export class FakeJobRuntime implements JobRuntimePort {
     return { status: "cancelled" };
   }
 
-  async work<T extends JobData>(
+  async work(
     queue: string,
-    handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,
+    handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void> {
     this.workCalls.push({ queue, options });
-    this.handlers.set(queue, handler as StoredHandler);
+    this.handlers.set(queue, handler);
   }
 
   async health(queueNames: readonly string[]): Promise<JobRuntimeHealth> {

@@ -1,13 +1,17 @@
 import type { NotificationCategory } from '@aido/api';
 import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import { userReportSheetHref } from '@src/features/moderation/utils/navigation/moderation-href';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Box,
   Button,
@@ -18,6 +22,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
 import { useCallback } from 'react';
 import { RefreshControl } from 'react-native';
@@ -45,8 +50,8 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
   const query = useSuspenseInfiniteQuery(
     useGetNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
   );
-  const today = useToday();
-  const listItems = toDateSectionedListItems(query.data, today);
+  const { currentLocalDateKey, currentTimeZone } = useLocalDate();
+  const listItems = toDateSectionedListItems(query.data, currentLocalDateKey, currentTimeZone);
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
 
@@ -136,7 +141,21 @@ interface NotificationItemProps {
 
 NotificationList.Item = function Item({ notification }: NotificationItemProps) {
   const handlePress = useSingleTap(useNotificationPress(notification));
-  const { t } = useTranslation('notification');
+  const push = useSingleTap(router.push);
+  const { t } = useTranslation(['notification', 'moderation']);
+  const receivedCheer = NotificationPolicy.findReceivedCheer(notification);
+
+  // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 메시지를 신고한다
+  const handleReportCheer =
+    receivedCheer == null
+      ? undefined
+      : () =>
+          push(
+            userReportSheetHref({
+              target: UserReportPolicy.cheerMessageTarget(receivedCheer),
+              displayName: receivedCheer.senderName ?? t('moderation:fallbackName'),
+            }),
+          );
 
   return (
     <NotificationListRow
@@ -145,7 +164,19 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
       body={notification.body}
       createdAt={notification.createdAt}
       isUnread={!notification.isRead}
+      testID={`notification-item-${notification.type}`}
       onPress={handlePress}
+      onLongPress={handleReportCheer}
+      accessibilityActions={
+        handleReportCheer == null
+          ? undefined
+          : [{ name: 'report', label: t('moderation:menu.reportCheer') }]
+      }
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'report') {
+          handleReportCheer?.();
+        }
+      }}
     />
   );
 };
@@ -153,6 +184,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
 function useNotificationPress(notification: Notification) {
   const navigateToDestination = useNotificationNavigation();
   const today = useTodayKey();
+  const windowSizeClass = useWindowSizeClass();
   const logger = useLogger();
 
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
@@ -183,7 +215,7 @@ function useNotificationPress(notification: Notification) {
         routing: notification.routing,
         action: notification.action,
       },
-      { today },
+      { today, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
     );
     trackEvent('notification_center_opened', {
       type: notification.type,
@@ -200,6 +232,7 @@ function useNotificationPress(notification: Notification) {
     premiumDialog,
     navigateToDestination,
     today,
+    windowSizeClass,
     logger,
   ]);
 }

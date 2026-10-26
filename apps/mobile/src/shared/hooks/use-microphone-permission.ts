@@ -2,21 +2,13 @@ import { t } from '@src/shared/i18n';
 import * as Linking from 'expo-linking';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { useCallback } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 import { match } from 'ts-pattern';
 
 interface UseMicrophonePermissionReturn {
   /** 권한 있으면 콜백 실행, 없으면 권한 요청 후 처리 */
   requestPermissionAndExecute: (onGranted: () => void) => Promise<void>;
 }
-
-/** 설정 앱 열기 */
-const openSettings = () => {
-  match(Platform.OS)
-    .with('ios', () => Linking.openURL('app-settings:'))
-    .with('android', 'windows', 'macos', 'web', () => Linking.openSettings())
-    .exhaustive();
-};
 
 /** 권한 거부 시 설정으로 이동 안내 Alert */
 const showPermissionDeniedAlert = () => {
@@ -25,7 +17,7 @@ const showPermissionDeniedAlert = () => {
     t('common:permissions.microphone.message'),
     [
       { text: t('common:permissions.cancel'), style: 'cancel' },
-      { text: t('common:permissions.openSettings'), onPress: openSettings },
+      { text: t('common:permissions.openSettings'), onPress: () => Linking.openSettings() },
     ],
   );
 };

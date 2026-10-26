@@ -7,7 +7,10 @@ export const appVersionSchema = z.object({
   APP_VERSION_CHECK_ANDROID_LATEST_VERSION: z.string().optional(),
 });
 
-export function validateAppVersionConfig(config: AppVersionConfig, context: z.RefinementCtx): void {
+export function validateAppVersionConfig({
+  value: config,
+  issues,
+}: z.core.ParsePayload<AppVersionConfig>): void {
   if (!config.APP_VERSION_CHECK_ENABLED) return;
 
   for (const [key, value] of [
@@ -15,8 +18,9 @@ export function validateAppVersionConfig(config: AppVersionConfig, context: z.Re
     ["APP_VERSION_CHECK_ANDROID_LATEST_VERSION", config.APP_VERSION_CHECK_ANDROID_LATEST_VERSION],
   ] as const) {
     if (!appStoreVersionSchema.safeParse(value).success) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: config,
         path: [key],
         message: `${key} must be a stable MAJOR.MINOR.PATCH version when APP_VERSION_CHECK_ENABLED is true`,
       });

@@ -50,6 +50,9 @@ export default function SettingsLayout() {
       <Stack.Screen name="category-settings" options={{ title: t('titles.categorySettings') }}>
         {backToolbar}
       </Stack.Screen>
+      <Stack.Screen name="blocked-users" options={{ title: t('titles.blockedUsers') }}>
+        {backToolbar}
+      </Stack.Screen>
     </Stack>
   );
 

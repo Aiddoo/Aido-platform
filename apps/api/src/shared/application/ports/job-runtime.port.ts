@@ -121,9 +121,10 @@ export interface JobRuntimePort {
   ): Promise<void>;
   unschedule(scheduleKey: string, queue: string): Promise<void>;
   cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult>;
-  work<T extends JobData>(
+  /** payload는 저장소에서 읽은 그대로라 handler가 자기 스키마로 검증한다. */
+  work(
     queue: string,
-    handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,
+    handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void>;
   health(queueNames: readonly string[]): Promise<JobRuntimeHealth>;

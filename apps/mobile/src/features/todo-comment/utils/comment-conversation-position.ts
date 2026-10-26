@@ -8,7 +8,8 @@ interface CommentRowLayout {
 }
 
 const FOCUSED_COMMENT_VIEW_POSITION = 0.18;
-const FOCUSED_COMMENT_CLEARANCE = 12;
+/** focus 댓글과 화면 위·작성 바 사이에 남기는 여백. 첫 위치와 사후 보정이 같은 값을 써야 진입 뒤 목록이 밀리지 않는다. */
+export const FOCUSED_COMMENT_CLEARANCE = 12;
 const KEYBOARD_LIFT_RISK_POSITION = 0.55;
 
 export type CommentKeyboardLiftBehavior = 'never' | 'persistent' | 'whenAtEnd';
@@ -138,7 +139,7 @@ export function toInitialConversationWindow<TPage, TPageParam extends Conversati
   const initialPage = data.pages[initialIndex];
   const initialPageParam = data.pageParams[initialIndex];
 
-  if (initialPage === undefined || initialPageParam === undefined) {
+  if (initialPage == null || initialPageParam == null) {
     return null;
   }
 

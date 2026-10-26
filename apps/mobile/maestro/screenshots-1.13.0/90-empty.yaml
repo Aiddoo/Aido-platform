@@ -1,0 +1,46 @@
+appId: com.aido.mobile
+name: 처음 가입한 계정의 빈 화면과 없는 화면
+tags:
+  - free
+  - account-switch
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow:
+    file: subflows/start.yaml
+    env:
+      QA_EMAIL: ${MAESTRO_SHOT_NEWBIE_EMAIL}
+      QA_PASSWORD: ${MAESTRO_SHOT_NEWBIE_PASSWORD}
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: feed?date=${MAESTRO_SHOT_TODAY}
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 90_빈_홈_시작_체크리스트
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: memo
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 91_빈_메모
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: friends
+- extendedWaitUntil:
+    visible:
+      id: friends-empty-invite
+    timeout: 20000
+- takeScreenshot: 92_빈_친구
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: this-screen-does-not-exist
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 95_없는_화면

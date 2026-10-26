@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { dateSchema } from "../../common/datetime.js";
 import { todoCommentIdSchema } from "../todo-comment/todo-comment.request.js";
 import { notificationTypeSchema } from "./notification.common.js";
 
@@ -86,14 +87,42 @@ export type TodoCommentNotificationRouting = z.infer<typeof todoCommentNotificat
 /**
  * 기존 알림과 구버전 클라이언트를 위한 읽기 계약.
  * 예전 payload는 필드 일부만 가질 수 있으므로 optional shape을 유지한다.
+ * 보낸 사람은 응원처럼 친구가 보낸 알림에서 신고·차단 확인 문구에 이름을 보여 주는 데 쓴다(1.13.0+).
+ *
+ * 할 일이 대상인 알림(todoId가 있는 댓글·답글·좋아요·리마인더·콕)은 서버가 1.13.0부터 그 할 일의
+ * 주인과 날짜를 함께 싣는다. 펼친 화면이 목록 pane을 그 사람의 그 날짜 피드로 연다.
+ * 잘못된 값은 그 필드만 버려 댓글 이동 재료를 잃지 않는다. 구버전 앱은 모르는 키를 버린다.
  */
-export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.partial();
+export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.partial().extend({
+  // 다른 알림의 metadata에도 같은 이름의 값이 있을 수 있어, 모양이 달라도 댓글 routing을 깨지 않고 버린다
+  senderId: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .catch(undefined)
+    .describe("알림을 보낸 사용자 ID (응원 알림)"),
+  senderName: z
+    .string()
+    .min(1)
+    .max(100)
+    .optional()
+    .catch(undefined)
+    .describe("알림을 보낸 사용자 표시 이름 (응원 알림)"),
+  todoOwnerId: z.string().min(1).optional().catch(undefined).describe("할 일 주인 사용자 ID"),
+  todoDate: dateSchema.optional().catch(undefined).describe("할 일 날짜 (YYYY-MM-DD, 시작일)"),
+});
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 
 export const notificationActionSchema = z.object({
   type: notificationActionTypeSchema,
-  url: z.string().optional(),
+  url: z
+    .string()
+    .optional()
+    .describe(
+      "BROWSER·WEBVIEW는 열 http(s) 주소. DEEP_LINK는 선택이며, 공지(SYSTEM_NOTICE·ADMIN_*)는 앱 경로(/feed, /achievements, /weather, /friends, /friends/invite, /settings/subscription, /settings/notifications) 중 하나를 싣는다. 그 밖의 타입은 type·context로 이동한다.",
+    ),
 });
 
 export type NotificationAction = z.infer<typeof notificationActionSchema>;

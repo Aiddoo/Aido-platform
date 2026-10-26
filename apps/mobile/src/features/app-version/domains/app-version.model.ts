@@ -3,15 +3,14 @@ import { z } from 'zod';
 
 export const appVersionPlatformSchema = z.enum(['ios', 'android']);
 export const appVersionConfigSchema = z.discriminatedUnion('enabled', [
-  z.object({ enabled: z.literal(false) }).strict(),
-  z
-    .object({
-      enabled: z.literal(true),
-      latestByPlatform: z
-        .object({ ios: appStoreVersionSchema, android: appStoreVersionSchema })
-        .strict(),
-    })
-    .strict(),
+  z.strictObject({ enabled: z.literal(false) }),
+  z.strictObject({
+    enabled: z.literal(true),
+    latestByPlatform: z.strictObject({
+      ios: appStoreVersionSchema,
+      android: appStoreVersionSchema,
+    }),
+  }),
 ]);
 
 export type AppVersionPlatform = z.infer<typeof appVersionPlatformSchema>;

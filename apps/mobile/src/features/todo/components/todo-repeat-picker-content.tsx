@@ -1,18 +1,19 @@
 import type { DayOfWeek } from '@aido/api';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
+  formatDate,
   formatDaysOfWeek,
-  formatMonthDay,
   getDayOfWeekLabel,
-  getMonthHeaderText,
   isAfterDay,
   isBeforeDay,
   isSameDay,
   isSameMonth,
 } from '@src/shared/utils/date';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -240,6 +241,7 @@ export const TodoRepeatPickerContent = ({
   };
 
   const today = useToday();
+  const dateFormatContext = useDateFormatContext();
 
   const handleCalendarPress = (date: Date) => {
     if (isBeforeDay(date, today)) {
@@ -289,7 +291,12 @@ export const TodoRepeatPickerContent = ({
             </Text>
             {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) ? (
               <Text size="b3" tone="brand">
-                {formatMonthDay(startDate)} - {formatMonthDay(repeatSetting.endDate)}
+                {formatDateKeyLabel(formatDate(startDate), 'monthDay', dateFormatContext)} -{' '}
+                {formatDateKeyLabel(
+                  formatDate(repeatSetting.endDate),
+                  'monthDay',
+                  dateFormatContext,
+                )}
               </Text>
             ) : (
               <Text size="b3" tone="neutral" shade={5}>
@@ -330,6 +337,7 @@ const RepeatCalendar = ({
   onDatePress,
 }: RepeatCalendarProps) => {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
+  const dateFormatContext = useDateFormatContext();
 
   return (
     <VStack gap={16}>
@@ -338,7 +346,7 @@ const RepeatCalendar = ({
           <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-          {getMonthHeaderText(displayMonth)}
+          {formatDateKeyLabel(formatDate(displayMonth), 'yearMonth', dateFormatContext)}
         </Text>
         <PressableFeedback onPress={goToNextMonth} hitSlop={12}>
           <ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />

@@ -1,11 +1,12 @@
 import type { Logger } from '@src/core/ports/logger';
 import { err, ok, type Result } from '@src/shared/errors/result';
-import { t } from '@src/shared/i18n';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
 import type { SubscriptionOffering } from '../domains/subscription.model';
+import { CustomerInfoPolicy } from './customer-info.policy';
+import { toSubscriptionError } from './revenuecat-error.mapper';
 import type { RevenueCatSdkManager } from './revenuecat-sdk-manager';
 import { toSubscriptionOfferingWithPackages } from './subscription.mapper';
 
@@ -26,7 +27,7 @@ export class SubscriptionService {
 
   getOfferings = async (): Promise<Result<SubscriptionOffering, SubscriptionError>> => {
     if (!this.#sdkManager.isConfigured()) {
-      return err(SubscriptionErrors.notConfigured());
+      return err(SubscriptionErrors.storeUnavailable());
     }
 
     try {
@@ -34,7 +35,7 @@ export class SubscriptionService {
       const result = toSubscriptionOfferingWithPackages(offerings);
 
       if (!result) {
-        return err(SubscriptionErrors.noOfferings());
+        return err(SubscriptionErrors.offeringsUnavailable());
       }
 
       this.#packageMap = result.packageMap;
@@ -43,54 +44,64 @@ export class SubscriptionService {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.OFFERINGS_FETCH_FAILED, {
         error: error instanceof Error ? error.message : String(error),
       });
-      const message = error instanceof Error ? error.message : undefined;
-      return err(SubscriptionErrors.fetchOfferingsFailed(message));
+      return err(toSubscriptionError('offerings', error));
     }
   };
 
   purchase = async (identifier: string): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#sdkManager.isConfigured()) {
-      return err(SubscriptionErrors.notConfigured());
+      return err(SubscriptionErrors.storeUnavailable());
     }
 
     let rcPackage = this.#packageMap.get(identifier);
     if (!rcPackage) {
       const refetchResult = await this.getOfferings();
       if (!refetchResult.ok) {
-        return err(
-          SubscriptionErrors.purchaseFailed(t('subscription:errors.offeringsInfoUnavailable')),
-        );
+        return refetchResult;
       }
       rcPackage = this.#packageMap.get(identifier);
       if (!rcPackage) {
-        return err(
-          SubscriptionErrors.purchaseFailed(t('subscription:errors.offeringsInfoNotFound')),
-        );
+        return err(SubscriptionErrors.offeringsUnavailable());
       }
     }
 
     try {
       const { customerInfo } = await Purchases.purchasePackage(rcPackage);
-      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
-      return ok(hasActive);
+      return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo.entitlements));
     } catch (error) {
-      return err(SubscriptionErrors.fromPurchaseError(error));
+      return err(toSubscriptionError('purchase', error));
+    }
+  };
+
+  /** 그 스토어에서 결제한 활성 구독의 상품 id. 알 수 없으면 null이고 호출부는 구독 목록을 연다. */
+  getActiveStoreProductId = async (
+    store: Parameters<typeof CustomerInfoPolicy.findStoreProductId>[1],
+  ): Promise<string | null> => {
+    if (!this.#sdkManager.isConfigured()) {
+      return null;
+    }
+
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      return CustomerInfoPolicy.findStoreProductId(customerInfo.entitlements, store);
+    } catch (error) {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   };
 
   restorePurchases = async (): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#sdkManager.isConfigured()) {
-      return err(SubscriptionErrors.notConfigured());
+      return err(SubscriptionErrors.storeUnavailable());
     }
 
     try {
       const customerInfo = await Purchases.restorePurchases();
-      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
-      return ok(hasActive);
+      return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo.entitlements));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('subscription:errors.restoreFailed');
-      return err(SubscriptionErrors.restoreFailed(message));
+      return err(toSubscriptionError('restore', error));
     }
   };
 }

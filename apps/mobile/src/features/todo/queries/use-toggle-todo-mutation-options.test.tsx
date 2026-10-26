@@ -1,5 +1,7 @@
+import { QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
 
+import { createParentTodo } from '../__tests__/sub-todo.factories';
 import { useToggleTodoMutationOptions } from './use-toggle-todo-mutation-options';
 
 const mockPromptAfterSuccessfulCompletion = jest.fn();
@@ -27,6 +29,7 @@ jest.mock('@src/shared/analytics', () => ({
 }));
 
 jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
   mutationOptions: (options: unknown) => options,
   useQueryClient: () => mockQueryClient,
 }));
@@ -39,6 +42,8 @@ jest.mock('../hooks/use-store-review-prompt', () => ({
   }),
 }));
 
+const MUTATION_CONTEXT = { client: new QueryClient(), meta: undefined };
+
 describe('useToggleTodoMutationOptions store review wiring', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -49,18 +54,17 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
   it('서버에서 완료 전환에 성공한 뒤에만 리뷰 정책에 완료를 기록한다', async () => {
     // Given
     const { result } = await renderHook(() => useToggleTodoMutationOptions());
-    const onSuccess = result.current.onSuccess as (...args: unknown[]) => Promise<void> | void;
 
     // When
-    await onSuccess(
-      undefined,
+    await result.current.onSuccess?.(
+      createParentTodo({ id: 42 }),
       {
         todoId: 42,
         body: { completed: true },
         startDate: '2026-07-26',
       },
-      undefined,
-      undefined,
+      { completed: false, startDate: '2026-07-26' },
+      MUTATION_CONTEXT,
     );
 
     // Then
@@ -71,21 +75,19 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
   it('미완료 전환이나 오류 경로에서는 리뷰 프롬프트를 시도하지 않는다', async () => {
     // Given
     const { result } = await renderHook(() => useToggleTodoMutationOptions());
-    const onSuccess = result.current.onSuccess as (...args: unknown[]) => Promise<void> | void;
-    const onError = result.current.onError as (...args: unknown[]) => Promise<void> | void;
 
     // When
-    await onSuccess(
-      undefined,
+    await result.current.onSuccess?.(
+      createParentTodo({ id: 42 }),
       {
         todoId: 42,
         body: { completed: false },
         startDate: '2026-07-26',
       },
-      undefined,
-      undefined,
+      { completed: false, startDate: '2026-07-26' },
+      MUTATION_CONTEXT,
     );
-    await onError(
+    await result.current.onError?.(
       new Error('request failed'),
       {
         todoId: 42,
@@ -93,7 +95,7 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
         startDate: '2026-07-26',
       },
       undefined,
-      undefined,
+      MUTATION_CONTEXT,
     );
 
     // Then

@@ -32,7 +32,7 @@ describe("SendCheerNotification", () => {
         type: "CHEER_RECEIVED",
         cheerId: 2,
         friendId: "u1",
-        metadata: { message: "화이팅!" },
+        metadata: { senderId: "u1", senderName: "지윤", message: "화이팅!" },
         campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
       }),
     );

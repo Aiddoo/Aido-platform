@@ -26,14 +26,14 @@ Domain에 HTTP DTO나 transport serialization을 넣지 않는다. Application�
 ## 입력과 시간 의미
 
 - required/optional/nullable/default와 validation 메시지는 계약이다. 리팩터링 중 바꾸지 않는다.
-- PATCH undefined는 미제공, 허용된 null은 초기화다. false·0을 누락으로 처리하지 않는다.
+- PATCH undefined는 미제공, 허용된 null은 초기화다. false·0을 누락으로 처리하지 않는다. 응답 `.nullable()`·요청 `.optional()`·새 응답 필드의 형태는 [공통 nullish 규칙](../../../docs/conventions/nullish.md#4-계약-aidoapi-zod)에 있다.
 - 필수 scalar에 nullish fallback을 덧붙여 유효하지 않은 입력을 감추지 않는다.
 - `YYYY-MM-DD` calendar label과 instant ISO datetime·epoch milliseconds를 구분한다. process-local Date 파싱으로 사용자 날짜/요일을 이동시키지 않는다.
 - timezone·locale header/default와 지원 범위도 계약이다. 예를 들어 전역 좌표 VO가 생겼어도 기존 Weather HTTP의 한국 bbox·1901/1902·fallback 범위가 해외 지원으로 바뀐 것은 아니다.
 
 ## 오류·copy·호환
 
-공개 오류는 기존 ErrorCode/HTTP 상태/details/envelope를 유지하고 GlobalExceptionFilter가 변환한다. Domain은 번역된 문장을 판정하지 않는다. 기존 한국어 validation 문구는 현재 계약으로 보존하고, 사용자 표시·AI prompt·notification/email copy는 Application typed catalog 또는 Presentation에서 다룬다.
+공개 오류는 기존 ErrorCode/HTTP 상태/details/envelope를 유지하고 GlobalExceptionFilter가 변환한다. 성공·실패 envelope와 ErrorCode 범위는 [공통 오류 규칙](../../../docs/conventions/errors.md), 외부 계약 전체의 호환 범위는 [하위 호환](../../../docs/conventions/compatibility.md)에 있다. Domain은 번역된 문장을 판정하지 않는다. 기존 한국어 validation 문구는 현재 계약으로 보존하고, 사용자 표시·AI prompt·notification/email copy는 Application typed catalog 또는 Presentation에서 다룬다.
 
 API 필드를 제거하거나 의미를 바꾸는 작업은 요청 범위와 실제 소비자·배포 전략을 확인한다. 소비가 없는 내부 forwarding alias/helper는 유지 명분이 없으면 제거할 수 있으나, 배포된 구 앱 계약이나 queue/DB 운영 호환과 혼동하지 않는다.
 

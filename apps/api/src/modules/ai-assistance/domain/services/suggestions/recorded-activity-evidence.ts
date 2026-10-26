@@ -23,7 +23,7 @@ export function collectRecordedActivities(
         completedOccurrences += 1;
       }
       days.set(day, counts);
-      if (record.scheduledTime !== null) {
+      if (record.scheduledTime != null) {
         recordedTimes.add(record.scheduledTime);
       }
     }
@@ -33,7 +33,7 @@ export function collectRecordedActivities(
       completedOccurrences,
       days: DAY_OF_WEEK_ORDER.flatMap((day) => {
         const counts = days.get(day);
-        return counts === undefined ? [] : [{ day, ...counts }];
+        return counts == null ? [] : [{ day, ...counts }];
       }),
       recordedTimes: [...recordedTimes].sort(),
     };
@@ -52,5 +52,5 @@ export function selectRecordedDays(evidence: RecordedActivityEvidence) {
       right.total - left.total ||
       DAY_OF_WEEK_ORDER.indexOf(left.day) - DAY_OF_WEEK_ORDER.indexOf(right.day),
   )[0];
-  return bestDay === undefined ? [] : [bestDay.day];
+  return bestDay == null ? [] : [bestDay.day];
 }

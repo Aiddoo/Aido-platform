@@ -14,6 +14,7 @@ import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notifi
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
@@ -31,6 +32,7 @@ import { PushDeliveryAfterCommitPublisher } from "./application/services/deliver
 import { PushDeliveryEligibilityService } from "./application/services/delivery/push-delivery-eligibility.service.js";
 import { PushNotificationDeliveryService } from "./application/services/delivery/push-notification-delivery.service.js";
 import { PushNotificationPayloadFactory } from "./application/services/delivery/push-notification-payload.factory.js";
+import { PushQuietHoursReader } from "./application/services/delivery/push-quiet-hours.reader.js";
 import { DeliverPushNotifications } from "./application/use-cases/delivery/deliver-push-notifications.use-case.js";
 import { FinalizeBatchNotification } from "./application/use-cases/delivery/finalize-batch-notification.use-case.js";
 import { GetNotifications } from "./application/use-cases/delivery/get-notifications.use-case.js";
@@ -87,6 +89,14 @@ export const pushDeliveryAfterCommitPublisherProvider: FactoryProvider<PushDeliv
         logger: new Logger(PushDeliveryAfterCommitPublisher.name),
       }),
   };
+
+export const pushQuietHoursReaderProvider: FactoryProvider<PushQuietHoursReader> = {
+  provide: PushQuietHoursReader,
+  inject: [USER_NOTIFICATION_SETTINGS],
+  useFactory: (
+    userSettings: ConstructorParameters<typeof PushQuietHoursReader>[0]["userSettings"],
+  ) => new PushQuietHoursReader({ userSettings }),
+};
 
 export const pushDeliveryEligibilityServiceProvider: FactoryProvider<PushDeliveryEligibilityService> =
   {
@@ -673,7 +683,12 @@ export const unregisterPushTokenProvider: FactoryProvider<UnregisterPushToken> =
 
 export const notificationPublisherProvider: FactoryProvider<NotificationPublisher> = {
   provide: NotificationPublisher,
-  inject: [SendNotification, SendNotificationWithDedup, SendBatchNotification],
+  inject: [
+    SendNotification,
+    SendNotificationWithDedup,
+    SendBatchNotification,
+    NOTIFICATION_TODO_TARGET_READER,
+  ],
   useFactory: (
     sendNotification: ConstructorParameters<typeof NotificationPublisher>[0]["sendNotification"],
     sendNotificationWithDeduplication: ConstructorParameters<
@@ -682,10 +697,12 @@ export const notificationPublisherProvider: FactoryProvider<NotificationPublishe
     sendBatchNotification: ConstructorParameters<
       typeof NotificationPublisher
     >[0]["sendBatchNotification"],
+    todoTargetReader: ConstructorParameters<typeof NotificationPublisher>[0]["todoTargetReader"],
   ) =>
     new NotificationPublisher({
       sendNotification,
       sendNotificationWithDeduplication,
       sendBatchNotification,
+      todoTargetReader,
     }),
 };

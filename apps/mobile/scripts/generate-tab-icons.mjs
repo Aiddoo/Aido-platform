@@ -4,20 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const output = resolve(root, 'assets/tab-icons');
-await mkdir(output, { recursive: true });
+import { TAB_ICON_IMAGES } from './tab-icon-images.mjs';
 
-for (const name of ['todo', 'memo', 'mypage']) {
-  const source = await readFile(resolve(root, `assets/icons/ic_tab_${name}.svg`));
-  for (const scale of [1, 2, 3]) {
-    const size = 24 * scale;
-    const png = await sharp(source, { density: 72 * scale })
-      .resize(size, size)
-      .png()
-      .toBuffer();
-    const suffix = scale === 1 ? '' : `@${scale}x`;
-    await writeFile(resolve(output, `${name}${suffix}.png`), png);
-  }
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+await mkdir(resolve(root, 'assets/tab-icons'), { recursive: true });
+
+for (const { sourcePath, outputPath, size, density } of TAB_ICON_IMAGES) {
+  const source = await readFile(resolve(root, sourcePath));
+  const png = await sharp(source, { density }).resize(size, size).png().toBuffer();
+  await writeFile(resolve(root, outputPath), png);
 }
-console.log('공용 탭 SVG에서 네이티브 아이콘 9개를 생성했습니다.');
+console.log(`공용 탭 SVG에서 네이티브 아이콘 ${TAB_ICON_IMAGES.length}개를 생성했습니다.`);

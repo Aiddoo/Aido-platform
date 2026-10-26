@@ -1,0 +1,41 @@
+appId: com.aido.mobile
+name: 로그아웃 상태 초대 링크가 초대 카드, 로그인, 보상 적용, 환영 시트로 이어진다
+tags:
+  - smoke
+  - full
+  - fresh
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- openLink:
+    label: 로그아웃 상태에서 커스텀 스킴 초대 링크를 연다
+    link: ${QA_SCHEME}://invite/${output.code}
+# Then: 로그인 화면이 아니라 초대 카드가 먼저 보인다
+- extendedWaitUntil:
+    label: 초대 카드
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- assertVisible:
+    id: invite-card-signup
+- assertVisible:
+    id: invite-card-login
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invite-card-logged-out
+# When: 기존 계정 B로 로그인한다
+- tapOn:
+    id: invite-card-login
+- runFlow: subflows/login-invitee.yaml
+# Then: 보류한 초대가 이어서 적용되고 환영 시트가 열린다
+- extendedWaitUntil:
+    label: 환영 시트(보상 포함)
+    visible: '${output.a.name}님과 친구가 됐어요|You.re now friends with ${output.a.name}'
+    timeout: 30000
+- assertVisible: '프리미엄 .*일을 받았어요|You got .* of Premium'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invite-welcome-sheet
+- tapOn:
+    id: invite-welcome-later

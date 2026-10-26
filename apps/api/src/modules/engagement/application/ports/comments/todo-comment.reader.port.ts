@@ -12,7 +12,8 @@ export const TODO_COMMENT_READER = Symbol("TODO_COMMENT_READER");
 /** 댓글 읽기 모델의 단일 경계. 쓰기 aggregate와 응답 projection을 섞지 않는다. */
 export interface TodoCommentReaderPort {
   findAccessibleTodoDetails(todoId: number, viewerId: string): Promise<TodoDetailsRecord | null>;
-  canAccessTodo(todoId: number, viewerId: string): Promise<boolean>;
+  /** viewer가 볼 수 있는 할 일이면 주인 ID, 없거나 볼 수 없으면 null */
+  findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null>;
   findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null>;
   findCommentRecords(todoId: number, commentIds: readonly string[]): Promise<TodoCommentRecord[]>;
   listOverview(params: ListTodoCommentOverviewParams): Promise<TodoCommentOverviewWindow | null>;

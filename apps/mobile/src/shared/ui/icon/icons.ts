@@ -15,7 +15,6 @@ import CrosshairIconSvg from '@assets/icons/ic_crosshair.svg';
 import CrownIconSvg from '@assets/icons/ic_crown.svg';
 import DeviceIconSvg from '@assets/icons/ic_device.svg';
 import DocsIconSvg from '@assets/icons/ic_docs.svg';
-import DragIconSvg from '@assets/icons/ic_drag.svg';
 import EyeIconSvg from '@assets/icons/ic_eye.svg';
 import EyeOffIconSvg from '@assets/icons/ic_eye_off.svg';
 import FillCheckIconSvg from '@assets/icons/ic_fill_check.svg';
@@ -54,9 +53,6 @@ import SendIconSvg from '@assets/icons/ic_send.svg';
 import SettingIconSvg from '@assets/icons/ic_setting.svg';
 import ShareIconSvg from '@assets/icons/ic_share.svg';
 import SunIconSvg from '@assets/icons/ic_sun.svg';
-import MemoTabIconSvg from '@assets/icons/ic_tab_memo.svg';
-import MyPageTabIconSvg from '@assets/icons/ic_tab_mypage.svg';
-import TodoTabIconSvg from '@assets/icons/ic_tab_todo.svg';
 import ToastErrorIconSvg from '@assets/icons/ic_toast_error.svg';
 import ToastSuccessIconSvg from '@assets/icons/ic_toast_success.svg';
 import ToastWarningIconSvg from '@assets/icons/ic_toast_warning.svg';
@@ -90,7 +86,6 @@ export const CrosshairIcon = createStyledIcon(CrosshairIconSvg);
 export const CrownIcon = createStyledIcon(CrownIconSvg);
 export const DeviceIcon = createStyledIcon(DeviceIconSvg);
 export const DocsIcon = createStyledIcon(DocsIconSvg);
-export const DragIcon = createStyledIcon(DragIconSvg);
 export const EditIcon = createStyledIcon(PenIconSvg);
 export const EnglishIcon = createStyledIcon(EnglishIconSvg);
 export const FillCheckIcon = createStyledIcon(FillCheckIconSvg);
@@ -141,9 +136,3 @@ export const WeatherShowerIcon = createStyledIcon(WeatherShowerIconSvg);
 export const WeatherSnowIcon = createStyledIcon(WeatherSnowIconSvg);
 export const WeatherSunriseIcon = createStyledIcon(WeatherSunriseIconSvg);
 export const WeatherSunsetIcon = createStyledIcon(WeatherSunsetIconSvg);
-
-export const TodoTabIcon = createStyledIcon(TodoTabIconSvg);
-
-export const MemoTabIcon = createStyledIcon(MemoTabIconSvg);
-
-export const MyPageTabIcon = createStyledIcon(MyPageTabIconSvg);

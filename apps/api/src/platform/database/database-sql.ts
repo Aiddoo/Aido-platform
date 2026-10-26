@@ -10,6 +10,7 @@ export function sqlStatement(context: Pick<Prisma8Transaction, "raw">, statement
   const values = statement.values.map((value) => {
     if (value instanceof Date)
       return param(databaseTimestamp(value), { codecId: "pg/timestamp-string@1" });
+    // nullish-strict: undefined 파라미터는 빠뜨린 값이라 NULL로 묶지 않고 아래에서 거부한다
     if (value === null) return param(null, { codecId: "pg/text@1" });
     if (
       typeof value === "string" ||
@@ -51,16 +52,12 @@ export function decodeSqlRows<Spec extends RawRowSpec, Rows>(
 export function decodeSqlRows(spec: RawRowSpec, rows: unknown): unknown {
   if (!Array.isArray(rows)) throw new TypeError("SQL query must return rows");
   return rows.map((row) => {
-    if (typeof row !== "object" || row === null) throw new TypeError("Invalid SQL row");
+    if (typeof row !== "object" || row == null) throw new TypeError("Invalid SQL row");
     return Object.fromEntries(
       Object.entries(row).map(([key, value]) => {
         const column = spec[key];
         const codec = typeof column === "string" ? column : column?.codecId;
-        if (
-          value !== null &&
-          value !== undefined &&
-          (codec === "pg/date-string@1" || codec === "pg/timestamp-string@1")
-        ) {
+        if (value != null && (codec === "pg/date-string@1" || codec === "pg/timestamp-string@1")) {
           if (typeof value !== "string") throw new TypeError(`Invalid SQL date: ${key}`);
           return [
             key,

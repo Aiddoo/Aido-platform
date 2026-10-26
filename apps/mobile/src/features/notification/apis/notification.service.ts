@@ -99,6 +99,9 @@ export class NotificationService {
 
   isSupported = (): boolean => this.#pushTokenService.isPhysicalDevice();
 
+  /** 권한 창을 띄우지 않고 이미 알림을 허용했는지만 본다 */
+  hasPermission = (): Promise<boolean> => this.#pushTokenService.requestPermission(false);
+
   getNotifications = async (
     query?: GetNotificationsQuery,
     signal?: AbortSignal,

@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { z } from "zod";
 
 /**
  * InMemoryCacheAdapter 단위 테스트
@@ -56,7 +57,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value);
-      const result = await cache.get<{ foo: string }>(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toEqual(value);
@@ -67,7 +68,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const nonExistentKey = "non-existent";
 
       // When
-      const result = await cache.get(nonExistentKey);
+      const result = await cache.get(nonExistentKey, z.unknown());
 
       // Then
       expect(result).toBeUndefined();
@@ -82,7 +83,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await new Promise((resolve) => setTimeout(resolve, 100));
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBeUndefined();
@@ -95,7 +96,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value);
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -115,8 +116,8 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       // When & Then
       for (const { key, value } of testCases) {
         await cache.set(key, value);
-        const result = await cache.get(key);
-        if (value === null) {
+        const result = await cache.get(key, z.unknown());
+        if (value == null) {
           expect(result).toBeNull();
         } else {
           expect(result).toEqual(value);
@@ -133,7 +134,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, newValue);
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(newValue);
@@ -149,7 +150,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.del(key);
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBeUndefined();
@@ -177,9 +178,9 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // Then
       expect(count).toBe(2);
-      expect(await cache.get("user:profile:1")).toBeUndefined();
-      expect(await cache.get("user:profile:2")).toBeUndefined();
-      expect(await cache.get("user:subscription:1")).toBe("c");
+      expect(await cache.get("user:profile:1", z.unknown())).toBeUndefined();
+      expect(await cache.get("user:profile:2", z.unknown())).toBeUndefined();
+      expect(await cache.get("user:subscription:1", z.unknown())).toBe("c");
     });
 
     it("매칭되는 키가 없으면 0을 반환한다", async () => {
@@ -206,9 +207,9 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // Then
       expect(count).toBe(2);
-      expect(await cache.get("friends:mutual:user1:user2")).toBeUndefined();
-      expect(await cache.get("friends:mutual:user1:user3")).toBeUndefined();
-      expect(await cache.get("friends:mutual:user2:user1")).toBe(true);
+      expect(await cache.get("friends:mutual:user1:user2", z.unknown())).toBeUndefined();
+      expect(await cache.get("friends:mutual:user1:user3", z.unknown())).toBeUndefined();
+      expect(await cache.get("friends:mutual:user2:user1", z.unknown())).toBe(true);
     });
 
     it("다중 와일드카드 패턴을 처리할 수 있다", async () => {
@@ -223,7 +224,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // Then
       expect(count).toBe(2);
-      expect(await cache.get("stats:daily:user2:2025-01-26:todo")).toBe(2);
+      expect(await cache.get("stats:daily:user2:2025-01-26:todo", z.unknown())).toBe(2);
     });
   });
 
@@ -237,15 +238,15 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await cache.reset();
 
       // Then
-      expect(await cache.get("key1")).toBeUndefined();
-      expect(await cache.get("key2")).toBeUndefined();
+      expect(await cache.get("key1", z.unknown())).toBeUndefined();
+      expect(await cache.get("key2", z.unknown())).toBeUndefined();
     });
 
     it("통계를 초기화한다", async () => {
       // Given
-      await cache.get("miss");
+      await cache.get("miss", z.unknown());
       await cache.set("key1", "a");
-      await cache.get("key1");
+      await cache.get("key1", z.unknown());
 
       // When
       await cache.reset();
@@ -264,9 +265,9 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await cache.set("key1", "value");
 
       // When
-      await cache.get("key1"); // hit
-      await cache.get("key1"); // hit
-      await cache.get("miss"); // miss
+      await cache.get("key1", z.unknown()); // hit
+      await cache.get("key1", z.unknown()); // hit
+      await cache.get("miss", z.unknown()); // miss
       const stats = cache.getStats();
 
       // Then
@@ -306,7 +307,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await new Promise((resolve) => setTimeout(resolve, 50));
-      await cache.get("key1"); // expired -> miss
+      await cache.get("key1", z.unknown()); // expired -> miss
       const stats = cache.getStats();
 
       // Then
@@ -330,10 +331,10 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await smallCache.set("key4", "d"); // key1 삭제됨
 
       // Then
-      expect(await smallCache.get("key1")).toBeUndefined();
-      expect(await smallCache.get("key2")).toBe("b");
-      expect(await smallCache.get("key3")).toBe("c");
-      expect(await smallCache.get("key4")).toBe("d");
+      expect(await smallCache.get("key1", z.unknown())).toBeUndefined();
+      expect(await smallCache.get("key2", z.unknown())).toBe("b");
+      expect(await smallCache.get("key3", z.unknown())).toBe("c");
+      expect(await smallCache.get("key4", z.unknown())).toBe("d");
 
       smallCache.onModuleDestroy();
     });
@@ -373,8 +374,8 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Then
-      expect(await testCache.get("key1")).toBeUndefined();
-      expect(await testCache.get("key2")).toBeUndefined();
+      expect(await testCache.get("key1", z.unknown())).toBeUndefined();
+      expect(await testCache.get("key2", z.unknown())).toBeUndefined();
 
       testCache.onModuleDestroy();
     });
@@ -388,7 +389,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value, "1s");
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -401,7 +402,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value, "5m");
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -414,7 +415,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value, "1h");
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -427,7 +428,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value, "1d");
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -440,7 +441,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value, 5000);
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -454,12 +455,12 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const factory = vi.fn().mockResolvedValue("value");
 
       // When
-      const result = await cache.wrap(key, factory);
+      const result = await cache.wrap(key, z.unknown(), factory);
 
       // Then
       expect(factory).toHaveBeenCalledTimes(1);
       expect(result).toBe("value");
-      expect(await cache.get(key)).toBe("value");
+      expect(await cache.get(key, z.unknown())).toBe("value");
     });
 
     it("캐시 히트 시 factory를 호출하지 않는다", async () => {
@@ -469,7 +470,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const factory = vi.fn().mockResolvedValue("new-value");
 
       // When
-      const result = await cache.wrap(key, factory);
+      const result = await cache.wrap(key, z.unknown(), factory);
 
       // Then
       expect(factory).not.toHaveBeenCalled();
@@ -482,11 +483,11 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const factory = vi.fn().mockResolvedValue(undefined);
 
       // When
-      const result = await cache.wrap(key, factory);
+      const result = await cache.wrap(key, z.unknown(), factory);
 
       // Then
       expect(result).toBeUndefined();
-      expect(await cache.get(key)).toBeUndefined();
+      expect(await cache.get(key, z.unknown())).toBeUndefined();
     });
 
     it("factory가 null을 반환하면 캐싱하지 않는다", async () => {
@@ -495,11 +496,11 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const factory = vi.fn().mockResolvedValue(null);
 
       // When
-      const result = await cache.wrap(key, factory);
+      const result = await cache.wrap(key, z.unknown(), factory);
 
       // Then
       expect(result).toBeNull();
-      expect(await cache.get(key)).toBeUndefined();
+      expect(await cache.get(key, z.unknown())).toBeUndefined();
     });
 
     it("TTL shorthand를 지원한다", async () => {
@@ -508,7 +509,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const factory = vi.fn().mockResolvedValue("value");
 
       // When
-      await cache.wrap(key, factory, "5m");
+      await cache.wrap(key, z.unknown(), factory, "5m");
       const ttlResult = await cache.ttl(key);
 
       // Then
@@ -522,7 +523,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       const factory = vi.fn().mockRejectedValue(new Error("factory error"));
 
       // When & Then
-      await expect(cache.wrap(key, factory)).rejects.toThrow("factory error");
+      await expect(cache.wrap(key, z.unknown(), factory)).rejects.toThrow("factory error");
     });
   });
 
@@ -534,7 +535,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await cache.set("key3", "c");
 
       // When
-      const results = await cache.mget<string>(["key1", "key2", "key3"]);
+      const results = await cache.mget(["key1", "key2", "key3"], z.unknown());
 
       // Then
       expect(results).toEqual(["a", "b", "c"]);
@@ -545,7 +546,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await cache.set("key1", "a");
 
       // When
-      const results = await cache.mget<string>(["key1", "missing", "key1"]);
+      const results = await cache.mget(["key1", "missing", "key1"], z.unknown());
 
       // Then
       expect(results).toEqual(["a", undefined, "a"]);
@@ -553,7 +554,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
     it("빈 배열을 전달하면 빈 배열을 반환한다", async () => {
       // When
-      const results = await cache.mget<string>([]);
+      const results = await cache.mget([], z.unknown());
 
       // Then
       expect(results).toEqual([]);
@@ -566,7 +567,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // When
-      const results = await cache.mget<string>(["key1", "key2"]);
+      const results = await cache.mget(["key1", "key2"], z.unknown());
 
       // Then
       expect(results).toEqual([undefined, "b"]);
@@ -586,9 +587,9 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await cache.mset(entries);
 
       // Then
-      expect(await cache.get("key1")).toBe("a");
-      expect(await cache.get("key2")).toBe("b");
-      expect(await cache.get("key3")).toBe("c");
+      expect(await cache.get("key1", z.unknown())).toBe("a");
+      expect(await cache.get("key2", z.unknown())).toBe("b");
+      expect(await cache.get("key3", z.unknown())).toBe("c");
     });
 
     it("각 항목에 개별 TTL을 설정할 수 있다", async () => {
@@ -603,8 +604,8 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Then
-      expect(await cache.get("key1")).toBeUndefined();
-      expect(await cache.get("key2")).toBe("b");
+      expect(await cache.get("key1", z.unknown())).toBeUndefined();
+      expect(await cache.get("key2", z.unknown())).toBe("b");
     });
 
     it("빈 배열을 전달해도 에러가 발생하지 않는다", async () => {
@@ -623,8 +624,8 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       await cache.mset(entries);
 
       // Then
-      expect(await cache.get("key0")).toBe("value0");
-      expect(await cache.get("key49")).toBe("value49");
+      expect(await cache.get("key0", z.unknown())).toBe("value0");
+      expect(await cache.get("key49", z.unknown())).toBe("value49");
     });
   });
 
@@ -751,7 +752,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value);
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -764,7 +765,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(longKey, value);
-      const result = await cache.get(longKey);
+      const result = await cache.get(longKey, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -777,7 +778,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(specialKey, value);
-      const result = await cache.get(specialKey);
+      const result = await cache.get(specialKey, z.unknown());
 
       // Then
       expect(result).toBe(value);
@@ -792,7 +793,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
       // When
       await cache.set(key, value, ttlMs);
       await new Promise((resolve) => setTimeout(resolve, 1));
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       expect(result).toBeUndefined();
@@ -805,7 +806,7 @@ describe("InMemoryCacheAdapter — 인메모리 캐시 어댑터", () => {
 
       // When
       await cache.set(key, value);
-      const result = await cache.get(key);
+      const result = await cache.get(key, z.unknown());
 
       // Then
       // undefined는 저장되지만 get은 miss와 동일하게 undefined 반환

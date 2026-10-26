@@ -1,15 +1,18 @@
+import { AiConsentNotice } from '@src/features/ai/components/ai-consent-notice';
 import { SuggestionsList } from '@src/features/ai/components/suggestions-list';
 import { invalidateAiSuggestions } from '@src/features/ai/queries/ai-cache';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui';
+import { useTranslation } from '@src/shared/i18n';
+import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function SuggestionsScreen() {
+  const { t } = useTranslation('ai');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
@@ -30,11 +33,14 @@ function SuggestionsScreen() {
         <Spacing size={16} />
         {match(isPremiumUser)
           .with(true, () => (
-            <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
-              <Suspense fallback={<SuggestionsList.Loading />}>
-                <SuggestionsList />
-              </Suspense>
-            </QueryErrorBoundary>
+            <VStack gap={12}>
+              <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
+              <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
+                <Suspense fallback={<SuggestionsList.Loading />}>
+                  <SuggestionsList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </VStack>
           ))
           .with(false, () => <SuggestionsList.PremiumPreview />)
           .exhaustive()}

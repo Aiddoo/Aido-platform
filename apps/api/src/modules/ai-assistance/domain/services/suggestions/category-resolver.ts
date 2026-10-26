@@ -21,7 +21,7 @@ export function resolveSuggestedCategoryId(
 ): number | null {
   const categoryByName = buildCategoryNameMap(todos);
   const titleMatch = matchTitleToCategory(title, categoryByName);
-  if (titleMatch !== null) {
+  if (titleMatch != null) {
     return titleMatch;
   }
 

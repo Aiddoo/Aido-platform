@@ -1,0 +1,32 @@
+appId: com.aido.mobile
+name: 초대 보상으로 프리미엄 쓰는 계정(D-1)
+tags:
+  - premium
+  - account-switch
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow:
+    file: subflows/start.yaml
+    env:
+      QA_EMAIL: ${MAESTRO_SHOT_GRANT_EMAIL}
+      QA_PASSWORD: ${MAESTRO_SHOT_GRANT_PASSWORD}
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/subscription
+- extendedWaitUntil:
+    visible:
+      id: subscription-receipt-reward
+    timeout: 20000
+- takeScreenshot: 80_구독_초대_보상_D-1
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: notifications
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 81_알림_보상_종료_예정

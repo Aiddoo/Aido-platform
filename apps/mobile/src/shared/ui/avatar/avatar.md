@@ -9,7 +9,7 @@ import { Avatar } from '@src/shared/ui/avatar/avatar';
 
 // 기본 사용 (선택 UI 없음)
 <Avatar size="lg" alt="프로필">
-  <Avatar.Image source={require('@assets/icon.png')} />
+  <Avatar.Image source={require('@assets/images/icon.png')} />
 </Avatar>
 
 // 선택 가능 모드
@@ -65,11 +65,11 @@ HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `co
 
 ### Sub-components
 
-| 컴포넌트          | 설명                          |
-| ----------------- | ----------------------------- |
-| `Avatar.Image`    | HeroUI Avatar.Image 포워딩    |
-| `Avatar.Fallback` | HeroUI Avatar.Fallback 포워딩 |
-| `Avatar.Loading`  | Skeleton 로딩 상태            |
+| 컴포넌트          | 설명                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `Avatar.Image`    | HeroUI Avatar.Image(asChild) 안에서 expo-image로 그림. 메모리·디스크 캐시, 표시 크기 다운샘플링, 페이드 인 없이 바로 표시 |
+| `Avatar.Fallback` | HeroUI Avatar.Fallback 포워딩                                                                                             |
+| `Avatar.Loading`  | Skeleton 로딩 상태                                                                                                        |
 
 ## 파일 구조
 

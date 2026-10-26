@@ -6,7 +6,7 @@ module.exports = {
   clearMocks: true,
   restoreMocks: true,
   transformIgnorePatterns: [
-    'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation))',
+    'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation|@revenuecat))',
   ],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

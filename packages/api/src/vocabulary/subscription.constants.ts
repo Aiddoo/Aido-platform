@@ -41,3 +41,17 @@ export const REVENUECAT_STORES = [
 
 /** 알려진 스토어 유니온 (참조용). 실제 webhook은 이 외의 스토어도 수신 가능. */
 export type RevenueCatStore = (typeof REVENUECAT_STORES)[number] | (string & {});
+
+/** 프리미엄의 출처. STORE는 스토어 구독, GRANT는 서버가 지급한 보상 기간이다. */
+export const PREMIUM_SOURCE = {
+  STORE: "STORE",
+  GRANT: "GRANT",
+} as const;
+
+export type PremiumSource = (typeof PREMIUM_SOURCE)[keyof typeof PREMIUM_SOURCE];
+
+/** 보상 기간이 끝나기 며칠 전에 안내할지. 서버 PREMIUM_GRANT_ENDING 푸시와 앱 안내가 같은 값을 쓴다. */
+export const PREMIUM_GRANT_ENDING_NOTICE_DAYS = 1;
+
+/** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간(일). 지나면 /me의 premiumGrantEndedAt이 null이다. */
+export const PREMIUM_GRANT_ENDED_WINDOW_DAYS = 7;

@@ -270,9 +270,10 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 
       const resetLog = logs.find(
         (log) =>
-          log.metadata &&
+          log.metadata != null &&
           typeof log.metadata === "object" &&
-          (log.metadata as Record<string, unknown>).reason === "PASSWORD_RESET",
+          "reason" in log.metadata &&
+          log.metadata.reason === "PASSWORD_RESET",
       );
       expect(resetLog).toBeDefined();
     });

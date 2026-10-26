@@ -57,23 +57,24 @@ export class UpdateTodo {
     const events = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
         MutationLockKeys.todo(id),
-        ...(data.categoryId === undefined ? [] : [MutationLockKeys.todoCategory(userId)]),
+        ...(data.categoryId == null ? [] : [MutationLockKeys.todoCategory(userId)]),
       ]);
-      if (data.categoryId !== undefined) {
+      if (data.categoryId != null) {
         // 일반 PATCH는 전용 category endpoint와 달리 활성 한도를 검사하지 않는다.
         await this.#dependencies.categoryOwnership.validateOwnership(data.categoryId, userId);
       }
 
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
       const wasCompleted = todo.isCompleted();
       const details: TodoDetailsPatch = { ...data, scheduledTime: undefined };
+      // nullish-strict: PATCH라 undefined는 유지, null은 시간 지우기다
       if (data.scheduledTime !== undefined) {
         details.scheduledTime =
-          data.scheduledTime === null
+          data.scheduledTime == null
             ? null
             : parseLocalDateTime(
                 toDateString(data.startDate ?? todo.toPersistence().startDate),
@@ -90,6 +91,7 @@ export class UpdateTodo {
       >(
         key: K,
       ): void => {
+        // nullish-strict: null로 비운 필드도 저장할 변경이다
         if (data[key] !== undefined) {
           patch[key] = snapshot[key];
         }
@@ -101,7 +103,7 @@ export class UpdateTodo {
       copyField("scheduledTime");
       copyField("isAllDay");
       copyField("visibility");
-      if (data.completed !== undefined) {
+      if (data.completed != null) {
         patch.completed = snapshot.completed;
         if (snapshot.completed !== wasCompleted) {
           patch.completedAt = snapshot.completedAt;
@@ -114,7 +116,7 @@ export class UpdateTodo {
 
     this.#dependencies.logger.log({ event: PlanningTodoLogEvent.UPDATED, todoId: id, userId });
 
-    if (data.categoryId !== undefined) {
+    if (data.categoryId != null) {
       await this.#dependencies.todoCache.invalidateTodoCategories(userId);
     }
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
@@ -122,7 +124,7 @@ export class UpdateTodo {
     await this.#dependencies.eventPublisher.publishAll(events);
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      // expo export가 번들·app.config extra에 굽는 값 — 바뀌면 캐시를 무효화하고 strict 모드에서도 전달한다
+      "env": [
+        "APP_ENV",
+        "EXPO_PUBLIC_*",
+        "GOOGLE_SERVICES_JSON",
+        "GOOGLE_SERVICES_INFO_PLIST",
+        "REVENUECAT_*"
+      ]
+    }
+  }
+}

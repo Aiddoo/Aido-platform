@@ -17,6 +17,7 @@ import { vi } from "vitest";
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 import { createMockDatabaseContext } from "#test/mocks/database.mock";
 import { asTxClient } from "#test/mocks/transaction.mock";
+import { mockOf } from "#test/mocks/typed-mock";
 
 import {
   LazyPgBossClient,
@@ -141,17 +142,14 @@ class FakePgBossClient implements PgBossClient {
 
   async unschedule(_name: string, _key?: string): Promise<void> {}
 
-  async findJobs<T extends JobData>(
-    _name: string,
-    options?: FindJobsOptions,
-  ): Promise<JobWithMetadata<T>[]> {
+  async findJobs(_name: string, options?: FindJobsOptions): Promise<JobWithMetadata<JobData>[]> {
     if (this.findJobsError) {
       throw this.findJobsError;
     }
     const jobs = options?.queued
       ? this.jobs.filter(({ state }) => state === "created" || state === "retry")
       : this.jobs;
-    return jobs as JobWithMetadata<T>[];
+    return jobs;
   }
 
   async cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
@@ -169,12 +167,12 @@ class FakePgBossClient implements PgBossClient {
     };
   }
 
-  async work<T extends JobData>(
+  async work(
     name: string,
     _options: WorkOptions & { includeMetadata: true },
-    handler: (jobs: JobWithMetadata<T>[]) => Promise<unknown>,
+    handler: (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
   ): Promise<string> {
-    this.handlers.set(name, handler as (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>);
+    this.handlers.set(name, handler);
     return `worker:${name}`;
   }
 
@@ -184,7 +182,7 @@ class FakePgBossClient implements PgBossClient {
 }
 
 function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata<JobData> {
-  return {
+  return mockOf<JobWithMetadata<JobData>>({
     id: "job-1",
     name: QUEUE,
     data: { documentId: 42 },
@@ -192,7 +190,7 @@ function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata
     retryCount: 1,
     createdOn: new Date("2026-07-22T11:59:00.000Z"),
     ...overrides,
-  } as JobWithMetadata<JobData>;
+  });
 }
 
 describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
@@ -468,12 +466,12 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
 
   it("queue 상태를 공통 health 모델로 정규화한다", async () => {
     boss.queues = [
-      {
+      mockOf<QueueResult>({
         name: QUEUE,
         queuedCount: 3,
         activeCount: 1,
         failedCount: 2,
-      } as QueueResult,
+      }),
     ];
 
     await expect(runtime.health([QUEUE])).resolves.toEqual({

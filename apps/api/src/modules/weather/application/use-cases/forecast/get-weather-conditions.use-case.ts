@@ -45,7 +45,7 @@ export class GetWeatherConditions {
 
   async execute(input: GetWeatherConditionsInput): Promise<WeatherConditions> {
     const location = await this.#dependencies.weatherLocationRepository.findByUserId(input.userId);
-    if (location === null) {
+    if (location == null) {
       throw new ApplicationException(ErrorCode.WEATHER_1902);
     }
 
@@ -54,7 +54,7 @@ export class GetWeatherConditions {
       location.gridY,
       input.date,
     );
-    if (cached !== undefined) {
+    if (cached != null) {
       return cached;
     }
 

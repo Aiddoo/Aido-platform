@@ -25,6 +25,15 @@ export const registerPushTokenSchema = z.object({
 
 export type RegisterPushTokenInput = z.infer<typeof registerPushTokenSchema>;
 
+/** 푸시 토큰 해제. deviceId를 생략하면 사용자의 모든 토큰을 해제한다. 등록할 때와 같은 기기 ID 규칙을 쓴다. */
+export const unregisterPushTokenQuerySchema = z.object({
+  deviceId: registerPushTokenSchema.shape.deviceId.describe(
+    "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제 (최대 100자)",
+  ),
+});
+
+export type UnregisterPushTokenQuery = z.infer<typeof unregisterPushTokenQuerySchema>;
+
 export const markNotificationReadSchema = z.object({
   notificationId: z.coerce
     .number()

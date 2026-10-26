@@ -40,7 +40,7 @@ export class ToggleMemoPin {
         input.memoId,
         input.userId,
       );
-      if (memo === null) {
+      if (memo == null) {
         throw new ApplicationException(ErrorCode.MEMO_2001, {
           memoId: input.memoId,
         });

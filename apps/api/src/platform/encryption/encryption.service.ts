@@ -32,12 +32,11 @@ export class EncryptionService {
   }
 
   decrypt(ciphertext: string): string {
-    const parts = ciphertext.split(":");
-    if (parts.length !== 3) {
+    const [ivB64, authTagB64, encryptedB64, ...rest] = ciphertext.split(":");
+    if (ivB64 == null || authTagB64 == null || encryptedB64 == null || rest.length > 0) {
       throw new Error("Invalid ciphertext format");
     }
 
-    const [ivB64, authTagB64, encryptedB64] = parts as [string, string, string];
     const iv = Buffer.from(ivB64, "base64");
     const authTag = Buffer.from(authTagB64, "base64");
     const encrypted = Buffer.from(encryptedB64, "base64");

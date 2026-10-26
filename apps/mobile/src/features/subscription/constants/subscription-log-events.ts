@@ -1,5 +1,6 @@
 export const SUBSCRIPTION_LOG_EVENT = {
   OFFERINGS_FETCH_FAILED: 'subscription.offerings-fetch.failed',
+  CUSTOMER_INFO_FETCH_FAILED: 'subscription.customer-info-fetch.failed',
   REVENUECAT_CONFIGURE_SKIPPED: 'subscription.revenuecat-configure.skipped',
   REVENUECAT_CONFIGURE_FAILED: 'subscription.revenuecat-configure.failed',
   REVENUECAT_LOGIN_FAILED: 'subscription.revenuecat-login.failed',

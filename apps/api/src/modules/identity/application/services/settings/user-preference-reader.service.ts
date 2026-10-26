@@ -22,7 +22,7 @@ export class UserPreferenceReader implements UserPreferenceReaderPort {
   read(userId: string): Promise<PreferenceSnapshot> {
     return this.#dependencies.cache.wrapUserPreference(userId, async () => {
       const preference = await this.#dependencies.preferenceRepository.findByUserId(userId);
-      return preference === null
+      return preference == null
         ? { ...DEFAULT_PREFERENCE_SNAPSHOT }
         : buildPreferenceSnapshot(preference);
     });

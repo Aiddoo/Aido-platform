@@ -41,6 +41,34 @@ describe("친구 요청 보내기", () => {
     expect(fixture.notifier.newRequests).toEqual([]);
   });
 
+  it("내가 차단한 사용자에게 요청하면 차단 해제를 안내하는 오류로 거부한다", async () => {
+    // Given
+    const fixture = createSocialFriendFixture();
+    fixture.addUser("me");
+    fixture.addUser("blocked");
+    fixture.userBlockRepository.seed("me", "blocked");
+    // When / Then
+    await expect(
+      new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: "blocked" }),
+    ).rejects.toMatchObject({ errorCode: "BLOCK_2203" });
+    expect(fixture.followRepository.follows.size).toBe(0);
+    expect(fixture.notifier.newRequests).toEqual([]);
+  });
+
+  it("나를 차단한 사용자에게 요청하면 차단 사실 대신 없는 사용자로 답한다", async () => {
+    // Given
+    const fixture = createSocialFriendFixture();
+    fixture.addUser("me");
+    fixture.addUser("blocker");
+    fixture.userBlockRepository.seed("blocker", "me");
+    // When / Then
+    await expect(
+      new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: "blocker" }),
+    ).rejects.toMatchObject({ errorCode: "FOLLOW_0905" });
+    expect(fixture.followRepository.follows.size).toBe(0);
+    expect(fixture.notifier.newRequests).toEqual([]);
+  });
+
   it("무료 친구 한도에 도달하면 대상 존재 여부보다 한도 오류가 우선한다", async () => {
     // Given
     const fixture = createSocialFriendFixture();

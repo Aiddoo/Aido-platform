@@ -1,9 +1,8 @@
 import { useAnalytics, useFeatureAttribution } from '@src/bootstrap/providers/di-context';
 import type { AnalyticsEventParams } from '@src/core/ports/analytics';
+import type { AppEventMap, FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { useCallback } from 'react';
 
-import type { AppEventMap } from './events';
-import type { FeatureKey } from './events/growth.events';
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';
 
 /** `track()`의 hook 버전 — DI에서 Analytics를 받아 타입 이벤트만 전송한다. */

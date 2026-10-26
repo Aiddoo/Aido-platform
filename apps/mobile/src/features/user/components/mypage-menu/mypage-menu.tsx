@@ -1,9 +1,11 @@
 import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-context';
 import {
   FEATURE_DISCOVERY_CAMPAIGN_ID,
+  filterAvailableCampaign,
   getBundledFeatureDiscoveryCampaign,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/use-feature-discovery-hub';
+import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
 import { useTranslation } from '@src/shared/i18n';
 import { SettingNavigation, Spacing } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -40,7 +42,12 @@ export function MyPageMenu() {
   const { data: user } = useQuery(useGetMeQueryOptions());
   const { openHub } = useFeatureDiscoveryHub();
   const featureDiscoveryState = useFeatureDiscoveryStateService();
-  const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
+  const isInviteAvailable = useInviteAvailability();
+  // 소개할 기능이 모두 꺼져 있으면 기능 가이드 항목을 숨긴다
+  const campaign = filterAvailableCampaign(
+    getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID),
+    { isInviteAvailable },
+  );
 
   const openFeatureGuide = () => {
     if (!campaign || !user) {
@@ -61,14 +68,18 @@ export function MyPageMenu() {
     <>
       <SettingNavigation label={t('mypage.sections.activity')}>
         <MyPageMenuItem label={t('mypage.items.friends')} pathname="/friends" />
+        <MyPageMenuItem label={t('mypage.items.blockedUsers')} pathname="/settings/blocked-users" />
         <MyPageMenuItem
           label={t('mypage.items.categories')}
           pathname="/settings/category-settings"
         />
-        <SettingNavigation.Item
-          label={t('featureDiscovery:entry.mypage')}
-          onPress={openFeatureGuide}
-        />
+        {campaign != null && (
+          <SettingNavigation.Item
+            testID="feature-guide-open"
+            label={t('featureDiscovery:entry.mypage')}
+            onPress={openFeatureGuide}
+          />
+        )}
         <MyPageMenuItem label={t('mypage.items.achievements')} pathname="/achievements" />
       </SettingNavigation>
 

@@ -1,0 +1,33 @@
+appId: com.aido.mobile
+name: 형식은 맞지만 없는 코드는 찾을 수 없음 카드(INVITE_2101)가 보이고 직접 입력으로 돌아갈 수 있다
+tags:
+  - failure
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+  # 알파벳에 속한 6자지만 발급되지 않은 코드
+  QA_MISSING_CODE: ZZZZZZ
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+- openLink: ${QA_SCHEME}://invite/${QA_MISSING_CODE}
+- extendedWaitUntil:
+    label: INVITE_2101 카드
+    visible:
+      id: invite-result-not-found
+    timeout: 20000
+- assertVisible: '코드를 다시 확인하거나 친구에게 새 링크를 받아주세요|Check the code again or ask your friend for a new link'
+- assertNotVisible:
+    id: invite-card-redeem
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-failure-code-not-found
+# Recover: 코드 직접 입력하기 -> 입력 화면
+- tapOn:
+    id: invite-result-enter-code
+- extendedWaitUntil:
+    visible: '영문과 숫자 6자리예요.*|It.s 6 letters and numbers.*'
+    timeout: 10000

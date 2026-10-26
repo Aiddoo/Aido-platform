@@ -54,20 +54,20 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
     let query = this.todos.where((todo) =>
       and(
         todo.userId.eq(userId),
-        completed === undefined ? all() : todo.completed.eq(completed),
-        categoryId === undefined ? all() : todo.categoryId.eq(categoryId),
+        completed == null ? all() : todo.completed.eq(completed),
+        categoryId == null ? all() : todo.categoryId.eq(categoryId),
         publicOnly ? todo.visibility.eq("PUBLIC") : all(),
         todoDatePredicate(todo, startDate, endDate),
       ),
     );
-    if (cursor !== null && cursor !== undefined) {
+    if (cursor != null) {
       // Prisma 8 cursors require every ordering key and do not support relation ordering.
       // Resolve the existing ID cursor, then apply the same exclusive composite keyset.
       const anchor = await this.client.orm.public.Todo.where({ id: cursor })
         .select("id", "sortOrder")
         .include("category", (category) => category.select("sortOrder"))
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       const categoryOrder = requireRecord(anchor.category).sortOrder;
       query = query.where((todo) =>
         or(
@@ -153,7 +153,7 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
 
   async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
     const row = decodeRecord("Todo", await this.todos.where({ id, userId }).first());
-    return row === null ? null : TodoMapper.toResponse(row);
+    return row == null ? null : TodoMapper.toResponse(row);
   }
 
   async countActiveByCategory(userId: string, categoryId: number): Promise<number> {

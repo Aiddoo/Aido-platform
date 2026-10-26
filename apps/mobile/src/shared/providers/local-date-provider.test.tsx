@@ -1,12 +1,17 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createMockAnalytics, createMockDIContainer } from '@src/shared/__tests__';
-import { millisecondsUntilNextLocalMidnight } from '@src/shared/utils/local-date-clock';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { LocalDateProvider, useLocalDate } from './local-date-provider';
+
+interface FakeDeviceCalendar {
+  timeZone: string;
+}
+
+const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const originalCurrentStateDescriptor = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 
@@ -36,7 +41,7 @@ describe('앱 로컬 날짜 Provider', () => {
     }
   });
 
-  async function setup() {
+  async function setup(device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE }) {
     const analytics = createMockAnalytics();
     const errorReporter = createMockErrorReporter();
     const remove = jest.fn();
@@ -49,7 +54,9 @@ describe('앱 로컬 날짜 Provider', () => {
 
     const wrapper = ({ children }: PropsWithChildren) => (
       <StaticDIProvider container={createMockDIContainer({ analytics, errorReporter })}>
-        <LocalDateProvider>{children}</LocalDateProvider>
+        <LocalDateProvider useDeviceCalendar={() => ({ timeZone: device.timeZone })}>
+          {children}
+        </LocalDateProvider>
       </StaticDIProvider>
     );
     const hook = await renderHook(() => useLocalDate(), { wrapper });
@@ -109,37 +116,61 @@ describe('앱 로컬 날짜 Provider', () => {
     });
   });
 
-  it('날짜가 같아도 복귀할 때 시간대가 바뀌면 현재 상태를 갱신한다', async () => {
+  it('날짜가 같아도 기기 시간대가 바뀌면 현재 상태를 갱신한다', async () => {
     // Given
     jest.setSystemTime(new Date('2026-07-14T00:00:00.000Z'));
-    // Jest 30 fake timers replace Intl.DateTimeFormat with a wrapper that binds methods from
-    // the native formatter, so the device time zone is stubbed at the factory instead of the prototype.
-    const createDateTimeFormat = Intl.DateTimeFormat;
-    let deviceTimeZone = 'Asia/Seoul';
-    const dateTimeFormat = jest
-      .spyOn(Intl, 'DateTimeFormat')
-      .mockImplementation((locales, options) => {
-        const formatter = createDateTimeFormat(locales, options);
-        return {
-          ...formatter,
-          resolvedOptions: () => ({ ...formatter.resolvedOptions(), timeZone: deviceTimeZone }),
-        };
-      });
-    const { result, analytics, getAppStateListener, unmount } = await setup();
+    const device: FakeDeviceCalendar = { timeZone: 'Asia/Seoul' };
+    const { result, analytics, rerender } = await setup(device);
     const previousDate = result.current.currentLocalDate;
+
     // When
-    await act(() => {
-      getAppStateListener()?.('background');
-      deviceTimeZone = 'Asia/Tokyo';
-      getAppStateListener()?.('active');
-    });
+    device.timeZone = 'Asia/Tokyo';
+    await rerender({});
+
     // Then
     expect(result.current.currentLocalDateKey).toBe('2026-07-14');
     expect(result.current.currentTimeZone).toBe('Asia/Tokyo');
     expect(result.current.currentLocalDate).not.toBe(previousDate);
     expect(analytics.trackEvent).not.toHaveBeenCalled();
-    await unmount();
-    dateTimeFormat.mockRestore();
+  });
+
+  it('실행 중 시간대가 바뀌면 이전 시간대의 자정에는 날짜를 넘기지 않는다', async () => {
+    // Given - 서울 23:00, 서울 자정까지 1시간
+    jest.setSystemTime(new Date('2026-07-14T14:00:00.000Z'));
+    const device: FakeDeviceCalendar = { timeZone: 'Asia/Seoul' };
+    const { result, analytics, rerender } = await setup(device);
+    device.timeZone = 'America/Los_Angeles';
+    await rerender({});
+
+    // When - 서울 자정을 지난다(로스앤젤레스 08:00)
+    await act(() => {
+      jest.advanceTimersByTime(60 * 60 * 1000 + 200);
+    });
+
+    // Then
+    expect(result.current.currentTimeZone).toBe('America/Los_Angeles');
+    expect(result.current.currentLocalDateKey).toBe('2026-07-14');
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('실행 중 시간대가 바뀌면 바뀐 시간대의 자정에 날짜를 넘긴다', async () => {
+    // Given - 서울 23:00에 로스앤젤레스(07:00)로 이동한다
+    jest.setSystemTime(new Date('2026-07-14T14:00:00.000Z'));
+    const device: FakeDeviceCalendar = { timeZone: 'Asia/Seoul' };
+    const { result, analytics, rerender } = await setup(device);
+    device.timeZone = 'America/Los_Angeles';
+    await rerender({});
+
+    // When - 로스앤젤레스 자정(17시간 뒤)을 지난다
+    await act(() => {
+      jest.advanceTimersByTime(17 * 60 * 60 * 1000 + 200);
+    });
+
+    // Then
+    expect(result.current.currentLocalDateKey).toBe('2026-07-15');
+    expect(analytics.trackEvent).toHaveBeenCalledWith('local_day_changed', {
+      trigger: 'midnight_timer',
+    });
   });
 
   it('관측 어댑터 실패가 날짜 변경을 중단시키지 않는다', async () => {
@@ -179,16 +210,5 @@ describe('앱 로컬 날짜 Provider', () => {
     // Then
     expect(remove).toHaveBeenCalledTimes(1);
     expect(analytics.trackEvent).not.toHaveBeenCalled();
-  });
-});
-
-describe('다음 로컬 자정 예약', () => {
-  it('다음 로컬 자정 직후까지 한 번만 예약한다', () => {
-    // Given
-    const now = new Date(2026, 6, 14, 23, 59, 59, 900);
-    // When
-    const delay = millisecondsUntilNextLocalMidnight(now);
-    // Then
-    expect(delay).toBe(200);
   });
 });

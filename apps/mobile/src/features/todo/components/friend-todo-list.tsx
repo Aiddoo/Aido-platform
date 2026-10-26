@@ -9,6 +9,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,12 +22,12 @@ import {
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   PawIcon,
+  Flex,
   Result,
   Text,
   VStack,
   useOverlay,
 } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -122,7 +123,8 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const selectTodo = useSingleTap(setSelectedTodoId);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
+  const dateFormatContext = useDateFormatContext();
+  const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const showDateTime = formattedTime != null;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
@@ -206,10 +208,12 @@ FriendTodoList.Loading = function Loading() {
 FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <Result
-      title={t('todo:list.loadError')}
-      button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        title={t('todo:list.loadError')}
+        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+      />
+    </Flex>
   );
 };
 
@@ -220,11 +224,13 @@ FriendTodoList.Empty = function Empty() {
   const today = useToday();
   const isToday = isSameDay(date, today);
   return (
-    <Result
-      icon={<DocsIcon width={72} height={72} />}
-      title={t('friendTodo.emptyTitle')}
-      description={isToday ? t('friendTodo.emptyDescription') : undefined}
-      button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('friendTodo.emptyTitle')}
+        description={isToday ? t('friendTodo.emptyDescription') : undefined}
+        button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
+      />
+    </Flex>
   );
 };

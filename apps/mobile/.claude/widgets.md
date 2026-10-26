@@ -1,26 +1,32 @@
 # 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 3.0.0 · **Last Updated**: 2026-10-05 · **Owner**: Aido Mobile Team
+**Version**: 3.2.0 · **Last Updated**: 2026-10-26 · **Owner**: Aido Mobile Team
 
 iOS는 `expo-widgets`, Android는 `react-native-android-widget`의 공식 Expo config plugin과
 HeadlessJS API를 사용한다. 앱에서 Kotlin·Swift source나 dependency patch를 생성하지 않는다.
-두 플랫폼은 기존 `WidgetSnapshot` v1, mapper, Policy, `WidgetSyncService`, `WidgetBridge`를 공유한다.
+두 플랫폼은 `WidgetSnapshot` v2(오늘·내일 day), mapper, Policy, `WidgetSyncService`, `WidgetBridge`를 공유한다.
+
+Android를 `expo-widgets`로 옮기지 않는 이유: SDK 58 `expo-widgets`의 Android 구현에는 timeline이 없어
+자정 전환을 미리 예약할 수 없고, AppWidget provider class가 바뀌면 사용자가 홈 화면에 둔 위젯이
+사라진다. 그래서 기존 provider 이름을 유지하는 `react-native-android-widget`을 계속 사용한다.
 
 ## 데이터 흐름과 소유권
 
 ```text
 useWidgetSnapshotSync(authState)
-  → 현재 계정·로컬 날짜의 기존 TodoSummary / daily completions Query
+  → 현재 계정·로컬 날짜의 오늘·내일 TodoSummary(`?date=`) / daily completions Query
   → WidgetSyncService (직렬 쓰기·generation·내용/소유자 중복 제거)
   → 순수 snapshot / props mapper
   → 플랫폼별 WidgetBridge
-      iOS: Expo Widgets timeline (현재·다음 로컬 자정 stale)
+      iOS: Expo Widgets timeline (지금: 오늘 · 다음 자정: 내일 · 그다음 자정: stale)
       Android: 기존 MMKV widget-storage snapshot + 공식 requestWidgetUpdate
 ```
 
 - Query는 인증과 현재 계정 식별자가 준비될 때 활성화하고 `throwOnError: false`를 유지한다.
 - 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다.
-- 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot v1과 iOS timeline payload에 추가하지 않는다.
+- 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot과 iOS timeline payload에 추가하지 않는다.
+- 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다(통계·스트릭). 서버 날짜가 요청과 다르거나
+  거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다.
 - 렌더러는 전달받은 props만 사용한다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다.
@@ -42,7 +48,23 @@ Android 공식 plugin은 기존 `${android.package}.widget` 아래 같은 세 pr
 기존 AppWidgetHost ID·배치·크기를 지우거나 위젯을 재등록하지 않는다. iOS `AidoTodayList` 이름,
 extension bundle identifier와 App Group도 유지한다.
 
-기존 `widget-storage`의 `aido_widget_snapshot_v1` plain JSON을 검증해 재사용한다. 기존 Expo
+### 위젯 갤러리 이름·설명 다국어
+
+OS 위젯 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-locales/{ko,en}.json`)가 만든다.
+ko 기기는 한국어, 그 밖의 언어는 영어로 표시한다. 영어는 앱 카탈로그의 위젯 용어(`Today's to-dos`)를 따른다.
+
+- iOS: `expo-widgets`는 `configurationDisplayName("오늘 할 일")`처럼 한국어 원문을 `LocalizedStringKey`로
+  생성하고, 앱의 `Localizable.strings`를 위젯 확장 리소스에 넣는다. 키(원문)와 번역은 각 파일의
+  `ios["Localizable.strings"]`에 두고 `app.config.ts`의 `displayName`·`description`과 글자까지 같게 유지한다.
+  ko 파일에도 같은 키를 둬야 위젯 번들에 `ko.lproj`가 생겨 한국어 기기가 영어로 떨어지지 않는다.
+- Android: provider `android:label`은 `@string/widget_{name}_label`, `android:description`은 공식 plugin이
+  만드는 `@string/widget_{name}_description`이다. 번역은 각 파일의 `android` 항목(`values-b+{lang}`)이다.
+  `plugins/withAndroidFallbackLocaleStrings`가 finalized 단계에서 en 항목을 기본 `values/`에 써서
+  ko·en이 아닌 기기의 리소스 누락과 plugin의 `translatable="false"` 한국어 기본값을 함께 대체한다.
+- 첫 동기화 전 로그인 안내의 iOS 번역도 같은 `Localizable.strings`에 둔다(아래 「디자인과 렌더링」).
+
+기존 `widget-storage`의 `aido_widget_snapshot_v1` key를 그대로 쓴다. 값은 v2 JSON이며, 이미 저장된
+v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. 기존 Expo
 SharedPreferences만 있고 MMKV snapshot이 없거나 현재 소유자를 알 수 없으면 개인 목록을
 추측하지 않고 앱 열기 안내를 표시한다. 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
 이 범위는 로그인·계정·할 일 데이터 호환성과 다르며, 업그레이드 전 위젯 표시 내용을 앱 실행
@@ -50,10 +72,15 @@ SharedPreferences만 있고 MMKV snapshot이 없거나 현재 소유자를 알 �
 
 ## 날짜와 OS 갱신
 
-LocalDateProvider가 자정 timer와 foreground의 날짜·timezone 재평가를 소유한다. iOS timeline에는
-다음 로컬 자정 stale entry를 넣는다. Android adapter는 렌더 경계에서 snapshot.date와 현재
-local date를 Policy로 비교한다. 세 provider는 공식 plugin의 `updatePeriodMillis: 1800000`을 사용한다.
-Doze·launcher 갱신 정책 때문에 정확한 자정 또는 최대 30분 이내의 갱신을 보장하지 않는다.
+LocalDateProvider가 자정 timer, foreground, `useCalendars()`(시간대·significant time change)의
+날짜 재평가를 소유한다. 자정은 Intl 기기 시간대로 계산한다(`getNextLocalMidnight`). Provider 밖의
+위젯 경계도 같은 `readDeviceLocalDateState()`로 오늘 key를 계산하고 dayjs 로컬 날짜를 쓰지 않는다.
+
+- iOS: `toWidgetTimelineEntries`가 [지금: 오늘] → [다음 자정: 내일] → [그다음 자정: stale]을
+  `updateTimeline`에 넣는다. 내일 day가 없으면 다음 자정부터 stale이다.
+- Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다(`WidgetSnapshotPolicy.selectDay`).
+  세 provider는 공식 plugin의 `updatePeriodMillis: 1800000`을 사용한다. Doze·launcher 갱신 정책 때문에
+  정확한 자정 또는 최대 30분 이내의 갱신을 보장하지 않는다.
 
 ## 디자인과 렌더링
 
@@ -72,7 +99,13 @@ Doze·launcher 갱신 정책 때문에 정확한 자정 또는 최대 30분 이�
   여유 slot 안에서 가운데 배치한다. 긴 제목은 한 줄 말줄임, 개수는 자리수에 따라 축소한다.
 - Android TextWidget는 취소선을 제공하지 않는다. 완료는 색이 흐려진 제목과 체크 표시로 나타낸다.
   글자 폭을 추측해 선을 그리거나 native API를 패치하지 않는다.
-- 첫 snapshot 부재는 카탈로그의 한국어 로그인 안내로 렌더링하고 현재 Expo scheme을 사용한다.
+- 첫 snapshot 부재(갤러리 미리보기·첫 배치)는 카탈로그의 로그인 안내를 기기 언어(ko, 그 밖은 en)로
+  렌더링하고 현재 Expo scheme을 사용한다. 동기화 뒤에는 앱 언어로 만든 snapshot 문구를 쓴다.
+  - iOS `initialProps`는 빌드 시점에 고정되므로 영어 문구와 `localizeStateCopy`를 넘기고, 렌더러가
+    `Text markdownEnabled`(`LocalizedStringKey`)로 위젯 번들의 `Localizable.strings`를 조회한다.
+    SwiftUI Text는 환경 locale(예: ja)의 lproj가 없으면 키를 그대로 보여 주므로 이 키는 영어여야 한다.
+    갤러리 이름은 OS가 번들 언어로 해석하므로 한국어 원문 키를 그대로 쓴다.
+  - Android는 headless 렌더 시 `getDeviceLanguage()`로 `createInitialWidgetProps` 언어를 고른다.
 
 ## Android 위젯에서 앱으로 이동
 
@@ -104,7 +137,7 @@ URI가 유실되는 경우를 실제 재현했다. launchMode 변경이나 OTA �
 ## 검증과 관측
 
 테스트는 한국어 설명과 Given / When / Then을 사용한다. 모델·mapper·저장소·sync·entry hook·handler·
-renderer에서 손상 JSON, 이전 v1, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 검증한다.
+renderer·timeline에서 손상 JSON, 이전 v1, 자정 직전/정각 day 선택, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 검증한다.
 
 ```sh
 pnpm --filter @aido/mobile exec jest --runInBand src/features/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx

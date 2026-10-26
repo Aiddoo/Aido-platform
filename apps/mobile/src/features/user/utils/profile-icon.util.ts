@@ -1,4 +1,4 @@
-import defaultProfileIconImage from '@assets/images/icon.png';
+import defaultProfileIconImage from '@assets/images/profile-icons/default.webp';
 import { APP_ICONS } from '@src/features/app-icon/constants/app-icons';
 import type { ImageSourcePropType } from 'react-native';
 

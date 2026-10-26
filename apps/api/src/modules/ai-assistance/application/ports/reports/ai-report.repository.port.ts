@@ -8,7 +8,10 @@ import type {
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { AiReport } from "../../../domain/entities/reports/ai-report.entity.js";
-import type { ReportType } from "../../../domain/types/reports/ai-report.types.js";
+import type {
+  ReportContentSource,
+  ReportType,
+} from "../../../domain/types/reports/ai-report.types.js";
 
 export const AI_REPORT_REPOSITORY = Symbol("AI_REPORT_REPOSITORY");
 
@@ -34,6 +37,8 @@ export interface CreateAiReportInput {
   locale: SupportedLocale;
   hasActivity: boolean;
   generatedAt: Date;
+  contentSource: ReportContentSource;
+  promptVersion: string | null;
 }
 
 /**

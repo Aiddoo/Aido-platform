@@ -250,13 +250,18 @@ jobs:
       - name: Oxfmt Check
         run: pnpm format:check
 
+      # 위험을 수용한 advisory는 pnpm-workspace.yaml auditConfig.ignoreGhsas에서 관리한다.
+      - name: Dependency audit
+        run: pnpm audit --prod --audit-level high
+
       - name: Type Check
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
         run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
-      - name: Mobile conventions
-        if: needs.gate.outputs.mobile == 'true'
-        run: pnpm --filter @aido/mobile check:conventions
+      # 컨벤션 검사는 apps/api·packages의 규칙도 맡으므로 서버·공유 계약만 바뀐 PR에서도 실행한다.
+      # API 범위는 모바일 의존성이 없으므로 pnpm 스크립트(실행 전 설치) 대신 node로 직접 실행한다.
+      - name: Conventions
+        run: node apps/mobile/scripts/check-mobile-conventions.mjs
 
   test-unit:
     name: Test - Mobile & Contracts
@@ -289,7 +294,7 @@ jobs:
     # GitHub starts, health-checks and stops the service; no container wrapper script.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16.15-alpine
         env:
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
@@ -354,33 +359,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push api image
+      # 검사를 통과한 이미지만 GHCR에 올린다. deploy는 두 이미지가 모두 있는 SHA만 배포한다.
+      - name: Build api image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/api/Dockerfile
           target: production
           platforms: linux/arm64
-          push: true
-          pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
+          load: true
+          push: false
+          pull: true # node:24.22.1-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,scope=api,mode=max
 
-      - name: Build & push migrate image
+      - name: Scan api image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Build migrate image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: apps/api/Dockerfile
           target: migrate
           platforms: linux/arm64
-          push: true
-          pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
+          load: true
+          push: false
+          pull: true # node:24.22.1-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
           cache-from: type=gha,scope=migrate
           cache-to: type=gha,scope=migrate,mode=max
+
+      - name: Scan migrate image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Push images
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push "ghcr.io/aiddoo/aido-platform-api:$IMAGE_TAG"
+          docker push "ghcr.io/aiddoo/aido-platform-migrate:$IMAGE_TAG"
 
       # sha 태그 누적 방지 — 각 패키지 최신 10개만 유지
       - name: Prune old api image versions

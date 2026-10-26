@@ -1,0 +1,35 @@
+appId: com.aido.mobile
+name: 이미 친구인 초대자의 링크(새로 만든 링크 포함)를 다시 열면 보상 없이 친구 피드로 간다
+tags:
+  - failure
+  - full
+  - fresh
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  # B가 첫 링크로 수락해 A와 친구인 상태를 API로 만든 뒤, A가 링크를 새로 만든다
+  - runScript: scripts/redeem.js
+  - runScript: scripts/rotate-code.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+- openLink:
+    label: 새로 만든 링크를 B가 연다
+    link: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- tapOn:
+    id: invite-card-redeem
+# Then: 환영 시트 없이 친구(A)의 피드로 간다. 두 번째 보상은 없다
+- extendedWaitUntil:
+    label: A의 피드
+    visible: '${output.a.name} 프로필.*|${output.a.name} profile.*'
+    timeout: 20000
+- assertNotVisible:
+    id: invite-welcome-sheet
+- assertNotVisible: '프리미엄 .*일을 받았어요|You got .* of Premium'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-failure-already-friends

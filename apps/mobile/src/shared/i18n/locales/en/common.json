@@ -41,7 +41,8 @@
   "premiumDialog": {
     "title": "Premium Feature",
     "close": "Close",
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "subscribeUnlimited": "Go unlimited with Premium"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -98,11 +99,6 @@
     "todo": "To-dos",
     "memo": "Memos",
     "mypage": "Me"
-  },
-  "webview": {
-    "invalidUrl": "Invalid URL",
-    "title": "Browser",
-    "back": "Back"
   },
   "infraErrors": {
     "network": "Please check your internet connection",

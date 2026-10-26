@@ -112,6 +112,14 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       3,
     ],
     [
+      "INVITE_JOINED",
+      0,
+    ],
+    [
+      "INVITE_REWARDED",
+      0,
+    ],
+    [
       "NUDGE_RECEIVED",
       3,
     ],
@@ -219,6 +227,10 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
     ],
     [
       "BILLING_ISSUE",
+      0,
+    ],
+    [
+      "PREMIUM_GRANT_ENDING",
       0,
     ],
     [

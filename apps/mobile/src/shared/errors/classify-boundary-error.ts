@@ -1,3 +1,5 @@
+import { ErrorCode } from '@aido/api/errors';
+
 import { isApiError } from './api-error';
 
 /**
@@ -5,7 +7,8 @@ import { isApiError } from './api-error';
  *
  * - `auth-transition`: 세션이 끝난 뒤 도착한 401. 라우트 게이트가 곧 로그인 화면으로 바꾸므로
  *   화면·리포트 없이 조용히 넘긴다.
- * - `expected-state`: 404 ApiError. 대상이 없거나 아직 등록되지 않은 상태로, fallback이 안내 화면을 그린다.
+ * - `expected-state`: 404 ApiError 또는 기능이 꺼진 4xx(`FEATURE_UNAVAILABLE_CODES`). 대상이 없거나
+ *   아직 등록되지 않았거나 지금 쓸 수 없는 상태로, fallback이 안내 화면을 그린다.
  *   장애가 아니므로 예외 리포트 대신 breadcrumb만 남긴다.
  * - `error`: 진짜 장애(5xx·네트워크·파싱 등). 에러 화면 + 리포트.
  */
@@ -20,12 +23,15 @@ export type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
  * 가 `status`와 결합해 내린다(`app/(app)/_layout.tsx` 안전망 참조). 이 함수는 그 판단의
  * 한 축(에러 종류)만 제공한다.
  */
+/** 서버 플래그로 기능이 꺼졌다는 코드. fallback이 "지금은 쓸 수 없음"을 그린다 */
+const FEATURE_UNAVAILABLE_CODES: ReadonlySet<string> = new Set([ErrorCode.INVITE_2105]);
+
 export const classifyBoundaryError = (error: unknown): BoundaryErrorKind => {
   if (isApiError(error) && error.status === 401) {
     return 'auth-transition';
   }
 
-  if (isApiError(error) && error.status === 404) {
+  if (isApiError(error) && (error.status === 404 || FEATURE_UNAVAILABLE_CODES.has(error.code))) {
     return 'expected-state';
   }
 

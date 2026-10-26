@@ -1,15 +1,17 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
-  getMonthHeaderText,
+  formatDate,
   getWeekdayLabels,
   getNextDay,
   isSameDay,
   isSameMonth,
   startOfDay,
 } from '@src/shared/utils/date';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
@@ -119,6 +121,7 @@ interface DatePickerCalendarProps {
 
 const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) => {
   const { displayMonth, weeks, date: startDate, goToPrevMonth, goToNextMonth } = picker;
+  const dateFormatContext = useDateFormatContext();
 
   return (
     <VStack gap={16}>
@@ -127,7 +130,7 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
           <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-          {getMonthHeaderText(displayMonth)}
+          {formatDateKeyLabel(formatDate(displayMonth), 'yearMonth', dateFormatContext)}
         </Text>
         <PressableFeedback onPress={goToNextMonth} hitSlop={12}>
           <ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />

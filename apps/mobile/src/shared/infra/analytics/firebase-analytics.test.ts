@@ -1,29 +1,26 @@
-import {
-  getAnalytics,
-  resetAnalyticsData,
-  setUserId,
-  setUserProperty,
-} from '@react-native-firebase/analytics';
+import { resetAnalyticsData, setUserId, setUserProperty } from '@react-native-firebase/analytics';
 import type { Logger } from '@src/core/ports/logger';
 
 import { createFirebaseAnalytics } from './firebase-analytics';
 
+const mockGetAnalytics = jest.fn<void, []>();
+const mockAnalyticsLogEvent = jest.fn<Promise<void>, [string, Record<string, unknown>?]>();
+const mockFirebaseAnalytics = { logEvent: mockAnalyticsLogEvent };
+
+// 모듈 mock은 실제 instance 타입을 요구하지 않으므로 adapter가 쓰는 logEvent만 가진 fake를 돌려준다.
 jest.mock('@react-native-firebase/analytics', () => ({
-  getAnalytics: jest.fn(),
+  getAnalytics: () => {
+    mockGetAnalytics();
+    return mockFirebaseAnalytics;
+  },
   resetAnalyticsData: jest.fn(),
   setUserId: jest.fn(),
   setUserProperty: jest.fn(),
 }));
 
-const mockGetAnalytics = getAnalytics as jest.MockedFunction<typeof getAnalytics>;
-const mockResetAnalyticsData = resetAnalyticsData as jest.MockedFunction<typeof resetAnalyticsData>;
-const mockSetUserId = setUserId as jest.MockedFunction<typeof setUserId>;
-const mockSetUserProperty = setUserProperty as jest.MockedFunction<typeof setUserProperty>;
-
-const mockAnalyticsLogEvent = jest.fn<Promise<void>, [string, Record<string, unknown>?]>();
-const firebaseAnalytics = {
-  logEvent: mockAnalyticsLogEvent,
-} as unknown as ReturnType<typeof getAnalytics>;
+const mockResetAnalyticsData = jest.mocked(resetAnalyticsData);
+const mockSetUserId = jest.mocked(setUserId);
+const mockSetUserProperty = jest.mocked(setUserProperty);
 
 const createLogger = (): jest.Mocked<Logger> => ({
   debug: jest.fn(),
@@ -34,7 +31,6 @@ const createLogger = (): jest.Mocked<Logger> => ({
 
 describe('createFirebaseAnalytics', () => {
   beforeEach(() => {
-    mockGetAnalytics.mockReturnValue(firebaseAnalytics);
     mockAnalyticsLogEvent.mockResolvedValue(undefined);
     mockSetUserId.mockResolvedValue(undefined);
     mockSetUserProperty.mockResolvedValue(undefined);
@@ -137,8 +133,13 @@ describe('createFirebaseAnalytics', () => {
     analytics.setUserProperties({ streak: 7, premium: true });
     await Promise.resolve();
 
-    expect(mockSetUserProperty).toHaveBeenNthCalledWith(1, firebaseAnalytics, 'streak', '7');
-    expect(mockSetUserProperty).toHaveBeenNthCalledWith(2, firebaseAnalytics, 'premium', 'true');
+    expect(mockSetUserProperty).toHaveBeenNthCalledWith(1, mockFirebaseAnalytics, 'streak', '7');
+    expect(mockSetUserProperty).toHaveBeenNthCalledWith(
+      2,
+      mockFirebaseAnalytics,
+      'premium',
+      'true',
+    );
     expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.set-user-property.failed', {
       key: 'streak',
       error: 'property rejected',
@@ -153,7 +154,7 @@ describe('createFirebaseAnalytics', () => {
     analytics.resetData();
     await Promise.resolve();
 
-    expect(mockResetAnalyticsData).toHaveBeenCalledWith(firebaseAnalytics);
+    expect(mockResetAnalyticsData).toHaveBeenCalledWith(mockFirebaseAnalytics);
     expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.reset-data.failed', {
       error: 'reset rejected',
     });

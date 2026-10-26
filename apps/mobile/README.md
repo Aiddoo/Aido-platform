@@ -101,3 +101,5 @@ pnpm update:production "메시지"
 스토어 문구·스크린샷 순서·릴리스 체크리스트의 단일 준비본은
 [`store-metadata/1.8.0/release.json`](./store-metadata/1.8.0/release.json)을
 참고합니다. 이 파일을 변경해도 외부 스토어에 자동 게시되지는 않습니다.
+한·영 스토어 등록 정보(이름·부제·설명·키워드·업데이트 내용)는
+[`store-metadata/listing/`](./store-metadata/listing/README.md)에 있고 `pnpm store:check`로 검사합니다.

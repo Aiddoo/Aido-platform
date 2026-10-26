@@ -33,7 +33,7 @@ export class MarkAsRead {
     const record =
       await this.#dependencies.notificationInboxReader.findNotificationById(notificationId);
 
-    if (record === null) {
+    if (record == null) {
       throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {
         notificationId,
       });

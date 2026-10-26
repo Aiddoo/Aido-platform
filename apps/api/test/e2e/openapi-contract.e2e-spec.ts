@@ -12,7 +12,9 @@
 
 import { createHash } from "node:crypto";
 
+import { ErrorCode } from "@aido/api/errors";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { z } from "zod";
 
 import { convertStandardSchema } from "#api/platform/http/swagger/standard-schema.converter";
 
@@ -58,13 +60,13 @@ function stableContract(value: unknown, parentKey?: string): unknown {
     return value;
   }
 
-  const record = value as Record<string, unknown>;
+  const children = new Map<string, unknown>(Object.entries(value));
   const isJsonSchemaPropertiesMap = parentKey === "properties";
   return Object.fromEntries(
-    Object.keys(record)
+    [...children.keys()]
       .filter((key) => isJsonSchemaPropertiesMap || !DOCUMENTATION_ONLY_FIELDS.has(key))
       .sort()
-      .map((key) => [key, stableContract(record[key], key)]),
+      .map((key) => [key, stableContract(children.get(key), key)]),
   );
 }
 
@@ -72,6 +74,44 @@ function contractFingerprint(value: unknown): string {
   return createHash("sha256")
     .update(JSON.stringify(stableContract(value)))
     .digest("hex");
+}
+
+/**
+ * Zod schema 없이 원시 query 값을 받는 엔드포인트. 입력 검증 실패 400(SYS_0002)이 나가지 않는다.
+ * 배포된 브라우저 OAuth 흐름(start → 공급자 → web-callback)은 공급자가 붙이는 query를 그대로 받아
+ * 오류를 앱 딥링크로 돌려보내므로 400 응답으로 바꾸지 않는다.
+ * 새 엔드포인트는 `@Param/@Query/@Body({ schema })`로 검증하고 이 목록에 더하지 않는다.
+ */
+const RAW_INPUT_OPERATIONS = [
+  "GET /v1/auth/google/start",
+  "GET /v1/auth/google/web-callback",
+  "GET /v1/auth/kakao/start",
+  "GET /v1/auth/kakao/web-callback",
+  "GET /v1/auth/naver/start",
+  "GET /v1/auth/naver/web-callback",
+];
+
+const errorResponseCodeSchema = z.object({
+  content: z.object({
+    "application/json": z.object({
+      schema: z.object({
+        properties: z.object({
+          error: z.object({
+            properties: z.object({
+              code: z.object({ enum: z.array(z.string()).optional(), example: z.string() }),
+            }),
+          }),
+        }),
+      }),
+    }),
+  }),
+});
+
+/** 응답에 선언된 오류 코드 목록. 단일 코드 응답은 example 하나, 여러 코드 응답은 enum 전체다. */
+function declaredErrorCodes(response: unknown): string[] {
+  const { schema } = errorResponseCodeSchema.parse(response).content["application/json"];
+  const code = schema.properties.error.properties.code;
+  return code.enum ?? [code.example];
 }
 
 function selectReleasedContract(
@@ -141,6 +181,165 @@ describe("OpenAPI 계약 (e2e)", () => {
     expect(document.components).toMatchSnapshot("openapi-components");
   });
 
+  it("친구 초대 API는 operationId·인증·오류 상태를 문서에 선언한다", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+
+    // When
+    const operations = {
+      availability: document.paths["/v1/invites/availability"]?.get,
+      myInvite: document.paths["/v1/invites/me"]?.get,
+      rotate: document.paths["/v1/invites/me/rotate"]?.post,
+      invitees: document.paths["/v1/invites/me/invitees"]?.get,
+      preview: document.paths["/v1/invites/{code}"]?.get,
+      redeem: document.paths["/v1/invites/{code}/redeem"]?.post,
+    };
+
+    // Then
+    expect(Object.values(operations).map((operation) => operation?.operationId)).toEqual([
+      "getInviteAvailability",
+      "getMyInvite",
+      "rotateInviteCode",
+      "getInvitedFriends",
+      "getInvitePreview",
+      "redeemInvite",
+    ]);
+    expect(operations.preview?.security).toBeUndefined();
+    expect(operations.myInvite?.security).toEqual([{ bearer: [] }]);
+    expect(Object.keys(operations.preview?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "403", "404", "410", "429"]),
+    );
+    expect(Object.keys(operations.preview?.responses ?? {})).not.toContain("401");
+    expect(Object.keys(operations.rotate?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "401", "403", "429"]),
+    );
+    expect(Object.keys(operations.redeem?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404", "409", "410", "429"]),
+    );
+  });
+
+  it("같은 상태 코드로 나가는 오류 코드를 모두 문서에 선언한다", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+    const redeemResponses = document.paths["/v1/invites/{code}/redeem"]?.post?.responses ?? {};
+    const parseTodoResponses = document.paths["/v1/ai/parse-todo"]?.post?.responses ?? {};
+    const parseMemoResponses = document.paths["/v1/ai/parse-memo"]?.post?.responses ?? {};
+    const linkResponses = document.paths["/v1/auth/link"]?.post?.responses ?? {};
+    const deleteCategoryResponses =
+      document.paths["/v1/todo-categories/{id}"]?.delete?.responses ?? {};
+
+    // When
+    const declared = {
+      redeem: {
+        400: declaredErrorCodes(redeemResponses["400"]),
+        403: declaredErrorCodes(redeemResponses["403"]),
+        404: declaredErrorCodes(redeemResponses["404"]),
+        409: declaredErrorCodes(redeemResponses["409"]),
+        410: declaredErrorCodes(redeemResponses["410"]),
+      },
+      parseTodo: { 429: declaredErrorCodes(parseTodoResponses["429"]) },
+      parseMemo: { 429: declaredErrorCodes(parseMemoResponses["429"]) },
+      linkSocialAccount: { 409: declaredErrorCodes(linkResponses["409"]) },
+      deleteTodoCategory: { 400: declaredErrorCodes(deleteCategoryResponses["400"]) },
+    };
+
+    // Then - 한 상태에 하나만 남기던 데코레이터 중첩으로 코드가 빠지면 안 된다
+    expect(declared).toEqual({
+      redeem: {
+        400: [ErrorCode.INVITE_2103, ErrorCode.SYS_0002],
+        403: [ErrorCode.BLOCK_2204, ErrorCode.INVITE_2105, ErrorCode.INVITE_2106],
+        404: [ErrorCode.INVITE_2101, ErrorCode.USER_0601],
+        409: [ErrorCode.INVITE_2104],
+        410: [ErrorCode.INVITE_2102],
+      },
+      parseTodo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
+      parseMemo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
+      linkSocialAccount: {
+        409: [
+          ErrorCode.APPLE_0355,
+          ErrorCode.GOOGLE_0405,
+          ErrorCode.KAKAO_0306,
+          ErrorCode.NAVER_0455,
+        ],
+      },
+      deleteTodoCategory: {
+        400: [ErrorCode.SYS_0002, ErrorCode.TODO_CATEGORY_0854, ErrorCode.TODO_CATEGORY_0855],
+      },
+    });
+  });
+
+  it("요청 path·query·body를 검증하는 모든 엔드포인트는 400에 검증 실패 SYS_0002를 선언한다", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+    const operationSchema = z.object({
+      parameters: z.array(z.object({ in: z.string() })).optional(),
+      requestBody: z.unknown().optional(),
+      responses: z.record(z.string(), z.unknown()),
+    });
+
+    // When - 입력이 있는데 400에 SYS_0002가 없는 operation
+    const missing = Object.entries(document.paths).flatMap(([route, pathItem]) =>
+      Object.entries(pathItem).flatMap(([method, operation]) => {
+        const parsed = operationSchema.safeParse(operation);
+        if (!parsed.success) {
+          return [];
+        }
+        const { parameters = [], requestBody, responses } = parsed.data;
+        const hasInput =
+          requestBody != null ||
+          parameters.some((parameter) => parameter.in === "path" || parameter.in === "query");
+        const operationName = `${method.toUpperCase()} ${route}`;
+        if (!hasInput || RAW_INPUT_OPERATIONS.includes(operationName)) {
+          return [];
+        }
+        const badRequest = errorResponseCodeSchema.safeParse(responses["400"]);
+        const codes = badRequest.success
+          ? (badRequest.data.content["application/json"].schema.properties.error.properties.code
+              .enum ?? [
+              badRequest.data.content["application/json"].schema.properties.error.properties.code
+                .example,
+            ])
+          : [];
+        return codes.includes(ErrorCode.SYS_0002) ? [] : [operationName];
+      }),
+    );
+
+    // Then
+    expect(missing).toEqual([]);
+  });
+
+  it("오류 응답 schema는 content 안에만 둔다 (공통 응답이 선언한 응답을 덮지 않는다)", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+
+    // When - content 밖 response.schema로 떠 있는 응답
+    const strayResponses = Object.entries(document.paths).flatMap(([route, pathItem]) =>
+      Object.entries(pathItem).flatMap(([method, operation]) =>
+        Object.entries(
+          z.object({ responses: z.record(z.string(), z.unknown()) }).safeParse(operation).data
+            ?.responses ?? {},
+        )
+          .filter(([, response]) => z.object({ schema: z.unknown() }).safeParse(response).success)
+          .map(([status]) => `${method.toUpperCase()} ${route} ${status}`),
+      ),
+    );
+
+    // Then
+    expect(strayResponses).toEqual([]);
+  });
+
   it.each(RELEASED_OPENAPI_CONTRACTS)(
     "스토어 배포된 $releasedClientVersion 클라이언트의 요청·응답·상태 코드 계약을 보존한다",
     (releasedContract) => {
@@ -149,7 +348,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       const document = SwaggerModule.createDocument(ctx.app, config, {
         standardSchemaConverter: convertStandardSchema,
       });
-      const currentSchemas = (document.components?.schemas ?? {}) as Record<string, unknown>;
+      const currentSchemas: Record<string, unknown> = document.components?.schemas ?? {};
       const currentPaths = Object.fromEntries(
         Object.entries(document.paths).map(([route, contract]) => [
           route === "/health" ? route : route.replace(/^\/v1/, ""),

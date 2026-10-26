@@ -1,6 +1,7 @@
 import {
   getNudgeInteractionsQuerySchema,
   nudgeReplyKindSchema,
+  nudgeThanksPreviewResponseSchema,
   type TodoVisibility,
 } from '@aido/api';
 import { match } from 'ts-pattern';
@@ -73,8 +74,23 @@ export const nudgeThanksPreviewSchema = z.object({
       profileImage: z.string().nullable(),
     }),
   ),
+  thankedRecipientCount: nudgeThanksPreviewResponseSchema.shape.thankedRecipientCount.unwrap(),
+  lastThankedAt: z.date().nullable(),
 });
 export type NudgeThanksPreview = z.infer<typeof nudgeThanksPreviewSchema>;
+
+export const nudgeThanksSummaryStateSchema = z.enum([
+  'NONE',
+  'PENDING',
+  'SENT',
+  'SENT_WITH_PENDING',
+]);
+export type NudgeThanksSummaryState = z.infer<typeof nudgeThanksSummaryStateSchema>;
+
+export interface NudgeThanksSummary {
+  state: NudgeThanksSummaryState;
+  pendingRecipientCount: number;
+}
 
 export function getNudgeInteractionStatusOf(
   nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
@@ -107,9 +123,30 @@ export function isThankablePreview(
   return preview.throughNudgeId != null && preview.recipients.length > 0;
 }
 
+export function getNudgeThanksSummary(
+  preview: Pick<
+    NudgeThanksPreview,
+    'throughNudgeId' | 'recipients' | 'totalRecipients' | 'thankedRecipientCount'
+  >,
+): NudgeThanksSummary {
+  const pendingRecipientCount = isThankablePreview(preview) ? preview.totalRecipients : 0;
+  const state = match({
+    hasPending: pendingRecipientCount > 0,
+    hasThanked: preview.thankedRecipientCount > 0,
+  })
+    .returnType<NudgeThanksSummaryState>()
+    .with({ hasPending: true, hasThanked: true }, () => 'SENT_WITH_PENDING')
+    .with({ hasPending: true, hasThanked: false }, () => 'PENDING')
+    .with({ hasPending: false, hasThanked: true }, () => 'SENT')
+    .with({ hasPending: false, hasThanked: false }, () => 'NONE')
+    .exhaustive();
+  return { state, pendingRecipientCount };
+}
+
 export const NudgeInteractionPolicy = {
   getStatus: getNudgeInteractionStatusOf,
   isThankableTodo,
   isReplyable: isReplyableNudge,
   isThankable: isThankablePreview,
+  getThanksSummary: getNudgeThanksSummary,
 } as const;

@@ -25,6 +25,12 @@ const ExtraSchema = z.object({
   revenueCatTestApiKey: z.string().optional(),
   sentryDsn: z.string().optional(),
   sentryDebug: z.boolean().optional(),
+  // .env의 빈 값(EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=)은 키가 없는 빌드로 본다
+  kakaoNativeAppKey: z
+    .string()
+    .trim()
+    .optional()
+    .transform((key) => (key == null || key.length === 0 ? undefined : key)),
 });
 
 // =============================================================================
@@ -46,6 +52,10 @@ type ApiUrlContext = {
 // =============================================================================
 
 const extra = ExtraSchema.parse(Constants.expoConfig?.extra);
+
+/** 카카오톡 공유 버튼이 앱을 여는 스킴(kakao{네이티브 앱 키}). 키가 없는 빌드는 null */
+const resolveKakaoScheme = (kakaoNativeAppKey: string | undefined) =>
+  kakaoNativeAppKey == null ? null : `kakao${kakaoNativeAppKey}`;
 
 /**
  * Expo Metro 번들러의 hostUri에서 개발 머신 IP를 자동으로 추출
@@ -150,6 +160,10 @@ export const ENV = {
     googleApiKey: extra.revenueCatGoogleApiKey,
     testApiKey: extra.revenueCatTestApiKey,
   }),
+
+  // 카카오톡 공유 SDK 키(publishable). 없으면 OS 공유로 대신한다
+  KAKAO_NATIVE_APP_KEY: extra.kakaoNativeAppKey,
+  KAKAO_SCHEME: resolveKakaoScheme(extra.kakaoNativeAppKey),
 
   SENTRY_DSN: extra.sentryDsn,
   // 프로덕션이면 항상 활성. 개발/preview는 기본 비활성이며 EXPO_PUBLIC_SENTRY_DEBUG=true일 때만 활성(테스트용).

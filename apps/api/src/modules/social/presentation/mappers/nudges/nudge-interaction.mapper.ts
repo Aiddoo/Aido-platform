@@ -47,6 +47,7 @@ export abstract class NudgeInteractionMapper {
   ): NudgeThanksPreviewResponse {
     return {
       ...preview,
+      lastThankedAt: toISOStringOrNull(preview.lastThankedAt),
       recipients: preview.recipients.map((user) =>
         NudgeInteractionMapper.toUserDto(user, appVersion),
       ),

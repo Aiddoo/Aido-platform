@@ -1,4 +1,8 @@
 export {
+  USER_APP_VERSION_READER,
+  type UserAppVersionReaderPort,
+} from "./application/ports/auth/user-app-version.reader.port.js";
+export {
   USER_MUTATION_LOCK,
   type UserMutationLockPort,
 } from "./application/ports/auth/user-mutation-lock.port.js";

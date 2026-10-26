@@ -395,7 +395,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     let reads = 0;
     vi.spyOn(fixture.userRepository, "findById").mockImplementation(async (id) => {
       const user = await originalRead(id);
-      if (user === null) return null;
+      if (user == null) return null;
       return ++reads === 1 ? user : { ...user, role: "ADMIN" };
     });
     // When

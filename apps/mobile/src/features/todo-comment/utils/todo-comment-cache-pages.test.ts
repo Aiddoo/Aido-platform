@@ -54,7 +54,7 @@ function createOverviewPages(): OverviewPages {
               totalCount: 1,
               hiddenCount: 0,
               hasMore: false,
-              participantAuthors: previewReply.author === null ? [] : [previewReply.author],
+              participantAuthors: previewReply.author == null ? [] : [previewReply.author],
             },
           },
         ],
@@ -75,7 +75,7 @@ describe('todo comment cache pages', () => {
   test('같은 댓글을 conversation과 overview preview에서 함께 변환한다', () => {
     const overview = createOverviewPages();
     const previewReply = overview.pages[0]?.items[0]?.previewReply;
-    if (previewReply === null || previewReply === undefined) {
+    if (previewReply == null) {
       throw new Error('preview reply is required');
     }
     const conversationResult = patchTodoCommentConversationPages(
@@ -97,7 +97,7 @@ describe('todo comment cache pages', () => {
     const focused = createTodoCommentReply(root);
     const pages = createConversationPages([focused]);
     const page = pages.pages[0];
-    if (page === undefined) {
+    if (page == null) {
       throw new Error('conversation page is required');
     }
     const withFocus: ConversationPages = {
@@ -138,7 +138,7 @@ describe('todo comment cache pages', () => {
   test('conversation에 없는 대표 답글도 overview snapshot에서 찾는다', () => {
     const overview = createOverviewPages();
     const previewReply = overview.pages[0]?.items[0]?.previewReply;
-    if (previewReply === null || previewReply === undefined) {
+    if (previewReply == null) {
       throw new Error('preview reply is required');
     }
 
@@ -155,7 +155,7 @@ describe('todo comment cache pages', () => {
     ]);
     const latestSnapshot = findTodoCommentInConversationPages(latestPages, targetId);
     const staleSnapshot = findTodoCommentInConversationPages(stalePages, targetId);
-    if (latestSnapshot === undefined || staleSnapshot === undefined) {
+    if (latestSnapshot == null || staleSnapshot == null) {
       throw new Error('comment snapshots are required');
     }
 

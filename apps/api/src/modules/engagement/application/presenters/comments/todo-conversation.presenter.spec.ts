@@ -23,9 +23,11 @@ function createRecord(
     rootId: depth === 0 ? null : ROOT_ID,
     path: [],
     depth,
+    parentAuthorId: null,
     parentAuthorName: null,
     authorId: `author-${id}`,
     authorName: id,
+    authorUserTag: null,
     authorProfileImage: null,
     todoOwnerId: "owner",
     content: id,
@@ -50,6 +52,7 @@ function toItems(
     nextRecord: boundary.nextRecord ?? null,
     focusCommentId: null,
     viewerId: VIEWER_ID,
+    blockedAuthorIds: new Set(),
     likedCommentIds: new Set(),
   });
 }
@@ -142,6 +145,7 @@ describe("할 일 대화 응답 변환", () => {
     const result = toTodoConversationAncestorItems({
       records: [root, parent] satisfies TodoCommentRecord[],
       viewerId: VIEWER_ID,
+      blockedAuthorIds: new Set(),
       likedCommentIds: new Set(),
     });
 

@@ -58,6 +58,8 @@ function DeleteAccountScreen() {
                 placeholder={t('deleteAccount.passwordPlaceholder')}
                 value={value}
                 onChange={onChange}
+                textContentType="password"
+                autoComplete="password"
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="done"

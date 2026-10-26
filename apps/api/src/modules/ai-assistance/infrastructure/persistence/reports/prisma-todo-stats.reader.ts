@@ -52,7 +52,7 @@ export class PrismaTodoStatsReader implements TodoStatsReaderPort {
 
       completed.map((row) => ({
         startDate: new Date(`${row.startDate}T00:00:00.000Z`),
-        completedAt: row.completedAt === null ? null : new Date(`${row.completedAt}Z`),
+        completedAt: row.completedAt == null ? null : new Date(`${row.completedAt}Z`),
       })),
     );
   }

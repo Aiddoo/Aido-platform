@@ -7,7 +7,7 @@ export class CheerMessage {
   private constructor(private readonly text: string | null) {}
 
   static of(value?: string | null): CheerMessage {
-    if (value === null || value === undefined) {
+    if (value == null) {
       return new CheerMessage(null);
     }
     if (value.length > CHEER_LIMITS.MAX_MESSAGE_LENGTH) {

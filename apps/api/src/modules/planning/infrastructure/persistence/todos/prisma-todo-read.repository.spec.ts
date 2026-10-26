@@ -64,7 +64,7 @@ for (const publicOnly of [false, true]) {
       assertNativeWhere("Todo", db.orm.public.Todo.where.mock.calls[1]?.[0], (todo) =>
         todo.id.eq(cursor),
       );
-      if (anchor.category === null) throw new TypeError("Missing cursor category");
+      if (anchor.category == null) throw new TypeError("Missing cursor category");
       const categoryOrder = anchor.category.sortOrder;
       assertNativeWhere("Todo", db.orm.public.Todo.where.mock.calls[2]?.[0], (todo) =>
         or(

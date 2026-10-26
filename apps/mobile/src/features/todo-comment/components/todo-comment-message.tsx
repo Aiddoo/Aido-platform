@@ -1,5 +1,12 @@
+import {
+  blockUserConfirmHref,
+  commentReportSheetHref,
+} from '@src/features/moderation/utils/navigation/moderation-href';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   Box,
   ChatBubbleIcon,
@@ -12,13 +19,17 @@ import {
   MoreIcon,
   Text,
   TextSkeleton,
+  useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
-import { formatRelativeTime } from '@src/shared/utils/date';
+import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
+import { compact } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { Menu, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { useRef, useState, type ComponentProps } from 'react';
+import { match } from 'ts-pattern';
 
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentNavigation } from '../hooks/use-todo-comment-navigation';
@@ -34,18 +45,21 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
   const navigation = useTodoCommentNavigation(comment);
   const isActive = TodoCommentPolicy.isActive(comment);
   const { t } = useTranslation('todoComment');
+  const accessibilityLabel = useCommentAccessibilityLabel(comment);
 
   return (
-    <VStack gap={3} className="min-w-0">
-      <HStack align="start" justify="between" gap={8} className="min-w-0">
+    <HStack align="start" gap={8} className="min-w-0">
+      <VStack gap={3} className="min-w-0 flex-1">
         <PressableFeedback
           onPress={navigation.openConversation}
           animation={false}
           isAnimatedStyleActive={false}
           accessibilityRole="button"
-          accessibilityLabel={t('actions.openConversation')}
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint={t('actions.openConversation')}
           accessibilityState={{ selected: isFocused }}
-          className="min-h-11 min-w-0 flex-1 justify-center overflow-visible rounded-xl"
+          className="min-h-11 min-w-0 justify-center overflow-visible rounded-xl"
+          testID={`todo-comment-open-conversation-${comment.id}`}
         >
           <PressableFeedback.Highlight className="rounded-xl" />
           <VStack gap={3}>
@@ -53,82 +67,151 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
             <CommentBody comment={comment} />
           </VStack>
         </PressableFeedback>
-        {isActive && (
-          <Box className="shrink-0">
-            <CommentActionMenu
-              comment={comment}
-              isEditPreparing={navigation.isPreparing}
-              canOpenEdit={navigation.canStartEdit}
-              onEdit={navigation.startEdit}
-            />
-          </Box>
-        )}
-      </HStack>
 
-      {isActive && (
-        <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
-          <HStack align="center">
-            <CommentLikeButton comment={comment} />
-            <CommentReplyButton
-              comment={comment}
-              isPreparing={navigation.isPreparing}
-              canOpenReply={navigation.canStartReply}
-              onPress={navigation.startReply}
-            />
-          </HStack>
-        </VStack>
-      )}
-    </VStack>
+        {isActive && (
+          <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
+            <HStack align="center">
+              <CommentLikeButton comment={comment} testID={`todo-comment-like-${comment.id}`} />
+              <CommentReplyButton
+                comment={comment}
+                testID={`todo-comment-reply-${comment.id}`}
+                isPreparing={navigation.isPreparing}
+                canOpenReply={navigation.canStartReply}
+                onPress={navigation.startReply}
+              />
+            </HStack>
+          </VStack>
+        )}
+      </VStack>
+
+      {/* 메뉴가 없는 댓글도 같은 폭을 남겨 본문 폭이 행마다 같게 한다 */}
+      <Box className="size-11 shrink-0 items-center justify-center">
+        {TodoCommentPolicy.hasActions(comment) && (
+          <CommentActionMenu
+            comment={comment}
+            isEditPreparing={navigation.isPreparing}
+            canOpenEdit={navigation.canStartEdit}
+            onEdit={navigation.startEdit}
+          />
+        )}
+      </Box>
+    </HStack>
   );
 }
 
 TodoCommentMessage.Loading = function Loading() {
   return (
-    <VStack gap={3} className="min-w-0">
-      <Box className="min-h-11 justify-center">
-        <VStack gap={3}>
-          <TextSkeleton size="b4" className="w-24" />
-          <TextSkeleton size="b3" className="w-4/5" />
+    <HStack align="start" gap={8} className="min-w-0">
+      <VStack gap={3} className="min-w-0 flex-1">
+        <Box className="min-h-11 justify-center">
+          <VStack gap={3}>
+            <HStack align="center" gap={4}>
+              <TextSkeleton size="b4" className="w-24" />
+              <TextSkeleton size="e1" className="ml-auto w-10" />
+            </HStack>
+            <TextSkeleton size="b3" className="w-4/5" />
+          </VStack>
+        </Box>
+        <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
+          <HStack align="center">
+            {times(2, (index) => (
+              <Box
+                key={index}
+                className="min-h-11 min-w-11 items-center justify-center px-2 py-1.5"
+              >
+                <Skeleton
+                  className="rounded-full"
+                  style={{
+                    width: ICON_COUNT_BUTTON_ICON_SIZE,
+                    height: ICON_COUNT_BUTTON_ICON_SIZE,
+                  }}
+                />
+              </Box>
+            ))}
+          </HStack>
         </VStack>
-      </Box>
-      <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
-        <HStack align="center">
-          {times(2, (index) => (
-            <Box key={index} className="min-h-11 min-w-11 items-center justify-center px-2 py-1.5">
-              <Skeleton
-                className="rounded-full"
-                style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
-              />
-            </Box>
-          ))}
-        </HStack>
       </VStack>
-    </VStack>
+      <Box className="size-11 shrink-0" />
+    </HStack>
   );
 };
 
+/** 댓글 시간. 수정했으면 "수정됨"을 이어 붙인다 */
+function useCommentTimeLabel(comment: TodoComment) {
+  const { t } = useTranslation('todoComment');
+  const dateFormatContext = useDateFormatContext();
+
+  return [
+    formatRelativeTimeLabel(comment.createdAt, new Date(), dateFormatContext),
+    ...(comment.isEdited ? [t('list.edited')] : []),
+  ].join(' · ');
+}
+
+/**
+ * 대화 열기 버튼 하나가 행을 덮으므로 VoiceOver·TalkBack이 작성자·본문·시간을 한 번에 읽도록 화면에
+ * 보이는 순서대로 라벨을 만든다. 무엇을 하는지는 hint가 알린다.
+ */
+function useCommentAccessibilityLabel(comment: TodoComment) {
+  const { t } = useTranslation('todoComment');
+  const timeLabel = useCommentTimeLabel(comment);
+  const userTag = comment.author?.userTag;
+  const mention = comment.replyTo?.authorName;
+  const body = match(comment)
+    .with({ isDeleted: true, isAuthorBlocked: true }, () => t('list.blockedAuthor'))
+    .with({ isDeleted: true }, () => t('list.deleted'))
+    .otherwise(({ content }) =>
+      compact([mention == null ? null : `@${mention}`, content]).join(' '),
+    );
+
+  return compact([
+    comment.author?.name ?? t('list.unknownUser'),
+    userTag == null ? null : `#${userTag}`,
+    comment.author?.isTodoOwner === true ? t('list.authorBadge') : null,
+    body,
+    timeLabel,
+  ]).join(', ');
+}
+
+/**
+ * 이름만 말줄임되고 태그·작성자 배지·시간은 줄지 않는다. 가장 큰 글자에서는 한 줄에 다 담기지 않아
+ * 태그와 시간을 둘째 줄로 내린다.
+ */
 function CommentAuthorLine({ comment }: { comment: TodoComment }) {
   const { t } = useTranslation('todoComment');
+  const { fontScale } = useFontScale();
+  const userTag = comment.author?.userTag;
+  const tagLabel = userTag == null ? null : `#${userTag}`;
+  const timeLabel = useCommentTimeLabel(comment);
+  const isMetaOnSecondLine = fontScale === 'xlarge';
 
   return (
-    <HStack gap={4} align="center" className="min-w-0 flex-wrap">
-      <Text size="b4" weight="semibold" className="max-w-full shrink">
-        {comment.author?.name ?? t('list.unknownUser')}
-      </Text>
-      {comment.author?.isTodoOwner === true && (
-        <Text size="e2" tone="brand">
-          {t('list.authorBadge')}
+    <VStack gap={1} className="min-w-0">
+      <HStack gap={4} align="baseline" className="min-w-0">
+        <Text size="b4" weight="semibold" maxLines={1} className="min-w-0 shrink">
+          {comment.author?.name ?? t('list.unknownUser')}
+        </Text>
+        {!isMetaOnSecondLine && tagLabel != null && (
+          <Text size="e1" shade={7} className="shrink-0">
+            {tagLabel}
+          </Text>
+        )}
+        {comment.author?.isTodoOwner === true && (
+          <Text size="e2" tone="brand" className="shrink-0">
+            {t('list.authorBadge')}
+          </Text>
+        )}
+        {!isMetaOnSecondLine && (
+          <Text size="e1" shade={7} className="ml-auto shrink-0 pl-2 tabular-nums">
+            {timeLabel}
+          </Text>
+        )}
+      </HStack>
+      {isMetaOnSecondLine && (
+        <Text size="e1" shade={7} className="tabular-nums">
+          {[tagLabel, timeLabel].filter((label) => label != null).join(' · ')}
         </Text>
       )}
-      <Text size="e1" shade={5}>
-        {formatRelativeTime(comment.createdAt, new Date())}
-      </Text>
-      {comment.isEdited && (
-        <Text size="e1" shade={5}>
-          {t('list.edited')}
-        </Text>
-      )}
-    </HStack>
+    </VStack>
   );
 }
 
@@ -138,8 +221,14 @@ function CommentBody({ comment }: { comment: TodoComment }) {
 
   if (comment.isDeleted) {
     return (
-      <Text size="b4" shade={6}>
-        {t('list.deleted')}
+      <Text
+        size="b4"
+        shade={6}
+        testID={
+          comment.isAuthorBlocked ? `todo-comment-blocked-placeholder-${comment.id}` : undefined
+        }
+      >
+        {comment.isAuthorBlocked ? t('list.blockedAuthor') : t('list.deleted')}
       </Text>
     );
   }
@@ -176,13 +265,29 @@ function CommentActionMenu({
   onEdit,
 }: CommentActionMenuProps) {
   const { todoId } = useTodoScreenParams();
-  const { t } = useTranslation('todoComment');
+  const { t } = useTranslation(['todoComment', 'moderation']);
+  const push = useSingleTap(router.push);
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const [isOpen, setIsOpen] = useState(false);
+  const confirmDialog = useConfirmDialog();
+  const author = comment.author;
 
-  if (!TodoCommentPolicy.canManage(comment)) {
-    return null;
-  }
+  // 내 댓글은 바로 지우고, 내 할 일에 달린 남의 댓글은 모두에게서 사라진다는 것을 확인받는다
+  const handleDelete = async () => {
+    if (TodoCommentPolicy.isDeletingOthers(comment)) {
+      const isConfirmed = await confirmDialog.open({
+        title: t('deleteOthersConfirm.title'),
+        description: t('deleteOthersConfirm.description'),
+        confirmLabel: t('deleteOthersConfirm.confirm'),
+        confirmColor: 'danger',
+        cancelLabel: t('actions.cancel'),
+      });
+      if (!isConfirmed) {
+        return;
+      }
+    }
+    deleteComment.mutate({ commentId: comment.id });
+  };
 
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
@@ -191,6 +296,7 @@ function CommentActionMenu({
           hitSlop={10}
           className="min-h-11 min-w-11 items-center justify-center py-1"
           isDisabled={deleteComment.isPending}
+          testID={`todo-comment-more-${comment.id}`}
           accessibilityRole="button"
           accessibilityLabel={t('actions.more')}
           accessibilityState={{
@@ -217,12 +323,32 @@ function CommentActionMenu({
             </Menu.Item>
           )}
           {TodoCommentPolicy.canDelete(comment) && (
+            <Menu.Item variant="danger" isDisabled={deleteComment.isPending} onPress={handleDelete}>
+              <Menu.ItemTitle>{t('actions.delete')}</Menu.ItemTitle>
+            </Menu.Item>
+          )}
+          {TodoCommentPolicy.canReport(comment) && (
+            <Menu.Item
+              onPress={() => push(commentReportSheetHref({ todoId, commentId: comment.id }))}
+              testID="todo-comment-report"
+            >
+              <Menu.ItemTitle>{t('actions.report')}</Menu.ItemTitle>
+            </Menu.Item>
+          )}
+          {author != null && TodoCommentPolicy.canBlockAuthor(comment) && (
             <Menu.Item
               variant="danger"
-              isDisabled={deleteComment.isPending}
-              onPress={() => deleteComment.mutate({ commentId: comment.id })}
+              testID="todo-comment-block"
+              onPress={() =>
+                push(
+                  blockUserConfirmHref({
+                    userId: author.id,
+                    displayName: author.name ?? t('moderation:fallbackName'),
+                  }),
+                )
+              }
             >
-              <Menu.ItemTitle>{t('actions.delete')}</Menu.ItemTitle>
+              <Menu.ItemTitle>{t('actions.block')}</Menu.ItemTitle>
             </Menu.Item>
           )}
         </Menu.Content>
@@ -264,6 +390,7 @@ function CommentLikeButton({ comment, ...buttonProps }: CommentLikeButtonProps) 
         )
       }
       count={comment.likeCount}
+      countDisplay="compact"
       isDisabled={!TodoCommentPolicy.canLike(comment) || likeComment.isPending}
       accessibilityLabel={
         buttonProps.accessibilityLabel ??
@@ -341,6 +468,7 @@ function CommentReplyButton({
         )
       }
       count={comment.replyCount}
+      countDisplay="compact"
       isDisabled={isDisabled}
       accessibilityLabel={t('actions.replyWithCount', {
         name: authorName,

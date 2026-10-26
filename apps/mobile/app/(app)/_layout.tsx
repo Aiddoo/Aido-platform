@@ -16,11 +16,16 @@ const SHEET_ROUTES = [
   'todo/[todoId]/time',
   'todo/[todoId]/category',
   'todo/[todoId]/thanks',
+  'todo/[todoId]/report',
+  'todo/[todoId]/comments/[commentId]/report',
   'todo/[todoId]/sub-todos/new',
   'todo/[todoId]/sub-todos/[subTodoId]/actions',
   'todo/[todoId]/sub-todos/[subTodoId]/edit',
   'todo-categories/new',
   'todo-categories/[categoryId]/edit',
+  'invite-welcome/[friendId]',
+  'users/[userId]/block',
+  'users/[userId]/report',
 ] as const;
 
 export const unstable_settings = {
@@ -37,7 +42,7 @@ function AppLayout() {
           headerShown: false,
           animation: 'slide_from_right',
           animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor: backgroundColor as string },
+          contentStyle: { backgroundColor },
         }}
       >
         <Stack.Screen name="(tabs)" />
@@ -49,7 +54,6 @@ function AppLayout() {
         <Stack.Screen name="suggestions" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="weather" />
-        <Stack.Screen name="webview/[url]" />
         <Stack.Screen
           name="memo"
           options={{ animation: 'fade_from_bottom', animationDuration: 200 }}

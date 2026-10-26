@@ -171,7 +171,14 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
       .then((row) => decodeRecord("User", requireRecord(row)));
   }
 
-  async updateLastActiveAt(id: string, timezone: string): Promise<void> {
+  async findLastSeenAppVersion(userId: string): Promise<string | null> {
+    const user = await this.client.orm.public.User.where((row) => row.id.eq(userId))
+      .select("lastSeenAppVersion")
+      .first();
+    return user?.lastSeenAppVersion ?? null;
+  }
+
+  async updateLastActiveAt(id: string, timezone: string, appVersion?: string): Promise<void> {
     const seenAt = now();
     const localDate = startOfDayInTimezone(seenAt, timezone);
 
@@ -183,6 +190,11 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
 						COALESCE(app_user."lastActiveAt", ${param(databaseTimestamp(seenAt), { codecId: "pg/timestamp-string@1" })}),
 						${param(databaseTimestamp(seenAt), { codecId: "pg/timestamp-string@1" })}
 					),
+					"lastSeenAppVersion" = COALESCE(${param(appVersion ?? null, { codecId: "pg/text@1" })}::VARCHAR(30), app_user."lastSeenAppVersion"),
+					"lastSeenAppVersionAt" = CASE
+						WHEN ${param(appVersion ?? null, { codecId: "pg/text@1" })}::VARCHAR(30) IS NULL THEN app_user."lastSeenAppVersionAt"
+						ELSE ${param(databaseTimestamp(seenAt), { codecId: "pg/timestamp-string@1" })}
+					END,
 					"updatedAt" = GREATEST(app_user."updatedAt", ${param(databaseTimestamp(seenAt), { codecId: "pg/timestamp-string@1" })})
 				WHERE app_user."id" = ${id}
 				RETURNING app_user."id"
@@ -255,6 +267,7 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
             profileImage: data.profileImage ?? null,
           }),
           update: encodePatch("UserProfile", {
+            // nullish-strict: PATCH라 undefined는 그대로 두고 null은 비운다
             ...(data.name !== undefined && { name: data.name }),
             ...(data.profileImage !== undefined && {
               profileImage: data.profileImage,
@@ -292,7 +305,7 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
         .all(),
     );
     return rows.filter(
-      (row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt !== null,
+      (row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt != null,
     );
   }
 

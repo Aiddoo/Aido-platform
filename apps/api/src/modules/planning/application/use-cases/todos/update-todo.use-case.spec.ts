@@ -63,7 +63,7 @@ describe("할 일 부분 수정", () => {
   it("명시한 null은 시간을 지우고 생략한 endDate와 false 값은 보존한다", async () => {
     // Given
     const saved = fixture.records.get(1);
-    if (saved === undefined) throw new Error("Todo fixture missing");
+    if (saved == null) throw new Error("Todo fixture missing");
     saved.scheduledTime = new Date("2026-05-15T00:00:00Z");
     saved.endDate = new Date("2026-05-16T00:00:00Z");
     // When

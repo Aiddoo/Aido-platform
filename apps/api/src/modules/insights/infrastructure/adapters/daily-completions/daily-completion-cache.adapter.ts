@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 
@@ -14,6 +15,21 @@ import {
   DAILY_COMPLETION_GENERATION_TTL_MS,
   DailyCompletionCacheKey,
 } from "../../cache/daily-completions/daily-completion-cache.keyspace.js";
+
+const DAILY_COMPLETIONS_RANGE_SCHEMA = z.object({
+  completions: z.array(
+    z.object({
+      date: z.string(),
+      totalTodos: z.number(),
+      completedTodos: z.number(),
+      isComplete: z.boolean(),
+      completionRate: z.number(),
+      categoryColors: z.array(z.string()),
+    }),
+  ),
+  totalCompleteDays: z.number(),
+  dateRange: z.object({ startDate: z.string(), endDate: z.string() }),
+}) satisfies z.ZodType<DailyCompletionsRange>;
 
 @Injectable()
 export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
@@ -84,7 +100,10 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
     keyForGeneration: (generation: string) => string,
   ): Promise<DailyCompletionCacheRead> {
     const generation = await this.getGeneration(userId);
-    const value = await this.cacheService.get<DailyCompletionsRange>(keyForGeneration(generation));
+    const value = await this.cacheService.get(
+      keyForGeneration(generation),
+      DAILY_COMPLETIONS_RANGE_SCHEMA,
+    );
     const verifiedGeneration = await this.getGeneration(userId);
 
     return verifiedGeneration === generation
@@ -107,8 +126,8 @@ export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
 
   private async getGeneration(userId: string): Promise<string> {
     const key = DailyCompletionCacheKey.generation(userId);
-    const cachedGeneration = await this.cacheService.get<string>(key);
-    if (cachedGeneration !== undefined) {
+    const cachedGeneration = await this.cacheService.get(key, z.string());
+    if (cachedGeneration != null) {
       return cachedGeneration;
     }
 

@@ -19,7 +19,6 @@ out/
 # Database & Prisma
 **/prisma/generated/
 **/src/generated/
-node_modules/.prisma/
 *.db
 *.sqlite
 *.sqlite3
@@ -37,6 +36,18 @@ junit.xml
 !.env.*.example
 !/apps/api/.env.test
 .secrets/
+
+# 서명 키·인증서·빌드 바이너리 (실수로 커밋되면 이력 정리가 필요하므로 전역 차단)
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+*.ipa
+*.apk
+*.aab
 
 # IDE & Editor
 .idea/
@@ -77,7 +88,6 @@ myDocs/
 PLAN.md
 settings.local.json
 my-docs
-약관
 
 # 마이그레이션 안전망 산출물 (로컬 전용)
 backups/

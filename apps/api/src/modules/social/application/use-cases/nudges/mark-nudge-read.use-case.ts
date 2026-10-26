@@ -28,7 +28,7 @@ export class MarkNudgeRead {
     const { userId, nudgeId } = input;
 
     const nudge = await this.#dependencies.nudgeRepository.findById(nudgeId);
-    if (nudge === null || !nudge.isReceivedBy(userId)) {
+    if (nudge == null || !nudge.isReceivedBy(userId)) {
       throw new ApplicationException(ErrorCode.NUDGE_1105, { nudgeId });
     }
     if (!nudge.markRead(now())) {

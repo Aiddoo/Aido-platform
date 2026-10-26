@@ -1,8 +1,19 @@
+import catHiImage from '@assets/images/ido_cat_hi.webp';
+import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
+import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
+import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
+import type { BlockTarget } from '@src/features/moderation/domains/user-block.model';
+import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import {
+  blockUserConfirmHref,
+  userReportSheetHref,
+} from '@src/features/moderation/utils/navigation/moderation-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -12,15 +23,20 @@ import {
   InfoIcon,
   ListRow,
   MenuIcon,
+  MoreIcon,
+  Result,
   Text,
+  TextButton,
   TextSkeleton,
+  VStack,
   useOverlay,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
+import { router } from 'expo-router';
+import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { ActivityIndicator, RefreshControl } from 'react-native';
+import { ActivityIndicator, Image, RefreshControl } from 'react-native';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -176,12 +192,15 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
             }
             contents={<ListRow.Texts type="1RowTypeA" top={friend.displayName} />}
             right={
-              isEditMode && !isActive ? (
+              !isEditMode ? (
+                <FriendModerationMenu userId={friend.id} displayName={friend.displayName} />
+              ) : !isActive ? (
                 <Animated.View
                   entering={FadeInRight.duration(ANIMATION.duration.normal)}
                   exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
                 >
                   <Button
+                    testID="friend-delete"
                     variant="weak"
                     color="danger"
                     size="small"
@@ -200,6 +219,58 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
     </PressableFeedback>
   );
 };
+
+/** 친구 행의 ⋯ 메뉴. 편집 중이 아닐 때 프로필을 신고하거나 친구를 차단한다 */
+function FriendModerationMenu({ userId, displayName }: BlockTarget) {
+  const { t } = useTranslation('moderation');
+  const push = useSingleTap(router.push);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Menu.Trigger asChild>
+        <PressableFeedback
+          hitSlop={8}
+          className="size-11 items-center justify-center rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel={t('menu.moreFor', { name: displayName })}
+          accessibilityState={{ expanded: isOpen }}
+        >
+          <MoreIcon width={18} height={18} colorClassName="text-gray-6" />
+        </PressableFeedback>
+      </Menu.Trigger>
+      <Menu.Portal disableFullWindowOverlay={false}>
+        <Menu.Overlay />
+        <Menu.Content
+          presentation="popover"
+          placement="bottom"
+          align="end"
+          width={180}
+          className="rounded-2xl border border-gray-2 bg-gray-1"
+        >
+          <Menu.Item
+            onPress={() =>
+              push(
+                userReportSheetHref({
+                  target: UserReportPolicy.profileTarget({ userId }),
+                  displayName,
+                }),
+              )
+            }
+          >
+            <Menu.ItemTitle>{t('menu.report')}</Menu.ItemTitle>
+          </Menu.Item>
+          <Menu.Item
+            variant="danger"
+            onPress={() => push(blockUserConfirmHref({ userId, displayName }))}
+          >
+            <Menu.ItemTitle>{t('block.action')}</Menu.ItemTitle>
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu>
+  );
+}
 
 FriendList.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();
@@ -222,7 +293,45 @@ FriendList.Loading = function Loading() {
 FriendList.Error = UserList.Error;
 
 FriendList.Empty = function Empty() {
-  const { t } = useTranslation('friend');
+  const { t } = useTranslation(['friend', 'invite']);
+  const push = useSingleTap(router.push);
+  const openMyInvite = useOpenMyInvite();
+  const isInviteAvailable = useInviteAvailability();
+
+  // 초대를 쓸 수 있으면 링크로 데려오는 길을 먼저, 태그 찾기를 다음으로 보여 준다
+  if (isInviteAvailable) {
+    return (
+      <UserList.Empty
+        icon={
+          <Image
+            source={catHiImage}
+            accessibilityIgnoresInvertColors
+            className="size-[120px]"
+            resizeMode="contain"
+          />
+        }
+        title={t('invite:entry.friendsEmptyTitle')}
+        description={t('invite:entry.friendsEmptyDescription', {
+          days: InviteRewardPolicy.welcomePremiumDays(),
+        })}
+        button={
+          <VStack align="center" gap={4}>
+            <Result.Button
+              testID="friends-empty-invite"
+              color="primary"
+              onPress={() => openMyInvite('friends_empty')}
+            >
+              {t('invite:entry.inviteFriends')}
+            </Result.Button>
+            <TextButton size="small" variant="underline" onPress={() => push('/friends/add')}>
+              {t('invite:entry.findByTag')}
+            </TextButton>
+          </VStack>
+        }
+      />
+    );
+  }
+
   return (
     <UserList.Empty
       icon={<DocsIcon width={72} height={72} />}

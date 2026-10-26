@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, nullableDateSchema } from "../../common/datetime.js";
+import { AI_PARSE_LIMITS } from "../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../todo/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
@@ -42,13 +43,21 @@ export const parsedMemoTodoSchema = z.object({
     .default(null)
     .describe("반복 설정 (비반복 일정은 null)"),
   categoryId: z.number().int().positive().describe("카테고리 ID"),
-  items: z.array(parsedMemoTodoItemSchema).max(5).default([]).describe("서브투두 목록 (0-5개)"),
+  items: z
+    .array(parsedMemoTodoItemSchema)
+    .max(AI_PARSE_LIMITS.MEMO_MAX_ITEMS)
+    .default([])
+    .describe(`서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개)`),
 });
 
 export type ParsedMemoTodo = z.infer<typeof parsedMemoTodoSchema>;
 
 export const parsedMemoDataSchema = z.object({
-  todos: z.array(parsedMemoTodoSchema).min(1).max(5).describe("파싱된 할 일 목록 (1-5개)"),
+  todos: z
+    .array(parsedMemoTodoSchema)
+    .min(1)
+    .max(AI_PARSE_LIMITS.MEMO_MAX_TODOS)
+    .describe(`파싱된 할 일 목록 (1-${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개)`),
 });
 
 export type ParsedMemoData = z.infer<typeof parsedMemoDataSchema>;
@@ -57,6 +66,18 @@ export const parseMemoMetaSchema = z.object({
   model: z.string().describe("사용된 AI 모델명"),
   processingTimeMs: z.number().int().nonnegative().describe("AI 처리 시간 (밀리초)"),
   tokenUsage: tokenUsageSchema.describe("AI 토큰 사용량 정보"),
+  promptVersion: z
+    .string()
+    .optional()
+    .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@v2"). 구 서버 응답에는 없을 수 있다'),
+  omittedTodoCount: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe(
+      `할 일을 ${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개까지만 만들어 생략한 할 일 수입니다. 메모 원문은 그대로 남습니다. 구 서버 응답에는 없을 수 있습니다`,
+    ),
 });
 
 export type ParseMemoMeta = z.infer<typeof parseMemoMetaSchema>;
@@ -73,6 +94,12 @@ export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;
 // LLM 내부용 스키마
 // ============================================================================
 
+// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
+// 공급자 요청 schema로 전송되므로 meta를 붙이지 않는다.
+/**
+ * @deprecated parse-memo v1 롤백 경로에서만 쓰는 LLM schema다. v2는 서버 내부 draft schema를 쓴다.
+ */
 export const llmParsedMemoResultSchema = parsedMemoDataSchema;
 
+/** @deprecated llmParsedMemoResultSchema와 함께 제거한다. */
 export type LlmParsedMemoResult = z.infer<typeof llmParsedMemoResultSchema>;

@@ -150,11 +150,6 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
       <Text size="e1" shade={5}>
         {t('todo:interaction.thanksSelectionHint')}
       </Text>
-      {sendThanks.isError && (
-        <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
-          {isApiError(sendThanks.error) ? sendThanks.error.message : t('todo:toast.retryLater')}
-        </Text>
-      )}
       <Button
         color="primary"
         isLoading={sendThanks.isPending}

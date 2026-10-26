@@ -34,10 +34,12 @@ export type TodoItem = DatabaseRecord<"TodoItem">;
 export type TodoView = DatabaseRecord<"TodoView">;
 export type User = DatabaseRecord<"User">;
 export type UserActivityDay = DatabaseRecord<"UserActivityDay">;
+export type UserBlock = DatabaseRecord<"UserBlock">;
 export type UserConsent = DatabaseRecord<"UserConsent">;
 export type UserLocation = DatabaseRecord<"UserLocation">;
 export type UserPreference = DatabaseRecord<"UserPreference">;
 export type UserProfile = DatabaseRecord<"UserProfile">;
+export type UserReport = DatabaseRecord<"UserReport">;
 export type Verification = DatabaseRecord<"Verification">;
 export type WeeklyAchievement = DatabaseRecord<"WeeklyAchievement">;
 

@@ -5,7 +5,18 @@
  * Cacheable, @nestjs/cache-manager 등 인기 라이브러리 패턴 참고
  */
 
+import type { z } from "zod";
+
 export const CACHE_SERVICE = Symbol("CACHE_SERVICE");
+
+/**
+ * 캐시 값 스키마
+ *
+ * 캐시는 직렬화 경계(Redis JSON)이자 이전 배포가 남긴 값이 섞이는 저장소다.
+ * 읽기는 소비처 스키마로 다시 검증하고, 형태가 다르면 캐시 미스로 취급한다.
+ * 날짜처럼 JSON에서 문자열이 되는 값은 `z.coerce.date()`로 복원한다.
+ */
+export type CacheValueSchema<T> = z.ZodType<T>;
 
 /**
  * TTL Shorthand 타입 (Cacheable 패턴)
@@ -18,7 +29,20 @@ export const CACHE_SERVICE = Symbol("CACHE_SERVICE");
  * '1d'  // 1일
  * 60000 // 60초 (밀리초)
  */
-export type TtlValue = number | `${number}${"s" | "m" | "h" | "d"}`;
+export type TtlValue = number | `${number}${TtlUnit}`;
+
+const TTL_UNIT_MILLISECONDS = {
+  s: 1000,
+  m: 60 * 1000,
+  h: 60 * 60 * 1000,
+  d: 24 * 60 * 60 * 1000,
+} as const;
+
+type TtlUnit = keyof typeof TTL_UNIT_MILLISECONDS;
+
+function isTtlUnit(unit: string): unit is TtlUnit {
+  return Object.hasOwn(TTL_UNIT_MILLISECONDS, unit);
+}
 
 /**
  * TTL Shorthand 문자열을 밀리초로 변환
@@ -37,19 +61,13 @@ export type TtlValue = number | `${number}${"s" | "m" | "h" | "d"}`;
 export function parseTtl(ttl: TtlValue): number {
   if (typeof ttl === "number") return ttl;
 
-  const match = ttl.match(/^(\d+)(s|m|h|d)$/);
-  if (!match) throw new Error(`Invalid TTL format: ${ttl}`);
+  const unit = ttl.at(-1);
+  const value = ttl.slice(0, -1);
+  if (unit == null || !isTtlUnit(unit) || !/^\d+$/.test(value)) {
+    throw new Error(`Invalid TTL format: ${ttl}`);
+  }
 
-  const value = match[1] as string;
-  const unit = match[2] as "s" | "m" | "h" | "d";
-  const multipliers: Record<"s" | "m" | "h" | "d", number> = {
-    s: 1000,
-    m: 60 * 1000,
-    h: 60 * 60 * 1000,
-    d: 24 * 60 * 60 * 1000,
-  };
-
-  return Number.parseInt(value, 10) * multipliers[unit];
+  return Number.parseInt(value, 10) * TTL_UNIT_MILLISECONDS[unit];
 }
 
 /**
@@ -68,9 +86,9 @@ export function parseTtl(ttl: TtlValue): number {
 export interface ICacheService {
   /**
    * 캐시에서 값 조회
-   * @returns 캐시 미스 시 undefined (백엔드 장애 시에도 undefined)
+   * @returns 캐시 미스 시 undefined (백엔드 장애·스키마 불일치 시에도 undefined)
    */
-  get<T>(key: string): Promise<T | undefined>;
+  get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined>;
 
   /**
    * 캐시에 값 저장
@@ -111,6 +129,7 @@ export interface ICacheService {
    * 2. 캐시 미스 → factory 호출 → 결과 캐싱 → 반환
    *
    * @param key 캐시 키
+   * @param schema 캐시 값과 factory 결과를 함께 설명하는 스키마
    * @param factory 캐시 미스 시 호출될 함수
    * @param ttl TTL (선택)
    * @returns factory 결과 또는 캐시된 값
@@ -120,11 +139,17 @@ export interface ICacheService {
    * @example
    * const user = await cache.wrap(
    *   `user:${userId}`,
+   *   userSchema,
    *   () => userRepository.findById(userId),
    *   '5m'
    * );
    */
-  wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T>;
+  wrap<T>(
+    key: string,
+    schema: CacheValueSchema<T>,
+    factory: () => Promise<T>,
+    ttl?: TtlValue,
+  ): Promise<T>;
 
   /**
    * 다중 키 조회 (배치)
@@ -133,7 +158,7 @@ export interface ICacheService {
    *
    * Redis: MGET 명령
    */
-  mget<T>(keys: string[]): Promise<(T | undefined)[]>;
+  mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]>;
 
   /**
    * 다중 키 저장 (배치)

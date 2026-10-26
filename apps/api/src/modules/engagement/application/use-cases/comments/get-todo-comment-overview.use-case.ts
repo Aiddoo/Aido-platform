@@ -8,9 +8,12 @@ import type {
   TodoCommentOverviewCursor,
   TodoCommentRootPosition,
 } from "../../models/comments/todo-comment.types.js";
+import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
 import { type TodoCommentCursorCodecPort } from "../../ports/comments/todo-comment-cursor-codec.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
+  collectCommentAuthorIds,
+  collectCommentIds,
   toTodoCommentCursorPagination,
   toTodoCommentOverviewItem,
 } from "../../presenters/comments/index.js";
@@ -50,12 +53,12 @@ function getAnchor(
   input: GetTodoCommentOverviewInput,
   cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview">,
 ): OverviewAnchor {
-  if (input.before !== undefined) {
+  if (input.before != null) {
     const cursor = decodeCursor(input.before, input.sort, input.todoId, cursorCodec);
     return { mode: "BEFORE", rootId: cursor.rootId, position: cursor.position };
   }
 
-  if (input.after !== undefined) {
+  if (input.after != null) {
     const cursor = decodeCursor(input.after, input.sort, input.todoId, cursorCodec);
     return { mode: "AFTER", rootId: cursor.rootId, position: cursor.position };
   }
@@ -66,8 +69,9 @@ function getAnchor(
 interface GetTodoCommentOverviewDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "listOverview" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "listOverview" | "findLikedCommentIds"
   >;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview" | "encodeOverview">;
 }
 
@@ -90,35 +94,48 @@ export class GetTodoCommentOverview {
       anchorPosition: anchor.position,
     });
 
-    if (window === null) {
+    if (window == null) {
       throw new ApplicationException(ErrorCode.SYS_0002);
     }
 
-    const commentIds = window.items.flatMap((item) => [
-      item.comment.id,
-      ...(item.previewReply === null ? [] : [item.previewReply.id]),
-    ]);
-    const likedCommentIds = await this.#dependencies.reader.findLikedCommentIds(
-      commentIds,
-      input.viewerId,
+    const visibleRecords = window.items.flatMap((item) =>
+      item.previewReply == null ? [item.comment] : [item.comment, item.previewReply],
     );
+    const participantIds = window.items.flatMap((item) =>
+      item.participantAuthors.map((author) => author.id),
+    );
+    const [likedCommentIds, blockedAuthorIds] = await Promise.all([
+      this.#dependencies.reader.findLikedCommentIds(
+        collectCommentIds(visibleRecords),
+        input.viewerId,
+      ),
+      this.#dependencies.blockReader.findBlockedCounterpartIds(input.viewerId, [
+        ...collectCommentAuthorIds(visibleRecords),
+        ...participantIds,
+      ]),
+    ]);
     const firstRecord = window.items.at(0)?.comment;
     const lastRecord = window.items.at(-1)?.comment;
 
     return {
       items: window.items.map((record) =>
-        toTodoCommentOverviewItem({ record, viewerId: input.viewerId, likedCommentIds }),
+        toTodoCommentOverviewItem({
+          record,
+          viewerId: input.viewerId,
+          likedCommentIds,
+          blockedAuthorIds,
+        }),
       ),
       pagination: toTodoCommentCursorPagination({
         size: input.size,
         hasPrevious: window.hasPrevious,
         hasNext: window.hasNext,
         previousCursor:
-          window.hasPrevious && firstRecord !== undefined
+          window.hasPrevious && firstRecord != null
             ? this.#dependencies.cursorCodec.encodeOverview(firstRecord, input.sort)
             : null,
         nextCursor:
-          window.hasNext && lastRecord !== undefined
+          window.hasNext && lastRecord != null
             ? this.#dependencies.cursorCodec.encodeOverview(lastRecord, input.sort)
             : null,
       }),

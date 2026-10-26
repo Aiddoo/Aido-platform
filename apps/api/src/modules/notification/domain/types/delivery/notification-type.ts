@@ -31,4 +31,7 @@ export type NotificationType =
   | "LUNCH_NUDGE"
   | "STREAK_AT_RISK"
   | "WEATHER_MORNING"
-  | "WEATHER_EVENING";
+  | "WEATHER_EVENING"
+  | "INVITE_JOINED"
+  | "INVITE_REWARDED"
+  | "PREMIUM_GRANT_ENDING";

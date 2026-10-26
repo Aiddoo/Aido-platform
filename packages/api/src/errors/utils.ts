@@ -79,7 +79,7 @@ export function getErrorsByDomain(
  * 모든 에러 코드 목록 가져오기
  */
 export function getAllErrorCodes(): ErrorCodeType[] {
-  return Object.values(ErrorCode) as ErrorCodeType[];
+  return Object.values(ErrorCode);
 }
 
 /**

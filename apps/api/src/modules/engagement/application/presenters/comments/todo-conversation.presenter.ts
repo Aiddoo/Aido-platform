@@ -3,6 +3,7 @@ import type {
   TodoConversationConnection,
   TodoConversationItem,
 } from "@aido/api";
+import { uniq } from "es-toolkit";
 
 import type {
   TodoCommentRecord,
@@ -14,14 +15,12 @@ function isDirectParent(
   parent: TodoCommentRecord | null | undefined,
   child: TodoCommentRecord | null | undefined,
 ): boolean {
-  return parent !== null && parent !== undefined && child !== null && child !== undefined
-    ? child.parentId === parent.id
-    : false;
+  return parent != null && child != null ? child.parentId === parent.id : false;
 }
 
 /** Wire lane은 순서와 중복을 허용하지 않는다. reader 결과도 경계에서 한 번 정규화한다. */
 function normalizeLaneDepths(depths: readonly number[]): number[] {
-  return [...new Set(depths)].sort((left, right) => left - right);
+  return uniq(depths).sort((left, right) => left - right);
 }
 
 function toIncomingBranch(depth: number): TodoConversationConnection["incomingBranch"] {
@@ -58,9 +57,15 @@ export function toTodoConversationItems(input: {
   focusCommentId: string | null;
   viewerId: string;
   likedCommentIds: ReadonlySet<string>;
+  blockedAuthorIds: ReadonlySet<string>;
 }): TodoConversationItem[] {
   return input.records.map((record, index) => ({
-    comment: toTodoCommentResponse(record, input.viewerId, input.likedCommentIds),
+    comment: toTodoCommentResponse(
+      record,
+      input.viewerId,
+      input.likedCommentIds,
+      input.blockedAuthorIds,
+    ),
     connection: toConversationConnection(
       record,
       index === input.records.length - 1 ? input.nextRecord : input.records[index + 1],
@@ -78,9 +83,15 @@ export function toTodoConversationAncestorItems(input: {
   records: readonly TodoCommentRecord[];
   viewerId: string;
   likedCommentIds: ReadonlySet<string>;
+  blockedAuthorIds: ReadonlySet<string>;
 }): TodoConversationItem[] {
   return input.records.map((record) => ({
-    comment: toTodoCommentResponse(record, input.viewerId, input.likedCommentIds),
+    comment: toTodoCommentResponse(
+      record,
+      input.viewerId,
+      input.likedCommentIds,
+      input.blockedAuthorIds,
+    ),
     connection: {
       visualDepth: record.depth,
       upperLaneDepths: record.depth === 0 ? [] : [record.depth - 1],

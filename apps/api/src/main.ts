@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/nestjs";
 import { Logger } from "nestjs-pino";
 
 import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
+import { SocialReportsAdminModule } from "#api/modules/social/social-reports.public";
 import type { EnvConfig } from "#api/platform/config/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
@@ -89,6 +90,8 @@ async function bootstrap() {
       .addTag(SWAGGER_TAGS.CHEERS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.CHEERS])
       .addTag(SWAGGER_TAGS.NUDGES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES])
       .addTag(SWAGGER_TAGS.NOTIFICATIONS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NOTIFICATIONS])
+      .addTag(SWAGGER_TAGS.BLOCKS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.BLOCKS])
+      .addTag(SWAGGER_TAGS.REPORTS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.REPORTS])
       // 통계 APIs
       .addTag(
         SWAGGER_TAGS.DAILY_COMPLETIONS,
@@ -150,6 +153,7 @@ async function bootstrap() {
 | ADMIN_1401 | 403 | 관리자 권한이 필요합니다 |
 | ADMIN_1402 | 404 | 알림 대상 사용자가 없습니다 |
 | ADMIN_1403 | 400 | 유효하지 않은 필터 조건입니다 |
+| REPORT_2255 | 404 | 신고를 찾을 수 없습니다 |
 `)
       .setVersion("1.0.0")
       .addServer("http://localhost:8080", "Local Development")
@@ -166,17 +170,20 @@ async function bootstrap() {
         SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_NOTIFICATIONS],
       )
       .addTag(SWAGGER_TAGS.ADMIN_USERS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_USERS])
+      .addTag(SWAGGER_TAGS.ADMIN_REPORTS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_REPORTS])
       .addTag(SWAGGER_TAGS.ADMIN_SYSTEM, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ADMIN_SYSTEM])
       .build();
 
     const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
-      include: [OperationsAdminModule],
+      include: [OperationsAdminModule, SocialReportsAdminModule],
       standardSchemaConverter: convertStandardSchema,
     });
     SwaggerModule.setup("api/admin/docs", app, adminDocument, {
       customSiteTitle: "Aido Admin API Documentation",
       swaggerOptions: {
         persistAuthorization: true,
+        // 신고 접수 이메일이 처리 API로 바로 이동하는 #/{tag}/{operationId} 링크를 쓴다
+        deepLinking: true,
         docExpansion: "list",
         filter: true,
         showRequestDuration: true,

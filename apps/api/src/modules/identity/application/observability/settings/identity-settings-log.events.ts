@@ -4,6 +4,7 @@ export const IdentitySettingsLogEvent = {
   PREFERENCE_UPDATED: "identity.settings.preference.updated",
   MARKETING_CONSENT_UPDATED: "identity.settings.marketing-consent.updated",
   MARKETING_PUSH_CONSENT_UPDATED: "identity.settings.marketing-push-consent.updated",
+  AI_DATA_SHARING_CONSENT_UPDATED: "identity.settings.ai-data-sharing-consent.updated",
   STREAK_UPDATED: "identity.settings.streak.updated",
   STREAK_RECALCULATED: "identity.settings.streak.recalculated",
   STREAK_UPDATE_CONFLICT: "identity.settings.streak.update.conflict",

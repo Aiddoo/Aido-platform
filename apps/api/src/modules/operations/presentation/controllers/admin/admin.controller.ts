@@ -54,7 +54,6 @@ export class AdminController {
 - \`SUBSCRIBERS\`: 유료 구독 사용자`,
   })
   @ApiCreatedResponse({ type: BroadcastResultDto })
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiBadRequestError(ErrorCode.ADMIN_1403)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1402)
@@ -81,7 +80,6 @@ export class AdminController {
 존재하지 않는 사용자 ID는 자동으로 필터링됩니다.`,
   })
   @ApiCreatedResponse({ type: BroadcastResultDto })
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1402)
   async sendTargetedNotification(

@@ -12,4 +12,6 @@ export interface NudgeThanksPreviewResult {
   totalRecipients?: number;
   nextCursor?: number | null;
   hasNext?: boolean;
+  thankedRecipientCount: number;
+  lastThankedAt: Date | null;
 }

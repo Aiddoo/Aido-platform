@@ -19,7 +19,6 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import {
-  ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
   ApiForbiddenError,
@@ -104,7 +103,6 @@ export class TodoCommentController {
   @ApiSuccessResponse({ type: TodoCommentOverviewResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async getOverview(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
@@ -134,7 +132,6 @@ export class TodoCommentController {
   @ApiSuccessResponse({ type: TodoConversationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async getConversation(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
@@ -209,7 +206,12 @@ export class TodoCommentController {
   }
 
   @Delete("comments/:commentId")
-  @ApiDoc({ summary: "본인 댓글 삭제", operationId: "deleteTodoComment" })
+  @ApiDoc({
+    summary: "댓글 삭제",
+    operationId: "deleteTodoComment",
+    description:
+      "작성자는 자기 댓글을, 할 일 주인은 자기 할 일에 달린 모든 댓글을 삭제할 수 있습니다. 삭제한 댓글은 모든 사람에게 삭제된 댓글로 보입니다.",
+  })
   @ApiSuccessResponse({ type: DeleteTodoCommentResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.TODO_0832)

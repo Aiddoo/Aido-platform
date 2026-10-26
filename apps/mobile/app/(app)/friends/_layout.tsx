@@ -6,6 +6,7 @@ export default function FriendsLayout() {
   const screenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
   const backToolbar = useStackBackToolbar();
   const { t } = useTranslation('friend');
+  const { t: tInvite } = useTranslation('invite');
 
   return (
     <Stack screenOptions={screenOptions}>
@@ -16,6 +17,12 @@ export default function FriendsLayout() {
         {backToolbar}
       </Stack.Screen>
       <Stack.Screen name="add" options={{ title: '' }}>
+        {backToolbar}
+      </Stack.Screen>
+      <Stack.Screen name="invite/index" options={{ title: tInvite('myInvite.title') }}>
+        {backToolbar}
+      </Stack.Screen>
+      <Stack.Screen name="invite/invitees" options={{ title: tInvite('friendList.title') }}>
         {backToolbar}
       </Stack.Screen>
     </Stack>

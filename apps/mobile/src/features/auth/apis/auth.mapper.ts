@@ -9,6 +9,7 @@ import type {
   RegisterResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
+  UpdateAiDataSharingConsentResponse,
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
 } from '@aido/api';
@@ -22,6 +23,7 @@ import type {
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
+  UpdateAiDataSharingConsentResult,
   UpdateMarketingConsentResult,
   UpdateMarketingPushConsentResult,
 } from '../domains/auth.model';
@@ -42,6 +44,9 @@ export const toConsent = (dto: ConsentResponse): Consent => ({
   agreedTermsVersion: dto.agreedTermsVersion,
   marketingAgreedAt: dto.marketingAgreedAt ? new Date(dto.marketingAgreedAt) : null,
   marketingPushAgreedAt: dto.marketingPushAgreedAt ? new Date(dto.marketingPushAgreedAt) : null,
+  // 1.13.0 이전 서버는 AI 동의 필드를 주지 않는다. 답하지 않은 것으로 보고 AI 전에 안내를 띄운다
+  aiDataSharingDecision: dto.aiDataSharingDecision ?? 'UNDECIDED',
+  aiDataSharingAgreedAt: dto.aiDataSharingAgreedAt ? new Date(dto.aiDataSharingAgreedAt) : null,
 });
 
 export const toRegisterResult = (dto: RegisterResponse): RegisterResult => ({
@@ -67,6 +72,13 @@ export const toUpdateMarketingPushConsentResult = (
   dto: UpdateMarketingPushConsentResponse,
 ): UpdateMarketingPushConsentResult => ({
   marketingPushAgreedAt: dto.marketingPushAgreedAt ? new Date(dto.marketingPushAgreedAt) : null,
+});
+
+export const toUpdateAiDataSharingConsentResult = (
+  dto: UpdateAiDataSharingConsentResponse,
+): UpdateAiDataSharingConsentResult => ({
+  aiDataSharingDecision: dto.aiDataSharingDecision,
+  aiDataSharingAgreedAt: dto.aiDataSharingAgreedAt ? new Date(dto.aiDataSharingAgreedAt) : null,
 });
 
 export const toDeleteAccountResult = (dto: DeleteAccountResponse): DeleteAccountResult => ({

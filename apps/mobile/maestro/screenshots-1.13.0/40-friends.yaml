@@ -1,0 +1,63 @@
+appId: com.aido.mobile
+name: 친구 목록·요청·친구 피드·찾기·콕
+tags:
+  - free
+  - premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: friends
+- extendedWaitUntil:
+    visible: '.*(지훈|Jake).*'
+    timeout: 20000
+- takeScreenshot: 40_친구_목록
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'premium'}
+    commands:
+      - tapOn: '받은 요청.*|Received.*'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 41_친구_받은_요청
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: feed?friendId=${MAESTRO_SHOT_FRIEND_ID}&date=${MAESTRO_SHOT_TODAY}
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 42_친구_피드
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: nudges/${MAESTRO_SHOT_NUDGE_ID}
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 43_받은_콕
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: friends/search
+- tapOn:
+    id: friend-search-input
+- inputText: ${MAESTRO_SHOT_STRANGER_NAME}
+- hideKeyboard
+- extendedWaitUntil:
+    visible: '추가|Add'
+    timeout: 15000
+- takeScreenshot: 44_친구_찾기
+# 무료 계정은 친구 5명이 다 차 있어 추가하면 초대로 자리를 늘리는 안내가 뜬다(요청은 만들어지지 않는다)
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'free'}
+    commands:
+      - tapOn: '추가|Add'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 45_친구_한도_안내

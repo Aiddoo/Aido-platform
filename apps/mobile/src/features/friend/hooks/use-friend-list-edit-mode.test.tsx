@@ -22,7 +22,7 @@ describe('useFriendListEditMode', () => {
     [undefined, false],
   ])('딥링크 isEditing=%s는 편집 모드 %s로 읽는다', async (isEditing, expected) => {
     // Given
-    mockedUseLocalSearchParams.mockReturnValue(isEditing === undefined ? {} : { isEditing });
+    mockedUseLocalSearchParams.mockReturnValue(isEditing == null ? {} : { isEditing });
 
     // When
     const { result } = await renderHook(() => useFriendListEditMode());

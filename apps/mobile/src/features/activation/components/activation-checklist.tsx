@@ -1,7 +1,11 @@
+import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
+import { useInviteActivationStep } from '@src/features/invite/hooks/use-invite-activation-step';
+import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { PressableFeedback } from 'heroui-native';
 
 import { useActivationChecklist } from '../hooks/use-activation-progress';
 
@@ -10,8 +14,10 @@ interface ActivationChecklistProps {
 }
 
 export function ActivationChecklist({ className }: ActivationChecklistProps) {
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation(['todo', 'invite']);
   const { progress, isVisible } = useActivationChecklist();
+  const inviteStep = useInviteActivationStep();
+  const openMyInvite = useOpenMyInvite();
 
   if (!isVisible) {
     return null;
@@ -37,11 +43,33 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
 
       <ActivationStep label={t('activation.createTodo')} isCompleted={hasCreated} />
       <ActivationStep label={t('activation.completeTodo')} isCompleted={hasCompleted} />
+      {inviteStep.isVisible && (
+        <PressableFeedback
+          isDisabled={inviteStep.isCompleted}
+          onPress={() => openMyInvite('activation_checklist')}
+          accessibilityRole="button"
+        >
+          <ActivationStep
+            label={t('invite:entry.checklistStep')}
+            isCompleted={inviteStep.isCompleted}
+            reward={t('invite:entry.checklistReward', {
+              days: InviteRewardPolicy.welcomePremiumDays(),
+            })}
+          />
+        </PressableFeedback>
+      )}
     </VStack>
   );
 }
 
-function ActivationStep({ label, isCompleted }: { label: string; isCompleted: boolean }) {
+interface ActivationStepProps {
+  label: string;
+  isCompleted: boolean;
+  /** 단계를 마치면 받는 보상(오른쪽 강조 문구) */
+  reward?: string;
+}
+
+function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
@@ -67,9 +95,20 @@ function ActivationStep({ label, isCompleted }: { label: string; isCompleted: bo
           />
         )}
       </Box>
-      <Text size="b3" weight={isCompleted ? 'medium' : 'normal'} shade={isCompleted ? 5 : 8}>
+      <Text
+        size="b3"
+        weight={isCompleted ? 'medium' : 'normal'}
+        shade={isCompleted ? 5 : 8}
+        className="flex-1"
+      >
         {label}
       </Text>
+      {/* 보상 문구가 길어도 단계 이름이 글자 단위로 꺾이지 않게 행의 절반까지만 쓰고 줄바꿈한다 */}
+      {reward != null && !isCompleted && (
+        <Text size="e1" weight="bold" tone="brand" align="right" className="max-w-[50%] shrink">
+          {reward}
+        </Text>
+      )}
     </HStack>
   );
 }

@@ -31,9 +31,30 @@ export const NOTIFICATION_TYPE = {
   // 날씨
   WEATHER_MORNING: "WEATHER_MORNING",
   WEATHER_EVENING: "WEATHER_EVENING",
+  // 친구 초대
+  INVITE_JOINED: "INVITE_JOINED",
+  INVITE_REWARDED: "INVITE_REWARDED",
+  // 프리미엄 보상 기간
+  PREMIUM_GRANT_ENDING: "PREMIUM_GRANT_ENDING",
 } as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
+
+/**
+ * 공지(SYSTEM_NOTICE·ADMIN_BROADCAST·ADMIN_TARGETED)의 DEEP_LINK url로 보낼 수 있는 앱 경로.
+ * 앱(1.13.0+)은 이 경로만 열고, 모르는 경로·쿼리·상세 id 경로는 이동하지 않는다. 이전 앱은 url을 무시한다.
+ */
+export const NOTICE_DEEP_LINK_PATH = {
+  FEED: "/feed",
+  ACHIEVEMENTS: "/achievements",
+  WEATHER: "/weather",
+  FRIENDS: "/friends",
+  FRIEND_INVITE: "/friends/invite",
+  SUBSCRIPTION: "/settings/subscription",
+  NOTIFICATION_SETTINGS: "/settings/notifications",
+} as const;
+
+export type NoticeDeepLinkPath = (typeof NOTICE_DEEP_LINK_PATH)[keyof typeof NOTICE_DEEP_LINK_PATH];
 
 export const NOTIFICATION_LIMITS = {
   MAX_FETCH_LIMIT: 50,
@@ -68,6 +89,7 @@ export const CATEGORY_TYPE_MAP: Record<
     NOTIFICATION_TYPE.SYSTEM_NOTICE,
     NOTIFICATION_TYPE.ADMIN_BROADCAST,
     NOTIFICATION_TYPE.ADMIN_TARGETED,
+    NOTIFICATION_TYPE.PREMIUM_GRANT_ENDING,
   ],
   TODO: [
     NOTIFICATION_TYPE.TODO_REMINDER,
@@ -95,5 +117,7 @@ export const CATEGORY_TYPE_MAP: Record<
     NOTIFICATION_TYPE.FRIEND_COMPLETED,
     NOTIFICATION_TYPE.SOCIAL_DIGEST,
     NOTIFICATION_TYPE.NUDGE_SUGGEST,
+    NOTIFICATION_TYPE.INVITE_JOINED,
+    NOTIFICATION_TYPE.INVITE_REWARDED,
   ],
 } as const;

@@ -46,6 +46,7 @@
     "start": "Start"
   },
   "aiReview": {
+    "titleLabel": "To-do title",
     "analyzing": "Analyzing your memo...",
     "limitTitle": "You've used all your AI credits this month",
     "parseFailed": "Parsing failed",
@@ -54,6 +55,8 @@
     "noTodosTitle": "No to-dos to create",
     "createCount_one": "Create {{count}} to-do",
     "createCount_other": "Create {{count}} to-dos",
+    "omittedTodos_one": "We made up to {{max}} to-dos. The other {{count}} stays in your memo.",
+    "omittedTodos_other": "We made up to {{max}} to-dos. The other {{count}} stay in your memo.",
     "allDay": "All day",
     "categoryFallback": "Category",
     "weeklyRepeat": "Weekly on {{days}}",

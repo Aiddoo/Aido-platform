@@ -24,7 +24,7 @@ export interface UpdateTodoCommentInput {
 interface UpdateTodoCommentDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "findCommentRecord" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "findCommentRecord" | "findLikedCommentIds"
   >;
   readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "updateComment">;
   readonly mutationLock: MutationLockPort;
@@ -49,7 +49,7 @@ export class UpdateTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
@@ -62,7 +62,7 @@ export class UpdateTodoComment {
         input.todoId,
         input.commentId,
       );
-      if (updatedComment === null) {
+      if (updatedComment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 

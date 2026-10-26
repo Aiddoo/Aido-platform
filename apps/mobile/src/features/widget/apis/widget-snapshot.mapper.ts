@@ -1,10 +1,18 @@
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
-import { getCalendarWeek } from '@src/shared/utils/calendar-week';
-import { formatDate, getWeekDates, getWeekStart, toDate } from '@src/shared/utils/date';
-import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/utils/date-format';
-import { keyBy } from 'es-toolkit';
+import { getCalendarWeekOfDateKey } from '@src/shared/utils/calendar-week';
+import {
+  type DateFormatContext,
+  formatDateKeyLabel,
+  toDateFormatLocale,
+} from '@src/shared/utils/date-format';
+import { addDaysToDateKey } from '@src/shared/utils/date-key';
+import { keyBy, range } from 'es-toolkit';
 
-import type { WidgetSnapshot, WidgetSnapshotStrings } from '../domains/widget-snapshot.model';
+import type {
+  WidgetDaySnapshot,
+  WidgetSnapshot,
+  WidgetSnapshotStrings,
+} from '../domains/widget-snapshot.model';
 
 /**
  * 오늘의 할 일 요약 입력 (GET v1/todos/summary 도메인 모델과 구조 동일).
@@ -50,6 +58,8 @@ export interface WidgetSnapshotContext {
   t: WidgetTranslateFn;
   locale: ResolvedLanguage;
   now: Date;
+  /** 쓰기 시점의 기기 시간대. 표시 내용이 같아도 바뀌면 iOS timeline의 자정 경계를 다시 써야 한다. */
+  timeZone: string;
   userId?: string;
   weekCompletions?: readonly { date: string; totalTodos: number; isComplete: boolean }[];
 }
@@ -84,11 +94,30 @@ function bakeStrings(
   };
 }
 
-/** 요약 → 위젯 스냅샷 (순수함수 — I/O 없음) */
+export interface WidgetDaySummaries {
+  today: WidgetSummaryInput;
+  /** 자정 이후 표시할 잠정 요약. 받지 못했으면 생략하고 자정부터 stale을 표시한다. */
+  tomorrow?: WidgetSummaryInput;
+}
+
+/** 오늘·내일 요약 → 위젯 스냅샷 (순수함수 — I/O 없음) */
 export function toWidgetSnapshot(
-  summary: WidgetSummaryInput,
+  { today, tomorrow }: WidgetDaySummaries,
   context: WidgetSnapshotContext,
 ): WidgetSnapshot {
+  const todaySnapshot = toWidgetDaySnapshot(today, context);
+  return {
+    version: 2,
+    updatedAtIso: context.now.toISOString(),
+    days:
+      tomorrow == null ? [todaySnapshot] : [todaySnapshot, toWidgetDaySnapshot(tomorrow, context)],
+  };
+}
+
+function toWidgetDaySnapshot(
+  summary: WidgetSummaryInput,
+  context: WidgetSnapshotContext,
+): WidgetDaySnapshot {
   const topTodos = summary.topTodos.slice(0, TOP_TODOS_DISPLAY_LIMIT).map((todo) => ({
     id: todo.id,
     title: todo.title,
@@ -98,10 +127,8 @@ export function toWidgetSnapshot(
   const week = toWidgetWeek(summary, context);
 
   return {
-    version: 1,
     state: summary.totalTodos > 0 ? 'data' : 'empty',
     date: summary.date,
-    updatedAtIso: context.now.toISOString(),
     totalTodos: summary.totalTodos,
     completedTodos: summary.completedTodos,
     completionRate: summary.completionRate,
@@ -121,11 +148,12 @@ export function toWidgetSnapshot(
 function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContext) {
   const completions = keyBy(context.weekCompletions ?? [], (completion) => completion.date);
   const dateFormatContext: DateFormatContext = {
-    locale: context.locale === 'ko' ? 'ko-KR' : 'en-US',
+    locale: toDateFormatLocale(context.locale),
     timeZone: 'UTC',
   };
-  const days = getWeekDates(getWeekStart(toDate(summary.date))).map((day) => {
-    const date = formatDate(day);
+  const week = getCalendarWeekOfDateKey(summary.date);
+  const days = range(7).map((dayOffset) => {
+    const date = addDaysToDateKey(week.startDateKey, dayOffset);
     const completion = completions[date];
     return {
       date,
@@ -138,14 +166,11 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
       hasTodos: date === summary.date ? summary.totalTodos > 0 : (completion?.totalTodos ?? 0) > 0,
     };
   });
-  const week = getCalendarWeek(toDate(summary.date));
-  const weekStartKey = formatDate(week.start);
-  const weekEndKey = formatDate(week.end);
   const title = context.t('widget:calendar.weekTitle', {
-    month: formatDateKeyLabel(weekStartKey, 'month', dateFormatContext),
+    month: formatDateKeyLabel(week.startDateKey, 'month', dateFormatContext),
     week: week.weekOfMonth,
   });
-  const rangeLabel = [weekStartKey, weekEndKey]
+  const rangeLabel = [week.startDateKey, week.endDateKey]
     .map((dateKey) => formatDateKeyLabel(dateKey, 'dottedMonthDay', dateFormatContext))
     .join(' – ');
   return { days, title, rangeLabel };
@@ -157,22 +182,26 @@ export function toLoggedOutWidgetSnapshot(
   context: WidgetSnapshotContext,
 ): WidgetSnapshot {
   return {
-    version: 1,
-    state: 'loggedOut',
-    date: localDate,
+    version: 2,
     updatedAtIso: context.now.toISOString(),
-    totalTodos: 0,
-    completedTodos: 0,
-    completionRate: 0,
-    isComplete: false,
-    currentStreak: 0,
-    topTodos: [],
-    locale: context.locale,
-    strings: bakeStrings(context.t, {
-      completedTodos: 0,
-      totalTodos: 0,
-      completionRate: 0,
-      currentStreak: 0,
-    }),
+    days: [
+      {
+        state: 'loggedOut',
+        date: localDate,
+        totalTodos: 0,
+        completedTodos: 0,
+        completionRate: 0,
+        isComplete: false,
+        currentStreak: 0,
+        topTodos: [],
+        locale: context.locale,
+        strings: bakeStrings(context.t, {
+          completedTodos: 0,
+          totalTodos: 0,
+          completionRate: 0,
+          currentStreak: 0,
+        }),
+      },
+    ],
   };
 }

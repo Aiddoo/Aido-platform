@@ -179,6 +179,6 @@ function createAdminNotification(input: AdminNotification): AdminNotification {
     title: content.title,
     body: content.body,
     fields: (input.fields ?? []).map((field) => ({ ...field })),
-    ...(input.color === undefined ? {} : { color: input.color }),
+    ...(input.color == null ? {} : { color: input.color }),
   };
 }

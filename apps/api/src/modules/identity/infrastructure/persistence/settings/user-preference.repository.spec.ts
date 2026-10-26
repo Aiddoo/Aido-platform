@@ -127,7 +127,7 @@ describe("UserPreferenceRepository — 부분 설정 저장과 스트릭 조건�
             row.userId.eq(userId),
             row.currentStreak.eq(2),
             row.longestStreak.eq(4),
-            lastCompletedDate === null
+            lastCompletedDate == null
               ? row.lastCompletedDate.isNull()
               : row.lastCompletedDate.eq(databaseDate(lastCompletedDate)),
           ),

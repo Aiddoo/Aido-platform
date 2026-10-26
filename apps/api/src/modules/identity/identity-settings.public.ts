@@ -7,6 +7,10 @@ export type UserPreferenceCacheInvalidatorPort = Pick<
 >;
 
 export {
+  AI_DATA_SHARING_CONSENT_READER,
+  type AiDataSharingConsentReaderPort,
+} from "./application/ports/settings/ai-data-sharing-consent.reader.port.js";
+export {
   USER_PREFERENCE_READER,
   type UserPreferenceReaderPort,
 } from "./application/ports/settings/user-preference.reader.port.js";

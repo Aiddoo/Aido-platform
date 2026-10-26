@@ -17,6 +17,7 @@ export const SCHEDULER_CAMPAIGN_KEY = {
   SOCIAL_DIGEST: "social_digest_v3",
   WEATHER_MORNING: "weather_morning_v3",
   WEATHER_EVENING: "weather_evening_v3",
+  PREMIUM_GRANT_ENDING: "premium_grant_ending_v1",
 } as const;
 
 /** 저녁 리마인더와 소셜 다이제스트 사이의 피로도 완충 시간. */

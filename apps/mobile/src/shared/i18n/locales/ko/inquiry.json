@@ -2,6 +2,7 @@
   "category": {
     "bugReport": "버그 신고",
     "featureRequest": "기능 요청",
+    "payment": "결제·구독",
     "other": "기타"
   },
   "form": {

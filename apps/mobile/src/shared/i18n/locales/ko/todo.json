@@ -68,7 +68,7 @@
     "placeholder": "무엇을 하고 싶으신가요?",
     "submit": "선택하기",
     "aiFeature": "AI로 할 일 만들기",
-    "voiceAddTitle": "말로 할일을 추가해요",
+    "voiceAddTitle": "말로 할 일을 추가해요",
     "voiceAddHint": "\"이번 주 금요일 저녁 7시 약속\"처럼\n말하면 날짜·시간을 채워줘요"
   },
   "subTodo": {
@@ -143,8 +143,6 @@
     "loadFailed": "캘린더 표시를 업데이트하지 못했어요"
   },
   "feed": {
-    "me": "나",
-    "avatarAlt": "{{name}} 프로필",
     "loading": "불러오는 중...",
     "suggestionsLoading": "제안을 불러오는 중...",
     "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
@@ -152,14 +150,25 @@
     "preparing": "이번 주 제안을 준비 중이에요",
     "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해 주세요"
   },
+  "friendStrip": {
+    "me": "나",
+    "meLabel": "내 할 일 보기",
+    "friendLabel": "{{name}}님의 할 일 보기",
+    "findFriends": "친구 찾기",
+    "loadMoreFailed": "다시 시도",
+    "loadMoreFailedLabel": "친구를 더 불러오지 못했어요. 다시 시도",
+    "emptyInvite": "초대하기",
+    "emptyInviteHint": "친구를 초대하면 서로의 할 일을 보고 응원할 수 있어요",
+    "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해 보세요"
+  },
   "activation": {
     "title": "첫 할 일을 만들고 완료해 보세요",
-    "description": "두 단계만 끝내면 Aido를 바로 익힐 수 있어요",
+    "description": "아래 단계를 끝내면 아이두를 바로 익힐 수 있어요",
     "createTodo": "첫 할 일 만들기",
     "completeTodo": "만든 할 일 완료하기",
     "completed": "완료",
     "incomplete": "미완료",
-    "accessibilityLabel": "Aido 시작 체크리스트",
+    "accessibilityLabel": "아이두 시작 체크리스트",
     "stepAccessibilityLabel": "{{label}}, {{status}}"
   },
   "reorderCoachmark": {
@@ -170,6 +179,8 @@
   "detail": {
     "emptyTitle": "선택한 할 일이 없어요",
     "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
+    "unavailableTitle": "지금은 볼 수 없는 할 일이에요",
+    "unavailableDescription": "할 일이 지워졌거나 친구 관계가 바뀌었을 수 있어요",
     "title": "할 일",
     "open": "댓글",
     "pageTitle": "할 일 상세",
@@ -222,7 +233,13 @@
     "replyStatus": "답장: {{reply}}",
     "waiting": "답장을 기다리고 있어요",
     "thanked": "완료 소식과 고마운 마음을 전했어요",
-    "thanksAction": "친구에게 고마움 전하기",
+    "thanksPendingTitle": "콕 찔러 준 친구 {{count}}명",
+    "thanksPendingDescription": "완료 소식과 함께 고마움을 전해요",
+    "thanksNewPendingDescription": "새로 콕 찔러 준 친구 {{count}}명이 있어요",
+    "thanksSentTitle": "친구 {{count}}명에게 고마움을 전했어요",
+    "thanksQuickAction": "고마워요",
+    "thanksSendMore": "더 전하기",
+    "thanksQuickActionLabel": "콕 찔러 준 친구 {{count}}명에게 고마움 전하기",
     "thanksTitle": "친구에게 고마움을 전해요",
     "thanksDescription": "응원해 준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
     "thanksEmpty": "지금은 고마움을 전할 친구가 없어요",

@@ -45,7 +45,7 @@ export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOpti
     enabled: isProduction && Boolean(env.SENTRY_DSN),
     environment,
     tracesSampleRate:
-      env.SENTRY_TRACES_SAMPLE_RATE !== undefined
+      env.SENTRY_TRACES_SAMPLE_RATE != null
         ? Number(env.SENTRY_TRACES_SAMPLE_RATE)
         : isProduction
           ? 0.2

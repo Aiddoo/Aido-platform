@@ -11,6 +11,7 @@ export function FeatureDiscoveryReentryCard({ onPress }: FeatureDiscoveryReentry
 
   return (
     <PressableFeedback
+      testID="feature-guide-open"
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={t('entry.openLabel')}

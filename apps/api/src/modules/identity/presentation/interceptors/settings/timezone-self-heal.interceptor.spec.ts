@@ -10,6 +10,8 @@ import { of } from "rxjs";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";
 
+import { createMockExecutionContext } from "#test/mocks/execution-context.mock";
+
 import { IdentitySettingsLogEvent } from "../../../application/observability/settings/identity-settings-log.events.js";
 import { RefreshPushTimezone } from "../../../application/use-cases/settings/refresh-push-timezone.use-case.js";
 import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor.js";
@@ -18,11 +20,9 @@ const nextHandler: CallHandler = { handle: () => of("ok") };
 
 function contextFor(
   user: { userId: string } | undefined,
-  headers: Record<string, unknown>,
+  headers: Record<string, string>,
 ): ExecutionContext {
-  return {
-    switchToHttp: () => ({ getRequest: () => ({ user, headers }) }),
-  } as unknown as ExecutionContext;
+  return createMockExecutionContext({ user, headers }).context;
 }
 
 describe("TimezoneSelfHealInterceptor", () => {

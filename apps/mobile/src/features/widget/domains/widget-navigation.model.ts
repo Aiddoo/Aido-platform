@@ -1,12 +1,10 @@
 import { dateSchema } from '@aido/api';
 import { z } from 'zod';
 
-const widgetFeedParametersSchema = z
-  .object({
-    date: z.union([dateSchema, z.literal('today')]),
-    action: z.literal('add-todo').optional(),
-  })
-  .strict();
+const widgetFeedParametersSchema = z.strictObject({
+  date: z.union([dateSchema, z.literal('today')]),
+  action: z.literal('add-todo').optional(),
+});
 
 const widgetNavigationDestinationSchema = z.discriminatedUnion('kind', [
   widgetFeedParametersSchema.extend({ kind: z.literal('feed') }),
@@ -51,7 +49,7 @@ export function parseWidgetNavigationUri(uri: string | null): WidgetNavigationDe
 
 export const widgetNavigationCommandSchema = z.object({
   id: z.string().min(1),
-  uri: z.string().refine((uri) => parseWidgetNavigationUri(uri) !== null),
+  uri: z.string().refine((uri) => parseWidgetNavigationUri(uri) != null),
   userId: z.string().min(1),
   createdAt: z.number().int().nonnegative(),
 });

@@ -43,6 +43,8 @@ export const aiSuggestionActionResultSchema = z.object({
 });
 export type AiSuggestionActionResult = z.infer<typeof aiSuggestionActionResultSchema>;
 
-export const parsedMemoResultSchema = parsedMemoDataSchema;
+export const parsedMemoResultSchema = parsedMemoDataSchema.extend({
+  omittedTodoCount: z.number().int().nonnegative(),
+});
 export type ParsedMemoResult = z.infer<typeof parsedMemoResultSchema>;
 export type ParsedMemoTodo = ParsedMemoResult['todos'][number];

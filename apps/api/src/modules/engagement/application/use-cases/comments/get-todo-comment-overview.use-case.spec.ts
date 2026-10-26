@@ -7,6 +7,7 @@ import {
   createEngagementCommentReader,
   StubEngagementCursorCodec,
 } from "#test/fixtures/engagement-comment.fixture";
+import { StubTodoCommentBlockReader } from "#test/mocks/ports/engagement-comment.stub";
 
 import type {
   TodoCommentOverviewItemRecord,
@@ -81,7 +82,11 @@ describe("GetTodoCommentOverview", () => {
     };
     reader.likedCommentIds = new Set([REPLY_ID]);
     cursorCodec.encodedOverviews = ["previous", "next"];
-    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoCommentOverview({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     const response = await useCase.execute({
@@ -127,7 +132,11 @@ describe("GetTodoCommentOverview", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoCommentOverview({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     // When
@@ -155,7 +164,11 @@ describe("GetTodoCommentOverview", () => {
 
     const cursorCodec = new StubEngagementCursorCodec();
     reader.accessiblePairs.delete(`${TODO_ID}:${VIEWER_ID}`);
-    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoCommentOverview({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     // When
     const result = useCase.execute({
@@ -197,7 +210,11 @@ describe("GetTodoCommentOverview", () => {
       hasNext: false,
     };
     reader.likedCommentIds = new Set();
-    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoCommentOverview({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
 
     await useCase.execute({
       todoId: TODO_ID,
@@ -224,7 +241,11 @@ describe("GetTodoCommentOverview", () => {
 
     const cursorCodec = new StubEngagementCursorCodec();
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
-    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
+    const useCase = new GetTodoCommentOverview({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: new StubTodoCommentBlockReader(),
+    });
     const cursor = "other-todo-cursor";
     const root = createRoot({ todoId: 2 });
     cursorCodec.decodedOverview = {

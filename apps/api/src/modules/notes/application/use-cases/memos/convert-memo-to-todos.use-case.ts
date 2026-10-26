@@ -78,12 +78,12 @@ export class ConvertMemoToTodos {
         MutationLockKeys.todoSortOrder(userId),
       ]);
       const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (memo === null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      if (memo == null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       const todos: Todo[] = [];
       for (const todoData of data.todos) {
         try {
           const staged = await this.#dependencies.savepointRunner.run(() => {
-            if (todoData.isRecurring === true && todoData.recurrence !== undefined) {
+            if (todoData.isRecurring === true && todoData.recurrence != null) {
               return this.#dependencies.todoCreator.stageRecurringTodos(
                 {
                   userId,
@@ -93,7 +93,7 @@ export class ConvertMemoToTodos {
                   endDate: toDateString(todoData.recurrence.endDate),
                   daysOfWeek: todoData.recurrence.daysOfWeek,
                   scheduledTime:
-                    todoData.scheduledTime === undefined || todoData.scheduledTime === null
+                    todoData.scheduledTime == null
                       ? null
                       : toLocalTimeString(todoData.scheduledTime, timezone),
                   isAllDay: todoData.isAllDay ?? true,

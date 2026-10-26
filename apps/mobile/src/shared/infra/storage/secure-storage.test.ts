@@ -1,5 +1,6 @@
 import { KeychainLockedError } from '@src/shared/errors';
 import * as ExpoSecureStore from 'expo-secure-store';
+import { z } from 'zod';
 
 import { SecureStorage } from './secure-storage';
 
@@ -11,9 +12,7 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(),
 }));
 
-const getItemAsync = ExpoSecureStore.getItemAsync as jest.MockedFunction<
-  typeof ExpoSecureStore.getItemAsync
->;
+const getItemAsync = jest.mocked(ExpoSecureStore.getItemAsync);
 
 describe('SecureStorage — 벤더 에러 분류', () => {
   let storage: SecureStorage;
@@ -28,7 +27,7 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockResolvedValue(JSON.stringify('token-value'));
 
     // When & Then
-    await expect(storage.get<string>('key')).resolves.toBe('token-value');
+    await expect(storage.get('key', z.string())).resolves.toBe('token-value');
   });
 
   it('항목이 없으면 null을 돌려준다', async () => {
@@ -36,7 +35,7 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockResolvedValue(null);
 
     // When & Then
-    await expect(storage.get('key')).resolves.toBeNull();
+    await expect(storage.get('key', z.string())).resolves.toBeNull();
   });
 
   it('기기 잠금 오류는 KeychainLockedError로 승격한다', async () => {
@@ -44,7 +43,7 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockRejectedValue(new Error('User interaction is not allowed.'));
 
     // When & Then — "지금 못 읽는다"는 "토큰이 없다"와 다르다
-    await expect(storage.get('key')).rejects.toBeInstanceOf(KeychainLockedError);
+    await expect(storage.get('key', z.string())).rejects.toBeInstanceOf(KeychainLockedError);
   });
 
   it('Error가 아닌 값으로 던져져도 잠금을 판별한다', async () => {
@@ -53,7 +52,7 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockRejectedValue({ message: 'User interaction is not allowed.' });
 
     // When & Then
-    await expect(storage.get('key')).rejects.toBeInstanceOf(KeychainLockedError);
+    await expect(storage.get('key', z.string())).rejects.toBeInstanceOf(KeychainLockedError);
   });
 
   it('잠금 오류를 승격할 때 원본을 cause로 보존한다', async () => {
@@ -62,10 +61,11 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockRejectedValue(original);
 
     // When
-    const error = await storage.get('key').catch((caught: unknown) => caught);
+    const reading = storage.get('key', z.string());
 
     // Then — 관측 시 원본 OSStatus 메시지를 잃지 않는다
-    expect((error as KeychainLockedError).cause).toBe(original);
+    await expect(reading).rejects.toBeInstanceOf(KeychainLockedError);
+    await expect(reading).rejects.toMatchObject({ cause: original });
   });
 
   it.each([
@@ -79,8 +79,8 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockRejectedValue(original);
 
     // When & Then
-    await expect(storage.get('key')).rejects.toBe(original);
-    await expect(storage.get('key')).rejects.not.toBeInstanceOf(KeychainLockedError);
+    await expect(storage.get('key', z.string())).rejects.toBe(original);
+    await expect(storage.get('key', z.string())).rejects.not.toBeInstanceOf(KeychainLockedError);
   });
 
   it('저장된 값이 손상돼 파싱에 실패하면 null로 취급한다 (throw하지 않는다)', async () => {
@@ -88,6 +88,6 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockResolvedValue('{not-json');
 
     // When & Then
-    await expect(storage.get('key')).resolves.toBeNull();
+    await expect(storage.get('key', z.string())).resolves.toBeNull();
   });
 });

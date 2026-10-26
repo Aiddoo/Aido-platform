@@ -76,21 +76,15 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
           styles.container,
           containerStyle,
           {
-            backgroundColor: surface.backgroundColor as string,
-            borderColor: border.borderColor as string,
+            backgroundColor: surface.backgroundColor,
+            borderColor: border.borderColor,
           },
         ]}
       >
-        <Animated.View
-          style={[styles.bar, barOpacity, { backgroundColor: inner.backgroundColor as string }]}
-        >
-          <ReText style={[styles.percent, { color: label.color as string }]} text={percentText} />
-          <Animated.View
-            style={[styles.track, { backgroundColor: track.backgroundColor as string }]}
-          >
-            <Animated.View
-              style={[styles.fill, fillWidth, { backgroundColor: brand.color as string }]}
-            />
+        <Animated.View style={[styles.bar, barOpacity, { backgroundColor: inner.backgroundColor }]}>
+          <ReText style={[styles.percent, { color: label.color }]} text={percentText} />
+          <Animated.View style={[styles.track, { backgroundColor: track.backgroundColor }]}>
+            <Animated.View style={[styles.fill, fillWidth, { backgroundColor: brand.color }]} />
           </Animated.View>
         </Animated.View>
 
@@ -99,7 +93,7 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
             StyleSheet.absoluteFill,
             styles.collapsed,
             arrowOpacity,
-            { backgroundColor: inner.backgroundColor as string },
+            { backgroundColor: inner.backgroundColor },
           ]}
         >
           <PressableFeedback onPress={onScrollToTop} className="flex-1 items-center justify-center">

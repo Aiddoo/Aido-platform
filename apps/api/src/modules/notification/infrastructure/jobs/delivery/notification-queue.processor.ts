@@ -1,10 +1,6 @@
 import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
 
-import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/index";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
 import { ReconcilePushReceipts } from "../../../application/use-cases/delivery/reconcile-push-receipts.use-case.js";
 import { SendBillingIssueNotification } from "../../../application/use-cases/delivery/send-billing-issue-notification.use-case.js";
@@ -46,14 +42,14 @@ export class NotificationQueueProcessor implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     if (!this.runtime) return;
 
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       NOTIFICATION_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.process(job.data);
       },
       NOTIFICATION_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       NOTIFICATION_LEGACY_QUEUE,
       async (jobs) => {
         for (const job of jobs) {

@@ -50,7 +50,7 @@ describe("할 일 카테고리 이동", () => {
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
     expect(fixture.records.get(1)?.categoryId).toBe(1);
     const saved = fixture.records.get(1);
-    if (saved === undefined) throw new Error("Todo fixture missing");
+    if (saved == null) throw new Error("Todo fixture missing");
     saved.completed = true;
     saved.completedAt = PLANNING_TIME;
     const result = await useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 });
