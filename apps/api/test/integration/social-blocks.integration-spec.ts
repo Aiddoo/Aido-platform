@@ -309,4 +309,40 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       }),
     ).toBe(0);
   });
+
+  it("차단하면 콕 하나를 열어도 보낸 사람·받은 사람 모두에게 없는 콕이다", async () => {
+    // Given
+    const { id: categoryId } = await client.orm.public.TodoCategory.create(
+      encodeCreate("TodoCategory", TodoCategoryFixture.create({ userId: meId, sortOrder: 0 })),
+    );
+    const todo = await client.orm.public.Todo.create(
+      encodeCreate(
+        "Todo",
+        omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]),
+      ),
+    );
+    const nudge = await client.orm.public.Nudge.create(
+      encodeCreate(
+        "Nudge",
+        omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId: todo.id }), ["id"]),
+      ),
+    );
+    const [receivedBeforeBlock, sentBeforeBlock] = await Promise.all([
+      nudgeRepository.findInteractionById(nudge.id, meId),
+      nudgeRepository.findInteractionById(nudge.id, otherId),
+    ]);
+    await blockUser.execute({ blockerId: meId, blockedId: otherId });
+
+    // When
+    const [receivedAfterBlock, sentAfterBlock] = await Promise.all([
+      nudgeRepository.findInteractionById(nudge.id, meId),
+      nudgeRepository.findInteractionById(nudge.id, otherId),
+    ]);
+
+    // Then
+    expect(receivedBeforeBlock?.id).toBe(nudge.id);
+    expect(sentBeforeBlock?.id).toBe(nudge.id);
+    expect(receivedAfterBlock).toBeNull();
+    expect(sentAfterBlock).toBeNull();
+  });
 });

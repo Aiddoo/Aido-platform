@@ -266,7 +266,20 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       "Nudge",
       await this.interactions
         .where((nudge) =>
-          and(nudge.id.eq(id), or(nudge.senderId.eq(userId), nudge.receiverId.eq(userId))),
+          and(
+            nudge.id.eq(id),
+            // 목록과 같이 상대가 어느 방향으로든 차단 관계면 없는 콕으로 본다.
+            or(
+              and(
+                nudge.receiverId.eq(userId),
+                nudge.sender.some((sender) => hasNoBlockWith(sender, userId)),
+              ),
+              and(
+                nudge.senderId.eq(userId),
+                nudge.receiver.some((receiver) => hasNoBlockWith(receiver, userId)),
+              ),
+            ),
+          ),
         )
         .first(),
     );
