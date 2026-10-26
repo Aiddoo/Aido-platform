@@ -3,6 +3,7 @@ import { createMockSyncStorage } from '@src/shared/__tests__/create-mock-sync-st
 import {
   claimFeatureDiscoverySeen,
   createFeatureDiscoveryStateRepository,
+  dismissFeatureDiscoveryReentry,
   featureDiscoverySeenKey,
   isFeatureDiscoveryReentryVisible,
   isFeatureDiscoverySeen,
@@ -153,5 +154,73 @@ describe('feature discovery 14일 재진입', () => {
 
     // Then
     expect(result).toBe(false);
+  });
+});
+
+describe('feature discovery 재진입 카드 닫기', () => {
+  const claimedAt = new Date('2026-08-02T00:00:00.000Z');
+  const now = new Date('2026-08-03T00:00:00.000Z');
+
+  const createStatefulStorage = () => {
+    const storage = createMockSyncStorage();
+    const values = new Map<string, string>();
+    storage.getString.mockImplementation((key) => values.get(key));
+    storage.set.mockImplementation((key, value) => values.set(key, value));
+    storage.delete.mockImplementation((key) => values.delete(key));
+    return storage;
+  };
+
+  it('닫은 캠페인의 재진입 카드는 다시 claim해도 돌아오지 않는다', () => {
+    // Given
+    const storage = createStatefulStorage();
+    claimFeatureDiscoverySeen(storage, { ...input, at: claimedAt });
+
+    // When
+    dismissFeatureDiscoveryReentry(storage, input);
+    const reclaimed = claimFeatureDiscoverySeen(storage, { ...input, at: now });
+
+    // Then
+    expect(reclaimed).toBe(false);
+    expect(isFeatureDiscoveryReentryVisible(storage, { ...input, now })).toBe(false);
+  });
+
+  it('한 계정·캠페인에서 닫아도 다른 계정과 새 캠페인의 카드는 남는다', () => {
+    // Given
+    const storage = createStatefulStorage();
+    const otherUser = { ...input, userId: 'user-2' };
+    const nextCampaign = { ...input, campaignId: 'feature-discovery-2026-11' };
+    claimFeatureDiscoverySeen(storage, { ...input, at: claimedAt });
+    claimFeatureDiscoverySeen(storage, { ...otherUser, at: claimedAt });
+    claimFeatureDiscoverySeen(storage, { ...nextCampaign, at: claimedAt });
+
+    // When
+    dismissFeatureDiscoveryReentry(storage, input);
+
+    // Then
+    expect(isFeatureDiscoveryReentryVisible(storage, { ...otherUser, now })).toBe(true);
+    expect(isFeatureDiscoveryReentryVisible(storage, { ...nextCampaign, now })).toBe(true);
+  });
+
+  it('이전 버전이 저장한 재진입 시각을 그대로 읽는다', () => {
+    // Given
+    const storage = createMockSyncStorage();
+    storage.getString.mockReturnValue(claimedAt.toISOString());
+
+    // When
+    const result = isFeatureDiscoveryReentryVisible(storage, { ...input, now });
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it('저장소에서 지우지 못해도 앱을 멈추지 않는다', () => {
+    // Given
+    const storage = createMockSyncStorage();
+    storage.delete.mockImplementation(() => {
+      throw new Error('storage unavailable');
+    });
+
+    // When & Then
+    expect(() => dismissFeatureDiscoveryReentry(storage, input)).not.toThrow();
   });
 });
