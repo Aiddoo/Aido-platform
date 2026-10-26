@@ -106,6 +106,23 @@ describe('calculateDaysLeft 달력 경계', () => {
 });
 
 describe('PremiumAccessPolicy', () => {
+  describe('isStoreSubscribed', () => {
+    it.each([
+      ['STORE', true],
+      ['GRANT', false],
+      [null, false],
+    ] as const)('출처가 %s면 %s를 반환한다', (source, expected) => {
+      // Given 보상 프리미엄만 쓰는 중(GRANT)이거나 프리미엄이 없으면 구독을 권할 수 있다
+      const access = createPremiumAccess({ source });
+
+      // When
+      const result = PremiumAccessPolicy.isStoreSubscribed(access);
+
+      // Then
+      expect(result).toBe(expected);
+    });
+  });
+
   describe('isGrantOnly', () => {
     it.each([
       ['GRANT', true],

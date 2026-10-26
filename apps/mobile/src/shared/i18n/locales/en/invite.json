@@ -99,6 +99,7 @@
     "progress": {
       "notStarted": "Invite your first friend. You'll be friends as soon as they join",
       "monthlyCapReached": "You've earned the most Premium for this {{windowDays}}-day period ({{days}} days). You can still collect paw prints, and each one lets you add 1 more friend",
+      "totalCapReached": "You've received all {{days}} days of invite Premium. Each new paw print still lets you add 1 more friend",
       "next_one": "{{count}} more friend to your next reward",
       "next_other": "{{count}} more friends to your next reward"
     },
@@ -108,7 +109,9 @@
     "complete": "You filled board {{boardNumber}}! A new board opens next time",
     "rewardsSummary_one": "{{count}} day of Premium · +{{slots}} friend limit",
     "rewardsSummary_other": "{{count}} days of Premium · +{{slots}} friend limit",
-    "unavailable": "You can keep collecting paw prints when invites are back"
+    "unavailable": "You can keep collecting paw prints when invites are back",
+    "keepPremium": "Keep Premium",
+    "keepPremiumHint": "Opens the subscription screen"
   },
   "friendList": {
     "title": "Invited friends",

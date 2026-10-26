@@ -243,6 +243,40 @@ describe('InviteService', () => {
       ]);
     });
 
+    it.each([
+      ['상한 상태가 없는 이전 서버', undefined],
+      ['앱이 모르는 새 상한 상태', 'PAUSED'],
+    ])('%s 응답이면 상한을 AVAILABLE로 읽어 반환한다', async (_case, premiumCapState) => {
+      // Given
+      const { service, authHttpClient } = createService();
+      const { premiumCapState: _omitted, ...previousDto } = createInviteDto();
+      authHttpClient.get.mockResolvedValue({
+        ok: true,
+        value: premiumCapState == null ? previousDto : { ...previousDto, premiumCapState },
+      });
+
+      // When
+      const result = await service.getInvite();
+
+      // Then
+      expect(result.ok && result.value.premiumCapState).toBe('AVAILABLE');
+    });
+
+    it('서버가 누적 상한을 보내면 그대로 반환한다', async () => {
+      // Given 출시 전에 이미 상한에 닿은 사용자도 첫 조회에서 상한 상태를 받는다
+      const { service, authHttpClient } = createService();
+      authHttpClient.get.mockResolvedValue({
+        ok: true,
+        value: createInviteDto({ premiumCapState: 'TOTAL_REACHED', totalPremiumDays: 90 }),
+      });
+
+      // When
+      const result = await service.getInvite();
+
+      // Then
+      expect(result.ok && result.value.premiumCapState).toBe('TOTAL_REACHED');
+    });
+
     it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {
       // Given
       const { service, authHttpClient } = createService();

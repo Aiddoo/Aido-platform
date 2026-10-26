@@ -56,7 +56,7 @@ describe('InviteRewardPolicy', () => {
       // When
       const result = InviteRewardPolicy.inviterPremiumDays();
 
-      // Then INVITER_REWARD_MILESTONES[0]의 PREMIUM_DAYS 7 (친구 자리 1은 세지 않는다)
+      // Then INVITER_REWARD_MILESTONES[0]의 PREMIUM_DAYS 7 (친구 추가 +1명은 세지 않는다)
       expect(result).toBe(7);
     });
   });

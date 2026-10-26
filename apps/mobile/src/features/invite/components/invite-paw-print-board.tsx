@@ -1,9 +1,15 @@
 import { useInviteService } from '@src/bootstrap/providers/di-context';
+import {
+  type PremiumAccess,
+  PremiumAccessPolicy,
+} from '@src/features/subscription/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
+  Button,
   FishIcon,
   HStack,
   PawIcon,
@@ -16,8 +22,9 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/format';
 import { notifySuccess } from '@src/shared/utils/haptics';
-import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useId, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
@@ -479,7 +486,9 @@ function WaitingPawPrint() {
 
 function InviteProgressMessage() {
   const { t } = useTranslation('invite');
-  const { data: myInvite } = useSuspenseQuery(useGetInviteQueryOptions());
+  const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
+    queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
+  });
   const remaining = InvitePolicy.remainingToNextMilestone(myInvite);
 
   return match(InvitePolicy.progress(myInvite))
@@ -489,12 +498,35 @@ function InviteProgressMessage() {
       </Text>
     ))
     .with('monthly-cap-reached', () => (
-      <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-        {t('pawPrintBoard.progress.monthlyCapReached', {
-          windowDays: InvitePolicy.premiumCapWindowDays(),
-          days: InvitePolicy.monthlyPremiumCapDays(),
-        })}
-      </Text>
+      <VStack gap={12}>
+        <Text
+          size="b4"
+          shade={7}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
+          {t('pawPrintBoard.progress.monthlyCapReached', {
+            windowDays: InvitePolicy.premiumCapWindowDays(),
+            days: InvitePolicy.monthlyPremiumCapDays(),
+          })}
+        </Text>
+        <KeepPremiumButton premiumAccess={me.premiumAccess} />
+      </VStack>
+    ))
+    .with('total-cap-reached', () => (
+      <VStack gap={12}>
+        <Text
+          size="b4"
+          shade={7}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
+          {t('pawPrintBoard.progress.totalCapReached', {
+            days: InvitePolicy.totalPremiumCapDays(),
+          })}
+        </Text>
+        <KeepPremiumButton premiumAccess={me.premiumAccess} />
+      </VStack>
     ))
     .with('in-progress', () => (
       <VStack gap={2}>
@@ -517,4 +549,29 @@ function InviteProgressMessage() {
       </VStack>
     ))
     .exhaustive();
+}
+
+/**
+ * 초대 보상 프리미엄 상한에 닿았을 때 구독 화면으로 가는 버튼. 이동만 하고 보상·상한은 서버가 정한다.
+ * 이미 스토어 구독 중이면 권하지 않는다
+ */
+function KeepPremiumButton({ premiumAccess }: { premiumAccess: PremiumAccess }) {
+  const { t } = useTranslation('invite');
+  const navigate = useSingleTap(router.navigate);
+
+  if (PremiumAccessPolicy.isStoreSubscribed(premiumAccess)) {
+    return null;
+  }
+
+  return (
+    <Button
+      variant="weak"
+      size="medium"
+      display="inline"
+      accessibilityHint={t('pawPrintBoard.keepPremiumHint')}
+      onPress={() => navigate('/settings/subscription')}
+    >
+      {t('pawPrintBoard.keepPremium')}
+    </Button>
+  );
 }
