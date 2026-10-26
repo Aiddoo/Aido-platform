@@ -1,5 +1,6 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { TODO_SHEET_FALLBACK_HREF } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -10,6 +11,7 @@ import {
   Text,
   VStack,
   Box,
+  useSheetRoute,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -19,6 +21,7 @@ import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { Image } from 'react-native';
 
 import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
+import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
 import { useSendRemindNudgeMutationOptions } from '../queries/use-send-remind-nudge-mutation-options';
 import { useSendTodoNudgeMutationOptions } from '../queries/use-send-todo-nudge-mutation-options';
 
@@ -74,6 +77,20 @@ export function RemindNudgeBottomSheet({
     />
   );
 }
+
+/** route(`/users/[userId]/nudge`)로 띄운 독촉 콕 시트. 받는 사람은 route에서 읽는다 */
+RemindNudgeBottomSheet.Route = function Route() {
+  const { userId, name } = useRemindNudgeRouteParams();
+  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+
+  return (
+    <RemindNudgeBottomSheet
+      receiver={{ id: userId, displayName: name }}
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+    />
+  );
+};
 
 interface NudgeMessageSheetProps extends SheetProps {
   receiver: NudgeReceiver;

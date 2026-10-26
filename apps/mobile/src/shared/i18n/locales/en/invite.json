@@ -143,7 +143,6 @@
     "waiting_other": "Off to a good start! {{count}} more days of to-dos to get a paw print",
     "waitingNotStarted_one": "Completes to-dos on {{count}} day to get you a paw print",
     "waitingNotStarted_other": "Completes to-dos on {{count}} days to get you a paw print",
-    "nudge": "Nudge",
     "nudgeLabel_one": "Go nudge {{name}}. One more day to a paw print",
     "nudgeLabel_other": "Go nudge {{name}}. {{count}} more days to a paw print"
   },

@@ -129,7 +129,6 @@
     "emptyWaitingDescription": "가입했지만 아직 발자국이 찍히지 않은 친구가 여기에 보여요",
     "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요",
     "waitingNotStarted": "{{count}}일 동안 할 일을 끝내면 발자국이 찍혀요",
-    "nudge": "콕 찌르기",
     "nudgeLabel": "{{name}}에게 콕 찌르러 가기. {{count}}일만 더 하면 발자국이 찍혀요"
   },
   "share": {

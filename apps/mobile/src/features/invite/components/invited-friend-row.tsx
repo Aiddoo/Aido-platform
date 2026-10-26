@@ -1,7 +1,8 @@
 import { REDEMPTION_REJECTION_REASON } from '@aido/api';
 import { useGetFriendQueryOptions } from '@src/features/friend/queries/get-friend-query-options';
+import { NudgePawButton } from '@src/features/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queries/get-remind-nudge-cooldown-query-options';
-import { createFeedHref } from '@src/features/todo/utils/feed-route';
+import { remindNudgeSheetHref } from '@src/features/nudge/utils/navigation/nudge-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -13,21 +14,17 @@ import {
   HStack,
   ListRow,
   type ListRowProps,
-  PawIcon,
   Text,
   VStack,
 } from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
 import { type InvitedFriend, InvitedFriendPolicy } from '../domains/invited-friend.model';
-import {
-  invitedFriendChipVariants,
-  invitedFriendNudgeButtonVariants,
-} from './invited-friend-row.variants';
+import { invitedFriendChipVariants } from './invited-friend-row.variants';
 
 interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' | 'right'> {
   friend: InvitedFriend;
@@ -181,27 +178,19 @@ function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
   );
 }
 
-/**
- * 그 친구의 오늘 피드로 간다. 할 일이 있으면 할 일 콕, 없으면 독촉 콕을 기존 콕 찌르기 흐름이 그대로 고른다
- */
+/** 친구 독촉 콕 시트를 route로 연다. 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
 function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
   const push = useSingleTap(router.push);
+  const displayName = InvitedFriendPolicy.displayName(friend);
 
   return (
-    <PressableFeedback
-      accessibilityRole="button"
+    <NudgePawButton
       accessibilityLabel={t('friendList.nudgeLabel', {
-        name: InvitedFriendPolicy.displayName(friend),
+        name: displayName,
         count: InvitedFriendPolicy.activeDaysLeft(friend),
       })}
-      onPress={() => push(createFeedHref({ friendId: friend.userId, date: 'today' }))}
-      className={invitedFriendNudgeButtonVariants()}
-    >
-      <PawIcon width={14} height={14} colorClassName="text-main" />
-      <Text size="e1" weight="bold" tone="brand" maxLines={1}>
-        {t('friendList.nudge')}
-      </Text>
-    </PressableFeedback>
+      onPress={() => push(remindNudgeSheetHref({ id: friend.userId, displayName }))}
+    />
   );
 }

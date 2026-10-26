@@ -9,7 +9,3 @@ export const invitedFriendChipVariants = tv({
     },
   },
 });
-
-export const invitedFriendNudgeButtonVariants = tv({
-  base: 'min-h-7 flex-row items-center gap-1 rounded-full bg-main/10 px-2.5',
-});
