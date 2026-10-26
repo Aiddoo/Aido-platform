@@ -8,7 +8,14 @@ import sharp from 'sharp';
 
 import { cardLayout, cardWidthForHeight } from './lib/card.mjs';
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
-import { captureNeeds, cleanSheet, keyboardHeight, plan, systemBarCrop } from './render.mjs';
+import {
+  captureNeeds,
+  cleanSheet,
+  keyboardHeight,
+  mergeGalleryEntries,
+  plan,
+  systemBarCrop,
+} from './render.mjs';
 import { LOCALES, SCENES, SETS, SLOTS, TARGETS, slotCopy } from './storyboard.mjs';
 
 test('WCAG 대비율을 계산하고 기준 미달을 고른다', () => {
@@ -249,4 +256,24 @@ test('iOS 시트 화면은 어두운 배경을 시트 바탕색으로 지우고 
     .png()
     .toFile(plain);
   assert.equal(await cleanSheet(plain, 100), null);
+});
+
+test('일부만 다시 그려도 갤러리에 폴더의 다른 이미지와 그래픽이 남는다', () => {
+  // Given: 이전 갤러리에 화면 2장과 그래픽 1장이 있고, 그중 화면 1장의 파일은 지워졌다
+  const previous = [
+    { group: '기본 · iPhone · ko', output: 'a/01.png' },
+    { group: '기본 · iPhone · ko', output: 'a/02.png' },
+    { group: '그래픽 · 검색 결과', output: 'g/search.png' },
+  ];
+  const current = [{ group: '기본 · iPhone · ko', output: 'a/01.png', fresh: true }];
+
+  // When
+  const merged = mergeGalleryEntries(previous, current, (output) => output !== 'a/02.png');
+
+  // Then: 새로 그린 항목이 이전 항목을 대신하고, 그래픽은 화면 묶음 뒤에 남는다
+  assert.deepEqual(
+    merged.map((entry) => entry.output),
+    ['a/01.png', 'g/search.png'],
+  );
+  assert.equal(merged[0].fresh, true);
 });

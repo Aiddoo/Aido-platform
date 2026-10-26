@@ -425,6 +425,28 @@ async function finish(png, job, expected) {
   return { output, problems, bytes: output.length };
 }
 
+function readPreviousEntries(out) {
+  const path = join(out, 'manifest.json');
+  if (!existsSync(path)) {
+    return [];
+  }
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  return Array.isArray(manifest.entries) ? manifest.entries : [];
+}
+
+// 이번에 그린 이미지가 같은 경로의 이전 항목을 대신하고, 파일이 지워진 이전 항목은 뺀다. 화면 묶음 → 그래픽 순서로 정렬한다.
+export function mergeGalleryEntries(previous, current, exists) {
+  const rendered = new Set(current.map((entry) => entry.output));
+  const kept = previous.filter((entry) => !rendered.has(entry.output) && exists(entry.output));
+  const isGraphic = (entry) => entry.group.startsWith('그래픽');
+  return [...kept, ...current].toSorted(
+    (a, b) =>
+      Number(isGraphic(a)) - Number(isGraphic(b)) ||
+      a.group.localeCompare(b.group) ||
+      a.output.localeCompare(b.output),
+  );
+}
+
 function galleryHtml(entries, { preview, captureRoot }) {
   const groups = new Map();
   for (const entry of entries) {
@@ -627,11 +649,15 @@ async function render({ out, captureRoot, preview, only, locales }) {
       sheetTemp = null;
     }
   }
+  // --only로 일부만 다시 그려도 갤러리에는 폴더에 이미 있는 다른 이미지가 남게 이전 목록과 합친다
+  const gallery = mergeGalleryEntries(readPreviousEntries(out), entries, (output) =>
+    existsSync(join(out, output)),
+  );
   writeFileSync(
     join(out, 'manifest.json'),
-    `${JSON.stringify({ release: RELEASE_VERSION, preview, captureRoot, entries }, null, 2)}\n`,
+    `${JSON.stringify({ release: RELEASE_VERSION, preview, captureRoot, entries: gallery }, null, 2)}\n`,
   );
-  writeFileSync(join(out, 'index.html'), galleryHtml(entries, { preview, captureRoot }));
+  writeFileSync(join(out, 'index.html'), galleryHtml(gallery, { preview, captureRoot }));
   if (errors.length > 0) {
     throw new Error(
       `검사 실패 ${errors.length}건:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
