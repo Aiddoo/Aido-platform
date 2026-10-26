@@ -105,14 +105,14 @@
   "friendList": {
     "title": "초대한 친구",
     "stamped": "{{date}}에 발자국을 남겼어요",
-    "waiting": "할 일 {{done}}/{{required}}일 완료",
+    "waiting": "할 일을 시작했어요! {{count}}일만 더 끝내면 발자국이 찍혀요",
     "excluded": "이번에는 발자국이 찍히지 않았어요",
     "excludedExpired": "가입하고 {{days}}일이 지나서 이번에는 발자국이 찍히지 않았어요",
     "excludedMonthlyCap": "보상 한도를 다 채워서 이번에는 발자국이 찍히지 않았어요",
     "joined": "{{date}}에 가입했어요",
     "chipDone": "찍혔어요",
     "chipDoneLabel": "발자국이 찍혔어요",
-    "chipWaiting": "할 일 {{count}}일 더",
+    "chipWaiting": "{{count}}일 남음",
     "chipWaitingLabel": "{{count}}일만 더 하면 발자국이 찍혀요",
     "emptyTitle": "아직 초대한 친구가 없어요",
     "emptyDescription": "초대 링크로 가입한 친구가 여기에 보여요",
@@ -123,7 +123,8 @@
     "seeAll": "전체 보기 {{count}}명",
     "emptyWaitingTitle": "발자국을 기다리는 친구가 없어요",
     "emptyWaitingDescription": "가입했지만 아직 발자국이 찍히지 않은 친구가 여기에 보여요",
-    "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요"
+    "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요",
+    "waitingNotStarted": "{{count}}일 동안 할 일을 끝내면 발자국이 찍혀요"
   },
   "share": {
     "kakao": "카카오톡으로 초대하기",

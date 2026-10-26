@@ -114,15 +114,14 @@
   "friendList": {
     "title": "Invited friends",
     "stamped": "Left a paw print on {{date}}",
-    "waiting": "To-dos done on {{done}} of {{required}} days",
     "excluded": "This one didn't get a paw print",
     "excludedExpired": "More than {{days}} days passed since they joined, so no paw print this time",
     "excludedMonthlyCap": "You'd reached the reward limit, so no paw print this time",
     "joined": "Joined on {{date}}",
     "chipDone": "Added",
     "chipDoneLabel": "Paw print added",
-    "chipWaiting_one": "{{count}} more day",
-    "chipWaiting_other": "{{count}} more days",
+    "chipWaiting_one": "{{count}} day left",
+    "chipWaiting_other": "{{count}} days left",
     "chipWaitingLabel_one": "One more day to get a paw print",
     "chipWaitingLabel_other": "{{count}} more days to get a paw print",
     "emptyTitle": "No invited friends yet",
@@ -134,7 +133,11 @@
     "seeAll": "See all {{count}}",
     "emptyWaitingTitle": "No friends waiting for a paw print",
     "emptyWaitingDescription": "Friends show up here while they work toward a paw print",
-    "unavailable": "You'll see the friends you invited when invites are back"
+    "unavailable": "You'll see the friends you invited when invites are back",
+    "waiting_one": "Off to a good start! {{count}} more day of to-dos to get a paw print",
+    "waiting_other": "Off to a good start! {{count}} more days of to-dos to get a paw print",
+    "waitingNotStarted_one": "Completes to-dos on {{count}} day to get you a paw print",
+    "waitingNotStarted_other": "Completes to-dos on {{count}} days to get you a paw print"
   },
   "share": {
     "kakao": "Invite via KakaoTalk",
