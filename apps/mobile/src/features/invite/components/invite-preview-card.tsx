@@ -70,7 +70,13 @@ InvitePreviewCard.Contents = function Contents({ inviteCode }: { inviteCode: Inv
 
       <Spacing size={8} />
 
-      <Text size="b3" shade={7} align="center">
+      <Text
+        size="b3"
+        shade={7}
+        align="center"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
         {t('card.subtitle')}
       </Text>
     </VStack>
