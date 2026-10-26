@@ -3,6 +3,8 @@ import {
   createBillingIssueNotificationMessage,
   createEveningReminderNotificationMessage,
   createInviteJoinedNotificationMessage,
+  createInviteProgressNotificationMessage,
+  createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   createMorningReminderNotificationMessage,
   createNudgeReceivedNotificationMessage,
@@ -232,19 +234,65 @@ describe("알림 문구 생성", () => {
 
   it.each([
     {
+      inviteeName: "매튜",
+      ko: "매튜가 첫날 할 일을 끝냈어 🐾",
+      en: "매튜 finished day one 🐾",
+    },
+    { inviteeName: "존", ko: "존이 첫날 할 일을 끝냈어 🐾", en: "존 finished day one 🐾" },
+    { inviteeName: "Mina", ko: "Mina가 첫날 할 일을 끝냈어 🐾", en: "Mina finished day one 🐾" },
+  ])(
+    "초대한 친구의 첫날 알림은 이름에 조사를 붙이고 콕으로 응원하자고 권한다 ($inviteeName)",
+    ({ inviteeName, ko, en }) => {
+      // Given
+      const input = { inviteeName, variantContext: VARIANT_CONTEXT };
+
+      // When
+      const korean = createInviteProgressNotificationMessage({ ...input, locale: "ko" });
+      const english = createInviteProgressNotificationMessage({ ...input, locale: "en" });
+
+      // Then
+      expect(korean).toMatchObject({ title: ko, body: "콕 찔러서 내일도 해내게 응원해줘" });
+      expect(english).toMatchObject({
+        title: en,
+        body: "Send a nudge to cheer them on for day two",
+      });
+    },
+  );
+
+  it("사용 시작 알림은 초대한 사람 이름으로 하루만 더 하면 발자국을 선물한다고 알린다", () => {
+    // Given
+    const input = { inviterName: "매튜", variantContext: VARIANT_CONTEXT };
+
+    // When
+    const korean = createInviteQualifyReminderNotificationMessage({ ...input, locale: "ko" });
+    const english = createInviteQualifyReminderNotificationMessage({ ...input, locale: "en" });
+
+    // Then
+    expect(korean).toMatchObject({
+      title: "하루만 더 할 일을 끝내볼까? 🐾",
+      body: "오늘 할 일을 끝내면 매튜에게 발자국을 선물할 수 있어",
+    });
+    expect(english).toMatchObject({
+      title: "One more day to go 🐾",
+      body: "Finish a to-do today and 매튜 gets a paw print",
+    });
+  });
+
+  it.each([
+    {
       rewards: { premiumDays: 7, friendSlots: 1 },
-      ko: "프리미엄 7일과 친구 자리 1개를 받았어",
-      en: "You got 7 days of Premium and 1 more friend slot",
+      ko: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어",
+      en: "You got 7 days of Premium and can add 1 more friend",
     },
     {
       rewards: { premiumDays: 2, friendSlots: 1 },
-      ko: "프리미엄 2일과 친구 자리 1개를 받았어",
-      en: "You got 2 days of Premium and 1 more friend slot",
+      ko: "프리미엄 2일을 받았고, 친구도 1명 더 추가할 수 있어",
+      en: "You got 2 days of Premium and can add 1 more friend",
     },
     {
       rewards: { premiumDays: 0, friendSlots: 2 },
-      ko: "친구 자리 2개를 받았어",
-      en: "You got 2 more friend slots",
+      ko: "이제 친구를 2명 더 추가할 수 있어",
+      en: "You can now add 2 more friends",
     },
     {
       rewards: { premiumDays: 1, friendSlots: 0 },

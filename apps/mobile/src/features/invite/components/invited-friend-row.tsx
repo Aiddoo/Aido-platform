@@ -1,10 +1,15 @@
 import { REDEMPTION_REJECTION_REASON } from '@aido/api';
+import { useGetFriendQueryOptions } from '@src/features/friend/queries/get-friend-query-options';
+import { NudgePawButton } from '@src/features/nudge/components/nudge-paw-button';
+import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queries/get-remind-nudge-cooldown-query-options';
+import { remindNudgeSheetHref } from '@src/features/nudge/utils/navigation/nudge-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  FillCheckIcon,
+  CheckmarkIcon,
   FishIcon,
   HStack,
   ListRow,
@@ -13,6 +18,8 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
@@ -90,7 +97,16 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
           </Text>
         </VStack>
       }
-      right={<InvitedFriendPawPrintChip friend={friend} />}
+      right={
+        // 행마다 끝에는 하나만 둔다. 폭을 같게 잡아 칩·버튼이 바뀌어도 설명 줄바꿈과 행 높이가 그대로다
+        <Box className="min-w-[84px] items-end">
+          {InvitedFriendPolicy.pawPrintState(friend) === 'waiting' ? (
+            <InvitedFriendWaitingAction friend={friend} />
+          ) : (
+            <InvitedFriendPawPrintChip friend={friend} />
+          )}
+        </Box>
+      }
       {...props}
     />
   );
@@ -118,7 +134,7 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
         accessibilityLabel={t('friendList.chipDoneLabel')}
       >
         <Box className="size-5 items-center justify-center rounded-full bg-main">
-          <FillCheckIcon width={11} height={11} colorClassName="text-white dark:text-gray-1" />
+          <CheckmarkIcon width={11} height={11} colorClassName="text-white dark:text-gray-9" />
         </Box>
         <Text size="e1" weight="bold" tone="brand">
           {t('friendList.chipDone')}
@@ -140,4 +156,41 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
     ))
     .with('excluded', 'unknown', () => <Box className="min-h-7" />)
     .exhaustive();
+}
+
+/**
+ * 발자국을 기다리는 친구의 끝 칸. 지금 콕 찌를 수 있으면 [콕 찌르기]만, 아니면(친구 목록에 없음·친구 끊김·차단,
+ * 독촉 쿨다운, 불러오는 중) 남은 일수 칩을 둔다. 남은 일수는 설명 문구에도 있다
+ */
+function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
+  const { data: myFriend } = useInfiniteQuery(
+    useGetFriendQueryOptions({ friendId: friend.userId }),
+  );
+  const { data: cooldownInfo } = useQuery({
+    ...useGetRemindNudgeCooldownQueryOptions({ userId: friend.userId }),
+    enabled: myFriend != null,
+  });
+
+  return cooldownInfo?.canNudge === true ? (
+    <InvitedFriendNudgeButton friend={friend} />
+  ) : (
+    <InvitedFriendPawPrintChip friend={friend} />
+  );
+}
+
+/** 친구 독촉 콕 시트를 route로 연다. 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
+function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
+  const { t } = useTranslation('invite');
+  const push = useSingleTap(router.push);
+  const displayName = InvitedFriendPolicy.displayName(friend);
+
+  return (
+    <NudgePawButton
+      accessibilityLabel={t('friendList.nudgeLabel', {
+        name: displayName,
+        count: InvitedFriendPolicy.activeDaysLeft(friend),
+      })}
+      onPress={() => push(remindNudgeSheetHref({ id: friend.userId, displayName }))}
+    />
+  );
 }

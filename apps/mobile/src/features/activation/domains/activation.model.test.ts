@@ -1,6 +1,10 @@
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
 
-import { ActivationPolicy, type ActivationProgress } from './activation.model';
+import {
+  ACTIVATION_CHECKLIST_WINDOW_MS,
+  ActivationPolicy,
+  type ActivationProgress,
+} from './activation.model';
 
 const LAUNCHED_AT = new Date('2026-08-01T00:00:00.000Z');
 
@@ -63,14 +67,14 @@ describe('ActivationPolicy', () => {
     });
   });
 
-  describe('isChecklistVisible', () => {
+  describe('isChecklistEligible', () => {
     it('가입 후 7일 미만인 미활성 신규 사용자에게 체크리스트를 표시한다', () => {
       // Given
       const user = { id: 'new-user', createdAt: LAUNCHED_AT };
       const now = new Date('2026-08-07T23:59:59.999Z');
 
       // When
-      const result = ActivationPolicy.isChecklistVisible({
+      const result = ActivationPolicy.isChecklistEligible({
         config: createConfig(),
         user,
         progress: createProgress(),
@@ -86,13 +90,13 @@ describe('ActivationPolicy', () => {
       const user = { id: 'new-user', createdAt: LAUNCHED_AT };
 
       // When
-      const activated = ActivationPolicy.isChecklistVisible({
+      const activated = ActivationPolicy.isChecklistEligible({
         config: createConfig(),
         user,
         progress: createProgress({ activatedAt: new Date('2026-08-02T00:00:00.000Z') }),
         now: new Date('2026-08-02T00:00:01.000Z'),
       });
-      const expired = ActivationPolicy.isChecklistVisible({
+      const expired = ActivationPolicy.isChecklistEligible({
         config: createConfig(),
         user,
         progress: createProgress(),
@@ -102,6 +106,80 @@ describe('ActivationPolicy', () => {
       // Then
       expect(activated).toBe(false);
       expect(expired).toBe(false);
+    });
+  });
+
+  describe('isChecklistVisible', () => {
+    const user = { id: 'new-user', createdAt: LAUNCHED_AT };
+    const withinWindow = new Date('2026-08-03T00:00:00.000Z');
+    const requiredDone = { hasCreatedTodo: true, hasCompletedTodo: true };
+
+    it('필수 단계를 끝내면 친구 초대를 하지 않았어도 체크리스트를 숨긴다', () => {
+      // Given: 할 일을 만들고 완료했고, 선택 단계인 친구 초대는 아직이다
+      const steps = requiredDone;
+
+      // When
+      const result = ActivationPolicy.isChecklistVisible({
+        config: createConfig(),
+        user,
+        progress: createProgress(),
+        now: withinWindow,
+        steps,
+      });
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('필수 단계가 남아 있으면 7일 안에서는 체크리스트를 보여준다', () => {
+      // Given: 할 일은 만들었지만 아직 완료하지 않았다
+      const steps = { hasCreatedTodo: true, hasCompletedTodo: false };
+
+      // When
+      const result = ActivationPolicy.isChecklistVisible({
+        config: createConfig(),
+        user,
+        progress: createProgress(),
+        now: withinWindow,
+        steps,
+      });
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('필수 단계가 남아 있어도 가입 후 7일이 지나면 숨긴다', () => {
+      // Given
+      const steps = { hasCreatedTodo: false, hasCompletedTodo: false };
+
+      // When
+      const result = ActivationPolicy.isChecklistVisible({
+        config: createConfig(),
+        user,
+        progress: createProgress(),
+        now: new Date(LAUNCHED_AT.getTime() + ACTIVATION_CHECKLIST_WINDOW_MS),
+        steps,
+      });
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('캠페인 전에 가입한 기존 사용자는 업데이트 후에도 체크리스트를 보지 않는다', () => {
+      // Given: 1.12.x 이전부터 쓰던 사용자이고 필수 단계 기록이 없다
+      const existingUser = { id: 'existing-user', createdAt: new Date('2026-07-01T00:00:00.000Z') };
+
+      // When
+      const result = ActivationPolicy.isChecklistVisible({
+        config: createConfig(),
+        user: existingUser,
+        progress: createProgress(),
+        now: withinWindow,
+        steps: { hasCreatedTodo: false, hasCompletedTodo: false },
+      });
+
+      // Then
+      expect(result).toBe(false);
     });
   });
 
@@ -241,7 +319,7 @@ describe('ActivationPolicy', () => {
       expect(result).toBe(false);
       expect(ActivationPolicy.activationIdentity(undefined, user)).toBeNull();
       expect(
-        ActivationPolicy.isChecklistVisible({
+        ActivationPolicy.isChecklistEligible({
           config: undefined,
           user,
           progress: createProgress(),

@@ -4,6 +4,7 @@ import {
   INVITE_CODE,
   INVITE_CODE_PATTERN,
   INVITE_FRIENDSHIP,
+  PREMIUM_CAP_STATE,
   REDEMPTION_REJECTION_REASON,
   REDEMPTION_STATUS,
   REDEMPTION_STATUS_UNKNOWN,
@@ -55,6 +56,17 @@ export const invitedFriendRejectionReasonSchema = redemptionRejectionReasonSchem
   .nullable()
   .catch(null)
   .describe("보상 제외 사유 (EXPIRED, 앱이 모르는 새 사유는 null로 읽는다)");
+
+/**
+ * 응답에서 읽는 프리미엄 상한 상태. 필드가 없는 이전 서버와 앱이 모르는 새 상태는 AVAILABLE로 읽어
+ * 상한 안내 없이 화면을 계속 보여 준다.
+ */
+export const premiumCapStateSchema = z
+  .enum(PREMIUM_CAP_STATE)
+  .catch(PREMIUM_CAP_STATE.AVAILABLE)
+  .describe(
+    "초대 보상 프리미엄 상한 (AVAILABLE: 더 받을 수 있음, WINDOW_REACHED: 최근 30일 상한에 닿음, TOTAL_REACHED: 누적 상한에 닿음. 앱이 모르는 값·필드 없음은 AVAILABLE로 읽는다)",
+  );
 
 export const inviteFriendshipSchema = z
   .enum(INVITE_FRIENDSHIP)

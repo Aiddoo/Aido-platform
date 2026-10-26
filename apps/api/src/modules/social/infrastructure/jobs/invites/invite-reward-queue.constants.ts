@@ -61,3 +61,23 @@ export const INVITE_MAINTENANCE_JOB_OPTIONS = {
 export const InviteMaintenanceJobKey = {
   catchUp: (localDate: string): string => `invite-maintenance_${localDate}`,
 };
+
+/**
+ * 사용 시작 알림은 새 큐·worker 없이 정비 큐에 발송 시각(startAfter)을 둔 작업으로 넣는다. 정비 작업 payload와
+ * 같은 `{ name, data }` 모양이라 processor가 name으로 나눈다.
+ */
+export const INVITE_QUALIFY_REMINDER_JOB_NAME = "send-qualify-reminder";
+
+export const inviteMaintenanceJobPayloadSchema = z.discriminatedUnion("name", [
+  z.object({ name: z.literal(INVITE_MAINTENANCE_JOB_NAME) }),
+  z.object({
+    name: z.literal(INVITE_QUALIFY_REMINDER_JOB_NAME),
+    data: z.object({ redemptionId: z.string().min(1) }),
+  }),
+]);
+
+export const InviteQualifyReminderJobKey = {
+  // 같은 수락의 같은 발송 시각은 정비 작업을 다시 돌려도 작업 하나로 합친다
+  of: (redemptionId: string, sendAt: Date): string =>
+    `invite-qualify-reminder:${redemptionId}:${sendAt.toISOString()}`,
+};

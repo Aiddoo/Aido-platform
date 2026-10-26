@@ -20,6 +20,7 @@ function createRedemption(overrides: Partial<InviteRedemptionProps> = {}): Invit
     rewardedAt: null,
     rejectedAt: null,
     expiresAt: new Date("2028-03-05T03:00:00.000Z"),
+    qualifyReminderSentAt: null,
     ...overrides,
   });
 }

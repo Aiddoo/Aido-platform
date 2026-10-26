@@ -82,6 +82,33 @@ toast.error(t('friend:toast.sendFailed'));
 
 - ko/en은 같은 키·같은 보간 변수로 함께 추가한다(`locale-parity.test.ts`).
 
+### 초대·보상 용어
+
+앱·서버 푸시·스토어·랜딩이 같은 말을 쓴다. 앱 UI는 해요체, 서버 푸시는 기존 반말 + 가벼운 이모지 톤을 유지한다.
+
+**누가·언제·무엇을 받는지 항상 함께 쓴다.** 조건 없이 `함께`·`둘 다`·`친구도 나도 7일`·`both`·`together`로 보상을 말하지 않는다. 보상을 말할 때는 받는 사람과 시점을 짝지어 쓴다.
+
+- 친구(초대받은 사람): `가입하면 바로 프리미엄 7일` / `Your friend: 7 days of Premium right when they join`
+- 나(초대한 사람): `친구가 2일 동안 할 일을 끝내면 프리미엄 7일 + 친구 1명 더` / `You: 7 days of Premium + 1 more friend once they complete to-dos on 2 days`
+- 자리가 좁으면 한 줄로 줄이거나(`친구는 가입하면 바로, 나는 친구가 2일 하면 프리미엄 7일`) 위 두 줄을 라벨(친구/나, Your friend/You)로 나눠 쓴다.
+- 숫자는 보간 변수(`days`, `activeDays`)로 받고, 스토어·랜딩처럼 변수가 없는 곳만 숫자를 직접 쓴다.
+
+| 개념                     | ko                                                                        | en                                                                         |
+| ------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 친구 한도 +1 (문장)      | 친구를 1명 더 추가할 수 있어요                                            | add 1 more friend / can add 1 more friend                                  |
+| 친구 한도 +1 (짧은 라벨) | 친구 추가 +1명                                                            | +1 friend limit                                                            |
+| 한도가 찬 상태           | 친구를 더 추가할 수 없어요 / {{name}}님은 지금 친구를 더 추가할 수 없어요 | You've reached your friend limit / {{name}} has reached their friend limit |
+| 초대한 사람 조건         | 친구가 2일 동안 할 일을 끝내면                                            | When they complete to-dos on 2 days                                        |
+| 날짜 세는 법             | 하루에 여러 개를 끝내도 1일                                               | Several to-dos on the same day count as 1 day                              |
+| 초대한 사람 보상 (요약)  | 프리미엄 7일 + 친구 1명 더                                                | 7 days of Premium + 1 more friend                                          |
+| 초대한 사람 보상 (문장)  | 나는 프리미엄 7일을 받고, 친구를 1명 더 추가할 수 있어요                  | you get 7 days of Premium and can add 1 more friend                        |
+| 초대받은 사람 보상       | 가입하면 바로 프리미엄 7일을 받고 친구가 돼요                             | 7 days of Premium right when they join, friends right away                 |
+| 구독 중 받은 보상        | 구독이 끝난 뒤 이어서 시작돼요                                            | starts after your subscription ends                                        |
+
+- 그대로 쓰는 말: 아이두/Aido, 프리미엄/Premium, 발자국/paw print, 발자국 모으기/Collect paw prints, 콕 찌르기/nudge, 할 일/to-do, 초대 링크·초대 코드/invite link·invite code
+- 쓰지 않는 말: `친구 자리`, `자리가 꽉 찼어요`, `friend slot(s)`, `slots are full`, `활동일`, `active days`, `qualify`. 코드·계약 이름(`FRIEND_SLOT`, `friendSlots`)은 바꾸지 않는다.
+- 푸시 예: `발자국이 찍혔어 🐾` / `프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어` · `You got a paw print 🐾` / `You got 7 days of Premium and can add 1 more friend`
+
 ### 비번역 대상
 
 - 코드 주석, 로그, Sentry breadcrumb/이벤트 메시지 (개발자용)

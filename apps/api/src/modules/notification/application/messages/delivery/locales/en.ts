@@ -238,17 +238,29 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("One more friend in Aido", `Say hello to ${senderName} 🐾`),
     ],
   },
+  INVITE_PROGRESS: {
+    copy: ({ inviteeName }) =>
+      copy(`${inviteeName} finished day one 🐾`, "Send a nudge to cheer them on for day two"),
+  },
+  INVITE_QUALIFY_REMINDER: {
+    copy: ({ inviterName }) =>
+      copy("One more day to go 🐾", `Finish a to-do today and ${inviterName} gets a paw print`),
+  },
   INVITE_JOINED: {
     copy: ({ inviteeName }) =>
       copy(`${inviteeName} accepted your invite 🐾`, "You’re now friends. Cheer each other on"),
   },
   INVITE_REWARDED: {
     copy: ({ premiumDays, friendSlots }) => {
-      const rewards = [
-        premiumDays > 0 ? `${countLabel(premiumDays, "day")} of Premium` : null,
-        friendSlots > 0 ? countLabel(friendSlots, "more friend slot") : null,
-      ].filter((reward) => reward != null);
-      return copy("You got a paw print 🐾", `You got ${rewards.join(" and ")}`);
+      const premium = `You got ${countLabel(premiumDays, "day")} of Premium`;
+      const friends = countLabel(friendSlots, "more friend");
+      if (premiumDays > 0 && friendSlots > 0) {
+        return copy("You got a paw print 🐾", `${premium} and can add ${friends}`);
+      }
+      return copy(
+        "You got a paw print 🐾",
+        premiumDays > 0 ? premium : `You can now add ${friends}`,
+      );
     },
   },
   NUDGE_RECEIVED: {

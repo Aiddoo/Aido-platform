@@ -3,6 +3,8 @@ import {
   INVITE_REWARD_CAPS,
   INVITEE_REWARDS,
   INVITER_REWARD_MILESTONES,
+  PREMIUM_CAP_STATE,
+  type PremiumCapState,
   REWARD_TYPE,
   type RewardType,
 } from "@aido/api/vocabulary";
@@ -96,6 +98,19 @@ export function remainingPremiumDays(summary: InviterRewardSummary): number {
       INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL - summary.totalPremiumDays,
     ),
   );
+}
+
+/** 누적 상한이 먼저다. 누적은 다시 열리지 않고, 최근 30일 상한은 지급이 기간 밖으로 빠지면 다시 열린다. */
+export function premiumCapState(
+  summary: Pick<InviterRewardSummary, "premiumDaysInWindow" | "totalPremiumDays">,
+): PremiumCapState {
+  if (summary.totalPremiumDays >= INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL) {
+    return PREMIUM_CAP_STATE.TOTAL_REACHED;
+  }
+  if (summary.premiumDaysInWindow >= INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS) {
+    return PREMIUM_CAP_STATE.WINDOW_REACHED;
+  }
+  return PREMIUM_CAP_STATE.AVAILABLE;
 }
 
 function sumRewards(rewards: readonly RewardAmount[]): RewardAmount[] {

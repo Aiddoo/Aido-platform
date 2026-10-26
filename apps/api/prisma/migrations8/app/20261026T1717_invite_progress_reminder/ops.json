@@ -1,0 +1,188 @@
+[
+  {
+    "id": "addNativeEnumValue.NotificationType.INVITE_PROGRESS",
+    "label": "Add value \"INVITE_PROGRESS\" to enum type \"NotificationType\"",
+    "summary": "Adds value \"INVITE_PROGRESS\" to enum type \"NotificationType\". A newly added enum value cannot be used until the transaction that adds it commits, so a migration that both appends a value and uses it in the same step will fail at apply.",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "NotificationType"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure enum type \"NotificationType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_type\" AS \"t\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"t\".\"typtype\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "NotificationType",
+          "e"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "enum type \"NotificationType\""
+        }
+      },
+      {
+        "description": "ensure value \"INVITE_PROGRESS\" is absent from enum type \"NotificationType\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"e\".\"enumlabel\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "NotificationType",
+          "INVITE_PROGRESS"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "value \"INVITE_PROGRESS\" in enum type \"NotificationType\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add value \"INVITE_PROGRESS\" to enum type \"NotificationType\"",
+        "sql": "ALTER TYPE \"public\".\"NotificationType\" ADD VALUE 'INVITE_PROGRESS'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify value \"INVITE_PROGRESS\" exists on enum type \"NotificationType\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"e\".\"enumlabel\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "NotificationType",
+          "INVITE_PROGRESS"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "value \"INVITE_PROGRESS\" in enum type \"NotificationType\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "addNativeEnumValue.NotificationType.INVITE_QUALIFY_REMINDER",
+    "label": "Add value \"INVITE_QUALIFY_REMINDER\" to enum type \"NotificationType\"",
+    "summary": "Adds value \"INVITE_QUALIFY_REMINDER\" to enum type \"NotificationType\". A newly added enum value cannot be used until the transaction that adds it commits, so a migration that both appends a value and uses it in the same step will fail at apply.",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "NotificationType"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure enum type \"NotificationType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_type\" AS \"t\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"t\".\"typtype\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "NotificationType",
+          "e"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "enum type \"NotificationType\""
+        }
+      },
+      {
+        "description": "ensure value \"INVITE_QUALIFY_REMINDER\" is absent from enum type \"NotificationType\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"e\".\"enumlabel\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "NotificationType",
+          "INVITE_QUALIFY_REMINDER"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "value \"INVITE_QUALIFY_REMINDER\" in enum type \"NotificationType\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add value \"INVITE_QUALIFY_REMINDER\" to enum type \"NotificationType\"",
+        "sql": "ALTER TYPE \"public\".\"NotificationType\" ADD VALUE 'INVITE_QUALIFY_REMINDER'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify value \"INVITE_QUALIFY_REMINDER\" exists on enum type \"NotificationType\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"e\".\"enumlabel\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "NotificationType",
+          "INVITE_QUALIFY_REMINDER"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "value \"INVITE_QUALIFY_REMINDER\" in enum type \"NotificationType\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.InviteRedemption.qualifyReminderSentAt",
+    "label": "Add column \"qualifyReminderSentAt\" to \"InviteRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "qualifyReminderSentAt",
+        "table": "InviteRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"qualifyReminderSentAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InviteRedemption",
+          "qualifyReminderSentAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"qualifyReminderSentAt\" on \"InviteRedemption\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"qualifyReminderSentAt\"",
+        "sql": "ALTER TABLE \"public\".\"InviteRedemption\" ADD COLUMN \"qualifyReminderSentAt\" timestamp(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"qualifyReminderSentAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "InviteRedemption",
+          "qualifyReminderSentAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"qualifyReminderSentAt\" on \"InviteRedemption\""
+        }
+      },
+      {
+        "description": "verify column \"qualifyReminderSentAt\" has type \"timestamp(3) without time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "InviteRedemption",
+          "qualifyReminderSentAt",
+          "timestamp(3) without time zone"
+        ]
+      }
+    ]
+  }
+]

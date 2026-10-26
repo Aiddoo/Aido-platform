@@ -40,6 +40,11 @@ export function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
 export type PremiumEndingNotice = 'tomorrow' | 'today';
 
 export const PremiumAccessPolicy = {
+  /** 스토어 구독으로 프리미엄을 쓰는 중이라 구독을 다시 권하지 않는다 */
+  isStoreSubscribed(access: PremiumAccess) {
+    return access.source === PREMIUM_SOURCE.STORE;
+  },
+
   isGrantOnly(access: PremiumAccess) {
     return access.source === PREMIUM_SOURCE.GRANT;
   },

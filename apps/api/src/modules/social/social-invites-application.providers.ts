@@ -7,6 +7,7 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 
 import { CLAIM_HASHER } from "./application/ports/invites/claim-hasher.port.js";
 import { INVITE_NOTIFIER } from "./application/ports/invites/invite-notifier.port.js";
+import { INVITE_QUALIFY_REMINDER_SCHEDULER } from "./application/ports/invites/invite-qualify-reminder.scheduler.port.js";
 import { INVITE_REDEMPTION_REPOSITORY } from "./application/ports/invites/invite-redemption.repository.port.js";
 import { INVITE_REWARD_ALERT } from "./application/ports/invites/invite-reward-alert.port.js";
 import { INVITE_REWARD_SCHEDULER } from "./application/ports/invites/invite-reward.scheduler.port.js";
@@ -25,6 +26,8 @@ import { PreviewInvite } from "./application/use-cases/invites/preview-invite.us
 import { RecordInviteeActivity } from "./application/use-cases/invites/record-invitee-activity.use-case.js";
 import { RedeemInvite } from "./application/use-cases/invites/redeem-invite.use-case.js";
 import { RotateInviteCode } from "./application/use-cases/invites/rotate-invite-code.use-case.js";
+import { ScheduleInviteQualifyReminders } from "./application/use-cases/invites/schedule-invite-qualify-reminders.use-case.js";
+import { SendInviteQualifyReminder } from "./application/use-cases/invites/send-invite-qualify-reminder.use-case.js";
 
 export const myInviteReaderProvider: FactoryProvider<MyInviteReader> = {
   provide: MyInviteReader,
@@ -166,6 +169,9 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_GRANT_REPOSITORY,
     INVITE_REWARD_SCHEDULER,
+    INVITE_NOTIFIER,
+    FOLLOW_READER,
+    USER_BLOCK_READER,
     INVITE_CONFIG,
     MUTATION_LOCK,
     UNIT_OF_WORK,
@@ -178,6 +184,9 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
       typeof RecordInviteeActivity
     >[0]["rewardGrantRepository"],
     rewardScheduler: ConstructorParameters<typeof RecordInviteeActivity>[0]["rewardScheduler"],
+    notifier: ConstructorParameters<typeof RecordInviteeActivity>[0]["notifier"],
+    followReader: ConstructorParameters<typeof RecordInviteeActivity>[0]["followReader"],
+    blockReader: ConstructorParameters<typeof RecordInviteeActivity>[0]["blockReader"],
     inviteConfig: ConstructorParameters<typeof RecordInviteeActivity>[0]["inviteConfig"],
     mutationLock: ConstructorParameters<typeof RecordInviteeActivity>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof RecordInviteeActivity>[0]["unitOfWork"],
@@ -186,6 +195,9 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
       inviteRedemptionRepository,
       rewardGrantRepository,
       rewardScheduler,
+      notifier,
+      followReader,
+      blockReader,
       inviteConfig,
       mutationLock,
       unitOfWork,
@@ -256,5 +268,57 @@ export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedempti
       inviteConfig,
       unitOfWork,
       logger: new Logger(ExpireStaleRedemptions.name),
+    }),
+};
+
+export const scheduleInviteQualifyRemindersProvider: FactoryProvider<ScheduleInviteQualifyReminders> =
+  {
+    provide: ScheduleInviteQualifyReminders,
+    inject: [INVITE_REDEMPTION_REPOSITORY, INVITE_QUALIFY_REMINDER_SCHEDULER, INVITE_CONFIG],
+    useFactory: (
+      inviteRedemptionRepository: ConstructorParameters<
+        typeof ScheduleInviteQualifyReminders
+      >[0]["inviteRedemptionRepository"],
+      reminderScheduler: ConstructorParameters<
+        typeof ScheduleInviteQualifyReminders
+      >[0]["reminderScheduler"],
+      inviteConfig: ConstructorParameters<typeof ScheduleInviteQualifyReminders>[0]["inviteConfig"],
+    ) =>
+      new ScheduleInviteQualifyReminders({
+        inviteRedemptionRepository,
+        reminderScheduler,
+        inviteConfig,
+        logger: new Logger(ScheduleInviteQualifyReminders.name),
+      }),
+  };
+
+export const sendInviteQualifyReminderProvider: FactoryProvider<SendInviteQualifyReminder> = {
+  provide: SendInviteQualifyReminder,
+  inject: [
+    INVITE_REDEMPTION_REPOSITORY,
+    INVITE_NOTIFIER,
+    FOLLOW_READER,
+    USER_BLOCK_READER,
+    INVITE_CONFIG,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    inviteRedemptionRepository: ConstructorParameters<
+      typeof SendInviteQualifyReminder
+    >[0]["inviteRedemptionRepository"],
+    notifier: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["notifier"],
+    followReader: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["followReader"],
+    blockReader: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["blockReader"],
+    inviteConfig: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["inviteConfig"],
+    unitOfWork: ConstructorParameters<typeof SendInviteQualifyReminder>[0]["unitOfWork"],
+  ) =>
+    new SendInviteQualifyReminder({
+      inviteRedemptionRepository,
+      notifier,
+      followReader,
+      blockReader,
+      inviteConfig,
+      unitOfWork,
+      logger: new Logger(SendInviteQualifyReminder.name),
     }),
 };

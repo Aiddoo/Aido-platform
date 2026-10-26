@@ -162,7 +162,7 @@
     "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해 보세요"
   },
   "activation": {
-    "title": "첫 할 일을 만들고 완료해 보세요",
+    "title": "첫 할 일을 만들고 완료해보세요",
     "description": "아래 단계를 끝내면 아이두를 바로 익힐 수 있어요",
     "createTodo": "첫 할 일 만들기",
     "completeTodo": "만든 할 일 완료하기",

@@ -1,14 +1,14 @@
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { PawIcon, useOverlay, usePremiumDialog } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
+import { useOverlay, usePremiumDialog } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
+import type { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { NudgeBottomSheet, type NudgeReceiver, type NudgeTargetTodo } from './nudge-bottom-sheet';
+import { NudgePawButton } from './nudge-paw-button';
 
 interface TodoNudgeButtonProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
@@ -23,11 +23,6 @@ export function TodoNudgeButton({
   receiver,
   todo,
   isDisabled,
-  className,
-  hitSlop,
-  accessibilityRole,
-  accessibilityLabel,
-  accessibilityState,
   ...pressableProps
 }: TodoNudgeButtonProps) {
   const { t } = useTranslation('todo');
@@ -69,22 +64,5 @@ export function TodoNudgeButton({
     openNudgeSheet();
   };
 
-  return (
-    <PressableFeedback
-      {...pressableProps}
-      onPress={handlePress}
-      hitSlop={hitSlop ?? 8}
-      isDisabled={isUnavailable}
-      accessibilityRole={accessibilityRole ?? 'button'}
-      accessibilityLabel={accessibilityLabel ?? t('friendTodo.nudge')}
-      accessibilityState={{ ...accessibilityState, disabled: isUnavailable }}
-      className={cn('min-h-11 min-w-11 items-center justify-center', className)}
-    >
-      <PawIcon
-        width={18}
-        height={18}
-        colorClassName={isUnavailable ? 'text-gray-5' : 'text-main'}
-      />
-    </PressableFeedback>
-  );
+  return <NudgePawButton {...pressableProps} onPress={handlePress} isDisabled={isUnavailable} />;
 }

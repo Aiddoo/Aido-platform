@@ -7,14 +7,15 @@
   },
   "entry": {
     "mypage": "Aido Feature Guide",
-    "feedTitle": "Take another look at what's new",
+    "feedTitle": "See what's new again",
     "feedDescription": "You can reopen this guide anytime for 14 days",
-    "openLabel": "Open Aido feature guide"
+    "openLabel": "Open Aido feature guide",
+    "dismissLabel": "Dismiss feature guide card"
   },
   "cards": {
     "friendInvite": {
       "title": "Invite friends and\ncollect paw prints",
-      "description": "Send a link on KakaoTalk. Your friend gets {{inviteeDays}} days of Premium on joining, and you get {{inviterDays}} days once they complete to-dos on {{activeDays}} different days",
+      "description": "Send a link on KakaoTalk. Your friend gets {{inviteeDays}} days of Premium right when they join. You get {{inviterDays}} days of Premium and can add 1 more friend once they complete to-dos on {{activeDays}} different days",
       "cta": "Start inviting",
       "ctaLabel": "Open Invite friends"
     }

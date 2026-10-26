@@ -60,6 +60,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
         qualifiedCount: 0,
         premiumDaysInWindow: 0,
         totalPremiumDays: 0,
+        premiumCapState: "AVAILABLE",
         nextMilestone: {
           qualifiedCount: 1,
           rewards: [

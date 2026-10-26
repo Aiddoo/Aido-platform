@@ -64,7 +64,7 @@ export const useSendRequestByTagMutationOptions = () => {
                 activeDays: InvitedFriendPolicy.requiredActiveDays(),
               }),
               alternativeAction: {
-                label: t('invite:entry.growFriendSlots'),
+                label: t('invite:entry.growFriendLimit'),
                 onPress: () => openMyInvite('friend_limit_dialog'),
               },
             }))

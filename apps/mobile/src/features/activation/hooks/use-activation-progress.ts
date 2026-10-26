@@ -51,13 +51,14 @@ export function useActivationProgress() {
 
 export function useActivationChecklist() {
   const activation = useActivationProgress();
+  const now = new Date();
   const isEligible =
     activation.isReady &&
-    ActivationPolicy.isChecklistVisible({
+    ActivationPolicy.isChecklistEligible({
       config: activation.config,
       user: activation.user,
       progress: activation.progress,
-      now: new Date(),
+      now,
     });
   // 재설치·다른 기기에서도 같은 진행을 보이도록 서버의 할 일 기록을 함께 본다. 대상 사용자에게만 부른다
   const todoExistenceQuery = useQuery({
@@ -72,6 +73,15 @@ export function useActivationChecklist() {
 
   return {
     steps,
-    isVisible: isEligible && hasSettledTodoExistence && !steps.hasCompletedTodo,
+    isVisible:
+      isEligible &&
+      hasSettledTodoExistence &&
+      ActivationPolicy.isChecklistVisible({
+        config: activation.config,
+        user: activation.user,
+        progress: activation.progress,
+        now,
+        steps,
+      }),
   };
 }

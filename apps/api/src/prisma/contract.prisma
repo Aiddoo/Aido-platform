@@ -870,6 +870,7 @@ namespace public {
     rewardedAt      TimestampString(3)?
     rejectedAt      TimestampString(3)?
     expiresAt       TimestampString(3)
+    qualifyReminderSentAt TimestampString(3)?
     createdAt       TimestampString(3)                         @default(now())
     updatedAt       temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
     activeDays      InviteActiveDay[]
@@ -1024,6 +1025,8 @@ namespace public {
     INVITE_JOINED = "INVITE_JOINED"
     INVITE_REWARDED = "INVITE_REWARDED"
     PREMIUM_GRANT_ENDING = "PREMIUM_GRANT_ENDING"
+    INVITE_PROGRESS = "INVITE_PROGRESS"
+    INVITE_QUALIFY_REMINDER = "INVITE_QUALIFY_REMINDER"
   }
 
   native_enum NudgeReplyKind {

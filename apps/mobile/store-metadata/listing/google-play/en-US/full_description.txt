@@ -3,10 +3,10 @@ Keep putting off your to-dos? Get them done with friends.
 Aido is a social to-do app that helps you follow through every day, with AI to plan and friends to keep you going.
 Just say what you need to do and it becomes a to-do. With friends by your side, sticking with it gets easier.
 
-[ Invite friends and earn Premium together ]
+[ Invite friends and earn Premium ]
 - Send your invite link on KakaoTalk or any app, or share your 6-character invite code
-- Friends who joined within the last 7 days get 7 days of Premium when they accept
-- When your friend completes to-dos on 2 days within 14 days of joining, you get 7 days of Premium and 1 more friend slot
+- Your friend: 7 days of Premium right when they accept, if they joined within the last 7 days
+- You: 7 days of Premium + 1 more friend once they complete to-dos on 2 days within 14 days of joining
 - See your paw prints and rewards at a glance in “Collect paw prints”
 - Rewards are in-app Premium with no cash value, once per device and account
 - Earn up to 30 days of Premium every 30 days, 90 days in total (see Terms of Use)

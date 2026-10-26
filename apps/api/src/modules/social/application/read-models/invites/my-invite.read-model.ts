@@ -1,4 +1,5 @@
 import type { RewardAmount } from "@aido/api";
+import type { PremiumCapState } from "@aido/api/vocabulary";
 
 import type { InviteMilestoneView } from "../../../domain/policies/invites/invite-reward.policy.js";
 
@@ -9,6 +10,7 @@ export interface MyInviteView {
   readonly qualifiedCount: number;
   readonly premiumDaysInWindow: number;
   readonly totalPremiumDays: number;
+  readonly premiumCapState: PremiumCapState;
   readonly nextMilestone: InviteMilestoneView | null;
   readonly rewardsEarned: readonly RewardAmount[];
   readonly createdAt: Date;

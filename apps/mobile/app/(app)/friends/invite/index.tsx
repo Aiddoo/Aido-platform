@@ -2,9 +2,9 @@ import catHiImage from '@assets/images/ido_cat_hi.webp';
 import ShareIcon from '@expo/material-symbols/share.xml';
 import { InviteLinkCard } from '@src/features/invite/components/invite-link-card';
 import { InvitePawPrintBoard } from '@src/features/invite/components/invite-paw-print-board';
+import { InviteRewardLines } from '@src/features/invite/components/invite-reward-lines';
 import { InviteShareActions } from '@src/features/invite/components/invite-share-actions';
 import { InvitedFriendSummary } from '@src/features/invite/components/invited-friend-summary';
-import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
 import { createInviteShareContent } from '@src/features/invite/domains/invite-share.model';
 import { isInviteDisabledError } from '@src/features/invite/domains/invite.error';
 import { InvitePolicy } from '@src/features/invite/domains/invite.model';
@@ -62,6 +62,8 @@ export default function MyInviteScreen() {
           <ReadableContent px={16} pt={8} pb={32}>
             <VStack gap={20}>
               <InviteHeroBanner />
+
+              <InviteRewardLines />
 
               {/* 네 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
               <QueryErrorBoundary fallback={InviteContentsError}>
@@ -163,8 +165,6 @@ function PawPrintBoardSection({ children }: { children: ReactNode }) {
 
 function InviteHeroBanner() {
   const { t } = useTranslation('invite');
-  const inviteeDays = InviteRewardPolicy.welcomePremiumDays();
-  const inviterDays = InviteRewardPolicy.inviterPremiumDays();
 
   return (
     <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
@@ -175,16 +175,6 @@ function InviteHeroBanner() {
         className="absolute -bottom-[30px] -right-[18px] size-[136px]"
         resizeMode="cover"
       />
-
-      <Box className="self-start rounded-full bg-white px-3 py-1">
-        <Text size="b4" weight="semibold" tone="brand">
-          {inviteeDays === inviterDays
-            ? t('myInvite.heroChip', { days: inviteeDays })
-            : t('myInvite.heroChipSeparate', { inviteeDays, inviterDays })}
-        </Text>
-      </Box>
-
-      <Spacing size={14} />
 
       <Text size="t2" weight="bold" lineBreakStrategyIOS="hangul-word" className="mr-[98px]">
         {t('myInvite.heroTitle')}

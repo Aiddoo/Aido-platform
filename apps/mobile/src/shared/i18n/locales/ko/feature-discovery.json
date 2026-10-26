@@ -7,14 +7,15 @@
   },
   "entry": {
     "mypage": "아이두 기능 가이드",
-    "feedTitle": "새 기능을 다시 살펴보세요",
+    "feedTitle": "새 기능 다시 보기",
     "feedDescription": "14일 동안 언제든 기능 가이드를 다시 열 수 있어요",
-    "openLabel": "아이두 기능 가이드 열기"
+    "openLabel": "아이두 기능 가이드 열기",
+    "dismissLabel": "기능 가이드 카드 닫기"
   },
   "cards": {
     "friendInvite": {
       "title": "친구를 초대하고\n발자국을 모아보세요",
-      "description": "카카오톡으로 링크를 보내보세요. 친구는 가입하면 바로 프리미엄 {{inviteeDays}}일, 나는 친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{inviterDays}}일을 받아요",
+      "description": "카카오톡으로 링크를 보내보세요. 친구는 가입하면 바로 프리미엄 {{inviteeDays}}일, 나는 친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{inviterDays}}일을 받고 친구를 1명 더 추가할 수 있어요",
       "cta": "초대하러 가기",
       "ctaLabel": "친구 초대 화면으로 이동"
     }

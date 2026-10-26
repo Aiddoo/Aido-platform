@@ -100,8 +100,17 @@ export function useFeatureDiscoveryFeed() {
     });
   }, [accountId, campaign, openHub]);
 
+  const dismissReentry = useCallback(() => {
+    if (identity == null) {
+      return;
+    }
+    stateService.dismissReentry(identity);
+    refreshState();
+  }, [identity, stateService]);
+
   return {
     isReentryVisible,
     openFromReentry,
+    dismissReentry,
   };
 }

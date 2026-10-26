@@ -246,6 +246,20 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("친구가 한 명 더 생겼어", `${senderName}에게 가볍게 인사해봐 🐾`),
     ],
   },
+  INVITE_PROGRESS: {
+    copy: ({ inviteeName }) =>
+      copy(
+        `${attachJosa(inviteeName, "이/가")} 첫날 할 일을 끝냈어 🐾`,
+        "콕 찔러서 내일도 해내게 응원해줘",
+      ),
+  },
+  INVITE_QUALIFY_REMINDER: {
+    copy: ({ inviterName }) =>
+      copy(
+        "하루만 더 할 일을 끝내볼까? 🐾",
+        `오늘 할 일을 끝내면 ${inviterName}에게 발자국을 선물할 수 있어`,
+      ),
+  },
   INVITE_JOINED: {
     copy: ({ inviteeName }) =>
       copy(
@@ -255,11 +269,15 @@ export const SOCIAL_TEMPLATES = {
   },
   INVITE_REWARDED: {
     copy: ({ premiumDays, friendSlots }) => {
-      const rewards = [
-        premiumDays > 0 ? `프리미엄 ${premiumDays}일` : null,
-        friendSlots > 0 ? `친구 자리 ${friendSlots}개` : null,
-      ].filter((reward) => reward != null);
-      return copy("발자국이 찍혔어 🐾", `${attachJosa(rewards.join("과 "), "을/를")} 받았어`);
+      const premium = `프리미엄 ${premiumDays}일`;
+      const friends = `${friendSlots}명 더 추가할 수 있어`;
+      if (premiumDays > 0 && friendSlots > 0) {
+        return copy("발자국이 찍혔어 🐾", `${premium}을 받았고, 친구도 ${friends}`);
+      }
+      return copy(
+        "발자국이 찍혔어 🐾",
+        premiumDays > 0 ? `${premium}을 받았어` : `이제 친구를 ${friends}`,
+      );
     },
   },
   NUDGE_RECEIVED: {

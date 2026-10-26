@@ -15,4 +15,6 @@ export const TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY = {
   TODO_COMMENT_ACTIVITY: "todo_comment_activity_v1",
   INVITE_JOINED: "invite_joined_v1",
   INVITE_REWARDED: "invite_rewarded_v1",
+  INVITE_PROGRESS: "invite_progress_v1",
+  INVITE_QUALIFY_REMINDER: "invite_qualify_reminder_v1",
 } as const;

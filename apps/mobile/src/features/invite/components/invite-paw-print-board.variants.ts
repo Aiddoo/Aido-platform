@@ -1,7 +1,7 @@
 import { tv } from '@src/shared/utils/tv';
 
 export const pawPrintVariants = tv({
-  base: 'size-14 items-center justify-center rounded-full',
+  base: 'size-full items-center justify-center rounded-full',
   variants: {
     state: {
       stamped: '-rotate-6 bg-main',

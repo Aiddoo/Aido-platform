@@ -25,13 +25,13 @@ import { NotificationService } from '@src/features/notification/apis/notificatio
 import { PushTokenService } from '@src/features/notification/apis/push-token.service';
 import { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import { PreferenceService } from '@src/features/preference/apis/preference.service';
+import { createStoreReviewRepository } from '@src/features/store-review/apis/store-review.repository';
+import { StoreReviewService } from '@src/features/store-review/apis/store-review.service';
 import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
 import { createReorderCoachmarkRepository } from '@src/features/todo/apis/reorder-coachmark.repository';
 import { ReorderCoachmarkService } from '@src/features/todo/apis/reorder-coachmark.service';
-import { createStoreReviewPromptRepository } from '@src/features/todo/apis/store-review-prompt.repository';
-import { StoreReviewPromptService } from '@src/features/todo/apis/store-review-prompt.service';
 import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
@@ -221,8 +221,10 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     const reorderCoachmarkService = new ReorderCoachmarkService(
       createReorderCoachmarkRepository(mmkvSyncStorage),
     );
-    const storeReviewPromptService = new StoreReviewPromptService(
-      createStoreReviewPromptRepository(mmkvSyncStorage),
+
+    // Store review
+    const storeReviewService = new StoreReviewService(
+      createStoreReviewRepository(mmkvSyncStorage),
       expoAppStoreGateway,
     );
 
@@ -273,7 +275,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       notificationService,
       todoNudgeService,
       reorderCoachmarkService,
-      storeReviewPromptService,
+      storeReviewService,
       userService,
       revenueCatSdkManager,
       subscriptionService,

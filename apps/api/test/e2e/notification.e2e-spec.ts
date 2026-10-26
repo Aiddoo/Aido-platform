@@ -986,7 +986,14 @@ describe("알림 E2E", () => {
       {
         name: "1.13.0",
         version: "1.13.0",
-        visible: ["FOLLOW_NEW", "INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"],
+        visible: [
+          "FOLLOW_NEW",
+          "INVITE_JOINED",
+          "INVITE_PROGRESS",
+          "INVITE_QUALIFY_REMINDER",
+          "INVITE_REWARDED",
+          "PREMIUM_GRANT_ENDING",
+        ],
       },
     ])(
       "$name 앱의 알림함·안 읽은 수는 버전 헤더로 초대·보상 알림을 거르고 구 목록 API는 항상 숨긴다",
@@ -1000,7 +1007,14 @@ describe("알림 E2E", () => {
           .getClient()
           .orm.public.Notification.createAndCount(
             (
-              ["FOLLOW_NEW", "INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"] as const
+              [
+                "FOLLOW_NEW",
+                "INVITE_JOINED",
+                "INVITE_REWARDED",
+                "INVITE_PROGRESS",
+                "INVITE_QUALIFY_REMINDER",
+                "PREMIUM_GRANT_ENDING",
+              ] as const
             ).map((type) =>
               encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
             ),

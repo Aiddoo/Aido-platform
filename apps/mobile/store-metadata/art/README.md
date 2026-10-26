@@ -13,7 +13,7 @@ pnpm --filter @aido/mobile store:art asset-names --out <파일.md>      # App St
 pnpm --filter @aido/mobile test:store-art
 ```
 
-옵션: `--captures <캡처 루트>`(기본 `~/Desktop/Aido-Screens-1.13.0`), `--only <scenes|screenshots|세트 id|대상 id>`,
+옵션: `--captures <캡처 루트>`(기본 `~/Desktop/Aido-Screens-1.13.0`), `--only <scenes|screenshots|세트 id|대상 id|세트/대상>`(쉼표로 여러 개),
 `--locales ko,en`. 결과 폴더에 `index.html`(스토리보드 + 갤러리, 360px 썸네일)과 `manifest.json`을 써요.
 
 필요한 것: Google Chrome(또는 `CHROME_PATH`), Node 24. 브라우저 자동화는 Node 내장 WebSocket으로 DevTools
@@ -30,16 +30,21 @@ pnpm --filter @aido/mobile test:store-art
 | 출력 대상          | 크기(px)  | 기기 폴더                                      | 틀                     |
 | ------------------ | --------- | ---------------------------------------------- | ---------------------- |
 | `iphone-6.3`       | 1206×2622 | `iPhone 17 Pro`                                | iPhone(Dynamic Island) |
-| `iphone-6.9`       | 1320×2868 | `iPhone 17 Pro`(키워서 씀)                     | iPhone                 |
+| `iphone-6.9`       | 1320×2868 | `iPhone 6.9 원본`(없으면 `iPhone 17 Pro`)      | iPhone                 |
 | `iphone-duo`       | 2007×2853 | `iPhone Duo 펼침`(+ `iPhone Duo 접힘` 쌍 배치) | Duo 펼침·접힘          |
 | `iphone-duo-outer` | 1398×2034 | `iPhone Duo 접힘`                              | Duo 접힘               |
 | `ipad-13`          | 2064×2752 | `iPad Pro 13`                                  | iPad                   |
-| `play-phone`       | 1080×1920 | `Android 폰`                                   | 틀 없이 화면 카드      |
-| `play-tablet-7`    | 1920×1080 | `Android 폴드 펼침`(문구 없음)                 | 화면 카드              |
-| `play-tablet-10`   | 2560×1440 | `Android 폴드 펼침`(문구 없음)                 | 화면 카드              |
+| `play-phone`       | 1080×1920 | `iPhone 17 Pro`(OS 막대·키보드 잘라 냄)        | 틀 없이 화면 카드      |
+| `play-tablet-7`    | 1920×1080 | `iPad Pro 13` 두 장(문구 없음)                 | 화면 카드 두 장        |
+| `play-tablet-10`   | 2560×1440 | `iPad Pro 13` 두 장(문구 없음)                 | 화면 카드 두 장        |
 
-캡처 계획에 아직 없는 것(2026-10-26 기준): `iPad Pro 13` 기기(ko·en), `iPhone Duo`·`Android 폰`·`Android 폴드 펼침`의 `en`,
-그리고 OS 홈 화면이라 자동으로 못 찍는 `W1_홈_화면_위젯.png`(기기별 ko·en, 같은 폴더에 직접 저장).
+Google Play는 Android 캡처 없이 iOS 캡처를 **틀 없는 화면 카드**로 써요. 다른 회사 기기 틀에 넣지 않고,
+`CAPTURE_DEVICES`(storyboard)의 높이만큼 상태 막대·홈 인디케이터를, `KEYBOARD_SCREENS` 화면은 키보드 윗선 아래를 잘라 내요.
+iOS 홈 화면 위젯은 Play에 쓰지 않고, 태블릿은 장면의 `capture`와 `tabletPair`를 나란히 둬요.
+화면 카드(`lib/card.mjs`의 `cardLayout`)는 잘라 낸 첫 행·마지막 행의 바탕색으로 위·아래에 모서리 곡선보다 큰 여백을 둬서
+뒤로 버튼 같은 요소가 둥근 모서리에 잘리지 않게 하고, 카드 높이가 모자라거나 키보드 위에서 자른 화면은 아래를 페이드로 끝내요.
+iOS 시트 화면은 시트 바깥 어두운 배경과 뒤에 겹친 시트를 지우고(`cleanSheet`) 시트 윗선부터 보여줘요.
+Play 문구는 장면의 `play` 문구를 먼저 쓰고, 보상 일수 같은 혜택 표현을 넣지 않아요(`slotCopy`).
 `captures` 명령이 장면별로 빠진 파일을 보여줘요.
 
 `W1_홈_화면_위젯.png` 찍는 법: 프리미엄 데모 계정으로 오늘 할 일(일부 완료)을 채운 뒤 앱을 한 번 열어 위젯을 갱신하고,

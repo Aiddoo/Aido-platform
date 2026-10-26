@@ -29,14 +29,23 @@ export interface PawPrintBoard {
   totalPawPrints: number;
   /** 이 판을 다 채웠다. 축하를 보여 준 뒤 다음에 열면 새 판이 나온다 */
   isComplete: boolean;
+  /** 이 판에 남은 칸보다 많아 판에 그리지 못한 기다리는 친구 수. 판은 찍힌 발자국으로만 채워진다 */
+  waitingOverflowCount: number;
   rows: PawPrintRow[];
 }
 
+/**
+ * 판 하나의 칸 수. 기기 폭과 상관없이 모두 같아서 같은 사람은 어느 기기에서나 같은 판 번호·축하 시점을 본다.
+ * 좁은 창은 4열 × 3줄, 넓은 창은 6열 × 2줄로 놓는다.
+ */
+export const PAW_PRINT_BOARD_SIZE = 12;
+
 const PAW_PRINT_CELL_SIZE = 56;
 const MIN_CONNECTOR_WIDTH = 12;
+// 생선 뼈 굵기(w-3·h-3)
+const FISH_BONE_THICKNESS = 12;
 const COMPACT_COLUMNS = 4;
 const REGULAR_COLUMNS = 6;
-const ROWS_PER_BOARD = 2;
 // 화면 좌우 여백(16×2)과 카드 안쪽 여백(18×2)
 const BOARD_HORIZONTAL_INSET = 68;
 
@@ -71,23 +80,53 @@ export function calculatePawPrintColumns(availableWidth: number) {
   return availableWidth >= regularMinWidth ? REGULAR_COLUMNS : COMPACT_COLUMNS;
 }
 
-/** 판 하나의 칸 수. 판 크기가 정해져 있어 발자국이 늘어도 화면이 커지지 않는다 */
-export function calculateBoardSize(columns: number) {
-  return columns * ROWS_PER_BOARD;
+export interface PawPrintGrid {
+  columns: number;
+  /** 발자국 칸 지름. 좁은 폭에서는 56pt보다 작아져 판이 카드 밖으로 넘치지 않는다 */
+  cellSize: number;
+  /** 같은 줄 두 칸 사이 생선 뼈 길이. 모든 줄이 같은 값을 써서 열 위치가 줄마다 같다 */
+  connectorLength: number;
+  /** 한 줄 전체 폭. 쓸 수 있는 폭을 넘지 않는다 */
+  rowWidth: number;
+  /** 줄을 꺾는 세로 생선 뼈가 칸 가운데에 오도록 줄 끝에서 띄우는 폭 */
+  turnInset: number;
+}
+
+/**
+ * 실제로 잰 판 폭에서 모든 줄이 같이 쓰는 열 격자를 만든다.
+ * 칸과 생선 뼈 길이를 정수 pt로 정해 모든 줄이 같은 x에 놓이고, 줄 폭이 판 폭을 넘지 않는다.
+ */
+export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
+  const width = Math.max(availableWidth, 0);
+  const columns = calculatePawPrintColumns(width);
+  const gapCount = columns - 1;
+  const cellSize = Math.max(
+    Math.min(PAW_PRINT_CELL_SIZE, Math.floor((width - gapCount * MIN_CONNECTOR_WIDTH) / columns)),
+    0,
+  );
+  const connectorLength = Math.max(Math.floor((width - columns * cellSize) / gapCount), 0);
+
+  return {
+    columns,
+    cellSize,
+    connectorLength,
+    rowWidth: columns * cellSize + gapCount * connectorLength,
+    turnInset: Math.max((cellSize - FISH_BONE_THICKNESS) / 2, 0),
+  };
 }
 
 /**
  * 지금 보여 줄 판(0부터). 판을 막 채웠고 아직 축하하지 않았으면 그 판을 한 번 더 보여 주고,
  * 다음에 열 때 새 판으로 넘어간다.
  */
-export function calculateBoardIndex(
-  pawPrintedCount: number,
-  boardSize: number,
-  celebratedCount: number,
-) {
+export function calculateBoardIndex(pawPrintedCount: number, celebratedCount: number) {
   const isJustFilled =
-    pawPrintedCount > 0 && pawPrintedCount % boardSize === 0 && celebratedCount < pawPrintedCount;
-  return isJustFilled ? pawPrintedCount / boardSize - 1 : Math.floor(pawPrintedCount / boardSize);
+    pawPrintedCount > 0 &&
+    pawPrintedCount % PAW_PRINT_BOARD_SIZE === 0 &&
+    celebratedCount < pawPrintedCount;
+  return isJustFilled
+    ? pawPrintedCount / PAW_PRINT_BOARD_SIZE - 1
+    : Math.floor(pawPrintedCount / PAW_PRINT_BOARD_SIZE);
 }
 
 interface PawPrintCountInput {
@@ -110,6 +149,15 @@ export function calculatePawPrintState(
   return milestoneCounts.includes(index + 1) ? 'milestone' : 'empty';
 }
 
+/** 찍힌 발자국 뒤에 이어 그리는 기다리는 칸 중 판 끝(boardEndIndex)을 넘는 수 */
+export function calculateWaitingOverflow(
+  { pawPrintedCount, waitingCount }: Pick<PawPrintCountInput, 'pawPrintedCount' | 'waitingCount'>,
+  boardEndIndex: number,
+) {
+  const waitingStart = Math.max(pawPrintedCount, boardEndIndex);
+  return Math.min(Math.max(pawPrintedCount + waitingCount - waitingStart, 0), waitingCount);
+}
+
 interface PawPrintBoardOptions {
   columns: number;
   /** 이 기기에서 이미 찍히는 모습을 본 발자국 수 */
@@ -127,15 +175,15 @@ export function createPawPrintBoard(
     milestoneCounts: InvitePolicy.milestoneQualifiedCounts(),
   };
   const isPawPrinted = (index: number) => index < counts.pawPrintedCount;
-  const boardSize = calculateBoardSize(columns);
-  const boardIndex = calculateBoardIndex(counts.pawPrintedCount, boardSize, celebratedCount);
-  const firstIndex = boardIndex * boardSize;
-  const rowIndexes = chunk(range(firstIndex, firstIndex + boardSize), columns);
+  const boardIndex = calculateBoardIndex(counts.pawPrintedCount, celebratedCount);
+  const firstIndex = boardIndex * PAW_PRINT_BOARD_SIZE;
+  const rowIndexes = chunk(range(firstIndex, firstIndex + PAW_PRINT_BOARD_SIZE), columns);
 
   return {
     boardNumber: boardIndex + 1,
     totalPawPrints: counts.pawPrintedCount,
-    isComplete: counts.pawPrintedCount >= firstIndex + boardSize,
+    isComplete: counts.pawPrintedCount >= firstIndex + PAW_PRINT_BOARD_SIZE,
+    waitingOverflowCount: calculateWaitingOverflow(counts, firstIndex + PAW_PRINT_BOARD_SIZE),
     rows: rowIndexes.map((indexes, rowIndex) => {
       const orderedIndexes = rowIndex % 2 === 0 ? indexes : [...indexes].reverse();
       const lastIndex = indexes[indexes.length - 1] ?? firstIndex;

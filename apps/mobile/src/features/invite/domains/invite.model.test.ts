@@ -8,7 +8,6 @@ import {
   toInviteCodeDraft,
   calculateRemainingInvites,
   findOneTimeMilestoneCounts,
-  hasReachedPremiumCap,
   InvitePolicy,
 } from './invite.model';
 
@@ -200,20 +199,6 @@ describe('calculateRemainingInvites', () => {
   });
 });
 
-describe('hasReachedPremiumCap', () => {
-  it.each([
-    [29, false],
-    [30, true],
-    [31, true],
-  ])('받은 일수가 %i일이고 상한이 30일이면 %s를 반환한다', (grantedDays, expected) => {
-    // When
-    const result = hasReachedPremiumCap(grantedDays, 30);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('findOneTimeMilestoneCounts', () => {
   it('반복하지 않는 단계의 인원만 반환한다', () => {
     // When
@@ -280,22 +265,6 @@ describe('InvitePolicy', () => {
     });
   });
 
-  describe('isMonthlyCapReached', () => {
-    it.each([
-      [29, false],
-      [30, true],
-    ])('최근 30일 동안 %i일을 받았으면 %s를 반환한다', (premiumDaysInWindow, expected) => {
-      // Given
-      const myInvite = createInvite({ premiumDaysInWindow });
-
-      // When
-      const result = InvitePolicy.isMonthlyCapReached(myInvite);
-
-      // Then
-      expect(result).toBe(expected);
-    });
-  });
-
   describe('progress', () => {
     it('발자국이 없으면 not-started를 반환한다', () => {
       // Given
@@ -319,15 +288,53 @@ describe('InvitePolicy', () => {
       expect(result).toBe('in-progress');
     });
 
-    it('월 상한에 닿으면 발자국 수와 관계없이 monthly-cap-reached를 반환한다', () => {
-      // Given
-      const myInvite = createInvite({ qualifiedCount: 5, premiumDaysInWindow: 30 });
+    it.each([
+      ['WINDOW_REACHED', 'monthly-cap-reached'],
+      ['TOTAL_REACHED', 'total-cap-reached'],
+    ] as const)(
+      '서버가 상한을 %s로 보내면 발자국·기다리는 친구 수와 관계없이 %s를 반환한다',
+      (premiumCapState, expected) => {
+        // Given 기다리는 친구가 남아 있어도 상한 안내가 먼저다
+        const myInvite = createInvite({ qualifiedCount: 5, waitingCount: 2, premiumCapState });
+
+        // When
+        const result = InvitePolicy.progress(myInvite);
+
+        // Then
+        expect(result).toBe(expected);
+      },
+    );
+
+    it('받은 일수가 상한이어도 서버가 AVAILABLE로 보내면(30일 기간 해제) in-progress를 반환한다', () => {
+      // Given 앱은 받은 일수로 상한을 다시 계산하지 않는다
+      const myInvite = createInvite({
+        qualifiedCount: 5,
+        premiumDaysInWindow: 30,
+        premiumCapState: 'AVAILABLE',
+      });
 
       // When
       const result = InvitePolicy.progress(myInvite);
 
       // Then
-      expect(result).toBe('monthly-cap-reached');
+      expect(result).toBe('in-progress');
+    });
+  });
+
+  describe('isPremiumCapReached', () => {
+    it.each([
+      ['AVAILABLE', false],
+      ['WINDOW_REACHED', true],
+      ['TOTAL_REACHED', true],
+    ] as const)('상한 상태가 %s면 %s를 반환한다', (premiumCapState, expected) => {
+      // Given
+      const myInvite = createInvite({ premiumCapState });
+
+      // When
+      const result = InvitePolicy.isPremiumCapReached(myInvite);
+
+      // Then
+      expect(result).toBe(expected);
     });
   });
 });

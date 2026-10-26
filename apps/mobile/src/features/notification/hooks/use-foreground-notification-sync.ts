@@ -38,7 +38,7 @@ export function useForegroundNotificationSync({
         if (type === 'FOLLOW_NEW' || type === 'FOLLOW_ACCEPTED') {
           tasks.push(invalidateFriends(queryClient));
         }
-        if (type === 'INVITE_JOINED' || type === 'INVITE_REWARDED') {
+        if (type === 'INVITE_JOINED' || type === 'INVITE_REWARDED' || type === 'INVITE_PROGRESS') {
           tasks.push(invalidateOnInviteNotification(queryClient));
         }
         // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다

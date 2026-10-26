@@ -25,8 +25,7 @@ export function snapshotTodo(
   queryClient: QueryClient,
   { date, todoId }: { date: string; todoId: number },
 ): TodoSnapshot | null {
-  const todos =
-    queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }))?.todos ?? [];
+  const todos = getCachedTodosByDate(queryClient, { date }) ?? [];
   const index = todos.findIndex((todo) => todo.id === todoId);
   const todo = todos[index];
 
@@ -35,6 +34,14 @@ export function snapshotTodo(
   }
 
   return { date, todo, index };
+}
+
+/** 그 날짜 목록에 지금 보이는 할 일. 아직 불러오지 않았으면 undefined */
+export function getCachedTodosByDate(
+  queryClient: QueryClient,
+  { date }: { date: string },
+): Todo[] | undefined {
+  return queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }))?.todos;
 }
 
 export function updateTodoInList(

@@ -1,5 +1,5 @@
 appId: com.aido.mobile
-name: 초대자의 친구 자리가 꽉 차면 친구 요청으로 바뀌고 보상은 받는다(REQUESTED)
+name: 초대자가 친구를 더 추가할 수 없으면 친구 요청으로 바뀌고 보상은 받는다(REQUESTED)
 tags:
   - failure
   - full
@@ -20,12 +20,12 @@ onFlowStart:
     timeout: 20000
 - tapOn:
     id: invite-card-redeem
-# Then: 친구가 아니라 친구 요청이 갔고, 자리가 찬 사정을 알려 준다
+# Then: 친구가 아니라 친구 요청이 갔고, 친구 한도가 찬 사정을 알려 준다
 - extendedWaitUntil:
     label: 요청 환영 시트
     visible: '${output.a.name}님에게 친구 요청을 보냈어요|Friend request sent to ${output.a.name}'
     timeout: 20000
-- assertVisible: '.*친구 자리가 꽉 찼어요.*|.*friend slots are full.*'
+- assertVisible: '.*친구를 더 추가할 수 없어요.*|.*reached their friend limit.*'
 - assertVisible: '프리미엄 .*일을 받았어요|You got .* of Premium'
 - takeScreenshot: 1.13.0-failure-friend-limit-requested
 - tapOn:

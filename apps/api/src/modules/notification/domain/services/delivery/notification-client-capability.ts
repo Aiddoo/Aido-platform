@@ -9,6 +9,8 @@ const NOTIFICATION_MIN_APP_VERSION = {
   NUDGE_THANKED: "1.11.0",
   INVITE_JOINED: "1.13.0",
   INVITE_REWARDED: "1.13.0",
+  INVITE_PROGRESS: "1.13.0",
+  INVITE_QUALIFY_REMINDER: "1.13.0",
   PREMIUM_GRANT_ENDING: "1.13.0",
 } as const satisfies Partial<Record<NotificationType, string>>;
 

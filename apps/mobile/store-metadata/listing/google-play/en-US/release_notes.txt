@@ -1,6 +1,15 @@
-Invite friends with a link and earn Premium together. You can now report and block, and AI and widgets are more accurate.
+Aido 1.13.0
 
-- Invite a friend with a link. New members get 7 days of Premium.
-- When they finish to-dos on 2 days, you get 7 days of Premium and 1 more friend slot.
-- Report or block people, and we ask for consent before sending data to AI.
-- AI reads dates more accurately, and widgets switch to the new day after midnight.
+New
+- Friends you invite get 7 days of Premium when they join.
+- You get 7 days of Premium + 1 more friend once they complete to-dos on 2 days.
+- Report to-dos, comments, or nudges and block the sender.
+
+Improvements
+- AI asks for your consent before using your data.
+- AI reads dates like “tomorrow at 3 PM” better.
+- Widgets switch to the new day after midnight.
+
+Bug fixes
+- Fixed recurring to-dos missing in daylight saving time.
+- Fixed notifications opening the wrong screen.

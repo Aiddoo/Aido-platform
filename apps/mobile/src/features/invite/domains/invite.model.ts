@@ -3,6 +3,7 @@ import {
   inviteCodeSchema,
   normalizeInviteCode,
   INVITE_REWARD_CAPS,
+  PREMIUM_CAP_STATE,
   INVITER_REWARD_MILESTONES,
   type InviterRewardMilestone,
   inviteMilestoneSchema,
@@ -131,10 +132,6 @@ function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
   return qualifiedCount + waitingCount;
 }
 
-export function hasReachedPremiumCap(grantedDays: number, capDays: number) {
-  return grantedDays >= capDays;
-}
-
 export function toDisplayLink(link: string) {
   return link.replace(/^https?:\/\//, '');
 }
@@ -183,10 +180,6 @@ export const InvitePolicy = {
     return INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL;
   },
 
-  isMonthlyCapReached(myInvite: Invite) {
-    return hasReachedPremiumCap(myInvite.premiumDaysInWindow, this.monthlyPremiumCapDays());
-  },
-
   milestoneQualifiedCounts() {
     return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
   },
@@ -196,16 +189,31 @@ export const InvitePolicy = {
     return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
   },
 
-  /** 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다) */
+  /**
+   * 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다).
+   * 프리미엄 상한은 서버가 정한 premiumCapState를 그대로 따른다
+   */
   progress(myInvite: Invite) {
     return match({
-      isMonthlyCapReached: this.isMonthlyCapReached(myInvite),
+      premiumCapState: myInvite.premiumCapState,
       hasPawPrint: myInvite.qualifiedCount > 0,
     })
-      .with({ isMonthlyCapReached: true }, () => 'monthly-cap-reached' as const)
+      .with(
+        { premiumCapState: PREMIUM_CAP_STATE.TOTAL_REACHED },
+        () => 'total-cap-reached' as const,
+      )
+      .with(
+        { premiumCapState: PREMIUM_CAP_STATE.WINDOW_REACHED },
+        () => 'monthly-cap-reached' as const,
+      )
       .with({ hasPawPrint: false }, () => 'not-started' as const)
       .with({ hasPawPrint: true }, () => 'in-progress' as const)
       .exhaustive();
+  },
+
+  /** 상한에 닿아 초대로는 프리미엄을 더 받지 못한다 */
+  isPremiumCapReached(myInvite: Invite) {
+    return myInvite.premiumCapState !== PREMIUM_CAP_STATE.AVAILABLE;
   },
 
   /** 화면에 보여 줄 링크. 스킴을 빼서 짧게 읽힌다(복사·공유는 전체 링크를 쓴다) */

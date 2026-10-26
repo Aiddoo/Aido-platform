@@ -25,4 +25,7 @@ export class FeatureDiscoveryStateService {
       ...identity,
       now: this.#now(),
     });
+
+  dismissReentry = (identity: FeatureDiscoveryStateIdentity): void =>
+    this.#repository.dismissReentry(identity);
 }

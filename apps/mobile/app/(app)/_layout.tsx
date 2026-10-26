@@ -26,6 +26,7 @@ const SHEET_ROUTES = [
   'invite-welcome/[friendId]',
   'users/[userId]/block',
   'users/[userId]/report',
+  'users/[userId]/nudge',
 ] as const;
 
 export const unstable_settings = {
