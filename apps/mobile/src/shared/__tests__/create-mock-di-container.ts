@@ -128,8 +128,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get reorderCoachmarkService() {
       return dependency('reorderCoachmarkService');
     },
-    get storeReviewPromptService() {
-      return dependency('storeReviewPromptService');
+    get storeReviewService() {
+      return dependency('storeReviewService');
     },
     get userService() {
       return dependency('userService');
