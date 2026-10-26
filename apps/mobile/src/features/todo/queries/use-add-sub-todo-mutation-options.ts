@@ -8,11 +8,11 @@ import { t } from '@src/shared/i18n';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
   cancelTodoListQuery,
   createOptimisticId,
+  invalidateTodoInList,
   restoreTodo,
   snapshotTodo,
   updateTodoInList,
@@ -66,8 +66,7 @@ export const useAddSubTodoMutationOptions = () => {
       }
     },
     onSettled: (_data, _error, { todoId, startDate }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+      invalidateTodoInList(queryClient, { date: startDate, todoId });
     },
   });
 };

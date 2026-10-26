@@ -7,9 +7,14 @@ import { unwrap } from '@src/shared/errors/result';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { useStoreReviewPrompt } from '../hooks/use-store-review-prompt';
-import { cancelTodoListQuery, snapshotTodo, updateTodoInList } from './todo-cache';
+import {
+  cancelTodoListQuery,
+  invalidateTodoCompletions,
+  invalidateTodoInList,
+  snapshotTodo,
+  updateTodoInList,
+} from './todo-cache';
 
 interface ToggleTodoMutationParams {
   todoId: number;
@@ -70,9 +75,8 @@ export const useToggleTodoMutationOptions = () => {
       }
     },
     onSettled: (_data, _error, { startDate, todoId }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+      invalidateTodoInList(queryClient, { date: startDate, todoId });
+      invalidateTodoCompletions(queryClient);
       invalidateNudgeInteractions(queryClient);
     },
   });
