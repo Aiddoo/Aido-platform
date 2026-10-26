@@ -22,6 +22,27 @@ import { PUSH_RATE_LIMIT_POLICY } from "../../../domain/services/delivery/push-r
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const MAX_TRANSACTION_RETRIES = 5;
+/**
+ * Serializable 충돌 재시도 대기의 기준값. 시도마다 두 배로 늘린다.
+ * 충돌 상대가 커밋하기 전에 즉시 재시도하면 같은 snapshot에서 같은 pivot 충돌이 반복되므로,
+ * 상대 트랜잭션이 끝날 시간을 준 뒤 새 snapshot으로 다시 판정한다.
+ */
+const TRANSACTION_RETRY_BASE_DELAY_MS = 20;
+
+/**
+ * n번째 실패 뒤 다음 시도까지 기다릴 시간(equal jitter 지수 백오프).
+ * 절반은 고정해 최소 대기를 보장하고, 나머지 절반은 무작위로 둬 경합자끼리 같은 박자로 재충돌하지 않게 한다.
+ */
+export function transactionRetryDelayMs(failedAttempt: number, random: () => number): number {
+  const ceiling = TRANSACTION_RETRY_BASE_DELAY_MS * 2 ** (failedAttempt - 1);
+  return ceiling / 2 + (ceiling / 2) * random();
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 interface ReservationRequest extends PushRateLimitRequest {
   readonly reserveGeneral: boolean;
@@ -74,7 +95,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           const userIds = requests.map((request) => request.userId);
           const generalWindowStart = databaseTimestamp(new Date(Date.now() - GENERAL.WINDOW_MS));
           const engagementDates = requests.flatMap((request) =>
-            request.engagementLocalDate !== undefined
+            request.engagementLocalDate != null
               ? [databaseDate(this.#toDate(request.engagementLocalDate))]
               : [],
           );
@@ -114,9 +135,9 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           const engagementStats = engagementRows.map((row) => ({
             userId: row.userId,
             count: row.count,
-            localDate: row.localDate === null ? null : applicationDate(row.localDate),
+            localDate: row.localDate == null ? null : applicationDate(row.localDate),
             lastReservedAt:
-              row.lastReservedAt === null ? null : applicationTimestamp(row.lastReservedAt),
+              row.lastReservedAt == null ? null : applicationTimestamp(row.lastReservedAt),
           }));
           this.#assertDispatchOwnership(requests, dispatches);
           const decisions = this.#decide(requests, existing, generalStats, engagementStats);
@@ -128,8 +149,8 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           return decisions.limited;
         });
       } catch (error) {
-        if (isTransactionWriteConflict(error) && attempt < MAX_TRANSACTION_RETRIES) continue;
-        throw error;
+        if (!isTransactionWriteConflict(error) || attempt === MAX_TRANSACTION_RETRIES) throw error;
+        await delay(transactionRetryDelayMs(attempt, Math.random));
       }
     }
     throw new Error("Push rate limit transaction retry budget exhausted");
@@ -169,11 +190,10 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
         (request.reserveGeneral &&
           !generalReserved &&
           (generalByUser.get(request.userId) ?? 0) >= GENERAL.MAX) ||
-        (localDate !== null &&
+        (localDate != null &&
           !engagementReserved &&
           ((engagement?.count ?? 0) >= ENGAGEMENT.DAILY_MAX ||
-            (engagement?.lastReservedAt !== null &&
-              engagement?.lastReservedAt !== undefined &&
+            (engagement?.lastReservedAt != null &&
               now - engagement.lastReservedAt.getTime() < ENGAGEMENT.MIN_INTERVAL_MS)));
       if (isLimited) return true;
 
@@ -238,7 +258,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
   }
 
   #requiredDecision(value: boolean | undefined, dispatchId: number): boolean {
-    if (value === undefined) {
+    if (value == null) {
       throw new Error(`Push rate limit reservation result missing: dispatchId=${dispatchId}`);
     }
     return value;

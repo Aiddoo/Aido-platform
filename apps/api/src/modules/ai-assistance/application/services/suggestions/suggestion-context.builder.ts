@@ -94,7 +94,7 @@ export class SuggestionContextBuilder {
 
     // 보고서 인사이트 추출
     let weeklyReportInsight: string | null = null;
-    if (weeklyReport !== null) {
+    if (weeklyReport != null) {
       const stats = reportStatsSchema.safeParse(weeklyReport.stats);
       if (stats.success) {
         weeklyReportInsight = suggestionContextTranslations[locale].reportInsight(
@@ -152,7 +152,7 @@ export class SuggestionContextBuilder {
         titleDayCount.set(todo.title, new Map());
       }
       const dayMap = titleDayCount.get(todo.title);
-      if (dayMap === undefined) continue;
+      if (dayMap == null) continue;
       dayMap.set(dayName, (dayMap.get(dayName) ?? 0) + 1);
     }
 
@@ -183,7 +183,7 @@ export class SuggestionContextBuilder {
     date: Date,
     locale: SupportedLocale,
   ): Promise<string | null> {
-    if (grid === null) return null;
+    if (grid == null) return null;
 
     try {
       const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
@@ -191,7 +191,7 @@ export class SuggestionContextBuilder {
         date,
       );
       const forecast = forecasts.get(`${grid.gridX}:${grid.gridY}`);
-      if (forecast === undefined) return null;
+      if (forecast == null) return null;
 
       const translations = suggestionContextTranslations[locale];
       const description =
@@ -258,7 +258,7 @@ export class SuggestionContextBuilder {
     info: { readonly currentStreak: number; readonly longestStreak: number } | null,
     locale: SupportedLocale,
   ): string {
-    if (info === null) return suggestionContextTranslations[locale].noStreak;
+    if (info == null) return suggestionContextTranslations[locale].noStreak;
     return suggestionContextTranslations[locale].streak(info.currentStreak, info.longestStreak);
   }
 

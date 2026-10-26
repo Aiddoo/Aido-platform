@@ -32,7 +32,7 @@ export function createDetectedPattern(overrides: Partial<DetectedPattern> = {}):
 export function createReportAiResponse(locale: "ko" | "en" = "ko") {
   return locale === "en"
     ? { summary: "You made steady progress this week.", tips: ["Read for ten minutes."] }
-    : { summary: "이번 주에도 차근차근 기록을 쌓았어요.", tips: ["책 읽기 10분부터 시작해요."] };
+    : { summary: "이번 주에도 차근차근 기록을 쌓았어요.", tips: ["책 읽기 한 가지부터 시작해요."] };
 }
 
 export function createParsedMemoResponse(categoryId = 7) {

@@ -57,7 +57,7 @@ export class CreateTodo {
       created.getId().getValue(),
       input.userId,
     );
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, {
         todoId: created.getId().getValue(),
       });

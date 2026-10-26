@@ -1,0 +1,122 @@
+[
+  {
+    "id": "column.public.AiReport.contentSource",
+    "label": "Add column \"contentSource\" to \"AiReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "contentSource",
+        "table": "AiReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"contentSource\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "AiReport",
+          "contentSource"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"contentSource\" on \"AiReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"contentSource\"",
+        "sql": "ALTER TABLE \"public\".\"AiReport\" ADD COLUMN \"contentSource\" character varying(16)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"contentSource\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "AiReport",
+          "contentSource"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"contentSource\" on \"AiReport\""
+        }
+      },
+      {
+        "description": "verify column \"contentSource\" has type \"character varying(16)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "AiReport",
+          "contentSource",
+          "character varying(16)"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.AiReport.promptVersion",
+    "label": "Add column \"promptVersion\" to \"AiReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "promptVersion",
+        "table": "AiReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"promptVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "AiReport",
+          "promptVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"promptVersion\" on \"AiReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"promptVersion\"",
+        "sql": "ALTER TABLE \"public\".\"AiReport\" ADD COLUMN \"promptVersion\" character varying(40)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"promptVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "AiReport",
+          "promptVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"promptVersion\" on \"AiReport\""
+        }
+      },
+      {
+        "description": "verify column \"promptVersion\" has type \"character varying(40)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "AiReport",
+          "promptVersion",
+          "character varying(40)"
+        ]
+      }
+    ]
+  }
+]

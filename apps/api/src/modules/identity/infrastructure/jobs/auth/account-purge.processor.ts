@@ -24,7 +24,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     const handler = async () => this.process();
     for (const queue of [ACCOUNT_PURGE_QUEUE, ACCOUNT_PURGE_LEGACY_QUEUE]) {
-      await this.runtime.work<AccountPurgeJobData>(queue, handler, {
+      await this.runtime.work(queue, handler, {
         teamSize: 1,
         pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
       });

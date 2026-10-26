@@ -1,0 +1,34 @@
+appId: com.aido.mobile
+name: 초대자가 새 링크를 만들면 이전 링크는 바뀜 카드(INVITE_2102)가 보이고 새 링크는 열린다
+tags:
+  - failure
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  # A가 링크를 새로 만든다(API). 확인 대화상자는 my-invite.yaml이 UI로 확인한다
+  - runScript: scripts/rotate-code.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+# When: 폐기된 이전 링크를 연다
+- openLink: ${QA_SCHEME}://invite/${output.oldCode}
+- extendedWaitUntil:
+    label: INVITE_2102 카드
+    visible:
+      id: invite-result-rotated
+    timeout: 20000
+- assertVisible: '새 링크를 받아 다시 열어주세요|Ask for the new one and open it again'
+- assertNotVisible:
+    id: invite-card-redeem
+- takeScreenshot: 1.13.0-failure-link-rotated
+# Recover: 새 링크는 정상으로 열린다
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- assertVisible:
+    id: invite-card-redeem

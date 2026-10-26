@@ -1,0 +1,39 @@
+appId: com.aido.mobile
+name: 초대 미리보기가 네트워크 오류면 다시 시도 카드가 보이고 연결이 돌아오면 성공한다(Android 전용)
+tags:
+  - failure
+  - full
+  - android-only
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+# iOS 시뮬레이터에는 비행기 모드가 없어 iOS에서는 이 흐름을 건너뛴다
+- runFlow:
+    label: Android에서만 실행
+    when:
+      platform: Android
+    commands:
+      - runFlow: subflows/login-invitee.yaml
+      - setAirplaneMode: enabled
+      - openLink: ${QA_SCHEME}://invite/${output.code}
+      - extendedWaitUntil:
+          label: 미리보기 실패 카드
+          visible: '초대 정보를 불러오지 못했어요|Couldn.t load the invite'
+          timeout: 30000
+      - assertVisible:
+          id: invite-result-retry
+      - takeScreenshot: 1.13.0-failure-network-error
+      # Recover: 네트워크를 되돌리고 다시 시도한다
+      - setAirplaneMode: disabled
+      - retry:
+          maxRetries: 3
+          commands:
+            - tapOn:
+                id: invite-result-retry
+            - extendedWaitUntil:
+                visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+                timeout: 10000

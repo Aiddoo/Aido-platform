@@ -8,7 +8,12 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
+import {
+  PREMIUM_GRANTER,
+  type PremiumGranterPort,
+} from "#api/modules/billing/billing-subscriptions.public";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
@@ -64,6 +69,10 @@ describe("팔로우 리소스 제한 E2E", () => {
       // Then - 403 에러와 FOLLOW_0909 코드 반환
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("FOLLOW_0909");
+      expect(response.body.error.details).toMatchObject({
+        current: FREE_LIMIT,
+        limit: FREE_LIMIT,
+      });
 
       // When - 리소스 제한 조회
       const limitResponse = await request(ctx.app.getHttpServer())
@@ -74,6 +83,89 @@ describe("팔로우 리소스 제한 E2E", () => {
       // Then - 현재 친구 수와 한도가 FREE_LIMIT과 일치
       expect(limitResponse.body.data.friendCount).toBe(FREE_LIMIT);
       expect(limitResponse.body.data.maxCount).toBe(FREE_LIMIT);
+    });
+  });
+
+  describe("초대 보상 친구 자리", () => {
+    it("친구 자리 보너스만큼 한도가 늘고, 넘으면 FOLLOW_0909 details에 보너스를 더한 한도를 싣는다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("follow-limit-bonus@test.com", password);
+      await ctx.testDatabase.getClient().orm.public.ResourceBonus.create(
+        encodeCreate("ResourceBonus", {
+          userId: user.userId,
+          resource: "FRIEND",
+          quantity: 1,
+          sourceKey: "invite:follow-limit-bonus",
+        }),
+      );
+      const friends: VerifiedUser[] = [];
+      for (let i = 0; i < FREE_LIMIT + 2; i++) {
+        friends.push(
+          await ctx.helpers.createVerifiedUser(`follow-bonus-friend-${i}@test.com`, password),
+        );
+      }
+      for (const friend of friends.slice(0, FREE_LIMIT + 1)) {
+        await ctx.helpers.createFriendship(user, friend);
+      }
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .post(`/v1/follows/${friends[FREE_LIMIT + 1]?.userTag}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(403);
+
+      // Then
+      expect(response.body.error.code).toBe("FOLLOW_0909");
+      expect(response.body.error.details).toEqual({
+        current: FREE_LIMIT + 1,
+        limit: FREE_LIMIT + 1,
+      });
+    });
+  });
+
+  describe("보상 기간과 친구 자리 보너스", () => {
+    it("보상 기간 중에는 친구 자리 보너스가 있어도 무제한이고 끝나면 무료 한도에 보너스를 더한다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        const email = "follow-limit-grant@test.com";
+        const user = await ctx.helpers.createVerifiedUser(email, password);
+        await ctx.testDatabase.getClient().orm.public.ResourceBonus.create(
+          encodeCreate("ResourceBonus", {
+            userId: user.userId,
+            resource: "FRIEND",
+            quantity: 1,
+            sourceKey: "invite:follow-limit-grant",
+          }),
+        );
+        await ctx.module.get<PremiumGranterPort>(PREMIUM_GRANTER).grant({
+          userId: user.userId,
+          source: "INVITE",
+          sourceKey: "invite:limit",
+          durationDays: 7,
+        });
+        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+        const maxCountAt = async (at: Date) => {
+          vi.setSystemTime(at);
+          await ctx.module.get(SweepPremiumGrants).execute({ now: at });
+          const { accessToken } = await ctx.helpers.loginUser(email, password);
+          const response = await request(ctx.app.getHttpServer())
+            .get("/v1/follows/resource-limit")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .expect(200);
+          return response.body.data.maxCount;
+        };
+
+        // When
+        const duringGrant = await maxCountAt(new Date(endsAt.getTime() - 1));
+        const afterGrant = await maxCountAt(endsAt);
+
+        // Then
+        expect(duringGrant).toBeNull();
+        expect(afterGrant).toBe(FREE_LIMIT + 1);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

@@ -1,9 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
-import { AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
+import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
 
 function createTodo(title: string, categoryId: number) {
@@ -23,7 +23,7 @@ function createTodo(title: string, categoryId: number) {
 function createFixture() {
   const fixture = createAiQuotaFixture();
   fixture.aiProvider.setRawResponse({ todos: [createTodo("팀 미팅", 7)] });
-  const useCase = new ParseMemo(fixture);
+  const useCase = new ParseMemo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
   const input: ParseMemoInput = {
     userId: fixture.userId,
     content: "내일 팀 미팅",
@@ -34,7 +34,7 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseMemo", () => {
+describe("ParseMemo — v1 롤백 경로", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AI_QUOTA_TIME);
@@ -112,10 +112,16 @@ describe("ParseMemo", () => {
   });
 
   it.each([
-    { error: new AiProviderCallError("provider unavailable", 500), errorCode: "AI_1301" },
+    { error: new AiProviderError("RATE_LIMITED", 429), errorCode: "AI_1310" },
+    { error: new AiProviderError("UPSTREAM", 503), errorCode: "AI_1301" },
+    { error: new AiProviderError("TIMEOUT", undefined), errorCode: "AI_1301" },
+    { error: new AiProviderError("UNAVAILABLE", undefined), errorCode: "AI_1301" },
+    { error: new AiProviderError("TRUNCATED", undefined), errorCode: "AI_1302" },
+    { error: new AiProviderError("BLOCKED", 400), errorCode: "AI_1302" },
+    { error: new AiProviderError("INVALID_OUTPUT", undefined), errorCode: "AI_1302" },
     { error: new Error("invalid output"), errorCode: "AI_1302" },
   ])(
-    "provider 오류는 $errorCode를 반환하고 예약 사용량을 보상한다",
+    "공급자 오류 $error.message는 $errorCode를 반환하고 예약 사용량을 보상한다",
     async ({ error, errorCode }) => {
       // Given
       const fixture = createFixture();
@@ -162,7 +168,9 @@ describe("ParseMemo", () => {
     vi.spyOn(fixture.aiProvider, "generateStructured").mockResolvedValueOnce({
       output: { todos: [todo] },
       model: "fixture:model",
-      usage: { input: 150, output: 50 },
+      finishReason: "stop",
+      latencyMs: 0,
+      usage: { input: 150, output: 50, reasoning: 0 },
     });
     // When
     const execution = fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO" });
@@ -170,12 +178,17 @@ describe("ParseMemo", () => {
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
     expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
-    expect(fixture.logger.error).toHaveBeenCalledWith({
-      event: "ai.parsing.output.invalid",
-      userId: fixture.userId,
-      errorCode: ErrorCode.AI_1302,
-      validationIssues: [{ path: ["todos", 0, "items"], code: "too_big" }],
-    });
+    expect(fixture.logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "ai.generation.failed",
+        task: "parse-memo",
+        userId: fixture.userId,
+        errorKind: "INVALID_OUTPUT",
+        errorCode: ErrorCode.AI_1302,
+        quotaCharged: false,
+        validationIssues: [{ path: ["todos", 0, "items"], code: "too_big" }],
+      }),
+    );
     const logged = JSON.stringify(fixture.logger.error.mock.calls);
     expect(logged).not.toContain("PRIVATE_");
     expect(logged).not.toContain("message");
@@ -199,21 +212,29 @@ describe("ParseMemo", () => {
     expect(result.data.todos[0]?.items).toHaveLength(5);
     expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
     expect(fixture.logger.log).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.parsing.memo.completed", todoCount: 1, itemCount: 5 }),
+      expect.objectContaining({
+        event: "ai.generation.completed",
+        task: "parse-memo",
+        quotaCharged: true,
+        todoCount: 1,
+        itemCount: 5,
+      }),
     );
     expect(fixture.logger.error).not.toHaveBeenCalled();
   });
 
-  it("provider의 rate-limit ApplicationException은 기존 코드와 identity를 유지하고 사용량을 반환한다", async () => {
+  it("재시도가 소진된 요청 과다는 파싱 실패가 아닌 AI_1310으로 반환하고 사용량을 반환한다", async () => {
     // Given
     const fixture = createFixture();
-    const failure = new ApplicationException(ErrorCode.AI_1310);
-    fixture.aiProvider.setInvalidResponse(failure);
+    fixture.aiProvider.setInvalidResponse(new AiProviderError("RATE_LIMITED", 429));
     // When
     const execution = fixture.useCase.execute(fixture.input);
     // Then
-    await expect(execution).rejects.toBe(failure);
+    await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1310 });
     expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
+    expect(fixture.logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "ai.generation.failed", errorKind: "RATE_LIMITED" }),
+    );
   });
 });

@@ -48,7 +48,7 @@ describe("AccountPurgeJob — 일일 스케줄과 재시작 보정", () => {
       },
     ]);
     expect(runtime.enqueueCalls).toEqual(
-      key === undefined
+      key == null
         ? []
         : [
             {

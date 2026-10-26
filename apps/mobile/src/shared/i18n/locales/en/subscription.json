@@ -1,28 +1,4 @@
 {
-  "status": {
-    "premiumTitle": "Aido Premium",
-    "active": {
-      "label": "Subscribed",
-      "description": "You're enjoying all premium features"
-    },
-    "cancelled": {
-      "label": "Canceled",
-      "description": "Your subscription has been canceled"
-    },
-    "expired": {
-      "label": "Expired",
-      "description": "Your subscription has expired"
-    },
-    "free": {
-      "label": "Free",
-      "description": "You're on the free plan"
-    },
-    "cancelledUntil": "Your subscription has been canceled. You can keep using it until {{date}}",
-    "nextBillingDate": "Next billing date",
-    "expiresAt": "Expires on",
-    "statusLabel": "Subscription status",
-    "autoRenewal": "Auto-renews"
-  },
   "plan": {
     "annual": "Annual",
     "monthly": "Monthly",
@@ -33,26 +9,25 @@
   },
   "toast": {
     "purchaseSuccess": "You're subscribed!",
+    "purchaseSyncPending": "It may take a moment for your payment to show up",
     "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
-    "purchaseFailed": "Subscription failed",
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",
-    "restoreFailed": "Failed to restore purchases"
+    "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
+    "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
   },
   "errors": {
-    "notConfigured": "RevenueCat isn't initialized",
-    "noOfferings": "No subscription products available",
-    "fetchOfferingsFailed": "Failed to load subscription products",
+    "storeUnavailable": "The store isn't available",
+    "offeringsUnavailable": "Couldn't load subscription products",
+    "network": "Couldn't connect to the store",
     "purchaseCancelled": "Purchase canceled",
-    "purchaseFailed": "Purchase failed",
     "paymentPending": "Payment approval is pending",
-    "restoreFailed": "Failed to restore purchases",
-    "offeringsInfoUnavailable": "Couldn't load subscription product info",
-    "offeringsInfoNotFound": "Subscription product info not found"
+    "purchaseFailed": "Purchase failed",
+    "restoreFailed": "Failed to restore purchases"
   },
   "benefits": {
     "aiParsing": {
-      "title": "Unlimited AI to-do parsing",
+      "title": "Unlimited AI to-dos",
       "description": "Organize to-dos in natural language, without the 5-per-month limit"
     },
     "nudge": {
@@ -86,24 +61,94 @@
     "future": "All future premium features"
   },
   "subscriber": {
-    "title": "Premium active",
-    "description": "You're enjoying all premium features",
     "benefitsTitle": "Your benefits",
     "manageButton": "Manage subscription (store settings)",
-    "restoreButton": "Restore purchases"
+    "manageOpenFailed": "Couldn't open subscription management. Check Subscriptions in the store app",
+    "restoreButton": "Restore purchases",
+    "subscribeAfterGrantButton": "Subscribe to keep Premium"
   },
   "paywall": {
     "title": "Upgrade to Premium",
     "subtitle": "Use every feature without limits",
     "futureIncluded": "All future premium features are included too",
+    "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
     "moreBenefits": "More premium benefits",
     "subscribeButton": "Subscribe",
-    "unavailableTitle": "Subscriptions are coming soon",
-    "unavailableDescription": "The subscription service isn't available right now. Please try again later.",
+    "renewalNotice": {
+      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
+      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
+    },
     "termsPrefix": "By purchasing, you agree to the ",
     "termsLink": "Terms of Service",
     "termsAnd": " and ",
     "privacyLink": "Privacy Policy",
     "termsSuffix": "."
+  },
+  "endingNotice": {
+    "badgeTomorrow": "Tomorrow",
+    "badgeToday": "Today",
+    "tomorrow": "Your Premium ends tomorrow. Subscribe to keep Premium going",
+    "today": "Your Premium ends today. Subscribe to keep Premium going",
+    "paidTomorrow": "Your subscription ends tomorrow. Turn auto-renew back on to keep Premium going",
+    "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going"
+  },
+  "receipt": {
+    "paid": {
+      "title": "Premium active",
+      "description": "You're enjoying all premium features"
+    },
+    "reward": {
+      "title": "Premium from an invite reward",
+      "description": "You got Premium through a friend invite"
+    },
+    "admin": {
+      "title": "Admin account",
+      "description": "All features unlocked"
+    },
+    "rows": {
+      "account": "Account",
+      "accountAdmin": "Admin",
+      "rewardRecord": "Invite reward record",
+      "until": "Until {{date}}",
+      "nextBillingDate": "Next billing date",
+      "subscriptionEndsOn": "Subscription ends",
+      "subscriptionStatus": "Subscription status",
+      "autoRenewalOn": "Auto-renews",
+      "autoRenewalOff": "Auto-renew off",
+      "rewardPeriod": "Access period",
+      "bankedReward": "Reward up next",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "daysUntil_one": "{{count}} day · until {{date}}",
+      "daysUntil_other": "{{count}} days · until {{date}}",
+      "overallPeriod": "Total period",
+      "daysLeft": "Time left"
+    },
+    "footnote": {
+      "returnsToFreePlan": "After {{date}}, you'll go back to the free plan",
+      "rewardStartsAfterSubscription_one": "When your subscription ends, your {{count}} reward day starts",
+      "rewardStartsAfterSubscription_other": "When your subscription ends, your {{count}} reward days start",
+      "manageAutoRenewalInStore": "You can change auto-renew in your store settings"
+    }
+  },
+  "failure": {
+    "title": {
+      "receipt": "Couldn't load your subscription",
+      "plans": "Couldn't load plans",
+      "purchase": "Couldn't complete your payment",
+      "restore": "Couldn't load your purchases"
+    },
+    "description": {
+      "network": "Check your internet connection and try again",
+      "server": "Please try again in a moment. If it keeps happening, contact us",
+      "store": "Couldn't connect to the store. Please try again in a moment",
+      "purchase": "If you were charged but don't see Premium, contact us",
+      "restore": "Please try again in a moment. If it keeps happening, contact us"
+    },
+    "contactSupport": "Contact us"
+  },
+  "inquiryDraft": {
+    "withDevice": "{{subject}}\n(Error code: {{code}} / App {{appVersion}} / {{platform}})\n\n",
+    "withoutDevice": "{{subject}}\n(Error code: {{code}})\n\n"
   }
 }

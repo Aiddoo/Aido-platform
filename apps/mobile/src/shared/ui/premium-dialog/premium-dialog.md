@@ -16,13 +16,14 @@ premiumDialog.open({ description: t('settings.reminderPremium') });
 
 ## Props (`PremiumDialogProps`)
 
-| Prop           | 타입                      | 기본값                | 설명                      |
-| -------------- | ------------------------- | --------------------- | ------------------------- |
-| `isOpen`       | `boolean`                 | -                     | 열림 상태                 |
-| `onOpenChange` | `(open: boolean) => void` | -                     | 열림 상태 변경            |
-| `title`        | `string`                  | `premiumDialog.title` | 제목                      |
-| `description`  | `string`                  | -                     | 프리미엄이 필요한 이유    |
-| `onConfirm`    | `() => void`              | -                     | 구독하기를 눌렀을 때 호출 |
+| Prop                | 타입                                     | 기본값                | 설명                                                                                                            |
+| ------------------- | ---------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `isOpen`            | `boolean`                                | -                     | 열림 상태                                                                                                       |
+| `onOpenChange`      | `(open: boolean) => void`                | -                     | 열림 상태 변경                                                                                                  |
+| `title`             | `string`                                 | `premiumDialog.title` | 제목                                                                                                            |
+| `description`       | `string`                                 | -                     | 프리미엄이 필요한 이유                                                                                          |
+| `onConfirm`         | `() => void`                             | -                     | 구독하기를 눌렀을 때 호출                                                                                       |
+| `alternativeAction` | `{ label: string; onPress: () => void }` | -                     | 구독 대신 고를 행동(예: 친구 초대로 자리 늘리기). 있으면 이 버튼을 먼저, "프리미엄으로 무제한"을 두 번째로 둔다 |
 
 구독하기는 다이얼로그를 닫고 `/settings/subscription`으로 이동합니다.
 

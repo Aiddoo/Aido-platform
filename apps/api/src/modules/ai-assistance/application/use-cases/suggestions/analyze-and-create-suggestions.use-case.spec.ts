@@ -1,3 +1,5 @@
+import { assert } from "vitest";
+
 import {
   createAiAssistanceFixture,
   createAnalysisTodo,
@@ -21,9 +23,13 @@ describe("AnalyzeAndCreateSuggestions", () => {
         seedPendingSuggestion(f);
         seedPendingSuggestion(f, 2);
         seedPendingSuggestion(f, 3);
-        f.repository.rows.set(2, { ...f.repository.rows.get(2)!, status: "ACCEPTED" });
+        const respondedSuggestion = f.repository.rows.get(2);
+        const expiredSuggestion = f.repository.rows.get(3);
+        assert.exists(respondedSuggestion);
+        assert.exists(expiredSuggestion);
+        f.repository.rows.set(2, { ...respondedSuggestion, status: "ACCEPTED" });
         f.repository.rows.set(3, {
-          ...f.repository.rows.get(3)!,
+          ...expiredSuggestion,
           expiresAt: new Date("2026-03-01"),
         });
         // When - 실제 컨텍스트 수집과 schema 검증을 거쳐 분석
@@ -47,6 +53,38 @@ describe("AnalyzeAndCreateSuggestions", () => {
         expect(f.access.locks).toEqual([true]);
       }),
   );
+
+  it("AI 데이터 처리를 거부한 사용자는 기록을 AI로 보내지 않고 기존 제안도 바꾸지 않는다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 반복 기록이 있지만 AI 데이터 처리를 거부함
+      const f = usePatternResponse(createAiAssistanceFixture());
+      f.aiDataSharingConsent.decision = "DECLINED";
+      seedPendingSuggestion(f);
+      // When
+      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      // Then
+      expect(count).toBe(0);
+      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.repository.writes).toEqual([]);
+      expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+    }));
+
+  it("1.13.0 이상 앱을 쓰는 사용자는 동의해야 반복 제안을 분석한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 같은 반복 기록, 1.13.0 앱
+      const undecided = usePatternResponse(createAiAssistanceFixture());
+      undecided.clientAppVersion.latestAppVersion = "1.13.0";
+      const agreed = usePatternResponse(createAiAssistanceFixture());
+      agreed.clientAppVersion.latestAppVersion = "1.13.0";
+      agreed.aiDataSharingConsent.decision = "AGREED";
+      // When
+      const skipped = await undecided.analyze.execute(undecided.userId, "Asia/Seoul");
+      await agreed.analyze.execute(agreed.userId, "Asia/Seoul");
+      // Then
+      expect(skipped).toBe(0);
+      expect(undecided.aiProvider.getCallCount()).toBe(0);
+      expect(agreed.aiProvider.getCallCount()).toBe(1);
+    }));
 
   it("기록이 없으면 기존 pending을 보존하고 AI와 쓰기를 모두 생략한다", () =>
     withAiAssistanceTime(async () => {

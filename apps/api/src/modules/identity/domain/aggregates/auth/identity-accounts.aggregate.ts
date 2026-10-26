@@ -34,7 +34,7 @@ export class IdentityAccounts extends AggregateRoot<IdentityAccountsProps> {
 
   unlink(provider: AccountProvider): void {
     const account = this.props.accounts.find((candidate) => candidate.provider === provider);
-    if (account === undefined) {
+    if (account == null) {
       throw new DomainException(ErrorCode.USER_0603, { provider: undefined });
     }
     if (!this.canUnlink) throw new DomainException(ErrorCode.USER_0610);

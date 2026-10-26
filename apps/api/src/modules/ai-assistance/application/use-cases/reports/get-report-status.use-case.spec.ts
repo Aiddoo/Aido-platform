@@ -40,6 +40,9 @@ describe("GetReportStatus", () => {
   let mockEntitlement: Mocked<
     ConstructorParameters<typeof GetReportStatus>[0]["entitlementReader"]
   >;
+  let mockPreference: Mocked<
+    ConstructorParameters<typeof GetReportStatus>[0]["localePreferenceReader"]
+  >;
 
   const tz = "Asia/Seoul";
 
@@ -51,6 +54,7 @@ describe("GetReportStatus", () => {
     useCase = unit;
     mockRepository = getReportStatusDependencies.aiReportRepository;
     mockEntitlement = getReportStatusDependencies.entitlementReader;
+    mockPreference = getReportStatusDependencies.localePreferenceReader;
     mockEntitlement.hasPremiumAccess.mockResolvedValue(true);
     mockRepository.findLatest.mockResolvedValue(null);
   });
@@ -88,5 +92,44 @@ describe("GetReportStatus", () => {
     expect(result.latestWeekly).not.toBeNull();
     expect(result.latestMonthly).toBeNull();
     expect(mockRepository.findLatest).toHaveBeenCalledTimes(2);
+  });
+
+  describe("사용자 시간대 기준 예정 시각", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("LA 일요일 저녁에는 LA 월요일 08:00을 다음 주간 리포트로 안내한다", async () => {
+      // Given - LA 2026-10-25(일) 18:00, 서울은 이미 월요일 10:00
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-26T01:00:00Z") });
+      // When
+      const result = await useCase.execute("user-123", "America/Los_Angeles");
+      // Then
+      expect(result.nextWeeklyAt).toBe("2026-10-26T15:00:00.000Z");
+      expect(result.daysUntilWeekly).toBe(1);
+      expect(result.nextMonthlyAt).toBe("2026-11-01T16:00:00.000Z");
+      expect(result.daysUntilMonthly).toBe(7);
+    });
+
+    it("서머타임이 끝난 뒤의 월요일 08:00은 PST 오프셋으로 계산한다", async () => {
+      // Given - LA 2026-11-01(일) 12:00 PST
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-01T20:00:00Z") });
+      // When
+      const result = await useCase.execute("user-123", "America/Los_Angeles");
+      // Then
+      expect(result.nextWeeklyAt).toBe("2026-11-02T16:00:00.000Z");
+      expect(result.nextMonthlyAt).toBe("2026-12-01T16:00:00.000Z");
+    });
+
+    it("X-Timezone이 없으면 저장된 사용자 시간대를 쓴다", async () => {
+      // Given - 서울 2026-10-26(월) 07:00
+      vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-25T22:00:00Z") });
+      mockPreference.read.mockResolvedValue({ timezone: "Asia/Seoul", locale: "ko" });
+      // When
+      const result = await useCase.execute("user-123", undefined);
+      // Then
+      expect(result.nextWeeklyAt).toBe("2026-10-25T23:00:00.000Z");
+      expect(result.daysUntilWeekly).toBe(0);
+    });
   });
 });

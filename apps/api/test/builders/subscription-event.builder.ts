@@ -113,6 +113,12 @@ export class SubscriptionEventBuilder {
   // Chaining Methods
   // =========================================================================
 
+  /** TRANSFER에서 구매를 넘겨준 app_user_id 목록 */
+  withTransferredFrom(appUserIds: string[]): this {
+    this.event.transferred_from = [...appUserIds];
+    return this;
+  }
+
   withAppUserId(appUserId: string): this {
     this.event.app_user_id = appUserId;
     return this;
@@ -125,6 +131,11 @@ export class SubscriptionEventBuilder {
 
   withStore(store: string): this {
     this.event.store = store;
+    return this;
+  }
+
+  withPeriodType(periodType: string): this {
+    this.event.period_type = periodType;
     return this;
   }
 

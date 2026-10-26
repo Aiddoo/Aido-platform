@@ -1,0 +1,25 @@
+appId: com.aido.mobile
+name: https 초대 링크(aido.kr/i)가 앱의 초대 카드로 열린다
+tags:
+  - production-build
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+# 주의: aido.kr AASA/assetlinks에는 운영 앱만 등록돼 있다(app.config.ts). dev/preview 빌드에서는
+# 브라우저가 열려 실패하므로 --exclude-tags production-build 로 기본 실행에서 뺀다.
+# 코드는 로컬 API에서 읽지만 링크는 운영 도메인이라, 로컬 코드가 운영에 없으면 not-found 카드가 뜬다.
+# 따라서 이 flow는 운영 빌드 + 운영과 같은 데이터로 수동 실행할 때만 의미가 있다.
+# iOS 시뮬레이터에서 openLink가 universal link를 앱으로 넘기지 못하면:
+#   xcrun simctl openurl booted https://aido.kr/i/<CODE>
+- openLink:
+    label: 운영 https 초대 링크
+    link: https://aido.kr/i/${output.code}
+    autoVerify: true
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- assertVisible:
+    id: invite-card-signup
+- takeScreenshot: 1.13.0-invite-card-https

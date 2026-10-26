@@ -35,8 +35,8 @@ import {
 } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/auth.mapper";
 import {
-  ApiConflictError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiErrorResponse,
   ApiSuccessResponse,
   ApiUnauthorizedError,
@@ -830,12 +830,13 @@ provider에 따라 필수 토큰이 다릅니다:
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-  @ApiConflictError(ErrorCode.KAKAO_0306)
-  @ApiConflictError(ErrorCode.APPLE_0355)
-  @ApiConflictError(ErrorCode.GOOGLE_0405)
-  @ApiConflictError(ErrorCode.NAVER_0455)
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0107, ErrorCode.SOCIAL_0202])
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [
+    ErrorCode.KAKAO_0306,
+    ErrorCode.APPLE_0355,
+    ErrorCode.GOOGLE_0405,
+    ErrorCode.NAVER_0455,
+  ])
   async linkSocialAccount(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: LinkSocialAccountDto }) dto: LinkSocialAccountDto,
@@ -888,12 +889,13 @@ provider에 따라 필수 토큰이 다릅니다:
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
-  @ApiConflictError(ErrorCode.KAKAO_0306)
-  @ApiConflictError(ErrorCode.APPLE_0355)
-  @ApiConflictError(ErrorCode.GOOGLE_0405)
-  @ApiConflictError(ErrorCode.NAVER_0455)
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0107, ErrorCode.SOCIAL_0202])
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [
+    ErrorCode.KAKAO_0306,
+    ErrorCode.APPLE_0355,
+    ErrorCode.GOOGLE_0405,
+    ErrorCode.NAVER_0455,
+  ])
   async linkWithExchangeCode(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,

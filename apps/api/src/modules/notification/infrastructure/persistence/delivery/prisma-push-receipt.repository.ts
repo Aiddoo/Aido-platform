@@ -49,7 +49,7 @@ export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
         .all(),
     );
     return rows.flatMap((row) =>
-      row.expoTicketId !== null ? [{ ticketId: row.expoTicketId }] : [],
+      row.expoTicketId != null ? [{ ticketId: row.expoTicketId }] : [],
     );
   }
 
@@ -99,7 +99,7 @@ export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
       ),
     );
     return invalidAttempts.flatMap((attempt) =>
-      attempt.tokenFingerprint !== null &&
+      attempt.tokenFingerprint != null &&
       attempt.tokenFingerprint === pushTokenFingerprint(attempt.token)
         ? [{ userId: attempt.userId, token: attempt.token }]
         : [],

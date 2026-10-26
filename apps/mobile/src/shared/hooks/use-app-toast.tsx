@@ -1,3 +1,4 @@
+import { userFacingMessageOf } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { AppToast, type AppToastVariant } from '@src/shared/ui/toast';
 import { useToast } from 'heroui-native';
@@ -22,19 +23,16 @@ export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
   fallback?: string;
 }
 
+/** 문자열은 그대로, Error는 사용자 문구일 때만 쓴다. 파싱 오류 등은 폴백 문구로 바꾼다. */
 const extractErrorMessage = (
   input: string | Error | undefined,
   fallback = t('common:toast.defaultError'),
 ): string => {
-  if (typeof input === 'string' && input.trim()) {
-    return input;
+  if (typeof input === 'string') {
+    return input.trim() ? input : fallback;
   }
 
-  if (input instanceof Error && input.message.trim()) {
-    return input.message;
-  }
-
-  return fallback;
+  return userFacingMessageOf(input) ?? fallback;
 };
 
 /**

@@ -1,26 +1,6 @@
-import {
-  getAnnualDiscountPercent,
-  getMonthlyEquivalent,
-  isActiveSubscription,
-  isCancelledSubscription,
-  SubscriptionPolicy,
-} from './subscription.model';
+import { getAnnualDiscountPercent, getMonthlyEquivalent } from './subscription.model';
 
-describe('구독 상태와 가격 계산', () => {
-  test.each(['ACTIVE', 'FREE', 'EXPIRED', 'CANCELLED'] as const)(
-    '%s 구독 상태를 판정한다',
-    (status) => {
-      // Given
-      const subscriptionStatus = status;
-      // When
-      const active = isActiveSubscription(subscriptionStatus);
-      const cancelled = isCancelledSubscription(subscriptionStatus);
-      // Then
-      expect(active).toBe(status === 'ACTIVE');
-      expect(cancelled).toBe(status === 'CANCELLED');
-    },
-  );
-
+describe('구독 가격 계산', () => {
   test.each([
     [8_900, 68_000, 36],
     [1_000, 12_000, 0],
@@ -44,21 +24,4 @@ describe('구독 상태와 가격 계산', () => {
     // Then
     expect(result).toBeCloseTo(expected, 2);
   });
-
-  test.each(['ACTIVE', 'CANCELLED', 'FREE', 'EXPIRED'] as const)(
-    '%s 상태와 만료일을 함께 판정한다',
-    (subscriptionStatus) => {
-      // Given
-      const user = { subscriptionStatus, subscriptionExpiresAt: new Date('2026-04-01T00:00:00Z') };
-      // When
-      const result = SubscriptionPolicy.isExpirationRelevant(user);
-      const withoutDate = SubscriptionPolicy.isExpirationRelevant({
-        ...user,
-        subscriptionExpiresAt: null,
-      });
-      // Then
-      expect(result).toBe(subscriptionStatus === 'ACTIVE' || subscriptionStatus === 'CANCELLED');
-      expect(withoutDate).toBe(false);
-    },
-  );
 });

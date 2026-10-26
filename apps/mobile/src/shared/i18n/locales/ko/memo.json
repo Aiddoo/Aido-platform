@@ -45,6 +45,7 @@
     "start": "시작하기"
   },
   "aiReview": {
+    "titleLabel": "할 일 제목",
     "analyzing": "메모를 분석하고 있어요...",
     "limitTitle": "이번 달 AI 사용 횟수를 모두 사용했어요",
     "parseFailed": "파싱에 실패했어요",
@@ -52,6 +53,7 @@
     "goBack": "돌아가기",
     "noTodosTitle": "생성할 할 일이 없어요",
     "createCount": "{{count}}개 할 일 생성",
+    "omittedTodos": "할 일이 많아서 {{max}}개까지 만들었어요. 나머지 {{count}}개는 메모에 그대로 있어요",
     "allDay": "종일",
     "categoryFallback": "카테고리",
     "weeklyRepeat": "매주 {{days}}",

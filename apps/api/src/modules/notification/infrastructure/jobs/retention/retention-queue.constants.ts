@@ -67,7 +67,4 @@ export const RETENTION_DISPATCH_JOB_POLICY = {
 } as const;
 
 export type RetentionRuntimeJob = z.output<typeof RetentionRuntimeJobSchema>;
-export type RetentionJobMap = {
-  [TJob in RetentionRuntimeJob as TJob["name"]]: TJob["data"];
-};
 export type RetentionJobData = RetentionRuntimeJob["data"];

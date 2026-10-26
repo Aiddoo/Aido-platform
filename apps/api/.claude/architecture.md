@@ -38,6 +38,8 @@ Aggregate는 함께 일관성을 지켜야 하는 단건 상태와 행동이 있
 - [AiReport](../src/modules/ai-assistance/domain/entities/reports/ai-report.entity.ts)는 저장 결과의 불변 snapshot이다. 상태 전이가 없는데 형식적으로 AggregateRoot를 상속하지 않는다. 표시 label과 응답은 [Application read-model의 toAiReportView](../src/modules/ai-assistance/application/read-models/reports/ai-report.read-model.ts)가 조립한다.
 - [Coordinate](../src/modules/weather/domain/value-objects/forecast/coordinate.vo.ts)의 전역 좌표 검증과 KMA의 한국 지원·투영 정책은 다르다. provider 정책/계산을 Domain 좌표에 섞지 않는다.
 
+Aggregate 행동은 생성 factory(`planCreation`/`create`)와 저장 복원(`reconstitute`)을 나누고, 상태 전이 메서드는 실제로 바뀌었는지를 `boolean`으로 돌려준다. 이미 같은 상태면 아무것도 바꾸지 않고 `false`다([Nudge](../src/modules/social/domain/aggregates/nudges/nudge.aggregate.ts)의 `markRead`·`reply`). UseCase는 `false`일 때 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다.
+
 `readonly`는 참조 재할당을 막을 뿐 `Date`·배열·원소를 깊게 고정하지 않는다. 상태 snapshot의 가변 값은 입력·출력에서 복사한다. 저장 복원은 생성 정책을 다시 실행하는 것과 구분한다.
 
 조회·집계·렌더링은 read model/함수로 충분할 수 있다. batch claim/counter 같은 집합 원자성은 명명된 Port 뒤 DB 연산이 소유한다. 단건 Aggregate를 행마다 만들었다는 사실로 DB 동시성이 보장되지 않는다.
@@ -62,7 +64,7 @@ Module 순환과 type-only 참조를 구분한다. public barrel이 module을 �
 
 ## 트랜잭션과 외부 작업
 
-UoW 콜백은 transaction client를 인자로 받지 않는다. Repository/Reader가 CLS의 활성 transaction을 읽는다. 필요한 동시성은 canonical lock·conditional update·constraint 등 실제 DB 수단으로 보장한다.
+UoW 콜백은 transaction client를 인자로 받지 않는다. 같은 사용자의 상태를 여러 요청이 동시에 바꾸는 흐름(한도·보상·구독)은 UoW 안에서 `USER_MUTATION_LOCK`(identity의 사용자 행 잠금 Port, 소비 Context는 자기 이름의 token을 `useExisting`으로 연결)을 먼저 잡고 최신 상태를 다시 읽는다. Repository/Reader가 CLS의 활성 transaction을 읽는다. 필요한 동시성은 canonical lock·conditional update·constraint 등 실제 DB 수단으로 보장한다.
 
 ```text
 필요한 외부 조회/생성
@@ -84,7 +86,7 @@ commit
 ## 캐시·큐·시간·표시의 소유
 
 - Application은 모듈 cache Port를 사용한다. Redis key, TTL, sentinel, pattern invalidation은 해당 Infrastructure keyspace가 소유하며 운영 키를 임의로 바꾸지 않는다.
-- queue/job 이름, payload schema, retry/backoff, attempt 의미, enqueue 조건은 queue 소유 Context의 계약이다. 외부 입력은 신뢰하지 않으며 producer/consumer가 같은 schema를 사용한다.
+- queue/job 이름, payload schema, retry/backoff, attempt 의미, enqueue 조건은 queue 소유 Context의 계약이다. 외부 입력은 신뢰하지 않으며 producer/consumer가 같은 schema를 사용한다. pg-boss는 at-least-once이므로 handler는 같은 payload의 재실행에 멱등이어야 한다(`singletonKey`, unique key, 상태 fence, 위의 boolean 전이).
 - Date instant, DB DATE/calendar label, 사용자 timezone을 구분한다. 날짜 문자열을 process timezone의 instant로 바꾼 뒤 요일을 계산하지 않는다. DST 기간은 각 경계를 대상 zone에 다시 해석한다. 기존 shared date helper를 사용한다.
 - locale별 사용자 copy·AI 지시문·response schema는 Application의 typed catalog나 Presentation이 소유한다. Domain 숫자 판단과 상태 규칙은 번역 문자열을 만들거나 파싱하지 않는다. 예: AI `application/prompts`, Notification `application/messages`, Email `application/services/email/email-message.factory.ts`·`application/templates/email`.
 - Provider의 wire JSON/SDK 타입은 Infrastructure에서 변환한다. Application의 이메일 HTML이나 관리자 채널 표시처럼 순수 렌더링을 둔 기존 흐름은 I/O 구현과 구분한다.
@@ -97,6 +99,6 @@ commit
 
 ## 검증과 현재 전환 범위
 
-Oxlint import/cycle 규칙은 일부 기계적 경계를, 타입 검사는 계약 연결을 확인한다. 상태 소유·추상화 가치·실제 Module 조립·transaction은 코드 검토와 적절한 실행 증거가 필요하다. 새 소스 파싱 검사나 중복 architecture test를 기본으로 추가하지 않는다.
+Module·파일 순환은 만들지 않는다. `import/no-cycle`(Oxlint)이 import 순환을 막고, Nest `forwardRef`로 순환을 덮지 않는다. Oxlint import/cycle 규칙은 일부 기계적 경계를, 타입 검사는 계약 연결을 확인한다. 상태 소유·추상화 가치·실제 Module 조립·transaction은 코드 검토와 적절한 실행 증거가 필요하다. 새 소스 파싱 검사나 중복 architecture test를 기본으로 추가하지 않는다.
 
 Context별 현재 구현과 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에서 확인한다. 계획된 경로를 현재 경로로 링크하거나 회귀 검증을 운영 배포 완료로 표현하지 않는다. 변경 위험에 맞는 검증은 [testing-guide.md](testing-guide.md)에서 선택한다.

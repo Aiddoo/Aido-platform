@@ -3,6 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   CACHE_SERVICE,
   type CacheStats,
+  type CacheValueSchema,
   type ICacheService,
   type TtlValue,
 } from "./interfaces/cache.interface.js";
@@ -11,8 +12,8 @@ import {
 export class CacheService {
   constructor(@Inject(CACHE_SERVICE) private readonly cache: ICacheService) {}
 
-  get<T>(key: string): Promise<T | undefined> {
-    return this.cache.get<T>(key);
+  get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
+    return this.cache.get(key, schema);
   }
 
   set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
@@ -40,12 +41,17 @@ export class CacheService {
    *
    * 캐시에 데이터가 있으면 반환, 없으면 factory 실행 후 캐싱
    */
-  wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
-    return this.cache.wrap(key, factory, ttl);
+  wrap<T>(
+    key: string,
+    schema: CacheValueSchema<T>,
+    factory: () => Promise<T>,
+    ttl?: TtlValue,
+  ): Promise<T> {
+    return this.cache.wrap(key, schema, factory, ttl);
   }
 
-  mget<T>(keys: string[]): Promise<(T | undefined)[]> {
-    return this.cache.mget<T>(keys);
+  mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
+    return this.cache.mget(keys, schema);
   }
 
   mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {

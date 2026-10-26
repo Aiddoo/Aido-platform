@@ -9,8 +9,8 @@ import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-lab
 import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Box,
   Button,
@@ -34,8 +34,8 @@ export function SentNudgeList() {
   const query = useSuspenseInfiniteQuery(
     useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
   );
-  const today = useToday();
-  const listItems = toDateSectionedListItems(query.data, today);
+  const { currentLocalDateKey, currentTimeZone } = useLocalDate();
+  const listItems = toDateSectionedListItems(query.data, currentLocalDateKey, currentTimeZone);
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
 

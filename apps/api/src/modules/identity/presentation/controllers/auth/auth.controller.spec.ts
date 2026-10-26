@@ -21,6 +21,7 @@ import {
   Register,
 } from "#api/modules/identity/application/use-cases/auth/index";
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
+import { mockOf } from "#test/mocks/typed-mock";
 
 import type { LoginDto, RegisterDto } from "../../schemas/auth/index.js";
 import { AuthController } from "./auth.controller.js";
@@ -38,10 +39,10 @@ describe("AuthController — 인증 컨트롤러", () => {
     role: "USER",
   };
 
-  const mockReq = {
+  const mockReq = mockOf<Request>({
     ip: "127.0.0.1",
     headers: { "user-agent": "test-agent" },
-  } as unknown as Request;
+  });
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(AuthController).compile();

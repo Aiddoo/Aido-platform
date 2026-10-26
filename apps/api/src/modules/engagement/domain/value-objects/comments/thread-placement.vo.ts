@@ -20,8 +20,8 @@ export class ThreadPlacement extends ValueObject<ThreadPlacementProps> {
     rootId: string | null;
     path: readonly string[];
   }): ThreadPlacement {
-    if (props.parentId === null) {
-      if (props.rootId !== null || props.path.length > 0) {
+    if (props.parentId == null) {
+      if (props.rootId != null || props.path.length > 0) {
         throw new DomainException(ErrorCode.SYS_0002, {
           reason: "topLevelPlacementMustNotHaveAncestors",
         });
@@ -30,7 +30,7 @@ export class ThreadPlacement extends ValueObject<ThreadPlacementProps> {
       return ThreadPlacement.topLevel();
     }
 
-    if (props.rootId === null || props.path.at(-1) !== props.parentId) {
+    if (props.rootId == null || props.path.at(-1) !== props.parentId) {
       throw new DomainException(ErrorCode.SYS_0002, {
         reason: "replyPlacementMustEndWithParent",
       });
@@ -68,6 +68,6 @@ export class ThreadPlacement extends ValueObject<ThreadPlacementProps> {
   }
 
   get isTopLevel(): boolean {
-    return this.value.parentId === null;
+    return this.value.parentId == null;
   }
 }

@@ -40,7 +40,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       PushTokenBuilder.create(userId).withToken("ExponentPushToken[first]").build(),
       PushTokenBuilder.create(userId).withToken("ExponentPushToken[second]").build(),
     ];
-    cacheService.wrap.mockImplementation((_cachedUserId, loader) => loader());
+    cacheService.wrap.mockImplementation((_cachedUserId, _schema, loader) => loader());
     pushTokenRepository.findPushTokensByUser.mockResolvedValue(records);
 
     // When - 단건 활성 토큰 조회
@@ -49,6 +49,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     // Then - 기존 단건 cache-aside 쿼리와 토큰 순서를 보존
     expect(cacheService.wrap).toHaveBeenCalledWith(
       NotificationCacheKey.pushTokens(userId),
+      expect.anything(),
       expect.any(Function),
       NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
     );
@@ -87,11 +88,14 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
 
     // Then - miss만 DB에서 읽고 빈 배열까지 같은 TTL로 저장
     expect(cacheService.mget).toHaveBeenCalledTimes(1);
-    expect(cacheService.mget).toHaveBeenCalledWith([
-      NotificationCacheKey.pushTokens(cachedUserId),
-      NotificationCacheKey.pushTokens(loadedUserId),
-      NotificationCacheKey.pushTokens(tokenlessUserId),
-    ]);
+    expect(cacheService.mget).toHaveBeenCalledWith(
+      [
+        NotificationCacheKey.pushTokens(cachedUserId),
+        NotificationCacheKey.pushTokens(loadedUserId),
+        NotificationCacheKey.pushTokens(tokenlessUserId),
+      ],
+      expect.anything(),
+    );
     expect(pushTokenRepository.findActivePushTokensByUsers).toHaveBeenCalledTimes(1);
     expect(pushTokenRepository.findActivePushTokensByUsers).toHaveBeenCalledWith([
       loadedUserId,

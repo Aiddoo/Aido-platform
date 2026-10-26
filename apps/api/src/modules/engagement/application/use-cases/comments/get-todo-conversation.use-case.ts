@@ -11,9 +11,11 @@ import type {
   TodoConversationPosition,
   TodoConversationScope,
 } from "../../models/comments/todo-comment.types.js";
+import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
 import { type TodoCommentCursorCodecPort } from "../../ports/comments/todo-comment-cursor-codec.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
+  collectCommentAuthorIds,
   collectCommentIds,
   toTodoCommentCursorPagination,
   toTodoConversationAncestorItems,
@@ -58,11 +60,11 @@ function getAnchor(
   input: GetTodoConversationInput,
   cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
 ): ConversationAnchor {
-  if (input.focusCommentId !== undefined) {
+  if (input.focusCommentId != null) {
     return { mode: "FOCUS", scope: "THREAD", commentId: input.focusCommentId };
   }
 
-  if (input.before !== undefined) {
+  if (input.before != null) {
     const cursor = decodeCursor(input.before, input.sort, input.todoId, cursorCodec);
     return {
       mode: "BEFORE",
@@ -73,7 +75,7 @@ function getAnchor(
     };
   }
 
-  if (input.after !== undefined) {
+  if (input.after != null) {
     const cursor = decodeCursor(input.after, input.sort, input.todoId, cursorCodec);
     return {
       mode: "AFTER",
@@ -95,8 +97,9 @@ interface FocusAncestorContext {
 interface GetTodoConversationDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "listConversation" | "findAncestors" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "listConversation" | "findAncestors" | "findLikedCommentIds"
   >;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
     TodoCommentCursorCodecPort,
     "decodeConversation" | "encodeConversation"
@@ -125,32 +128,38 @@ export class GetTodoConversation {
     });
 
     const focusedRecord =
-      window?.anchorIndex === null || window?.anchorIndex === undefined
-        ? undefined
-        : window.items[window.anchorIndex];
+      window?.anchorIndex == null ? undefined : window.items[window.anchorIndex];
     if (
       anchor.mode === "FOCUS" &&
-      (window === null || focusedRecord === undefined || focusedRecord.id !== anchor.commentId)
+      (window == null || focusedRecord == null || focusedRecord.id !== anchor.commentId)
     ) {
       return this.toEmptyResponse(input.size);
     }
 
-    if (window === null) {
+    if (window == null) {
       throw new ApplicationException(ErrorCode.SYS_0002);
     }
 
     const focusRecord = this.getFocusRecord(window.items, window.anchorIndex, anchor);
     const ancestorContext = await this.getFocusAncestors(input.todoId, focusRecord, window.items);
-    const likedCommentIds = await this.#dependencies.reader.findLikedCommentIds(
-      collectCommentIds([...window.items, ...ancestorContext.records]),
-      input.viewerId,
-    );
+    const visibleRecords = [...window.items, ...ancestorContext.records];
+    const [likedCommentIds, blockedAuthorIds] = await Promise.all([
+      this.#dependencies.reader.findLikedCommentIds(
+        collectCommentIds(visibleRecords),
+        input.viewerId,
+      ),
+      this.#dependencies.blockReader.findBlockedCounterpartIds(
+        input.viewerId,
+        collectCommentAuthorIds(visibleRecords),
+      ),
+    ]);
     const items = toTodoConversationItems({
       records: window.items,
       nextRecord: window.nextRecord,
       focusCommentId: focusRecord?.id ?? null,
       viewerId: input.viewerId,
       likedCommentIds,
+      blockedAuthorIds,
     });
     const firstRecord = window.items.at(0);
     const lastRecord = window.items.at(-1);
@@ -163,13 +172,14 @@ export class GetTodoConversation {
         ancestorContext,
         input.viewerId,
         likedCommentIds,
+        blockedAuthorIds,
       ),
       pagination: toTodoCommentCursorPagination({
         size: input.size,
         hasPrevious: window.hasPrevious,
         hasNext: window.hasNext,
         previousCursor:
-          window.hasPrevious && firstRecord !== undefined
+          window.hasPrevious && firstRecord != null
             ? this.#dependencies.cursorCodec.encodeConversation(
                 firstRecord,
                 input.sort,
@@ -177,7 +187,7 @@ export class GetTodoConversation {
               )
             : null,
         nextCursor:
-          window.hasNext && lastRecord !== undefined
+          window.hasNext && lastRecord != null
             ? this.#dependencies.cursorCodec.encodeConversation(
                 lastRecord,
                 input.sort,
@@ -197,13 +207,13 @@ export class GetTodoConversation {
       return null;
     }
 
-    const record = anchorIndex === null ? undefined : items[anchorIndex];
+    const record = anchorIndex == null ? undefined : items[anchorIndex];
 
-    if (record === undefined || record.id !== anchor.commentId) {
+    if (record == null || record.id !== anchor.commentId) {
       throw new ApplicationException(ErrorCode.TODO_0831, { commentId: anchor.commentId });
     }
 
-    return record.deletedAt === null ? record : null;
+    return record.deletedAt == null ? record : null;
   }
 
   private toEmptyResponse(size: number): TodoConversationResponse {
@@ -225,7 +235,7 @@ export class GetTodoConversation {
     focusRecord: TodoCommentRecord | null,
     pageRecords: readonly TodoCommentRecord[],
   ): Promise<FocusAncestorContext> {
-    if (focusRecord === null) {
+    if (focusRecord == null) {
       return { records: [], omittedCount: 0 };
     }
 
@@ -248,8 +258,9 @@ export class GetTodoConversation {
     ancestorContext: FocusAncestorContext,
     viewerId: string,
     likedCommentIds: ReadonlySet<string>,
+    blockedAuthorIds: ReadonlySet<string>,
   ): TodoConversationFocus | null {
-    if (focusRecord === null || itemIndex === null) {
+    if (focusRecord == null || itemIndex == null) {
       return null;
     }
 
@@ -260,6 +271,7 @@ export class GetTodoConversation {
         records: ancestorContext.records,
         viewerId,
         likedCommentIds,
+        blockedAuthorIds,
       }),
       omittedAncestorCount: ancestorContext.omittedCount,
     };

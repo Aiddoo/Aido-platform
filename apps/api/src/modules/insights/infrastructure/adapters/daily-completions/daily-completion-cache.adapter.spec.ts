@@ -106,8 +106,8 @@ describe("DailyCompletionCacheAdapter — 완료 집계 generation", () => {
     const entered = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const originalGet = cacheService.get.bind(cacheService);
-    vi.spyOn(cacheService, "get").mockImplementation(async (key) => {
-      const value = await originalGet(key);
+    vi.spyOn(cacheService, "get").mockImplementation(async (key, schema) => {
+      const value = await originalGet(key, schema);
       if (key === valueKey) {
         entered.resolve();
         await release.promise;

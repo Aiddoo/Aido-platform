@@ -1,7 +1,7 @@
 import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/api";
 
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../../domain/services/delivery/feature-marketing-capability.js";
-import { isNudgeInteractionNotification } from "../../../domain/services/delivery/notification-client-capability.js";
+import { notificationMinAppVersion } from "../../../domain/services/delivery/notification-client-capability.js";
 import { isMarketingNotification } from "../../../domain/services/delivery/push-eligibility.js";
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
@@ -18,7 +18,8 @@ export interface BatchPushNotificationPayload extends Omit<PushPayload, "token">
   readonly userId: string;
   readonly dispatchId: number;
   readonly requiresFeatureCapability: boolean;
-  readonly requiresNudgeInteractionCapability?: boolean;
+  /** 이 버전 미만 기기에는 보내지 않는다. 없으면 모든 활성 기기 대상이다. */
+  readonly minAppVersion?: string;
 }
 
 /** 모바일 라우팅·컨텍스트·마케팅 메타데이터를 푸시 provider payload로 변환한다. */
@@ -50,13 +51,12 @@ export class PushNotificationPayloadFactory {
 
   createBatch(input: CreatePushNotificationPayloadInput): BatchPushNotificationPayload {
     const { data, notificationId, dispatchId } = input;
+    const minAppVersion = notificationMinAppVersion(data.type);
     return {
       userId: data.userId,
       dispatchId,
       requiresFeatureCapability: data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
-      ...(isNudgeInteractionNotification(data.type) && {
-        requiresNudgeInteractionCapability: true,
-      }),
+      ...(minAppVersion != null && { minAppVersion }),
       title: data.title,
       body: data.body,
       data: {

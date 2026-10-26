@@ -37,7 +37,7 @@ export class ListLinkedAccounts {
         const account = accountsByProvider.get(provider);
         return {
           provider,
-          linked: account !== undefined,
+          linked: account != null,
           providerAccountId: account?.providerAccountId ?? null,
           linkedAt: account?.createdAt ?? null,
         };

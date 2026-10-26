@@ -19,7 +19,7 @@ export interface UnlikeTodoCommentInput {
 }
 
 interface UnlikeTodoCommentDependencies {
-  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo">;
+  readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId">;
   readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "removeLike">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -43,7 +43,7 @@ export class UnlikeTodoComment {
         input.commentId,
       );
 
-      if (comment === null) {
+      if (comment == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 

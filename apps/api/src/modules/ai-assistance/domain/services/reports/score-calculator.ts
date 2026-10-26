@@ -44,7 +44,7 @@ export interface ProductivityScoreInput {
 export function calculateProductivityScore(input: ProductivityScoreInput): number {
   const streakRatio =
     input.periodDays > 0 ? Math.min(input.streakDays / input.periodDays, 1) * 100 : 0;
-  const trendBonus = input.rateChange !== null ? Math.min(Math.max(input.rateChange, -10), 10) : 0;
+  const trendBonus = input.rateChange != null ? Math.min(Math.max(input.rateChange, -10), 10) : 0;
 
   return Math.round(
     input.completionRate * 0.4 +

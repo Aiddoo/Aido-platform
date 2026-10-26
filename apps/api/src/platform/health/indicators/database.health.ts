@@ -31,7 +31,7 @@ export class DatabaseHealthIndicator {
         .then((result) => result.affectedRows);
       return indicator.up();
     } catch (error) {
-      return indicator.down({ error: (error as Error).message });
+      return indicator.down({ error: error instanceof Error ? error.message : String(error) });
     }
   }
 }

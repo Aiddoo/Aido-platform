@@ -33,7 +33,7 @@ export class GetTodoDetails {
         input.viewerId,
       );
 
-      if (todoDetails === null) {
+      if (todoDetails == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.todoId });
       }
 

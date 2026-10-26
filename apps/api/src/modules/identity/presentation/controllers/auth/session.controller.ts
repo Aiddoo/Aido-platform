@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
 import { RevokeSession } from "#api/modules/identity/application/use-cases/auth/index";
@@ -17,7 +17,7 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { MessageResponseDto, SessionListDto } from "../../schemas/auth/index.js";
+import { MessageResponseDto, RevokeSessionDto, SessionListDto } from "../../schemas/auth/index.js";
 import { extractMetadata } from "./auth-controller.utils.js";
 
 /**
@@ -106,23 +106,18 @@ export class SessionController {
 - \`SESSION_NOT_FOUND\`: 존재하지 않는 세션 ID
 		`,
   })
-  @ApiParam({
-    name: "sessionId",
-    description: "종료할 세션 ID (UUID)",
-    example: "550e8400-e29b-41d4-a716-446655440000",
-  })
   @ApiSuccessResponse({ type: MessageResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.SESSION_0701)
   async revokeSession(
     @CurrentUser() user: CurrentUserPayload,
-    @Param("sessionId") sessionId: string,
+    @Param({ schema: RevokeSessionDto }) params: RevokeSessionDto,
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
     const result = await this.revokeSessionUseCase.execute({
       userId: user.userId,
-      sessionId,
+      sessionId: params.sessionId,
       metadata,
     });
     return result;

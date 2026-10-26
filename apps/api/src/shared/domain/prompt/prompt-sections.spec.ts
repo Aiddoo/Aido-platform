@@ -5,10 +5,10 @@
  * 프롬프트 본문은 각 빌더 자신의 spec에서 검증하고, 여기서는 "보안/출력 규칙 주입 여부"만 봅니다.
  */
 
-import { buildParseMemoPrompt } from "#api/modules/ai-assistance/application/prompts/parsing/parse-memo.prompt";
-import { buildParseTodoPrompt } from "#api/modules/ai-assistance/application/prompts/parsing/parse-todo.prompt";
-import { buildReportPrompt } from "#api/modules/ai-assistance/application/prompts/reports/report.prompt";
-import { buildSuggestionPrompt } from "#api/modules/ai-assistance/application/prompts/suggestions/detect-patterns.prompt";
+import { buildParseMemoPrompt } from "#api/modules/ai-assistance/application/prompts/parsing/parse-memo/v1/prompt.ko";
+import { buildParseTodoPrompt } from "#api/modules/ai-assistance/application/prompts/parsing/parse-todo/v1/prompt.ko";
+import { buildReportPrompt } from "#api/modules/ai-assistance/application/prompts/reports/report/v1/prompt.ko";
+import { buildSuggestionPrompt } from "#api/modules/ai-assistance/application/prompts/suggestions/suggestion/v1/prompt.ko";
 import type { SuggestionContext } from "#api/modules/ai-assistance/application/types/suggestions/suggestion-context";
 import type { AggregatedReportData } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
 

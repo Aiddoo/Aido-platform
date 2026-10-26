@@ -30,11 +30,25 @@ import contractJson from "../../src/generated/prisma8/contract.json" with { type
 
 type OrmModels = Prisma8Transaction["orm"]["public"];
 // rc.15+ collection methods type `this`; resolving it against a mock proxy recurses without bound.
+// select·groupBy projection은 모델 row의 일부 필드만 돌려주므로 mock 반환 row는 Partial로 받는다.
+type ProjectedRows<Result> =
+  Result extends AsyncIterableResult<infer Row>
+    ? AsyncIterableResult<Partial<Row>>
+    : Result extends Promise<readonly (infer Row)[]>
+      ? Promise<(Partial<NonNullable<Row>> | Extract<Row, undefined>)[]>
+      : Result;
+type ProjectedQuery<Query> = {
+  readonly [Member in keyof Query]: Query[Member] extends (...args: infer Args) => infer Result
+    ? Mock<(...args: Args) => ProjectedRows<Result>>
+    : Query[Member];
+};
 type CollectionMock<Collection> = {
   readonly [Member in keyof Collection]: Collection[Member] extends (
     ...args: infer Args
   ) => infer Result
-    ? Mock<(...args: Args) => Result>
+    ? Member extends "groupBy"
+      ? Mock<(...args: Args) => ProjectedQuery<Result>>
+      : Mock<(...args: Args) => ProjectedRows<Result>>
     : Collection[Member];
 };
 export type MockDatabaseContext = Omit<DeepMockProxy<Prisma8Transaction>, "orm"> & {
@@ -44,9 +58,36 @@ export type MockDatabaseContext = Omit<DeepMockProxy<Prisma8Transaction>, "orm">
 };
 const staticClient = postgres({ contract });
 
+const transactionByMockContext = new WeakMap<MockDatabaseContext, Prisma8Transaction>();
+
+/** 같은 mock 객체를 운영 타입으로 돌려준다. `createMockDatabaseContext`로 만든 context만 받는다. */
+export function mockTransactionOf(context: MockDatabaseContext): Prisma8Transaction {
+  const transaction = transactionByMockContext.get(context);
+  if (transaction === undefined) {
+    throw new TypeError("createMockDatabaseContext로 만든 context가 아닙니다");
+  }
+  return transaction;
+}
+
+/**
+ * `mockDeep`는 모든 멤버를 mock 함수로 만든다. 같은 객체를 mock 전용 타입으로 보기 전에
+ * native model 멤버가 실제로 mock 함수인지 확인한다.
+ */
+function isMockDatabaseContext(value: unknown): value is MockDatabaseContext {
+  const orm: unknown = Reflect.get(Object(value), "orm");
+  const publicModels: unknown = Reflect.get(Object(orm), "public");
+  return vi.isMockFunction(Reflect.get(Object(Reflect.get(Object(publicModels), "User")), "first"));
+}
+
 /** Native fluent query mocks. Real SQL/codec builders stay available for atomic operations. */
 export function createMockDatabaseContext(): MockDatabaseContext {
-  const context = mockDeep<Prisma8Transaction>() as unknown as MockDatabaseContext;
+  const transaction: Prisma8Transaction = mockDeep<Prisma8Transaction>();
+  const mockView: unknown = transaction;
+  if (!isMockDatabaseContext(mockView)) {
+    throw new TypeError("mockDeep가 native model mock을 만들지 않았습니다");
+  }
+  const context = mockView;
+  transactionByMockContext.set(context, transaction);
   Object.assign(context, {
     raw: staticClient.raw,
     sql: staticClient.sql,
@@ -82,11 +123,6 @@ export function nativeRows<Row>(rows: readonly Row[]): AsyncIterableResult<Row> 
       yield* rows;
     })(),
   );
-}
-
-/** Mocks type a method by its widest overload; a select·groupBy projection is matched to it once here. */
-export function projectedResult<Result>(result: unknown): Result {
-  return result as Result;
 }
 
 export function sqlQueryError(sqlState: string, constraint?: string): Error {

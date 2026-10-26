@@ -246,6 +246,22 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("친구가 한 명 더 생겼어", `${senderName}에게 가볍게 인사해봐 🐾`),
     ],
   },
+  INVITE_JOINED: {
+    copy: ({ inviteeName }) =>
+      copy(
+        `${attachJosa(inviteeName, "이/가")} 내 초대로 친구가 됐어 🐾`,
+        "서로의 하루를 응원해봐",
+      ),
+  },
+  INVITE_REWARDED: {
+    copy: ({ premiumDays, friendSlots }) => {
+      const rewards = [
+        premiumDays > 0 ? `프리미엄 ${premiumDays}일` : null,
+        friendSlots > 0 ? `친구 자리 ${friendSlots}개` : null,
+      ].filter((reward) => reward != null);
+      return copy("발자국이 찍혔어 🐾", `${attachJosa(rewards.join("과 "), "을/를")} 받았어`);
+    },
+  },
   NUDGE_RECEIVED: {
     variants: [
       ({ senderName, todoTitle }) =>
@@ -465,6 +481,9 @@ export const SYSTEM_TEMPLATES = {
   },
   BILLING_ISSUE: {
     copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해 주세요."),
+  },
+  PREMIUM_GRANT_ENDING: {
+    copy: staticCopy("내일 프리미엄이 끝나요", "구독하면 끊김 없이 이어져요."),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("첫 할 일을 함께 적어볼까? 🌱", "지금 떠오르는 작은 일 하나면 충분해"),

@@ -12,4 +12,5 @@ export const NOTIFICATION_QUERY_KEYS = {
   list: (filters: NotificationListFilters) =>
     [...NOTIFICATION_QUERY_KEYS.lists(), filters] as const,
   unreadCount: () => [...NOTIFICATION_QUERY_KEYS.all, 'unread-count'] as const,
+  permission: () => [...NOTIFICATION_QUERY_KEYS.all, 'permission'] as const,
 } as const;

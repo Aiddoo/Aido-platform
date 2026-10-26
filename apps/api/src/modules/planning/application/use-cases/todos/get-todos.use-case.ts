@@ -25,8 +25,8 @@ export class GetTodos {
 
   async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoResponse, number>> {
     if (
-      input.startDate !== undefined &&
-      input.endDate !== undefined &&
+      input.startDate != null &&
+      input.endDate != null &&
       isAfter(input.startDate, input.endDate)
     ) {
       throw new ApplicationException(ErrorCode.SYS_0002, {

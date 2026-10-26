@@ -45,7 +45,9 @@ interface ConversationQueryRow {
   depth: number | null;
   authorId: string | null;
   authorName: string | null;
+  authorUserTag: string | null;
   authorProfileImage: string | null;
+  parentAuthorId: string | null;
   parentAuthorName: string | null;
   todoOwnerId: string | null;
   content: string | null;
@@ -69,7 +71,9 @@ interface OverviewRootQueryRow {
   depth: number | null;
   authorId: string | null;
   authorName: string | null;
+  authorUserTag: string | null;
   authorProfileImage: string | null;
+  parentAuthorId: string | null;
   parentAuthorName: string | null;
   todoOwnerId: string | null;
   content: string | null;
@@ -93,7 +97,9 @@ interface OverviewSummaryQueryRow {
   previewDepth: number | null;
   previewAuthorId: string | null;
   previewAuthorName: string | null;
+  previewAuthorUserTag: string | null;
   previewAuthorProfileImage: string | null;
+  previewParentAuthorId: string | null;
   previewParentAuthorName: string | null;
   todoOwnerId: string;
   previewContent: string | null;
@@ -123,7 +129,7 @@ interface OverviewSummaryRecord {
 }
 
 function requireValue<T>(value: T | null, field: string): T {
-  if (value === null) {
+  if (value == null) {
     throw new Error(`댓글 대화 조회 결과에 ${field} 값이 없습니다.`);
   }
 
@@ -147,9 +153,11 @@ function toRecord(row: CommentRow): TodoCommentRecord {
     rootId: row.rootId,
     path: decodeTodoCommentPath(row.path),
     depth: row.depth,
+    parentAuthorId: row.parent?.authorId ?? null,
     parentAuthorName: row.parent?.author?.profile?.name ?? null,
     authorId: requireValue(row.authorId, "authorId"),
     authorName: row.author?.profile?.name ?? null,
+    authorUserTag: row.author?.userTag ?? null,
     authorProfileImage: row.author?.profile?.profileImage ?? null,
     todoOwnerId: requireRecord(row.todo).userId,
     content: row.content,
@@ -162,7 +170,7 @@ function toRecord(row: CommentRow): TodoCommentRecord {
 }
 
 function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord | null {
-  if (row.commentId === null) {
+  if (row.commentId == null) {
     return null;
   }
 
@@ -173,9 +181,11 @@ function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord
     rootId: row.rootId,
     path: [...requireValue(row.path, "path")],
     depth: requireValue(row.depth, "depth"),
+    parentAuthorId: row.parentAuthorId,
     parentAuthorName: row.parentAuthorName,
     authorId: requireValue(row.authorId, "authorId"),
     authorName: row.authorName,
+    authorUserTag: row.authorUserTag,
     authorProfileImage: row.authorProfileImage,
     todoOwnerId: requireValue(row.todoOwnerId, "todoOwnerId"),
     content: row.content,
@@ -196,7 +206,7 @@ function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord
 }
 
 function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRootRecord | null {
-  if (row.commentId === null) {
+  if (row.commentId == null) {
     return null;
   }
 
@@ -207,9 +217,11 @@ function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRoo
     rootId: row.rootId,
     path: [...requireValue(row.path, "path")],
     depth: requireValue(row.depth, "depth"),
+    parentAuthorId: row.parentAuthorId,
     parentAuthorName: row.parentAuthorName,
     authorId: requireValue(row.authorId, "authorId"),
     authorName: row.authorName,
+    authorUserTag: row.authorUserTag,
     authorProfileImage: row.authorProfileImage,
     todoOwnerId: requireValue(row.todoOwnerId, "todoOwnerId"),
     content: row.content,
@@ -226,7 +238,7 @@ function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRoo
 }
 
 function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecord | null {
-  if (row.previewCommentId === null) {
+  if (row.previewCommentId == null) {
     return null;
   }
 
@@ -237,9 +249,11 @@ function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecor
     rootId: row.previewRootId,
     path: [...requireValue(row.previewPath, "previewPath")],
     depth: requireValue(row.previewDepth, "previewDepth"),
+    parentAuthorId: row.previewParentAuthorId,
     parentAuthorName: row.previewParentAuthorName,
     authorId: requireValue(row.previewAuthorId, "previewAuthorId"),
     authorName: row.previewAuthorName,
+    authorUserTag: row.previewAuthorUserTag,
     authorProfileImage: row.previewAuthorProfileImage,
     todoOwnerId: row.todoOwnerId,
     content: row.previewContent,
@@ -254,7 +268,7 @@ function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecor
 function toParticipantAuthor(
   row: OverviewSummaryQueryRow,
 ): TodoCommentParticipantAuthorRecord | null {
-  if (row.participantAuthorId === null) {
+  if (row.participantAuthorId == null) {
     return null;
   }
 
@@ -290,10 +304,10 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    return friendship !== null;
+    return friendship != null;
   }
 
-  async canAccessTodo(todoId: number, viewerId: string): Promise<boolean> {
+  async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
     const todo = decodeRecord(
       "Todo",
       await this.client.orm.public.Todo.where((row) => row.id.eq(todoId))
@@ -301,19 +315,19 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    if (todo === null) {
-      return false;
+    if (todo == null) {
+      return null;
     }
 
     if (todo.userId === viewerId) {
-      return true;
+      return todo.userId;
     }
 
     if (todo.visibility !== "PUBLIC") {
-      return false;
+      return null;
     }
 
-    return this.isAcceptedFriend(todo.userId, viewerId);
+    return (await this.isAcceptedFriend(todo.userId, viewerId)) ? todo.userId : null;
   }
 
   async findAccessibleTodoDetails(
@@ -330,7 +344,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .include("user", (user) => user.include("profile"))
         .first(),
     );
-    if (row === null) return null;
+    if (row == null) return null;
     const isOwner = row.userId === viewerId;
     const canAccess =
       isOwner ||
@@ -364,7 +378,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    return row === null ? null : toRecord(row);
+    return row == null ? null : toRecord(row);
   }
 
   async findCommentRecords(
@@ -391,7 +405,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     return commentIds.flatMap((commentId) => {
       const row = rowsById.get(commentId);
-      return row === undefined ? [] : [toRecord(row)];
+      return row == null ? [] : [toRecord(row)];
     });
   }
 
@@ -400,7 +414,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     params: ListTodoCommentOverviewParams,
   ): Promise<TodoCommentOverviewWindow | null> {
     const rootWindow = await this.listOverviewRoots(params);
-    if (rootWindow === null) {
+    if (rootWindow == null) {
       return null;
     }
 
@@ -439,7 +453,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       depth: { codecId: "pg/int4@1", nullable: true },
       authorId: { codecId: "pg/text@1", nullable: true },
       authorName: { codecId: "pg/text@1", nullable: true },
+      authorUserTag: { codecId: "pg/text@1", nullable: true },
       authorProfileImage: { codecId: "pg/text@1", nullable: true },
+      parentAuthorId: { codecId: "pg/text@1", nullable: true },
       parentAuthorName: { codecId: "pg/text@1", nullable: true },
       todoOwnerId: { codecId: "pg/text@1", nullable: true },
       content: { codecId: "pg/text@1", nullable: true },
@@ -453,19 +469,16 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     });
 
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
-    if (
-      isCursorPage &&
-      (params.anchorRootId === undefined || params.anchorPosition === undefined)
-    ) {
+    if (isCursorPage && (params.anchorRootId == null || params.anchorPosition == null)) {
       return null;
     }
 
     const boundaryLikeCount =
-      params.anchorPosition === undefined
+      params.anchorPosition == null
         ? sql`anchor."likeCount"`
         : sql`${params.anchorPosition.rootLikeCount}`;
     const boundaryReplyCount =
-      params.anchorPosition === undefined
+      params.anchorPosition == null
         ? sql`anchor."replyCount"`
         : sql`${params.anchorPosition.rootReplyCount}`;
     const rootOrder =
@@ -600,7 +613,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected."depth",
 				selected."authorId",
 				author_profile."name" AS "authorName",
+				author_user."userTag" AS "authorUserTag",
 				author_profile."profileImage" AS "authorProfileImage",
+				NULL::TEXT AS "parentAuthorId",
 				NULL::TEXT AS "parentAuthorName",
 				todo."userId" AS "todoOwnerId",
 				selected."content",
@@ -614,6 +629,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 			FROM selected
 			INNER JOIN "Todo" AS todo ON todo."id" = selected."todoId"
 			LEFT JOIN "UserProfile" AS author_profile ON author_profile."userId" = selected."authorId"
+			LEFT JOIN "User" AS author_user ON author_user."id" = selected."authorId"
 			ORDER BY ${selectedOrder}
 		`,
         )
@@ -632,7 +648,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     const markedRecords = rows.flatMap((row) => {
       const record = toOverviewRootRecord(row);
-      return record === null ? [] : [{ marker: row.marker, record }];
+      return record == null ? [] : [{ marker: row.marker, record }];
     });
     return this.toOverviewRootWindow(markedRecords, params);
   }
@@ -689,7 +705,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       previewDepth: { codecId: "pg/int4@1", nullable: true },
       previewAuthorId: { codecId: "pg/text@1", nullable: true },
       previewAuthorName: { codecId: "pg/text@1", nullable: true },
+      previewAuthorUserTag: { codecId: "pg/text@1", nullable: true },
       previewAuthorProfileImage: { codecId: "pg/text@1", nullable: true },
+      previewParentAuthorId: { codecId: "pg/text@1", nullable: true },
       previewParentAuthorName: { codecId: "pg/text@1", nullable: true },
       todoOwnerId: "pg/text@1",
       previewContent: { codecId: "pg/text@1", nullable: true },
@@ -809,7 +827,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				preview."depth" AS "previewDepth",
 				preview."authorId" AS "previewAuthorId",
 				preview_author_profile."name" AS "previewAuthorName",
+				preview_author_user."userTag" AS "previewAuthorUserTag",
 				preview_author_profile."profileImage" AS "previewAuthorProfileImage",
+				preview_parent."authorId" AS "previewParentAuthorId",
 				preview_parent_profile."name" AS "previewParentAuthorName",
 				todo."userId" AS "todoOwnerId",
 				preview."content" AS "previewContent",
@@ -828,6 +848,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 			LEFT JOIN preview ON preview."threadId" = requested."rootId"
 			LEFT JOIN "UserProfile" AS preview_author_profile
 				ON preview_author_profile."userId" = preview."authorId"
+			LEFT JOIN "User" AS preview_author_user ON preview_author_user."id" = preview."authorId"
 			LEFT JOIN "TodoComment" AS preview_parent ON preview_parent."id" = preview."parentId"
 			LEFT JOIN "UserProfile" AS preview_parent_profile
 				ON preview_parent_profile."userId" = preview_parent."authorId"
@@ -850,16 +871,16 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       const existing = summaries.get(row.rootId);
       const participant = toParticipantAuthor(row);
 
-      if (existing === undefined) {
+      if (existing == null) {
         summaries.set(row.rootId, {
           previewReply: toOverviewPreviewRecord(row),
           totalCount: toSafeCount(row.totalCount, "totalCount"),
-          participantAuthors: participant === null ? [] : [participant],
+          participantAuthors: participant == null ? [] : [participant],
         });
         continue;
       }
 
-      if (participant !== null) {
+      if (participant != null) {
         existing.participantAuthors.push(participant);
       }
     }
@@ -884,7 +905,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       depth: { codecId: "pg/int4@1", nullable: true },
       authorId: { codecId: "pg/text@1", nullable: true },
       authorName: { codecId: "pg/text@1", nullable: true },
+      authorUserTag: { codecId: "pg/text@1", nullable: true },
       authorProfileImage: { codecId: "pg/text@1", nullable: true },
+      parentAuthorId: { codecId: "pg/text@1", nullable: true },
       parentAuthorName: { codecId: "pg/text@1", nullable: true },
       todoOwnerId: { codecId: "pg/text@1", nullable: true },
       content: { codecId: "pg/text@1", nullable: true },
@@ -901,15 +924,15 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
     if (
       isCursorPage &&
-      (params.anchorCommentId === undefined ||
-        params.anchorThreadId === undefined ||
-        params.anchorPosition === undefined)
+      (params.anchorCommentId == null ||
+        params.anchorThreadId == null ||
+        params.anchorPosition == null)
     ) {
       return null;
     }
 
     const snapshotBoundary =
-      params.anchorPosition === undefined
+      params.anchorPosition == null
         ? null
         : {
             position: params.anchorPosition,
@@ -917,11 +940,11 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
           };
     const boundaryThreadId = sql`anchor."threadId"`;
     const boundaryRootLikeCount =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`anchor."rootLikeCount"`
         : sql`${snapshotBoundary.position.rootLikeCount}`;
     const boundaryRootReplyCount =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`anchor."rootReplyCount"`
         : sql`${snapshotBoundary.position.rootReplyCount}`;
     const boundaryRootCreatedAt = sql`anchor."rootCreatedAt"`;
@@ -933,7 +956,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         ? sql`(tree."deletedAt" IS NULL OR tree."replyCount" > 0)`
         : sql`TRUE`;
     const candidateRootLikeCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`candidate."rootLikeCount"`
         : sql`
 				CASE
@@ -943,7 +966,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				END
 			`;
     const candidateRootReplyCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`candidate."rootReplyCount"`
         : sql`
 				CASE
@@ -953,7 +976,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				END
 			`;
     const selectedRootLikeCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`selected."rootLikeCount"`
         : sql`
 				CASE
@@ -963,7 +986,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				END
 			`;
     const selectedRootReplyCountAtBoundary =
-      snapshotBoundary === null
+      snapshotBoundary == null
         ? sql`selected."rootReplyCount"`
         : sql`
 				CASE
@@ -1162,7 +1185,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected."depth",
 				selected."authorId",
 				author_profile."name" AS "authorName",
+				author_user."userTag" AS "authorUserTag",
 				author_profile."profileImage" AS "authorProfileImage",
+				parent_comment."authorId" AS "parentAuthorId",
 				parent_profile."name" AS "parentAuthorName",
 				todo."userId" AS "todoOwnerId",
 				selected."content",
@@ -1177,6 +1202,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 			FROM selected
 			LEFT JOIN "Todo" AS todo ON todo."id" = selected."todoId"
 			LEFT JOIN "UserProfile" AS author_profile ON author_profile."userId" = selected."authorId"
+			LEFT JOIN "User" AS author_user ON author_user."id" = selected."authorId"
 			LEFT JOIN "TodoComment" AS parent_comment ON parent_comment."id" = selected."parentId"
 			LEFT JOIN "UserProfile" AS parent_profile ON parent_profile."userId" = parent_comment."authorId"
 			ORDER BY ${selectedOrder}
@@ -1201,7 +1227,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     const markedRecords = rows.flatMap((row) => {
       const record = toConversationRecord(row);
-      return record === null ? [] : [{ marker: row.marker, record }];
+      return record == null ? [] : [{ marker: row.marker, record }];
     });
     return this.toConversationWindow(markedRecords, params);
   }
@@ -1262,7 +1288,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       .filter(({ marker }) => marker === "AFTER")
       .map(({ record }) => record);
     const focus = markedRecords.find(({ marker }) => marker === "FOCUS")?.record;
-    if (focus === undefined) {
+    if (focus == null) {
       return {
         items: [],
         anchorIndex: null,

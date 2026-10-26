@@ -3,6 +3,8 @@ import type {
   FeatureDiscoveryCard,
   FeatureDiscoveryCardId,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
+import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
+import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Button, H3, HStack, ModalBottomSheet, Text, TextButton, VStack } from '@src/shared/ui';
@@ -20,30 +22,26 @@ const NON_LIST_HEIGHT_BY_FONT_SCALE = {
   xlarge: 272,
 } as const;
 
+// 보상 일수·조건은 계약 상수에서 읽어 문구와 서버 규칙이 어긋나지 않게 한다
+const CARD_DESCRIPTION_VALUES = {
+  friend_invite: {
+    inviteeDays: InviteRewardPolicy.welcomePremiumDays(),
+    inviterDays: InviteRewardPolicy.inviterPremiumDays(),
+    activeDays: InvitedFriendPolicy.requiredActiveDays(),
+  },
+} as const satisfies Record<FeatureDiscoveryCardId, Record<string, number>>;
+
+// E2E(Maestro)가 카드 CTA를 찾는 testID
+const CARD_CTA_TEST_IDS = {
+  friend_invite: 'feature-discovery-invite-cta',
+} as const satisfies Record<FeatureDiscoveryCardId, string>;
+
 const CARD_COPY = {
-  memo_ai: {
-    title: 'cards.memoAi.title',
-    description: 'cards.memoAi.description',
-    cta: 'cards.memoAi.cta',
-    ctaLabel: 'cards.memoAi.ctaLabel',
-  },
-  friend_search: {
-    title: 'cards.friendSearch.title',
-    description: 'cards.friendSearch.description',
-    cta: 'cards.friendSearch.cta',
-    ctaLabel: 'cards.friendSearch.ctaLabel',
-  },
-  drag_reorder: {
-    title: 'cards.dragReorder.title',
-    description: 'cards.dragReorder.description',
-    cta: 'cards.dragReorder.cta',
-    ctaLabel: 'cards.dragReorder.ctaLabel',
-  },
-  todo_creation: {
-    title: 'cards.todoCreation.title',
-    description: 'cards.todoCreation.description',
-    cta: 'cards.todoCreation.cta',
-    ctaLabel: 'cards.todoCreation.ctaLabel',
+  friend_invite: {
+    title: 'cards.friendInvite.title',
+    description: 'cards.friendInvite.description',
+    cta: 'cards.friendInvite.cta',
+    ctaLabel: 'cards.friendInvite.ctaLabel',
   },
 } as const satisfies Record<
   FeatureDiscoveryCardId,
@@ -90,6 +88,7 @@ export function FeatureDiscoveryBottomSheet({
             onPress={() => onOpenChange(false)}
             accessibilityRole="button"
             accessibilityLabel={t('hub.closeLabel')}
+            testID="feature-discovery-close"
           >
             {t('common:actions.close')}
           </TextButton>
@@ -126,13 +125,14 @@ function FeatureCard({ card, onCta }: { card: FeatureDiscoveryCard; onCta: () =>
           {t(copy.title)}
         </Text>
         <Text size="b4" shade={6} className="shrink">
-          {t(copy.description)}
+          {t(copy.description, CARD_DESCRIPTION_VALUES[card.id])}
         </Text>
       </VStack>
       <Button
         size="medium"
         display="block"
         variant="weak"
+        testID={CARD_CTA_TEST_IDS[card.id]}
         onPress={onCta}
         accessibilityRole="button"
         accessibilityLabel={t(copy.ctaLabel)}

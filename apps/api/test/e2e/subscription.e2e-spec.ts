@@ -1,4 +1,4 @@
-import type { RevenueCatWebhookPayload } from "@aido/api";
+import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
@@ -6,6 +6,14 @@ import {
   SUBSCRIPTION_WEBHOOK_LOCK,
   type SubscriptionWebhookLockPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription-webhook-lock.port";
+import {
+  PREMIUM_GRANTER,
+  type PremiumGranterPort,
+} from "#api/modules/billing/billing-subscriptions.public";
+import {
+  AUTH_CACHE,
+  type AuthCachePort,
+} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import { decodeRecord } from "#api/platform/database/database-records";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
@@ -291,5 +299,97 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
     ).toEqual([]);
     expect(await context.testDatabase.getClient().orm.public.Subscription.all()).toEqual([]);
+  });
+
+  it("/me는 보상 기간 출처·지금 기간 끝·전체 끝·자동 갱신 여부·대기 중인 보상 일수를 optional 필드로 함께 반환한다", async () => {
+    // Given
+    const user = await context.helpers.createVerifiedUser("premium-grant-me@test.com", "Test1234!");
+    const before = await request(context.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
+    await context.module
+      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me", durationDays: 7 });
+
+    const afterFirst = await request(context.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
+
+    // When
+    await context.module
+      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me-2", durationDays: 7 });
+    const after = await request(context.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
+
+    // Then
+    expect(currentUserSchema.parse(before.body.data)).toMatchObject({
+      subscriptionStatus: "FREE",
+      premiumSource: null,
+      premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
+      willRenew: false,
+      bankedPremiumDays: 0,
+    });
+    expect(currentUserSchema.parse(afterFirst.body.data)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: "2027-01-11T12:00:00.000Z",
+      premiumSource: "GRANT",
+      premiumEndsAt: "2027-01-11T12:00:00.000Z",
+      premiumPeriodEndsAt: "2027-01-11T12:00:00.000Z",
+      willRenew: false,
+      bankedPremiumDays: 0,
+    });
+    // 보상 기간 중 또 받은 보상은 지금 기간 뒤에 쌓여 전체 끝만 늘어난다
+    expect(currentUserSchema.parse(after.body.data)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: "2027-01-18T12:00:00.000Z",
+      premiumSource: "GRANT",
+      premiumEndsAt: "2027-01-18T12:00:00.000Z",
+      premiumPeriodEndsAt: "2027-01-11T12:00:00.000Z",
+      willRenew: false,
+      bankedPremiumDays: 7,
+    });
+  });
+
+  it("/me는 보상 기간이 끝난 FREE 사용자에게 7일 동안만 끝난 시각을 알려 준다", async () => {
+    // Given
+    const email = "premium-grant-ended@test.com";
+    const password = "Test1234!";
+    const user = await context.helpers.createVerifiedUser(email, password);
+    await context.module
+      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:ended", durationDays: 1 });
+    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
+    const authCache = context.module.get<AuthCachePort>(AUTH_CACHE, { strict: false });
+    const meAt = async (time: Date) => {
+      vi.setSystemTime(time);
+      await authCache.invalidateUserProfile(user.userId);
+      const { accessToken } = await context.helpers.loginUser(email, password);
+      const response = await request(context.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      return currentUserSchema.parse(response.body.data);
+    };
+
+    // When
+    const justEnded = await meAt(endsAt);
+    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000 - 1));
+    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000));
+
+    // Then
+    expect(justEnded).toMatchObject({
+      premiumSource: null,
+      premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
+      premiumGrantEndedAt: endsAt.toISOString(),
+    });
+    expect(lastMoment.premiumGrantEndedAt).toBe(endsAt.toISOString());
+    expect(afterWindow.premiumGrantEndedAt).toBeNull();
   });
 });

@@ -27,7 +27,7 @@ export class SendFriendRequestByTag {
   async execute(input: SendFriendRequestByTagInput): Promise<SendFriendRequestResult> {
     const targetTag = UserTag.of(input.targetUserTag);
     const targetUser = await this.#dependencies.followRepository.findUserByTag(targetTag.value);
-    if (targetUser === null) {
+    if (targetUser == null) {
       throw new ApplicationException(ErrorCode.FOLLOW_0905, {
         userTag: input.targetUserTag,
       });

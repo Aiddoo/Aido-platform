@@ -48,7 +48,7 @@ export class UpdateTodoSchedule {
     const events = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todo(id)]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
@@ -75,7 +75,7 @@ export class UpdateTodoSchedule {
     await this.#dependencies.todoCache.invalidateFriendTodos(userId);
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

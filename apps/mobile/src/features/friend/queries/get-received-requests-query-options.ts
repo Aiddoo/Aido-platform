@@ -5,6 +5,8 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 
+const FIRST_PAGE_CURSOR: string | undefined = undefined;
+
 export function getReceivedRequestsQueryOptions(friendService: FriendService) {
   return infiniteQueryOptions({
     queryKey: FRIEND_QUERY_KEYS.received(),
@@ -12,7 +14,7 @@ export function getReceivedRequestsQueryOptions(friendService: FriendService) {
       const result = await friendService.getReceivedRequests({ cursor: pageParam }, signal);
       return unwrap(result);
     },
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: FIRST_PAGE_CURSOR,
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore || lastPage.items.length === 0) {
         return undefined;

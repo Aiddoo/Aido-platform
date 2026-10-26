@@ -9,6 +9,8 @@
     "commit": "cz",
     "db:generate": "pnpm --filter @aido/server db:generate",
     "db:migrate": "pnpm --filter @aido/server db:migrate",
+    "db:plan": "pnpm --filter @aido/server db:plan",
+    "db:verify": "pnpm --filter @aido/server db:verify",
     "dev": "turbo run dev",
     "docker:dev:build": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml build",
     "docker:dev:down": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml down",
@@ -24,19 +26,16 @@
     "docker:up": "docker compose up -d",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "postinstall": "turbo build --filter=./packages/*",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
+    "postinstall": "turbo build --filter=./packages/*",
     "prepare": "simple-git-hooks",
     "test": "turbo run test",
     "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
-    "test:coverage": "pnpm --filter @aido/server test:coverage && pnpm --filter @aido/mobile test:coverage",
     "test:e2e": "turbo run test:e2e --filter=@aido/server",
-    "typecheck": "turbo run typecheck",
     "test:integration": "turbo run test:integration --filter=@aido/server",
-    "db:plan": "pnpm --filter @aido/server db:plan",
-    "db:verify": "pnpm --filter @aido/server db:verify"
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
@@ -59,9 +58,9 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
       "oxlint --fix",
-      "oxfmt --write"
+      "oxfmt --write --no-error-on-unmatched-pattern"
     ],
-    "*.{json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}": "oxfmt --write"
+    "*.{json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}": "oxfmt --write --no-error-on-unmatched-pattern"
   },
   "config": {
     "commitizen": {

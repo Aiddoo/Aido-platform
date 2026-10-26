@@ -1,0 +1,64 @@
+appId: com.aido.mobile
+name: 홈의 오늘 할 일과 어제 기록
+tags:
+  - free
+  - premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+# 이 흐름이 캡처 계정으로 로그인해 두고, 뒤 흐름은 subflows/resume.yaml로 이어 쓴다
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          clearState: true
+          clearKeychain: true
+          stopApp: true
+          permissions:
+            notifications: allow
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          clearState: true
+          stopApp: true
+          permissions:
+            notifications: allow
+- runFlow:
+    file: ../release-1.13.0/subflows/login.yaml
+    env:
+      QA_EMAIL: ${MAESTRO_SHOT_EMAIL}
+      QA_PASSWORD: ${MAESTRO_SHOT_PASSWORD}
+# 1.13.0 기능 소개가 처음 로그인에서 자동으로 열리면 그대로 찍는다(서버 캠페인 설정 autoOpen)
+- runFlow:
+    when:
+      visible: '새로 생겼어요|What.s new'
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: 05_기능_소개_자동
+- runFlow: subflows/settle.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: feed?date=${MAESTRO_SHOT_TODAY}
+- extendedWaitUntil:
+    visible: '.*(서연이 생일 선물|birthday gift for Grace).*'
+    timeout: 20000
+- takeScreenshot: 10_홈_오늘
+- scroll
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 11_홈_오늘_아래
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: feed?date=${MAESTRO_SHOT_YESTERDAY}
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 12_홈_어제_기록

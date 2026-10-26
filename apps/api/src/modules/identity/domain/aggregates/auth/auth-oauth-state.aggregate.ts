@@ -15,7 +15,7 @@ export class AuthOAuthState extends AggregateRoot<AuthOAuthStateProps> {
     return new AuthOAuthState({
       id: props.id,
       expiresAt: new Date(props.expiresAt),
-      exchangedAt: props.exchangedAt === null ? null : new Date(props.exchangedAt),
+      exchangedAt: props.exchangedAt == null ? null : new Date(props.exchangedAt),
       mode: props.mode,
       initiatingUserId: props.initiatingUserId,
     });
@@ -26,18 +26,18 @@ export class AuthOAuthState extends AggregateRoot<AuthOAuthStateProps> {
   }
 
   get exchangedAt(): Date | null {
-    return this.props.exchangedAt === null ? null : new Date(this.props.exchangedAt);
+    return this.props.exchangedAt == null ? null : new Date(this.props.exchangedAt);
   }
 
   validityAt(at: Date): AuthOAuthStateValidity {
-    if (this.props.exchangedAt !== null) return "exchanged";
+    if (this.props.exchangedAt != null) return "exchanged";
     return this.props.expiresAt <= at ? "expired" : "valid";
   }
 
   canLinkFor(userId: string): boolean {
     return (
       this.props.mode === "link" &&
-      (this.props.initiatingUserId === null ||
+      (this.props.initiatingUserId == null ||
         this.props.initiatingUserId === "" ||
         this.props.initiatingUserId === userId)
     );

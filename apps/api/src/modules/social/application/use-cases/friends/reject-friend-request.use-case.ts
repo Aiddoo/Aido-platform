@@ -41,7 +41,7 @@ export class RejectFriendRequest {
         requesterUserId,
         userId,
       );
-      if (request === null || !request.isPending()) {
+      if (request == null || !request.isPending()) {
         throw new ApplicationException(ErrorCode.FOLLOW_0903, {
           targetUserId: requesterUserId,
         });

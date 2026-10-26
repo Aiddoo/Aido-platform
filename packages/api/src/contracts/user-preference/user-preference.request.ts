@@ -82,20 +82,20 @@ export const updatePreferenceSchema = z
   })
   .refine(
     (data) =>
-      data.pushEnabled !== undefined ||
-      data.nightPushEnabled !== undefined ||
-      data.timezone !== undefined ||
-      data.morningReminderHour !== undefined ||
-      data.morningReminderMinute !== undefined ||
-      data.eveningReminderHour !== undefined ||
-      data.eveningReminderMinute !== undefined ||
-      data.timeFormat !== undefined ||
-      data.weatherMorningEnabled !== undefined ||
-      data.weatherMorningHour !== undefined ||
-      data.weatherMorningMinute !== undefined ||
-      data.weatherEveningEnabled !== undefined ||
-      data.weatherEveningHour !== undefined ||
-      data.weatherEveningMinute !== undefined,
+      data.pushEnabled != null ||
+      data.nightPushEnabled != null ||
+      data.timezone != null ||
+      data.morningReminderHour != null ||
+      data.morningReminderMinute != null ||
+      data.eveningReminderHour != null ||
+      data.eveningReminderMinute != null ||
+      data.timeFormat != null ||
+      data.weatherMorningEnabled != null ||
+      data.weatherMorningHour != null ||
+      data.weatherMorningMinute != null ||
+      data.weatherEveningEnabled != null ||
+      data.weatherEveningHour != null ||
+      data.weatherEveningMinute != null,
     { message: "최소 하나의 설정 값이 필요합니다" },
   );
 

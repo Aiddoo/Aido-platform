@@ -93,7 +93,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   }
 
   encodeOverview(record: TodoCommentOverviewRootRecord, sort: TodoCommentSort): string {
-    if (record.parentId !== null || record.rootId !== null) {
+    if (record.parentId != null || record.rootId != null) {
       throw invalidCursor();
     }
 
@@ -121,11 +121,11 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   private decode(cursor: string): unknown {
     const [payload, signature, extra] = cursor.split(".");
     if (
-      payload === undefined ||
+      payload == null ||
       payload.length === 0 ||
-      signature === undefined ||
+      signature == null ||
       signature.length === 0 ||
-      extra !== undefined ||
+      extra != null ||
       !this.hasValidSignature(payload, signature)
     ) {
       throw invalidCursor();

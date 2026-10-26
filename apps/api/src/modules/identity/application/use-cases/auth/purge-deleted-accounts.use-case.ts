@@ -43,11 +43,11 @@ export class PurgeDeletedAccounts {
       try {
         const cleanup = await this.#dependencies.unitOfWork.run(async () => {
           const user = await this.#dependencies.userRepository.findByIdForUpdate(candidate.id);
-          if (user === null) {
+          if (user == null) {
             return null;
           }
           const identityUser = IdentityUser.reconstitute(user);
-          if (user.deletedAt === null || !identityUser.isPurgeEligibleAt(at)) {
+          if (user.deletedAt == null || !identityUser.isPurgeEligibleAt(at)) {
             return null;
           }
           const notification = await this.#dependencies.notificationCleanup.cleanupInTransaction(
@@ -70,7 +70,7 @@ export class PurgeDeletedAccounts {
           });
           return { notification, todoComment };
         });
-        if (cleanup === null) {
+        if (cleanup == null) {
           skippedCount += 1;
           continue;
         }

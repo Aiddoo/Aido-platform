@@ -1,0 +1,23 @@
+{
+  "$comment": "맞춤형 제품 페이지(CPP)에 배정할 키워드. Apple은 가장 최근 승인 버전의 키워드 필드에 있는 단어만 배정하게 하므로 store:check가 각 단어가 그 로캘 keywords.txt에 있는지, 페이지끼리 겹치지 않는지 확인한다. 스크린샷 세트는 ../../art/storyboard.mjs의 cpp-* 세트.",
+  "pages": {
+    "invite": {
+      "label": "CPP-1 초대 유입",
+      "deepLink": "aido://invite",
+      "keywords": { "ko": ["친구초대", "초대코드", "초대링크"], "en-US": ["invite", "social"] }
+    },
+    "ai": {
+      "label": "CPP-2 AI",
+      "deepLink": null,
+      "keywords": {
+        "ko": ["AI할일", "음성입력", "자동일정"],
+        "en-US": ["voice", "schedule", "todo"]
+      }
+    },
+    "large-screen": {
+      "label": "CPP-3 큰 화면(iPad·iPhone Duo)",
+      "deepLink": null,
+      "keywords": { "ko": ["홈위젯", "폴더블"], "en-US": ["ipad", "widget"] }
+    }
+  }
+}

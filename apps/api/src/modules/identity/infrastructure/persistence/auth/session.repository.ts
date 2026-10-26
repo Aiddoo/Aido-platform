@@ -128,7 +128,7 @@ export class SessionRepository implements AuthSessionRepositoryPort {
       and(
         row.userId.eq(userId),
         row.revokedAt.isNull(),
-        excludeSessionId !== undefined && excludeSessionId.length > 0
+        excludeSessionId != null && excludeSessionId.length > 0
           ? row.id.neq(excludeSessionId)
           : all(),
       ),

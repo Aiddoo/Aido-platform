@@ -1,7 +1,9 @@
 import { pushNotificationDataSchema } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { invalidateFriends } from '@src/features/friend/queries/friend-cache';
+import { invalidateOnInviteNotification } from '@src/features/invite/queries/invite-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
+import { invalidateMe } from '@src/features/user/queries/user-cache';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
@@ -35,6 +37,13 @@ export function useForegroundNotificationSync({
         }
         if (type === 'FOLLOW_NEW' || type === 'FOLLOW_ACCEPTED') {
           tasks.push(invalidateFriends(queryClient));
+        }
+        if (type === 'INVITE_JOINED' || type === 'INVITE_REWARDED') {
+          tasks.push(invalidateOnInviteNotification(queryClient));
+        }
+        // 보상 기간이 곧 끝난다는 알림이면 구독 화면의 남은 기간을 서버 값으로 맞춘다
+        if (type === 'PREMIUM_GRANT_ENDING') {
+          tasks.push(invalidateMe(queryClient));
         }
 
         Promise.all(tasks).catch((error) =>

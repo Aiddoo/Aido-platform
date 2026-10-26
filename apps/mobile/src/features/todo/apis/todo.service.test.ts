@@ -70,6 +70,37 @@ describe('TodoService', () => {
     });
   });
 
+  // ── getTodoSummary ───────────────────────────
+
+  describe('getTodoSummary', () => {
+    test('요약할 날짜를 date 쿼리로 보내고 응답 날짜를 그대로 반환한다', async () => {
+      // Given
+      httpClient.get.mockResolvedValue({
+        ok: true,
+        value: {
+          date: '2026-07-13',
+          totalTodos: 0,
+          completedTodos: 0,
+          completionRate: 0,
+          isComplete: false,
+          currentStreak: 3,
+          topTodos: [],
+        },
+      });
+      const controller = new AbortController();
+
+      // When
+      const result = await service.getTodoSummary('2026-07-13', controller.signal);
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todos/summary', {
+        signal: controller.signal,
+        params: { date: '2026-07-13' },
+      });
+      expect(result.ok && result.value.date).toBe('2026-07-13');
+    });
+  });
+
   // ── createTodo ───────────────────────────────
 
   describe('createTodo', () => {

@@ -1,4 +1,5 @@
 import {
+  updateAiDataSharingConsentSchema,
   updateMarketingConsentSchema,
   updateMarketingPushConsentSchema,
   updatePreferenceSchema,
@@ -16,3 +17,7 @@ export const UpdateMarketingPushConsentDto = updateMarketingPushConsentSchema.me
   id: "UpdateMarketingPushConsentDto",
 });
 export type UpdateMarketingPushConsentDto = z.infer<typeof UpdateMarketingPushConsentDto>;
+export const UpdateAiDataSharingConsentDto = updateAiDataSharingConsentSchema.meta({
+  id: "UpdateAiDataSharingConsentDto",
+});
+export type UpdateAiDataSharingConsentDto = z.infer<typeof UpdateAiDataSharingConsentDto>;

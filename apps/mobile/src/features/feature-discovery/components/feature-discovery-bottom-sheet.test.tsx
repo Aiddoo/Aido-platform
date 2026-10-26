@@ -58,10 +58,10 @@ jest.mock('@src/shared/ui', () => {
     ModalBottomSheet: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
       isOpen ? React.createElement(View, { testID: 'modal-sheet' }, children) : null,
     CheckIcon: () => null,
+    PawIcon: () => null,
     ArrowUpIcon: () => null,
     CalendarIcon: () => null,
     ClockIcon: () => null,
-    DragIcon: () => null,
     EyeIcon: () => null,
     MemoIcon: () => null,
     MenuIcon: () => null,
@@ -82,7 +82,7 @@ describe('FeatureDiscoveryBottomSheet', () => {
     });
   });
 
-  it('작은 화면에서도 네 카드와 CTA를 스크롤 콘텐츠로 렌더링한다', async () => {
+  it('작은 화면에서도 친구 초대 카드와 CTA를 스크롤 콘텐츠로 렌더링한다', async () => {
     // Given
     if (!campaign) {
       throw new Error('bundled campaign missing');
@@ -101,12 +101,8 @@ describe('FeatureDiscoveryBottomSheet', () => {
     );
 
     // Then
-    expect(screen.getByText('메모가 여러 할 일이 돼요')).toBeTruthy();
-    expect(screen.getByText('이름이나 해시태그로 친구를 찾아요')).toBeTruthy();
-    expect(screen.getByText('#MATT2025')).toBeTruthy();
-    expect(screen.getByText('드래그해서 원하는 순서로 정리해요')).toBeTruthy();
-    expect(screen.getByText('나에게 맞는 방식으로 할 일을 만들어요')).toBeTruthy();
-    expect(screen.queryByText('AI 추천')).toBeNull();
+    expect(screen.getByText('친구를 초대하고\n발자국을 모아보세요')).toBeTruthy();
+    expect(screen.getByText('초대하러 가기')).toBeTruthy();
     expect(screen.getByTestId('feature-discovery-card-list')).toBeTruthy();
   });
 
@@ -130,11 +126,11 @@ describe('FeatureDiscoveryBottomSheet', () => {
 
     // When
     await fireEvent.press(screen.getByLabelText('기능 가이드 닫기'));
-    await fireEvent.press(screen.getByLabelText('친구 찾기 기능으로 이동'));
+    await fireEvent.press(screen.getByLabelText('친구 초대 화면으로 이동'));
 
     // Then
     expect(onOpenChange).toHaveBeenCalledTimes(1);
-    expect(onCardCta).toHaveBeenCalledWith('friend_search');
+    expect(onCardCta).toHaveBeenCalledWith('friend_invite');
   });
 
   it('작은 화면의 en × xlarge × safe-area에서도 장문 CTA 목록을 안전한 높이로 스크롤한다', async () => {
@@ -164,10 +160,10 @@ describe('FeatureDiscoveryBottomSheet', () => {
     );
 
     // Then
-    expect(screen.getByText('Drag things into the order you want')).toBeTruthy();
+    expect(screen.getByText('Invite friends and\ncollect paw prints')).toBeTruthy();
     expect(
       screen.getByText(
-        'Set the date, time, repeat schedule, visibility, and category as you create a to-do.',
+        'Send a link on KakaoTalk. Your friend gets 7 days of Premium on joining, and you get 7 days once they complete to-dos on 2 different days',
       ),
     ).toBeTruthy();
     const listStyle = StyleSheet.flatten(

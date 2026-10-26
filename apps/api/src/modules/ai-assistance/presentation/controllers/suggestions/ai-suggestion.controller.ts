@@ -261,7 +261,7 @@ export class AiSuggestionController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: SuggestionIdParamDto }) params: SuggestionIdParamDto,
     @Body({ schema: SuggestionActionDto }) body: SuggestionActionDto,
-    @Timezone() tz: string,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<SuggestionActionResponseDto> {
     const result = await this.handleSuggestionActionUseCase.execute({
       userId: user.userId,

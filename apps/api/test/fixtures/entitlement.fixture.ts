@@ -3,7 +3,12 @@ import { UserFixture } from "#test/fixtures/user.fixture";
 import { StubEntitlementDatabase, StubEntitlementCache } from "#test/mocks/ports/entitlement.stub";
 
 export function createEntitlementFixture(
-  input: { role?: string; subscriptionStatus?: string; exists?: boolean } = {},
+  input: {
+    role?: string;
+    subscriptionStatus?: string;
+    accessDeadline?: Date | null;
+    exists?: boolean;
+  } = {},
 ) {
   const user = UserFixture.create();
   const database = new StubEntitlementDatabase();
@@ -12,6 +17,7 @@ export function createEntitlementFixture(
     database.users.set(user.id, {
       role: input.role ?? "USER",
       subscriptionStatus: input.subscriptionStatus ?? "FREE",
+      accessDeadline: input.accessDeadline ?? null,
     });
   const service = new EntitlementService({ database, cacheService: cache });
   return { userId: user.id, database, cache, service };

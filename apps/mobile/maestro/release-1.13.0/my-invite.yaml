@@ -1,0 +1,67 @@
+appId: com.aido.mobile
+name: 내 초대 화면의 공유 동작, 발자국 판, 초대한 친구 목록이 보인다
+tags:
+  - smoke
+  - full
+  - fresh
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  # 초대한 친구 목록이 비지 않도록 B의 수락을 API로 준비한다
+  - runScript: scripts/redeem.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-inviter.yaml
+- openLink: ${QA_SCHEME}://friends/invite
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 20000
+- assertVisible:
+    id: my-invite-code
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+# Then: 공유 동작 세 가지(카카오톡 공유 자체는 자동화하지 않는다)
+- scrollUntilVisible:
+    element:
+      id: invite-share-kakao
+- assertVisible:
+    id: invite-share-copy-link
+- assertVisible:
+    id: invite-share-system
+- takeScreenshot: 1.13.0-my-invite-share-actions
+# When: 링크 복사
+- tapOn:
+    id: invite-share-copy-link
+- extendedWaitUntil:
+    label: 복사 토스트
+    visible: '링크를 복사했어요|Link copied'
+    timeout: 5000
+# 새 링크 만들기는 확인 대화상자만 확인하고 취소한다(코드가 바뀌지 않는다)
+- tapOn:
+    id: my-invite-rotate
+- assertVisible: '새 링크를 만들까요\?|Make a new link\?'
+- tapOn: '취소|Cancel'
+# 발자국 판
+- scrollUntilVisible:
+    element: '발자국 모으기|Collect paw prints'
+- assertVisible: '.*번째 판 · 지금까지 발자국.*|Board .* paw prints? so far|첫 발자국을 남겨보세요.*|Get your first paw print.*'
+- takeScreenshot: 1.13.0-my-invite-paw-board
+# 초대한 친구 요약 -> 전체 보기
+- scrollUntilVisible:
+    element:
+      id: invitees-see-all
+- tapOn:
+    id: invitees-see-all
+- extendedWaitUntil:
+    visible: '전체 [0-9]+|All [0-9]+'
+    timeout: 10000
+- assertVisible: '${output.b.name}'
+- takeScreenshot: 1.13.0-invitees-all
+- tapOn:
+    id: invitees-tab-waiting
+- assertVisible: '발자국 대기 [0-9]+|Waiting [0-9]+'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invitees-waiting
+- tapOn:
+    id: invitees-tab-all

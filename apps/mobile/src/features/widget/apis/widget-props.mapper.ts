@@ -1,10 +1,10 @@
 import { match } from 'ts-pattern';
 
 import type { WidgetProps } from '../domains/widget-props.model';
-import { type WidgetRenderState, type WidgetSnapshot } from '../domains/widget-snapshot.model';
+import type { WidgetDaySnapshot, WidgetRenderState } from '../domains/widget-snapshot.model';
 
 export function toWidgetProps(
-  snapshot: WidgetSnapshot,
+  snapshot: WidgetDaySnapshot,
   state: WidgetRenderState,
   appScheme = 'aido',
 ): WidgetProps {
@@ -53,7 +53,7 @@ export function toWidgetProps(
 }
 
 function getWidgetStateScreenStrings(
-  snapshot: WidgetSnapshot,
+  snapshot: WidgetDaySnapshot,
   renderState: WidgetRenderState,
 ): { title: string; cta: string } {
   return match(renderState)

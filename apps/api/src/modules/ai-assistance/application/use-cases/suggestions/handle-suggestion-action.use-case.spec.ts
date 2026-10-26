@@ -34,6 +34,9 @@ function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
 
 describe("HandleSuggestionAction", () => {
   let useCase: HandleSuggestionAction;
+  let localePreferenceReader: Mocked<
+    ConstructorParameters<typeof HandleSuggestionAction>[0]["localePreferenceReader"]
+  >;
   let repo: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"]>;
   let creator: Mocked<
     ConstructorParameters<typeof HandleSuggestionAction>[0]["recurringTodoCreator"]
@@ -52,6 +55,7 @@ describe("HandleSuggestionAction", () => {
     repo = handleSuggestionActionDependencies.repository;
     creator = handleSuggestionActionDependencies.recurringTodoCreator;
     entitlement = handleSuggestionActionDependencies.entitlementReader;
+    localePreferenceReader = handleSuggestionActionDependencies.localePreferenceReader;
 
     entitlement.hasPremiumAccessInTx.mockResolvedValue(true);
     handleSuggestionActionDependencies.userMutationLock.lockById.mockResolvedValue(true);
@@ -197,5 +201,139 @@ describe("HandleSuggestionAction", () => {
     await expect(execution).rejects.toBe(failure);
     expect(repo.updateStatus).toHaveBeenCalledTimes(1);
     expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
+  });
+
+  describe("수락 기본 기간", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it.each([
+      {
+        name: "KST 새벽 수락은 한국 날짜 오늘부터 시작한다",
+        at: "2026-10-27T16:30:00.000Z",
+        timezone: "Asia/Seoul",
+        startDate: "2026-10-28",
+        endDate: "2026-11-25",
+      },
+      {
+        name: "미주 저녁 수락은 현지 날짜 오늘부터 시작한다",
+        at: "2026-10-28T02:00:00.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2026-10-27",
+        endDate: "2026-11-24",
+      },
+      {
+        name: "윤일 직전 현지 자정 직후에도 현지 날짜를 쓴다",
+        at: "2028-02-28T15:05:00.000Z",
+        timezone: "Asia/Seoul",
+        startDate: "2028-02-29",
+        endDate: "2028-03-28",
+      },
+      {
+        name: "서울 윤일 직전 23:59:59는 아직 2월 28일이다",
+        at: "2028-02-28T14:59:59.000Z",
+        timezone: "Asia/Seoul",
+        startDate: "2028-02-28",
+        endDate: "2028-03-27",
+      },
+      {
+        name: "서울 연초 00:00:00은 새해 1월 1일부터 4주이다",
+        at: "2026-12-31T15:00:00.000Z",
+        timezone: "Asia/Seoul",
+        startDate: "2027-01-01",
+        endDate: "2027-01-29",
+      },
+      {
+        name: "LA 연말 23:59:59는 아직 12월 31일이다",
+        at: "2027-01-01T07:59:59.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2026-12-31",
+        endDate: "2027-01-28",
+      },
+      {
+        name: "LA 봄 전환일 01:30 PST는 3월 12일부터 4주이다",
+        at: "2028-03-12T09:30:00.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2028-03-12",
+        endDate: "2028-04-09",
+      },
+      {
+        name: "LA 봄 전환일 23:59:59 PDT는 아직 3월 12일이다",
+        at: "2028-03-13T06:59:59.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2028-03-12",
+        endDate: "2028-04-09",
+      },
+      {
+        name: "LA 봄 전환 다음 날 00:00:00 PDT는 3월 13일이다",
+        at: "2028-03-13T07:00:00.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2028-03-13",
+        endDate: "2028-04-10",
+      },
+      {
+        name: "LA 가을 전환일 23:59:59 PST는 아직 11월 5일이다",
+        at: "2028-11-06T07:59:59.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2028-11-05",
+        endDate: "2028-12-03",
+      },
+      {
+        name: "LA 가을 전환 다음 날 00:00:00 PST는 11월 6일이다",
+        at: "2028-11-06T08:00:00.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2028-11-06",
+        endDate: "2028-12-04",
+      },
+    ])("$name", async ({ at, timezone, startDate, endDate }) => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(at));
+      repo.findByIdAndUserId.mockResolvedValue(
+        createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
+      );
+      repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
+      creator.createRecurring.mockResolvedValue({ count: 4 });
+      // When
+      await useCase.execute({
+        userId: mockUserId,
+        suggestionId: 1,
+        action: "accept",
+        categoryId: 5,
+        timezone,
+      });
+      // Then
+      expect(creator.createRecurring).toHaveBeenCalledWith(
+        expect.objectContaining({ startDate, endDate }),
+        timezone,
+      );
+      expect(localePreferenceReader.read).not.toHaveBeenCalled();
+    });
+
+    it("X-Timezone이 없으면 저장된 사용자 시간대로 계산한다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-10-27T16:30:00.000Z"));
+      localePreferenceReader.read.mockResolvedValue({ timezone: "Asia/Seoul", locale: "ko" });
+      repo.findByIdAndUserId.mockResolvedValue(
+        createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
+      );
+      repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
+      creator.createRecurring.mockResolvedValue({ count: 4 });
+      // When
+      await useCase.execute({
+        userId: mockUserId,
+        suggestionId: 1,
+        action: "accept",
+        categoryId: 5,
+        timezone: undefined,
+      });
+      // Then
+      expect(creator.createRecurring).toHaveBeenCalledWith(
+        expect.objectContaining({ startDate: "2026-10-28" }),
+        "Asia/Seoul",
+      );
+    });
   });
 });

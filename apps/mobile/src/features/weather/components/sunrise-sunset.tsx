@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/icon';
@@ -48,6 +49,7 @@ function SunTime({
 }) {
   const palette = useTimePalette();
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const dateFormatContext = useDateFormatContext();
 
   return (
     <VStack align="center" gap={4}>
@@ -58,7 +60,7 @@ function SunTime({
         </Text>
       </HStack>
       <Text size="b1" weight="semibold" style={{ color: palette.text }}>
-        {formatTimeDisplay(time, preference.timeFormat)}
+        {formatTimeDisplay(time, preference.timeFormat, dateFormatContext)}
       </Text>
     </VStack>
   );

@@ -26,15 +26,17 @@ const makePattern = (overrides: Partial<Pattern> = {}): Pattern => ({
   ...overrides,
 });
 
+const makeTodo = (title: string): PatternEvidenceContext["todos"][number] => ({
+  title,
+  startDate: "2026-03-02",
+  scheduledTime: null,
+  categoryId: 1,
+  completed: true,
+  categoryName: "생활",
+});
+
 const baseContext: PatternEvidenceContext = {
-  todos: ["운동", "운동", "공부"].map((title) => ({
-    title,
-    startDate: "2026-03-02",
-    scheduledTime: null,
-    categoryId: 1,
-    completed: true,
-    categoryName: "생활",
-  })),
+  todos: ["운동", "운동", "공부"].map(makeTodo),
   weather: null,
 };
 
@@ -312,8 +314,7 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
     const context = {
       ...baseContext,
       todos: ["2026-09-21", "2026-09-28", "2026-10-05"].map((startDate) => ({
-        ...baseContext.todos[0]!,
-        title: "책 읽기 10분",
+        ...makeTodo("책 읽기 10분"),
         startDate,
       })),
     };
@@ -347,7 +348,7 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
     (title) => {
       const context = {
         ...baseContext,
-        todos: [{ ...baseContext.todos[0]!, title, startDate: "2026-03-18" }],
+        todos: [{ ...makeTodo(title), startDate: "2026-03-18" }],
       };
       const result = normalizeStarterSuggestions(
         [makePattern({ title: "러닝 15분", daysOfWeek: ["SUN"], confidence: 0.95 })],
@@ -363,7 +364,7 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
     },
   );
   it("산책 기록의 시작 제안을 무관한 스트레칭으로 바꾸지 않는다", () => {
-    const context = { ...baseContext, todos: [{ ...baseContext.todos[0]!, title: "산책" }] };
+    const context = { ...baseContext, todos: [makeTodo("산책")] };
     expect(normalizeStarterSuggestions([makePattern({ title: "스트레칭 10분" })], context)).toEqual(
       [],
     );
@@ -372,7 +373,7 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
     // Given - 기록된 책 읽기와 별개의 산책 제안
     const context = {
       ...baseContext,
-      todos: [{ ...baseContext.todos[0]!, title: "책 읽기 10분" }],
+      todos: [makeTodo("책 읽기 10분")],
     };
     const pattern = makePattern({ title: "봄 산책", matchedTitles: [] });
     // When / Then - 희소 기록에서는 다른 활동을 대체하지 않고, 일반 보완 유형은 유지
@@ -382,10 +383,7 @@ describe("pattern-filter.util — AI 제안 순수 함수", () => {
   it("다중 근거의 정확한 원본 제목과 사용자 분량을 먼저 보존한다", () => {
     const context = {
       ...baseContext,
-      todos: [
-        { ...baseContext.todos[0]!, title: "러닝", completed: true },
-        { ...baseContext.todos[0]!, title: "러닝 30분", completed: false },
-      ],
+      todos: [makeTodo("러닝"), { ...makeTodo("러닝 30분"), completed: false }],
     };
     const result = groundPatternCandidates(
       [makePattern({ title: "러닝 30분", matchedTitles: ["러닝", "러닝 30분"] })],

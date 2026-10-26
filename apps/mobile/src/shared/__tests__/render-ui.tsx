@@ -1,5 +1,6 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -48,17 +49,19 @@ export async function renderUi(
 
   function Harness({ children }: { children: ReactNode }) {
     return (
-      <StaticDIProvider container={container}>
-        <QueryClientProvider client={client}>
-          <FontScaleProvider>
-            <HeroUIProvider
-              config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
-            >
-              {children}
-            </HeroUIProvider>
-          </FontScaleProvider>
-        </QueryClientProvider>
-      </StaticDIProvider>
+      <GestureHandlerProvider>
+        <StaticDIProvider container={container}>
+          <QueryClientProvider client={client}>
+            <FontScaleProvider>
+              <HeroUIProvider
+                config={{ animation: 'disable-all', devInfo: { stylingPrinciples: false } }}
+              >
+                {children}
+              </HeroUIProvider>
+            </FontScaleProvider>
+          </QueryClientProvider>
+        </StaticDIProvider>
+      </GestureHandlerProvider>
     );
   }
 

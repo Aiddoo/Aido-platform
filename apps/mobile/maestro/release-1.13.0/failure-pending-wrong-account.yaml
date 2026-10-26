@@ -1,0 +1,29 @@
+appId: com.aido.mobile
+name: 보류한 초대는 다른 계정(초대자 본인)으로 로그인하면 적용되지 않는다
+tags:
+  - failure
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- tapOn:
+    id: invite-card-login
+# When: 초대받는 B가 아니라 초대자 A로 로그인한다
+- runFlow: subflows/login-inviter.yaml
+# Then: 환영 시트가 열리지 않고 일반 홈으로 간다
+- assertNotVisible:
+    id: invite-welcome-sheet
+- assertNotVisible: '.*님과 친구가 됐어요|You.re now friends with .*'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-failure-pending-wrong-account
+# 서버에도 수락 기록이 없다(초대한 친구 0명). reset 직후 base 그룹에서 실행해야 한다
+- runScript: scripts/assert-no-invitees.js

@@ -27,7 +27,7 @@ describe("받은 응원 목록 조회", () => {
     // Then
     expect(result).toMatchObject({ totalCount: 3, unreadCount: 2, hasMore: true });
     expect(result.items).toHaveLength(2);
-    expect(result.items.every((item) => item.sender.profile === null)).toBe(true);
+    expect(result.items.every((item) => item.sender.profile == null)).toBe(true);
   });
   it("다른 사용자의 기록은 내 빈 목록이나 개수에 포함하지 않는다", async () => {
     // Given

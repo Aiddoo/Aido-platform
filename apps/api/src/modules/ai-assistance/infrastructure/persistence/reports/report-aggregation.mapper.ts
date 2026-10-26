@@ -31,7 +31,7 @@ export function toAggregationInputs(
   for (const row of daily) {
     const key = row.startDate.getTime();
     const existing = dailyTotals.get(key);
-    if (existing !== undefined) {
+    if (existing != null) {
       existing._count.id += row.count;
     } else {
       dailyTotals.set(key, { startDate: row.startDate, _count: { id: row.count } });
@@ -41,7 +41,7 @@ export function toAggregationInputs(
   const categoryTotals = new Map<number, { categoryId: number; _count: { id: number } }>();
   for (const row of category) {
     const existing = categoryTotals.get(row.categoryId);
-    if (existing !== undefined) {
+    if (existing != null) {
       existing._count.id += row.count;
     } else {
       categoryTotals.set(row.categoryId, { categoryId: row.categoryId, _count: { id: row.count } });

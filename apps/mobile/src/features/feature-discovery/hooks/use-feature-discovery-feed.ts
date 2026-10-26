@@ -2,7 +2,11 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-context';
 import { getNativeAppVersion } from '@src/features/feature-discovery/apis/native-app-version';
 import { FeatureDiscoveryPolicy } from '@src/features/feature-discovery/domains/feature-discovery.model';
-import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/domains/feature-discovery.registry';
+import {
+  filterAvailableCampaign,
+  getBundledFeatureDiscoveryCampaign,
+} from '@src/features/feature-discovery/domains/feature-discovery.registry';
+import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
@@ -28,8 +32,11 @@ export function useFeatureDiscoveryFeed() {
   const stateService = useFeatureDiscoveryStateService();
   const [_refreshCount, refreshState] = useReducer((value: number) => value + 1, 0);
 
-  const campaign =
-    config?.enabled === true ? getBundledFeatureDiscoveryCampaign(config.campaignId) : null;
+  const isInviteAvailable = useInviteAvailability();
+  const campaign = filterAvailableCampaign(
+    config?.enabled === true ? getBundledFeatureDiscoveryCampaign(config.campaignId) : null,
+    { isInviteAvailable },
+  );
   const accountId = user?.id;
   const identity = useMemo(
     () =>

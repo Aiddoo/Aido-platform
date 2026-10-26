@@ -82,6 +82,7 @@ export class KyHttpClient implements HttpClient {
     return this.#request(() =>
       this.#client.delete(url, {
         ...this.#buildOptions(restConfig),
+        // nullish-strict: null도 보낼 수 있는 JSON 본문이다
         ...(body !== undefined ? { json: body } : {}),
       }),
     );
@@ -157,7 +158,7 @@ export class KyHttpClient implements HttpClient {
     if (config.params) {
       options.searchParams = Object.fromEntries(
         Object.entries(config.params)
-          .filter((entry): entry is [string, string | number | boolean] => entry[1] !== undefined)
+          .filter((entry): entry is [string, string | number | boolean] => entry[1] != null)
           .map(([key, value]) => [key, String(value)]),
       );
     }

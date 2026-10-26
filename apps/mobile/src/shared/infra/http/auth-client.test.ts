@@ -51,6 +51,14 @@ const createStatefulTokenStore = (initial: AuthTokenPair): TokenStore => {
   };
 };
 
+/** ky는 fetch에 항상 Request를 넘긴다. 다른 입력이면 테스트 전제가 깨진 것이다. */
+const requestOf = (input: Parameters<typeof fetch>[0]): Request => {
+  if (!(input instanceof Request)) {
+    throw new Error('ky가 Request가 아닌 fetch 입력을 넘겼다');
+  }
+  return input;
+};
+
 describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   let fetchMock: jest.MockedFunction<typeof fetch>;
   let tokenStore: TokenStore;
@@ -83,7 +91,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   };
 
   beforeEach(() => {
-    fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+    fetchMock = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>();
     global.fetch = fetchMock;
     tokenStore = createStatefulTokenStore({ accessToken: 'access-1', refreshToken: 'refresh-1' });
     requestRefresh = jest.fn();
@@ -95,7 +103,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     // Given — 첫 요청은 401, 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
     let retriedAuthorization: string | null = null;
     fetchMock.mockImplementation(async (input) => {
-      const request = input as Request;
+      const request = requestOf(input);
       if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
         retriedAuthorization = request.headers.get('Authorization');
         return successBody({ id: 'todo-1' });
@@ -201,7 +209,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
   it('갱신 성공 후 재시도가 5xx면 ServerError로 표면화한다', async () => {
     // Given — 401 → 갱신 성공 → 재시도 요청이 503 (서버 부팅 중)
     fetchMock.mockImplementation(async (input) => {
-      const request = input as Request;
+      const request = requestOf(input);
       if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
         return errorBody(503, 'SYS_0001', 'booting');
       }
@@ -251,7 +259,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
 
     // Given (2차 — 서버 복귀): 갱신 성공(토큰 회전), 마커 붙은 재시도는 200
     fetchMock.mockImplementation(async (input) => {
-      const request = input as Request;
+      const request = requestOf(input);
       if (request.headers.get(RETRY_MARKER_HEADER) === '1') {
         return successBody({ id: 'todo-1' });
       }

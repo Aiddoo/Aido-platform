@@ -28,6 +28,8 @@ interface ModalBottomSheetProps {
   /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
   onExit: () => void;
   children: ReactNode;
+  /** 내용이 길어 스크롤돼도 시트 아래에 고정되는 영역. 주 동작 버튼을 둔다. */
+  footer?: ReactNode;
 }
 
 /**
@@ -41,6 +43,7 @@ export const ModalBottomSheet = ({
   onOpenChange,
   onExit,
   children,
+  footer,
 }: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -220,6 +223,8 @@ export const ModalBottomSheet = ({
           >
             {children}
           </ScrollView>
+
+          {footer != null && <Box style={styles.footer}>{footer}</Box>}
         </Box>
       </Animated.View>
     </Box>
@@ -228,5 +233,6 @@ export const ModalBottomSheet = ({
 
 const styles = StyleSheet.create({
   surface: { overflow: 'hidden', flexShrink: 1 },
-  scroll: { flexGrow: 0 },
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  footer: { paddingHorizontal: 20, paddingBottom: 20 },
 });

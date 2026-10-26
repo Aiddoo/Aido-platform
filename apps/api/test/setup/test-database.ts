@@ -1,10 +1,10 @@
 /** Managed PostgreSQL test client. Global setup owns containers and native migration graphs. */
-import postgres from "@prisma/orm-postgres/runtime";
 import { raw } from "sql-template-tag";
 
 import { sqlStatement } from "../../src/platform/database/database-sql.js";
-import { type DatabaseService, contract } from "../../src/platform/database/database.service.js";
+import type { DatabaseService } from "../../src/platform/database/database.service.js";
 import { databaseSqlState } from "../../src/platform/database/prisma-error.util.js";
+import { createTestClient } from "./database-context.js";
 import { assertManagedTestDatabaseEnvironment } from "./managed-test-database.js";
 
 export type TestDatabaseClient = DatabaseService["db"];
@@ -42,12 +42,7 @@ export class TestDatabase {
   constructor(options: TestDatabaseOptions = {}) {
     this.env = options.env ?? process.env;
     this.createClient =
-      options.createClient ??
-      ((connectionUri) =>
-        postgres({
-          contract,
-          url: connectionUri,
-        }));
+      options.createClient ?? ((connectionUri) => createTestClient(connectionUri));
   }
 
   /**

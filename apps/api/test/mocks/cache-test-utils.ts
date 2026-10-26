@@ -4,6 +4,7 @@ import { mockDeep } from "vitest-mock-extended";
 import type { AuthCachedUserProfile } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import {
   type CacheStats,
+  type CacheValueSchema,
   type ICacheService,
   parseTtl,
   type TtlValue,
@@ -17,7 +18,7 @@ export class MockCacheAdapter implements ICacheService {
   public stats = { hits: 0, misses: 0 };
   readonly #defaultTtlMs = 60 * 60 * 1000; // 1시간
 
-  async get<T>(key: string): Promise<T | undefined> {
+  async get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
     const entry = this.#store.get(key);
     if (!entry) {
       this.stats.misses++;
@@ -28,8 +29,13 @@ export class MockCacheAdapter implements ICacheService {
       this.stats.misses++;
       return undefined;
     }
+    const parsed = schema.safeParse(entry.value);
+    if (!parsed.success) {
+      this.stats.misses++;
+      return undefined;
+    }
     this.stats.hits++;
-    return entry.value as T;
+    return parsed.data;
   }
 
   async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
@@ -65,20 +71,25 @@ export class MockCacheAdapter implements ICacheService {
     return { ...this.stats, keys: this.#store.size };
   }
 
-  async wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
-    const cached = await this.get<T>(key);
+  async wrap<T>(
+    key: string,
+    schema: CacheValueSchema<T>,
+    factory: () => Promise<T>,
+    ttl?: TtlValue,
+  ): Promise<T> {
+    const cached = await this.get(key, schema);
     if (cached !== undefined) {
       return cached;
     }
     const value = await factory();
-    if (value !== undefined && value !== null) {
+    if (value != null) {
       await this.set(key, value, ttl);
     }
     return value;
   }
 
-  async mget<T>(keys: string[]): Promise<(T | undefined)[]> {
-    return Promise.all(keys.map((key) => this.get<T>(key)));
+  async mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
+    return Promise.all(keys.map((key) => this.get(key, schema)));
   }
 
   async mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {

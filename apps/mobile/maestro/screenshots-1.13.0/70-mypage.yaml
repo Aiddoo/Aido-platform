@@ -1,0 +1,82 @@
+appId: com.aido.mobile
+name: 마이페이지·설정·기능 가이드·구독
+tags:
+  - free
+  - premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: mypage
+- extendedWaitUntil:
+    visible:
+      id: mypage-invite-card
+    timeout: 20000
+- takeScreenshot: 70_마이페이지
+- scroll
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 71_마이페이지_아래
+- scrollUntilVisible:
+    element:
+      id: feature-guide-open
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: feature-guide-open
+- extendedWaitUntil:
+    visible: '새로 생겼어요|What.s new'
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 72_기능_가이드_시트
+- tapOn:
+    id: feature-discovery-close
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/profile
+- takeScreenshot: 73_프로필
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/app-icon
+- takeScreenshot: 74_앱_아이콘
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/theme
+- takeScreenshot: 75_화면_테마
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/notifications
+- takeScreenshot: 76_알림_설정
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: achievements
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 77_달성_배지
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: weather
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 78_날씨
+# 무료: 페이월(개발 빌드에 RevenueCat 키가 없으면 '요금제를 불러오지 못했어요'), 프리미엄: 스토어 구독 + 쌓아 둔 보상
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/subscription
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 79_구독

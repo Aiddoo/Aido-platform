@@ -6,7 +6,6 @@
 import type {
   Notification,
   NotificationType,
-  Platform,
   PushToken,
 } from "#api/platform/database/database.types";
 
@@ -108,7 +107,7 @@ export const PushTokenFixture = {
       id: overrides.id ?? id,
       userId: overrides.userId ?? `user-${id}`,
       token: overrides.token ?? `ExponentPushToken[${id}]`,
-      platform: overrides.platform ?? ("IOS" as Platform),
+      platform: overrides.platform ?? "IOS",
       deviceId: overrides.deviceId ?? `device-${id}`,
       isActive: overrides.isActive ?? true,
       lastUsedAt: overrides.lastUsedAt ?? now,

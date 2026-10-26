@@ -55,7 +55,7 @@ export class ChangeTodoCategory {
       await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
 
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
 
@@ -91,7 +91,7 @@ export class ChangeTodoCategory {
     });
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(id, userId);
-    if (response === null) {
+    if (response == null) {
       throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
     }
     return response;

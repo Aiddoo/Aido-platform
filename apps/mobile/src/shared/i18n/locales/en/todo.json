@@ -147,8 +147,6 @@
     "loadFailed": "Couldn’t update calendar markers"
   },
   "feed": {
-    "me": "Me",
-    "avatarAlt": "{{name}}'s profile",
     "loading": "Loading...",
     "suggestionsLoading": "Loading suggestions...",
     "routineSuggestion": "We'll suggest routines just for you!",
@@ -157,9 +155,20 @@
     "preparing": "We're preparing this week's suggestions",
     "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again."
   },
+  "friendStrip": {
+    "me": "Me",
+    "meLabel": "View my to-dos",
+    "friendLabel": "View {{name}}'s to-dos",
+    "findFriends": "Find friends",
+    "loadMoreFailed": "Retry",
+    "loadMoreFailedLabel": "Couldn't load more friends. Retry",
+    "emptyInvite": "Invite",
+    "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",
+    "emptySearchHint": "Find friends to see and cheer on each other's to-dos"
+  },
   "activation": {
     "title": "Create and complete your first to-do",
-    "description": "Finish these two steps to get started with Aido",
+    "description": "Finish these steps to get started with Aido",
     "createTodo": "Create your first to-do",
     "completeTodo": "Complete the to-do you created",
     "completed": "completed",
@@ -175,6 +184,8 @@
   "detail": {
     "emptyTitle": "No to-do selected",
     "selectPrompt": "Select a to-do to see its details and comments here",
+    "unavailableTitle": "This to-do is no longer available",
+    "unavailableDescription": "It may have been deleted, or your friendship may have changed",
     "title": "To-do",
     "open": "Comments",
     "pageTitle": "To-do details",
@@ -227,7 +238,17 @@
     "replyStatus": "Reply: {{reply}}",
     "waiting": "Waiting for a reply",
     "thanked": "You shared the good news and your thanks",
-    "thanksAction": "Say thanks to your friends",
+    "thanksPendingTitle_one": "{{count}} friend nudged you",
+    "thanksPendingTitle_other": "{{count}} friends nudged you",
+    "thanksPendingDescription": "Send thanks with your done update",
+    "thanksNewPendingDescription_one": "{{count}} new friend nudged you",
+    "thanksNewPendingDescription_other": "{{count}} new friends nudged you",
+    "thanksSentTitle_one": "Thanks sent to {{count}} friend",
+    "thanksSentTitle_other": "Thanks sent to {{count}} friends",
+    "thanksQuickAction": "Thanks",
+    "thanksSendMore": "Send more",
+    "thanksQuickActionLabel_one": "Thank {{count}} friend who nudged you",
+    "thanksQuickActionLabel_other": "Thank {{count}} friends who nudged you",
     "thanksTitle": "Thank your friends",
     "thanksEmpty": "No one new to thank right now",
     "thanksEmptyDescription": "You may have thanked them already, or your friendship may have changed",

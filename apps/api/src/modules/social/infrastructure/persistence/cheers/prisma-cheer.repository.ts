@@ -19,6 +19,7 @@ import type {
   FindCheersParams,
 } from "../../../application/ports/cheers/cheer.repository.port.js";
 import { Cheer } from "../../../domain/aggregates/cheers/cheer.aggregate.js";
+import { hasNoBlockWith } from "../blocks/user-block.filter.js";
 
 type UserBriefRow = {
   id: string;
@@ -77,7 +78,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       "Cheer",
       await this.client.orm.public.Cheer.where((row) => row.id.eq(id)).first(),
     );
-    return row === null ? null : PrismaCheerRepository.toCheer(row);
+    return row == null ? null : PrismaCheerRepository.toCheer(row);
   }
 
   async findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null> {
@@ -89,7 +90,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row === null ? null : PrismaCheerRepository.toCheer(row);
+    return row == null ? null : PrismaCheerRepository.toCheer(row);
   }
 
   async saveRead(cheer: Cheer): Promise<void> {
@@ -107,7 +108,12 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 
   async findReceivedCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
     const { userId, cursor, size } = params;
-    let cheers = this.client.orm.public.Cheer.where({ receiverId: userId })
+    let cheers = this.client.orm.public.Cheer.where((row) =>
+      and(
+        row.receiverId.eq(userId),
+        row.sender.some((sender) => hasNoBlockWith(sender, userId)),
+      ),
+    )
       .include("sender", (user) =>
         user
           .select("id", "userTag")
@@ -121,11 +127,11 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Cheer.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       cheers = cheers.cursor(anchor);
     }
     const rows = decodeRecord("Cheer", await cheers.all());
@@ -134,7 +140,12 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 
   async findSentCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
     const { userId, cursor, size } = params;
-    let cheers = this.client.orm.public.Cheer.where({ senderId: userId })
+    let cheers = this.client.orm.public.Cheer.where((row) =>
+      and(
+        row.senderId.eq(userId),
+        row.receiver.some((receiver) => hasNoBlockWith(receiver, userId)),
+      ),
+    )
       .include("sender", (user) =>
         user
           .select("id", "userTag")
@@ -148,11 +159,11 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Cheer.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       cheers = cheers.cursor(anchor);
     }
     const rows = decodeRecord("Cheer", await cheers.all());
@@ -172,20 +183,34 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
   }
 
   async countReceived(userId: string): Promise<number> {
-    return this.client.orm.public.Cheer.where((row) => row.receiverId.eq(userId))
+    return this.client.orm.public.Cheer.where((row) =>
+      and(
+        row.receiverId.eq(userId),
+        row.sender.some((sender) => hasNoBlockWith(sender, userId)),
+      ),
+    )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);
   }
 
   async countSent(userId: string): Promise<number> {
-    return this.client.orm.public.Cheer.where((row) => row.senderId.eq(userId))
+    return this.client.orm.public.Cheer.where((row) =>
+      and(
+        row.senderId.eq(userId),
+        row.receiver.some((receiver) => hasNoBlockWith(receiver, userId)),
+      ),
+    )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);
   }
 
   async countUnreadReceived(userId: string): Promise<number> {
     return this.client.orm.public.Cheer.where((row) =>
-      and(row.receiverId.eq(userId), row.readAt.isNull()),
+      and(
+        row.receiverId.eq(userId),
+        row.readAt.isNull(),
+        row.sender.some((sender) => hasNoBlockWith(sender, userId)),
+      ),
     )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);

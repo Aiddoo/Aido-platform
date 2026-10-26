@@ -185,7 +185,7 @@ export class AiService {
       throw new ParseError(`[AiService] Invalid parseMemo response: ${parsed.error.message}`);
     }
 
-    return ok(toParsedMemoResult(parsed.data.data));
+    return ok(toParsedMemoResult(parsed.data));
   };
 
   handleSuggestionAction = async (

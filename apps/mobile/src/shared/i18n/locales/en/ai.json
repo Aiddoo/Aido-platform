@@ -115,5 +115,37 @@
       "tip3": "Side Projects came in at 67%, a bit short. Reserving a 2-hour block on weekend mornings will help you make steady progress.",
       "tip4": "You logged a 9-day streak! How about going for 14 days next month?"
     }
+  },
+  "consent": {
+    "title": "Before AI organizes this",
+    "subtitle": "Agree once and we'll skip this next time.",
+    "items": {
+      "sentData": {
+        "title": "What we send",
+        "description": "The sentence or memo you entered, category names, and today's date and time zone. For reports and suggestions, to-do titles and completion history for that period. We never send your name, email, or friends."
+      },
+      "processor": {
+        "title": "Who processes it",
+        "description": "Google Gemini (Google LLC) organizes it into to-dos."
+      },
+      "usage": {
+        "title": "How it's used",
+        "description": "Only for organizing to-dos, reports, and suggestions. Never for ads."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "description": "We keep and delete it as described in our Privacy Policy."
+      }
+    },
+    "privacyLink": "View Privacy Policy",
+    "declineNotice": "If you don't agree, only AI features turn off. You can still add to-dos yourself.",
+    "later": "Not now",
+    "agree": "Agree",
+    "saveFailed": "Couldn't save your choice. Please try again.",
+    "notice": {
+      "reports": "Agree to get AI reports",
+      "suggestions": "Agree to get AI suggestions",
+      "action": "Review"
+    }
   }
 }

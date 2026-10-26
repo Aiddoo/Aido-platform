@@ -208,8 +208,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const three = await measure("overview-size3", () =>
       overview.execute({ todoId, viewerId: userId, sort: "POPULAR", size: 3 }),
     );
-    expect(one.count).toBe(4);
-    expect(three.count).toBe(4);
+    // 차단 관계는 행 수와 상관없이 좋아요 조회와 함께 한 번만 읽는다
+    expect(one.count).toBe(5);
+    expect(three.count).toBe(5);
     expect(one.result.items).toHaveLength(1);
     expect(three.result.items).toHaveLength(3);
   });
@@ -227,7 +228,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         focusCommentId: focusId,
       }),
     );
-    expect(normal.count).toBe(3);
+    expect(normal.count).toBe(4);
     expect(normal.result.items).toHaveLength(9);
     process.stdout.write(
       "ENGAGEMENT_FOCUS_AFTER " +
@@ -239,7 +240,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         }) +
         "\n",
     );
-    expect(focus.count).toBe(4);
+    expect(focus.count).toBe(5);
     expect(focus.result.items).toHaveLength(1);
     expect(focus.result.focus).toMatchObject({
       itemIndex: 0,

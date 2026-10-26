@@ -22,9 +22,9 @@ import {
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiBadRequestError,
-  ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -101,15 +101,17 @@ export class FollowController {
     operationId: "sendFriendRequest",
     description: `특정 사용자에게 친구 요청을 보냅니다.
 
-상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).`,
+상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).
+
+내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).`,
   })
   @ApiCreatedResponse({ type: SendFriendRequestResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.FOLLOW_0904)
   @ApiNotFoundError(ErrorCode.FOLLOW_0905)
-  @ApiConflictError(ErrorCode.FOLLOW_0901)
-  @ApiConflictError(ErrorCode.FOLLOW_0902)
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.FOLLOW_0901, ErrorCode.FOLLOW_0902])
   @ApiForbiddenError(ErrorCode.FOLLOW_0909)
+  @ApiForbiddenError(ErrorCode.BLOCK_2203)
   async sendRequest(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserTagParamDto }) params: UserTagParamDto,
@@ -299,8 +301,12 @@ export class FollowController {
     operationId: "getFriends",
     description: `나와 맞팔 관계인 친구 목록을 조회합니다.
 
+**정렬**
+- 사용자가 친구 목록 편집에서 정한 순서(\`sortOrder\` 오름차순)입니다. 피드의 친구 줄도 이 순서를 그대로 씁니다.
+- 순서 변경은 \`PATCH /v1/follows/friends/{followId}/reorder\`로 합니다.
+
 **쿼리 파라미터**
-- \`cursor\`: 페이지네이션 커서
+- \`cursor\`: 페이지네이션 커서(이전 페이지 마지막 항목의 \`followId\`)
 - \`limit\`: 페이지 크기 (1-50, 기본값: 20)
 - \`search\`: Aido ID로 검색`,
   })

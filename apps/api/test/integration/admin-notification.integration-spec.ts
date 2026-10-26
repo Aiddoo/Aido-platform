@@ -18,7 +18,6 @@ import { Test, type TestingModule } from "@nestjs/testing";
  * pnpm --filter @aido/server test admin-notification.integration-spec
  * ```
  */
-import type { Job } from "bullmq";
 import { vi } from "vitest";
 
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
@@ -33,8 +32,8 @@ import {
   sendAdminNotificationProvider,
 } from "../../src/modules/operations/operations-notifications-application.providers.js";
 
-function createMockJob(name: string, data: Record<string, unknown>): Job {
-  return { name, data, id: `job-${name}` } as unknown as Job;
+function createMockJob(name: string, data: Record<string, unknown>) {
+  return { name, data, id: `job-${name}` };
 }
 
 describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {

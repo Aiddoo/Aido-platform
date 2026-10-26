@@ -1,8 +1,14 @@
+import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
+/** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
   locale: 'ko-KR' | 'en-US';
   timeZone: string;
+}
+
+export function toDateFormatLocale(language: ResolvedLanguage): DateFormatContext['locale'] {
+  return language === 'ko' ? 'ko-KR' : 'en-US';
 }
 
 export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
@@ -18,9 +24,9 @@ type DateLabel =
   | 'monthDay'
   | 'numericDate'
   | 'dottedMonthDay'
-  | 'dayOfMonth'
   | 'dayNumber'
   | 'yearMonth'
+  | 'yearShortMonth'
   | 'month'
   | 'weekday';
 
@@ -29,9 +35,9 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   monthDay: { month: 'short', day: 'numeric' },
   numericDate: { year: 'numeric', month: 'numeric', day: 'numeric' },
   dottedMonthDay: { month: '2-digit', day: '2-digit' },
-  dayOfMonth: { day: 'numeric' },
   dayNumber: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
+  yearShortMonth: { year: 'numeric', month: 'short' },
   month: { month: 'short' },
   weekday: { weekday: 'short' },
 };
@@ -76,6 +82,15 @@ function findPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPar
   return parts.find((part) => part.type === type)?.value ?? '';
 }
 
+// Hermes(iOS)는 ko-KR day 파트에 "일"까지 붙여 주므로 숫자만 필요한 곳은 en-US 파트에서 읽는다
+function formatNumericDay(date: Date, context: DateFormatContext): string {
+  const parts = getFormatter(
+    { ...context, locale: PARTS_LOCALE },
+    DATE_OPTIONS.dayNumber,
+  ).formatToParts(date);
+  return findPart(parts, 'day');
+}
+
 function toUtcContext(context: DateFormatContext): DateFormatContext {
   return { ...context, timeZone: 'UTC' };
 }
@@ -96,13 +111,8 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
   if (!isValidDate(date)) {
     return '';
   }
-  const formatter = getFormatter(context, DATE_OPTIONS[kind]);
   return match(kind)
-    .with('dayOfMonth', () => {
-      const day = findPart(formatter.formatToParts(date), 'day');
-      return context.locale === 'ko-KR' ? `${day}일` : day;
-    })
-    .with('dayNumber', () => findPart(formatter.formatToParts(date), 'day'))
+    .with('dayNumber', () => formatNumericDay(date, context))
     .with('dottedMonthDay', () => {
       const parts = getFormatter(
         { ...context, locale: PARTS_LOCALE },
@@ -110,7 +120,7 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
       ).formatToParts(date);
       return `${findPart(parts, 'month')}.${findPart(parts, 'day')}`;
     })
-    .otherwise(() => formatter.format(date));
+    .otherwise(() => getFormatter(context, DATE_OPTIONS[kind]).format(date));
 }
 
 /** YYYY-MM-DD 날짜 key를 기기 시간대와 무관하게 그 날짜 그대로 표시한다. */

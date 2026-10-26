@@ -320,7 +320,7 @@ export class DeliverPushNotifications {
   ): Promise<void> {
     const finalizations = skipped.flatMap(({ candidate, reason }) => {
       const context = contexts.get(candidate.dispatchId);
-      if (context === undefined) return [];
+      if (context == null) return [];
       this.#logSkipped(candidate.data, reason);
       return [{ fence: candidate.claimed.fence, context, reason }];
     });

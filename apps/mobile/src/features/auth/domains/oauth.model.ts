@@ -32,6 +32,17 @@ export function toOAuthProvider(slug: OAuthProviderSlug): OAuthProvider {
   return OAUTH_PROVIDER_BY_SLUG[slug];
 }
 
+const OAUTH_PROVIDER_SLUG = {
+  APPLE: 'apple',
+  GOOGLE: 'google',
+  KAKAO: 'kakao',
+  NAVER: 'naver',
+} as const satisfies { [Provider in OAuthProvider]: Lowercase<Provider> & OAuthProviderSlug };
+
+export function toOAuthProviderSlug(provider: OAuthProvider): OAuthProviderSlug {
+  return OAUTH_PROVIDER_SLUG[provider];
+}
+
 const oauthStartProviderSchema = oauthProviderSlugSchema.exclude(['apple']);
 export type OAuthStartProvider = z.infer<typeof oauthStartProviderSchema>;
 const oauthStartModeSchema = z.enum(['login', 'link']);

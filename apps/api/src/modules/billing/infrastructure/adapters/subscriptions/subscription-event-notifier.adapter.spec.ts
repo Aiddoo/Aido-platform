@@ -64,7 +64,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     expect(mockScope.setTag).toHaveBeenCalledWith("domain", "payment");
     expect(mockScope.setTag).toHaveBeenCalledWith("webhook.event_type", "INITIAL_PURCHASE");
     expect(mockScope.setTag).toHaveBeenCalledWith("webhook.store", "APP_STORE");
-    expect(mockScope.setExtra).toHaveBeenCalledWith("webhook.app_user_id", "user-123");
+    expect(mockScope.setExtra).toHaveBeenCalledWith("webhook.app_user_id", "user-1…");
     expect(mockScope.setExtra).toHaveBeenCalledWith("webhook.product_id", "premium_monthly");
     expect(captureException).toHaveBeenCalledWith(error);
   });

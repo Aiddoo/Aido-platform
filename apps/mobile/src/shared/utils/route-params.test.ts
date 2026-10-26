@@ -1,7 +1,7 @@
 import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
 import { isSampleReportId, getSampleReport } from '@src/features/ai/constants/sample-reports';
 
-import { parseWebViewUrl, routeIntegerStringSchema } from './route-params';
+import { routeIntegerStringSchema } from './route-params';
 
 const reportIdSchema = routeIntegerStringSchema.pipe(aiReportIdParamSchema.shape.id);
 const weekSchema = routeIntegerStringSchema.pipe(weeklyAchievementParamSchema.shape.week);
@@ -40,27 +40,5 @@ describe('route params', () => {
     expect(reportIdSchema.parse('42')).toBe(42);
     expect(weekSchema.safeParse('54').success).toBe(false);
     expect(weekSchema.parse('53')).toBe(53);
-  });
-
-  it.each([
-    undefined,
-    ['https://example.com'],
-    '%',
-    'javascript:alert(1)',
-    'file:///tmp/file',
-    'not-a-url',
-  ])('잘못된 웹뷰 URL %p를 거부한다', (value) => {
-    expect(parseWebViewUrl(value)).toBeNull();
-  });
-
-  it('이미 디코딩된 URL의 인코딩된 쿼리는 보존한다', () => {
-    const url = 'https://example.com/?redirect=%2Ffeed&text=100%25';
-    expect(parseWebViewUrl(url)).toBe(url);
-  });
-
-  it('이전 호출부의 인코딩된 URL도 지원한다', () => {
-    expect(parseWebViewUrl(encodeURIComponent('https://example.com/terms'))).toBe(
-      'https://example.com/terms',
-    );
   });
 });

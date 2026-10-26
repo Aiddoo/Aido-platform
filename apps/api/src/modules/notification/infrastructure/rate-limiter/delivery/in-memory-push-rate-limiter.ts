@@ -113,7 +113,7 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
     const last = timestamps.at(-1);
     if (
       timestamps.length >= ENGAGEMENT.DAILY_MAX ||
-      (last !== undefined && now - last < ENGAGEMENT.MIN_INTERVAL_MS)
+      (last != null && now - last < ENGAGEMENT.MIN_INTERVAL_MS)
     ) {
       return true;
     }
@@ -142,11 +142,11 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
         ? `${request.userId}:${request.engagementLocalDate}`
         : null;
       const generalReserved =
-        reservationId !== undefined &&
+        reservationId != null &&
         this.#hasReservation(this.generalReservations, request.userId, reservationId, now);
       const engagementReserved =
-        engagementKey === null ||
-        (reservationId !== undefined &&
+        engagementKey == null ||
+        (reservationId != null &&
           this.#hasReservation(this.engagementReservations, request.userId, reservationId, now));
 
       const generalTimestamps = (this.pushTimestamps.get(request.userId) ?? []).filter(
@@ -163,10 +163,10 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
         : [];
       const lastEngagement = engagementTimestamps.at(-1);
       const engagementLimited =
-        engagementKey !== null &&
+        engagementKey != null &&
         !engagementReserved &&
         (engagementTimestamps.length >= ENGAGEMENT.DAILY_MAX ||
-          (lastEngagement !== undefined && now - lastEngagement < ENGAGEMENT.MIN_INTERVAL_MS));
+          (lastEngagement != null && now - lastEngagement < ENGAGEMENT.MIN_INTERVAL_MS));
       if (engagementLimited) {
         results.push(true);
         continue;
@@ -177,7 +177,7 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
         engagementTimestamps.push(now);
         this.engagementTimestamps.set(engagementKey, engagementTimestamps);
       }
-      if (!generalReserved && reservationId !== undefined) {
+      if (!generalReserved && reservationId != null) {
         this.#saveReservation(
           this.generalReservations,
           request.userId,
@@ -185,7 +185,7 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
           now + ENGAGEMENT.RETENTION_MS,
         );
       }
-      if (engagementKey && !engagementReserved && reservationId !== undefined) {
+      if (engagementKey && !engagementReserved && reservationId != null) {
         this.#saveReservation(
           this.engagementReservations,
           request.userId,
@@ -241,7 +241,7 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
     now: number,
   ): boolean {
     const expiresAt = reservations.get(key)?.get(reservationId);
-    return expiresAt !== undefined && expiresAt > now;
+    return expiresAt != null && expiresAt > now;
   }
 
   #saveReservation(

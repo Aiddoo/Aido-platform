@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 
@@ -12,6 +13,8 @@ import {
   NotificationCacheKey,
 } from "../../cache/delivery/notification-cache.keyspace.js";
 
+const PUSH_TOKENS_SCHEMA = z.array(z.string());
+
 @Injectable()
 export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReaderPort {
   constructor(
@@ -23,6 +26,7 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
   findByUserId(userId: string): Promise<readonly string[]> {
     return this.cacheService.wrap(
       NotificationCacheKey.pushTokens(userId),
+      PUSH_TOKENS_SCHEMA,
       async () => {
         const records = await this.pushTokenRepository.findPushTokensByUser({
           userId,
@@ -39,12 +43,12 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
 
     const tokensByUserId = new Map<string, readonly string[]>();
     const cacheKeys = userIds.map((userId) => NotificationCacheKey.pushTokens(userId));
-    const cachedTokens = await this.cacheService.mget<string[]>(cacheKeys);
+    const cachedTokens = await this.cacheService.mget(cacheKeys, PUSH_TOKENS_SCHEMA);
     const missedUserIds: string[] = [];
 
     for (const [index, userId] of userIds.entries()) {
       const tokens = cachedTokens[index];
-      if (tokens === undefined) {
+      if (tokens == null) {
         missedUserIds.push(userId);
       } else if (tokens.length > 0) {
         tokensByUserId.set(userId, tokens);

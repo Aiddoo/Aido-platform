@@ -55,7 +55,7 @@ export class GetFriendDailyCompletions {
       startKey,
       endKey,
     );
-    if (cacheRead.value !== undefined) {
+    if (cacheRead.value != null) {
       return cacheRead.value;
     }
 

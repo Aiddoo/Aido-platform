@@ -1,6 +1,7 @@
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
-import { AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
+import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 
 function createFixture() {
@@ -10,7 +11,7 @@ function createFixture() {
     startDate: "2026-04-12",
     categoryId: 7,
   });
-  const useCase = new ParseTodo(fixture);
+  const useCase = new ParseTodo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
   const input: ParseTodoInput = {
     userId: fixture.userId,
     text: "내일 팀 미팅",
@@ -21,7 +22,7 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseTodo", () => {
+describe("ParseTodo — v1 롤백 경로", () => {
   it("필수 필드가 없는 실제 raw 응답은 AI_1302로 거절하고 quota를 보상한다", async () => {
     // Given - 정상 fixture 기본 응답과 별개인 원본 빈 객체
     const fixture = createFixture();
@@ -121,10 +122,16 @@ describe("ParseTodo", () => {
   });
 
   it.each([
-    { error: new AiProviderCallError("provider unavailable", 500), errorCode: "AI_1301" },
+    { error: new AiProviderError("RATE_LIMITED", 429), errorCode: "AI_1310" },
+    { error: new AiProviderError("UPSTREAM", 503), errorCode: "AI_1301" },
+    { error: new AiProviderError("TIMEOUT", undefined), errorCode: "AI_1301" },
+    { error: new AiProviderError("UNAVAILABLE", undefined), errorCode: "AI_1301" },
+    { error: new AiProviderError("TRUNCATED", undefined), errorCode: "AI_1302" },
+    { error: new AiProviderError("BLOCKED", 400), errorCode: "AI_1302" },
+    { error: new AiProviderError("INVALID_OUTPUT", undefined), errorCode: "AI_1302" },
     { error: new Error("invalid output"), errorCode: "AI_1302" },
   ])(
-    "provider 오류는 $errorCode를 반환하고 예약 사용량을 보상한다",
+    "공급자 오류 $error.message는 $errorCode를 반환하고 예약 사용량을 보상한다",
     async ({ error, errorCode }) => {
       // Given
       const fixture = createFixture();
@@ -144,6 +151,75 @@ describe("ParseTodo", () => {
     vi.spyOn(fixture.categoryReader, "findByUserId").mockRejectedValueOnce(failure);
     // When
     const execution = fixture.useCase.execute(fixture.input);
+    // Then
+    await expect(execution).rejects.toBe(failure);
+    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect(fixture.aiProvider.getCallCount()).toBe(0);
+  });
+
+  it("작업 정책과 프롬프트 버전을 공급자에 넘기고 원문 없이 생성 결과를 기록한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setTokenUsage({ reasoning: 12 });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, text: "PRIVATE_TODO_TEXT" });
+    // Then
+    expect(fixture.aiProvider.getLastOptions()).toMatchObject({
+      task: "parse-todo",
+      promptVersion: "parse-todo@v1",
+      policy: { thinking: "low", maxOutputTokens: 1024, timeoutMs: 12_000, maxRetries: 1 },
+    });
+    expect(fixture.logger.log).toHaveBeenCalledWith({
+      event: "ai.generation.completed",
+      task: "parse-todo",
+      promptVersion: "parse-todo@v1",
+      model: "fake:test-model",
+      latencyMs: 0,
+      inputTokens: 150,
+      outputTokens: 50,
+      reasoningTokens: 12,
+      finishReason: "stop",
+      outcome: "SUCCESS",
+      quotaCharged: true,
+      userId: fixture.userId,
+      warnings: [],
+    });
+    expect(JSON.stringify(fixture.logger.log.mock.calls)).not.toContain("PRIVATE_TODO_TEXT");
+  });
+
+  it("카테고리를 고른 요청은 카테고리 목록을 읽거나 프롬프트에 넣지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    const read = vi.spyOn(fixture.categoryReader, "findByUserId");
+    // When
+    const result = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
+    // Then
+    expect(read).not.toHaveBeenCalled();
+    expect(fixture.aiProvider.getLastPrompt()).not.toContain("업무");
+    expect(result.data.categoryId).toBe(3);
+  });
+
+  it("X-Timezone이 없으면 저장된 사용자 시간대로 프롬프트를 만든다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.localePreferenceReader.preferences.set(fixture.userId, {
+      timezone: "Asia/Seoul",
+      locale: "ko",
+    });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, timezone: undefined });
+    // Then
+    expect(fixture.aiProvider.getLastPrompt()).toContain("Asia/Seoul");
+    expect(fixture.localePreferenceReader.readCount).toBe(1);
+  });
+
+  it("저장된 설정 조회 실패는 사용량을 예약하기 전에 전파한다", async () => {
+    // Given
+    const fixture = createFixture();
+    const failure = new Error("preference unavailable");
+    vi.spyOn(fixture.localePreferenceReader, "read").mockRejectedValueOnce(failure);
+    // When
+    const execution = fixture.useCase.execute({ ...fixture.input, locale: undefined });
     // Then
     await expect(execution).rejects.toBe(failure);
     expect((await fixture.quota.read(fixture.userId)).used).toBe(0);

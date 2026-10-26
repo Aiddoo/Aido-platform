@@ -1,0 +1,56 @@
+appId: com.aido.mobile
+name: 로그아웃 상태의 시작·로그인·가입 화면
+tags:
+  - free
+  - logged-out
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          clearState: true
+          clearKeychain: true
+          stopApp: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          clearState: true
+          stopApp: true
+- extendedWaitUntil:
+    visible:
+      id: login-email-entry
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 01_시작_로그인
+- tapOn:
+    id: login-email-entry
+- extendedWaitUntil:
+    visible:
+      id: email-login-email
+    timeout: 10000
+- hideKeyboard
+- takeScreenshot: 02_이메일_로그인
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: sign-up
+- takeScreenshot: 03_회원가입
+# 로그아웃 상태로 초대 링크를 열면 가입 유도 카드가 뜬다(프리미엄 계정의 실제 초대 코드)
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: invite/${MAESTRO_SHOT_INVITE_CODE}
+- extendedWaitUntil:
+    visible:
+      id: invite-card-signup
+    timeout: 20000
+- takeScreenshot: 04_초대카드_로그아웃

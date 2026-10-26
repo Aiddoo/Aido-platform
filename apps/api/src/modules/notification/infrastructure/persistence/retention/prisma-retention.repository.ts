@@ -62,7 +62,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
         }),
         update: {},
       });
-      if (input.startedAt === null || assignment.id !== assignmentId) return;
+      if (input.startedAt == null || assignment.id !== assignmentId) return;
       await this.client.orm.public.RetentionExperimentStage.createAndCount(
         RETENTION_STAGE_NAMES.map((stage) =>
           encodeCreate("RetentionExperimentStage", { assignmentId, stage }),
@@ -623,7 +623,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
     const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
     const claim = ownershipRows.find(
       (row) =>
-        row.dispatchId !== null && row.deliveryAttemptCount !== null && row.publishAttempt !== null,
+        row.dispatchId != null && row.deliveryAttemptCount != null && row.publishAttempt != null,
     );
     const claimedDispatchCount = claim ? 1 : 0;
     if (claimedDispatchCount !== ownedOutboxCount) {
@@ -633,9 +633,9 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
     }
     if (!claim) return null;
     if (
-      claim.dispatchId === null ||
-      claim.deliveryAttemptCount === null ||
-      claim.publishAttempt === null
+      claim.dispatchId == null ||
+      claim.deliveryAttemptCount == null ||
+      claim.publishAttempt == null
     ) {
       throw new Error("Retention delivery claim returned an incomplete fence");
     }
@@ -693,7 +693,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
       pushEnabled: requireRecord(dispatch.user).preference?.pushEnabled ?? false,
       nightPushEnabled: requireRecord(dispatch.user).preference?.nightPushEnabled ?? false,
       marketingPushAgreedAt: requireRecord(dispatch.user).consent?.marketingPushAgreedAt ?? null,
-      rateLimitReserved: dispatch.rateLimitReservedAt !== null,
+      rateLimitReserved: dispatch.rateLimitReservedAt != null,
       tokens: requireRecord(dispatch.user).pushTokens,
     };
   }
@@ -803,7 +803,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
       and(
         outbox.id.eq(outboxId),
         outbox.status.in(["PROCESSING", "PUBLISHED"]),
-        ...(publishAttempt === undefined ? [] : [outbox.attempts.eq(publishAttempt)]),
+        ...(publishAttempt == null ? [] : [outbox.attempts.eq(publishAttempt)]),
       ),
     )
       .select("id")

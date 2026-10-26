@@ -3,11 +3,7 @@
  *
  * 타입 안전한 Session 및 인증 관련 엔티티 테스트 데이터 생성
  */
-import type {
-  Session,
-  Verification,
-  VerificationType,
-} from "#api/platform/database/database.types";
+import type { Session, Verification } from "#api/platform/database/database.types";
 
 let sessionCounter = 0;
 let verificationCounter = 0;
@@ -104,7 +100,7 @@ export const VerificationFixture = {
     return {
       id: overrides.id ?? id,
       userId: overrides.userId ?? `user-${id}`,
-      type: overrides.type ?? ("EMAIL_VERIFY" as VerificationType),
+      type: overrides.type ?? "EMAIL_VERIFY",
       token: overrides.token ?? `token-${id}-${Date.now()}`,
       expiresAt: overrides.expiresAt ?? expiresAt,
       usedAt: overrides.usedAt ?? null,

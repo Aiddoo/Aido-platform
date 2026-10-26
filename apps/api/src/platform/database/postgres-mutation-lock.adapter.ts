@@ -1,5 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { uniq } from "es-toolkit";
 import sql, { join } from "sql-template-tag";
 
 import type { MutationLockPort } from "#api/shared/application/ports/index";
@@ -23,7 +24,7 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
       throw new Error("Mutation lock requires an active transaction");
     }
 
-    const orderedKeys = [...new Set(keys)].sort();
+    const orderedKeys = uniq(keys).sort();
     if (orderedKeys.length === 0) {
       return;
     }

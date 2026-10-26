@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { USER_SEARCH_QUERY_LENGTH } from "../../vocabulary/follow.constants.js";
 import { reorderPositionSchema } from "../todo-category/todo-category.common.js";
 
 export const userIdParamSchema = z.object({
@@ -81,9 +82,14 @@ export const searchUsersQuerySchema = z.object({
   q: z
     .string()
     .trim()
-    .min(2, "검색어는 2자 이상이어야 합니다")
-    .max(50, "검색어는 50자 이내여야 합니다")
-    .describe("검색어: 이름 또는 Aido ID (2-50자)"),
+    .min(
+      USER_SEARCH_QUERY_LENGTH.MIN,
+      `검색어는 ${USER_SEARCH_QUERY_LENGTH.MIN}자 이상이어야 합니다`,
+    )
+    .max(USER_SEARCH_QUERY_LENGTH.MAX, `검색어는 ${USER_SEARCH_QUERY_LENGTH.MAX}자 이내여야 합니다`)
+    .describe(
+      `검색어: 이름 또는 Aido ID (${USER_SEARCH_QUERY_LENGTH.MIN}-${USER_SEARCH_QUERY_LENGTH.MAX}자)`,
+    ),
   // 관련도 랭킹 keyset을 인코딩한 불투명 커서. 다른 팔로우 쿼리와 달리 CUID가 아니다.
   cursor: z.string().optional().describe("페이지네이션 커서 (불투명 문자열, 선택)"),
   limit: z

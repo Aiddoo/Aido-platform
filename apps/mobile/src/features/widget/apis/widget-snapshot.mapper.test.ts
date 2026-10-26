@@ -2,7 +2,16 @@ import {
   buildWidgetSnapshotContext,
   buildWidgetSummary,
 } from '../__tests__/widget-snapshot.factory';
-import { toLoggedOutWidgetSnapshot, toWidgetSnapshot } from './widget-snapshot.mapper';
+import {
+  toLoggedOutWidgetSnapshot,
+  toWidgetSnapshot,
+  type WidgetSnapshotContext,
+  type WidgetSummaryInput,
+} from './widget-snapshot.mapper';
+
+function toTodaySnapshot(summary: WidgetSummaryInput, context: WidgetSnapshotContext) {
+  return toWidgetSnapshot({ today: summary }, context).days[0];
+}
 
 describe('toWidgetSnapshot', () => {
   it('주간 발자국은 할 일이 있고 모두 완료한 날에만 표시한다', () => {
@@ -17,7 +26,7 @@ describe('toWidgetSnapshot', () => {
       ],
     });
     // When
-    const snapshot = toWidgetSnapshot(summary, context);
+    const snapshot = toTodaySnapshot(summary, context);
     // Then
     expect(snapshot.weekDays?.map((day) => day.date)).toEqual([
       '2026-07-12',
@@ -49,7 +58,7 @@ describe('toWidgetSnapshot', () => {
     // Given
     const summary = buildWidgetSummary({ date: '2026-12-31', totalTodos: 2, isComplete: true });
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext({ locale: 'en' }));
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext({ locale: 'en' }));
     // Then
     expect(snapshot.weekDays?.[0]?.date).toBe('2026-12-27');
     expect(snapshot.weekDays?.[6]?.date).toBe('2027-01-02');
@@ -64,13 +73,15 @@ describe('toWidgetSnapshot', () => {
     const summary = buildWidgetSummary();
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const document = toWidgetSnapshot({ today: summary }, buildWidgetSnapshotContext());
+    const [snapshot] = document.days;
 
     // Then
-    expect(snapshot.version).toBe(1);
+    expect(document.version).toBe(2);
+    expect(document.days).toHaveLength(1);
+    expect(document.updatedAtIso).toBe('2026-07-12T09:00:00.000Z');
     expect(snapshot.state).toBe('data');
     expect(snapshot.date).toBe('2026-07-12');
-    expect(snapshot.updatedAtIso).toBe('2026-07-12T09:00:00.000Z');
     expect(snapshot.totalTodos).toBe(5);
     expect(snapshot.completedTodos).toBe(3);
     expect(snapshot.currentStreak).toBe(12);
@@ -78,12 +89,28 @@ describe('toWidgetSnapshot', () => {
     expect(snapshot.locale).toBe('ko');
   });
 
+  it('내일 요약을 받으면 오늘 다음 day로 함께 담고 각 날짜의 주간 달력을 만든다', () => {
+    // Given - 토요일 다음 날은 새 주의 일요일이다
+    const today = buildWidgetSummary({ date: '2026-07-18', totalTodos: 2 });
+    const tomorrow = buildWidgetSummary({ date: '2026-07-19', totalTodos: 0, topTodos: [] });
+
+    // When
+    const { days } = toWidgetSnapshot({ today, tomorrow }, buildWidgetSnapshotContext());
+
+    // Then
+    expect(days.map((day) => [day.date, day.state])).toEqual([
+      ['2026-07-18', 'data'],
+      ['2026-07-19', 'empty'],
+    ]);
+    expect(days[1]?.weekDays?.[0]?.date).toBe('2026-07-19');
+  });
+
   it('할 일이 없으면 empty 상태다', () => {
     // Given
     const summary = buildWidgetSummary({ totalTodos: 0, completedTodos: 0, topTodos: [] });
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.state).toBe('empty');
@@ -94,7 +121,7 @@ describe('toWidgetSnapshot', () => {
     const summary = buildWidgetSummary();
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.strings.progressTitle).toBe('widget:progress.title');
@@ -108,7 +135,7 @@ describe('toWidgetSnapshot', () => {
     const summary = buildWidgetSummary({ completionRate: 33.333 });
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.strings.percentLabel).toBe('widget:progress.percent({"rate":33})');
@@ -125,7 +152,7 @@ describe('toWidgetSnapshot', () => {
     const summary = buildWidgetSummary({ totalTodos: 13, topTodos });
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext());
 
     // Then
     expect(snapshot.topTodos).toHaveLength(10);
@@ -136,7 +163,7 @@ describe('toWidgetSnapshot', () => {
     const summary = buildWidgetSummary();
 
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext());
 
     // Then - 렌더 시점에 위젯이 {count}를 실제 초과분으로 치환한다
     expect(snapshot.strings.moreLabelTemplate).toBe('widget:list.more({"overflow":"{count}"})');
@@ -146,10 +173,10 @@ describe('toWidgetSnapshot', () => {
 describe('toLoggedOutWidgetSnapshot', () => {
   it('비로그인 스냅샷을 만든다 (카운트 0, loggedOut 상태)', () => {
     // When
-    const snapshot = toLoggedOutWidgetSnapshot(
+    const [snapshot] = toLoggedOutWidgetSnapshot(
       '2026-07-12',
       buildWidgetSnapshotContext({ locale: 'en' }),
-    );
+    ).days;
 
     // Then
     expect(snapshot.state).toBe('loggedOut');
@@ -166,7 +193,7 @@ describe('위젯과 앱 달력의 주간 제목', () => {
     // Given
     const summary = buildWidgetSummary({ date: '2026-10-01' });
     // When
-    const snapshot = toWidgetSnapshot(summary, buildWidgetSnapshotContext());
+    const snapshot = toTodaySnapshot(summary, buildWidgetSnapshotContext());
     // Then
     expect(snapshot.weekDays?.[0]?.date).toBe('2026-09-27');
     expect(snapshot.strings.weekTitle).toBe('widget:calendar.weekTitle({"month":"9월","week":4})');

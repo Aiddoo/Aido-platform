@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../common/datetime.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../vocabulary/auth.constants.js";
+import { PREMIUM_SOURCE } from "../../vocabulary/subscription.constants.js";
 import { deviceTypeSchema, oauthProviderSchema } from "./auth.request.js";
 
 export const userStatusSchema = z.enum(USER_STATUS).describe("사용자 계정 상태");
@@ -110,6 +111,10 @@ export const subscriptionStatusSchema = z
 
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
+export const premiumSourceSchema = z
+  .enum(PREMIUM_SOURCE)
+  .describe("프리미엄 출처 (STORE: 스토어 구독, GRANT: 서버가 지급한 보상 기간)");
+
 export const currentUserSchema = z
   .object({
     userId: z.cuid().describe("사용자 고유 ID"),
@@ -127,6 +132,41 @@ export const currentUserSchema = z
     providers: z
       .array(accountProviderSchema)
       .describe('연결된 로그인 제공자 목록 (예: ["CREDENTIAL", "KAKAO"])'),
+    premiumSource: premiumSourceSchema
+      .nullable()
+      .optional()
+      .describe(
+        "프리미엄 출처입니다. STORE는 스토어 구독(RevenueCat 프로모션 포함), GRANT는 초대 등 서버가 준 보상 기간, 둘 다 없으면 null입니다. ADMIN은 role로 모든 기능이 무제한이고 이 필드는 스토어·보상 기간만 반영합니다. 구버전 서버는 생략합니다.",
+      ),
+    premiumEndsAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "프리미엄 전체가 끝나는 시각입니다 (ISO 8601 UTC). 쌓아 둔 보상 일수까지 이어 붙인 끝입니다. STORE에 쌓아 둔 보상이 없으면 스토어 만료 시각, 있으면 스토어가 끝나는 시각(취소했으면 만료 시각, 자동 갱신 중이면 만료 뒤 유예 3시간)부터 쌓아 둔 일수를 더한 시각입니다. GRANT면 진행 중인 보상 기간 끝에 쌓아 둔 일수를 더한 시각입니다. 지금 기간만의 끝은 premiumPeriodEndsAt을 씁니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
+      ),
+    premiumPeriodEndsAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "지금 출처의 기간만 끝나는 시각입니다 (ISO 8601 UTC). 쌓아 둔 보상은 넣지 않습니다. STORE면 스토어 구독 만료 시각(자동 갱신이면 다음 결제 예정 시각), GRANT면 진행 중인 보상 기간의 끝입니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
+      ),
+    willRenew: z
+      .boolean()
+      .optional()
+      .describe(
+        "스토어 구독이 자동 갱신되는지 여부입니다. 취소했지만 만료 전인 구독과 보상 기간만 있으면 false이고 구버전 서버는 생략합니다.",
+      ),
+    bankedPremiumDays: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "아직 시작하지 않고 쌓아 둔 보상 일수 합계입니다. 지금 기간(스토어 구독이나 진행 중인 보상 기간)이 끝나면 받은 순서대로 이어서 시작합니다. 없으면 0이고 구버전 서버는 생략합니다.",
+      ),
+    premiumGrantEndedAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "마지막 보상 기간이 끝난 시각입니다 (ISO 8601 UTC). 지금 프리미엄이 아니고 최근 7일 안에 끝났을 때만 값이 있고, 그 밖에는 null입니다. 구버전 서버는 생략합니다.",
+      ),
   })
   .describe("현재 사용자 정보")
   .meta({
@@ -144,6 +184,12 @@ export const currentUserSchema = z
       profileImage: "https://example.com/profiles/matthew.jpg",
       createdAt: "2026-01-01T09:00:00.000Z",
       providers: ["CREDENTIAL"],
+      premiumSource: null,
+      premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
+      willRenew: false,
+      bankedPremiumDays: 0,
+      premiumGrantEndedAt: null,
     },
   });
 

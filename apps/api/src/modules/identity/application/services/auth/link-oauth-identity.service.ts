@@ -43,7 +43,7 @@ export class LinkOAuthIdentity {
       provider,
       providerAccountId,
     );
-    if (existingAccount !== null) {
+    if (existingAccount != null) {
       if (existingAccount.userId !== userId) throw this.#alreadyLinked(input);
       return { message: "이미 연결된 계정입니다.", linked: false };
     }

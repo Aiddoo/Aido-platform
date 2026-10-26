@@ -17,7 +17,8 @@
       "appIcon": "앱 아이콘",
       "subscription": "구독 관리",
       "inquiry": "문의하기",
-      "terms": "약관 및 정책"
+      "terms": "약관 및 정책",
+      "blockedUsers": "차단한 사용자"
     }
   },
   "logout": {

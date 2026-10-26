@@ -27,7 +27,7 @@ describe("MarkAllAsRead", () => {
   it("모든 알림을 읽음 처리하고 캐시를 무효화해야 한다", async () => {
     notificationRepo.markAllAsRead.mockResolvedValue({ count: 5 });
 
-    const result = await useCase.execute(mockUserId, "1.11.0");
+    const result = await useCase.execute(mockUserId, "1.13.0");
 
     expect(notificationRepo.markAllAsRead).toHaveBeenCalledWith(mockUserId, undefined);
     expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(mockUserId);

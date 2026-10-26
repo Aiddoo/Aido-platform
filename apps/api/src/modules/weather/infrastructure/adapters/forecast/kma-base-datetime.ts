@@ -19,7 +19,7 @@ export function getKmaBaseDateTime(date: Date): KmaBaseDateTime {
   const time = Number(toLocalTimeString(date, KMA_TIMEZONE).replace(":", ""));
   const localDate = dayWindowInTimezone(date, KMA_TIMEZONE).date;
   const baseTime = KMA_BASE_TIMES.findLast((candidate) => time >= Number(candidate) + 15);
-  const baseDate = baseTime === undefined ? subtractDays(1, localDate) : localDate;
+  const baseDate = baseTime == null ? subtractDays(1, localDate) : localDate;
   return {
     baseDate: toDateString(baseDate).replaceAll("-", ""),
     baseTime: baseTime ?? "2300",

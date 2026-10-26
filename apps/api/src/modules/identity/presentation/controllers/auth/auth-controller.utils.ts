@@ -10,9 +10,13 @@ export function extractMetadata(req: Request): RequestMetadata {
   return {
     ip: req.ip || undefined,
     userAgent: req.headers["user-agent"],
-    deviceName: req.headers["x-device-name"] as string | undefined,
-    deviceType: req.headers["x-device-type"] as string | undefined,
+    deviceName: singleHeaderValue(req.headers["x-device-name"]),
+    deviceType: singleHeaderValue(req.headers["x-device-type"]),
   };
+}
+
+function singleHeaderValue(value: string | string[] | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 /**

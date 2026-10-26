@@ -8,7 +8,6 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import {
-  ApiBadRequestError,
   ApiDoc,
   ApiForbiddenError,
   ApiSuccessResponse,
@@ -38,7 +37,6 @@ export class AdminGrowthController {
       "가입 cohort 범위의 활성화·D1/D7/D30 리텐션과 종료 현지 날짜 기준 DAU/WAU/MAU를 집계합니다.",
   })
   @ApiSuccessResponse({ type: GrowthSummaryResponseDto })
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   async getGrowthSummary(
     @CurrentUser() _user: CurrentUserPayload,

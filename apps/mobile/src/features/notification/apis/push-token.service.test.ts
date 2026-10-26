@@ -1,3 +1,4 @@
+import { type PermissionResponse, PermissionStatus } from 'expo';
 import * as Notifications from 'expo-notifications';
 
 import { PushTokenService } from './push-token.service';
@@ -10,6 +11,13 @@ jest.mock('expo-notifications', () => ({
 const getPermissionsAsync = jest.mocked(Notifications.getPermissionsAsync);
 const requestPermissionsAsync = jest.mocked(Notifications.requestPermissionsAsync);
 
+const createPermission = (status: PermissionStatus): PermissionResponse => ({
+  status,
+  granted: status === PermissionStatus.GRANTED,
+  canAskAgain: status !== PermissionStatus.DENIED,
+  expires: 'never',
+});
+
 describe('PushTokenService.requestPermission', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -17,7 +25,7 @@ describe('PushTokenService.requestPermission', () => {
 
   it('이미 허용된 권한은 OS 요청 없이 재사용한다', async () => {
     // Given
-    getPermissionsAsync.mockResolvedValue({ status: 'granted' } as never);
+    getPermissionsAsync.mockResolvedValue(createPermission(PermissionStatus.GRANTED));
     const service = new PushTokenService();
 
     // When
@@ -30,7 +38,7 @@ describe('PushTokenService.requestPermission', () => {
 
   it('거부된 권한은 OS 요청을 다시 호출하지 않는다', async () => {
     // Given
-    getPermissionsAsync.mockResolvedValue({ status: 'denied' } as never);
+    getPermissionsAsync.mockResolvedValue(createPermission(PermissionStatus.DENIED));
     const service = new PushTokenService();
 
     // When
@@ -43,8 +51,8 @@ describe('PushTokenService.requestPermission', () => {
 
   it('아직 결정되지 않은 권한만 OS에 요청한다', async () => {
     // Given
-    getPermissionsAsync.mockResolvedValue({ status: 'undetermined' } as never);
-    requestPermissionsAsync.mockResolvedValue({ status: 'granted' } as never);
+    getPermissionsAsync.mockResolvedValue(createPermission(PermissionStatus.UNDETERMINED));
+    requestPermissionsAsync.mockResolvedValue(createPermission(PermissionStatus.GRANTED));
     const service = new PushTokenService();
 
     // When
@@ -57,7 +65,7 @@ describe('PushTokenService.requestPermission', () => {
 
   it('호환성 사전 등록은 미결정 권한을 OS에 요청하지 않는다', async () => {
     // Given
-    getPermissionsAsync.mockResolvedValue({ status: 'undetermined' } as never);
+    getPermissionsAsync.mockResolvedValue(createPermission(PermissionStatus.UNDETERMINED));
     const service = new PushTokenService();
 
     // When

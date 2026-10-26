@@ -38,7 +38,7 @@ export class BroadcastNotification {
 
   async execute(input: BroadcastNotificationInput): Promise<BroadcastResult> {
     const content = BroadcastContent.create(input);
-    const action = input.action === undefined ? undefined : { ...input.action };
+    const action = input.action == null ? undefined : { ...input.action };
     const { targetFilter } = input;
     const force = input.force ?? false;
     let totalTargets = 0;

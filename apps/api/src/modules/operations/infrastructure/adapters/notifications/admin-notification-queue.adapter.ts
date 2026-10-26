@@ -34,7 +34,7 @@ export class AdminNotificationQueueAdapter implements AdminNotificationQueuePort
     options?: EnqueueSendOptions,
   ): Promise<void> {
     const jobOptions: EnqueueJobOptions =
-      options?.jobId === undefined
+      options?.jobId == null
         ? ADMIN_NOTIFICATION_JOB_POLICY
         : { ...ADMIN_NOTIFICATION_JOB_POLICY, idempotencyKey: options.jobId };
     await this.runtime.enqueue(

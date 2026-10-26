@@ -49,7 +49,7 @@ describe("DiscordWebhookProvider 실제 HTTP wire와 로그 경계", () => {
     expect(result).toEqual({ success: true });
     expect(fetch).toHaveBeenCalledTimes(1);
     const call = fetch.mock.calls[0];
-    if (call === undefined) throw new Error("HTTP fixture request missing");
+    if (call == null) throw new Error("HTTP fixture request missing");
     const [url, init] = call;
     expect(String(url)).toBe(WEBHOOK);
     expect(init?.method).toBe("POST");

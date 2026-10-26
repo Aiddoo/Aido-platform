@@ -14,12 +14,22 @@ export const notificationSchema = z
     id: z.number().int().positive().describe("알림 ID (양의 정수)"),
     userId: z.string().describe("사용자 ID (CUID 25자)"),
     type: notificationTypeSchema
-      .exclude(["NUDGE_REPLIED", "NUDGE_THANKED"])
-      .describe("알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등)"),
+      .exclude([
+        "NUDGE_REPLIED",
+        "NUDGE_THANKED",
+        "INVITE_JOINED",
+        "INVITE_REWARDED",
+        "PREMIUM_GRANT_ENDING",
+      ])
+      .describe(
+        "알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등). 이 enum은 배포된 구버전 앱의 계약입니다. X-App-Version이 1.11.0 이상인 앱은 NUDGE_REPLIED·NUDGE_THANKED를, 1.13.0 이상인 앱은 INVITE_JOINED·INVITE_REWARDED·PREMIUM_GRANT_ENDING도 받습니다. 그보다 낮은 앱의 알림 목록과 푸시에서는 이 타입을 뺍니다.",
+      ),
     title: notificationTitleSchema,
     body: notificationBodySchema,
     isRead: z.boolean().describe("읽음 여부"),
-    metadata: notificationMetadataSchema.describe("추가 메타데이터 (미설정 시 null)"),
+    metadata: notificationMetadataSchema.describe(
+      "추가 메타데이터 (미설정 시 null). 이동 재료(commentId·threadRootId·activityKind, 할 일 알림의 todoOwnerId·todoDate)를 함께 싣는다",
+    ),
     context: notificationContextSchema.optional(),
     action: notificationActionSchema.optional(),
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)"),

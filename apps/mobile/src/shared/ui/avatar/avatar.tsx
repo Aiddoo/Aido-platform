@@ -2,7 +2,12 @@ import { Box } from '@src/shared/ui/box';
 import { CheckmarkIcon } from '@src/shared/ui/icon';
 import { VStack } from '@src/shared/ui/v-stack';
 import { cn } from '@src/shared/utils/cn';
+import { Image as ExpoImage } from 'expo-image';
 import { type AvatarRootProps, Avatar as HeroUIAvatar, Skeleton } from 'heroui-native';
+import type { ComponentProps } from 'react';
+import type { ImageSourcePropType } from 'react-native';
+
+import { getAvatarRecyclingKey } from './get-avatar-recycling-key';
 
 interface AvatarProps extends AvatarRootProps {
   isSelected?: boolean;
@@ -28,7 +33,26 @@ export function Avatar({ isSelected, className, children, ...props }: AvatarProp
   );
 }
 
-Avatar.Image = HeroUIAvatar.Image;
+interface AvatarImageProps extends Omit<ComponentProps<typeof ExpoImage>, 'source' | 'style'> {
+  source: ImageSourcePropType;
+}
+
+const AVATAR_IMAGE_STYLE = { width: '100%', height: '100%' } as const;
+
+// HeroUI 페이드 인(opacity 0 → onLoad) 대신 expo-image로 바로 그린다. 다시 마운트돼 onLoad가 오지 않아도 보이고 디스크 캐시를 쓴다
+Avatar.Image = function Image({ source, ...props }: AvatarImageProps) {
+  return (
+    <HeroUIAvatar.Image source={source} asChild>
+      <ExpoImage
+        style={AVATAR_IMAGE_STYLE}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        recyclingKey={getAvatarRecyclingKey(source)}
+        {...props}
+      />
+    </HeroUIAvatar.Image>
+  );
+};
 Avatar.Fallback = HeroUIAvatar.Fallback;
 
 Avatar.Loading = function Loading() {

@@ -153,6 +153,8 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
       agreedTermsVersion: input.agreedTermsVersion ?? null,
       marketingAgreedAt: input.marketingAgreedAt ?? null,
       marketingPushAgreedAt: input.marketingPushAgreedAt ?? null,
+      aiDataSharingAgreedAt: null,
+      aiDataSharingVersion: null,
     };
     this.records.set(userId, record);
     return { ...record };
@@ -181,6 +183,18 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
     this.records.set(userId, updated);
     return { ...updated };
   }
+  async upsertAiDataSharingConsent(
+    userId: string,
+    input: { agreedAt: Date | null; version: string },
+  ): Promise<UserConsentRecord> {
+    const updated = {
+      ...this.#existingOrCreate(userId),
+      aiDataSharingAgreedAt: input.agreedAt == null ? null : new Date(input.agreedAt),
+      aiDataSharingVersion: input.version,
+    };
+    this.records.set(userId, updated);
+    return { ...updated };
+  }
   #existingOrCreate(userId: string): UserConsentRecord {
     return (
       this.records.get(userId) ?? {
@@ -189,6 +203,8 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
         agreedTermsVersion: null,
         marketingAgreedAt: null,
         marketingPushAgreedAt: null,
+        aiDataSharingAgreedAt: null,
+        aiDataSharingVersion: null,
       }
     );
   }

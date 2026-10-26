@@ -6,6 +6,7 @@ import {
   writeFontScale,
 } from '@src/shared/preferences/font-scale.preference';
 import type { TextSize } from '@src/shared/ui/text/text.types';
+import { noop } from 'es-toolkit';
 import { createContext, type PropsWithChildren, use, useCallback, useMemo, useState } from 'react';
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
@@ -108,7 +109,7 @@ export function FontScaleProvider({
 // (useTheme과 다르게 — useTheme은 Text 내부에서 호출되지 않음)
 const DEFAULT_CONTEXT: FontScaleContextValue = {
   fontScale: 'medium',
-  setFontScale: () => {},
+  setFontScale: noop,
   resolveSize: (size: TextSize) => size,
 };
 

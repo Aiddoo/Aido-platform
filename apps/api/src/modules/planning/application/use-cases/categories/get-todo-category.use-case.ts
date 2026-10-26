@@ -23,7 +23,7 @@ export class GetTodoCategory {
     readonly userId: string;
   }): Promise<TodoCategoryWithCountView> {
     const category = await this.#dependencies.repository.findByIdWithCount(input.id);
-    if (category === null) {
+    if (category == null) {
       throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: input.id });
     }
     if (category.userId !== input.userId) {

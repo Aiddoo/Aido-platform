@@ -7,7 +7,7 @@ export class NudgeMessage {
   private constructor(private readonly text: string | null) {}
 
   static of(value?: string | null): NudgeMessage {
-    if (value === null || value === undefined) {
+    if (value == null) {
       return new NudgeMessage(null);
     }
     if (value.length > NUDGE_LIMITS.MAX_MESSAGE_LENGTH) {

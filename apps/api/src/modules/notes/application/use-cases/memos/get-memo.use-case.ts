@@ -28,7 +28,7 @@ export class GetMemo {
 
   async execute(input: GetMemoInput): Promise<GetMemoResult> {
     const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
-    if (memo === null) {
+    if (memo == null) {
       throw new ApplicationException(ErrorCode.MEMO_2001, {
         memoId: input.memoId,
       });

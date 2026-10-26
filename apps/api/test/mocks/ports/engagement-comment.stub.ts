@@ -11,6 +11,7 @@ import type {
   ListTodoConversationParams,
   ListTodoCommentOverviewParams,
 } from "#api/modules/engagement/application/models/comments/todo-comment.types";
+import type { TodoCommentBlockReaderPort } from "#api/modules/engagement/application/ports/comments/todo-comment-block-reader.port";
 import type {
   TodoCommentActivityNotificationInput,
   TodoCommentWrittenInput,
@@ -206,12 +207,15 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   ancestors: TodoCommentRecord[] | undefined;
   likedCommentIds: Set<string> | undefined;
   constructor(readonly repository: StubEngagementCommentRepository) {}
-  async canAccessTodo(todoId: number, viewerId: string) {
-    return this.accessiblePairs.has(`${todoId}:${viewerId}`);
+  async findAccessibleTodoOwnerId(todoId: number, viewerId: string) {
+    if (!this.accessiblePairs.has(`${todoId}:${viewerId}`)) {
+      return null;
+    }
+    return this.todoOwners.get(todoId) ?? viewerId;
   }
   async findAccessibleTodoDetails(todoId: number, viewerId: string) {
     const record = this.details.get(todoId);
-    return record !== undefined && (await this.canAccessTodo(todoId, viewerId))
+    return record !== undefined && (await this.findAccessibleTodoOwnerId(todoId, viewerId)) != null
       ? { ...structuredClone(record), isOwner: record.owner.id === viewerId }
       : null;
   }
@@ -223,9 +227,14 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
       todoId,
       authorId: comment.authorId,
       authorName: this.names.get(comment.authorId) ?? null,
+      authorUserTag: null,
       authorProfileImage: null,
       todoOwnerId: this.todoOwners.get(todoId) ?? comment.authorId,
       parentId: comment.parentId,
+      parentAuthorId:
+        comment.parentId === null
+          ? null
+          : (this.repository.comments.get(comment.parentId)?.authorId ?? null),
       parentAuthorName:
         comment.parentId === null
           ? null
@@ -266,6 +275,28 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   }
   async findUserDisplayName(userId: string) {
     return this.names.get(userId) ?? null;
+  }
+}
+
+/** 차단 쌍을 방향과 상관없이 기억하는 댓글 차단 reader */
+export class StubTodoCommentBlockReader implements TodoCommentBlockReaderPort {
+  readonly blockedPairs = new Set<string>();
+
+  block(blockerId: string, blockedId: string): void {
+    this.blockedPairs.add(`${blockerId}:${blockedId}`);
+  }
+
+  async findBlockedCounterpartIds(
+    viewerId: string,
+    candidateUserIds: readonly string[],
+  ): Promise<ReadonlySet<string>> {
+    return new Set(
+      candidateUserIds.filter(
+        (userId) =>
+          this.blockedPairs.has(`${viewerId}:${userId}`) ||
+          this.blockedPairs.has(`${userId}:${viewerId}`),
+      ),
+    );
   }
 }
 

@@ -1,0 +1,710 @@
+[
+  {
+    "id": "createNativeEnumType.UserReportReason",
+    "label": "Create enum type \"UserReportReason\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "UserReportReason"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"UserReportReason\"",
+        "sql": "CREATE TYPE \"public\".\"UserReportReason\" AS ENUM ('SPAM', 'HARASSMENT', 'INAPPROPRIATE', 'IMPERSONATION', 'OTHER')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.UserReportStatus",
+    "label": "Create enum type \"UserReportStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "UserReportStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"UserReportStatus\"",
+        "sql": "CREATE TYPE \"public\".\"UserReportStatus\" AS ENUM ('OPEN', 'RESOLVED')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.UserReportTargetType",
+    "label": "Create enum type \"UserReportTargetType\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "UserReportTargetType"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"UserReportTargetType\"",
+        "sql": "CREATE TYPE \"public\".\"UserReportTargetType\" AS ENUM ('PROFILE', 'TODO', 'COMMENT', 'NUDGE_MESSAGE', 'CHEER_MESSAGE')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.UserBlock",
+    "label": "Create table \"UserBlock\"",
+    "summary": "Creates table \"UserBlock\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "UserBlock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"UserBlock\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserBlock\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"UserBlock\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"UserBlock\"",
+        "sql": "CREATE TABLE \"public\".\"UserBlock\" (\n  \"blockedId\" text NOT NULL,\n  \"blockerId\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  CONSTRAINT \"UserBlock_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"UserBlock\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"UserBlock\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"UserBlock\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.UserReport",
+    "label": "Create table \"UserReport\"",
+    "summary": "Creates table \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"UserReport\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"UserReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"UserReport\"",
+        "sql": "CREATE TABLE \"public\".\"UserReport\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"detail\" character varying(500),\n  \"id\" text NOT NULL,\n  \"reason\" \"UserReportReason\" NOT NULL,\n  \"reporterId\" text NOT NULL,\n  \"status\" \"UserReportStatus\" DEFAULT 'OPEN'::\"UserReportStatus\" NOT NULL,\n  \"targetId\" character varying(64),\n  \"targetType\" \"UserReportTargetType\" NOT NULL,\n  \"targetUserId\" text NOT NULL,\n  CONSTRAINT \"UserReport_pkey\" PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"UserReport\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"UserReport\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.UserBlock.UserBlock_blockerId_blockedId_key",
+    "label": "Add unique constraint on \"UserBlock\" (blockerId, blockedId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "UserBlock_blockerId_blockedId_key",
+        "table": "UserBlock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"UserBlock_blockerId_blockedId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserBlock_blockerId_blockedId_key",
+          "public",
+          "\"public\".\"UserBlock\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"UserBlock_blockerId_blockedId_key\" on \"UserBlock\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"UserBlock_blockerId_blockedId_key\"",
+        "sql": "ALTER TABLE \"public\".\"UserBlock\" ADD CONSTRAINT \"UserBlock_blockerId_blockedId_key\" UNIQUE (\"blockerId\", \"blockedId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"UserBlock_blockerId_blockedId_key\" exists on (blockerId, blockedId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "UserBlock_blockerId_blockedId_key",
+          "public",
+          "\"public\".\"UserBlock\"",
+          "u",
+          "[\"blockerId\",\"blockedId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserBlock.UserBlock_blockedId_blockerId_idx",
+    "label": "Create index \"UserBlock_blockedId_blockerId_idx\" on \"UserBlock\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserBlock_blockedId_blockerId_idx",
+        "table": "UserBlock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserBlock_blockedId_blockerId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserBlock_blockedId_blockerId_idx\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserBlock_blockedId_blockerId_idx\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserBlock_blockedId_blockerId_idx\"",
+        "sql": "CREATE INDEX \"UserBlock_blockedId_blockerId_idx\" ON \"public\".\"UserBlock\" (\"blockedId\", \"blockerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserBlock_blockedId_blockerId_idx\" exists on \"UserBlock\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserBlock_blockedId_blockerId_idx\"",
+          "i",
+          "I",
+          "\"public\".\"UserBlock\"",
+          "btree",
+          "[\"blockedId\",\"blockerId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserBlock.UserBlock_blockerId_createdAt_id_idx",
+    "label": "Create index \"UserBlock_blockerId_createdAt_id_idx\" on \"UserBlock\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserBlock_blockerId_createdAt_id_idx",
+        "table": "UserBlock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserBlock_blockerId_createdAt_id_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserBlock_blockerId_createdAt_id_idx\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserBlock_blockerId_createdAt_id_idx\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserBlock_blockerId_createdAt_id_idx\"",
+        "sql": "CREATE INDEX \"UserBlock_blockerId_createdAt_id_idx\" ON \"public\".\"UserBlock\" (\"blockerId\", \"createdAt\", \"id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserBlock_blockerId_createdAt_id_idx\" exists on \"UserBlock\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserBlock_blockerId_createdAt_id_idx\"",
+          "i",
+          "I",
+          "\"public\".\"UserBlock\"",
+          "btree",
+          "[\"blockerId\",\"createdAt\",\"id\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserReport.UserReport_reporterId_createdAt_idx",
+    "label": "Create index \"UserReport_reporterId_createdAt_idx\" on \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserReport_reporterId_createdAt_idx",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserReport_reporterId_createdAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_reporterId_createdAt_idx\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserReport_reporterId_createdAt_idx\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserReport_reporterId_createdAt_idx\"",
+        "sql": "CREATE INDEX \"UserReport_reporterId_createdAt_idx\" ON \"public\".\"UserReport\" (\"reporterId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserReport_reporterId_createdAt_idx\" exists on \"UserReport\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_reporterId_createdAt_idx\"",
+          "i",
+          "I",
+          "\"public\".\"UserReport\"",
+          "btree",
+          "[\"reporterId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserReport.UserReport_reporterId_target_createdAt_idx",
+    "label": "Create index \"UserReport_reporterId_target_createdAt_idx\" on \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserReport_reporterId_target_createdAt_idx",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserReport_reporterId_target_createdAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_reporterId_target_createdAt_idx\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserReport_reporterId_target_createdAt_idx\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserReport_reporterId_target_createdAt_idx\"",
+        "sql": "CREATE INDEX \"UserReport_reporterId_target_createdAt_idx\" ON \"public\".\"UserReport\" (\"reporterId\", \"targetUserId\", \"targetType\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserReport_reporterId_target_createdAt_idx\" exists on \"UserReport\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_reporterId_target_createdAt_idx\"",
+          "i",
+          "I",
+          "\"public\".\"UserReport\"",
+          "btree",
+          "[\"reporterId\",\"targetUserId\",\"targetType\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserReport.UserReport_status_createdAt_idx",
+    "label": "Create index \"UserReport_status_createdAt_idx\" on \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserReport_status_createdAt_idx",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserReport_status_createdAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_status_createdAt_idx\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserReport_status_createdAt_idx\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserReport_status_createdAt_idx\"",
+        "sql": "CREATE INDEX \"UserReport_status_createdAt_idx\" ON \"public\".\"UserReport\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserReport_status_createdAt_idx\" exists on \"UserReport\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_status_createdAt_idx\"",
+          "i",
+          "I",
+          "\"public\".\"UserReport\"",
+          "btree",
+          "[\"status\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserReport.UserReport_targetUserId_createdAt_idx",
+    "label": "Create index \"UserReport_targetUserId_createdAt_idx\" on \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserReport_targetUserId_createdAt_idx",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserReport_targetUserId_createdAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_targetUserId_createdAt_idx\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserReport_targetUserId_createdAt_idx\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserReport_targetUserId_createdAt_idx\"",
+        "sql": "CREATE INDEX \"UserReport_targetUserId_createdAt_idx\" ON \"public\".\"UserReport\" (\"targetUserId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserReport_targetUserId_createdAt_idx\" exists on \"UserReport\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserReport_targetUserId_createdAt_idx\"",
+          "i",
+          "I",
+          "\"public\".\"UserReport\"",
+          "btree",
+          "[\"targetUserId\",\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserBlock.UserBlock_blockerId_fkey",
+    "label": "Add foreign key \"UserBlock_blockerId_fkey\" on \"UserBlock\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserBlock_blockerId_fkey",
+        "table": "UserBlock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserBlock_blockerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserBlock_blockerId_fkey",
+          "public",
+          "\"public\".\"UserBlock\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"UserBlock_blockerId_fkey\" on \"UserBlock\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserBlock_blockerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserBlock\"\nADD CONSTRAINT \"UserBlock_blockerId_fkey\"\nFOREIGN KEY (\"blockerId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserBlock_blockerId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "UserBlock_blockerId_fkey",
+          "public",
+          "\"public\".\"UserBlock\"",
+          "f",
+          "[\"blockerId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "c",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserBlock.UserBlock_blockedId_fkey",
+    "label": "Add foreign key \"UserBlock_blockedId_fkey\" on \"UserBlock\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserBlock_blockedId_fkey",
+        "table": "UserBlock"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserBlock_blockedId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserBlock_blockedId_fkey",
+          "public",
+          "\"public\".\"UserBlock\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"UserBlock_blockedId_fkey\" on \"UserBlock\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserBlock_blockedId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserBlock\"\nADD CONSTRAINT \"UserBlock_blockedId_fkey\"\nFOREIGN KEY (\"blockedId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserBlock_blockedId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "UserBlock_blockedId_fkey",
+          "public",
+          "\"public\".\"UserBlock\"",
+          "f",
+          "[\"blockedId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "c",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserReport.UserReport_reporterId_fkey",
+    "label": "Add foreign key \"UserReport_reporterId_fkey\" on \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserReport_reporterId_fkey",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserReport_reporterId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserReport_reporterId_fkey",
+          "public",
+          "\"public\".\"UserReport\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"UserReport_reporterId_fkey\" on \"UserReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserReport_reporterId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserReport\"\nADD CONSTRAINT \"UserReport_reporterId_fkey\"\nFOREIGN KEY (\"reporterId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserReport_reporterId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "UserReport_reporterId_fkey",
+          "public",
+          "\"public\".\"UserReport\"",
+          "f",
+          "[\"reporterId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "c",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserReport.UserReport_targetUserId_fkey",
+    "label": "Add foreign key \"UserReport_targetUserId_fkey\" on \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserReport_targetUserId_fkey",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserReport_targetUserId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserReport_targetUserId_fkey",
+          "public",
+          "\"public\".\"UserReport\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"UserReport_targetUserId_fkey\" on \"UserReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserReport_targetUserId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserReport\"\nADD CONSTRAINT \"UserReport_targetUserId_fkey\"\nFOREIGN KEY (\"targetUserId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserReport_targetUserId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "UserReport_targetUserId_fkey",
+          "public",
+          "\"public\".\"UserReport\"",
+          "f",
+          "[\"targetUserId\"]",
+          "\"public\".\"User\"",
+          "[\"id\"]",
+          "c",
+          "c"
+        ]
+      }
+    ]
+  }
+]

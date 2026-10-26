@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
+import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
@@ -92,9 +93,13 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
           push(memoAiReviewHref(memoId));
         },
         onError: (error) => {
-          if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
+          // 한도 소진 안내는 mutation 공통 프리미엄 다이얼로그가 맡고, 확인 창만 닫는다.
+          // 동의가 없으면 창을 닫고, 연 쪽이 동의 안내부터 다시 시작한다.
+          if (
+            isAiDataSharingConsentRequiredError(error) ||
+            (isApiError(error) && error.hasCode(ErrorCode.AI_1303))
+          ) {
             close();
-            replace('/settings/subscription');
           }
         },
       },
@@ -121,12 +126,16 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
         </ConfirmDialog.Description>
       }
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={close}>
+        <ConfirmDialog.CancelButton testID="memo-ai-close" onPress={close}>
           {t('common:actions.close')}
         </ConfirmDialog.CancelButton>
       }
       confirmButton={
-        <ConfirmDialog.ConfirmButton onPress={handleStart} isLoading={parseMutation.isPending}>
+        <ConfirmDialog.ConfirmButton
+          testID="memo-ai-start"
+          onPress={handleStart}
+          isLoading={parseMutation.isPending}
+        >
           {t('memo:aiDialog.start')}
         </ConfirmDialog.ConfirmButton>
       }

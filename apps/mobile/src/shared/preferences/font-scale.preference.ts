@@ -7,7 +7,7 @@ export type FontScale = (typeof FONT_SCALES)[number];
 const KEY = 'aido_font_scale';
 
 export function isFontScale(value: unknown): value is FontScale {
-  return typeof value === 'string' && FONT_SCALES.includes(value as FontScale);
+  return FONT_SCALES.some((candidate) => candidate === value);
 }
 
 export function readFontScale(storage: SyncStorage): FontScale {

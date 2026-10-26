@@ -20,9 +20,9 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
-  ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -113,7 +113,6 @@ export class MemoController {
   })
   @ApiCreatedResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiForbiddenError(ErrorCode.MEMO_2003)
   async create(
     @CurrentUser() user: CurrentUserPayload,
@@ -175,7 +174,6 @@ export class MemoController {
   })
   @ApiSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiNotFoundError(ErrorCode.MEMO_2001)
   async update(
     @CurrentUser() user: CurrentUserPayload,
@@ -221,9 +219,7 @@ export class MemoController {
   })
   @ApiSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiNotFoundError(ErrorCode.MEMO_2002)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.MEMO_2002])
   async reorder(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
@@ -284,10 +280,8 @@ export class MemoController {
   })
   @ApiCreatedResponse({ type: ConvertMemoToTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async convertToTodo(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
@@ -300,12 +294,9 @@ export class MemoController {
       data: {
         categoryId: dto.categoryId,
         startDate: parseDateOnly(dto.startDate),
-        endDate:
-          dto.endDate === undefined || dto.endDate === null
-            ? undefined
-            : parseDateOnly(dto.endDate),
+        endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
         scheduledTime:
-          dto.scheduledTime === undefined || dto.scheduledTime === null
+          dto.scheduledTime == null
             ? undefined
             : parseLocalDateTime(dto.startDate, dto.scheduledTime, tz),
         isAllDay: dto.isAllDay,
@@ -346,10 +337,8 @@ export class MemoController {
   })
   @ApiCreatedResponse({ type: ConvertMemoToTodosResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async convertToTodos(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
@@ -364,19 +353,16 @@ export class MemoController {
           title: todo.title,
           categoryId: todo.categoryId,
           startDate: parseDateOnly(todo.startDate),
-          endDate:
-            todo.endDate === undefined || todo.endDate === null
-              ? undefined
-              : parseDateOnly(todo.endDate),
+          endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
           scheduledTime:
-            todo.scheduledTime === undefined || todo.scheduledTime === null
+            todo.scheduledTime == null
               ? undefined
               : parseLocalDateTime(todo.startDate, todo.scheduledTime, tz),
           isAllDay: todo.isAllDay,
           visibility: todo.visibility,
           isRecurring: todo.isRecurring,
           recurrence:
-            todo.recurrence !== undefined
+            todo.recurrence != null
               ? {
                   daysOfWeek: todo.recurrence.daysOfWeek,
                   endDate: parseDateOnly(todo.recurrence.endDate),

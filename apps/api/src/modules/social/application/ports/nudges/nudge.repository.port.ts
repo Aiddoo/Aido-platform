@@ -87,6 +87,11 @@ export interface NudgeThanksCandidatePage {
   hasNext: boolean;
 }
 
+export interface NudgeThanksSummary {
+  thankedRecipientCount: number;
+  lastThankedAt: Date | null;
+}
+
 /** 콕 찌르기 생성 입력 */
 export interface CreateNudgeInput {
   senderId: string;
@@ -125,6 +130,7 @@ export interface NudgeRepositoryPort {
   findThanksCandidatePage(
     input: FindNudgeThanksCandidatesInput & { cursor?: number; size: number },
   ): Promise<NudgeThanksCandidatePage>;
+  findThanksSummary(todoId: number, userId: string): Promise<NudgeThanksSummary>;
 
   findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;
   findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]>;

@@ -173,6 +173,28 @@ describe("문의 E2E", () => {
         expect(response.body.data.message).toBe("문의가 접수되었습니다.");
       });
 
+      it("PAYMENT 카테고리로 결제·구독 문의 접수", async () => {
+        // Given - 인증된 사용자
+        const user = await ctx.helpers.createVerifiedUser(
+          "inquiry-payment@example.com",
+          "Test1234!",
+        );
+
+        // When - PAYMENT 카테고리로 문의 접수 API 호출
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/inquiries")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({
+            category: "PAYMENT",
+            content: "구독을 결제했는데 프리미엄이 적용되지 않습니다. 확인 부탁드립니다.",
+          })
+          .expect(201);
+
+        // Then - 문의 접수 성공 검증
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.message).toBe("문의가 접수되었습니다.");
+      });
+
       it("OTHER 카테고리로 문의 접수", async () => {
         // Given - 인증된 사용자
         const user = await ctx.helpers.createVerifiedUser("inquiry-other@example.com", "Test1234!");

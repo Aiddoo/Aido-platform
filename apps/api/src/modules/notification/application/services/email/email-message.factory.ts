@@ -18,6 +18,12 @@ import {
   type PasswordSetupTemplateData,
 } from "../../templates/email/password-setup.template.js";
 import {
+  getUserReportHtml,
+  getUserReportSubject,
+  getUserReportText,
+  type UserReportTemplateData,
+} from "../../templates/email/user-report.template.js";
+import {
   getVerificationCodeHtml,
   getVerificationCodeSubject,
   getVerificationCodeText,
@@ -79,5 +85,20 @@ export function createInquiryEmail(to: string, data: InquiryTemplateData): Email
       { name: "type", value: "inquiry" },
       { name: "category", value: data.category },
     ],
+  });
+}
+
+export function createUserReportEmail(to: string, data: UserReportTemplateData): EmailMessage {
+  return EmailMessage.create({
+    to,
+    subject: getUserReportSubject(data),
+    html: getUserReportHtml(data),
+    text: getUserReportText(data),
+    tags: [
+      { name: "type", value: "user-report" },
+      { name: "reason", value: data.reason },
+    ],
+    // 같은 신고를 다시 보내도 운영자에게 한 번만 가도록 신고 ID를 멱등 키로 쓴다.
+    idempotencyKey: `user-report:${data.reportId}`,
   });
 }

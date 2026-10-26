@@ -23,7 +23,7 @@ export const addTodoFormSchema = z
     daysOfWeek: z.array(dayOfWeekSchema).default([]),
     source: todoSourceSchema,
   })
-  .refine((data) => !data.isRecurring || data.repeatEndDate !== null, {
+  .refine((data) => !data.isRecurring || data.repeatEndDate != null, {
     error: () => t('todo:form.repeatEndDateRequired'),
     path: ['repeatEndDate'],
   })

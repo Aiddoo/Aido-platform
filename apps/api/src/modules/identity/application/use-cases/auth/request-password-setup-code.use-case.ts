@@ -29,7 +29,7 @@ export class RequestPasswordSetupCode {
   async execute(input: RequestPasswordSetupCodeInput): Promise<{ message: string }> {
     const { userId } = input;
     const user = await this.#dependencies.userRepository.findById(userId);
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
     assertNotDeleted(user);
@@ -38,7 +38,7 @@ export class RequestPasswordSetupCode {
       userId,
       "CREDENTIAL",
     );
-    if (account !== null) {
+    if (account != null) {
       throw new ApplicationException(ErrorCode.USER_0614, { userId });
     }
 

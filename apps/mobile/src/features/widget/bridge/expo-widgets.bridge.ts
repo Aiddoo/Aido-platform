@@ -1,37 +1,22 @@
-import { formatDate } from '@src/shared/utils/date';
+import { readDeviceLocalDateState } from '@src/shared/utils/local-date-clock';
 import Constants from 'expo-constants';
 
-import { toWidgetProps } from '../apis/widget-props.mapper';
+import { toWidgetTimelineEntries } from '../apis/widget-timeline.mapper';
 import { AIDO_WIDGETS } from '../components/widgets';
-import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
+import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
 import type { WidgetBridge } from './widget-bridge';
-
-function nextLocalMidnight(now: Date): Date {
-  const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
-  return midnight;
-}
 
 export function createExpoWidgetsBridge(): WidgetBridge {
   const scheme = Constants.expoConfig?.scheme;
   const appScheme = typeof scheme === 'string' ? scheme : (scheme?.[0] ?? 'aido');
   return {
     async writeSnapshot(snapshot: WidgetSnapshot): Promise<void> {
-      const now = new Date();
-      const localDate = formatDate(now);
-      const currentProps = toWidgetProps(
-        snapshot,
-        WidgetSnapshotPolicy.renderState(snapshot, localDate),
+      const { currentLocalDate, currentTimeZone } = readDeviceLocalDateState();
+      const entries = toWidgetTimelineEntries(snapshot, {
+        now: currentLocalDate,
+        timeZone: currentTimeZone,
         appScheme,
-      );
-
-      const entries =
-        snapshot.state === 'loggedOut'
-          ? [{ date: now, props: currentProps }]
-          : [
-              { date: now, props: currentProps },
-              { date: nextLocalMidnight(now), props: toWidgetProps(snapshot, 'stale', appScheme) },
-            ];
+      });
 
       for (const { widget } of AIDO_WIDGETS) {
         widget.updateTimeline(entries);

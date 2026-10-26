@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import type { Todo as TodoResponse } from "@aido/api";
+import { type Todo as TodoResponse, todoSchema } from "@aido/api";
 import { Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import { TodoCategoryCacheKey } from "#api/modules/planning/infrastructure/cache/categories/todo-category-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -16,6 +17,15 @@ import {
   TODO_CACHE_TTL_MS,
   TodoCacheKey,
 } from "../../cache/todos/todo-cache.keyspace.js";
+
+const FRIEND_TODOS_PAGE_SCHEMA = z.object({
+  items: z.array(todoSchema),
+  pagination: z.object({
+    nextCursor: z.number().nullable(),
+    hasNext: z.boolean(),
+    size: z.number(),
+  }),
+}) satisfies z.ZodType<CursorPaginatedResponse<TodoResponse, number>>;
 
 /**
  * Todo 캐시 포트 어댑터 — CacheService에 위임
@@ -35,8 +45,9 @@ export class TodoCacheAdapter implements TodoCachePort {
     size: number,
   ): Promise<FriendTodosFirstPageCacheRead> {
     const generation = await this.getFriendTodosGeneration(ownerUserId);
-    const page = await this.cacheService.get<CursorPaginatedResponse<TodoResponse, number>>(
+    const page = await this.cacheService.get(
       TodoCacheKey.friendTodosFirstPageVersioned(ownerUserId, generation, startDate, endDate, size),
+      FRIEND_TODOS_PAGE_SCHEMA,
     );
     // page GET이 끝난 뒤 다시 읽어야 둘 사이의 invalidate를 반드시 관측한다.
     const verifiedGeneration = await this.getFriendTodosGeneration(ownerUserId);
@@ -91,7 +102,7 @@ export class TodoCacheAdapter implements TodoCachePort {
 
   private async getFriendTodosGeneration(ownerUserId: string): Promise<string> {
     return (
-      (await this.cacheService.get<string>(TodoCacheKey.friendTodosGeneration(ownerUserId))) ??
+      (await this.cacheService.get(TodoCacheKey.friendTodosGeneration(ownerUserId), z.string())) ??
       FRIEND_TODOS_INITIAL_GENERATION
     );
   }

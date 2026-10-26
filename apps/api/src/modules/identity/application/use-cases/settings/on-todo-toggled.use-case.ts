@@ -45,14 +45,14 @@ export class OnTodoToggled {
         }
 
         const record = await this.#dependencies.preferenceRepository.findByUserId(input.userId);
-        if (record === null) {
+        if (record == null) {
           return;
         }
 
         const preference = UserPreference.reconstitute(record);
         const allCompleted = stats.total === stats.completed;
         const plan = await this.#planTransition(input.userId, preference, today, allCompleted);
-        if (plan === null) {
+        if (plan == null) {
           return;
         }
 
@@ -116,6 +116,6 @@ export class OnTodoToggled {
     const hadYesterdayCompletion =
       yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
     const nextState = preference.planTodoUncompletion(today, hadYesterdayCompletion);
-    return nextState === null ? null : { nextState, reachedStreak3: false };
+    return nextState == null ? null : { nextState, reachedStreak3: false };
   }
 }

@@ -69,4 +69,18 @@ export class UserConsentRepository implements UserConsentRepositoryPort {
       })
       .then((row) => decodeRecord("UserConsent", row));
   }
+
+  async upsertAiDataSharingConsent(
+    userId: string,
+    data: { agreedAt: Date | null; version: string },
+  ): Promise<UserConsent> {
+    const values = { aiDataSharingAgreedAt: data.agreedAt, aiDataSharingVersion: data.version };
+    return this.client.orm.public.UserConsent.where((row) => row.userId.eq(userId))
+      .upsert({
+        conflictOn: encodePatch("UserConsent", { userId }),
+        create: encodeCreate("UserConsent", { userId, ...values }),
+        update: encodePatch("UserConsent", values),
+      })
+      .then((row) => decodeRecord("UserConsent", row));
+  }
 }

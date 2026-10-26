@@ -32,7 +32,14 @@ describe('getTodoCommentFormUnavailableReason', () => {
 
   test('답글을 달 수 없는 댓글이면 답글 불가 사유를 돌려준다', () => {
     const target = createTodoComment({
-      viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: false },
+      viewer: {
+        isLiked: false,
+        canEdit: true,
+        canDelete: true,
+        canReply: false,
+        canReport: false,
+        canBlock: false,
+      },
     });
 
     expect(
@@ -42,7 +49,14 @@ describe('getTodoCommentFormUnavailableReason', () => {
 
   test('수정할 수 없는 댓글이면 수정 불가 사유를 돌려준다', () => {
     const target = createTodoComment({
-      viewer: { isLiked: false, canEdit: false, canDelete: true, canReply: true },
+      viewer: {
+        isLiked: false,
+        canEdit: false,
+        canDelete: true,
+        canReply: true,
+        canReport: false,
+        canBlock: false,
+      },
     });
 
     expect(

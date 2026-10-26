@@ -1,4 +1,5 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
+import { sortBy } from "es-toolkit";
 import sql from "sql-template-tag";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
@@ -21,6 +22,7 @@ import { decodeRecord, encodeCreate } from "#api/platform/database/database-reco
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/database-values";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { withDatabaseTransaction } from "#test/setup/database-context";
@@ -492,10 +494,11 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       status: "FREE",
       expiresAt: distantExpiry,
     });
+    // 자동 갱신 구독은 갱신 웹훅을 기다리는 유예 시간이 끝나는 순간부터 제외한다
     await givenOtherSubscription({
       revenueCatId: "expired-boundary-other",
       status: "ACTIVE",
-      expiresAt: at,
+      expiresAt: new Date(at.getTime() - STORE_RENEWAL_GRACE_MS),
     });
     const foreignUser = UserFixture.create({
       id: createEntityId(),
@@ -511,7 +514,6 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     const body = expiration("exclude-ineligible-chains");
     body.event.expiration_at_ms = distantExpiry.getTime();
     // When
-    expect(await repository.findOtherEntitlementExpiry(userId, transactionId, at)).toBeNull();
     await useCase.execute({ body });
     // Then
     expect(await snapshot()).toMatchObject({
@@ -522,19 +524,23 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(failures).toEqual([]);
   });
 
-  it("유효한 다른 체인이 여러 개면 가장 늦은 만료일 하나를 ORM으로 조회한다", async () => {
+  it("스토어 엔타이틀먼트 조회는 한 사용자의 체인 전체를 한 번에 읽는다", async () => {
     // Given
     const shorterExpiry = new Date("2027-01-05T12:00:00.000Z");
     await givenOtherSubscription({ revenueCatId: "shorter-other", expiresAt: shorterExpiry });
     await givenOtherSubscription({ status: "CANCELLED", expiresAt: nextExpiry });
     // When
-    const expiry = await repository.findOtherEntitlementExpiry(userId, transactionId, at);
+    const entitlements = await repository.findStoreEntitlements(userId);
     // Then
-    expect(expiry).toEqual(nextExpiry);
+    expect(sortBy(entitlements, [(entitlement) => entitlement.revenueCatId])).toEqual([
+      { revenueCatId: transactionId, status: "ACTIVE", expiresAt: previousExpiry },
+      { revenueCatId: "other-subscription-chain", status: "CANCELLED", expiresAt: nextExpiry },
+      { revenueCatId: "shorter-other", status: "ACTIVE", expiresAt: shorterExpiry },
+    ]);
   });
 
   it.each(["FREE", "CANCELLED"] as const)(
-    "기존 %s 사용자에게 다른 활성 체인이 있어도 자동으로 권한을 되살리지 않는다",
+    "기존 %s 사용자의 다른 활성 체인이 다른 사용자에게 옮겨 갔으면 권한을 되살리지 않는다",
     async (subscriptionStatus) => {
       // Given
       await repository.updateUserSubscriptionStatus(userId, {
@@ -542,6 +548,14 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         subscriptionExpiresAt: nextExpiry,
       });
       await givenOtherSubscription();
+      const receiver = UserFixture.create({
+        id: createEntityId(),
+        email: `transfer-receiver-${subscriptionStatus.toLowerCase()}@example.com`,
+        userTag: `BILLT${subscriptionStatus.slice(0, 3)}`,
+      });
+      await client.orm.public.User.create(encodeCreate("User", receiver));
+      await repository.takeOverChains(userId, receiver.id);
+      await repository.claimChain(transactionId, userId);
       // When
       await useCase.execute({ body: expiration("no-automatic-reactivation") });
       // Then

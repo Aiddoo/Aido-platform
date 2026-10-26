@@ -81,7 +81,7 @@ export class TodoCreationWriter {
       ...draft,
       sortOrder: maxSortOrder + 1,
     });
-    if (items !== undefined && items.length > 0)
+    if (items != null && items.length > 0)
       await this.#dependencies.todoRepository.createInlineItems(created.getId().getValue(), items);
     return created;
   }
@@ -105,9 +105,7 @@ export class TodoCreationWriter {
       sortOrder: maxSortOrder + 1 + index,
       startDate: parseDateOnly(date),
       scheduledTime:
-        data.scheduledTime === undefined || data.scheduledTime === null
-          ? null
-          : parseLocalDateTime(date, data.scheduledTime, timezone),
+        data.scheduledTime == null ? null : parseLocalDateTime(date, data.scheduledTime, timezone),
     }));
     return this.#dependencies.todoRepository.createMany(items, recurrenceGroupId, data.items);
   }

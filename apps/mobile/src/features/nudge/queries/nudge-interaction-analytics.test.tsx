@@ -19,6 +19,10 @@ jest.mock('@src/shared/analytics', () => ({
   useTrack: () => ({ trackEvent: mockTrackEvent }),
 }));
 
+jest.mock('@src/shared/hooks/use-app-toast', () => ({
+  useAppToast: () => ({ error: jest.fn() }),
+}));
+
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
   useQueryClient: () => mockQueryClient,

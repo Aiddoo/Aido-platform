@@ -6,18 +6,29 @@ import type {
   TodoCommentRecord,
 } from "../../models/comments/todo-comment.types.js";
 
+const NO_BLOCKED_AUTHORS: ReadonlySet<string> = new Set();
+
+/**
+ * viewer와 차단 관계인 작성자의 댓글은 대화 위치만 남기고 삭제된 댓글처럼 가린다.
+ * isAuthorBlocked를 모르는 구 앱도 삭제된 댓글로 그려 차단한 사람의 이름·내용이 보이지 않는다.
+ */
 export function toTodoCommentResponse(
   record: TodoCommentRecord,
   viewerId: string,
   likedCommentIds: ReadonlySet<string>,
+  blockedAuthorIds: ReadonlySet<string> = NO_BLOCKED_AUTHORS,
 ): TodoComment {
-  const isDeleted = record.deletedAt !== null;
   const authorId = record.authorId;
+  const isAuthorBlocked = blockedAuthorIds.has(authorId);
+  const isHidden = record.deletedAt != null || isAuthorBlocked;
+  const isParentAuthorBlocked =
+    record.parentAuthorId != null && blockedAuthorIds.has(record.parentAuthorId);
   const viewer = getTodoCommentViewerPermissions({
-    isDeleted,
+    isDeleted: isHidden,
     isLiked: likedCommentIds.has(record.id),
     authorId,
     viewerId,
+    todoOwnerId: record.todoOwnerId,
   });
 
   return {
@@ -25,27 +36,39 @@ export function toTodoCommentResponse(
     threadId: record.rootId ?? record.id,
     parentId: record.parentId,
     depth: record.depth,
-    author: !isDeleted
+    author: !isHidden
       ? {
           id: authorId,
           name: record.authorName,
+          userTag: record.authorUserTag ?? undefined,
           profileImage: record.authorProfileImage,
           isTodoOwner: authorId === record.todoOwnerId,
         }
       : null,
-    content: isDeleted ? null : record.content,
-    isDeleted,
-    isEdited: record.editedAt !== null,
-    likeCount: isDeleted ? 0 : record.likeCount,
+    content: isHidden ? null : record.content,
+    isDeleted: isHidden,
+    isAuthorBlocked,
+    isEdited: record.editedAt != null,
+    likeCount: isHidden ? 0 : record.likeCount,
     replyCount: record.replyCount,
     replyTo:
-      record.parentId === null
+      record.parentId == null
         ? null
-        : { commentId: record.parentId, authorName: record.parentAuthorName },
+        : {
+            commentId: record.parentId,
+            authorName: isParentAuthorBlocked ? null : record.parentAuthorName,
+          },
     viewer,
     createdAt: record.createdAt,
     editedAt: record.editedAt,
   };
+}
+
+/** 응답에 실릴 수 있는 작성자 ID. 차단 관계를 한 번에 조회하는 후보로 쓴다. */
+export function collectCommentAuthorIds(records: readonly TodoCommentRecord[]): string[] {
+  return records.flatMap((record) =>
+    record.parentAuthorId == null ? [record.authorId] : [record.authorId, record.parentAuthorId],
+  );
 }
 
 export function collectCommentIds(records: readonly TodoCommentRecord[]): string[] {

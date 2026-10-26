@@ -63,7 +63,7 @@ export class Register {
     const email = Email.of(input.email).value;
 
     const existingUser = await this.#dependencies.userRepository.findByEmail(email);
-    if (existingUser !== null) {
+    if (existingUser != null) {
       throw new ApplicationException(ErrorCode.EMAIL_0501, { email });
     }
 

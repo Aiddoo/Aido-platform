@@ -62,7 +62,9 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
                 errorReporter.addBreadcrumb({
                   category: 'http',
                   message: 'query_boundary_expected_state',
-                  data: { code: isApiError(error) ? error.code : undefined, statusCode: 404 },
+                  data: isApiError(error)
+                    ? { code: error.code, statusCode: error.status }
+                    : undefined,
                 }),
               )
               .with('error', () =>

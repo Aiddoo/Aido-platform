@@ -17,6 +17,11 @@ const rawTodoCommentRouteSchema = z
   .catch({});
 
 export type TodoCommentView = 'overview' | 'conversation';
+/**
+ * `screen`은 Stack 화면이다. 댓글 개요(`/todo/[todoId]`)에서 대화(`/todo/[todoId]/comments/[commentId]`)를
+ * native push하고 뒤로가기는 pop이다. `pane`은 펼친 피드의 상세 영역이라 Stack이 없어 같은 URL의 search만 바꾼다.
+ */
+export type TodoCommentPresentation = 'screen' | 'pane';
 export type TodoCommentNavigationDestination = 'conversation' | 'reply' | 'edit';
 
 export type TodoCommentRoute =
@@ -39,7 +44,7 @@ export type TodoCommentRouteAction =
   | { type: 'startReply'; commentId: string }
   | { type: 'startEdit'; commentId: string }
   | { type: 'cancelForm' }
-  | { type: 'completeForm' }
+  | { type: 'completeForm'; focusCommentId?: string }
   | { type: 'changeSort'; sort: TodoCommentSort };
 
 export interface TodoCommentRouteParams {
@@ -49,6 +54,27 @@ export interface TodoCommentRouteParams {
   intent: 'thread' | 'reply' | 'edit' | 'create' | undefined;
   returnTo: 'overview' | 'thread' | undefined;
 }
+
+/** 대화 화면 URL. 읽기만 하면 intent가 없고, 작성기를 연 채 진입하면 reply·edit와 복귀 문맥을 둔다. */
+export interface TodoCommentThreadParams {
+  [key: string]: string | number | undefined;
+  commentId: string;
+  sort: TodoCommentSort;
+  intent: 'reply' | 'edit' | undefined;
+  returnTo: 'overview' | 'thread' | undefined;
+}
+
+export type TodoCommentRouteNavigation =
+  | { type: 'none' }
+  | { type: 'setParams'; params: TodoCommentRouteParams | TodoCommentThreadParams }
+  | {
+      type: 'push';
+      href: {
+        pathname: '/todo/[todoId]/comments/[commentId]';
+        params: TodoCommentThreadParams & { todoId: number };
+      };
+    }
+  | { type: 'back' };
 
 function createOverviewRoute(sort: TodoCommentSort): TodoCommentRoute {
   return { sort, view: 'overview', form: null };
@@ -67,8 +93,8 @@ function getFormReturnView(route: TodoCommentRoute): TodoCommentView {
 export function parseTodoCommentRoute(params: unknown): TodoCommentRoute {
   const rawRoute = rawTodoCommentRouteSchema.parse(params);
   const sort = todoCommentSortSchema.parse(rawRoute.sort);
-  const hasComment = rawRoute.comment !== undefined;
-  const hasIntent = rawRoute.intent !== undefined;
+  const hasComment = rawRoute.comment != null;
+  const hasIntent = rawRoute.intent != null;
 
   if (!hasComment && !hasIntent) {
     return createOverviewRoute(sort);
@@ -167,7 +193,10 @@ export function reduceTodoCommentRoute(
         return route;
       }
 
-      return route.view === 'overview' ? createOverviewRoute(route.sort) : { ...route, form: null };
+      // 답글을 게시하면 새 답글을 focus해 방금 쓴 글이 강조된 채 보이게 한다.
+      return route.view === 'overview'
+        ? createOverviewRoute(route.sort)
+        : { ...route, commentId: action.focusCommentId ?? route.commentId, form: null };
     case 'changeSort':
       return route.sort === action.sort ? route : { ...route, sort: action.sort };
   }
@@ -197,6 +226,105 @@ export function serializeTodoCommentRoute(route: TodoCommentRoute): TodoCommentR
     comment: route.commentId,
     intent: route.form.type,
     returnTo: route.form.returnView === 'overview' ? 'overview' : 'thread',
+  };
+}
+
+function serializeTodoCommentThreadRoute(
+  route: Extract<TodoCommentRoute, { view: 'conversation' }>,
+): TodoCommentThreadParams {
+  return {
+    commentId: route.commentId,
+    sort: route.sort,
+    intent: route.form?.type,
+    returnTo:
+      route.form == null ? undefined : route.form.returnView === 'overview' ? 'overview' : 'thread',
+  };
+}
+
+/** 대화 화면 href. 알림과 댓글 개요가 같은 모양으로 대화를 연다. */
+export function createTodoCommentThreadHref({
+  todoId,
+  route,
+}: {
+  todoId: number;
+  route: Extract<TodoCommentRoute, { view: 'conversation' }>;
+}): Extract<TodoCommentRouteNavigation, { type: 'push' }>['href'] {
+  return {
+    pathname: '/todo/[todoId]/comments/[commentId]',
+    params: { todoId, ...serializeTodoCommentThreadRoute(route) },
+  };
+}
+
+/**
+ * 한 댓글 상태를 Stack 화면으로 열 때 쌓을 화면들. 대화는 개요 위에 쌓아 뒤로가기가 그 할 일의 댓글 개요로
+ * 올라가게 한다. 펼친 pane에서 접힌 화면으로 넘길 때와 알림으로 열 때 같은 순서를 쓴다.
+ */
+export function createTodoCommentScreenHrefs({
+  todoId,
+  route,
+}: {
+  todoId: number;
+  route: TodoCommentRoute;
+}) {
+  const overviewHref = {
+    pathname: '/todo/[todoId]',
+    params: {
+      todoId,
+      ...serializeTodoCommentRoute(
+        route.view === 'overview' ? route : createOverviewRoute(route.sort),
+      ),
+    },
+  } as const;
+
+  return {
+    overviewHref,
+    threadHref:
+      route.view === 'conversation' ? createTodoCommentThreadHref({ todoId, route }) : null,
+  };
+}
+
+interface ResolveTodoCommentRouteNavigationParams {
+  todoId: number;
+  route: TodoCommentRoute;
+  action: TodoCommentRouteAction;
+  presentation: TodoCommentPresentation;
+}
+
+/**
+ * 댓글 route 전이를 실제 이동 방법으로 바꾼다.
+ * 화면은 개요 → 대화를 한 단계 push하고 대화 → 개요를 pop한다. 같은 대화 안의 focus·작성기 변화는
+ * 현재 화면 search만 바꿔 history를 늘리지 않는다. pane은 Stack이 없어 모든 전이를 search로 처리한다.
+ */
+export function resolveTodoCommentRouteNavigation({
+  todoId,
+  route,
+  action,
+  presentation,
+}: ResolveTodoCommentRouteNavigationParams): TodoCommentRouteNavigation {
+  const nextRoute = reduceTodoCommentRoute(route, action);
+
+  if (areTodoCommentRoutesEqual(route, nextRoute)) {
+    return { type: 'none' };
+  }
+
+  if (presentation === 'pane') {
+    return { type: 'setParams', params: serializeTodoCommentRoute(nextRoute) };
+  }
+
+  if (route.view === 'overview' && nextRoute.view === 'conversation') {
+    return { type: 'push', href: createTodoCommentThreadHref({ todoId, route: nextRoute }) };
+  }
+
+  if (route.view === 'conversation' && nextRoute.view === 'overview') {
+    return { type: 'back' };
+  }
+
+  return {
+    type: 'setParams',
+    params:
+      nextRoute.view === 'conversation'
+        ? serializeTodoCommentThreadRoute(nextRoute)
+        : serializeTodoCommentRoute(nextRoute),
   };
 }
 

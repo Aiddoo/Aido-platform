@@ -80,7 +80,7 @@ function orderReplayRows(
   const rowsByRequestId = new Map(rows.map((row) => [row.clientRequestId, row]));
   const ordered = command.items.flatMap((item) => {
     const row = rowsByRequestId.get(item.clientRequestId);
-    return row === undefined ? [] : [row];
+    return row == null ? [] : [row];
   });
 
   if (
@@ -101,7 +101,8 @@ function isLegacyReplay(ordered: readonly ReplayRow[], command: TodoCommentChain
     const item = command.items[index];
 
     return (
-      item !== undefined &&
+      item != null &&
+      // nullish-strict: undefined는 목록 밖 항목, null은 루트 댓글의 부모다
       expectedParentId !== undefined &&
       row.todoId === command.todoId &&
       row.authorId === command.authorId &&
@@ -117,7 +118,7 @@ function isIdempotencyRace(error: unknown): boolean {
   }
 
   const targets = uniqueConstraintTargets(error);
-  if (targets === undefined) {
+  if (targets == null) {
     // PostgreSQL unique 오류의 constraint 이름으로 멱등성 충돌을 식별한다.
     // 이 insert의 id는 DB가 만들고, 유일한 업무 유니크는 authorId/clientRequestId다.
     return true;
@@ -142,7 +143,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       ).first(),
     );
 
-    return row === null ? null : toAggregate(row);
+    return row == null ? null : toAggregate(row);
   }
 
   async findCommentChainReplay(input: TodoCommentChainCommand): Promise<string[] | null> {
@@ -175,7 +176,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       return ordered.map((row) => row.id);
     }
 
-    const allLegacy = ordered.every((row) => row.requestFingerprint === null);
+    const allLegacy = ordered.every((row) => row.requestFingerprint == null);
     if (allLegacy && isLegacyReplay(ordered, input)) {
       return ordered.map((row) => row.id);
     }
@@ -415,19 +416,19 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       ).first(),
     );
 
-    if (existingLike !== null && existingLike.isActive) {
+    if (existingLike != null && existingLike.isActive) {
       return {
         commentId,
         commentAuthorId: comment.authorId,
         changed: false,
         isLiked: true,
         likeCount: comment.likeCount,
-        wasEverNotified: existingLike.notifiedAt !== null,
+        wasEverNotified: existingLike.notifiedAt != null,
       };
     }
 
     const changed =
-      existingLike !== null
+      existingLike != null
         ? {
             count: await this.client.orm.public.TodoCommentLike.where((row) =>
               and(row.commentId.eq(commentId), row.userId.eq(userId), row.isActive.eq(false)),
@@ -463,7 +464,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
         .returning("likeCount")
         .build(),
     );
-    if (counter === undefined) throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
+    if (counter == null) throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
 
     return {
       commentId,
@@ -471,7 +472,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       changed: true,
       isLiked: true,
       likeCount: counter.likeCount,
-      wasEverNotified: existingLike !== null && existingLike.notifiedAt !== null,
+      wasEverNotified: existingLike != null && existingLike.notifiedAt != null,
     };
   }
 
@@ -492,7 +493,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
     )
       .select("id", "authorId", "rootId")
       .first();
-    return row === null ? null : { recipientId: row.authorId, threadRootId: row.rootId ?? row.id };
+    return row == null ? null : { recipientId: row.authorId, threadRootId: row.rootId ?? row.id };
   }
 
   async markLikeNotified(commentId: string, userId: string): Promise<void> {
@@ -531,14 +532,14 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       ).first(),
     );
 
-    if (existingLike === null || !existingLike.isActive) {
+    if (existingLike == null || !existingLike.isActive) {
       return {
         commentId,
         commentAuthorId: comment.authorId,
         changed: false,
         isLiked: false,
         likeCount: comment.likeCount,
-        wasEverNotified: existingLike !== null && existingLike.notifiedAt !== null,
+        wasEverNotified: existingLike != null && existingLike.notifiedAt != null,
       };
     }
 
@@ -569,7 +570,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
         .returning("likeCount")
         .build(),
     );
-    if (counter === undefined) throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
+    if (counter == null) throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
 
     const like = decodeRecord(
       "TodoCommentLike",
@@ -586,7 +587,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       changed: true,
       isLiked: false,
       likeCount: counter.likeCount,
-      wasEverNotified: like !== null && like.notifiedAt !== null,
+      wasEverNotified: like != null && like.notifiedAt != null,
     };
   }
 

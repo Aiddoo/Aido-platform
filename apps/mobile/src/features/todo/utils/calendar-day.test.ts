@@ -8,9 +8,9 @@ jest.mock('@src/shared/utils/date', () => ({
 
 import { isDateToday, isSaturday, isSunday } from '@src/shared/utils/date';
 
-const mockIsDateToday = isDateToday as jest.Mock;
-const mockIsSunday = isSunday as jest.Mock;
-const mockIsSaturday = isSaturday as jest.Mock;
+const mockIsDateToday = jest.mocked(isDateToday);
+const mockIsSunday = jest.mocked(isSunday);
+const mockIsSaturday = jest.mocked(isSaturday);
 
 const DATE = new Date('2025-03-17'); // 임의 날짜 (월요일)
 const TODAY = new Date('2025-03-20');

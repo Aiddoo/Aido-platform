@@ -1,4 +1,4 @@
-import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { ThanksSummaryRow } from '@src/features/nudge/components/nudge-interactions/thanks-summary-row';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useTodoSheetDateParam } from '@src/features/todo/hooks/use-todo-sheet-params';
@@ -122,11 +122,16 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   return (
     <VStack gap={8}>
       {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
-        <NudgeThanksButton
-          onPress={() =>
-            onClose({ type: 'replace', href: todoThanksSheetHref({ todoId: todo.id }) })
-          }
-        />
+        <QueryErrorBoundary resetKeys={[todo.id]} fallback={() => null}>
+          <Suspense fallback={<ThanksSummaryRow.Loading />}>
+            <ThanksSummaryRow
+              todoId={todo.id}
+              onThanksPress={() =>
+                onClose({ type: 'replace', href: todoThanksSheetHref({ todoId: todo.id }) })
+              }
+            />
+          </Suspense>
+        </QueryErrorBoundary>
       )}
       <PressableFeedback
         onPress={() => openActionSheet('edit')}

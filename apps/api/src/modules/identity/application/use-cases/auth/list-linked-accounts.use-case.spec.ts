@@ -42,7 +42,7 @@ describe("ListLinkedAccounts — 로그인 수단과 소셜 연결 상태", () =
         .filter((account) => account.provider !== "GOOGLE")
         .every(
           (account) =>
-            !account.linked && account.providerAccountId === null && account.linkedAt === null,
+            !account.linked && account.providerAccountId == null && account.linkedAt == null,
         ),
     ).toBe(true);
     expect(result.canUnlink).toBe(true);

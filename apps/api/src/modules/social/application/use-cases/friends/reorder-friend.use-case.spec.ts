@@ -1,3 +1,5 @@
+import { assert } from "vitest";
+
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
 import { ReorderFriend } from "./reorder-friend.use-case.js";
@@ -14,16 +16,17 @@ describe("친구 목록 정렬", () => {
   function fixtureWithFriends() {
     const fixture = createSocialFriendFixture();
     fixture.addUser("me");
-    const friends = ["first", "second", "third"].map((id, index) => {
+    const addFriend = (id: string, sortOrder: number) => {
       fixture.addUser(id);
-      return fixture.addMutual("me", id, index);
-    });
+      return fixture.addMutual("me", id, sortOrder);
+    };
+    const friends = [addFriend("first", 0), addFriend("second", 1), addFriend("third", 2)] as const;
     return { ...fixture, friends };
   }
   it("타인의 관계나 없는 기준 관계이면 FOLLOW_0910으로 거부하고 정렬을 유지한다", async () => {
     // Given
     const fixture = fixtureWithFriends();
-    const first = fixture.friends[0]!;
+    const [first] = fixture.friends;
     const before = structuredClone([...fixture.followRepository.follows.values()]);
     // When / Then
     await expect(
@@ -46,7 +49,7 @@ describe("친구 목록 정렬", () => {
   it("자기 자신을 기준으로 요청하면 쓰기 없이 기존 순서를 반환한다", async () => {
     // Given
     const fixture = fixtureWithFriends();
-    const first = fixture.friends[0]!;
+    const [first] = fixture.friends;
     const update = vi.spyOn(fixture.followRepository, "updateFollowSortOrder");
     const shift = vi.spyOn(fixture.followRepository, "shiftFriendSortOrders");
     // When
@@ -85,11 +88,12 @@ describe("친구 목록 정렬", () => {
   }>)("$name 이동하면 자신의 목록 구간만 재정렬한다", async (input) => {
     // Given
     const fixture = fixtureWithFriends();
-    const source = fixture.friends[input.source]!;
+    const source = fixture.friends[input.source];
+    assert.exists(source);
     // When
     await new ReorderFriend(fixture).execute({
       followId: source.id,
-      targetFollowId: input.target === undefined ? undefined : fixture.friends[input.target]?.id,
+      targetFollowId: input.target == null ? undefined : fixture.friends[input.target]?.id,
       userId: "me",
       position: input.position,
     });

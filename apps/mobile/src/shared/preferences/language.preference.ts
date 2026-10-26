@@ -9,7 +9,7 @@ export type ResolvedLanguage = 'ko' | 'en';
 const KEY = 'aido_language';
 
 export function isLanguageMode(value: unknown): value is LanguageMode {
-  return typeof value === 'string' && LANGUAGE_MODES.includes(value as LanguageMode);
+  return LANGUAGE_MODES.some((candidate) => candidate === value);
 }
 
 export function readLanguageMode(storage: SyncStorage): LanguageMode {

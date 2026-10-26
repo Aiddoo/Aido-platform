@@ -1,3 +1,4 @@
+import { pushNotificationDataSchema } from "@aido/api";
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
@@ -131,4 +132,34 @@ describe("PushNotificationPayloadFactory", () => {
       action: { type: "BROWSER", url: "https://aido.kr/notice" },
     });
   });
+
+  it.each([
+    { type: "INVITE_JOINED" as const, purpose: "TRANSACTIONAL" as const },
+    { type: "INVITE_REWARDED" as const, purpose: "TRANSACTIONAL" as const },
+    { type: "PREMIUM_GRANT_ENDING" as const, purpose: "ENGAGEMENT" as const },
+  ])(
+    "$type payload는 공유 푸시 data 스키마를 통과하고 타입을 그대로 싣는다",
+    ({ type, purpose }) => {
+      // Given
+      const data = {
+        userId: "user-1",
+        type,
+        title: "제목",
+        body: "본문",
+        metadata: { redemptionId: "redemption-1" },
+        campaignKey: "invite_joined_v1",
+        purpose,
+      };
+
+      // When
+      const payload = factory.createSingle({ data, notificationId: 7, dispatchId: 8 });
+
+      // Then
+      expect(pushNotificationDataSchema.parse(payload.data)).toMatchObject({
+        notificationId: 7,
+        type,
+        action: { type: "DEEP_LINK" },
+      });
+    },
+  );
 });

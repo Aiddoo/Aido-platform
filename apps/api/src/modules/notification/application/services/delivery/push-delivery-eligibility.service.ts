@@ -1,3 +1,5 @@
+import { uniq } from "es-toolkit";
+
 import { resolveDeliveryTimezone, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { isNightTime } from "../../../domain/services/delivery/night-time.js";
@@ -87,7 +89,7 @@ export class PushDeliveryEligibilityService {
   async loadBatchRecipients(
     userIds: readonly string[],
   ): Promise<ReadonlyMap<string, BatchPushDeliveryRecipient>> {
-    const uniqueUserIds = [...new Set(userIds)];
+    const uniqueUserIds = uniq(userIds);
     const [preferences, consents] = await Promise.all([
       this.#dependencies.userSettings.getPreferenceRecordsByUserIds(uniqueUserIds),
       this.#dependencies.userSettings.getConsentRecordsByUserIds(uniqueUserIds),

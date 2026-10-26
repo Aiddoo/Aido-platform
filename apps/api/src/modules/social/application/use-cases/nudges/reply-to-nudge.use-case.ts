@@ -47,7 +47,7 @@ export class ReplyToNudge {
         input.nudgeId,
         input.userId,
       );
-      if (existingNudge === null || existingNudge.receiverId !== input.userId) {
+      if (existingNudge == null || existingNudge.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
 
@@ -55,14 +55,14 @@ export class ReplyToNudge {
         existingNudge.todoId,
         input.userId,
       );
-      if (todo === null) {
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.NUDGE_1109);
       }
       const record = await this.#dependencies.nudgeRepository.findInteractionById(
         input.nudgeId,
         input.userId,
       );
-      if (record === null || record.receiverId !== input.userId) {
+      if (record == null || record.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
       const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(
@@ -101,7 +101,7 @@ export class ReplyToNudge {
         nudge.id,
         input.userId,
       );
-      if (updatedNudge === null) {
+      if (updatedNudge == null) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
       return { ...updatedNudge, isAvailable: true };

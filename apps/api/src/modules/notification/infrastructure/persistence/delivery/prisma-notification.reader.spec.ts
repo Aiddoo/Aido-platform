@@ -7,7 +7,6 @@ import {
   createMockTransactionHost,
   databaseFixture,
   nativeRows,
-  projectedResult,
 } from "#test/mocks/database.mock";
 import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
@@ -185,12 +184,10 @@ describe("PrismaNotificationReader", () => {
 
   it("이미 알림 받은 수신자를 distinct Set으로 반환한다", async () => {
     const notificationDate = new Date("2026-02-06T00:00:00.000Z");
-    asMock(db.orm.public.Notification.groupBy("userId").aggregate).mockResolvedValue(
-      projectedResult([
-        { userId: "user-1", count: 1 },
-        { userId: "user-3", count: 1 },
-      ]),
-    );
+    asMock(db.orm.public.Notification.groupBy("userId").aggregate).mockResolvedValue([
+      { userId: "user-1", count: 1 },
+      { userId: "user-3", count: 1 },
+    ]);
 
     await expect(
       reader.findAlreadyNotifiedUserIds({

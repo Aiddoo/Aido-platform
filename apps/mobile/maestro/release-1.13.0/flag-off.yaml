@@ -1,0 +1,36 @@
+appId: com.aido.mobile
+name: 서버 초대 기능이 꺼져 있으면 진입점이 숨겨지고 링크는 사용 불가 안내(INVITE_2105)를 보여 준다
+tags:
+  - flag-off
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+---
+# 사전 조건: 로컬 API를 INVITE_ENABLED=false 로 다시 시작한다(README). 앱도 새로 시작해 가용성을 다시 읽는다.
+- runFlow: subflows/login-invitee.yaml
+# 진입점이 보이지 않는다
+- openLink: ${QA_SCHEME}://friends
+- extendedWaitUntil:
+    visible: '아직 친구가 없어요|No friends yet'
+    timeout: 20000
+- assertNotVisible:
+    id: friends-empty-invite
+- openLink: ${QA_SCHEME}://mypage
+- extendedWaitUntil:
+    visible: '마이|Me'
+    timeout: 20000
+- assertNotVisible:
+    id: mypage-invite-card
+# 링크는 사용 불가 안내를 보여 준다
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    label: INVITE_2105 카드
+    visible:
+      id: invite-result-disabled
+    timeout: 20000
+- assertNotVisible:
+    id: invite-card-redeem
+- takeScreenshot: 1.13.0-flag-off

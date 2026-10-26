@@ -105,7 +105,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
             followerId: input.followerId,
             followingId: input.followingId,
             status: input.status,
-            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+            ...(input.sortOrder != null && { sortOrder: input.sortOrder }),
           }),
         ),
       );
@@ -130,12 +130,12 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         and(row.followerId.eq(followerId), row.followingId.eq(followingId)),
       ).first(),
     );
-    return row === null ? null : PrismaFollowRepository.toFriendship(row);
+    return row == null ? null : PrismaFollowRepository.toFriendship(row);
   }
 
   async findByIdWithUser(id: string): Promise<FollowWithUser | null> {
     const row = decodeRecord("Follow", await this.followsWithUser.where({ id }).first());
-    return row === null ? null : PrismaFollowRepository.toWithUser(row);
+    return row == null ? null : PrismaFollowRepository.toWithUser(row);
   }
 
   async update(id: string, input: UpdateFollowInput): Promise<Friendship> {
@@ -168,7 +168,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
   async findMutualFriends(params: FindFollowsParams): Promise<FollowWithUser[]> {
     const { userId, cursor, size, search } = params;
     const pattern =
-      search === undefined
+      search == null
         ? undefined
         : `%${search.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
     let follows = this.followsWithUser
@@ -178,7 +178,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
           row.status.eq("ACCEPTED"),
           row.following.some((user) =>
             and(
-              pattern !== undefined ? user.userTag.ilike(pattern) : all(),
+              pattern != null ? user.userTag.ilike(pattern) : all(),
               user.following.some((back) =>
                 and(
                   back.followerId.neq(userId),
@@ -193,11 +193,11 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       .orderBy((row) => row.sortOrder.asc())
       .orderBy((row) => row.id.asc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Follow.where({ id: cursor })
         .select("id", "sortOrder")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       follows = follows.cursor(anchor);
     }
     const rows = decodeRecord("Follow", await follows.all());
@@ -211,11 +211,11 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Follow.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       follows = follows.cursor(anchor);
     }
     const rows = decodeRecord("Follow", await follows.all());
@@ -229,11 +229,11 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Follow.where({ id: cursor })
         .select("id", "createdAt")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       follows = follows.cursor(anchor);
     }
     const rows = decodeRecord("Follow", await follows.all());
@@ -247,7 +247,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         and(row.id.eq(id), row.followerId.eq(followerId), row.status.eq("ACCEPTED")),
       ).first(),
     );
-    return row === null ? null : PrismaFollowRepository.toFriendship(row);
+    return row == null ? null : PrismaFollowRepository.toFriendship(row);
   }
 
   async getMaxSortOrderForFriends(followerId: string): Promise<number> {
@@ -275,7 +275,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         functions.gte(fields.sortOrder, fromSortOrder),
       ),
     );
-    if (toSortOrder !== null)
+    if (toSortOrder != null)
       mutation = mutation.where((fields, functions) =>
         functions.lte(fields.sortOrder, toSortOrder),
       );
@@ -348,7 +348,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         .select("id")
         .first(),
     );
-    return user !== null;
+    return user != null;
   }
 
   async getUserDisplayName(userId: string): Promise<string> {
@@ -443,6 +443,11 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         WHERE u.id <> ${viewerId}
           AND u."deletedAt" IS NULL
           AND u.status = 'ACTIVE'
+          AND NOT EXISTS (
+            SELECT 1 FROM "UserBlock" b
+            WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = u.id)
+               OR (b."blockerId" = u.id AND b."blockedId" = ${viewerId})
+          )
           AND (
             u."userTag" ILIKE '%' || ${upperTag} || '%'
             OR p.name ILIKE '%' || ${nfcQuery} || '%'
@@ -477,6 +482,8 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         user.id.neq(viewerId),
         user.deletedAt.isNull(),
         user.status.eq("ACTIVE"),
+        user.initiatedBlocks.none((block) => block.blockedId.eq(viewerId)),
+        user.receivedBlocks.none((block) => block.blockerId.eq(viewerId)),
         or(
           user.userTag.ilike(`%${upperTag}%`),
           user.profile.some((profile) => profile.name.ilike(`%${nfcQuery}%`)),

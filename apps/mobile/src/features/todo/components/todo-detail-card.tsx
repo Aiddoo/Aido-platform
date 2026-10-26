@@ -1,18 +1,27 @@
-import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { ThanksSummaryRow } from '@src/features/nudge/components/nudge-interactions/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { ChatBubbleIcon, EyeIcon, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { formatFullDate } from '@src/shared/utils/date';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  ChatBubbleIcon,
+  EyeIcon,
+  HStack,
+  QueryErrorBoundary,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
+import { Suspense } from 'react';
 
 import type { TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
@@ -30,7 +39,7 @@ export function TodoDetailCard() {
       <TodoOwnerLine detail={detail} />
       <TodoBody detail={detail} />
       <TodoMetricLine detail={detail} />
-      <TodoDetailThanksAction detail={detail} />
+      <TodoDetailThanksSummary detail={detail} />
     </VStack>
   );
 }
@@ -39,6 +48,7 @@ type TodoDetailSectionProps = { detail: TodoDetails };
 
 function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
   const { t } = useTranslation('todo');
+  const dateFormatContext = useDateFormatContext();
   const ownerName = detail.owner.name ?? t('detail.unknownOwner');
 
   return (
@@ -49,7 +59,7 @@ function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
           {ownerName}
         </Text>
         <Text size="e1" shade={5}>
-          {formatFullDate(detail.todo.startDate)}
+          {formatDateKeyLabel(detail.todo.startDate, 'fullDate', dateFormatContext)}
         </Text>
       </VStack>
     </HStack>
@@ -164,12 +174,23 @@ TodoDetailCard.Loading = function Loading() {
   );
 };
 
-function TodoDetailThanksAction({ detail }: TodoDetailSectionProps) {
-  const { data: me } = useQuery(useGetMeQueryOptions());
+function TodoDetailThanksSummary({ detail }: TodoDetailSectionProps) {
   const push = useSingleTap(router.push);
-  return NudgeInteractionPolicy.isThankableTodo(detail.todo, {
-    isOwner: me?.id === detail.owner.id,
-  }) ? (
-    <NudgeThanksButton onPress={() => push(todoThanksSheetHref({ todoId: detail.todo.id }))} />
-  ) : null;
+  const isThankable = NudgeInteractionPolicy.isThankableTodo(detail.todo, {
+    isOwner: detail.permissions.canEdit,
+  });
+  if (!isThankable) {
+    return null;
+  }
+
+  return (
+    <QueryErrorBoundary resetKeys={[detail.todo.id]} fallback={() => null}>
+      <Suspense fallback={<ThanksSummaryRow.Loading />}>
+        <ThanksSummaryRow
+          todoId={detail.todo.id}
+          onThanksPress={() => push(todoThanksSheetHref({ todoId: detail.todo.id }))}
+        />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
 }

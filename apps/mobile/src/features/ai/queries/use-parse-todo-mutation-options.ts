@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
+import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -10,6 +11,7 @@ import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
+import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
 
 export const useParseTodoMutationOptions = () => {
   const aiService = useAiService();
@@ -28,6 +30,12 @@ export const useParseTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.usage() });
     },
     onError: (error) => {
+      // 동의 안내는 AI를 요청한 화면이 띄우고, 동의하면 같은 요청을 다시 보낸다
+      if (isAiDataSharingConsentRequiredError(error)) {
+        markAiDataSharingConsentRequired(queryClient);
+        return;
+      }
+
       trackEvent('ai_parse_used', { success: false });
       notifyError();
 

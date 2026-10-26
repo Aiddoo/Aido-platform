@@ -53,7 +53,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       location.gridY,
       date,
     );
-    if (cached !== undefined) {
+    if (cached != null) {
       return cached;
     }
 
@@ -85,7 +85,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       location.gridX,
       location.gridY,
     );
-    if (latest !== undefined) {
+    if (latest != null) {
       this.#dependencies.logger.warn({ event: WeatherLogEvent.FORECAST_FALLBACK_USED });
       return latest;
     }
@@ -113,7 +113,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
     for (const [i, grid] of grids.entries()) {
       const key = `${grid.gridX}:${grid.gridY}`;
       const cachedItem = cached[i];
-      if (cachedItem !== undefined) {
+      if (cachedItem != null) {
         result.set(key, cachedItem);
       } else {
         misses.push(grid);
@@ -171,7 +171,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       let fallbackCount = 0;
       for (const [j, miss] of latestFallbackTargets.entries()) {
         const fallback = fallbackCached[j];
-        if (fallback !== undefined) {
+        if (fallback != null) {
           result.set(`${miss.gridX}:${miss.gridY}`, fallback);
           fallbackCount += 1;
         }

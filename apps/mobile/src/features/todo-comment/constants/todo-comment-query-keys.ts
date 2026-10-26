@@ -7,7 +7,8 @@ export const TODO_COMMENT_QUERY_TIMING = {
 } as const;
 
 export const TODO_COMMENT_QUERY_KEYS = {
-  all: ({ todoId }: { todoId: number }) => ['todo-comment', { todoId }] as const,
+  root: ['todo-comment'] as const,
+  all: ({ todoId }: { todoId: number }) => [...TODO_COMMENT_QUERY_KEYS.root, { todoId }] as const,
   overviews: ({ todoId }: { todoId: number }) =>
     [...TODO_COMMENT_QUERY_KEYS.all({ todoId }), 'overview'] as const,
   overview: ({ todoId, sort }: { todoId: number; sort: TodoCommentSort }) =>

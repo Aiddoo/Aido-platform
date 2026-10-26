@@ -251,6 +251,35 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     ).toBe(0);
   });
 
+  it("차단하면 받은 사람·보낸 사람 모두 그 콕을 열 수 없고 답장도 NUDGE_1105로 거부한다", async () => {
+    // Given
+    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await ctx.helpers.createFriendship(sender, receiver);
+    const todo = await createTodo(receiver);
+    const nudge = await sendNudge(sender, receiver, todo.id);
+    await request(ctx.app.getHttpServer())
+      .post(`/v1/blocks/${sender.userId}`)
+      .set("Authorization", `Bearer ${receiver.accessToken}`)
+      .expect(200);
+
+    // When
+    const receiverQuery = await request(ctx.app.getHttpServer())
+      .get(`/v1/nudges/${nudge.id}/interaction`)
+      .set("Authorization", `Bearer ${receiver.accessToken}`)
+      .expect(404);
+    const senderQuery = await request(ctx.app.getHttpServer())
+      .get(`/v1/nudges/${nudge.id}/interaction`)
+      .set("Authorization", `Bearer ${sender.accessToken}`)
+      .expect(404);
+    const receiverReply = await reply(receiver, nudge.id, "STARTING").expect(404);
+
+    // Then
+    for (const response of [receiverQuery, senderQuery, receiverReply]) {
+      expect(response.body.error.code).toBe(ErrorCode.NUDGE_1105);
+    }
+  });
+
   it("비공개로 변경한 할 일은 보낸 사람에게 가리고 답장을 차단한다", async () => {
     // Given
     const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
@@ -417,6 +446,8 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     const preview = await getThanksPreview(receiver, todo.id);
     expect(preview.throughNudgeId).toBe(laterNudge.id);
     expect(preview.recipients.map((friend) => friend.id)).toEqual([secondFriend.userId]);
+    expect(preview.thankedRecipientCount).toBe(1);
+    expect(preview.lastThankedAt).toEqual(expect.any(String));
   });
 
   it("다른 할 일의 콕을 감사 기준으로 보내면 거절한다", async () => {

@@ -1,0 +1,36 @@
+appId: com.aido.mobile
+name: 새 계정이 초대 링크로 친구가 되고 보상을 받는다
+tags:
+  - premium
+  - account-switch
+  - consumes-newbie
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+# 수락은 되돌릴 수 없어 capture.sh가 이 흐름 뒤에 demo-seed reset-newbie를 실행한다
+- runFlow:
+    file: subflows/start.yaml
+    env:
+      QA_EMAIL: ${MAESTRO_SHOT_NEWBIE_EMAIL}
+      QA_PASSWORD: ${MAESTRO_SHOT_NEWBIE_PASSWORD}
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: invite/${MAESTRO_SHOT_INVITE_CODE}
+- extendedWaitUntil:
+    visible:
+      id: invite-card-redeem
+    timeout: 20000
+- takeScreenshot: 85_초대카드_로그인
+- tapOn:
+    id: invite-card-redeem
+- extendedWaitUntil:
+    visible:
+      id: invite-welcome-sheet
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 86_초대_환영_시트

@@ -1,0 +1,26 @@
+appId: com.aido.mobile
+name: 초대 보상으로 프리미엄을 쓰는 계정의 구독 화면에 이용 기간이 보인다
+tags:
+  - full
+  - fresh
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  # B가 수락해 보상(PremiumGrant)을 받은 상태를 API로 준비한다
+  - runScript: scripts/redeem.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+- openLink: ${QA_SCHEME}://settings/subscription
+- extendedWaitUntil:
+    visible:
+      id: subscription-receipt-reward
+    timeout: 20000
+# Then: 이용 기간 문구가 보이고 스토어 구독 관리는 보이지 않는다
+- assertVisible: '이용 기간|Access period'
+- assertVisible: '.*까지|Until .*'
+- assertNotVisible: '구독 관리 \(스토어 설정\)|Manage subscription.*'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-premium-grant-subscription

@@ -1,6 +1,7 @@
 import { userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/queries/use-send-request-by-tag-mutation-options';
+import { useGetInviteAvailabilityQueryOptions } from '@src/features/invite/queries/get-invite-availability-query-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,11 +17,11 @@ import {
   Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, usePrefetchQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView } from 'react-native';
+import { Platform, ScrollView } from 'react-native';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -32,6 +33,8 @@ function AddFriendScreen() {
 
   const { t } = useTranslation('friend');
   const sendRequestMutation = useMutation(useSendRequestByTagMutationOptions());
+  // 친구 한도 안내에 초대로 자리를 늘리는 길을 보여 줄지 미리 알아 둔다
+  usePrefetchQuery(useGetInviteAvailabilityQueryOptions());
 
   const formMethods = useForm({
     resolver: zodResolver(userTagParamSchema),
@@ -83,13 +86,21 @@ function AddFriendScreen() {
             <FormField control={control} name="userTag">
               {({ onChange, value }, { error }) => (
                 <Input
+                  testID="friend-tag-input"
                   label={t('add.tagLabel')}
                   placeholder="ABC12345"
                   value={value}
-                  onChange={onChange}
+                  // 태그는 영문 대문자·숫자라 한글 자판 대신 영문 자판을 띄우고, 소문자로 쳐도 대문자로 맞춘다
+                  onChange={(text) => onChange(text.toUpperCase())}
                   autoFocus
+                  keyboardType={Platform.select({
+                    ios: 'ascii-capable',
+                    android: 'visible-password',
+                  })}
                   autoCapitalize="characters"
                   autoCorrect={false}
+                  autoComplete="off"
+                  spellCheck={false}
                   maxLength={8}
                   submitBehavior="submit"
                   returnKeyType="done"
@@ -113,6 +124,7 @@ function AddFriendScreen() {
           onPress={() => handleSubmit(handleSubmitFriendRequest)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
+          testID="friend-tag-submit"
         >
           {t('add.submit')}
         </KeyboardAdaptiveButton>

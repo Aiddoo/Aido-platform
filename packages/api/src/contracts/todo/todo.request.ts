@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { dateSchema } from "../../common/datetime.js";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from "../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../todo-category/todo-category.common.js";
 import { dayOfWeekSchema, todoVisibilitySchema } from "./todo.common.js";
@@ -310,6 +311,16 @@ export const todoResourceLimitQuerySchema = z.object({
 
 export type TodoResourceLimitQuery = z.infer<typeof todoResourceLimitQuerySchema>;
 
+export const getTodoSummaryQuerySchema = z.object({
+  date: dateSchema
+    .optional()
+    .describe(
+      "조회할 날짜 (선택, YYYY-MM-DD, 생략하면 X-Timezone 기준 오늘, 위젯의 내일 미리 받기용)",
+    ),
+});
+
+export type GetTodoSummaryQuery = z.infer<typeof getTodoSummaryQuerySchema>;
+
 // ===== 하위 항목 (체크리스트) =====
 
 export const createTodoItemSchema = z.object({
@@ -332,7 +343,7 @@ export const updateTodoItemSchema = z
       .describe("하위 항목 제목 (선택)"),
     completed: z.boolean().optional().describe("완료 상태 (선택)"),
   })
-  .refine((data) => data.title !== undefined || data.completed !== undefined, {
+  .refine((data) => data.title != null || data.completed != null, {
     message: "제목 또는 완료 상태 중 하나는 입력해야 합니다",
   });
 

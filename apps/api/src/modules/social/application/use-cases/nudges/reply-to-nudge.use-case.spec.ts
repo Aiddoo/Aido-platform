@@ -1,3 +1,5 @@
+import { assert } from "vitest";
+
 import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
@@ -99,8 +101,11 @@ describe("받은 콕에 답장", () => {
     const fixture = replyFixture();
     if (input.state === "missing") fixture.nudgeRepository.records.delete(fixture.nudge.id);
     if (input.state === "unfriended") fixture.followRepository.follows.clear();
-    if (input.state === "private")
-      fixture.nudgeRepository.todos.get(fixture.todo.id)!.visibility = "PRIVATE";
+    if (input.state === "private") {
+      const todoRecord = fixture.nudgeRepository.todos.get(fixture.todo.id);
+      assert.exists(todoRecord);
+      todoRecord.visibility = "PRIVATE";
+    }
     if (input.state === "deleted-todo") fixture.nudgeRepository.todos.delete(fixture.todo.id);
     // When / Then
     await expect(
@@ -118,7 +123,9 @@ describe("받은 콕에 답장", () => {
     const lock = fixture.nudgeRepository.lockInteractionTodo.bind(fixture.nudgeRepository);
     vi.spyOn(fixture.nudgeRepository, "lockInteractionTodo").mockImplementation(
       async (...input) => {
-        fixture.nudgeRepository.todos.get(fixture.todo.id)!.visibility = "PRIVATE";
+        const todoRecord = fixture.nudgeRepository.todos.get(fixture.todo.id);
+        assert.exists(todoRecord);
+        todoRecord.visibility = "PRIVATE";
         return lock(...input);
       },
     );

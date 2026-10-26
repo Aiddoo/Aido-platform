@@ -29,7 +29,7 @@ export function useTodoCommentNavigation(comment: TodoComment): TodoCommentNavig
   const logger = useLogger();
   const { error: showError, warning: showWarning } = useAppToast();
   const { t } = useTranslation('todoComment');
-  const prepareConversation = usePrepareTodoCommentConversation(comment.id);
+  const prepareConversation = usePrepareTodoCommentConversation();
   const pendingTransition = usePendingTodoCommentTransition();
   const { getCommentNavigationAvailability, startCommentNavigation, finishTransition } =
     useTodoCommentScreenTransitionActions();
@@ -81,7 +81,7 @@ export function useTodoCommentNavigation(comment: TodoComment): TodoCommentNavig
       }
 
       try {
-        await prepareConversation();
+        await prepareConversation(comment.id);
       } catch {
         if (finishTransition(transition).status === 'committed') {
           showError(undefined, { fallback: t('toasts.openConversationFailed') });

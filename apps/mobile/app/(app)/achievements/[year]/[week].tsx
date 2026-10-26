@@ -9,6 +9,7 @@ import {
 import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/queries/get-weekly-achievement-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -25,7 +26,6 @@ import {
   type QueryErrorFallbackProps,
   Box,
 } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -72,6 +72,7 @@ function WeeklyAchievementCertificate() {
     queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
   });
   const { t } = useTranslation('achievement');
+  const dateFormatContext = useDateFormatContext();
 
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewShotRef>(null);
@@ -146,7 +147,7 @@ function WeeklyAchievementCertificate() {
               {formatDateKeyRange(
                 achievement.dateRange.startDate,
                 achievement.dateRange.endDate,
-                getDateFormatContext(),
+                dateFormatContext,
               )}
             </Text>
           </VStack>

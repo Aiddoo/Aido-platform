@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { FakeWeatherProvider } from "#test/mocks/fake-weather.provider";
@@ -126,7 +128,7 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     expect(await weather.getLatestForecast(60, 127)).toBeUndefined();
     expect(await weather.getConditions(60, 127, at)).toBeUndefined();
     expect(await weather.getConditions(60, 127, next)).toBeUndefined();
-    expect(await cache.get(WeatherCacheKey.legacyConditions(60, 127))).toBeUndefined();
+    expect(await cache.get(WeatherCacheKey.legacyConditions(60, 127), z.unknown())).toBeUndefined();
     expect(await weather.getConditions(60, 128, at)).toEqual(conditions);
   });
 });

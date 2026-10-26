@@ -30,7 +30,7 @@ export class AccountBuilder {
     this.data = {
       id: AccountBuilder.idCounter,
       userId,
-      provider: "CREDENTIAL" as AccountProvider,
+      provider: "CREDENTIAL",
       providerAccountId: "local",
       password: null,
       accessToken: null,

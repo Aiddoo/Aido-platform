@@ -21,6 +21,7 @@ const context: WidgetSnapshotContext = {
   t: (key) => key,
   locale: 'ko',
   now: new Date('2026-07-12T09:00:00.000Z'),
+  timeZone: 'Asia/Seoul',
 };
 
 const summary: WidgetSummaryInput = {
@@ -41,11 +42,13 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When
-    await service.syncSummary(summary, context);
+    await service.syncSummary({ today: summary }, context);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'data', totalTodos: 3, completedTodos: 1 }),
+      expect.objectContaining({
+        days: [expect.objectContaining({ state: 'data', totalTodos: 3, completedTodos: 1 })],
+      }),
       null,
     );
     expect(errorReporter.captureException).not.toHaveBeenCalled();
@@ -59,7 +62,7 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When / Then
-    await expect(service.syncSummary(summary, context)).resolves.toBeUndefined();
+    await expect(service.syncSummary({ today: summary }, context)).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ feature: 'widget', method: 'syncSummary' }),
@@ -77,7 +80,9 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'loggedOut', totalTodos: 0 }),
+      expect.objectContaining({
+        days: [expect.objectContaining({ state: 'loggedOut', totalTodos: 0 })],
+      }),
       null,
     );
   });
@@ -115,7 +120,7 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    const summaryWrite = service.syncSummary(summary, context);
+    const summaryWrite = service.syncSummary({ today: summary }, context);
     await writeStarted;
     const logoutWrite = service.syncLoggedOut(summary.date, context);
     finishWrite();
@@ -123,7 +128,7 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenLastCalledWith(
-      expect.objectContaining({ state: 'loggedOut' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
   });
@@ -135,14 +140,14 @@ describe('WidgetSyncService', () => {
 
     // When
     await Promise.all([
-      service.syncSummary(summary, context),
+      service.syncSummary({ today: summary }, context),
       service.syncLoggedOut(summary.date, context),
     ]);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'loggedOut' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
   });
@@ -153,11 +158,27 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    await service.syncSummary(summary, context);
-    await service.syncSummary(summary, { ...context, now: new Date('2026-07-12T09:01:00.000Z') });
+    await service.syncSummary({ today: summary }, context);
+    await service.syncSummary(
+      { today: summary },
+      { ...context, now: new Date('2026-07-12T09:01:00.000Z') },
+    );
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('표시 내용이 같아도 기기 시간대가 바뀌면 자정 경계를 다시 계산하도록 다시 쓴다', async () => {
+    // Given: 서울에서 같은 날짜의 요약을 이미 기록했다
+    const bridge = createMockBridge();
+    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    await service.syncSummary({ today: summary }, context);
+
+    // When: 같은 날짜 그대로 런던 시간대로 바뀐다
+    await service.syncSummary({ today: summary }, { ...context, timeZone: 'Europe/London' });
+
+    // Then: iOS timeline의 다음 자정이 새 시간대 기준이 되도록 다시 기록한다
+    expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
   });
 
   it('기록에 실패한 같은 스냅샷은 다음 동기화에서 다시 시도한다', async () => {
@@ -167,9 +188,9 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    await service.syncSummary(summary, context);
+    await service.syncSummary({ today: summary }, context);
     // When
-    await service.syncSummary(summary, context);
+    await service.syncSummary({ today: summary }, context);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
@@ -182,12 +203,15 @@ describe('WidgetSyncService', () => {
 
     // When / Then
     await expect(
-      service.syncSummary(summary, {
-        ...context,
-        t: () => {
-          throw new Error('translation failure');
+      service.syncSummary(
+        { today: summary },
+        {
+          ...context,
+          t: () => {
+            throw new Error('translation failure');
+          },
         },
-      }),
+      ),
     ).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalled();
   });
@@ -198,13 +222,13 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    await service.syncSummary(summary, { ...context, userId: 'previous-user' });
-    await service.syncSummary(summary, { ...context, userId: 'current-user' });
+    await service.syncSummary({ today: summary }, { ...context, userId: 'previous-user' });
+    await service.syncSummary({ today: summary }, { ...context, userId: 'current-user' });
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
     expect(bridge.writeSnapshot).toHaveBeenLastCalledWith(
-      expect.objectContaining({ state: 'data' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'data' })] }),
       'current-user',
     );
   });
@@ -219,7 +243,7 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'loggedOut' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
   });

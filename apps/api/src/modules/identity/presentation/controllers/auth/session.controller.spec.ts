@@ -18,6 +18,7 @@ import type { Mocked } from "vitest";
 import { RevokeSession } from "#api/modules/identity/application/use-cases/auth/index";
 import { ListActiveSessions } from "#api/modules/identity/application/use-cases/auth/queries.public";
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
+import { mockOf } from "#test/mocks/typed-mock";
 
 import { SessionController } from "./session.controller.js";
 
@@ -33,14 +34,14 @@ describe("SessionController — 세션 컨트롤러", () => {
     role: "USER",
   };
 
-  const mockRequest = {
+  const mockRequest = mockOf<Request>({
     ip: "127.0.0.1",
     headers: {
       "user-agent": "TestAgent/1.0",
       "x-device-name": "iPhone 15",
       "x-device-type": "mobile",
     },
-  } as unknown as Request;
+  });
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(SessionController).compile();
@@ -116,7 +117,7 @@ describe("SessionController — 세션 컨트롤러", () => {
       revokeSessionUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - revokeSession을 호출하면
-      const result = await controller.revokeSession(mockUser, sessionId, mockRequest);
+      const result = await controller.revokeSession(mockUser, { sessionId }, mockRequest);
 
       // Then - 서비스에 userId, sessionId, metadata를 전달하고 결과를 반환해야 한다
       expect(revokeSessionUseCase.execute).toHaveBeenCalledWith({

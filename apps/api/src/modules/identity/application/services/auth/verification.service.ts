@@ -138,7 +138,7 @@ export class VerificationService {
       at,
     );
 
-    if (verification === null) {
+    if (verification == null) {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
 

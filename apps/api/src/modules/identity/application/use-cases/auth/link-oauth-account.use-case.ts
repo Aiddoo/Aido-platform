@@ -39,9 +39,9 @@ export class LinkOAuthAccount {
 
   async execute(input: LinkOAuthAccountInput): Promise<{ message: string }> {
     const strategy = this.#dependencies.registry.get(input.provider);
-    if (strategy === undefined) throw new ApplicationException(ErrorCode.USER_0602);
+    if (strategy == null) throw new ApplicationException(ErrorCode.USER_0602);
     const token = input.idToken ?? input.accessToken;
-    if (token === undefined || token === "") throw new ApplicationException(ErrorCode.USER_0602);
+    if (token == null || token === "") throw new ApplicationException(ErrorCode.USER_0602);
     const profile = await strategy.verifyToken(token, input.nonce);
     const result = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.findByIdForUpdate(input.userId);

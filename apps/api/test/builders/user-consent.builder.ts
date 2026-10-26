@@ -25,6 +25,8 @@ export class UserConsentBuilder {
       agreedTermsVersion: "1.0.0",
       marketingAgreedAt: null,
       marketingPushAgreedAt: null,
+      aiDataSharingAgreedAt: null,
+      aiDataSharingVersion: null,
     };
   }
 

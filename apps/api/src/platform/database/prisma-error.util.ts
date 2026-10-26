@@ -46,7 +46,7 @@ export class DatabaseRecordNotFoundError extends Error {
 }
 
 export function requireRecord<Row>(row: Row | null | undefined): Row {
-  if (row === null || row === undefined) throw new DatabaseRecordNotFoundError();
+  if (row == null) throw new DatabaseRecordNotFoundError();
   return row;
 }
 
@@ -72,7 +72,7 @@ export function isTransactionWriteConflict(error: unknown): boolean {
 export function uniqueConstraintTargets(error: unknown): string[] | undefined {
   const metadata = resolveDatabaseError(error);
   const name = metadata?.constraint;
-  if (metadata?.sqlState === "23505" && name !== undefined) {
+  if (metadata?.sqlState === "23505" && name != null) {
     for (const table of Object.values(contractJson.storage.namespaces.public.entries.table)) {
       if (!("uniques" in table)) continue;
       for (const constraint of table.uniques) {

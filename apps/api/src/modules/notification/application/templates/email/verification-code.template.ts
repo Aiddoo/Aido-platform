@@ -7,7 +7,7 @@ export interface VerificationCodeTemplateData {
 }
 
 export function getVerificationCodeSubject(): string {
-  return "[Aido] 이메일 인증 코드";
+  return "[아이두] 이메일 인증 코드";
 }
 
 export function getVerificationCodeHtml(data: VerificationCodeTemplateData): string {
@@ -28,7 +28,7 @@ export function getVerificationCodeHtml(data: VerificationCodeTemplateData): str
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
-                Aido
+                아이두
               </h1>
             </td>
           </tr>
@@ -76,7 +76,7 @@ export function getVerificationCodeHtml(data: VerificationCodeTemplateData): str
 
 export function getVerificationCodeText(data: VerificationCodeTemplateData): string {
   return `
-[Aido] 이메일 인증 코드
+[아이두] 이메일 인증 코드
 
 인증 코드: ${data.code}
 

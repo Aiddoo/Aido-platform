@@ -21,6 +21,8 @@
 
 역할을 이름으로 설명한다. Repository는 영속 상태, Reader는 조회, Sender는 발송, Recorder는 기록, Publisher는 발행, Resolver는 해석, Adapter는 경계 변환, Policy는 순수 판단이다. Registry는 실제 여러 구현의 선택 정책이 있을 때 사용한다. 기존 Processor/JobHandler는 queue 소비 역할을 따른다. 새 `Impl`·`Manager`·전달 전용 Facade로 실제 역할을 감추지 않는다.
 
+NestJS 관례를 따른다. 파일은 `*.module.ts`·`*.controller.ts`·`*.processor.ts`·`*.subscriber.ts`·`*.repository.ts`와 위 표의 use-case·port·vo·aggregate·policy 접미사를 쓴다. 클래스는 PascalCase로, UseCase는 파일 접미사가 역할을 말하므로 `<Verb><Object>`(`BlockUser`·`GetMemo`), 그 밖은 역할로 끝난다(`PrismaUserBlockRepository`·`KmaWeatherGridResolver`). DI token은 UPPER_SNAKE `Symbol`(`USER_MUTATION_LOCK`), 메서드는 동사로 시작한다(`findBlockedUserIds`).
+
 파일·폴더는 kebab-case, 클래스·타입은 PascalCase, 변수·필드는 camelCase다. `nudgeId`/`friendIds`, `repliedAt`/`replyUpdatedAt`, `timeoutMs`/`ttlSeconds`처럼 값의 의미·복수·단위를 드러낸다. boolean은 is/has/can/should를 기본으로 하되 공개된 enabled 등 DTO·DB·payload 필드를 내부 명명 때문에 바꾸지 않는다.
 
 private 상태·의존성은 `#` field로, 불변 참조는 readonly로 표현한다. 객체 입력·출력의 불변성과 PATCH null/undefined 의미는 [코드 기준](../../apps/api/.claude/api-conventions.md)에서 확인한다.

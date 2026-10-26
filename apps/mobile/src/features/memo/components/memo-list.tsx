@@ -1,9 +1,11 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   DocsIcon,
   Button,
+  Flex,
   HStack,
   PinFilledIcon,
   Result,
@@ -12,7 +14,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatMonthDay } from '@src/shared/utils/date';
+import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -27,6 +29,7 @@ export function MemoList() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
   const windowSizeClass = useWindowSizeClass();
+  const dateFormatContext = useDateFormatContext();
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
@@ -52,7 +55,7 @@ export function MemoList() {
                   id={item.id}
                   content={item.content}
                   isPinned={item.isPinned}
-                  date={formatMonthDay(item.createdAt)}
+                  date={formatDateLabel(item.createdAt, 'monthDay', dateFormatContext)}
                 />
               </Animated.View>
             ))}
@@ -128,21 +131,25 @@ MemoList.Loading = function Loading() {
 MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
   return (
-    <Result
-      icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
-      title={t('list.emptyTitle')}
-      description={t('list.emptyDescription')}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
+        title={t('list.emptyTitle')}
+        description={t('list.emptyDescription')}
+      />
+    </Flex>
   );
 };
 
 MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
   return (
-    <Result
-      title={t('memo:list.loadFailed')}
-      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        title={t('memo:list.loadFailed')}
+        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+      />
+    </Flex>
   );
 };
 

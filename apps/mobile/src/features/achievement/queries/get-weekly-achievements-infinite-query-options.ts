@@ -15,6 +15,8 @@ function selectWeeklyAchievements(
   };
 }
 
+const FIRST_PAGE_CURSOR: number | undefined = undefined;
+
 export function getWeeklyAchievementsInfiniteQueryOptions(
   achievementService: AchievementService,
   { year }: { year: number },
@@ -31,7 +33,7 @@ export function getWeeklyAchievementsInfiniteQueryOptions(
       );
       return unwrap(result);
     },
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: FIRST_PAGE_CURSOR,
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasNext) {
         return undefined;

@@ -2,7 +2,17 @@ import type { TodoCategoryWithCount } from '@src/features/todo/domains/todo-cate
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useDeleteTodoCategoryMutationOptions } from '@src/features/todo/queries/use-delete-todo-category-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, ConfirmDialog, H4, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  ConfirmDialog,
+  H4,
+  HStack,
+  READABLE_CONTENT_MAX_WIDTH,
+  Spacing,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Dialog, Radio, RadioGroup } from 'heroui-native';
 import { useState } from 'react';
@@ -47,7 +57,10 @@ export function CategoryDeleteDialog({
       <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
         <Dialog.Portal>
           <Dialog.Overlay className="bg-black/40" />
-          <Dialog.Content>
+          <Dialog.Content
+            className="w-full self-center"
+            style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}
+          >
             <TodoMoveCategoryDeleteSection
               category={category}
               otherCategories={otherCategories}

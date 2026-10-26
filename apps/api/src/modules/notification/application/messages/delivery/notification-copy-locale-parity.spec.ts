@@ -81,6 +81,8 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(weather.EVENING_SNOW, { precipProb: 100, tempMin: -99, tempMax: 99 }),
     ...render(social.FOLLOW_NEW, { senderName: longName }),
     ...render(social.FOLLOW_ACCEPTED, { senderName: longName }),
+    ...render(social.INVITE_JOINED, { inviteeName: longName }),
+    ...render(social.INVITE_REWARDED, { premiumDays: 9999, friendSlots: 9999 }),
     ...render(social.NUDGE_RECEIVED, { senderName: longName, todoTitle }),
     ...render(social.NUDGE_RECEIVED_WITH_MESSAGE, {
       senderName: longName,
@@ -115,6 +117,7 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(system.MONTHLY_REPORT, undefined),
     ...render(system.AI_SUGGESTION, undefined),
     ...render(system.BILLING_ISSUE, undefined),
+    ...render(system.PREMIUM_GRANT_ENDING, undefined),
     ...render(system.ONBOARDING_DAY0, undefined),
     ...render(system.ONBOARDING_DAY1, undefined),
     ...render(system.ONBOARDING_DAY2, undefined),
@@ -141,7 +144,7 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
 function hasVariants(value: unknown): value is { readonly variants: readonly unknown[] } {
   return (
     typeof value === "object" &&
-    value !== null &&
+    value != null &&
     "variants" in value &&
     Array.isArray(value.variants)
   );
@@ -175,6 +178,7 @@ function renderNoVariableCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(system.MONTHLY_REPORT, undefined),
     ...render(system.AI_SUGGESTION, undefined),
     ...render(system.BILLING_ISSUE, undefined),
+    ...render(system.PREMIUM_GRANT_ENDING, undefined),
     ...render(system.ONBOARDING_DAY0, undefined),
     ...render(system.ONBOARDING_DAY1, undefined),
     ...render(system.ONBOARDING_DAY2, undefined),

@@ -200,7 +200,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       // Given
       const fixture = givenAccount();
       const account = fixture.accountRepository.accounts[0];
-      if (account === undefined) throw new Error("Credential fixture가 없습니다.");
+      if (account == null) throw new Error("Credential fixture가 없습니다.");
       account.password = storedPassword;
 
       // When

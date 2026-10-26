@@ -1,7 +1,11 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 
 import { ANDROID_WIDGET_STORAGE_KEYS } from '../bridge/android-widget';
-import { widgetSnapshotSchema, type WidgetSnapshot } from '../domains/widget-snapshot.model';
+import {
+  storedWidgetSnapshotSchema,
+  type WidgetSnapshot,
+  WidgetSnapshotPolicy,
+} from '../domains/widget-snapshot.model';
 
 export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
   return {
@@ -12,7 +16,7 @@ export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
       }
 
       try {
-        const result = widgetSnapshotSchema.safeParse(JSON.parse(raw));
+        const result = storedWidgetSnapshotSchema.safeParse(JSON.parse(raw));
         return result.success ? result.data : null;
       } catch {
         return null;
@@ -24,7 +28,7 @@ export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
     },
     writeSnapshot(snapshot: WidgetSnapshot, userId: string | null): void {
       storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshot, JSON.stringify(snapshot));
-      if (snapshot.state === 'loggedOut' || userId == null) {
+      if (WidgetSnapshotPolicy.isLoggedOut(snapshot) || userId == null) {
         storage.delete(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
         return;
       }

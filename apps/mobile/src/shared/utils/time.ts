@@ -1,8 +1,7 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 
-import { getDateFormatContext } from './date';
-import { formatTimeOfDay, type TimeFormat } from './date-format';
+import { type DateFormatContext, formatTimeOfDay, type TimeFormat } from './date-format';
 
 dayjs.extend(customParseFormat);
 
@@ -68,21 +67,14 @@ export const getPickerLocale = (
   return resolvedLanguage === 'en' ? 'en_US' : 'ko';
 };
 
-/** 시간+분 정수를 앱 표시 언어에 맞춰 포맷 (ko: "오전 8:30", en: "8:30 AM") */
-export const formatReminderTime = (
-  hour: number,
-  minute: number,
-  timeFormat: TimeFormat = 'TWELVE_HOUR',
-): string => formatTimeOfDay({ hour, minute }, timeFormat, getDateFormatContext());
-
 /** "HH:mm" 문자열을 사용자 시간 형식에 맞춰 표시용으로 변환 */
-export const formatTimeDisplay = (time: string, timeFormat: TimeFormat = 'TWELVE_HOUR'): string => {
+export const formatTimeDisplay = (
+  time: string,
+  timeFormat: TimeFormat,
+  context: DateFormatContext,
+): string => {
   if (!isValidHHmm(time)) {
     return time;
   }
-  return formatTimeOfDay(
-    { hour: parseHour(time), minute: parseMinute(time) },
-    timeFormat,
-    getDateFormatContext(),
-  );
+  return formatTimeOfDay({ hour: parseHour(time), minute: parseMinute(time) }, timeFormat, context);
 };

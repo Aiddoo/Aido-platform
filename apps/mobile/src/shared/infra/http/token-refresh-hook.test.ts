@@ -1,8 +1,7 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
-import { createMockTokenStore } from '@src/shared/__tests__';
+import { createMockTokenStore, runKyAfterResponseHook } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
-import type { KyRequest, KyResponse, NormalizedOptions } from 'ky';
 
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import type { RefreshOutcome } from './token-refresher';
@@ -12,6 +11,18 @@ const createFakeRequest = (headers: Record<string, string> = {}): Request =>
   new Request('https://api.test/v1/todos', { headers });
 
 const createFakeResponse = (status: number): Response => new Response(null, { status });
+
+/** `ky.retry({ request })` 마커에서 재시도 요청을 꺼낸다. 마커가 아니면 undefined다. */
+const readRetriedRequest = (result: unknown): Request | undefined => {
+  if (typeof result !== 'object' || result == null || !('options' in result)) {
+    return undefined;
+  }
+  const { options } = result;
+  if (typeof options !== 'object' || options == null || !('request' in options)) {
+    return undefined;
+  }
+  return options.request instanceof Request ? options.request : undefined;
+};
 
 describe('createTokenRefreshHook', () => {
   let tokenStore: ReturnType<typeof createMockTokenStore>;
@@ -33,12 +44,7 @@ describe('createTokenRefreshHook', () => {
   });
 
   const invokeHook = (request: Request, response: Response) =>
-    hook({
-      request: request as KyRequest,
-      options: {} as NormalizedOptions,
-      response: response as KyResponse,
-      retryCount: 0,
-    });
+    runKyAfterResponseHook(hook, request, response);
 
   /**
    * 재시도 판정은 `ky.retry({ request })` 마커 반환으로 표현된다(ky v2, RetryMarker).
@@ -47,7 +53,7 @@ describe('createTokenRefreshHook', () => {
    * 마커의 재시도 요청은 갱신된 Authorization과 재시도 표시 헤더를 함께 싣는다.
    */
   const expectForcedRetry = (result: unknown, expectedToken: string) => {
-    const retriedRequest = (result as { options?: { request?: Request } }).options?.request;
+    const retriedRequest = readRetriedRequest(result);
     expect(retriedRequest).toBeInstanceOf(Request);
     expect(retriedRequest?.headers.get(RETRY_MARKER_HEADER)).toBe('1');
     expect(retriedRequest?.headers.get('Authorization')).toBe(`Bearer ${expectedToken}`);

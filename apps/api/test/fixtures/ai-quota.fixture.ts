@@ -3,11 +3,13 @@ import { mock } from "vitest-mock-extended";
 import type { AiQuotaState } from "#api/modules/access/application/ports/quotas/ai-quota.repository.port";
 import { AiQuotaService } from "#api/modules/access/application/services/quotas/ai-quota.service";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { TEST_AI_TASK_SETTINGS } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
   StubAiQuotaRepository,
   StubAiQuotaUserMutationLock,
   StubAiUserCategoryReader,
+  StubUserLocalePreferenceReader,
 } from "#test/mocks/ports/ai-quota.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
@@ -20,6 +22,7 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
   repository.users.set(user.id, {
     role: "USER",
     subscriptionStatus: "FREE",
+    accessDeadline: null,
     count: 0,
     resetAt: new Date(AI_QUOTA_TIME),
     ...input,
@@ -31,6 +34,7 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
   const categoryReader = new StubAiUserCategoryReader();
   categoryReader.categories.set(user.id, [{ id: 7, name: "업무" }]);
   const aiProvider = new FakeAiProvider();
+  const localePreferenceReader = new StubUserLocalePreferenceReader();
   return {
     userId: user.id,
     repository,
@@ -40,5 +44,7 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
     quota,
     categoryReader,
     aiProvider,
+    localePreferenceReader,
+    settings: TEST_AI_TASK_SETTINGS,
   };
 }

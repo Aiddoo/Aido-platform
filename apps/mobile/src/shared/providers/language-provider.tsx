@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { getDeviceLanguage, i18n } from '@src/shared/i18n';
+import { i18n } from '@src/shared/i18n';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   type LanguageMode,
@@ -8,6 +8,8 @@ import {
   resolveLanguage,
   writeLanguageMode,
 } from '@src/shared/preferences/language.preference';
+import { noop } from 'es-toolkit';
+import { useLocales } from 'expo-localization';
 import {
   createContext,
   type PropsWithChildren,
@@ -26,27 +28,34 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+function useExpoDeviceLanguage(): string | null {
+  const [deviceLocale] = useLocales();
+  return deviceLocale.languageCode;
+}
+
 interface LanguageProviderProps extends PropsWithChildren {
   syncStorage?: SyncStorage;
-  deviceLanguage?: () => string | null;
+  /** 기기 언어 코드. 기기 언어 설정이 실행 중에 바뀌면 다시 렌더링해 새 값을 돌려준다. */
+  useDeviceLanguage?: () => string | null;
 }
 
 export function LanguageProvider({
   children,
   syncStorage = mmkvSyncStorage,
-  deviceLanguage = getDeviceLanguage,
+  useDeviceLanguage = useExpoDeviceLanguage,
 }: LanguageProviderProps) {
   const [languageMode, setLanguageModeState] = useState<LanguageMode>(() =>
     readLanguageMode(syncStorage),
   );
+  const deviceLanguage = useDeviceLanguage();
 
   const resolvedLanguage = useMemo(
-    () => resolveLanguage(languageMode, deviceLanguage()),
+    () => resolveLanguage(languageMode, deviceLanguage),
     [languageMode, deviceLanguage],
   );
 
   // 단방향 동기화: resolvedLanguage(단일 소스)가 바뀔 때만 i18n에 반영한다.
-  // languageChanged 이벤트가 react-i18next 리렌더와 dayjs locale 동기화를 처리한다.
+  // languageChanged 이벤트가 react-i18next 리렌더를 처리한다.
   useEffect(() => {
     if (i18n.language !== resolvedLanguage) {
       i18n.changeLanguage(resolvedLanguage);
@@ -73,7 +82,7 @@ export function LanguageProvider({
 const DEFAULT_CONTEXT: LanguageContextValue = {
   languageMode: 'system',
   resolvedLanguage: 'ko',
-  setLanguageMode: () => {},
+  setLanguageMode: noop,
 };
 
 export const useLanguage = (): LanguageContextValue => {

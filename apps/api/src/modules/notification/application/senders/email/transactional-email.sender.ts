@@ -4,13 +4,15 @@ import {
   createPasswordResetEmail,
   createPasswordSetupEmail,
   createInquiryEmail,
+  createUserReportEmail,
 } from "../../services/email/email-message.factory.js";
 import type { InquiryTemplateData } from "../../templates/email/inquiry.template.js";
 import type { PasswordResetTemplateData } from "../../templates/email/password-reset.template.js";
 import type { PasswordSetupTemplateData } from "../../templates/email/password-setup.template.js";
+import type { UserReportTemplateData } from "../../templates/email/user-report.template.js";
 import type { VerificationCodeTemplateData } from "../../templates/email/verification-code.template.js";
 
-/** 인증 및 문의 템플릿을 외부 이메일 공급자로 발송하는 공개 capability. */
+/** 인증·문의·신고 템플릿을 외부 이메일 공급자로 발송하는 공개 capability. */
 export class TransactionalEmailSender {
   readonly #emailSender: Pick<EmailSenderPort, "send">;
 
@@ -44,5 +46,9 @@ export class TransactionalEmailSender {
 
   sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
     return this.#emailSender.send(createInquiryEmail(to, data));
+  }
+
+  sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailSendResult> {
+    return this.#emailSender.send(createUserReportEmail(to, data));
   }
 }

@@ -13,6 +13,7 @@
  */
 import RedisMock from "ioredis-mock";
 import { vi, type Mock } from "vitest";
+import { z } from "zod";
 
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
 import { describeCacheAdapterContract } from "./cache-adapter.contract.js";
@@ -56,7 +57,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
       vi.spyOn(redis, "get").mockRejectedValue(failure);
 
       // When
-      const result = await cache.get("key");
+      const result = await cache.get("key", z.unknown());
 
       // Then
       expect(result).toBeUndefined();
@@ -67,7 +68,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
       vi.spyOn(redis, "mget").mockRejectedValue(failure);
 
       // When
-      const result = await cache.mget(["a", "b", "c"]);
+      const result = await cache.mget(["a", "b", "c"], z.unknown());
 
       // Then
       expect(result).toEqual([undefined, undefined, undefined]);
@@ -134,7 +135,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
       const factory = vi.fn().mockResolvedValue("from-db");
 
       // When
-      const result = await cache.wrap("key", factory);
+      const result = await cache.wrap("key", z.unknown(), factory);
 
       // Then
       expect(result).toBe("from-db");
@@ -147,7 +148,7 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
 
       // When
       for (let i = 0; i < 50; i++) {
-        await cache.get("key");
+        await cache.get("key", z.unknown());
       }
 
       // Then

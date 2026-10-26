@@ -30,14 +30,14 @@ export class AiUsageGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
 
-    if (user === undefined) {
+    if (user == null) {
       // JwtAuthGuard가 먼저 실행되어야 함
       throw new ApplicationException(ErrorCode.AUTH_0107);
     }
 
     const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
-    if (usage.limit !== null && usage.used >= usage.limit) {
+    if (usage.limit != null && usage.used >= usage.limit) {
       throw new ApplicationException(ErrorCode.AI_1303, {
         used: usage.used,
         limit: usage.limit,

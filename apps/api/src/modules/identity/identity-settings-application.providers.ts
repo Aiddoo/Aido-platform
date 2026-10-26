@@ -9,6 +9,7 @@ import { TODO_COMPLETION_STATS_READER } from "./application/ports/settings/todo-
 import { USER_CONSENT_REPOSITORY } from "./application/ports/settings/user-consent.repository.port.js";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/settings/user-preference.repository.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
+import { AiDataSharingConsentReader } from "./application/services/settings/ai-data-sharing-consent-reader.service.js";
 import { UserPreferenceReader } from "./application/services/settings/user-preference-reader.service.js";
 import { GetConsentRecord } from "./application/use-cases/settings/get-consent-record.use-case.js";
 import { GetConsentRecords } from "./application/use-cases/settings/get-consent-records.use-case.js";
@@ -19,6 +20,7 @@ import { GetPreference } from "./application/use-cases/settings/get-preference.u
 import { OnTodoToggled } from "./application/use-cases/settings/on-todo-toggled.use-case.js";
 import { RefreshPushTimezone } from "./application/use-cases/settings/refresh-push-timezone.use-case.js";
 import { SeedUserSettings } from "./application/use-cases/settings/seed-user-settings.use-case.js";
+import { UpdateAiDataSharingConsent } from "./application/use-cases/settings/update-ai-data-sharing-consent.use-case.js";
 import { UpdateMarketingConsent } from "./application/use-cases/settings/update-marketing-consent.use-case.js";
 import { UpdateMarketingPushConsent } from "./application/use-cases/settings/update-marketing-push-consent.use-case.js";
 import { UpdatePreference } from "./application/use-cases/settings/update-preference.use-case.js";
@@ -129,6 +131,30 @@ export const seedUserSettingsProvider: FactoryProvider<SeedUserSettings> = {
     new SeedUserSettings({
       consentRepository,
       preferenceRepository,
+    }),
+};
+
+export const aiDataSharingConsentReaderProvider: FactoryProvider<AiDataSharingConsentReader> = {
+  provide: AiDataSharingConsentReader,
+  inject: [USER_CONSENT_REPOSITORY],
+  useFactory: (
+    consentRepository: ConstructorParameters<
+      typeof AiDataSharingConsentReader
+    >[0]["consentRepository"],
+  ) => new AiDataSharingConsentReader({ consentRepository }),
+};
+
+export const updateAiDataSharingConsentProvider: FactoryProvider<UpdateAiDataSharingConsent> = {
+  provide: UpdateAiDataSharingConsent,
+  inject: [USER_CONSENT_REPOSITORY],
+  useFactory: (
+    consentRepository: ConstructorParameters<
+      typeof UpdateAiDataSharingConsent
+    >[0]["consentRepository"],
+  ) =>
+    new UpdateAiDataSharingConsent({
+      consentRepository,
+      logger: new Logger(UpdateAiDataSharingConsent.name),
     }),
 };
 

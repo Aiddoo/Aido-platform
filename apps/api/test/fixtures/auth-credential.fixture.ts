@@ -1,5 +1,9 @@
 import { mock } from "vitest-mock-extended";
 
+import type {
+  PremiumAccess,
+  PremiumAccessReaderPort,
+} from "#api/modules/billing/billing-subscriptions.public";
 import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
 import { VerificationService } from "#api/modules/identity/application/services/auth/verification.service";
 import { IssueLogin } from "#api/modules/identity/application/use-cases/auth/issue-login.use-case";
@@ -113,5 +117,26 @@ export function createAuthCredentialFixture(
     provisionUserUseCase,
     issueLoginUseCase,
     restoreAccount,
+    premiumAccessReader: new StubPremiumAccessReader(),
   };
+}
+
+/** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
+export class StubPremiumAccessReader implements PremiumAccessReaderPort {
+  readonly accesses = new Map<string, PremiumAccess>();
+  readonly requestedUserIds: string[] = [];
+
+  async getPremiumAccess(userId: string): Promise<PremiumAccess> {
+    this.requestedUserIds.push(userId);
+    return (
+      this.accesses.get(userId) ?? {
+        source: null,
+        endsAt: null,
+        periodEndsAt: null,
+        willRenew: false,
+        bankedDays: 0,
+        recentGrantEndedAt: null,
+      }
+    );
+  }
 }

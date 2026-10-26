@@ -29,6 +29,11 @@ export interface UserConsentRepositoryPort {
     userId: string,
     data: { agreedAt: Date | null },
   ): Promise<UserConsentRecord>;
+  /** 동의하면 agreedAt에 시각, 거부·철회하면 null을 쓰고 답한 안내 version을 함께 남긴다. */
+  upsertAiDataSharingConsent(
+    userId: string,
+    data: { agreedAt: Date | null; version: string },
+  ): Promise<UserConsentRecord>;
 }
 
 export const USER_CONSENT_REPOSITORY = Symbol("USER_CONSENT_REPOSITORY");

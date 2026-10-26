@@ -54,7 +54,7 @@ export class AirkoreaProvider implements AirQualityProvider {
   async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
     try {
       const apiKey = this.configService.dataGoKrApiKey;
-      if (apiKey === undefined || apiKey === null || apiKey === "") {
+      if (apiKey == null || apiKey === "") {
         this.#logger.warn({
           event: WeatherProviderLogEvent.NOT_CONFIGURED,
           provider: "airkorea",
@@ -205,7 +205,7 @@ export class AirkoreaProvider implements AirQualityProvider {
   }
 
   #parseValue(value: string | null | undefined): number | null {
-    if (value === undefined || value === null || value === "" || value === "-") {
+    if (value == null || value === "" || value === "-") {
       return null;
     }
 

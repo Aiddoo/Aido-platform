@@ -31,12 +31,12 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 
 ## API 작업 흐름
 
-| Job                | 역할                                                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                           |
-| Lint & Type Check  | Oxc lint/format 한 번, 영향 범위 typecheck                                                                         |
-| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→HTTP/released-client E2E→API 의존성 closure build                   |
-| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 발행 |
+| Job                | 역할                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                     |
+| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                      |
+| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→HTTP/released-client E2E→API 의존성 closure build                                                                             |
+| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행 |
 
 공식 setup action은 `.nvmrc` Node.js 버전, packageManager의 pnpm 버전, frozen lockfile과 pnpm cache를 사용한다. API만 영향이 있으면 API dependency closure를 설치하고 필요한 contract를 emit한다. GitHub Actions는 버전 주석과 commit SHA로 고정하며 업데이트의 정본은 workflow다.
 
@@ -49,3 +49,8 @@ API test 로그는 실패 시 upload-artifact로 14일 보관한다. Bash의 `-e
 작업 중에는 변경한 동작의 target test와 필요한 lint/type/format을 실행하고, source가 바뀌지 않은 성공 검사를 반복하지 않는다. 최종 누적 CI는 공개 HTTP·OpenAPI·released-client fingerprint, 실제 DB/transaction 및 build를 함께 검사한다. 로컬 결과에는 command, source revision, seed, 파일/테스트 수, 실패·재실행 사유와 한계를 남긴다. coverage나 SDK schema 통과를 실제 vendor 품질/운영 배포 완료로 표현하지 않는다.
 
 수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [DEPLOYMENT.md](../../apps/api/DEPLOYMENT.md)의 동일 SHA 이미지·graph·health 절차를 따른다.
+
+## 의존성·이미지 보안 검사
+
+- `pnpm audit --prod --audit-level high`가 high 이상 취약점을 막는다. 패치 버전이 없어 위험을 수용한 advisory는 `pnpm-workspace.yaml`의 `auditConfig.ignoreGhsas`에 사유·제거 조건 주석과 함께 둔다. 현재는 `@expo/cli`(Expo 빌드 도구) 내부의 `node-forge`(GHSA-86w9-cpqp-85rv)와 `zod` 3.x(GHSA-mrhx-c7xc-m3w5)이며, `@expo/cli`가 패치된 버전을 받으면 제거한다.
+- API/migrate 이미지는 runner에 load한 상태로 Trivy가 먼저 검사하고, 둘 다 고칠 수 있는 HIGH/CRITICAL이 없을 때만 GHCR에 push한다. 검사에 실패하면 그 SHA의 이미지가 발행되지 않으므로 deploy의 이미지 존재 확인(`docker buildx imagetools inspect`)에서 멈춘다.

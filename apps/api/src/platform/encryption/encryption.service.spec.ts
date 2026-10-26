@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
 /**
  * EncryptionService 단위 테스트
@@ -20,10 +20,10 @@ describe("EncryptionService — 암호화 서비스", () => {
 
   beforeEach(() => {
     // Given - Mock 설정 서비스
-    const mockConfigService = {
+    const mockConfigService = mock<TypedConfigService>({
       tokenEncryptionKey: "test-encryption-key-must-be-at-least-32-characters-long",
-      get: vi.fn().mockReturnValue(undefined),
-    } as unknown as TypedConfigService;
+    });
+    mockConfigService.get.mockReturnValue(undefined);
 
     service = new EncryptionService(mockConfigService);
   });

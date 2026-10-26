@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import type * as InviteServiceStubModule from '@src/features/invite/__tests__/create-stub-invite-service';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
@@ -14,15 +15,33 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() 
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
 jest.mock('@src/bootstrap/providers/di-context', () => {
+  const { createStubInviteService } = jest.requireActual<typeof InviteServiceStubModule>(
+    '@src/features/invite/__tests__/create-stub-invite-service',
+  );
   const errorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
   const repository = {
     subscribe: () => () => {},
     getPendingCommand: () => null,
     clearIfCurrent: () => false,
   };
+  // 초대 진입 훅은 실제 서비스에 빈 저장소와 referrer 없는 gateway를 주입해 그대로 돈다
+  const inviteService = createStubInviteService();
+  const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+  const analytics = {
+    trackEvent: jest.fn(),
+    trackScreenView: jest.fn(),
+    setUserId: jest.fn(),
+    setUserProperties: jest.fn(),
+    resetData: jest.fn(),
+  };
+  const featureAttribution = { record: jest.fn(), consume: jest.fn(() => null) };
   return {
     useErrorReporter: () => errorReporter,
     useWidgetNavigationRepository: () => repository,
+    useInviteService: () => inviteService,
+    useLogger: () => logger,
+    useAnalytics: () => analytics,
+    useFeatureAttribution: () => featureAttribution,
   };
 });
 jest.mock('@src/features/user/queries/get-me-query-options', () => ({
@@ -102,6 +121,7 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
       _layout: AuthGateLayout,
       index: RootIndex,
       loading: LoadingScreen,
+      'invite/index': () => <Text>Invite</Text>,
       '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(auth)/login': LoginScreen,
       '(app)/_layout': {

@@ -7,6 +7,7 @@ import { SettingsToggle } from '@src/features/notification/components/settings/s
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -19,7 +20,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatReminderTime } from '@src/shared/utils/time';
+import { formatTimeOfDay } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator } from 'heroui-native';
@@ -73,6 +74,7 @@ function NotificationSettingsScreen() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const { t } = useTranslation('notification');
+  const dateFormatContext = useDateFormatContext();
 
   const isPushDisabled = PreferencePolicy.isPushDisabled(preference);
 
@@ -111,7 +113,12 @@ function NotificationSettingsScreen() {
         <Separator className="bg-gray-2" />
         <NavigationRow
           label={t('settings.reminderLabel')}
-          summary={`${formatReminderTime(preference.morningReminderHour, preference.morningReminderMinute, preference.timeFormat)} / ${formatReminderTime(preference.eveningReminderHour, preference.eveningReminderMinute, preference.timeFormat)}`}
+          summary={[
+            { hour: preference.morningReminderHour, minute: preference.morningReminderMinute },
+            { hour: preference.eveningReminderHour, minute: preference.eveningReminderMinute },
+          ]
+            .map((time) => formatTimeOfDay(time, preference.timeFormat, dateFormatContext))
+            .join(' / ')}
           isSummaryEnabled={!isPushDisabled}
           onPress={() => push('/settings/notifications/reminder')}
           isDisabled={isPushDisabled}

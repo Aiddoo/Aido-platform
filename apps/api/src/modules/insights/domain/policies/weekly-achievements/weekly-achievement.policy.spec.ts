@@ -35,6 +35,28 @@ describe("weekly-achievement 도메인", () => {
       expect(diffDays).toBe(6);
     });
 
+    it.each(["2026-01-01T00:00:00Z", "2026-10-26T12:00:00Z", "2027-12-31T23:59:59Z"])(
+      "호출 시각(%s)과 관계없이 연초 1주차·53주차·DST 전환 주의 날짜가 같다",
+      (now) => {
+        // Given
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date(now));
+        // When
+        const ranges = [1, 10, 44, 53].map((week) => computeDateRange(2026, week));
+        ranges.push(computeDateRange(2027, 1));
+        vi.useRealTimers();
+        // Then
+        expect(ranges).toEqual([
+          { startDate: "2025-12-29", endDate: "2026-01-04" },
+          // 미국 DST 시작(3/8)·종료(11/1) 주. LA 시간대로 실행해도 날짜가 하루 밀리지 않는다.
+          { startDate: "2026-03-02", endDate: "2026-03-08" },
+          { startDate: "2026-10-26", endDate: "2026-11-01" },
+          { startDate: "2026-12-28", endDate: "2027-01-03" },
+          { startDate: "2027-01-04", endDate: "2027-01-10" },
+        ]);
+      },
+    );
+
     it("2026년 10주차의 정확한 날짜를 반환한다", () => {
       const range = computeDateRange(2026, 10);
       expect(range.startDate).toBe("2026-03-02");

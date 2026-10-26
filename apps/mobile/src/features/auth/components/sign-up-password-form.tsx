@@ -81,6 +81,8 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
                       placeholder={t('signUp.passwordConfirmPlaceholder')}
                       value={value}
                       onChange={onChange}
+                      textContentType="newPassword"
+                      autoComplete="new-password"
                       returnKeyType="done"
                       isInvalid={!!error}
                       errorMessage={resolveValidationMessage(error, {
@@ -107,6 +109,8 @@ export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
                     placeholder={t('signUp.passwordPlaceholder')}
                     value={value}
                     onChange={onChange}
+                    textContentType="newPassword"
+                    autoComplete="new-password"
                     autoFocus={step === 'password'}
                     submitBehavior="submit"
                     returnKeyType="next"

@@ -3,6 +3,7 @@ import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
 import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
+import { InviteEntryBanner } from '@src/features/invite/components/invite-entry-banner';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PokeBanner } from '@src/features/nudge/components/poke-banner';
@@ -12,6 +13,7 @@ import { FriendCalendar } from '@src/features/todo/components/calendar/friend-ca
 import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
 import { FeedListPane } from '@src/features/todo/components/feed-list-pane';
 import { FeedTodoDetailPane } from '@src/features/todo/components/feed-todo-detail-pane';
+import { FriendStrip } from '@src/features/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
@@ -55,6 +57,13 @@ export default function FeedScreen() {
         <AdaptivePane
           primary={
             <FeedListPane>
+              <StyledSafeAreaView edges={['left', 'right']}>
+                <QueryErrorBoundary fallback={FriendStrip.Error}>
+                  <Suspense fallback={<FriendStrip.Loading />}>
+                    <FriendStrip />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </StyledSafeAreaView>
               {match(friendId)
                 .with(P.string, (id) => <FriendFeed key={id} />)
                 .with(undefined, () => <MyFeed />)
@@ -101,6 +110,8 @@ function MyFeed() {
         </Box>
 
         <Spacing size={20} />
+
+        <InviteEntryBanner className="mx-4 mb-5" />
 
         {featureDiscovery.isReentryVisible && (
           <>

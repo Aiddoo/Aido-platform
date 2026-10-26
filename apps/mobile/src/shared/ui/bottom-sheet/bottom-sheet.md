@@ -36,6 +36,15 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 </KeyboardBottomSheet>;
 ```
 
+작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
+(키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
+
+```tsx
+<KeyboardBottomSheet isOpen={isOpen} onOpenChange={setIsOpen} footer={<Button>신고하기</Button>}>
+  {/* 사유 선택·상세 입력 */}
+</KeyboardBottomSheet>
+```
+
 ### ModalBottomSheet
 
 기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. 드래그 닫기는 상단 손잡이에서 동작하여 내부 목록 스크롤과 경쟁하지 않습니다. 시스템 Reduce Motion 설정을 Reanimated `ReduceMotion.System`으로 따릅니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.
@@ -47,6 +56,20 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 <ModalBottomSheet isOpen={isOpen} onOpenChange={handleOpenChange} onExit={handleExit}>
   {/* 피커 내용 */}
 </ModalBottomSheet>;
+```
+
+내용은 시트 안에서 스크롤된다. 글자 크기를 키우거나 작은 화면에서 내용이 넘쳐도 주 동작 버튼이 밀려나지 않게
+`footer`에 두면 스크롤 영역 아래에 고정된다. 시트 안에 세로 스크롤 컨테이너를 또 두지 않는다.
+
+```tsx
+<ModalBottomSheet
+  isOpen={isOpen}
+  onOpenChange={handleOpenChange}
+  onExit={handleExit}
+  footer={<Button onPress={handleConfirm}>확인</Button>}
+>
+  {/* 긴 안내 */}
+</ModalBottomSheet>
 ```
 
 ### 시트 route (`SheetRouteScreen`, `useSheetRoute`)
@@ -102,6 +125,7 @@ const sheet = useSheetRoute('/feed');
 | `onOpenChange` | `(isOpen: boolean) => void` | -      | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출 |
 | `onExit`       | `() => void`                | -      | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거    |
 | `children`     | `ReactNode`                 | -      | 시트 내용                                                  |
+| `footer`       | `ReactNode`                 | -      | 스크롤 영역 아래에 고정되는 영역 (주 동작 버튼, 선택)      |
 
 ## 파일 구조
 

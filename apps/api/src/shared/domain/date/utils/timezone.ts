@@ -44,7 +44,7 @@ export function resolveTimezone(value: unknown): string {
  */
 export function resolveDeliveryTimezone(value: unknown): string {
   const normalized = normalizeIanaTimezone(value);
-  if (normalized === null || normalized === DEFAULT_TIMEZONE) {
+  if (normalized == null || normalized === DEFAULT_TIMEZONE) {
     return DEFAULT_DELIVERY_TIMEZONE;
   }
   return normalized;

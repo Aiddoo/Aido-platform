@@ -1,5 +1,6 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
@@ -18,6 +19,7 @@ import {
   DocsIcon,
   HStack,
   QueryErrorBoundary,
+  Flex,
   Result,
   RobotIcon,
   CheckboxIcon,
@@ -53,7 +55,6 @@ import {
   MEMO_TOOLBAR_ICON,
   MemoActionButton,
   MemoDeleteButton,
-  MemoBackButton,
   MemoPinButton,
   MemoSaveButton,
 } from './memo-detail-actions';
@@ -83,11 +84,13 @@ MemoDetailPane.Empty = function Empty() {
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
-      <Result
-        icon={<DocsIcon width={72} height={72} />}
-        title={t('detail.emptyTitle')}
-        description={t('detail.selectPrompt')}
-      />
+      <Flex flex={1} justify="center" align="center">
+        <Result
+          icon={<DocsIcon width={72} height={72} />}
+          title={t('detail.emptyTitle')}
+          description={t('detail.selectPrompt')}
+        />
+      </Flex>
     </StyledSafeAreaView>
   );
 };
@@ -212,41 +215,40 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         {isPane ? (
           <Box className="bg-white">
-            <HStack align="center" justify="between" px={8}>
-              <MemoBackButton onPress={handleBack} />
-              <HStack gap={4} align="center">
-                <MemoPinButton
-                  isPinned={memo.isPinned}
-                  isDisabled={isTogglePinPending}
-                  onPress={handleTogglePin}
+            <HStack align="center" justify="end" gap={4} px={8}>
+              <MemoPinButton
+                isPinned={memo.isPinned}
+                isDisabled={isTogglePinPending}
+                onPress={handleTogglePin}
+              />
+              <MemoActionButton
+                testID="memo-ai-review"
+                onPress={aiParse.handlePress}
+                accessibilityLabel={t('memo:titles.aiReview')}
+                isDisabled={aiParse.isDisabled}
+                icon={
+                  aiParse.isLoading ? (
+                    <ActivityIndicator size="small" />
+                  ) : (
+                    <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
+                  )
+                }
+              />
+              <MemoActionButton
+                testID="memo-convert-to-todo"
+                onPress={convertToTodo.handlePress}
+                accessibilityLabel={t('memo:detail.convertToTodo')}
+                isDisabled={convertToTodo.isDisabled}
+                icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
+              />
+              <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
+              {isEditing && (
+                <MemoSaveButton
+                  isHighlighted={isDirty && isValid}
+                  isDisabled={!isValid || isSubmitting}
+                  onPress={() => handleSave()}
                 />
-                <MemoActionButton
-                  onPress={aiParse.handlePress}
-                  accessibilityLabel={t('memo:titles.aiReview')}
-                  isDisabled={aiParse.isDisabled}
-                  icon={
-                    aiParse.isLoading ? (
-                      <ActivityIndicator size="small" />
-                    ) : (
-                      <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
-                    )
-                  }
-                />
-                <MemoActionButton
-                  onPress={convertToTodo.handlePress}
-                  accessibilityLabel={t('memo:detail.convertToTodo')}
-                  isDisabled={convertToTodo.isDisabled}
-                  icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
-                />
-                <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
-                {isEditing && (
-                  <MemoSaveButton
-                    isHighlighted={isDirty && isValid}
-                    isDisabled={!isValid || isSubmitting}
-                    onPress={() => handleSave()}
-                  />
-                )}
-              </HStack>
+              )}
             </HStack>
             <Separator />
           </Box>
@@ -370,14 +372,21 @@ function useAiParseAction() {
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const aiUsageQuery = useQuery(useGetAiUsageQueryOptions());
   const hasCategory = categoriesQuery.data?.categories[0] != null;
+  const aiConsent = useAiDataSharingConsentGate();
+  const toast = useAppToast();
+  const { t } = useTranslation('errors');
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (getParsedMemo(queryClient, { memoId })) {
       push(memoAiReviewHref(memoId));
       return;
     }
+    const consent = await aiConsent.ensureAgreed();
+    if (!consent.isAgreed) {
+      return;
+    }
 
-    overlay.open(({ isOpen, close, exit }) => {
+    await overlay.open(({ isOpen, close, exit }) => {
       const handleOpenChange = (open: boolean) => {
         if (!open) {
           close();
@@ -401,6 +410,18 @@ function useAiParseAction() {
         </QueryErrorBoundary>
       );
     });
+
+    // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 확인 창이 닫히고 동의 캐시가 미응답이 된다.
+    // 확인 창은 Portal이라 그 위에 시트를 띄울 수 없어, 창이 닫힌 뒤 동의부터 다시 시작한다
+    if (!aiConsent.isAgreementRequired()) {
+      return;
+    }
+    // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다
+    if (consent.wasAsked) {
+      toast.error(t('AI_1311'));
+      return;
+    }
+    await handlePress();
   };
 
   return {

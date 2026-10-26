@@ -1,6 +1,6 @@
 import { encodeUntrustedJson, sanitizeForPrompt, sanitizeMemoForPrompt } from "./sanitize.js";
 
-describe("sanitizeForPrompt (단문 200자)", () => {
+describe("sanitizeForPrompt (계약 상한 500자)", () => {
   it("줄바꿈을 공백으로 치환해야 한다", () => {
     expect(sanitizeForPrompt("첫째줄\n둘째줄\r\n셋째줄")).toBe("첫째줄 둘째줄 셋째줄");
   });
@@ -13,9 +13,15 @@ describe("sanitizeForPrompt (단문 200자)", () => {
     expect(sanitizeForPrompt("- 항목 * 강조 1~5장")).toBe("- 항목 * 강조 1~5장");
   });
 
-  it("200자를 초과하면 잘라내야 한다", () => {
-    const longInput = "가".repeat(300);
-    expect(sanitizeForPrompt(longInput)).toHaveLength(200);
+  it("계약 상한 500자까지는 자르지 않고, 초과분만 잘라내야 한다", () => {
+    expect(sanitizeForPrompt("가".repeat(500))).toHaveLength(500);
+    expect(sanitizeForPrompt("가".repeat(600))).toHaveLength(500);
+  });
+
+  it("NFKC로 길어진 입력도 이모지를 반으로 자르지 않아야 한다", () => {
+    const result = sanitizeForPrompt(`${"가".repeat(499)}😀`);
+    expect(result).toBe("가".repeat(499));
+    expect(result.isWellFormed()).toBe(true);
   });
 
   it("앞뒤 공백을 제거해야 한다", () => {
@@ -32,14 +38,18 @@ describe("sanitizeForPrompt (단문 200자)", () => {
   });
 });
 
-describe("sanitizeMemoForPrompt (장문 1000자)", () => {
+describe("sanitizeMemoForPrompt (계약 상한 5000자)", () => {
   it("줄바꿈과 리스트 구조를 그대로 보존해야 한다", () => {
     expect(sanitizeMemoForPrompt("1번\n- 2번\n3번")).toBe("1번\n- 2번\n3번");
   });
 
-  it("1000자를 초과하면 잘라내야 한다", () => {
-    const longInput = "가".repeat(1500);
-    expect(sanitizeMemoForPrompt(longInput)).toHaveLength(1000);
+  it("계약 상한 5000자 메모의 뒤쪽 내용을 보존해야 한다", () => {
+    const longInput = `${"가".repeat(4990)}\n- 마지막 할 일`;
+    expect(sanitizeMemoForPrompt(longInput)).toBe(longInput);
+  });
+
+  it("5000자를 초과한 부분만 잘라내야 한다", () => {
+    expect(sanitizeMemoForPrompt("가".repeat(5500))).toHaveLength(5000);
   });
 
   it("리스트 불릿(- *)을 보존해야 한다", () => {

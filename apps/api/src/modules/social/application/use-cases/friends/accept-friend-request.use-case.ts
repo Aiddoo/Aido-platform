@@ -58,7 +58,7 @@ export class AcceptFriendRequest {
         requesterUserId,
         userId,
       );
-      if (request === null || !request.isPending()) {
+      if (request == null || !request.isPending()) {
         throw new ApplicationException(ErrorCode.FOLLOW_0903, {
           targetUserId: requesterUserId,
         });
@@ -77,12 +77,12 @@ export class AcceptFriendRequest {
         requesterUserId,
       );
 
-      if (existingReverse !== null) {
+      if (existingReverse != null) {
         existingReverse.accept(maxSortUser + 1);
       }
 
       const createdFollow =
-        existingReverse !== null
+        existingReverse != null
           ? await this.#dependencies.followRepository.update(
               existingReverse.id,
               existingReverse.toUpdate(),
@@ -97,7 +97,7 @@ export class AcceptFriendRequest {
       const followWithUser = await this.#dependencies.followRepository.findByIdWithUser(
         createdFollow.id,
       );
-      if (followWithUser === null) {
+      if (followWithUser == null) {
         throw new ApplicationException(ErrorCode.SYS_0001, {
           detail: "Failed to retrieve created follow with user info",
           context: { followId: createdFollow.id, userId, requesterUserId },

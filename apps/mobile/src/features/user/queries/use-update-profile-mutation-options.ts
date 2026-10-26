@@ -32,7 +32,8 @@ export const useUpdateProfileMutationOptions = () => {
         }
         return {
           ...old,
-          ...(input.name !== undefined && { name: input.name }),
+          ...(input.name != null && { name: input.name }),
+          // nullish-strict: profileImage null은 사진 지우기다
           ...(input.profileImage !== undefined && { profileImage: input.profileImage }),
         };
       });

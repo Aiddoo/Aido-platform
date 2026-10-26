@@ -95,6 +95,38 @@ describe('formatDateKeyLabel', () => {
     expect(formatDateKeyLabel('2026-09-07', 'dottedMonthDay', KO_SEOUL)).toBe('09.07');
     expect(formatDateKeyLabel('2026-09-07', 'dottedMonthDay', EN_SEOUL)).toBe('09.07');
   });
+
+  it('Hermes처럼 ko-KR day 파트에 "일"이 붙어도 dayNumber는 숫자만 돌려준다', () => {
+    // Given
+    const originalFormatToParts = Intl.DateTimeFormat.prototype.formatToParts;
+    const spy = jest
+      .spyOn(Intl.DateTimeFormat.prototype, 'formatToParts')
+      .mockImplementation(function (this: Intl.DateTimeFormat, target) {
+        if (this.resolvedOptions().locale.startsWith('ko')) {
+          return [{ type: 'day', value: '7일' }];
+        }
+        return originalFormatToParts.call(this, target);
+      });
+
+    try {
+      // When
+      const label = formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL);
+
+      // Then
+      expect(label).toBe('7');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('DateString은 기기 시간대와 무관하게 그 날짜로 표시한다', () => {
+    // Given: 서울보다 하루 늦은 시간대
+    const losAngeles = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' } as const;
+
+    // When / Then
+    expect(formatDateKeyLabel('2026-10-20', 'fullDate', losAngeles)).toBe('2026년 10월 20일');
+    expect(formatDateKeyLabel('2028-02-29', 'fullDate', EN_SEOUL)).toBe('February 29, 2028');
+  });
 });
 
 describe('formatDateKeyRange', () => {
@@ -153,5 +185,23 @@ describe('getZonedHour', () => {
   it('지정 시간대의 0-23시를 반환한다', () => {
     expect(getZonedHour(new Date('2026-10-01T15:30:00Z'), 'Asia/Seoul')).toBe(0);
     expect(getZonedHour(new Date('2026-10-01T14:30:00Z'), 'Asia/Seoul')).toBe(23);
+  });
+});
+
+describe('formatDateLabel monthDay 윤일 경계', () => {
+  // 2028-02-29T15:00Z = 서울 3월 1일 00:00, LA 2월 29일 07:00
+  const LEAP_DAY_BOUNDARY = new Date('2028-02-29T15:00:00Z');
+
+  it.each([
+    ['ko-KR', 'Asia/Seoul', '3월 1일'],
+    ['ko-KR', 'America/Los_Angeles', '2월 29일'],
+    ['en-US', 'Asia/Seoul', 'Mar 1'],
+    ['en-US', 'America/Los_Angeles', 'Feb 29'],
+  ] as const)('%s·%s에서는 %s로 표시한다', (locale, timeZone, expected) => {
+    // When
+    const result = formatDateLabel(LEAP_DAY_BOUNDARY, 'monthDay', { locale, timeZone });
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

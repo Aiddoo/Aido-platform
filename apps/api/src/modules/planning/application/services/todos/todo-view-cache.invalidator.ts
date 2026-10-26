@@ -17,7 +17,7 @@ export class TodoViewCacheInvalidator implements TodoViewCacheInvalidatorPort {
   async invalidateForTodo(todoId: number): Promise<void> {
     const ownerUserId = await this.#dependencies.todoReadRepository.findOwnerId(todoId);
 
-    if (ownerUserId === null) {
+    if (ownerUserId == null) {
       return;
     }
 

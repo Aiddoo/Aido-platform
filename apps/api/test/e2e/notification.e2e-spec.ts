@@ -1,9 +1,14 @@
+import { randomUUID } from "node:crypto";
+
+import { notificationInboxResponseSchema, notificationListResponseSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
 } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
+import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
 /**
  * Notification E2E 테스트
  *
@@ -320,6 +325,21 @@ describe("알림 E2E", () => {
         // Then - 토큰 해제 성공 검증
         expect(response.body.success).toBe(true);
         expect(response.body.data.registered).toBe(false);
+      });
+
+      it("100자를 넘는 deviceId는 400 SYS_0002를 반환한다", async () => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser("notif-del-invalid@test.com", password);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .delete("/v1/notifications/token")
+          .query({ deviceId: "d".repeat(101) })
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(400);
+
+        // Then
+        expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
       });
 
       it("모든 토큰을 해제한다 (deviceId 미지정)", async () => {
@@ -911,6 +931,167 @@ describe("알림 E2E", () => {
         .expect(200);
 
       expect(response.body.data.optedOut).toBe(true);
+    });
+  });
+
+  describe("앱 버전별 새 알림 노출", () => {
+    it("1.12.1 이하 앱은 초대·보상 종료 알림을 받지 못하고 1.13.0부터 알림함에 보인다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("notif-invite@test.com", password);
+      await ctx.testDatabase
+        .getClient()
+        .orm.public.Notification.createAndCount(
+          (["FOLLOW_NEW", "INVITE_JOINED", "PREMIUM_GRANT_ENDING"] as const).map((type) =>
+            encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
+          ),
+        );
+
+      // When
+      const released = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.12.1")
+        .expect(200);
+      const legacy = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      const updated = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.13.0")
+        .expect(200);
+
+      // Then
+      const releasedInbox = notificationInboxResponseSchema.parse(released.body.data);
+      expect(releasedInbox.notifications.map((item) => item.type)).toEqual(["FOLLOW_NEW"]);
+      expect(releasedInbox.unreadCount).toBe(1);
+      expect(
+        notificationListResponseSchema
+          .parse(legacy.body.data)
+          .notifications.map((item) => item.type),
+      ).toEqual(["FOLLOW_NEW"]);
+      const updatedInbox = notificationInboxResponseSchema.parse(updated.body.data);
+      expect(updatedInbox.notifications.map((item) => item.type).sort()).toEqual([
+        "FOLLOW_NEW",
+        "INVITE_JOINED",
+        "PREMIUM_GRANT_ENDING",
+      ]);
+      expect(updatedInbox.unreadCount).toBe(3);
+    });
+
+    it.each([
+      { name: "버전 헤더 없음", version: undefined, visible: ["FOLLOW_NEW"] },
+      { name: "1.12.1", version: "1.12.1", visible: ["FOLLOW_NEW"] },
+      {
+        name: "1.13.0",
+        version: "1.13.0",
+        visible: ["FOLLOW_NEW", "INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"],
+      },
+    ])(
+      "$name 앱의 알림함·안 읽은 수는 버전 헤더로 초대·보상 알림을 거르고 구 목록 API는 항상 숨긴다",
+      async ({ version, visible }) => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser(
+          `notif-gate-${version ?? "none"}@test.com`,
+          password,
+        );
+        await ctx.testDatabase
+          .getClient()
+          .orm.public.Notification.createAndCount(
+            (
+              ["FOLLOW_NEW", "INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"] as const
+            ).map((type) =>
+              encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
+            ),
+          );
+        const get = (path: string) => {
+          const call = request(ctx.app.getHttpServer())
+            .get(path)
+            .set("Authorization", `Bearer ${user.accessToken}`);
+          return (version == null ? call : call.set("X-App-Version", version)).expect(200);
+        };
+
+        // When
+        const [inbox, list, unread] = await Promise.all([
+          get("/v1/notifications/inbox"),
+          get("/v1/notifications"),
+          get("/v1/notifications/inbox/unread-count"),
+        ]);
+
+        // Then
+        expect(
+          notificationInboxResponseSchema
+            .parse(inbox.body.data)
+            .notifications.map((item) => item.type)
+            .sort(),
+        ).toEqual(visible);
+        // 구 목록 API는 1.12.1 이하 앱만 쓰므로 헤더와 관계없이 새 알림 종류를 내보내지 않는다
+        expect(
+          notificationListResponseSchema
+            .parse(list.body.data)
+            .notifications.map((item) => item.type),
+        ).toEqual(["FOLLOW_NEW"]);
+        expect(unread.body.data.unreadCount).toBe(visible.length);
+      },
+    );
+  });
+
+  describe("공지 알림의 앱 이동 경로", () => {
+    it("결제 문제 공지는 알림함에 구독 화면 DEEP_LINK를 싣는다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("notif-billing@test.com", password);
+
+      // When
+      await ctx.module.get(SendBillingIssueNotification).execute({ userId: user.userId });
+      const inbox = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.13.0")
+        .expect(200);
+
+      // Then
+      const [notice] = notificationInboxResponseSchema.parse(inbox.body.data).notifications;
+      expect(notice).toMatchObject({
+        type: "SYSTEM_NOTICE",
+        action: { type: "DEEP_LINK", url: "/settings/subscription" },
+      });
+    });
+  });
+
+  describe("할 일 알림의 이동 재료", () => {
+    it("친구 할 일에 댓글을 받으면 알림함 metadata에 할 일 주인과 날짜를 싣는다", async () => {
+      // Given
+      const owner = await ctx.helpers.createVerifiedUser("notif-todo-owner@test.com", password);
+      const friend = await ctx.helpers.createVerifiedUser("notif-todo-friend@test.com", password);
+      await ctx.helpers.createFriendship(owner, friend);
+      const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
+      const todo = await request(ctx.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .send({ title: "친구 할 일", categoryId, startDate: "2026-08-14", visibility: "PUBLIC" })
+        .expect(201);
+      const todoId: number = todo.body.data.todo.id;
+
+      // When
+      await request(ctx.app.getHttpServer())
+        .post(`/v1/todos/${todoId}/comments`)
+        .set("Authorization", `Bearer ${friend.accessToken}`)
+        .send({ parentId: null, items: [{ clientRequestId: randomUUID(), content: "응원해" }] })
+        .expect(201);
+      const inbox = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .set("X-App-Version", "1.13.0")
+        .expect(200);
+
+      // Then
+      const [notification] = notificationInboxResponseSchema.parse(inbox.body.data).notifications;
+      expect(notification).toMatchObject({
+        type: "TODO_SHARED",
+        context: { todoId },
+        metadata: { todoOwnerId: owner.userId, todoDate: "2026-08-14" },
+      });
     });
   });
 });

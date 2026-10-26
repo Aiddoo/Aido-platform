@@ -13,7 +13,8 @@
     "requestFailed": "친구 요청에 실패했어요"
   },
   "premium": {
-    "unlimitedFriends": "프리미엄 구독으로 무제한 친구를 추가할 수 있어요"
+    "unlimitedFriends": "프리미엄 구독으로 무제한 친구를 추가할 수 있어요",
+    "friendLimitTitle": "친구 자리가 꽉 찼어요"
   },
   "deleteDialog": {
     "title": "친구를 삭제할까요?",

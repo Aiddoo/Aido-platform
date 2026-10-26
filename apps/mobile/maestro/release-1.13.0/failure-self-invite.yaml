@@ -1,0 +1,30 @@
+appId: com.aido.mobile
+name: 내 초대 링크로 수락하면 서버가 막고 내 초대 화면으로 안내한다(INVITE_2103)
+tags:
+  - failure
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-inviter.yaml
+# 앱은 내 초대 정보를 미리 부르지 않는다(처음 부르면 코드가 생긴다). 본인 판정은 서버 INVITE_2103이 한다
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    label: 로그인한 사람의 수락 버튼
+    visible:
+      id: invite-card-redeem
+    timeout: 20000
+- assertNotVisible:
+    id: invite-card-signup
+- tapOn:
+    id: invite-card-redeem
+# Then: 수락 오류 처리가 내 초대 화면으로 보낸다
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 15000
+- takeScreenshot: 1.13.0-failure-self-invite

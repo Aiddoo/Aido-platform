@@ -88,7 +88,7 @@ export class LoginWithOAuthToken {
 
   async execute(input: LoginWithOAuthTokenInput): Promise<LoginResult> {
     const strategy = this.#dependencies.registry.get(input.provider);
-    if (strategy === undefined)
+    if (strategy == null)
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
         provider: input.provider,
         reason: `Unsupported provider: ${input.provider}`,
@@ -140,11 +140,11 @@ export class LoginWithOAuthToken {
     let userId: string;
     let userEmail: string;
 
-    if (existingAccount !== null) {
+    if (existingAccount != null) {
       userId = existingAccount.userId;
       const user = await this.#dependencies.userRepository.findById(userId);
 
-      if (user === null) {
+      if (user == null) {
         throw new ApplicationException(ErrorCode.USER_0601, { userId });
       }
 
@@ -173,7 +173,7 @@ export class LoginWithOAuthToken {
 
       if (email) {
         const existingUser = await this.#dependencies.userRepository.findByEmail(email);
-        if (existingUser !== null) {
+        if (existingUser != null) {
           return this.#handleEmailConflict(existingUser, provider, providerAccountId, {
             emailVerified: options.emailVerified,
             ip,
@@ -286,7 +286,7 @@ export class LoginWithOAuthToken {
   ): Promise<LoginResult> {
     const userRecord = await this.#dependencies.userRepository.findById(user.id);
 
-    if (userRecord === null) {
+    if (userRecord == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId: user.id });
     }
 
@@ -343,7 +343,7 @@ export class LoginWithOAuthToken {
   ): Promise<LoginResult> {
     const user = await this.#dependencies.userRepository.findById(userId);
 
-    if (user === null) {
+    if (user == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
 

@@ -28,7 +28,7 @@ export class MarkCheerRead {
     const { userId, cheerId } = input;
 
     const cheer = await this.#dependencies.cheerRepository.findById(cheerId);
-    if (cheer === null || !cheer.isReceivedBy(userId)) {
+    if (cheer == null || !cheer.isReceivedBy(userId)) {
       throw new ApplicationException(ErrorCode.CHEER_1205, { cheerId });
     }
     if (!cheer.markRead(now())) {

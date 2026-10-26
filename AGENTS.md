@@ -69,6 +69,7 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 | 홈 화면 위젯 (iOS/Android)       | [`apps/mobile/.claude/widgets.md`](apps/mobile/.claude/widgets.md)                                                                                |
 | OAuth / 소셜 로그인              | [`apps/mobile/.claude/oauth-client-guide.md`](apps/mobile/.claude/oauth-client-guide.md)                                                          |
 | 로깅 패턴                        | [`apps/api/.claude/logging-guide.md`](apps/api/.claude/logging-guide.md)                                                                          |
+| 응답·오류, 날짜·시간, 하위 호환  | [오류](docs/conventions/errors.md) · [날짜](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md)                                |
 | 배포                             | `apps/{api,mobile}/DEPLOYMENT.md`                                                                                                                 |
 
 ---
@@ -76,11 +77,11 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 ## 규칙 & 금칙
 
 - **린트/포맷**: Oxlint + Oxfmt — `pnpm lint`, `pnpm format:check`, `pnpm format`
-- **이슈/PR**: 이슈는 배경·목표·완료 조건, PR은 요약·주요 변경·실제 검증을 기본으로 작성한다. 코드 가독성·품질 개선은 실제 base/head의 짧은 Before/After 코드와 문제·개선 이유를 적고 측정 성능과 구분한다. 재현·측정·위험·배포·화면 자료는 필요한 경우만 추가하고 merge와 운영 배포 상태를 구분한다.
-- **커밋**: Conventional Commits (`pnpm commit` 권장). 설명은 한국어로 작성한다. 서버 리팩터링은 `refactor(server): 설명`, CI 변경은 `ci(server): 설명` 형식을 사용한다.
-- **타입**: `strict: true` 유지
+- **커밋/PR/이슈**: 한국어 Conventional Commits(`refactor(server): …`, `ci(server): …`). PR은 요약·주요 변경·실제 검증, 측정한 숫자만. stack은 `stack:<release>`, tip만 `ci:stack-tip`. 상세: [docs/conventions/git.md](docs/conventions/git.md)
+- **타입**: `strict: true`. `as`(`as const` 제외)·`any`·`!`·`@ts-ignore`/`@ts-expect-error` 금지, 타입은 Zod·props·상수 튜플에서 유도
 - **DTO**: `@aido/api`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
 - **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
+- **비교·null/undefined**: 값 비교는 `===`, "없음"만 `== null`(Oxlint `eqeqeq`). 상세: [docs/conventions/nullish.md](docs/conventions/nullish.md)
 - **API 문서**: Swagger UI는 `http://localhost:8080/api/docs`
 - **AGENTS.md**: Claude/Codex 공통 지침의 단일 원본. 세션 컨텍스트에 포함되므로 _얇게 유지_. 상세는 `.claude/*.md`로 분리
 

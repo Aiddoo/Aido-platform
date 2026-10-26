@@ -1,0 +1,31 @@
+appId: com.aido.mobile
+name: 앱 데이터를 비우고 지정한 계정으로 로그인한다
+# 사용: runFlow { file: subflows/start.yaml, env: { QA_EMAIL, QA_PASSWORD } }
+---
+# docs: reference/commands-available/launchapp.md - clearState, clearKeychain(iOS), permissions
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          clearState: true
+          clearKeychain: true
+          stopApp: true
+          permissions:
+            notifications: allow
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          clearState: true
+          stopApp: true
+          permissions:
+            notifications: allow
+# 로그인 절차는 1.13.0 릴리스 흐름의 이메일 로그인을 그대로 쓴다
+- runFlow:
+    file: ../../release-1.13.0/subflows/login.yaml
+    env:
+      QA_EMAIL: ${QA_EMAIL}
+      QA_PASSWORD: ${QA_PASSWORD}
+- runFlow: settle.yaml

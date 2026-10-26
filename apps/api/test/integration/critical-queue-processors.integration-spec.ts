@@ -1,4 +1,5 @@
 import { and } from "@prisma/orm-postgres/orm-client";
+import { assert } from "vitest";
 
 import {
   NOTIFICATION_QUEUE,
@@ -245,12 +246,13 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       processingJobAttempt: 2,
       startedAt: new Date(),
     });
-    expect(retry?.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
+    assert.exists(retry);
+    expect(retry.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
     await expect(
-      harness.retentionRepository.markDispatchSkipped(first?.fence ?? retry!.fence, "STALE"),
+      harness.retentionRepository.markDispatchSkipped(first?.fence ?? retry.fence, "STALE"),
     ).resolves.toBe(false);
     await expect(
-      harness.retentionRepository.markDispatchSkipped(retry!.fence, "CURRENT"),
+      harness.retentionRepository.markDispatchSkipped(retry.fence, "CURRENT"),
     ).resolves.toBe(true);
   });
 
@@ -330,13 +332,13 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       processingJobAttempt: 1,
       startedAt: new Date(),
     });
-    expect(claimed).not.toBeNull();
+    assert.exists(claimed);
     await expect(
-      harness.retentionRepository.markRateLimitReserved(claimed!.fence, new Date()),
+      harness.retentionRepository.markRateLimitReserved(claimed.fence, new Date()),
     ).resolves.toBe(true);
     await expect(
       harness.retentionRepository.releaseDispatchForRetry({
-        fence: claimed!.fence,
+        fence: claimed.fence,
         reason: "provider unavailable",
         availableAt: new Date(),
         hasExhaustedRetries: false,

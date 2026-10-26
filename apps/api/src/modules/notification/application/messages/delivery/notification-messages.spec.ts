@@ -2,6 +2,8 @@ import { createNotificationLabelPreview } from "./notification-copy.renderer.js"
 import {
   createBillingIssueNotificationMessage,
   createEveningReminderNotificationMessage,
+  createInviteJoinedNotificationMessage,
+  createInviteRewardedNotificationMessage,
   createMorningReminderNotificationMessage,
   createNudgeReceivedNotificationMessage,
   createOnboardingNotificationMessage,
@@ -210,6 +212,57 @@ describe("알림 문구 생성", () => {
       expect(`${message.title} ${message.body}`).toContain(text);
     },
   );
+
+  it.each([
+    { inviteeName: "매튜", expected: "매튜가 내 초대로 친구가 됐어 🐾" },
+    { inviteeName: "존", expected: "존이 내 초대로 친구가 됐어 🐾" },
+  ])(
+    "초대 수락 알림은 다른 소셜 알림처럼 반말로 이름에 조사를 붙인다 ($inviteeName)",
+    ({ inviteeName, expected }) => {
+      // Given
+      const input = { inviteeName, locale: "ko" as const, variantContext: VARIANT_CONTEXT };
+
+      // When
+      const message = createInviteJoinedNotificationMessage(input);
+
+      // Then
+      expect(message).toMatchObject({ title: expected, body: "서로의 하루를 응원해봐" });
+    },
+  );
+
+  it.each([
+    {
+      rewards: { premiumDays: 7, friendSlots: 1 },
+      ko: "프리미엄 7일과 친구 자리 1개를 받았어",
+      en: "You got 7 days of Premium and 1 more friend slot",
+    },
+    {
+      rewards: { premiumDays: 2, friendSlots: 1 },
+      ko: "프리미엄 2일과 친구 자리 1개를 받았어",
+      en: "You got 2 days of Premium and 1 more friend slot",
+    },
+    {
+      rewards: { premiumDays: 0, friendSlots: 2 },
+      ko: "친구 자리 2개를 받았어",
+      en: "You got 2 more friend slots",
+    },
+    {
+      rewards: { premiumDays: 1, friendSlots: 0 },
+      ko: "프리미엄 1일을 받았어",
+      en: "You got 1 day of Premium",
+    },
+  ])("발자국 알림은 받은 보상을 모두 적고 영어는 복수형을 맞춘다 ($ko)", ({ rewards, ko, en }) => {
+    // Given
+    const input = { ...rewards, variantContext: VARIANT_CONTEXT };
+
+    // When
+    const korean = createInviteRewardedNotificationMessage({ ...input, locale: "ko" });
+    const english = createInviteRewardedNotificationMessage({ ...input, locale: "en" });
+
+    // Then
+    expect(korean).toMatchObject({ title: "발자국이 찍혔어 🐾", body: ko });
+    expect(english).toMatchObject({ title: "You got a paw print 🐾", body: en });
+  });
 
   it("댓글 좋아요는 개수를 받지 않고 actor를 먼저 알린다", () => {
     const message = createTodoCommentNotificationMessage({

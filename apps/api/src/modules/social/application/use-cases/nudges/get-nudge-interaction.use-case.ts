@@ -35,7 +35,7 @@ export class GetNudgeInteraction {
       input.nudgeId,
       input.userId,
     );
-    if (nudge === null) {
+    if (nudge == null) {
       throw new ApplicationException(ErrorCode.NUDGE_1105);
     }
     const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId);

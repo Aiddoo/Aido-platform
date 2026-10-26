@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { PROFILE_ICON_KEYS } from '@aido/api';
 import sharp from 'sharp';
 
+import { TAB_ICON_IMAGES } from './tab-icon-images.mjs';
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(
   execFileSync('pnpm', ['exec', 'expo', 'config', '--type', 'public', '--json'], {
@@ -47,15 +49,12 @@ for (const key of ['russian_blue', 'cream_cat', 'tuxedo_cat']) {
   assert.equal(metadata.space, 'srgb');
 }
 
-for (const name of ['todo', 'memo', 'mypage']) {
-  for (const scale of [1, 2, 3]) {
-    const suffix = scale === 1 ? '' : `@${scale}x`;
-    const metadata = await sharp(resolve(root, `assets/tab-icons/${name}${suffix}.png`)).metadata();
-    assert.equal(metadata.width, 24 * scale);
-    assert.equal(metadata.height, 24 * scale);
-    assert.equal(metadata.hasAlpha, true, `${name} 탭 아이콘은 투명 배경이어야 합니다.`);
-  }
+for (const { outputPath, size } of TAB_ICON_IMAGES) {
+  const metadata = await sharp(resolve(root, outputPath)).metadata();
+  assert.equal(metadata.width, size, `${outputPath} 너비가 ${size}px이어야 합니다.`);
+  assert.equal(metadata.height, size, `${outputPath} 높이가 ${size}px이어야 합니다.`);
+  assert.equal(metadata.hasAlpha, true, `${outputPath} 탭 아이콘은 투명 배경이어야 합니다.`);
 }
 console.log(
-  `앱 아이콘 ${PROFILE_ICON_KEYS.length}종과 탭 이미지 9개의 네이티브 에셋 검증을 통과했습니다.`,
+  `앱 아이콘 ${PROFILE_ICON_KEYS.length}종과 탭 이미지 ${TAB_ICON_IMAGES.length}개의 네이티브 에셋 검증을 통과했습니다.`,
 );

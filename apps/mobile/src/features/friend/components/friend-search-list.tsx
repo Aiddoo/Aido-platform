@@ -46,6 +46,9 @@ export function FriendSearchList({ query }: { query: string }) {
 
   return (
     <UserList
+      // 검색 중에는 키보드가 떠 있으므로 첫 탭이 키보드를 내리는 데 먹히지 않게 하고, 끌면 내린다
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       data={search.data?.pages.flatMap((page) => page.items) ?? []}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <FriendSearchList.Item user={item} />}

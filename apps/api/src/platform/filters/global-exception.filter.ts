@@ -1,5 +1,5 @@
 import type { RestErrorResponse } from "@aido/api";
-import { ErrorCode, Errors } from "@aido/api/errors";
+import { ErrorCode, Errors, toPublicErrorDetails } from "@aido/api/errors";
 import {
   type ArgumentsHost,
   Catch,
@@ -17,7 +17,9 @@ import {
   databaseSqlState,
   isRecordNotFoundError,
 } from "#api/platform/database/prisma-error.util";
+import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
+import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
@@ -73,7 +75,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           timestamp: Date.now(),
         };
       }
-    } else if (databaseSqlState(exception) !== undefined || isRecordNotFoundError(exception)) {
+    } else if (databaseSqlState(exception) != null || isRecordNotFoundError(exception)) {
       // Database 에러 처리
       const businessException = this.#mapDatabaseError(exception);
       ({ statusCode, errorResponse } = this.#toRestErrorResponse(businessException));
@@ -96,8 +98,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // 사용자 ID 추출 (Sentry 컨텍스트 + 로깅 공용)
-    const userId =
-      (request as Request & { user?: { userId?: string } }).user?.userId ?? "anonymous";
+    const userId = readRequestUserId(request) ?? "anonymous";
 
     const requestPath = httpRequestPath(request.url);
 
@@ -109,12 +110,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ip_address: "{{auto}}",
         });
         scope.setTags({
-          "http.method": request.method,
-          "http.url": requestPath,
-          "http.status_code": String(statusCode),
-          "error.code": errorResponse.error.code,
+          [SENTRY_TAG.HTTP_METHOD]: request.method,
+          [SENTRY_TAG.HTTP_URL]: requestPath,
+          [SENTRY_TAG.HTTP_STATUS_CODE]: String(statusCode),
+          [SENTRY_TAG.ERROR_CODE]: errorResponse.error.code,
         });
-        scope.setExtra("errorResponse", errorResponse);
+        scope.setExtra(SENTRY_EXTRA.ERROR_RESPONSE, errorResponse);
         Sentry.captureException(exception);
       });
     }
@@ -156,6 +157,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     errorResponse: RestErrorResponse;
   } {
     const definition = Errors[exception.errorCode];
+    // 운영에서는 앱이 계약으로 쓰는 코드의 검증된 상세만 내보낸다
+    const details = this.configService.isDevelopment
+      ? exception.details
+      : toPublicErrorDetails(exception.errorCode, exception.details);
     return {
       statusCode: definition.httpStatus,
       errorResponse: {
@@ -163,7 +168,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error: {
           code: exception.errorCode,
           message: exception.message || definition.message,
-          ...(this.configService.isDevelopment && { details: exception.details }),
+          // undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
+          // nullish-strict: undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
+          ...(details !== undefined && { details }),
         },
         timestamp: Date.now(),
       },

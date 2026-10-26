@@ -1,0 +1,181 @@
+{
+  "codeEntry": {
+    "title": "초대 코드 입력",
+    "headline": "친구에게 받은\n초대 코드를 입력해주세요",
+    "description": "영문과 숫자 6자리예요. 헷갈리는 0·O·1·I·L은 없어요",
+    "inputLabel": "초대 코드",
+    "paste": "복사한 코드 붙여넣기",
+    "submit": "확인",
+    "retry": "다시 확인",
+    "invalidCharacter": {
+      "confusable": "{{characters}} 글자는 초대 코드에 없어요.\n헷갈리기 쉬운 0·O·1·I·L은 쓰지 않아요",
+      "unused": "{{characters}} 글자는 초대 코드에 없어요.\n코드를 다시 확인해주세요",
+      "more": "{{characters}} 등의"
+    }
+  },
+  "card": {
+    "inviterAvatar": "{{name}}님의 고양이 프로필",
+    "title": "{{name}}님이\n아이두에 초대했어요",
+    "subtitle": "친구가 되면 서로의 할 일을 응원할 수 있어요",
+    "receipt": {
+      "title": "가입하면 프리미엄 {{count}}일",
+      "description": "AI 할 일 만들기와 친구 추가를 마음껏 누려보세요",
+      "benefitFriend": "{{name}}님과 바로 친구가 돼요",
+      "benefitAi": "AI 할 일 만들기 무제한",
+      "benefitFriends": "친구 추가·콕 찌르기 무제한",
+      "codeLabel": "초대 코드"
+    },
+    "signUp": "가입하고 친구 되기",
+    "login": "이미 계정이 있어요 · 로그인",
+    "unnamedInviter": "친구",
+    "existingAccountNote": "이미 아이두를 쓰고 있어서 바로 친구가 돼요. 프리미엄 보상은 새로 가입한 친구에게 드려요",
+    "redeemWithReward": "친구 되고 프리미엄 {{count}}일 받기",
+    "connect": "{{name}}님과 친구 맺기",
+    "alreadyAccepted": "이미 받은 초대예요"
+  },
+  "result": {
+    "notFound": {
+      "title": "초대 코드를 찾을 수 없어요",
+      "description": "코드를 다시 확인하거나 친구에게 새 링크를 받아주세요"
+    },
+    "rotated": {
+      "title": "초대 링크가 바뀌었어요",
+      "description": "친구가 링크를 새로 만들었어요.\n새 링크를 받아 다시 열어주세요"
+    },
+    "disabled": {
+      "title": "지금은 초대를 받을 수 없어요",
+      "description": "잠시 후 다시 열어주세요.\n링크는 그대로 쓸 수 있어요"
+    },
+    "loadFailed": {
+      "title": "초대 정보를 불러오지 못했어요",
+      "description": "인터넷 연결을 확인하고 다시 시도해주세요"
+    },
+    "enterCode": "코드 직접 입력하기",
+    "retry": "다시 시도"
+  },
+  "errors": {
+    "invalidCode": "초대 코드는 영문과 숫자 6자리예요"
+  },
+  "myInvite": {
+    "title": "친구 초대",
+    "heroChip": "친구도 나도 프리미엄 {{days}}일",
+    "heroChipSeparate": "친구는 프리미엄 {{inviteeDays}}일, 나는 {{inviterDays}}일",
+    "heroTitle": "친구를 초대하고\n서로의 할 일을 응원해요",
+    "codeLabel": "내 초대 코드",
+    "copy": "복사",
+    "copyLink": "초대 링크 복사",
+    "rotate": {
+      "button": "새 링크 만들기",
+      "title": "새 링크를 만들까요?",
+      "description": "새 링크를 만들면 이전 링크는 쓸 수 없어요",
+      "confirm": "새로 만들기"
+    },
+    "notice": {
+      "qualification": "친구가 가입하고 {{days}}일 안에 서로 다른 {{count}}일 동안 할 일을 끝내면 발자국이 찍혀요",
+      "cap": "프리미엄은 최근 {{windowDays}}일 동안 {{monthly}}일, 모두 합쳐 {{total}}일까지 받을 수 있어요",
+      "subscription": "구독 중이면 받은 프리미엄은 구독이 끝난 뒤 시작돼요"
+    },
+    "unavailable": {
+      "title": "지금은 친구 초대를 쓸 수 없어요",
+      "description": "잠시 후 다시 열어주세요.\n이미 받은 보상은 그대로 남아 있어요"
+    }
+  },
+  "pawPrintBoard": {
+    "title": "발자국 모으기",
+    "rewardRule": "친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 발자국 1개와 프리미엄 {{days}}일, 친구 자리 {{slots}}개를 받아요",
+    "cellLabel": "{{number}}번째 발자국, {{state}}",
+    "state": {
+      "stamped": "찍혔어요",
+      "waiting": "곧 찍혀요",
+      "empty": "비어 있어요",
+      "milestone": "생선 보상 칸이에요"
+    },
+    "progress": {
+      "notStarted": "첫 친구를 초대해보세요. 가입하면 바로 친구가 돼요",
+      "monthlyCapReached": "최근 {{windowDays}}일 동안 받을 수 있는 프리미엄 {{days}}일을 모두 받았어요. 발자국과 친구 자리는 계속 모을 수 있어요",
+      "next": "다음 보상까지 친구 {{count}}명 남았어요"
+    },
+    "header": "{{boardNumber}}번째 판 · 지금까지 발자국 {{total}}개",
+    "firstHint": "첫 친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 여기에 발자국이 찍혀요",
+    "complete": "{{boardNumber}}번째 판을 다 채웠어요! 다음엔 새 판이 열려요",
+    "rewardsSummary": "프리미엄 {{count}}일 · 친구 자리 {{slots}}개",
+    "unavailable": "초대가 다시 열리면 발자국을 이어서 모을 수 있어요"
+  },
+  "friendList": {
+    "title": "초대한 친구",
+    "stamped": "{{date}}에 발자국을 남겼어요",
+    "waiting": "할 일을 {{required}}일 중 {{done}}일 해냈어요",
+    "excluded": "이번에는 발자국이 찍히지 않았어요",
+    "excludedExpired": "가입하고 {{days}}일이 지나 발자국이 찍히지 않았어요",
+    "excludedMonthlyCap": "보상 한도에 걸려 이번에는 발자국이 찍히지 않았어요",
+    "joined": "{{date}}에 가입했어요",
+    "chipDone": "찍혔어요",
+    "chipDoneLabel": "발자국이 찍혔어요",
+    "chipWaiting": "할 일 {{count}}일 더",
+    "chipWaitingLabel": "{{count}}일만 더 하면 발자국이 찍혀요",
+    "emptyTitle": "아직 초대한 친구가 없어요",
+    "emptyDescription": "초대 링크로 가입한 친구가 여기에 보여요",
+    "tab": {
+      "all": "전체 {{count}}",
+      "waiting": "발자국 대기 {{count}}"
+    },
+    "seeAll": "전체 보기 {{count}}명",
+    "emptyWaitingTitle": "발자국을 기다리는 친구가 없어요",
+    "emptyWaitingDescription": "가입했지만 아직 발자국이 찍히지 않은 친구가 여기에 보여요",
+    "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요"
+  },
+  "share": {
+    "kakao": "카카오톡으로 초대하기",
+    "copyLink": "링크 복사",
+    "system": "다른 앱으로 공유",
+    "toolbarLabel": "초대 링크 공유",
+    "kakaoTitle": "{{name}}님이 아이두에 초대했어요",
+    "kakaoDescription": "가입하면 바로 친구가 되고 프리미엄 {{days}}일을 받아요",
+    "kakaoButton": "초대받기",
+    "message": "아이두에서 같이 할 일을 해요! 가입하면 프리미엄 {{count}}일을 받아요.",
+    "dialogTitle": "초대 링크 보내기"
+  },
+  "toast": {
+    "linkCopied": "링크를 복사했어요",
+    "rotated": "새 초대 링크를 만들었어요",
+    "shareFailed": "공유하지 못했어요. 잠시 후 다시 시도해주세요"
+  },
+  "entry": {
+    "haveInviteCode": "초대 코드가 있나요?",
+    "inviteCodeShort": "초대 코드",
+    "inviteFriends": "친구 초대하기",
+    "findByTag": "태그로 찾기",
+    "friendsEmptyDescription": "링크 하나로 친구를 초대해보세요.\n친구는 가입하면 바로 프리미엄 {{days}}일을 받아요",
+    "friendLimitDescription": "지금은 {{limit}}명까지 함께할 수 있어요.\n초대한 친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 친구 자리가 1개씩 늘어나요",
+    "growFriendSlots": "친구 초대로 친구 자리 늘리기",
+    "mypageTitle": "친구 초대 · 발자국 {{count}}개",
+    "mypageStart": "첫 발자국을 남겨보세요",
+    "mypageNext": "다음 보상까지 친구 {{count}}명 남았어요",
+    "mypageKeepGoing": "친구와 함께 계속 응원해요",
+    "checklistStep": "친구 1명 초대하기",
+    "checklistReward": "친구에게 프리미엄 {{days}}일",
+    "allDoneDescription": "친구와 같이 하면 더 오래 이어가요",
+    "allDoneDismiss": "오늘은 그만 보기",
+    "friendsEmptyTitle": "첫 친구를 초대해보세요",
+    "allDoneTitlePrefix": "오늘 할 일을",
+    "allDoneTitleHighlight": "다 끝냈어요"
+  },
+  "welcome": {
+    "friendsTitle": "{{name}}님과 친구가 됐어요",
+    "requestedTitle": "{{name}}님에게 친구 요청을 보냈어요",
+    "friendsDescription": "이제 서로의 할 일을 보고 응원할 수 있어요",
+    "requestedDescription": "{{name}}님의 친구 자리가 꽉 찼어요.\n{{name}}님이 수락하면 바로 친구가 돼요",
+    "alreadyClaimedDescription": "이 기기에서는 이미 초대 보상을 받아서 이번에는 친구만 맺었어요",
+    "existingAccountDescription": "이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요",
+    "rewardTitle": "프리미엄 {{count}}일을 받았어요",
+    "rewardDescription": "{{count}}일 동안 모든 기능을 쓸 수 있어요",
+    "rewardAfterSubscription": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요",
+    "rewardAfterCurrentReward": "지금 쓰고 있는 보상 프리미엄이 끝나면 이번 {{count}}일이 이어서 시작돼요",
+    "notificationContext": "친구가 할 일을 끝내면 알려드릴게요",
+    "notificationButton": "알림 받기",
+    "notificationOn": "친구 소식 알림을 켰어요",
+    "createFirstTodo": "첫 할 일 만들기",
+    "openFriendFeed": "{{name}}님 할 일 먼저 보기",
+    "later": "나중에 할게요"
+  }
+}

@@ -1,6 +1,10 @@
 import request from "supertest";
+import { assert } from "vitest";
 
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import {
+  AI_PROVIDER,
+  AI_TASK_SETTINGS,
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 /**
  * AI 모듈 E2E 테스트
  *
@@ -21,6 +25,7 @@ import {
   createParsedTodoResponse,
   parsingIntentCases,
 } from "#test/fixtures/ai-response.fixture";
+import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -94,7 +99,13 @@ describe("AI E2E", () => {
     fakeAiProvider = new FakeAiProvider();
 
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
+      // 이 파일의 응답 fixture는 v1 모양이라 파싱 v1 롤백 경로를 검증한다. v2는 ai-parsing-v2.e2e-spec이 맡는다.
+      customizeBuilder: (builder) =>
+        builder
+          .overrideProvider(AI_PROVIDER)
+          .useValue(fakeAiProvider)
+          .overrideProvider(AI_TASK_SETTINGS)
+          .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
       additionalResetters: [() => fakeAiProvider.clear()],
     });
   }, 60000);
@@ -958,7 +969,9 @@ describe("AI E2E", () => {
     async ({ itemCount, status, used }) => {
       // Given
       const memo = createParsedMemoResponse();
-      memo.todos[0]!.items = Array.from({ length: itemCount }, (_, index) => ({
+      const [firstTodo] = memo.todos;
+      assert.exists(firstTodo);
+      firstTodo.items = Array.from({ length: itemCount }, (_, index) => ({
         title: `발표 준비 단계 ${index + 1}`,
       }));
       fakeAiProvider.setRawResponse(memo);
@@ -979,7 +992,7 @@ describe("AI E2E", () => {
       expect(fakeAiProvider.getCallCount()).toBe(1);
       if (status === 200) {
         expect(response.body.data.success).toBe(true);
-        expect(response.body.data.data.todos[0].items).toEqual(memo.todos[0]!.items);
+        expect(response.body.data.data.todos[0].items).toEqual(firstTodo.items);
       } else {
         expect(response.body.error.code).toBe("AI_1302");
       }
@@ -1014,8 +1027,10 @@ describe("AI E2E", () => {
     async (locale) => {
       // Given - 명시적인 완전 Memo 응답에 Todo 두 개
       const raw = createParsedMemoResponse(1);
+      const [firstTodo] = raw.todos;
+      assert.exists(firstTodo);
       raw.todos.push({
-        ...raw.todos[0]!,
+        ...firstTodo,
         title: locale === "en" ? "Prepare notes" : "자료 준비",
         items: [],
       });

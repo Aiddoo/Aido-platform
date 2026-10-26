@@ -15,6 +15,8 @@ export {
   createFollowAcceptedNotificationMessage,
   createFollowRequestNotificationMessage,
   createFriendCompletedNotificationMessage,
+  createInviteJoinedNotificationMessage,
+  createInviteRewardedNotificationMessage,
   createNudgeReceivedNotificationMessage,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
@@ -27,6 +29,7 @@ export {
   createMilestoneNotificationMessage,
   createMonthlyReportNotificationMessage,
   createOnboardingNotificationMessage,
+  createPremiumGrantEndingNotificationMessage,
   createWeeklyReportNotificationMessage,
   createWinbackNotificationMessage,
 } from "./system-notification-message.js";

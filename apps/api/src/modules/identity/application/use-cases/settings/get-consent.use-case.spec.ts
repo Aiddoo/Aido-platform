@@ -22,6 +22,9 @@ describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
       agreedTermsVersion: null,
       marketingAgreedAt: null,
       marketingPushAgreedAt: null,
+      aiDataSharingDecision: "UNDECIDED",
+      aiDataSharingAgreedAt: null,
+      aiDataSharingConsentVersion: null,
     });
     expect(fixture.consentRepository.records.size).toBe(0);
   });
@@ -39,6 +42,9 @@ describe("GetConsent — 약관과 선택 동의의 nullable 응답", () => {
       agreedTermsVersion: fixture.consent.agreedTermsVersion,
       marketingAgreedAt: null,
       marketingPushAgreedAt: SETTINGS_TIME.toISOString(),
+      aiDataSharingDecision: "UNDECIDED",
+      aiDataSharingAgreedAt: null,
+      aiDataSharingConsentVersion: null,
     });
   });
 });

@@ -2,6 +2,7 @@ import type {
   Subscription,
   SubscriptionStatusValue,
 } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
+import type { StoreSubscriptionEntitlement } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 
 export const SUBSCRIPTION_REPOSITORY = Symbol("SUBSCRIPTION_REPOSITORY");
 
@@ -50,12 +51,12 @@ export interface UpdateUserSubscriptionStatusData {
 export interface SubscriptionRepositoryPort {
   findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
   findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
-  findUserById(userId: string): Promise<SubscriptionUser | null>;
-  findOtherEntitlementExpiry(
-    userId: string,
-    excludedRevenueCatId: string,
-    at: Date,
-  ): Promise<Date | null>;
+  /** 이 사용자가 소유한 삭제되지 않은 스토어 구독 행을 한 번에 읽는다. */
+  findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]>;
+  /** 이 체인의 이벤트가 온 사용자를 행의 소유자로 정한다. 다른 사용자 행이었으면 옮기고 true를 반환한다. */
+  claimChain(revenueCatId: string, userId: string): Promise<boolean>;
+  /** TRANSFER로 넘겨준 사용자의 삭제되지 않은 행을 받은 사용자에게 옮기고 옮긴 행 수를 반환한다. */
+  takeOverChains(fromUserId: string, toUserId: string): Promise<number>;
   create(data: CreateSubscriptionData): Promise<void>;
   updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
   updateUserSubscriptionStatus(

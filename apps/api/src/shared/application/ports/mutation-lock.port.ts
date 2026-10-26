@@ -22,6 +22,12 @@ export const MutationLockKeys = {
   friendList(userId: string): string {
     return `${MUTATION_KEY_PREFIX}:friend:list:${userId}`;
   },
+  invite(inviterId: string): string {
+    return `${MUTATION_KEY_PREFIX}:invite:${inviterId}`;
+  },
+  inviteRewardLedger(inviterId: string): string {
+    return `${MUTATION_KEY_PREFIX}:invite-reward-ledger:${inviterId}`;
+  },
   cheerDailyQuota(senderId: string): string {
     return `${MUTATION_KEY_PREFIX}:cheer:daily-quota:${senderId}`;
   },
@@ -36,6 +42,9 @@ export const MutationLockKeys = {
   },
   remindNudgeCooldown(senderId: string, receiverId: string): string {
     return `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId}:${receiverId}`;
+  },
+  userReport(reporterId: string): string {
+    return `${MUTATION_KEY_PREFIX}:user-report:${reporterId}`;
   },
   todoCategory(userId: string): string {
     return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;

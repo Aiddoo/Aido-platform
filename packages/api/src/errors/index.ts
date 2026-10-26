@@ -12,3 +12,5 @@ export {
   getErrorsByHttpStatus,
   isErrorCode,
 } from "./utils.js";
+export type { FriendLimitErrorDetails } from "./public-details.js";
+export { friendLimitErrorDetailsSchema, toPublicErrorDetails } from "./public-details.js";

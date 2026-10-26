@@ -1,4 +1,5 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api";
+import type { PremiumSource } from "@aido/api/vocabulary";
 
 import type { AccountProvider, UserStatus } from "../../../domain/types/auth/auth.types.js";
 
@@ -21,6 +22,13 @@ export interface AuthCachedUserProfile {
   profileImage: string | null;
   createdAt: string;
   providers: AccountProvider[];
+  /** 1.13.0 이전 캐시에는 없다. 없으면 응답에서도 생략한다. */
+  premiumSource?: PremiumSource | null;
+  premiumEndsAt?: string | null;
+  premiumPeriodEndsAt?: string | null;
+  willRenew?: boolean;
+  bankedPremiumDays?: number;
+  premiumGrantEndedAt?: string | null;
 }
 
 export interface AuthCachedSession {
@@ -78,5 +86,9 @@ export interface AuthRuntimeConfigPort {
 }
 
 export interface AuthUserActivityWriterPort {
-  updateLastActiveAt(userId: string, timezone: string): Promise<void>;
+  /**
+   * 마지막 활동 시각과 활동일을 남긴다. appVersion(SemVer)이 있으면 요청한 앱 버전도 함께 남겨,
+   * 요청 헤더가 없는 예약 작업이 사용자의 앱이 지원하는 동작을 고를 수 있게 한다.
+   */
+  updateLastActiveAt(userId: string, timezone: string, appVersion?: string): Promise<void>;
 }

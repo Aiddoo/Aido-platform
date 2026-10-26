@@ -23,6 +23,7 @@ interface GetNudgeThanksPreviewDependencies {
     | "findLastReceivedNudgeId"
     | "findThanksCandidatePage"
     | "findThanksCandidates"
+    | "findThanksSummary"
   >;
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
   readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
@@ -43,19 +44,19 @@ export class GetNudgeThanksPreview {
       input.todoId,
       input.userId,
     );
-    if (todo === null) {
+    if (todo == null) {
       throw new ApplicationException(ErrorCode.TODO_0801);
     }
     if (!todo.completed) {
       throw new ApplicationException(ErrorCode.NUDGE_1110);
     }
 
-    if (input.throughNudgeId !== undefined) {
+    if (input.throughNudgeId != null) {
       const cutoff = await this.#dependencies.nudgeRepository.findInteractionById(
         input.throughNudgeId,
         input.userId,
       );
-      if (cutoff === null || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
+      if (cutoff == null || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
     }
@@ -65,7 +66,11 @@ export class GetNudgeThanksPreview {
         input.todoId,
         input.userId,
       ));
-    if (throughNudgeId === null || todo.visibility !== "PUBLIC") {
+    const thanksSummary = await this.#dependencies.nudgeRepository.findThanksSummary(
+      input.todoId,
+      input.userId,
+    );
+    if (throughNudgeId == null || todo.visibility !== "PUBLIC") {
       return {
         todoId: input.todoId,
         throughNudgeId,
@@ -73,10 +78,11 @@ export class GetNudgeThanksPreview {
         totalRecipients: 0,
         nextCursor: null,
         hasNext: false,
+        ...thanksSummary,
       };
     }
     const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId);
-    if (input.limit !== undefined) {
+    if (input.limit != null) {
       const page = await this.#dependencies.nudgeRepository.findThanksCandidatePage({
         userId: input.userId,
         todoId: input.todoId,
@@ -92,6 +98,7 @@ export class GetNudgeThanksPreview {
         totalRecipients: page.totalRecipients,
         nextCursor: page.nextCursor,
         hasNext: page.hasNext,
+        ...thanksSummary,
       };
     }
     const candidates = await this.#dependencies.nudgeRepository.findThanksCandidates({
@@ -104,6 +111,7 @@ export class GetNudgeThanksPreview {
       todoId: input.todoId,
       throughNudgeId,
       recipients: candidates.map((nudge) => nudge.sender),
+      ...thanksSummary,
     };
   }
 }

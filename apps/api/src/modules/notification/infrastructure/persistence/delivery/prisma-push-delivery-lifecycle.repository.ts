@@ -1,6 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, or } from "@prisma/orm-postgres/orm-client";
+import { uniq } from "es-toolkit";
 import sql, { join } from "sql-template-tag";
 
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
@@ -23,7 +24,7 @@ import type {
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
 
 function toNotificationMetadata(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  if (typeof value !== "object" || value == null || Array.isArray(value)) return null;
   return Object.fromEntries(Object.entries(value));
 }
 
@@ -148,9 +149,9 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
     const claimedRows = ownershipRows.flatMap((row) => {
       if (
-        row.dispatchId === null ||
-        row.deliveryAttemptCount === null ||
-        row.publishAttempt === null
+        row.dispatchId == null ||
+        row.deliveryAttemptCount == null ||
+        row.publishAttempt == null
       ) {
         return [];
       }
@@ -406,9 +407,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     const sqlRows4 = sqlRowSpec({ dispatchId: "pg/int4@1", publishAttempt: "pg/int4@1" });
 
     if (inputs.length === 0) return 0;
-    const allTokens = [
-      ...new Set(inputs.flatMap((input) => input.results.map((result) => result.token))),
-    ];
+    const allTokens = uniq(inputs.flatMap((input) => input.results.map((result) => result.token)));
     const tokens =
       allTokens.length === 0
         ? []

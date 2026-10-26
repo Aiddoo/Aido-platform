@@ -76,8 +76,8 @@ export class TodoCategory extends AggregateRoot<{
   }
 
   updateDetails(changes: { name?: string; color?: string }): void {
-    const name = changes.name === undefined ? this.props.name : CategoryName.of(changes.name);
-    const color = changes.color === undefined ? this.props.color : CategoryColor.of(changes.color);
+    const name = changes.name == null ? this.props.name : CategoryName.of(changes.name);
+    const color = changes.color == null ? this.props.color : CategoryColor.of(changes.color);
     const changed = name.value !== this.name || color.value !== this.color;
     this.props.name = name;
     this.props.color = color;

@@ -7,11 +7,16 @@
 ## 목표와 경계
 
 댓글 화면은 Threads처럼 할 일 본문 아래에서 댓글을 훑고, 필요한 대화만 한 단계 들어가 답글을
-작성하는 흐름이다. 댓글 깊이마다 새 화면을 쌓지 않는다.
+작성하는 흐름이다. Stack에는 댓글 개요와 대화 두 단계만 쌓고, 댓글 깊이마다 새 화면을 쌓지 않는다.
+대화 화면은 서버가 thread 전체를 깊이 제한 없이 rail로 그려 주므로 답글의 답글도 같은 화면에 이미 보인다.
+대화 안에서 다른 댓글을 고르면 같은 화면에서 focus만 옮긴다. 같은 내용을 다시 push하면 중복 화면과
+뒤로가기 반복만 늘어난다.
 
 - 모바일은 댓글 트리를 재귀 계산하지 않는다. 최상위 댓글 개요, 대표 답글, 답글 집계, 참여자,
   연결선은 서버 read model을 그대로 그린다.
-- 화면은 `/todo/[todoId]` 하나만 사용한다. 현재 보기와 작성 의도는 URL search가 소유한다.
+- 접힌 화면은 댓글 개요 `/todo/[todoId]`에서 대화 `/todo/[todoId]/comments/[commentId]`로 native push한다.
+  뒤로가기와 edge swipe는 pop이라 개요의 스크롤 위치가 그대로 남는다. 작성 의도는 각 화면의 URL search가 소유한다.
+- 펼친 피드 pane은 Stack이 없어 같은 피드 URL의 search(`comment`, `intent`, `returnTo`)로 개요와 대화를 바꾼다.
 - 작성 UI는 BottomSheet가 아니다. `TodoCommentInputBar`가 목록 아래에 한 번 놓이고 키보드 바로
   위를 따라간다.
 - 할 일 본문은 기존 `TodoDetailCard`가 소유한다. 관계만 암시하는 `Original`, `OriginalPost` 같은
@@ -21,31 +26,36 @@
 
 ## 한 route와 URL 상태
 
-`useTodoScreenParams`가 자기 route의 `todoId`(상세 화면은 path, 피드 pane은 피드 화면 query)를 읽고, `useTodoCommentRoute`가 `sort`, `comment`,
-`intent`, `returnTo`를 검증한다. 저장 매체가 Expo search param이어도 View에는 React 상태와 같은 tuple
-인터페이스만 노출한다.
+`useTodoScreenParams`가 자기 route의 `todoId`(상세 화면은 path, 피드 pane은 피드 화면 query)를 읽고, `useTodoCommentRoute`가 `sort`,
+선택한 댓글(대화 화면은 path `commentId`, 개요 화면과 pane은 search `comment`), `intent`, `returnTo`를 검증한다.
+저장 매체가 Expo URL이어도 View에는 React 상태와 같은 tuple 인터페이스만 노출한다. 표시 방식(`screen`·`pane`)은
+`TodoDetailPane`이 `TodoCommentPresentationProvider`로 알린다.
 
 ```ts
 const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
 ```
 
-| 화면 상태    | URL 예                                                               | 내부 상태                     |
-| ------------ | -------------------------------------------------------------------- | ----------------------------- |
-| 댓글 개요    | `/todo/42?sort=LATEST`                                               | `overview` + form `null`      |
-| 새 댓글 작성 | `/todo/42?sort=LATEST&intent=create`                                 | `overview` + form `new`       |
-| 한 대화 보기 | `/todo/42?sort=LATEST&comment=cm_123&intent=thread`                  | `conversation` + form `null`  |
-| 답글 작성    | `/todo/42?sort=LATEST&comment=cm_123&intent=reply&returnTo=overview` | `conversation` + form `reply` |
-| 댓글 수정    | `/todo/42?sort=LATEST&comment=cm_123&intent=edit&returnTo=thread`    | `conversation` + form `edit`  |
+| 화면 상태    | 화면 URL 예                                                           | 내부 상태                     |
+| ------------ | --------------------------------------------------------------------- | ----------------------------- |
+| 댓글 개요    | `/todo/42?sort=LATEST`                                                | `overview` + form `null`      |
+| 새 댓글 작성 | `/todo/42?sort=LATEST&intent=create`                                  | `overview` + form `new`       |
+| 한 대화 보기 | `/todo/42/comments/cm_123?sort=LATEST`                                | `conversation` + form `null`  |
+| 답글 작성    | `/todo/42/comments/cm_123?sort=LATEST&intent=reply&returnTo=overview` | `conversation` + form `reply` |
+| 댓글 수정    | `/todo/42/comments/cm_123?sort=LATEST&intent=edit&returnTo=thread`    | `conversation` + form `edit`  |
 
-- 알림에서 쓰던 `comment` 단독 URL은 `thread`로 복구해 호환한다.
+- pane은 같은 상태를 피드 URL search로 둔다(`/feed?todoId=42&comment=cm_123&intent=thread`).
+- 이전 앱과 외부 링크의 `/todo/42?comment=cm_123` 대화 URL은 `/todo/[todoId]` route가 대화 화면으로 Redirect한다.
 - `create`는 `comment` 없이만 유효하다. `thread`, `reply`, `edit`는 유효한 `comment`가 있어야
   한다.
 - `returnTo`는 `reply`, `edit`를 연 댓글 문맥인 `overview` 또는 `thread`만 허용한다. 개요에서
   작성기를 열면 `overview`, 대화에서 열면 `thread`이며, 답글 작성 중 대상을 바꿔도 최초 출처를
   유지한다. 누락되거나 잘못된 값은 기존 URL 호환을 위해 `thread`로 복구한다.
 - 잘못되거나 모호한 조합은 예외를 던지지 않고 `overview`로 복구한다.
-- route update는 모두 `router.setParams`를 사용한다. 댓글을 누를 때마다 history나 중첩
-  route를 늘리지 않으며, 작성기 취소와 게시 성공을 같은 전이로 처리하지 않는다.
+- 전이는 `resolveTodoCommentRouteNavigation`이 순수 함수로 이동 방법을 정한다. 화면의 개요 → 대화만 push,
+  대화 → 개요는 pop(`back`)이고, 같은 대화 안의 focus·작성기 변화는 `router.setParams`다. pane은 모두
+  `setParams`다. 작성기 취소와 게시 성공을 같은 전이로 처리하지 않는다.
+- 알림과 펼침 → 접힘 handoff는 `createTodoCommentScreenHrefs`로 개요 위에 대화를 쌓아 뒤로가기가 그 할 일의
+  댓글 개요로 올라가게 한다.
 - 화면 안에서 대화나 답글을 열 때는 `useTodoCommentNavigation`이 목표 댓글의 첫 page를
   `fetchInfiniteQuery({ pages: 1 })`로 확정한 뒤 URL을 바꾼다. 새 화면을 먼저 열고 뒤늦게 위치를
   찾지 않는다.
@@ -57,10 +67,10 @@ const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
 URL mode를 닫는 의미는 Header back과 Android hardware back에서 같다.
 
 - `reply`와 `edit`의 뒤로가기와 취소는 `returnTo`에 따라 작성기를 연 댓글 개요 또는 대화로
-  돌아간다.
+  돌아간다. 화면에서 개요로 돌아가는 경우는 pop이다.
 - `create`는 댓글 개요로 돌아간다.
-- `thread`는 `comment`와 `intent`를 지우고 댓글 개요로 돌아간다.
-- `overview`에서만 Expo Router의 native pop을 그대로 사용한다.
+- `thread`는 화면에서는 pop, pane에서는 `comment`와 `intent`를 지워 댓글 개요로 돌아간다.
+- 화면의 개요와 대화(개요에서 연 작성기 포함)는 Expo Router의 native pop을 그대로 사용한다.
 
 Header back과 Android hardware back은 키보드를 닫으면서 위 mode 전이를 한 번에 수행한다. 다음
 우선순위로 직전 댓글 문맥을 복구한다.
@@ -69,15 +79,15 @@ Header back과 Android hardware back은 키보드를 닫으면서 위 mode 전�
 2. `reply`, `edit`는 키보드와 현재 작성기를 같은 이벤트에서 닫고 `returnTo`로 돌아간다.
 3. `create`는 키보드와 작성기를 닫고 댓글 개요로 돌아간다.
 4. `thread`는 댓글 개요로 돌아간다.
-5. 댓글 개요에서는 native pop을 사용한다.
+5. 화면의 개요와 대화에서는 native pop을 사용한다.
 
 공통 우선순위는 `getTodoCommentBackResult`가 순수 함수로 결정하고, Header와 Android는 같은
 `useTodoCommentBack`의 `handleBack`을 사용한다. `useAndroidTodoCommentBackHandler`는 route 최상단에서
 Android `BackHandler` 구독과 cleanup만 소유한다. 목록이나
 작성기의 Suspense·ErrorBoundary 상태와 무관하게 항상 mount하되, `useFocusEffect`로 현재 화면에
 focus가 있을 때만 Android listener를 연결한다.
-iOS native stack의 edge swipe는 댓글 개요에서만 활성화한다. 작성기나 thread에서 route 전체를 pop해
-중간 URL mode를 건너뛰지 않도록 내부 mode의 뒤로가기는 화면 제목 바가 소유한다.
+iOS native stack의 edge swipe는 뒤로가기 결과가 native pop일 때만 활성화한다. 대화에서 연 작성기처럼
+같은 화면 안에서 닫아야 하는 단계는 swipe로 건너뛰지 않도록 화면 제목 바가 소유한다.
 
 ## 서버가 제공하는 두 read model
 
@@ -170,7 +180,8 @@ interface TodoConversationFocus {
 
 ## 페이지 조립
 
-route 파일 `app/(app)/todo/[todoId]/index.tsx`에서 화면 구조가 바로 읽혀야 한다.
+두 route 파일(`index.tsx`, `comments/[commentId].tsx`)은 `TodoDetailPane`만 조립하고, `TodoDetailPane`에서 화면 구조가
+바로 읽혀야 한다. 아래는 구조 요약이다.
 
 ```tsx
 function TodoDetailScreen() {
@@ -221,9 +232,18 @@ export default function TodoDetailRoute() {
 - `view: overview`는 form이 `null`이든 `new`든 할 일 본문, 정렬, 최상위 댓글 개요를 보여 준다.
 - `view: conversation`은 form이 `null`, `reply`, `edit` 중 무엇이든 선택한 대화를 보여 준다.
 - route가 safe area, separator, 바깥 padding, `QueryErrorBoundary`, `Suspense` 위치를 소유한다.
+- focus 대화가 비어 있으면 고른 댓글이 삭제됐거나 볼 수 없게 된 경우다. 빈 댓글 안내 대신 `댓글을 찾을 수 없어요`와
+  댓글 목록으로 돌아가는 버튼을 보여 준다.
+- 선택한 댓글 강조는 행 높이에 관여하지 않는 overlay로 잠깐 보인 뒤 Reanimated로 흐려진다. 동작 줄이기에서는
+  깜빡이지 않고 강조를 유지한다.
+- 첫 위치는 `initialScrollIndexParams.viewOffset`으로 focus 위 12pt 여백까지 정해 mount 뒤 reveal 보정이 목록을
+  한 번 더 밀지 않게 한다.
 - focus 진입의 `Suspense` fallback은 댓글 row skeleton부터 그린다. 최종 initial viewport에서 가려질
   할 일 header를 fallback 맨 위에 잠깐 보여 주지 않는다.
-- `TodoCommentTitleBar`는 view/form에 맞는 제목과 back 의미만 소유한다.
+- `TodoCommentTitleBar`는 view/form에 맞는 제목과 back 의미만 소유한다. 개요는 `할 일 상세`와 조회수, 대화는
+  `대화`와 할 일 제목을 부제목으로 보여 어느 할 일의 대화인지 알 수 있게 한다. 전체 화면은 `.StackHeader`(네이티브
+  헤더, 가운데 제목)를 쓴다. 펼친 피드의 상세 pane은 왼쪽 정렬 제목 바를 쓰며, 댓글 개요에는 뒤로가기가 없고
+  내 할 일일 때만 ⋯(할 일 옵션 시트)를 둔다. 대화에서만 개요로 돌아가는 뒤로가기를 둔다.
 - `TodoCommentScreenTransitionProvider`는 화면 안의 최신 댓글 이동과 정렬 전환 의도만 유지한다.
   연속 탭, 취소, 뒤로가기, 키보드 닫기, 작성 mutation과 늦게 끝난 prefetch가 현재 route를 뒤집지
   못하게 한다. 숫자 request ID나 문자열 route identity를 만들지 않고, 판별 가능한 transition 객체
@@ -238,6 +258,8 @@ export default function TodoDetailRoute() {
 - 목록의 `Loading`, `Error`, `Empty`는 본체와 같은 row 조각을 사용한다. 완료될 때 높이와 배치가
   크게 바뀌는 임의 skeleton을 만들지 않는다.
 - 댓글 query만 실패하면 할 일 상세와 정렬 문맥은 유지하고 댓글 영역만 재시도 상태로 바꾼다.
+- 할 일 자체를 볼 수 없게 되면(404 `TODO_0801`: 삭제·친구 해제·차단·공개 범위 변경) 본문·목록·작성 바의 오류를 각각 띄우지
+  않고 `TodoDetailPane`이 볼 수 없는 할 일 안내 하나와 돌아가기 버튼만 보여 준다.
 - route 식별자는 page에서 자식 prop으로 배포하지 않는다. 각 feature block이 검증된
   `useTodoScreenParams`와 `useTodoCommentRoute`에서 직접 읽고, page는 화면 순서와 boundary만 소유한다.
 
@@ -356,7 +378,18 @@ submission의 `parentId`만 최신 session을 따른다. 폼 전체 높이는 vi
 modal 작성기를 이 기능에 다시 도입하지 않는다.
 
 답글 작성과 수정의 뒤로가기·취소는 `returnTo`로 복귀하지만, 성공한 게시·수정은 갱신된 결과를 확인할
-수 있도록 선택한 `thread`에 남는다. 새 댓글 작성 성공은 댓글 개요로 돌아간다.
+수 있도록 선택한 `thread`에 남는다. 답글 게시는 새 답글의 대화 window를 먼저 확정한 뒤 그 답글로 focus를
+옮겨 방금 쓴 글이 보이게 한다. 새 댓글 작성 성공은 댓글 개요로 돌아간다.
+
+Stack 화면이 겹칠 때 키보드 규칙은 다음과 같다.
+
+- 작성기를 연 채 push한 대화는 push 전환이 끝난 뒤(`transitionEnd`) 작성기를 focus한다. 전환 중 focus는
+  iOS가 무시하거나 키보드가 화면과 따로 움직인다.
+- 가려진 화면(`useIsFocused` false)의 `KeyboardChatScrollView`는 `freeze`, 작성 바의 `KeyboardStickyView`는
+  `enabled={false}`로 위 화면의 키보드에 반응하지 않는다. 작성 바의 하단 여백도 자기 작성기가 열린 동안만 줄인다.
+  그렇지 않으면 대화에서 개요로 pop했을 때 개요 목록이 밀린다.
+- 댓글 화면이 focus를 잃으면 키보드를 내린다. 알림 등으로 다른 화면이 위에 쌓여도 가려진 작성기가
+  first responder로 남지 않는다. 작성 내용은 초안 저장소에 남는다.
 
 전송 상태의 단일 소스는 `useIsMutating({ mutationKey: TODO_COMMENT_MUTATION_KEYS.submissions({ todoId }) })`다.
 페이지, 입력 폼, 화면 전환 provider가 같은 mutation prefix를 읽는다. React render가 반영되기 전 같은
@@ -437,7 +470,9 @@ After
 
 ```text
 app/(app)/todo/[todoId]/index.tsx
-  화면 조립과 query boundary
+  댓글 개요 화면. 이전 `?comment=` URL은 대화 화면으로 Redirect
+app/(app)/todo/[todoId]/comments/[commentId].tsx
+  대화 화면. 둘 다 TodoDetailPane presentation="screen"을 조립한다
 
 src/features/todo-comment/
   domains/todo-comment.model.ts
@@ -452,6 +487,7 @@ src/features/todo-comment/
     todo-comment-sort-bar.tsx
     todo-comment-title-bar.tsx
     todo-comment-keyboard-scroll-view.tsx
+    providers/todo-comment-presentation-provider.tsx
     providers/todo-comment-screen-transition-provider.tsx
     todo-comment-overview-list/todo-comment-overview-list.tsx
     todo-comment-conversation-list/todo-comment-conversation-list.tsx
@@ -460,6 +496,7 @@ src/features/todo-comment/
       todo-comment-form.tsx
   hooks/
     use-todo-comment-route.ts
+      URL 읽기와 전이 실행. 댓글 feature에서 router.push를 쓰는 유일한 파일
     use-prepare-todo-comment-conversation.ts
     use-todo-comment-navigation.ts
     use-todo-comment-sort.ts
@@ -540,9 +577,9 @@ pnpm --filter @aido/mobile test:conventions
 
 `pnpm --filter @aido/mobile check:conventions`가 다음 회귀를 막는다.
 
-- 중첩 댓글 route와 todo route 전용 `_layout.tsx`
+- 대화 아래의 중첩 댓글 route(`comments/[commentId]/…`)와 todo route·comments 전용 `_layout.tsx`
 - todo-comment 컴포넌트의 route 식별자 props
-- todo-comment feature의 `router.push`
+- `use-todo-comment-route.ts` 밖의 todo-comment feature `router.push`
 - query hook의 인라인 옵션
 - todo-comment feature와 todo route의 re-export
 - todo-comment의 model, service, pure navigation/util/view-model 경계를 벗어난 새 테스트

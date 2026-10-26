@@ -64,6 +64,8 @@ export class PrismaAiReportRepository implements AiReportRepositoryPort {
           locale: input.locale,
           hasActivity: input.hasActivity,
           generatedAt: input.generatedAt,
+          contentSource: input.contentSource,
+          promptVersion: input.promptVersion,
         }),
       ),
     );

@@ -48,7 +48,12 @@ export class SendCheerNotification {
       body: message.body,
       cheerId: input.cheerId,
       friendId: input.senderId,
-      metadata: input.message ? { message: input.message } : undefined,
+      // 보낸 사람은 받은 사람이 응원을 신고·차단할 때 확인 문구에 이름을 보여 주는 데 쓴다
+      metadata: {
+        senderId: input.senderId,
+        senderName: input.senderName,
+        ...(input.message ? { message: input.message } : {}),
+      },
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,
     });

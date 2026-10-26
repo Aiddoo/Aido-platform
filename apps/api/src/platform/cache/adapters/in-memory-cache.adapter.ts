@@ -2,13 +2,14 @@ import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 
 import {
   type CacheStats,
+  type CacheValueSchema,
   type ICacheService,
   parseTtl,
   type TtlValue,
 } from "../interfaces/cache.interface.js";
 
-interface CacheEntry<T> {
-  value: T;
+interface CacheEntry {
+  value: unknown;
   expiresAt: number; // timestamp
 }
 
@@ -24,7 +25,7 @@ interface CacheEntry<T> {
 @Injectable()
 export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
   readonly #logger = new Logger(InMemoryCacheAdapter.name);
-  readonly #cache = new Map<string, CacheEntry<unknown>>();
+  readonly #cache = new Map<string, CacheEntry>();
   readonly #defaultTtlMs: number;
   readonly #maxItems: number;
   readonly #inflight = new Map<string, Promise<unknown>>();
@@ -53,8 +54,8 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     clearInterval(this.#cleanupInterval);
   }
 
-  async get<T>(key: string): Promise<T | undefined> {
-    const entry = this.#cache.get(key) as CacheEntry<T> | undefined;
+  async get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
+    const entry = this.#cache.get(key);
 
     if (!entry) {
       this.#stats.misses++;
@@ -69,9 +70,17 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
       return undefined;
     }
 
+    const parsed = schema.safeParse(entry.value);
+    if (!parsed.success) {
+      this.#cache.delete(key);
+      this.#stats.misses++;
+      this.#logger.debug(`INVALID ${key}`);
+      return undefined;
+    }
+
     this.#stats.hits++;
     this.#logger.debug(`HIT ${key}`);
-    return entry.value;
+    return parsed.data;
   }
 
   async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
@@ -90,7 +99,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
       }
     }
 
-    const ttlMs = ttl !== undefined ? parseTtl(ttl) : this.#defaultTtlMs;
+    const ttlMs = ttl != null ? parseTtl(ttl) : this.#defaultTtlMs;
     const expiresAt = Date.now() + ttlMs;
     this.#cache.set(key, { value, expiresAt });
     this.#logger.debug(`SET ${key} (TTL: ${ttlMs}ms)`);
@@ -135,8 +144,14 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 
   // === 새로운 메서드 (Cacheable 패턴) ===
 
-  async wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
-    const cached = await this.get<T>(key);
+  async wrap<T>(
+    key: string,
+    schema: CacheValueSchema<T>,
+    factory: () => Promise<T>,
+    ttl?: TtlValue,
+  ): Promise<T> {
+    const cached = await this.get(key, schema);
+    // nullish-strict: undefined는 cache miss, null은 저장해 둔 값이다
     if (cached !== undefined) {
       return cached;
     }
@@ -147,12 +162,12 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     // factory 에러 시 대기 중인 모든 요청에 동일 에러 전파 (의도된 동작).
     const existing = this.#inflight.get(key);
     if (existing) {
-      return existing as Promise<T>;
+      return existing.then((value) => schema.parse(value));
     }
 
     const promise = factory()
       .then(async (value) => {
-        if (value !== undefined && value !== null) {
+        if (value != null) {
           await this.set(key, value, ttl);
         }
         return value;
@@ -165,8 +180,8 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     return promise;
   }
 
-  async mget<T>(keys: string[]): Promise<(T | undefined)[]> {
-    return Promise.all(keys.map((key) => this.get<T>(key)));
+  async mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
+    return Promise.all(keys.map((key) => this.get(key, schema)));
   }
 
   async mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {

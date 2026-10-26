@@ -72,7 +72,7 @@ describe('todo comment mapper', () => {
             totalCount: 4,
             hiddenCount: 3,
             hasMore: true,
-            participantAuthors: previewReply.author === null ? [] : [previewReply.author],
+            participantAuthors: previewReply.author == null ? [] : [previewReply.author],
           },
         },
       ],

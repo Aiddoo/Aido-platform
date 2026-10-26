@@ -1,3 +1,5 @@
+import { uniq } from 'es-toolkit';
+
 import type { TodoConversationConnection } from '../domains/todo-comment.model';
 
 export const TODO_COMMENT_CONNECTION_GEOMETRY = {
@@ -47,7 +49,7 @@ function toLaneX(depth: number): number {
 }
 
 function uniqueNumbers(values: number[]): number[] {
-  return [...new Set(values)];
+  return uniq(values);
 }
 
 export function getTodoCommentConnectionLayout(
@@ -84,7 +86,7 @@ export function getTodoCommentConnectionLayout(
   const branchEndX = avatarLeft - TODO_COMMENT_CONNECTION_GEOMETRY.avatarGap;
   const branchWidth = incomingFromX == null ? 0 : branchEndX - incomingFromX;
   const incomingBranch =
-    !hasVisibleIncomingBranch || incomingFromX === null || branchWidth <= 0
+    !hasVisibleIncomingBranch || incomingFromX == null || branchWidth <= 0
       ? null
       : {
           left: incomingFromX,

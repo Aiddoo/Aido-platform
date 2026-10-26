@@ -11,6 +11,14 @@ const createUser = (overrides?: Partial<User>): User => ({
   subscriptionStatus: 'FREE',
   subscriptionExpiresAt: null,
   providers: ['CREDENTIAL'],
+  premiumAccess: {
+    source: null,
+    endsAt: null,
+    periodEndsAt: null,
+    willRenew: false,
+    bankedDays: 0,
+    grantEndedAt: null,
+  },
   createdAt: new Date('2026-01-01T09:00:00.000Z'),
   ...overrides,
 });

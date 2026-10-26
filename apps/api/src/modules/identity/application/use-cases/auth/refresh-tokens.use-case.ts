@@ -61,12 +61,12 @@ export class RefreshTokens {
     const refreshTokenHash = this.#dependencies.tokenService.hashRefreshToken(input.refreshToken);
     const session =
       await this.#dependencies.sessionRepository.findByRefreshTokenHash(refreshTokenHash);
-    if (session !== null) {
+    if (session != null) {
       return this.#rotateSession(AuthSession.reconstitute(session), input, false);
     }
 
     const currentSession = await this.#dependencies.sessionRepository.findById(sessionId);
-    if (currentSession === null) {
+    if (currentSession == null) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
     }
     const authSession = AuthSession.reconstitute(currentSession);
@@ -146,7 +146,7 @@ export class RefreshTokens {
       sessionId,
       rotation,
     );
-    if (rotatedSession === null) {
+    if (rotatedSession == null) {
       this.#dependencies.logger.warn({
         event: IdentityLogEvent.SESSION_ROTATION_CONFLICT,
         userId,

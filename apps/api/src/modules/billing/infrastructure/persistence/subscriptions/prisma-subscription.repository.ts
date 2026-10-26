@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
+import { varchar } from "#api/platform/database/database-values";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -17,6 +17,7 @@ import type {
   UpdateUserSubscriptionStatusData,
 } from "../../../application/ports/subscriptions/subscription.repository.port.js";
 import { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
+import type { StoreSubscriptionEntitlement } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 
 /**
  * 구독 저장소 Prisma 어댑터.
@@ -57,7 +58,7 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
         )
         .first(),
     );
-    return row === null ? null : Subscription.reconstitute(row);
+    return row == null ? null : Subscription.reconstitute(row);
   }
 
   /**
@@ -76,34 +77,15 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
       .then((row) => decodeRecord("User", row));
   }
 
-  async findUserById(userId: string): Promise<SubscriptionUser | null> {
-    return this.client.orm.public.User.where((row) => row.id.eq(userId))
-      .select("id", "email", "subscriptionStatus", "subscriptionExpiresAt", "revenueCatUserId")
-      .include("profile", (related) => related.select("name"))
-      .first()
-      .then((row) => decodeRecord("User", row));
-  }
-
-  async findOtherEntitlementExpiry(
-    userId: string,
-    excludedRevenueCatId: string,
-    at: Date,
-  ): Promise<Date | null> {
-    const subscription = decodeRecord(
+  async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
+    return decodeRecord(
       "Subscription",
       await this.client.orm.public.Subscription.where((row) =>
-        and(
-          row.userId.eq(userId),
-          row.revenueCatId.neq(varchar(excludedRevenueCatId, 255)),
-          or(row.status.eq("ACTIVE"), row.status.eq("CANCELLED")),
-          row.expiresAt.gt(databaseTimestamp(at)),
-        ),
+        and(row.userId.eq(userId), row.deletedAt.isNull()),
       )
-        .select("expiresAt")
-        .orderBy((row) => row.expiresAt.desc())
-        .first(),
+        .select("revenueCatId", "status", "expiresAt")
+        .all(),
     );
-    return subscription?.expiresAt ?? null;
   }
 
   /**
@@ -135,6 +117,19 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
         reason: `Subscription not found: ${revenueCatId}`,
       });
     }
+  }
+
+  async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
+    const claimed = await this.client.orm.public.Subscription.where((row) =>
+      and(row.revenueCatId.eq(varchar(revenueCatId, 255)), row.userId.neq(userId)),
+    ).updateAndCount(encodePatch("Subscription", { userId }));
+    return claimed > 0;
+  }
+
+  async takeOverChains(fromUserId: string, toUserId: string): Promise<number> {
+    return this.client.orm.public.Subscription.where((row) =>
+      and(row.userId.eq(fromUserId), row.deletedAt.isNull()),
+    ).updateAndCount(encodePatch("Subscription", { userId: toUserId }));
   }
 
   /**

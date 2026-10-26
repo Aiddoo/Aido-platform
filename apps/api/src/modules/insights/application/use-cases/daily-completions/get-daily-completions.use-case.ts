@@ -33,7 +33,7 @@ export class GetDailyCompletions {
     const endKey = toDateString(endInclusive);
 
     const cacheRead = await this.#dependencies.cache.readRange(input.userId, startKey, endKey);
-    if (cacheRead.value !== undefined) {
+    if (cacheRead.value != null) {
       return cacheRead.value;
     }
 

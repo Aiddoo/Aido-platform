@@ -35,7 +35,7 @@ describe("TransactionalEmailSender — 트랜잭션 이메일 발송", () => {
     // Then
     const message = sender.messages[0];
     expect(message?.to).toBe("user@test.com");
-    expect(message?.subject).toBe("[Aido] 이메일 인증 코드");
+    expect(message?.subject).toBe("[아이두] 이메일 인증 코드");
     expect(message?.tags).toEqual([{ name: "type", value: "verification" }]);
     expect(message?.idempotencyKey).toBe("idem-1");
     expect(result).toEqual({ success: true, messageId: "id-1" });

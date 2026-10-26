@@ -1,4 +1,8 @@
-import type { TodoCommentRoute, TodoCommentView } from './todo-comment-route';
+import type {
+  TodoCommentPresentation,
+  TodoCommentRoute,
+  TodoCommentView,
+} from './todo-comment-route';
 
 export type TodoCommentBackLabelKey =
   | 'screen.backToOverview'
@@ -36,11 +40,17 @@ export function resolveHardwareBackAction({
 interface GetTodoCommentBackResultParams {
   route: TodoCommentRoute;
   isSubmitting: boolean;
+  presentation: TodoCommentPresentation;
 }
 
+/**
+ * 뒤로가기는 한 단계만 올라간다. 작성기는 연 문맥으로 닫고, 화면의 대화는 Stack pop으로 개요에 돌아가
+ * 개요의 스크롤 위치를 그대로 보여 준다. pane은 Stack이 없어 같은 자리에서 개요로 바꾼다.
+ */
 export function getTodoCommentBackResult({
   route,
   isSubmitting,
+  presentation,
 }: GetTodoCommentBackResultParams): TodoCommentBackResult {
   if (isSubmitting) {
     return { status: 'blocked', reason: 'comment-submitting' };
@@ -56,15 +66,13 @@ export function getTodoCommentBackResult({
         };
   }
 
-  if (route.form == null) {
-    return {
-      status: 'navigate',
-      destination: 'overview',
-      labelKey: 'screen.backToOverview',
-    };
+  const returnView = route.form == null ? 'overview' : route.form.returnView;
+
+  if (returnView === 'overview' && presentation === 'screen') {
+    return { status: 'native' };
   }
 
-  return route.form.returnView === 'overview'
+  return returnView === 'overview'
     ? {
         status: 'navigate',
         destination: 'overview',

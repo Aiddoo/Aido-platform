@@ -2,6 +2,7 @@ import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Box } from '@src/shared/ui/box';
 import { Button, type ButtonProps } from '@src/shared/ui/button';
 import { HStack } from '@src/shared/ui/h-stack';
+import { READABLE_CONTENT_MAX_WIDTH } from '@src/shared/ui/readable-content';
 import { H4, Text } from '@src/shared/ui/text';
 import { VStack } from '@src/shared/ui/v-stack';
 import { Dialog } from 'heroui-native';
@@ -19,6 +20,7 @@ export function ConfirmDialog({
   description,
   cancelButton,
   confirmButton,
+  secondaryButton,
 }: ConfirmDialogProps) {
   const { fontScale } = useFontScale();
   const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
@@ -26,13 +28,23 @@ export function ConfirmDialog({
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="bg-black/40" />
-        <Dialog.Content>
+        {/* 태블릿·펼친 폴더블에서도 창 폭만큼 늘어나지 않고 읽기 폭에서 멈춘다 */}
+        <Dialog.Content
+          className="w-full self-center"
+          style={{ maxWidth: READABLE_CONTENT_MAX_WIDTH }}
+        >
           <VStack gap={16}>
             <VStack gap={6}>
               {title}
               {description}
             </VStack>
-            {cancelButton && stackActions ? (
+            {secondaryButton != null ? (
+              <VStack gap={8} className="w-full">
+                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
+                <Box className="w-full">{asFullWidthAction(secondaryButton)}</Box>
+                {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
+              </VStack>
+            ) : cancelButton && stackActions ? (
               <VStack gap={8} className="w-full">
                 <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
                 <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>

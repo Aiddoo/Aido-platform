@@ -75,6 +75,15 @@ export function createBillingIssueNotificationMessage({
   });
 }
 
+export function createPremiumGrantEndingNotificationMessage({
+  locale = DEFAULT_LOCALE,
+}: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES.PREMIUM_GRANT_ENDING,
+    variables: undefined,
+  });
+}
+
 export function createWinbackNotificationMessage({
   inactiveDays,
   locale = DEFAULT_LOCALE,

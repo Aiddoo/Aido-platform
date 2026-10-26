@@ -84,6 +84,7 @@ export interface HttpClient {
 | `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
+> 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
 
 | 클라이언트                  | 용도                                 |
 | --------------------------- | ------------------------------------ |
@@ -100,14 +101,16 @@ export interface HttpClient {
 | **Firebase Analytics** | 제품 지표(이벤트/화면/유저 속성)                       | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()`                    |
 
 - **Crashlytics는 사용하지 않는다** (Sentry로 크래시까지 일원화, 2026-07 정리).
-- Breadcrumb 카테고리는 `BreadcrumbCategory` union(`http`·`navigation`·…)으로 고정 — 매직 문자열 금지.
-- Analytics 이벤트는 `AppEventMap`(`shared/analytics/events/*.events.ts`)에만 정의, raw `trackEvent` 직접호출 금지.
+- Breadcrumb 카테고리는 `BREADCRUMB_CATEGORIES`(`BreadcrumbCategory`, `http`·`navigation`·…)로 고정 — 매직 문자열 금지.
+- Analytics 이벤트는 `AppEventMap`(`shared/observability/telemetry-keys.ts`)에만 정의, raw `trackEvent` 직접호출 금지.
 
 ---
 
 ## 에러 시스템
 
 ### 예측 가능 vs 예측 불가능
+
+서버·모바일 공통 계약(envelope, ErrorCode 범위, 한 오류는 한 곳에서)은 [공통 오류 규칙](../../../docs/conventions/errors.md)에 있다.
 
 | 구분            | 에러 종류                                          | 처리 방식                         |
 | --------------- | -------------------------------------------------- | --------------------------------- |
@@ -207,10 +210,14 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 - hook은 라우트 읽기, 전환 조정, mutation 상태, field focus처럼 하나의 변화 이유만 갖는다. 계산은
   순수 함수/Policy로 빼고 화면 hook은 작은 계약을 조합한다. 한 컴포넌트에서만 쓰는 작은 hook은
   소유 파일에 둘 수 있다.
-- 날짜 표시는 `shared/utils/date`의 호환 wrapper를 재사용한다. 순수 포맷 구현은
-  `date-format.ts`의 Intl.DateTimeFormat에 locale/timeZone을 명시해 호출한다. 오늘 기준은
-  `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다.
-  날짜 산술과 YYYY-MM-DD API key는 기존 dayjs 유틸을 유지한다.
+- 날짜 표시는 `date-format.ts`의 순수 helper에 `DateFormatContext { locale, timeZone }`를 넘겨
+  만든다. 컴포넌트는 `useDateFormatContext()`(언어=LanguageProvider, 시간대=LocalDateProvider)로
+  context를 읽는다. 언어는 글자 모양만 바꾸고 시간대·오늘·주 시작(일요일)·날짜 key를 바꾸지 않는다.
+  - 서버 DateString(YYYY-MM-DD)과 달력에서 고른 로컬 날짜는 `formatDateKeyLabel`(로컬 Date는
+    `formatDate`로 key를 만든 뒤), 시각(createdAt·expiresAt 같은 ISO instant)은 `formatDateLabel`.
+  - 주는 `calendar-week.ts`의 `getCalendarWeekOfDateKey`, 일 산술은 `date-key.ts`의
+    `addDaysToDateKey`, 오늘은 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준
+    상태로 만들지 않는다.
 - 미디어 업로드는 실제 API 계약이 있을 때만 도입한다. Expo 호환성과 유지 상태가 검증된 라이브러리를
   우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
@@ -261,6 +268,10 @@ export function FriendCalendar() {
 }
 ```
 
+선택된 대상을 보여 주는 블록(`CalculationResult` 형태)은 바깥 컴포넌트가 튜플 훅으로 id를 읽어 `== null`이면
+`.Empty`를 반환하고, 좁혀진 id만 `X.Contents`에 넘긴다. `.Contents`가 그 id로 `useSuspenseQuery`를 하고
+`대상 == null` → `.Empty`, 입력 미완 → 지역 `Message` 순서로 조기 반환한 뒤 지역 `Record`들을 나열한다.
+
 **데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내려 주면 Suspense 경계를 블록 단위로
 나눌 수 없다. 목록 컴포넌트는 도메인 대신 정책을 Props로 받는다(`filters`, `orderBy`, `limit`).
 
@@ -303,6 +314,10 @@ UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
 };
 ```
 
+**변환은 es-toolkit으로 의도를 드러낸다.** 수동 `reduce`·`for`·정렬 복사·중복 제거 대신 `groupBy`, `keyBy`,
+`partition`, `countBy`, `sumBy`, `orderBy`, `uniqBy`, `chunk`, `compact`, `mapValues`, `minBy`/`maxBy`, `times`를 쓴다.
+변환은 view-model·utils의 순수 함수에 두고 화면은 결과만 그린다(예: `notification-list.view-model.ts`의 `groupBy` 날짜 섹션).
+
 **반복 UI는 지역 컴포넌트로 추상화하고 나열한다.** 항목마다 기획·디자인이 따로 바뀔 수 있는 행은
 설정 배열을 `.map`하지 않고 `<Record />`, `<ActionRow />` 같은 지역 컴포넌트를 명시적으로 나열한다.
 상수로 개수가 정해지는 반복(`InputOTP.Slot`, 스켈레톤)은 es-toolkit `times`로 만든다.
@@ -343,6 +358,8 @@ function useView() {
   `AdaptivePane`을 그려 상세 pane이 같은 화면의 local params(`todoId`, 댓글 param)를 읽는다. 친구 전환은
   `router.setParams`라 pane이 다시 마운트되지 않고 history가 쌓이지 않으며, 레이아웃이 자식 params를
   global params로 읽어 얼려 둘 필요도 없다.
+- 웹 페이지(약관·공지 `WEBVIEW` action)는 route가 아니라 `useOpenUrl`(OS 앱 안 브라우저)로 연다. 앱 자체 WebView
+  화면(`/webview/[url]`)과 `react-native-webview`는 1.13.0에서 지웠고, 예전 `aido://webview/…` 링크는 `+not-found`로 간다.
 
 **기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
 반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
@@ -371,6 +388,12 @@ function useView() {
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.
 - 접기/펼치기에서 컴포넌트를 살릴 수 있으면 초안보다 재마운트를 없애는 쪽을 먼저 택한다(`AdaptivePane`은 pane을 같은 트리 슬롯에 둔다).
+- pending·error는 이미 주는 곳에서 읽는다. react-hook-form의 `formState.isSubmitting`·`errors`, mutation·query의
+  `isPending`·`error`·`variables`를 `useState`로 다시 만들지 않는다. 저장 버튼은 mutation `isPending`을 `Button`에 넘긴다.
+- 한 컴포넌트에서 서로 독립인 `useSuspenseQuery`를 연달아 부르면 워터폴이다. `useSuspenseQueries`나 블록별
+  Suspense 경계로 나눠 병렬로 받는다. 앞 결과가 다음 조회의 입력일 때만 순차로 둔다.
+- 당겨서 새로고침은 `useRefresh`(TanStack Query React Native 문서의 `useRefreshByUser` 패턴)로 사용자가 당긴 동안만
+  표시한다. 배경 refetch까지 켜지는 `isRefetching`으로 대신하지 않는다.
 
 ### 1. Models — 클라이언트 도메인 모델 + Policy
 
@@ -663,7 +686,7 @@ HTTP 요청
 [onError 콜백]
     ├─ isApiError(error) → 토스트 또는 코드별 분기
     ├─ is{Feature}Error(error) → 토스트 또는 코드별 분기
-    └─ InfraError → ErrorBoundary (re-throw)
+    └─ 그 밖(InfraError) → 기본 오류 토스트 하나 (mutation은 경계로 가지 않는다)
 ```
 
 ---
@@ -685,11 +708,13 @@ export const useCreate{Feature}MutationOptions = () => {
       toast.success('생성되었어요');
     },
     onError: (error) => {
-      // ApiError, {Feature}Error 모두 message에 사용자 친화적 메시지가 있음
+      // ApiError, {Feature}Error는 message에 사용자 문구가 있다
       if (isApiError(error) || is{Feature}Error(error)) {
         toast.error(error.message);
+        return;
       }
-      // InfraError는 QueryErrorBoundary가 처리
+      // InfraError의 message는 개발용이라 기본 문구를 쓴다
+      toast.error(undefined, { fallback: t('common:toast.defaultError') });
     },
   });
 };
@@ -727,8 +752,8 @@ onError: (error) => {
     return;
   }
 
-  // 3. InfraError → re-throw하여 ErrorBoundary로 전파
-  throw error;
+  // 3. 그 밖(InfraError) → 기본 문구 토스트 하나. 다시 던지지 않는다
+  toast.error(undefined, { fallback: t('common:toast.defaultError') });
 },
 ```
 
@@ -740,13 +765,13 @@ onError: (error) => {
 | --------------------------------- | -------------------- |
 | Service                           | `Result<T, E>` 반환  |
 | Presentation (queryFn/mutationFn) | `unwrap()` 사용      |
-| InfraError                        | ErrorBoundary가 처리 |
+| InfraError (조회)                 | ErrorBoundary가 처리 |
 
-| 에러 유형                       | 타입 가드                 | 처리 방식             |
-| ------------------------------- | ------------------------- | --------------------- |
-| **서버 비즈니스 에러 (4xx)**    | `isApiError(error)`       | 토스트 or 코드별 분기 |
-| **클라이언트 도메인 에러**      | `is{Feature}Error(error)` | 토스트 or 코드별 분기 |
-| **인프라 에러 (5xx, 네트워크)** | -                         | ErrorBoundary가 처리  |
+| 에러 유형                       | 타입 가드                 | 처리 방식                                    |
+| ------------------------------- | ------------------------- | -------------------------------------------- |
+| **서버 비즈니스 에러 (4xx)**    | `isApiError(error)`       | 토스트 or 코드별 분기                        |
+| **클라이언트 도메인 에러**      | `is{Feature}Error(error)` | 토스트 or 코드별 분기                        |
+| **인프라 에러 (5xx, 네트워크)** | -                         | 조회는 ErrorBoundary, mutation은 기본 토스트 |
 
 **ApiError 유틸리티**
 
@@ -838,6 +863,8 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 
 ## DO / DON'T
 
+비교·null/undefined·기본값은 [공통 nullish 규칙](../../../docs/conventions/nullish.md)을 따른다: 값 비교는 `===`, "없음"은 `== null`, 서버 DTO의 `null`은 모델에서도 `null`, 선택 props는 `?:`(undefined), 기본값은 `??`.
+
 ### DO
 
 ```typescript
@@ -899,8 +926,11 @@ const canEdit = Date.now() - item.createdAt < 24 * 60 * 60 * 1000;  // ❌ Polic
 // Query key 하드코딩 금지
 queryKey: ['{feature}', 'list'];  // ❌ QUERY_KEYS 상수 사용
 
-// InfraError catch 금지 (ErrorBoundary가 처리)
+// InfraError catch 금지 (조회는 ErrorBoundary, mutation은 onError가 처리)
 try { ... } catch (e) { if (e instanceof ServerError) ... }  // ❌
+
+// 같은 오류를 토스트와 경계 fallback 두 곳에 보이기 금지
+onError: (error) => { toast.error(error.message); throw error; }  // ❌
 
 // Policy를 class로 만들기 금지
 class {Feature}Policy { ... }  // ❌ 객체 리터럴 사용

@@ -1,3 +1,6 @@
+import { isSemanticVersionAtLeast } from "@aido/api";
+import { uniq } from "es-toolkit";
+
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import {
@@ -5,8 +8,8 @@ import {
   supportsFeatureDiscoveryMarketing,
 } from "../../../domain/services/delivery/feature-marketing-capability.js";
 import {
-  isNudgeInteractionNotification,
-  supportsNudgeInteractions,
+  notificationMinAppVersion,
+  supportsNotificationType,
 } from "../../../domain/services/delivery/notification-client-capability.js";
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type ActivePushTokenReaderPort } from "../../ports/delivery/active-push-token.reader.port.js";
@@ -103,18 +106,13 @@ export class PushNotificationDeliveryService {
   async prepareBatchDelivery(
     payloads: readonly BatchPushNotificationPayload[],
   ): Promise<PreparedBatchPushDelivery> {
-    const userIds = [...new Set(payloads.map((payload) => payload.userId))];
+    const userIds = uniq(payloads.map((payload) => payload.userId));
     const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(userIds);
-    const capabilityUserIds = [
-      ...new Set(
-        payloads
-          .filter(
-            (payload) =>
-              payload.requiresFeatureCapability || payload.requiresNudgeInteractionCapability,
-          )
-          .map((payload) => payload.userId),
-      ),
-    ];
+    const capabilityUserIds = uniq(
+      payloads
+        .filter((payload) => payload.requiresFeatureCapability || payload.minAppVersion != null)
+        .map((payload) => payload.userId),
+    );
     const capabilityTokenRecords =
       capabilityUserIds.length === 0
         ? []
@@ -134,8 +132,8 @@ export class PushNotificationDeliveryService {
     for (const payload of payloads) {
       const activeTokens = tokensByUser.get(payload.userId) ?? [];
       const capabilityRecords = capabilityTokensByUser.get(payload.userId) ?? [];
-      const requiresCapability =
-        payload.requiresFeatureCapability || payload.requiresNudgeInteractionCapability;
+      const { minAppVersion } = payload;
+      const requiresCapability = payload.requiresFeatureCapability || minAppVersion != null;
       const activeTokenCount = requiresCapability ? capabilityRecords.length : activeTokens.length;
       if (activeTokenCount === 0) {
         skippedDispatches.push({
@@ -150,8 +148,8 @@ export class PushNotificationDeliveryService {
             .filter(
               (record) =>
                 (!payload.requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
-                (!payload.requiresNudgeInteractionCapability ||
-                  supportsNudgeInteractions(record.appVersion)),
+                (minAppVersion == null ||
+                  isSemanticVersionAtLeast(record.appVersion, minAppVersion)),
             )
             .map((record) => record.token)
         : activeTokens;
@@ -220,7 +218,7 @@ export class PushNotificationDeliveryService {
     const resultsByDispatch = new Map<number, PushResult[]>();
     for (const [index, pushResult] of result.results.entries()) {
       const dispatchId = prepared.dispatchIds[index];
-      if (dispatchId === undefined) continue;
+      if (dispatchId == null) continue;
       const current = resultsByDispatch.get(dispatchId) ?? [];
       current.push(pushResult);
       resultsByDispatch.set(dispatchId, current);
@@ -235,8 +233,8 @@ export class PushNotificationDeliveryService {
     | { readonly status: "skipped"; readonly reason: PushDispatchSkipReason }
   > {
     const requiresFeatureCapability = data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY;
-    const requiresNudgeInteractionCapability = isNudgeInteractionNotification(data.type);
-    if (requiresFeatureCapability || requiresNudgeInteractionCapability) {
+    const requiresAppVersion = notificationMinAppVersion(data.type) != null;
+    if (requiresFeatureCapability || requiresAppVersion) {
       const records = await this.#dependencies.pushTokenRepository.findPushTokensByUser({
         userId: data.userId,
         activeOnly: true,
@@ -247,7 +245,7 @@ export class PushNotificationDeliveryService {
         .filter(
           (record) =>
             (!requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
-            (!requiresNudgeInteractionCapability || supportsNudgeInteractions(record.appVersion)),
+            supportsNotificationType(data.type, record.appVersion),
         )
         .map((record) => record.token);
       return tokens.length > 0

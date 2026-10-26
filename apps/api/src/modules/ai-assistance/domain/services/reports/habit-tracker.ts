@@ -77,13 +77,15 @@ export function classifyHabit(params: HabitClassifyParams): HabitStatus {
  * 습관 형성 상태 분석
  *
  * 투두 데이터를 제목별·주차별로 그룹핑한 뒤 classifyHabit으로 분류합니다.
+ * 놓친 주 수는 호출 시각이 아니라 기준 시각(asOf, 보통 분석 기간의 끝)의 주차로 센다.
  */
 export function analyzeHabitFormation(
   todos: readonly HabitTrackerInput[],
   timezone: string,
+  asOf: Date,
 ): HabitFormationData {
   const titleWeekMap = groupByTitleAndWeek(todos, timezone);
-  const currentWeek = dayjs().tz(timezone).isoWeek();
+  const currentWeek = isoWeekIndex(asOf, timezone);
 
   const forming: HabitFormationData["forming"][number][] = [];
   const established: HabitFormationData["established"][number][] = [];
@@ -98,7 +100,7 @@ export function analyzeHabitFormation(
     const consecutiveCount = countConsecutiveWeeks(weeks);
     const completionRate = computeCompletionRate(weekMap);
     const lastWeek = weeks[weeks.length - 1];
-    const missedWeeks = lastWeek !== undefined ? currentWeek - lastWeek : 0;
+    const missedWeeks = lastWeek != null ? Math.max(0, currentWeek - lastWeek) : 0;
 
     const status = classifyHabit({
       consecutiveCount,
@@ -126,6 +128,23 @@ export function analyzeHabitFormation(
 // 내부 헬퍼 (private)
 // ============================================================================
 
+const DAY_MS = 86_400_000;
+
+/**
+ * 사용자 시간대의 날짜가 속한 ISO 주(월요일 시작)의 연속 번호. 1970-01-01(목)이 0번 주다.
+ * ISO 주차 번호(1~53)는 연도가 바뀌면 다시 1부터 시작해 53주→1주를 연속으로 셀 수 없으므로 쓰지 않는다.
+ * 날짜만 UTC로 옮겨 세므로 DST 전환일의 23·25시간도 하루로 센다.
+ */
+function isoWeekIndex(date: Date, timezone: string): number {
+  const [year = 0, month = 1, day = 1] = dayjs(date)
+    .tz(timezone)
+    .format("YYYY-MM-DD")
+    .split("-")
+    .map(Number);
+  const dayNumber = Date.UTC(year, month - 1, day) / DAY_MS;
+  return Math.floor((dayNumber + 3) / 7);
+}
+
 function groupByTitleAndWeek(
   todos: readonly HabitTrackerInput[],
   timezone: string,
@@ -133,7 +152,7 @@ function groupByTitleAndWeek(
   const map = new Map<string, Map<number, { total: number; completed: number }>>();
 
   for (const todo of todos) {
-    const week = dayjs(todo.startDate).tz(timezone).isoWeek();
+    const week = isoWeekIndex(todo.startDate, timezone);
 
     let weekMap = map.get(todo.title);
     if (!weekMap) {
@@ -160,7 +179,7 @@ function countConsecutiveWeeks(sortedWeeks: number[]): number {
   for (let i = sortedWeeks.length - 1; i > 0; i--) {
     const current = sortedWeeks[i];
     const prev = sortedWeeks[i - 1];
-    if (current !== undefined && prev !== undefined && current - prev === 1) {
+    if (current != null && prev != null && current - prev === 1) {
       count++;
     } else {
       break;

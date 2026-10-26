@@ -3,21 +3,35 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
+import { InvitePawPrintBoard } from '@src/features/invite/components/invite-paw-print-board';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
-import {
-  isActiveSubscription,
-  SubscriptionPolicy,
-} from '@src/features/subscription/domains/subscription.model';
+import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
+import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
+import { useOpenSubscriptionInquiry } from '@src/features/subscription/hooks/use-open-subscription-inquiry';
+import { useOpenSubscriptionManagement } from '@src/features/subscription/hooks/use-open-subscription-management';
+import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
+import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-subscription-view-param';
 import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
 import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
+import {
+  getSubscriptionStore,
+  type SubscriptionStore,
+} from '@src/features/subscription/utils/subscription-store';
+import {
+  type SubscriptionSupportFailure,
+  toSubscriptionLoadFailure,
+} from '@src/features/subscription/utils/view-models/subscription-failure.view-model';
+import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/view-models/subscription-receipt.view-model';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
-import { STORE_URLS } from '@src/shared/constants/store-urls';
+import { legalUrl } from '@src/shared/constants/legal-urls';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
+  Barcode,
   Button,
   CalendarIcon,
   DocsIcon,
@@ -29,6 +43,8 @@ import {
   ListRow,
   PersonIcon,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  ReadableContent,
   Result,
   Spacing,
   type StyledIconType,
@@ -40,53 +56,103 @@ import {
   ScallopedContainer,
   Box,
 } from '@src/shared/ui';
-import { formatFullDate } from '@src/shared/utils/date';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { cn } from '@src/shared/utils/cn';
+import { formatDateLabel } from '@src/shared/utils/date-format';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
-import { Suspense, useState } from 'react';
-import { Image, type ImageSourcePropType, Linking, ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { Suspense, useEffect, useState } from 'react';
+import {
+  AccessibilityInfo,
+  Image,
+  type ImageSourcePropType,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { match, P } from 'ts-pattern';
 
 function SubscriptionScreen() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const sdkManager = useRevenueCatSdkManager();
+  const receipt = useSubscriptionReceipt();
+  const [view] = useSubscriptionViewParam();
 
+  // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
+  // 영수증은 서버의 내 정보로만 그려 스토어가 실패해도 이용 중인 사람은 영수증을 본다.
   return match({
     isPremium: UserPolicy.isPremiumUser(user),
+    canSubscribe: receipt.primaryAction === 'subscribe',
     isStoreConfigured: sdkManager.isConfigured(),
+    view,
   })
+    .with(
+      { canSubscribe: true, view: 'plans' },
+      { isPremium: false, isStoreConfigured: true },
+      () => (
+        <QueryErrorBoundary fallback={PaywallPane.Error}>
+          <Suspense fallback={<SubscriptionScreen.Loading />}>
+            <PaywallPane />
+          </Suspense>
+        </QueryErrorBoundary>
+      ),
+    )
     .with({ isPremium: true }, () => <SubscriberPane />)
     .with({ isStoreConfigured: false }, () => <StoreUnavailablePane />)
-    .with({ isPremium: false, isStoreConfigured: true }, () => <PaywallPane />)
     .exhaustive();
 }
 
+SubscriptionScreen.Loading = function Loading() {
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
+      <Spinner size="lg" color="default" />
+    </StyledSafeAreaView>
+  );
+};
+
+/** 내 정보를 불러오지 못하면 영수증도 요금제도 정할 수 없어 화면 전체에서 안내한다 */
+SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  return (
+    <SubscriptionFailureResult
+      failure={toSubscriptionLoadFailure('receipt', error)}
+      onRetry={reset}
+    />
+  );
+};
+
 function SubscriberPane() {
   const { t } = useTranslation('subscription');
+  const { primaryAction } = useSubscriptionReceipt();
   const restore = useMutation(useRestoreMutationOptions());
-
-  const handleManageSubscription = () => {
-    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
-      return Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
-    }
-  };
+  const openSubscriptionManagement = useOpenSubscriptionManagement();
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
       <StyledSafeAreaView edges={['left', 'right']}>
         <Spacing size={16} />
 
-        <QueryErrorBoundary>
-          <Suspense fallback={<SubscriptionScreen.Loading />}>
-            <SubscriptionReceipt />
-          </Suspense>
-        </QueryErrorBoundary>
+        <PremiumEndingNotice />
+
+        <SubscriptionReceipt />
 
         <Spacing size={16} />
 
-        <Button onPress={handleManageSubscription} variant="weak" color="dark">
-          {t('subscriber.manageButton')}
-        </Button>
+        {match(primaryAction)
+          .with('subscribe', () => (
+            <Button
+              onPress={() =>
+                router.push({ pathname: '/settings/subscription', params: { view: 'plans' } })
+              }
+            >
+              {t('subscriber.subscribeAfterGrantButton')}
+            </Button>
+          ))
+          .with('manage', () => (
+            <Button onPress={openSubscriptionManagement} variant="weak" color="dark">
+              {t('subscriber.manageButton')}
+            </Button>
+          ))
+          .with(null, () => null)
+          .exhaustive()}
 
         <Spacing size={16} />
 
@@ -105,50 +171,48 @@ function SubscriberPane() {
   );
 }
 
+/** 스토어 SDK를 쓸 수 없으면 다시 시도해도 같아 문의로만 안내한다 */
 function StoreUnavailablePane() {
-  const { t } = useTranslation('subscription');
-
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
-      <Result
-        icon={<DocsIcon width={72} height={72} />}
-        title={t('paywall.unavailableTitle')}
-        description={t('paywall.unavailableDescription')}
-      />
-    </StyledSafeAreaView>
+    <SubscriptionFailureResult
+      failure={toSubscriptionLoadFailure('plans', SubscriptionErrors.storeUnavailable())}
+    />
   );
 }
 
 function PaywallPane() {
   const { t } = useTranslation('subscription');
-  const { data: offering } = useQuery({
-    ...useGetOfferingsQueryOptions(),
-    throwOnError: (_error, query) => query.state.data == null,
-  });
+  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const purchase = useMutation(usePurchaseMutationOptions());
   const restore = useMutation(useRestoreMutationOptions());
+  const [view] = useSubscriptionViewParam();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
   const defaultPlan =
-    offering?.plans.find((plan) => plan.planType === 'annual') ?? offering?.plans[0];
+    offering.plans.find((plan) => plan.planType === 'annual') ?? offering.plans[0];
   const selectedPlanId = chosenPlanId ?? defaultPlan?.identifier;
-  const selectedPlan = offering?.plans.find((plan) => plan.identifier === selectedPlanId);
+  const selectedPlan = offering.plans.find((plan) => plan.identifier === selectedPlanId);
 
   const handlePurchase = () => {
     if (!selectedPlan || purchase.isPending) {
       return;
     }
-    purchase.mutate(selectedPlan.identifier);
+    purchase.mutate(selectedPlan.identifier, {
+      // 보상 영수증에서 요금제로 들어왔으면 영수증으로 돌아가 결제한 영수증으로 바뀌는 것을 보여 준다
+      onSuccess: () => {
+        if (view === 'plans' && router.canGoBack()) {
+          router.back();
+        }
+      },
+    });
   };
 
-  if (offering == null) {
-    return <SubscriptionScreen.Loading />;
-  }
-
   return (
-    <Box className="flex-1">
+    <Box className="flex-1" testID="subscription-paywall">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={16} />
+
+          <GrantEndedNotice />
 
           <ScallopedContainer>
             <Box className="px-5 pt-5">
@@ -206,6 +270,7 @@ function PaywallPane() {
           <Spacing size={24} />
 
           <VStack gap={8} className="items-center">
+            <SubscriptionRenewalNotice />
             <SubscriptionTerms />
             <TextButton
               size="small"
@@ -232,71 +297,123 @@ function PaywallPane() {
   );
 }
 
-SubscriptionScreen.Loading = function Loading() {
+/** 스토어에서 요금제를 받지 못해도 빈 화면 대신 다시 시도와 문의를 보여 준다 */
+PaywallPane.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
-      <Spinner size="lg" color="default" />
-    </StyledSafeAreaView>
+    <SubscriptionFailureResult
+      failure={toSubscriptionLoadFailure('plans', error)}
+      onRetry={reset}
+    />
   );
 };
 
+interface SubscriptionFailureResultProps {
+  failure: SubscriptionSupportFailure;
+  /** 다시 해도 결과가 같으면 넘기지 않는다 */
+  onRetry?: () => void;
+}
+
+/** 구독 실패 안내. 무엇이 실패했는지 → 할 일 → 다시 시도 → 문의하기 순서를 모든 실패에서 지킨다 */
+function SubscriptionFailureResult({ failure, onRetry }: SubscriptionFailureResultProps) {
+  const { t } = useTranslation(['subscription', 'common']);
+  const openInquiry = useOpenSubscriptionInquiry();
+  const title = t(failure.titleKey);
+  const description = t(failure.descriptionKey);
+
+  // 화면이 오류로 바뀐 것을 스크린 리더에도 알린다
+  useEffect(() => {
+    AccessibilityInfo.announceForAccessibilityWithOptions(`${title}. ${description}`, {
+      queue: true,
+    });
+  }, [title, description]);
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+      <ReadableContent className="flex-1 px-6" accessibilityRole="alert">
+        <Result
+          icon={<DocsIcon width={72} height={72} />}
+          title={title}
+          description={description}
+          testID="subscription-load-failure"
+          button={
+            <VStack gap={12} align="center">
+              {onRetry != null && (
+                <Result.Button onPress={onRetry}>{t('common:actions.retry')}</Result.Button>
+              )}
+              <TextButton size="medium" variant="underline" onPress={() => openInquiry(failure)}>
+                {t('subscription:failure.contactSupport')}
+              </TextButton>
+            </VStack>
+          }
+        />
+      </ReadableContent>
+    </StyledSafeAreaView>
+  );
+}
+
 function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isActive = isActiveSubscription(user.subscriptionStatus);
-  const showDetails = SubscriptionPolicy.isExpirationRelevant(user);
+  const { variant, rows, footnote } = useSubscriptionReceipt();
+  const dateFormatContext = useDateFormatContext();
+  // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
+  const receiptDateLabel = variant === 'paid' ? 'fullDate' : 'monthDay';
+  const formatReceiptDate = (date: Date) =>
+    formatDateLabel(date, receiptDateLabel, dateFormatContext);
 
   return (
     <ScallopedContainer>
-      <Box className="px-5 pt-5">
+      {variant === 'reward' && <InvitePawPrintBoard.Stamp className="absolute right-4 top-4" />}
+
+      <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>
         <HStack gap={16} className="items-center">
           <FillTicketIcon width={40} height={40} />
 
-          <VStack gap={2}>
-            <Text size="t3" weight="bold" tone="brand">
-              {t('subscriber.title')}
+          {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
+          <VStack gap={2} className={cn('flex-1', variant === 'reward' && 'pr-10')}>
+            {/* 가장 큰 글자에서 "이/용 중"처럼 단어 중간에서 끊기지 않게 어절 단위로 줄바꿈한다 */}
+            <Text
+              size="t3"
+              weight="bold"
+              tone="brand"
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
+              {t(`receipt.${variant}.title`)}
             </Text>
 
-            <Text size="b4" shade={6}>
-              {t('subscriber.description')}
+            <Text
+              size="b4"
+              shade={6}
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
+              {t(`receipt.${variant}.description`)}
             </Text>
           </VStack>
         </HStack>
 
         <Spacing size={24} />
 
-        {showDetails && user.subscriptionExpiresAt && (
-          <VStack>
-            <ListRow
-              verticalPadding="small"
-              contents={
-                <Text size="b4" shade={6}>
-                  {isActive ? t('status.nextBillingDate') : t('status.expiresAt')}
-                </Text>
-              }
-              right={
-                <Text size="b4" weight="semibold" shade={8}>
-                  {user.subscriptionExpiresAt && formatFullDate(user.subscriptionExpiresAt)}
-                </Text>
-              }
-            />
+        <VStack>
+          {rows.map((row) => (
+            <ReceiptDetailRow key={row.type} row={row} formatDate={formatReceiptDate} />
+          ))}
+        </VStack>
 
-            {isActive && (
-              <ListRow
-                verticalPadding="small"
-                contents={
-                  <Text size="b4" shade={6}>
-                    {t('status.statusLabel')}
-                  </Text>
-                }
-                right={
-                  <Text size="b4" weight="semibold" tone="brand">
-                    {t('status.autoRenewal')}
-                  </Text>
-                }
-              />
-            )}
-          </VStack>
+        {footnote != null && (
+          <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word" className="mt-2">
+            {match(footnote)
+              .with({ type: 'returnsToFreePlan' }, ({ date }) =>
+                t('receipt.footnote.returnsToFreePlan', { date: formatReceiptDate(date) }),
+              )
+              .with({ type: 'rewardStartsAfterSubscription' }, ({ days }) =>
+                t('receipt.footnote.rewardStartsAfterSubscription', { count: days }),
+              )
+              .with({ type: 'manageAutoRenewalInStore' }, () =>
+                t('receipt.footnote.manageAutoRenewalInStore'),
+              )
+              .exhaustive()}
+          </Text>
         )}
       </Box>
 
@@ -322,10 +439,180 @@ function SubscriptionReceipt() {
 
       <DashedDivider className="my-5 mx-5" />
 
-      <Box className="px-5 pb-5 items-center">
-        <ReceiptBarcode />
-      </Box>
+      <Barcode className="px-5 pb-5" />
     </ScallopedContainer>
+  );
+}
+
+interface ReceiptDetailRowProps {
+  row: SubscriptionReceiptRow;
+  formatDate: (date: Date) => string;
+}
+
+type ReceiptValueTone = 'default' | 'brand' | 'muted';
+
+function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
+  const { t } = useTranslation('subscription');
+  const { label, value, tone } = match<
+    SubscriptionReceiptRow,
+    { label: string; value: string; tone: ReceiptValueTone }
+  >(row)
+    .with({ type: 'account' }, () => ({
+      label: t('receipt.rows.account'),
+      value: t('receipt.rows.accountAdmin'),
+      tone: 'default',
+    }))
+    .with({ type: 'rewardRecord' }, ({ endsAt }) => ({
+      label: t('receipt.rows.rewardRecord'),
+      value: t('receipt.rows.until', { date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'nextBillingDate' }, ({ date }) => ({
+      label: t('receipt.rows.nextBillingDate'),
+      value: formatDate(date),
+      tone: 'default',
+    }))
+    .with({ type: 'subscriptionEndsOn' }, ({ date }) => ({
+      label: t('receipt.rows.subscriptionEndsOn'),
+      value: formatDate(date),
+      tone: 'default',
+    }))
+    .with({ type: 'autoRenewal' }, ({ willRenew }) => ({
+      label: t('receipt.rows.subscriptionStatus'),
+      value: willRenew ? t('receipt.rows.autoRenewalOn') : t('receipt.rows.autoRenewalOff'),
+      tone: willRenew ? 'brand' : 'muted',
+    }))
+    .with({ type: 'rewardPeriod' }, ({ endsAt }) => ({
+      label: t('receipt.rows.rewardPeriod'),
+      value: t('receipt.rows.until', { date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'bankedReward' }, ({ days, endsAt }) => ({
+      label: t('receipt.rows.bankedReward'),
+      value:
+        endsAt == null
+          ? t('receipt.rows.days', { count: days })
+          : t('receipt.rows.daysUntil', { count: days, date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'overallPeriod' }, ({ endsAt }) => ({
+      label: t('receipt.rows.overallPeriod'),
+      value: t('receipt.rows.until', { date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'daysLeft' }, ({ days, endingNotice }) => ({
+      label: t('receipt.rows.daysLeft'),
+      value: match(endingNotice)
+        .with('today', () => t('endingNotice.badgeToday'))
+        .with('tomorrow', () => t('endingNotice.badgeTomorrow'))
+        .with(null, () => t('receipt.rows.days', { count: days }))
+        .exhaustive(),
+      tone: endingNotice == null ? 'default' : 'brand',
+    }))
+    .exhaustive();
+
+  return (
+    <ListRow
+      verticalPadding="small"
+      testID={`subscription-receipt-row-${row.type}`}
+      contents={
+        <Text size="b4" shade={6}>
+          {label}
+        </Text>
+      }
+      right={
+        <Text
+          size="b4"
+          weight="semibold"
+          tone={tone === 'brand' ? 'brand' : 'neutral'}
+          shade={tone === 'muted' ? 6 : 8}
+          className="tabular-nums"
+        >
+          {value}
+        </Text>
+      }
+    />
+  );
+}
+
+/** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
+function PremiumEndingNotice() {
+  const { t } = useTranslation('subscription');
+  const { variant, endingNotice } = useSubscriptionReceipt();
+
+  if (endingNotice == null) {
+    return null;
+  }
+
+  // 보상 기간은 구독 버튼으로, 취소한 결제 구독은 스토어에서 자동 갱신을 다시 켜서 이어 간다
+  const { badge, message } = match({ variant, endingNotice })
+    .with({ variant: 'paid', endingNotice: 'today' }, () => ({
+      badge: t('endingNotice.badgeToday'),
+      message: t('endingNotice.paidToday'),
+    }))
+    .with({ variant: 'paid', endingNotice: 'tomorrow' }, () => ({
+      badge: t('endingNotice.badgeTomorrow'),
+      message: t('endingNotice.paidTomorrow'),
+    }))
+    .with({ variant: P.union('reward', 'admin'), endingNotice: 'today' }, () => ({
+      badge: t('endingNotice.badgeToday'),
+      message: t('endingNotice.today'),
+    }))
+    .with({ variant: P.union('reward', 'admin'), endingNotice: 'tomorrow' }, () => ({
+      badge: t('endingNotice.badgeTomorrow'),
+      message: t('endingNotice.tomorrow'),
+    }))
+    .exhaustive();
+
+  return (
+    <>
+      <HStack
+        gap={10}
+        align="center"
+        accessibilityRole="summary"
+        className="rounded-2xl bg-main/10 px-3.5 py-3"
+        testID="subscription-ending-notice"
+      >
+        <Box className="rounded-full bg-main px-2 py-0.5">
+          <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
+            {badge}
+          </Text>
+        </Box>
+        <Text size="b4" weight="semibold" tone="brand" className="flex-1">
+          {message}
+        </Text>
+      </HStack>
+      <Spacing size={12} />
+    </>
+  );
+}
+
+/** 최근에 초대 보상이 끝나 무료로 돌아온 사람에게 페이월 위에서 한 줄로 알린다 */
+function GrantEndedNotice() {
+  const { t } = useTranslation('subscription');
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const dateFormatContext = useDateFormatContext();
+  const grantEndedAt = PremiumAccessPolicy.recentGrantEndedAt(user.premiumAccess);
+
+  if (grantEndedAt == null) {
+    return null;
+  }
+
+  return (
+    <>
+      <Text
+        size="b4"
+        shade={7}
+        align="center"
+        lineBreakStrategyIOS="hangul-word"
+        className="rounded-2xl bg-white px-4 py-3 dark:bg-gray-2"
+      >
+        {t('paywall.grantEnded', {
+          date: formatDateLabel(grantEndedAt, 'monthDay', dateFormatContext),
+        })}
+      </Text>
+      <Spacing size={12} />
+    </>
   );
 }
 
@@ -335,7 +622,7 @@ function ReceiptBenefitRow({ title }: { title: string }) {
       verticalPadding="small"
       left={
         <Box className="bg-main w-5 h-5 rounded-full items-center justify-center">
-          <FillCheckIcon width={12} height={12} colorClassName="text-white" />
+          <FillCheckIcon width={12} height={12} colorClassName="text-white dark:text-gray-1" />
         </Box>
       }
       contents={
@@ -434,18 +721,50 @@ function AdditionalSubscriptionBenefits() {
   );
 }
 
+const RENEWAL_NOTICE_KEYS = {
+  appStore: 'paywall.renewalNotice.appStore',
+  googlePlay: 'paywall.renewalNotice.googlePlay',
+} as const satisfies Record<SubscriptionStore, string>;
+
+/** 결제 전 자동 갱신 조건과 스토어별 해지 경로 안내 */
+function SubscriptionRenewalNotice() {
+  const { t } = useTranslation('subscription');
+  const store = getSubscriptionStore(Platform.OS);
+
+  if (store == null) {
+    return null;
+  }
+
+  return (
+    <Text size="e2" shade={4} align="center">
+      {t(RENEWAL_NOTICE_KEYS[store])}
+    </Text>
+  );
+}
+
 function SubscriptionTerms() {
   const { t } = useTranslation('subscription');
   const openUrl = useOpenUrl();
+  const { resolvedLanguage } = useLanguage();
 
   return (
     <Text size="e2" shade={4} align="center">
       {t('paywall.termsPrefix')}
-      <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.TERMS)}>
+      <Text
+        size="e2"
+        shade={5}
+        underline
+        onPress={() => openUrl(legalUrl('terms', resolvedLanguage))}
+      >
         {t('paywall.termsLink')}
       </Text>
       {t('paywall.termsAnd')}
-      <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
+      <Text
+        size="e2"
+        shade={5}
+        underline
+        onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+      >
         {t('paywall.privacyLink')}
       </Text>
       {t('paywall.termsSuffix')}
@@ -453,31 +772,10 @@ function SubscriptionTerms() {
   );
 }
 
-/** 영수증 하단 바코드 장식 */
-const BARCODE_BARS = [
-  4, 1, 3, 1, 2, 1, 1, 3, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 1, 3, 1, 2, 1, 1, 3, 2, 1, 1, 2, 3, 1, 1,
-  2, 1, 1, 3, 1, 2, 1, 3, 1, 1, 2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3,
-] as const;
-
-function ReceiptBarcode() {
-  return (
-    <HStack align="end" justify="center" gap={1.5}>
-      {BARCODE_BARS.map((w, i) => (
-        <Box
-          // 순서와 개수가 고정된 장식 요소이므로 index가 안정적인 key다.
-          key={i}
-          className="bg-gray-7 rounded-[0.5px]"
-          style={{ width: w * 1.8, height: 32 }}
-        />
-      ))}
-    </HStack>
-  );
-}
-
 export default function SubscriptionRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={SubscriptionScreen.Error}>
         <Suspense fallback={<SubscriptionScreen.Loading />}>
           <SubscriptionScreen />
         </Suspense>

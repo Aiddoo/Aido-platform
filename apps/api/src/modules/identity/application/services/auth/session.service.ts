@@ -94,7 +94,7 @@ export class SessionService {
     const validity = getSessionValidity(
       {
         expiresAt: new Date(session.expiresAt),
-        revokedAt: session.revokedAt === null ? null : new Date(session.revokedAt),
+        revokedAt: session.revokedAt == null ? null : new Date(session.revokedAt),
       },
       new Date(),
     );

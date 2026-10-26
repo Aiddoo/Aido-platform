@@ -47,14 +47,14 @@ describe('feature discovery analytics', () => {
     recordFeatureDiscoveryCardCta(analytics, attribution, {
       accountId: 'private-user-id',
       campaignId: 'feature-discovery-2026-08',
-      cardId: 'drag_reorder',
+      cardId: 'friend_invite',
       source: 'mypage',
     });
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: 'feature-discovery-2026-08',
-      feature: 'category_reorder',
+      feature: 'friend_invite',
       source: 'mypage',
     });
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(
@@ -64,7 +64,7 @@ describe('feature discovery analytics', () => {
     expect(attribution.record).toHaveBeenCalledWith({
       accountId: 'private-user-id',
       campaignId: 'feature-discovery-2026-08',
-      feature: 'category_reorder',
+      feature: 'friend_invite',
     });
   });
 
@@ -77,14 +77,14 @@ describe('feature discovery analytics', () => {
     recordFeatureDiscoveryCardCta(analytics, attribution, {
       accountId: undefined,
       campaignId: 'feature-discovery-2026-08',
-      cardId: 'memo_ai',
+      cardId: 'friend_invite',
       source: 'mypage',
     });
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: 'feature-discovery-2026-08',
-      feature: 'memo_ai',
+      feature: 'friend_invite',
       source: 'mypage',
     });
     expect(attribution.record).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('feature discovery analytics', () => {
       recordFeatureDiscoveryCardCta(analytics, attribution, {
         accountId: 'user-1',
         campaignId: 'feature-discovery-2026-08',
-        cardId: 'memo_ai',
+        cardId: 'friend_invite',
         source: 'auto',
       });
 
@@ -111,7 +111,7 @@ describe('feature discovery analytics', () => {
     expect(record).not.toThrow();
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: 'feature-discovery-2026-08',
-      feature: 'memo_ai',
+      feature: 'friend_invite',
       source: 'auto',
     });
   });
@@ -153,7 +153,7 @@ describe('feature discovery analytics', () => {
       recordFeatureDiscoveryCardCta(analytics, attribution, {
         accountId: 'user-1',
         campaignId: 'feature-discovery-2026-08',
-        cardId: 'friend_search',
+        cardId: 'friend_invite',
         source: 'mypage',
       });
 
@@ -162,7 +162,7 @@ describe('feature discovery analytics', () => {
     expect(attribution.record).toHaveBeenCalledWith({
       accountId: 'user-1',
       campaignId: 'feature-discovery-2026-08',
-      feature: 'friend_search',
+      feature: 'friend_invite',
     });
   });
 });

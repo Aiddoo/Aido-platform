@@ -264,7 +264,16 @@ APPLE_CALLBACK_URL=https://api.aido.kr/v1/auth/apple/callback
 
 ### Kakao / Naver
 
-각 플랫폼의 개발자 콘솔에서 앱 등록 후 Client ID/Secret을 **API 서버에** 설정합니다.
+각 플랫폼의 개발자 콘솔에서 앱 등록 후 Client ID/Secret을 **API 서버에** 설정합니다(로그인은 서버 OAuth 흐름).
+
+**카카오톡 공유(1.13.0 친구 초대)는 앱에 네이티브 앱 키가 필요합니다.**
+
+- 키: `EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY`(publishable). EAS 환경 변수 `production`·`preview`·`development`에 각각 넣고, 로컬은 `.env.development`에 둡니다.
+- 카카오 디벨로퍼스 > 플랫폼 등록
+  - iOS 번들 ID: `com.aido.mobile`, `com.aido.mobile.preview`
+  - Android 패키지: `com.aido.mobile`, `com.aido.mobile.preview`
+  - Android 키 해시: debug 키, EAS 업로드 키, Play 앱 서명 키(Play Console > 앱 무결성) 세 가지를 모두 등록합니다.
+- 키가 있을 때만 `app.config.ts`가 카카오 config plugin(`@react-native-kakao/core`, `kakao{KEY}://kakaolink` 스킴)을 넣습니다. 키를 처음 넣거나 바꾸면 **dev client를 다시 빌드**해야 합니다(JS 리로드로는 반영되지 않습니다).
 
 ---
 

@@ -39,7 +39,7 @@ export class Logout {
 
   async execute(input: LogoutInput): Promise<{ message: string }> {
     const session = await this.#dependencies.sessionRepository.findById(input.sessionId);
-    if (session === null) {
+    if (session == null) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId: undefined });
     }
     const authSession = AuthSession.reconstitute(session);

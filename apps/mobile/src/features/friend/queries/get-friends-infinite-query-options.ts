@@ -10,6 +10,8 @@ import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import type { FriendUser } from '../domains/friend.model';
 import { toFriendUserViewModel } from '../utils/view-models/friend-user.view-model';
 
+const FIRST_PAGE_CURSOR: string | undefined = undefined;
+
 export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
   return infiniteQueryOptions({
     queryKey: FRIEND_QUERY_KEYS.friends(),
@@ -17,7 +19,7 @@ export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
       const result = await friendService.getFriends({ cursor: pageParam }, signal);
       return unwrap(result);
     },
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: FIRST_PAGE_CURSOR,
     getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore || lastPage.items.length === 0) {
         return undefined;

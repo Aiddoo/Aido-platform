@@ -1,18 +1,24 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";
-import dayjs from "dayjs";
 
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import { decodeRecord } from "#api/platform/database/database-records";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { toIsoMonthId, toIsoWeekId } from "#api/shared/domain/date/utils/format";
+import { now } from "#api/shared/domain/date/utils/core";
+import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
+import {
+  isInReportDispatchWindow,
+  reportDispatchPeriodId,
+} from "../../../domain/services/reports/report-dispatch-window.js";
+import type { ReportType } from "../../../domain/types/reports/ai-report.types.js";
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { ReportGenerationProcessor } from "../../processors/reports/report-generation.processor.js";
 import {
+  AI_REPORT_JOB_RETRY_POLICY,
   AI_REPORT_QUEUE,
   type AiReportGenerateData,
   AiReportJobName,
@@ -23,8 +29,15 @@ import {
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
-/** 크론 스케줄 + jobId 계산에 사용하는 기준 타임존 */
-const CRON_TZ = "Asia/Seoul";
+/** preference가 없는 사용자의 기존 기본 타임존 */
+const DEFAULT_REPORT_TIMEZONE = "Asia/Seoul";
+
+/**
+ * 매시 5분에 디스패치하고 사용자 로컬 기준 새 주기 시작 직후인 사용자만 등록한다.
+ * KST 고정 cron은 서쪽 시간대 사용자에게 아직 끝나지 않은 주기를 "지난 주기"로 만들었다.
+ */
+const HOURLY_DISPATCH_CRON = "5 * * * *";
+const DISPATCH_CRON_TZ = "UTC";
 
 @Injectable()
 export class ReportGenerationJob implements OnModuleInit {
@@ -55,14 +68,14 @@ export class ReportGenerationJob implements OnModuleInit {
       async () => {
         await this.runtime.schedule(
           AiReportSchedulerName.WEEKLY,
-          "0 1 * * 1",
+          HOURLY_DISPATCH_CRON,
           AI_REPORT_QUEUE,
           { name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
           this.#jobOptions(),
         );
         await this.runtime.schedule(
           AiReportSchedulerName.MONTHLY,
-          "0 2 1 * *",
+          HOURLY_DISPATCH_CRON,
           AI_REPORT_QUEUE,
           { name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
           this.#jobOptions(),
@@ -76,10 +89,11 @@ export class ReportGenerationJob implements OnModuleInit {
   }
 
   /**
-   * 대상 사용자를 조회하여 BullMQ 큐에 per-user 잡 등록
+   * 로컬 디스패치 창에 든 대상 사용자만 per-user 잡으로 등록한다.
+   * 창 안에서 매시 다시 실행돼도 사용자 로컬 주기의 멱등 키가 중복 등록을 막는다.
    */
   async dispatchReports(
-    type: "WEEKLY" | "MONTHLY",
+    type: ReportType,
     dispatchJob?: { updateProgress(progress: object): Promise<unknown> },
   ): Promise<void> {
     this.#logger.log({
@@ -88,7 +102,7 @@ export class ReportGenerationJob implements OnModuleInit {
       reportType: type,
     });
 
-    const periodId = this.#getJobDeduplicationId(type);
+    const dispatchedAt = now();
     let totalEnqueued = 0;
 
     await forEachBatch({
@@ -96,7 +110,7 @@ export class ReportGenerationJob implements OnModuleInit {
       fetchPage: (cursor, take) =>
         this.database.orm.public.User.where((row) =>
           and(
-            cursor !== undefined ? row.id.gt(cursor) : all(),
+            cursor != null ? row.id.gt(cursor) : all(),
             or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
             row.status.eq("ACTIVE"),
             row.deletedAt.isNull(),
@@ -109,25 +123,34 @@ export class ReportGenerationJob implements OnModuleInit {
           .all()
           .then((row) => decodeRecord("User", row)),
       onBatch: async (batch) => {
+        const due = batch.flatMap((user) => {
+          const timezone = resolveTimezone(user.preference?.timezone ?? DEFAULT_REPORT_TIMEZONE);
+          return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
+        });
+        if (due.length === 0) return;
         await this.runtime.enqueueMany(
           AI_REPORT_QUEUE,
-          batch.map((user) => ({
+          due.map(({ user, timezone }) => ({
             data: {
               name: AiReportJobName.GENERATE,
               data: {
                 userId: user.id,
-                timezone: user.preference?.timezone ?? "Asia/Seoul",
+                timezone,
                 locale: user.preference?.locale ?? "ko",
                 reportType: type,
               } satisfies AiReportGenerateData,
             },
             options: {
               ...this.#jobOptions(),
-              idempotencyKey: AiReportJobKey.generate(type, user.id, periodId),
+              idempotencyKey: AiReportJobKey.generate(
+                type,
+                user.id,
+                reportDispatchPeriodId(type, dispatchedAt, timezone),
+              ),
             },
           })),
         );
-        totalEnqueued += batch.length;
+        totalEnqueued += due.length;
         await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
       },
     });
@@ -141,69 +164,28 @@ export class ReportGenerationJob implements OnModuleInit {
   }
 
   /**
-   * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
-   *
-   * 현재 KST 시각이 크론 트리거 윈도우 내에 있으면 dispatch 잡을 큐에 추가합니다.
-   * 동일 기간의 enqueue 중복은 runtime key로 줄이고 저장 중복은 Application에서 확인한다.
+   * 재시작으로 놓친 매시 디스패치를 보정한다.
+   * 같은 UTC 시각의 보정은 한 번만 등록되고, 사용자별 중복은 생성 잡의 멱등 키가 막는다.
    */
   async #catchUpIfNeeded(): Promise<void> {
-    const kstNow = dayjs().tz(CRON_TZ);
-    const dayOfWeek = kstNow.day(); // 0=일, 1=월, ...
-    const dayOfMonth = kstNow.date();
-    const hour = kstNow.hour();
-    const now = kstNow.toDate();
-
-    // 주간: 월요일 01:00 이후
-    if (dayOfWeek === 1 && hour >= 1) {
-      const weekId = toIsoWeekId(now, CRON_TZ);
-      this.#logger.log({
-        event: AiJobLogEvent.CATCH_UP,
-        queueName: AI_REPORT_QUEUE,
-        reportType: "WEEKLY",
-      });
+    const hourId = now().toISOString().slice(0, 13);
+    for (const reportType of ["WEEKLY", "MONTHLY"] as const) {
+      this.#logger.log({ event: AiJobLogEvent.CATCH_UP, queueName: AI_REPORT_QUEUE, reportType });
       await this.runtime.enqueue(
         AI_REPORT_QUEUE,
-        { name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
-        { ...this.#jobOptions(), idempotencyKey: AiReportJobKey.dispatch("WEEKLY", weekId) },
+        { name: AiReportJobName.DISPATCH, data: { reportType } },
+        { ...this.#jobOptions(), idempotencyKey: AiReportJobKey.dispatch(reportType, hourId) },
       );
     }
-
-    // 월간: 1일 01:00 이후
-    if (dayOfMonth === 1 && hour >= 1) {
-      const monthId = toIsoMonthId(now, CRON_TZ);
-      this.#logger.log({
-        event: AiJobLogEvent.CATCH_UP,
-        queueName: AI_REPORT_QUEUE,
-        reportType: "MONTHLY",
-      });
-      await this.runtime.enqueue(
-        AI_REPORT_QUEUE,
-        { name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
-        { ...this.#jobOptions(), idempotencyKey: AiReportJobKey.dispatch("MONTHLY", monthId) },
-      );
-    }
-  }
-
-  /**
-   * jobId 중복 방지용 기간 식별자 생성 (KST 기준)
-   *
-   * 크론 스케줄과 동일한 타임존으로 주차/월을 계산하여
-   * UTC ↔ KST 날짜 경계 불일치로 인한 jobId 충돌을 방지합니다.
-   */
-  #getJobDeduplicationId(type: "WEEKLY" | "MONTHLY"): string {
-    const now = new Date();
-    return type === "WEEKLY" ? toIsoWeekId(now, CRON_TZ) : toIsoMonthId(now, CRON_TZ);
   }
 
   #jobOptions() {
     return {
-      retryLimit: 2,
-      retryDelaySeconds: 5,
-      retryBackoff: true,
+      ...AI_REPORT_JOB_RETRY_POLICY,
       expireInSeconds: 10 * 60,
       retentionSeconds: 7 * 24 * 60 * 60,
       deleteAfterSeconds: 7 * 24 * 60 * 60,
-      timezone: CRON_TZ,
+      timezone: DISPATCH_CRON_TZ,
     };
   }
 }

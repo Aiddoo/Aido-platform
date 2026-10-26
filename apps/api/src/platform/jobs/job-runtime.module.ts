@@ -101,9 +101,9 @@ export class RedisDrainJobRuntime implements JobRuntimePort {
       : { status: "missing" };
   }
 
-  async work<T extends JobData>(
+  async work(
     queue: string,
-    handler: (jobs: readonly JobEnvelope<T>[]) => Promise<void>,
+    handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void> {
     await Promise.all([

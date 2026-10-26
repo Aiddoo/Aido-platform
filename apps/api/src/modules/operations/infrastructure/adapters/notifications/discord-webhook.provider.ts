@@ -34,7 +34,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
 
   async send(notification: AdminNotification): Promise<AdminNotifyResult> {
     const webhookUrl = this.#webhookUrl;
-    if (webhookUrl === undefined || webhookUrl === "") {
+    if (webhookUrl == null || webhookUrl === "") {
       this.#logger.debug({
         event: AdminNotificationInfraEvent.PROVIDER_NOT_CONFIGURED,
         provider: this.name,

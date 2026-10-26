@@ -41,7 +41,7 @@ describe("TokenService — 토큰 서비스", () => {
     // JwtService 외부 라이브러리 mock 수동 설정
     jwtService.signAsync.mockImplementation((payload) => {
       const sub =
-        typeof payload === "object" && payload !== null && "sub" in payload
+        typeof payload === "object" && payload != null && "sub" in payload
           ? String(payload.sub)
           : "";
       return Promise.resolve(`mock-token-${sub}`);

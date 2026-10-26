@@ -84,6 +84,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
       type: "SYSTEM_NOTICE",
       title: expected?.title,
       body: expected?.body,
+      action: { type: "DEEP_LINK", url: "/feed" },
       metadata: { onboardingDay: 0 },
     });
   });
@@ -112,6 +113,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
       type: "SYSTEM_NOTICE",
       title: expected?.title,
       body: expected?.body,
+      action: { type: "DEEP_LINK", url: "/achievements" },
       metadata: { onboardingDay: 5 },
     });
   });

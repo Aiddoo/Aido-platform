@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
 import type { EffectCallback } from 'react';
 import { AppState } from 'react-native';
-import { useKeyboardState } from 'react-native-keyboard-controller';
+import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
 import { useStableFeedForeground } from './use-stable-feed-foreground';
 
@@ -26,7 +26,17 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-const mockUseKeyboardState = useKeyboardState as jest.Mock;
+const mockUseKeyboardState = jest.mocked(useKeyboardState);
+
+const createKeyboardState = (isVisible: boolean): IKeyboardState => ({
+  isVisible,
+  height: isVisible ? 300 : 0,
+  duration: 250,
+  timestamp: 0,
+  target: -1,
+  type: 'default',
+  appearance: 'light',
+});
 
 describe('useStableFeedForeground', () => {
   beforeEach(() => {
@@ -39,14 +49,15 @@ describe('useStableFeedForeground', () => {
       configurable: true,
       value: 'active',
     });
-    jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
-    mockUseKeyboardState.mockImplementation((selector) =>
-      selector({ isVisible: mockIsKeyboardVisible }),
-    );
+    jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() });
+    mockUseKeyboardState.mockImplementation((selector) => {
+      const state = createKeyboardState(mockIsKeyboardVisible);
+      return selector == null ? state : selector(state);
+    });
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
     jest.spyOn(Linking, 'addEventListener').mockImplementation((_event, listener) => {
       deepLinkListener = listener;
-      return { remove: jest.fn() } as never;
+      return { remove: jest.fn() };
     });
     jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     Object.defineProperty(globalThis, 'requestIdleCallback', {

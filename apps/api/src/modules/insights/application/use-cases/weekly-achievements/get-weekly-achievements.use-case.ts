@@ -56,7 +56,7 @@ export class GetWeeklyAchievements {
     const lastItem = paginatedItems[paginatedItems.length - 1];
 
     const pagination: CursorPaginationInfo<number> = {
-      nextCursor: hasNext && lastItem !== undefined ? lastItem.week : null,
+      nextCursor: hasNext && lastItem != null ? lastItem.week : null,
       hasNext,
       size,
     };
