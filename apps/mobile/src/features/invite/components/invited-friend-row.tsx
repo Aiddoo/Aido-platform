@@ -101,12 +101,14 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
         </VStack>
       }
       right={
-        <HStack align="center" gap={6}>
-          {InvitedFriendPolicy.pawPrintState(friend) === 'waiting' && (
-            <InvitedFriendNudgeButton friend={friend} />
+        // 행마다 끝에는 하나만 둔다. 폭을 같게 잡아 칩·버튼이 바뀌어도 설명 줄바꿈과 행 높이가 그대로다
+        <Box className="min-w-[84px] items-end">
+          {InvitedFriendPolicy.pawPrintState(friend) === 'waiting' ? (
+            <InvitedFriendWaitingAction friend={friend} />
+          ) : (
+            <InvitedFriendPawPrintChip friend={friend} />
           )}
-          <InvitedFriendPawPrintChip friend={friend} />
-        </HStack>
+        </Box>
       }
       {...props}
     />
@@ -160,14 +162,11 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
 }
 
 /**
- * 발자국을 기다리는 친구를 콕 찌르러 그 친구의 오늘 피드로 간다. 할 일이 있으면 할 일에, 없으면 독촉으로
- * 기존 콕 찌르기 흐름이 그대로 고른다. 친구 목록에 없으면(친구 끊김·차단) 보이지 않는다
+ * 발자국을 기다리는 친구의 끝 칸. 지금 콕 찌를 수 있으면 [콕 찌르기]만, 아니면(친구 목록에 없음·친구 끊김·차단,
+ * 독촉 쿨다운, 불러오는 중) 남은 일수 칩을 둔다. 남은 일수는 설명 문구에도 있다
  */
-function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
-  const { t } = useTranslation('invite');
-  const push = useSingleTap(router.push);
-  const displayName = InvitedFriendPolicy.displayName(friend);
-  const { data: myFriend, isPending } = useInfiniteQuery(
+function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
+  const { data: myFriend } = useInfiniteQuery(
     useGetFriendQueryOptions({ friendId: friend.userId }),
   );
   const { data: cooldownInfo } = useQuery({
@@ -175,39 +174,34 @@ function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
     enabled: myFriend != null,
   });
 
-  if (!isPending && myFriend == null) {
-    return null;
-  }
+  return cooldownInfo?.canNudge === true ? (
+    <InvitedFriendNudgeButton friend={friend} />
+  ) : (
+    <InvitedFriendPawPrintChip friend={friend} />
+  );
+}
 
-  // 친구 목록을 불러오는 동안에도 자리를 잡아 두어 버튼이 나타날 때 설명 줄바꿈·행 높이가 바뀌지 않는다
-  const isReady = !isPending;
-  const canNudge = isReady && (cooldownInfo?.canNudge ?? true);
+/**
+ * 그 친구의 오늘 피드로 간다. 할 일이 있으면 할 일 콕, 없으면 독촉 콕을 기존 콕 찌르기 흐름이 그대로 고른다
+ */
+function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
+  const { t } = useTranslation('invite');
+  const push = useSingleTap(router.push);
 
   return (
     <PressableFeedback
       accessibilityRole="button"
-      accessibilityLabel={
-        canNudge
-          ? t('friendList.nudgeLabel', { name: displayName })
-          : t('friendList.nudgedLabel', { name: displayName })
-      }
-      accessibilityState={{ disabled: !canNudge }}
-      accessibilityElementsHidden={!isReady}
-      importantForAccessibility={isReady ? 'auto' : 'no-hide-descendants'}
-      isDisabled={!canNudge}
+      accessibilityLabel={t('friendList.nudgeLabel', {
+        name: InvitedFriendPolicy.displayName(friend),
+        count: InvitedFriendPolicy.activeDaysLeft(friend),
+      })}
       onPress={() => push(createFeedHref({ friendId: friend.userId, date: 'today' }))}
-      className={invitedFriendNudgeButtonVariants({ isDisabled: !canNudge, isReady })}
+      className={invitedFriendNudgeButtonVariants()}
     >
-      <PawIcon width={14} height={14} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
-      {canNudge || !isReady ? (
-        <Text size="e1" weight="bold" tone="brand">
-          {t('friendList.nudge')}
-        </Text>
-      ) : (
-        <Text size="e1" weight="bold" shade={6}>
-          {t('friendList.nudged')}
-        </Text>
-      )}
+      <PawIcon width={14} height={14} colorClassName="text-main" />
+      <Text size="e1" weight="bold" tone="brand" maxLines={1}>
+        {t('friendList.nudge')}
+      </Text>
     </PressableFeedback>
   );
 }

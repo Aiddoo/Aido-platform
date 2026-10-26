@@ -128,9 +128,7 @@
     "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요",
     "waitingNotStarted": "{{count}}일 동안 할 일을 끝내면 발자국이 찍혀요",
     "nudge": "콕 찌르기",
-    "nudged": "콕 했어요",
-    "nudgeLabel": "{{name}}에게 콕 찌르러 가기",
-    "nudgedLabel": "오늘 {{name}}에게 이미 콕 했어요"
+    "nudgeLabel": "{{name}}에게 콕 찌르러 가기. {{count}}일만 더 하면 발자국이 찍혀요"
   },
   "share": {
     "kakao": "카카오톡으로 초대하기",
