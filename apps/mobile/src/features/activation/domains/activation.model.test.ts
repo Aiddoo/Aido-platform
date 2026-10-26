@@ -105,6 +105,55 @@ describe('ActivationPolicy', () => {
     });
   });
 
+  describe('checklistSteps', () => {
+    it('이 기기 기록이 없어도 서버에 할 일·완료한 할 일이 있으면 단계를 끝낸다', () => {
+      // Given
+      const progress = createProgress();
+
+      // When
+      const created = ActivationPolicy.checklistSteps(progress, {
+        hasTodo: true,
+        hasCompletedTodo: false,
+      });
+      const completed = ActivationPolicy.checklistSteps(progress, {
+        hasTodo: true,
+        hasCompletedTodo: true,
+      });
+
+      // Then
+      expect(created).toEqual({ hasCreatedTodo: true, hasCompletedTodo: false });
+      expect(completed).toEqual({ hasCreatedTodo: true, hasCompletedTodo: true });
+    });
+
+    it('서버 기록을 못 읽었으면 이 기기 기록으로 판단한다', () => {
+      // Given
+      const progress = createProgress({ todoCreatedAt: new Date('2026-08-02T00:00:00.000Z') });
+
+      // When
+      const result = ActivationPolicy.checklistSteps(progress, undefined);
+
+      // Then
+      expect(result).toEqual({ hasCreatedTodo: true, hasCompletedTodo: false });
+    });
+
+    it('서버에서 할 일을 지워도 이 기기에서 끝낸 단계는 되돌리지 않는다', () => {
+      // Given
+      const progress = createProgress({
+        todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
+        activatedAt: new Date('2026-08-02T00:01:00.000Z'),
+      });
+
+      // When
+      const result = ActivationPolicy.checklistSteps(progress, {
+        hasTodo: false,
+        hasCompletedTodo: false,
+      });
+
+      // Then
+      expect(result).toEqual({ hasCreatedTodo: true, hasCompletedTodo: true });
+    });
+  });
+
   describe('shouldRegisterPushAutomatically', () => {
     it('기존 사용자와 활성화된 신규 사용자는 자동 등록한다', () => {
       // Given

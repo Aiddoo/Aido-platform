@@ -154,7 +154,7 @@
     "mypageStart": "첫 발자국을 남겨보세요",
     "mypageNext": "다음 보상까지 친구 {{count}}명 남았어요",
     "mypageKeepGoing": "친구와 함께 계속 응원해요",
-    "checklistStep": "친구 1명 초대하기",
+    "checklistStep": "친구 1명 초대하기 (선택)",
     "checklistReward": "친구에게 프리미엄 {{days}}일",
     "allDoneDescription": "친구와 같이 하면 더 오래 이어가요",
     "allDoneDismiss": "오늘은 그만 보기",

@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useGetFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/queries/get-feature-discovery-query-options';
+import { useGetTodoExistenceQueryOptions } from '@src/features/todo/queries/get-todo-existence-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
 
@@ -50,15 +51,27 @@ export function useActivationProgress() {
 
 export function useActivationChecklist() {
   const activation = useActivationProgress();
+  const isEligible =
+    activation.isReady &&
+    ActivationPolicy.isChecklistVisible({
+      config: activation.config,
+      user: activation.user,
+      progress: activation.progress,
+      now: new Date(),
+    });
+  // 재설치·다른 기기에서도 같은 진행을 보이도록 서버의 할 일 기록을 함께 본다. 대상 사용자에게만 부른다
+  const todoExistenceQuery = useQuery({
+    ...useGetTodoExistenceQueryOptions(),
+    enabled: isEligible,
+    throwOnError: false,
+  });
+  const steps = ActivationPolicy.checklistSteps(activation.progress, todoExistenceQuery.data);
+  // 서버 기록을 읽기 전에는 띄우지 않아, 이미 끝낸 사용자에게 카드가 잠깐 보였다 사라지지 않게 한다.
+  // 읽기에 실패하면 이 기기 기록만으로 판단한다
+  const hasSettledTodoExistence = todoExistenceQuery.isSuccess || todoExistenceQuery.isError;
+
   return {
-    progress: activation.progress,
-    isVisible:
-      activation.isReady &&
-      ActivationPolicy.isChecklistVisible({
-        config: activation.config,
-        user: activation.user,
-        progress: activation.progress,
-        now: new Date(),
-      }),
+    steps,
+    isVisible: isEligible && hasSettledTodoExistence && !steps.hasCompletedTodo,
   };
 }

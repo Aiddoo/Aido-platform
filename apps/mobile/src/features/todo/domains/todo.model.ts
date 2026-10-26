@@ -41,6 +41,13 @@ export const todoListResultSchema = z.object({
 });
 export type TodoListResult = z.infer<typeof todoListResultSchema>;
 
+/** 계정에 할 일이 하나라도 있는지·완료한 할 일이 있는지. 기기와 무관한 서버 기록이다 */
+export const todoExistenceSchema = z.object({
+  hasTodo: z.boolean(),
+  hasCompletedTodo: z.boolean(),
+});
+export type TodoExistence = z.infer<typeof todoExistenceSchema>;
+
 export type DailyCompletionSummary = DailyCompletionSummaryResponse;
 export type DailyCompletionsResult = DailyCompletionsRangeResponse;
 export type TodoSummary = TodoSummaryResponse;

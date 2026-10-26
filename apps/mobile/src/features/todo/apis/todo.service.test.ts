@@ -70,6 +70,38 @@ describe('TodoService', () => {
     });
   });
 
+  describe('getTodoExistence', () => {
+    test('날짜 조건 없이 전체·완료 할 일을 한 건씩 읽어 있는지를 돌려준다', async () => {
+      // Given
+      httpClient.get.mockImplementation(async (_url, options) =>
+        options?.params?.completed === true
+          ? { ok: true, value: createTodoListResponseDto({ items: [] }) }
+          : { ok: true, value: createTodoListResponseDto() },
+      );
+
+      // When
+      const result = await service.getTodoExistence();
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todos', {
+        params: expect.objectContaining({ size: 1, startDate: undefined, endDate: undefined }),
+      });
+      expect(result).toEqual({ ok: true, value: { hasTodo: true, hasCompletedTodo: false } });
+    });
+
+    test('한 요청이라도 실패하면 그 오류를 돌려준다', async () => {
+      // Given
+      const apiError = createTodoApiError();
+      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.getTodoExistence();
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+  });
+
   // ── getTodoSummary ───────────────────────────
 
   describe('getTodoSummary', () => {

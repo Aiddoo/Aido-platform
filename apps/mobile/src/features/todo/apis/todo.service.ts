@@ -25,6 +25,7 @@ import type {
   DailyCompletionsResult,
   Todo,
   TodoDetails,
+  TodoExistence,
   TodoSummary,
   TodoListResult,
 } from '../domains/todo.model';
@@ -70,6 +71,24 @@ export class TodoService {
     }
 
     return ok(toTodoListResult(parsed.data));
+  };
+
+  /** 날짜 조건 없이 한 건씩만 읽어, 기간과 무관하게 할 일·완료한 할 일이 있는지 본다 */
+  getTodoExistence = async (signal?: AbortSignal): Promise<Result<TodoExistence, ApiError>> => {
+    const [anyTodo, completedTodo] = await Promise.all([
+      this.getTodos({ size: 1 }, signal),
+      this.getTodos({ size: 1, completed: true }, signal),
+    ]);
+    if (!anyTodo.ok) {
+      return anyTodo;
+    }
+    if (!completedTodo.ok) {
+      return completedTodo;
+    }
+    return ok({
+      hasTodo: anyTodo.value.todos.length > 0,
+      hasCompletedTodo: completedTodo.value.todos.length > 0,
+    });
   };
 
   getFriendTodos = async (

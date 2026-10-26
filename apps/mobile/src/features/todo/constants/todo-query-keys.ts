@@ -12,6 +12,9 @@ export const TODO_QUERY_KEYS = {
   widgetSummaryByDate: ({ date, userId }: { date: string; userId?: string | null }) =>
     [...TODO_QUERY_KEYS.widgetSummary(), { date, userId: userId ?? null }] as const,
 
+  // 할 일·완료한 할 일이 있는지(시작 체크리스트) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다
+  existence: () => [...TODO_QUERY_KEYS.completions(), 'existence'] as const,
+
   // 선택된 날짜의 할 일 목록
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: ({ date }: { date: string }) => [...TODO_QUERY_KEYS.lists(), { date }] as const,
