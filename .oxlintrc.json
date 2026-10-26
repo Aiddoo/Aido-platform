@@ -76,7 +76,6 @@
       ],
       "rules": {
         "typescript/no-explicit-any": "off",
-        "typescript/no-non-null-assertion": "off",
         "typescript/ban-ts-comment": [
           "error",
           {

@@ -1,4 +1,5 @@
 import request from "supertest";
+import { assert } from "vitest";
 
 import {
   AI_PROVIDER,
@@ -968,7 +969,9 @@ describe("AI E2E", () => {
     async ({ itemCount, status, used }) => {
       // Given
       const memo = createParsedMemoResponse();
-      memo.todos[0]!.items = Array.from({ length: itemCount }, (_, index) => ({
+      const [firstTodo] = memo.todos;
+      assert.exists(firstTodo);
+      firstTodo.items = Array.from({ length: itemCount }, (_, index) => ({
         title: `발표 준비 단계 ${index + 1}`,
       }));
       fakeAiProvider.setRawResponse(memo);
@@ -989,7 +992,7 @@ describe("AI E2E", () => {
       expect(fakeAiProvider.getCallCount()).toBe(1);
       if (status === 200) {
         expect(response.body.data.success).toBe(true);
-        expect(response.body.data.data.todos[0].items).toEqual(memo.todos[0]!.items);
+        expect(response.body.data.data.todos[0].items).toEqual(firstTodo.items);
       } else {
         expect(response.body.error.code).toBe("AI_1302");
       }
@@ -1024,8 +1027,10 @@ describe("AI E2E", () => {
     async (locale) => {
       // Given - 명시적인 완전 Memo 응답에 Todo 두 개
       const raw = createParsedMemoResponse(1);
+      const [firstTodo] = raw.todos;
+      assert.exists(firstTodo);
       raw.todos.push({
-        ...raw.todos[0]!,
+        ...firstTodo,
         title: locale === "en" ? "Prepare notes" : "자료 준비",
         items: [],
       });

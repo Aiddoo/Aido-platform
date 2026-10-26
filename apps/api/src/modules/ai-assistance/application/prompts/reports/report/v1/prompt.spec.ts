@@ -6,6 +6,14 @@ import {
   reportAiResponseSchemaEn,
 } from "./prompt.ko.js";
 
+const exerciseCategory: AggregatedReportData["categoryBreakdown"][number] = {
+  name: "운동",
+  color: "#FF6B43",
+  total: 10,
+  completed: 8,
+  rate: 80,
+};
+
 const baseData: AggregatedReportData = {
   totalTodos: 20,
   completedTodos: 15,
@@ -13,7 +21,7 @@ const baseData: AggregatedReportData = {
   prevCompletionRate: 60,
   streakDays: 4,
   categoryBreakdown: [
-    { name: "운동", color: "#FF6B43", total: 10, completed: 8, rate: 80 },
+    exerciseCategory,
     { name: "업무", color: "#3B82F6", total: 10, completed: 7, rate: 70 },
   ],
   dayPatterns: [
@@ -181,7 +189,7 @@ describe("단일 분석축과 기록 없음 안내", () => {
     const data = {
       ...baseData,
       categoryBreakdown: [
-        baseData.categoryBreakdown[0]!,
+        exerciseCategory,
         { name: "없음", color: "#fff", total: 0, completed: 0, rate: 0 },
       ],
       dayPatterns: [

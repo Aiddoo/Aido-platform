@@ -1,3 +1,5 @@
+import { assert } from "vitest";
+
 import {
   createAiAssistanceFixture,
   createAnalysisTodo,
@@ -21,9 +23,13 @@ describe("AnalyzeAndCreateSuggestions", () => {
         seedPendingSuggestion(f);
         seedPendingSuggestion(f, 2);
         seedPendingSuggestion(f, 3);
-        f.repository.rows.set(2, { ...f.repository.rows.get(2)!, status: "ACCEPTED" });
+        const respondedSuggestion = f.repository.rows.get(2);
+        const expiredSuggestion = f.repository.rows.get(3);
+        assert.exists(respondedSuggestion);
+        assert.exists(expiredSuggestion);
+        f.repository.rows.set(2, { ...respondedSuggestion, status: "ACCEPTED" });
         f.repository.rows.set(3, {
-          ...f.repository.rows.get(3)!,
+          ...expiredSuggestion,
           expiresAt: new Date("2026-03-01"),
         });
         // When - 실제 컨텍스트 수집과 schema 검증을 거쳐 분석

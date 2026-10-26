@@ -1,4 +1,5 @@
 import request from "supertest";
+import { assert } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
@@ -210,24 +211,24 @@ describe("AI 리포트 E2E", () => {
       const report = await ctx.module
         .get(GenerateReport)
         .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale });
-      expect(report).not.toBeNull();
+      assert.exists(report);
       const response = await request(ctx.app.getHttpServer())
-        .get(`/v1/ai/reports/${report!.id}`)
+        .get(`/v1/ai/reports/${report.id}`)
         .set("Authorization", `Bearer ${user.accessToken}`);
       // Then - schema 콘텐츠와 기간 read model을 보존
       expect(response.status).toBe(200);
       expect(response.body.data.report.aiSummary).toBe(raw.summary);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
-      expect(response.body.data.report.periodLabel).toBe(report!.periodLabel);
+      expect(response.body.data.report.periodLabel).toBe(report.periodLabel);
       expect(fakeAiProvider.getCallCount()).toBe(1);
       const stored = decodeRecord(
         "AiReport",
-        await ctx.testDatabase.getClient().orm.public.AiReport.where({ id: report!.id }).first(),
+        await ctx.testDatabase.getClient().orm.public.AiReport.where({ id: report.id }).first(),
       );
       expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@v2.1" });
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
       const denied = await request(ctx.app.getHttpServer())
-        .get(`/v1/ai/reports/${report!.id}`)
+        .get(`/v1/ai/reports/${report.id}`)
         .set("Authorization", `Bearer ${other.accessToken}`);
       expect(denied.status).toBe(404);
       expect(denied.body.error.code).toBe("AI_1304");

@@ -1,3 +1,5 @@
+import { assert } from "vitest";
+
 import type { SuggestionContext } from "../../../../types/suggestions/suggestion-context.js";
 import {
   buildSuggestionPrompt,
@@ -6,6 +8,15 @@ import {
   getDetectedPatternsSchema,
   suggestionPromptCatalog,
 } from "./prompt.ko.js";
+
+const baseTodo: SuggestionContext["todos"][number] = {
+  startDate: "2026-07-01",
+  title: "운동",
+  scheduledTime: "07:00",
+  completed: true,
+  categoryId: 1,
+  categoryName: "운동",
+};
 
 const baseContext: SuggestionContext = {
   streak: "3일",
@@ -17,16 +28,7 @@ const baseContext: SuggestionContext = {
   weather: null,
   weeklyReportInsight: null,
   suggestionHistory: [],
-  todos: [
-    {
-      startDate: "2026-07-01",
-      title: "운동",
-      scheduledTime: "07:00",
-      completed: true,
-      categoryId: 1,
-      categoryName: "운동",
-    },
-  ],
+  todos: [baseTodo],
 };
 
 describe("buildSuggestionPrompt — locale 분기", () => {
@@ -91,12 +93,12 @@ describe("getDetectedPatternsSchema", () => {
 
 describe("시작 단계와 반복 인정 횟수 구분", () => {
   it.each(["ko", "en"] as const)("%s 실제 호출 반복기준2에서도 기록2개는 시작 단계다", (locale) => {
-    const context = { ...baseContext, todos: [baseContext.todos[0]!, baseContext.todos[0]!] };
+    const context = { ...baseContext, todos: [baseTodo, baseTodo] };
     const { system, prompt } = buildSuggestionPrompt(context, 2, locale);
     const json = prompt.match(/<context_json>\n([\s\S]*?)\n<\/context_json>/)?.[1];
-    expect(json).toBeDefined();
-    expect(JSON.parse(json!)).toMatchObject({ mode: "STARTER", todoCount: 2 });
-    expect(JSON.parse(json!).recordedActivities).toEqual([
+    assert.exists(json);
+    expect(JSON.parse(json)).toMatchObject({ mode: "STARTER", todoCount: 2 });
+    expect(JSON.parse(json).recordedActivities).toEqual([
       {
         title: "운동",
         occurrences: 2,
@@ -126,7 +128,7 @@ describe("실제 반복 근거와 사용자 안내", () => {
       const context = {
         ...baseContext,
         todos: ["2026-09-21", "2026-09-28", "2026-10-05"].map((startDate, index) => ({
-          ...baseContext.todos[0]!,
+          ...baseTodo,
           startDate,
           title: evidence.title,
           scheduledTime: "19:30",
@@ -137,8 +139,8 @@ describe("실제 반복 근거와 사용자 안내", () => {
       };
       const { system, prompt } = buildSuggestionPrompt(context, 3, locale);
       const json = prompt.match(/<context_json>\n([\s\S]*?)\n<\/context_json>/)?.[1];
-      expect(json).toBeDefined();
-      const data = JSON.parse(json!);
+      assert.exists(json);
+      const data = JSON.parse(json);
       expect(data.recordedActivities).toEqual([evidence]);
       expect(data.suggestionHistory).toEqual(context.suggestionHistory);
       expect(system).toContain("MON");
@@ -176,7 +178,7 @@ describe("원본 분량을 보존하는 시작 제안", () => {
     const context: SuggestionContext = {
       ...baseContext,
       timeCompletionRates: "",
-      todos: [{ ...baseContext.todos[0]!, title, scheduledTime: null }],
+      todos: [{ ...baseTodo, title, scheduledTime: null }],
     };
     // When: 실제 분석 인수2로 프롬프트와 서버 안내 문구를 만든다.
     const { system, prompt } = buildSuggestionPrompt(context, 2, locale);
