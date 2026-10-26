@@ -15,8 +15,13 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoCategoriesResult } from '../domains/todo-category.model';
-import type { OptimisticTodo, TodoListResult } from '../domains/todo.model';
-import { createOptimisticId } from './todo-cache';
+import type { OptimisticTodo } from '../domains/todo.model';
+import {
+  appendTodoToList,
+  cancelTodoListQuery,
+  createOptimisticId,
+  removeTodoFromList,
+} from './todo-cache';
 
 export interface CreateTodoParams {
   input: CreateTodoInput;
@@ -47,9 +52,7 @@ export const useCreateTodoMutationOptions = () => {
     onMutate: async ({ input }) => {
       const startDate = input.startDate;
 
-      await queryClient.cancelQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      });
+      await cancelTodoListQuery(queryClient, { date: startDate });
 
       // 카테고리 캐시에서 카테고리 정보 조회
       const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
@@ -81,18 +84,7 @@ export const useCreateTodoMutationOptions = () => {
         optimistic: true,
       };
 
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: [...old.todos, optimisticTodo],
-          };
-        },
-      );
+      appendTodoToList(queryClient, { date: startDate }, optimisticTodo);
 
       return { startDate, optimisticId: optimisticTodo.id };
     },
@@ -121,14 +113,7 @@ export const useCreateTodoMutationOptions = () => {
       notifyError();
 
       if (context?.optimisticId != null) {
-        queryClient.setQueryData<TodoListResult>(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          (current) =>
-            current && {
-              ...current,
-              todos: current.todos.filter((todo) => todo.id !== context.optimisticId),
-            },
-        );
+        removeTodoFromList(queryClient, { date: context.startDate, todoId: context.optimisticId });
       }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
