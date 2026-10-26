@@ -1,4 +1,5 @@
 import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { useStoreReviewMoment } from '@src/features/store-review/hooks/use-store-review-moment';
 import {
   type PremiumAccess,
   PremiumAccessPolicy,
@@ -101,6 +102,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   );
   const board = createPawPrintBoard(myInvite, { columns: grid.columns, celebratedCount });
   const hasNewPawPrint = myInvite.qualifiedCount > celebratedCount;
+  const { requestReviewAt } = useStoreReviewMoment();
 
   useEffect(() => {
     if (myInvite.qualifiedCount === celebratedCount) {
@@ -110,8 +112,17 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
     inviteService.markPawPrintsCelebrated(userId, myInvite.qualifiedCount);
     if (hasNewPawPrint) {
       notifySuccess();
+      // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
+      requestReviewAt('paw_print_celebration');
     }
-  }, [celebratedCount, hasNewPawPrint, inviteService, myInvite.qualifiedCount, userId]);
+  }, [
+    celebratedCount,
+    hasNewPawPrint,
+    inviteService,
+    myInvite.qualifiedCount,
+    requestReviewAt,
+    userId,
+  ]);
 
   const handleBoardLayout = (event: LayoutChangeEvent) => {
     setMeasuredWidth(event.nativeEvent.layout.width);
