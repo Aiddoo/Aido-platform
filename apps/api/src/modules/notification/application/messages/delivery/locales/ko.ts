@@ -246,6 +246,20 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("친구가 한 명 더 생겼어", `${senderName}에게 가볍게 인사해봐 🐾`),
     ],
   },
+  INVITE_PROGRESS: {
+    copy: ({ inviteeName }) =>
+      copy(
+        `${attachJosa(inviteeName, "이/가")} 첫날 할 일을 끝냈어 🐾`,
+        "콕 찔러서 내일도 해내게 응원해줘",
+      ),
+  },
+  INVITE_QUALIFY_REMINDER: {
+    copy: ({ inviterName }) =>
+      copy(
+        "하루만 더 할 일을 끝내볼까? 🐾",
+        `오늘 할 일을 끝내면 ${inviterName}에게 발자국을 선물할 수 있어`,
+      ),
+  },
   INVITE_JOINED: {
     copy: ({ inviteeName }) =>
       copy(

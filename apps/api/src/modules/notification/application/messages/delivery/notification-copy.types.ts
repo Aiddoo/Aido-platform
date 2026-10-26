@@ -87,6 +87,8 @@ export interface SocialCopyVariablesByKey {
   readonly FOLLOW_ACCEPTED: { readonly senderName: string };
   readonly INVITE_JOINED: { readonly inviteeName: string };
   readonly INVITE_REWARDED: { readonly premiumDays: number; readonly friendSlots: number };
+  readonly INVITE_PROGRESS: { readonly inviteeName: string };
+  readonly INVITE_QUALIFY_REMINDER: { readonly inviterName: string };
   readonly NUDGE_RECEIVED: {
     readonly senderName: string;
     readonly todoTitle: string | null;

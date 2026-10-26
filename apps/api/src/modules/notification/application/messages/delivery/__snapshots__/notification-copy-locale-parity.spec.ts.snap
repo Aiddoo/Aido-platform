@@ -112,6 +112,14 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       3,
     ],
     [
+      "INVITE_PROGRESS",
+      0,
+    ],
+    [
+      "INVITE_QUALIFY_REMINDER",
+      0,
+    ],
+    [
       "INVITE_JOINED",
       0,
     ],

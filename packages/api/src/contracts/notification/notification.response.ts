@@ -20,9 +20,11 @@ export const notificationSchema = z
         "INVITE_JOINED",
         "INVITE_REWARDED",
         "PREMIUM_GRANT_ENDING",
+        "INVITE_PROGRESS",
+        "INVITE_QUALIFY_REMINDER",
       ])
       .describe(
-        "알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등). 이 enum은 배포된 구버전 앱의 계약입니다. X-App-Version이 1.11.0 이상인 앱은 NUDGE_REPLIED·NUDGE_THANKED를, 1.13.0 이상인 앱은 INVITE_JOINED·INVITE_REWARDED·PREMIUM_GRANT_ENDING도 받습니다. 그보다 낮은 앱의 알림 목록과 푸시에서는 이 타입을 뺍니다.",
+        "알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등). 이 enum은 배포된 구버전 앱의 계약입니다. X-App-Version이 1.11.0 이상인 앱은 NUDGE_REPLIED·NUDGE_THANKED를, 1.13.0 이상인 앱은 INVITE_JOINED·INVITE_REWARDED·INVITE_PROGRESS·INVITE_QUALIFY_REMINDER·PREMIUM_GRANT_ENDING도 받습니다. 그보다 낮은 앱의 알림 목록과 푸시에서는 이 타입을 뺍니다.",
       ),
     title: notificationTitleSchema,
     body: notificationBodySchema,

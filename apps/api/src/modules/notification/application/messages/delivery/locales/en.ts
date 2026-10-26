@@ -238,6 +238,14 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("One more friend in Aido", `Say hello to ${senderName} 🐾`),
     ],
   },
+  INVITE_PROGRESS: {
+    copy: ({ inviteeName }) =>
+      copy(`${inviteeName} finished day one 🐾`, "Send a nudge to cheer them on for day two"),
+  },
+  INVITE_QUALIFY_REMINDER: {
+    copy: ({ inviterName }) =>
+      copy("One more day to go 🐾", `Finish a to-do today and ${inviterName} gets a paw print`),
+  },
   INVITE_JOINED: {
     copy: ({ inviteeName }) =>
       copy(`${inviteeName} accepted your invite 🐾`, "You’re now friends. Cheer each other on"),

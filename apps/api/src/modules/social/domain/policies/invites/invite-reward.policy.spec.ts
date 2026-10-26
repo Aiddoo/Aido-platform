@@ -161,6 +161,7 @@ describe("InviteRewardPolicy", () => {
       rewardedAt: null,
       rejectedAt: null,
       expiresAt: new Date("2028-03-24T00:00:00.000Z"),
+      qualifyReminderSentAt: null,
     });
 
     function plan(premiumDaysInWindow: number, totalPremiumDays: number) {

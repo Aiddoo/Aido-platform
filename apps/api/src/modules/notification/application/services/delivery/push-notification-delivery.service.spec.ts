@@ -169,45 +169,48 @@ describe("PushNotificationDeliveryService", () => {
     },
   );
 
-  it.each(["INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"] as const)(
-    "%s 알림은 1.12.1 기기에는 보내지 않고 1.13.0 이상 기기에만 보낸다",
-    async (type) => {
-      // Given
-      tokenRepository.findPushTokensByUser.mockResolvedValue([
-        pushToken({
-          userId: "user-1",
-          token: "released-token",
-          payloadVersion: 2,
-          appVersion: "1.12.1",
-        }),
-        pushToken({
-          userId: "user-1",
-          token: "updated-token",
-          payloadVersion: 2,
-          appVersion: "1.13.0",
-        }),
-      ]);
-      pushProvider.sendBatch.mockResolvedValue({
-        total: 1,
-        successCount: 1,
-        failureCount: 0,
-        results: [{ token: "updated-token", success: true }],
-        invalidTokens: [],
-      });
+  it.each([
+    "INVITE_JOINED",
+    "INVITE_REWARDED",
+    "INVITE_PROGRESS",
+    "INVITE_QUALIFY_REMINDER",
+    "PREMIUM_GRANT_ENDING",
+  ] as const)("%s 알림은 1.12.1 기기에는 보내지 않고 1.13.0 이상 기기에만 보낸다", async (type) => {
+    // Given
+    tokenRepository.findPushTokensByUser.mockResolvedValue([
+      pushToken({
+        userId: "user-1",
+        token: "released-token",
+        payloadVersion: 2,
+        appVersion: "1.12.1",
+      }),
+      pushToken({
+        userId: "user-1",
+        token: "updated-token",
+        payloadVersion: 2,
+        appVersion: "1.13.0",
+      }),
+    ]);
+    pushProvider.sendBatch.mockResolvedValue({
+      total: 1,
+      successCount: 1,
+      failureCount: 0,
+      results: [{ token: "updated-token", success: true }],
+      invalidTokens: [],
+    });
 
-      // When
-      const result = await service.deliverSingle({
-        data: { userId: "user-1", type, title: "초대", body: "본문" },
-        payload: { title: "초대", body: "본문" },
-      });
+    // When
+    const result = await service.deliverSingle({
+      data: { userId: "user-1", type, title: "초대", body: "본문" },
+      payload: { title: "초대", body: "본문" },
+    });
 
-      // Then
-      expect(result.status).toBe("sent");
-      expect(pushProvider.sendBatch).toHaveBeenCalledWith([
-        { token: "updated-token", title: "초대", body: "본문" },
-      ]);
-    },
-  );
+    // Then
+    expect(result.status).toBe("sent");
+    expect(pushProvider.sendBatch).toHaveBeenCalledWith([
+      { token: "updated-token", title: "초대", body: "본문" },
+    ]);
+  });
 
   it("답장·감사 배치는 기존 알림을 구버전에도 보내고 새 유형만 지원 기기에 제한한다", async () => {
     // Given

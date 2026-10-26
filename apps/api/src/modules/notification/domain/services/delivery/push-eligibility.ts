@@ -18,6 +18,8 @@ export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
     "LUNCH_NUDGE",
     "STREAK_AT_RISK",
     "PREMIUM_GRANT_ENDING",
+    // 초대받은 사람이 직접 한 행동의 결과가 아니라 사용 시작을 권하는 자동 알림이다
+    "INVITE_QUALIFY_REMINDER",
   ]);
 
 export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TYPES;
