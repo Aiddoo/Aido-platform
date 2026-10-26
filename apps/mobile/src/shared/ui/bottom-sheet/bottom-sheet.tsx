@@ -1,10 +1,12 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
+  BottomSheetFooter,
+  type BottomSheetFooterProps,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
-import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
@@ -23,12 +25,20 @@ interface BottomSheetProps {
   onOpenChange: (isOpen: boolean) => void;
   onCloseStart?: () => void;
   children: ReactNode;
+  /** 내용이 길어 스크롤돼도 시트 아래에 고정되는 영역. 주 동작 버튼을 둔다. */
+  footer?: ReactNode;
 }
 
 /**
  * 키보드 불필요 BottomSheet. 피커, 액션시트 등에 사용.
  */
-export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: BottomSheetProps) => {
+export const BottomSheet = ({
+  isOpen,
+  onOpenChange,
+  onCloseStart,
+  children,
+  footer,
+}: BottomSheetProps) => {
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const lastContentHeightRef = useRef(0);
@@ -44,6 +54,8 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
   const bottomInset = insets.bottom || 16;
   const maxDynamicContentSize =
     getSheetMaxHeight(windowHeight, topInset, bottomInset) - HANDLE_HEIGHT;
+  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다
+  const [footerHeight, setFooterHeight] = useState(0);
 
   useEffect(() => {
     if (!isOpen) {
@@ -123,6 +135,20 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     [],
   );
 
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) => (
+      <BottomSheetFooter {...props}>
+        <View
+          onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          style={[styles.footer, backgroundStyle]}
+        >
+          {footer}
+        </View>
+      </BottomSheetFooter>
+    ),
+    [backgroundStyle, footer],
+  );
+
   const handleContentSizeChange = (_width: number, height: number) => {
     if (!isOpen || isClosingRef.current) {
       return;
@@ -166,10 +192,14 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
+      footerComponent={footer == null ? undefined : renderFooter}
     >
       <BottomSheetScrollView
         onContentSizeChange={handleContentSizeChange}
-        contentContainerStyle={SHARED_SHEET_STYLES.content}
+        contentContainerStyle={[
+          SHARED_SHEET_STYLES.content,
+          footer != null && { paddingBottom: footerHeight },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -178,3 +208,13 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     </GorhomBottomSheet>
   );
 };
+
+const styles = StyleSheet.create({
+  footer: {
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+});

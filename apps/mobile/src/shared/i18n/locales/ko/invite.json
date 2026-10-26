@@ -169,6 +169,8 @@
     "requestedDescription": "{{name}}님의 친구 자리가 꽉 찼어요.\n{{name}}님이 수락하면 바로 친구가 돼요",
     "alreadyClaimedDescription": "이 기기에서는 이미 초대 보상을 받아서 이번에는 친구만 맺었어요",
     "existingAccountDescription": "이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요",
+    "requestedAlreadyClaimedDescription": "{{name}}님의 친구 자리가 꽉 찼어요. {{name}}님이 수락하면 친구가 돼요.\n이 기기에서는 이미 초대 보상을 받아서 이번에는 보상이 없어요",
+    "requestedExistingAccountDescription": "{{name}}님의 친구 자리가 꽉 찼어요. {{name}}님이 수락하면 친구가 돼요.\n이미 아이두를 쓰고 있어서 이번에는 보상이 없어요",
     "rewardTitle": "프리미엄 {{count}}일을 받았어요",
     "rewardDescription": "{{count}}일 동안 모든 기능을 쓸 수 있어요",
     "rewardAfterSubscription": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요",

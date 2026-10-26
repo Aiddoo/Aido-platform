@@ -22,6 +22,15 @@ import { BottomSheet } from '@src/shared/ui/bottom-sheet';
 </BottomSheet>;
 ```
 
+내용이 시트 최대 높이보다 길면 시트 안에서 스크롤한다. 작은 화면(SE·Duo 바깥 화면)·큰 글자에서도 주 동작 버튼이
+보여야 하면 `footer`에 두어 시트 아래에 고정한다.
+
+```tsx
+<BottomSheet isOpen={isOpen} onOpenChange={setIsOpen} footer={<Button>확인</Button>}>
+  {/* 긴 안내 */}
+</BottomSheet>
+```
+
 ### KeyboardBottomSheet
 
 내용은 스크롤된다. 짧으면 시트가 그 높이로 줄어들지만, 키보드가 올라온 채로 내용이
@@ -113,12 +122,13 @@ const sheet = useSheetRoute('/feed');
 
 ### BottomSheet
 
-| Prop           | 타입                        | 기본값 | 설명                     |
-| -------------- | --------------------------- | ------ | ------------------------ |
-| `isOpen`       | `boolean`                   | -      | 시트 열림 상태           |
-| `onOpenChange` | `(isOpen: boolean) => void` | -      | 열림/닫힘 상태 변경 콜백 |
-| `onCloseStart` | `() => void`                | -      | 닫기 시작 시 콜백 (선택) |
-| `children`     | `ReactNode`                 | -      | 시트 내용                |
+| Prop           | 타입                        | 기본값 | 설명                       |
+| -------------- | --------------------------- | ------ | -------------------------- |
+| `isOpen`       | `boolean`                   | -      | 시트 열림 상태             |
+| `onOpenChange` | `(isOpen: boolean) => void` | -      | 열림/닫힘 상태 변경 콜백   |
+| `onCloseStart` | `() => void`                | -      | 닫기 시작 시 콜백 (선택)   |
+| `children`     | `ReactNode`                 | -      | 시트 내용                  |
+| `footer`       | `ReactNode`                 | -      | 시트 아래 고정 영역 (선택) |
 
 ### ModalBottomSheet
 

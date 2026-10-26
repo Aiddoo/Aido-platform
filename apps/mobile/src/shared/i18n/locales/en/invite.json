@@ -185,6 +185,8 @@
     "requestedDescription": "{{name}}'s friend slots are full.\nYou'll be friends once they accept",
     "alreadyClaimedDescription": "This device already received an invite reward, so you're just friends this time",
     "existingAccountDescription": "Since you already use Aido, you're friends now without a reward",
+    "requestedAlreadyClaimedDescription": "{{name}}'s friend slots are full. You'll be friends once they accept.\nThis device already received an invite reward, so there's no reward this time",
+    "requestedExistingAccountDescription": "{{name}}'s friend slots are full. You'll be friends once they accept.\nSince you already use Aido, there's no reward this time",
     "rewardTitle_one": "You got {{count}} day of Premium",
     "rewardTitle_other": "You got {{count}} days of Premium",
     "rewardDescription_one": "Enjoy all features for {{count}} day",
