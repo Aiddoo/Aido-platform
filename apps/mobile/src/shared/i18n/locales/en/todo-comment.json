@@ -49,7 +49,7 @@
     "delete": "Delete",
     "save": "Save",
     "cancel": "Cancel",
-    "openConversation": "Open comment conversation",
+    "openConversation": "Opens the comment conversation",
     "replyWithCount": "Reply to {{name}}, {{count}} replies",
     "likeWithCount": "Like, {{count}} likes",
     "unlikeWithCount": "Unlike, {{count}} likes",

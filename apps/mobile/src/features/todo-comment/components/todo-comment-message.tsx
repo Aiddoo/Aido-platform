@@ -24,10 +24,12 @@ import {
 } from '@src/shared/ui';
 import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
+import { compact } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Menu, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { useRef, useState, type ComponentProps } from 'react';
+import { match } from 'ts-pattern';
 
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentNavigation } from '../hooks/use-todo-comment-navigation';
@@ -43,6 +45,7 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
   const navigation = useTodoCommentNavigation(comment);
   const isActive = TodoCommentPolicy.isActive(comment);
   const { t } = useTranslation('todoComment');
+  const accessibilityLabel = useCommentAccessibilityLabel(comment);
 
   return (
     <HStack align="start" gap={8} className="min-w-0">
@@ -52,7 +55,8 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
           animation={false}
           isAnimatedStyleActive={false}
           accessibilityRole="button"
-          accessibilityLabel={t('actions.openConversation')}
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint={t('actions.openConversation')}
           accessibilityState={{ selected: isFocused }}
           className="min-h-11 min-w-0 justify-center overflow-visible rounded-xl"
           testID={`todo-comment-open-conversation-${comment.id}`}
@@ -132,6 +136,42 @@ TodoCommentMessage.Loading = function Loading() {
   );
 };
 
+/** 댓글 시간. 수정했으면 "수정됨"을 이어 붙인다 */
+function useCommentTimeLabel(comment: TodoComment) {
+  const { t } = useTranslation('todoComment');
+  const dateFormatContext = useDateFormatContext();
+
+  return [
+    formatRelativeTimeLabel(comment.createdAt, new Date(), dateFormatContext),
+    ...(comment.isEdited ? [t('list.edited')] : []),
+  ].join(' · ');
+}
+
+/**
+ * 대화 열기 버튼 하나가 행을 덮으므로 VoiceOver·TalkBack이 작성자·본문·시간을 한 번에 읽도록 화면에
+ * 보이는 순서대로 라벨을 만든다. 무엇을 하는지는 hint가 알린다.
+ */
+function useCommentAccessibilityLabel(comment: TodoComment) {
+  const { t } = useTranslation('todoComment');
+  const timeLabel = useCommentTimeLabel(comment);
+  const userTag = comment.author?.userTag;
+  const mention = comment.replyTo?.authorName;
+  const body = match(comment)
+    .with({ isDeleted: true, isAuthorBlocked: true }, () => t('list.blockedAuthor'))
+    .with({ isDeleted: true }, () => t('list.deleted'))
+    .otherwise(({ content }) =>
+      compact([mention == null ? null : `@${mention}`, content]).join(' '),
+    );
+
+  return compact([
+    comment.author?.name ?? t('list.unknownUser'),
+    userTag == null ? null : `#${userTag}`,
+    comment.author?.isTodoOwner === true ? t('list.authorBadge') : null,
+    body,
+    timeLabel,
+  ]).join(', ');
+}
+
 /**
  * 이름만 말줄임되고 태그·작성자 배지·시간은 줄지 않는다. 가장 큰 글자에서는 한 줄에 다 담기지 않아
  * 태그와 시간을 둘째 줄로 내린다.
@@ -139,13 +179,9 @@ TodoCommentMessage.Loading = function Loading() {
 function CommentAuthorLine({ comment }: { comment: TodoComment }) {
   const { t } = useTranslation('todoComment');
   const { fontScale } = useFontScale();
-  const dateFormatContext = useDateFormatContext();
   const userTag = comment.author?.userTag;
   const tagLabel = userTag == null ? null : `#${userTag}`;
-  const timeLabel = [
-    formatRelativeTimeLabel(comment.createdAt, new Date(), dateFormatContext),
-    ...(comment.isEdited ? [t('list.edited')] : []),
-  ].join(' · ');
+  const timeLabel = useCommentTimeLabel(comment);
   const isMetaOnSecondLine = fontScale === 'xlarge';
 
   return (

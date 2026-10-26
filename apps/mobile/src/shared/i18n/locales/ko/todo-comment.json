@@ -47,7 +47,7 @@
     "delete": "삭제",
     "save": "저장",
     "cancel": "취소",
-    "openConversation": "댓글 대화 열기",
+    "openConversation": "댓글 대화를 열어요",
     "replyWithCount": "{{name}}님에게 답글 달기, 답글 {{count}}개",
     "likeWithCount": "좋아요, {{count}}개",
     "unlikeWithCount": "좋아요 취소, {{count}}개",
