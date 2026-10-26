@@ -239,7 +239,10 @@ export const SLOTS = {
   'paw-board': {
     title: '발자국 모으기',
     capture: premium('51_발자국_판'),
-    ko: { tagline: '친구가 이틀 해내면', headline: '발자국이 찍히고\n나도 [프리미엄 7일]' },
+    ko: {
+      tagline: '친구가 다른 날 두 번 해내면',
+      headline: '발자국이 찍히고\n나도 [프리미엄 7일]',
+    },
     en: {
       tagline: 'When your friend shows up',
       headline: 'Collect paw prints and\nget [7 days of Premium]',
