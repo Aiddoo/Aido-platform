@@ -4,7 +4,7 @@ import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, CheckIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -156,7 +156,6 @@ interface ActivationStepProps {
 }
 
 function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
-  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
 
@@ -169,20 +168,7 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
       accessibilityLabel={t('activation.stepAccessibilityLabel', { label, status })}
       accessibilityState={{ checked: isCompleted }}
     >
-      <Box
-        className={cn(
-          'size-6 items-center justify-center rounded-full border',
-          isCompleted ? 'border-main bg-main' : 'border-gray-4 bg-white',
-        )}
-      >
-        {isCompleted && (
-          <CheckIcon
-            width={fontScaledSize(14)}
-            height={fontScaledSize(14)}
-            colorClassName="text-white"
-          />
-        )}
-      </Box>
+      <ActivationStepIndicator isCompleted={isCompleted} />
       <Text
         size="b3"
         weight={isCompleted ? 'medium' : 'normal'}
@@ -198,5 +184,37 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
         </Text>
       )}
     </HStack>
+  );
+}
+
+interface ActivationStepIndicatorProps {
+  isCompleted: boolean;
+}
+
+/**
+ * 두 상태의 크기·테두리를 같게 두어 단계를 끝내도 행이 움직이지 않는다.
+ * white 토큰은 다크 모드에서 어두워지므로 체크는 Avatar 선택 배지와 같은 색을 쓴다
+ */
+function ActivationStepIndicator({ isCompleted }: ActivationStepIndicatorProps) {
+  const fontScaledSize = useFontScaledSize();
+  const size = fontScaledSize(24);
+  const checkSize = fontScaledSize(14);
+
+  return (
+    <Box
+      style={{ width: size, height: size }}
+      className={cn(
+        'items-center justify-center rounded-full border-[1.5px]',
+        isCompleted ? 'border-main bg-main' : 'border-gray-5',
+      )}
+    >
+      {isCompleted && (
+        <CheckmarkIcon
+          width={checkSize}
+          height={checkSize}
+          colorClassName="text-white dark:text-gray-9"
+        />
+      )}
+    </Box>
   );
 }
