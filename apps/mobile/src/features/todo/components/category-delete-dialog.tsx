@@ -11,6 +11,7 @@ import {
   READABLE_CONTENT_MAX_WIDTH,
   Spacing,
   Text,
+  useDialogPortalTarget,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -31,6 +32,7 @@ export function CategoryDeleteDialog({
   const { t } = useTranslation(['todo', 'common']);
   const deleteMutation = useMutation(useDeleteTodoCategoryMutationOptions());
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const portalTarget = useDialogPortalTarget();
 
   const category = categoriesResult.categories.find((c) => c.id === categoryId);
   const otherCategories = categoriesResult.categories.filter((c) => c.id !== categoryId);
@@ -55,7 +57,7 @@ export function CategoryDeleteDialog({
   if (category.todoCount > 0) {
     return (
       <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-        <Dialog.Portal>
+        <Dialog.Portal {...portalTarget}>
           <Dialog.Overlay className="bg-black/40" />
           <Dialog.Content
             className="w-full self-center"

@@ -105,6 +105,9 @@ const sheet = useSheetRoute('/feed');
 - Android 뒤로가기는 시트의 `useAndroidSheetBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
 - `SheetRouteScreen`은 제스처 루트와 Overlay를 route 안에 다시 둔다. iOS transparentModal은 루트 위에
   따로 표시되므로, 시트 안에서 여는 피커·다이얼로그가 시트 아래로 숨지 않게 하기 위해서다.
+- 같은 이유로 모달 안에 PortalHost를 둔다. HeroUI `Dialog.Portal`을 직접 쓰는 다이얼로그는
+  `useDialogPortalTarget()`을 펼쳐 넘긴다(`ConfirmDialog`는 이미 쓴다). iOS FullWindowOverlay는 모달 바깥
+  창에 붙어 화면에는 보여도 VoiceOver·XCUITest가 읽지 못한다.
 
 ## Props
 

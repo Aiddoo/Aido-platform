@@ -10,6 +10,7 @@ export {
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,
   SheetRouteScreen,
+  useDialogPortalTarget,
   useSheetLayout,
   useSheetRoute,
 } from './bottom-sheet';

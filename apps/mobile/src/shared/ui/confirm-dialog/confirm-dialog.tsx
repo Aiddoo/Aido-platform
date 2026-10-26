@@ -1,4 +1,5 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { useDialogPortalTarget } from '@src/shared/ui/bottom-sheet';
 import { Box } from '@src/shared/ui/box';
 import { Button, type ButtonProps } from '@src/shared/ui/button';
 import { HStack } from '@src/shared/ui/h-stack';
@@ -24,9 +25,10 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { fontScale } = useFontScale();
   const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
+  const portalTarget = useDialogPortalTarget();
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
+      <Dialog.Portal {...portalTarget}>
         <Dialog.Overlay className="bg-black/40" />
         {/* 태블릿·펼친 폴더블에서도 창 폭만큼 늘어나지 않고 읽기 폭에서 멈춘다 */}
         <Dialog.Content
