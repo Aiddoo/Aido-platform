@@ -50,8 +50,7 @@
       "title": "초대 정보를 불러오지 못했어요",
       "description": "인터넷 연결을 확인하고 다시 시도해주세요"
     },
-    "enterCode": "코드 직접 입력하기",
-    "retry": "다시 시도"
+    "enterCode": "코드 직접 입력하기"
   },
   "errors": {
     "invalidCode": "초대 코드는 영문과 숫자 6자리예요"

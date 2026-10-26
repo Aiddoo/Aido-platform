@@ -8,8 +8,9 @@ import {
   H2,
   PauseIcon,
   PawIcon,
-  RefreshIcon,
+  QueryErrorActions,
   type QueryErrorFallbackProps,
+  RefreshIcon,
   Result,
   SearchIcon,
   Spacing,
@@ -147,11 +148,7 @@ InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallba
       <InviteResult
         title={t('result.loadFailed.title')}
         description={t('result.loadFailed.description')}
-        button={
-          <Result.Button testID="invite-result-retry" onPress={reset}>
-            {t('result.retry')}
-          </Result.Button>
-        }
+        button={<QueryErrorActions testID="invite-result-retry" onRetry={reset} />}
       />
     ))
     .exhaustive();

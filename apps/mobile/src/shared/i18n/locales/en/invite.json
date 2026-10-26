@@ -54,8 +54,7 @@
       "title": "Couldn't load the invite",
       "description": "Check your connection and try again"
     },
-    "enterCode": "Enter code instead",
-    "retry": "Try again"
+    "enterCode": "Enter code instead"
   },
   "errors": {
     "invalidCode": "Invite codes are 6 characters (letters and numbers)"
