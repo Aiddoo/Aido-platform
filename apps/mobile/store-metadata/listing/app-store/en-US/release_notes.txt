@@ -1,6 +1,6 @@
-Invite friends with a link and earn Premium together. You can also report or block people, and AI and dates are more accurate.
+Invite friends with a link and earn Premium together. You can now report and block, and AI and widgets are more accurate.
 
-- Share invites on KakaoTalk and more. Friends who joined within 7 days get 7 days of Premium.
-- You get 7 days and 1 friend slot when they finish to-dos on 2 different days within 14 days of joining.
-- Report or block people. We ask for your consent before sending data to AI.
-- AI reads to-dos and dates in notes more accurately, and widgets roll over after midnight.
+- Invite a friend with a link. New members get 7 days of Premium.
+- When they finish to-dos on 2 days, you get 7 days of Premium and 1 more friend slot.
+- Report or block people, and we ask for consent before sending data to AI.
+- AI reads dates more accurately, and widgets switch to the new day after midnight.
