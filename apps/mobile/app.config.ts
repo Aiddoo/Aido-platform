@@ -403,7 +403,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
 
-      'expo-secure-store',
+      // 생체 인증 잠금(requireAuthentication)을 쓰지 않으므로 플러그인 기본 Face ID 영어 문구를 넣지 않는다.
+      ['expo-secure-store', { faceIDPermission: false }],
       'expo-sharing',
       'expo-system-ui',
       WEB_BROWSER_PLUGIN_PATH,
