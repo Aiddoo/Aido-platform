@@ -173,3 +173,17 @@ test('키보드 윗선을 찾는다', async (t) => {
     .toFile(blank);
   assert.equal(await keyboardHeight(blank), 0);
 });
+
+test('--only는 쉼표로 여러 값과 세트/대상 조합을 받는다', () => {
+  const jobs = plan({ only: 'cpp-ai/iphone-6.3,header', locales: ['ko'] });
+  assert.ok(jobs.length > 0);
+  for (const job of jobs) {
+    if (job.type === 'screenshot') {
+      assert.equal(job.set.id, 'cpp-ai');
+      assert.equal(job.targetId, 'iphone-6.3');
+    } else {
+      assert.equal(job.sceneId, 'header');
+    }
+  }
+  assert.equal(jobs.filter((job) => job.type === 'scene').length, 1);
+});

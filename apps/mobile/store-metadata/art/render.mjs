@@ -90,12 +90,14 @@ export function capturePath(root, device, capture, locale) {
 // 렌더 작업 목록. 같은 입력이면 같은 순서·같은 파일 이름이다.
 export function plan({ only, locales }) {
   const jobs = [];
-  const wanted = (...keys) => only == null || keys.includes(only);
+  // only: 쉼표로 여러 개. 각 값은 scenes·screenshots·세트 id·대상 id·장면 id 또는 '세트/대상'(예: cpp-ai/iphone-6.3)
+  const filters = only == null ? null : only.split(',');
+  const wanted = (...keys) => filters == null || filters.some((filter) => keys.includes(filter));
   for (const set of SETS) {
     for (const targetId of set.targets) {
       const target = TARGETS[targetId];
       for (const locale of (set.locales ?? LOCALES).filter((item) => locales.includes(item))) {
-        if (!wanted('screenshots', set.id, targetId)) {
+        if (!wanted('screenshots', set.id, targetId, `${set.id}/${targetId}`)) {
           continue;
         }
         const storeLocale = STORE_LOCALE[target.store][locale];
