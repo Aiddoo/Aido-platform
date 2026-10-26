@@ -17,14 +17,27 @@ export function Result({ icon, title, description, button, className, testID }: 
         </>
       )}
 
-      <Text size="b3" shade={6} align="center" weight="medium">
+      <Text
+        size="b3"
+        shade={6}
+        align="center"
+        weight="medium"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
         {title}
       </Text>
 
       {description && (
         <>
           <Spacing size={4} />
-          <Text size="b4" shade={5} align="center">
+          <Text
+            size="b4"
+            shade={5}
+            align="center"
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+          >
             {description}
           </Text>
         </>

@@ -110,7 +110,13 @@ InviteWelcomeBottomSheet.Contents = function Contents({
 
       <Spacing size={6} />
 
-      <Text size="b3" shade={7} align="center">
+      <Text
+        size="b3"
+        shade={7}
+        align="center"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
         {match(InviteRedemptionPolicy.missingRewardReason(result))
           .with('already-claimed', () => t('welcome.alreadyClaimedDescription'))
           .with('existing-account', () => t('welcome.existingAccountDescription'))
@@ -129,7 +135,12 @@ InviteWelcomeBottomSheet.Contents = function Contents({
             <Text size="b2" weight="bold" tone="brand">
               {t('welcome.rewardTitle', { count: premiumDays })}
             </Text>
-            <Text size="b4" shade={7}>
+            <Text
+              size="b4"
+              shade={7}
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
               {match(InviteRedemptionPolicy.rewardStart(me.premiumAccess))
                 .with('now', () => t('welcome.rewardDescription', { count: premiumDays }))
                 .with('after-subscription', () =>
@@ -178,7 +189,13 @@ function WelcomeNotificationPrompt() {
   return (
     <HStack gap={8} align="center" className="mt-4 w-full rounded-2xl bg-gray-1 px-4 py-3">
       <BellIcon width={18} height={18} colorClassName="text-gray-7" />
-      <Text size="b4" shade={7} className="flex-1">
+      <Text
+        size="b4"
+        shade={7}
+        className="flex-1"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
         {registerPush.isSuccess ? t('welcome.notificationOn') : t('welcome.notificationContext')}
       </Text>
       {!registerPush.isSuccess && (

@@ -115,7 +115,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
         })}
       </Text>
 
-      <Text size="b3" shade={7}>
+      <Text size="b3" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {t('pawPrintBoard.rewardRule', {
           activeDays: InvitedFriendPolicy.requiredActiveDays(),
           days: InvitePolicy.nextPremiumDays(myInvite),
@@ -166,7 +166,15 @@ InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard
   const { t } = useTranslation('invite');
 
   return (
-    <Text size="b4" weight="medium" shade={6} align="center" className="min-h-5">
+    <Text
+      size="b4"
+      weight="medium"
+      shade={6}
+      align="center"
+      className="min-h-5"
+      lineBreakStrategyIOS="hangul-word"
+      textBreakStrategy="highQuality"
+    >
       {match(board)
         .with({ isComplete: true }, () => (
           <Text size="b4" weight="bold" tone="brand">
@@ -449,12 +457,12 @@ function InviteProgressMessage() {
 
   return match(InvitePolicy.progress(myInvite))
     .with('not-started', () => (
-      <Text size="b4" shade={7}>
+      <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {t('pawPrintBoard.progress.notStarted')}
       </Text>
     ))
     .with('monthly-cap-reached', () => (
-      <Text size="b4" shade={7}>
+      <Text size="b4" shade={7} lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
         {t('pawPrintBoard.progress.monthlyCapReached', {
           windowDays: InvitePolicy.premiumCapWindowDays(),
           days: InvitePolicy.monthlyPremiumCapDays(),
@@ -470,7 +478,12 @@ function InviteProgressMessage() {
           })}
         </Text>
         {remaining != null && (
-          <Text size="b4" shade={6}>
+          <Text
+            size="b4"
+            shade={6}
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+          >
             {t('pawPrintBoard.progress.next', { count: remaining })}
           </Text>
         )}
