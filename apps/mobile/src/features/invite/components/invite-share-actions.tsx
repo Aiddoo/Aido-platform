@@ -6,8 +6,6 @@ import {
   Button,
   CheckIcon,
   CopyIcon,
-  Grid,
-  GridItem,
   HStack,
   KakaoIcon,
   type QueryErrorFallbackProps,
@@ -161,11 +159,12 @@ function SecondaryShareActions({ copyLink, system }: { copyLink: ReactNode; syst
     );
   }
 
+  // Grid의 GridItem은 50% 폭이라 columnGap을 더하면 한 줄을 넘쳐 두 번째 버튼이 다음 줄로 내려간다
   return (
-    <Grid columns={2} columnGap={10}>
-      <GridItem>{copyLink}</GridItem>
-      <GridItem>{system}</GridItem>
-    </Grid>
+    <HStack gap={10}>
+      <Box className="flex-1">{copyLink}</Box>
+      <Box className="flex-1">{system}</Box>
+    </HStack>
   );
 }
 

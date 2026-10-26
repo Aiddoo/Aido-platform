@@ -71,7 +71,12 @@ export function InviteEntryBanner({ className, ...props }: ComponentProps<typeof
             {t('entry.allDoneTitleHighlight')}
           </Text>
         </Text>
-        <Text size="e1" shade={6}>
+        <Text
+          size="e1"
+          shade={6}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
           {t('entry.allDoneDescription')}
         </Text>
         <Button

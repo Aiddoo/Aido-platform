@@ -73,7 +73,12 @@ InviteRewardCard.Contents = function Contents({ className, ...props }: InviteRew
             <Text size="b2" weight="bold">
               {t('entry.mypageTitle', { count: invite.qualifiedCount })}
             </Text>
-            <Text size="b4" shade={7}>
+            <Text
+              size="b4"
+              shade={7}
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
               {match({ progress: InvitePolicy.progress(invite), remaining })
                 .with({ progress: 'not-started' }, () => t('entry.mypageStart'))
                 .with({ remaining: P.number }, ({ remaining: count }) =>
@@ -132,7 +137,12 @@ InviteRewardCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
         <Text size="b2" weight="bold">
           {t('result.loadFailed.title')}
         </Text>
-        <Text size="b4" shade={7}>
+        <Text
+          size="b4"
+          shade={7}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
           {t('result.loadFailed.description')}
         </Text>
       </VStack>

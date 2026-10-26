@@ -44,7 +44,13 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             </Text>
           </HStack>
 
-          <Text size="b4" shade={6} maxLines={2}>
+          <Text
+            size="b4"
+            shade={6}
+            maxLines={2}
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+          >
             {match(InvitedFriendPolicy.pawPrintState(friend))
               .with('stamped', () =>
                 t('friendList.stamped', {
