@@ -51,7 +51,7 @@ function createService({
 
 describe('InviteShareService', () => {
   describe('share', () => {
-    it('카카오톡으로 보내면 버튼이 앱에서 초대 코드를 열도록 넘기고 shared를 반환한다', async () => {
+    it('카카오톡으로 보내면 2:1 썸네일 크기와 앱에서 열 초대 코드를 넘기고 shared를 반환한다', async () => {
       // Given
       const { service, kakaoShareFeed } = createService();
 
@@ -62,6 +62,8 @@ describe('InviteShareService', () => {
       expect(kakaoShareFeed).toHaveBeenCalledWith(
         expect.objectContaining({
           webUrl: 'https://aido.kr/i/K7M2QX',
+          imageWidth: 1600,
+          imageHeight: 800,
           executionParams: { inviteCode: 'K7M2QX' },
         }),
       );

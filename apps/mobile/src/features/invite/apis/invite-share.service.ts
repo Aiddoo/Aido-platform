@@ -4,7 +4,7 @@ import type { KakaoShareGateway } from '@src/core/ports/kakao-share';
 import type { SystemShareGateway } from '@src/core/ports/system-share';
 import { t } from '@src/shared/i18n';
 
-import { INVITE_SHARE_IMAGE_URL } from '../constants/invite-share';
+import { INVITE_SHARE_IMAGE } from '../constants/invite-share';
 import { InviteRewardPolicy } from '../domains/invite-reward.model';
 import type {
   InviteShareChannel,
@@ -64,7 +64,9 @@ export class InviteShareService {
         description: t('invite:share.kakaoDescription', {
           days: InviteRewardPolicy.welcomePremiumDays(),
         }),
-        imageUrl: INVITE_SHARE_IMAGE_URL,
+        imageUrl: INVITE_SHARE_IMAGE.url,
+        imageWidth: INVITE_SHARE_IMAGE.width,
+        imageHeight: INVITE_SHARE_IMAGE.height,
         webUrl: content.link,
         buttonTitle: t('invite:share.kakaoButton'),
         executionParams: { inviteCode: content.inviteCode },

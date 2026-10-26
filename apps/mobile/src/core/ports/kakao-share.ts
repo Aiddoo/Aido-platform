@@ -2,6 +2,9 @@ export interface KakaoFeedShare {
   title: string;
   description: string;
   imageUrl: string;
+  /** 이미지 원본 크기(px). 카카오톡이 이 비율로 썸네일을 그린다 */
+  imageWidth: number;
+  imageHeight: number;
   /** 카카오톡이 없거나 웹에서 열 때 쓰는 링크 */
   webUrl: string;
   buttonTitle: string;
