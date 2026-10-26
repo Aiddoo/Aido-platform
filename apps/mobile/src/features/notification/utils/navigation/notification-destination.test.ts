@@ -384,6 +384,8 @@ describe('알림 타입별 목적지', () => {
     ['WEATHER_EVENING', {}, { kind: 'route', href: '/weather' }],
     ['INVITE_JOINED', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
     ['INVITE_REWARDED', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
+    ['INVITE_PROGRESS', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
+    ['INVITE_QUALIFY_REMINDER', {}, todayFeed],
     ['PREMIUM_GRANT_ENDING', {}, { kind: 'route', href: '/settings/subscription' }],
   ];
 
