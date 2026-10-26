@@ -119,7 +119,14 @@ export {
 export { OverlayProvider, type OverlayRender, useOverlay, useOverlayState } from './overlay';
 export { PremiumDialog, type PremiumDialogProps, usePremiumDialog } from './premium-dialog';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
-export { QueryErrorBoundary } from './query-error-boundary';
+export {
+  BUG_REPORT_INQUIRY_HREF,
+  INQUIRY_SHEET_EXIT,
+  openBugReportInquiry,
+  QueryErrorActions,
+  QueryErrorBoundary,
+  QueryErrorFallback,
+} from './query-error-boundary';
 export {
   READABLE_CONTENT_MAX_WIDTH,
   ReadableContent,

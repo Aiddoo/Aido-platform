@@ -10,7 +10,9 @@ import {
   BottomSheet,
   Box,
   EditIcon,
+  INQUIRY_SHEET_EXIT,
   ListRow,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
@@ -45,7 +47,14 @@ export function SubTodoActionsBottomSheet(props: SubTodoActionsBottomSheetProps)
 
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary fallback={SubTodoActionsBottomSheet.Error}>
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <SubTodoActionsBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
         <Suspense fallback={<SubTodoActionsBottomSheet.Loading />}>
           <SubTodoActionsBottomSheet.Content onClose={sheet.close} />
         </Suspense>
@@ -151,12 +160,15 @@ SubTodoActionsBottomSheet.Loading = function Loading() {
   );
 };
 
-SubTodoActionsBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+SubTodoActionsBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
   return (
     <Result
       title={t('errorBoundary.title')}
-      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
     />
   );
 };

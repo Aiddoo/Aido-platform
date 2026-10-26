@@ -14,9 +14,11 @@ import {
   Box,
   HStack,
   InfoIcon,
+  INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
   MicIcon,
   PauseIcon,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
@@ -56,7 +58,14 @@ export function AddSubTodoBottomSheet({ mode, ...props }: AddSubTodoBottomSheetP
 
   return (
     <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary fallback={AddSubTodoBottomSheet.Error}>
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <AddSubTodoBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
         <Suspense fallback={<AddSubTodoBottomSheet.Loading />}>
           {match(mode)
             .with('create', () => <AddSubTodoBottomSheet.Create onClose={() => sheet.close()} />)
@@ -122,12 +131,15 @@ AddSubTodoBottomSheet.Loading = function Loading() {
   );
 };
 
-AddSubTodoBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+AddSubTodoBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
   return (
     <Result
       title={t('errorBoundary.title')}
-      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
     />
   );
 };

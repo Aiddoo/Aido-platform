@@ -120,7 +120,7 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(예: `AuthErrors.
 | `error`           | 그 밖(5xx·파싱 등) | `captureException` | fallback(다시 시도 + 문의하기)  |
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다.
-- 기능 fallback은 `fallback={X.Error}`로 연결하고, 다시 시도(`reset`)와 문의하기 경로를 함께 둔다.
+- 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. route 시트 안에서는 `sheet.close(INQUIRY_SHEET_EXIT)`로 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
 - mutation은 경계로 가지 않는다(`throwOnError` 미사용). `ParseError`의 message는 개발용이므로, 기능 오류가 아닌 경우의 토스트는 `fallback` 문구를 쓴다.
 
 ## 저장소 에러: KeychainLockedError

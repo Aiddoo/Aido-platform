@@ -46,7 +46,9 @@
   },
   "errorBoundary": {
     "title": "Something went wrong",
-    "retry": "Retry"
+    "retry": "Retry",
+    "description": "Please try again. If it keeps happening, let us know.",
+    "inquiry": "Contact us"
   },
   "toast": {
     "defaultError": "Something went wrong"

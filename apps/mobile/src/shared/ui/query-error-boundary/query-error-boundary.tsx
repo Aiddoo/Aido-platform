@@ -1,12 +1,11 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { classifyBoundaryError, isApiError, toError } from '@src/shared/errors';
-import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { match } from 'ts-pattern';
 
-import { Result } from '../result/result';
+import { QueryErrorFallback } from './query-error-fallback';
 
 /**
  * 경계가 fallback에 넘겨주는 값.
@@ -39,7 +38,6 @@ function Fallback({
 
 export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryErrorBoundaryProps) {
   const errorReporter = useErrorReporter();
-  const { t } = useTranslation();
 
   return (
     <QueryErrorResetBoundary>
@@ -77,14 +75,7 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
             fallback ? (
               <Fallback render={fallback} error={error} reset={resetErrorBoundary} />
             ) : (
-              <Result
-                title={t('errorBoundary.title')}
-                button={
-                  <Result.Button onPress={resetErrorBoundary}>
-                    {t('errorBoundary.retry')}
-                  </Result.Button>
-                }
-              />
+              <QueryErrorFallback reset={resetErrorBoundary} />
             )
           }
         >

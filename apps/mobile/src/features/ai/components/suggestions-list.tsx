@@ -5,17 +5,18 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   Button,
   DashedDivider,
   H4,
   HStack,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   Result,
   ScallopedContainer,
   Spacing,
   Text,
   VStack,
-  type QueryErrorFallbackProps,
-  Box,
 } from '@src/shared/ui';
 import { formatDaysOfWeek } from '@src/shared/utils/date';
 import { type DateFormatContext, formatDateLabel } from '@src/shared/utils/date-format';
@@ -315,10 +316,7 @@ SuggestionsList.Error = function ErrorState({ error, reset }: QueryErrorFallback
   return (
     <ScallopedContainer>
       <Box className="px-5 py-6">
-        <Result
-          title={t('errorBoundary.title')}
-          button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
-        />
+        <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
       </Box>
     </ScallopedContainer>
   );

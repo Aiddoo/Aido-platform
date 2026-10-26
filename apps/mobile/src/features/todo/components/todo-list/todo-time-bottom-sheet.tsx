@@ -5,6 +5,8 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
   Box,
+  INQUIRY_SHEET_EXIT,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
@@ -33,7 +35,14 @@ export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       {sheet.isOpen && (
-        <QueryErrorBoundary fallback={TodoTimeBottomSheet.Error}>
+        <QueryErrorBoundary
+          fallback={(fallbackProps) => (
+            <TodoTimeBottomSheet.Error
+              {...fallbackProps}
+              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+            />
+          )}
+        >
           <Suspense fallback={<TodoTimeBottomSheet.Loading />}>
             <TodoTimeBottomSheet.Content onClose={() => sheet.close()} />
           </Suspense>
@@ -94,12 +103,15 @@ TodoTimeBottomSheet.Loading = function Loading() {
   );
 };
 
-TodoTimeBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+TodoTimeBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
   return (
     <Result
       title={t('errorBoundary.title')}
-      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
     />
   );
 };

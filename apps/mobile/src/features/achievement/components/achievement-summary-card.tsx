@@ -7,17 +7,18 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   Button,
   DashedDivider,
   H4,
   HStack,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   Result,
   ShareIcon,
   Spacing,
   Text,
   VStack,
-  type QueryErrorFallbackProps,
-  Box,
 } from '@src/shared/ui';
 import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import {
@@ -275,10 +276,7 @@ AchievementSummaryCard.Error = function ErrorState({ reset }: QueryErrorFallback
   return (
     <Certificate>
       <Spacing size={16} />
-      <Result
-        title={t('errorBoundary.title')}
-        button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
-      />
+      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
     </Certificate>
   );
 };

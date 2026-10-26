@@ -4,9 +4,10 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Flex,
   ListRow,
-  Result,
   type ListRowProps,
+  QueryErrorActions,
   type QueryErrorFallbackProps,
+  Result,
 } from '@src/shared/ui';
 import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -132,12 +133,7 @@ UserList.Loading = function Loading({
 
 UserList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation();
-  return (
-    <Result
-      title={t('errorBoundary.title')}
-      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
-    />
-  );
+  return <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />;
 };
 
 UserList.Empty = function Empty(props: ComponentProps<typeof Result>) {

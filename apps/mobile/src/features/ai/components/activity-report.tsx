@@ -4,6 +4,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   DashedDivider,
   HStack,
+  Result,
   ScallopedContainer,
   Spacing,
   Text,
@@ -314,5 +315,21 @@ ActivityReport.Loading = function Loading() {
         <SkeletonGroup.Item className="h-24 w-full rounded-2xl" />
       </SkeletonGroup>
     </VStack>
+  );
+};
+
+/** 지워졌거나 볼 수 없는 리포트. 예전 알림·딥링크가 열 때 보이고, 다시 시도 대신 목록으로 보낸다 */
+ActivityReport.Unavailable = function Unavailable({ onBackToList }: { onBackToList: () => void }) {
+  const { t } = useTranslation('ai');
+
+  return (
+    <Result
+      testID="report-unavailable"
+      title={t('report.unavailable.title')}
+      description={t('report.unavailable.description')}
+      button={
+        <Result.Button onPress={onBackToList}>{t('report.unavailable.backToList')}</Result.Button>
+      }
+    />
   );
 };

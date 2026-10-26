@@ -6,6 +6,8 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
   Box,
+  INQUIRY_SHEET_EXIT,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
@@ -37,7 +39,14 @@ export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomShe
   return (
     <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       {sheet.isOpen && (
-        <QueryErrorBoundary fallback={SuggestionCategoryBottomSheet.Error}>
+        <QueryErrorBoundary
+          fallback={(fallbackProps) => (
+            <SuggestionCategoryBottomSheet.Error
+              {...fallbackProps}
+              onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+            />
+          )}
+        >
           <Suspense fallback={<SuggestionCategoryBottomSheet.Loading />}>
             <SuggestionCategoryBottomSheet.Content onClose={sheet.close} />
           </Suspense>
@@ -100,12 +109,15 @@ SuggestionCategoryBottomSheet.Loading = function Loading() {
   );
 };
 
-SuggestionCategoryBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+SuggestionCategoryBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
   return (
     <Result
       title={t('errorBoundary.title')}
-      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
     />
   );
 };

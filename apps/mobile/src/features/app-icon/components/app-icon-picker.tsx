@@ -5,8 +5,9 @@ import {
   CrownIcon,
   Grid,
   GridItem,
-  Result,
+  QueryErrorActions,
   type QueryErrorFallbackProps,
+  Result,
   Text,
   TextSkeleton,
   VStack,
@@ -120,7 +121,7 @@ AppIconPicker.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
     <Result
       title={t('errorDialog.title')}
       description={t('errorDialog.description')}
-      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} />}
     />
   );
 };

@@ -3,6 +3,7 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createMockDIContainer } from '@src/shared/__tests__';
 import { ApiError, ServerError } from '@src/shared/errors';
 import { fireEvent, render } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { Pressable, Text } from 'react-native';
@@ -10,6 +11,8 @@ import { Pressable, Text } from 'react-native';
 import { OverlayProvider } from '../overlay/overlay-provider';
 import { useOverlay } from '../overlay/use-overlay';
 import { QueryErrorBoundary } from './query-error-boundary';
+
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
 jest.mock('heroui-native', () => {
   const { View } = require('react-native');
@@ -127,6 +130,21 @@ describe('QueryErrorBoundary 관측', () => {
       expect.objectContaining({ feature: 'error_boundary' }),
     );
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('기본 fallback은 다시 시도와 문의하기를 함께 주고, 문의하기는 문의 화면으로 간다', async () => {
+    // Given
+    const screen = await renderWithBoundary(new ServerError(503));
+
+    // When
+    fireEvent.press(screen.getByTestId('query-error-inquiry'));
+
+    // Then
+    expect(screen.getByText('다시 시도')).toBeTruthy();
+    expect(jest.mocked(router.push)).toHaveBeenCalledWith({
+      pathname: '/settings/inquiry',
+      params: { category: 'BUG_REPORT' },
+    });
   });
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
