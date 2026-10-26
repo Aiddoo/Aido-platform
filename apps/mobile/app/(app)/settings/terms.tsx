@@ -1,9 +1,6 @@
 import { ConsentPolicy } from '@src/features/auth/domains/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/auth/queries/use-update-ai-data-sharing-consent-mutation-options';
-import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import { ToggleSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
-import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
@@ -13,6 +10,7 @@ import {
   ArrowRightIcon,
   HStack,
   QueryErrorBoundary,
+  SettingsCard,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -125,7 +123,7 @@ TermsSettingsScreen.Loading = function Loading() {
       </VStack>
 
       <SettingsCard>
-        <ToggleSkeleton hasDescription />
+        <SettingsCard.ToggleSkeleton hasDescription />
       </SettingsCard>
     </VStack>
   );
@@ -179,7 +177,7 @@ function AiDataSharingConsentCard() {
 
   return (
     <SettingsCard>
-      <SettingsToggle
+      <SettingsCard.Toggle
         label={t('settings:terms.aiDataSharing.label')}
         description={t('settings:terms.aiDataSharing.description')}
         isSelected={isAgreed}

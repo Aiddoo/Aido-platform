@@ -137,6 +137,12 @@ export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer, type ScallopedContainerProps } from './scalloped-container';
 export { ScrollProgressWidget } from './scroll-progress-widget';
 export { SettingNavigation } from './setting-navigation';
+export {
+  SettingsCard,
+  type SettingsCardProps,
+  type SettingsCardToggleProps,
+  type SettingsCardToggleSkeletonProps,
+} from './settings-card';
 export { Spacing, type SpacingProps } from './spacing';
 export {
   STACK_BACK_ICON,

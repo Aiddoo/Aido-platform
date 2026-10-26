@@ -1,9 +1,4 @@
-import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import {
-  NavigationSkeleton,
-  ToggleSkeleton,
-} from '@src/features/notification/components/settings/settings-skeleton';
-import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
+import { NavigationSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
@@ -14,6 +9,7 @@ import {
   ArrowRightIcon,
   HStack,
   QueryErrorBoundary,
+  SettingsCard,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -81,7 +77,7 @@ function NotificationSettingsScreen() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <SettingsToggle
+        <SettingsCard.Toggle
           label={t('settings.timeFormat24')}
           isSelected={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
           onSelectedChange={(isEnabled) =>
@@ -132,7 +128,7 @@ NotificationSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <ToggleSkeleton />
+        <SettingsCard.ToggleSkeleton />
       </SettingsCard>
 
       <SettingsCard>
