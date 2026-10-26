@@ -387,6 +387,13 @@ function useView() {
   열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 정상 동작하며 Sentry에 보고한다. 평문 `aido.drafts`는 첫 실행에 옮긴 뒤 삭제한다.
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.
+- 예외(초대 수락 결과): mutation 응답을 다음 화면(환영 시트)에 넘길 때 `queryFn: skipToken` 쿼리
+  (`getRedemptionResultQueryOptions`)에 둔다. 보상·친구 결과를 URL로 넘기면 딥링크로 위조할 수 있고 직렬화도
+  어려워서다. 서버에서 다시 받지 않으며, 결과가 없으면 시트가 바로 닫힌다.
+- 예외(차단·신고 대상 이름): 사용자 한 명을 id로 조회하는 API가 없어 확인 문구에 쓸 이름을 route query(`name`)로
+  받는다. 표시용 값이며 대상 판정은 폴더 param의 id로만 한다.
+- 시트 route는 `app/` route가 param을 `safeParse`해 틀리면 `Redirect`하고, 안쪽 컴포넌트는 같은 스키마의
+  `parse` 훅으로 타입이 좁혀진 값을 읽는다. 검증 경계(route)와 타입 단언(훅)이 나뉜 것이라 그대로 둔다.
 - 접기/펼치기에서 컴포넌트를 살릴 수 있으면 초안보다 재마운트를 없애는 쪽을 먼저 택한다(`AdaptivePane`은 pane을 같은 트리 슬롯에 둔다).
 - pending·error는 이미 주는 곳에서 읽는다. react-hook-form의 `formState.isSubmitting`·`errors`, mutation·query의
   `isPending`·`error`·`variables`를 `useState`로 다시 만들지 않는다. 저장 버튼은 mutation `isPending`을 `Button`에 넘긴다.
