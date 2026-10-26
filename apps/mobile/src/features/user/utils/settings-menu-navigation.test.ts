@@ -41,4 +41,13 @@ describe('isSettingsMenuItemSelected', () => {
   it('마이페이지 탭에서는 아무것도 선택되지 않는다', () => {
     expect(isSettingsMenuItemSelected('/mypage', '/settings/theme')).toBe(false);
   });
+
+  it('친구 초대 화면은 마이페이지에 따로 진입점이 있어 친구 관리를 선택하지 않는다', () => {
+    expect(isSettingsMenuItemSelected('/friends/invite', '/friends')).toBe(false);
+    expect(isSettingsMenuItemSelected('/friends/invite/invitees', '/friends')).toBe(false);
+  });
+
+  it('친구 상세 화면에서는 친구 관리가 그대로 선택된다', () => {
+    expect(isSettingsMenuItemSelected('/friends/user-1', '/friends')).toBe(true);
+  });
 });
