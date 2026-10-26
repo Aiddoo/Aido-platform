@@ -2,6 +2,7 @@
   "ios": {
     "NSMicrophoneUsageDescription": "Aido uses the microphone so you can add to-dos by voice.",
     "NSSpeechRecognitionUsageDescription": "Aido turns what you say into text so you can add to-dos by voice. Your voice may be processed by Apple speech recognition.",
+    "NSPhotoLibraryUsageDescription": "Aido uses your photo library when working with images you share or save.",
     "NSPhotoLibraryAddUsageDescription": "Aido saves images you share to your photo library.",
     "NSLocationWhenInUseUsageDescription": "Aido uses your location to show the weather where you are.",
     "Localizable.strings": {

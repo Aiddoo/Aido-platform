@@ -207,7 +207,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         NSMicrophoneUsageDescription: '말로 할 일을 입력할 때 마이크를 써요.',
         NSSpeechRecognitionUsageDescription:
           '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.',
-        // 공유 시트의 "이미지 저장"이 사진 보관함에 추가할 때만 쓴다. 사진을 읽지 않으므로 추가 권한만 둔다.
+        // 앱이 사진을 직접 읽지 않아도 포함된 SDK가 사진 보관함 API를 참조해 App Store 업로드에 읽기 문구가 필요하다(ITMS-90683).
+        NSPhotoLibraryUsageDescription: '공유하거나 저장할 이미지를 다룰 때 사진 보관함을 써요.',
+        // 공유 시트의 "이미지 저장"이 사진 보관함에 추가할 때 쓴다.
         NSPhotoLibraryAddUsageDescription: '공유한 이미지를 사진 보관함에 저장할 때 써요.',
         ...(isDevelopment && {
           NSAppTransportSecurity: {
