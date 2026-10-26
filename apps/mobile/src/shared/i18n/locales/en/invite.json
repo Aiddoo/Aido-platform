@@ -27,7 +27,7 @@
       "benefitAi": "Unlimited AI to-dos",
       "benefitFriends": "Unlimited friends and nudges",
       "codeLabel": "Invite code",
-      "inviterReward": "{{name}} gets {{days}} days of Premium + 1 more friend once you complete to-dos on {{activeDays}} days"
+      "inviterReward": "When you complete to-dos on {{activeDays}} days, {{name}} gets {{days}} days of Premium too"
     },
     "signUp": "Join and become friends",
     "login": "I have an account · Log in",
@@ -62,8 +62,10 @@
   },
   "myInvite": {
     "title": "Invite friends",
-    "rewardInvitee": "Your friend: {{days}} days of Premium right when they join",
-    "rewardInviter": "You: {{days}} days of Premium + 1 more friend once they complete to-dos on {{activeDays}} days",
+    "rewardInviteeLabel": "Your friend",
+    "rewardInvitee": "{{days}} days of Premium right when they join",
+    "rewardInviterLabel": "You",
+    "rewardInviter": "{{days}} days of Premium + 1\u00a0more\u00a0friend once they complete to-dos on {{activeDays}} days",
     "heroTitle": "Invite a friend and\ncheer each other on",
     "codeLabel": "My invite code",
     "copy": "Copy",

@@ -24,7 +24,7 @@
       "benefitAi": "AI 할 일 만들기 무제한",
       "benefitFriends": "친구 추가·콕 찌르기 무제한",
       "codeLabel": "초대 코드",
-      "inviterReward": "초대한 {{name}}님은 내가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구 1명 더 받아요"
+      "inviterReward": "내가 {{activeDays}}일 동안 할 일을 끝내면 {{name}}님도 프리미엄 {{days}}일을 받아요"
     },
     "signUp": "가입하고 친구 되기",
     "login": "이미 계정이 있어요 · 로그인",
@@ -58,8 +58,10 @@
   },
   "myInvite": {
     "title": "친구 초대",
-    "rewardInvitee": "친구: 가입하면 바로 프리미엄 {{days}}일",
-    "rewardInviter": "나: 친구가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구 1명 더",
+    "rewardInviteeLabel": "친구",
+    "rewardInvitee": "가입하면 바로 프리미엄 {{days}}일",
+    "rewardInviterLabel": "나",
+    "rewardInviter": "친구가 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{days}}일 + 친구\u00a01\u2060명\u00a0더",
     "heroTitle": "친구를 초대하고\n서로의 할 일을 응원해요",
     "codeLabel": "내 초대 코드",
     "copy": "복사",
