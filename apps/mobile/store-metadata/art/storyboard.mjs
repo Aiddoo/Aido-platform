@@ -140,13 +140,13 @@ export const SLOTS = {
     isNew: true,
     decor: 'cat-peek',
     ko: {
-      tagline: '서로 콕콕, 함께 받는 보상',
-      headline: '친구를 초대하면\n친구도 나도 [프리미엄 7일]',
+      tagline: '링크 하나로 친구 초대',
+      headline: '친구는 가입하면 바로\n나는 친구가 2일 하면 [프리미엄 7일]',
       note: '나는 친구가 가입하고 14일 안에\n2일 동안 할 일을 끝내면 받아요',
     },
     en: {
       tagline: 'Better together',
-      headline: 'Invite a friend and\nyou both get [7 days of Premium]',
+      headline: 'Your friend gets [7 days of Premium]\non joining, you after their 2 days',
       note: 'You get yours when your friend completes\nto-dos on 2 days within 14 days of joining',
     },
     play: {
@@ -285,22 +285,22 @@ export const SLOTS = {
   },
   'paw-board': {
     title: '발자국 다 모았을 때',
-    // 발자국 8개를 채운 판 전체가 헤더 아래에 보이는 화면. 아래로 스크롤한 53은 도장이 헤더에 잘린다.
+    // 판을 다 채운 화면 전체가 헤더 아래에 보이는 화면. 아래로 스크롤한 53은 도장이 헤더에 잘린다.
     capture: premium('56_발자국_판_완성_전체'),
     ko: {
       tagline: '친구가 2일 동안 해내면',
-      headline: '발자국이 찍힐 때마다\n나도 [프리미엄 7일]',
+      headline: '발자국이 찍힐 때마다\n나는 [프리미엄 7일]',
       note: '친구가 가입하고 14일 안에 2일 동안 할 일을 끝내면 찍혀요\n발자국마다 친구를 1명 더 추가할 수 있어요\n프리미엄 보상은 30일 동안 최대 30일, 전체 최대 90일',
     },
     en: {
-      tagline: 'Your friend shows up 2 days',
+      tagline: 'Your friend completes 2 days',
       headline: 'Every paw print earns you\n[7 days of Premium]',
       note: 'Counts when your friend completes to-dos on 2 days within 14 days of joining\nEach paw print also lets you add 1 more friend\nPremium rewards: up to 30 days every 30 days, 90 days in total',
     },
     play: {
       ko: { tagline: '친구가 2일 동안 해내면', headline: '발자국을 모아\n[판을 채워요]' },
       en: {
-        tagline: 'Your friend shows up 2 days',
+        tagline: 'Your friend completes 2 days',
         headline: 'Collect paw prints\nand [fill your board]',
       },
     },
@@ -531,14 +531,14 @@ export const CARD_COPY = {
   ko: {
     rows: ['아침 운동', '책 10쪽 읽기'],
     nudge: '콕',
-    reward: '친구도 나도 프리미엄 7일',
+    reward: '친구는 바로, 나는 친구가 2일 하면 프리미엄 7일',
     condition: '조건 있음 · 앱에서 확인',
     board: '발자국 모으기',
   },
   en: {
     rows: ['Morning workout', 'Read 10 pages'],
     nudge: 'Nudge',
-    reward: '7 days of Premium for both of you',
+    reward: '7 days of Premium: your friend now, you after their 2 days',
     condition: 'Conditions apply',
     board: 'Collect paw prints',
   },

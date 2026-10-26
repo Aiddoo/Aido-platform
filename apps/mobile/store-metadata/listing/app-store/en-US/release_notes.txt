@@ -1,8 +1,8 @@
 Aido 1.13.0
 
 New
-- Invite friends with a link. They get 7 days of Premium.
-- When they complete to-dos on 2 days, you get 7 days of Premium and +1 friend limit.
+- Friends you invite get 7 days of Premium when they join.
+- You get 7 days of Premium + 1 more friend once they complete to-dos on 2 days.
 - Report to-dos, comments, or nudges and block the sender.
 
 Improvements
