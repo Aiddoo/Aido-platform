@@ -23,7 +23,7 @@ import {
 import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { range } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   type LayoutChangeEvent,
@@ -249,6 +249,15 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
     [pageWidth, children],
   );
 
+  // 시작 위치는 네이티브가 뷰를 만들 때 바로 적용하는 contentOffset으로 준다. initialScrollIndex만 두면
+  // 목록이 콘텐츠 크기를 받은 뒤 JS가 scrollTo를 보내는데, 앱을 다시 열 때처럼 네이티브 contentSize가
+  // 아직 0이면 그 명령이 0으로 잘려 260번째 주가 화면 밖에 그려지고 날짜 줄이 빈다.
+  // 목록은 너비마다 새로 만들므로 이 값도 너비가 바뀔 때만 다시 계산한다.
+  const initialContentOffset = useMemo(
+    () => ({ x: currentPageRef.current * pageWidth, y: 0 }),
+    [pageWidth],
+  );
+
   return (
     <Box onLayout={handleLayout}>
       {/* 너비가 바뀌면(측정·접기·펼치기) 새 목록으로 현재 페이지에서 시작한다. 이전 오프셋을 그대로 두면
@@ -263,6 +272,7 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
         renderItem={renderItem}
         getItemLayout={getItemLayout}
         initialScrollIndex={currentPageRef.current}
+        contentOffset={initialContentOffset}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleScrollEnd}
         onScrollToIndexFailed={(info) => {
