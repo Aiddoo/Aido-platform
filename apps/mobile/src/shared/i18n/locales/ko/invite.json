@@ -102,7 +102,8 @@
     "rewardsSummary": "프리미엄 {{count}}일 · 친구 추가 +{{slots}}명",
     "unavailable": "초대가 다시 열리면 발자국을 이어서 모을 수 있어요",
     "keepPremium": "프리미엄 계속 쓰기",
-    "keepPremiumHint": "구독 화면으로 이동해요"
+    "keepPremiumHint": "구독 화면으로 이동해요",
+    "waitingOverflow": "기다리는 친구가 {{count}}명 더 있어요"
   },
   "friendList": {
     "title": "초대한 친구",

@@ -111,7 +111,9 @@
     "rewardsSummary_other": "{{count}} days of Premium · +{{slots}} friend limit",
     "unavailable": "You can keep collecting paw prints when invites are back",
     "keepPremium": "Keep Premium",
-    "keepPremiumHint": "Opens the subscription screen"
+    "keepPremiumHint": "Opens the subscription screen",
+    "waitingOverflow_one": "{{count}} more friend is on the way",
+    "waitingOverflow_other": "{{count}} more friends are on their way"
   },
   "friendList": {
     "title": "Invited friends",

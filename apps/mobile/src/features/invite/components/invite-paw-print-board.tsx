@@ -43,7 +43,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { InvitePolicy } from '../domains/invite.model';
@@ -183,7 +183,10 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   );
 }
 
-/** 판 아래 한 줄. 빈 판에서는 어디부터 찍히는지, 다 채운 판에서는 축하를 보여 준다 */
+/**
+ * 판 아래 한 줄. 다 채운 판에서는 축하를, 판에 다 못 그린 기다리는 친구가 있으면 그 수를,
+ * 빈 판에서는 어디부터 찍히는지 보여 준다
+ */
 InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard }) {
   const { t } = useTranslation('invite');
 
@@ -203,6 +206,9 @@ InvitePawPrintBoard.Caption = function Caption({ board }: { board: PawPrintBoard
             {t('pawPrintBoard.complete', { boardNumber: board.boardNumber })}
           </Text>
         ))
+        .with({ waitingOverflowCount: P.number.positive() }, ({ waitingOverflowCount }) =>
+          t('pawPrintBoard.waitingOverflow', { count: waitingOverflowCount }),
+        )
         .with({ totalPawPrints: 0 }, () =>
           t('pawPrintBoard.firstHint', { activeDays: InvitedFriendPolicy.requiredActiveDays() }),
         )

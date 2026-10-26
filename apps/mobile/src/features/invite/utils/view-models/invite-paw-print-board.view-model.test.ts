@@ -5,6 +5,7 @@ import {
   calculatePawPrintColumns,
   calculatePawPrintGrid,
   calculatePawPrintState,
+  calculateWaitingOverflow,
   createPawPrintBoard,
   PAW_PRINT_BOARD_SIZE,
 } from './invite-paw-print-board.view-model';
@@ -115,6 +116,24 @@ describe('calculateBoardIndex', () => {
   });
 });
 
+describe('calculateWaitingOverflow', () => {
+  it.each([
+    ['찍힘 3·대기 2', 3, 2, 12, 0],
+    ['찍힘 3·대기 12', 3, 12, 12, 3],
+    ['찍힘 0·대기 12', 0, 12, 12, 0],
+    ['판을 막 채운 찍힘 12·대기 2', 12, 2, 12, 2],
+  ])(
+    '%s이고 판 끝이 %#번째 경우 넘친 대기 수를 반환한다',
+    (_case, pawPrintedCount, waitingCount, boardEndIndex, expected) => {
+      // When
+      const result = calculateWaitingOverflow({ pawPrintedCount, waitingCount }, boardEndIndex);
+
+      // Then 대기 칸 [찍힘, 찍힘+대기) 중 판 끝 이후 칸 수
+      expect(result).toBe(expected);
+    },
+  );
+});
+
 describe('calculatePawPrintState', () => {
   const counts = { pawPrintedCount: 2, waitingCount: 1, milestoneCounts: [5] };
 
@@ -204,6 +223,20 @@ describe('createPawPrintBoard', () => {
     // Then 같은 첫 판에 8개가 찍혀 있고 새로 찍히는 발자국은 없다
     expect(board).toMatchObject({ boardNumber: 1, totalPawPrints: 8, isComplete: false });
     expect(board.rows.flatMap((row) => row.cells).some((cell) => cell.isNew)).toBe(false);
+  });
+
+  it('기다리는 친구가 남은 칸보다 많으면 판은 대기 칸으로 채우고 넘친 수를 따로 반환한다', () => {
+    // Given 찍힘 3 + 대기 12 = 15 > 12칸
+    const myInvite = createInvite({ qualifiedCount: 3, waitingCount: 12 });
+
+    // When
+    const board = createPawPrintBoard(myInvite, { columns: 4, celebratedCount: 3 });
+
+    // Then 판은 찍힌 발자국으로만 다 채워지고, 다음 칸 표시는 판 밖을 가리키지 않는다
+    const cells = board.rows.flatMap((row) => row.cells);
+    expect(board).toMatchObject({ isComplete: false, waitingOverflowCount: 3 });
+    expect(cells.filter((cell) => cell.state === 'waiting')).toHaveLength(9);
+    expect(cells.some((cell) => cell.isNext)).toBe(false);
   });
 
   it('4열이면 지그재그로 꺾는 3줄 판을 반환한다', () => {

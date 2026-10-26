@@ -29,6 +29,8 @@ export interface PawPrintBoard {
   totalPawPrints: number;
   /** 이 판을 다 채웠다. 축하를 보여 준 뒤 다음에 열면 새 판이 나온다 */
   isComplete: boolean;
+  /** 이 판에 남은 칸보다 많아 판에 그리지 못한 기다리는 친구 수. 판은 찍힌 발자국으로만 채워진다 */
+  waitingOverflowCount: number;
   rows: PawPrintRow[];
 }
 
@@ -147,6 +149,15 @@ export function calculatePawPrintState(
   return milestoneCounts.includes(index + 1) ? 'milestone' : 'empty';
 }
 
+/** 찍힌 발자국 뒤에 이어 그리는 기다리는 칸 중 판 끝(boardEndIndex)을 넘는 수 */
+export function calculateWaitingOverflow(
+  { pawPrintedCount, waitingCount }: Pick<PawPrintCountInput, 'pawPrintedCount' | 'waitingCount'>,
+  boardEndIndex: number,
+) {
+  const waitingStart = Math.max(pawPrintedCount, boardEndIndex);
+  return Math.min(Math.max(pawPrintedCount + waitingCount - waitingStart, 0), waitingCount);
+}
+
 interface PawPrintBoardOptions {
   columns: number;
   /** 이 기기에서 이미 찍히는 모습을 본 발자국 수 */
@@ -172,6 +183,7 @@ export function createPawPrintBoard(
     boardNumber: boardIndex + 1,
     totalPawPrints: counts.pawPrintedCount,
     isComplete: counts.pawPrintedCount >= firstIndex + PAW_PRINT_BOARD_SIZE,
+    waitingOverflowCount: calculateWaitingOverflow(counts, firstIndex + PAW_PRINT_BOARD_SIZE),
     rows: rowIndexes.map((indexes, rowIndex) => {
       const orderedIndexes = rowIndex % 2 === 0 ? indexes : [...indexes].reverse();
       const lastIndex = indexes[indexes.length - 1] ?? firstIndex;
