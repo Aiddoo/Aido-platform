@@ -1,4 +1,4 @@
-import { createParentTodo } from '../__tests__/sub-todo.factories';
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories';
 import { SubTodoPolicy } from './sub-todo.model';
 
 describe('SubTodoPolicy', () => {
@@ -37,90 +37,96 @@ describe('SubTodoPolicy', () => {
     });
   });
 
-  describe('statsAfterToggle', () => {
-    test('완료로 토글하면 completed가 1 증가한다', () => {
-      // Given
-      const parentTodo = createParentTodo({ subTodoStats: { total: 5, completed: 2 } });
-
-      // When
-      const result = SubTodoPolicy.statsAfterToggle(parentTodo, true);
-
-      // Then
-      expect(result).toEqual({ total: 5, completed: 3 });
-    });
-
-    test('미완료로 토글하면 completed가 1 감소한다', () => {
-      // Given
-      const parentTodo = createParentTodo({ subTodoStats: { total: 5, completed: 2 } });
-
-      // When
-      const result = SubTodoPolicy.statsAfterToggle(parentTodo, false);
-
-      // Then
-      expect(result).toEqual({ total: 5, completed: 1 });
-    });
-  });
-
-  describe('statsAfterAdd', () => {
-    test('추가하면 total이 1 증가하고 completed는 유지된다', () => {
-      // Given
-      const parentTodo = createParentTodo({ subTodoStats: { total: 3, completed: 1 } });
-
-      // When
-      const result = SubTodoPolicy.statsAfterAdd(parentTodo);
-
-      // Then
-      expect(result).toEqual({ total: 4, completed: 1 });
-    });
-  });
-
-  describe('statsAfterDelete', () => {
-    test('완료된 서브투두를 삭제하면 total과 completed가 각각 1 감소한다', () => {
+  describe('withSubTodoToggled', () => {
+    test('서브투두를 완료하면 목록과 통계가 함께 바뀐다', () => {
       // Given
       const parentTodo = createParentTodo({
-        subTodos: [
-          { id: 1, title: '완료 항목', completed: true, sortOrder: 0 },
-          { id: 2, title: '미완료 항목', completed: false, sortOrder: 1 },
-        ],
-        subTodoStats: { total: 2, completed: 1 },
+        subTodos: [createSubTodo({ id: 1 }), createSubTodo({ id: 2 })],
+        subTodoStats: { total: 2, completed: 0 },
       });
 
       // When
-      const result = SubTodoPolicy.statsAfterDelete(parentTodo, 1);
+      const result = SubTodoPolicy.withSubTodoToggled(parentTodo, 1, true);
 
       // Then
-      expect(result).toEqual({ total: 1, completed: 0 });
+      expect(result.subTodos.map((subTodo) => subTodo.completed)).toEqual([true, false]);
+      expect(result.subTodoStats).toEqual({ total: 2, completed: 1 });
     });
 
-    test('미완료 서브투두를 삭제하면 total만 1 감소한다', () => {
+    test('이미 완료한 서브투두를 다시 완료해도 1/1을 넘지 않는다', () => {
       // Given
       const parentTodo = createParentTodo({
-        subTodos: [
-          { id: 1, title: '완료 항목', completed: true, sortOrder: 0 },
-          { id: 2, title: '미완료 항목', completed: false, sortOrder: 1 },
-        ],
-        subTodoStats: { total: 2, completed: 1 },
-      });
-
-      // When
-      const result = SubTodoPolicy.statsAfterDelete(parentTodo, 2);
-
-      // Then
-      expect(result).toEqual({ total: 1, completed: 1 });
-    });
-
-    test('존재하지 않는 id를 삭제하면 stats를 변경하지 않는다', () => {
-      // Given
-      const parentTodo = createParentTodo({
-        subTodos: [{ id: 1, title: '항목', completed: true, sortOrder: 0 }],
+        subTodos: [createSubTodo({ id: 1, completed: true })],
         subTodoStats: { total: 1, completed: 1 },
       });
 
       // When
-      const result = SubTodoPolicy.statsAfterDelete(parentTodo, 999);
+      const result = SubTodoPolicy.withSubTodoToggled(parentTodo, 1, true);
 
       // Then
-      expect(result).toEqual({ total: 1, completed: 1 });
+      expect(result.subTodoStats).toEqual({ total: 1, completed: 1 });
+    });
+
+    test('캐시의 통계가 목록과 어긋나 있어도 목록 기준으로 바로잡는다', () => {
+      // Given
+      const parentTodo = createParentTodo({
+        subTodos: [createSubTodo({ id: 1 })],
+        subTodoStats: { total: 1, completed: 2 },
+      });
+
+      // When
+      const result = SubTodoPolicy.withSubTodoToggled(parentTodo, 1, false);
+
+      // Then
+      expect(result.subTodoStats).toEqual({ total: 1, completed: 0 });
+    });
+  });
+
+  describe('withSubTodoAdded', () => {
+    test('서브투두를 추가하면 전체 개수만 늘어난다', () => {
+      // Given
+      const parentTodo = createParentTodo({
+        subTodos: [createSubTodo({ id: 1, completed: true })],
+        subTodoStats: { total: 1, completed: 1 },
+      });
+
+      // When
+      const result = SubTodoPolicy.withSubTodoAdded(parentTodo, createSubTodo({ id: 2 }));
+
+      // Then
+      expect(result.subTodos.map((subTodo) => subTodo.id)).toEqual([1, 2]);
+      expect(result.subTodoStats).toEqual({ total: 2, completed: 1 });
+    });
+  });
+
+  describe('withSubTodoRemoved', () => {
+    test('완료한 서브투두를 지우면 전체와 완료 개수가 함께 줄어든다', () => {
+      // Given
+      const parentTodo = createParentTodo({
+        subTodos: [createSubTodo({ id: 1, completed: true }), createSubTodo({ id: 2 })],
+        subTodoStats: { total: 2, completed: 1 },
+      });
+
+      // When
+      const result = SubTodoPolicy.withSubTodoRemoved(parentTodo, 1);
+
+      // Then
+      expect(result.subTodoStats).toEqual({ total: 1, completed: 0 });
+    });
+
+    test('없는 서브투두를 지우려 하면 목록과 통계가 그대로다', () => {
+      // Given
+      const parentTodo = createParentTodo({
+        subTodos: [createSubTodo({ id: 1, completed: true })],
+        subTodoStats: { total: 1, completed: 1 },
+      });
+
+      // When
+      const result = SubTodoPolicy.withSubTodoRemoved(parentTodo, 999);
+
+      // Then
+      expect(result.subTodos).toEqual(parentTodo.subTodos);
+      expect(result.subTodoStats).toEqual({ total: 1, completed: 1 });
     });
   });
 

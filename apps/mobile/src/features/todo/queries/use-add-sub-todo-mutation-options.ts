@@ -38,14 +38,14 @@ export const useAddSubTodoMutationOptions = () => {
     onMutate: async ({ todoId, title, startDate }) => {
       await cancelTodoListQuery(queryClient, { date: startDate });
       const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
-        ...todo,
-        subTodos: [
-          ...todo.subTodos,
-          { id: createOptimisticId(), title, completed: false, sortOrder: todo.subTodos.length },
-        ],
-        subTodoStats: SubTodoPolicy.statsAfterAdd(todo),
-      }));
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoAdded(todo, {
+          id: createOptimisticId(),
+          title,
+          completed: false,
+          sortOrder: todo.subTodos.length,
+        }),
+      );
 
       return { snapshot };
     },
