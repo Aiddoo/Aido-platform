@@ -6,6 +6,7 @@ import type { Todo } from '../domains/todo.model';
 import { useToggleTodoMutationOptions } from './use-toggle-todo-mutation-options';
 
 const TODAY = '2026-10-27';
+const YESTERDAY = '2026-10-26';
 const mockRecordActiveDay = jest.fn();
 const mockRequestReviewAt = jest.fn();
 const mockRecordTodoCompletionForActivation = jest.fn();
@@ -56,12 +57,12 @@ const givenTodayTodos = (todos: Todo[]) => {
   mockQueryClient.getQueryData.mockReturnValue({ todos, hasNext: false, nextCursor: null });
 };
 
-const completeTodo = async (todoId: number, completed = true) => {
+const completeTodo = async (todoId: number, completed = true, startDate = TODAY) => {
   const { result } = await renderHook(() => useToggleTodoMutationOptions());
   await result.current.onSuccess?.(
     createParentTodo({ id: todoId }),
-    { todoId, body: { completed }, startDate: TODAY },
-    { completed: !completed, startDate: TODAY },
+    { todoId, body: { completed }, startDate },
+    { completed: !completed, startDate },
     MUTATION_CONTEXT,
   );
 };
@@ -85,6 +86,33 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
     // Then
     expect(mockRecordActiveDay).toHaveBeenCalledTimes(1);
     expect(mockRequestReviewAt).toHaveBeenCalledWith('all_todos_done');
+  });
+
+  it('어제 시작한 여러 날 할 일을 오늘 마지막으로 끝내면 리뷰 순간을 알리고 남은 할 일이 있으면 알리지 않는다', async () => {
+    // Given 낙관적 갱신은 시작일(어제) 목록에만 반영돼 오늘 목록에는 아직 미완료다
+    const multiDay = createParentTodo({
+      id: 7,
+      startDate: YESTERDAY,
+      endDate: TODAY,
+      completed: false,
+    });
+    givenTodayTodos([createParentTodo({ id: 41, completed: true }), multiDay]);
+
+    // When
+    await completeTodo(7, true, YESTERDAY);
+
+    // Then
+    expect(mockRequestReviewAt).toHaveBeenCalledWith('all_todos_done');
+
+    // Given 오늘 남은 할 일이 하나 더 있다
+    jest.clearAllMocks();
+    givenTodayTodos([createParentTodo({ id: 41, completed: false }), multiDay]);
+
+    // When
+    await completeTodo(7, true, YESTERDAY);
+
+    // Then
+    expect(mockRequestReviewAt).not.toHaveBeenCalled();
   });
 
   it('남은 할 일이 있으면 끝낸 날만 남기고 리뷰 순간은 알리지 않는다', async () => {

@@ -67,8 +67,7 @@ export const useToggleTodoMutationOptions = () => {
       recordActiveDay();
       // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
       const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];
-      const isTodayTodo = todayTodos.some((todo) => todo.id === variables.todoId);
-      if (isTodayTodo && TodoPolicy.areAllCompleted(todayTodos)) {
+      if (TodoPolicy.completesAll(todayTodos, variables.todoId)) {
         requestReviewAt('all_todos_done');
       }
     },
