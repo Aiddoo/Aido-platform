@@ -36,6 +36,15 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 </KeyboardBottomSheet>;
 ```
 
+작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
+(키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
+
+```tsx
+<KeyboardBottomSheet isOpen={isOpen} onOpenChange={setIsOpen} footer={<Button>신고하기</Button>}>
+  {/* 사유 선택·상세 입력 */}
+</KeyboardBottomSheet>
+```
+
 ### ModalBottomSheet
 
 기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. 드래그 닫기는 상단 손잡이에서 동작하여 내부 목록 스크롤과 경쟁하지 않습니다. 시스템 Reduce Motion 설정을 Reanimated `ReduceMotion.System`으로 따릅니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.

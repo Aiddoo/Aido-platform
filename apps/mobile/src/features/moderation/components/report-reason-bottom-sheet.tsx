@@ -104,7 +104,12 @@ export function ReportReasonBottomSheet({
 
   return (
     <FormProvider {...formMethods}>
-      <KeyboardBottomSheet {...sheetProps} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <KeyboardBottomSheet
+        {...sheetProps}
+        isOpen={sheet.isOpen}
+        onOpenChange={sheet.onOpenChange}
+        footer={<SubmitButton onPress={() => formMethods.handleSubmit(handleReport)()} />}
+      >
         <VStack gap={16} pb={16} testID="report-reason-sheet">
           <VStack gap={2}>
             <Text size="b3" shade={7}>
@@ -123,8 +128,6 @@ export function ReportReasonBottomSheet({
           <Text size="e1" shade={7}>
             {t('report.notice')}
           </Text>
-
-          <SubmitButton onPress={() => formMethods.handleSubmit(handleReport)()} />
         </VStack>
       </KeyboardBottomSheet>
     </FormProvider>
