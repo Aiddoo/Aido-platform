@@ -4,6 +4,7 @@ import benefitNotificationImage from '@assets/images/subscription/benefit-notifi
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
 import { InvitePawPrintBoard } from '@src/features/invite/components/invite-paw-print-board';
+import { ReceiptBenefitRow } from '@src/features/subscription/components/receipt-benefit-row';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
 import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
 import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
@@ -35,7 +36,6 @@ import {
   Button,
   CalendarIcon,
   DocsIcon,
-  FillCheckIcon,
   FillTicketIcon,
   H2,
   HStack,
@@ -51,6 +51,7 @@ import {
   StyledSafeAreaView,
   Text,
   TextButton,
+  TextSkeleton,
   VStack,
   DashedDivider,
   ScallopedContainer,
@@ -59,8 +60,9 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
-import { Separator, Spinner } from 'heroui-native';
+import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -90,7 +92,7 @@ function SubscriptionScreen() {
       { isPremium: false, isStoreConfigured: true },
       () => (
         <QueryErrorBoundary fallback={PaywallPane.Error}>
-          <Suspense fallback={<SubscriptionScreen.Loading />}>
+          <Suspense fallback={<PaywallPane.Loading />}>
             <PaywallPane />
           </Suspense>
         </QueryErrorBoundary>
@@ -101,7 +103,20 @@ function SubscriptionScreen() {
     .exhaustive();
 }
 
+/** 내 정보를 받기 전에는 영수증과 같은 자리·모양의 스켈레톤을 둔다 */
 SubscriptionScreen.Loading = function Loading() {
+  return (
+    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8" scrollEnabled={false}>
+      <StyledSafeAreaView edges={['left', 'right']} accessibilityState={{ busy: true }}>
+        <Spacing size={16} />
+        <SubscriptionReceipt.Loading />
+      </StyledSafeAreaView>
+    </ScrollView>
+  );
+};
+
+/** 요금제는 스토어에서 받아 모양이 정해지지 않아 가운데 표시기만 둔다 */
+PaywallPane.Loading = function Loading() {
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
       <Spinner size="lg" color="default" />
@@ -425,15 +440,15 @@ function SubscriptionReceipt() {
         </Text>
 
         <VStack gap={2}>
-          <ReceiptBenefitRow title={t('benefits.aiParsing.title')} />
-          <ReceiptBenefitRow title={t('benefits.nudge.title')} />
-          <ReceiptBenefitRow title={t('benefits.reminder.title')} />
-          <ReceiptBenefitRow title={t('benefits.appIcon.title')} />
-          <ReceiptBenefitRow title={t('benefits.friends.title')} />
-          <ReceiptBenefitRow title={t('benefits.categories.title')} />
-          <ReceiptBenefitRow title={t('benefits.aiRepeat.title')} />
-          <ReceiptBenefitRow title={t('benefits.aiReport.title')} />
-          <ReceiptBenefitRow title={t('benefits.future')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.aiParsing.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.nudge.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.reminder.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.appIcon.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.friends.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.categories.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.aiRepeat.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.aiReport.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.future')} />
         </VStack>
       </Box>
 
@@ -443,6 +458,47 @@ function SubscriptionReceipt() {
     </ScallopedContainer>
   );
 }
+
+SubscriptionReceipt.Loading = function Loading() {
+  return (
+    <ScallopedContainer>
+      <Box className="px-5 pt-5">
+        <HStack gap={16} className="items-center">
+          <Skeleton className="size-10 rounded-lg" />
+          <VStack gap={2} className="flex-1">
+            <TextSkeleton size="t3" className="w-40" />
+            <TextSkeleton size="b4" className="w-52" />
+          </VStack>
+        </HStack>
+
+        <Spacing size={24} />
+
+        <VStack gap={12}>
+          {times(3, (index) => (
+            <HStack key={index} justify="between">
+              <TextSkeleton size="b3" className="w-20" />
+              <TextSkeleton size="b3" className="w-28" />
+            </HStack>
+          ))}
+        </VStack>
+      </Box>
+
+      <DashedDivider className="my-5 mx-5" />
+
+      <Box className="px-5 pb-5">
+        <TextSkeleton size="b3" className="mb-3 w-32" />
+        <VStack gap={10}>
+          {times(4, (index) => (
+            <HStack key={index} gap={12} align="center">
+              <Skeleton className="size-5 rounded-full" />
+              <TextSkeleton size="b3" className="w-44" />
+            </HStack>
+          ))}
+        </VStack>
+      </Box>
+    </ScallopedContainer>
+  );
+};
 
 interface ReceiptDetailRowProps {
   row: SubscriptionReceiptRow;
@@ -613,24 +669,6 @@ function GrantEndedNotice() {
       </Text>
       <Spacing size={12} />
     </>
-  );
-}
-
-function ReceiptBenefitRow({ title }: { title: string }) {
-  return (
-    <ListRow
-      verticalPadding="small"
-      left={
-        <Box className="bg-main w-5 h-5 rounded-full items-center justify-center">
-          <FillCheckIcon width={12} height={12} colorClassName="text-white dark:text-gray-1" />
-        </Box>
-      }
-      contents={
-        <Text size="b3" shade={8}>
-          {title}
-        </Text>
-      }
-    />
   );
 }
 

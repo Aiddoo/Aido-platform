@@ -7,7 +7,13 @@ import {
 import { useGetInviteQueryOptions } from '@src/features/invite/queries/get-invite-query-options';
 import { useGetInvitedFriendCountInfiniteQueryOptions } from '@src/features/invite/queries/get-invited-friends-infinite-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, QueryErrorBoundary, ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
+import {
+  Box,
+  QueryErrorBoundary,
+  ReadableContent,
+  StyledSafeAreaView,
+  TextSkeleton,
+} from '@src/shared/ui';
 import {
   usePrefetchInfiniteQuery,
   usePrefetchQuery,
@@ -15,7 +21,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { Skeleton, Tabs } from 'heroui-native';
+import { Tabs } from 'heroui-native';
 import { type ComponentProps, Suspense } from 'react';
 import { match } from 'ts-pattern';
 
@@ -101,6 +107,21 @@ function InvitedFriendFilterTabs({
   );
 }
 
+/** 숫자를 받기 전에도 같은 탭 모양·선택을 두고 라벨 자리만 비워 둔다 */
 InvitedFriendFilterTabs.Loading = function Loading() {
-  return <Skeleton className="h-10 rounded-full" />;
+  const [view] = useInvitedFriendsViewParam();
+
+  return (
+    <Tabs value={view} onValueChange={noop} variant="primary" accessibilityState={{ busy: true }}>
+      <Tabs.List>
+        <Tabs.Indicator />
+        <Tabs.Trigger value="all">
+          <TextSkeleton size="b3" className="w-14" />
+        </Tabs.Trigger>
+        <Tabs.Trigger value="waiting">
+          <TextSkeleton size="b3" className="w-20" />
+        </Tabs.Trigger>
+      </Tabs.List>
+    </Tabs>
+  );
 };
