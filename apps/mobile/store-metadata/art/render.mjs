@@ -10,23 +10,29 @@
 //
 // 옵션: --captures <캡처 루트>(기본 ~/Desktop/Aido-Screens-1.13.0), --only <scenes|screenshots|세트 id|대상 id>,
 //       --locales ko,en. 결과 폴더에 index.html(스토리보드 갤러리)과 manifest.json을 쓴다.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import sharp from 'sharp';
 
+import { cardLayout, cardWidthForHeight } from './lib/card.mjs';
 import { defaultCaptureRoot, launchChrome } from './lib/chrome.mjs';
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
 import {
+  CAPTURE_DEVICES,
   CARD_COPY,
+  KEYBOARD_SCREENS,
   LOCALES,
   RELEASE_VERSION,
   SCENES,
   SETS,
   SLOTS,
   TARGETS,
+  slotCopy,
 } from './storyboard.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -72,6 +78,8 @@ const MOCK_CAPTURES = new Set([
 ]);
 
 const pad = (number) => String(number).padStart(2, '0');
+// 템플릿에서도 같은 카드 배치 계산을 쓴다(테스트하는 함수 그대로 주입).
+const CARD_PRELUDE = `window.cardLayout = ${cardLayout.toString()}; window.cardWidthForHeight = ${cardWidthForHeight.toString()};`;
 
 export function capturePath(root, device, capture, locale) {
   return join(
@@ -87,12 +95,14 @@ export function capturePath(root, device, capture, locale) {
 // 렌더 작업 목록. 같은 입력이면 같은 순서·같은 파일 이름이다.
 export function plan({ only, locales }) {
   const jobs = [];
-  const wanted = (...keys) => only == null || keys.includes(only);
+  // only: 쉼표로 여러 개. 각 값은 scenes·screenshots·세트 id·대상 id·장면 id 또는 '세트/대상'(예: cpp-ai/iphone-6.3)
+  const filters = only == null ? null : only.split(',');
+  const wanted = (...keys) => filters == null || filters.some((filter) => keys.includes(filter));
   for (const set of SETS) {
     for (const targetId of set.targets) {
       const target = TARGETS[targetId];
       for (const locale of (set.locales ?? LOCALES).filter((item) => locales.includes(item))) {
-        if (!wanted('screenshots', set.id, targetId)) {
+        if (!wanted('screenshots', set.id, targetId, `${set.id}/${targetId}`)) {
           continue;
         }
         const storeLocale = STORE_LOCALE[target.store][locale];
@@ -104,6 +114,7 @@ export function plan({ only, locales }) {
             targetId,
             locale,
             slotId,
+            index,
             slot: SLOTS[slotId],
             output: join(
               target.store,
@@ -137,23 +148,197 @@ export function plan({ only, locales }) {
   return jobs;
 }
 
-function screenSource(job, captureRoot, device, capture) {
-  const path = capturePath(captureRoot, device, capture, job.locale);
-  if (existsSync(path)) {
-    return { path, label: relative(captureRoot, path) };
-  }
-  return { path: null, label: relative(captureRoot, path) };
+// 대상 기기 폴더는 하나 또는 우선순위 목록이다. 목록이면 캡처가 있는 첫 폴더를 쓴다.
+export function resolveDevice(root, devices, capture, locale) {
+  const list = Array.isArray(devices) ? devices : [devices];
+  return list.find((device) => existsSync(capturePath(root, device, capture, locale))) ?? list[0];
 }
 
-async function screenSpec(source, frameAspect, capture, locale) {
+// 장면 하나가 쓰는 캡처: [기기 폴더(또는 목록), 캡처, 역할]. 역할 folded=Duo 접힘, pair=Play 태블릿 두 번째 화면.
+export function captureNeeds(job) {
+  const { target, slot } = job;
+  const needs = [[target.device, slot.capture, 'main']];
+  if ((target.layout ?? slot.layout) === 'duo-pair') {
+    needs.push([target.foldedDevice, slot.foldedCapture, 'folded']);
+  }
+  if (target.layout === 'card-pair') {
+    needs.push([target.device, slot.tabletPair ?? slot.capture, 'pair']);
+  }
+  return needs;
+}
+
+function screenSource(job, captureRoot, devices, capture) {
+  const device = resolveDevice(captureRoot, devices, capture, job.locale);
+  const path = capturePath(captureRoot, device, capture, job.locale);
+  return { path: existsSync(path) ? path : null, label: relative(captureRoot, path), device };
+}
+
+// stripSystemBars면 기기의 상태 막대·홈 인디케이터(키보드 화면은 키보드 윗선 아래 전부)를 잘라 낸다.
+// bottomPx는 아래에서 잘라 낼 높이(px). 돌려주는 값도 px.
+export function systemBarCrop(device, bottomPx) {
+  const bars = CAPTURE_DEVICES[device];
+  if (bars == null) {
+    throw new Error(`${device}: CAPTURE_DEVICES에 OS 막대 높이가 없어요`);
+  }
+  return { top: bars.statusBar, bottom: Math.max(bottomPx ?? 0, bars.homeIndicator) };
+}
+
+// 왼쪽 가장자리 여백(폭의 0.5~2.5%) 바탕색을 EDGE_STEP행마다 기록한다. 카드 위 여백은 잘라 낸 첫 행 색,
+// 아래 여백·페이드는 카드가 실제로 끝나는 행의 색으로 채운다(템플릿이 이 표에서 고른다).
+export const EDGE_STEP = 4;
+export async function edgeProfile(path) {
+  const { data, info } = await sharp(path)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const from = Math.round(info.width * 0.005);
+  const to = Math.max(from + 1, Math.round(info.width * 0.025));
+  const rows = [];
+  for (let y = 0; y < info.height; y += EDGE_STEP) {
+    const sum = [0, 0, 0];
+    for (let x = from; x < to; x += 1) {
+      const index = (y * info.width + x) * 3;
+      for (let channel = 0; channel < 3; channel += 1) {
+        sum[channel] += data[index + channel];
+      }
+    }
+    rows.push(
+      `#${sum
+        .map((value) =>
+          Math.round(value / (to - from))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`,
+    );
+  }
+  return { step: EDGE_STEP, rows };
+}
+
+// iOS 시트(page sheet) 화면은 상태 막대 아래에 어두운 배경과 시트 둥근 모서리, 뒤에 겹친 시트가 남는다(iOS 표시).
+// 왼쪽 끝이 어두우면 시트로 보고 (1) 가운데 열이 시트 바탕색이 되는 행까지 위를 더 잘라 내고(top),
+// (2) 그 아래 모서리 바깥 픽셀을 양끝에서 안쪽으로 시트 바탕색 픽셀을 만날 때까지 시트 바탕색으로 칠한다.
+// 시트 안쪽(헤더·뒤로 버튼)은 건드리지 않는다. 시트가 아니면 null.
+export async function cleanSheet(path, top) {
+  const { data, info } = await sharp(path)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  const lum = (x, y) => {
+    const index = (y * width + x) * 3;
+    return (data[index] + data[index + 1] + data[index + 2]) / 3;
+  };
+  if (lum(1, top + 2) >= 160) {
+    return null;
+  }
+  const limit = Math.round(height * 0.2);
+  let clear = null;
+  for (let y = top + 2; y < limit; y += 1) {
+    if (lum(1, y) > 240 && lum(1, y + 1) > 240) {
+      clear = y + 1;
+      break;
+    }
+  }
+  if (clear == null) {
+    return null;
+  }
+  const center = Math.round(width / 2);
+  // 시트 바탕색: 모서리가 끝난 행의 폭 25% 지점(끝 열은 그림자로 조금 어둡고, 가운데는 제목 글자일 수 있다)
+  const sheetIndex = ((clear + 2) * width + Math.round(width * 0.25)) * 3;
+  const sheet = [data[sheetIndex], data[sheetIndex + 1], data[sheetIndex + 2]];
+  const isSheet = (x, y) => {
+    const index = (y * width + x) * 3;
+    return sheet.every((value, channel) => Math.abs(data[index + channel] - value) <= 4);
+  };
+  let sheetTop = top;
+  while (sheetTop < clear && !isSheet(center, sheetTop)) {
+    sheetTop += 1;
+  }
+  // 맨 끝 열은 조금 더 늦게 밝아져서 clear 아래로 화면 높이의 2%까지 더 본다
+  const last = Math.min(height - 1, clear + Math.round(height * 0.02));
+  for (let y = sheetTop; y <= last; y += 1) {
+    for (const [from, step] of [
+      [0, 1],
+      [width - 1, -1],
+    ]) {
+      // 시트 바탕색 픽셀을 만날 때까지(모서리 곡선의 안티에일리어싱 선까지) 칠하고, 폭의 20%를 넘지 않는다
+      for (let x = from; Math.abs(x - from) < width * 0.2 && !isSheet(x, y); x += step) {
+        const index = (y * width + x) * 3;
+        data.set(sheet, index);
+      }
+    }
+  }
+  const cleaned = join(sheetDir(), `${createHash('sha1').update(path).digest('hex')}.png`);
+  await sharp(data, { raw: { width, height, channels: 3 } })
+    .png()
+    .toFile(cleaned);
+  return { path: cleaned, top: sheetTop };
+}
+
+let sheetTemp = null;
+function sheetDir() {
+  sheetTemp ??= mkdtempSync(join(tmpdir(), 'aido-store-art-sheet-'));
+  return sheetTemp;
+}
+
+// 라이트 테마 iOS 키보드 바탕(#e2e3e8 근처)이 화면 왼쪽 끝에서 화면 높이의 15% 넘게 이어지면 키보드로 보고,
+// 그 윗선부터 아래 끝까지의 높이(px)를 돌려준다. 키보드가 없으면 0.
+export async function keyboardHeight(path) {
+  const { data, info } = await sharp(path)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const x = Math.round(info.width * 0.008);
+  const isKeyboard = (y) => {
+    const index = (y * info.width + x) * 3;
+    return [226, 227, 232].every((value, channel) => Math.abs(data[index + channel] - value) <= 6);
+  };
+  const run = Math.round(info.height * 0.15);
+  for (let top = Math.round(info.height * 0.4); top < info.height - run; top += 1) {
+    let length = 0;
+    while (length < run && isKeyboard(top + length)) {
+      length += 1;
+    }
+    if (length === run) {
+      // 키보드 윗선의 그림자 줄까지 함께 잘라 낸다
+      return info.height - top + Math.round(info.height * 0.003);
+    }
+    top += length;
+  }
+  return 0;
+}
+
+async function screenSpec(source, frameAspect, capture, locale, strip) {
   if (source.path == null) {
     return MOCK_CAPTURES.has(capture.file)
       ? { mock: 'invite', mockCopy: INVITE_MOCK[locale], label: source.label }
       : { label: source.label };
   }
   const { width, height } = await sharp(source.path).metadata();
+  const src = pathToFileURL(source.path).href;
+  if (strip) {
+    const keyboard = KEYBOARD_SCREENS.has(capture.file) ? await keyboardHeight(source.path) : 0;
+    const bars = systemBarCrop(source.device, keyboard);
+    const sheet = await cleanSheet(source.path, bars.top);
+    const crop = { ...bars, top: sheet?.top ?? bars.top };
+    const cardSrc = sheet?.path ?? source.path;
+    return {
+      src: pathToFileURL(cardSrc).href,
+      label: source.label,
+      card: {
+        srcWidth: width,
+        srcHeight: height,
+        cropTop: crop.top,
+        cropBottom: crop.bottom,
+        // 키보드 위에서 자른 화면은 내용이 아래로 이어진다
+        continues: keyboard > 0,
+        edge: await edgeProfile(cardSrc),
+      },
+    };
+  }
   const fit = Math.abs(width / height - frameAspect) / frameAspect > 0.03 ? 'contain' : 'cover';
-  return { src: pathToFileURL(source.path).href, fit, label: source.label };
+  return { src, fit, label: source.label };
 }
 
 const FRAME_ASPECT = {
@@ -162,38 +347,37 @@ const FRAME_ASPECT = {
   'duo-closed': 1398 / 2034,
   ipad: 2064 / 2752,
   card: 1080 / 2400,
-  'card-fold': 2208 / 1840,
 };
 
 async function buildScreenshotJob(job, captureRoot, preview) {
   const { target, slot, locale } = job;
-  const copy = slot[locale];
-  const main = screenSource(job, captureRoot, target.device, slot.capture);
-  const sources = [main];
+  const copy = slotCopy(slot, target.store, locale);
+  const layout = target.layout ?? slot.layout ?? 'single';
+  const strip = target.stripSystemBars === true;
+  const sources = [];
   const spec = {
     width: target.width,
     height: target.height,
+    store: target.store,
     frame: target.frame,
-    layout: slot.layout ?? 'single',
+    layout,
     tagline: copy.tagline,
     headline: copy.headline,
     note: copy.note ?? null,
     badge: target.badge && slot.isNew ? 'NEW' : null,
     decor: slot.decor ?? null,
     catSrc: ASSETS.cat,
-    screen: await screenSpec(
-      main,
-      FRAME_ASPECT[slot.layout === 'duo-pair' ? 'duo-open' : target.frame],
-      slot.capture,
-      locale,
-    ),
+    motif: job.index ?? 0,
     preview: preview ? `PREVIEW · ${RELEASE_VERSION}` : null,
     bare: target.bare === true,
   };
-  if (slot.layout === 'duo-pair') {
-    const folded = screenSource(job, captureRoot, target.foldedDevice, slot.foldedCapture);
-    sources.push(folded);
-    spec.folded = await screenSpec(folded, FRAME_ASPECT['duo-closed'], slot.foldedCapture, locale);
+  for (const [devices, capture, role] of captureNeeds(job)) {
+    const source = screenSource(job, captureRoot, devices, capture);
+    sources.push(source);
+    const frame =
+      role === 'folded' ? 'duo-closed' : layout === 'duo-pair' ? 'duo-open' : target.frame;
+    const screen = await screenSpec(source, FRAME_ASPECT[frame], capture, locale, strip);
+    spec[role === 'main' ? 'screen' : role] = screen;
   }
   return { spec, sources };
 }
@@ -241,6 +425,28 @@ async function finish(png, job, expected) {
   return { output, problems, bytes: output.length };
 }
 
+function readPreviousEntries(out) {
+  const path = join(out, 'manifest.json');
+  if (!existsSync(path)) {
+    return [];
+  }
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  return Array.isArray(manifest.entries) ? manifest.entries : [];
+}
+
+// 이번에 그린 이미지가 같은 경로의 이전 항목을 대신하고, 파일이 지워진 이전 항목은 뺀다. 화면 묶음 → 그래픽 순서로 정렬한다.
+export function mergeGalleryEntries(previous, current, exists) {
+  const rendered = new Set(current.map((entry) => entry.output));
+  const kept = previous.filter((entry) => !rendered.has(entry.output) && exists(entry.output));
+  const isGraphic = (entry) => entry.group.startsWith('그래픽');
+  return [...kept, ...current].toSorted(
+    (a, b) =>
+      Number(isGraphic(a)) - Number(isGraphic(b)) ||
+      a.group.localeCompare(b.group) ||
+      a.output.localeCompare(b.output),
+  );
+}
+
 function galleryHtml(entries, { preview, captureRoot }) {
   const groups = new Map();
   for (const entry of entries) {
@@ -272,7 +478,13 @@ function galleryHtml(entries, { preview, captureRoot }) {
     const rows = set.slots
       .map((slotId, index) => {
         const slot = SLOTS[slotId];
-        return `<tr><td>${pad(index + 1)}</td><td>${escape(slot.title)}</td><td>${escape(slot.ko.tagline)}<br><b>${escape(slot.ko.headline.replace(/[[\]]/gu, ''))}</b></td><td>${escape(slot.en.tagline)}<br><b>${escape(slot.en.headline.replace(/[[\]]/gu, ''))}</b></td><td><code>${escape(slot.capture.file)}${slot.foldedCapture ? ` + ${escape(slot.foldedCapture.file)}` : ''}</code></td></tr>`;
+        const target = TARGETS[set.targets[0]];
+        const ko = slotCopy(slot, target.store, 'ko');
+        const en = slotCopy(slot, target.store, 'en');
+        const captures = captureNeeds({ target, slot })
+          .map(([, capture]) => capture.file)
+          .join(' + ');
+        return `<tr><td>${pad(index + 1)}</td><td>${escape(slot.title)}</td><td>${escape(ko.tagline)}<br><b>${escape(ko.headline.replace(/[[\]]/gu, ''))}</b></td><td>${escape(en.tagline)}<br><b>${escape(en.headline.replace(/[[\]]/gu, ''))}</b></td><td><code>${escape(captures)}</code></td></tr>`;
       })
       .join('');
     const sizes = set.targets
@@ -343,6 +555,7 @@ async function render({ out, captureRoot, preview, only, locales }) {
         expected = { width: job.target.width, height: job.target.height };
         result = await chrome.render({
           url: pathToFileURL(join(HERE, 'templates/screenshot.html')).href,
+          prelude: CARD_PRELUDE,
           width: expected.width,
           height: expected.height,
           job: built.spec,
@@ -351,7 +564,8 @@ async function render({ out, captureRoot, preview, only, locales }) {
           .map((item) => (item.path == null ? `캡처 대기: ${item.label}` : item.label))
           .join(' + ');
         title = `${job.slotId} · ${job.slot.title}`;
-        caption = `${job.slot[job.locale].tagline} / ${job.slot[job.locale].headline.replace(/[[\]]/gu, '').replace('\n', ' ')}`;
+        const copy = slotCopy(job.slot, job.target.store, job.locale);
+        caption = `${copy.tagline} / ${copy.headline.replace(/[[\]]/gu, '').replace('\n', ' ')}`;
       } else {
         const [width, height] = job.scene.design;
         expected = { width: width * job.scene.scale, height: height * job.scene.scale };
@@ -430,12 +644,20 @@ async function render({ out, captureRoot, preview, only, locales }) {
     }
   } finally {
     await chrome.close();
+    if (sheetTemp != null) {
+      rmSync(sheetTemp, { recursive: true, force: true });
+      sheetTemp = null;
+    }
   }
+  // --only로 일부만 다시 그려도 갤러리에는 폴더에 이미 있는 다른 이미지가 남게 이전 목록과 합친다
+  const gallery = mergeGalleryEntries(readPreviousEntries(out), entries, (output) =>
+    existsSync(join(out, output)),
+  );
   writeFileSync(
     join(out, 'manifest.json'),
-    `${JSON.stringify({ release: RELEASE_VERSION, preview, captureRoot, entries }, null, 2)}\n`,
+    `${JSON.stringify({ release: RELEASE_VERSION, preview, captureRoot, entries: gallery }, null, 2)}\n`,
   );
-  writeFileSync(join(out, 'index.html'), galleryHtml(entries, { preview, captureRoot }));
+  writeFileSync(join(out, 'index.html'), galleryHtml(gallery, { preview, captureRoot }));
   if (errors.length > 0) {
     throw new Error(
       `검사 실패 ${errors.length}건:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
@@ -447,11 +669,8 @@ async function render({ out, captureRoot, preview, only, locales }) {
 function listCaptures({ captureRoot, locales }) {
   const rows = new Map();
   for (const job of plan({ only: 'screenshots', locales })) {
-    const pairs = [[job.target.device, job.slot.capture]];
-    if (job.slot.layout === 'duo-pair') {
-      pairs.push([job.target.foldedDevice, job.slot.foldedCapture]);
-    }
-    for (const [device, capture] of pairs) {
+    for (const [devices, capture] of captureNeeds(job)) {
+      const device = resolveDevice(captureRoot, devices, capture, job.locale);
       const path = capturePath(captureRoot, device, capture, job.locale);
       const key = relative(captureRoot, path);
       const row = rows.get(key) ?? {
@@ -481,16 +700,13 @@ function writeTodos({ out, captureRoot, locales }) {
   for (const job of plan({ only: 'screenshots', locales })) {
     const folder = dirname(join(out, job.output));
     const lines = folders.get(folder) ?? [];
-    const captures = [[job.target.device, job.slot.capture]];
-    if (job.slot.layout === 'duo-pair') {
-      captures.push([job.target.foldedDevice, job.slot.foldedCapture]);
-    }
-    const needed = captures.map(([device, capture]) => {
+    const needed = captureNeeds(job).map(([devices, capture]) => {
+      const device = resolveDevice(captureRoot, devices, capture, job.locale);
       const path = capturePath(captureRoot, device, capture, job.locale);
       return `\`${relative(captureRoot, path)}\`${existsSync(path) ? '' : ' (없음)'}${capture.manual ? ' (직접 찍기)' : ''}`;
     });
     lines.push(
-      `- [ ] ${job.output.split('/').pop()} — ${job.slot[job.locale].headline.replace(/[[\]]/gu, '').replace('\n', ' ')} ← ${needed.join(' + ')}`,
+      `- [ ] ${job.output.split('/').pop()} — ${slotCopy(job.slot, job.target.store, job.locale).headline.replace(/[[\]]/gu, '').replace('\n', ' ')} ← ${needed.join(' + ')}`,
     );
     folders.set(folder, lines);
   }
