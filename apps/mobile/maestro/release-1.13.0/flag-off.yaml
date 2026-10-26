@@ -28,7 +28,8 @@ env:
 - openLink: ${QA_SCHEME}://invite/${output.code}
 - extendedWaitUntil:
     label: INVITE_2105 카드
-    visible: '지금은 초대를 받을 수 없어요|Invites aren.t available right now'
+    visible:
+      id: invite-result-disabled
     timeout: 20000
 - assertNotVisible:
     id: invite-card-redeem

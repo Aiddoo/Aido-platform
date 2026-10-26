@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 처음 가입한 계정의 빈 화면과 없는 화면
 tags:
-  - free account-switch
+  - free
+  - account-switch
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:

@@ -10,9 +10,11 @@ name: 첫 진입에서 이메일 로그인 후 홈으로 이동한다
           point: '94%, 93%'
 - runFlow:
     when:
-      visible: 'Sign in with email|이메일로 로그인'
+      visible:
+        id: login-email-entry
     commands:
-      - tapOn: 'Sign in with email|이메일로 로그인'
+      - tapOn:
+          id: login-email-entry
 # When: 이메일과 비밀번호를 입력하고 로그인한다
 - tapOn:
     id: email-login-email

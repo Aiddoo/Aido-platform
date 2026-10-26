@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 홈의 오늘 할 일과 어제 기록
 tags:
-  - free premium
+  - free
+  - premium
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:

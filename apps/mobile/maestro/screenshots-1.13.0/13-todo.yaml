@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 할 일 상세·추가·반복 편집 시트
 tags:
-  - free premium
+  - free
+  - premium
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:
@@ -38,9 +39,11 @@ onFlowStart:
 - takeScreenshot: 15_할일_추가_시트
 - runFlow:
     when:
-      visible: 'AI로 할 일 만들기|Create a to-do with AI'
+      visible:
+        id: todo-ai-feature-tooltip
     commands:
-      - tapOn: 'AI로 할 일 만들기|Create a to-do with AI'
+      - tapOn:
+          id: todo-ai-feature-tooltip
       - waitForAnimationToEnd:
           timeout: 3000
       - takeScreenshot: 16_AI_음성_입력_안내

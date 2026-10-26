@@ -17,7 +17,8 @@ onFlowStart:
 - openLink: ${QA_SCHEME}://invite/${QA_MISSING_CODE}
 - extendedWaitUntil:
     label: INVITE_2101 카드
-    visible: '초대 코드를 찾을 수 없어요|We couldn.t find this invite code'
+    visible:
+      id: invite-result-not-found
     timeout: 20000
 - assertVisible: '코드를 다시 확인하거나 친구에게 새 링크를 받아주세요|Check the code again or ask your friend for a new link'
 - assertNotVisible:

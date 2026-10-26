@@ -6,7 +6,8 @@ name: 이전 흐름의 로그인 상태로 앱을 이어서 연다
     stopApp: false
 - runFlow:
     when:
-      visible: '이메일로 로그인|Sign in with email'
+      visible:
+        id: login-email-entry
     file: start.yaml
     env:
       QA_EMAIL: ${MAESTRO_SHOT_EMAIL}

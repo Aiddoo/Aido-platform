@@ -15,7 +15,8 @@ onFlowStart:
 - runFlow: subflows/login-invitee.yaml
 - openLink: ${QA_SCHEME}://settings/subscription
 - extendedWaitUntil:
-    visible: '초대 보상으로 프리미엄 이용 중|Premium from an invite reward'
+    visible:
+      id: subscription-receipt-reward
     timeout: 20000
 # Then: 이용 기간 문구가 보이고 스토어 구독 관리는 보이지 않는다
 - assertVisible: '이용 기간|Access period'

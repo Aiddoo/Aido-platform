@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 알림함
 tags:
-  - free premium
+  - free
+  - premium
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:

@@ -126,8 +126,8 @@ iOS는 Maestro `back`이 동작하지 않아 왼쪽 위 영역을 탭한다. 비
 | `QA_FAR_FRIEND_TODO_TITLE` | 그 친구의 같은 날짜 할 일 제목                     |
 
 ```sh
-maestro --device <device> test -e QA_DATE=… -e QA_TODO_TITLE=… … apps/mobile/maestro/release-1.13.0/friend-strip.yaml
+maestro --device <device> test --include-tags strip -e QA_DATE=… -e QA_TODO_TITLE=… … apps/mobile/maestro/release-1.13.0/friend-strip.yaml
 ```
 
 친구 줄에서 친구 → 같은 날짜의 친구 할 일, "나" → 내 할 일 복귀, 첫 페이지 밖 친구 딥링크 표시를 확인한다.
-태그가 없어 `run.sh`와 태그 실행에는 포함되지 않는다.
+태그는 `strip` 하나라 `run.sh`(smoke·full·failure·flag-off)에는 포함되지 않는다. 위 변수를 직접 넘겨 따로 실행한다.

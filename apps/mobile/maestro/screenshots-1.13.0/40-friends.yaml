@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 친구 목록·요청·친구 피드·찾기·콕
 tags:
-  - free premium
+  - free
+  - premium
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:
@@ -43,7 +44,8 @@ onFlowStart:
     file: subflows/open.yaml
     env:
       ROUTE: friends/search
-- tapOn: '이름 또는 해시태그로 검색|Search by name or hashtag'
+- tapOn:
+    id: friend-search-input
 - inputText: ${MAESTRO_SHOT_STRANGER_NAME}
 - hideKeyboard
 - extendedWaitUntil:

@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 메모 목록·상세와 AI 메모 분석
 tags:
-  - free premium
+  - free
+  - premium
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:
@@ -32,9 +33,11 @@ onFlowStart:
       true: ${MAESTRO_SHOT_ROLE == 'premium'}
     commands:
       # 실제 AI(parse-memo, 로컬 API의 Gemini)로 메모를 할 일로 나눈다. 결과는 저장하지 않는다
-      - tapOn: '시작하기|Start'
+      - tapOn:
+          id: memo-ai-start
       - extendedWaitUntil:
-          visible: '.*(개 할 일 생성|Create \d+ to-do).*'
+          visible:
+            id: ai-review-submit
           timeout: 60000
       - waitForAnimationToEnd:
           timeout: 3000

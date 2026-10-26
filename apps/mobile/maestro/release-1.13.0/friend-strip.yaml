@@ -1,8 +1,12 @@
 appId: com.aido.mobile
 name: 친구 줄에서 친구를 고르면 같은 날짜의 친구 할 일이 보이고, 나를 고르면 내 할 일로 돌아온다
+tags:
+  - strip
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 ---
 # Given: 정한 날짜의 내 피드
-- openLink: aido-dev://feed?date=${QA_DATE}
+- openLink: ${QA_SCHEME}://feed?date=${QA_DATE}
 - extendedWaitUntil:
     visible: '.*${QA_TODO_TITLE}.*'
     timeout: 20000
@@ -16,20 +20,22 @@ name: 친구 줄에서 친구를 고르면 같은 날짜의 친구 할 일이 �
 - assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
 - takeScreenshot: 1.13.0-friend-strip-friend
 # When: "나"를 고른다
-- tapOn: '내 할 일 보기|View my to-dos'
+- tapOn:
+    id: friend-strip-me
 # Then: 같은 날짜의 내 할 일로 돌아온다
 - extendedWaitUntil:
     visible: '.*${QA_TODO_TITLE}.*'
     timeout: 10000
 - assertNotVisible: '.*${QA_FRIEND_TODO_TITLE}.*'
 # Given: 첫 페이지 밖(21번째 이후)에 있는 친구의 피드 딥링크
-- openLink: aido-dev://feed?friendId=${QA_FAR_FRIEND_ID}&date=${QA_DATE}
+- openLink: ${QA_SCHEME}://feed?friendId=${QA_FAR_FRIEND_ID}&date=${QA_DATE}
 # Then: 친구 줄이 그 친구까지 불러와 보이게 옮기고, 그 친구의 할 일이 보인다
 - extendedWaitUntil:
-    visible: '${QA_FAR_FRIEND_NAME}님의 할 일 보기|View ${QA_FAR_FRIEND_NAME}.s to-dos'
+    visible:
+      id: friend-strip-item-${QA_FAR_FRIEND_ID}
     timeout: 20000
 - extendedWaitUntil:
     visible: '.*${QA_FAR_FRIEND_TODO_TITLE}.*'
     timeout: 10000
 - takeScreenshot: 1.13.0-friend-strip-far-friend
-- openLink: aido-dev://feed?date=${QA_DATE}
+- openLink: ${QA_SCHEME}://feed?date=${QA_DATE}

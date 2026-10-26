@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 로그아웃 상태의 시작·로그인·가입 화면
 tags:
-  - free logged-out
+  - free
+  - logged-out
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:
@@ -24,12 +25,14 @@ onFlowStart:
           clearState: true
           stopApp: true
 - extendedWaitUntil:
-    visible: '이메일로 로그인|Sign in with email'
+    visible:
+      id: login-email-entry
     timeout: 30000
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 01_시작_로그인
-- tapOn: '이메일로 로그인|Sign in with email'
+- tapOn:
+    id: login-email-entry
 - extendedWaitUntil:
     visible:
       id: email-login-email

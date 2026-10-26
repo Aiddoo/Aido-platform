@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 초대 보상으로 프리미엄 쓰는 계정(D-1)
 tags:
-  - premium account-switch
+  - premium
+  - account-switch
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:
@@ -18,7 +19,8 @@ onFlowStart:
     env:
       ROUTE: settings/subscription
 - extendedWaitUntil:
-    visible: '초대 보상으로 프리미엄 이용 중|Premium from your invite reward'
+    visible:
+      id: subscription-receipt-reward
     timeout: 20000
 - takeScreenshot: 80_구독_초대_보상_D-1
 - runFlow:

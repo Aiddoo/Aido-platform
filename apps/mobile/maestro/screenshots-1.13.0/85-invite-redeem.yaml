@@ -1,7 +1,9 @@
 appId: com.aido.mobile
 name: 새 계정이 초대 링크로 친구가 되고 보상을 받는다
 tags:
-  - premium account-switch consumes-newbie
+  - premium
+  - account-switch
+  - consumes-newbie
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:

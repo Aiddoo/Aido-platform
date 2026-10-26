@@ -18,7 +18,8 @@ onFlowStart:
 - openLink: ${QA_SCHEME}://invite/${output.oldCode}
 - extendedWaitUntil:
     label: INVITE_2102 카드
-    visible: '초대 링크가 바뀌었어요|This invite link has changed'
+    visible:
+      id: invite-result-rotated
     timeout: 20000
 - assertVisible: '새 링크를 받아 다시 열어주세요|Ask for the new one and open it again'
 - assertNotVisible:

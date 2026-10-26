@@ -1,7 +1,8 @@
 appId: com.aido.mobile
 name: 내 초대·발자국 판·초대한 친구·코드 입력
 tags:
-  - free premium
+  - free
+  - premium
 env:
   QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
 onFlowStart:

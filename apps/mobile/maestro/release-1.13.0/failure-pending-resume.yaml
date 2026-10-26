@@ -19,7 +19,8 @@ onFlowStart:
 - tapOn:
     id: invite-card-login
 - extendedWaitUntil:
-    visible: '이메일로 로그인|Sign in with email'
+    visible:
+      id: login-email-entry
     timeout: 10000
 - runFlow:
     when:
