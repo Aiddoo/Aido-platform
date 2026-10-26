@@ -14,7 +14,7 @@
   "cards": {
     "friendInvite": {
       "title": "친구를 초대하고\n발자국을 모아보세요",
-      "description": "카카오톡으로 링크를 보내보세요. 친구는 가입하면 바로 프리미엄 {{inviteeDays}}일, 나는 친구가 할 일을 끝낸 날이 {{activeDays}}일이 되면 프리미엄 {{inviterDays}}일을 받아요",
+      "description": "카카오톡으로 링크를 보내보세요. 친구는 가입하면 바로 프리미엄 {{inviteeDays}}일, 나는 친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{inviterDays}}일을 받아요",
       "cta": "초대하러 가기",
       "ctaLabel": "친구 초대 화면으로 이동"
     }
