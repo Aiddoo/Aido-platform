@@ -9,10 +9,11 @@ import {
   ChatBubbleIcon,
   Flex,
   HStack,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   Result,
   Text,
   VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -156,7 +157,7 @@ TodoCommentOverviewList.Error = function ErrorFallback({ reset }: QueryErrorFall
     <Flex flex={1} justify="center" align="center">
       <Result
         title={t('todoComment:list.loadFailed')}
-        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+        button={<QueryErrorActions onRetry={reset} />}
       />
     </Flex>
   );

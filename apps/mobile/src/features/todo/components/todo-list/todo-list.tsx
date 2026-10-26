@@ -9,17 +9,18 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  HStack,
-  PlusIcon,
-  Flex,
-  Result,
-  Text,
-  type QueryErrorFallbackProps,
   ChatBubbleIcon,
+  Flex,
+  HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   LockIcon,
   MoreIcon,
+  PlusIcon,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
+  Result,
+  Text,
 } from '@src/shared/ui';
 import { formatDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
@@ -112,10 +113,7 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
     <Flex flex={1} justify="center" align="center">
-      <Result
-        title={t('list.loadError')}
-        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
-      />
+      <Result title={t('list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
     </Flex>
   );
 };

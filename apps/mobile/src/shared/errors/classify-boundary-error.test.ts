@@ -29,6 +29,14 @@ describe('classifyBoundaryError', () => {
     expect(classifyBoundaryError(error)).toBe('expected-state');
   });
 
+  it('없는 AI 리포트(AI_1304, 404)는 expected-state로 분류한다 (예전 알림·딥링크가 연 리포트)', () => {
+    // Given
+    const error = new ApiError(ErrorCode.AI_1304, '리포트를 찾을 수 없어요', 404);
+
+    // When / Then
+    expect(classifyBoundaryError(error)).toBe('expected-state');
+  });
+
   it('기능이 꺼진 403(INVITE_2105)은 expected-state로 분류한다 (fallback이 쓸 수 없음 안내를 그린다)', () => {
     // Given
     const error = new ApiError(

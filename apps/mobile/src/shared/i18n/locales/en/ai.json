@@ -54,6 +54,11 @@
       "description": "Subscribe to Premium and we'll send you\nAI-powered reports every week and month",
       "premiumDialogDescription": "AI reports are available to Premium subscribers only.",
       "subscribe": "Subscribe to Premium"
+    },
+    "unavailable": {
+      "title": "Report not found",
+      "description": "This report was removed or is no longer available.",
+      "backToList": "Go to reports"
     }
   },
   "suggestions": {

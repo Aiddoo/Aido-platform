@@ -8,14 +8,15 @@ import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
+  Box,
   HStack,
   ListRow,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   Result,
   Spacing,
   Text,
   VStack,
-  type QueryErrorFallbackProps,
-  Box,
 } from '@src/shared/ui';
 import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -169,10 +170,7 @@ WeeklyAchievementList.Error = function ErrorState({ reset }: QueryErrorFallbackP
 
   return (
     <VStack flex={1} p={24} justify="center">
-      <Result
-        title={t('errorBoundary.title')}
-        button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
-      />
+      <Result title={t('errorBoundary.title')} button={<QueryErrorActions onRetry={reset} />} />
     </VStack>
   );
 };

@@ -50,6 +50,11 @@
       "description": "프리미엄 구독으로 매주/매월\nAI가 분석한 리포트를 보내드려요",
       "premiumDialogDescription": "AI 리포트는 프리미엄 구독자만 이용할 수 있어요.",
       "subscribe": "프리미엄 구독하기"
+    },
+    "unavailable": {
+      "title": "리포트를 찾을 수 없어요",
+      "description": "지워졌거나 더는 볼 수 없는 리포트예요",
+      "backToList": "리포트 목록으로"
     }
   },
   "suggestions": {

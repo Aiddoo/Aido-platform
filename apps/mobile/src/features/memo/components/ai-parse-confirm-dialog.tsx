@@ -10,7 +10,14 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { ConfirmDialog, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  ConfirmDialog,
+  openBugReportInquiry,
+  QueryErrorActions,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
@@ -155,6 +162,16 @@ AiParseConfirmDialog.Error = function ErrorDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={<ConfirmDialog.Title>{t('errorBoundary.title')}</ConfirmDialog.Title>}
+      description={
+        <Box className="items-start">
+          <QueryErrorActions.Inquiry
+            onPress={() => {
+              onOpenChange(false);
+              openBugReportInquiry();
+            }}
+          />
+        </Box>
+      }
       cancelButton={
         <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
           {t('actions.close')}

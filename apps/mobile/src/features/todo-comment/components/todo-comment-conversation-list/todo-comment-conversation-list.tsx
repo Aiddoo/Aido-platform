@@ -7,10 +7,11 @@ import {
   Box,
   ChatBubbleIcon,
   HStack,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   Result,
   Text,
   VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -598,7 +599,7 @@ TodoCommentConversationList.Error = function ErrorFallback({ reset }: QueryError
   return (
     <Result
       title={t('todoComment:list.loadFailed')}
-      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} />}
     />
   );
 };
