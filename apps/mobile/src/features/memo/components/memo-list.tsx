@@ -3,15 +3,16 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  DocsIcon,
   Button,
+  DocsIcon,
   Flex,
   HStack,
   PinFilledIcon,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   Result,
   Text,
   VStack,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
@@ -145,10 +146,7 @@ MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
   return (
     <Flex flex={1} justify="center" align="center">
-      <Result
-        title={t('memo:list.loadFailed')}
-        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
-      />
+      <Result title={t('memo:list.loadFailed')} button={<QueryErrorActions onRetry={reset} />} />
     </Flex>
   );
 };

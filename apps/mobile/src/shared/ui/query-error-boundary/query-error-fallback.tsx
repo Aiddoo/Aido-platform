@@ -1,9 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { router } from 'expo-router';
 
 import { Result } from '../result/result';
-import { TextButton } from '../text-button/text-button';
-import { VStack } from '../v-stack/v-stack';
+import { QueryErrorActions } from './query-error-actions';
 import type { QueryErrorFallbackProps } from './query-error-boundary';
 
 /**
@@ -17,18 +15,7 @@ export function QueryErrorFallback({ reset }: Pick<QueryErrorFallbackProps, 'res
     <Result
       title={t('errorBoundary.title')}
       description={t('errorBoundary.description')}
-      button={
-        <VStack align="center" gap={8}>
-          <Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>
-          <TextButton
-            size="small"
-            testID="query-error-inquiry"
-            onPress={() => router.push('/settings/inquiry')}
-          >
-            {t('errorBoundary.inquiry')}
-          </TextButton>
-        </VStack>
-      }
+      button={<QueryErrorActions onRetry={reset} />}
     />
   );
 }

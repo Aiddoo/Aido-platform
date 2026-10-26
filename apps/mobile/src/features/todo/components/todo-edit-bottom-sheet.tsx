@@ -4,6 +4,8 @@ import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
+  INQUIRY_SHEET_EXIT,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
@@ -65,7 +67,9 @@ TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallback
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
       <Result
         title={t('errorBoundary.title')}
-        button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+        button={
+          <QueryErrorActions onRetry={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+        }
       />
     </BottomSheet>
   );

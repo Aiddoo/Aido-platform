@@ -11,7 +11,9 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheetInput,
   Button,
+  INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Result,
@@ -41,7 +43,14 @@ export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
 
   return (
     <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary fallback={CategoryEditBottomSheet.Error}>
+      <QueryErrorBoundary
+        fallback={(fallbackProps) => (
+          <CategoryEditBottomSheet.Error
+            {...fallbackProps}
+            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+          />
+        )}
+      >
         <Suspense fallback={<CategoryEditBottomSheet.Loading />}>
           <CategoryEditBottomSheet.Content onClose={() => sheet.close()} />
         </Suspense>
@@ -81,12 +90,15 @@ CategoryEditBottomSheet.Loading = function Loading() {
   );
 };
 
-CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+CategoryEditBottomSheet.Error = function ErrorFallback({
+  reset,
+  onInquiry,
+}: QueryErrorFallbackProps & { onInquiry: () => void }) {
   const { t } = useTranslation('common');
   return (
     <Result
       title={t('errorBoundary.title')}
-      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+      button={<QueryErrorActions onRetry={reset} onInquiry={onInquiry} />}
     />
   );
 };

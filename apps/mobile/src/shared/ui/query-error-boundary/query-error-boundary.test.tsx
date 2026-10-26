@@ -140,8 +140,11 @@ describe('QueryErrorBoundary 관측', () => {
     fireEvent.press(screen.getByTestId('query-error-inquiry'));
 
     // Then
-    expect(screen.getByText('재시도')).toBeTruthy();
-    expect(jest.mocked(router.push)).toHaveBeenCalledWith('/settings/inquiry');
+    expect(screen.getByText('다시 시도')).toBeTruthy();
+    expect(jest.mocked(router.push)).toHaveBeenCalledWith({
+      pathname: '/settings/inquiry',
+      params: { category: 'BUG_REPORT' },
+    });
   });
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
