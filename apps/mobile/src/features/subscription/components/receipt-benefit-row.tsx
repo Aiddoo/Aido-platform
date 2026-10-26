@@ -1,4 +1,4 @@
-import { Box, FillCheckIcon, ListRow, Text } from '@src/shared/ui';
+import { Box, CheckmarkIcon, ListRow, Text } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 
 interface ReceiptBenefitRowProps {
@@ -14,7 +14,7 @@ export function ReceiptBenefitRow({ title, shade }: ReceiptBenefitRowProps) {
       verticalPadding="small"
       left={
         <Box className="size-5 items-center justify-center rounded-full bg-main">
-          <FillCheckIcon width={12} height={12} colorClassName="text-white dark:text-gray-1" />
+          <CheckmarkIcon width={12} height={12} colorClassName="text-white dark:text-gray-9" />
         </Box>
       }
       contents={

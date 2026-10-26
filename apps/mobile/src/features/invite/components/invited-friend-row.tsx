@@ -9,7 +9,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
-  FillCheckIcon,
+  CheckmarkIcon,
   FishIcon,
   HStack,
   ListRow,
@@ -134,7 +134,7 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
         accessibilityLabel={t('friendList.chipDoneLabel')}
       >
         <Box className="size-5 items-center justify-center rounded-full bg-main">
-          <FillCheckIcon width={11} height={11} colorClassName="text-white dark:text-gray-1" />
+          <CheckmarkIcon width={11} height={11} colorClassName="text-white dark:text-gray-9" />
         </Box>
         <Text size="e1" weight="bold" tone="brand">
           {t('friendList.chipDone')}
