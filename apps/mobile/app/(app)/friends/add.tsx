@@ -2,6 +2,7 @@ import { userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/queries/use-send-request-by-tag-mutation-options';
 import { useGetInviteAvailabilityQueryOptions } from '@src/features/invite/queries/get-invite-availability-query-options';
+import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,7 +22,7 @@ import { useMutation, usePrefetchQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { Platform, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -93,14 +94,7 @@ function AddFriendScreen() {
                   // 태그는 영문 대문자·숫자라 한글 자판 대신 영문 자판을 띄우고, 소문자로 쳐도 대문자로 맞춘다
                   onChange={(text) => onChange(text.toUpperCase())}
                   autoFocus
-                  keyboardType={Platform.select({
-                    ios: 'ascii-capable',
-                    android: 'visible-password',
-                  })}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  autoComplete="off"
-                  spellCheck={false}
+                  {...ASCII_CODE_TEXT_INPUT_PROPS}
                   maxLength={8}
                   submitBehavior="submit"
                   returnKeyType="done"

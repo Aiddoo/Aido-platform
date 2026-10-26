@@ -212,7 +212,7 @@ function InviteCardActions() {
     return <InviteRedeemActions inviteCode={inviteCode} />;
   }
 
-  const continueAsGuest = (pathname: '/sign-up' | '/login') => {
+  const handleContinueAsGuest = (pathname: '/sign-up' | '/login') => {
     inviteService.savePendingRedemption({ inviteCode, source }, new Date());
     router.push(pathname);
   };
@@ -220,7 +220,7 @@ function InviteCardActions() {
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
       <ReadableContent px={20} pt={12} pb={12} gap={4}>
-        <Button testID="invite-card-signup" onPress={() => continueAsGuest('/sign-up')}>
+        <Button testID="invite-card-signup" onPress={() => handleContinueAsGuest('/sign-up')}>
           {t('card.signUp')}
         </Button>
 
@@ -228,7 +228,7 @@ function InviteCardActions() {
           <TextButton
             testID="invite-card-login"
             size="medium"
-            onPress={() => continueAsGuest('/login')}
+            onPress={() => handleContinueAsGuest('/login')}
           >
             {t('card.login')}
           </TextButton>

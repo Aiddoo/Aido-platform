@@ -26,7 +26,7 @@ export function InvitedFriendList({
 }: InvitedFriendListProps) {
   const queryClient = useQueryClient();
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useSuspenseInfiniteQuery(
-    useGetInvitedFriendsInfiniteQueryOptions({ status: status ?? null }),
+    useGetInvitedFriendsInfiniteQueryOptions({ status }),
   );
   // 발자국 요약(탭 숫자)과 목록을 함께 새로 고친다
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateInvite(queryClient));

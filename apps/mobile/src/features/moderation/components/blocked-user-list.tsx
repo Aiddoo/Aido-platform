@@ -18,7 +18,7 @@ export function BlockedUserList() {
   const { t } = useTranslation('moderation');
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(useGetBlockedUsersInfiniteQueryOptions());
-  const [refreshing, onRefresh] = useRefresh(refetch);
+  const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   return (
     <UserList
@@ -38,8 +38,8 @@ export function BlockedUserList() {
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={fetchNextPage}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
     />
   );
 }

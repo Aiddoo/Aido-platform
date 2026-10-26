@@ -6,7 +6,9 @@ import type {
   UserReportTargetType,
 } from '@aido/api';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
+import type { OAuthProviderSlug } from '@src/features/auth/domains/oauth.model';
 import type { InviteLinkSource } from '@src/features/invite/domains/invite-redemption.model';
+import type { InviteShareChannel } from '@src/features/invite/domains/invite-share.model';
 import type { RedeemFailureReason } from '@src/features/invite/domains/invite.error';
 
 // 관측 키의 단일 원본. Analytics 이벤트·Sentry feature/tag·breadcrumb 카테고리를 여기서만 정의한다.
@@ -40,7 +42,6 @@ export const SENTRY_TAGS = {
   STATUS_CODE: 'statusCode',
   SOURCE: 'source',
 } as const;
-export type SentryTagKey = (typeof SENTRY_TAGS)[keyof typeof SENTRY_TAGS];
 
 /**
  * Sentry breadcrumb 카테고리(벤더 중립).
@@ -61,8 +62,8 @@ export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
 
 // 새 이벤트는 해당 기능의 `*EventMap`에 먼저 정의한다 → `AppEventMap`으로 합쳐진다.
 
-export type AuthMethod = 'email' | 'google' | 'apple' | 'kakao' | 'naver';
-export type SocialProvider = 'google' | 'apple' | 'kakao' | 'naver';
+export type SocialProvider = OAuthProviderSlug;
+export type AuthMethod = 'email' | SocialProvider;
 
 export interface AuthEventMap {
   auth_login: { method: AuthMethod };
@@ -212,7 +213,7 @@ export interface GrowthEventMap {
  * 사용 시작과 보상 지급은 서버 로그가 원천이다.
  */
 export interface InviteEventMap {
-  invite_link_shared: { channel: 'kakao' | 'copy_link' | 'system' };
+  invite_link_shared: { channel: InviteShareChannel };
   invite_entry_tapped: { entry: InviteEntrySource };
   invite_link_opened: { source: InviteLinkSource };
   invite_redeemed: { outcome: RedeemOutcome; friendship: InviteFriendship | 'NONE' };

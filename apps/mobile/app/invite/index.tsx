@@ -167,7 +167,7 @@ function InviteCodeEntryScreen() {
             <Spacing size={12} />
 
             {errorMessage == null ? (
-              <PasteInviteCodeChip onChange={handlePaste} />
+              <PasteInviteCodeChip onPaste={handlePaste} />
             ) : (
               <HStack
                 gap={6}
@@ -208,14 +208,14 @@ interface PasteInviteCodeChipProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
   'onPress' | 'children'
 > {
-  onChange: (value: string) => void;
+  onPaste: (value: string) => void;
 }
 
 /**
  * 클립보드에 글자가 있는지만 보고 칩을 보여 준다. 실제로 읽는 건 누를 때라
  * iOS 붙여넣기 허용 배너가 화면에 들어오자마자 뜨지 않는다.
  */
-function PasteInviteCodeChip({ onChange, ...props }: PasteInviteCodeChipProps) {
+function PasteInviteCodeChip({ onPaste, ...props }: PasteInviteCodeChipProps) {
   const clipboard = useClipboard();
   const [hasPasted, setHasPasted] = useState(false);
   const { data: hasClipboardText } = useQuery({
@@ -226,7 +226,7 @@ function PasteInviteCodeChip({ onChange, ...props }: PasteInviteCodeChipProps) {
   const handlePaste = async () => {
     const text = await clipboard.getString();
     setHasPasted(true);
-    onChange(text);
+    onPaste(text);
   };
 
   // 칩이 없어도 같은 모양을 보이지 않게 그려 글자 크기와 상관없이 오류 문구로 바뀔 때 버튼이 밀리지 않는다

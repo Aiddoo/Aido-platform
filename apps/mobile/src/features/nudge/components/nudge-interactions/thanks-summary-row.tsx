@@ -64,7 +64,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
   return match(state)
     .with('NONE', () => null)
     .with('PENDING', () => (
-      <Card
+      <ThanksSummaryCard
         variant="pending"
         left={<RecipientAvatars recipients={preview.recipients} />}
         title={
@@ -94,7 +94,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
       />
     ))
     .with('SENT', () => (
-      <Card
+      <ThanksSummaryCard
         variant="sent"
         left={<SentHeart style={heartStyle} />}
         title={
@@ -106,7 +106,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
       />
     ))
     .with('SENT_WITH_PENDING', () => (
-      <Card
+      <ThanksSummaryCard
         variant="sent"
         left={<SentHeart style={heartStyle} />}
         title={
@@ -135,7 +135,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
 
 ThanksSummaryRow.Loading = function Loading() {
   return (
-    <Card
+    <ThanksSummaryCard
       variant="pending"
       left={
         <HStack>
@@ -168,13 +168,13 @@ function useThanksCelebration(thankedRecipientCount: number) {
     if (isReducedMotion) {
       return;
     }
-    scale.value = withSequence(withSpring(1.2, HEART_SPRING), withSpring(1, HEART_SPRING));
+    scale.set(withSequence(withSpring(1.2, HEART_SPRING), withSpring(1, HEART_SPRING)));
   }, [thankedRecipientCount, isReducedMotion, scale]);
 
-  return useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 }
 
-interface CardProps {
+interface ThanksSummaryCardProps {
   variant: 'pending' | 'sent';
   left: ReactNode;
   title: ReactNode;
@@ -182,7 +182,7 @@ interface CardProps {
   action?: ReactNode;
 }
 
-function Card({ variant, left, title, description, action }: CardProps) {
+function ThanksSummaryCard({ variant, left, title, description, action }: ThanksSummaryCardProps) {
   const { fontScale } = useFontScale();
   const isActionStacked = fontScale === 'xlarge';
 
