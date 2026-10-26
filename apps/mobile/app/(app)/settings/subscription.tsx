@@ -370,11 +370,23 @@ function SubscriptionReceipt() {
 
           {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
           <VStack gap={2} className={cn('flex-1', variant === 'reward' && 'pr-10')}>
-            <Text size="t3" weight="bold" tone="brand">
+            {/* 가장 큰 글자에서 "이/용 중"처럼 단어 중간에서 끊기지 않게 어절 단위로 줄바꿈한다 */}
+            <Text
+              size="t3"
+              weight="bold"
+              tone="brand"
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
               {t(`receipt.${variant}.title`)}
             </Text>
 
-            <Text size="b4" shade={6}>
+            <Text
+              size="b4"
+              shade={6}
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
               {t(`receipt.${variant}.description`)}
             </Text>
           </VStack>
