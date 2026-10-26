@@ -27,6 +27,7 @@ export const InviteMapper = {
       qualifiedCount: view.qualifiedCount,
       premiumDaysInWindow: view.premiumDaysInWindow,
       totalPremiumDays: view.totalPremiumDays,
+      premiumCapState: view.premiumCapState,
       nextMilestone:
         view.nextMilestone == null
           ? null

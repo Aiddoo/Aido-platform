@@ -1,6 +1,7 @@
 import type { Invite } from "../../../domain/aggregates/invites/invite.aggregate.js";
 import {
   InviteRewardPolicy,
+  premiumCapState,
   qualifiedRedemptionCount,
   rewardCapWindowStart,
 } from "../../../domain/policies/invites/invite-reward.policy.js";
@@ -38,6 +39,7 @@ export class MyInviteReader {
       qualifiedCount,
       premiumDaysInWindow: rewards.premiumDaysInWindow,
       totalPremiumDays: rewards.totalPremiumDays,
+      premiumCapState: premiumCapState(rewards),
       nextMilestone: InviteRewardPolicy.nextMilestone(qualifiedCount),
       rewardsEarned: rewards.rewardsEarned,
       createdAt: invite.createdAt,
