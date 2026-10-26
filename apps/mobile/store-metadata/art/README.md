@@ -30,16 +30,18 @@ pnpm --filter @aido/mobile test:store-art
 | 출력 대상          | 크기(px)  | 기기 폴더                                      | 틀                     |
 | ------------------ | --------- | ---------------------------------------------- | ---------------------- |
 | `iphone-6.3`       | 1206×2622 | `iPhone 17 Pro`                                | iPhone(Dynamic Island) |
-| `iphone-6.9`       | 1320×2868 | `iPhone 17 Pro`(키워서 씀)                     | iPhone                 |
+| `iphone-6.9`       | 1320×2868 | `iPhone 17 Pro Max`(없으면 `iPhone 17 Pro`)    | iPhone                 |
 | `iphone-duo`       | 2007×2853 | `iPhone Duo 펼침`(+ `iPhone Duo 접힘` 쌍 배치) | Duo 펼침·접힘          |
 | `iphone-duo-outer` | 1398×2034 | `iPhone Duo 접힘`                              | Duo 접힘               |
 | `ipad-13`          | 2064×2752 | `iPad Pro 13`                                  | iPad                   |
-| `play-phone`       | 1080×1920 | `Android 폰`                                   | 틀 없이 화면 카드      |
-| `play-tablet-7`    | 1920×1080 | `Android 폴드 펼침`(문구 없음)                 | 화면 카드              |
-| `play-tablet-10`   | 2560×1440 | `Android 폴드 펼침`(문구 없음)                 | 화면 카드              |
+| `play-phone`       | 1080×1920 | `iPhone 17 Pro`(OS 막대·키보드 잘라 냄)        | 틀 없이 화면 카드      |
+| `play-tablet-7`    | 1920×1080 | `iPad Pro 13` 두 장(문구 없음)                 | 화면 카드 두 장        |
+| `play-tablet-10`   | 2560×1440 | `iPad Pro 13` 두 장(문구 없음)                 | 화면 카드 두 장        |
 
-캡처 계획에 아직 없는 것(2026-10-26 기준): `iPad Pro 13` 기기(ko·en), `iPhone Duo`·`Android 폰`·`Android 폴드 펼침`의 `en`,
-그리고 OS 홈 화면이라 자동으로 못 찍는 `W1_홈_화면_위젯.png`(기기별 ko·en, 같은 폴더에 직접 저장).
+Google Play는 Android 캡처 없이 iOS 캡처를 **틀 없는 화면 카드**로 써요. 다른 회사 기기 틀에 넣지 않고,
+`CAPTURE_DEVICES`(storyboard)의 높이만큼 상태 막대·홈 인디케이터를, `KEYBOARD_SCREENS` 화면은 키보드 윗선 아래를 잘라 내요.
+iOS 홈 화면 위젯은 Play에 쓰지 않고, 태블릿은 장면의 `capture`와 `tabletPair`를 나란히 둬요.
+Play 문구는 장면의 `play` 문구를 먼저 쓰고, 보상 일수 같은 혜택 표현을 넣지 않아요(`slotCopy`).
 `captures` 명령이 장면별로 빠진 파일을 보여줘요.
 
 `W1_홈_화면_위젯.png` 찍는 법: 프리미엄 데모 계정으로 오늘 할 일(일부 완료)을 채운 뒤 앱을 한 번 열어 위젯을 갱신하고,

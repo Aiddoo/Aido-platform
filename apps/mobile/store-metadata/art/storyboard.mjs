@@ -20,11 +20,12 @@ export const TARGETS = {
   },
   'iphone-6.9': {
     store: 'app-store',
-    label: 'iPhone Dynamic Island 대형(6.9″) — 같은 캡처를 키워 씀',
+    label: 'iPhone Dynamic Island 대형(6.9″)',
     width: 1320,
     height: 2868,
     frame: 'iphone',
-    device: 'iPhone 17 Pro',
+    // 6.9″ 실제 캡처(1320×2868)를 먼저 쓰고, 없으면 6.3″ 캡처를 키워 쓴다.
+    device: ['iPhone 17 Pro Max', 'iPhone 17 Pro'],
     folder: 'iphone-6.9_1320x2868',
     badge: true,
   },
@@ -59,6 +60,8 @@ export const TARGETS = {
     folder: 'ipad-13_2064x2752',
     badge: true,
   },
+  // Google Play: Android 캡처가 없어 iOS 캡처를 틀 없는 화면 카드로 쓴다. 다른 회사 기기 틀에 넣지 않고,
+  // iOS 상태 막대·홈 인디케이터는 CAPTURE_DEVICES의 높이만큼 잘라 낸다(stripSystemBars).
   'play-phone': {
     store: 'google-play',
     label: 'Google Play 휴대전화(9:16)',
@@ -66,19 +69,23 @@ export const TARGETS = {
     height: 1920,
     // Play 가이드: 기기 이미지는 금방 낡아 보이니 화면만 카드로 보여준다.
     frame: 'card',
-    device: 'Android 폰',
+    device: 'iPhone 17 Pro',
+    stripSystemBars: true,
     folder: 'phone_1080x1920',
     // Play 그래픽에는 "New" 같은 기간 한정 표현을 쓰지 않는다.
     badge: false,
   },
   // Play 태블릿(7″·10″): 16:9 가로, 1,080~7,680px. 가이드가 앱 화면 밖 글자를 빼라고 해서 문구 없이 화면만 둔다.
+  // iPad 13″의 넓은 화면(regular width) 캡처 두 장을 화면 카드로 나란히 둔다(장면의 capture + tabletPair).
   'play-tablet-7': {
     store: 'google-play',
     label: 'Google Play 7″ 태블릿(16:9, 문구 없음)',
     width: 1920,
     height: 1080,
-    frame: 'card-fold',
-    device: 'Android 폴드 펼침',
+    frame: 'card',
+    layout: 'card-pair',
+    device: 'iPad Pro 13',
+    stripSystemBars: true,
     folder: 'tablet-7_1920x1080',
     badge: false,
     bare: true,
@@ -88,17 +95,36 @@ export const TARGETS = {
     label: 'Google Play 10″ 태블릿(16:9, 문구 없음)',
     width: 2560,
     height: 1440,
-    frame: 'card-fold',
-    device: 'Android 폴드 펼침',
+    frame: 'card',
+    layout: 'card-pair',
+    device: 'iPad Pro 13',
+    stripSystemBars: true,
     folder: 'tablet-10_2560x1440',
     badge: false,
     bare: true,
   },
 };
 
+// 캡처 기기 폴더별 OS 막대 높이(px, 캡처 원본 기준). Play 화면 카드에서 iOS 표시를 잘라 낼 때 쓴다.
+// iPhone은 3배(상태 막대 62pt·홈 인디케이터 34pt), iPad는 2배(24pt·20pt).
+export const CAPTURE_DEVICES = {
+  'iPhone 17 Pro': { statusBar: 186, homeIndicator: 102 },
+  'iPhone 17 Pro Max': { statusBar: 186, homeIndicator: 102 },
+  'iPad Pro 13': { statusBar: 48, homeIndicator: 40 },
+};
+
+// iOS 키보드가 열린 화면. Play 화면 카드에서는 키보드 위까지만 보여준다(render.mjs가 키보드 윗선을 찾는다).
+export const KEYBOARD_SCREENS = new Set([
+  '15_할일_추가_시트',
+  '16_AI_음성_입력_안내',
+  '17_반복_할일_편집',
+]);
+
 const premium = (file, extra = {}) => ({ file, plan: '프리미엄', theme: '라이트', ...extra });
 
-// 장면. capture는 기기 폴더 아래 경로, foldedCapture는 Duo 접힘 화면(쌍 배치)이다.
+// 장면. capture는 기기 폴더 아래 경로, foldedCapture는 Duo 접힘 화면(쌍 배치),
+// tabletPair는 Play 태블릿에서 capture 옆에 나란히 둘 두 번째 화면이다.
+// play: Google Play에서 쓸 문구. Play 그래픽에는 보상 일수 같은 혜택·홍보 표현을 넣지 않는다(메타데이터 정책).
 export const SLOTS = {
   ai: {
     title: 'AI 할 일',
@@ -109,22 +135,31 @@ export const SLOTS = {
   invite: {
     title: '친구 초대(1.13.0)',
     capture: premium('50_내_초대'),
+    tabletPair: premium('51_발자국_판'),
     isNew: true,
     decor: 'cat-peek',
     ko: {
       tagline: '서로 콕콕, 함께 받는 보상',
       headline: '친구를 초대하면\n친구도 나도 [프리미엄 7일]',
-      note: '받는 조건은 앱의 친구 초대 화면에서 확인할 수 있어요',
+      note: '나는 친구가 가입하고 14일 안에\n2일 동안 할 일을 끝내면 받아요',
     },
     en: {
       tagline: 'Better together',
       headline: 'Invite a friend and\nyou both get [7 days of Premium]',
-      note: 'Conditions apply. See Invite friends in the app.',
+      note: 'You get yours when your friend completes\nto-dos on 2 days within 14 days of joining',
+    },
+    play: {
+      ko: { tagline: '링크 하나로 초대', headline: '친구를 초대하고\n서로의 할 일을 [응원해요]' },
+      en: {
+        tagline: 'Invite with one link',
+        headline: 'Invite a friend and\n[cheer each other on]',
+      },
     },
   },
   friends: {
     title: '친구 피드·콕',
     capture: premium('10_홈_오늘'),
+    tabletPair: premium('14_할일_체크리스트'),
     ko: { tagline: '미루면 콕, 함께하면 쭉', headline: '친구와 서로 챙기며\n끝까지 해내요' },
     en: { tagline: 'Nudge, cheer, repeat', headline: 'Keep each other going\nall the way to done' },
   },
@@ -149,6 +184,7 @@ export const SLOTS = {
   report: {
     title: 'AI 리포트',
     capture: premium('31_AI_리포트_주간'),
+    tabletPair: premium('34_AI_반복_제안'),
     ko: {
       tagline: '주간·월간 리포트로 한눈에',
       headline: '내 할 일 패턴을 분석해\n리포트로 보여줘요',
@@ -165,6 +201,7 @@ export const SLOTS = {
     title: '홈 화면 위젯',
     // OS 홈 화면이라 maestro가 찍지 않는다. 같은 폴더에 직접 찍어 둔다(README '직접 찍는 화면').
     // 휴대전화는 작은(2×2)+중간(4×2), 큰 화면은 중간+큰(4×4) 위젯을 할 일이 있는 오늘로 배치한다.
+    // iOS 홈 화면이라 App Store에만 쓴다(Play는 Android 위젯 캡처가 없다).
     capture: premium('W1_홈_화면_위젯', { manual: true }),
     ko: { tagline: '앱을 열지 않아도', headline: '오늘 할 일을\n홈 화면 위젯으로 봐요' },
     en: { tagline: 'Right on your Home Screen', headline: 'See today’s to-dos\nin a widget' },
@@ -190,6 +227,7 @@ export const SLOTS = {
   'large-feed': {
     title: '피드 2단',
     capture: premium('13_할일_상세_콕'),
+    tabletPair: premium('42_친구_피드'),
     ko: { tagline: '넓은 화면엔 두 칸으로', headline: '목록과 상세를\n한 화면에서 봐요' },
     en: {
       tagline: 'Two panes on wide screens',
@@ -199,6 +237,7 @@ export const SLOTS = {
   'large-memo': {
     title: '메모 2단',
     capture: premium('21_메모_상세'),
+    tabletPair: premium('23_메모_AI_분석_결과'),
     ko: { tagline: '메모도 나란히', headline: '메모 목록과 내용을\n같이 봐요' },
     en: { tagline: 'Notes side by side', headline: 'Browse notes and\nread them at once' },
   },
@@ -235,17 +274,34 @@ export const SLOTS = {
       tagline: 'If you joined within 7 days',
       headline: 'Accept the invite and\nget [7 days of Premium]',
     },
+    play: {
+      ko: { tagline: '초대 링크 하나면', headline: '초대를 수락하면\n바로 [친구가 돼요]' },
+      en: {
+        tagline: 'One link is all it takes',
+        headline: 'Accept the invite and\n[become friends] right away',
+      },
+    },
   },
   'paw-board': {
-    title: '발자국 모으기',
-    capture: premium('51_발자국_판'),
+    title: '발자국 다 모았을 때',
+    // 1.13.0 발자국 판을 다 채운 화면(판 완성 문구와 발자국을 남긴 친구 목록, 보상 한도 안내가 함께 보인다).
+    capture: premium('53_친구초대_발자국완성_아래'),
     ko: {
-      tagline: '친구가 다른 날 두 번 해내면',
-      headline: '발자국이 찍히고\n나도 [프리미엄 7일]',
+      tagline: '친구가 2일 동안 해내면',
+      headline: '발자국이 찍힐 때마다\n나도 [프리미엄 7일]',
+      note: '친구가 가입하고 14일 안에 2일 동안 할 일을 끝내면 찍혀요\n발자국마다 친구 자리도 1개 늘어요\n프리미엄 보상은 30일 동안 최대 30일, 전체 최대 90일',
     },
     en: {
-      tagline: 'When your friend shows up',
-      headline: 'Collect paw prints and\nget [7 days of Premium]',
+      tagline: 'Your friend shows up 2 days',
+      headline: 'Every paw print earns you\n[7 days of Premium]',
+      note: 'Counts when your friend completes to-dos on 2 days within 14 days of joining\nEach paw print also adds 1 friend slot\nPremium rewards: up to 30 days every 30 days, 90 days in total',
+    },
+    play: {
+      ko: { tagline: '친구가 2일 동안 해내면', headline: '발자국을 모아\n[판을 채워요]' },
+      en: {
+        tagline: 'Your friend shows up 2 days',
+        headline: 'Collect paw prints\nand [fill your board]',
+      },
     },
   },
   'friends-feed': {
@@ -265,13 +321,6 @@ export const SLOTS = {
     capture: premium('15_할일_추가_시트'),
     ko: { tagline: '‘다음 주 금요일’도', headline: '말하면 날짜까지\n정확하게 맞춰요' },
     en: { tagline: '“Next Friday” works too', headline: 'AI gets the date\nright every time' },
-  },
-  'ai-time': {
-    title: 'AI 시간 맞춤',
-    // AI 음성 결과 화면은 시뮬레이터에서 자동으로 못 찍어, AI가 만든 할 일이 보이는 홈으로 대신한다.
-    capture: premium('10_홈_오늘'),
-    ko: { tagline: '‘저녁’은 오후 7시로', headline: '때만 말해도\n시간을 알아서 정해요' },
-    en: { tagline: '“Evening” means 7 PM', headline: 'Say the time of day,\nAI sets the time' },
   },
   'ai-memo': {
     title: 'AI 메모 → 할 일',
@@ -306,17 +355,20 @@ const MAIN_IPHONE = [
   'reminders',
   'memo',
 ];
+// Play는 iOS 홈 화면 위젯 대신 메모 → AI 할 일을 넣는다.
 const MAIN_PLAY = [
   'ai',
   'invite',
   'friends',
-  'widgets',
   'subtasks',
+  'memo',
   'suggestions',
   'report',
   'reminders',
 ];
 const CPP_INVITE = ['invite-card', 'invite-accept', 'paw-board', 'friends-feed', 'ai-short'];
+// Play 태블릿은 키보드가 없는 넓은 화면 두 장씩(장면의 capture + tabletPair).
+const PLAY_TABLET = ['large-feed', 'invite', 'large-memo', 'report', 'friends'];
 
 // 세트: 어디에 올리는 이미지 묶음인지. locales는 ko/en, folder는 업로드 폴더 안 위치.
 export const SETS = [
@@ -347,7 +399,7 @@ export const SETS = [
     id: 'main',
     label: '기본 스토어 등록정보(태블릿)',
     targets: ['play-tablet-7', 'play-tablet-10'],
-    slots: ['large-feed', 'ai', 'invite', 'widgets', 'large-memo', 'report', 'large-settings'],
+    slots: PLAY_TABLET,
   },
   {
     id: 'cpp-invite',
@@ -359,7 +411,7 @@ export const SETS = [
     id: 'cpp-ai',
     label: 'CPP-2 AI',
     targets: ['iphone-6.3', 'iphone-6.9', 'ipad-13'],
-    slots: ['ai-date', 'ai-time', 'ai-memo', 'ai-suggestions', 'ai-report'],
+    slots: ['ai-short', 'ai-date', 'ai-memo', 'ai-suggestions', 'ai-report'],
   },
   {
     id: 'cpp-large',
@@ -384,7 +436,7 @@ export const SETS = [
     id: 'custom-listing-invite',
     label: 'Play 맞춤 등록정보 invite(태블릿)',
     targets: ['play-tablet-7', 'play-tablet-10'],
-    slots: ['invite', 'large-feed', 'ai', 'report'],
+    slots: ['invite', 'large-feed', 'large-memo', 'report'],
   },
   {
     id: 'experiment-invite-first',
@@ -394,6 +446,11 @@ export const SETS = [
     slots: ['invite-card', 'paw-board', ...MAIN_PLAY.slice(2)],
   },
 ];
+
+// 장면 문구: Play 대상이면 play 문구를 먼저 쓴다.
+export function slotCopy(slot, store, locale) {
+  return (store === 'google-play' ? slot.play?.[locale] : null) ?? slot[locale];
+}
 
 // 배너·이벤트·그래픽 이미지. 캡처가 필요 없어 바로 최종본을 만든다.
 // design: CSS 픽셀 크기, scale: 출력 배율. text: false면 글자 없이(인앱 이벤트·Play 맞춤 그래픽).

@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
+import sharp from 'sharp';
+
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
-import { plan } from './render.mjs';
-import { LOCALES, SCENES, SETS, SLOTS, TARGETS } from './storyboard.mjs';
+import { captureNeeds, keyboardHeight, plan, systemBarCrop } from './render.mjs';
+import { LOCALES, SCENES, SETS, SLOTS, TARGETS, slotCopy } from './storyboard.mjs';
 
 test('WCAG 대비율을 계산하고 기준 미달을 고른다', () => {
   assert.equal(contrastRatio('#000000', '#ffffff').toFixed(1), '21.0');
@@ -86,4 +91,85 @@ test('Play 태블릿은 문구 없이 4장 이상, 16:9 1,080~7,680px로 만든�
       assert.ok(set.slots.length >= 4 && set.slots.length <= 8, set.label);
     }
   }
+});
+
+test('Play 이미지는 기기 틀 없이 iOS 막대를 잘라 낸 화면 카드이고, 혜택 문구를 쓰지 않는다', () => {
+  for (const [id, target] of Object.entries(TARGETS).filter(
+    ([, item]) => item.store === 'google-play',
+  )) {
+    assert.equal(target.frame, 'card', id);
+    assert.equal(target.stripSystemBars, true, id);
+  }
+  for (const set of SETS.filter((item) => TARGETS[item.targets[0]].store === 'google-play')) {
+    for (const slotId of set.slots) {
+      for (const locale of LOCALES) {
+        const copy = slotCopy(SLOTS[slotId], 'google-play', locale);
+        const text = `${copy.tagline}${copy.headline}${copy.note ?? ''}`;
+        assert.ok(
+          !/프리미엄|premium|\b(best|new|free|top-rated)\b|#1|최고|1위|무료|신규/iu.test(text),
+          `${slotId}.${locale}`,
+        );
+      }
+    }
+  }
+  // iOS 홈 화면 위젯은 Play에 쓰지 않는다
+  const playSlots = SETS.filter((item) => TARGETS[item.targets[0]].store === 'google-play').flatMap(
+    (item) => item.slots,
+  );
+  assert.ok(!playSlots.some((slotId) => SLOTS[slotId].capture.manual));
+});
+
+test('App Store 화면은 같은 종류 기기의 캡처를 쓴다', () => {
+  assert.equal(TARGETS['ipad-13'].device, 'iPad Pro 13');
+  assert.deepEqual(TARGETS['iphone-6.9'].device, ['iPhone 17 Pro Max', 'iPhone 17 Pro']);
+  assert.equal(TARGETS['iphone-duo'].device, 'iPhone Duo 펼침');
+  assert.equal(TARGETS['iphone-duo-outer'].device, 'iPhone Duo 접힘');
+});
+
+test('slotCopy는 Play 문구가 있을 때만 바꿔 쓴다', () => {
+  assert.equal(slotCopy(SLOTS.invite, 'app-store', 'ko'), SLOTS.invite.ko);
+  assert.equal(slotCopy(SLOTS.invite, 'google-play', 'en'), SLOTS.invite.play.en);
+  assert.equal(slotCopy(SLOTS.ai, 'google-play', 'ko'), SLOTS.ai.ko);
+});
+
+test('태블릿 두 장 배치는 장면마다 두 번째 화면을 쓴다', () => {
+  for (const job of plan({ only: undefined, locales: LOCALES }).filter(
+    (item) => item.type === 'screenshot' && item.target.layout === 'card-pair',
+  )) {
+    const needs = captureNeeds(job);
+    assert.equal(needs.length, 2, job.output);
+    assert.ok(job.slot.tabletPair, `${job.slotId}에 tabletPair가 없어요`);
+    assert.notEqual(needs[0][1].file, needs[1][1].file, job.output);
+  }
+});
+
+test('OS 막대 자르기는 아래쪽 키보드가 더 길면 키보드 위까지만 남긴다', () => {
+  const plain = systemBarCrop('iPhone 17 Pro', 1206, 2622, 0);
+  assert.equal(plain.top, 186 / 2622);
+  assert.equal(plain.bottom, 102 / 2622);
+  assert.equal(plain.aspect, 1206 / (2622 - 186 - 102));
+  const keyboard = systemBarCrop('iPhone 17 Pro', 1206, 2622, 950);
+  assert.equal(keyboard.bottom, 950 / 2622);
+  assert.throws(() => systemBarCrop('Android 폰', 1080, 2400, 0));
+});
+
+test('키보드 윗선을 찾는다', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'store-art-test-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const path = join(dir, 'keyboard.png');
+  const keyboard = await sharp({
+    create: { width: 100, height: 400, channels: 3, background: '#e2e3e8' },
+  })
+    .png()
+    .toBuffer();
+  await sharp({ create: { width: 100, height: 1000, channels: 3, background: '#ffffff' } })
+    .composite([{ input: keyboard, left: 0, top: 600 }])
+    .png()
+    .toFile(path);
+  assert.equal(await keyboardHeight(path), 403);
+  const blank = join(dir, 'blank.png');
+  await sharp({ create: { width: 100, height: 1000, channels: 3, background: '#ffffff' } })
+    .png()
+    .toFile(blank);
+  assert.equal(await keyboardHeight(blank), 0);
 });

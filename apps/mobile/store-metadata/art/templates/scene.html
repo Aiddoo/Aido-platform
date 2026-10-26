@@ -574,8 +574,9 @@
           setRich(headline, copy.headline);
           fit(headline, 440);
           contrastTag(headline, 'large', '#ff6b43');
-          const cardNode = card(548, 262, 420, 20, cardCopy, assets, { reward: false });
-          el('img', 'cat', { left: 628, top: 26, width: 300, zIndex: 0 }).src = assets.cat;
+          // 핵심 요소는 가장자리에서 40px 넘게 떨어뜨린다(Play 그래픽 이미지 가이드)
+          const cardNode = card(548, 226, 420, 19, cardCopy, assets, { reward: false });
+          el('img', 'cat', { left: 636, top: 8, width: 284, zIndex: 0 }).src = assets.cat;
           cardNode.style.zIndex = 1;
           motif('fish', 470, 70, 46, { rotate: -12, color: '#ffffff', opacity: 0.35 });
           motif('bone', 120, 410, 56, { rotate: 14, color: '#ffffff', opacity: 0.3 });

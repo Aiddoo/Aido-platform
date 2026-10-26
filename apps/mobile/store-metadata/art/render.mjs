@@ -20,13 +20,16 @@ import sharp from 'sharp';
 import { defaultCaptureRoot, launchChrome } from './lib/chrome.mjs';
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
 import {
+  CAPTURE_DEVICES,
   CARD_COPY,
+  KEYBOARD_SCREENS,
   LOCALES,
   RELEASE_VERSION,
   SCENES,
   SETS,
   SLOTS,
   TARGETS,
+  slotCopy,
 } from './storyboard.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -104,6 +107,7 @@ export function plan({ only, locales }) {
             targetId,
             locale,
             slotId,
+            index,
             slot: SLOTS[slotId],
             output: join(
               target.store,
@@ -137,23 +141,88 @@ export function plan({ only, locales }) {
   return jobs;
 }
 
-function screenSource(job, captureRoot, device, capture) {
-  const path = capturePath(captureRoot, device, capture, job.locale);
-  if (existsSync(path)) {
-    return { path, label: relative(captureRoot, path) };
-  }
-  return { path: null, label: relative(captureRoot, path) };
+// 대상 기기 폴더는 하나 또는 우선순위 목록이다. 목록이면 캡처가 있는 첫 폴더를 쓴다.
+export function resolveDevice(root, devices, capture, locale) {
+  const list = Array.isArray(devices) ? devices : [devices];
+  return list.find((device) => existsSync(capturePath(root, device, capture, locale))) ?? list[0];
 }
 
-async function screenSpec(source, frameAspect, capture, locale) {
+// 장면 하나가 쓰는 캡처: [기기 폴더(또는 목록), 캡처, 역할]. 역할 folded=Duo 접힘, pair=Play 태블릿 두 번째 화면.
+export function captureNeeds(job) {
+  const { target, slot } = job;
+  const needs = [[target.device, slot.capture, 'main']];
+  if ((target.layout ?? slot.layout) === 'duo-pair') {
+    needs.push([target.foldedDevice, slot.foldedCapture, 'folded']);
+  }
+  if (target.layout === 'card-pair') {
+    needs.push([target.device, slot.tabletPair ?? slot.capture, 'pair']);
+  }
+  return needs;
+}
+
+function screenSource(job, captureRoot, devices, capture) {
+  const device = resolveDevice(captureRoot, devices, capture, job.locale);
+  const path = capturePath(captureRoot, device, capture, job.locale);
+  return { path: existsSync(path) ? path : null, label: relative(captureRoot, path), device };
+}
+
+// stripSystemBars면 기기의 상태 막대·홈 인디케이터(키보드 화면은 키보드 윗선 아래 전부)를 비율로 잘라 내고,
+// 카드 비율을 잘라 낸 화면에 맞춘다. bottomPx는 아래에서 잘라 낼 높이(px).
+export function systemBarCrop(device, width, height, bottomPx) {
+  const bars = CAPTURE_DEVICES[device];
+  if (bars == null) {
+    throw new Error(`${device}: CAPTURE_DEVICES에 OS 막대 높이가 없어요`);
+  }
+  const bottom = Math.max(bottomPx ?? 0, bars.homeIndicator);
+  return {
+    top: bars.statusBar / height,
+    bottom: bottom / height,
+    aspect: width / (height - bars.statusBar - bottom),
+  };
+}
+
+// 라이트 테마 iOS 키보드 바탕(#e2e3e8 근처)이 화면 왼쪽 끝에서 화면 높이의 15% 넘게 이어지면 키보드로 보고,
+// 그 윗선부터 아래 끝까지의 높이(px)를 돌려준다. 키보드가 없으면 0.
+export async function keyboardHeight(path) {
+  const { data, info } = await sharp(path)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const x = Math.round(info.width * 0.008);
+  const isKeyboard = (y) => {
+    const index = (y * info.width + x) * 3;
+    return [226, 227, 232].every((value, channel) => Math.abs(data[index + channel] - value) <= 6);
+  };
+  const run = Math.round(info.height * 0.15);
+  for (let top = Math.round(info.height * 0.4); top < info.height - run; top += 1) {
+    let length = 0;
+    while (length < run && isKeyboard(top + length)) {
+      length += 1;
+    }
+    if (length === run) {
+      // 키보드 윗선의 그림자 줄까지 함께 잘라 낸다
+      return info.height - top + Math.round(info.height * 0.003);
+    }
+    top += length;
+  }
+  return 0;
+}
+
+async function screenSpec(source, frameAspect, capture, locale, strip) {
   if (source.path == null) {
     return MOCK_CAPTURES.has(capture.file)
       ? { mock: 'invite', mockCopy: INVITE_MOCK[locale], label: source.label }
       : { label: source.label };
   }
   const { width, height } = await sharp(source.path).metadata();
+  const src = pathToFileURL(source.path).href;
+  if (strip) {
+    const keyboard = KEYBOARD_SCREENS.has(capture.file) ? await keyboardHeight(source.path) : 0;
+    const crop = systemBarCrop(source.device, width, height, keyboard);
+    return { src, fit: 'cover', crop, aspect: crop.aspect, label: source.label };
+  }
   const fit = Math.abs(width / height - frameAspect) / frameAspect > 0.03 ? 'contain' : 'cover';
-  return { src: pathToFileURL(source.path).href, fit, label: source.label };
+  return { src, fit, label: source.label };
 }
 
 const FRAME_ASPECT = {
@@ -162,38 +231,37 @@ const FRAME_ASPECT = {
   'duo-closed': 1398 / 2034,
   ipad: 2064 / 2752,
   card: 1080 / 2400,
-  'card-fold': 2208 / 1840,
 };
 
 async function buildScreenshotJob(job, captureRoot, preview) {
   const { target, slot, locale } = job;
-  const copy = slot[locale];
-  const main = screenSource(job, captureRoot, target.device, slot.capture);
-  const sources = [main];
+  const copy = slotCopy(slot, target.store, locale);
+  const layout = target.layout ?? slot.layout ?? 'single';
+  const strip = target.stripSystemBars === true;
+  const sources = [];
   const spec = {
     width: target.width,
     height: target.height,
+    store: target.store,
     frame: target.frame,
-    layout: slot.layout ?? 'single',
+    layout,
     tagline: copy.tagline,
     headline: copy.headline,
     note: copy.note ?? null,
     badge: target.badge && slot.isNew ? 'NEW' : null,
     decor: slot.decor ?? null,
     catSrc: ASSETS.cat,
-    screen: await screenSpec(
-      main,
-      FRAME_ASPECT[slot.layout === 'duo-pair' ? 'duo-open' : target.frame],
-      slot.capture,
-      locale,
-    ),
+    motif: job.index ?? 0,
     preview: preview ? `PREVIEW · ${RELEASE_VERSION}` : null,
     bare: target.bare === true,
   };
-  if (slot.layout === 'duo-pair') {
-    const folded = screenSource(job, captureRoot, target.foldedDevice, slot.foldedCapture);
-    sources.push(folded);
-    spec.folded = await screenSpec(folded, FRAME_ASPECT['duo-closed'], slot.foldedCapture, locale);
+  for (const [devices, capture, role] of captureNeeds(job)) {
+    const source = screenSource(job, captureRoot, devices, capture);
+    sources.push(source);
+    const frame =
+      role === 'folded' ? 'duo-closed' : layout === 'duo-pair' ? 'duo-open' : target.frame;
+    const screen = await screenSpec(source, FRAME_ASPECT[frame], capture, locale, strip);
+    spec[role === 'main' ? 'screen' : role] = screen;
   }
   return { spec, sources };
 }
@@ -272,7 +340,13 @@ function galleryHtml(entries, { preview, captureRoot }) {
     const rows = set.slots
       .map((slotId, index) => {
         const slot = SLOTS[slotId];
-        return `<tr><td>${pad(index + 1)}</td><td>${escape(slot.title)}</td><td>${escape(slot.ko.tagline)}<br><b>${escape(slot.ko.headline.replace(/[[\]]/gu, ''))}</b></td><td>${escape(slot.en.tagline)}<br><b>${escape(slot.en.headline.replace(/[[\]]/gu, ''))}</b></td><td><code>${escape(slot.capture.file)}${slot.foldedCapture ? ` + ${escape(slot.foldedCapture.file)}` : ''}</code></td></tr>`;
+        const target = TARGETS[set.targets[0]];
+        const ko = slotCopy(slot, target.store, 'ko');
+        const en = slotCopy(slot, target.store, 'en');
+        const captures = captureNeeds({ target, slot })
+          .map(([, capture]) => capture.file)
+          .join(' + ');
+        return `<tr><td>${pad(index + 1)}</td><td>${escape(slot.title)}</td><td>${escape(ko.tagline)}<br><b>${escape(ko.headline.replace(/[[\]]/gu, ''))}</b></td><td>${escape(en.tagline)}<br><b>${escape(en.headline.replace(/[[\]]/gu, ''))}</b></td><td><code>${escape(captures)}</code></td></tr>`;
       })
       .join('');
     const sizes = set.targets
@@ -351,7 +425,8 @@ async function render({ out, captureRoot, preview, only, locales }) {
           .map((item) => (item.path == null ? `캡처 대기: ${item.label}` : item.label))
           .join(' + ');
         title = `${job.slotId} · ${job.slot.title}`;
-        caption = `${job.slot[job.locale].tagline} / ${job.slot[job.locale].headline.replace(/[[\]]/gu, '').replace('\n', ' ')}`;
+        const copy = slotCopy(job.slot, job.target.store, job.locale);
+        caption = `${copy.tagline} / ${copy.headline.replace(/[[\]]/gu, '').replace('\n', ' ')}`;
       } else {
         const [width, height] = job.scene.design;
         expected = { width: width * job.scene.scale, height: height * job.scene.scale };
@@ -447,11 +522,8 @@ async function render({ out, captureRoot, preview, only, locales }) {
 function listCaptures({ captureRoot, locales }) {
   const rows = new Map();
   for (const job of plan({ only: 'screenshots', locales })) {
-    const pairs = [[job.target.device, job.slot.capture]];
-    if (job.slot.layout === 'duo-pair') {
-      pairs.push([job.target.foldedDevice, job.slot.foldedCapture]);
-    }
-    for (const [device, capture] of pairs) {
+    for (const [devices, capture] of captureNeeds(job)) {
+      const device = resolveDevice(captureRoot, devices, capture, job.locale);
       const path = capturePath(captureRoot, device, capture, job.locale);
       const key = relative(captureRoot, path);
       const row = rows.get(key) ?? {
@@ -481,16 +553,13 @@ function writeTodos({ out, captureRoot, locales }) {
   for (const job of plan({ only: 'screenshots', locales })) {
     const folder = dirname(join(out, job.output));
     const lines = folders.get(folder) ?? [];
-    const captures = [[job.target.device, job.slot.capture]];
-    if (job.slot.layout === 'duo-pair') {
-      captures.push([job.target.foldedDevice, job.slot.foldedCapture]);
-    }
-    const needed = captures.map(([device, capture]) => {
+    const needed = captureNeeds(job).map(([devices, capture]) => {
+      const device = resolveDevice(captureRoot, devices, capture, job.locale);
       const path = capturePath(captureRoot, device, capture, job.locale);
       return `\`${relative(captureRoot, path)}\`${existsSync(path) ? '' : ' (없음)'}${capture.manual ? ' (직접 찍기)' : ''}`;
     });
     lines.push(
-      `- [ ] ${job.output.split('/').pop()} — ${job.slot[job.locale].headline.replace(/[[\]]/gu, '').replace('\n', ' ')} ← ${needed.join(' + ')}`,
+      `- [ ] ${job.output.split('/').pop()} — ${slotCopy(job.slot, job.target.store, job.locale).headline.replace(/[[\]]/gu, '').replace('\n', ' ')} ← ${needed.join(' + ')}`,
     );
     folders.set(folder, lines);
   }
