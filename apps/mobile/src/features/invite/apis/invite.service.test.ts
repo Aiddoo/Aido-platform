@@ -81,6 +81,45 @@ describe('InviteService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
+    it('이어서 열려던 초대가 없어졌으면 기기에 남긴 초대를 지운다', async () => {
+      // Given
+      const { service, publicHttpClient, pendingRedemptionRepository } = createService();
+      pendingRedemptionRepository.save(createPendingRedemption({ inviteCode: 'K7M2QX' }));
+      publicHttpClient.get.mockResolvedValue({
+        ok: false,
+        error: createInviteApiError({ code: 'INVITE_2102', status: 410 }),
+      });
+
+      // When
+      await service.getPreview('K7M2QX');
+
+      // Then
+      expect(pendingRedemptionRepository.get()).toBeNull();
+    });
+
+    it('다른 코드의 실패나 일시 오류는 기기에 남긴 초대를 지우지 않는다', async () => {
+      // Given
+      const { service, publicHttpClient, pendingRedemptionRepository } = createService();
+      const pending = createPendingRedemption({ inviteCode: 'K7M2QX' });
+      pendingRedemptionRepository.save(pending);
+      publicHttpClient.get
+        .mockResolvedValueOnce({
+          ok: false,
+          error: createInviteApiError({ code: 'INVITE_2102', status: 410 }),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          error: createInviteApiError({ code: 'INVITE_2105', status: 403 }),
+        });
+
+      // When
+      await service.getPreview('BCDF23');
+      await service.getPreview('K7M2QX');
+
+      // Then
+      expect(pendingRedemptionRepository.get()).toEqual(pending);
+    });
+
     it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
       // Given
       const { service, publicHttpClient } = createService();

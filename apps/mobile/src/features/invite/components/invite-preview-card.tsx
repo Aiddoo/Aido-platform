@@ -1,5 +1,4 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,11 +20,10 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, type ReactNode, useEffect } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { InvitePreviewPolicy } from '../domains/invite-preview.model';
-import { isTerminalRedeemFailure, toRedeemFailureReason } from '../domains/invite.error';
 import type { InviteCode } from '../domains/invite.model';
 import { useInviteRouteParams } from '../hooks/use-invite-route-params';
 import { useGetInvitePreviewQueryOptions } from '../queries/get-invite-preview-query-options';
@@ -126,16 +124,6 @@ function EnterCodeButton() {
 
 InvitePreviewCard.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('invite');
-  const inviteService = useInviteService();
-  const isTerminal = isTerminalRedeemFailure(toRedeemFailureReason(error));
-
-  // 없어졌거나 바뀐 초대는 다음 실행 때 다시 열지 않는다
-  useEffect(() => {
-    if (isTerminal) {
-      inviteService.clearPendingRedemption();
-    }
-  }, [inviteService, isTerminal]);
-
   return match(isApiError(error) ? error.code : null)
     .with(ErrorCode.INVITE_2101, () => <InvitePreviewCard.Empty />)
     .with(ErrorCode.INVITE_2102, () => (
