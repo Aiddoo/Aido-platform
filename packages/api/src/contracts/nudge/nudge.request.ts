@@ -97,9 +97,7 @@ export const getNudgeThanksPreviewQuerySchema = z
       .describe("첫 미리보기 시점의 마지막 콕 ID"),
   })
   .refine(
-    (query) =>
-      query.cursor === undefined ||
-      (query.limit !== undefined && query.throughNudgeId !== undefined),
+    (query) => query.cursor == null || (query.limit != null && query.throughNudgeId != null),
     {
       message: "다음 페이지 조회에는 페이지 크기와 미리보기 시점의 콕 ID가 필요합니다",
       path: ["cursor"],

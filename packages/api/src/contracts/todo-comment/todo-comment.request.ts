@@ -119,7 +119,7 @@ export const getTodoCommentOverviewQuerySchema = z
     size: todoCommentPageSizeSchema,
   })
   .check(({ value, issues }) => {
-    if (value.before !== undefined && value.after !== undefined) {
+    if (value.before != null && value.after != null) {
       issues.push({
         code: "custom",
         input: value,
@@ -144,7 +144,7 @@ export const getTodoConversationQuerySchema = z
   })
   .check(({ value, issues }) => {
     const positions = [value.focusCommentId, value.before, value.after].filter(
-      (position) => position !== undefined,
+      (position) => position != null,
     );
 
     if (positions.length > 1) {

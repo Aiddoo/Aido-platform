@@ -121,7 +121,7 @@ const todoConversationLaneDepthsSchema = z.array(z.number().int().nonnegative())
   (depths) =>
     depths.every((depth, index) => {
       const previousDepth = depths[index - 1];
-      return previousDepth === undefined || depth > previousDepth;
+      return previousDepth == null || depth > previousDepth;
     }),
   "연결선 depth는 중복 없이 오름차순이어야 합니다.",
 );
@@ -160,8 +160,8 @@ export const todoConversationConnectionSchema = z
         : { fromDepth: connection.visualDepth - 1, toDepth: connection.visualDepth };
 
     if (
-      (expectedBranch === null && connection.incomingBranch !== null) ||
-      (expectedBranch !== null &&
+      (expectedBranch == null && connection.incomingBranch != null) ||
+      (expectedBranch != null &&
         (connection.incomingBranch?.fromDepth !== expectedBranch.fromDepth ||
           connection.incomingBranch.toDepth !== expectedBranch.toDepth))
     ) {

@@ -343,7 +343,7 @@ export const updateTodoItemSchema = z
       .describe("하위 항목 제목 (선택)"),
     completed: z.boolean().optional().describe("완료 상태 (선택)"),
   })
-  .refine((data) => data.title !== undefined || data.completed !== undefined, {
+  .refine((data) => data.title != null || data.completed != null, {
     message: "제목 또는 완료 상태 중 하나는 입력해야 합니다",
   });
 

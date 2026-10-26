@@ -96,5 +96,5 @@ export function isSemanticVersionAtLeast(
   minimumVersion: string,
 ): boolean {
   const difference = compareSemanticVersions(version, minimumVersion);
-  return difference !== null && difference >= 0;
+  return difference != null && difference >= 0;
 }
