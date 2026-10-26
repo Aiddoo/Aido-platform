@@ -1,1 +1,1 @@
-todo,list,task,checklist,habit,routine,reminder,widget,social,invite,voice,schedule,ipad,feed
+todo,list,task,checklist,habit,routine,reminder,widget,schedule,invite,social,voice,ipad,streak,goal

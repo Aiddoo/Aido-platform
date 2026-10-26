@@ -1,1 +1,1 @@
-organizer,agenda,diary,calendar,goal,motivation,streak,productivity,accountability,tracker
+todo,list,task,checklist,habit,routine,reminder,widget,organiser,diary,schedule,productivity,streak
