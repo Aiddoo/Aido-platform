@@ -1,5 +1,3 @@
-Aido 1.13.0
-
 New
 - Friends you invite get 7 days of Premium when they join.
 - You get 7 days of Premium + 1 more friend once they complete to-dos on 2 days.
