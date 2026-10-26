@@ -44,8 +44,10 @@ App Store는 이름·부제·키워드를 함께 검색해요. 이름·부제에
   검색어 형태를 살려 늘렸어요(습관→습관만들기, 루틴→루틴관리, 일정→일정관리, 위젯→홈위젯, 갓생→갓생살기).
   1.13.0 초대(친구초대·초대코드·초대링크)와 맞춤형 제품 페이지용 단어(AI할일·음성입력·자동일정·폴더블·친구피드)를 더했어요.
   Apple 문서는 100바이트라고 하지만 App Store Connect는 한글 100자를 받아 왔어요(1.12.1). `store:check`는 글자 수(100자)로 막아요.
-- `en-US`: 이름(Aido, AI, To-do, Planner)·부제(friends, done)에 없는 검색어 — `todo` 표기, `list`, `task`, `checklist`,
-  `habit`, `routine`, `reminder`, `widget`, `social`과 맞춤형 제품 페이지용 `invite`, `voice`, `schedule`, `ipad`, `feed`.
-- `en-GB`: 한국 스토어(KOR)의 추가 언어이자 영국·호주 스토어 언어예요. `en-US`와 겹치지 않는 두 번째 조합을 둬요.
+- `en-US`: 미국 스토어 검색어. 이름(Aido, AI, To-do, Planner)·부제(friends, done)에 없는 단어 — `todo` 표기, `list`, `task`,
+  `checklist`, `habit`, `routine`, `reminder`, `widget`, `schedule`, `streak`, `goal`과 맞춤형 제품 페이지용 `invite`, `social`, `voice`, `ipad`.
+- `en-GB`: 영국 스토어는 `en-GB`만 색인하고, 한국 스토어는 `ko`와 함께 `en-GB`도 색인해요. 그래서 `en-US`를 피하는 보조 조합이 아니라
+  영국 사용자가 쓰는 핵심 단어를 영국식 철자(`organiser`)로 담은 완결된 세트로 둬요.
+- 공통 규칙: 100자 이하, 쉼표 뒤 공백 없음, 이름·부제에 있는 단어와 복수형 중복 금지, 경쟁 앱·상표 이름 금지, 한 단어 3글자 이상.
 - [`app-store/custom-product-pages.json`](app-store/custom-product-pages.json): 맞춤형 제품 페이지별 키워드. Apple은 최근 승인
   버전의 키워드 필드에 있는 단어만 배정하게 해서, `store:check`가 키워드 필드에 있는지·페이지끼리 겹치지 않는지 확인해요.
