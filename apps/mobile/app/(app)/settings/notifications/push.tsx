@@ -3,15 +3,18 @@ import { unlockPushRegistrationForActivation } from '@src/features/activation/qu
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
-import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import { ToggleSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
-import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
+import {
+  QueryErrorBoundary,
+  SettingsCard,
+  Spacing,
+  StyledSafeAreaView,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
@@ -34,7 +37,7 @@ function PushSettingsScreen() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <SettingsToggle
+        <SettingsCard.Toggle
           label={t('settings.pushLabel')}
           description={t('settings.pushDescription')}
           isSelected={preference.pushEnabled}
@@ -60,7 +63,7 @@ function PushSettingsScreen() {
           isDisabled={updateMutation.isPending || registerPushMutation.isPending}
         />
         <Separator className="bg-gray-2" />
-        <SettingsToggle
+        <SettingsCard.Toggle
           label={t('settings.nightPushLabel')}
           description={
             PreferencePolicy.isPushDisabled(preference)
@@ -75,7 +78,7 @@ function PushSettingsScreen() {
 
       {/* 마케팅 수신 동의(일반 + 광고성 푸시)는 발송 설정이 아니라 수신 동의(consent)라 별도 카드로 분리 */}
       <SettingsCard>
-        <SettingsToggle
+        <SettingsCard.Toggle
           label={t('settings.marketingLabel')}
           description={t('settings.marketingDescription')}
           isSelected={consent.marketingAgreedAt != null}
@@ -83,7 +86,7 @@ function PushSettingsScreen() {
           isDisabled={marketingMutation.isPending}
         />
         <Separator className="bg-gray-2" />
-        <SettingsToggle
+        <SettingsCard.Toggle
           label={t('settings.marketingPushLabel')}
           description={t('settings.marketingPushDescription')}
           isSelected={consent.marketingPushAgreedAt != null}
@@ -99,14 +102,14 @@ PushSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <ToggleSkeleton hasDescription />
+        <SettingsCard.ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />
-        <ToggleSkeleton hasDescription />
+        <SettingsCard.ToggleSkeleton hasDescription />
       </SettingsCard>
       <SettingsCard>
-        <ToggleSkeleton hasDescription />
+        <SettingsCard.ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />
-        <ToggleSkeleton hasDescription />
+        <SettingsCard.ToggleSkeleton hasDescription />
       </SettingsCard>
     </VStack>
   );

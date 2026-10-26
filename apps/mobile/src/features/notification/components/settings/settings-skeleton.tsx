@@ -1,17 +1,4 @@
 import { ArrowRightIcon, HStack, TextSkeleton, VStack } from '@src/shared/ui';
-import { Skeleton } from 'heroui-native';
-
-export function ToggleSkeleton({ hasDescription = false }: { hasDescription?: boolean }) {
-  return (
-    <HStack align="center" gap={12}>
-      <VStack flex={1}>
-        <TextSkeleton size="b2" className="w-24" />
-        {hasDescription && <TextSkeleton size="b3" className="w-48" />}
-      </VStack>
-      <Skeleton className="h-6 w-12 rounded-full" />
-    </HStack>
-  );
-}
 
 export function TimeRowSkeleton() {
   return (

@@ -1,13 +1,8 @@
-import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import {
-  TimeRowSkeleton,
-  ToggleSkeleton,
-} from '@src/features/notification/components/settings/settings-skeleton';
+import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
   SettingsTimeInput,
 } from '@src/features/notification/components/settings/settings-time-input';
-import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/settings-time-range';
 import {
   type Preference,
@@ -16,7 +11,13 @@ import {
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
+import {
+  QueryErrorBoundary,
+  SettingsCard,
+  Spacing,
+  StyledSafeAreaView,
+  VStack,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
@@ -32,7 +33,7 @@ function WeatherSettingsScreen() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <SettingsToggle
+        <SettingsCard.Toggle
           label={t('settings.weatherLabel')}
           description={
             PreferencePolicy.isPushDisabled(preference)
@@ -70,7 +71,7 @@ WeatherSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <ToggleSkeleton hasDescription />
+        <SettingsCard.ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />
         <TimeRowSkeleton />
         <Separator className="bg-gray-2" />

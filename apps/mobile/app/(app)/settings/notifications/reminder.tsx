@@ -1,4 +1,3 @@
-import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
 import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
@@ -18,6 +17,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   CrownIcon,
   QueryErrorBoundary,
+  SettingsCard,
   Spacing,
   StyledSafeAreaView,
   usePremiumDialog,
