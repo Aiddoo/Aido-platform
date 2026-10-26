@@ -30,13 +30,9 @@ export const useToggleSubTodoMutationOptions = () => {
     onMutate: async ({ todoId, subTodoId, isCompleted, startDate }) => {
       await cancelTodoListQuery(queryClient, { date: startDate });
       const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
-        ...todo,
-        subTodos: todo.subTodos.map((subTodo) =>
-          subTodo.id === subTodoId ? { ...subTodo, completed: isCompleted } : subTodo,
-        ),
-        subTodoStats: SubTodoPolicy.statsAfterToggle(todo, isCompleted),
-      }));
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoToggled(todo, subTodoId, isCompleted),
+      );
 
       return { snapshot };
     },

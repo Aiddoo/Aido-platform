@@ -30,11 +30,9 @@ export const useDeleteSubTodoMutationOptions = () => {
     onMutate: async ({ todoId, subTodoId, startDate }) => {
       await cancelTodoListQuery(queryClient, { date: startDate });
       const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
-        ...todo,
-        subTodos: todo.subTodos.filter((subTodo) => subTodo.id !== subTodoId),
-        subTodoStats: SubTodoPolicy.statsAfterDelete(todo, subTodoId),
-      }));
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoRemoved(todo, subTodoId),
+      );
 
       return { snapshot };
     },
