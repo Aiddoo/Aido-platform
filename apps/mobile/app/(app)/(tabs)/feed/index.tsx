@@ -116,9 +116,12 @@ function MyFeed() {
         {featureDiscovery.isReentryVisible && (
           <>
             <Box px={16}>
-              <FeatureDiscoveryReentryCard onPress={featureDiscovery.openFromReentry} />
+              <FeatureDiscoveryReentryCard
+                onPress={featureDiscovery.openFromReentry}
+                onDismiss={featureDiscovery.dismissReentry}
+              />
             </Box>
-            <Spacing size={20} />
+            <Spacing size={12} />
           </>
         )}
 

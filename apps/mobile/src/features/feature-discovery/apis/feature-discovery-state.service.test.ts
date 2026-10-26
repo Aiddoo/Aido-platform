@@ -10,6 +10,7 @@ const createRepository = (): jest.Mocked<FeatureDiscoveryStateRepository> => ({
   isSeen: jest.fn(),
   claimSeen: jest.fn(),
   isReentryVisible: jest.fn(),
+  dismissReentry: jest.fn(),
 });
 
 describe('FeatureDiscoveryStateService', () => {

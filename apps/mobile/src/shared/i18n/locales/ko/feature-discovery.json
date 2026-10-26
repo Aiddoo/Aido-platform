@@ -7,9 +7,10 @@
   },
   "entry": {
     "mypage": "아이두 기능 가이드",
-    "feedTitle": "새 기능을 다시 살펴보세요",
+    "feedTitle": "새 기능 다시 보기",
     "feedDescription": "14일 동안 언제든 기능 가이드를 다시 열 수 있어요",
-    "openLabel": "아이두 기능 가이드 열기"
+    "openLabel": "아이두 기능 가이드 열기",
+    "dismissLabel": "기능 가이드 카드 닫기"
   },
   "cards": {
     "friendInvite": {

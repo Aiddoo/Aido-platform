@@ -36,7 +36,17 @@ const pushRegistrationInputSchema = z.object({
   progress: activationProgressSchema,
 });
 type PushRegistrationInput = z.infer<typeof pushRegistrationInputSchema>;
-const checklistVisibilityInputSchema = pushRegistrationInputSchema.extend({ now: z.date() });
+const checklistEligibilityInputSchema = pushRegistrationInputSchema.extend({ now: z.date() });
+type ChecklistEligibilityInput = z.infer<typeof checklistEligibilityInputSchema>;
+const activationChecklistStepsSchema = z.object({
+  hasCreatedTodo: z.boolean(),
+  hasCompletedTodo: z.boolean(),
+});
+export type ActivationChecklistSteps = z.infer<typeof activationChecklistStepsSchema>;
+// 친구 초대는 선택 단계라 노출 판단에 넣지 않는다. 필수 단계(만들기·완료)만 본다
+const checklistVisibilityInputSchema = checklistEligibilityInputSchema.extend({
+  steps: activationChecklistStepsSchema,
+});
 type ChecklistVisibilityInput = z.infer<typeof checklistVisibilityInputSchema>;
 
 function resolveEnabledCampaign(
@@ -80,7 +90,8 @@ const isWithinTimeWindow = (createdAt: number, now: number, window: number): boo
 const calculateElapsedDays = (createdAt: number, now: number): number =>
   Math.max(0, Math.floor((now - createdAt) / DAY_MS));
 
-function isChecklistVisible({ config, user, progress, now }: ChecklistVisibilityInput): boolean {
+/** 체크리스트 대상인지. 신규 코호트이고 활성화 전이며 가입 후 7일 안이어야 한다 */
+function isChecklistEligible({ config, user, progress, now }: ChecklistEligibilityInput): boolean {
   if (!isNewUserCohort(config, user) || !user || progress.activatedAt) {
     return false;
   }
@@ -90,11 +101,6 @@ function isChecklistVisible({ config, user, progress, now }: ChecklistVisibility
     now.getTime(),
     ACTIVATION_CHECKLIST_WINDOW_MS,
   );
-}
-
-export interface ActivationChecklistSteps {
-  hasCreatedTodo: boolean;
-  hasCompletedTodo: boolean;
 }
 
 /**
@@ -112,6 +118,11 @@ function checklistSteps(
       hasCompletedTodo || progress.todoCreatedAt != null || (todoExistence?.hasTodo ?? false),
     hasCompletedTodo,
   };
+}
+
+/** 대상이고 필수 단계를 아직 다 끝내지 않았을 때만 보인다. 선택 단계(친구 초대)는 카드를 붙잡아 두지 않는다 */
+function isChecklistVisible({ steps, ...input }: ChecklistVisibilityInput): boolean {
+  return isChecklistEligible(input) && !(steps.hasCreatedTodo && steps.hasCompletedTodo);
 }
 
 function shouldRegisterPushAutomatically({
@@ -140,6 +151,7 @@ export const ActivationPolicy = {
   activationIdentity,
   checklistSteps,
   daysSinceSignup,
+  isChecklistEligible,
   isChecklistVisible,
   isNewUserCohort,
   shouldRegisterPushAutomatically,

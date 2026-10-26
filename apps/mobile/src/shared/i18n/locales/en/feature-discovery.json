@@ -7,9 +7,10 @@
   },
   "entry": {
     "mypage": "Aido Feature Guide",
-    "feedTitle": "Take another look at what's new",
+    "feedTitle": "See what's new again",
     "feedDescription": "You can reopen this guide anytime for 14 days",
-    "openLabel": "Open Aido feature guide"
+    "openLabel": "Open Aido feature guide",
+    "dismissLabel": "Dismiss feature guide card"
   },
   "cards": {
     "friendInvite": {
