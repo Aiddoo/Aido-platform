@@ -43,6 +43,7 @@ export const createInviteDto = (overrides?: Partial<MyInviteResponse>): MyInvite
   qualifiedCount: 2,
   premiumDaysInWindow: 14,
   totalPremiumDays: 14,
+  premiumCapState: 'AVAILABLE',
   nextMilestone: {
     qualifiedCount: 3,
     rewards: [
@@ -65,6 +66,7 @@ export const createInvite = (overrides?: Partial<Invite>): Invite => ({
   qualifiedCount: 0,
   premiumDaysInWindow: 0,
   totalPremiumDays: 0,
+  premiumCapState: 'AVAILABLE',
   nextMilestone: {
     qualifiedCount: 1,
     rewards: [

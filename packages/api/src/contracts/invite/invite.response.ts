@@ -8,6 +8,7 @@ import {
   invitedFriendRejectionReasonSchema,
   invitedFriendStatusSchema,
   inviteRewardSchema,
+  premiumCapStateSchema,
 } from "./invite.common.js";
 
 const userTagSchema = z
@@ -88,6 +89,7 @@ export const myInviteResponseSchema = z
       .int()
       .nonnegative()
       .describe("지금까지 초대로 받은 프리미엄 일수 (누적 상한 판단용, 음이 아닌 정수)"),
+    premiumCapState: premiumCapStateSchema,
     nextMilestone: inviteMilestoneSchema
       .nullable()
       .describe("다음 보상 단계 (더 받을 단계가 없으면 null)"),
@@ -104,6 +106,7 @@ export const myInviteResponseSchema = z
       qualifiedCount: 2,
       premiumDaysInWindow: 14,
       totalPremiumDays: 14,
+      premiumCapState: "AVAILABLE",
       nextMilestone: {
         qualifiedCount: 3,
         rewards: [

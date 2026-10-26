@@ -6,6 +6,7 @@ import {
   InviteRewardPolicy,
   isMilestoneReachedAt,
   nextMilestoneQualifiedCount,
+  premiumCapState,
   remainingPremiumDays,
   rewardCapWindowStart,
   rewardsAtQualifiedCount,
@@ -124,6 +125,38 @@ describe("InviteRewardPolicy", () => {
 
       // Then
       expect(start).toEqual(new Date("2028-02-14T00:00:00.000Z"));
+    });
+  });
+
+  describe("premiumCapState", () => {
+    it.each([
+      { inWindow: 0, total: 0, expected: "AVAILABLE" },
+      { inWindow: 29, total: 29, expected: "AVAILABLE" },
+      { inWindow: 30, total: 30, expected: "WINDOW_REACHED" },
+      { inWindow: 30, total: 89, expected: "WINDOW_REACHED" },
+      { inWindow: 7, total: 90, expected: "TOTAL_REACHED" },
+      { inWindow: 30, total: 90, expected: "TOTAL_REACHED" },
+    ])("최근 30일 $inWindow일·누적 $total일이면 $expected다", ({ inWindow, total, expected }) => {
+      // Given
+      const summary = { premiumDaysInWindow: inWindow, totalPremiumDays: total };
+
+      // When
+      const state = premiumCapState(summary);
+
+      // Then 누적 상한(90)이 최근 30일 상한(30)보다 먼저다
+      expect(state).toBe(expected);
+    });
+
+    it("최근 30일 상한에 닿았던 지급이 기간 밖으로 빠지면 다시 AVAILABLE이다", () => {
+      // Given 30일을 받은 뒤 rolling 기간이 지나 기간 안 지급이 0이 됐다
+      const reached = { premiumDaysInWindow: 30, totalPremiumDays: 30 };
+      const afterWindow = { premiumDaysInWindow: 0, totalPremiumDays: 30 };
+
+      // When
+      const states = [premiumCapState(reached), premiumCapState(afterWindow)];
+
+      // Then
+      expect(states).toEqual(["WINDOW_REACHED", "AVAILABLE"]);
     });
   });
 

@@ -22,6 +22,19 @@ export const INVITE_REWARD_CAPS = {
   WINDOW_DAYS: 30,
 } as const;
 
+/**
+ * 초대 보상 프리미엄 상한 상태. 서버가 지급 기록으로 정하고 앱은 그대로 보여 준다.
+ * WINDOW_REACHED: 최근 WINDOW_DAYS일 상한에 닿음(지급이 기간 밖으로 빠지면 다시 AVAILABLE),
+ * TOTAL_REACHED: 누적 상한에 닿음(다시 열리지 않는다). 둘 다여도 TOTAL_REACHED다.
+ */
+export const PREMIUM_CAP_STATE = {
+  AVAILABLE: "AVAILABLE",
+  WINDOW_REACHED: "WINDOW_REACHED",
+  TOTAL_REACHED: "TOTAL_REACHED",
+} as const;
+
+export type PremiumCapState = (typeof PREMIUM_CAP_STATE)[keyof typeof PREMIUM_CAP_STATE];
+
 export const REWARD_TYPE = {
   PREMIUM_DAYS: "PREMIUM_DAYS",
   FRIEND_SLOT: "FRIEND_SLOT",

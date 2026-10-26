@@ -4968,6 +4968,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
           ],
         },
+        "premiumCapState": "AVAILABLE",
         "premiumDaysInWindow": 14,
         "qualifiedCount": 2,
         "rewardsEarned": [
@@ -5077,6 +5078,16 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           ],
           "type": "object",
         },
+        "premiumCapState": {
+          "default": "AVAILABLE",
+          "description": "초대 보상 프리미엄 상한 (AVAILABLE: 더 받을 수 있음, WINDOW_REACHED: 최근 30일 상한에 닿음, TOTAL_REACHED: 누적 상한에 닿음. 앱이 모르는 값·필드 없음은 AVAILABLE로 읽는다)",
+          "enum": [
+            "AVAILABLE",
+            "WINDOW_REACHED",
+            "TOTAL_REACHED",
+          ],
+          "type": "string",
+        },
         "premiumDaysInWindow": {
           "description": "최근 30일 동안 초대로 받은 프리미엄 일수 (월 상한 판단용, 음이 아닌 정수)",
           "maximum": 9007199254740991,
@@ -5166,6 +5177,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "qualifiedCount",
         "premiumDaysInWindow",
         "totalPremiumDays",
+        "premiumCapState",
         "nextMilestone",
         "rewardsEarned",
         "createdAt",

@@ -5,6 +5,7 @@ import { InvitePreviewPolicy } from '@src/features/invite/domains/invite-preview
 import { InviteRedemptionPolicy } from '@src/features/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
 import type { InviteCode } from '@src/features/invite/domains/invite.model';
+import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
 import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-route-params';
 import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
 import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
@@ -124,6 +125,19 @@ function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }
           <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitAi')} />
           <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitFriends')} />
         </VStack>
+
+        <Text
+          size="b4"
+          shade={6}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
+          {t('card.receipt.inviterReward', {
+            name: inviterName,
+            activeDays: InvitedFriendPolicy.requiredActiveDays(),
+            days: InviteRewardPolicy.inviterPremiumDays(),
+          })}
+        </Text>
 
         <DashedDivider />
 
