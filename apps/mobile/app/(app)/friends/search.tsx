@@ -4,6 +4,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, Input, QueryErrorBoundary, SearchIcon, StyledSafeAreaView } from '@src/shared/ui';
 import { usePrefetchQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
@@ -27,11 +28,14 @@ export default function SearchFriendScreen() {
           renderErrorMessage={false}
         />
       </Box>
-      <Box flex={1} px={16}>
-        <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
-          <FriendSearchList query={query} />
-        </QueryErrorBoundary>
-      </Box>
+      {/* 검색 중에는 키보드가 떠 있으므로 결과 영역을 키보드 위로 줄여 가운데 안내가 가려지지 않게 한다 */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
+        <Box flex={1} px={16}>
+          <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
+            <FriendSearchList query={query} />
+          </QueryErrorBoundary>
+        </Box>
+      </KeyboardAvoidingView>
     </StyledSafeAreaView>
   );
 }
