@@ -49,6 +49,13 @@ export function updateTodoInList(
   );
 }
 
+export function appendTodoToList(queryClient: QueryClient, { date }: { date: string }, todo: Todo) {
+  queryClient.setQueryData<TodoListResult>(
+    TODO_QUERY_KEYS.listByDate({ date }),
+    (old) => old && { ...old, todos: [...old.todos, todo] },
+  );
+}
+
 export function removeTodoFromList(
   queryClient: QueryClient,
   { date, todoId }: { date: string; todoId: number },

@@ -8,8 +8,8 @@ import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { TodoListResult } from '../domains/todo.model';
 import { useStoreReviewPrompt } from '../hooks/use-store-review-prompt';
+import { cancelTodoListQuery, snapshotTodo, updateTodoInList } from './todo-cache';
 
 interface ToggleTodoMutationParams {
   todoId: number;
@@ -30,33 +30,14 @@ export const useToggleTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, body, startDate }) => {
-      await queryClient.cancelQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      });
+      await cancelTodoListQuery(queryClient, { date: startDate });
+      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
+        ...todo,
+        completed: body.completed,
+      }));
 
-      const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      );
-
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: old.todos.map((todo) =>
-              todo.id === todoId ? { ...todo, completed: body.completed } : todo,
-            ),
-          };
-        },
-      );
-
-      return {
-        completed: previousData?.todos.find((todo) => todo.id === todoId)?.completed,
-        startDate,
-      };
+      return { completed: snapshot?.todo.completed, startDate };
     },
     onSuccess: (_data, variables) => {
       trackEvent('todo_completed', {
@@ -79,16 +60,12 @@ export const useToggleTodoMutationOptions = () => {
       notifyError();
 
       const previousCompleted = context?.completed;
+      // 완료 여부만 되돌려 같은 할 일의 서브투두 변경은 지키게 한다
       if (context && previousCompleted != null) {
-        queryClient.setQueryData<TodoListResult>(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          (current) =>
-            current && {
-              ...current,
-              todos: current.todos.map((todo) =>
-                todo.id === variables.todoId ? { ...todo, completed: previousCompleted } : todo,
-              ),
-            },
+        updateTodoInList(
+          queryClient,
+          { date: context.startDate, todoId: variables.todoId },
+          (todo) => ({ ...todo, completed: previousCompleted }),
         );
       }
     },
