@@ -28,11 +28,11 @@ pnpm --filter @aido/mobile test:store-listing
 ## 문구 규칙
 
 - 브랜드: 한국어 문구는 **아이두**, 영어는 **Aido**. 유료 기능은 앱 화면과 같은 **프리미엄 / Premium**(“Pro” 금지).
-- 용어: 친구 초대·초대 링크·초대 코드·발자국(‘발자국 모으기’)·친구 자리·콕 찌르기 / invite link·invite code·paw prints
-  (“Collect paw prints”)·friend slot·nudge·to-do.
+- 용어: 친구 초대·초대 링크·초대 코드·발자국(‘발자국 모으기’)·친구 1명 더 추가·콕 찌르기 / invite link·invite code·paw prints
+  (“Collect paw prints”)·add 1 more friend·nudge·to-do. ‘친구 자리’·‘friend slot’은 쓰지 않아요(앱 i18n 가이드의 초대·보상 용어).
 - 한국어 설명은 해요체, 항목은 명사형으로 끝내요. 영어 제목은 sentence case.
 - 초대 보상 조건은 앱과 같게 써요: 가입한 지 7일 안의 친구가 수락하면 프리미엄 7일, 친구가 가입하고 14일 안에
-  2일 동안 할 일을 끝내면(하루에 여러 개를 끝내도 1일) 초대한 사람도 프리미엄 7일 + 친구 자리 1개, 구독 중 받은 보상은 구독이 끝난 뒤 시작.
+  2일 동안 할 일을 끝내면(하루에 여러 개를 끝내도 1일) 초대한 사람도 프리미엄 7일 + 친구 1명 더, 구독 중 받은 보상은 구독이 끝난 뒤 시작.
 - Play 앱 이름·간단한 설명에는 순위·가격·기간 한정 표현(최고, 1위, 무료, 신규, best, free, new…)을 쓰지 않아요.
 
 ## 키워드

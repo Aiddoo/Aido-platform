@@ -4,7 +4,7 @@
   "patchNotes": {
     "ko": [
       "친구 초대: 초대 링크로 가입한 친구에게 프리미엄 7일을 드려요.",
-      "초대 보상: 친구가 2일 동안 할 일을 끝내면 나도 프리미엄 7일과 친구 자리 1개를 받아요.",
+      "초대 보상: 친구가 2일 동안 할 일을 끝내면 나도 프리미엄 7일을 받고, 친구를 1명 더 추가할 수 있어요.",
       "신고·차단: 불편한 할 일·댓글·콕을 신고하고 상대를 차단할 수 있어요.",
       "AI에 메모나 할 일을 보내기 전에 동의를 받아요.",
       "AI가 ‘내일 오후 3시’ 같은 날짜를 더 정확하게 알아들어요.",
@@ -14,7 +14,7 @@
     ],
     "en": [
       "Invite friends with a link. They get 7 days of Premium.",
-      "When they complete to-dos on 2 days, you get 7 days of Premium plus a friend slot.",
+      "When they complete to-dos on 2 days, you get 7 days of Premium and +1 friend limit.",
       "Report to-dos, comments, or nudges and block the sender.",
       "AI asks for your consent before using your data.",
       "AI reads dates like “tomorrow at 3 PM” better.",

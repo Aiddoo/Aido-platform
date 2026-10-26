@@ -290,12 +290,12 @@ export const SLOTS = {
     ko: {
       tagline: '친구가 2일 동안 해내면',
       headline: '발자국이 찍힐 때마다\n나도 [프리미엄 7일]',
-      note: '친구가 가입하고 14일 안에 2일 동안 할 일을 끝내면 찍혀요\n발자국마다 친구 자리도 1개 늘어요\n프리미엄 보상은 30일 동안 최대 30일, 전체 최대 90일',
+      note: '친구가 가입하고 14일 안에 2일 동안 할 일을 끝내면 찍혀요\n발자국마다 친구를 1명 더 추가할 수 있어요\n프리미엄 보상은 30일 동안 최대 30일, 전체 최대 90일',
     },
     en: {
       tagline: 'Your friend shows up 2 days',
       headline: 'Every paw print earns you\n[7 days of Premium]',
-      note: 'Counts when your friend completes to-dos on 2 days within 14 days of joining\nEach paw print also adds 1 friend slot\nPremium rewards: up to 30 days every 30 days, 90 days in total',
+      note: 'Counts when your friend completes to-dos on 2 days within 14 days of joining\nEach paw print also lets you add 1 more friend\nPremium rewards: up to 30 days every 30 days, 90 days in total',
     },
     play: {
       ko: { tagline: '친구가 2일 동안 해내면', headline: '발자국을 모아\n[판을 채워요]' },
