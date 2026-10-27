@@ -75,33 +75,31 @@ export const TARGETS = {
     // Play 그래픽에는 "New" 같은 기간 한정 표현을 쓰지 않는다.
     badge: false,
   },
-  // Play 태블릿(7″·10″): 16:9 가로, 1,080~7,680px. 가이드가 앱 화면 밖 글자를 빼라고 해서 문구 없이 화면만 둔다.
-  // iPad 13″의 넓은 화면(regular width) 캡처 두 장을 화면 카드로 나란히 둔다(장면의 capture + tabletPair).
+  // Play 태블릿(7″·10″): 16:9 가로, 1,080~7,680px. 휴대전화와 같은 톤으로 왼쪽에 문구, 오른쪽에
+  // iPad 13″의 넓은 화면(regular width) 캡처 한 장을 화면 카드로 둔다.
   'play-tablet-7': {
     store: 'google-play',
-    label: 'Google Play 7″ 태블릿(16:9, 문구 없음)',
+    label: 'Google Play 7″ 태블릿(16:9)',
     width: 1920,
     height: 1080,
     frame: 'card',
-    layout: 'card-pair',
+    layout: 'landscape',
     device: 'iPad Pro 13',
     stripSystemBars: true,
     folder: 'tablet-7_1920x1080',
     badge: false,
-    bare: true,
   },
   'play-tablet-10': {
     store: 'google-play',
-    label: 'Google Play 10″ 태블릿(16:9, 문구 없음)',
+    label: 'Google Play 10″ 태블릿(16:9)',
     width: 2560,
     height: 1440,
     frame: 'card',
-    layout: 'card-pair',
+    layout: 'landscape',
     device: 'iPad Pro 13',
     stripSystemBars: true,
     folder: 'tablet-10_2560x1440',
     badge: false,
-    bare: true,
   },
 };
 
@@ -124,7 +122,6 @@ export const KEYBOARD_SCREENS = new Set([
 const premium = (file, extra = {}) => ({ file, plan: '프리미엄', theme: '라이트', ...extra });
 
 // 장면. capture는 기기 폴더 아래 경로, foldedCapture는 Duo 접힘 화면(쌍 배치),
-// tabletPair는 Play 태블릿에서 capture 옆에 나란히 둘 두 번째 화면이다.
 // play: Google Play에서 쓸 문구. Play 그래픽에는 보상 일수 같은 혜택·홍보 표현을 넣지 않는다(메타데이터 정책).
 export const SLOTS = {
   ai: {
@@ -136,18 +133,17 @@ export const SLOTS = {
   invite: {
     title: '친구 초대(1.13.0)',
     capture: premium('50_내_초대'),
-    tabletPair: premium('51_발자국_판'),
     isNew: true,
     decor: 'cat-peek',
     ko: {
       tagline: '링크 하나로 친구 초대',
-      headline: '친구는 가입하면 바로\n나는 친구가 2일 하면 [프리미엄 7일]',
-      note: '나는 친구가 가입하고 14일 안에\n2일 동안 할 일을 끝내면 받아요',
+      headline: '친구를 초대하고\n[프리미엄 7일] 받아요',
+      note: '친구: 가입하면 바로 프리미엄 7일\n나: 친구가 2일 동안 할 일을 끝내면 프리미엄 7일',
     },
     en: {
       tagline: 'Better together',
-      headline: 'Your friend gets [7 days of Premium]\non joining, you after their 2 days',
-      note: 'You get yours when your friend completes\nto-dos on 2 days within 14 days of joining',
+      headline: 'Invite a friend,\nget [7 days of Premium]',
+      note: 'Friend: 7 days of Premium on joining\nYou: 7 days once they complete to-dos on 2 days',
     },
     play: {
       ko: { tagline: '링크 하나로 초대', headline: '친구를 초대하고\n서로의 할 일을 [응원해요]' },
@@ -160,7 +156,6 @@ export const SLOTS = {
   friends: {
     title: '친구 피드·콕',
     capture: premium('10_홈_오늘'),
-    tabletPair: premium('14_할일_체크리스트'),
     ko: { tagline: '미루면 콕, 함께하면 쭉', headline: '친구와 서로 챙기며\n끝까지 해내요' },
     en: { tagline: 'Nudge, cheer, repeat', headline: 'Keep each other going\nall the way to done' },
   },
@@ -185,7 +180,6 @@ export const SLOTS = {
   report: {
     title: 'AI 리포트',
     capture: premium('31_AI_리포트_주간'),
-    tabletPair: premium('34_AI_반복_제안'),
     ko: {
       tagline: '주간·월간 리포트로 한눈에',
       headline: '내 할 일 패턴을 분석해\n리포트로 보여줘요',
@@ -228,7 +222,6 @@ export const SLOTS = {
   'large-feed': {
     title: '피드 2단',
     capture: premium('13_할일_상세_콕'),
-    tabletPair: premium('42_친구_피드'),
     ko: { tagline: '넓은 화면엔 두 칸으로', headline: '목록과 상세를\n한 화면에서 봐요' },
     en: {
       tagline: 'Two panes on wide screens',
@@ -238,7 +231,6 @@ export const SLOTS = {
   'large-memo': {
     title: '메모 2단',
     capture: premium('21_메모_상세'),
-    tabletPair: premium('23_메모_AI_분석_결과'),
     ko: { tagline: '메모도 나란히', headline: '메모 목록과 내용을\n같이 봐요' },
     en: { tagline: 'Notes side by side', headline: 'Browse notes and\nread them at once' },
   },
@@ -368,7 +360,7 @@ const MAIN_PLAY = [
   'reminders',
 ];
 const CPP_INVITE = ['invite-card', 'invite-accept', 'paw-board', 'friends-feed', 'ai-short'];
-// Play 태블릿은 키보드가 없는 넓은 화면 두 장씩(장면의 capture + tabletPair).
+// Play 태블릿은 키보드가 없는 넓은 화면을 쓴다.
 const PLAY_TABLET = ['large-feed', 'invite', 'large-memo', 'report', 'friends'];
 
 // 세트: 어디에 올리는 이미지 묶음인지. locales는 ko/en, folder는 업로드 폴더 안 위치.
@@ -531,14 +523,14 @@ export const CARD_COPY = {
   ko: {
     rows: ['아침 운동', '책 10쪽 읽기'],
     nudge: '콕',
-    reward: '친구는 바로, 나는 친구가 2일 하면 프리미엄 7일',
+    reward: '친구 초대하고 프리미엄 7일',
     condition: '조건 있음 · 앱에서 확인',
     board: '발자국 모으기',
   },
   en: {
     rows: ['Morning workout', 'Read 10 pages'],
     nudge: 'Nudge',
-    reward: '7 days of Premium: your friend now, you after their 2 days',
+    reward: 'Invite a friend, get 7 days of Premium',
     condition: 'Conditions apply',
     board: 'Collect paw prints',
   },

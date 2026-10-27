@@ -154,15 +154,12 @@ export function resolveDevice(root, devices, capture, locale) {
   return list.find((device) => existsSync(capturePath(root, device, capture, locale))) ?? list[0];
 }
 
-// 장면 하나가 쓰는 캡처: [기기 폴더(또는 목록), 캡처, 역할]. 역할 folded=Duo 접힘, pair=Play 태블릿 두 번째 화면.
+// 장면 하나가 쓰는 캡처: [기기 폴더(또는 목록), 캡처, 역할]. 역할 folded=Duo 접힘.
 export function captureNeeds(job) {
   const { target, slot } = job;
   const needs = [[target.device, slot.capture, 'main']];
   if ((target.layout ?? slot.layout) === 'duo-pair') {
     needs.push([target.foldedDevice, slot.foldedCapture, 'folded']);
-  }
-  if (target.layout === 'card-pair') {
-    needs.push([target.device, slot.tabletPair ?? slot.capture, 'pair']);
   }
   return needs;
 }
@@ -369,7 +366,6 @@ async function buildScreenshotJob(job, captureRoot, preview) {
     catSrc: ASSETS.cat,
     motif: job.index ?? 0,
     preview: preview ? `PREVIEW · ${RELEASE_VERSION}` : null,
-    bare: target.bare === true,
   };
   for (const [devices, capture, role] of captureNeeds(job)) {
     const source = screenSource(job, captureRoot, devices, capture);
