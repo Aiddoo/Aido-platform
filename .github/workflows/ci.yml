@@ -31,6 +31,7 @@ permissions:
   pull-requests: read
 
 env:
+  TZ: UTC
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
   DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder

@@ -1,5 +1,6 @@
 FROM node:24.22.1-alpine3.24 AS base
 WORKDIR /app
+ENV TZ=UTC
 ENV COREPACK_HOME=/usr/local/share/corepack
 ENV pnpm_config_verify_deps_before_run=false
 COPY package.json ./
@@ -63,6 +64,7 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
 COPY --from=builder --chown=nestjs:nodejs /app/production/ ./
 RUN mkdir -p /app/certs && chmod 0755 /app/certs
 ADD --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
+ENV TZ=UTC
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
