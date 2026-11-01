@@ -3,7 +3,6 @@ WORKDIR /app
 ENV TZ=UTC
 ENV COREPACK_HOME=/usr/local/share/corepack
 ENV pnpm_config_verify_deps_before_run=false
-COPY package.json ./
 RUN apk upgrade --no-cache && corepack enable && apk add --no-cache openssl
 
 FROM base AS pruner
@@ -41,9 +40,9 @@ COPY --from=pruner /app/out/migrate/full/tooling/database-migrate/ ./tooling/dat
 COPY apps/api/drizzle/ ./apps/api/drizzle/
 COPY apps/api/scripts/guard-database-url.cjs ./apps/api/scripts/
 # 실행 시점은 corepack pnpm만 쓴다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
-RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 migrate
-RUN mkdir -p /app/certs && chmod 0755 /app/certs
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
+    addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 migrate && \
+    mkdir -p /app/certs && chmod 0755 /app/certs
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 WORKDIR /app/tooling/database-migrate
@@ -54,10 +53,10 @@ CMD ["pnpm", "db:deploy"]
 FROM node:24.22.1-alpine3.24 AS production
 WORKDIR /app
 # 운영 서버는 node로만 실행한다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
-RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
-RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
+RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
+    addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs && \
+    mkdir -p /app/certs && chmod 0755 /app/certs
 COPY --from=builder --chown=nestjs:nodejs /app/production/ ./
-RUN mkdir -p /app/certs && chmod 0755 /app/certs
 ADD --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 ENV TZ=UTC
 ENV NODE_ENV=production
