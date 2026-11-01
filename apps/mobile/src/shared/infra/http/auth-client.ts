@@ -1,6 +1,7 @@
 import type { TokenStore } from '@src/core/ports/token-store';
 import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
+import { getDeviceHeaders } from '@src/shared/utils/device-headers';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
 
@@ -40,6 +41,7 @@ export const createAuthClient = ({
     headers: {
       'Content-Type': 'application/json',
       ...(appVersion && { 'X-App-Version': appVersion }),
+      ...getDeviceHeaders(),
     },
     hooks: {
       beforeRequest: [
