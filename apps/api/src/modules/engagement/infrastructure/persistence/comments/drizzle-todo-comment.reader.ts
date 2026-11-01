@@ -1,15 +1,13 @@
 import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, or } from "@prisma/orm-postgres/orm-client";
-import sql, { join } from "sql-template-tag";
+import { sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
-import type { DatabaseRecord } from "#api/platform/database/database-records";
-import { decodeRecord } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { todo, todoComment, userProfile, user } from "#api/platform/database/schema/index";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type {
@@ -24,95 +22,119 @@ import type {
   TodoDetailsRecord,
 } from "../../../application/models/comments/todo-comment.types.js";
 import type { TodoCommentReaderPort } from "../../../application/ports/comments/todo-comment.reader.port.js";
-import { decodeTodoCommentPath } from "./todo-comment-path.js";
 import { buildTodoConversationTreeCtes } from "./todo-conversation-tree.sql.js";
 import { toTodoResponse } from "./todo-details.mapper.js";
 
-type ProfileUser = DatabaseRecord<"User"> & { profile: DatabaseRecord<"UserProfile"> | null };
-type CommentRow = DatabaseRecord<"TodoComment"> & {
-  author: ProfileUser | null;
-  parent: (DatabaseRecord<"TodoComment"> & { author: ProfileUser | null }) | null;
+type CommentRow = typeof todoComment.$inferSelect & {
+  author: AuthorRow | null;
+  parent: { authorId: string; author: { profile: { name: string | null } | null } | null } | null;
   todo: { userId: string } | null;
 };
-
-interface ConversationQueryRow {
-  marker: "PAGE" | "PREVIOUS" | "NEXT" | "BEFORE" | "FOCUS" | "AFTER";
-  commentId: string | null;
-  todoId: number | null;
-  parentId: string | null;
-  rootId: string | null;
-  path: readonly string[] | null;
-  depth: number | null;
-  authorId: string | null;
-  authorName: string | null;
-  authorUserTag: string | null;
-  authorProfileImage: string | null;
-  parentAuthorId: string | null;
-  parentAuthorName: string | null;
-  todoOwnerId: string | null;
-  content: string | null;
-  likeCount: number | null;
-  replyCount: number | null;
-  rootLikeCount: number | null;
-  rootReplyCount: number | null;
-  continuingAncestorDepths: number[] | null;
-  deletedAt: Date | null;
-  editedAt: Date | null;
-  createdAt: Date | null;
+interface AuthorRow {
+  userTag: string;
+  profile: { name: string | null; profileImage: string | null } | null;
 }
 
-interface OverviewRootQueryRow {
-  marker: "PAGE" | "PREVIOUS" | "NEXT";
-  commentId: string | null;
-  todoId: number | null;
-  parentId: string | null;
-  rootId: string | null;
-  path: readonly string[] | null;
-  depth: number | null;
-  authorId: string | null;
-  authorName: string | null;
-  authorUserTag: string | null;
-  authorProfileImage: string | null;
-  parentAuthorId: string | null;
-  parentAuthorName: string | null;
-  todoOwnerId: string | null;
-  content: string | null;
-  likeCount: number | null;
-  replyCount: number | null;
-  rootLikeCount: number | null;
-  rootReplyCount: number | null;
-  deletedAt: Date | null;
-  editedAt: Date | null;
-  createdAt: Date | null;
-}
+const commentRelations = {
+  author: {
+    columns: { userTag: true },
+    with: { profile: { columns: { name: true, profileImage: true } } },
+  },
+  parent: {
+    columns: { authorId: true },
+    with: { author: { columns: {}, with: { profile: { columns: { name: true } } } } },
+  },
+  todo: { columns: { userId: true } },
+} as const;
 
-interface OverviewSummaryQueryRow {
-  rootId: string;
-  totalCount: bigint;
-  previewCommentId: string | null;
-  previewTodoId: number | null;
-  previewParentId: string | null;
-  previewRootId: string | null;
-  previewPath: readonly string[] | null;
-  previewDepth: number | null;
-  previewAuthorId: string | null;
-  previewAuthorName: string | null;
-  previewAuthorUserTag: string | null;
-  previewAuthorProfileImage: string | null;
-  previewParentAuthorId: string | null;
-  previewParentAuthorName: string | null;
-  todoOwnerId: string;
-  previewContent: string | null;
-  previewLikeCount: number | null;
-  previewReplyCount: number | null;
-  previewDeletedAt: Date | null;
-  previewEditedAt: Date | null;
-  previewCreatedAt: Date | null;
-  participantAuthorId: string | null;
-  participantAuthorName: string | null;
-  participantAuthorProfileImage: string | null;
-  participantIsTodoOwner: boolean | null;
-}
+const authorProfile = alias(userProfile, "author_profile");
+const authorUser = alias(user, "author_user");
+const parentComment = alias(todoComment, "parent_comment");
+const parentProfile = alias(userProfile, "parent_profile");
+const candidateComment = alias(todoComment, "candidate");
+const anchorComment = alias(todoComment, "comment");
+const childComment = alias(todoComment, "child");
+const previewAuthorProfile = alias(userProfile, "preview_author_profile");
+const previewAuthorUser = alias(user, "preview_author_user");
+const previewParent = alias(todoComment, "preview_parent");
+const previewParentProfile = alias(userProfile, "preview_parent_profile");
+const participantProfile = alias(userProfile, "participant_profile");
+
+/** timestamp 컬럼은 드라이버가 UTC 기준 텍스트로 돌려주므로 Date로 좁힌다. */
+const timestampText = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?$/)
+  .transform((value) => new Date(`${value.replace(" ", "T")}Z`));
+const nullableTimestamp = timestampText.nullable();
+const nullableText = z.string().nullable();
+const nullableInt = z.number().int().nullable();
+const pathSchema = z.array(z.string()).nullable();
+
+const commentColumnsSchema = {
+  commentId: nullableText,
+  todoId: nullableInt,
+  parentId: nullableText,
+  rootId: nullableText,
+  path: pathSchema,
+  depth: nullableInt,
+  authorId: nullableText,
+  authorName: nullableText,
+  authorUserTag: nullableText,
+  authorProfileImage: nullableText,
+  parentAuthorId: nullableText,
+  parentAuthorName: nullableText,
+  todoOwnerId: nullableText,
+  content: nullableText,
+  likeCount: nullableInt,
+  replyCount: nullableInt,
+  rootLikeCount: nullableInt,
+  rootReplyCount: nullableInt,
+  deletedAt: nullableTimestamp,
+  editedAt: nullableTimestamp,
+  createdAt: nullableTimestamp,
+};
+
+const conversationRowSchema = z.object({
+  ...commentColumnsSchema,
+  marker: z.enum(["PAGE", "PREVIOUS", "NEXT", "BEFORE", "FOCUS", "AFTER"]),
+  continuingAncestorDepths: z.array(z.number().int()).nullable(),
+});
+type ConversationQueryRow = z.infer<typeof conversationRowSchema>;
+
+const overviewRootRowSchema = z.object({
+  ...commentColumnsSchema,
+  marker: z.enum(["PAGE", "PREVIOUS", "NEXT"]),
+});
+type OverviewRootQueryRow = z.infer<typeof overviewRootRowSchema>;
+
+const overviewSummaryRowSchema = z.object({
+  rootId: z.string(),
+  totalCount: z.coerce.bigint(),
+  previewCommentId: nullableText,
+  previewTodoId: nullableInt,
+  previewParentId: nullableText,
+  previewRootId: nullableText,
+  previewPath: pathSchema,
+  previewDepth: nullableInt,
+  previewAuthorId: nullableText,
+  previewAuthorName: nullableText,
+  previewAuthorUserTag: nullableText,
+  previewAuthorProfileImage: nullableText,
+  previewParentAuthorId: nullableText,
+  previewParentAuthorName: nullableText,
+  todoOwnerId: z.string(),
+  previewContent: nullableText,
+  previewLikeCount: nullableInt,
+  previewReplyCount: nullableInt,
+  previewDeletedAt: nullableTimestamp,
+  previewEditedAt: nullableTimestamp,
+  previewCreatedAt: nullableTimestamp,
+  participantAuthorId: nullableText,
+  participantAuthorName: nullableText,
+  participantAuthorProfileImage: nullableText,
+  participantIsTodoOwner: z.boolean().nullable(),
+});
+type OverviewSummaryQueryRow = z.infer<typeof overviewSummaryRowSchema>;
 
 interface OverviewRootWindow {
   items: TodoCommentOverviewRootRecord[];
@@ -151,7 +173,7 @@ function toRecord(row: CommentRow): TodoCommentRecord {
     todoId: row.todoId,
     parentId: row.parentId,
     rootId: row.rootId,
-    path: decodeTodoCommentPath(row.path),
+    path: row.path,
     depth: row.depth,
     parentAuthorId: row.parent?.authorId ?? null,
     parentAuthorName: row.parent?.author?.profile?.name ?? null,
@@ -281,75 +303,82 @@ function toParticipantAuthor(
 }
 
 @Injectable()
-export class PrismaTodoCommentReader implements TodoCommentReaderPort {
-  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
+  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
-  private get client() {
+  private get db() {
     return this.txHost.tx;
   }
 
+  private async queryRows<Schema extends z.ZodType>(
+    schema: Schema,
+    query: SQL,
+  ): Promise<z.output<Schema>[]> {
+    const result = await this.db.execute<Record<string, unknown>>(query);
+    return z.array(schema).parse(result.rows);
+  }
+
   private async isAcceptedFriend(firstUserId: string, secondUserId: string): Promise<boolean> {
-    const friendship = decodeRecord(
-      "Follow",
-      await this.client.orm.public.Follow.where((row) =>
-        and(
-          row.status.eq("ACCEPTED"),
-          or(
-            and(row.followerId.eq(firstUserId), row.followingId.eq(secondUserId)),
-            and(row.followerId.eq(secondUserId), row.followingId.eq(firstUserId)),
-          ),
-        ),
-      )
-        .select("id")
-        .first(),
-    );
+    const friendship = await this.db.query.follow.findFirst({
+      columns: { id: true },
+      where: {
+        status: "ACCEPTED",
+        OR: [
+          { followerId: firstUserId, followingId: secondUserId },
+          { followerId: secondUserId, followingId: firstUserId },
+        ],
+      },
+    });
 
     return friendship != null;
   }
 
   async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
-    const todo = decodeRecord(
-      "Todo",
-      await this.client.orm.public.Todo.where((row) => row.id.eq(todoId))
-        .select("userId", "visibility")
-        .first(),
-    );
+    const row = await this.db.query.todo.findFirst({
+      columns: { userId: true, visibility: true },
+      where: { id: todoId },
+    });
 
-    if (todo == null) {
+    if (row == null) {
       return null;
     }
 
-    if (todo.userId === viewerId) {
-      return todo.userId;
+    if (row.userId === viewerId) {
+      return row.userId;
     }
 
-    if (todo.visibility !== "PUBLIC") {
+    if (row.visibility !== "PUBLIC") {
       return null;
     }
 
-    return (await this.isAcceptedFriend(todo.userId, viewerId)) ? todo.userId : null;
+    return (await this.isAcceptedFriend(row.userId, viewerId)) ? row.userId : null;
   }
 
   async findAccessibleTodoDetails(
     todoId: number,
     viewerId: string,
   ): Promise<TodoDetailsRecord | null> {
-    const row = decodeRecord(
-      "Todo",
-      await this.client.orm.public.Todo.where({ id: todoId })
-        .include("category")
-        .include("items", (items) =>
-          items.orderBy((item) => item.sortOrder.asc()).orderBy((item) => item.id.asc()),
-        )
-        .include("user", (user) => user.include("profile"))
-        .first(),
-    );
-    if (row == null) return null;
+    const row = await this.db.query.todo.findFirst({
+      where: { id: todoId },
+      with: {
+        category: true,
+        items: { orderBy: { sortOrder: "asc", id: "asc" } },
+        user: {
+          columns: { id: true },
+          with: { profile: { columns: { name: true, profileImage: true } } },
+        },
+      },
+    });
+    if (row == null) {
+      return null;
+    }
     const isOwner = row.userId === viewerId;
     const canAccess =
       isOwner ||
       (row.visibility === "PUBLIC" && (await this.isAcceptedFriend(row.userId, viewerId)));
-    if (!canAccess) return null;
+    if (!canAccess) {
+      return null;
+    }
     const owner = requireRecord(row.user);
     return {
       todo: toTodoResponse(row),
@@ -365,18 +394,10 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null> {
-    const row = decodeRecord(
-      "TodoComment",
-      await this.client.orm.public.TodoComment.where((row) =>
-        and(row.id.eq(commentId), row.todoId.eq(todoId)),
-      )
-        .include("author", (related) => related.include("profile"))
-        .include("parent", (related) =>
-          related.include("author", (related) => related.include("profile")),
-        )
-        .include("todo", (related) => related.select("userId"))
-        .first(),
-    );
+    const row = await this.db.query.todoComment.findFirst({
+      where: { id: commentId, todoId },
+      with: commentRelations,
+    });
 
     return row == null ? null : toRecord(row);
   }
@@ -389,18 +410,10 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       return [];
     }
 
-    const rows = decodeRecord(
-      "TodoComment",
-      await this.client.orm.public.TodoComment.where((row) =>
-        and(row.todoId.eq(todoId), row.id.in([...commentIds])),
-      )
-        .include("author", (related) => related.include("profile"))
-        .include("parent", (related) =>
-          related.include("author", (related) => related.include("profile")),
-        )
-        .include("todo", (related) => related.select("userId"))
-        .all(),
-    );
+    const rows = await this.db.query.todoComment.findMany({
+      where: { todoId, id: { in: [...commentIds] } },
+      with: commentRelations,
+    });
     const rowsById = new Map(rows.map((row) => [row.id, row]));
 
     return commentIds.flatMap((commentId) => {
@@ -443,31 +456,6 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
   private async listOverviewRoots(
     params: ListTodoCommentOverviewParams,
   ): Promise<OverviewRootWindow | null> {
-    const sqlRows1 = sqlRowSpec({
-      marker: "pg/text@1",
-      commentId: { codecId: "pg/text@1", nullable: true },
-      todoId: { codecId: "pg/int4@1", nullable: true },
-      parentId: { codecId: "pg/text@1", nullable: true },
-      rootId: { codecId: "pg/text@1", nullable: true },
-      path: { codecId: "pg/json@1", nullable: true },
-      depth: { codecId: "pg/int4@1", nullable: true },
-      authorId: { codecId: "pg/text@1", nullable: true },
-      authorName: { codecId: "pg/text@1", nullable: true },
-      authorUserTag: { codecId: "pg/text@1", nullable: true },
-      authorProfileImage: { codecId: "pg/text@1", nullable: true },
-      parentAuthorId: { codecId: "pg/text@1", nullable: true },
-      parentAuthorName: { codecId: "pg/text@1", nullable: true },
-      todoOwnerId: { codecId: "pg/text@1", nullable: true },
-      content: { codecId: "pg/text@1", nullable: true },
-      likeCount: { codecId: "pg/int4@1", nullable: true },
-      replyCount: { codecId: "pg/int4@1", nullable: true },
-      rootLikeCount: { codecId: "pg/int4@1", nullable: true },
-      rootReplyCount: { codecId: "pg/int4@1", nullable: true },
-      deletedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      editedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      createdAt: { codecId: "pg/timestamp-string@1", nullable: true },
-    });
-
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
     if (isCursorPage && (params.anchorRootId == null || params.anchorPosition == null)) {
       return null;
@@ -483,12 +471,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         : sql`${params.anchorPosition.rootReplyCount}`;
     const rootOrder =
       params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`candidate."createdAt" DESC, candidate."id" DESC`
-        : sql`candidate."likeCount" DESC, candidate."replyCount" DESC, candidate."createdAt" DESC, candidate."id" DESC`;
+        ? sql`${candidateComment.createdAt} DESC, ${candidateComment.id} DESC`
+        : sql`${candidateComment.likeCount} DESC, ${candidateComment.replyCount} DESC, ${candidateComment.createdAt} DESC, ${candidateComment.id} DESC`;
     const reverseRootOrder =
       params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`candidate."createdAt" ASC, candidate."id" ASC`
-        : sql`candidate."likeCount" ASC, candidate."replyCount" ASC, candidate."createdAt" ASC, candidate."id" ASC`;
+        ? sql`${candidateComment.createdAt} ASC, ${candidateComment.id} ASC`
+        : sql`${candidateComment.likeCount} ASC, ${candidateComment.replyCount} ASC, ${candidateComment.createdAt} ASC, ${candidateComment.id} ASC`;
     const selectedOrder =
       params.sort === TODO_COMMENT_SORT.LATEST
         ? sql`selected."createdAt" DESC, selected."id" DESC`
@@ -496,15 +484,15 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     const afterAnchor =
       params.sort === TODO_COMMENT_SORT.LATEST
         ? sql`
-					ROW(candidate."createdAt", candidate."id")
+					ROW(${candidateComment.createdAt}, ${candidateComment.id})
 						< ROW(anchor."createdAt", anchor."id")
 				`
         : sql`
 					ROW(
-						candidate."likeCount",
-						candidate."replyCount",
-						candidate."createdAt",
-						candidate."id"
+						${candidateComment.likeCount},
+						${candidateComment.replyCount},
+						${candidateComment.createdAt},
+						${candidateComment.id}
 					) < ROW(
 						${boundaryLikeCount},
 						${boundaryReplyCount},
@@ -515,15 +503,15 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     const beforeAnchor =
       params.sort === TODO_COMMENT_SORT.LATEST
         ? sql`
-					ROW(candidate."createdAt", candidate."id")
+					ROW(${candidateComment.createdAt}, ${candidateComment.id})
 						> ROW(anchor."createdAt", anchor."id")
 				`
         : sql`
 					ROW(
-						candidate."likeCount",
-						candidate."replyCount",
-						candidate."createdAt",
-						candidate."id"
+						${candidateComment.likeCount},
+						${candidateComment.replyCount},
+						${candidateComment.createdAt},
+						${candidateComment.id}
 					) > ROW(
 						${boundaryLikeCount},
 						${boundaryReplyCount},
@@ -534,10 +522,10 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     const anchorCte = sql`
 			anchor AS (
 				SELECT comment.*
-				FROM "TodoComment" AS comment
-				WHERE comment."todoId" = ${params.todoId}
-					AND comment."id" = ${params.anchorRootId ?? null}::TEXT
-					AND comment."parentId" IS NULL
+				FROM ${todoComment} AS ${anchorComment}
+				WHERE ${anchorComment.todoId} = ${params.todoId}
+					AND ${anchorComment.id} = ${params.anchorRootId ?? null}::TEXT
+					AND ${anchorComment.parentId} IS NULL
 			)
 		`;
     const selectionCte = (() => {
@@ -545,10 +533,10 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         return sql`
 					selected AS (
 						SELECT candidate.*, 'PAGE'::TEXT AS "marker"
-						FROM "TodoComment" AS candidate
-						WHERE candidate."todoId" = ${params.todoId}
-							AND candidate."parentId" IS NULL
-							AND (candidate."deletedAt" IS NULL OR candidate."replyCount" > 0)
+						FROM ${todoComment} AS ${candidateComment}
+						WHERE ${candidateComment.todoId} = ${params.todoId}
+							AND ${candidateComment.parentId} IS NULL
+							AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
 						ORDER BY ${rootOrder}
 						LIMIT ${params.size + 1}
 					)
@@ -561,11 +549,11 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 					selected AS (
 						(
 							SELECT candidate.*, 'PAGE'::TEXT AS "marker"
-							FROM "TodoComment" AS candidate
+							FROM ${todoComment} AS ${candidateComment}
 							CROSS JOIN anchor
-							WHERE candidate."todoId" = ${params.todoId}
-								AND candidate."parentId" IS NULL
-								AND (candidate."deletedAt" IS NULL OR candidate."replyCount" > 0)
+							WHERE ${candidateComment.todoId} = ${params.todoId}
+								AND ${candidateComment.parentId} IS NULL
+								AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
 								AND (${afterAnchor})
 							ORDER BY ${rootOrder}
 							LIMIT ${params.size + 1}
@@ -581,11 +569,11 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected AS (
 					(
 						SELECT candidate.*, 'PAGE'::TEXT AS "marker"
-						FROM "TodoComment" AS candidate
+						FROM ${todoComment} AS ${candidateComment}
 						CROSS JOIN anchor
-						WHERE candidate."todoId" = ${params.todoId}
-							AND candidate."parentId" IS NULL
-							AND (candidate."deletedAt" IS NULL OR candidate."replyCount" > 0)
+						WHERE ${candidateComment.todoId} = ${params.todoId}
+							AND ${candidateComment.parentId} IS NULL
+							AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
 							AND (${beforeAnchor})
 						ORDER BY ${reverseRootOrder}
 						LIMIT ${params.size + 1}
@@ -596,12 +584,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 			`;
     })();
 
-    const rows = decodeSqlRows(
-      sqlRows1,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const rows = await this.queryRows(
+      overviewRootRowSchema,
+      sql`
 			WITH ${selectionCte}
 			SELECT
 				selected."marker",
@@ -612,12 +597,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				to_json(selected."path") AS "path",
 				selected."depth",
 				selected."authorId",
-				author_profile."name" AS "authorName",
-				author_user."userTag" AS "authorUserTag",
-				author_profile."profileImage" AS "authorProfileImage",
+				${authorProfile.name} AS "authorName",
+				${authorUser.userTag} AS "authorUserTag",
+				${authorProfile.profileImage} AS "authorProfileImage",
 				NULL::TEXT AS "parentAuthorId",
 				NULL::TEXT AS "parentAuthorName",
-				todo."userId" AS "todoOwnerId",
+				${todo.userId} AS "todoOwnerId",
 				selected."content",
 				selected."likeCount",
 				selected."replyCount",
@@ -627,20 +612,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected."editedAt",
 				selected."createdAt"
 			FROM selected
-			INNER JOIN "Todo" AS todo ON todo."id" = selected."todoId"
-			LEFT JOIN "UserProfile" AS author_profile ON author_profile."userId" = selected."authorId"
-			LEFT JOIN "User" AS author_user ON author_user."id" = selected."authorId"
+			INNER JOIN ${todo} ON ${todo.id} = selected."todoId"
+			LEFT JOIN ${userProfile} AS ${authorProfile} ON ${authorProfile.userId} = selected."authorId"
+			LEFT JOIN ${user} AS ${authorUser} ON ${authorUser.id} = selected."authorId"
 			ORDER BY ${selectedOrder}
 		`,
-        )
-          .returnsRow(sqlRows1)
-          .build(),
-      ),
-    ).map((row) => ({
-      ...row,
-      marker: z.enum(["PAGE", "PREVIOUS", "NEXT"]).parse(row["marker"]),
-      path: z.array(z.string()).nullable().parse(row.path),
-    }));
+    );
 
     if (isCursorPage && rows.length === 0) {
       return null;
@@ -694,45 +671,17 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     todoId: number,
     rootIds: readonly string[],
   ): Promise<Map<string, OverviewSummaryRecord>> {
-    const sqlRows2 = sqlRowSpec({
-      rootId: "pg/text@1",
-      totalCount: "pg/int8@1",
-      previewCommentId: { codecId: "pg/text@1", nullable: true },
-      previewTodoId: { codecId: "pg/int4@1", nullable: true },
-      previewParentId: { codecId: "pg/text@1", nullable: true },
-      previewRootId: { codecId: "pg/text@1", nullable: true },
-      previewPath: { codecId: "pg/json@1", nullable: true },
-      previewDepth: { codecId: "pg/int4@1", nullable: true },
-      previewAuthorId: { codecId: "pg/text@1", nullable: true },
-      previewAuthorName: { codecId: "pg/text@1", nullable: true },
-      previewAuthorUserTag: { codecId: "pg/text@1", nullable: true },
-      previewAuthorProfileImage: { codecId: "pg/text@1", nullable: true },
-      previewParentAuthorId: { codecId: "pg/text@1", nullable: true },
-      previewParentAuthorName: { codecId: "pg/text@1", nullable: true },
-      todoOwnerId: "pg/text@1",
-      previewContent: { codecId: "pg/text@1", nullable: true },
-      previewLikeCount: { codecId: "pg/int4@1", nullable: true },
-      previewReplyCount: { codecId: "pg/int4@1", nullable: true },
-      previewDeletedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      previewEditedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      previewCreatedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      participantAuthorId: { codecId: "pg/text@1", nullable: true },
-      participantAuthorName: { codecId: "pg/text@1", nullable: true },
-      participantAuthorProfileImage: { codecId: "pg/text@1", nullable: true },
-      participantIsTodoOwner: { codecId: "pg/bool@1", nullable: true },
-    });
-
     if (rootIds.length === 0) {
       return new Map();
     }
 
-    const rootIdList = join(rootIds);
-    const rows = decodeSqlRows(
-      sqlRows2,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const rootIdList = sql.join(
+      rootIds.map((id) => sql`${id}`),
+      sql`, `,
+    );
+    const rows = await this.queryRows(
+      overviewSummaryRowSchema,
+      sql`
 			WITH RECURSIVE requested_roots AS (
 				SELECT requested."rootId", requested."ordinal"
 				FROM unnest(ARRAY[${rootIdList}]::TEXT[])
@@ -743,11 +692,11 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 					child.*,
 					requested."rootId" AS "threadId",
 					ARRAY[
-						lpad(((extract(epoch FROM child."createdAt") * 1000000)::BIGINT)::TEXT, 20, '0') || ':' || child."id"
+						lpad(((extract(epoch FROM ${childComment.createdAt}) * 1000000)::BIGINT)::TEXT, 20, '0') || ':' || ${childComment.id}
 					]::TEXT[] AS "dfsPath"
 				FROM requested_roots AS requested
-				INNER JOIN "TodoComment" AS child ON child."parentId" = requested."rootId"
-				WHERE child."todoId" = ${todoId}
+				INNER JOIN ${todoComment} AS ${childComment} ON ${childComment.parentId} = requested."rootId"
+				WHERE ${childComment.todoId} = ${todoId}
 
 				UNION ALL
 
@@ -755,11 +704,11 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 					child.*,
 					parent."threadId",
 					parent."dfsPath" || ARRAY[
-						lpad(((extract(epoch FROM child."createdAt") * 1000000)::BIGINT)::TEXT, 20, '0') || ':' || child."id"
+						lpad(((extract(epoch FROM ${childComment.createdAt}) * 1000000)::BIGINT)::TEXT, 20, '0') || ':' || ${childComment.id}
 					]::TEXT[]
-				FROM "TodoComment" AS child
-				INNER JOIN descendant_tree AS parent ON parent."id" = child."parentId"
-				WHERE child."todoId" = ${todoId}
+				FROM ${todoComment} AS ${childComment}
+				INNER JOIN descendant_tree AS parent ON parent."id" = ${childComment.parentId}
+				WHERE ${childComment.todoId} = ${todoId}
 			),
 			visible_summary AS (
 				SELECT descendant."threadId", COUNT(*)::BIGINT AS "totalCount"
@@ -773,12 +722,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 					ROW_NUMBER() OVER (
 						PARTITION BY descendant."threadId"
 						ORDER BY
-							(descendant."authorId" = todo."userId") DESC,
+							(descendant."authorId" = ${todo.userId}) DESC,
 							descendant."createdAt" ASC,
 							descendant."id" ASC
 					) AS "previewRank"
 				FROM descendant_tree AS descendant
-				INNER JOIN "Todo" AS todo ON todo."id" = descendant."todoId"
+				INNER JOIN ${todo} ON ${todo.id} = descendant."todoId"
 				WHERE descendant."parentId" = descendant."threadId"
 					AND descendant."deletedAt" IS NULL
 			),
@@ -805,12 +754,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 					ROW_NUMBER() OVER (
 						PARTITION BY author_first."threadId"
 						ORDER BY
-							(author_first."authorId" = todo."userId") DESC,
+							(author_first."authorId" = ${todo.userId}) DESC,
 							author_first."dfsPath" ASC,
 							author_first."authorId" ASC
 					) AS "participantRank"
 				FROM author_first
-				INNER JOIN "Todo" AS todo ON todo."id" = author_first."todoId"
+				INNER JOIN ${todo} ON ${todo.id} = author_first."todoId"
 			),
 			participants AS (
 				SELECT * FROM participant_ranked
@@ -826,12 +775,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				to_json(preview."path") AS "previewPath",
 				preview."depth" AS "previewDepth",
 				preview."authorId" AS "previewAuthorId",
-				preview_author_profile."name" AS "previewAuthorName",
-				preview_author_user."userTag" AS "previewAuthorUserTag",
-				preview_author_profile."profileImage" AS "previewAuthorProfileImage",
-				preview_parent."authorId" AS "previewParentAuthorId",
-				preview_parent_profile."name" AS "previewParentAuthorName",
-				todo."userId" AS "todoOwnerId",
+				${previewAuthorProfile.name} AS "previewAuthorName",
+				${previewAuthorUser.userTag} AS "previewAuthorUserTag",
+				${previewAuthorProfile.profileImage} AS "previewAuthorProfileImage",
+				${previewParent.authorId} AS "previewParentAuthorId",
+				${previewParentProfile.name} AS "previewParentAuthorName",
+				${todo.userId} AS "todoOwnerId",
 				preview."content" AS "previewContent",
 				preview."likeCount" AS "previewLikeCount",
 				preview."replyCount" AS "previewReplyCount",
@@ -839,32 +788,25 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				preview."editedAt" AS "previewEditedAt",
 				preview."createdAt" AS "previewCreatedAt",
 				participant."authorId" AS "participantAuthorId",
-				participant_profile."name" AS "participantAuthorName",
-				participant_profile."profileImage" AS "participantAuthorProfileImage",
-				(participant."authorId" = todo."userId") AS "participantIsTodoOwner"
+				${participantProfile.name} AS "participantAuthorName",
+				${participantProfile.profileImage} AS "participantAuthorProfileImage",
+				(participant."authorId" = ${todo.userId}) AS "participantIsTodoOwner"
 			FROM requested_roots AS requested
-			INNER JOIN "Todo" AS todo ON todo."id" = ${todoId}
+			INNER JOIN ${todo} ON ${todo.id} = ${todoId}
 			LEFT JOIN visible_summary AS summary ON summary."threadId" = requested."rootId"
 			LEFT JOIN preview ON preview."threadId" = requested."rootId"
-			LEFT JOIN "UserProfile" AS preview_author_profile
-				ON preview_author_profile."userId" = preview."authorId"
-			LEFT JOIN "User" AS preview_author_user ON preview_author_user."id" = preview."authorId"
-			LEFT JOIN "TodoComment" AS preview_parent ON preview_parent."id" = preview."parentId"
-			LEFT JOIN "UserProfile" AS preview_parent_profile
-				ON preview_parent_profile."userId" = preview_parent."authorId"
+			LEFT JOIN ${userProfile} AS ${previewAuthorProfile}
+				ON ${previewAuthorProfile.userId} = preview."authorId"
+			LEFT JOIN ${user} AS ${previewAuthorUser} ON ${previewAuthorUser.id} = preview."authorId"
+			LEFT JOIN ${todoComment} AS ${previewParent} ON ${previewParent.id} = preview."parentId"
+			LEFT JOIN ${userProfile} AS ${previewParentProfile}
+				ON ${previewParentProfile.userId} = ${previewParent.authorId}
 			LEFT JOIN participants AS participant ON participant."threadId" = requested."rootId"
-			LEFT JOIN "UserProfile" AS participant_profile
-				ON participant_profile."userId" = participant."authorId"
+			LEFT JOIN ${userProfile} AS ${participantProfile}
+				ON ${participantProfile.userId} = participant."authorId"
 			ORDER BY requested."ordinal" ASC, participant."participantRank" ASC NULLS LAST
 		`,
-        )
-          .returnsRow(sqlRows2)
-          .build(),
-      ),
-    ).map((row) => ({
-      ...row,
-      previewPath: z.array(z.string()).nullable().parse(row.previewPath),
-    }));
+    );
 
     const summaries = new Map<string, OverviewSummaryRecord>();
     for (const row of rows) {
@@ -895,32 +837,6 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
   async listConversation(
     params: ListTodoConversationParams,
   ): Promise<TodoConversationWindow | null> {
-    const sqlRows3 = sqlRowSpec({
-      marker: "pg/text@1",
-      commentId: { codecId: "pg/text@1", nullable: true },
-      todoId: { codecId: "pg/int4@1", nullable: true },
-      parentId: { codecId: "pg/text@1", nullable: true },
-      rootId: { codecId: "pg/text@1", nullable: true },
-      path: { codecId: "pg/json@1", nullable: true },
-      depth: { codecId: "pg/int4@1", nullable: true },
-      authorId: { codecId: "pg/text@1", nullable: true },
-      authorName: { codecId: "pg/text@1", nullable: true },
-      authorUserTag: { codecId: "pg/text@1", nullable: true },
-      authorProfileImage: { codecId: "pg/text@1", nullable: true },
-      parentAuthorId: { codecId: "pg/text@1", nullable: true },
-      parentAuthorName: { codecId: "pg/text@1", nullable: true },
-      todoOwnerId: { codecId: "pg/text@1", nullable: true },
-      content: { codecId: "pg/text@1", nullable: true },
-      likeCount: { codecId: "pg/int4@1", nullable: true },
-      replyCount: { codecId: "pg/int4@1", nullable: true },
-      rootLikeCount: { codecId: "pg/int4@1", nullable: true },
-      rootReplyCount: { codecId: "pg/int4@1", nullable: true },
-      continuingAncestorDepths: { codecId: "pg/json@1", nullable: true },
-      deletedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      editedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-      createdAt: { codecId: "pg/timestamp-string@1", nullable: true },
-    });
-
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
     if (
       isCursorPage &&
@@ -1167,12 +1083,9 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				)
 			`;
     })();
-    const rows = decodeSqlRows(
-      sqlRows3,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const rows = await this.queryRows(
+      conversationRowSchema,
+      sql`
 			WITH RECURSIVE ${buildTodoConversationTreeCtes(params)},
 			${selectionCte}
 			SELECT
@@ -1184,12 +1097,12 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				to_json(selected."path") AS "path",
 				selected."depth",
 				selected."authorId",
-				author_profile."name" AS "authorName",
-				author_user."userTag" AS "authorUserTag",
-				author_profile."profileImage" AS "authorProfileImage",
-				parent_comment."authorId" AS "parentAuthorId",
-				parent_profile."name" AS "parentAuthorName",
-				todo."userId" AS "todoOwnerId",
+				${authorProfile.name} AS "authorName",
+				${authorUser.userTag} AS "authorUserTag",
+				${authorProfile.profileImage} AS "authorProfileImage",
+				${parentComment.authorId} AS "parentAuthorId",
+				${parentProfile.name} AS "parentAuthorName",
+				${todo.userId} AS "todoOwnerId",
 				selected."content",
 				selected."likeCount",
 				selected."replyCount",
@@ -1200,26 +1113,14 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected."editedAt",
 				selected."createdAt"
 			FROM selected
-			LEFT JOIN "Todo" AS todo ON todo."id" = selected."todoId"
-			LEFT JOIN "UserProfile" AS author_profile ON author_profile."userId" = selected."authorId"
-			LEFT JOIN "User" AS author_user ON author_user."id" = selected."authorId"
-			LEFT JOIN "TodoComment" AS parent_comment ON parent_comment."id" = selected."parentId"
-			LEFT JOIN "UserProfile" AS parent_profile ON parent_profile."userId" = parent_comment."authorId"
+			LEFT JOIN ${todo} ON ${todo.id} = selected."todoId"
+			LEFT JOIN ${userProfile} AS ${authorProfile} ON ${authorProfile.userId} = selected."authorId"
+			LEFT JOIN ${user} AS ${authorUser} ON ${authorUser.id} = selected."authorId"
+			LEFT JOIN ${todoComment} AS ${parentComment} ON ${parentComment.id} = selected."parentId"
+			LEFT JOIN ${userProfile} AS ${parentProfile} ON ${parentProfile.userId} = ${parentComment.authorId}
 			ORDER BY ${selectedOrder}
 		`,
-        )
-          .returnsRow(sqlRows3)
-          .build(),
-      ),
-    ).map((row) => ({
-      ...row,
-      marker: z.enum(["PAGE", "PREVIOUS", "NEXT", "BEFORE", "FOCUS", "AFTER"]).parse(row["marker"]),
-      continuingAncestorDepths: z
-        .array(z.number().int())
-        .nullable()
-        .parse(row["continuingAncestorDepths"]),
-      path: z.array(z.string()).nullable().parse(row.path),
-    }));
+    );
 
     if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;
@@ -1326,25 +1227,19 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       return new Set();
     }
 
-    const likes = decodeRecord(
-      "TodoCommentLike",
-      await this.client.orm.public.TodoCommentLike.where((row) =>
-        and(row.commentId.in([...commentIds]), row.userId.eq(viewerId), row.isActive.eq(true)),
-      )
-        .select("commentId")
-        .all(),
-    );
+    const likes = await this.db.query.todoCommentLike.findMany({
+      columns: { commentId: true },
+      where: { commentId: { in: [...commentIds] }, userId: viewerId, isActive: true },
+    });
 
     return new Set(likes.map((like) => like.commentId));
   }
 
   async findUserDisplayName(userId: string): Promise<string | null> {
-    const profile = decodeRecord(
-      "UserProfile",
-      await this.client.orm.public.UserProfile.where((row) => row.userId.eq(userId))
-        .select("name")
-        .first(),
-    );
+    const profile = await this.db.query.userProfile.findFirst({
+      columns: { name: true },
+      where: { userId },
+    });
 
     return profile?.name ?? null;
   }

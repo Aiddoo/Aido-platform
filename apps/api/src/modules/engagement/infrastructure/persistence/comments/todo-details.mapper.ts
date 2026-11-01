@@ -1,7 +1,7 @@
 import type { Todo } from "@aido/api";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
-import type { DatabaseRecord } from "#api/platform/database/database-records";
+import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
 import {
   toDateString,
   toDateStringOrNull,
@@ -9,10 +9,9 @@ import {
   toISOStringOrNull,
 } from "#api/shared/domain/date/utils/format";
 
-export type TodoDetailsRow = DatabaseRecord<"Todo"> & {
-  category: DatabaseRecord<"TodoCategory"> | null;
-  items: DatabaseRecord<"TodoItem">[];
-  user: (DatabaseRecord<"User"> & { profile: DatabaseRecord<"UserProfile"> | null }) | null;
+export type TodoDetailsRow = typeof todo.$inferSelect & {
+  category: typeof todoCategory.$inferSelect | null;
+  items: (typeof todoItem.$inferSelect)[];
 };
 
 export function toTodoResponse(row: TodoDetailsRow): Todo {
