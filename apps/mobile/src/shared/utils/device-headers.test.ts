@@ -34,6 +34,24 @@ describe('getDeviceHeaders', () => {
     });
   });
 
+  it('웹 플랫폼은 WEB으로 구분한다', () => {
+    Platform.OS = 'web';
+
+    expect(getDeviceHeaders()).toEqual({
+      'X-Device-Type': 'WEB',
+      'X-Device-Name': 'iPhone 15 Pro',
+    });
+  });
+
+  it('모델명은 40자로 자른다', () => {
+    setModelName('a'.repeat(60));
+
+    expect(getDeviceHeaders()).toEqual({
+      'X-Device-Type': 'IOS',
+      'X-Device-Name': 'a'.repeat(40),
+    });
+  });
+
   it('모델명이 없으면 플랫폼만 반환한다', () => {
     setModelName(null);
 
