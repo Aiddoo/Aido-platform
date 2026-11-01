@@ -14,7 +14,7 @@ import { NUDGE_NOTIFIER } from "./application/ports/nudges/nudge-notifier.port.j
 import { NUDGE_REPOSITORY } from "./application/ports/nudges/nudge.repository.port.js";
 import { NudgeLimitReaderAdapter } from "./infrastructure/adapters/nudges/nudge-limit-reader.adapter.js";
 import { NudgeNotifierAdapter } from "./infrastructure/adapters/nudges/nudge-notifier.adapter.js";
-import { PrismaNudgeRepository } from "./infrastructure/persistence/nudges/prisma-nudge.repository.js";
+import { DrizzleNudgeRepository } from "./infrastructure/persistence/nudges/drizzle-nudge.repository.js";
 import { NudgeInteractionController } from "./presentation/controllers/nudges/nudge-interaction.controller.js";
 import { NudgeController } from "./presentation/controllers/nudges/nudge.controller.js";
 import {
@@ -45,7 +45,7 @@ import {
         isEnabled: config.get("NUDGE_INTERACTIONS_ENABLED"),
       }),
     },
-    { provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
+    { provide: NUDGE_REPOSITORY, useClass: DrizzleNudgeRepository },
     { provide: NUDGE_NOTIFIER, useClass: NudgeNotifierAdapter },
     { provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
     getReceivedNudgesProvider,
