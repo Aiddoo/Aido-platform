@@ -25,7 +25,9 @@ function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
         sole.$ref && Object.keys(sole).length === 1
           ? { allOf: [sole], ...converted, nullable: true }
           : { ...sole, ...converted, nullable: true };
-      if (sole.enum && !sole.enum.includes(null)) converted.enum = [...sole.enum, null];
+      if (sole.enum && !sole.enum.includes(null)) {
+        converted.enum = [...sole.enum, null];
+      }
     } else {
       converted = { ...converted, anyOf: nonNullAlternatives, nullable: true };
     }
@@ -44,24 +46,29 @@ function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
     converted.enum = [converted.const];
     delete converted.const;
   }
-  if (converted.properties)
+  if (converted.properties) {
     converted.properties = Object.fromEntries(
       Object.entries(converted.properties).map(([name, property]) => [
         name,
         typeof property === "boolean" ? property : normalizeJsonSchema(property),
       ]),
     );
-  if (Array.isArray(converted.items))
+  }
+  if (Array.isArray(converted.items)) {
     converted.items = converted.items.map((item) =>
       typeof item === "boolean" ? item : normalizeJsonSchema(item),
     );
-  else if (converted.items && typeof converted.items === "object")
+  } else if (converted.items && typeof converted.items === "object") {
     converted.items = normalizeJsonSchema(converted.items);
-  for (const name of ["anyOf", "oneOf", "allOf"] as const) {
-    if (converted[name]) converted[name] = converted[name].map(normalizeJsonSchema);
   }
-  if (converted.additionalProperties && typeof converted.additionalProperties === "object")
+  for (const name of ["anyOf", "oneOf", "allOf"] as const) {
+    if (converted[name]) {
+      converted[name] = converted[name].map(normalizeJsonSchema);
+    }
+  }
+  if (converted.additionalProperties && typeof converted.additionalProperties === "object") {
     converted.additionalProperties = normalizeJsonSchema(converted.additionalProperties);
+  }
   return converted;
 }
 
@@ -87,7 +94,9 @@ function unwrapRootDefinition(schema: JsonSchema): {
 export const convertStandardSchema: NonNullable<
   SwaggerDocumentOptions["standardSchemaConverter"]
 > = (schema) => {
-  if (!(schema instanceof z.ZodType)) return undefined;
+  if (!(schema instanceof z.ZodType)) {
+    return undefined;
+  }
 
   // Keep released input shapes, including nullable numeric boundary representation.
   const { root: jsonSchema, definitions } = unwrapRootDefinition(

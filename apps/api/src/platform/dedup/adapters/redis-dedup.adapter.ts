@@ -25,7 +25,9 @@ export class RedisDedupAdapter implements IDedupProvider {
   }
 
   async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
-    if (members.length === 0) return new Set();
+    if (members.length === 0) {
+      return new Set();
+    }
 
     const key = this.#key(setKey);
 
@@ -48,7 +50,9 @@ export class RedisDedupAdapter implements IDedupProvider {
   }
 
   async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
-    if (members.length === 0) return;
+    if (members.length === 0) {
+      return;
+    }
 
     const key = this.#key(setKey);
 

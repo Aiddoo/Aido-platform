@@ -38,7 +38,11 @@ export class AppConfigModule {}
  */
 function getEnvFilePath(): string {
   const env = process.env.NODE_ENV || "development";
-  if (env === "production") return ".env";
-  if (env === "test") return ".env.test";
+  if (env === "production") {
+    return ".env";
+  }
+  if (env === "test") {
+    return ".env.test";
+  }
   return ".env.development";
 }

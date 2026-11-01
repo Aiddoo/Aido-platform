@@ -13,11 +13,17 @@ export async function forEachBatch<T extends { id: string }>(opts: {
   // while (true) 와 동일 for(;;)
   for (;;) {
     const page = await opts.fetchPage(cursor, opts.batchSize);
-    if (page.length === 0) break;
+    if (page.length === 0) {
+      break;
+    }
     await opts.onBatch(page);
-    if (page.length < opts.batchSize) break;
+    if (page.length < opts.batchSize) {
+      break;
+    }
     const lastItem = page.at(-1);
-    if (!lastItem) break;
+    if (!lastItem) {
+      break;
+    }
     cursor = lastItem.id;
   }
 }

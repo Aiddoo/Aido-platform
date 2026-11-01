@@ -35,7 +35,9 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
 
   async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
     const entry = this.#getValid(setKey);
-    if (!entry) return new Set();
+    if (!entry) {
+      return new Set();
+    }
     return new Set(members.filter((m) => entry.members.has(m)));
   }
 
@@ -44,7 +46,9 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
   }
 
   async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
-    if (members.length === 0) return;
+    if (members.length === 0) {
+      return;
+    }
 
     let entry = this.#getValid(setKey);
     if (!entry) {
@@ -58,7 +62,9 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
   // === Private 헬퍼 ===
   #getValid(key: string): DedupEntry | undefined {
     const entry = this.#sets.get(key);
-    if (!entry) return undefined;
+    if (!entry) {
+      return undefined;
+    }
 
     if (Date.now() > entry.expiresAt) {
       this.#sets.delete(key);

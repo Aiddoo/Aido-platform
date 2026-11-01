@@ -125,8 +125,12 @@ export const getTodosQuerySchema = z.object({
     .describe("페이지 크기 (1-200, 기본값: 20)"),
   completed: z
     .preprocess((val) => {
-      if (val === "true") return true;
-      if (val === "false") return false;
+      if (val === "true") {
+        return true;
+      }
+      if (val === "false") {
+        return false;
+      }
       return val;
     }, z.boolean())
     .optional()

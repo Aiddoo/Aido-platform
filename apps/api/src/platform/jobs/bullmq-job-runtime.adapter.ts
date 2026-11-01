@@ -525,7 +525,9 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 }
 
 function isJobRetryPolicy(value: unknown): value is JobRetryPolicy {
-  if (typeof value !== "object" || value == null) return false;
+  if (typeof value !== "object" || value == null) {
+    return false;
+  }
   return (
     "retryLimit" in value &&
     typeof value.retryLimit === "number" &&

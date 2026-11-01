@@ -253,7 +253,9 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     queue: string,
     jobs: readonly EnqueueJobRequest<T>[],
   ): Promise<void> {
-    if (jobs.length === 0) return;
+    if (jobs.length === 0) {
+      return;
+    }
     for (const deadLetter of uniqueDeadLetters(jobs)) {
       const deadLetterQueue = resolveDeadLetterQueue(deadLetter);
       if (deadLetterQueue) {
