@@ -10,17 +10,12 @@
   },
   "ignorePatterns": [
     "**/*.generated.*",
-    "apps/api/prisma/generated/**",
-    "apps/api/src/generated/**",
     "apps/mobile/assets/**",
     "apps/mobile/.agents/**",
     "apps/mobile/.claude/skills/**",
     "**/dist/**",
     "**/build/**",
-    "**/coverage/**",
-    "apps/api/prisma/migrations8/snapshots/**",
-    "apps/api/prisma/migrations8/**/ops.json",
-    "apps/api/prisma/migrations8/**/migration.json"
+    "**/coverage/**"
   ],
   "rules": {
     "eslint/eqeqeq": [
@@ -101,7 +96,7 @@
           {
             "patterns": [
               {
-                "regex": "^@nestjs/|^@prisma/|(?:^|/)(?:generated|platform)(?:/|$)",
+                "regex": "^@nestjs/|(?:^|/)platform(?:/|$)",
                 "message": "Domain은 framework·ORM·platform 구현에 의존할 수 없습니다."
               },
               {
@@ -109,7 +104,7 @@
                 "message": "Domain은 Application·Infrastructure·Presentation에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
@@ -129,7 +124,7 @@
           {
             "patterns": [
               {
-                "regex": "^@nestjs/|^@prisma/|(?:^|/)(?:generated|platform)(?:/|$)",
+                "regex": "^@nestjs/|(?:^|/)platform(?:/|$)",
                 "message": "Application은 framework·ORM·platform 구현에 의존할 수 없습니다."
               },
               {
@@ -137,7 +132,7 @@
                 "message": "Application은 Infrastructure·Presentation 구현에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
@@ -177,7 +172,7 @@
           {
             "patterns": [
               {
-                "regex": "^@nestjs/|^@prisma/|^@aido/(?:server|mobile)(?:/|$)|^node:|^pg(?:/|$)|^react-native(?:/|$)",
+                "regex": "^@nestjs/|^drizzle-orm(?:/|$)|^@aido/(?:server|mobile)(?:/|$)|^node:|^pg(?:/|$)|^react-native(?:/|$)",
                 "message": "공유 REST 계약은 서버·네이티브 runtime에 의존할 수 없습니다."
               }
             ]
@@ -193,7 +188,7 @@
           {
             "patterns": [
               {
-                "regex": "^@nestjs/|^@prisma/|^@aido/(?:server|mobile)(?:/|$)|^node:|^pg(?:/|$)|^react-native(?:/|$)|^zod(?:/|$)|(?:^|/)(?:contracts|errors)(?:/|$)",
+                "regex": "^@nestjs/|^drizzle-orm(?:/|$)|^@aido/(?:server|mobile)(?:/|$)|^node:|^pg(?:/|$)|^react-native(?:/|$)|^zod(?:/|$)|(?:^|/)(?:contracts|errors)(?:/|$)",
                 "message": "공유 vocabulary는 runtime·Zod·REST 스키마에 의존할 수 없습니다."
               }
             ]
@@ -210,11 +205,11 @@
           {
             "patterns": [
               {
-                "regex": "^@nestjs/|^@prisma/|(?:^|/)(?:generated|platform|infrastructure|presentation|modules)(?:/|$)",
+                "regex": "^@nestjs/|(?:^|/)(?:platform|infrastructure|presentation|modules)(?:/|$)",
                 "message": "Shared Domain/Application은 framework·구현·개별 Context에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]

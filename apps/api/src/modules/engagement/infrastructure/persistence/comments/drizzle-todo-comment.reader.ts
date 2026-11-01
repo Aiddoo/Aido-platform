@@ -7,9 +7,7 @@ import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import {
-  nullableRawTimestampSchema,
-} from "#api/platform/database/raw-timestamp.schema";
+import { nullableRawTimestampSchema } from "#api/platform/database/raw-timestamp.schema";
 import { todo, todoComment, userProfile, user } from "#api/platform/database/schema/index";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 

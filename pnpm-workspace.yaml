@@ -22,7 +22,6 @@ allowBuilds:
   '@swc/core': true
   argon2: true
   esbuild: true
-  prisma: true
   '@sentry/cli': true
   '@firebase/util': false
   '@parcel/watcher': false
@@ -36,15 +35,12 @@ allowBuilds:
   workerd: false
 
 overrides:
-  # Prisma 내부 의존성이 다른 pg 타입을 끌어와 Pool 타입이 갈라지지 않도록 앱 드라이버 버전으로 통일한다.
-  pg: 'catalog:prisma8'
-  '@types/pg': 'catalog:prisma8'
   # pnpm audit --fix 결과. 상위 패키지가 패치 버전을 받으면 해당 항목을 제거한다.
   '@grpc/grpc-js@<1.13.6': ^1.13.6
   '@hono/node-server@<1.19.15': ^1.19.15
   body-parser@<2.4.0: ^2.4.0
   fast-uri@<3.1.9: ^3.1.9
-  # HealthService uses native SQL; the optional generated-client health indicator is unused.
+  # @nestjs/terminus의 선택 peer인 Prisma client가 autoInstallPeers로 설치되지 않게 막는다.
   '@nestjs/terminus@12.1.0>@prisma/client': '-'
   decode-uri-component@<=0.4.2: ^0.5.0
   hono@<4.13.7: ^4.13.7
@@ -75,6 +71,7 @@ catalog:
   '@swc/cli': '0.8.2'
   '@swc/core': '1.16.21'
   '@types/node': '26.6.6'
+  '@types/pg': '8.23.1'
   '@vitest/coverage-v8': '5.0.5'
   'ai': '7.0.159'
   'bullmq': '6.5.3'
@@ -157,12 +154,6 @@ catalogs:
     '@nestjs-cls/transactional-adapter-drizzle-orm': '2.0.2'
     'drizzle-kit': '1.0.0-rc.5'
     'drizzle-orm': '1.0.0-rc.5'
-  prisma8:
-    '@prisma/cli-engine': '0.9.0'
-    '@prisma/orm-postgres': '8.0.0-rc.20'
-    '@types/pg': '8.23.1'
-    'pg': '8.23.1'
-    'prisma': '8.0.0-rc.27'
   nest12:
     '@nestjs-cls/transactional': '4.0.2'
     '@nestjs/cli': '12.0.11'

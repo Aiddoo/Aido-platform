@@ -65,11 +65,13 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     const activeUsers = Array.from({ length: 501 }, (_, index) =>
       UserFixture.create({ id: `active-${String(index).padStart(4, "0")}` }),
     );
-    await client.insert(user).values([
-      ...activeUsers,
-      UserFixture.create({ status: "SUSPENDED" }),
-      UserFixture.create({ deletedAt: END }),
-    ]);
+    await client
+      .insert(user)
+      .values([
+        ...activeUsers,
+        UserFixture.create({ status: "SUSPENDED" }),
+        UserFixture.create({ deletedAt: END }),
+      ]);
 
     // When
     const batches = [];

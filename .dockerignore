@@ -70,10 +70,6 @@ my-docs/
 **/playwright-report/
 **/junit.xml
 
-# Generated (이미지 안에서 contract:emit / db:generate로 다시 만든다)
-**/src/generated/
-**/prisma/generated/
-
 # Local artifacts
 .worktrees/
 .secrets/

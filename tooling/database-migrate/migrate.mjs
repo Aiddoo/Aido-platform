@@ -1,41 +1,50 @@
-import { execFileSync } from "node:child_process";
-import { createRequire } from "node:module";
-import { resolve } from "node:path";
+import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
 
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import pg from "pg";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import pg from 'pg';
 
 const require = createRequire(import.meta.url);
-const apiDirectory = resolve(import.meta.dirname, "../../apps/api");
-const { assertDatabaseUrlIsSafe } = require(resolve(apiDirectory, "scripts/guard-database-url.cjs"));
+const apiDirectory = resolve(import.meta.dirname, '../../apps/api');
+const { assertDatabaseUrlIsSafe } = require(
+  resolve(apiDirectory, 'scripts/guard-database-url.cjs'),
+);
 
-const RESERVED_COMMENT_AUTHOR = ["cm1deletedcommentauthor000001", "system:deleted-comment-author", "_DELETED"];
+const RESERVED_COMMENT_AUTHOR = [
+  'cm1deletedcommentauthor000001',
+  'system:deleted-comment-author',
+  '_DELETED',
+];
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
+  throw new Error('DATABASE_URL is required');
 }
 const jobDatabaseUrl = process.env.PGBOSS_DATABASE_URL ?? databaseUrl;
 assertDatabaseUrlIsSafe(databaseUrl);
 assertDatabaseUrlIsSafe(jobDatabaseUrl);
 
-const lockTimeout = "-c lock_timeout=5000";
+const lockTimeout = '-c lock_timeout=5000';
 const pgOptions = process.env.PGOPTIONS ? `${process.env.PGOPTIONS} ${lockTimeout}` : lockTimeout;
 
-execFileSync("pnpm", ["exec", "pg-boss", "migrate"], {
-  stdio: "inherit",
+execFileSync('pnpm', ['exec', 'pg-boss', 'migrate'], {
+  stdio: 'inherit',
   env: {
     ...process.env,
     PGOPTIONS: pgOptions,
     PGBOSS_DATABASE_URL: jobDatabaseUrl,
-    PGBOSS_SCHEMA: process.env.JOB_SCHEMA ?? "pgboss",
+    PGBOSS_SCHEMA: process.env.JOB_SCHEMA ?? 'pgboss',
   },
 });
 
-const pool = new pg.Pool({ connectionString: databaseUrl, options: `-c TimeZone=UTC ${lockTimeout}` });
+const pool = new pg.Pool({
+  connectionString: databaseUrl,
+  options: `-c TimeZone=UTC ${lockTimeout}`,
+});
 const db = drizzle({ client: pool });
-const migrationsFolder = resolve(apiDirectory, "drizzle");
+const migrationsFolder = resolve(apiDirectory, 'drizzle');
 
 /** Prisma로 만든 기존 DB는 baseline을 실행하지 않고 적용됨으로만 기록한다(공식 init). */
 async function adoptExistingDatabase() {
@@ -57,20 +66,22 @@ async function adoptExistingDatabase() {
     RESERVED_COMMENT_AUTHOR,
   );
   if (invariant.rows[0]?.valid !== true) {
-    throw new Error("Reserved comment author invariant is invalid");
+    throw new Error('Reserved comment author invariant is invalid');
   }
 
   const result = await migrate(db, { migrationsFolder, init: true });
   if (result?.exitCode) {
-    throw new Error(`Cannot adopt the existing database as the Drizzle baseline: ${result.exitCode}`);
+    throw new Error(
+      `Cannot adopt the existing database as the Drizzle baseline: ${result.exitCode}`,
+    );
   }
-  console.log("[migrate] existing database adopted at the Drizzle baseline");
+  console.log('[migrate] existing database adopted at the Drizzle baseline');
 }
 
 try {
   await adoptExistingDatabase();
   await migrate(db, { migrationsFolder });
-  console.log("[migrate] migrations applied");
+  console.log('[migrate] migrations applied');
 } finally {
   await pool.end();
 }

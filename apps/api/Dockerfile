@@ -19,13 +19,12 @@ RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild argon2 @swc/
 FROM deps AS builder
 COPY --from=pruner /app/out/api/full/ ./
 RUN pnpm --filter @aido/api build
-RUN pnpm --filter @aido/server db:generate && pnpm --filter @aido/server build
+RUN pnpm --filter @aido/server build
 RUN pnpm --filter @aido/server deploy --legacy --prod --prefer-offline /app/production
 
 FROM deps AS development
 COPY --from=pruner /app/out/api/full/ ./
 RUN pnpm --filter @aido/api build
-RUN pnpm --filter @aido/server db:generate
 WORKDIR /app/apps/api
 ENV NODE_ENV=development
 EXPOSE 8080
