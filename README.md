@@ -23,11 +23,11 @@
 | 분류         | 기술                                                               |
 | ------------ | ------------------------------------------------------------------ |
 | Monorepo     | Turborepo 2.11, pnpm 12.15                                         |
-| Backend      | NestJS 12.2 ESM, Prisma 8 RC (ORM rc.20, CLI rc.27), PostgreSQL 16 |
+| Backend      | NestJS 12.3 ESM, Prisma 8 RC (ORM rc.20, CLI rc.27), PostgreSQL 16 |
 | Mobile       | Expo 58, React Native 0.88, React 19.3                             |
-| Validation   | Zod 4.3.6, Nest Standard Schema                                    |
+| Validation   | Zod 4.6, Nest Standard Schema                                      |
 | Testing      | Jest Expo 58 (Jest 30), Vitest 5.0, Testcontainers                 |
-| Code Quality | Oxlint 1.89, Oxfmt 0.74                                            |
+| Code Quality | Oxlint 1.90, Oxfmt 0.75                                            |
 | Runtime      | Node.js 24.22.1 LTS                                                |
 
 ## 구조
