@@ -1,4 +1,5 @@
 import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
+import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
@@ -16,10 +17,6 @@ import {
   PushDeliveryRuntimeJobSchema,
 } from "./push-delivery-queue.constants.js";
 
-function assertUnreachable(job: never): never {
-  throw new Error(`Unhandled push delivery job: ${JSON.stringify(job)}`);
-}
-
 /** Queue transport parser/router. Delivery policy and state transitions remain in application. */
 @Injectable()
 export class PushDeliveryQueueProcessor implements OnModuleInit {
@@ -33,7 +30,9 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
     await this.runtime.work(
       PUSH_DELIVERY_QUEUE,
       async (jobs) => {
@@ -52,19 +51,18 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
 
   async process(processingJobId: string, jobAttempt: number, untrustedJob: unknown): Promise<void> {
     const job = PushDeliveryRuntimeJobSchema.parse(untrustedJob);
-    switch (job.name) {
-      case PushDeliveryJobName.RELAY_OUTBOX:
-        return this.relayOutbox.execute();
-      case PushDeliveryJobName.DELIVER_DISPATCHES:
-        return this.deliverPushNotifications.execute({
+    return match(job)
+      .with({ name: PushDeliveryJobName.RELAY_OUTBOX }, () => this.relayOutbox.execute())
+      .with({ name: PushDeliveryJobName.DELIVER_DISPATCHES }, ({ data }) =>
+        this.deliverPushNotifications.execute({
           processingJobId,
           processingJobAttempt: jobAttempt,
-          publications: job.data,
+          publications: data,
           // JobRuntime은 pg-boss/BullMQ 모두 1-based attempt로 정규화한다.
           isFinalAttempt: jobAttempt > PUSH_DELIVERY_JOB_POLICY.retryLimit,
-        });
-    }
-    return assertUnreachable(job);
+        }),
+      )
+      .exhaustive();
   }
 
   async processDeadLetter(untrustedJob: unknown): Promise<void> {
