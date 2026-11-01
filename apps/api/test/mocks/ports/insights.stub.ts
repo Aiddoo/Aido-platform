@@ -64,7 +64,9 @@ export class StubDailyCompletionCache implements DailyCompletionCachePort {
   async invalidate(userId: string): Promise<void> {
     this.#generations.set(userId, (this.#generations.get(userId) ?? 0) + 1);
     for (const [key, entry] of this.#ranges) {
-      if (entry.ownerId === userId) this.#ranges.delete(key);
+      if (entry.ownerId === userId) {
+        this.#ranges.delete(key);
+      }
     }
   }
   #read(scope: string, userId: string, start: string, end: string) {
@@ -81,7 +83,9 @@ export class StubDailyCompletionCache implements DailyCompletionCachePort {
     generation: string,
     value: DailyCompletionsRange,
   ) {
-    if (generation !== String(this.#generations.get(userId) ?? 0)) return;
+    if (generation !== String(this.#generations.get(userId) ?? 0)) {
+      return;
+    }
     this.#ranges.set(JSON.stringify([scope, userId, start, end]), {
       ownerId: userId,
       value: structuredClone(value),

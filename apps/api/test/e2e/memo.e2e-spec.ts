@@ -20,7 +20,7 @@ import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
  */
 import request from "supertest";
 
-import { encodeCreate } from "#api/platform/database/database-records";
+import { memo } from "#api/platform/database/schema/index";
 
 import {
   createE2eApp,
@@ -153,25 +153,25 @@ describe("메모 E2E", () => {
     });
 
     it("최대 한도(20개) 도달 시 403 에러 반환 (MEMO_2003)", async () => {
-      // Given - 이미 20개의 메모를 가진 사용자 (DB 직접 시딩)
+      // Given
       const user = await ctx.helpers.createVerifiedUser("memo-create-limit@test.com", password);
-      const prisma = ctx.testDatabase.getClient();
-      await prisma.orm.public.Memo.createAndCount(
+      const client = ctx.testDatabase.getClient();
+      await client.insert(memo).values(
         Array.from({ length: 20 }, (_, i) => ({
           userId: user.userId,
           content: `시딩 메모 ${i + 1}`,
           sortOrder: i,
-        })).map((value) => encodeCreate("Memo", value)),
+        })),
       );
 
-      // When - 21번째 메모 생성 시도
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/memos")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ content: "한도 초과 메모" })
         .expect(403);
 
-      // Then - MEMO_2003 에러
+      // Then
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("MEMO_2003");
     });

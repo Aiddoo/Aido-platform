@@ -42,15 +42,18 @@ describe("할 일 카테고리 이동", () => {
     // Given
     fixture.categories.set(2, { id: 2, name: "대상", color: "#123456", sortOrder: 1 });
     fixture.categoryOwners.set(2, fixture.userId);
-    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY + 1; id++)
+    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY + 1; id++) {
       fixture.records.set(id, { ...createPlanningTodo(fixture.userId, id), categoryId: 2 });
+    }
     // When / Then
     await expect(
       useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
     expect(fixture.records.get(1)?.categoryId).toBe(1);
     const saved = fixture.records.get(1);
-    if (saved == null) throw new Error("Todo fixture missing");
+    if (saved == null) {
+      throw new Error("Todo fixture missing");
+    }
     saved.completed = true;
     saved.completedAt = PLANNING_TIME;
     const result = await useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 });

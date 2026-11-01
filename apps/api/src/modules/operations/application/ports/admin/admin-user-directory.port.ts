@@ -6,7 +6,7 @@ export const ADMIN_USER_DIRECTORY = Symbol("ADMIN_USER_DIRECTORY");
 /**
  * 관리자 사용자 조회 포트 — 알림 대상 사용자 선별을 추상화한다.
  *
- * 필터→쿼리 변환(Prisma where 등)은 인프라 어댑터가 담당하며, application은
+ * 필터→쿼리 변환(ORM where 등)은 인프라 어댑터가 담당하며, application은
  * 대상 필터의 도메인 의미만 다룬다.
  */
 export interface AdminUserDirectoryPort {

@@ -299,10 +299,11 @@ describe("HandleWebhookEvent", () => {
       expect(
         fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
       ).toMatchObject({ status: "ACTIVE", expiresAt: SUBSCRIPTION_EXPIRY });
-      if (body.event.type === "PRODUCT_CHANGE")
+      if (body.event.type === "PRODUCT_CHANGE") {
         expect(
           fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID)?.productId,
         ).toBe("premium_yearly");
+      }
       expect(
         fixture.subscriptionRepository.users.get(fixture.user.id)?.subscriptionExpiresAt,
       ).toEqual(SUBSCRIPTION_EXPIRY);

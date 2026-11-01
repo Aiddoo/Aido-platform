@@ -61,8 +61,9 @@ export class StubCheerRepository implements CheerRepositoryPort {
   }
   async saveRead(cheer: Cheer): Promise<void> {
     const record = this.records.get(cheer.id);
-    if (record && record.readAt === null)
+    if (record && record.readAt === null) {
       this.records.set(cheer.id, { ...record, readAt: cheer.readAt });
+    }
   }
   async markManyAsRead(ids: number[], receiverId: string): Promise<number> {
     let count = 0;
@@ -175,18 +176,22 @@ export class StubNudgeRepository implements NudgeRepositoryPort {
   }
   async saveRead(nudge: Nudge): Promise<void> {
     const record = this.records.get(nudge.id);
-    if (record && record.readAt === null)
+    if (record && record.readAt === null) {
       this.records.set(nudge.id, { ...record, readAt: nudge.readAt });
+    }
   }
   async saveReply(nudge: Nudge): Promise<void> {
     const record = this.records.get(nudge.id);
-    if (record) this.records.set(nudge.id, { ...record, ...nudge.toPersistence() });
+    if (record) {
+      this.records.set(nudge.id, { ...record, ...nudge.toPersistence() });
+    }
   }
   async saveThanksBatch(ids: readonly number[], thankedAt: Date): Promise<void> {
     for (const id of ids) {
       const record = this.records.get(id);
-      if (record && record.thankedAt === null)
+      if (record && record.thankedAt === null) {
         this.records.set(id, { ...record, thankedAt: new Date(thankedAt) });
+      }
     }
   }
   async findInteractionById(id: number, userId: string): Promise<NudgeInteractionRecord | null> {

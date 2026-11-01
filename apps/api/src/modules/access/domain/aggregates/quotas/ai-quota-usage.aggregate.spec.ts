@@ -69,7 +69,9 @@ describe("AiQuotaUsage", () => {
     const at = new Date(AT);
     // When
     const reservation = usage.reserve({ at, limit: 5 });
-    if (reservation.status !== "reserved") throw new Error("expected reserved fixture");
+    if (reservation.status !== "reserved") {
+      throw new Error("expected reserved fixture");
+    }
     reservation.usage.resetAt.setUTCFullYear(2000);
     at.setUTCFullYear(2001);
     const release = usage.release("2026-M04");

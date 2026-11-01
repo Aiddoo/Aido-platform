@@ -1,9 +1,14 @@
-import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
+
+import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
+
+import { resolveTestDatabaseWorkerCount } from "./test-database-workers.js";
 
 const TEST_DATABASE_NAME_PATTERN = /^aido_test_[a-z0-9]{6,32}$/;
 
@@ -11,6 +16,7 @@ export type ManagedTestDatabaseEnvironment = Readonly<Record<string, string | un
 
 export interface ManagedTestDatabaseResource {
   getConnectionUri(): string;
+  cloneDatabases(templateName: string, names: readonly string[]): Promise<string[]>;
   stop(): Promise<unknown>;
 }
 
@@ -22,18 +28,14 @@ interface StartManagedTestDatabaseDependencies {
     env: ManagedTestDatabaseEnvironment,
   ) => Promise<ManagedTestDatabaseResource>;
   migrate: (connectionUri: string) => Promise<void> | void;
+  workerCount: number;
 }
 
 export interface ManagedTestDatabaseHandle {
   readonly connectionUri: string;
   readonly databaseName: string;
+  readonly workerUris: readonly string[];
   stop(): Promise<void>;
-}
-
-export function resolvePnpmCommand(
-  platform: NodeJS.Platform = process.platform,
-): "pnpm.cmd" | "pnpm" {
-  return platform === "win32" ? "pnpm.cmd" : "pnpm";
 }
 
 function getDatabaseName(connectionUri: string): string {
@@ -71,6 +73,57 @@ export function assertManagedTestDatabaseEnvironment(env: ManagedTestDatabaseEnv
   return { connectionUri: env.DATABASE_URL, databaseName };
 }
 
+function withDatabaseName(baseUri: string, databaseName: string): string {
+  const uri = new URL(baseUri);
+  uri.pathname = `/${databaseName}`;
+  return uri.toString();
+}
+
+function createAdminDatabaseController(adminUri: string) {
+  const pool = new Pool({ connectionString: adminUri, max: 1 });
+  const createdDatabases: string[] = [];
+
+  const dropDatabase = async (databaseName: string) => {
+    await pool.query(
+      "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()",
+      [databaseName],
+    );
+    await pool.query(`DROP DATABASE "${databaseName}"`);
+  };
+
+  return {
+    // Names come from the generated aido_test_<run-id>[w<n>] allowlist.
+    create: async (databaseName: string) => {
+      await pool.query(`CREATE DATABASE "${databaseName}"`);
+      createdDatabases.push(databaseName);
+    },
+    cloneDatabases: async (templateName: string, names: readonly string[]) => {
+      for (const name of names) {
+        if (!TEST_DATABASE_NAME_PATTERN.test(name)) {
+          throw new Error("Refusing test database creation: invalid worker database name");
+        }
+        await pool.query(`CREATE DATABASE "${name}" TEMPLATE "${templateName}"`);
+        createdDatabases.push(name);
+      }
+      return names.map((name) => withDatabaseName(adminUri, name));
+    },
+    dropCreated: async () => {
+      let firstError: unknown;
+      for (const name of [...createdDatabases].reverse()) {
+        try {
+          await dropDatabase(name);
+        } catch (error) {
+          firstError ??= error;
+        }
+      }
+      if (firstError !== undefined) {
+        throw firstError;
+      }
+    },
+    end: () => pool.end(),
+  };
+}
+
 async function startServiceDatabase(
   serviceUri: string,
   databaseName: string,
@@ -79,27 +132,21 @@ async function startServiceDatabase(
   if (getDatabaseName(serviceUri) !== "postgres") {
     throw new Error("AIDO_TEST_POSTGRES_URL must target the postgres administration database");
   }
-  const pool = new Pool({ connectionString: serviceUri, max: 1 });
+  const admin = createAdminDatabaseController(serviceUri);
   try {
-    // databaseName has already passed the strict generated-name allowlist.
-    await pool.query(`CREATE DATABASE "${databaseName}"`);
+    await admin.create(databaseName);
   } catch (error) {
-    await pool.end();
+    await admin.end();
     throw error;
   }
-  const connectionUri = new URL(serviceUri);
-  connectionUri.pathname = `/${databaseName}`;
   return {
-    getConnectionUri: () => connectionUri.toString(),
+    getConnectionUri: () => withDatabaseName(serviceUri, databaseName),
+    cloneDatabases: admin.cloneDatabases,
     stop: async () => {
       try {
-        await pool.query(
-          "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()",
-          [databaseName],
-        );
-        await pool.query(`DROP DATABASE "${databaseName}"`);
+        await admin.dropCreated();
       } finally {
-        await pool.end();
+        await admin.end();
       }
     },
   };
@@ -118,17 +165,35 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
       .withPassword("test_password")
       .start();
 
+    let admin: ReturnType<typeof createAdminDatabaseController> | undefined;
+
     return {
       getConnectionUri: () => container.getConnectionUri(),
-      stop: async () => container.stop(),
+      cloneDatabases: async (templateName, names) => {
+        admin ??= createAdminDatabaseController(
+          withDatabaseName(container.getConnectionUri(), "postgres"),
+        );
+        return admin.cloneDatabases(templateName, names);
+      },
+      stop: async () => {
+        try {
+          await admin?.end();
+        } finally {
+          await container.stop();
+        }
+      },
     };
   },
-  migrate: (connectionUri) => {
-    execFileSync(resolvePnpmCommand(), ["exec", "prisma", "db", "migrate", "--format", "human"], {
-      cwd: path.resolve(import.meta.dirname, "../.."),
-      env: { ...process.env, DATABASE_URL: connectionUri },
-      stdio: "inherit",
-    });
+  workerCount: resolveTestDatabaseWorkerCount(),
+  migrate: async (connectionUri) => {
+    const pool = new Pool(createPostgresPoolConfig(connectionUri));
+    try {
+      await migrate(drizzle({ client: pool }), {
+        migrationsFolder: path.resolve(import.meta.dirname, "../../drizzle"),
+      });
+    } finally {
+      await pool.end();
+    }
   },
 };
 
@@ -174,11 +239,20 @@ export async function startManagedTestDatabase(
 
     await dependencies.migrate(connectionUri);
 
+    const workerNames = Array.from(
+      { length: dependencies.workerCount },
+      (_, index) => `${databaseName}w${index + 1}`,
+    );
+    const workerUris = await database.cloneDatabases(databaseName, workerNames);
+
     return {
       connectionUri,
       databaseName,
+      workerUris,
       stop: async () => {
-        if (stopped) return;
+        if (stopped) {
+          return;
+        }
         stopped = true;
         try {
           await database?.stop();

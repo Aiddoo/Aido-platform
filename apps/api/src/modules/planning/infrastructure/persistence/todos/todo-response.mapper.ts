@@ -1,7 +1,7 @@
 import type { Todo } from "@aido/api";
 import { sumBy } from "es-toolkit";
 
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import {
   toDateString,
   toDateStringOrNull,

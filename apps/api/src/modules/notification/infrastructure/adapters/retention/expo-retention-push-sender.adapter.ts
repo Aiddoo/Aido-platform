@@ -40,7 +40,9 @@ export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {
 
   async reserveRateLimit(candidate: RetentionDispatchCandidate, now: Date): Promise<boolean> {
     const reservation = { dispatchId: candidate.dispatchId, userId: candidate.userId };
-    if (await this.rateLimiter.reserveGeneral(reservation)) return false;
+    if (await this.rateLimiter.reserveGeneral(reservation)) {
+      return false;
+    }
     return !(await this.rateLimiter.reserveEngagement({
       ...reservation,
       localDate: this.#localDate(now, candidate.timezone),

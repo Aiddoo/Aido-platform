@@ -88,11 +88,12 @@ export class LoginWithOAuthToken {
 
   async execute(input: LoginWithOAuthTokenInput): Promise<LoginResult> {
     const strategy = this.#dependencies.registry.get(input.provider);
-    if (strategy == null)
+    if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
         provider: input.provider,
         reason: `Unsupported provider: ${input.provider}`,
       });
+    }
     let profile: VerifiedProfile;
     let options: SocialLoginOptions;
     try {
@@ -200,6 +201,8 @@ export class LoginWithOAuthToken {
         email: effectiveEmail,
         provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
         registeredAt: toISOString(now()),
+        name: newUser.name,
+        ...options.metadata?.device,
       } satisfies AuthUserRegisteredNotification);
     }
 
@@ -249,7 +252,7 @@ export class LoginWithOAuthToken {
         metadata: { provider: data.provider },
       });
 
-      return user;
+      return { id: user.id, name: effectiveName };
     });
   }
 

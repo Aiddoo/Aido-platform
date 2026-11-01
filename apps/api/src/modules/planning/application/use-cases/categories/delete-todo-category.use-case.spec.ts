@@ -137,8 +137,11 @@ describe("카테고리 삭제", () => {
     const categoryIds = new Set([1, 2]);
     const todoCategoryIds = [1, 1, 1];
     repository.moveTodosToCategory.mockImplementation(async (from, to) => {
-      for (const [index, categoryId] of todoCategoryIds.entries())
-        if (categoryId === from) todoCategoryIds[index] = to;
+      for (const [index, categoryId] of todoCategoryIds.entries()) {
+        if (categoryId === from) {
+          todoCategoryIds[index] = to;
+        }
+      }
       return 3;
     });
     repository.delete.mockImplementation(async (id) => {

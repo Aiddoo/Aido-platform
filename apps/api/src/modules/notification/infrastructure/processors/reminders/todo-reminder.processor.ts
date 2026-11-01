@@ -44,18 +44,24 @@ export class TodoReminderProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
     await this.runtime.work(
       TODO_REMINDER_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       { teamSize: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
     );
     await this.runtime.work(
       TODO_REMINDER_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       { teamSize: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
     );

@@ -55,7 +55,9 @@ export class ExpoPushProvider implements PushProvider {
       const receipts = await this.#expo.getPushNotificationReceiptsAsync(chunk);
       for (const ticketId of chunk) {
         const receipt = receipts[ticketId];
-        if (!receipt) continue;
+        if (!receipt) {
+          continue;
+        }
         if (receipt.status === "ok") {
           results.push({ ticketId, delivered: true });
         } else {
@@ -213,18 +215,21 @@ export class ExpoPushProvider implements PushProvider {
         nextSendableEntryIndex++;
 
         if (!ticket || !entry) {
-          if (entry)
+          if (entry) {
             orderedResults[entry.originalIndex] = {
               token: entry.payload.token,
               success: false,
               error: "No ticket or payload",
               errorCode: "NOTIFICATION_1003",
             };
+          }
           continue;
         }
 
         const result = this.#parseTicket(ticket, entry.payload.token);
-        if (result.success) acceptedTicketCount++;
+        if (result.success) {
+          acceptedTicketCount++;
+        }
 
         if (!result.success && result.errorCode === "DeviceNotRegistered") {
           invalidTokens.push(entry.payload.token);

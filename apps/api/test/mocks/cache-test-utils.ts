@@ -98,7 +98,9 @@ export class MockCacheAdapter implements ICacheService {
 
   async has(key: string): Promise<boolean> {
     const entry = this.#store.get(key);
-    if (!entry) return false;
+    if (!entry) {
+      return false;
+    }
     if (Date.now() > entry.expiresAt) {
       this.#store.delete(key);
       return false;
@@ -108,7 +110,9 @@ export class MockCacheAdapter implements ICacheService {
 
   async ttl(key: string): Promise<number> {
     const entry = this.#store.get(key);
-    if (!entry) return -2;
+    if (!entry) {
+      return -2;
+    }
     const remaining = entry.expiresAt - Date.now();
     if (remaining <= 0) {
       this.#store.delete(key);
@@ -119,7 +123,9 @@ export class MockCacheAdapter implements ICacheService {
 
   async touch(key: string, ttl: TtlValue): Promise<boolean> {
     const entry = this.#store.get(key);
-    if (!entry) return false;
+    if (!entry) {
+      return false;
+    }
     if (Date.now() > entry.expiresAt) {
       this.#store.delete(key);
       return false;
@@ -173,7 +179,9 @@ export async function setMultipleCacheEntries(
  */
 export function calculateHitRate(stats: CacheStats): number {
   const total = stats.hits + stats.misses;
-  if (total === 0) return 0;
+  if (total === 0) {
+    return 0;
+  }
   return (stats.hits / total) * 100;
 }
 

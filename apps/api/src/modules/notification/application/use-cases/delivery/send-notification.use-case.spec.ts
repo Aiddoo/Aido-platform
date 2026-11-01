@@ -124,7 +124,9 @@ describe("SendNotification", () => {
 
     const cacheTask = afterCommitTasks[0];
     expect(cacheTask).toBeDefined();
-    if (!cacheTask) throw new Error("Expected unread cache after-commit task");
+    if (!cacheTask) {
+      throw new Error("Expected unread cache after-commit task");
+    }
     await expect(cacheTask()).resolves.toBeUndefined();
     expect(cache.invalidateUnreadCount).toHaveBeenCalledWith(data.userId);
   });

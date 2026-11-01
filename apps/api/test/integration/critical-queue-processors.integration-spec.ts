@@ -1,4 +1,4 @@
-import { and } from "@prisma/orm-postgres/orm-client";
+import { eq } from "drizzle-orm";
 import { assert } from "vitest";
 
 import {
@@ -9,9 +9,7 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { retentionPushOutbox } from "#api/platform/database/schema/index";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -47,21 +45,21 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 
   it("friend-completed 잡은 실제 worker를 거쳐 알림과 푸시 전달 결과를 영속화한다", async () => {
     // Given
-    const friend = await createPushReadyUser(harness.prisma, {
+    const friend = await createPushReadyUser(harness.client, {
       email: "queue-friend@example.com",
       userTag: "FRIEND01",
       name: "완료 친구",
       locale: "ko",
       token: "fake-friend-token",
     });
-    const koreanRecipient = await createPushReadyUser(harness.prisma, {
+    const koreanRecipient = await createPushReadyUser(harness.client, {
       email: "queue-ko@example.com",
       userTag: "QUEUEKO1",
       name: "한국어 수신자",
       locale: "ko",
       token: "fake-queue-ko-token",
     });
-    const englishRecipient = await createPushReadyUser(harness.prisma, {
+    const englishRecipient = await createPushReadyUser(harness.client, {
       email: "queue-en@example.com",
       userTag: "QUEUEEN1",
       name: "English recipient",
@@ -87,29 +85,16 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     // Then
     expect(jobId).not.toBeNull();
     await harness.eventually(async () => {
+      const friendCompleted = { type: "FRIEND_COMPLETED" as const, friendId: friend.id };
       const [notifications, dispatches, attempts, jobs] = await Promise.all([
-        harness.prisma.orm.public.Notification.where((row) =>
-          and(row._type.eq("FRIEND_COMPLETED"), row.friendId.eq(friend.id)),
-        )
-          .orderBy((row) => row.userId.asc())
-          .all()
-          .then((row) => decodeRecord("Notification", row)),
-        harness.prisma.orm.public.PushDispatch.where((row) =>
-          row.notification.some((related) =>
-            and(related._type.eq("FRIEND_COMPLETED"), related.friendId.eq(friend.id)),
-          ),
-        )
-          .all()
-          .then((row) => decodeRecord("PushDispatch", row)),
-        harness.prisma.orm.public.PushDeliveryAttempt.where((row) =>
-          row.dispatch.some((related) =>
-            related.notification.some((related) =>
-              and(related._type.eq("FRIEND_COMPLETED"), related.friendId.eq(friend.id)),
-            ),
-          ),
-        )
-          .all()
-          .then((row) => decodeRecord("PushDeliveryAttempt", row)),
+        harness.client.query.notification.findMany({
+          where: friendCompleted,
+          orderBy: { userId: "asc" },
+        }),
+        harness.client.query.pushDispatch.findMany({ where: { notification: friendCompleted } }),
+        harness.client.query.pushDeliveryAttempt.findMany({
+          where: { dispatch: { notification: friendCompleted } },
+        }),
         harness.boss.findJobs(NOTIFICATION_QUEUE, {
           id: jobId ?? undefined,
         }),
@@ -136,7 +121,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 
   it("retention-dispatch 잡은 실제 worker를 거쳐 전송 상태와 시도를 영속화한다", async () => {
     // Given
-    const recipient = await createPushReadyUser(harness.prisma, {
+    const recipient = await createPushReadyUser(harness.client, {
       email: "queue-retention@example.com",
       userTag: "RETENT01",
       name: "리텐션 수신자",
@@ -149,17 +134,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       variant: "TREATMENT",
       startedAt: new Date("2026-07-01T00:00:00.000Z"),
     });
-    const stage = decodeRecord(
-      "RetentionExperimentStage",
-      requireRecord(
-        await harness.prisma.orm.public.RetentionExperimentStage.where((row) =>
-          and(
-            row.assignment.some((related) => related.userId.eq(recipient.id)),
-            row.stage.eq("D1"),
-          ),
-        ).first(),
-      ),
-    );
+    const stage = await findD1Stage(harness, recipient.id);
     await harness.retentionRepository.createDelivery({
       stageId: stage.id,
       userId: recipient.id,
@@ -169,14 +144,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       route: "/feed",
       variantId: "d1_return",
     });
-    const outbox = decodeRecord(
-      "RetentionPushOutbox",
-      requireRecord(
-        await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
-          row.stageId.eq(stage.id),
-        ).first(),
-      ),
-    );
+    const outbox = await findOutbox(harness, stage.id);
     const publication = await claimReadyRetentionOutbox(harness, outbox.id);
     expect(publication).toEqual({ id: outbox.id, attempts: 1 });
 
@@ -189,25 +157,24 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       },
       { ...JOB_OPTIONS, idempotencyKey: `retention-dispatch:${outbox.id}` },
     );
-    if (publication) await harness.retentionRepository.markOutboxPublished(publication);
+    if (publication) {
+      await harness.retentionRepository.markOutboxPublished(publication);
+    }
 
     // Then
     expect(jobId).not.toBeNull();
     await harness.eventually(async () => {
       const [dispatch, attempts, jobs] = await Promise.all([
-        harness.prisma.orm.public.PushDispatch.where((row) => row.id.eq(outbox.dispatchId))
-          .first()
-          .then((row) => decodeRecord("PushDispatch", requireRecord(row))),
-        harness.prisma.orm.public.PushDeliveryAttempt.where((row) =>
-          row.dispatchId.eq(outbox.dispatchId),
-        )
-          .all()
-          .then((row) => decodeRecord("PushDeliveryAttempt", row)),
+        harness.client.query.pushDispatch.findFirst({ where: { id: outbox.dispatchId } }),
+        harness.client.query.pushDeliveryAttempt.findMany({
+          where: { dispatchId: outbox.dispatchId },
+        }),
         harness.boss.findJobs(RETENTION_QUEUE, {
           id: jobId ?? undefined,
         }),
       ]);
 
+      assert.exists(dispatch);
       expect(dispatch.status).toBe("SENT");
       expect(dispatch.sentAt).not.toBeNull();
       expect(attempts).toHaveLength(1);
@@ -219,7 +186,8 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     ]);
   });
 
-  it("retention lease는 같은 runtime job의 높은 attempt만 reclaim하고 stale worker finalize를 거부한다", async () => {
+  it("retention 잠금은 같은 잡의 더 높은 시도 횟수만 다시 가져가고 오래된 작업자의 마무리는 거부한다", async () => {
+    // Given
     const { outbox, publication } = await createRetentionPublication(harness, "LEASE001");
     const first = await harness.retentionRepository.claimDispatch({
       outboxId: outbox.id,
@@ -228,17 +196,15 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       processingJobAttempt: 1,
       startedAt: new Date(),
     });
-    expect(first).not.toBeNull();
 
-    await expect(
-      harness.retentionRepository.claimDispatch({
-        outboxId: outbox.id,
-        publishAttempt: publication.attempts,
-        processingJobId: "different-job",
-        processingJobAttempt: 2,
-        startedAt: new Date(),
-      }),
-    ).resolves.toBeNull();
+    // When
+    const other = await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      processingJobId: "different-job",
+      processingJobAttempt: 2,
+      startedAt: new Date(),
+    });
     const retry = await harness.retentionRepository.claimDispatch({
       outboxId: outbox.id,
       publishAttempt: publication.attempts,
@@ -246,6 +212,10 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       processingJobAttempt: 2,
       startedAt: new Date(),
     });
+
+    // Then
+    expect(first).not.toBeNull();
+    expect(other).toBeNull();
     assert.exists(retry);
     expect(retry.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
     await expect(
@@ -256,7 +226,8 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     ).resolves.toBe(true);
   });
 
-  it("stale retention PROCESSING lease는 일반 outbox와 섞지 않고 dispatch+retention outbox를 함께 reopen한다", async () => {
+  it("오래 멈춘 retention 처리 중 상태는 일반 outbox와 섞지 않고 발송 건과 retention outbox를 함께 다시 연다", async () => {
+    // Given
     const { outbox, publication } = await createRetentionPublication(harness, "STALE001");
     await harness.retentionRepository.claimDispatch({
       outboxId: outbox.id,
@@ -266,29 +237,28 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       startedAt: new Date("2026-08-01T00:00:00.000Z"),
     });
 
+    // When
+    const recovered = await harness.retentionRepository.recoverStaleDispatches(
+      new Date("2026-08-01T00:15:01.000Z"),
+    );
+
+    // Then
+    expect(recovered).toBe(1);
     await expect(
-      harness.retentionRepository.recoverStaleDispatches(new Date("2026-08-01T00:15:01.000Z")),
-    ).resolves.toBe(1);
-    await expect(
-      harness.prisma.orm.public.PushDispatch.where((row) => row.id.eq(outbox.dispatchId))
-        .first()
-        .then((row) => decodeRecord("PushDispatch", requireRecord(row))),
+      harness.client.query.pushDispatch.findFirst({ where: { id: outbox.dispatchId } }),
     ).resolves.toMatchObject({ status: "PENDING", processingJobId: null });
     await expect(
-      harness.prisma.orm.public.RetentionPushOutbox.where((row) => row.id.eq(outbox.id))
-        .first()
-        .then((row) => decodeRecord("RetentionPushOutbox", requireRecord(row))),
+      harness.client.query.retentionPushOutbox.findFirst({ where: { id: outbox.id } }),
     ).resolves.toMatchObject({ status: "PENDING", publishedAt: null });
     await expect(
-      harness.prisma.orm.public.PushDispatchOutbox.where((row) =>
-        row.dispatchId.eq(outbox.dispatchId),
-      )
-        .aggregate((aggregate) => ({ count: aggregate.count() }))
-        .then(({ count }) => count),
-    ).resolves.toBe(0);
+      harness.client.query.pushDispatchOutbox.findMany({
+        where: { dispatchId: outbox.dispatchId },
+      }),
+    ).resolves.toHaveLength(0);
   });
 
-  it("enqueue 성공 뒤 publish mark가 늦어져도 active retention worker lease를 reopen하지 않는다", async () => {
+  it("발행 표시가 늦어져도 실행 중인 retention 작업자의 잠금은 다시 열지 않는다", async () => {
+    // Given
     const { outbox, publication } = await createRetentionPublication(harness, "ACTIVE01");
     const startedAt = new Date();
     await harness.retentionRepository.claimDispatch({
@@ -298,32 +268,29 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       processingJobAttempt: 1,
       startedAt,
     });
-    decodeRecord(
-      "RetentionPushOutbox",
-      requireRecord(
-        await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
-          row.id.eq(outbox.id),
-        ).update(
-          encodePatch("RetentionPushOutbox", {
-            status: "PROCESSING",
-            publishedAt: null,
-            lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
-          }),
-        ),
-      ),
+    await harness.client
+      .update(retentionPushOutbox)
+      .set({
+        status: "PROCESSING",
+        publishedAt: null,
+        lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
+      })
+      .where(eq(retentionPushOutbox.id, outbox.id));
+
+    // When
+    const recovered = await harness.retentionRepository.recoverStaleOutboxes(
+      new Date(startedAt.getTime() - 15 * 60_000),
     );
 
+    // Then
+    expect(recovered).toBe(0);
     await expect(
-      harness.retentionRepository.recoverStaleOutboxes(new Date(startedAt.getTime() - 15 * 60_000)),
-    ).resolves.toBe(0);
-    await expect(
-      harness.prisma.orm.public.RetentionPushOutbox.where((row) => row.id.eq(outbox.id))
-        .first()
-        .then((row) => decodeRecord("RetentionPushOutbox", requireRecord(row))),
+      harness.client.query.retentionPushOutbox.findFirst({ where: { id: outbox.id } }),
     ).resolves.toMatchObject({ status: "PROCESSING" });
   });
 
-  it("retention rate marker는 새 publication generation에 남고 stale generation DLQ는 reopen하지 못한다", async () => {
+  it("retention 발송 한도 표시는 새 발행 회차에 남고 이전 회차의 실패 처리는 다시 열지 못한다", async () => {
+    // Given
     const { outbox, publication } = await createRetentionPublication(harness, "RATE0001");
     const claimed = await harness.retentionRepository.claimDispatch({
       outboxId: outbox.id,
@@ -333,27 +300,25 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       startedAt: new Date(),
     });
     assert.exists(claimed);
-    await expect(
-      harness.retentionRepository.markRateLimitReserved(claimed.fence, new Date()),
-    ).resolves.toBe(true);
-    await expect(
-      harness.retentionRepository.releaseDispatchForRetry({
-        fence: claimed.fence,
-        reason: "provider unavailable",
-        availableAt: new Date(),
-        hasExhaustedRetries: false,
-      }),
-    ).resolves.toBe(true);
+    const reserved = await harness.retentionRepository.markRateLimitReserved(
+      claimed.fence,
+      new Date(),
+    );
+    const released = await harness.retentionRepository.releaseDispatchForRetry({
+      fence: claimed.fence,
+      reason: "provider unavailable",
+      availableAt: new Date(),
+      hasExhaustedRetries: false,
+    });
     const [nextPublication] = await harness.retentionRepository.claimOutboxes(1, new Date());
-    expect(nextPublication?.attempts).toBe(2);
-    await expect(
-      harness.retentionRepository.reopenUnclaimedDispatch({
-        outboxId: outbox.id,
-        publishAttempt: publication.attempts,
-        availableAt: new Date(),
-        reason: "stale DLQ",
-      }),
-    ).resolves.toBe(false);
+
+    // When
+    const reopened = await harness.retentionRepository.reopenUnclaimedDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      availableAt: new Date(),
+      reason: "stale DLQ",
+    });
     const retry = await harness.retentionRepository.claimDispatch({
       outboxId: outbox.id,
       publishAttempt: nextPublication?.attempts,
@@ -361,12 +326,18 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       processingJobAttempt: 1,
       startedAt: new Date(),
     });
+
+    // Then
+    expect(reserved).toBe(true);
+    expect(released).toBe(true);
+    expect(nextPublication?.attempts).toBe(2);
+    expect(reopened).toBe(false);
     expect(retry?.rateLimitReserved).toBe(true);
   });
 });
 
 async function createRetentionPublication(harness: CriticalQueueProcessorHarness, userTag: string) {
-  const user = await createPushReadyUser(harness.prisma, {
+  const user = await createPushReadyUser(harness.client, {
     email: `${userTag.toLowerCase()}@example.com`,
     userTag,
     name: "Retention fixture",
@@ -379,17 +350,7 @@ async function createRetentionPublication(harness: CriticalQueueProcessorHarness
     variant: "TREATMENT",
     startedAt: new Date("2026-07-01T00:00:00.000Z"),
   });
-  const stage = decodeRecord(
-    "RetentionExperimentStage",
-    requireRecord(
-      await harness.prisma.orm.public.RetentionExperimentStage.where((row) =>
-        and(
-          row.assignment.some((related) => related.userId.eq(user.id)),
-          row.stage.eq("D1"),
-        ),
-      ).first(),
-    ),
-  );
+  const stage = await findD1Stage(harness, user.id);
   await harness.retentionRepository.createDelivery({
     stageId: stage.id,
     userId: user.id,
@@ -399,32 +360,41 @@ async function createRetentionPublication(harness: CriticalQueueProcessorHarness
     route: "/feed",
     variantId: "d1_return",
   });
-  const outbox = decodeRecord(
-    "RetentionPushOutbox",
-    requireRecord(
-      await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
-        row.stageId.eq(stage.id),
-      ).first(),
-    ),
-  );
+  const outbox = await findOutbox(harness, stage.id);
   const publication = await claimReadyRetentionOutbox(harness, outbox.id);
   await harness.retentionRepository.markOutboxPublished(publication);
   return { outbox, publication };
 }
 
+async function findD1Stage(harness: CriticalQueueProcessorHarness, userId: string) {
+  const stage = await harness.client.query.retentionExperimentStage.findFirst({
+    where: { stage: "D1", assignment: { userId } },
+  });
+  assert.exists(stage);
+  return stage;
+}
+
+async function findOutbox(harness: CriticalQueueProcessorHarness, stageId: string) {
+  const outbox = await harness.client.query.retentionPushOutbox.findFirst({ where: { stageId } });
+  assert.exists(outbox);
+  return outbox;
+}
+
 async function claimReadyRetentionOutbox(harness: CriticalQueueProcessorHarness, outboxId: string) {
-  // DB DEFAULT 시계와 Node 시계의 차이 대신 같은 업무 시각으로 발행 가능 여부를 검증한다.
   const claimAt = new Date("2026-07-02T00:00:00.000Z");
-  await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
-    row.id.eq(outboxId),
-  ).updateAndCount(encodePatch("RetentionPushOutbox", { availableAt: claimAt }));
+  await harness.client
+    .update(retentionPushOutbox)
+    .set({ availableAt: claimAt })
+    .where(eq(retentionPushOutbox.id, outboxId));
   const [publication] = await harness.retentionRepository.claimOutboxes(1, claimAt);
-  if (publication === undefined) throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+  if (publication === undefined) {
+    throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+  }
   return publication;
 }
 
 async function createPushReadyUser(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   input: {
     email: string;
     userTag: string;
@@ -435,30 +405,23 @@ async function createPushReadyUser(
   },
 ): Promise<{ id: string }> {
   return createUserDatabaseFixture(
-    prisma,
-    encodeCreate("User", { email: input.email, userTag: input.userTag, status: "ACTIVE" }),
+    client,
+    { email: input.email, userTag: input.userTag, status: "ACTIVE" },
     {
-      profile: encodePatch("UserProfile", { id: createEntityId(), name: input.name }),
-      preference: encodePatch("UserPreference", {
-        id: createEntityId(),
+      profile: { name: input.name },
+      preference: {
         pushEnabled: true,
         nightPushEnabled: true,
         timezone: input.timezone ?? "Asia/Seoul",
         locale: input.locale,
-      }),
-      consent: encodePatch("UserConsent", {
-        id: createEntityId(),
-        marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
-      }),
-      pushTokens: encodePatch<
-        "PushToken",
-        { token: string; deviceId: string; platform: "IOS"; appVersion: string }
-      >("PushToken", {
+      },
+      consent: { marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z") },
+      pushTokens: {
         token: input.token,
         deviceId: `${input.userTag}-device`,
         platform: "IOS",
         appVersion: "1.8.0",
-      }),
+      },
     },
-  ).then((row) => decodeRecord("User", row));
+  );
 }

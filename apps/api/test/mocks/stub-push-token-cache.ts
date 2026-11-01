@@ -8,7 +8,9 @@ export class StubPushTokenCache implements Pick<NotificationCachePort, "invalida
 
   async invalidatePushTokens(userId: string): Promise<void> {
     this.invalidationAttempts.push(userId);
-    if (this.failForUsers.has(userId)) throw new Error("synthetic cache failure");
+    if (this.failForUsers.has(userId)) {
+      throw new Error("synthetic cache failure");
+    }
     this.entries.delete(userId);
   }
 }

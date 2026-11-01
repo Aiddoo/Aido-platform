@@ -31,11 +31,11 @@ import { InviteMaintenanceProcessor } from "./infrastructure/jobs/invites/invite
 import { InviteQualifyReminderSchedulerAdapter } from "./infrastructure/jobs/invites/invite-qualify-reminder.scheduler.adapter.js";
 import { InviteRewardProcessor } from "./infrastructure/jobs/invites/invite-reward.processor.js";
 import { InviteRewardSchedulerAdapter } from "./infrastructure/jobs/invites/invite-reward.scheduler.adapter.js";
+import { DrizzleInviteRedemptionRepository } from "./infrastructure/persistence/invites/drizzle-invite-redemption.repository.js";
+import { DrizzleInviteRepository } from "./infrastructure/persistence/invites/drizzle-invite.repository.js";
+import { DrizzleRewardClaimRepository } from "./infrastructure/persistence/invites/drizzle-reward-claim.repository.js";
+import { DrizzleRewardGrantRepository } from "./infrastructure/persistence/invites/drizzle-reward-grant.repository.js";
 import { InviteCodeGenerator } from "./infrastructure/persistence/invites/invite-code.generator.js";
-import { PrismaInviteRedemptionRepository } from "./infrastructure/persistence/invites/prisma-invite-redemption.repository.js";
-import { PrismaInviteRepository } from "./infrastructure/persistence/invites/prisma-invite.repository.js";
-import { PrismaRewardClaimRepository } from "./infrastructure/persistence/invites/prisma-reward-claim.repository.js";
-import { PrismaRewardGrantRepository } from "./infrastructure/persistence/invites/prisma-reward-grant.repository.js";
 import { InviteeActivitySubscriber } from "./infrastructure/subscribers/invites/invitee-activity.subscriber.js";
 import { InviteController } from "./presentation/controllers/invites/invite.controller.js";
 import {
@@ -71,10 +71,10 @@ import {
       }),
     },
     InviteCodeGenerator,
-    { provide: INVITE_REPOSITORY, useClass: PrismaInviteRepository },
-    { provide: INVITE_REDEMPTION_REPOSITORY, useClass: PrismaInviteRedemptionRepository },
-    { provide: REWARD_GRANT_REPOSITORY, useClass: PrismaRewardGrantRepository },
-    { provide: REWARD_CLAIM_REPOSITORY, useClass: PrismaRewardClaimRepository },
+    { provide: INVITE_REPOSITORY, useClass: DrizzleInviteRepository },
+    { provide: INVITE_REDEMPTION_REPOSITORY, useClass: DrizzleInviteRedemptionRepository },
+    { provide: REWARD_GRANT_REPOSITORY, useClass: DrizzleRewardGrantRepository },
+    { provide: REWARD_CLAIM_REPOSITORY, useClass: DrizzleRewardClaimRepository },
     { provide: CLAIM_HASHER, useClass: HmacClaimHasherAdapter },
     { provide: INVITE_NOTIFIER, useClass: InviteNotifierAdapter },
     { provide: INVITE_REWARD_ALERT, useClass: SentryInviteRewardAlertAdapter },

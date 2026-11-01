@@ -62,7 +62,9 @@ export function createE2eTestStateResetter({
 
   let failedReset: AggregateError | undefined;
   return async () => {
-    if (failedReset) throw failedReset;
+    if (failedReset) {
+      throw failedReset;
+    }
     const errors: Error[] = [];
     if (drain) {
       try {

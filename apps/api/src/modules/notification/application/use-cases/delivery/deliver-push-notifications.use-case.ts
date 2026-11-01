@@ -45,8 +45,11 @@ function partitionEligibility<TCandidate>(
   const eligible: TCandidate[] = [];
   const skipped: PartitionedEligibility<TCandidate>["skipped"] = [];
   for (const decision of decisions) {
-    if (decision.status === "eligible") eligible.push(decision.candidate);
-    else skipped.push({ candidate: decision.candidate, reason: decision.reason });
+    if (decision.status === "eligible") {
+      eligible.push(decision.candidate);
+    } else {
+      skipped.push({ candidate: decision.candidate, reason: decision.reason });
+    }
   }
   return { eligible, skipped };
 }
@@ -93,7 +96,9 @@ export class DeliverPushNotifications {
 
   async execute(input: DeliverPushNotificationsInput): Promise<void> {
     const claimed = await this.#claim(input);
-    if (claimed.length === 0) return;
+    if (claimed.length === 0) {
+      return;
+    }
 
     try {
       for (const delivery of claimed.filter((item) => item.deliveryMode === "SINGLE")) {
@@ -145,7 +150,9 @@ export class DeliverPushNotifications {
   }
 
   async #deliverBatch(claimed: readonly ClaimedPushDelivery[]): Promise<void> {
-    if (claimed.length === 0) return;
+    if (claimed.length === 0) {
+      return;
+    }
     const candidates = claimed.map<ClaimedBatchCandidate>((item) => ({
       claimed: item,
       dispatchId: item.fence.dispatchId,
@@ -182,7 +189,9 @@ export class DeliverPushNotifications {
     const eligible = candidates.filter((candidate) =>
       approvedDispatchIds.has(candidate.dispatchId),
     );
-    if (eligible.length === 0) return;
+    if (eligible.length === 0) {
+      return;
+    }
 
     const prepared = await this.#dependencies.delivery.prepareBatchDelivery(
       eligible.map((candidate) =>
@@ -246,7 +255,9 @@ export class DeliverPushNotifications {
   async #markRateLimitReserved(
     claimedDeliveries: readonly ClaimedPushDelivery[],
   ): Promise<Set<number>> {
-    if (claimedDeliveries.length === 0) return new Set();
+    if (claimedDeliveries.length === 0) {
+      return new Set();
+    }
     const reservedAt = new Date();
     const reserved = await this.#dependencies.unitOfWork.run(async () => {
       const reservedDispatchIds = await this.#dependencies.lifecycle.markRateLimitReserved(
@@ -320,7 +331,9 @@ export class DeliverPushNotifications {
   ): Promise<void> {
     const finalizations = skipped.flatMap(({ candidate, reason }) => {
       const context = contexts.get(candidate.dispatchId);
-      if (context == null) return [];
+      if (context == null) {
+        return [];
+      }
       this.#logSkipped(candidate.data, reason);
       return [{ fence: candidate.claimed.fence, context, reason }];
     });

@@ -28,7 +28,9 @@ export class StubWeatherLocationRepository implements WeatherLocationRepositoryP
   saveFailure: Error | null = null;
 
   constructor(locations: readonly UserLocation[] = []) {
-    for (const location of locations) this.records.set(location.userId, location);
+    for (const location of locations) {
+      this.records.set(location.userId, location);
+    }
   }
 
   async findByUserId(userId: string): Promise<UserLocation | null> {
@@ -37,7 +39,9 @@ export class StubWeatherLocationRepository implements WeatherLocationRepositoryP
   }
 
   async upsert(location: UserLocation): Promise<UserLocation> {
-    if (this.saveFailure !== null) throw this.saveFailure;
+    if (this.saveFailure !== null) {
+      throw this.saveFailure;
+    }
     this.writes.push(location);
     this.records.set(location.userId, location);
     return location;
@@ -54,7 +58,9 @@ export class StubWeatherGridResolver implements WeatherGridResolverPort {
   resolveGrid(coordinate: Coordinate): GridCoordinate {
     this.coordinates.push(coordinate);
     const grid = this.grids.get(`${coordinate.latitude}:${coordinate.longitude}`);
-    if (grid === undefined) throw new Error("준비되지 않은 좌표의 격자입니다.");
+    if (grid === undefined) {
+      throw new Error("준비되지 않은 좌표의 격자입니다.");
+    }
     return grid;
   }
 }
@@ -70,7 +76,9 @@ export class StubWeatherProvider implements WeatherProvider {
   async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
     this.calls.push({ lat, lon, date: new Date(date) });
     const result = this.results.get(`${lat}:${lon}`) ?? this.failure ?? this.forecast;
-    if (result instanceof Error) throw result;
+    if (result instanceof Error) {
+      throw result;
+    }
     return weatherForecastFixture({ ...result, date: new Date(date) });
   }
 
@@ -92,7 +100,9 @@ export class StubAirQualityProvider implements AirQualityProvider {
 
   async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
     this.calls.push({ lat, lon });
-    if (this.failure !== null) throw this.failure;
+    if (this.failure !== null) {
+      throw this.failure;
+    }
     return this.result === null ? null : { ...this.result };
   }
   clear(): void {
@@ -121,7 +131,9 @@ export class StubLifestyleIndexProvider implements LifestyleIndexProvider {
     windSpeed: number,
   ): Promise<LifestyleIndex> {
     this.calls.push({ lat, lon, date: new Date(date), currentTemp, windSpeed });
-    if (this.failure !== null) throw this.failure;
+    if (this.failure !== null) {
+      throw this.failure;
+    }
     return this.result === null
       ? { feelsLikeTemperature: currentTemp, uvIndex: 0 }
       : { ...this.result };
@@ -141,7 +153,9 @@ export class StubSunTimeProvider implements SunTimeProvider {
 
   async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
     this.calls.push({ lat, lon, date: new Date(date) });
-    if (this.failure !== null) throw this.failure;
+    if (this.failure !== null) {
+      throw this.failure;
+    }
     const key = date.toISOString().slice(0, 10);
     const result = this.dates.has(key) ? this.dates.get(key) : this.result;
     return result == null ? null : { ...result };

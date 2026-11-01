@@ -15,8 +15,7 @@ import type {
 import { vi } from "vitest";
 
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
-import { createMockDatabaseContext } from "#test/mocks/database.mock";
-import { asTxClient } from "#test/mocks/transaction.mock";
+import { createFakeDatabase, type ExecutedStatement } from "#test/mocks/drizzle.mock";
 import { mockOf } from "#test/mocks/typed-mock";
 
 import {
@@ -195,16 +194,16 @@ function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata
 
 describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
   let boss: FakePgBossClient;
-  let context: ReturnType<typeof createMockDatabaseContext>;
+  let statements: ExecutedStatement[];
   let runtime: PgBossJobRuntimeAdapter;
 
   beforeEach(() => {
     boss = new FakePgBossClient();
-    context = createMockDatabaseContext();
-    context.query.mockResolvedValue([]);
+    const fake = createFakeDatabase();
+    statements = fake.statements;
     runtime = new PgBossJobRuntimeAdapter(
       boss,
-      { tx: asTxClient(context) },
+      { tx: fake.database },
       { job: { shutdownTimeoutMs: 90_000 } },
     );
   });
@@ -260,7 +259,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
     await boss.sendCalls[0]?.options.db?.executeSql("SELECT $1::uuid AS id", [
       "00000000-0000-4000-8000-000000000001",
     ]);
-    expect(context.query).toHaveBeenCalledOnce();
+    expect(statements).toHaveLength(1);
   });
 
   it("enqueueMany는 enqueue와 같은 작업 옵션으로 현재 CLS 트랜잭션에서 한 번에 insert한다", async () => {
@@ -289,7 +288,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
     await boss.insertCalls[0]?.options.db?.executeSql("SELECT $1::uuid AS id", [
       "00000000-0000-4000-8000-000000000001",
     ]);
-    expect(context.query).toHaveBeenCalledOnce();
+    expect(statements).toHaveLength(1);
   });
 
   it("빈 enqueueMany는 큐와 작업을 쓰지 않는다", async () => {

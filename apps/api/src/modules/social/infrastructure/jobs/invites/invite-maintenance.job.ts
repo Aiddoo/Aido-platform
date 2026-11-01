@@ -44,7 +44,9 @@ export class InviteMaintenanceJob implements OnModuleInit {
     // 프로세서와 같은 공용 날짜 유틸로 실행 날짜를 정해 catch-up 키와 재시도 날짜가 어긋나지 않게 한다
     const at = now();
     const { timezone, catchUpHour } = INVITE_MAINTENANCE_SCHEDULE;
-    if (Number(toLocalTimeString(at, timezone).slice(0, 2)) < catchUpHour) return;
+    if (Number(toLocalTimeString(at, timezone).slice(0, 2)) < catchUpHour) {
+      return;
+    }
 
     const { localDate } = dayWindowInTimezone(at, timezone);
     await this.runtime.enqueue(

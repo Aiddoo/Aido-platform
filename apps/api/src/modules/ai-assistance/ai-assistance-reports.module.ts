@@ -15,8 +15,8 @@ import { LATEST_REPORT_STATS_READER } from "./application/ports/reports/latest-r
 import { TODO_STATS_READER } from "./application/ports/reports/todo-stats.reader.port.js";
 import { LatestReportStatsReader } from "./infrastructure/adapters/reports/latest-report-stats.reader.js";
 import { ReportGenerationJob } from "./infrastructure/jobs/reports/report-generation.job.js";
-import { PrismaAiReportRepository } from "./infrastructure/persistence/reports/prisma-ai-report.repository.js";
-import { PrismaTodoStatsReader } from "./infrastructure/persistence/reports/prisma-todo-stats.reader.js";
+import { DrizzleAiReportRepository } from "./infrastructure/persistence/reports/drizzle-ai-report.repository.js";
+import { DrizzleTodoStatsReader } from "./infrastructure/persistence/reports/drizzle-todo-stats.reader.js";
 import { ReportGenerationProcessor } from "./infrastructure/processors/reports/report-generation.processor.js";
 import { AiReportController } from "./presentation/controllers/reports/ai-report.controller.js";
 
@@ -45,8 +45,8 @@ import { AiReportController } from "./presentation/controllers/reports/ai-report
     generateReportProvider,
     ReportGenerationJob,
     ReportGenerationProcessor,
-    { provide: AI_REPORT_REPOSITORY, useClass: PrismaAiReportRepository },
-    { provide: TODO_STATS_READER, useClass: PrismaTodoStatsReader },
+    { provide: AI_REPORT_REPOSITORY, useClass: DrizzleAiReportRepository },
+    { provide: TODO_STATS_READER, useClass: DrizzleTodoStatsReader },
     {
       provide: LATEST_REPORT_STATS_READER,
       useExisting: LatestReportStatsReader,

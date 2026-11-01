@@ -104,8 +104,12 @@ export function applyStoreEventChain(
   eventChain: StoreEventChainState | undefined,
 ): StoreSubscriptionEntitlement[] {
   return subscriptions.flatMap((subscription) => {
-    if (subscription.revenueCatId !== eventChain?.revenueCatId) return [subscription];
-    if (eventChain.expiresAt == null) return [];
+    if (subscription.revenueCatId !== eventChain?.revenueCatId) {
+      return [subscription];
+    }
+    if (eventChain.expiresAt == null) {
+      return [];
+    }
     return [
       {
         revenueCatId: subscription.revenueCatId,
@@ -161,7 +165,9 @@ function isInProgress(grant: PremiumGrantTerm, now: Date): boolean {
  * 사용자가 기간을 잃지 않게 한다(남은 1ms도 1일).
  */
 export function remainingPremiumGrantDays(grant: PremiumGrantTerm, now: Date): number {
-  if (grant.endsAt == null || grant.endsAt.getTime() <= now.getTime()) return 0;
+  if (grant.endsAt == null || grant.endsAt.getTime() <= now.getTime()) {
+    return 0;
+  }
   return Math.ceil((grant.endsAt.getTime() - now.getTime()) / DAY_MS);
 }
 
@@ -360,7 +366,9 @@ export const PremiumAccessPolicy = {
     for (const grant of banked) {
       activations.push({ grantId: grant.id, startsAt });
       const endsAt = premiumGrantEndsAt(startsAt, grant.durationDays);
-      if (endsAt.getTime() > now.getTime()) break;
+      if (endsAt.getTime() > now.getTime()) {
+        break;
+      }
       endedAfterActivation.push(grant.id);
       startsAt = endsAt;
     }

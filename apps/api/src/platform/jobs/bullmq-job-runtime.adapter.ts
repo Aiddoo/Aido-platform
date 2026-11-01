@@ -1,5 +1,6 @@
 import { type FactoryProvider, Inject, Injectable, Logger } from "@nestjs/common";
 import { type JobState, type JobsOptions, Queue, Worker } from "bullmq";
+import { withTimeout } from "es-toolkit";
 import type { Redis } from "ioredis";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -20,7 +21,6 @@ import {
   resolveDeadLetterQueue,
   resolveJobIdempotencyKey,
 } from "#api/shared/application/ports/job-runtime.port";
-import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 export const BULLMQ_CLIENT_FACTORY = Symbol("BULLMQ_CLIENT_FACTORY");
 
@@ -230,11 +230,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
     await Promise.all(
       [...this.workers.entries()].map(async ([name, worker]) => {
         try {
-          await withTimeout(
-            worker.close(false),
-            this.config.job.shutdownTimeoutMs,
-            `BullMQ worker ${name} shutdown`,
-          );
+          await withTimeout(() => worker.close(false), this.config.job.shutdownTimeoutMs);
         } catch {
           this.logger.warn(`BullMQ worker ${name} forced to close`);
           await worker.close(true);
@@ -529,7 +525,9 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
 }
 
 function isJobRetryPolicy(value: unknown): value is JobRetryPolicy {
-  if (typeof value !== "object" || value == null) return false;
+  if (typeof value !== "object" || value == null) {
+    return false;
+  }
   return (
     "retryLimit" in value &&
     typeof value.retryLimit === "number" &&

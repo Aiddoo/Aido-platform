@@ -19,7 +19,9 @@ export class OptOutMarketingPush {
 
   async execute(token: string): Promise<boolean> {
     const userId = this.#dependencies.tokens.verify(token);
-    if (!userId) return false;
+    if (!userId) {
+      return false;
+    }
     await this.#dependencies.settings.updateMarketingPushConsent(userId, false);
     this.#dependencies.logger.log({
       event: NotificationDeliveryLogEvent.OPT_OUT_MARKETING_PUSH_OPTED_OUT,

@@ -36,15 +36,15 @@ describe("EnqueueUserRegistered", () => {
     );
   });
 
-  it("기기 추정 라벨을 포함한다 (apple → iOS)", async () => {
-    await useCase.execute(payload);
+  it("확인된 기기 정보를 포함한다", async () => {
+    await useCase.execute({ ...payload, devicePlatform: "IOS", deviceModel: "iPhone 15 Pro" });
 
     const notification = queue.enqueueSend.mock.calls[0]?.[1];
     expect(notification?.fields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: "기기 (추정)",
-          value: "🍎 iOS (추정)",
+          name: "기기",
+          value: "🍎 iOS · iPhone 15 Pro",
         }),
       ]),
     );

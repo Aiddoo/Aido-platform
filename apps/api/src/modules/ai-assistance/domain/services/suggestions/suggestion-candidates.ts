@@ -80,7 +80,9 @@ export function buildSuggestionCandidates(
 
 /** 근거 기반 신뢰도. 같은 활동을 여러 번 끝냈을수록 높다. */
 export function suggestionConfidence(candidate: SuggestionCandidate, mode: SuggestionMode): number {
-  if (mode === "STARTER") return 0.55;
+  if (mode === "STARTER") {
+    return 0.55;
+  }
   const completionRate = candidate.completed / candidate.occurrences;
   if (candidate.occurrences >= 3 && completionRate >= 0.6) {
     return Math.round((0.8 + 0.15 * completionRate) * 100) / 100;
@@ -105,7 +107,9 @@ export function resolveSuggestionPicks(
   const resolved: ResolvedSuggestionPick[] = [];
   for (const pick of picks) {
     const candidate = byId.get(pick.candidateId);
-    if (candidate == null || seen.has(candidate.id) || excluded.has(candidate.title)) continue;
+    if (candidate == null || seen.has(candidate.id) || excluded.has(candidate.title)) {
+      continue;
+    }
     if (
       options.mode === "PATTERN" &&
       candidate.occurrences < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
@@ -133,7 +137,9 @@ export function resolveSuggestionPicks(
       confidence: suggestionConfidence(candidate, options.mode),
       modelReason: pick.reason,
     });
-    if (resolved.length >= maxPicks) break;
+    if (resolved.length >= maxPicks) {
+      break;
+    }
   }
   return resolved;
 }

@@ -17,8 +17,8 @@ import type { Mocked } from "vitest";
 
 import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { asDep, asMock } from "#test/mocks/index";
@@ -31,10 +31,10 @@ import { JwtStrategy } from "./jwt.strategy.js";
 
 describe("JwtStrategy — JWT 전략", () => {
   let strategy: JwtStrategy;
-  let sessionRepo: Mocked<SessionRepository>;
+  let sessionRepo: Mocked<DrizzleSessionRepository>;
   let sessionService: Mocked<SessionService>;
   let cacheService: Mocked<AuthCachePort>;
-  let userRepo: Mocked<UserRepository>;
+  let userRepo: Mocked<DrizzleUserRepository>;
 
   const validPayload: JwtPayload = {
     sub: "user-123",
@@ -54,10 +54,10 @@ describe("JwtStrategy — JWT 전략", () => {
       .compile();
 
     strategy = unit;
-    sessionRepo = unitRef.get(SessionRepository);
+    sessionRepo = unitRef.get(DrizzleSessionRepository);
     sessionService = unitRef.get(SessionService);
     cacheService = unitRef.get(AUTH_CACHE);
-    userRepo = unitRef.get(UserRepository);
+    userRepo = unitRef.get(DrizzleUserRepository);
 
     asMock(userRepo.findById).mockResolvedValue({
       status: "ACTIVE",

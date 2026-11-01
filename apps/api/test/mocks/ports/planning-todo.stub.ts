@@ -43,7 +43,9 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
     const saved = this.records.get(id);
-    if (saved === undefined || saved.userId !== userId) return null;
+    if (saved === undefined || saved.userId !== userId) {
+      return null;
+    }
     const record = structuredClone(saved);
     return Todo.reconstitute({
       id: TodoId.create(record.id),
@@ -72,7 +74,9 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     };
     this.records.set(id, record);
     const todo = await this.findByIdAndUserId(id, data.userId);
-    if (todo === null) throw new Error("Created Todo fixture is missing");
+    if (todo === null) {
+      throw new Error("Created Todo fixture is missing");
+    }
     return todo;
   }
 
@@ -85,16 +89,18 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     for (const plan of plans) {
       const todo = await this.create(plan);
       this.#record(todo.getId().getValue()).recurrenceGroupId = recurrenceGroupId;
-      if (inlineItems !== undefined)
+      if (inlineItems !== undefined) {
         await this.createInlineItems(todo.getId().getValue(), [...inlineItems]);
+      }
       created.push(todo);
     }
     return created;
   }
 
   async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
-    for (const [sortOrder, item] of items.entries())
+    for (const [sortOrder, item] of items.entries()) {
       await this.createItem(todoId, { ...item, sortOrder });
+    }
   }
   async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
     Object.assign(this.#record(id), { completed, completedAt: structuredClone(completedAt) });
@@ -133,13 +139,15 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     to: number | null,
     delta: number,
   ): Promise<void> {
-    for (const record of this.records.values())
+    for (const record of this.records.values()) {
       if (
         record.userId === userId &&
         record.sortOrder >= from &&
         (to === null || record.sortOrder <= to)
-      )
+      ) {
         record.sortOrder += delta;
+      }
+    }
   }
   async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
     return [...this.records.values()].filter(
@@ -172,29 +180,37 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     const item = [...this.records.values()]
       .flatMap((record) => record.items)
       .find((entry) => entry.id === itemId);
-    if (item === undefined) throw new Error("Todo item fixture is missing");
+    if (item === undefined) {
+      throw new Error("Todo item fixture is missing");
+    }
     Object.assign(
       item,
       Object.fromEntries(Object.entries(data).filter(([_fieldName, value]) => value !== undefined)),
     );
   }
   async deleteItem(itemId: number): Promise<void> {
-    for (const record of this.records.values())
+    for (const record of this.records.values()) {
       record.items = record.items.filter((item) => item.id !== itemId);
+    }
   }
   async reorderItems(itemIds: number[]): Promise<void> {
     for (const [sortOrder, id] of itemIds.entries()) {
       const item = [...this.records.values()]
         .flatMap((record) => record.items)
         .find((entry) => entry.id === id);
-      if (item !== undefined) item.sortOrder = sortOrder;
+      if (item !== undefined) {
+        item.sortOrder = sortOrder;
+      }
     }
-    for (const record of this.records.values())
+    for (const record of this.records.values()) {
       record.items.sort((left, right) => left.sortOrder - right.sortOrder);
+    }
   }
   #record(id: number): PlanningTodoRecord {
     const record = this.records.get(id);
-    if (record === undefined) throw new Error("Todo fixture is missing");
+    if (record === undefined) {
+      throw new Error("Todo fixture is missing");
+    }
     return record;
   }
 }
@@ -209,7 +225,9 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   ) {}
   async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
     const saved = this.records.get(id);
-    if (saved === undefined || saved.userId !== userId) return null;
+    if (saved === undefined || saved.userId !== userId) {
+      return null;
+    }
     const record = structuredClone(saved);
     record.items.sort((left, right) => left.sortOrder - right.sortOrder);
     record.category = this.categories.get(record.categoryId) ?? null;
@@ -230,7 +248,9 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
     const responses: TodoResponse[] = [];
     for (const record of records) {
       const response = await this.findByIdAndUserId(record.id, userId);
-      if (response !== null) responses.push(response);
+      if (response !== null) {
+        responses.push(response);
+      }
     }
     return responses;
   }
@@ -287,12 +307,17 @@ export class StubPlanningTodoCache implements TodoCachePort {
     generation: string,
     page: CursorPaginatedResponse<TodoResponse, number>,
   ): Promise<void> {
-    if (generation === String(this.generations.get(userId) ?? 0))
+    if (generation === String(this.generations.get(userId) ?? 0)) {
       this.pages.set(this.#key(userId, start, end, size), structuredClone(page));
+    }
   }
   async invalidateFriendTodos(userId: string): Promise<void> {
     this.generations.set(userId, (this.generations.get(userId) ?? 0) + 1);
-    for (const key of this.pages.keys()) if (key.startsWith(`${userId}:`)) this.pages.delete(key);
+    for (const key of this.pages.keys()) {
+      if (key.startsWith(`${userId}:`)) {
+        this.pages.delete(key);
+      }
+    }
   }
   #key(userId: string, start: string, end: string, size: number): string {
     return `${userId}:${start}:${end}:${size}`;
@@ -319,8 +344,9 @@ export function createCategoryOwnershipStub(
 ) {
   return {
     async validateOwnership(categoryId: number, userId: string): Promise<void> {
-      if (!categories.has(categoryId) || owners.get(categoryId) !== userId)
+      if (!categories.has(categoryId) || owners.get(categoryId) !== userId) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId });
+      }
     },
   };
 }

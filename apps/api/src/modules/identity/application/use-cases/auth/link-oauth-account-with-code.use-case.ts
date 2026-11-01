@@ -48,12 +48,17 @@ export class LinkOAuthAccountWithCode {
         input.code,
         at,
       );
-      if (state == null) throw this.#invalidCode();
-      const authorization = AuthOAuthState.reconstitute(state);
-      if (authorization.validityAt(at) !== "valid" || !authorization.canLinkFor(input.userId))
+      if (state == null) {
         throw this.#invalidCode();
+      }
+      const authorization = AuthOAuthState.reconstitute(state);
+      if (authorization.validityAt(at) !== "valid" || !authorization.canLinkFor(input.userId)) {
+        throw this.#invalidCode();
+      }
       const providerAccountId = state.userId;
-      if (providerAccountId == null || providerAccountId === "") throw this.#invalidCode();
+      if (providerAccountId == null || providerAccountId === "") {
+        throw this.#invalidCode();
+      }
       const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
         id: state.id,
         exchangeCode: input.code,
@@ -61,7 +66,9 @@ export class LinkOAuthAccountWithCode {
         purpose: "link",
         actorUserId: input.userId,
       });
-      if (!consumed) throw this.#invalidCode();
+      if (!consumed) {
+        throw this.#invalidCode();
+      }
       authorization.consume(at);
       return this.#dependencies.linkOAuthIdentity.execute({
         userId: input.userId,

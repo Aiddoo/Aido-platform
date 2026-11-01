@@ -90,13 +90,13 @@ import { AccountPurgeProcessor } from "./infrastructure/jobs/auth/account-purge.
 import { createOAuthProviderRegistry } from "./infrastructure/oauth/auth/adapters/index.js";
 import { OAuthTokenVerifierService } from "./infrastructure/oauth/auth/verifier/oauth-token-verifier.service.js";
 import {
-  AccountRepository,
-  LoginAttemptRepository,
-  OAuthStateRepository,
-  SecurityLogRepository,
-  SessionRepository,
-  UserRepository,
-  VerificationRepository,
+  DrizzleAccountRepository,
+  DrizzleLoginAttemptRepository,
+  DrizzleOAuthStateRepository,
+  DrizzleSecurityLogRepository,
+  DrizzleSessionRepository,
+  DrizzleUserRepository,
+  DrizzleVerificationRepository,
 } from "./infrastructure/persistence/auth/index.js";
 import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies/auth/index.js";
 import {
@@ -135,32 +135,32 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [
     // Repositories
-    UserRepository,
-    AccountRepository,
-    SessionRepository,
-    VerificationRepository,
-    LoginAttemptRepository,
-    SecurityLogRepository,
-    OAuthStateRepository,
-    { provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
-    { provide: AUTH_USER_ACTIVITY_WRITER, useExisting: UserRepository },
-    { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: AccountRepository },
-    { provide: AUTH_SESSION_REPOSITORY, useExisting: SessionRepository },
+    DrizzleUserRepository,
+    DrizzleAccountRepository,
+    DrizzleSessionRepository,
+    DrizzleVerificationRepository,
+    DrizzleLoginAttemptRepository,
+    DrizzleSecurityLogRepository,
+    DrizzleOAuthStateRepository,
+    { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
+    { provide: AUTH_USER_ACTIVITY_WRITER, useExisting: DrizzleUserRepository },
+    { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: DrizzleAccountRepository },
+    { provide: AUTH_SESSION_REPOSITORY, useExisting: DrizzleSessionRepository },
     {
       provide: AUTH_VERIFICATION_REPOSITORY,
-      useExisting: VerificationRepository,
+      useExisting: DrizzleVerificationRepository,
     },
     {
       provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
-      useExisting: LoginAttemptRepository,
+      useExisting: DrizzleLoginAttemptRepository,
     },
     {
       provide: AUTH_SECURITY_LOG_REPOSITORY,
-      useExisting: SecurityLogRepository,
+      useExisting: DrizzleSecurityLogRepository,
     },
     {
       provide: AUTH_OAUTH_STATE_REPOSITORY,
-      useExisting: OAuthStateRepository,
+      useExisting: DrizzleOAuthStateRepository,
     },
     // 프로비저닝 시딩 어댑터 (user-settings·todo-category 파사드 위임)
     {

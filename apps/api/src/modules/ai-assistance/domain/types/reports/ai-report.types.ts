@@ -26,7 +26,7 @@ export interface TimePatternItem {
 }
 
 /**
- * 리포트 타입 — Prisma ReportType과 동일한 리터럴(도메인은 generated를 참조하지 않는다)
+ * 리포트 타입 — DB ReportType과 동일한 리터럴(도메인은 persistence 스키마를 참조하지 않는다)
  */
 export type ReportType = "WEEKLY" | "MONTHLY";
 

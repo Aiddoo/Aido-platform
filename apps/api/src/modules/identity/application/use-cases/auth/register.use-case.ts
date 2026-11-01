@@ -136,6 +136,8 @@ export class Register {
       email: result.user.email,
       provider: "credential",
       registeredAt: toISOString(now()),
+      name,
+      ...metadata?.device,
     } satisfies AuthUserRegisteredNotification);
 
     return {

@@ -26,9 +26,9 @@ import {
 } from "./engagement-comments-application.providers.js";
 import { TodoCommentNotificationAdapter } from "./infrastructure/adapters/comments/todo-comment-notification.adapter.js";
 import { TodoViewCacheAdapter } from "./infrastructure/adapters/comments/todo-view-cache.adapter.js";
-import { PrismaTodoCommentAccountCleanupStore } from "./infrastructure/persistence/comments/prisma-todo-comment-account-cleanup.store.js";
-import { PrismaTodoCommentReader } from "./infrastructure/persistence/comments/prisma-todo-comment.reader.js";
-import { PrismaTodoCommentRepository } from "./infrastructure/persistence/comments/prisma-todo-comment.repository.js";
+import { DrizzleTodoCommentAccountCleanupStore } from "./infrastructure/persistence/comments/drizzle-todo-comment-account-cleanup.store.js";
+import { DrizzleTodoCommentReader } from "./infrastructure/persistence/comments/drizzle-todo-comment.reader.js";
+import { DrizzleTodoCommentRepository } from "./infrastructure/persistence/comments/drizzle-todo-comment.repository.js";
 import { HmacTodoCommentCursorCodec } from "./infrastructure/security/comments/hmac-todo-comment-cursor.codec.js";
 import { TodoCommentController } from "./presentation/controllers/comments/todo-comment.controller.js";
 
@@ -38,14 +38,14 @@ import { TodoCommentController } from "./presentation/controllers/comments/todo-
   providers: [
     HmacTodoCommentCursorCodec,
     { provide: TODO_COMMENT_CURSOR_CODEC, useExisting: HmacTodoCommentCursorCodec },
-    PrismaTodoCommentReader,
-    { provide: TODO_COMMENT_READER, useExisting: PrismaTodoCommentReader },
-    PrismaTodoCommentRepository,
-    { provide: TODO_COMMENT_REPOSITORY, useExisting: PrismaTodoCommentRepository },
-    PrismaTodoCommentAccountCleanupStore,
+    DrizzleTodoCommentReader,
+    { provide: TODO_COMMENT_READER, useExisting: DrizzleTodoCommentReader },
+    DrizzleTodoCommentRepository,
+    { provide: TODO_COMMENT_REPOSITORY, useExisting: DrizzleTodoCommentRepository },
+    DrizzleTodoCommentAccountCleanupStore,
     {
       provide: TODO_COMMENT_ACCOUNT_CLEANUP_STORE,
-      useExisting: PrismaTodoCommentAccountCleanupStore,
+      useExisting: DrizzleTodoCommentAccountCleanupStore,
     },
     { provide: TODO_COMMENT_NOTIFICATION, useClass: TodoCommentNotificationAdapter },
     { provide: TODO_VIEW_CACHE, useClass: TodoViewCacheAdapter },

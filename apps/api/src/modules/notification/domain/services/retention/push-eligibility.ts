@@ -9,11 +9,19 @@ export interface RetentionPushEligibilityInput {
 }
 
 export function retentionPushSkipReason(input: RetentionPushEligibilityInput): string | null {
-  if (!input.pushEnabled) return "PUSH_DISABLED";
-  if (!input.marketingPushAgreedAt) return "MARKETING_CONSENT_REQUIRED";
-  if (input.activeTokenCount === 0) return "NO_ACTIVE_TOKEN";
+  if (!input.pushEnabled) {
+    return "PUSH_DISABLED";
+  }
+  if (!input.marketingPushAgreedAt) {
+    return "MARKETING_CONSENT_REQUIRED";
+  }
+  if (input.activeTokenCount === 0) {
+    return "NO_ACTIVE_TOKEN";
+  }
   const hour = localHour(input.now, input.timezone);
-  if (hour < 8 || hour >= 21) return "MARKETING_QUIET_HOURS";
+  if (hour < 8 || hour >= 21) {
+    return "MARKETING_QUIET_HOURS";
+  }
   return null;
 }
 

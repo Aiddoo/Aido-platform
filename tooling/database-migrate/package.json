@@ -4,13 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "db:deploy": "sh ../../apps/api/scripts/migrate.sh"
+    "db:deploy": "node migrate.mjs"
   },
   "dependencies": {
-    "@prisma/cli-engine": "catalog:prisma8",
-    "@prisma/orm-postgres": "catalog:prisma8",
-    "pg": "catalog:prisma8",
-    "pg-boss": "catalog:",
-    "prisma": "catalog:prisma8"
+    "drizzle-orm": "catalog:drizzle1",
+    "pg": "catalog:",
+    "pg-boss": "catalog:"
   }
 }

@@ -163,11 +163,12 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       );
       await fixture.userRepository.softDelete(fixture.user.id, deletedAt);
       fixture.cacheService.userIds.add(fixture.user.id);
-      if (crossesBoundary)
+      if (crossesBoundary) {
         fixture.unitOfWork.run = async <T>(work: () => Promise<T>): Promise<T> => {
           vi.setSystemTime(new Date(AUTH_CREDENTIAL_TIME.getTime() + 2));
           return work();
         };
+      }
       // When
       const result = await fixture.useCase.execute({
         email: fixture.user.email,

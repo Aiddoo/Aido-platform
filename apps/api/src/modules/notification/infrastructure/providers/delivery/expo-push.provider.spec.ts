@@ -37,7 +37,9 @@ function reply(path: string, statusCode: number, data: unknown) {
 }
 function expectPrivateLogsAbsent() {
   const logs = JSON.stringify([...warn.mock.calls, ...error.mock.calls]);
-  for (const value of [credential, token, body]) expect(logs).not.toContain(value);
+  for (const value of [credential, token, body]) {
+    expect(logs).not.toContain(value);
+  }
 }
 
 beforeEach(async () => {

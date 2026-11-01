@@ -1,3 +1,5 @@
+import { sumBy } from "es-toolkit";
+
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 
@@ -47,7 +49,7 @@ export class DispatchDailySignupSummary {
         jobId: `signup-summary_${reportDateStr}`,
       });
 
-      const previousDayTotal = signupsByProvider.reduce((sum, group) => sum + group.count, 0);
+      const previousDayTotal = sumBy(signupsByProvider, (group) => group.count);
       this.#dependencies.logger.log({
         event: OperationsNotificationsLogEvent.SUMMARY_ENQUEUED,
         previousDayTotal,

@@ -13,7 +13,7 @@ import { FollowReader } from "./application/services/friends/follow.reader.js";
 import { FriendshipEstablisher } from "./application/services/friends/friendship-establisher.service.js";
 import { FollowCacheAdapter } from "./infrastructure/adapters/friends/follow-cache.adapter.js";
 import { FollowNotifierAdapter } from "./infrastructure/adapters/friends/follow-notifier.adapter.js";
-import { PrismaFollowRepository } from "./infrastructure/persistence/friends/prisma-follow.repository.js";
+import { DrizzleFollowRepository } from "./infrastructure/persistence/friends/drizzle-follow.repository.js";
 import { FollowController } from "./presentation/controllers/friends/follow.controller.js";
 import {
   acceptFriendRequestProvider,
@@ -36,7 +36,7 @@ import {
   imports: [AccessModule, NotificationDeliveryModule, SocialBlocksModule],
   controllers: [FollowController],
   providers: [
-    { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
+    { provide: FOLLOW_REPOSITORY, useClass: DrizzleFollowRepository },
     { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
     { provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
     followReaderProvider,

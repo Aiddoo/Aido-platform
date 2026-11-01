@@ -1,4 +1,4 @@
-import type { Memo } from "#api/platform/database/database.types";
+import type { Memo } from "#test/types/database-rows";
 
 export class MemoBuilder {
   private data: Memo;

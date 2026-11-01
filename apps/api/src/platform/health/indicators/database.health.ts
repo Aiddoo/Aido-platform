@@ -1,34 +1,21 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
-import sql from "sql-template-tag";
+import { sql } from "drizzle-orm";
 
-import { sqlStatement } from "#api/platform/database/database-sql";
-import { DatabaseService } from "#api/platform/database/index";
+import { type Database, DRIZZLE } from "#api/platform/database/index";
 
-/**
- * 데이터베이스 헬스 체크 인디케이터
- */
 @Injectable()
 export class DatabaseHealthIndicator {
   constructor(
-    private readonly database: DatabaseService,
+    @Inject(DRIZZLE) private readonly database: Database,
     private readonly healthIndicatorService: HealthIndicatorService,
   ) {}
 
-  /**
-   * 데이터베이스 연결 상태 확인
-   */
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const indicator = this.healthIndicatorService.check(key);
 
     try {
-      await this.database.db
-        .execute(
-          sqlStatement(this.database.db, sql`SELECT 1`)
-            .affectedCount()
-            .build(),
-        )
-        .then((result) => result.affectedRows);
+      await this.database.execute(sql`SELECT 1`);
       return indicator.up();
     } catch (error) {
       return indicator.down({ error: error instanceof Error ? error.message : String(error) });

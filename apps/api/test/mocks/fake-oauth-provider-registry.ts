@@ -84,7 +84,9 @@ export class FakeOAuthProviderRegistry {
   async #exchangeCode(provider: AccountProvider, code: string): Promise<ExchangedToken> {
     const key = exchangeKey(provider, code);
     const failure = this.#exchangeFailures.get(key);
-    if (failure) throw failure;
+    if (failure) {
+      throw failure;
+    }
 
     if (code.startsWith("invalid")) {
       throw new ApplicationException(ErrorCode.USER_0602);

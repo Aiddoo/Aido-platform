@@ -41,11 +41,12 @@ describe("할 일 순서 변경", () => {
     async ({ id, targetTodoId, position, expected }) => {
       // Given
       fixture.records.clear();
-      for (let todoId = 1; todoId <= 4; todoId++)
+      for (let todoId = 1; todoId <= 4; todoId++) {
         fixture.records.set(todoId, {
           ...createPlanningTodo(fixture.userId, todoId),
           sortOrder: todoId - 1,
         });
+      }
       // When
       const result = await useCase.execute({ id, userId: fixture.userId, targetTodoId, position });
       // Then

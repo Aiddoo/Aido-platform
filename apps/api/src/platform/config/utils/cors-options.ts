@@ -30,6 +30,8 @@ export function createCorsOptions(
       "X-Requested-With",
       "X-Timezone",
       "X-App-Version",
+      "X-Device-Type",
+      "X-Device-Name",
     ],
   };
 }

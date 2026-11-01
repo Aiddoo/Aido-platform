@@ -59,7 +59,9 @@ export class PublishPushDeliveryOutbox {
   }
 
   async #publish(publications: readonly PushDeliveryPublication[]): Promise<number> {
-    if (publications.length === 0) return 0;
+    if (publications.length === 0) {
+      return 0;
+    }
     try {
       // JobRuntime의 null(동일 idempotency key)은 이미 발행된 동일 generation으로 성공이다.
       await this.#dependencies.enqueuer.enqueueDeliveries(publications);

@@ -43,9 +43,9 @@ import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/settin
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/settings/timezone-reminder-enqueuer.adapter.js";
 import { UserSettingsAccessAdapter } from "./infrastructure/adapters/settings/user-settings-access.adapter.js";
 import { UserSettingsCacheAdapter } from "./infrastructure/adapters/settings/user-settings-cache.adapter.js";
-import { PrismaTodoCompletionStatsReader } from "./infrastructure/persistence/settings/prisma-todo-completion-stats.reader.js";
-import { UserConsentRepository } from "./infrastructure/persistence/settings/user-consent.repository.js";
-import { UserPreferenceRepository } from "./infrastructure/persistence/settings/user-preference.repository.js";
+import { DrizzleTodoCompletionStatsReader } from "./infrastructure/persistence/settings/drizzle-todo-completion-stats.reader.js";
+import { DrizzleUserConsentRepository } from "./infrastructure/persistence/settings/drizzle-user-consent.repository.js";
+import { DrizzleUserPreferenceRepository } from "./infrastructure/persistence/settings/drizzle-user-preference.repository.js";
 import { SettingsController } from "./presentation/controllers/settings/user-settings.controller.js";
 import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/settings/timezone-self-heal.interceptor.js";
 
@@ -75,17 +75,17 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
     getPreferenceRecordsProvider,
     getConsentRecordProvider,
     getConsentRecordsProvider,
-    UserPreferenceRepository,
-    UserConsentRepository,
-    PrismaTodoCompletionStatsReader,
+    DrizzleUserPreferenceRepository,
+    DrizzleUserConsentRepository,
+    DrizzleTodoCompletionStatsReader,
     {
       provide: USER_PREFERENCE_REPOSITORY,
-      useExisting: UserPreferenceRepository,
+      useExisting: DrizzleUserPreferenceRepository,
     },
-    { provide: USER_CONSENT_REPOSITORY, useExisting: UserConsentRepository },
+    { provide: USER_CONSENT_REPOSITORY, useExisting: DrizzleUserConsentRepository },
     {
       provide: TODO_COMPLETION_STATS_READER,
-      useExisting: PrismaTodoCompletionStatsReader,
+      useExisting: DrizzleTodoCompletionStatsReader,
     },
     {
       provide: REMINDER_SCHEDULE_ENQUEUER,

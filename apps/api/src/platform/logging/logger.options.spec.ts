@@ -76,7 +76,9 @@ describe("HTTP 로그 — 공식 Pino 연동과 인증 정보 비노출", () => 
         }),
       ]),
     );
-    for (const secret of secrets) expect(logs.join("")).not.toContain(secret);
+    for (const secret of secrets) {
+      expect(logs.join("")).not.toContain(secret);
+    }
   });
   it("4xx 응답은 HTTP 자동 로그를 생략해 예외 필터와 중복 기록하지 않는다", async () => {
     // Given

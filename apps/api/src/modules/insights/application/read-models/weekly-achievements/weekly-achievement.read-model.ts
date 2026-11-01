@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek.js";
 
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
@@ -9,8 +8,6 @@ import {
 } from "../../../domain/policies/weekly-achievements/weekly-achievement.policy.js";
 import type { WeeklyAchievementRow } from "../../../domain/records/weekly-achievements/weekly-achievement.record.js";
 import { formatWeekLabel } from "../../locale/weekly-achievements/weekly-achievement.locale.js";
-
-dayjs.extend(isoWeek);
 
 export interface WeeklyAchievementView {
   readonly id: number;
@@ -29,7 +26,7 @@ export function computeWeekLabel(
   week: number,
   locale: SupportedLocale = DEFAULT_LOCALE,
 ): string {
-  const thursday = dayjs(`${year}-01-04`).isoWeek(week).isoWeekday(4);
+  const thursday = dayjs.utc(`${year}-01-04`).isoWeek(week).isoWeekday(4);
   const month = thursday.month() + 1;
   const firstThursday = thursday.startOf("month").isoWeekday(4);
   const firstInMonth =

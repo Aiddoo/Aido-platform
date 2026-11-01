@@ -10,7 +10,7 @@
 
 import * as crypto from "node:crypto";
 
-import type { UserConsent } from "#api/platform/database/database.types";
+import type { UserConsent } from "#test/types/database-rows";
 
 export class UserConsentBuilder {
   private data: UserConsent;

@@ -39,7 +39,9 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
   }
 
   async findByUserIds(userIds: readonly string[]): Promise<ReadonlyMap<string, readonly string[]>> {
-    if (userIds.length === 0) return new Map();
+    if (userIds.length === 0) {
+      return new Map();
+    }
 
     const tokensByUserId = new Map<string, readonly string[]>();
     const cacheKeys = userIds.map((userId) => NotificationCacheKey.pushTokens(userId));
@@ -55,7 +57,9 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
       }
     }
 
-    if (missedUserIds.length === 0) return tokensByUserId;
+    if (missedUserIds.length === 0) {
+      return tokensByUserId;
+    }
 
     const records = await this.pushTokenRepository.findActivePushTokensByUsers(missedUserIds);
     const loadedTokensByUserId = new Map<string, string[]>();

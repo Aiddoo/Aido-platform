@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import { dateSchema, nullableDateSchema } from "../../common/datetime.js";
+import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../common/datetime.js";
 import { dayOfWeekSchema } from "../todo/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
-
-const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const todoRecurrenceSchema = z.object({
   daysOfWeek: z.array(dayOfWeekSchema).min(1).max(7),
@@ -21,9 +19,7 @@ export const parsedTodoDataSchema = z.object({
     .describe('AI가 추출한 할 일 제목 (1-200자, 예: "운동하기")'),
   startDate: dateSchema.describe("시작 날짜 (YYYY-MM-DD, 예: 2026-01-17)"),
   endDate: nullableDateSchema.describe("종료 날짜 (YYYY-MM-DD, 예: 2026-01-31, 단일 날짜는 null)"),
-  scheduledTime: z
-    .string()
-    .regex(timeRegex, "시간 형식이 올바르지 않습니다 (HH:mm)")
+  scheduledTime: timeOfDaySchema
     .nullable()
     .describe("예정 시간 (HH:mm 24시간 형식, 예: 15:30, 종일 일정은 null)"),
   isAllDay: z.boolean().describe("종일 일정 여부"),

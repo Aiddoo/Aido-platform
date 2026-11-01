@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { asc, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import {
@@ -14,8 +15,8 @@ import {
   TODO_CATEGORY_PROVISIONER,
   type TodoCategoryProvisionerPort,
 } from "#api/modules/planning/planning-categories.public";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { todo, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 
@@ -45,9 +46,10 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
     userId = createEntityId();
-    await context.testDatabase.getClient().orm.public.User.create(
-      encodeCreate(
-        "User",
+    await context.testDatabase
+      .getClient()
+      .insert(user)
+      .values(
         UserFixture.create({
           id: userId,
           email: "planning-category-owner@example.com",
@@ -55,36 +57,48 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
           createdAt: at,
           updatedAt: at,
         }),
-      ),
-    );
+      );
     categoryId = (await repository.create({ userId, name: "기존", color: "#FFB3B3", sortOrder: 0 }))
       .id;
   });
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
+    if (context) {
+      await destroyE2eApp(context);
+    }
   });
 
   it("없는 카테고리와 다른 사용자 카테고리는 각각 기존 404·403 업무 오류를 유지한다", async () => {
     // Given
     const getCategory = context.module.get(GetTodoCategory);
-    // When / Then
-    await expect(getCategory.execute({ id: categoryId + 1, userId })).rejects.toMatchObject({
-      errorCode: ErrorCode.TODO_CATEGORY_0851,
-    });
-    await expect(
+
+    // When
+    const [missing, foreign] = await Promise.allSettled([
+      getCategory.execute({ id: categoryId + 1, userId }),
       getCategory.execute({ id: categoryId, userId: "another-user" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0852 });
+    ]);
+
+    // Then
+    expect(missing).toMatchObject({
+      status: "rejected",
+      reason: { errorCode: ErrorCode.TODO_CATEGORY_0851 },
+    });
+    expect(foreign).toMatchObject({
+      status: "rejected",
+      reason: { errorCode: ErrorCode.TODO_CATEGORY_0852 },
+    });
   });
 
   it("이름만 수정하면 색상을 유지하고 warm 목록 캐시도 갱신한다", async () => {
     // Given
     const getCategories = context.module.get(GetTodoCategories);
     expect((await getCategories.execute({ userId }))[0]?.name).toBe("기존");
+
     // When
     await update.execute({ id: categoryId, userId, data: { name: "변경" } });
     const categories = await getCategories.execute({ userId });
+
     // Then
     expect(categories).toHaveLength(1);
     expect(categories[0]).toMatchObject({ name: "변경", color: "#FFB3B3" });
@@ -94,10 +108,12 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // Given
     const getCategories = context.module.get(GetTodoCategories);
     const before = await getCategories.execute({ userId });
+
     // When
     await expect(
       update.execute({ id: categoryId, userId, data: { name: "변경", color: "invalid" } }),
     ).rejects.toBeInstanceOf(Error);
+
     // Then
     expect(await repository.findByIdAndUserId(categoryId, userId)).toMatchObject({
       name: "기존",
@@ -110,6 +126,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // Given
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
     const failure = new Error("rollback-category");
+
     // When
     await expect(
       unitOfWork.run(async () => {
@@ -117,17 +134,20 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
         throw failure;
       }),
     ).rejects.toBe(failure);
+
     // Then
     expect(await repository.findByIdAndUserId(categoryId, userId)).toMatchObject({ name: "기존" });
   });
 
   it("동시 이름·색상 수정은 서로의 요청하지 않은 필드를 덮지 않는다", async () => {
     // Given
+
     // When
     await Promise.all([
       update.execute({ id: categoryId, userId, data: { name: "변경" } }),
       update.execute({ id: categoryId, userId, data: { color: "#112233" } }),
     ]);
+
     // Then
     expect(await repository.findByIdAndUserId(categoryId, userId)).toMatchObject({
       name: "변경",
@@ -143,10 +163,12 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
       color: "#112233",
       sortOrder: 1,
     });
+
     // When
     await expect(
       update.execute({ id: another.id, userId, data: { name: "기존" } }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0853 });
+
     // Then
     expect(await repository.findByIdAndUserId(another.id, userId)).toMatchObject({ name: "다른" });
   });
@@ -160,64 +182,58 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
       sortOrder: 1,
     });
     const client = context.testDatabase.getClient();
-    await client.orm.public.Todo.createAndCount([
-      encodeCreate(
-        "Todo",
-        omit(
-          TodoFixture.create({
-            userId,
-            categoryId,
-            completed: false,
-            sortOrder: 0,
-            createdAt: at,
-            updatedAt: at,
-          }),
-          ["id"],
-        ),
+    await client.insert(todo).values([
+      omit(
+        TodoFixture.create({
+          userId,
+          categoryId,
+          completed: false,
+          sortOrder: 0,
+          createdAt: at,
+          updatedAt: at,
+        }),
+        ["id"],
       ),
-      encodeCreate(
-        "Todo",
-        omit(
-          TodoFixture.createCompleted({
-            userId,
-            categoryId,
-            sortOrder: 1,
-            createdAt: at,
-            updatedAt: at,
-          }),
-          ["id"],
-        ),
+      omit(
+        TodoFixture.createCompleted({
+          userId,
+          categoryId,
+          sortOrder: 1,
+          createdAt: at,
+          updatedAt: at,
+        }),
+        ["id"],
       ),
     ]);
-    const before = decodeRecord(
-      "Todo",
-      await client.orm.public.Todo.where({ userId })
-        .orderBy((todo) => todo.id.asc())
-        .all(),
-    );
+    const before = await client
+      .select()
+      .from(todo)
+      .where(eq(todo.userId, userId))
+      .orderBy(asc(todo.id));
+
     // When
     await context.module
       .get(DeleteTodoCategory)
       .execute({ userId, categoryId, moveToCategoryId: target.id });
+
     // Then
-    const after = decodeRecord(
-      "Todo",
-      await client.orm.public.Todo.where({ userId })
-        .orderBy((todo) => todo.id.asc())
-        .all(),
-    );
+    const after = await client
+      .select()
+      .from(todo)
+      .where(eq(todo.userId, userId))
+      .orderBy(asc(todo.id));
     expect(
-      after.map((todo) => ({
-        id: todo.id,
-        completed: todo.completed,
-        sortOrder: todo.sortOrder,
-        categoryId: todo.categoryId,
+      after.map((row) => ({
+        id: row.id,
+        completed: row.completed,
+        sortOrder: row.sortOrder,
+        categoryId: row.categoryId,
       })),
     ).toEqual(
-      before.map((todo) => ({
-        id: todo.id,
-        completed: todo.completed,
-        sortOrder: todo.sortOrder,
+      before.map((row) => ({
+        id: row.id,
+        completed: row.completed,
+        sortOrder: row.sortOrder,
         categoryId: target.id,
       })),
     );
@@ -230,8 +246,10 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
   it("자원 한도 조회는 사용자 카테고리 수와 기존 무료 한도를 반환한다", async () => {
     // Given
     const getLimit = context.module.get(GetTodoCategoryResourceLimit);
+
     // When
     const limit = await getLimit.execute({ userId });
+
     // Then
     expect(limit).toEqual({ categoryCount: 1, maxCount: 3 });
   });
@@ -241,6 +259,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
     const provisioner = context.module.get<TodoCategoryProvisionerPort>(TODO_CATEGORY_PROVISIONER);
     const failure = new Error("rollback-default-categories");
+
     // When
     await expect(
       unitOfWork.run(async () => {
@@ -248,6 +267,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
         throw failure;
       }),
     ).rejects.toBe(failure);
+
     // Then
     expect(await repository.countByUserId(userId)).toBe(1);
   });

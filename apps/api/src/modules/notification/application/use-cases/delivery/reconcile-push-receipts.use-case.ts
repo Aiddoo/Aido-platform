@@ -35,7 +35,9 @@ export class ReconcilePushReceipts {
       await this.#dependencies.pushReceiptRepository.findPendingPushReceipts(
         PUSH_RECEIPT_BATCH_SIZE,
       );
-    if (pendingReceipts.length === 0) return;
+    if (pendingReceipts.length === 0) {
+      return;
+    }
 
     const receipts = await this.#dependencies.pushProvider.getReceipts(
       pendingReceipts.map((attempt) => attempt.ticketId),

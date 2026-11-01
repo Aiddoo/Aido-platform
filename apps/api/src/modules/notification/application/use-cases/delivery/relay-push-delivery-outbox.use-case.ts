@@ -37,7 +37,9 @@ export class RelayPushDeliveryOutbox {
         kind: "available",
         limit: RELAY_BATCH_SIZE,
       });
-      if (published < RELAY_BATCH_SIZE) return;
+      if (published < RELAY_BATCH_SIZE) {
+        return;
+      }
     }
   }
 }

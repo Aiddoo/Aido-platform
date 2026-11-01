@@ -11,7 +11,9 @@ export function validateAppVersionConfig({
   value: config,
   issues,
 }: z.core.ParsePayload<AppVersionConfig>): void {
-  if (!config.APP_VERSION_CHECK_ENABLED) return;
+  if (!config.APP_VERSION_CHECK_ENABLED) {
+    return;
+  }
 
   for (const [key, value] of [
     ["APP_VERSION_CHECK_IOS_LATEST_VERSION", config.APP_VERSION_CHECK_IOS_LATEST_VERSION],

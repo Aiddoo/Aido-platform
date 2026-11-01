@@ -74,7 +74,9 @@ export class SweepPremiumGrants {
       failedUserCount += results.filter((result) => result.status === "failed").length;
 
       hasRemaining = userIds.length === PREMIUM_GRANT_SWEEP.BATCH_SIZE;
-      if (!hasRemaining) break;
+      if (!hasRemaining) {
+        break;
+      }
       afterUserId = userIds.at(-1);
     }
 

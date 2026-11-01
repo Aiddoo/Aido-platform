@@ -1,21 +1,16 @@
-import { all, and, or, type ModelAccessor } from "@prisma/orm-postgres/orm-client";
+import { and, gte, isNotNull, isNull, lte, or, type SQL } from "drizzle-orm";
 
-import { databaseDate } from "#api/platform/database/database-values";
-
-import type { Contract } from "../../../../../generated/prisma8/contract.d.js";
+import { todo } from "#api/platform/database/schema/index";
 
 /** Inclusive overlap. A single supplied boundary selects that exact calendar date. */
-export function todoDatePredicate(
-  todo: ModelAccessor<Contract, "Todo", "public">,
-  startDate?: Date,
-  endDate?: Date,
-) {
-  const effectiveStart = startDate ?? endDate;
-  if (effectiveStart == null) return all();
-  const start = databaseDate(effectiveStart);
-  const end = databaseDate(endDate ?? effectiveStart);
+export function todoDateCondition(startDate?: Date, endDate?: Date): SQL | undefined {
+  const start = startDate ?? endDate;
+  if (start == null) {
+    return undefined;
+  }
+  const end = endDate ?? start;
   return or(
-    and(todo.endDate.isNotNull(), todo.startDate.lte(end), todo.endDate.gte(start)),
-    and(todo.endDate.isNull(), todo.startDate.gte(start), todo.startDate.lte(end)),
+    and(isNotNull(todo.endDate), lte(todo.startDate, end), gte(todo.endDate, start)),
+    and(isNull(todo.endDate), gte(todo.startDate, start), lte(todo.startDate, end)),
   );
 }

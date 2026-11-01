@@ -133,7 +133,9 @@ export function normalizeMemoDraft(
   const kept = tasks.slice(0, AI_PARSE_LIMITS.MEMO_MAX_TODOS);
   const noAction = kept.length === 0;
   const totalTaskCount = noAction ? 0 : Math.max(tasks.length, memo.totalTaskCount ?? 0);
-  if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) warnings.push("TODOS_TRUNCATED");
+  if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) {
+    warnings.push("TODOS_TRUNCATED");
+  }
   const drafts = noAction ? [{ ...noActionDraft(), items: [] }] : kept;
 
   const parsed = drafts.map((draft) => {
@@ -143,7 +145,9 @@ export function normalizeMemoDraft(
       draft.items.map((item) => cleanTitle(item.title)),
       normalized.todo.title,
     );
-    if (items.truncated) warnings.push("ITEMS_TRUNCATED");
+    if (items.truncated) {
+      warnings.push("ITEMS_TRUNCATED");
+    }
     return {
       ...normalized.todo,
       categoryId: normalized.todo.categoryId ?? context.defaultCategoryId,

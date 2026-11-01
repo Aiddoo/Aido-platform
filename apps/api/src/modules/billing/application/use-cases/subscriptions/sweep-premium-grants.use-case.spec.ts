@@ -21,7 +21,9 @@ function createSweep(pages: readonly (readonly string[])[], failingUserIds: Read
     },
     premiumAccessProjector: {
       project: async ({ userId }) => {
-        if (failingUserIds.has(userId)) throw new Error("projection failed");
+        if (failingUserIds.has(userId)) {
+          throw new Error("projection failed");
+        }
         projectedUserIds.push(userId);
         return {
           access: {

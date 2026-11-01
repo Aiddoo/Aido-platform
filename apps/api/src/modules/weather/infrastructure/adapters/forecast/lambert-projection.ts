@@ -40,8 +40,12 @@ export function convertToGrid(lat: number, lon: number): { nx: number; ny: numbe
   ra = (re * sf) / ra ** sn;
 
   let theta = lon * DEG_TO_RAD - olon;
-  if (theta > Math.PI) theta -= 2.0 * Math.PI;
-  if (theta < -Math.PI) theta += 2.0 * Math.PI;
+  if (theta > Math.PI) {
+    theta -= 2.0 * Math.PI;
+  }
+  if (theta < -Math.PI) {
+    theta += 2.0 * Math.PI;
+  }
   theta *= sn;
 
   const nx = Math.floor(ra * Math.sin(theta) + GRID.XO + 0.5);

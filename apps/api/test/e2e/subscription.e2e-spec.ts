@@ -14,7 +14,7 @@ import {
   AUTH_CACHE,
   type AuthCachePort,
 } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
-import { decodeRecord } from "#api/platform/database/database-records";
+import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -28,11 +28,11 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   let context: E2eTestContext;
 
   beforeAll(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     context = await createE2eApp();
   });
 
   beforeEach(async () => {
+    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
@@ -43,11 +43,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   });
 
   afterAll(async () => {
-    try {
-      await destroyE2eApp(context);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    await destroyE2eApp(context);
   });
 
   function webhook(body: object, authorization = `Bearer ${webhookSecret}`) {
@@ -81,13 +77,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   }
 
   async function storedUser(userId: string) {
-    return decodeRecord(
-      "User",
-      await context.testDatabase
-        .getClient()
-        .orm.public.User.where((row) => row.id.eq(userId))
-        .first(),
-    );
+    return context.testDatabase.getClient().query.user.findFirst({ where: { id: userId } });
   }
 
   it("구매 커밋 후 같은 JWT로 유료 프로필과 설정 권한을 즉시 조회한다", async () => {
@@ -114,7 +104,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       subscriptionExpiresAt: futureExpiry,
     });
     expect(
-      await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
+      await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
     ).toHaveLength(1);
   });
 
@@ -160,7 +150,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       subscriptionExpiresAt: futureExpiry,
     });
     expect(
-      await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
+      await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
     ).toHaveLength(4);
   });
 
@@ -200,7 +190,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
         subscriptionExpiresAt: futureExpiry,
       });
       expect(
-        await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
+        await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
       ).toHaveLength(3);
     },
   );
@@ -252,7 +242,9 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const user = await context.helpers.createVerifiedUser("billing-lock@example.com", "Test1234!");
     const lock = context.module.get<SubscriptionWebhookLockPort>(SUBSCRIPTION_WEBHOOK_LOCK);
     const release = await lock.acquire(user.userId);
-    if (release === null) throw new Error("테스트 Webhook 잠금 획득 실패");
+    if (release === null) {
+      throw new Error("테스트 Webhook 잠금 획득 실패");
+    }
     const payload = purchase(user.userId, "billing-lock");
 
     // When
@@ -260,7 +252,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       const rejected = await webhook(payload).expect(429);
       expect(rejected.body.error.code).toBe(ErrorCode.SUBSCRIPTION_1605);
       expect(
-        await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
+        await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
       ).toEqual([]);
     } finally {
       await release();
@@ -271,7 +263,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(retried.body.data).toEqual({ received: true });
     expect(await storedUser(user.userId)).toMatchObject({ subscriptionStatus: "ACTIVE" });
     expect(
-      await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
+      await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
     ).toHaveLength(1);
   });
 
@@ -295,10 +287,10 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(unauthorized.body.error.code).toBe(ErrorCode.SUBSCRIPTION_1601);
     expect(invalidPayload.body.data).toEqual({ received: true });
     expect(await storedUser(user.userId)).toMatchObject({ subscriptionStatus: "FREE" });
-    expect(
-      await context.testDatabase.getClient().orm.public.SubscriptionEventReceipt.all(),
-    ).toEqual([]);
-    expect(await context.testDatabase.getClient().orm.public.Subscription.all()).toEqual([]);
+    expect(await context.testDatabase.getClient().select().from(subscriptionEventReceipt)).toEqual(
+      [],
+    );
+    expect(await context.testDatabase.getClient().select().from(subscription)).toEqual([]);
   });
 
   it("/me는 보상 기간 출처·지금 기간 끝·전체 끝·자동 갱신 여부·대기 중인 보상 일수를 optional 필드로 함께 반환한다", async () => {

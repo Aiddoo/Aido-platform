@@ -3,7 +3,7 @@ import type { Redis } from "ioredis";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 
 import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/delivery/active-push-token.reader.port.js";
@@ -47,15 +47,15 @@ import { NotificationQueueModule } from "./infrastructure/jobs/delivery/notifica
 import { NotificationQueueProcessor } from "./infrastructure/jobs/delivery/notification-queue.processor.js";
 import { PushDeliveryQueueProcessor } from "./infrastructure/jobs/delivery/push-delivery-queue.processor.js";
 import { PushDeliveryQueueService } from "./infrastructure/jobs/delivery/push-delivery-queue.service.js";
-import { PrismaClientAppVersionReader } from "./infrastructure/persistence/delivery/prisma-client-app-version.reader.js";
-import { PrismaNotificationTodoTargetReader } from "./infrastructure/persistence/delivery/prisma-notification-todo-target.reader.js";
-import { PrismaNotificationReader } from "./infrastructure/persistence/delivery/prisma-notification.reader.js";
-import { PrismaNotificationRepository } from "./infrastructure/persistence/delivery/prisma-notification.repository.js";
-import { PrismaPushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository.js";
-import { PrismaPushDeliveryOutboxRepository } from "./infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository.js";
-import { PrismaPushDispatchStagingRepository } from "./infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository.js";
-import { PrismaPushReceiptRepository } from "./infrastructure/persistence/delivery/prisma-push-receipt.repository.js";
-import { PrismaPushTokenRepository } from "./infrastructure/persistence/delivery/prisma-push-token.repository.js";
+import { DrizzleClientAppVersionReader } from "./infrastructure/persistence/delivery/drizzle-client-app-version.reader.js";
+import { DrizzleNotificationTodoTargetReader } from "./infrastructure/persistence/delivery/drizzle-notification-todo-target.reader.js";
+import { DrizzleNotificationReader } from "./infrastructure/persistence/delivery/drizzle-notification.reader.js";
+import { DrizzleNotificationRepository } from "./infrastructure/persistence/delivery/drizzle-notification.repository.js";
+import { DrizzlePushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository.js";
+import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository.js";
+import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository.js";
+import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/delivery/drizzle-push-receipt.repository.js";
+import { DrizzlePushTokenRepository } from "./infrastructure/persistence/delivery/drizzle-push-token.repository.js";
 import { ExpoPushProvider } from "./infrastructure/providers/delivery/expo-push.provider.js";
 import { createPushRateLimiter } from "./infrastructure/rate-limiter/delivery/push-rate-limiter.factory.js";
 import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/security/delivery/hmac-marketing-push-opt-out-token.adapter.js";
@@ -128,28 +128,28 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     sendMilestoneNotificationProvider,
     reconcilePushReceiptsProvider,
     // 책임별 persistence 포트 바인딩
-    PrismaNotificationRepository,
-    { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
-    PrismaNotificationReader,
-    { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
-    { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
-    PrismaNotificationTodoTargetReader,
-    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: PrismaNotificationTodoTargetReader },
-    PrismaPushTokenRepository,
-    { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-    PrismaPushReceiptRepository,
-    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
-    PrismaPushDispatchStagingRepository,
-    { provide: PUSH_DISPATCH_STAGING, useExisting: PrismaPushDispatchStagingRepository },
-    PrismaPushDeliveryOutboxRepository,
+    DrizzleNotificationRepository,
+    { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
+    DrizzleNotificationReader,
+    { provide: NOTIFICATION_INBOX_READER, useExisting: DrizzleNotificationReader },
+    { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
+    DrizzleNotificationTodoTargetReader,
+    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: DrizzleNotificationTodoTargetReader },
+    DrizzlePushTokenRepository,
+    { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
+    DrizzlePushReceiptRepository,
+    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: DrizzlePushReceiptRepository },
+    DrizzlePushDispatchStagingRepository,
+    { provide: PUSH_DISPATCH_STAGING, useExisting: DrizzlePushDispatchStagingRepository },
+    DrizzlePushDeliveryOutboxRepository,
     {
       provide: PUSH_DELIVERY_OUTBOX_REPOSITORY,
-      useExisting: PrismaPushDeliveryOutboxRepository,
+      useExisting: DrizzlePushDeliveryOutboxRepository,
     },
-    PrismaPushDeliveryLifecycleRepository,
+    DrizzlePushDeliveryLifecycleRepository,
     {
       provide: PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-      useExisting: PrismaPushDeliveryLifecycleRepository,
+      useExisting: DrizzlePushDeliveryLifecycleRepository,
     },
     notificationAccountCleanupProvider,
     HmacMarketingPushOptOutTokenAdapter,
@@ -188,7 +188,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
       provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
       useExisting: CachedNotificationRecipientPreferenceAdapter,
     },
-    { provide: CLIENT_APP_VERSION_READER, useClass: PrismaClientAppVersionReader },
+    { provide: CLIENT_APP_VERSION_READER, useClass: DrizzleClientAppVersionReader },
     // application 전달 정책 + durable outbox/queue 경계
     pushDeliveryAfterCommitPublisherProvider,
     pushDeliveryEligibilityServiceProvider,
@@ -213,7 +213,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
       provide: PUSH_RATE_LIMITER,
       useFactory: (
         configService: TypedConfigService,
-        database: DatabaseService,
+        database: Database,
         redis?: Redis,
       ): PushRateLimiterPort => {
         return createPushRateLimiter({
@@ -222,11 +222,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
           ...(redis && { redis }),
         });
       },
-      inject: [
-        TypedConfigService,
-        DatabaseService,
-        { token: REDIS_COMMAND_CLIENT, optional: true },
-      ],
+      inject: [TypedConfigService, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
     },
     // 알림 큐 프로세서
     NotificationQueueProcessor,

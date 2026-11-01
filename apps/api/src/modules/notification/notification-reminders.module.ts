@@ -20,7 +20,7 @@ import {
   TimezoneReminderQueueService,
 } from "./infrastructure/jobs/reminders/index.js";
 import { TimezoneReminderProcessor } from "./infrastructure/jobs/reminders/timezone-reminder-queue.processor.js";
-import { PrismaSchedulerReader } from "./infrastructure/persistence/reminders/prisma-scheduler.reader.js";
+import { DrizzleSchedulerReader } from "./infrastructure/persistence/reminders/drizzle-scheduler.reader.js";
 import { TodoReminderProcessor } from "./infrastructure/processors/reminders/todo-reminder.processor.js";
 import { NotificationDeliveryModule } from "./notification-delivery.module.js";
 import {
@@ -49,7 +49,7 @@ import {
  *
  * - domain: 스케줄 정책(순수 함수) — 알림 시간·리마인더 단계·winback·onboarding
  * - application: 오케스트레이터·13 전략·리더/enqueuer 포트
- * - infrastructure: Prisma 리더·BullMQ 큐/스케줄러/프로세서
+ * - infrastructure: Drizzle 리더·BullMQ 큐/스케줄러/프로세서
  */
 @Module({
   imports: [
@@ -75,21 +75,21 @@ import {
     streakAtRiskStrategyProvider,
     weatherMorningStrategyProvider,
     weatherEveningStrategyProvider,
-    // 리더 어댑터 (단일 Prisma 어댑터 → 분리된 리더 포트들에 바인딩)
-    PrismaSchedulerReader,
+    // 리더 어댑터 (단일 Drizzle 어댑터 → 분리된 리더 포트들에 바인딩)
+    DrizzleSchedulerReader,
     SchedulerDedupAdapter,
     { provide: SCHEDULER_DEDUP, useExisting: SchedulerDedupAdapter },
-    { provide: SCHEDULED_REMINDER_READER, useExisting: PrismaSchedulerReader },
-    { provide: RE_ENGAGEMENT_READER, useExisting: PrismaSchedulerReader },
-    { provide: WEATHER_REMINDER_READER, useExisting: PrismaSchedulerReader },
+    { provide: SCHEDULED_REMINDER_READER, useExisting: DrizzleSchedulerReader },
+    { provide: RE_ENGAGEMENT_READER, useExisting: DrizzleSchedulerReader },
+    { provide: WEATHER_REMINDER_READER, useExisting: DrizzleSchedulerReader },
     {
       provide: WEEKLY_ACHIEVEMENT_STATS_READER,
-      useExisting: PrismaSchedulerReader,
+      useExisting: DrizzleSchedulerReader,
     },
-    { provide: TODO_REMINDER_READER, useExisting: PrismaSchedulerReader },
+    { provide: TODO_REMINDER_READER, useExisting: DrizzleSchedulerReader },
     {
       provide: SCHEDULER_PREFERENCE_READER,
-      useExisting: PrismaSchedulerReader,
+      useExisting: DrizzleSchedulerReader,
     },
     // enqueue 포트 (BullMQ 큐 서비스 재사용)
     {

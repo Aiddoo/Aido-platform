@@ -71,7 +71,9 @@ export class StubUserPreferenceRepository implements UserPreferenceRepositoryPor
 
   async upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecord> {
     const existing = this.records.get(userId);
-    if (existing === undefined) return this.create(userId, data);
+    if (existing === undefined) {
+      return this.create(userId, data);
+    }
     const record = { ...existing, ...pickBy(data, (value) => value !== undefined) };
     this.records.set(userId, record);
     return { ...record };
@@ -83,7 +85,9 @@ export class StubUserPreferenceRepository implements UserPreferenceRepositoryPor
 
   async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {
     const existing = this.records.get(userId);
-    if (existing === undefined || existing.timezone === timezone) return 0;
+    if (existing === undefined || existing.timezone === timezone) {
+      return 0;
+    }
     this.records.set(userId, { ...existing, timezone });
     return 1;
   }
@@ -104,8 +108,9 @@ export class StubUserPreferenceRepository implements UserPreferenceRepositoryPor
       record.currentStreak !== expected.currentStreak ||
       record.longestStreak !== expected.longestStreak ||
       record.lastCompletedDate?.getTime() !== expected.lastCompletedDate?.getTime()
-    )
+    ) {
       return false;
+    }
     this.records.set(userId, {
       ...record,
       ...next,
@@ -217,7 +222,9 @@ export class StubUserSettingsCache implements UserSettingsCachePort {
     factory: () => Promise<PreferenceSnapshot>,
   ): Promise<PreferenceSnapshot> {
     const snapshot = this.snapshots.get(userId);
-    if (snapshot !== undefined) return snapshot;
+    if (snapshot !== undefined) {
+      return snapshot;
+    }
     const loaded = await factory();
     this.snapshots.set(userId, loaded);
     return loaded;

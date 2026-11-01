@@ -1,8 +1,7 @@
-import postgres from "@prisma/orm-postgres/runtime";
-import { vi, type Mock } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import type { QueryResult } from "pg";
+import { vi } from "vitest";
 
-import { contract } from "#api/platform/database/database.service";
+import { createFakeDatabase, postgresError, queryResult } from "#test/mocks/drizzle.mock";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "./test-database.js";
@@ -12,27 +11,37 @@ const MANAGED_ENV = {
   AIDO_TEST_DB_MANAGED: "1",
 };
 
-type ExecuteRawMock = Mock<ReturnType<TestDatabaseClient["runtime"]>["execute"]>;
+type StatementHandler = ReturnType<typeof vi.fn<(text: string) => Promise<QueryResult>>>;
 
-function createFakeTestDatabaseClient(executeRawUnsafe: ExecuteRawMock) {
-  const client = mockDeep<TestDatabaseClient>();
-  const statics = postgres({ contract });
-  const runtime = mockDeep<ReturnType<TestDatabaseClient["runtime"]>>();
-  Object.assign(client, { raw: statics.raw });
-  client.close.mockResolvedValue(undefined);
-  runtime.query.mockResolvedValue([{ table_name: "Todo" }]);
-  runtime.execute.mockImplementation(executeRawUnsafe);
-  client.runtime.mockReturnValue(runtime);
-  return client;
+function succeed(): StatementHandler {
+  return vi.fn<(text: string) => Promise<QueryResult>>().mockResolvedValue(queryResult());
 }
 
-function deadlock() {
-  return Object.assign(new Error("deadlock detected"), { kind: "sql_query", sqlState: "40P01" });
+/** 실제 Drizzle 클라이언트에 가짜 pg Pool을 연결해 SQL 종류별 응답을 제어한다. */
+function createFakeTestDatabaseClient(
+  handlers: {
+    probe?: StatementHandler;
+    reset?: StatementHandler;
+    truncate?: StatementHandler;
+  } = {},
+) {
+  const { database } = createFakeDatabase(async ({ text }) => {
+    if (text.includes("session_replication_role")) {
+      return (handlers.reset ?? succeed())(text);
+    }
+    if (text.includes("TRUNCATE")) {
+      return (handlers.truncate ?? succeed())(text);
+    }
+    return (handlers.probe ?? succeed())(text);
+  });
+  return Object.assign(database, {
+    close: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  });
 }
 
 describe("TestDatabase", () => {
-  it("비관리 DATABASE_URL에서 Prisma 연결을 시도하지 않아야 한다", async () => {
-    // Given - localhost fallback URL과 Prisma factory spy
+  it("비관리 DATABASE_URL에서 DB 연결을 시도하지 않아야 한다", async () => {
+    // Given
     const createTestDatabaseClient = vi.fn();
     const testDatabase = new TestDatabase({
       env: {
@@ -41,31 +50,31 @@ describe("TestDatabase", () => {
       createClient: createTestDatabaseClient,
     });
 
-    // When & Then - marker/name 검증에서 즉시 중단
-    await expect(testDatabase.start()).rejects.toThrow("AIDO_TEST_DB_MANAGED=1");
+    // When
+    const start = testDatabase.start();
+
+    // Then
+    await expect(start).rejects.toThrow("AIDO_TEST_DB_MANAGED=1");
     expect(createTestDatabaseClient).not.toHaveBeenCalled();
   });
 
   describe("연결 probe 실패 생명주기", () => {
     it("SELECT 1이 실패하면 client를 닫고 미시작 상태로 돌아가 새 client로 재시도한다", async () => {
-      // Given - native client는 생성됐지만 첫 연결 확인이 실패한다
+      // Given
       const probeError = new Error("synthetic probe failure");
-      const firstClient = createFakeTestDatabaseClient(
-        vi.fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>(),
-      );
-      vi.spyOn(firstClient.runtime(), "query").mockRejectedValueOnce(probeError);
-      const retryClient = createFakeTestDatabaseClient(
-        vi.fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>(),
-      );
+      const firstClient = createFakeTestDatabaseClient({
+        probe: vi.fn<(text: string) => Promise<QueryResult>>().mockRejectedValueOnce(probeError),
+      });
+      const retryClient = createFakeTestDatabaseClient();
       const createClient = vi
         .fn<(uri: string) => TestDatabaseClient>()
         .mockReturnValueOnce(firstClient)
         .mockReturnValueOnce(retryClient);
       const database = new TestDatabase({ env: MANAGED_ENV, createClient });
       try {
-        // When - 실제 start의 native SELECT 1 경로에서 실패한다
-        await expect(database.start()).rejects.toBe(probeError);
-        // Then - 부분 자원을 닫고 client와 연결 정보를 공개하지 않는다
+        // When
+        await expect(database.start()).rejects.toMatchObject({ cause: probeError });
+        // Then
         expect.soft(firstClient.close).toHaveBeenCalledTimes(1);
         expect.soft(() => database.getClient()).toThrow("TestDatabase not started");
         expect.soft(() => database.getConnectionUri()).toThrow("TestDatabase not started");
@@ -77,18 +86,17 @@ describe("TestDatabase", () => {
     });
 
     it("실패 client의 close도 실패하면 정리 실패로 원래 probe 오류를 덮지 않는다", async () => {
-      // Given - 연결 확인과 부분 client 정리 모두 실패한다
+      // Given
       const probeError = new Error("synthetic original probe failure");
-      const failedClient = createFakeTestDatabaseClient(
-        vi.fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>(),
-      );
-      vi.spyOn(failedClient.runtime(), "query").mockRejectedValueOnce(probeError);
+      const failedClient = createFakeTestDatabaseClient({
+        probe: vi.fn<(text: string) => Promise<QueryResult>>().mockRejectedValueOnce(probeError),
+      });
       failedClient.close.mockRejectedValueOnce(new Error("synthetic close failure"));
       const database = new TestDatabase({ env: MANAGED_ENV, createClient: () => failedClient });
       try {
-        // When - 실제 시작 실패의 cleanup 경로를 실행한다
-        await expect(database.start()).rejects.toBe(probeError);
-        // Then - close 시도는 보장하고 실패한 client/URI는 미시작 상태다
+        // When
+        await expect(database.start()).rejects.toMatchObject({ cause: probeError });
+        // Then
         expect.soft(failedClient.close).toHaveBeenCalledTimes(1);
         expect.soft(() => database.getClient()).toThrow("TestDatabase not started");
         expect.soft(() => database.getConnectionUri()).toThrow("TestDatabase not started");
@@ -98,47 +106,64 @@ describe("TestDatabase", () => {
     });
   });
 
-  // TRUNCATE는 ACCESS EXCLUSIVE 락을 잡는다. 앞 테스트가 남긴 작업과 겹치면 교착으로
-  // 튕기는데, 이건 드문 경합이지 설계 결함이 아니다 — 물러섰다 다시 잡는 게 맞다.
-  describe("TRUNCATE 교착 재시도", () => {
-    async function startWith(executeRawUnsafe: ExecuteRawMock) {
+  describe("테이블 정리", () => {
+    async function startWith(handlers: { reset?: StatementHandler; truncate?: StatementHandler }) {
       const testDatabase = new TestDatabase({
         env: MANAGED_ENV,
-        createClient: () => createFakeTestDatabaseClient(executeRawUnsafe),
+        createClient: () => createFakeTestDatabaseClient(handlers),
       });
       await testDatabase.start();
       return testDatabase;
     }
 
-    it("교착으로 튕기면 다시 시도해 끝내 정리한다", async () => {
-      const executeRawUnsafe = vi
-        .fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>()
-        .mockRejectedValueOnce(deadlock())
-        .mockResolvedValueOnce({ affectedRows: 1 });
-      const testDatabase = await startWith(executeRawUnsafe);
+    it("FK 트리거를 끈 DELETE 한 문장으로 모든 테이블과 시퀀스를 초기화한다", async () => {
+      // Given
+      const reset = succeed();
+      const truncate = succeed();
+      const testDatabase = await startWith({ reset, truncate });
 
-      await expect(testDatabase.cleanup()).resolves.toBeUndefined();
-      expect(executeRawUnsafe).toHaveBeenCalledTimes(2);
+      // When
+      await testDatabase.cleanup();
+
+      // Then
+      expect(reset).toHaveBeenCalledOnce();
+      expect(reset.mock.calls[0]?.[0]).toContain("setval");
+      expect(truncate).not.toHaveBeenCalled();
     });
 
-    it("교착이 아닌 실패는 즉시 올린다 — 감추면 원인을 잃는다", async () => {
-      const executeRawUnsafe = vi
-        .fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>()
+    it("superuser가 아니면 TRUNCATE로 바꾸고 이후에도 TRUNCATE만 쓴다", async () => {
+      // Given
+      const reset = vi
+        .fn<(text: string) => Promise<QueryResult>>()
+        .mockRejectedValue(postgresError("42501"));
+      const truncate = succeed();
+      const testDatabase = await startWith({ reset, truncate });
+
+      // When
+      await testDatabase.cleanup();
+      await testDatabase.cleanup();
+
+      // Then
+      expect(reset).toHaveBeenCalledOnce();
+      expect(truncate).toHaveBeenCalledTimes(2);
+    });
+
+    it("권한 외 실패는 바꾸지 않고 그대로 올린다", async () => {
+      // Given
+      const reset = vi
+        .fn<(text: string) => Promise<QueryResult>>()
         .mockRejectedValue(new Error("relation does not exist"));
-      const testDatabase = await startWith(executeRawUnsafe);
+      const truncate = succeed();
+      const testDatabase = await startWith({ reset, truncate });
 
-      await expect(testDatabase.cleanup()).rejects.toThrow("relation does not exist");
-      expect(executeRawUnsafe).toHaveBeenCalledTimes(1);
-    });
+      // When
+      const cleanup = testDatabase.cleanup();
 
-    it("계속 교착이면 무한정 매달리지 않고 마지막 실패를 올린다", async () => {
-      const executeRawUnsafe = vi
-        .fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>()
-        .mockRejectedValue(deadlock());
-      const testDatabase = await startWith(executeRawUnsafe);
-
-      await expect(testDatabase.cleanup()).rejects.toThrow("deadlock detected");
-      expect(executeRawUnsafe).toHaveBeenCalledTimes(3);
+      // Then
+      await expect(cleanup).rejects.toMatchObject({
+        cause: { message: "relation does not exist" },
+      });
+      expect(truncate).not.toHaveBeenCalled();
     });
   });
 });

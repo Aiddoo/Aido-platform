@@ -64,14 +64,18 @@ export class FakeEmailService implements AuthEmailSenderPort {
 
   async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
     const failure = this.#failureResult();
-    if (failure !== null) return failure;
+    if (failure !== null) {
+      return failure;
+    }
     this.#sentInquiries.push({ to, data, sentAt: new Date() });
     return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
   }
 
   async sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailSendResult> {
     const failure = this.#failureResult();
-    if (failure !== null) return failure;
+    if (failure !== null) {
+      return failure;
+    }
     this.#sentUserReports.push({ to, data, sentAt: new Date() });
     return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
   }
@@ -90,9 +94,12 @@ export class FakeEmailService implements AuthEmailSenderPort {
       return { success: true, messageId: `fake-duplicate-${Date.now()}`, retryCount: 0 };
     }
     const failure = this.#failureResult();
-    if (failure !== null) return failure;
-    if (idempotencyKey !== undefined && idempotencyKey.length > 0)
+    if (failure !== null) {
+      return failure;
+    }
+    if (idempotencyKey !== undefined && idempotencyKey.length > 0) {
       this.#idempotencyKeys.add(idempotencyKey);
+    }
     this.#sentEmails.set(to, {
       code: data.code,
       expiryMinutes: data.expiryMinutes,
@@ -170,7 +177,9 @@ export class FakeEmailService implements AuthEmailSenderPort {
   }
 
   #failureResult(): EmailSendResult | null {
-    if (this.#failureCount >= this.#maximumFailures) return null;
+    if (this.#failureCount >= this.#maximumFailures) {
+      return null;
+    }
     this.#failureCount += 1;
     return { success: false, error: "Simulated failure for testing", retryCount: 0 };
   }

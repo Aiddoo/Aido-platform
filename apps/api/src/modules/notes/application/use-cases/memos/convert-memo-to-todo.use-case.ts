@@ -61,7 +61,9 @@ export class ConvertMemoToTodo {
         MutationLockKeys.todoSortOrder(userId),
       ]);
       const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (memo == null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      if (memo == null) {
+        throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      }
       const staged = await this.#dependencies.todoCreator.stageTodo({
         userId,
         title: memo.toTodoTitle(),

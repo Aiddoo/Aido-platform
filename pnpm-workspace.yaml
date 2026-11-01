@@ -22,7 +22,6 @@ allowBuilds:
   '@swc/core': true
   argon2: true
   esbuild: true
-  prisma: true
   '@sentry/cli': true
   '@firebase/util': false
   '@parcel/watcher': false
@@ -36,21 +35,20 @@ allowBuilds:
   workerd: false
 
 overrides:
-  # Prisma 내부 의존성이 다른 pg 타입을 끌어와 Pool 타입이 갈라지지 않도록 앱 드라이버 버전으로 통일한다.
-  pg: 'catalog:prisma8'
-  '@types/pg': 'catalog:prisma8'
   # pnpm audit --fix 결과. 상위 패키지가 패치 버전을 받으면 해당 항목을 제거한다.
   '@grpc/grpc-js@<1.13.6': ^1.13.6
   '@hono/node-server@<1.19.15': ^1.19.15
   body-parser@<2.4.0: ^2.4.0
   fast-uri@<3.1.9: ^3.1.9
-  # HealthService uses native SQL; the optional generated-client health indicator is unused.
+  # @nestjs/terminus의 선택 peer인 Prisma client가 autoInstallPeers로 설치되지 않게 막는다.
   '@nestjs/terminus@12.1.0>@prisma/client': '-'
   decode-uri-component@<=0.4.2: ^0.5.0
   hono@<4.13.7: ^4.13.7
   http-cache-semantics@<=4.2.0: ^4.3.0
   lodash@<=4.17.23: ^4.18.1
   multer@<2.5.0: ^2.5.0
+  node-forge@<1.4.1: ^1.4.1
+  re2js@>=2.2.0 <2.8.7: ^2.8.7
   'undici@<6.29.1': ^6.29.1
   'undici@>=7.0.0 <7.30.1': ^7.30.1
   'undici@>=8.0.0 <8.12.2': ^8.12.2
@@ -66,18 +64,31 @@ packageExtensions:
       '@expo/config-plugins': ~58.0.9
 
 catalog:
-  '@react-native-kakao/core': 2.4.11
-  '@react-native-kakao/share': 2.4.11
-  '@react-native-kakao/social': 2.4.11
-  '@react-native-kakao/user': 2.4.11
-  '@swc/core': '1.16.20'
-  '@types/node': '24.19.2'
+  '@ai-sdk/google': '4.0.109'
+  '@react-native-kakao/core': '2.4.11'
+  '@react-native-kakao/share': '2.4.11'
+  '@react-native-kakao/social': '2.4.11'
+  '@react-native-kakao/user': '2.4.11'
+  '@sentry/nestjs': '11.10.0'
+  '@swc/cli': '0.8.2'
+  '@swc/core': '1.16.21'
+  '@types/node': '26.6.6'
+  '@types/pg': '8.23.1'
   '@vitest/coverage-v8': '5.0.5'
+  'ai': '7.0.159'
+  'bowser': '2.15.0'
+  'bullmq': '6.5.3'
   'dayjs': '1.11.23'
-  'es-toolkit': '1.53.0'
+  'es-toolkit': '1.53.1'
+  'google-auth-library': '11.3.2'
+  'jose': '6.2.14'
+  'oxfmt': '0.75.0'
+  'oxlint': '1.90.0'
+  'pg': '8.23.1'
   'pg-boss': '12.38.0'
   'react-native-reorderable-list': '0.18.3'
   'react-native-reserved-regions': '0.2.0'
+  'resend': '6.37.0'
   'ts-pattern': '5.9.2'
   'typescript': '6.0.3'
   'vite': '8.3.5'
@@ -142,28 +153,26 @@ catalogs:
     'react-native-worklets': '0.13.0'
     'react-server-dom-webpack': '19.3.0'
     'uniwind': '1.13.1'
-  prisma8:
-    '@prisma/cli-engine': '0.9.0'
-    '@prisma/orm-postgres': '8.0.0-rc.20'
-    '@types/pg': '8.23.1'
-    'pg': '8.23.1'
-    'prisma': '8.0.0-rc.27'
+  drizzle1:
+    '@nestjs-cls/transactional-adapter-drizzle-orm': '2.0.2'
+    'drizzle-kit': '1.0.0-rc.5'
+    'drizzle-orm': '1.0.0-rc.5'
   nest12:
-    '@nestjs-cls/transactional': '4.0.1'
-    '@nestjs/cli': '12.0.10'
-    '@nestjs/common': '12.2.0'
+    '@nestjs-cls/transactional': '4.0.2'
+    '@nestjs/cli': '12.0.11'
+    '@nestjs/common': '12.3.2'
     '@nestjs/config': '12.0.1'
-    '@nestjs/core': '12.2.0'
+    '@nestjs/core': '12.3.2'
     '@nestjs/event-emitter': '12.0.1'
     '@nestjs/jwt': '12.0.3'
     '@nestjs/passport': '12.0.0'
-    '@nestjs/platform-express': '12.2.0'
-    '@nestjs/schematics': '12.0.10'
-    '@nestjs/swagger': '12.0.4'
+    '@nestjs/platform-express': '12.3.2'
+    '@nestjs/schematics': '12.0.12'
+    '@nestjs/swagger': '12.0.5'
     '@nestjs/terminus': '12.1.0'
-    '@nestjs/testing': '12.2.0'
+    '@nestjs/testing': '12.3.2'
     '@nestjs/throttler': '6.7.1'
-    'nestjs-cls': '7.0.1'
+    'nestjs-cls': '7.0.2'
 
 patchedDependencies:
   '@sentry/react-native@8.28.0': patches/@sentry__react-native@8.28.0.patch

@@ -57,7 +57,9 @@ export class StubAuthUserRepository
 
   async findByIdWithProfile(id: string): Promise<AuthUserProfileRecord | null> {
     const user = this.users.get(id);
-    if (user === undefined) return null;
+    if (user === undefined) {
+      return null;
+    }
     return {
       ...user,
       profile: this.profiles.get(id) ?? null,
@@ -87,7 +89,9 @@ export class StubAuthUserRepository
 
   async markEmailVerified(id: string): Promise<void> {
     const user = await this.findById(id);
-    if (user === null) throw new Error(`사용자가 없습니다: ${id}`);
+    if (user === null) {
+      throw new Error(`사용자가 없습니다: ${id}`);
+    }
     this.users.set(id, { ...user, status: "ACTIVE", emailVerifiedAt: new Date() });
   }
 
@@ -153,7 +157,9 @@ export class StubAuthProfileCache
     factory: () => Promise<AuthCachedUserProfile | undefined>,
   ): Promise<AuthCachedUserProfile | undefined> {
     const cached = this.profiles.get(userId);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      return cached;
+    }
     const profile = await factory();
     if (profile !== undefined) {
       this.profiles.set(userId, profile);
@@ -213,15 +219,18 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
       verification.usedAt !== null ||
       verification.expiresAt <= input.at ||
       verification.attempts >= input.maxAttempts
-    )
+    ) {
       return false;
+    }
     this.verifications.set(input.id, { ...verification, usedAt: new Date(input.at) });
     return true;
   }
 
   async incrementAttempts(id: number): Promise<void> {
     const verification = this.verifications.get(id);
-    if (verification === undefined) throw new Error(`인증 코드가 없습니다: ${id}`);
+    if (verification === undefined) {
+      throw new Error(`인증 코드가 없습니다: ${id}`);
+    }
     this.verifications.set(id, { ...verification, attempts: verification.attempts + 1 });
   }
 
@@ -236,8 +245,9 @@ export class StubAuthVerificationRepository implements AuthVerificationRepositor
         verification.type !== type ||
         verification.usedAt !== null ||
         verification.expiresAt.getTime() <= Date.now()
-      )
+      ) {
         continue;
+      }
       this.verifications.set(id, { ...verification, expiresAt: new Date() });
       count += 1;
     }

@@ -69,7 +69,9 @@ export class ExpireStaleRedemptions {
         ),
       );
       expiredCount += expired;
-      if (expired < INVITE_MAINTENANCE.BATCH_SIZE) break;
+      if (expired < INVITE_MAINTENANCE.BATCH_SIZE) {
+        break;
+      }
     }
     return expiredCount;
   }
@@ -90,7 +92,9 @@ export class ExpireStaleRedemptions {
       });
       retriedCount += redemptionIds.length;
 
-      if (redemptionIds.length < INVITE_MAINTENANCE.BATCH_SIZE) break;
+      if (redemptionIds.length < INVITE_MAINTENANCE.BATCH_SIZE) {
+        break;
+      }
       afterSourceId = redemptionIds.at(-1);
     }
     return retriedCount;

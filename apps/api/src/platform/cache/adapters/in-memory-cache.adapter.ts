@@ -190,7 +190,9 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 
   async has(key: string): Promise<boolean> {
     const entry = this.#cache.get(key);
-    if (!entry) return false;
+    if (!entry) {
+      return false;
+    }
 
     // 만료 체크
     if (Date.now() > entry.expiresAt) {
@@ -205,7 +207,9 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     const entry = this.#cache.get(key);
 
     // 키가 없으면 -2 (Redis PTTL 규칙)
-    if (!entry) return -2;
+    if (!entry) {
+      return -2;
+    }
 
     const remaining = entry.expiresAt - Date.now();
 
@@ -222,7 +226,9 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     const entry = this.#cache.get(key);
 
     // 키가 없으면 false
-    if (!entry) return false;
+    if (!entry) {
+      return false;
+    }
 
     // 만료 체크
     if (Date.now() > entry.expiresAt) {

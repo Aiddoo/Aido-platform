@@ -42,7 +42,9 @@ export function isMilestoneReachedAt(
   milestone: InviterRewardMilestone,
   qualifiedCount: number,
 ): boolean {
-  if (qualifiedCount === milestone.qualifiedCount) return true;
+  if (qualifiedCount === milestone.qualifiedCount) {
+    return true;
+  }
   return (
     milestone.repeatEvery != null &&
     qualifiedCount > milestone.qualifiedCount &&
@@ -68,8 +70,12 @@ export function nextMilestoneQualifiedCount(
   qualifiedCount: number,
 ): number | null {
   const candidates = milestones.flatMap((milestone) => {
-    if (milestone.qualifiedCount > qualifiedCount) return [milestone.qualifiedCount];
-    if (milestone.repeatEvery == null) return [];
+    if (milestone.qualifiedCount > qualifiedCount) {
+      return [milestone.qualifiedCount];
+    }
+    if (milestone.repeatEvery == null) {
+      return [];
+    }
     const passed = qualifiedCount - milestone.qualifiedCount;
     return [qualifiedCount + milestone.repeatEvery - (passed % milestone.repeatEvery)];
   });
@@ -197,7 +203,9 @@ export const InviteRewardPolicy = {
     milestones: readonly InviterRewardMilestone[] = INVITER_REWARD_MILESTONES,
   ): InviteMilestoneView | null {
     const next = nextMilestoneQualifiedCount(milestones, qualifiedCount);
-    if (next == null) return null;
+    if (next == null) {
+      return null;
+    }
     return { qualifiedCount: next, rewards: rewardsAtQualifiedCount(milestones, next) };
   },
 };

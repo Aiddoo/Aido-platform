@@ -15,7 +15,7 @@ export class DuplicateNotificationError extends Error {
 /**
  * 알림 영속 상태 변경 포트.
  *
- * 어댑터(Prisma)는 CLS TransactionHost 기반으로 활성 트랜잭션에 참여한다.
+ * 어댑터는 CLS TransactionHost 기반으로 활성 트랜잭션에 참여한다.
  */
 export interface NotificationRepositoryPort {
   createNotification(data: CreateNotificationData): Promise<NotificationRecord>;

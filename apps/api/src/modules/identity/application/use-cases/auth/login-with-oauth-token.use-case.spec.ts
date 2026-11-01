@@ -160,8 +160,10 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
           userId: result.userId,
           email: fixture.identityProvider.profile.email,
           provider: provider.toLowerCase(),
+          name: userName.slice(0, 20),
         },
       ]);
+      expect(fixture.adminEventNotifier.notifications[0]).not.toHaveProperty("devicePlatform");
       expect(fixture.securityLogRepository.entries).toMatchObject([
         {
           event: SECURITY_EVENT.REGISTRATION,
@@ -395,7 +397,9 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     let reads = 0;
     vi.spyOn(fixture.userRepository, "findById").mockImplementation(async (id) => {
       const user = await originalRead(id);
-      if (user == null) return null;
+      if (user == null) {
+        return null;
+      }
       return ++reads === 1 ? user : { ...user, role: "ADMIN" };
     });
     // When
@@ -415,7 +419,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       // Given
       const fixture = createAuthOAuthFixture("KAKAO");
       fixture.identityProvider.profile.email = fixture.user.email;
-      if (existingIdentity)
+      if (existingIdentity) {
         fixture.accountRepository.accounts.push(
           AccountFixture.create({
             userId: fixture.user.id,
@@ -423,6 +427,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
             providerAccountId: fixture.identityProvider.profile.id,
           }),
         );
+      }
       await fixture.userRepository.softDelete(
         fixture.user.id,
         new Date(AUTH_CREDENTIAL_TIME.getTime() - 31 * 86_400_000),
@@ -446,11 +451,12 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       // Given
       const fixture = createAuthOAuthFixture();
       fixture.identityProvider.profile.email = fixture.user.email;
-      if (restoring)
+      if (restoring) {
         await fixture.userRepository.softDelete(
           fixture.user.id,
           new Date(AUTH_CREDENTIAL_TIME.getTime() - 29 * 86_400_000),
         );
+      }
       fixture.cacheService.userIds.add(fixture.user.id);
       const storageError = new Error("연결 저장 실패");
       vi.spyOn(fixture.accountRepository, "createOAuthAccount").mockRejectedValueOnce(storageError);

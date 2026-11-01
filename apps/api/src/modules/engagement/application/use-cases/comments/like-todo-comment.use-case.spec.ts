@@ -142,8 +142,9 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
     let unitOfWorkCalls = 0;
     fixture.unitOfWork.run = async (work) => {
       unitOfWorkCalls++;
-      if (unitOfWorkCalls === 2)
+      if (unitOfWorkCalls === 2) {
         await fixture.repository.removeLike(1, comment.id, ENGAGEMENT_VIEWER_ID);
+      }
       return work();
     };
     // When

@@ -81,7 +81,9 @@ export class WeeklyAchievementStrategy implements TimezoneReminderStrategy {
     }
     const freeRecipientIds = await this.#dependencies.reader.findFreeRecipientIds(completedUserIds);
     const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
-    if (notifiableUserIds.length === 0) return { sent: 0 };
+    if (notifiableUserIds.length === 0) {
+      return { sent: 0 };
+    }
 
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({

@@ -15,7 +15,9 @@ export const DEFAULT_DELIVERY_TIMEZONE = "Asia/Seoul";
 
 /** 신뢰할 수 없는 값을 런타임이 지원하는 정규 IANA 타임존으로 변환한다. */
 export function normalizeIanaTimezone(value: unknown): string | null {
-  if (typeof value !== "string" || value.trim().length === 0) return null;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
   try {
     return new Intl.DateTimeFormat("en-US", {
       timeZone: value,

@@ -64,11 +64,15 @@ export class AdminNotificationProcessor implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
     await this.runtime.work(
       ADMIN_NOTIFICATION_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       ADMIN_NOTIFICATION_WORKER_POLICY,
     );
