@@ -2,7 +2,7 @@ import sql from "sql-template-tag";
 import { vi } from "vitest";
 
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import { PrismaAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-growth-metrics.adapter";
+import { DrizzleAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-growth-metrics.adapter";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
@@ -17,14 +17,14 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
   let prisma: TestDatabaseClient;
   let activityWriter: DrizzleUserRepository;
-  let growthMetrics: PrismaAdminGrowthMetricsAdapter;
+  let growthMetrics: DrizzleAdminGrowthMetricsAdapter;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
     prisma = await testDb.start();
     const txHost = createMockTransactionHost(createDatabaseContext(prisma));
     activityWriter = new DrizzleUserRepository(txHost);
-    growthMetrics = new PrismaAdminGrowthMetricsAdapter(createTestDatabaseService(prisma));
+    growthMetrics = new DrizzleAdminGrowthMetricsAdapter(createTestDatabaseService(prisma));
   }, 60_000);
 
   beforeEach(async () => {

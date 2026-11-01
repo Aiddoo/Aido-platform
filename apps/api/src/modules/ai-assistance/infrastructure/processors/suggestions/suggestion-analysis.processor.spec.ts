@@ -1,7 +1,9 @@
 import type { Mocked } from "vitest";
-import { mock } from "vitest-mock-extended";
+import { mock, mockDeep } from "vitest-mock-extended";
 
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
+import type { Database } from "#api/platform/database/database.client";
+import { createMockDrizzleTransactionHost } from "#test/mocks/drizzle.mock";
 /**
  * SuggestionAnalysisProcessor 단위 테스트
  *
@@ -9,9 +11,7 @@ import { NotificationPublisher } from "#api/modules/notification/notification-de
  * - 서비스 위임 검증
  * - 패턴 감지 여부에 따른 알림 발송 검증
  */
-import { createMockDatabaseContext } from "#test/mocks/database.mock";
 import { createMockJob } from "#test/mocks/index";
-import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { AnalyzeAndCreateSuggestions } from "../../../application/use-cases/suggestions/analyze-and-create-suggestions.use-case.js";
 import {
@@ -26,14 +26,14 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
   let mockNotificationService: Mocked<NotificationPublisher>;
 
   beforeEach(async () => {
-    const context = createMockDatabaseContext();
-    context.orm.public.UserPreference.first.mockResolvedValue(null);
+    const database = mockDeep<Database>();
+    database.query.userPreference.findFirst.mockResolvedValue(undefined);
     analyzeAndCreateSuggestionsUseCase = mock<AnalyzeAndCreateSuggestions>();
     mockNotificationService = mock<NotificationPublisher>();
     processor = new SuggestionAnalysisProcessor(
       analyzeAndCreateSuggestionsUseCase,
       mockNotificationService,
-      asDatabaseService(createMockDatabaseService(context)),
+      createMockDrizzleTransactionHost(database).host,
     );
   });
 

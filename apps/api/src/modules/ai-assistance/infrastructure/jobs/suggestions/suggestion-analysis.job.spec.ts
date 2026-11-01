@@ -1,33 +1,40 @@
+import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { UserBuilder } from "#test/builders/index";
-import { databaseFixture, nativeRows } from "#test/mocks/database.mock";
-import { asMock } from "#test/mocks/index";
-import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
 import { AiSuggestionQueueMaintenanceService } from "./ai-suggestion-queue-maintenance.service.js";
 import { AI_SUGGESTION_QUEUE } from "./ai-suggestion-queue.js";
 import { SuggestionAnalysisJob } from "./suggestion-analysis.job.js";
 
+function createUserQueryHost() {
+  const findMany = vi.fn();
+  const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
+  Object.defineProperty(host, "tx", { get: () => ({ query: { user: { findMany } } }) });
+  return { host, findMany };
+}
+
 describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
   let job: SuggestionAnalysisJob;
-  let database: ReturnType<typeof createMockDatabaseService>;
+  let findMany: ReturnType<typeof createUserQueryHost>["findMany"];
   let runtime: Mocked<JobRuntimePort>;
   let processor: Mocked<SuggestionAnalysisProcessor>;
 
   beforeEach(async () => {
-    database = createMockDatabaseService();
+    const userQuery = createUserQueryHost();
+    findMany = userQuery.findMany;
     runtime = mock<JobRuntimePort>();
     runtime.schedule.mockResolvedValue(undefined);
     runtime.enqueue.mockResolvedValue("job-1");
     processor = mock<SuggestionAnalysisProcessor>();
     const maintenance = mock<AiSuggestionQueueMaintenanceService>();
     maintenance.cleanExpiredFailures.mockResolvedValue(0);
-    job = new SuggestionAnalysisJob(asDatabaseService(database), runtime, processor, maintenance);
+    job = new SuggestionAnalysisJob(userQuery.host, runtime, processor, maintenance);
   });
 
   afterEach(() => vi.useRealTimers());
@@ -60,20 +67,15 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
   });
 
   it("최근 활동 사용자마다 분석 작업을 등록한다", async () => {
-    asMock(database.db.orm.public.User.all).mockReturnValue(
-      nativeRows(
-        databaseFixture(
-          "User",
-          [
-            { id: "user-1", preference: { timezone: "Asia/Seoul" }, location: null },
-            {
-              id: "user-2",
-              preference: { timezone: "America/New_York" },
-              location: null,
-            },
-          ].map((value) => ({ ...UserBuilder.create().build(), ...value })),
-        ),
-      ),
+    findMany.mockResolvedValue(
+      [
+        { id: "user-1", preference: { timezone: "Asia/Seoul" }, location: null },
+        {
+          id: "user-2",
+          preference: { timezone: "America/New_York" },
+          location: null,
+        },
+      ].map((value) => ({ ...UserBuilder.create().build(), ...value })),
     );
 
     await job.dispatchAnalysis();
@@ -94,9 +96,7 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
   });
 
   it("사용자가 없으면 분석 작업을 만들지 않는다", async () => {
-    asMock(database.db.orm.public.User.all).mockReturnValue(
-      nativeRows(databaseFixture("User", [])),
-    );
+    findMany.mockResolvedValue([]);
     await job.dispatchAnalysis();
 
     expect(runtime.enqueue).not.toHaveBeenCalled();

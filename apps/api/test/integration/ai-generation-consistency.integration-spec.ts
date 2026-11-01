@@ -16,9 +16,9 @@ import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/applicat
 import { HandleSuggestionAction } from "#api/modules/ai-assistance/application/use-cases/suggestions/handle-suggestion-action.use-case";
 import { AiReportJobName } from "#api/modules/ai-assistance/infrastructure/jobs/reports/ai-report-queue";
 import { AiSuggestionJobName } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/ai-suggestion-queue";
-import { PrismaAiReportRepository } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-ai-report.repository";
-import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
-import { PrismaAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/prisma-ai-suggestion.repository";
+import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-ai-report.repository";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
+import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
 import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
@@ -66,7 +66,7 @@ class GatedAiProvider extends FakeAiProvider {
   }
 }
 
-class FailingSuggestionRepository extends PrismaAiSuggestionRepository {
+class FailingSuggestionRepository extends DrizzleAiSuggestionRepository {
   override createMany(inputs: CreateSuggestionInput[]) {
     return super.createMany(inputs.map((input) => ({ ...input, userId: "missing-ai-user" })));
   }
@@ -78,8 +78,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let memory: InMemoryCacheAdapter;
   let entitlement: EntitlementService;
-  let suggestions: PrismaAiSuggestionRepository;
-  let reports: PrismaAiReportRepository;
+  let suggestions: DrizzleAiSuggestionRepository;
+  let reports: DrizzleAiReportRepository;
   let users: DrizzleUserRepository;
   let userId: string;
   let categoryId: number;
@@ -98,8 +98,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       database: new DrizzleEntitlementReader(fixture.txHost),
       cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
     });
-    suggestions = new PrismaAiSuggestionRepository(fixture.txHost);
-    reports = new PrismaAiReportRepository(fixture.txHost);
+    suggestions = new DrizzleAiSuggestionRepository(fixture.txHost);
+    reports = new DrizzleAiReportRepository(fixture.txHost);
     users = new DrizzleUserRepository(fixture.txHost);
     userId = createEntityId();
     await client.orm.public.User.create(
@@ -165,7 +165,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const report = new GenerateReport({
       aiReportRepository: reports,
-      todoStatsReader: new PrismaTodoStatsReader(fixture.txHost, service),
+      todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost, service),
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
       clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),

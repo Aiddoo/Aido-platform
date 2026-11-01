@@ -35,7 +35,7 @@ import type {
   AggregatedReportData,
   AggregateParams,
 } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
-import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -120,7 +120,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
           ],
         }),
       ],
-      providers: [{ provide: TODO_STATS_READER, useClass: PrismaTodoStatsReader }, ClsUnitOfWork],
+      providers: [{ provide: TODO_STATS_READER, useClass: DrizzleTodoStatsReader }, ClsUnitOfWork],
     }).compile();
 
     await module.init();

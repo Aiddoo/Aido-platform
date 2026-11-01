@@ -13,7 +13,7 @@ import {
 import { SIGNUP_STATS_READER } from "./application/ports/notifications/signup-stats.reader.port.js";
 import { AdminNotificationQueueAdapter } from "./infrastructure/adapters/notifications/admin-notification-queue.adapter.js";
 import { DiscordWebhookProvider } from "./infrastructure/adapters/notifications/discord-webhook.provider.js";
-import { PrismaSignupStatsReader } from "./infrastructure/adapters/notifications/prisma-signup-stats.reader.js";
+import { DrizzleSignupStatsReader } from "./infrastructure/adapters/notifications/drizzle-signup-stats.reader.js";
 import { AdminNotificationProcessor } from "./infrastructure/jobs/notifications/admin-notification-queue.processor.js";
 import { DailySignupSummaryScheduler } from "./infrastructure/jobs/notifications/daily-signup-summary.scheduler.js";
 import {
@@ -43,7 +43,7 @@ import {
     },
     {
       provide: SIGNUP_STATS_READER,
-      useClass: PrismaSignupStatsReader,
+      useClass: DrizzleSignupStatsReader,
     },
     {
       provide: ADMIN_NOTIFIER,

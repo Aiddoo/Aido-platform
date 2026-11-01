@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
-import { PrismaAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-user-directory.adapter";
-import { PrismaSignupStatsReader } from "#api/modules/operations/infrastructure/adapters/notifications/prisma-signup-stats.reader";
+import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
+import { DrizzleSignupStatsReader } from "#api/modules/operations/infrastructure/adapters/notifications/drizzle-signup-stats.reader";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createTestDatabaseService } from "#test/setup/database-context";
@@ -13,15 +13,15 @@ const END = new Date("2026-10-08T15:00:00.000Z");
 describe("운영 조회 계약 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
-  let directory: PrismaAdminUserDirectoryAdapter;
-  let signupStats: PrismaSignupStatsReader;
+  let directory: DrizzleAdminUserDirectoryAdapter;
+  let signupStats: DrizzleSignupStatsReader;
 
   beforeAll(async () => {
     database = new TestDatabase();
     client = await database.start();
     const service = createTestDatabaseService(client);
-    directory = new PrismaAdminUserDirectoryAdapter(service);
-    signupStats = new PrismaSignupStatsReader(service);
+    directory = new DrizzleAdminUserDirectoryAdapter(service);
+    signupStats = new DrizzleSignupStatsReader(service);
   });
   afterAll(async () => database?.stop());
   beforeEach(async () => {

@@ -1,10 +1,8 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { all, and, or } from "@prisma/orm-postgres/orm-client";
 
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
-import { decodeRecord } from "#api/platform/database/database-records";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -44,13 +42,13 @@ export class ReportGenerationJob implements OnModuleInit {
   readonly #logger = new Logger(ReportGenerationJob.name);
 
   constructor(
-    private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
     private readonly processor: ReportGenerationProcessor,
   ) {}
 
   /** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
-  private get database() {
+  private get db() {
     return this.txHost.tx;
   }
 
@@ -108,20 +106,18 @@ export class ReportGenerationJob implements OnModuleInit {
     await forEachBatch({
       batchSize: ENQUEUE_BATCH_SIZE,
       fetchPage: (cursor, take) =>
-        this.database.orm.public.User.where((row) =>
-          and(
-            cursor != null ? row.id.gt(cursor) : all(),
-            or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
-            row.status.eq("ACTIVE"),
-            row.deletedAt.isNull(),
-          ),
-        )
-          .select("id")
-          .include("preference", (related) => related.select("timezone", "locale"))
-          .orderBy((row) => row.id.asc())
-          .limit(take)
-          .all()
-          .then((row) => decodeRecord("User", row)),
+        this.db.query.user.findMany({
+          columns: { id: true },
+          with: { preference: { columns: { timezone: true, locale: true } } },
+          where: {
+            id: cursor != null ? { gt: cursor } : undefined,
+            OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+            status: "ACTIVE",
+            deletedAt: { isNull: true },
+          },
+          orderBy: { id: "asc" },
+          limit: take,
+        }),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
           const timezone = resolveTimezone(user.preference?.timezone ?? DEFAULT_REPORT_TIMEZONE);

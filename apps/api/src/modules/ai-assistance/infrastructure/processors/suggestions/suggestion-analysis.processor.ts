@@ -1,11 +1,11 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
 import {
   createAiSuggestionNotificationMessage,
   NotificationPublisher,
 } from "#api/modules/notification/notification-delivery.public";
-import { decodeRecord } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
@@ -41,7 +41,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       NotificationPublisher,
       "publish"
     >,
-    private readonly database: DatabaseService,
+    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
   ) {}
 
@@ -101,12 +101,10 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName: AI_SUGGESTION_QUEUE, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
-    const preference = decodeRecord(
-      "UserPreference",
-      await this.database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId))
-        .select("locale")
-        .first(),
-    );
+    const preference = await this.txHost.tx.query.userPreference.findFirst({
+      columns: { locale: true },
+      where: { userId },
+    });
     const locale = toSupportedLocale(preference?.locale);
 
     const createdCount = await this.analyzeSuggestions.execute(

@@ -8,7 +8,7 @@ import { Pool } from "pg";
 
 import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/services/reports/report-aggregation";
 import type { AggregateParams } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
-import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { DatabaseService, contract } from "#api/platform/database/database.service";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -51,14 +51,14 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
     module = await Test.createTestingModule({
       providers: [
         { provide: DatabaseService, useValue: createTestDatabaseService(prisma) },
-        PrismaTodoStatsReader,
+        DrizzleTodoStatsReader,
         {
           provide: TransactionHost,
           useValue: { tx: createDatabaseContext(prisma), isTransactionActive: () => false },
         },
       ],
     }).compile();
-    const reader = module.get(PrismaTodoStatsReader);
+    const reader = module.get(DrizzleTodoStatsReader);
     const measure = async (fetch: () => Promise<unknown>) => {
       const samples: number[] = [];
       const cpu = process.cpuUsage();

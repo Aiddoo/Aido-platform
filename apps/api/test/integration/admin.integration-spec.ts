@@ -20,8 +20,8 @@ import { ADMIN_GROWTH_METRICS } from "#api/modules/operations/application/ports/
 import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/application/ports/admin/admin-user-directory.port";
 import { BroadcastNotification } from "#api/modules/operations/application/use-cases/admin/broadcast-notification.use-case";
 import { SendTargetedNotification } from "#api/modules/operations/application/use-cases/admin/send-targeted-notification.use-case";
+import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
 import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/infrastructure/adapters/admin/notification-admin-broadcast-notifier.adapter";
-import { PrismaAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-user-directory.adapter";
 import {
   broadcastNotificationProvider,
   getGrowthSummaryProvider,
@@ -67,7 +67,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
         },
         {
           provide: ADMIN_USER_DIRECTORY,
-          useClass: PrismaAdminUserDirectoryAdapter,
+          useClass: DrizzleAdminUserDirectoryAdapter,
         },
         {
           provide: ADMIN_BROADCAST_NOTIFIER,
