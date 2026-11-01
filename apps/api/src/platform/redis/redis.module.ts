@@ -8,9 +8,8 @@ import {
   Optional,
   type Provider,
 } from "@nestjs/common";
+import { withTimeout } from "es-toolkit";
 import { Redis, type RedisOptions } from "ioredis";
-
-import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 import { TypedConfigService } from "../config/services/config.service.js";
 import {
@@ -129,7 +128,7 @@ export class RedisModule implements OnApplicationShutdown {
 
     try {
       // Redis 다운 중 종료 시 quit이 오프라인 큐에 걸려 hang할 수 있다
-      await withTimeout(client.quit(), QUIT_TIMEOUT_MS, "Redis quit");
+      await withTimeout(() => client.quit(), QUIT_TIMEOUT_MS);
       RedisModule.logger.log(`Redis[${name}] disconnected`);
     } catch {
       client.disconnect();

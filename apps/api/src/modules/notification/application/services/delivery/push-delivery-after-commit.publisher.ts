@@ -1,6 +1,7 @@
+import { withTimeout } from "es-toolkit";
+
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type AfterCommitTaskRegistryPort } from "#api/shared/application/ports/index";
-import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import type { PublishPushDeliveryOutbox } from "../../use-cases/delivery/publish-push-delivery-outbox.use-case.js";
@@ -29,12 +30,12 @@ export class PushDeliveryAfterCommitPublisher {
     this.#dependencies.afterCommit.register(async () => {
       try {
         await withTimeout(
-          this.#dependencies.publishOutbox.execute({
-            kind: "dispatches",
-            dispatchIds: committedDispatchIds,
-          }),
+          () =>
+            this.#dependencies.publishOutbox.execute({
+              kind: "dispatches",
+              dispatchIds: committedDispatchIds,
+            }),
           FAST_PATH_TIMEOUT_MS,
-          "Push delivery after-commit publication",
         );
       } catch {
         // Timeout은 underlying publish를 취소하지 않는다. PENDING/PROCESSING은 relay가 복구한다.
