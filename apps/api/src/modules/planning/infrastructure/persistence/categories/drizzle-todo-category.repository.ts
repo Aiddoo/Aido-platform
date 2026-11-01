@@ -149,7 +149,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   async existsByUserIdAndName(userId: string, name: string, excludeId?: number): Promise<boolean> {
     const row = await this.db.query.todoCategory.findFirst({
       columns: { id: true },
-      where: { userId, name, id: excludeId == null ? undefined : { ne: excludeId } },
+      where: { userId, name, ...(excludeId == null ? {} : { id: { ne: excludeId } }) },
     });
     return row != null;
   }
