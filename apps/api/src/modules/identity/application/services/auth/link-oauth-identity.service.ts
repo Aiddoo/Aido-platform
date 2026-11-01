@@ -44,7 +44,9 @@ export class LinkOAuthIdentity {
       providerAccountId,
     );
     if (existingAccount != null) {
-      if (existingAccount.userId !== userId) throw this.#alreadyLinked(input);
+      if (existingAccount.userId !== userId) {
+        throw this.#alreadyLinked(input);
+      }
       return { message: "이미 연결된 계정입니다.", linked: false };
     }
     try {
@@ -61,8 +63,12 @@ export class LinkOAuthIdentity {
         metadata: { provider, providerAccountId },
       });
     } catch (error) {
-      if (error instanceof AuthPersistenceConflict && error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED")
+      if (
+        error instanceof AuthPersistenceConflict &&
+        error.kind === "OAUTH_ACCOUNT_ALREADY_LINKED"
+      ) {
         throw this.#alreadyLinked(input);
+      }
       throw error;
     }
     return { message: "계정이 연결되었습니다.", linked: true };

@@ -36,11 +36,12 @@ export class StartOAuthAuthorization {
 
   async execute(input: StartOAuthAuthorizationInput): Promise<string> {
     const strategy = this.#dependencies.registry.get(input.provider);
-    if (strategy == null)
+    if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
         provider: input.provider,
         reason: `Unsupported provider: ${input.provider}`,
       });
+    }
     const url = await strategy.generateAuthUrl({
       state: input.state,
       validatedRedirectUri: this.#resolveRedirectUri(input.clientRedirectUri),
@@ -49,13 +50,17 @@ export class StartOAuthAuthorization {
       persistState: (provider, redirectUri, options) =>
         this.#dependencies.oauthStateRepository.create(input.state, provider, redirectUri, options),
     });
-    if (url == null || url === "") throw new ApplicationException(ErrorCode.USER_0602);
+    if (url == null || url === "") {
+      throw new ApplicationException(ErrorCode.USER_0602);
+    }
     return url;
   }
 
   #resolveRedirectUri(redirectUri?: string): string {
     const defaultRedirectUri = "aido://auth/callback";
-    if (redirectUri == null || redirectUri === "") return defaultRedirectUri;
+    if (redirectUri == null || redirectUri === "") {
+      return defaultRedirectUri;
+    }
     const patterns = [
       /^aido:\/\/auth(\/.*)?$/,
       /^aido:\/\/\/auth(\/.*)?$/,
@@ -69,7 +74,9 @@ export class StartOAuthAuthorization {
         /^http:\/\/localhost(:\d+)?(\/.*)?$/,
         /^exp:\/\/[\d.:]+(\/.*)?$/,
       );
-    if (patterns.some((pattern) => pattern.test(redirectUri))) return redirectUri;
+    if (patterns.some((pattern) => pattern.test(redirectUri))) {
+      return redirectUri;
+    }
     this.#dependencies.logger.warn({ event: IdentityLogEvent.OAUTH_REDIRECT_REJECTED });
     return defaultRedirectUri;
   }
