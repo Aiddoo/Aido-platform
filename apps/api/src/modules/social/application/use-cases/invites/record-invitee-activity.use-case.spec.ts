@@ -102,7 +102,9 @@ function createRecorder({
     rewardScheduler: { schedule: async () => {}, scheduleMany: async () => {} },
     notifier: {
       notifyInviteProgress: async (notification) => {
-        if (isNotifierDown) throw new Error("push outage");
+        if (isNotifierDown) {
+          throw new Error("push outage");
+        }
         notified.push(notification);
       },
     },

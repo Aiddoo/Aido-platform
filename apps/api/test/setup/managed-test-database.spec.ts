@@ -2,7 +2,6 @@ import { vi } from "vitest";
 
 import {
   assertManagedTestDatabaseEnvironment,
-  resolvePnpmCommand,
   startManagedTestDatabase,
 } from "./managed-test-database.js";
 
@@ -18,20 +17,15 @@ vi.mock("pg", () => ({
   },
 }));
 
+const cloneDatabases = vi.fn();
+
 beforeEach(() => {
+  cloneDatabases.mockReset().mockResolvedValue([]);
   serviceQuery.mockReset().mockResolvedValue({ rows: [] });
   serviceEnd.mockReset().mockResolvedValue(undefined);
 });
 
 describe("관리형 테스트 DB 수명주기", () => {
-  it.each([
-    ["win32", "pnpm.cmd"],
-    ["darwin", "pnpm"],
-    ["linux", "pnpm"],
-  ] as const)("%s에서는 migration 실행 파일로 %s을 사용해야 한다", (platform, expected) => {
-    expect(resolvePnpmCommand(platform)).toBe(expected);
-  });
-
   it("관리 마커가 없는 DATABASE_URL을 거부해야 한다", () => {
     // Given - 이름만 테스트 DB처럼 보이는 비관리 URL
     const env = {
@@ -66,6 +60,7 @@ describe("관리형 테스트 DB 수명주기", () => {
         createRunId: () => "abc123",
         startDatabase: async () => ({
           getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_abc123",
+          cloneDatabases,
           stop,
         }),
         migrate,
@@ -92,6 +87,7 @@ describe("관리형 테스트 DB 수명주기", () => {
           createRunId: () => "abc123",
           startDatabase: async () => ({
             getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_abc123",
+            cloneDatabases,
             stop,
           }),
           migrate: async () => {
@@ -123,6 +119,7 @@ describe("관리형 테스트 DB 수명주기", () => {
       createRunId: () => "def456",
       startDatabase: async () => ({
         getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_def456",
+        cloneDatabases,
         stop,
       }),
       migrate,
@@ -165,6 +162,7 @@ describe("관리형 테스트 DB 수명주기", () => {
     const handle = await startManagedTestDatabase({
       env,
       createRunId: () => "service123",
+      workerCount: 2,
       migrate,
     });
     await handle.stop();
@@ -173,12 +171,21 @@ describe("관리형 테스트 DB 수명주기", () => {
     expect(migrate).toHaveBeenCalledWith(
       "postgresql://test:test@localhost:5432/aido_test_service123",
     );
+    const terminate =
+      "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()";
+    expect(handle.workerUris).toEqual([
+      "postgresql://test:test@localhost:5432/aido_test_service123w1",
+      "postgresql://test:test@localhost:5432/aido_test_service123w2",
+    ]);
     expect(serviceQuery.mock.calls).toEqual([
       ['CREATE DATABASE "aido_test_service123"'],
-      [
-        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()",
-        ["aido_test_service123"],
-      ],
+      ['CREATE DATABASE "aido_test_service123w1" TEMPLATE "aido_test_service123"'],
+      ['CREATE DATABASE "aido_test_service123w2" TEMPLATE "aido_test_service123"'],
+      [terminate, ["aido_test_service123w2"]],
+      ['DROP DATABASE "aido_test_service123w2"'],
+      [terminate, ["aido_test_service123w1"]],
+      ['DROP DATABASE "aido_test_service123w1"'],
+      [terminate, ["aido_test_service123"]],
       ['DROP DATABASE "aido_test_service123"'],
     ]);
     expect(serviceEnd).toHaveBeenCalledTimes(1);
@@ -221,5 +228,65 @@ describe("관리형 테스트 DB 수명주기", () => {
     ).rejects.toBe(failure);
     expect(serviceEnd).toHaveBeenCalledTimes(1);
     expect(migrate).not.toHaveBeenCalled();
+  });
+});
+
+describe("worker DB 복제", () => {
+  it("template을 migrate한 뒤 worker 수만큼 복제한 URI를 노출해야 한다", async () => {
+    // Given
+    const order: string[] = [];
+    const migrate = vi.fn().mockImplementation(async () => {
+      order.push("migrate");
+    });
+    const clone = vi.fn().mockImplementation(async (_template: string, names: string[]) => {
+      order.push("clone");
+      return names.map((name) => `postgresql://test:test@localhost:5432/${name}`);
+    });
+
+    // When
+    const handle = await startManagedTestDatabase({
+      env: {},
+      createRunId: () => "clone123",
+      workerCount: 3,
+      migrate,
+      startDatabase: async () => ({
+        getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_clone123",
+        cloneDatabases: clone,
+        stop: async () => undefined,
+      }),
+    });
+
+    // Then
+    expect(order).toEqual(["migrate", "clone"]);
+    expect(clone).toHaveBeenCalledWith("aido_test_clone123", [
+      "aido_test_clone123w1",
+      "aido_test_clone123w2",
+      "aido_test_clone123w3",
+    ]);
+    expect(handle.workerUris).toHaveLength(3);
+  });
+
+  it("복제 실패 시 시작한 자원을 정리해야 한다", async () => {
+    // Given
+    const stop = vi.fn().mockResolvedValue(undefined);
+    const failure = new Error("clone failed");
+
+    // When & Then
+    await expect(
+      startManagedTestDatabase({
+        env: {},
+        createRunId: () => "clone456",
+        workerCount: 1,
+        migrate: vi.fn(),
+        startDatabase: async () => ({
+          getConnectionUri: () => "postgresql://test:test@localhost:5432/aido_test_clone456",
+          cloneDatabases: async () => {
+            throw failure;
+          },
+          stop,
+        }),
+      }),
+    ).rejects.toBe(failure);
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 });

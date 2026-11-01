@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
+import { withTimeout } from "es-toolkit";
 
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
@@ -14,7 +15,6 @@ import {
 } from "#api/modules/notification/notification-retention-jobs.public";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/operations-notifications-jobs.public";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
 const MONITORED_QUEUES = [
@@ -43,9 +43,8 @@ export class JobRuntimeHealthIndicator {
     const indicator = this.healthIndicatorService.check(key);
     try {
       const health = await withTimeout(
-        this.runtime.health(MONITORED_QUEUES),
+        () => this.runtime.health(MONITORED_QUEUES),
         QUEUE_STATS_TIMEOUT_MS,
-        "Job runtime health collection",
       );
       return indicator.up({ ...health });
     } catch {

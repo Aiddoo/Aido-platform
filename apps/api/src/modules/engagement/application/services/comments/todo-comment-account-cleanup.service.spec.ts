@@ -72,7 +72,9 @@ describe("TodoCommentAccountCleanup — 계정 정리 경계", () => {
     // Given
     const invalidate = fixture.todoViewCache.invalidateForTodo.bind(fixture.todoViewCache);
     vi.spyOn(fixture.todoViewCache, "invalidateForTodo").mockImplementation(async (todoId) => {
-      if (todoId === 8) throw new Error("private cache failure");
+      if (todoId === 8) {
+        throw new Error("private cache failure");
+      }
       return invalidate(todoId);
     });
     const warning = vi.spyOn(fixture.logger, "warn");

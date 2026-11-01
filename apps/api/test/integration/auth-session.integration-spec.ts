@@ -1,16 +1,12 @@
-import sql from "sql-template-tag";
+import { sql } from "drizzle-orm";
 import { vi } from "vitest";
+import { z } from "zod";
 
-import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
+import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { SessionFixture, UserFixture } from "#test/fixtures/index";
-import {
-  createDatabaseTransactionFixture,
-  createTestClient,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const currentTime = new Date("2026-12-31T23:59:00.000Z");
@@ -24,23 +20,23 @@ function createDeferred() {
   return { promise, resolve: () => resolve?.() };
 }
 
-describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자성", () => {
+describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 원자성", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
-  let repository: SessionRepository;
+  let repository: DrizzleSessionRepository;
   let userId: string;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await testDatabase.start();
-    repository = new SessionRepository(createDatabaseTransactionFixture(client).txHost);
+    repository = new DrizzleSessionRepository(createDatabaseTransactionFixture(client).txHost);
   });
 
   beforeEach(async () => {
     await testDatabase.cleanup();
-    const user = await client.orm.public.User.create(
-      encodeCreate(
-        "User",
+    const [user] = await client
+      .insert(userTable)
+      .values(
         UserFixture.create({
           id: createEntityId(),
           email: "session-owner@example.com",
@@ -50,8 +46,11 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
           emailVerifiedAt: currentTime,
           aiUsageResetAt: currentTime,
         }),
-      ),
-    );
+      )
+      .returning();
+    if (user === undefined) {
+      throw new Error("user fixture was not created");
+    }
     userId = user.id;
   });
 
@@ -70,7 +69,11 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
       expiresAt,
       ...overrides,
     });
-    return client.orm.public.Session.create(encodeCreate("Session", fixture));
+    const [created] = await client.insert(sessionTable).values(fixture).returning();
+    if (created === undefined) {
+      throw new Error("session fixture was not created");
+    }
+    return created;
   }
 
   it("같은 버전의 동시 회전 두 요청 중 하나만 성공하고 승자의 해시를 저장한다", async () => {
@@ -78,11 +81,9 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
     const session = await givenSession({ refreshTokenHash: "current-hash", tokenVersion: 1 });
     const locked = createDeferred();
     const release = createDeferred();
-    const holdingLock = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(transaction, sql`SELECT id FROM "Session" WHERE id = ${session.id} FOR UPDATE`)
-          .returnsRow({ id: "pg/text@1" })
-          .build(),
+    const holdingLock = client.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`SELECT ${sessionTable.id} FROM ${sessionTable} WHERE ${sessionTable.id} = ${session.id} FOR UPDATE`,
       );
       locked.resolve();
       await release.promise;
@@ -101,18 +102,17 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
       }),
     );
 
-    // When - 두 UPDATE가 실제 row lock에서 대기한 뒤 동시에 진행한다.
+    // When
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client.runtime().query(
-            client.raw.sql`SELECT count(*)::int AS count FROM pg_stat_activity
+          const { rows } = await client.execute<{ count: number }>(
+            sql`SELECT count(*)::int AS count FROM pg_stat_activity
             WHERE datname = current_database() AND wait_event_type = 'Lock'
-              AND query ILIKE '%update%' AND query LIKE '%Session%'`
-              .returnsRow({ count: "pg/int4@1" })
-              .build(),
+              AND query ILIKE '%update%' AND query LIKE '%Session%'`,
           );
-          expect(waiting[0]?.count).toBe(2);
+          const [waiting] = z.array(z.object({ count: z.number() })).parse(rows);
+          expect(waiting?.count).toBe(2);
         },
         { timeout: 5_000, interval: 10 },
       );
@@ -200,9 +200,13 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
       revokedAt: currentTime,
       revokedReason: "user_logout",
     });
-    const otherUser = await client.orm.public.User.create(
-      encodeCreate("User", UserFixture.create({ id: createEntityId(), userTag: "OTHER001" })),
-    );
+    const [otherUser] = await client
+      .insert(userTable)
+      .values(UserFixture.create({ id: createEntityId(), userTag: "OTHER001" }))
+      .returning();
+    if (otherUser === undefined) {
+      throw new Error("other user fixture was not created");
+    }
     const otherSession = await givenSession({
       userId: otherUser.id,
       refreshTokenHash: "other-user-device",
@@ -212,7 +216,7 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
     const ids = await repository.revokeAllByUserId(userId, "password_changed", current.id);
     const repeated = await repository.revokeAllByUserId(userId, "password_changed", current.id);
 
-    // Then - 만료된 미폐기 세션도 기존 전체 폐기 정책에 포함한다.
+    // Then
     expect(ids.toSorted()).toEqual([active.id, expired.id].toSorted());
     expect(repeated).toEqual([]);
     expect((await repository.findById(current.id))?.revokedAt).toBeNull();

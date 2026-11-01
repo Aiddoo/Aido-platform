@@ -39,8 +39,9 @@ describe("하위 항목 추가", () => {
   });
   it("20개 항목 한도와 잘못된 제목은 상태를 바꾸지 않는다", async () => {
     // Given
-    for (let sortOrder = 0; sortOrder < TODO_ITEM_LIMITS.MAX_PER_TODO; sortOrder++)
+    for (let sortOrder = 0; sortOrder < TODO_ITEM_LIMITS.MAX_PER_TODO; sortOrder++) {
       await fixture.todoRepository.createItem(1, { title: `항목 ${sortOrder}`, sortOrder });
+    }
     const before = structuredClone(fixture.records.get(1));
     // When / Then
     await expect(

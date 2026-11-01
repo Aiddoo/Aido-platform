@@ -17,7 +17,7 @@
  *   .build();
  * ```
  */
-import type { UserLocation } from "#api/platform/database/database.types";
+import type { UserLocation } from "#test/types/database-rows";
 
 export class UserLocationBuilder {
   private data: UserLocation;

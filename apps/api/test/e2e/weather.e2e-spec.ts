@@ -451,18 +451,20 @@ describe("날씨 E2E", () => {
         "weather-remain@example.com",
         "Test1234!",
       );
-      for (const user of [mover, remaining])
+      for (const user of [mover, remaining]) {
         await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
-      for (const date of ["2026-07-23", "2026-07-24"])
+      }
+      for (const date of ["2026-07-23", "2026-07-24"]) {
         await request(ctx.app.getHttpServer())
           .get("/v1/weather/conditions")
           .query({ date })
           .set("Authorization", `Bearer ${mover.accessToken}`)
           .expect(200);
+      }
       sunTimeProvider.dates.set("2026-07-23", { sunrise: "06:23", sunset: "19:00" });
       sunTimeProvider.dates.set("2026-07-24", { sunrise: "06:24", sunset: "19:01" });
       // When

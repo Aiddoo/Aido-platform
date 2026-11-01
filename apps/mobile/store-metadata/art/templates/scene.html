@@ -395,7 +395,7 @@
     <div class="row"><img class="avatar" src="${assets.avatars[1]}"><span class="todo" data-contrast="normal" data-bg="#ffffff">${copy.rows[1]}</span>
       <span class="poke"><span style="display:inline-block;width:.95em;height:.95em">${ICON.paw}</span>${copy.nudge}</span><span class="check"></span></div>
     <div class="divider"></div>
-    <div class="board"><span class="stamp on">${ICON.paw}</span><span class="stamp on">${ICON.paw}</span><span class="stamp wait">${ICON.paw}</span><span class="stamp fish">${ICON.fish}</span>
+    <div class="board"><span class="stamp on">${ICON.paw}</span><span class="stamp on">${ICON.paw}</span><span class="stamp wait">${ICON.paw}</span><span class="stamp off">${ICON.paw}</span>
       ${reward && inline ? `<span style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end">${rewardHtml(copy)}</span>` : ''}</div>
     ${reward && !inline ? rewardHtml(copy) : ''}`;
         return node;
@@ -408,7 +408,6 @@
           'on',
           'on',
           'on',
-          'fish',
           'on',
           'wait',
           'off',
@@ -416,9 +415,10 @@
           'off',
           'off',
           'off',
-          'fish',
+          'off',
+          'off',
         ];
-        node.innerHTML = `<div class="grid">${cells.map((cell) => `<span class="stamp ${cell}">${cell === 'fish' ? ICON.fish : ICON.paw}</span>`).join('')}</div>`;
+        node.innerHTML = `<div class="grid">${cells.map((cell) => `<span class="stamp ${cell}">${ICON.paw}</span>`).join('')}</div>`;
         return node;
       }
 

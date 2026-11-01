@@ -33,8 +33,9 @@ describe("친구에게 응원 보내기", () => {
   it("일일 한도에 도달하면 추가 저장 없이 CHEER_1201로 거부한다", async () => {
     // Given
     const fixture = createSocialInteractionFixture();
-    for (let index = 0; index < 3; index += 1)
+    for (let index = 0; index < 3; index += 1) {
       fixture.cheerRepository.seed({ senderId: "sender", receiverId: `previous-${index}` });
+    }
     // When / Then
     await expect(
       new SendCheer({
@@ -71,9 +72,11 @@ describe("친구에게 응원 보내기", () => {
       const fixture = createSocialInteractionFixture();
       const sender = fixture.addUser("sender", null);
       fixture.database.users.set("sender", { role: "USER", subscriptionStatus });
-      if (subscriptionStatus === "ACTIVE")
-        for (let index = 0; index < 4; index += 1)
+      if (subscriptionStatus === "ACTIVE") {
+        for (let index = 0; index < 4; index += 1) {
           fixture.cheerRepository.seed({ senderId: "sender", receiverId: `previous-${index}` });
+        }
+      }
       // When
       const result = await new SendCheer({
         ...fixture,

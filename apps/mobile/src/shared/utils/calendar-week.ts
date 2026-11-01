@@ -1,6 +1,8 @@
 import dayjs from 'dayjs';
 
+import { formatDateKey } from './date-format';
 import { addDaysToDateKey } from './date-key';
+import { getDeviceTimezone } from './timezone';
 
 export interface CalendarWeekOfDateKey {
   startDateKey: string;
@@ -26,7 +28,7 @@ export function getCalendarWeekOfDateKey(dateKey: string): CalendarWeekOfDateKey
 
 /** 로컬 달력 Date의 앱 달력 주. start는 그 주 일요일 0시, end는 토요일 23:59:59.999. */
 export function getCalendarWeek(date: Date) {
-  const week = getCalendarWeekOfDateKey(dayjs(date).format('YYYY-MM-DD'));
+  const week = getCalendarWeekOfDateKey(formatDateKey(date, getDeviceTimezone()));
   return {
     start: dayjs(week.startDateKey).toDate(),
     end: dayjs(week.endDateKey).endOf('day').toDate(),

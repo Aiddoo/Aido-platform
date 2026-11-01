@@ -1,4 +1,5 @@
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
@@ -16,7 +17,7 @@ import {
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
@@ -74,15 +75,15 @@ import { NotificationQueueProcessor } from "#api/modules/notification/infrastruc
 import { PushDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.processor";
 import { PushDeliveryQueueService } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.service";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
-import { PrismaNotificationTodoTargetReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification-todo-target.reader";
-import { PrismaNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.reader";
-import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
-import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository";
-import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository";
-import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
-import { PrismaPushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-receipt.repository";
-import { PrismaPushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-token.repository";
-import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification-todo-target.reader";
+import { DrizzleNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.reader";
+import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
+import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
+import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
+import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
+import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
+import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
 import { InMemoryPushRateLimiter } from "#api/modules/notification/infrastructure/rate-limiter/delivery/in-memory-push-rate-limiter";
 import {
   deliverPushNotificationsProvider,
@@ -107,9 +108,12 @@ import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cac
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
-import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import {
+  type Database,
+  DRIZZLE,
+  type DrizzleTransactionalAdapter,
+} from "#api/platform/database/database.client";
+import { userConsent, userPreference } from "#api/platform/database/schema/index";
 import { InMemoryDedupAdapter } from "#api/platform/dedup/adapters/in-memory-dedup.adapter";
 import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
@@ -120,7 +124,6 @@ import {
   UNIT_OF_WORK,
 } from "#api/shared/application/ports/index";
 import { FakePushProvider } from "#test/mocks/fake-push.provider";
-import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
@@ -137,21 +140,21 @@ const unexpectedUseCase = {
 
 @Module({})
 class CriticalQueueDatabaseModule {
-  static register(prisma: TestDatabaseClient): DynamicModule {
+  static register(client: TestDatabaseClient): DynamicModule {
     return {
       module: CriticalQueueDatabaseModule,
-      providers: [{ provide: DatabaseService, useValue: createTestDatabaseService(prisma) }],
-      exports: [DatabaseService],
+      providers: [{ provide: DRIZZLE, useValue: client }],
+      exports: [DRIZZLE],
     };
   }
 }
 
 export interface CriticalQueueProcessorHarness {
-  readonly prisma: TestDatabaseClient;
+  readonly client: TestDatabaseClient;
   readonly boss: PgBoss;
   readonly runtime: JobRuntimePort;
   readonly pushProvider: FakePushProvider;
-  readonly retentionRepository: PrismaRetentionRepository;
+  readonly retentionRepository: DrizzleRetentionRepository;
   readonly daytimeTimezone: string;
   cleanup(): Promise<void>;
   eventually(assertion: () => Promise<void>): Promise<void>;
@@ -161,7 +164,7 @@ export interface CriticalQueueProcessorHarness {
 export async function createCriticalQueueProcessorHarness(): Promise<CriticalQueueProcessorHarness> {
   suppressLogger();
   const testDatabase = new TestDatabase();
-  const prisma = await testDatabase.start();
+  const client = await testDatabase.start();
   const connectionString = testDatabase.getConnectionUri();
   const daytimeTimezone = findDaytimeTimezone(new Date());
 
@@ -184,7 +187,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     useListenNotify: false,
   });
   const pushProvider = new FakePushProvider();
-  const databaseModule = CriticalQueueDatabaseModule.register(prisma);
+  const databaseModule = CriticalQueueDatabaseModule.register(client);
   const module = await Test.createTestingModule({
     imports: [
       databaseModule,
@@ -193,7 +196,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         plugins: [
           new ClsPluginTransactional({
             imports: [databaseModule],
-            adapter: new Prisma8TransactionalAdapter(),
+            adapter: new TransactionalAdapterDrizzleOrm({ drizzleInstanceToken: DRIZZLE }),
           }),
         ],
       }),
@@ -205,7 +208,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       {
         provide: JOB_RUNTIME,
         inject: [TransactionHost],
-        useFactory: (txHost: TransactionHost<Prisma8TransactionalAdapter>) =>
+        useFactory: (txHost: TransactionHost<DrizzleTransactionalAdapter>) =>
           new PgBossJobRuntimeAdapter(boss, txHost, {
             job: { shutdownTimeoutMs: 10_000 },
           }),
@@ -220,11 +223,11 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
   await module.init();
 
   return {
-    prisma,
+    client,
     boss,
     runtime,
     pushProvider,
-    retentionRepository: module.get(PrismaRetentionRepository),
+    retentionRepository: module.get(DrizzleRetentionRepository),
     daytimeTimezone,
     cleanup: async () => {
       await testDatabase.cleanup();
@@ -271,28 +274,28 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: SendNotification, useValue: unexpectedUseCase },
     { provide: SendNotificationWithDedup, useValue: unexpectedUseCase },
     { provide: SendBatchNotification, useValue: unexpectedUseCase },
-    PrismaNotificationRepository,
-    { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
-    PrismaNotificationReader,
-    { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
-    { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
-    PrismaNotificationTodoTargetReader,
-    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: PrismaNotificationTodoTargetReader },
-    PrismaPushTokenRepository,
-    { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-    PrismaPushReceiptRepository,
-    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
-    PrismaPushDispatchStagingRepository,
-    { provide: PUSH_DISPATCH_STAGING, useExisting: PrismaPushDispatchStagingRepository },
-    PrismaPushDeliveryOutboxRepository,
+    DrizzleNotificationRepository,
+    { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
+    DrizzleNotificationReader,
+    { provide: NOTIFICATION_INBOX_READER, useExisting: DrizzleNotificationReader },
+    { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
+    DrizzleNotificationTodoTargetReader,
+    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: DrizzleNotificationTodoTargetReader },
+    DrizzlePushTokenRepository,
+    { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
+    DrizzlePushReceiptRepository,
+    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: DrizzlePushReceiptRepository },
+    DrizzlePushDispatchStagingRepository,
+    { provide: PUSH_DISPATCH_STAGING, useExisting: DrizzlePushDispatchStagingRepository },
+    DrizzlePushDeliveryOutboxRepository,
     {
       provide: PUSH_DELIVERY_OUTBOX_REPOSITORY,
-      useExisting: PrismaPushDeliveryOutboxRepository,
+      useExisting: DrizzlePushDeliveryOutboxRepository,
     },
-    PrismaPushDeliveryLifecycleRepository,
+    DrizzlePushDeliveryLifecycleRepository,
     {
       provide: PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-      useExisting: PrismaPushDeliveryLifecycleRepository,
+      useExisting: DrizzlePushDeliveryLifecycleRepository,
     },
     { provide: PUSH_PROVIDER, useValue: pushProvider },
     { provide: PUSH_RATE_LIMITER, useClass: InMemoryPushRateLimiter },
@@ -323,21 +326,21 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: NOTIFICATION_DEDUP, useExisting: NotificationDedupAdapter },
     {
       provide: USER_NOTIFICATION_SETTINGS,
-      inject: [DatabaseService],
-      useFactory: (database: DatabaseService): UserNotificationSettingsPort =>
+      inject: [DRIZZLE],
+      useFactory: (database: Database): UserNotificationSettingsPort =>
         createDatabaseBackedSettingsPort(database),
     },
     CachedActivePushTokenReaderAdapter,
     { provide: ACTIVE_PUSH_TOKEN_READER, useExisting: CachedActivePushTokenReaderAdapter },
-    UserPreferenceRepository,
+    DrizzleUserPreferenceRepository,
     {
       provide: USER_PREFERENCE_READER,
-      useFactory: (preferenceRepository: UserPreferenceRepository, cache: CacheService) =>
+      useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheService) =>
         new UserPreferenceReader({
           preferenceRepository,
           cache: new UserSettingsCacheAdapter(cache),
         }),
-      inject: [UserPreferenceRepository, CacheService],
+      inject: [DrizzleUserPreferenceRepository, CacheService],
     },
     CachedNotificationRecipientPreferenceAdapter,
     {
@@ -376,8 +379,8 @@ function retentionProviders(): Provider[] {
       useValue: unexpectedUseCase,
     },
     { provide: RelayRetentionOutbox, useValue: unexpectedUseCase },
-    PrismaRetentionRepository,
-    { provide: RETENTION_REPOSITORY, useExisting: PrismaRetentionRepository },
+    DrizzleRetentionRepository,
+    { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
     {
       provide: RETENTION_PUSH_SENDER,
       useClass: ExpoRetentionPushSenderAdapter,
@@ -386,58 +389,40 @@ function retentionProviders(): Provider[] {
   ];
 }
 
-function createDatabaseBackedSettingsPort(database: DatabaseService): UserNotificationSettingsPort {
+function createDatabaseBackedSettingsPort(database: Database): UserNotificationSettingsPort {
+  const upsertPreference = async (
+    userId: string,
+    values: Partial<Pick<typeof userPreference.$inferInsert, "timezone" | "locale">>,
+  ): Promise<void> => {
+    await database
+      .insert(userPreference)
+      .values({ userId, ...values })
+      .onConflictDoUpdate({ target: userPreference.userId, set: { userId, ...values } });
+  };
   return {
-    upsertPushTimezone: async (userId, timezone) => {
-      decodeRecord(
-        "UserPreference",
-        await database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId)).upsert({
-          conflictOn: encodePatch("UserPreference", { userId }),
-          create: encodeCreate("UserPreference", { userId, timezone }),
-          update: encodePatch("UserPreference", { timezone }),
-        }),
-      );
-    },
-    upsertPushLocale: async (userId, locale) => {
-      decodeRecord(
-        "UserPreference",
-        await database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId)).upsert({
-          conflictOn: encodePatch("UserPreference", { userId }),
-          create: encodeCreate("UserPreference", { userId, locale }),
-          update: encodePatch("UserPreference", { locale }),
-        }),
-      );
-    },
+    upsertPushTimezone: (userId, timezone) => upsertPreference(userId, { timezone }),
+    upsertPushLocale: (userId, locale) => upsertPreference(userId, { locale }),
     getPreferenceRecord: async (userId): Promise<UserPreferenceRecord | null> =>
-      database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId))
-        .first()
-        .then((row) => decodeRecord("UserPreference", row)),
+      (await database.query.userPreference.findFirst({ where: { userId } })) ?? null,
     getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceRecordWithId[]> =>
-      database.db.orm.public.UserPreference.where((row) => row.userId.in(userIds))
-        .all()
-        .then((row) => decodeRecord("UserPreference", row)),
+      userIds.length === 0
+        ? []
+        : database.query.userPreference.findMany({ where: { userId: { in: [...userIds] } } }),
     getConsentRecord: async (userId): Promise<UserConsentRecord | null> =>
-      database.db.orm.public.UserConsent.where((row) => row.userId.eq(userId))
-        .first()
-        .then((row) => decodeRecord("UserConsent", row)),
+      (await database.query.userConsent.findFirst({ where: { userId } })) ?? null,
     getConsentRecordsByUserIds: async (userIds): Promise<UserConsentRecordWithId[]> =>
-      database.db.orm.public.UserConsent.where((row) => row.userId.in(userIds))
-        .all()
-        .then((row) => decodeRecord("UserConsent", row)),
+      userIds.length === 0
+        ? []
+        : database.query.userConsent.findMany({ where: { userId: { in: [...userIds] } } }),
     updateMarketingPushConsent: async (userId, agreed) => {
-      decodeRecord(
-        "UserConsent",
-        await database.db.orm.public.UserConsent.where((row) => row.userId.eq(userId)).upsert({
-          conflictOn: encodePatch("UserConsent", { userId }),
-          create: encodeCreate("UserConsent", {
-            userId,
-            marketingPushAgreedAt: agreed ? new Date() : null,
-          }),
-          update: encodePatch("UserConsent", {
-            marketingPushAgreedAt: agreed ? new Date() : null,
-          }),
-        }),
-      );
+      const marketingPushAgreedAt = agreed ? new Date() : null;
+      await database
+        .insert(userConsent)
+        .values({ userId, marketingPushAgreedAt })
+        .onConflictDoUpdate({
+          target: userConsent.userId,
+          set: { marketingPushAgreedAt },
+        });
     },
   };
 }
@@ -498,7 +483,9 @@ function findDaytimeTimezone(now: Date): string {
         .formatToParts(now)
         .find((part) => part.type === "hour")?.value ?? "0",
     );
-    if (hour >= 9 && hour < 20) return timezone;
+    if (hour >= 9 && hour < 20) {
+      return timezone;
+    }
   }
   throw new Error("No daytime IANA timezone available for retention test");
 }

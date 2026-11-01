@@ -46,7 +46,9 @@ export class RedemptionStatus {
 
   /** 같은 상태로의 전이는 멱등으로 보고 null을 반환한다. 허용되지 않은 전이는 예외다. */
   transitionTo(next: RedemptionStatusValue): RedemptionStatus | null {
-    if (this.value === next) return null;
+    if (this.value === next) {
+      return null;
+    }
     if (!ALLOWED_TRANSITIONS[this.value].includes(next)) {
       throw new DomainException(ErrorCode.SYS_0001, {
         detail: "Invalid invite redemption transition",

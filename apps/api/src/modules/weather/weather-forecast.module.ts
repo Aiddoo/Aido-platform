@@ -16,7 +16,7 @@ import { KmaLifestyleIndexProvider } from "./infrastructure/adapters/forecast/km
 import { KmaWeatherGridResolver } from "./infrastructure/adapters/forecast/kma-weather-grid.resolver.js";
 import { KmaWeatherProvider } from "./infrastructure/adapters/forecast/kma-weather.provider.js";
 import { WeatherCacheAdapter } from "./infrastructure/adapters/forecast/weather-cache.adapter.js";
-import { PrismaWeatherLocationRepository } from "./infrastructure/persistence/forecast/prisma-weather-location.repository.js";
+import { DrizzleWeatherLocationRepository } from "./infrastructure/persistence/forecast/drizzle-weather-location.repository.js";
 import { WeatherController } from "./presentation/controllers/forecast/weather.controller.js";
 import { weatherForecastReaderProvider } from "./weather-forecast-application.providers.js";
 import { WEATHER_PROVIDERS } from "./weather-forecast.providers.js";
@@ -40,7 +40,7 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
     weatherForecastReaderProvider,
     {
       provide: WEATHER_LOCATION_REPOSITORY,
-      useClass: PrismaWeatherLocationRepository,
+      useClass: DrizzleWeatherLocationRepository,
     },
     { provide: WEATHER_PROVIDER, useClass: KmaWeatherProvider },
     { provide: AIR_QUALITY_PROVIDER, useClass: AirkoreaProvider },

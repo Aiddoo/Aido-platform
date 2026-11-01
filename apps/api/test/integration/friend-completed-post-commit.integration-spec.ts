@@ -62,7 +62,9 @@ class AfterCommitAwareUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegis
 
   async run<T>(work: () => Promise<T>): Promise<T> {
     const active = this.storage.getStore();
-    if (active && !active.closed) return work();
+    if (active && !active.closed) {
+      return work();
+    }
 
     this.rootTransactionCount += 1;
     const context: TransactionContext = { closed: false, afterCommitTasks: [] };
@@ -76,7 +78,9 @@ class AfterCommitAwareUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegis
       }
 
       context.closed = true;
-      for (const task of context.afterCommitTasks) await task();
+      for (const task of context.afterCommitTasks) {
+        await task();
+      }
       return result;
     });
   }

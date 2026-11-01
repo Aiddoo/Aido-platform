@@ -1,5 +1,7 @@
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { formatDate, toDate } from '@src/shared/utils/date';
+import { toDate } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 
 type FeedDateContextValue = {
@@ -24,7 +26,7 @@ export function FeedDateProvider({ children, date, onDateChange }: FeedDateProvi
   );
   const setSelectedDate = useCallback(
     (nextDate: Date) => {
-      const nextDateKey = formatDate(nextDate);
+      const nextDateKey = formatDateKey(nextDate, getDeviceTimezone());
       onDateChange(nextDateKey === currentLocalDateKey ? undefined : nextDateKey);
     },
     [currentLocalDateKey, onDateChange],

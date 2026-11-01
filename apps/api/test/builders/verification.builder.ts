@@ -11,7 +11,7 @@
 
 import * as crypto from "node:crypto";
 
-import type { Verification, VerificationType } from "#api/platform/database/database.types";
+import type { Verification, VerificationType } from "#test/types/database-rows";
 
 let idCounter = 1;
 

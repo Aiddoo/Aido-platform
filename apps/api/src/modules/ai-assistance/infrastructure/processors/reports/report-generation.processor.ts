@@ -30,11 +30,15 @@ export class ReportGenerationProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.runtime == null) return;
+    if (this.runtime == null) {
+      return;
+    }
     await this.runtime.work(
       AI_REPORT_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data, job.attempt);
+        for (const job of jobs) {
+          await this.process(job.data, job.attempt);
+        }
       },
       AI_REPORT_WORKER_POLICY,
     );

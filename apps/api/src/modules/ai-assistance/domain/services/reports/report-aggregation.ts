@@ -1,5 +1,6 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
+import { sumBy } from "es-toolkit";
 
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -178,8 +179,8 @@ export function assembleAggregatedData(
   } = inputs;
 
   // 전체/완료 계산
-  const totalTodos = dailyTotalGroups.reduce((sum, g) => sum + g._count.id, 0);
-  const completedTodosCount = dailyCompletedGroups.reduce((sum, g) => sum + g._count.id, 0);
+  const totalTodos = sumBy(dailyTotalGroups, (g) => g._count.id);
+  const completedTodosCount = sumBy(dailyCompletedGroups, (g) => g._count.id);
   const completionRate = totalTodos > 0 ? Math.round((completedTodosCount / totalTodos) * 100) : 0;
 
   // 이전 기간 달성률

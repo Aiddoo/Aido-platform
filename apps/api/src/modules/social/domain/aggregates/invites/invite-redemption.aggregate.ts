@@ -190,13 +190,17 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
   }
 
   qualify(qualifiedAt: Date): boolean {
-    if (!this.#transitionTo(REDEMPTION_STATUS.QUALIFIED)) return false;
+    if (!this.#transitionTo(REDEMPTION_STATUS.QUALIFIED)) {
+      return false;
+    }
     this.props.qualifiedAt = new Date(qualifiedAt);
     return true;
   }
 
   markRewarded(rewardedAt: Date): boolean {
-    if (!this.#transitionTo(REDEMPTION_STATUS.REWARDED)) return false;
+    if (!this.#transitionTo(REDEMPTION_STATUS.REWARDED)) {
+      return false;
+    }
     this.props.rewardedAt = new Date(rewardedAt);
     return true;
   }
@@ -230,7 +234,9 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
   }
 
   #reject(reason: RedemptionRejectionReason, rejectedAt: Date): boolean {
-    if (!this.#transitionTo(REDEMPTION_STATUS.REJECTED)) return false;
+    if (!this.#transitionTo(REDEMPTION_STATUS.REJECTED)) {
+      return false;
+    }
     this.props.rejectionReason = reason;
     this.props.rejectedAt = new Date(rejectedAt);
     return true;
@@ -238,7 +244,9 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
 
   #transitionTo(next: RedemptionStatusValue): boolean {
     const status = this.props.status.transitionTo(next);
-    if (status == null) return false;
+    if (status == null) {
+      return false;
+    }
     this.props.status = status;
     return true;
   }

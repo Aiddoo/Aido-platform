@@ -51,7 +51,9 @@ const reportFallbackCopy: Readonly<Record<SupportedLocale, ReportFallbackCopy>> 
 function mostCompletedCategory(data: AggregatedReportData): string | null {
   let best: { readonly name: string; readonly completed: number } | null = null;
   for (const category of data.categoryBreakdown) {
-    if (category.completed > (best?.completed ?? 0)) best = category;
+    if (category.completed > (best?.completed ?? 0)) {
+      best = category;
+    }
   }
   return best == null ? null : best.name;
 }
@@ -83,8 +85,9 @@ export function buildFallbackContent(
   input: ReportFallbackInput,
   locale: SupportedLocale,
 ): ReportContent {
-  if (!input.data.hasActivity)
+  if (!input.data.hasActivity) {
     return { ...buildNoActivityContent(input, locale), contentSource: "FALLBACK" };
+  }
   const copy = reportFallbackCopy[locale];
   const next = copy.nextPeriod[input.type];
   const category = mostCompletedCategory(input.data);

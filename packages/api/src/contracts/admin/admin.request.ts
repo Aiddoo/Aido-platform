@@ -25,7 +25,9 @@ export const growthSummaryQuerySchema = z
       return;
     }
 
-    if (!data.cohortFrom || !data.cohortTo) return;
+    if (!data.cohortFrom || !data.cohortTo) {
+      return;
+    }
 
     const inclusiveDays =
       (Date.parse(data.cohortTo) - Date.parse(data.cohortFrom)) / MILLISECONDS_PER_DAY + 1;

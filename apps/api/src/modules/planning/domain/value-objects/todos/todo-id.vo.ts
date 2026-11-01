@@ -5,7 +5,7 @@ import { DomainException, EntityId } from "#api/shared/domain/index";
 /**
  * Todo 식별자 VO
  *
- * Prisma autoincrement 정수 PK를 감쌉니다. 양의 정수만 허용합니다.
+ * autoincrement 정수 PK를 감쌉니다. 양의 정수만 허용합니다.
  */
 export class TodoId extends EntityId<number> {
   static create(value: number): TodoId {

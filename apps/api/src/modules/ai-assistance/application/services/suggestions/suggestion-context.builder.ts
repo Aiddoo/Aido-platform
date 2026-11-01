@@ -152,14 +152,18 @@ export class SuggestionContextBuilder {
         titleDayCount.set(todo.title, new Map());
       }
       const dayMap = titleDayCount.get(todo.title);
-      if (dayMap == null) continue;
+      if (dayMap == null) {
+        continue;
+      }
       dayMap.set(dayName, (dayMap.get(dayName) ?? 0) + 1);
     }
 
     const missing: string[] = [];
 
     for (const [title, dayMap] of titleDayCount) {
-      if (thisWeekTitles.has(title)) continue;
+      if (thisWeekTitles.has(title)) {
+        continue;
+      }
 
       for (const [day, count] of dayMap) {
         if (count >= 2) {
@@ -183,7 +187,9 @@ export class SuggestionContextBuilder {
     date: Date,
     locale: SupportedLocale,
   ): Promise<string | null> {
-    if (grid == null) return null;
+    if (grid == null) {
+      return null;
+    }
 
     try {
       const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
@@ -191,7 +197,9 @@ export class SuggestionContextBuilder {
         date,
       );
       const forecast = forecasts.get(`${grid.gridX}:${grid.gridY}`);
-      if (forecast == null) return null;
+      if (forecast == null) {
+        return null;
+      }
 
       const translations = suggestionContextTranslations[locale];
       const description =
@@ -250,7 +258,9 @@ export class SuggestionContextBuilder {
     }[],
     locale: SupportedLocale,
   ): string {
-    if (rates.length === 0) return suggestionContextTranslations[locale].none;
+    if (rates.length === 0) {
+      return suggestionContextTranslations[locale].none;
+    }
     return rates.map((r) => `${r.name}:${r.rate}%`).join("|");
   }
 
@@ -258,7 +268,9 @@ export class SuggestionContextBuilder {
     info: { readonly currentStreak: number; readonly longestStreak: number } | null,
     locale: SupportedLocale,
   ): string {
-    if (info == null) return suggestionContextTranslations[locale].noStreak;
+    if (info == null) {
+      return suggestionContextTranslations[locale].noStreak;
+    }
     return suggestionContextTranslations[locale].streak(info.currentStreak, info.longestStreak);
   }
 

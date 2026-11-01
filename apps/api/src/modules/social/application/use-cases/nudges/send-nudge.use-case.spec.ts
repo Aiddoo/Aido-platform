@@ -28,10 +28,18 @@ describe("친구의 할 일에 콕 보내기", () => {
     const todo = fixture.addTodo();
     const record = fixture.nudgeRepository.todos.get(todo.id);
     assert.exists(record);
-    if (input.change === "missing") fixture.nudgeRepository.todos.delete(todo.id);
-    if (input.change === "owner") record.ownerId = "other";
-    if (input.change === "private") record.visibility = "PRIVATE";
-    if (input.change === "date") record.startDate = new Date("2026-07-25T00:00:00Z");
+    if (input.change === "missing") {
+      fixture.nudgeRepository.todos.delete(todo.id);
+    }
+    if (input.change === "owner") {
+      record.ownerId = "other";
+    }
+    if (input.change === "private") {
+      record.visibility = "PRIVATE";
+    }
+    if (input.change === "date") {
+      record.startDate = new Date("2026-07-25T00:00:00Z");
+    }
     // When / Then
     await expect(
       new SendNudge({
@@ -55,15 +63,17 @@ describe("친구의 할 일에 콕 보내기", () => {
     // Given
     const fixture = createSocialInteractionFixture();
     const todo = fixture.addTodo();
-    if (input.code === "NUDGE_1101")
-      for (let index = 0; index < 3; index += 1)
+    if (input.code === "NUDGE_1101") {
+      for (let index = 0; index < 3; index += 1) {
         fixture.nudgeRepository.seed({
           senderId: "sender",
           receiverId: "receiver",
           todoId: todo.id + index + 1,
         });
-    else
+      }
+    } else {
       fixture.nudgeRepository.seed({ senderId: "sender", receiverId: "receiver", todoId: todo.id });
+    }
     const before = fixture.nudgeRepository.records.size;
     // When / Then
     await expect(
@@ -83,13 +93,15 @@ describe("친구의 할 일에 콕 보내기", () => {
       const fixture = createSocialInteractionFixture();
       const todo = fixture.addTodo();
       fixture.database.users.set("sender", { role: "USER", subscriptionStatus });
-      if (subscriptionStatus === "ACTIVE")
-        for (let index = 0; index < 4; index += 1)
+      if (subscriptionStatus === "ACTIVE") {
+        for (let index = 0; index < 4; index += 1) {
           fixture.nudgeRepository.seed({
             senderId: "sender",
             receiverId: "receiver",
             todoId: todo.id + index + 1,
           });
+        }
+      }
       // When
       const result = await new SendNudge({
         ...fixture,

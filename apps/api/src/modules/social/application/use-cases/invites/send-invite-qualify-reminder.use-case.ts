@@ -60,7 +60,9 @@ export class SendInviteQualifyReminder {
   }
 
   async #send(input: SendInviteQualifyReminderInput): Promise<SendInviteQualifyReminderResult> {
-    if (!this.#dependencies.inviteConfig.isEnabled) return skipped("disabled");
+    if (!this.#dependencies.inviteConfig.isEnabled) {
+      return skipped("disabled");
+    }
 
     return this.#dependencies.unitOfWork.run(async () => {
       const repository = this.#dependencies.inviteRedemptionRepository;
@@ -81,9 +83,13 @@ export class SendInviteQualifyReminder {
         return skipped("unreachable");
       }
       const inviterName = await repository.findDisplayName(inviterId);
-      if (inviterName == null) return skipped("unreachable");
+      if (inviterName == null) {
+        return skipped("unreachable");
+      }
 
-      if (!redemption.markQualifyReminderSent(input.now)) return skipped("not-due");
+      if (!redemption.markQualifyReminderSent(input.now)) {
+        return skipped("not-due");
+      }
       await repository.save(redemption);
       await this.#dependencies.notifier.notifyQualifyReminder({
         inviteeId: redemption.inviteeId,

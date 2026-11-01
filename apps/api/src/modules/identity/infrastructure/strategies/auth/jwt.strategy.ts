@@ -6,8 +6,8 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
@@ -36,10 +36,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
 
   constructor(
     readonly configService: TypedConfigService,
-    private readonly sessionRepository: SessionRepository,
+    private readonly sessionRepository: DrizzleSessionRepository,
     private readonly sessionService: SessionService,
     @Inject(AUTH_CACHE) private readonly cacheService: AuthCachePort,
-    private readonly userRepository: UserRepository,
+    private readonly userRepository: DrizzleUserRepository,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

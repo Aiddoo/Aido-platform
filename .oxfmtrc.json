@@ -24,8 +24,6 @@
   ],
   "ignorePatterns": [
     "**/*.generated.*",
-    "apps/api/prisma/generated/**",
-    "apps/api/src/generated/**",
     "apps/api/test/e2e/__snapshots__/**",
     "apps/api/test/e2e/fixtures/released-v1-openapi-contract.ts",
     "apps/mobile/assets/**",
@@ -35,9 +33,7 @@
     "**/dist/**",
     "**/build/**",
     "**/coverage/**",
-    "apps/api/prisma/migrations8/snapshots/**",
-    "apps/api/prisma/migrations8/**/ops.json",
-    "apps/api/prisma/migrations8/**/migration.json",
+    "apps/api/drizzle/**/snapshot.json",
     "apps/api/test/e2e/fixtures/released-*-openapi-contract.ts"
   ]
 }

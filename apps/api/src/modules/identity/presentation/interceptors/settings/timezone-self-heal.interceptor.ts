@@ -61,7 +61,9 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
     this.#seen.set(userId, attempt);
 
     void this.refreshPushTimezoneUseCase.execute({ userId, timezone }).catch((error: unknown) => {
-      if (this.#seen.get(userId) === attempt) this.#seen.delete(userId);
+      if (this.#seen.get(userId) === attempt) {
+        this.#seen.delete(userId);
+      }
       this.#logger.error({
         event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
         userId,

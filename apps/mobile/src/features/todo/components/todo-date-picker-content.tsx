@@ -4,14 +4,14 @@ import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
-  formatDate,
   getWeekdayLabels,
   getNextDay,
   isSameDay,
   isSameMonth,
   startOfDay,
 } from '@src/shared/utils/date';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { PressableFeedback } from 'heroui-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
@@ -130,7 +130,11 @@ const DatePickerCalendar = ({ picker, onDatePress }: DatePickerCalendarProps) =>
           <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-          {formatDateKeyLabel(formatDate(displayMonth), 'yearMonth', dateFormatContext)}
+          {formatDateKeyLabel(
+            formatDateKey(displayMonth, getDeviceTimezone()),
+            'yearMonth',
+            dateFormatContext,
+          )}
         </Text>
         <PressableFeedback onPress={goToNextMonth} hitSlop={12}>
           <ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />

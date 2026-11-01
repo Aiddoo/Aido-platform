@@ -9,7 +9,7 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { encodeCreate } from "#api/platform/database/database-records";
+import { todo as todoTable } from "#api/platform/database/schema/index";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
@@ -43,44 +43,42 @@ describe("오늘의 할 일 요약 E2E", () => {
 
   describe("GET /todos/summary", () => {
     it("오늘 진행률·스트릭·상위 할 일을 요약으로 반환한다", async () => {
-      // Given - 오늘 할 일 3개 중 1개 완료
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-summary@test.com", password);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
       const { startDate, endDate } = activeDateRange();
-      const prisma = ctx.testDatabase.getClient();
-      await prisma.orm.public.Todo.createAndCount(
-        [
-          {
-            userId: user.userId,
-            title: "완료한 할 일",
-            categoryId,
-            startDate,
-            endDate,
-            sortOrder: 0,
-            completed: true,
-            completedAt: new Date(),
-          },
-          {
-            userId: user.userId,
-            title: "남은 할 일 1",
-            categoryId,
-            startDate,
-            endDate,
-            sortOrder: 1,
-            completed: false,
-          },
-          {
-            userId: user.userId,
-            title: "남은 할 일 2",
-            categoryId,
-            startDate,
-            endDate,
-            sortOrder: 2,
-            completed: false,
-          },
-        ].map((value) => encodeCreate("Todo", value)),
-      );
+      const client = ctx.testDatabase.getClient();
+      await client.insert(todoTable).values([
+        {
+          userId: user.userId,
+          title: "완료한 할 일",
+          categoryId,
+          startDate,
+          endDate,
+          sortOrder: 0,
+          completed: true,
+          completedAt: new Date(),
+        },
+        {
+          userId: user.userId,
+          title: "남은 할 일 1",
+          categoryId,
+          startDate,
+          endDate,
+          sortOrder: 1,
+          completed: false,
+        },
+        {
+          userId: user.userId,
+          title: "남은 할 일 2",
+          categoryId,
+          startDate,
+          endDate,
+          sortOrder: 2,
+          completed: false,
+        },
+      ]);
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -97,7 +95,6 @@ describe("오늘의 할 일 요약 E2E", () => {
         completionRate: 33,
         isComplete: false,
         currentStreak: expect.any(Number),
-        // 미완료 우선 정렬 — 남은 일이 위, 완료한 일이 아래
         topTodos: [
           {
             id: expect.any(Number),
@@ -140,12 +137,12 @@ describe("오늘의 할 일 요약 E2E", () => {
     });
 
     it("상위 할 일은 최대 10개, 미완료가 항상 완료보다 먼저 온다", async () => {
-      // Given - 오늘 할 일 12개, 정렬 앞쪽(sortOrder 0~5) 6개는 완료 상태
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-summary-limit@test.com", password);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
       const { startDate, endDate } = activeDateRange();
-      const prisma = ctx.testDatabase.getClient();
-      await prisma.orm.public.Todo.createAndCount(
+      const client = ctx.testDatabase.getClient();
+      await client.insert(todoTable).values(
         Array.from({ length: 12 }, (_, i) => ({
           userId: user.userId,
           title: `할 일 ${i + 1}`,
@@ -155,7 +152,7 @@ describe("오늘의 할 일 요약 E2E", () => {
           sortOrder: i,
           completed: i < 6,
           ...(i < 6 && { completedAt: new Date() }),
-        })).map((value) => encodeCreate("Todo", value)),
+        })),
       );
 
       // When
@@ -164,12 +161,11 @@ describe("오늘의 할 일 요약 E2E", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);
 
-      // Then - 총계는 전체(12), 목록은 10개로 절단
+      // Then
       expect(response.status).toBe(200);
       expect(response.body.data.totalTodos).toBe(12);
       expect(response.body.data.topTodos).toHaveLength(10);
 
-      // 미완료 6개가 전부 앞에, 완료는 그 뒤에 온다 (sortOrder가 앞서도 완료면 뒤로)
       const completedFlags = response.body.data.topTodos.map(
         (todo: { completed: boolean }) => todo.completed,
       );
@@ -188,20 +184,18 @@ describe("오늘의 할 일 요약 E2E", () => {
     });
 
     it("date로 내일을 요청하면 내일 할 일 기준 요약을 반환한다", async () => {
-      // Given - 오늘만 있는 할 일 1개와 내일만 있는 할 일 2개
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-summary-tomorrow@test.com", password);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
       const today = todayInTimezone(timezone);
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-      const prisma = ctx.testDatabase.getClient();
-      await prisma.orm.public.Todo.createAndCount(
+      const client = ctx.testDatabase.getClient();
+      await client.insert(todoTable).values(
         [
           { title: "오늘 할 일", startDate: today, endDate: today, sortOrder: 0 },
           { title: "내일 할 일 1", startDate: tomorrow, endDate: tomorrow, sortOrder: 1 },
           { title: "내일 할 일 2", startDate: tomorrow, endDate: tomorrow, sortOrder: 2 },
-        ].map((todo) =>
-          encodeCreate("Todo", { ...todo, userId: user.userId, categoryId, completed: false }),
-        ),
+        ].map((todo) => ({ ...todo, userId: user.userId, categoryId, completed: false })),
       );
 
       // When

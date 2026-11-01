@@ -37,7 +37,9 @@ export class IdentityAccounts extends AggregateRoot<IdentityAccountsProps> {
     if (account == null) {
       throw new DomainException(ErrorCode.USER_0603, { provider: undefined });
     }
-    if (!this.canUnlink) throw new DomainException(ErrorCode.USER_0610);
+    if (!this.canUnlink) {
+      throw new DomainException(ErrorCode.USER_0610);
+    }
     this.props.accounts = this.props.accounts.filter((candidate) => candidate.id !== account.id);
   }
 }

@@ -99,7 +99,9 @@ async function main(): Promise<number> {
   let model = "";
 
   for (const [index, golden] of cases.entries()) {
-    if (index > 0 && delayMs > 0) await sleep(delayMs);
+    if (index > 0 && delayMs > 0) {
+      await sleep(delayMs);
+    }
     const now = new Date(golden.now);
     const { system, prompt } = definition[golden.locale].build({
       text: golden.input,
@@ -133,7 +135,9 @@ async function main(): Promise<number> {
         for (const field of wrong) {
           diff[field] = { expected: golden.expected[field], actual: todo[field] };
         }
-        if (wrong.length > 0) categories.push(group);
+        if (wrong.length > 0) {
+          categories.push(group);
+        }
       }
       if (!(todo.title === golden.expected.title || todo.title.includes(golden.expected.title))) {
         categories.push("title");

@@ -8,14 +8,7 @@ import sharp from 'sharp';
 
 import { cardLayout, cardWidthForHeight } from './lib/card.mjs';
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
-import {
-  captureNeeds,
-  cleanSheet,
-  keyboardHeight,
-  mergeGalleryEntries,
-  plan,
-  systemBarCrop,
-} from './render.mjs';
+import { cleanSheet, keyboardHeight, mergeGalleryEntries, plan, systemBarCrop } from './render.mjs';
 import { LOCALES, SCENES, SETS, SLOTS, TARGETS, slotCopy } from './storyboard.mjs';
 
 test('WCAG 대비율을 계산하고 기준 미달을 고른다', () => {
@@ -85,10 +78,10 @@ test('글자 없는 그래픽(인앱 이벤트·Play 맞춤 그래픽)은 공용
   }
 });
 
-test('Play 태블릿은 문구 없이 4장 이상, 16:9 1,080~7,680px로 만든다', () => {
+test('Play 태블릿은 문구와 화면 한 장을 가로로 두고 4장 이상, 16:9 1,080~7,680px로 만든다', () => {
   for (const id of ['play-tablet-7', 'play-tablet-10']) {
     const target = TARGETS[id];
-    assert.equal(target.bare, true);
+    assert.equal(target.layout, 'landscape');
     assert.equal(target.badge, false);
     assert.equal(target.width / target.height, 16 / 9);
     assert.ok(
@@ -138,17 +131,6 @@ test('slotCopy는 Play 문구가 있을 때만 바꿔 쓴다', () => {
   assert.equal(slotCopy(SLOTS.invite, 'app-store', 'ko'), SLOTS.invite.ko);
   assert.equal(slotCopy(SLOTS.invite, 'google-play', 'en'), SLOTS.invite.play.en);
   assert.equal(slotCopy(SLOTS.ai, 'google-play', 'ko'), SLOTS.ai.ko);
-});
-
-test('태블릿 두 장 배치는 장면마다 두 번째 화면을 쓴다', () => {
-  for (const job of plan({ only: undefined, locales: LOCALES }).filter(
-    (item) => item.type === 'screenshot' && item.target.layout === 'card-pair',
-  )) {
-    const needs = captureNeeds(job);
-    assert.equal(needs.length, 2, job.output);
-    assert.ok(job.slot.tabletPair, `${job.slotId}에 tabletPair가 없어요`);
-    assert.notEqual(needs[0][1].file, needs[1][1].file, job.output);
-  }
 });
 
 test('OS 막대 자르기는 아래쪽 키보드가 더 길면 키보드 위까지만 남긴다', () => {

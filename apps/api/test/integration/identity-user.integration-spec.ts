@@ -1,33 +1,29 @@
-import sql from "sql-template-tag";
+import { sql } from "drizzle-orm";
 import { vi } from "vitest";
+import { z } from "zod";
 
 import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
 import { IdentityUser } from "#api/modules/identity/domain/aggregates/auth/identity-user.aggregate";
-import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { securityLog, user as userTable } from "#api/platform/database/schema/index";
 import { UserFixture } from "#test/fixtures/index";
-import {
-  createDatabaseTransactionFixture,
-  createTestClient,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const at = new Date("2027-01-01T00:00:00.000Z");
 const cutoff = new Date("2026-12-02T00:00:00.000Z");
 
-describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
+describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
-  let repository: UserRepository;
+  let repository: DrizzleUserRepository;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await testDatabase.start();
-    repository = new UserRepository(createDatabaseTransactionFixture(client).txHost);
+    repository = new DrizzleUserRepository(createDatabaseTransactionFixture(client).txHost);
   });
 
   beforeEach(async () => {
@@ -52,7 +48,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
       aiUsageResetAt: at,
       ...overrides,
     });
-    await client.orm.public.User.create(encodeCreate("User", fixture));
+    await client.insert(userTable).values(fixture);
     return fixture;
   }
 
@@ -112,8 +108,8 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
 
   function givenPurge() {
     const transaction = createDatabaseTransactionFixture(client);
-    const userRepository = new UserRepository(transaction.txHost);
-    const securityLogRepository = new SecurityLogRepository(transaction.txHost);
+    const userRepository = new DrizzleUserRepository(transaction.txHost);
+    const securityLogRepository = new DrizzleSecurityLogRepository(transaction.txHost);
     const notificationCleanup = {
       cleanupInTransaction: async () => ({ affectedUserIds: [] }),
       settleAfterCommit: vi.fn(async () => {}),
@@ -135,7 +131,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
   }
 
   it("후보 조회 후 탈퇴 상태가 해제된 계정은 lock 이후 재검증하여 삭제하지 않는다", async () => {
-    // Given - 관리 작업 등으로 후보 조회와 실제 삭제 사이에 상태가 바뀐 경우
+    // Given
     const user = await givenUser({
       status: "SUSPENDED",
       deletedAt: new Date(cutoff.getTime() - 1),
@@ -159,7 +155,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
 
     // Then
     expect(await repository.findById(user.id)).toMatchObject({ status: "ACTIVE", deletedAt: null });
-    expect(await client.orm.public.SecurityLog.all()).toEqual([]);
+    expect(await client.select().from(securityLog)).toEqual([]);
     expect(dependencies.notificationCleanup.settleAfterCommit).not.toHaveBeenCalled();
     expect(dependencies.logger.log).toHaveBeenCalledWith(
       expect.objectContaining({ purgedCount: 0, skippedCount: 1, failedCount: 0 }),
@@ -194,7 +190,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
       deletedAt: user.deletedAt,
       profile: { name: "보존할 프로필" },
     });
-    expect(await client.orm.public.SecurityLog.all()).toEqual([]);
+    expect(await client.select().from(securityLog)).toEqual([]);
     expect(dependencies.notificationCleanup.settleAfterCommit).not.toHaveBeenCalled();
     expect(dependencies.todoCommentCleanup.settleAfterCommit).not.toHaveBeenCalled();
     expect(dependencies.logger.log).toHaveBeenCalledWith(
@@ -221,11 +217,9 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
     const lockedPromise = new Promise<void>((resolve) => {
       locked = resolve;
     });
-    const holdingLock = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(transaction, sql`SELECT "id" FROM "User" WHERE "id" = ${user.id} FOR UPDATE`)
-          .returnsRow({ id: "pg/text@1" })
-          .build(),
+    const holdingLock = client.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`SELECT ${userTable.id} FROM ${userTable} WHERE ${userTable.id} = ${user.id} FOR UPDATE`,
       );
       locked?.();
       await releasePromise;
@@ -238,19 +232,16 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
     ]);
     const purges = [purge.execute(), purge.execute()];
 
-    // When - 두 요청이 실제 User row lock에서 대기하는 것을 확인한다.
+    // When
     try {
       await vi.waitFor(async () => {
-        const waiting = await client.runtime().query(
-          client.raw.sql`
+        const { rows } = await client.execute<{ count: number }>(sql`
           SELECT count(*)::int AS count FROM pg_stat_activity
           WHERE datname = current_database() AND wait_event_type = 'Lock'
-            AND query LIKE '%FOR NO KEY UPDATE%' AND query LIKE '%User%'
-        `
-            .returnsRow({ count: "pg/int4@1" })
-            .build(),
-        );
-        expect(waiting[0]?.count).toBe(2);
+            AND query ILIKE '%FOR NO KEY UPDATE%' AND query LIKE '%User%'
+        `);
+        const [waiting] = z.array(z.object({ count: z.number() })).parse(rows);
+        expect(waiting?.count).toBe(2);
       });
     } finally {
       release?.();
@@ -260,7 +251,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
 
     // Then
     expect(await repository.findById(user.id)).toBeNull();
-    const audits = await client.orm.public.SecurityLog.all();
+    const audits = await client.select().from(securityLog);
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({ userId: null, event: "ACCOUNT_HARD_DELETED" });
     expect(dependencies.notificationCleanup.settleAfterCommit).toHaveBeenCalledTimes(1);

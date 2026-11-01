@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -34,11 +35,15 @@ export class RetentionQueueProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
     await this.runtime.work(
       RETENTION_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.id, job.attempt, job.data);
+        for (const job of jobs) {
+          await this.process(job.id, job.attempt, job.data);
+        }
       },
       RETENTION_WORKER_POLICY,
     );
@@ -75,26 +80,18 @@ export class RetentionQueueProcessor implements OnModuleInit {
       return;
     }
     const job = parsedJob.data;
-    switch (job.name) {
-      case RetentionJobName.STAGE_SWEEP:
-        await this.processStages.execute();
-        break;
-      case RetentionJobName.OUTBOX_RELAY:
-        await this.relayOutbox.execute();
-        break;
-      case RetentionJobName.DISPATCH:
-        await this.dispatchPush.execute({
-          ...job.data,
+    await match(job)
+      .with({ name: RetentionJobName.STAGE_SWEEP }, () => this.processStages.execute())
+      .with({ name: RetentionJobName.OUTBOX_RELAY }, () => this.relayOutbox.execute())
+      .with({ name: RetentionJobName.DISPATCH }, ({ data }) =>
+        this.dispatchPush.execute({
+          ...data,
           processingJobId,
           processingJobAttempt,
           isFinalAttempt: processingJobAttempt > RETENTION_JOB_POLICY.retryLimit,
-        });
-        break;
-      default: {
-        const exhaustive: never = job;
-        void exhaustive;
-      }
-    }
+        }),
+      )
+      .exhaustive();
   }
 
   onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error): void {

@@ -77,8 +77,9 @@ export class StubMemoRepository implements MemoRepositoryPort {
   }
 
   async delete(memoId: number): Promise<void> {
-    if (!this.records.delete(memoId))
+    if (!this.records.delete(memoId)) {
       throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+    }
   }
 
   #update(
@@ -86,7 +87,9 @@ export class StubMemoRepository implements MemoRepositoryPort {
     patch: Partial<Pick<MemoRecord, "content" | "isPinned" | "sortOrder">>,
   ): Memo {
     const record = this.records.get(memoId);
-    if (record === undefined) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+    if (record === undefined) {
+      throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+    }
     const updated = { ...record, ...patch, updatedAt: new Date() };
     this.seed(updated);
     return Memo.reconstitute(updated);

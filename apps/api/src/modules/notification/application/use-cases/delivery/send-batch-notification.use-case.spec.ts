@@ -51,7 +51,9 @@ describe("배치 알림의 커밋 후 정리", () => {
     expect(result).toEqual({ count: 1 });
     expect(finalizeBatch.execute).not.toHaveBeenCalled();
     expect(afterCommitTasks).toHaveLength(1);
-    for (const task of afterCommitTasks) await task();
+    for (const task of afterCommitTasks) {
+      await task();
+    }
     expect(finalizeBatch.execute).toHaveBeenCalledWith(persisted);
   });
 

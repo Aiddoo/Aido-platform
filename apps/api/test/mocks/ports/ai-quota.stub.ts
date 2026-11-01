@@ -17,8 +17,9 @@ export class StubAiQuotaRepository implements AiQuotaRepositoryPort {
   }
   async saveUsage(userId: string, usage: { count: number; resetAt: Date }): Promise<void> {
     const state = this.users.get(userId);
-    if (state !== undefined)
+    if (state !== undefined) {
       this.users.set(userId, { ...state, count: usage.count, resetAt: new Date(usage.resetAt) });
+    }
   }
   async releaseUsage(
     userId: string,
@@ -29,8 +30,9 @@ export class StubAiQuotaRepository implements AiQuotaRepositoryPort {
       state === undefined ||
       state.count <= 0 ||
       state.resetAt.getTime() !== input.expectedResetAt.getTime()
-    )
+    ) {
       return false;
+    }
     this.users.set(userId, { ...state, count: input.count });
     return true;
   }

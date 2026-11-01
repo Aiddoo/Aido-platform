@@ -55,7 +55,9 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     // Given
     const fixture = givenUsers();
     const user = fixture.userRepository.users.get("user-1");
-    if (user == null) throw new Error("삭제할 사용자 fixture가 없습니다.");
+    if (user == null) {
+      throw new Error("삭제할 사용자 fixture가 없습니다.");
+    }
 
     // When
     await fixture.useCase.execute();
@@ -141,12 +143,13 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       // Given
       const fixture = givenUsers();
       const settle = vi.spyOn(fixture.notificationCleanup, "settleAfterCommit");
-      if (scenario === "비동기 거절")
+      if (scenario === "비동기 거절") {
         settle.mockRejectedValueOnce(new Error("Private settlement failure"));
-      else
+      } else {
         settle.mockImplementationOnce(() => {
           throw new Error("Private settlement failure");
         });
+      }
 
       // When
       await fixture.useCase.execute();

@@ -22,7 +22,7 @@ export interface FindReportsParams {
   limit: number;
 }
 
-/** 리포트 생성 입력 — Json 직렬화는 어댑터 경계가 담당한다 */
+/** 리포트 생성 입력 — jsonb 직렬화는 어댑터 경계가 담당한다 */
 export interface CreateAiReportInput {
   userId: string;
   type: ReportType;
@@ -44,7 +44,7 @@ export interface CreateAiReportInput {
 /**
  * AI 리포트 저장소 포트.
  *
- * 트랜잭션은 CLS로 전파된다. Prisma Json 필드의 직렬화/역직렬화는 어댑터가 소유한다.
+ * 트랜잭션은 CLS로 전파된다. jsonb 필드의 직렬화/역직렬화는 어댑터가 소유한다.
  */
 export interface AiReportRepositoryPort {
   create(input: CreateAiReportInput): Promise<AiReport>;

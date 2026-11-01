@@ -50,8 +50,9 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     async (state) => {
       // Given
       const fixture = createAuthCredentialFixture({ empty: state === "존재하지 않는" });
-      if (state === "탈퇴한")
+      if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+      }
       const useCase = new RequestPasswordReset(fixture);
 
       // When

@@ -189,7 +189,9 @@ export class RedisCacheAdapter implements ICacheService {
   }
 
   async mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
-    if (keys.length === 0) return [];
+    if (keys.length === 0) {
+      return [];
+    }
 
     return this.#failOpen(
       "MGET",
@@ -204,7 +206,9 @@ export class RedisCacheAdapter implements ICacheService {
   }
 
   async mset<T>(entries: Array<{ key: string; value: T; ttl?: TtlValue }>): Promise<void> {
-    if (entries.length === 0) return;
+    if (entries.length === 0) {
+      return;
+    }
 
     await this.#failOpen(
       "MSET",

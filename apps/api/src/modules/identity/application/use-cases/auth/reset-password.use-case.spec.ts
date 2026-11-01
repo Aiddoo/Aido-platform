@@ -92,8 +92,9 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
         empty: state === "존재하지 않는",
         socialOnly: state === "소셜 전용",
       });
-      if (state === "탈퇴한")
+      if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+      }
       const errorCode =
         state === "존재하지 않는"
           ? ErrorCode.VERIFY_0751

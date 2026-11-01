@@ -501,9 +501,9 @@
       <div class="share"><span>${copy.kakao}</span><span>${copy.copy}</span><span>${copy.share}</span></div>
       <div class="board">
         <span class="stamp on">${paw()}</span><span class="stamp on">${paw()}</span><span class="stamp wait">${paw()}</span>
-        <span class="stamp off">${paw()}</span><span class="stamp fish">${fish()}</span>
+        <span class="stamp off">${paw()}</span><span class="stamp off">${paw()}</span>
         <span class="stamp off">${paw()}</span><span class="stamp off">${paw()}</span><span class="stamp off">${paw()}</span>
-        <span class="stamp off">${paw()}</span><span class="stamp fish">${fish()}</span>
+        <span class="stamp off">${paw()}</span><span class="stamp off">${paw()}</span>
       </div>`;
           return;
         }
@@ -659,8 +659,8 @@
         mark.textContent = job.preview;
       }
 
-      // 문구 없는 Play 태블릿: 톤 컨테이너 위에 넓은 화면 카드 두 장을 나란히 둔다.
-      async function renderBare(job, stage, width, height, unit) {
+      // 가로 태블릿(Play 7″·10″): 왼쪽에 문구, 오른쪽에 넓은 화면 카드 한 장을 둔다.
+      async function renderLandscape(job, stage, width, height, unit) {
         const panelInset = height * 0.045;
         const panel = el('div', 'panel', document.body);
         Object.assign(panel.style, {
@@ -670,39 +670,83 @@
           bottom: `${panelInset}px`,
           borderRadius: `${height * 0.06}px`,
         });
-        const screens = job.layout === 'card-pair' ? [job.screen, job.pair] : [job.screen];
-        const cardHeight = height * 0.8;
-        const gap = width * 0.035;
-        const widths = screens.map((screen) => cardWidthAt(screen, cardHeight));
-        const total = widths.reduce((sum, value) => sum + value, 0) + gap * (screens.length - 1);
-        let left = (width - total) / 2;
-        screens.forEach((screen, index) => {
-          drawDevice(
-            stage,
-            job.frame,
-            screen,
-            left,
-            (height - cardHeight) / 2,
-            widths[index],
-            cardHeight,
-          );
-          left += widths[index] + gap;
+        // 화면을 크게 보여 주려고 카드 아래쪽은 판 끝에서 페이드로 끝낸다
+        const cardTop = height * 0.1;
+        const cardWidth = cardWidthAt(job.screen, height * 1.08);
+        const cardLeft = width - panelInset - height * 0.07 - cardWidth;
+        drawDevice(
+          stage,
+          job.frame,
+          job.screen,
+          cardLeft,
+          cardTop,
+          cardWidth,
+          height - panelInset - cardTop,
+        );
+
+        const textLeft = panelInset + height * 0.1;
+        const textWidth = cardLeft - textLeft - height * 0.08;
+        const copy = el('div', 'copy', stage);
+        Object.assign(copy.style, {
+          position: 'absolute',
+          left: `${textLeft}px`,
+          width: `${textWidth}px`,
+          top: '0',
+          height: `${height}px`,
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          textAlign: 'left',
         });
-        // 양옆 여백에 발자국 길(글자 없음)
-        const side = (width - total) / 2;
-        const size = Math.min(side * 0.36, height * 0.07);
-        const trail = [
-          [0.5, 0.72, -8, 0.26],
-          [0.3, 0.6, -14, 0.19],
-          [0.52, 0.47, -6, 0.13],
-        ];
-        for (const [x, y, rotate, opacity] of trail) {
-          motif('paw', side * x - size / 2, height * y, size, rotate, opacity);
-          motif('paw', width - side * x - size / 2, height * (1.12 - y), size, -rotate, opacity);
+        const tagline = el('p', 'tagline', copy);
+        tagline.dataset.contrast = 'normal';
+        tagline.dataset.bg = '#ffdbcf';
+        tagline.style.fontSize = `${height * 0.04}px`;
+        tagline.append(job.tagline);
+        const headline = el('h1', 'headline', copy);
+        headline.dataset.contrast = 'large';
+        let size = height * 0.085;
+        headline.style.fontSize = `${size}px`;
+        headline.style.marginTop = `${height * 0.035}px`;
+        setRich(headline, job.headline);
+        await document.fonts.ready;
+        while (headline.getBoundingClientRect().width > textWidth && size > height * 0.05) {
+          size -= height * 0.002;
+          headline.style.fontSize = `${size}px`;
         }
+        if (job.note) {
+          const note = el('p', 'note', copy);
+          note.dataset.contrast = 'normal';
+          note.style.textAlign = 'left';
+          let noteSize = height * 0.03;
+          note.style.fontSize = `${noteSize}px`;
+          note.style.marginTop = `${height * 0.03}px`;
+          note.textContent = job.note;
+          while (note.getBoundingClientRect().width > textWidth && noteSize > height * 0.02) {
+            noteSize -= height * 0.001;
+            note.style.fontSize = `${noteSize}px`;
+          }
+        }
+        const paw = Math.min(height * 0.06, textWidth * 0.08);
+        motif('paw', textLeft, height * 0.8, paw, -10, 0.22);
+        motif('paw', textLeft + paw * 1.4, height * 0.72, paw, -16, 0.15);
         previewMark(job, unit);
         const broken = await settle();
-        return { contrast: [], broken, fonts: [], overflow: false };
+        const contrast = [...document.querySelectorAll('[data-contrast]')].flatMap((node) => {
+          const bg = node.dataset.bg || '#ffe9df';
+          return [node, ...node.querySelectorAll('em')].map((item) => ({
+            name: item.className || item.tagName,
+            color: getComputedStyle(item).color,
+            background: bg,
+            level: node.dataset.contrast,
+          }));
+        });
+        const fonts = [...document.fonts]
+          .filter((font) => font.status === 'error')
+          .map((font) => font.family);
+        const overflow = [...copy.children].some(
+          (node) => node.getBoundingClientRect().right > cardLeft,
+        );
+        return { contrast, broken, fonts, overflow };
       }
 
       window.renderJob = async (job) => {
@@ -722,9 +766,9 @@
           node.remove();
         stage.style.paddingTop = `${190 * unit}px`;
 
-        if (job.bare) {
+        if (job.layout === 'landscape') {
           stage.style.paddingTop = '0';
-          return renderBare(job, stage, width, height, unit);
+          return renderLandscape(job, stage, width, height, unit);
         }
 
         decorate(width, height, job.motif ?? 0);

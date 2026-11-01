@@ -19,7 +19,9 @@ function readWorkspaceManifests(): WorkspaceManifest[] {
   return ["apps", "packages", "tooling"].flatMap((directory) =>
     readdirSync(resolve(workspaceRoot, directory), { withFileTypes: true }).flatMap((entry) => {
       const manifestPath = resolve(workspaceRoot, directory, entry.name, "package.json");
-      if (!entry.isDirectory() || !existsSync(manifestPath)) return [];
+      if (!entry.isDirectory() || !existsSync(manifestPath)) {
+        return [];
+      }
       return [workspaceManifestSchema.parse(JSON.parse(readFileSync(manifestPath, "utf8")))];
     }),
   );
@@ -55,11 +57,17 @@ describe("Workspace 의존성 경계", () => {
     const visit = (name: string, ancestors: readonly string[]): void => {
       expect(ancestors, `순환 의존: ${[...ancestors, name].join(" → ")}`).not.toContain(name);
       expect(graph.has(name), `존재하지 않는 workspace: ${name}`).toBe(true);
-      if (visited.has(name)) return;
-      for (const dependency of graph.get(name) ?? []) visit(dependency, [...ancestors, name]);
+      if (visited.has(name)) {
+        return;
+      }
+      for (const dependency of graph.get(name) ?? []) {
+        visit(dependency, [...ancestors, name]);
+      }
       visited.add(name);
     };
     // When & Then
-    for (const name of graph.keys()) visit(name, []);
+    for (const name of graph.keys()) {
+      visit(name, []);
+    }
   });
 });

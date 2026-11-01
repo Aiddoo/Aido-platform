@@ -1,3 +1,5 @@
+import { sumBy } from "es-toolkit";
+
 import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 
 import { AdminNotificationMessage } from "../../../domain/value-objects/notifications/admin-notification-message.vo.js";
@@ -9,7 +11,7 @@ import type { UserRegisteredEventPayload } from "../../types/notifications/user-
 import { formatDate, formatPrice } from "./discord-format.js";
 import {
   accountProviderLabel,
-  PROVIDER_DEVICE_LABELS,
+  DEVICE_PLATFORM_LABELS,
   PROVIDER_LABELS,
 } from "./provider-labels.js";
 import {
@@ -32,18 +34,22 @@ export interface DailySignupSummary {
  */
 export function buildUserRegisteredMessage(payload: UserRegisteredEventPayload): AdminNotification {
   const providerLabel = PROVIDER_LABELS[payload.provider] ?? payload.provider;
-  const deviceLabel = PROVIDER_DEVICE_LABELS[payload.provider];
+  const platformLabel = payload.devicePlatform
+    ? DEVICE_PLATFORM_LABELS[payload.devicePlatform]
+    : undefined;
+  const deviceLabel =
+    [platformLabel, payload.deviceModel].filter(Boolean).join(" · ") || "확인 불가";
 
-  const fields: AdminNotificationField[] = [
-    { name: "이메일", value: payload.email, inline: true },
-    { name: "가입 방식", value: providerLabel, inline: true },
-  ];
+  const fields: AdminNotificationField[] = [];
 
-  if (deviceLabel) {
-    fields.push({ name: "기기 (추정)", value: deviceLabel, inline: true });
+  if (payload.name) {
+    fields.push({ name: "닉네임", value: payload.name, inline: true });
   }
 
   fields.push(
+    { name: "이메일", value: payload.email, inline: true },
+    { name: "가입 방식", value: providerLabel, inline: true },
+    { name: "기기", value: deviceLabel, inline: true },
     { name: "사용자 ID", value: payload.userId, inline: false },
     {
       name: "가입 시각",
@@ -54,7 +60,9 @@ export function buildUserRegisteredMessage(payload: UserRegisteredEventPayload):
 
   return createAdminNotification({
     title: "새로운 회원가입",
-    body: `**${payload.email}** 님이 가입했습니다.`,
+    body: payload.name
+      ? `**${payload.name}**(${payload.email}) 님이 가입했습니다.`
+      : `**${payload.email}** 님이 가입했습니다.`,
     color: 0x57f287,
     fields,
   });
@@ -137,7 +145,7 @@ export function buildSubscriptionEventMessage(
  * 일일 가입 요약 관리자 알림 메시지 조립.
  */
 export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNotification {
-  const previousDayTotal = summary.signupsByProvider.reduce((sum, group) => sum + group.count, 0);
+  const previousDayTotal = sumBy(summary.signupsByProvider, (group) => group.count);
 
   const providerBreakdown = summary.signupsByProvider
     .map((group) => {

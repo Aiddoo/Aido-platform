@@ -35,18 +35,20 @@ export function planRecurringTodoCreation(
     visibility: data.visibility,
   });
   const dates = expandRecurringDates(data.startDate, data.endDate, data.daysOfWeek);
-  if (dates.length === 0)
+  if (dates.length === 0) {
     throw new ApplicationException(ErrorCode.SYS_0002, {
       message: "선택한 기간과 요일에 해당하는 날짜가 없습니다",
       startDate: data.startDate,
       endDate: data.endDate,
       daysOfWeek: data.daysOfWeek,
     });
-  if (dates.length > RECURRING_TODO_LIMITS.MAX_INSTANCES)
+  }
+  if (dates.length > RECURRING_TODO_LIMITS.MAX_INSTANCES) {
     throw new ApplicationException(ErrorCode.TODO_0812, {
       count: dates.length,
       limit: RECURRING_TODO_LIMITS.MAX_INSTANCES,
     });
+  }
   return { data, timezone, draft, dates, recurrenceGroupId: randomUUID() };
 }
 
@@ -71,18 +73,20 @@ export class TodoCreationWriter {
       draft.userId,
       draft.categoryId,
     );
-    if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY)
+    if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY) {
       throw new ApplicationException(ErrorCode.TODO_0811, {
         activeCount,
         maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
       });
+    }
     const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(draft.userId);
     const created = await this.#dependencies.todoRepository.create({
       ...draft,
       sortOrder: maxSortOrder + 1,
     });
-    if (items != null && items.length > 0)
+    if (items != null && items.length > 0) {
       await this.#dependencies.todoRepository.createInlineItems(created.getId().getValue(), items);
+    }
     return created;
   }
 
@@ -93,12 +97,13 @@ export class TodoCreationWriter {
       data.userId,
       data.categoryId,
     );
-    if (activeInCategory + dates.length > TODO_LIMITS.MAX_PER_CATEGORY)
+    if (activeInCategory + dates.length > TODO_LIMITS.MAX_PER_CATEGORY) {
       throw new ApplicationException(ErrorCode.TODO_0813, {
         activeInCategory,
         batchSize: dates.length,
         maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
       });
+    }
     const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(data.userId);
     const items = dates.map((date, index) => ({
       ...draft,

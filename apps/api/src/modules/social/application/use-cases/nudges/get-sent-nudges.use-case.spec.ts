@@ -16,13 +16,14 @@ describe("보낸 콕 목록 조회", () => {
     // Given
     const fixture = createSocialInteractionFixture();
     fixture.addUser("sender", null);
-    for (let index = 0; index < 3; index += 1)
+    for (let index = 0; index < 3; index += 1) {
       fixture.nudgeRepository.seed({
         senderId: "sender",
         receiverId: "receiver",
         readAt: index === 0 ? SOCIAL_TIME : null,
         todoId: 1,
       });
+    }
     // When
     const result = await new GetSentNudges(fixture).execute({ userId: "sender", size: 2 });
     // Then

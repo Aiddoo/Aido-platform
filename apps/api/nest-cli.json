@@ -6,12 +6,6 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "builder": "swc",
-    "typeCheck": true,
-    "assets": [
-      {
-        "include": "generated/prisma8/contract.json",
-        "outDir": "dist"
-      }
-    ]
+    "typeCheck": true
   }
 }

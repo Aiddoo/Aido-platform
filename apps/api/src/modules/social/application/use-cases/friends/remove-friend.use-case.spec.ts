@@ -33,12 +33,13 @@ describe("친구 관계 삭제", () => {
         followingId: "friend",
         status: "ACCEPTED",
       });
-      if (reverseExists)
+      if (reverseExists) {
         fixture.followRepository.seed({
           followerId: "friend",
           followingId: "me",
           status: "ACCEPTED",
         });
+      }
       await fixture.reader.isMutualFriend("me", "friend");
       await fixture.reader.countFriends("me");
       await fixture.reader.getMutualFriendIds("me");

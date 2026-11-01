@@ -15,7 +15,10 @@
  */
 
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api";
+import { eq } from "drizzle-orm";
 import request from "supertest";
+
+import { userPreference } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -114,8 +117,8 @@ describe("사용자 설정 E2E", () => {
         "settings-first-weather@example.com",
         "Test1234!",
       );
-      const table = ctx.testDatabase.getClient().orm.public.UserPreference;
-      await table.where((row) => row.userId.eq(user.userId)).deleteAndCount();
+      const client = ctx.testDatabase.getClient();
+      await client.delete(userPreference).where(eq(userPreference.userId, user.userId));
       const weather = {
         weatherMorningEnabled: false,
         weatherMorningHour: 9,
@@ -139,7 +142,9 @@ describe("사용자 설정 E2E", () => {
       // Then
       expect(response.body.data).toMatchObject(weather);
       expect(reloaded.body.data).toMatchObject(weather);
-      expect(await table.where((row) => row.userId.eq(user.userId)).first()).toMatchObject(weather);
+      expect(
+        await client.query.userPreference.findFirst({ where: { userId: user.userId } }),
+      ).toMatchObject(weather);
     });
 
     it("부분 수정의 false와 0을 저장하고 생략한 날씨 필드와 streak는 보존한다", async () => {
@@ -148,17 +153,18 @@ describe("사용자 설정 E2E", () => {
         "settings-partial-weather@example.com",
         "Test1234!",
       );
-      const table = ctx.testDatabase.getClient().orm.public.UserPreference;
-      await table
-        .where((row) => row.userId.eq(user.userId))
-        .update({
+      const client = ctx.testDatabase.getClient();
+      await client
+        .update(userPreference)
+        .set({
           weatherMorningHour: 9,
           weatherMorningMinute: 37,
           weatherEveningHour: 22,
           weatherEveningMinute: 43,
           currentStreak: 2,
           longestStreak: 4,
-        });
+        })
+        .where(eq(userPreference.userId, user.userId));
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -175,7 +181,9 @@ describe("사용자 설정 E2E", () => {
         weatherEveningHour: 22,
         weatherEveningMinute: 43,
       });
-      expect(await table.where((row) => row.userId.eq(user.userId)).first()).toMatchObject({
+      expect(
+        await client.query.userPreference.findFirst({ where: { userId: user.userId } }),
+      ).toMatchObject({
         currentStreak: 2,
         longestStreak: 4,
       });
@@ -187,7 +195,7 @@ describe("사용자 설정 E2E", () => {
         "settings-timezone-heal@example.com",
         "Test1234!",
       );
-      const table = ctx.testDatabase.getClient().orm.public.UserPreference;
+      const client = ctx.testDatabase.getClient();
       const warm = await request(ctx.app.getHttpServer())
         .get("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -211,7 +219,9 @@ describe("사용자 설정 E2E", () => {
         .toBe("Asia/Seoul");
 
       // Then
-      expect(await table.where((row) => row.userId.eq(user.userId)).first()).toMatchObject({
+      expect(
+        await client.query.userPreference.findFirst({ where: { userId: user.userId } }),
+      ).toMatchObject({
         timezone: "Asia/Seoul",
       });
     });
@@ -222,10 +232,11 @@ describe("사용자 설정 E2E", () => {
         "settings-premium-gate@example.com",
         "Test1234!",
       );
-      const table = ctx.testDatabase.getClient().orm.public.UserPreference;
-      await table
-        .where((row) => row.userId.eq(user.userId))
-        .update({ morningReminderHour: 6, morningReminderMinute: 37, weatherMorningMinute: 43 });
+      const client = ctx.testDatabase.getClient();
+      await client
+        .update(userPreference)
+        .set({ morningReminderHour: 6, morningReminderMinute: 37, weatherMorningMinute: 43 })
+        .where(eq(userPreference.userId, user.userId));
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -244,7 +255,9 @@ describe("사용자 설정 E2E", () => {
         morningReminderMinute: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
         weatherMorningMinute: 43,
       });
-      expect(await table.where((row) => row.userId.eq(user.userId)).first()).toMatchObject({
+      expect(
+        await client.query.userPreference.findFirst({ where: { userId: user.userId } }),
+      ).toMatchObject({
         morningReminderHour: 6,
         morningReminderMinute: 37,
       });

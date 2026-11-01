@@ -5,7 +5,7 @@ import {
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { encodeCreate } from "#api/platform/database/database-records";
+import { weeklyAchievement } from "#api/platform/database/schema/index";
 import { INSIGHTS_TIME } from "#test/fixtures/insights.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -26,18 +26,19 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   afterEach(() => vi.useRealTimers());
 
   async function seedWeeks(userId: string, weeks: readonly number[]) {
-    return context.testDatabase.getClient().orm.public.WeeklyAchievement.createAll(
-      weeks.map((week) =>
-        encodeCreate("WeeklyAchievement", {
+    return context.testDatabase
+      .getClient()
+      .insert(weeklyAchievement)
+      .values(
+        weeks.map((week) => ({
           userId,
           year: 2026,
           week,
           totalTodos: 5,
           completedTodos: 5,
           achievedAt: new Date("2026-03-09T00:00:00.000Z"),
-        }),
-      ),
-    );
+        })),
+      );
   }
 
   it("연도 전체 요약은 페이지 크기와 무관하고 커서로 이전 주차를 중복 없이 이어서 조회한다", async () => {
@@ -47,6 +48,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
       "Test1234!",
     );
     await seedWeeks(user.userId, [1, 2, 3]);
+
     // When
     const first = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements")
@@ -60,6 +62,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     const secondData = weeklyAchievementListResponseSchema.parse(second.body.data);
+
     // Then
     expect(firstData.items.map((item) => item.week)).toEqual([3, 2]);
     expect(firstData.pagination).toEqual({ nextCursor: 2, hasNext: true, size: 2 });
@@ -80,6 +83,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
     const user = await context.helpers.createVerifiedUser("weekly-empty@example.com", "Test1234!");
     const other = await context.helpers.createVerifiedUser("weekly-other@example.com", "Test1234!");
     await seedWeeks(other.userId, [10]);
+
     // When
     const response = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements")
@@ -87,6 +91,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
     const result = weeklyAchievementListResponseSchema.parse(response.body.data);
+
     // Then
     expect(result.items).toEqual([]);
     expect(result.pagination).toEqual({ nextCursor: null, hasNext: false, size: 20 });
@@ -110,16 +115,18 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
         `weekly-detail-${language}@example.com`,
         "Test1234!",
       );
-      await context.testDatabase.getClient().orm.public.WeeklyAchievement.create(
-        encodeCreate("WeeklyAchievement", {
+      await context.testDatabase
+        .getClient()
+        .insert(weeklyAchievement)
+        .values({
           userId: user.userId,
           year: 2026,
           week: 10,
           totalTodos: 10,
           completedTodos: 7,
           achievedAt: new Date("2026-03-09T00:00:00.000Z"),
-        }),
-      );
+        });
+
       // When
       const response = await request(context.app.getHttpServer())
         .get("/v1/weekly-achievements/2026/10")
@@ -127,6 +134,7 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
         .set("Accept-Language", language)
         .expect(200);
       const result = weeklyAchievementDetailResponseSchema.parse(response.body.data);
+
       // Then
       expect(result).toMatchObject({
         year: 2026,
@@ -144,11 +152,13 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   it("year가 없는 목록 요청은 400으로 거절한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("weekly-noyear@example.com", "Test1234!");
+
     // When
     const response = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(400);
+
     // Then
     expect(response.body.success).toBe(false);
   });
@@ -164,11 +174,13 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
       "Test1234!",
     );
     await seedWeeks(other.userId, [10]);
+
     // When
     const response = await request(context.app.getHttpServer())
       .get("/v1/weekly-achievements/2026/10")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(404);
+
     // Then
     expect(response.body.error.code).toBe(ErrorCode.ACHIEVEMENT_1801);
   });
@@ -176,9 +188,11 @@ describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   it.each(["/v1/weekly-achievements?year=2026", "/v1/weekly-achievements/2026/10"])(
     "인증 없는 %s 요청은 401로 거절한다",
     async (path) => {
-      // Given - 인증 헤더가 없는 요청
+      // Given
+
       // When
       const response = await request(context.app.getHttpServer()).get(path).expect(401);
+
       // Then
       expect(response.body.success).toBe(false);
     },

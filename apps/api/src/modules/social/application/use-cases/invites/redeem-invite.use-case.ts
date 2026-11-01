@@ -324,7 +324,9 @@ export class RedeemInvite {
     let pendingCount = 0;
     for (const grant of grants) {
       if (grant.recipientId !== inviteeId || grant.rewardType !== REWARD_TYPE.PREMIUM_DAYS) {
-        if (grant.status !== "APPLIED") pendingCount += 1;
+        if (grant.status !== "APPLIED") {
+          pendingCount += 1;
+        }
         continue;
       }
       if (!(await this.#dependencies.rewardGrantRepository.markApplied(grant.id, appliedAt))) {

@@ -240,7 +240,9 @@ describe("PushNotificationDeliveryService", () => {
     ]);
 
     // Then
-    if (prepared.status !== "ready") throw new Error("전송할 알림 배치가 필요합니다");
+    if (prepared.status !== "ready") {
+      throw new Error("전송할 알림 배치가 필요합니다");
+    }
     expect(prepared.providerPayloads).toEqual([
       { token: "old-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
       { token: "new-token", title: "title-1", body: "body-1", data: { dispatchId: 1 } },
@@ -321,7 +323,9 @@ describe("PushNotificationDeliveryService", () => {
       batchPayload({ userId: "missing", dispatchId: 3 }),
       batchPayload({ userId: "unsupported", dispatchId: 4, requiresFeatureCapability: true }),
     ]);
-    if (prepared.status !== "ready") throw new Error("Expected a prepared batch delivery");
+    if (prepared.status !== "ready") {
+      throw new Error("Expected a prepared batch delivery");
+    }
     const result = await service.sendPreparedBatch(prepared);
 
     expect(pushProvider.sendBatch).toHaveBeenCalledWith([
@@ -373,7 +377,9 @@ describe("PushNotificationDeliveryService", () => {
       batchPayload({ userId: "user-1", dispatchId: 1 }),
       batchPayload({ userId: "user-2", dispatchId: 2 }),
     ]);
-    if (prepared.status !== "ready") throw new Error("Expected a prepared batch delivery");
+    if (prepared.status !== "ready") {
+      throw new Error("Expected a prepared batch delivery");
+    }
     await service.sendPreparedBatch(prepared);
 
     expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"]);
@@ -390,7 +396,9 @@ describe("PushNotificationDeliveryService", () => {
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
     ]);
-    if (prepared.status !== "ready") throw new Error("Expected a prepared batch delivery");
+    if (prepared.status !== "ready") {
+      throw new Error("Expected a prepared batch delivery");
+    }
     const transportError = new RetryablePushProviderTransportError(
       {
         providerName: "expo",

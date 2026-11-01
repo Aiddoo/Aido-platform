@@ -88,7 +88,9 @@ export class FakeAiProvider implements AiProvider {
   }
 
   setResponses(responses: Partial<ParsedTodoData>[]): this {
-    for (const response of responses) this.setResponse(response);
+    for (const response of responses) {
+      this.setResponse(response);
+    }
     return this;
   }
 

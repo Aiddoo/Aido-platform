@@ -99,14 +99,20 @@ describe("받은 콕에 답장", () => {
   ])("$state 상태이면 $code 오류로 거부하고 답장을 저장하지 않는다", async (input) => {
     // Given
     const fixture = replyFixture();
-    if (input.state === "missing") fixture.nudgeRepository.records.delete(fixture.nudge.id);
-    if (input.state === "unfriended") fixture.followRepository.follows.clear();
+    if (input.state === "missing") {
+      fixture.nudgeRepository.records.delete(fixture.nudge.id);
+    }
+    if (input.state === "unfriended") {
+      fixture.followRepository.follows.clear();
+    }
     if (input.state === "private") {
       const todoRecord = fixture.nudgeRepository.todos.get(fixture.todo.id);
       assert.exists(todoRecord);
       todoRecord.visibility = "PRIVATE";
     }
-    if (input.state === "deleted-todo") fixture.nudgeRepository.todos.delete(fixture.todo.id);
+    if (input.state === "deleted-todo") {
+      fixture.nudgeRepository.todos.delete(fixture.todo.id);
+    }
     // When / Then
     await expect(
       fixture.useCase.execute({

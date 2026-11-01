@@ -10,7 +10,7 @@ export const WEEKLY_ACHIEVEMENT_REPOSITORY = Symbol("WEEKLY_ACHIEVEMENT_REPOSITO
  * 주간 달성 저장소 포트.
  *
  * 조회(연도별 커서 페이지네이션·연도 전체·단일 주차)와 일괄 upsert를 추상화한다.
- * 영속 방식(Prisma·트랜잭션)은 인프라 어댑터가 담당한다.
+ * 영속 방식(트랜잭션)은 인프라 어댑터가 담당한다.
  */
 export interface WeeklyAchievementRepositoryPort {
   /** 연도별 주간 달성 기록을 커서 기반 페이지네이션으로 조회 (week 내림차순) */

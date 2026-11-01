@@ -1,41 +1,44 @@
+import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { UserBuilder } from "#test/builders/index";
-import { createMockTransactionHost, databaseFixture, nativeRows } from "#test/mocks/database.mock";
-import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { ReportGenerationProcessor } from "../../processors/reports/report-generation.processor.js";
 import { AI_REPORT_QUEUE } from "./ai-report-queue.js";
 import { ReportGenerationJob } from "./report-generation.job.js";
 
+function createUserQueryHost() {
+  const findMany = vi.fn();
+  const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
+  Object.defineProperty(host, "tx", { get: () => ({ query: { user: { findMany } } }) });
+  return { host, findMany };
+}
+
 describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
   let job: ReportGenerationJob;
-  let database: MockDatabaseContext;
+  let findMany: ReturnType<typeof createUserQueryHost>["findMany"];
   let runtime: Mocked<JobRuntimePort>;
   let processor: Mocked<ReportGenerationProcessor>;
 
   beforeEach(async () => {
-    database = createMockDatabaseContext();
+    const userQuery = createUserQueryHost();
+    findMany = userQuery.findMany;
     runtime = mock<JobRuntimePort>();
     runtime.schedule.mockResolvedValue(undefined);
     runtime.enqueue.mockResolvedValue("job-1");
     processor = mock<ReportGenerationProcessor>();
-    job = new ReportGenerationJob(createMockTransactionHost(database), runtime, processor);
+    job = new ReportGenerationJob(userQuery.host, runtime, processor);
   });
 
   afterEach(() => vi.useRealTimers());
 
   function usersFixture(values: Array<{ id: string; preference: unknown }>) {
-    asMock(database.orm.public.User.all).mockReturnValue(
-      nativeRows(
-        databaseFixture(
-          "User",
-          values.map((value) => ({ ...UserBuilder.create().build(), ...value })),
-        ),
-      ),
+    findMany.mockResolvedValue(
+      values.map((value) => ({ ...UserBuilder.create().build(), ...value })),
     );
   }
 

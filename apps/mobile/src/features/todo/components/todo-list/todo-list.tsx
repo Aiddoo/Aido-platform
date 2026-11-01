@@ -22,7 +22,8 @@ import {
   Result,
   Text,
 } from '@src/shared/ui';
-import { formatDate } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
@@ -68,7 +69,7 @@ export function TodoList() {
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
-      useGetTodosByDateQueryOptions({ date: formatDate(selectedDate) }),
+      useGetTodosByDateQueryOptions({ date: formatDateKey(selectedDate, getDeviceTimezone()) }),
       useGetPreferenceQueryOptions(),
     ],
   });

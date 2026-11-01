@@ -80,7 +80,7 @@ describe("AuthController — 인증 컨트롤러", () => {
       // Then - 서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
       expect(registerUseCase.execute).toHaveBeenCalledWith({
         ...dto,
-        metadata: { ip: "127.0.0.1", userAgent: "test-agent" },
+        metadata: { ip: "127.0.0.1", userAgent: "test-agent", device: {} },
       });
       expect(result).toEqual({
         message: serviceResult.message,
@@ -117,7 +117,7 @@ describe("AuthController — 인증 컨트롤러", () => {
       // Then - 서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
       expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith({
         ...dto,
-        metadata: { ip: "127.0.0.1", userAgent: "test-agent" },
+        metadata: { ip: "127.0.0.1", userAgent: "test-agent", device: {} },
       });
       expect(result).toEqual({
         userId: serviceResult.userId,

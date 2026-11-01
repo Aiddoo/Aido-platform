@@ -10,7 +10,7 @@
  * ```
  */
 
-import type { SecurityEvent, SecurityLog } from "#api/platform/database/database.types";
+import type { SecurityEvent, SecurityLog } from "#test/types/database-rows";
 
 let idCounter = 1;
 

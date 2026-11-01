@@ -1,0 +1,507 @@
+import { sql } from "drizzle-orm";
+import {
+  pgTable,
+  integer,
+  text,
+  timestamp,
+  varchar,
+  boolean,
+  serial,
+  date,
+  jsonb,
+  index,
+  uniqueIndex,
+  foreignKey,
+  primaryKey,
+  unique,
+  check,
+} from "drizzle-orm/pg-core";
+
+import { createEntityId } from "../entity-id.js";
+import {
+  notificationActionType,
+  notificationPurpose,
+  notificationType,
+  platform,
+  pushDeliveryMode,
+  pushDeliveryStatus,
+  pushDispatchOutboxStatus,
+  pushDispatchStatus,
+  pushRateLimitPhase,
+  retentionExperimentStageName,
+  retentionExperimentStageStatus,
+  retentionExperimentVariant,
+  retentionOutboxStatus,
+} from "./enums.schema.js";
+import { user } from "./identity.schema.js";
+
+export const notification = pgTable(
+  "Notification",
+  {
+    actionType: notificationActionType().default("DEEP_LINK").notNull(),
+    actionUrl: varchar({ length: 1000 }),
+    body: varchar({ length: 500 }).notNull(),
+    campaignKey: varchar({ length: 100 }),
+    cheerId: integer(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    friendId: text(),
+    id: serial().primaryKey(),
+    isRead: boolean().default(false).notNull(),
+    metadata: jsonb(),
+    notificationDate: date({ mode: "date" }),
+    nudgeId: integer(),
+    openedAt: timestamp({ precision: 3 }),
+    purpose: notificationPurpose().default("TRANSACTIONAL").notNull(),
+    readAt: timestamp({ precision: 3 }),
+    title: varchar({ length: 200 }).notNull(),
+    todoId: integer(),
+    type: notificationType().notNull(),
+    userId: text().notNull(),
+    variantId: varchar({ length: 100 }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "Notification_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("Notification_comment_actor_cleanup_idx")
+      .using("btree", sql`(metadata ->> 'senderId'::text)`)
+      .where(sql`((metadata ->> 'senderId'::text) IS NOT NULL)`),
+    index("Notification_createdAt_idx").using("btree", table.createdAt.asc().nullsLast()),
+    index("Notification_friend_actor_cleanup_idx")
+      .using("btree", table.friendId.asc().nullsLast())
+      .where(sql`("friendId" IS NOT NULL)`),
+    uniqueIndex("Notification_todo_reminder_dedup")
+      .using(
+        "btree",
+        table.todoId.asc().nullsLast(),
+        table.type.asc().nullsLast(),
+        sql`(metadata ->> 'stage'::text)`,
+      )
+      .where(sql`((type = 'TODO_REMINDER'::"NotificationType") AND ("todoId" IS NOT NULL))`),
+    index("Notification_todoId_type_createdAt_idx").using(
+      "btree",
+      table.todoId.asc().nullsLast(),
+      table.type.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+    ),
+    index("Notification_userId_createdAt_id_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+      table.id.asc().nullsLast(),
+    ),
+    index("Notification_userId_isRead_createdAt_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.isRead.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+    ),
+    index("Notification_userId_type_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.type.asc().nullsLast(),
+    ),
+    index("Notification_userId_type_notificationDate_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.type.asc().nullsLast(),
+      table.notificationDate.asc().nullsLast(),
+    ),
+    check(
+      "Notification_todo_comment_action_url_check",
+      sql`((type <> 'TODO_SHARED'::"NotificationType") OR ("actionType" <> 'DEEP_LINK'::"NotificationActionType") OR ((metadata ->> 'commentId'::text) IS NULL) OR ("actionUrl" IS NULL))`,
+    ),
+    check(
+      "Notification_todo_comment_sender_check",
+      sql`(((metadata ->> 'commentId'::text) IS NULL) OR COALESCE(((jsonb_typeof((metadata -> 'senderId'::text)) = 'string'::text) AND (length((metadata ->> 'senderId'::text)) > 0)), false))`,
+    ),
+  ],
+);
+
+export const pushToken = pgTable(
+  "PushToken",
+  {
+    appVersion: varchar({ length: 30 }),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    deviceId: varchar({ length: 255 }).notNull(),
+    id: serial().primaryKey(),
+    isActive: boolean().default(true).notNull(),
+    lastUsedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    payloadVersion: integer().default(1).notNull(),
+    platform: platform().notNull(),
+    token: varchar({ length: 255 }).notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "PushToken_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushToken_userId_isActive_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.isActive.asc().nullsLast(),
+    ),
+    unique("PushToken_token_key").on(table.token),
+    unique("PushToken_userId_deviceId_key").on(table.userId, table.deviceId),
+  ],
+);
+
+export const pushDailyBudget = pgTable(
+  "PushDailyBudget",
+  {
+    automatedCount: integer().default(0).notNull(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    id: serial().primaryKey(),
+    lastSentAt: timestamp({ precision: 3 }),
+    localDate: date({ mode: "date" }).notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "PushDailyBudget_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    unique("PushDailyBudget_userId_localDate_key").on(table.userId, table.localDate),
+  ],
+);
+
+export const pushDeliveryAttempt = pgTable(
+  "PushDeliveryAttempt",
+  {
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    dispatchId: integer().notNull(),
+    errorCode: varchar({ length: 100 }),
+    errorMessage: varchar({ length: 500 }),
+    expoTicketId: varchar({ length: 100 }),
+    id: serial().primaryKey(),
+    pushTokenId: integer().notNull(),
+    receiptCheckedAt: timestamp({ precision: 3 }),
+    status: pushDeliveryStatus().default("PENDING").notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    tokenFingerprint: varchar({ length: 64 }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.dispatchId],
+      foreignColumns: [pushDispatch.id],
+      name: "PushDeliveryAttempt_dispatchId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    foreignKey({
+      columns: [table.pushTokenId],
+      foreignColumns: [pushToken.id],
+      name: "PushDeliveryAttempt_pushTokenId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushDeliveryAttempt_status_createdAt_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+    ),
+    unique("PushDeliveryAttempt_dispatchId_pushTokenId_key").on(
+      table.dispatchId,
+      table.pushTokenId,
+    ),
+    unique("PushDeliveryAttempt_expoTicketId_key").on(table.expoTicketId),
+  ],
+);
+
+export const pushDispatch = pgTable(
+  "PushDispatch",
+  {
+    campaignKey: varchar({ length: 100 }),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    deliveryAttemptCount: integer().default(0).notNull(),
+    id: serial().primaryKey(),
+    lastError: varchar({ length: 500 }),
+    localDate: date({ mode: "date" }),
+    notificationId: integer().notNull(),
+    openedAt: timestamp({ precision: 3 }),
+    processingJobAttempt: integer(),
+    processingJobId: varchar({ length: 255 }),
+    processingStartedAt: timestamp({ precision: 3 }),
+    purpose: notificationPurpose().notNull(),
+    rateLimitReservedAt: timestamp({ precision: 3 }),
+    scheduledAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    sentAt: timestamp({ precision: 3 }),
+    skipReason: varchar({ length: 100 }),
+    status: pushDispatchStatus().default("PENDING").notNull(),
+    timezone: varchar({ length: 50 }).default("UTC").notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+    variantId: varchar({ length: 100 }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.notificationId],
+      foreignColumns: [notification.id],
+      name: "PushDispatch_notificationId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "PushDispatch_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushDispatch_campaignKey_status_createdAt_idx").using(
+      "btree",
+      table.campaignKey.asc().nullsLast(),
+      table.status.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+    ),
+    index("PushDispatch_processing_lease_idx")
+      .using("btree", table.processingStartedAt.asc().nullsLast())
+      .where(sql`(status = 'PROCESSING'::"PushDispatchStatus")`),
+    index("PushDispatch_status_scheduledAt_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.scheduledAt.asc().nullsLast(),
+    ),
+    index("PushDispatch_userId_localDate_purpose_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.localDate.asc().nullsLast(),
+      table.purpose.asc().nullsLast(),
+    ),
+    unique("PushDispatch_notificationId_key").on(table.notificationId),
+  ],
+);
+
+export const pushDispatchOutbox = pgTable(
+  "PushDispatchOutbox",
+  {
+    availableAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    deliveryMode: pushDeliveryMode().notNull(),
+    dispatchId: integer().primaryKey(),
+    force: boolean().default(false).notNull(),
+    lastError: varchar({ length: 500 }),
+    lockedAt: timestamp({ precision: 3 }),
+    publishAttempts: integer().default(0).notNull(),
+    publishedAt: timestamp({ precision: 3 }),
+    status: pushDispatchOutboxStatus().default("PENDING").notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.dispatchId],
+      foreignColumns: [pushDispatch.id],
+      name: "PushDispatchOutbox_dispatchId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushDispatchOutbox_status_availableAt_dispatchId_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.availableAt.asc().nullsLast(),
+      table.dispatchId.asc().nullsLast(),
+    ),
+    index("PushDispatchOutbox_status_lockedAt_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.lockedAt.asc().nullsLast(),
+    ),
+  ],
+);
+
+export const pushRateLimitReservation = pgTable(
+  "PushRateLimitReservation",
+  {
+    dispatchId: integer().notNull(),
+    localDate: date({ mode: "date" }),
+    phase: pushRateLimitPhase().notNull(),
+    reservedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    userId: text().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.dispatchId, table.phase], name: "PushRateLimitReservation_pkey" }),
+    foreignKey({
+      columns: [table.dispatchId],
+      foreignColumns: [pushDispatch.id],
+      name: "PushRateLimitReservation_dispatchId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushRateLimitReservation_phase_userId_localDate_reservedAt_idx").using(
+      "btree",
+      table.phase.asc().nullsLast(),
+      table.userId.asc().nullsLast(),
+      table.localDate.asc().nullsLast(),
+      table.reservedAt.asc().nullsLast(),
+    ),
+    index("PushRateLimitReservation_phase_userId_reservedAt_idx").using(
+      "btree",
+      table.phase.asc().nullsLast(),
+      table.userId.asc().nullsLast(),
+      table.reservedAt.asc().nullsLast(),
+    ),
+  ],
+);
+
+export const retentionExperimentAssignment = pgTable(
+  "RetentionExperimentAssignment",
+  {
+    assignedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    experimentKey: varchar({ length: 100 }).notNull(),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    startedAt: timestamp({ precision: 3 }),
+    userId: text().notNull(),
+    variant: retentionExperimentVariant().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "RetentionExperimentAssignment_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("RetentionExperimentAssignment_experimentKey_variant_startedAt_i").using(
+      "btree",
+      table.experimentKey.asc().nullsLast(),
+      table.variant.asc().nullsLast(),
+      table.startedAt.asc().nullsLast(),
+    ),
+    unique("RetentionExperimentAssignment_userId_experimentKey_key").on(
+      table.userId,
+      table.experimentKey,
+    ),
+  ],
+);
+
+export const retentionExperimentResult = pgTable(
+  "RetentionExperimentResult",
+  {
+    assignmentId: text().notNull(),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    measuredAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    returnedWithinD7: boolean().notNull(),
+    todoActionWithinD7: boolean().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.assignmentId],
+      foreignColumns: [retentionExperimentAssignment.id],
+      name: "RetentionExperimentResult_assignmentId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("RetentionExperimentResult_measuredAt_idx").using(
+      "btree",
+      table.measuredAt.asc().nullsLast(),
+    ),
+    unique("RetentionExperimentResult_assignmentId_key").on(table.assignmentId),
+  ],
+);
+
+export const retentionExperimentStage = pgTable(
+  "RetentionExperimentStage",
+  {
+    assignmentId: text().notNull(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    notificationId: integer(),
+    processedAt: timestamp({ precision: 3 }),
+    skipReason: varchar({ length: 100 }),
+    stage: retentionExperimentStageName().notNull(),
+    status: retentionExperimentStageStatus().default("SCHEDULED").notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.assignmentId],
+      foreignColumns: [retentionExperimentAssignment.id],
+      name: "RetentionExperimentStage_assignmentId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("RetentionExperimentStage_status_stage_createdAt_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.stage.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+    ),
+    unique("RetentionExperimentStage_assignmentId_stage_key").on(table.assignmentId, table.stage),
+    unique("RetentionExperimentStage_notificationId_key").on(table.notificationId),
+  ],
+);
+
+export const retentionPushOutbox = pgTable(
+  "RetentionPushOutbox",
+  {
+    attempts: integer().default(0).notNull(),
+    availableAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    dispatchId: integer().notNull(),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    lastError: varchar({ length: 500 }),
+    lockedAt: timestamp({ precision: 3 }),
+    notificationId: integer().notNull(),
+    publishedAt: timestamp({ precision: 3 }),
+    stageId: text().notNull(),
+    status: retentionOutboxStatus().default("PENDING").notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.stageId],
+      foreignColumns: [retentionExperimentStage.id],
+      name: "RetentionPushOutbox_stageId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("RetentionPushOutbox_status_availableAt_id_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.availableAt.asc().nullsLast(),
+      table.id.asc().nullsLast(),
+    ),
+    index("RetentionPushOutbox_status_lockedAt_idx").using(
+      "btree",
+      table.status.asc().nullsLast(),
+      table.lockedAt.asc().nullsLast(),
+    ),
+    unique("RetentionPushOutbox_dispatchId_key").on(table.dispatchId),
+    unique("RetentionPushOutbox_notificationId_key").on(table.notificationId),
+    unique("RetentionPushOutbox_stageId_key").on(table.stageId),
+  ],
+);

@@ -58,7 +58,9 @@ export class StreakAtRiskStrategy implements TimezoneReminderStrategy {
         const total = user.todos.length;
         const completed = user.todos.filter((t) => t.completed).length;
 
-        if (completed === total) return null;
+        if (completed === total) {
+          return null;
+        }
 
         const { streak, isAtRisk } = computeEffectiveStreak({
           currentStreak: user.preference?.currentStreak ?? 0,

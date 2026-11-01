@@ -19,7 +19,7 @@ Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버�
 
 ## 기술 스택 (요약)
 
-NestJS 12.2 ESM · Prisma 8 RC (ORM rc.20, CLI rc.27) · PostgreSQL 16 · Expo SDK 58 · React Native 0.88 · React 19.3 · TypeScript 6.0 · Zod 4.3.6 · Oxlint 1.89 · Oxfmt 0.74 · Turbo 2.11 · pnpm 12.15 · Node 24.22.1
+NestJS 12.3 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · Expo SDK 58 · React Native 0.88 · React 19.3 · TypeScript 6.0 · Zod 4.6 · Oxlint 1.90 · Oxfmt 0.75 · Turbo 2.11 · pnpm 12.15 · Node 24.22.1
 
 상세: [README.md](./README.md)
 
@@ -38,20 +38,20 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 
 ## 핵심 명령어
 
-| 명령어              | 설명                          |
-| ------------------- | ----------------------------- |
-| `pnpm install`      | 의존성 설치                   |
-| `pnpm docker:up`    | PostgreSQL 컨테이너 시작      |
-| `pnpm dev`          | 전체 개발 서버                |
-| `pnpm build`        | 전체 빌드                     |
-| `pnpm typecheck`    | 타입 체크                     |
-| `pnpm lint`         | Oxlint 정적 검사              |
-| `pnpm format`       | 코드 포맷팅                   |
-| `pnpm format:check` | Oxfmt 포맷 검사               |
-| `pnpm test`         | 단위 테스트                   |
-| `pnpm test:e2e`     | E2E 테스트                    |
-| `pnpm db:migrate`   | Prisma 8 migration graph 적용 |
-| `pnpm commit`       | Conventional Commit 생성기    |
+| 명령어              | 설명                       |
+| ------------------- | -------------------------- |
+| `pnpm install`      | 의존성 설치                |
+| `pnpm docker:up`    | PostgreSQL 컨테이너 시작   |
+| `pnpm dev`          | 전체 개발 서버             |
+| `pnpm build`        | 전체 빌드                  |
+| `pnpm typecheck`    | 타입 체크                  |
+| `pnpm lint`         | Oxlint 정적 검사           |
+| `pnpm format`       | 코드 포맷팅                |
+| `pnpm format:check` | Oxfmt 포맷 검사            |
+| `pnpm test`         | 단위 테스트                |
+| `pnpm test:e2e`     | E2E 테스트                 |
+| `pnpm db:migrate`   | Drizzle migration 적용     |
+| `pnpm commit`       | Conventional Commit 생성기 |
 
 ---
 
@@ -62,7 +62,7 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 | API 기능 추가·Context 경계 변경  | [`apps/api/AGENTS.md`](apps/api/AGENTS.md), 필요에 따라 [구조](apps/api/.claude/architecture.md)·[코드 규칙](apps/api/.claude/api-conventions.md) |
 | Mobile 기능 추가 (Feature-based) | [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md)                   |
 | Zod 스키마 / DTO 추가            | [`apps/api/.claude/rest-contracts.md`](apps/api/.claude/rest-contracts.md)                                                                        |
-| Prisma 스키마 변경               | [`apps/api/.claude/prisma.md`](apps/api/.claude/prisma.md)                                                                                        |
+| DB 스키마·ORM 변경               | [`apps/api/.claude/drizzle.md`](apps/api/.claude/drizzle.md)                                                                                      |
 | 단위/통합/E2E 테스트             | `apps/{api,mobile}/.claude/testing-guide.md`                                                                                                      |
 | Mobile UI 컴포넌트               | [`apps/mobile/.claude/ui-components.md`](apps/mobile/.claude/ui-components.md)                                                                    |
 | Mobile 다국어 / 문자열 추가      | [`apps/mobile/.claude/i18n-guide.md`](apps/mobile/.claude/i18n-guide.md)                                                                          |

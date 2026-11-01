@@ -1,4 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { z } from 'zod';
 
 /** 마케팅 푸시 옵트인 프롬프트의 도배 방지 상태 (MMKV 저장) */
 export interface MarketingPushPromptState {
@@ -9,6 +10,18 @@ export interface MarketingPushPromptState {
 }
 
 const KEY = 'aido_marketing_push_prompt';
+// 저장소 오염 방어: 유효하지 않은 날짜 문자열은 null로 정규화해 재노출을 허용한다
+// (invalid Date는 throw가 아니라 NaN이므로 하위 정책이 조용히 오작동하는 것을 차단)
+const savedStateSchema = z.object({
+  count: z.number(),
+  lastPromptedAt: z
+    .string()
+    .nullable()
+    .transform((value) =>
+      value != null && !Number.isNaN(new Date(value).getTime()) ? value : null,
+    ),
+});
+
 const EMPTY_STATE: MarketingPushPromptState = { lastPromptedAt: null, count: 0 };
 
 export function readMarketingPushPromptState(storage: SyncStorage): MarketingPushPromptState {
@@ -19,27 +32,8 @@ export function readMarketingPushPromptState(storage: SyncStorage): MarketingPus
   }
 
   try {
-    const parsed: unknown = JSON.parse(saved);
-
-    if (
-      typeof parsed === 'object' &&
-      parsed != null &&
-      'count' in parsed &&
-      'lastPromptedAt' in parsed &&
-      typeof parsed.count === 'number' &&
-      (parsed.lastPromptedAt == null || typeof parsed.lastPromptedAt === 'string')
-    ) {
-      // 저장소 오염 방어: 유효하지 않은 날짜 문자열은 null로 정규화해 재노출을 허용한다
-      // (invalid Date는 throw가 아니라 NaN이므로 하위 정책이 조용히 오작동하는 것을 차단)
-      const lastPromptedAt =
-        typeof parsed.lastPromptedAt === 'string' &&
-        !Number.isNaN(new Date(parsed.lastPromptedAt).getTime())
-          ? parsed.lastPromptedAt
-          : null;
-      return { lastPromptedAt, count: parsed.count };
-    }
-
-    return { ...EMPTY_STATE };
+    const parsed = savedStateSchema.safeParse(JSON.parse(saved));
+    return parsed.success ? parsed.data : { ...EMPTY_STATE };
   } catch {
     return { ...EMPTY_STATE };
   }

@@ -12,7 +12,9 @@ export function parseTimezoneHeader(
   options: TimezoneDecoratorOptions = {},
 ): string | undefined {
   const normalized = normalizeIanaTimezone(header);
-  if (normalized) return normalized;
+  if (normalized) {
+    return normalized;
+  }
   return options.preserveIfMissing ? undefined : "UTC";
 }
 

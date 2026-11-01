@@ -34,7 +34,9 @@ export class ProcessRetentionStages {
   }
 
   async execute(): Promise<void> {
-    if (!this.#dependencies.config.enabled) return;
+    if (!this.#dependencies.config.enabled) {
+      return;
+    }
     const candidates = await this.#dependencies.repository.findScheduledStages(200);
     for (const candidate of candidates) {
       try {
@@ -77,7 +79,9 @@ export class ProcessRetentionStages {
       todoActionWithinWindow: candidate.todoActionWithinWindow,
       activeToday,
     });
-    if (decision.kind === "WAIT") return;
+    if (decision.kind === "WAIT") {
+      return;
+    }
 
     await this.#dependencies.unitOfWork.run(async () => {
       if (candidate.stage === "D7") {

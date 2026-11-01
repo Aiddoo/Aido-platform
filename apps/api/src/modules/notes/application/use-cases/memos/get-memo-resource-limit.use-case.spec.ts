@@ -16,7 +16,9 @@ describe("GetMemoResourceLimit — 메모 사용자 상태", () => {
 
   it.each([0, 5])("현재 사용자 메모 %i개와 최대 20개를 반환한다", async (count) => {
     // Given
-    for (let index = 0; index < count; index++) fixture.addMemo(`메모 ${index}`);
+    for (let index = 0; index < count; index++) {
+      fixture.addMemo(`메모 ${index}`);
+    }
     fixture.addMemo("다른 사용자", 0, "other-user");
     // When
     const result = await new GetMemoResourceLimit(fixture).execute({ userId: fixture.userId });

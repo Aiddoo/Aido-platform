@@ -23,13 +23,14 @@ describe("콕 일일 한도 조회", () => {
       "2026-07-25T14:59:59.999Z",
       "2026-07-25T15:00:00.000Z",
       "2026-07-26T15:00:00.000Z",
-    ])
+    ]) {
       fixture.nudgeRepository.seed({
         senderId: "sender",
         receiverId: "receiver",
         createdAt: new Date(createdAt),
         todoId: 1,
       });
+    }
     fixture.nudgeRepository.seed({ senderId: "other", receiverId: "receiver", todoId: 1 });
     // When
     const result = await new GetNudgeLimit(fixture).execute({

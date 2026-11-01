@@ -1,68 +1,58 @@
-import type { CreateInput } from "@prisma/orm-postgres/orm-client";
+import type { Database } from "#api/platform/database/database.client";
+import {
+  account,
+  pushToken,
+  user,
+  userConsent,
+  userLocation,
+  userPreference,
+  userProfile,
+} from "#api/platform/database/schema/index";
 
-import { createEntityId } from "#api/platform/database/database-values";
-import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
+type RelatedInput<T extends { $inferInsert: { userId: string } }> = Omit<
+  T["$inferInsert"],
+  "userId"
+>;
 
-import type { Contract } from "../../src/generated/prisma8/contract.d.js";
-import { withDatabaseTransaction } from "./database-context.js";
-import type { TestDatabaseClient } from "./test-database.js";
-
-type RelatedInput<M extends "UserProfile" | "UserPreference" | "UserConsent" | "UserLocation"> =
-  Omit<CreateInput<Contract, M, "public">, "userId" | "id"> & { id?: string };
 interface RelatedFixtures {
-  profile?: RelatedInput<"UserProfile">;
-  preference?: RelatedInput<"UserPreference">;
-  consent?: RelatedInput<"UserConsent">;
-  location?: RelatedInput<"UserLocation">;
-  pushTokens?: Omit<CreateInput<Contract, "PushToken", "public">, "userId">;
-  accounts?: Omit<CreateInput<Contract, "Account", "public">, "userId">[];
+  profile?: RelatedInput<typeof userProfile>;
+  preference?: RelatedInput<typeof userPreference>;
+  consent?: RelatedInput<typeof userConsent>;
+  location?: RelatedInput<typeof userLocation>;
+  pushTokens?: RelatedInput<typeof pushToken>;
+  accounts?: RelatedInput<typeof account>[];
 }
 
-/** Native scalar creates share one transaction, matching production user provisioning. */
-export async function createUserDatabaseFixture(
-  client: TestDatabaseClient | Prisma8Transaction,
-  userInput: CreateInput<Contract, "User", "public">,
+/** 운영의 사용자 생성처럼 사용자와 연관 행을 한 트랜잭션에서 만든다. */
+export function createUserDatabaseFixture(
+  client: Database,
+  userInput: typeof user.$inferInsert,
   related: RelatedFixtures,
 ) {
-  const create = async (tx: Prisma8Transaction) => {
-    const user = await tx.orm.public.User.create(userInput);
+  return client.transaction(async (tx) => {
+    const [created] = await tx.insert(user).values(userInput).returning();
+    if (created == null) {
+      throw new Error("user fixture was not created");
+    }
+    const userId = created.id;
     if (related.profile !== undefined) {
-      await tx.orm.public.UserProfile.create({
-        ...related.profile,
-        id: related.profile.id ?? createEntityId(),
-        userId: user.id,
-      });
+      await tx.insert(userProfile).values({ ...related.profile, userId });
     }
     if (related.preference !== undefined) {
-      await tx.orm.public.UserPreference.create({
-        ...related.preference,
-        id: related.preference.id ?? createEntityId(),
-        userId: user.id,
-      });
+      await tx.insert(userPreference).values({ ...related.preference, userId });
     }
     if (related.consent !== undefined) {
-      await tx.orm.public.UserConsent.create({
-        ...related.consent,
-        id: related.consent.id ?? createEntityId(),
-        userId: user.id,
-      });
+      await tx.insert(userConsent).values({ ...related.consent, userId });
     }
     if (related.location !== undefined) {
-      await tx.orm.public.UserLocation.create({
-        ...related.location,
-        id: related.location.id ?? createEntityId(),
-        userId: user.id,
-      });
+      await tx.insert(userLocation).values({ ...related.location, userId });
     }
-    if (related.accounts !== undefined) {
-      await tx.orm.public.Account.createAndCount(
-        related.accounts.map((account) => ({ ...account, userId: user.id })),
-      );
+    if (related.accounts !== undefined && related.accounts.length > 0) {
+      await tx.insert(account).values(related.accounts.map((item) => ({ ...item, userId })));
     }
     if (related.pushTokens !== undefined) {
-      await tx.orm.public.PushToken.create({ ...related.pushTokens, userId: user.id });
+      await tx.insert(pushToken).values({ ...related.pushTokens, userId });
     }
-    return user;
-  };
-  return "runtime" in client ? withDatabaseTransaction(client, create) : create(client);
+    return created;
+  });
 }

@@ -46,7 +46,13 @@ describe("Register — 이메일 계정 등록", () => {
   it("미인증 계정·프로필·동의를 저장하고 인증 메일과 등록 알림을 발송한다", async () => {
     // Given
     const fixture = given({ empty: true });
-    const metadata = { ip: "192.0.2.1", userAgent: "Aido-Test" };
+    const metadata = {
+      ip: "192.0.2.1",
+      userAgent: "Aido-Test",
+      deviceType: "ANDROID",
+      deviceName: "Galaxy S24",
+      device: { devicePlatform: "ANDROID" as const, deviceModel: "Galaxy S24" },
+    };
     // When
     const result = await fixture.useCase.execute({ ...input, metadata });
     // Then
@@ -103,6 +109,9 @@ describe("Register — 이메일 계정 등록", () => {
         email: input.email,
         provider: "credential",
         registeredAt: AUTH_CREDENTIAL_TIME.toISOString(),
+        name: input.name,
+        devicePlatform: "ANDROID",
+        deviceModel: "Galaxy S24",
       },
     ]);
     const logs = JSON.stringify(fixture.logger.log.mock.calls);
@@ -139,9 +148,11 @@ describe("Register — 이메일 계정 등록", () => {
       // When
       const pending = fixture.useCase.execute(input);
       // Then
-      if (emailConflict)
+      if (emailConflict) {
         await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.EMAIL_0501 });
-      else await expect(pending).rejects.toBe(error);
+      } else {
+        await expect(pending).rejects.toBe(error);
+      }
       expect(fixture.emailSender.getSentCount()).toBe(0);
       expect(fixture.adminEventNotifier.notifications).toEqual([]);
     },

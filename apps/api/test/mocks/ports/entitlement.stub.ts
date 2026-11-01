@@ -20,7 +20,9 @@ export class StubEntitlementDatabase implements EntitlementDatabasePort {
   readonly resourceBonuses = new Map<string, ResourceBonuses>();
   async findUserState(userId: string): Promise<EntitlementUserState | null> {
     const user = this.users.get(userId);
-    if (user == null) return null;
+    if (user == null) {
+      return null;
+    }
     return {
       role: user.role,
       subscriptionStatus: user.subscriptionStatus,
@@ -39,7 +41,9 @@ export class StubEntitlementCache implements EntitlementCachePort {
     factory: () => Promise<CachedSubscriptionState>,
   ): Promise<CachedSubscriptionState | null> {
     const cached = this.snapshots.get(userId);
-    if (cached) return { ...cached };
+    if (cached) {
+      return { ...cached };
+    }
     const snapshot = await factory();
     this.snapshots.set(userId, { ...snapshot });
     return snapshot;

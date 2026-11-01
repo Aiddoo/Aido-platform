@@ -17,7 +17,9 @@ export class ActivateRetentionExperiment {
   }
 
   async execute(userId: string): Promise<void> {
-    if (!this.#dependencies.config.enabled) return;
+    if (!this.#dependencies.config.enabled) {
+      return;
+    }
     await this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.repository.activate(userId, new Date()),
     );

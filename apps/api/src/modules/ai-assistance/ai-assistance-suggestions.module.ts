@@ -21,7 +21,7 @@ import { RecurringTodoCreatorAdapter } from "./infrastructure/adapters/suggestio
 import { WeeklyReportReaderAdapter } from "./infrastructure/adapters/suggestions/weekly-report-reader.adapter.js";
 import { AiSuggestionQueueMaintenanceService } from "./infrastructure/jobs/suggestions/ai-suggestion-queue-maintenance.service.js";
 import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestions/suggestion-analysis.job.js";
-import { PrismaAiSuggestionRepository } from "./infrastructure/persistence/suggestions/prisma-ai-suggestion.repository.js";
+import { DrizzleAiSuggestionRepository } from "./infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository.js";
 import { SuggestionAnalysisProcessor } from "./infrastructure/processors/suggestions/suggestion-analysis.processor.js";
 import { AiSuggestionController } from "./presentation/controllers/suggestions/ai-suggestion.controller.js";
 
@@ -56,7 +56,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
   providers: [
     {
       provide: AI_SUGGESTION_REPOSITORY,
-      useClass: PrismaAiSuggestionRepository,
+      useClass: DrizzleAiSuggestionRepository,
     },
     { provide: RECURRING_TODO_CREATOR, useClass: RecurringTodoCreatorAdapter },
     { provide: WEEKLY_REPORT_READER, useClass: WeeklyReportReaderAdapter },

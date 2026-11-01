@@ -187,7 +187,9 @@ export class PushDeliveryEligibilityService {
         candidate.data.force === true &&
         candidate.data.purpose !== "ENGAGEMENT" &&
         !isMarketingNotification(candidate.data.type);
-      if (forced) return { status: "eligible", candidate };
+      if (forced) {
+        return { status: "eligible", candidate };
+      }
 
       const reason = this.#batchSettingsSkipReason(candidate.data, recipient);
       return reason ? this.#skipped(candidate, reason) : { status: "eligible", candidate };
@@ -216,8 +218,12 @@ export class PushDeliveryEligibilityService {
     data: CreateNotificationData,
     recipient: BatchPushDeliveryRecipient | undefined,
   ): PushDispatchSkipReason | null {
-    if (!recipient?.preference) return "PUSH_SETTINGS_MISSING";
-    if (!recipient.preference.pushEnabled) return "PUSH_DISABLED";
+    if (!recipient?.preference) {
+      return "PUSH_SETTINGS_MISSING";
+    }
+    if (!recipient.preference.pushEnabled) {
+      return "PUSH_DISABLED";
+    }
 
     const isMarketing = data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
     if (isNightTime(recipient.timezone) && isMarketing) {

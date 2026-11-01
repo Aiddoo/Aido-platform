@@ -116,7 +116,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     }
     const data = parsedResponse.data;
 
-    const resultCode = data?.response?.header?.resultCode;
+    const resultCode = data.response?.header?.resultCode;
     if (resultCode !== "00") {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
@@ -127,7 +127,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
       return null;
     }
 
-    const items = data?.response?.body?.items?.item;
+    const items = data.response?.body?.items?.item;
     if (!items || items.length === 0) {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,

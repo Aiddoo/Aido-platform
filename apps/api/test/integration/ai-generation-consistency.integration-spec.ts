@@ -1,9 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
+import { and, eq, sql } from "drizzle-orm";
 
 import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
-import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/prisma-entitlement.reader";
+import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import type {
   GenerateStructuredOptions,
   GenerateStructuredResult,
@@ -16,21 +17,27 @@ import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/applicat
 import { HandleSuggestionAction } from "#api/modules/ai-assistance/application/use-cases/suggestions/handle-suggestion-action.use-case";
 import { AiReportJobName } from "#api/modules/ai-assistance/infrastructure/jobs/reports/ai-report-queue";
 import { AiSuggestionJobName } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/ai-suggestion-queue";
-import { PrismaAiReportRepository } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-ai-report.repository";
-import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
-import { PrismaAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/prisma-ai-suggestion.repository";
+import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-ai-report.repository";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
+import { DrizzleAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
 import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
-import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
+import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId, varchar } from "#api/platform/database/database-values";
-import type { User } from "#api/platform/database/database.types";
-import { databaseSqlState } from "#api/platform/database/prisma-error.util";
+import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  aiReport,
+  dailyCompletion,
+  recurringSuggestion,
+  todo,
+  todoCategory,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import {
   TEST_AI_TASK_SETTINGS,
@@ -40,14 +47,10 @@ import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-quota.stub";
-import {
-  createDatabaseTransactionFixture,
-  createTestClient,
-  createTestDatabaseService,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+import type { User } from "#test/types/database-rows";
 
 const CURRENT_TIME = new Date("2026-10-08T02:00:00Z");
 
@@ -65,7 +68,7 @@ class GatedAiProvider extends FakeAiProvider {
   }
 }
 
-class FailingSuggestionRepository extends PrismaAiSuggestionRepository {
+class FailingSuggestionRepository extends DrizzleAiSuggestionRepository {
   override createMany(inputs: CreateSuggestionInput[]) {
     return super.createMany(inputs.map((input) => ({ ...input, userId: "missing-ai-user" })));
   }
@@ -77,9 +80,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let memory: InMemoryCacheAdapter;
   let entitlement: EntitlementService;
-  let suggestions: PrismaAiSuggestionRepository;
-  let reports: PrismaAiReportRepository;
-  let users: UserRepository;
+  let suggestions: DrizzleAiSuggestionRepository;
+  let reports: DrizzleAiReportRepository;
+  let users: DrizzleUserRepository;
   let userId: string;
   let categoryId: number;
 
@@ -94,24 +97,22 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     fixture = createDatabaseTransactionFixture(client);
     memory = new InMemoryCacheAdapter({ defaultTtlMs: 600_000, maxItems: 20 });
     entitlement = new EntitlementService({
-      database: new PrismaEntitlementReader(fixture.txHost),
+      database: new DrizzleEntitlementReader(fixture.txHost),
       cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
     });
-    suggestions = new PrismaAiSuggestionRepository(fixture.txHost);
-    reports = new PrismaAiReportRepository(fixture.txHost);
-    users = new UserRepository(fixture.txHost);
+    suggestions = new DrizzleAiSuggestionRepository(fixture.txHost);
+    reports = new DrizzleAiReportRepository(fixture.txHost);
+    users = new DrizzleUserRepository(fixture.txHost);
     userId = createEntityId();
-    await client.orm.public.User.create(
-      encodeCreate("User", UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" })),
-    );
-    const category = decodeRecord(
-      "TodoCategory",
-      await client.orm.public.TodoCategory.create(
-        encodeCreate("TodoCategory", { userId, name: "독서", color: "#3B82F6", sortOrder: 0 }),
-      ),
-    );
-    categoryId = category.id;
-    await client.orm.public.Todo.createAndCount(
+    await client
+      .insert(userTable)
+      .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
+    const [category] = await client
+      .insert(todoCategory)
+      .values({ userId, name: "독서", color: "#3B82F6", sortOrder: 0 })
+      .returning();
+    categoryId = requireRecord(category).id;
+    await client.insert(todo).values(
       ["2026-10-01", "2026-10-02", "2026-10-03"].map((date) => {
         const { id: _id, ...row } = TodoFixture.create({
           userId,
@@ -119,7 +120,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           title: "책 읽기 10분",
           startDate: new Date(`${date}T00:00:00Z`),
         });
-        return encodeCreate("Todo", row);
+        return row;
       }),
     );
   });
@@ -139,9 +140,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   function generation(provider: FakeAiProvider, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
-    const service = createTestDatabaseService(client);
     const consentReader = new AiDataSharingConsentReader({
-      consentRepository: new UserConsentRepository(fixture.txHost),
+      consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
     });
     const contextBuilder = new SuggestionContextBuilder({
       repository,
@@ -153,21 +153,20 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       repository,
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
-      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
+      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
-      // 이 파일의 제안 응답 fixture는 v1 모양이다.
       settings: TEST_AI_TASK_SETTINGS_V1,
     });
     const report = new GenerateReport({
       aiReportRepository: reports,
-      todoStatsReader: new PrismaTodoStatsReader(fixture.txHost, service),
+      todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost),
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
-      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
+      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,
@@ -184,7 +183,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           return null;
         },
       },
-      service,
+      fixture.txHost,
     );
     return { analyze, report, reportProcessor, suggestionProcessor, notifications };
   }
@@ -208,21 +207,20 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   }
 
   async function patchUser(patch: Partial<User>) {
-    await client.orm.public.User.where({ id: userId }).update(encodePatch("User", patch));
+    await client.update(userTable).set(patch).where(eq(userTable.id, userId));
   }
 
   it("LA 분석의 DATE 월요일 완료율은 일요일로 이동하지 않는다", async () => {
     // Given
-    await client.orm.public.DailyCompletion.create(
-      encodeCreate("DailyCompletion", {
-        id: createEntityId(),
-        userId,
-        date: new Date("2026-10-05T00:00:00Z"),
-        totalTodos: 2,
-        completedTodos: 2,
-        achievedAt: new Date("2026-10-05T12:00:00Z"),
-      }),
-    );
+    await client.insert(dailyCompletion).values({
+      id: createEntityId(),
+      userId,
+      date: new Date("2026-10-05T00:00:00Z"),
+      totalTodos: 2,
+      completedTodos: 2,
+      achievedAt: new Date("2026-10-05T12:00:00Z"),
+    });
+
     // When
     const rates = await suggestions.findDayCompletionRates(
       userId,
@@ -230,6 +228,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       CURRENT_TIME,
       "America/Los_Angeles",
     );
+
     // Then
     expect(rates.find((rate) => rate.day === "MON")).toMatchObject({ total: 2, completed: 2 });
     expect(rates.find((rate) => rate.day === "SUN")).toMatchObject({ total: 0, completed: 0 });
@@ -252,8 +251,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     "$timezone 추천의 DATE 조회 범위는 UTC 날짜 대신 사용자 현지 날짜를 포함한다",
     async ({ timezone, from, to, dates }) => {
       // Given
-      await client.orm.public.Todo.where({ userId }).deleteAndCount();
-      await client.orm.public.Todo.createAndCount(
+      await client.delete(todo).where(eq(todo.userId, userId));
+      await client.insert(todo).values(
         dates.map((date) => {
           const { id: _id, ...row } = TodoFixture.create({
             userId,
@@ -263,21 +262,20 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             completed: true,
             completedAt: new Date(`${date}T12:00:00Z`),
           });
-          return encodeCreate("Todo", row);
+          return row;
         }),
       );
-      await client.orm.public.DailyCompletion.createAndCount(
-        dates.map((date) =>
-          encodeCreate("DailyCompletion", {
-            id: createEntityId(),
-            userId,
-            date: new Date(`${date}T00:00:00Z`),
-            totalTodos: 1,
-            completedTodos: 1,
-            achievedAt: new Date(`${date}T12:00:00Z`),
-          }),
-        ),
+      await client.insert(dailyCompletion).values(
+        dates.map((date) => ({
+          id: createEntityId(),
+          userId,
+          date: new Date(`${date}T00:00:00Z`),
+          totalTodos: 1,
+          completedTodos: 1,
+          achievedAt: new Date(`${date}T12:00:00Z`),
+        })),
       );
+
       // When
       const start = new Date(from);
       const end = new Date(to);
@@ -287,6 +285,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         suggestions.findTimeCompletionRates(userId, start, end, timezone),
         suggestions.findCategoryCompletionRates(userId, start, end, timezone),
       ]);
+
       // Then
       expect(todos.map((todo) => todo.title)).toEqual([dates[1]]);
       expect(days.reduce((sum, day) => sum + day.total, 0)).toBe(1);
@@ -296,13 +295,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   );
 
   async function counts() {
-    const [report, suggestion] = await Promise.all([
-      client.orm.public.AiReport.where({ userId }).aggregate((a) => ({ count: a.count() })),
-      client.orm.public.RecurringSuggestion.where({ userId }).aggregate((a) => ({
-        count: a.count(),
-      })),
+    const [reports, suggestions] = await Promise.all([
+      client.$count(aiReport, eq(aiReport.userId, userId)),
+      client.$count(recurringSuggestion, eq(recurringSuggestion.userId, userId)),
     ]);
-    return { reports: report.count, suggestions: suggestion.count };
+    return { reports, suggestions };
   }
 
   it.each(["report", "suggestion"] as const)(
@@ -310,8 +307,10 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     async (kind) => {
       // Given
       const provider = new FakeAiProvider();
+
       // When
       const flow = await executeWorker(kind, provider);
+
       // Then
       expect(provider.getCallCount()).toBe(1);
       expect(await counts()).toEqual(
@@ -330,13 +329,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     "보상 기간만 있는 사용자의 $kind worker는 끝나는 시각 $offsetMs ms에 sweep 전이라도 끝 시각부터 저장하지 않는다",
     async ({ kind, offsetMs, expected }) => {
       // Given
-      // 보상 기간 projection은 User를 ACTIVE·만료 = 보상 끝으로 쓰고 sweep 전까지 raw 상태를 그대로 둔다
       const grantEndsAt = new Date(CURRENT_TIME.getTime() + 60_000);
       await patchUser({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: grantEndsAt });
       vi.setSystemTime(new Date(grantEndsAt.getTime() + offsetMs));
       const provider = new FakeAiProvider();
+
       // When
       await executeWorker(kind, provider);
+
       // Then
       expect(await counts()).toEqual(expected);
     },
@@ -346,7 +346,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     "%s 보고서는 저장된 DATE의 월요일·마지막 일요일을 해당 기간에 포함한다",
     async (timezone) => {
       // Given
-      await client.orm.public.Todo.createAndCount(
+      await client.insert(todo).values(
         [
           { date: "2026-09-27", completed: false },
           { date: "2026-09-28", completed: true },
@@ -360,17 +360,19 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
             completed,
             completedAt: completed ? new Date(`${date}T12:00:00Z`) : null,
           });
-          return encodeCreate("Todo", row);
+          return row;
         }),
       );
       const provider = new FakeAiProvider();
       provider.setRawResponse(createReportAiResponse());
+
       // When
       const report = await generation(provider).report.execute({
         userId,
         timezone,
         type: "WEEKLY",
       });
+
       // Then
       expect(report?.stats).toMatchObject({ totalTodos: 5, completedTodos: 2, completionRate: 40 });
       expect(report?.dayPatterns.find((day) => day.day === "MON")?.total).toBe(1);
@@ -391,10 +393,12 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       expect(await entitlement.hasPremiumAccess(userId)).toBe(true);
       await patchUser(patch);
       expect(await entitlement.hasPremiumAccess(userId)).toBe(true);
+
       // When
       for (const kind of ["report", "suggestion"] as const) {
         const provider = new FakeAiProvider();
         const flow = await executeWorker(kind, provider);
+
         // Then
         expect(provider.getCallCount()).toBe(0);
         expect(flow.notifications).toHaveLength(0);
@@ -415,6 +419,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           throw new Error("AI 진입 전 종료");
         }),
       ]);
+
       // When
       try {
         await patchUser({ subscriptionStatus: "FREE" });
@@ -422,6 +427,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         provider.released.resolve();
       }
       const flow = await work;
+
       // Then
       expect(provider.getCallCount()).toBe(1);
       expect(await counts()).toEqual({ reports: 0, suggestions: 0 });
@@ -455,37 +461,36 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         suggestedCategoryId: categoryId,
       },
     ]);
-    const before = await client.orm.public.RecurringSuggestion.where({ userId })
-      .orderBy((row) => row.id.asc())
-      .all();
+    const before = await client.query.recurringSuggestion.findMany({
+      where: { userId },
+      orderBy: { id: "asc" },
+    });
     const provider = new FakeAiProvider();
     provider.setRawResponse({ patterns: [createDetectedPattern()] });
     const flow = generation(provider, new FailingSuggestionRepository(fixture.txHost));
+
     // When
     const error = await flow.analyze
       .execute(userId, "Asia/Seoul", null)
       .catch((failure: unknown) => failure);
+
     // Then
     expect(databaseSqlState(error)).toBe("23503");
     expect(
-      await client.orm.public.RecurringSuggestion.where({ userId })
-        .orderBy((row) => row.id.asc())
-        .all(),
+      await client.query.recurringSuggestion.findMany({
+        where: { userId },
+        orderBy: { id: "asc" },
+      }),
     ).toEqual(before);
   });
 
   async function waitForLocks(count: number) {
     await vi.waitFor(
       async () => {
-        const rows = await client
-          .runtime()
-          .query(
-            client.raw
-              .sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`
-              .returnsRow({ count: "pg/int4@1" })
-              .build(),
-          );
-        expect(rows[0]?.count).toBe(count);
+        const waiting = await client.execute<{ count: number }>(
+          sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`,
+        );
+        expect(waiting.rows[0]?.count).toBe(count);
       },
       { timeout: 5000, interval: 10 },
     );
@@ -497,10 +502,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     provider.setRawResponse({ patterns: [createDetectedPattern()] });
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const changing = withDatabaseTransaction(client, async (tx) => {
-      await tx.orm.public.User.where({ id: userId }).update(
-        encodePatch("User", { subscriptionStatus: "FREE" }),
-      );
+    const changing = client.transaction(async (tx) => {
+      await tx
+        .update(userTable)
+        .set({ subscriptionStatus: "FREE" })
+        .where(eq(userTable.id, userId));
       acquired.resolve();
       await released.promise;
     });
@@ -510,6 +516,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         throw new Error("잠금 조기 종료");
       }),
     ]);
+
     // When
     const analysis = generation(provider).analyze.execute(userId, "Asia/Seoul", null);
     try {
@@ -519,6 +526,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       await changing;
       await analysis;
     }
+
     // Then
     expect(await analysis).toBe(0);
     expect(provider.getCallCount()).toBe(1);
@@ -539,8 +547,13 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         expiresAt: new Date("2026-10-22T00:00:00Z"),
       },
     ]);
-    const row = await client.orm.public.RecurringSuggestion.where({ userId }).select("id").first();
-    if (row === null) throw new Error("제안 fixture 생성 실패");
+    const row = await client.query.recurringSuggestion.findFirst({
+      columns: { id: true },
+      where: { userId },
+    });
+    if (row == null) {
+      throw new Error("제안 fixture 생성 실패");
+    }
     return row.id;
   }
 
@@ -564,7 +577,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         title: input.title,
         startDate: new Date("2026-10-12T00:00:00Z"),
       });
-      await fixture.txHost.tx.orm.public.Todo.create(encodeCreate("Todo", row));
+      await fixture.txHost.tx.insert(todo).values(row);
       return { count: 1 };
     },
   };
@@ -574,11 +587,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const suggestionId = await seedSuggestion();
     const entered = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (tx) => {
-      await tx.query(
-        tx.raw.sql`SELECT "id" FROM "RecurringSuggestion" WHERE "id"=${suggestionId} FOR UPDATE`
-          .returnsRow({ id: "pg/int4@1" })
-          .build(),
+    const holding = client.transaction(async (tx) => {
+      await tx.execute(
+        sql`SELECT "id" FROM "RecurringSuggestion" WHERE "id"=${suggestionId} FOR UPDATE`,
       );
       entered.resolve();
       await released.promise;
@@ -589,6 +600,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         throw new Error("잠금 조기 종료");
       }),
     ]);
+
     // When
     const useCase = action(creator);
     const outcomes = Promise.allSettled(
@@ -611,6 +623,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       await holding;
       await outcomes;
     }
+
     // Then
     const result = await outcomes;
     expect(result.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
@@ -619,12 +632,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       reason: { errorCode: ErrorCode.AI_1306 },
     });
     expect(
-      await client.orm.public.Todo.where({ userId, title: varchar("독서 5분", 200) }).aggregate(
-        (a) => ({
-          count: a.count(),
-        }),
-      ),
-    ).toEqual({ count: 1 });
+      await client.$count(todo, and(eq(todo.userId, userId), eq(todo.title, "독서 5분"))),
+    ).toBe(1);
     expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("ACCEPTED");
   });
 
@@ -639,6 +648,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       categoryId,
       timezone: "Asia/Seoul",
     };
+
     // When
     await expect(
       action({
@@ -648,15 +658,12 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         },
       }).execute(input),
     ).rejects.toBe(failure);
+
     // Then
     expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("PENDING");
     expect(
-      await client.orm.public.Todo.where({ userId, title: varchar("독서 5분", 200) }).aggregate(
-        (a) => ({
-          count: a.count(),
-        }),
-      ),
-    ).toEqual({ count: 0 });
+      await client.$count(todo, and(eq(todo.userId, userId), eq(todo.title, "독서 5분"))),
+    ).toBe(0);
     await expect(action(creator).execute(input)).resolves.toMatchObject({ createdTodosCount: 1 });
     expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("ACCEPTED");
   });
