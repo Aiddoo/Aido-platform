@@ -63,8 +63,7 @@ export class DrizzleAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort 
     readonly asOf: Date;
   }): Promise<AdminGrowthSummaryCounts> {
     const { cohortFrom, cohortTo } = input;
-    const asOf = input.asOf.toISOString();
-    const asOfTimestamp = sql`${asOf}::TIMESTAMP`;
+    const asOfTimestamp = sql.param(input.asOf, user.createdAt);
 
     const { rows } = await this.txHost.tx.execute<GrowthSummaryRow>(sql`
       WITH measurement AS (
@@ -104,7 +103,7 @@ export class DrizzleAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort 
               )
           )::DATE AS "signupLocalDate",
           (
-            ${asOf}::TIMESTAMPTZ AT TIME ZONE COALESCE(
+            ${sql.param(input.asOf, user.createdAt)}::TIMESTAMPTZ AT TIME ZONE COALESCE(
               valid_activity_timezone.name,
               valid_preference_timezone.name,
               'UTC'

@@ -59,7 +59,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
       return [];
     }
 
-    const receiptCheckedAt = now().toISOString();
+    const receiptCheckedAt = now();
     const values = results.map(
       (result) => sql`(
         ${result.ticketId}::VARCHAR(100),
@@ -74,8 +74,8 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
         SET "status" = receipt."status",
             "errorCode" = receipt."errorCode",
             "errorMessage" = receipt."errorMessage",
-            "receiptCheckedAt" = ${receiptCheckedAt}::TIMESTAMP(3),
-            "updatedAt" = ${receiptCheckedAt}::TIMESTAMP(3)
+            "receiptCheckedAt" = ${sql.param(receiptCheckedAt, pushDeliveryAttempt.receiptCheckedAt)},
+            "updatedAt" = ${sql.param(receiptCheckedAt, pushDeliveryAttempt.updatedAt)}
         FROM (VALUES ${sql.join(values, sql`, `)}) AS receipt("ticketId", "status", "errorCode", "errorMessage")
         WHERE attempt."expoTicketId" = receipt."ticketId"
           AND attempt."status" = 'TICKET_ACCEPTED'

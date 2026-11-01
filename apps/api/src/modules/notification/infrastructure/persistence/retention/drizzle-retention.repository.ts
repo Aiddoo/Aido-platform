@@ -22,6 +22,7 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import type {
   ClaimedOutbox,
@@ -234,7 +235,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   async markStageSkipped(stageId: string, reason: string): Promise<boolean> {
     const updated = await this.db
       .update(retentionExperimentStage)
-      .set({ status: "SKIPPED", skipReason: reason, processedAt: new Date() })
+      .set({ status: "SKIPPED", skipReason: reason, processedAt: now() })
       .where(
         and(
           eq(retentionExperimentStage.id, stageId),
@@ -248,7 +249,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   async createDelivery(input: CreateRetentionDeliveryInput): Promise<boolean> {
     const claimed = await this.db
       .update(retentionExperimentStage)
-      .set({ status: "OUTBOXED", processedAt: new Date() })
+      .set({ status: "OUTBOXED", processedAt: now() })
       .where(
         and(
           eq(retentionExperimentStage.id, input.stageId),
@@ -276,7 +277,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       })
       .returning({ id: notification.id });
     const notificationId = requireRecord(createdNotification).id;
-    const localDate = new Date(`${localDateString(new Date(), input.timezone)}T00:00:00.000Z`);
+    const localDate = new Date(`${localDateString(now(), input.timezone)}T00:00:00.000Z`);
     const [createdDispatch] = await this.db
       .insert(pushDispatch)
       .values({
@@ -316,7 +317,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
         set: {
           returnedWithinD7: input.returnedWithinD7,
           todoActionWithinD7: input.todoActionWithinD7,
-          measuredAt: new Date(),
+          measuredAt: now(),
         },
       });
   }
@@ -331,7 +332,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				INNER JOIN ${pushDispatch} AS dispatch
 					ON dispatch."id" = outbox."dispatchId"
 				WHERE outbox."status" = 'PROCESSING'::"RetentionOutboxStatus"
-					AND outbox."lockedAt" < ${cutoff.toISOString()}::TIMESTAMP(3)
+					AND outbox."lockedAt" < ${sql.param(cutoff, retentionPushOutbox.lockedAt)}
 					AND dispatch."status" <> 'PROCESSING'::"PushDispatchStatus"
 				ORDER BY outbox."id" ASC
 				FOR UPDATE OF outbox SKIP LOCKED
@@ -359,7 +360,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				INNER JOIN ${pushDispatch} AS dispatch
 					ON dispatch."id" = outbox."dispatchId"
 				WHERE dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${cutoff.toISOString()}::TIMESTAMP(3)
+					AND dispatch."processingStartedAt" < ${sql.param(cutoff, pushDispatch.processingStartedAt)}
 					AND NOT EXISTS (
 						SELECT 1 FROM ${pushDispatchOutbox} AS general
 						WHERE general."dispatchId" = dispatch."id"
@@ -379,7 +380,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				FROM locked_outboxes
 				WHERE dispatch."id" = locked_outboxes."dispatchId"
 					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${cutoff.toISOString()}::TIMESTAMP(3)
+					AND dispatch."processingStartedAt" < ${sql.param(cutoff, pushDispatch.processingStartedAt)}
 					AND NOT EXISTS (
 						SELECT 1 FROM ${pushDispatchOutbox} AS general
 						WHERE general."dispatchId" = dispatch."id"
@@ -405,21 +406,21 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     );
   }
 
-  async claimOutboxes(limit: number, now: Date): Promise<ClaimedOutbox[]> {
+  async claimOutboxes(limit: number, claimedAt: Date): Promise<ClaimedOutbox[]> {
     return claimedOutboxRowsSchema.parse(
       (
         await this.db.execute<Record<string, unknown>>(sql`
 			UPDATE ${retentionPushOutbox} AS outbox
 			SET
 				"status" = 'PROCESSING',
-				"lockedAt" = ${now.toISOString()}::TIMESTAMP(3),
+				"lockedAt" = ${sql.param(claimedAt, retentionPushOutbox.lockedAt)},
 				"attempts" = outbox."attempts" + 1,
 				"updatedAt" = NOW()
 			WHERE outbox."id" IN (
 				SELECT candidate."id"
 				FROM ${retentionPushOutbox} AS candidate
 				WHERE candidate."status" = 'PENDING'
-					AND candidate."availableAt" <= ${now.toISOString()}::TIMESTAMP(3)
+					AND candidate."availableAt" <= ${sql.param(claimedAt, retentionPushOutbox.availableAt)}
 				ORDER BY candidate."availableAt" ASC, candidate."id" ASC
 				LIMIT ${limit}
 				FOR UPDATE SKIP LOCKED
@@ -433,7 +434,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   async markOutboxPublished(outbox: ClaimedOutbox): Promise<void> {
     await this.db
       .update(retentionPushOutbox)
-      .set({ status: "PUBLISHED", publishedAt: new Date(), lockedAt: null })
+      .set({ status: "PUBLISHED", publishedAt: now(), lockedAt: null })
       .where(
         and(
           eq(retentionPushOutbox.id, outbox.id),
@@ -454,7 +455,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 			UPDATE ${retentionPushOutbox} AS outbox
 			SET
 				"status" = 'PENDING'::"RetentionOutboxStatus",
-				"availableAt" = ${input.availableAt.toISOString()}::TIMESTAMP(3),
+				"availableAt" = ${sql.param(input.availableAt, retentionPushOutbox.availableAt)},
 				"publishedAt" = NULL,
 				"lockedAt" = NULL,
 				"updatedAt" = CURRENT_TIMESTAMP
@@ -545,7 +546,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 					"skipReason" = NULL,
 					"processingJobId" = ${input.processingJobId},
 					"processingJobAttempt" = ${input.processingJobAttempt},
-					"processingStartedAt" = ${input.startedAt.toISOString()}::TIMESTAMP(3),
+					"processingStartedAt" = ${sql.param(input.startedAt, pushDispatch.processingStartedAt)},
 					"deliveryAttemptCount" = dispatch."deliveryAttemptCount" + 1,
 					"lastError" = NULL,
 					"updatedAt" = CURRENT_TIMESTAMP
@@ -704,7 +705,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 			UPDATE ${retentionPushOutbox} AS outbox
 			SET
 				"status" = ${input.hasExhaustedRetries ? "FAILED" : "PENDING"}::"RetentionOutboxStatus",
-				"availableAt" = ${input.availableAt.toISOString()}::TIMESTAMP(3),
+				"availableAt" = ${sql.param(input.availableAt, retentionPushOutbox.availableAt)},
 				"lockedAt" = NULL,
 				"publishedAt" = NULL,
 				"lastError" = ${input.reason.slice(0, 500)},
@@ -729,7 +730,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 			UPDATE ${retentionPushOutbox} AS outbox
 			SET
 				"status" = 'PENDING'::"RetentionOutboxStatus",
-				"availableAt" = ${input.availableAt.toISOString()}::TIMESTAMP(3),
+				"availableAt" = ${sql.param(input.availableAt, retentionPushOutbox.availableAt)},
 				"lockedAt" = NULL,
 				"publishedAt" = NULL,
 				"lastError" = ${input.reason.slice(0, 500)},
@@ -770,7 +771,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       (await (
         await this.db.execute<Record<string, unknown>>(sql`
 			UPDATE ${pushDispatch} AS dispatch
-			SET "rateLimitReservedAt" = ${reservedAt.toISOString()}::TIMESTAMP(3), "updatedAt" = CURRENT_TIMESTAMP
+			SET "rateLimitReservedAt" = ${sql.param(reservedAt, pushDispatch.rateLimitReservedAt)}, "updatedAt" = CURRENT_TIMESTAMP
 			WHERE dispatch."id" = ${fence.dispatchId}
 				AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
 				AND dispatch."processingJobId" = ${fence.processingJobId}
@@ -872,7 +873,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 			UPDATE ${pushDispatch} AS dispatch
 			SET
 				"status" = ${sent ? "SENT" : "FAILED"}::"PushDispatchStatus",
-				"sentAt" = ${sent ? new Date().toISOString() : null}::TIMESTAMP(3),
+				"sentAt" = ${sql.param(sent ? now() : null, pushDispatch.sentAt)},
 				"processingJobId" = NULL,
 				"processingJobAttempt" = NULL,
 				"processingStartedAt" = NULL,

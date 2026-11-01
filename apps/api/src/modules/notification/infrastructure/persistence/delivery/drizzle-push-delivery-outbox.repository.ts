@@ -101,7 +101,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
         INNER JOIN ${pushDispatch} AS dispatch
           ON dispatch."id" = outbox."dispatchId"
         WHERE outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
-          AND outbox."lockedAt" < ${lockedBefore.toISOString()}
+          AND outbox."lockedAt" < ${sql.param(lockedBefore, pushDispatchOutbox.lockedAt)}
           AND dispatch."status" <> 'PROCESSING'::"PushDispatchStatus"
         ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
         FOR UPDATE OF outbox SKIP LOCKED

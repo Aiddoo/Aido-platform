@@ -119,7 +119,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 					"status" = 'PROCESSING'::"PushDispatchStatus",
 					"processingJobId" = ${input.processingJobId},
 					"processingJobAttempt" = ${input.processingJobAttempt},
-					"processingStartedAt" = ${input.startedAt.toISOString()}::TIMESTAMP(3),
+					"processingStartedAt" = ${sql.param(input.startedAt, pushDispatch.processingStartedAt)},
 					"deliveryAttemptCount" = dispatch."deliveryAttemptCount" + 1,
 					"skipReason" = NULL,
 					"lastError" = NULL,
@@ -298,7 +298,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				${input.fence.dispatchId}::INTEGER,
 				${input.fence.processingJobId}::VARCHAR(255),
 				${input.fence.deliveryAttemptCount}::INTEGER,
-				${input.reservedAt.toISOString()}::TIMESTAMP(3)
+				${sql.param(input.reservedAt, pushDispatch.rateLimitReservedAt)}::TIMESTAMP(3)
 			)`,
     );
     const reserved = dispatchRowsSchema.parse(
@@ -535,7 +535,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				${input.fence.deliveryAttemptCount}::INTEGER,
 				${input.error.slice(0, 500)}::VARCHAR(500),
 				${input.reopenOutbox}::BOOLEAN,
-				${input.availableAt.toISOString()}::TIMESTAMP(3)
+				${sql.param(input.availableAt, pushDispatchOutbox.availableAt)}::TIMESTAMP(3)
 			)`,
     );
     const released = releaseRowsSchema.parse(
@@ -597,7 +597,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
           sql`(
             ${item.dispatchId}::INTEGER,
             ${item.publishAttempt}::INTEGER,
-            ${input.availableAt.toISOString()}::TIMESTAMP(3),
+            ${sql.param(input.availableAt, pushDispatchOutbox.availableAt)}::TIMESTAMP(3),
             ${input.error.slice(0, 500)}::VARCHAR(500)
           )`,
         ];
@@ -643,7 +643,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				INNER JOIN ${pushDispatch} AS dispatch
 					ON dispatch."id" = outbox."dispatchId"
 				WHERE dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${startedBefore.toISOString()}::TIMESTAMP(3)
+					AND dispatch."processingStartedAt" < ${sql.param(startedBefore, pushDispatch.processingStartedAt)}
 					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
 				FOR UPDATE OF outbox SKIP LOCKED
 			),
@@ -659,7 +659,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				FROM locked_outboxes
 				WHERE dispatch."id" = locked_outboxes."dispatchId"
 					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${startedBefore.toISOString()}::TIMESTAMP(3)
+					AND dispatch."processingStartedAt" < ${sql.param(startedBefore, pushDispatch.processingStartedAt)}
 				RETURNING dispatch."id"
 			)
 			UPDATE ${pushDispatchOutbox} AS outbox

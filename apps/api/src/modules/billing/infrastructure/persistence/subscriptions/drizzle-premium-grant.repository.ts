@@ -37,10 +37,6 @@ const currentOf = alias(premiumGrant, "current");
 const nextOf = alias(premiumGrant, "next");
 const storeOf = alias(subscription, "store");
 
-function timestampText(value: Date | null) {
-  return value == null ? null : value.toISOString();
-}
-
 @Injectable()
 export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort {
   constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
@@ -112,18 +108,18 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
     if (grants.length === 0) {
       return;
     }
-    const updatedAt = now().toISOString();
+    const updatedAt = now();
     // 행마다 다른 기간은 UPDATE … FROM (VALUES …) 한 문장으로 바꾼다
     const values = grants.map((grant) => {
       const state = grant.toPersistence();
-      return sql`(${grant.id}, ${state.status}, ${timestampText(state.startsAt)}::timestamp(3), ${timestampText(state.endsAt)}::timestamp(3))`;
+      return sql`(${grant.id}, ${state.status}, ${sql.param(state.startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(state.endsAt, premiumGrant.endsAt)}::timestamp(3))`;
     });
     await this.db.execute(sql`
       UPDATE ${premiumGrant}
       SET ${sql.identifier(premiumGrant.status.name)} = changed."status"::"PremiumGrantStatus",
           ${sql.identifier(premiumGrant.startsAt.name)} = changed."startsAt",
           ${sql.identifier(premiumGrant.endsAt.name)} = changed."endsAt",
-          ${sql.identifier(premiumGrant.updatedAt.name)} = ${updatedAt}::timestamp(3)
+          ${sql.identifier(premiumGrant.updatedAt.name)} = ${sql.param(updatedAt, premiumGrant.updatedAt)}
       FROM (VALUES ${sql.join(values, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt")
       WHERE ${premiumGrant.id} = changed."id"
     `);
@@ -210,7 +206,7 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
           ),
           params.after == null
             ? undefined
-            : sql`(${grantOf.endsAt}, ${grantOf.id}) > (${timestampText(params.after.endsAt)}::timestamp(3), ${params.after.grantId})`,
+            : sql`(${grantOf.endsAt}, ${grantOf.id}) > (${sql.param(params.after.endsAt, grantOf.endsAt)}, ${params.after.grantId})`,
         ),
       )
       .orderBy(grantOf.endsAt, grantOf.id)

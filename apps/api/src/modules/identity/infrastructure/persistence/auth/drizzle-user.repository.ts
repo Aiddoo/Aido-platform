@@ -11,7 +11,7 @@ import {
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { user, userProfile } from "#api/platform/database/schema/index";
+import { user, userActivityDay, userProfile } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -163,23 +163,22 @@ export class DrizzleUserRepository
 
   async updateLastActiveAt(id: string, timezone: string, appVersion?: string): Promise<void> {
     const seenAt = now();
-    const seenAtText = seenAt.toISOString();
-    const localDate = startOfDayInTimezone(seenAt, timezone).toISOString().slice(0, 10);
+    const localDate = startOfDayInTimezone(seenAt, timezone);
 
     await this.db.execute(sql`
       WITH updated_user AS (
         UPDATE "User" AS app_user
         SET
           "lastActiveAt" = GREATEST(
-            COALESCE(app_user."lastActiveAt", ${seenAtText}::timestamp(3)),
-            ${seenAtText}::timestamp(3)
+            COALESCE(app_user."lastActiveAt", ${sql.param(seenAt, user.lastActiveAt)}::timestamp(3)),
+            ${sql.param(seenAt, user.lastActiveAt)}::timestamp(3)
           ),
           "lastSeenAppVersion" = COALESCE(${appVersion ?? null}::VARCHAR(30), app_user."lastSeenAppVersion"),
           "lastSeenAppVersionAt" = CASE
             WHEN ${appVersion ?? null}::VARCHAR(30) IS NULL THEN app_user."lastSeenAppVersionAt"
-            ELSE ${seenAtText}::timestamp(3)
+            ELSE ${sql.param(seenAt, user.lastSeenAppVersionAt)}::timestamp(3)
           END,
-          "updatedAt" = GREATEST(app_user."updatedAt", ${seenAtText}::timestamp(3))
+          "updatedAt" = GREATEST(app_user."updatedAt", ${sql.param(seenAt, user.updatedAt)}::timestamp(3))
         WHERE app_user."id" = ${id}
         RETURNING app_user."id"
       )
@@ -192,10 +191,10 @@ export class DrizzleUserRepository
       )
       SELECT
         updated_user."id",
-        ${localDate}::DATE,
+        ${sql.param(localDate, userActivityDay.localDate)}::DATE,
         ${timezone},
-        ${seenAtText}::timestamp(3),
-        ${seenAtText}::timestamp(3)
+        ${sql.param(seenAt, userActivityDay.firstSeenAt)}::timestamp(3),
+        ${sql.param(seenAt, userActivityDay.lastSeenAt)}::timestamp(3)
       FROM updated_user
       ON CONFLICT ("userId", "localDate")
       DO UPDATE SET
