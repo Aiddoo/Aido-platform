@@ -33,7 +33,7 @@ export class DrizzleAdminUserDirectoryAdapter implements AdminUserDirectoryPort 
           deletedAt: { isNull: true },
           status: "ACTIVE",
           ...this.#buildTargetWhere(filter),
-          id: cursor == null ? undefined : { gt: cursor },
+          ...(cursor == null ? {} : { id: { gt: cursor } }),
         },
         orderBy: { id: "asc" },
         limit: BROADCAST_BATCH_SIZE,
