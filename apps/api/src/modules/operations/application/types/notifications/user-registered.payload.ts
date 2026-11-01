@@ -17,4 +17,10 @@ export interface UserRegisteredEventPayload {
   readonly provider: "credential" | "apple" | "google" | "kakao" | "naver";
   /** 가입 시각 (ISO string) */
   readonly registeredAt: string;
+  /** 닉네임/이름 */
+  readonly name?: string;
+  /** 요청에서 확인된 기기 플랫폼 */
+  readonly devicePlatform?: "IOS" | "ANDROID" | "WEB";
+  /** 요청에서 확인된 기기 모델 */
+  readonly deviceModel?: string;
 }

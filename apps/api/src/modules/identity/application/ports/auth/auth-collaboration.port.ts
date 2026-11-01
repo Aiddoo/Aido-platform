@@ -75,6 +75,9 @@ export interface AuthUserRegisteredNotification {
   email: string;
   provider: "credential" | "apple" | "google" | "kakao" | "naver";
   registeredAt: string;
+  name?: string;
+  devicePlatform?: "IOS" | "ANDROID" | "WEB";
+  deviceModel?: string;
 }
 
 export interface AuthRegistrationNotifierPort {
