@@ -171,8 +171,8 @@ pnpm dev
 | integration | `apps/api/test/integration/*.integration-spec.ts`   | 실제 PostgreSQL의 transaction·row lock·동시성·마이그레이션·job      |
 | e2e         | `apps/api/test/e2e/*.e2e-spec.ts`                   | HTTP 검증·권한·응답, OpenAPI와 배포된 앱 버전의 계약 fixture        |
 
-- **격리된 DB**: integration·e2e 실행마다 무작위 이름의 `aido_test_<run-id>` DB를 만들어 마이그레이션을 적용하고, 끝나면 자신이 만든 DB만 정리한다. 로컬은 Testcontainers, CI는 `AIDO_TEST_POSTGRES_URL`의 PostgreSQL service를 쓴다. `DATABASE_URL`은 테스트 DB로 사용하지 않는다.
-- **실행 방식**: unit은 worker 병렬(`maxWorkers: 50%`)로, DB project는 한 DB에서 파일을 직렬·무작위 순서(`sequence.shuffle`)로 실행해 순서 의존을 드러낸다.
+- **격리된 DB**: 실행마다 `aido_test_<run-id>` 템플릿 DB에 마이그레이션을 한 번 적용하고, worker 수만큼 복제한다. 각 worker는 자기 DB만 쓰고, 끝나면 자신이 만든 DB만 정리한다. 로컬은 Testcontainers, CI는 `AIDO_TEST_POSTGRES_URL`의 PostgreSQL service를 쓴다. `DATABASE_URL`은 테스트 DB로 쓰지 않는다.
+- **실행 방식**: unit은 worker 병렬(`maxWorkers: 50%`)이다. integration·e2e는 worker별 DB로 파일 단위 병렬(기본 2~4, `AIDO_TEST_DB_WORKERS`로 조정) + 무작위 순서(`sequence.shuffle`)로 실행해 순서 의존을 드러낸다. 테스트 사이 정리는 FK 트리거를 끈 `DELETE`로 처리한다.
 - **외부 공급자**: Expo Push·Resend·AI SDK는 Fake 또는 고정 HTTP fixture로 격리한다. 실제 유료 호출(`ai:eval`)과 `test:performance`는 CI 밖에서 별도로 실행한다.
 
 상세: [apps/api/.claude/testing-guide.md](./apps/api/.claude/testing-guide.md), [apps/mobile/.claude/testing-guide.md](./apps/mobile/.claude/testing-guide.md)
@@ -184,11 +184,13 @@ flowchart LR
   PR[PR / push] --> Gate[CI Scope<br/>변경 범위 계산]
   Gate --> Lint[Lint & Type Check]
   Gate --> Unit[Test - Mobile & Contracts]
-  Gate --> API[Verify API<br/>unit · integration · e2e · build]
+  Gate --> API[Verify API<br/>unit · integration · 계약 게이트 · build]
   Lint & Unit & API --> Img[Build & Push Image<br/>main 전용, GHCR]
   Img --> Deploy[Deploy to EC2<br/>SSH · migrate → API · health]
 ```
 
+- **E2E**: 전체 e2e는 Actions 사용량을 아끼려고 CI에서 돌리지 않는다. 배포된 앱(1.7.x·1.8.2)의 OpenAPI 계약 게이트(`test:contract`)만 돌리고, 전체 e2e는 로컬 `pnpm test:e2e`로 확인한다.
+- **보안**: 워크플로 권한은 job 단위 최소 권한이고, 액션은 SHA로 고정한다. PR은 Dependency Review, main 이미지는 출처 증명(attestation)과 Trivy, 저장소는 CodeQL로 검사한다.
 - **변경 범위**: `CI Scope` job이 diff로 API·모바일·공유 계약 범위를 계산해 필요한 job만 실행한다. 문서만 바뀌면 heavy job을 건너뛴다.
 - **Stack PR**: 의존하는 PR은 같은 `stack:<release>` 라벨을 달고, 맨 위 tip 하나에만 `ci:stack-tip`을 단다. 중간 PR과 draft의 heavy job은 미루고, tip이 base와 모든 ancestor를 포함한 누적 diff를 한 번 검증한다. 같은 Git tree가 develop·main에 올라가면 tip의 성공 결과를 재사용한다.
 - **이미지**: main의 API 변경이 검증되면 ARM64 API·migrate 이미지를 같은 커밋 SHA 태그로 빌드하고, Trivy(HIGH/CRITICAL) 검사를 통과한 경우에만 GHCR에 push한다.

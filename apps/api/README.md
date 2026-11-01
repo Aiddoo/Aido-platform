@@ -43,7 +43,8 @@ test/                    # integration · e2e · architecture · performance
 | `typecheck`        | `tsc --noEmit`                                      |
 | `test`             | unit (`--project unit`), `test:cov`로 커버리지 포함 |
 | `test:integration` | 실제 PostgreSQL integration                         |
-| `test:e2e`         | HTTP·OpenAPI·released-client 계약                   |
+| `test:e2e`         | HTTP 전체 e2e (로컬 전용, CI 제외)                  |
+| `test:contract`    | 배포된 앱 OpenAPI 계약 게이트 (CI에서 실행)         |
 | `test:performance` | 수동 성능 측정 (CI 밖)                              |
 | `db:generate`      | Drizzle 스키마 변경으로 마이그레이션 SQL 생성       |
 | `db:check`         | 마이그레이션 정합성 검사                            |
