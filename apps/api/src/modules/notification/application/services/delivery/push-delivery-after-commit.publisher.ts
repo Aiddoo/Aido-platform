@@ -22,7 +22,9 @@ export class PushDeliveryAfterCommitPublisher {
   }
 
   register(dispatchIds: readonly number[]): void {
-    if (dispatchIds.length === 0) return;
+    if (dispatchIds.length === 0) {
+      return;
+    }
     const committedDispatchIds = [...dispatchIds];
     this.#dependencies.afterCommit.register(async () => {
       try {

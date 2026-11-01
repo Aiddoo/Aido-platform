@@ -187,7 +187,9 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           ((engagement?.count ?? 0) >= ENGAGEMENT.DAILY_MAX ||
             (engagement?.lastReservedAt != null &&
               now - engagement.lastReservedAt.getTime() < ENGAGEMENT.MIN_INTERVAL_MS)));
-      if (isLimited) return true;
+      if (isLimited) {
+        return true;
+      }
 
       if (request.reserveGeneral && !generalReserved) {
         reservations.push({
@@ -217,7 +219,9 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
       if (!Number.isSafeInteger(request.dispatchId) || request.dispatchId <= 0) {
         throw new Error(`Invalid push dispatch id: ${request.dispatchId}`);
       }
-      if (request.userId.length === 0) throw new Error("Push rate limit user id is required");
+      if (request.userId.length === 0) {
+        throw new Error("Push rate limit user id is required");
+      }
       if (dispatchIds.has(request.dispatchId)) {
         throw new Error(`Duplicate push dispatch id: ${request.dispatchId}`);
       }

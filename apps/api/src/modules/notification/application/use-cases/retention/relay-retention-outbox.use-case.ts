@@ -33,7 +33,9 @@ export class RelayRetentionOutbox {
   }
 
   async execute(): Promise<void> {
-    if (!this.#dependencies.config.enabled) return;
+    if (!this.#dependencies.config.enabled) {
+      return;
+    }
     const now = new Date();
     const cutoff = new Date(now.getTime() - OUTBOX_PROCESSING_LEASE_MS);
     const claimed = await this.#dependencies.unitOfWork.run(async () => {

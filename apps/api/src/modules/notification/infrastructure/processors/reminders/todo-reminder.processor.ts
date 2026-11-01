@@ -44,7 +44,9 @@ export class TodoReminderProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
     await this.runtime.work(
       TODO_REMINDER_QUEUE,
       async (jobs) => {

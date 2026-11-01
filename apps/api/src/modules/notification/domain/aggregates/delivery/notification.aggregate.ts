@@ -36,7 +36,9 @@ export class Notification extends AggregateRoot<NotificationProps> {
         notificationId: this.props.id,
       });
     }
-    if (this.props.isRead) return false;
+    if (this.props.isRead) {
+      return false;
+    }
     this.props.isRead = true;
     return true;
   }

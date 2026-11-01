@@ -52,7 +52,9 @@ export class NotificationDedupAdapter implements NotificationDedupPort {
       notificationDedupKey(type, notificationDate),
       [NOTIFICATION_DEDUP_SENTINEL, ...userIds],
     );
-    if (!notifiedUsers.delete(NOTIFICATION_DEDUP_SENTINEL)) return null;
+    if (!notifiedUsers.delete(NOTIFICATION_DEDUP_SENTINEL)) {
+      return null;
+    }
     return notifiedUsers;
   }
 

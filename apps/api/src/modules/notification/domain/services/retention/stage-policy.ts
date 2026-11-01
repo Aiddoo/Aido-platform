@@ -31,7 +31,9 @@ export function decideRetentionStage(
   const day = localDayDifference(state.startedAt, state.now, state.timezone);
 
   if (stage === "D0") {
-    if (day > 0) return { kind: "SKIP", reason: "D0_COLLIDES_WITH_D1" };
+    if (day > 0) {
+      return { kind: "SKIP", reason: "D0_COLLIDES_WITH_D1" };
+    }
     if (state.now.getTime() - state.startedAt.getTime() < 2 * 60 * 60 * 1000) {
       return { kind: "WAIT" };
     }
@@ -41,7 +43,9 @@ export function decideRetentionStage(
   }
 
   const targetDay = stage === "D1" ? 1 : stage === "D3" ? 3 : 7;
-  if (day < targetDay) return { kind: "WAIT" };
+  if (day < targetDay) {
+    return { kind: "WAIT" };
+  }
   if (day > targetDay) {
     return stage === "D7"
       ? { kind: "EVALUATE_ONLY", reason: "D7_SEND_WINDOW_MISSED" }

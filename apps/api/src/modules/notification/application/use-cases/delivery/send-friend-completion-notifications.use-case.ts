@@ -104,7 +104,9 @@ export class SendFriendCompletionNotifications {
         this.#dependencies.persistBatch.execute(notifications),
       );
     } catch (error) {
-      if (!(error instanceof DuplicateNotificationError)) throw error;
+      if (!(error instanceof DuplicateNotificationError)) {
+        throw error;
+      }
       this.#dependencies.logger.debug({
         event:
           NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_DUPLICATE_PREVENTED,
