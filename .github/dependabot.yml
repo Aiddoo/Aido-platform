@@ -111,7 +111,10 @@ updates:
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
-    directory: '/'
+    # '/'만 지정하면 .github/workflows만 본다. composite action(setup)의 setup-node·pnpm 핀도 함께 갱신한다.
+    directories:
+      - '/'
+      - '/.github/actions/*'
     schedule:
       interval: 'weekly'
       day: 'monday'
@@ -119,6 +122,14 @@ updates:
       timezone: 'Asia/Seoul'
     open-pull-requests-limit: 5
     # cooldown은 github-actions 생태계 미지원 (공식 옵션 레퍼런스 지원 표) — npm 블록에만 적용
+    # 핀 갱신 PR마다 전체 CI가 돈다. minor/patch는 한 PR로 묶고 메이저만 따로 검토한다.
+    groups:
+      github-actions:
+        update-types:
+          - 'minor'
+          - 'patch'
+        patterns:
+          - '*'
     labels:
       - 'dependencies'
       - 'github-actions'
