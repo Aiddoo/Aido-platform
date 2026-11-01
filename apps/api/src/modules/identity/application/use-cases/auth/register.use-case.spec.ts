@@ -51,6 +51,7 @@ describe("Register — 이메일 계정 등록", () => {
       userAgent: "Aido-Test",
       deviceType: "ANDROID",
       deviceName: "Galaxy S24",
+      device: { devicePlatform: "ANDROID" as const, deviceModel: "Galaxy S24" },
     };
     // When
     const result = await fixture.useCase.execute({ ...input, metadata });

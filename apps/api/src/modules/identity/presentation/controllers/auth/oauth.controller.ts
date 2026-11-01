@@ -177,16 +177,11 @@ export class OAuthController {
 
     @Headers("x-app-version") appVersion?: string,
   ) {
-    const metadata = extractMetadata(req);
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "APPLE",
       token: dto.idToken,
       userName: dto.userName,
-      metadata: {
-        ...metadata,
-        deviceName: dto.deviceName ?? metadata.deviceName,
-        deviceType: dto.deviceType ?? metadata.deviceType,
-      },
+      metadata: extractMetadata(req, dto),
       nonce: dto.nonce,
     });
 
@@ -244,16 +239,11 @@ export class OAuthController {
 
     @Headers("x-app-version") appVersion?: string,
   ) {
-    const metadata = extractMetadata(req);
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "GOOGLE",
       token: dto.idToken,
       userName: dto.userName,
-      metadata: {
-        ...metadata,
-        deviceName: dto.deviceName ?? metadata.deviceName,
-        deviceType: dto.deviceType ?? metadata.deviceType,
-      },
+      metadata: extractMetadata(req, dto),
     });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);
@@ -444,16 +434,11 @@ export class OAuthController {
 
     @Headers("x-app-version") appVersion?: string,
   ) {
-    const metadata = extractMetadata(req);
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "KAKAO",
       token: dto.accessToken,
       userName: dto.userName,
-      metadata: {
-        ...metadata,
-        deviceName: dto.deviceName ?? metadata.deviceName,
-        deviceType: dto.deviceType ?? metadata.deviceType,
-      },
+      metadata: extractMetadata(req, dto),
     });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);
@@ -638,16 +623,11 @@ export class OAuthController {
 
     @Headers("x-app-version") appVersion?: string,
   ) {
-    const metadata = extractMetadata(req);
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "NAVER",
       token: dto.accessToken,
       userName: dto.userName,
-      metadata: {
-        ...metadata,
-        deviceName: dto.deviceName ?? metadata.deviceName,
-        deviceType: dto.deviceType ?? metadata.deviceType,
-      },
+      metadata: extractMetadata(req, dto),
     });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);

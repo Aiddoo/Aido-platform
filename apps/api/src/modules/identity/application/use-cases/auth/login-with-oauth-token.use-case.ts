@@ -37,7 +37,6 @@ import type {
   VerifiedProfile,
 } from "../../ports/auth/oauth-identity-provider.port.js";
 import type { LoginResult, RequestMetadata } from "../../types/auth/index.js";
-import { resolveSignupDevice } from "../../utils/auth/signup-device.utils.js";
 import type { IssueLogin } from "./issue-login.use-case.js";
 import type { ProvisionUser } from "./provision-user.use-case.js";
 import type { RestoreAccount } from "./restore-account.use-case.js";
@@ -202,7 +201,7 @@ export class LoginWithOAuthToken {
         provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
         registeredAt: toISOString(now()),
         name: newUser.name,
-        ...resolveSignupDevice(options.metadata),
+        ...options.metadata?.device,
       } satisfies AuthUserRegisteredNotification);
     }
 

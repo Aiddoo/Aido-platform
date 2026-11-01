@@ -28,7 +28,6 @@ import {
   AuthPersistenceConflict,
 } from "../../ports/auth/auth-persistence.port.js";
 import type { VerificationService } from "../../services/auth/verification.service.js";
-import { resolveSignupDevice } from "../../utils/auth/signup-device.utils.js";
 import type { ProvisionUser } from "./provision-user.use-case.js";
 
 export type RegisterInput = Readonly<RegisterBody> & { readonly metadata?: RequestMetadata };
@@ -138,7 +137,7 @@ export class Register {
       provider: "credential",
       registeredAt: toISOString(now()),
       name,
-      ...resolveSignupDevice(metadata),
+      ...metadata?.device,
     } satisfies AuthUserRegisteredNotification);
 
     return {
