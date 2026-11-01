@@ -3,12 +3,14 @@ import { resolve } from "node:path";
 import swc from "unplugin-swc";
 import { defineConfig } from "vitest/config";
 
+import { resolveTestDatabaseWorkerCount } from "./test/setup/test-database-workers.js";
+
 const setupFiles = ["./test/setup/vitest.setup"];
 const databaseProject = {
   globalSetup: "./test/setup/global-setup",
   setupFiles: ["./test/setup-env", ...setupFiles],
-  fileParallelism: false,
-  maxWorkers: 1,
+  fileParallelism: true,
+  maxWorkers: resolveTestDatabaseWorkerCount(),
   sequence: { shuffle: true },
 };
 
@@ -57,6 +59,8 @@ export default defineConfig({
         test: {
           ...databaseProject,
           name: "performance",
+          fileParallelism: false,
+          maxWorkers: 1,
           include: ["test/performance/**/*.performance-spec.ts"],
           testTimeout: 180_000,
         },

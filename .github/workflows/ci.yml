@@ -314,6 +314,7 @@ jobs:
       EMAIL_FROM_NAME: Aido Test
       TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
       NODE_ENV: test
+      AIDO_TEST_DB_WORKERS: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
