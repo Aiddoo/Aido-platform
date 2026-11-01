@@ -73,6 +73,7 @@ catalog:
   '@swc/core': '1.16.20'
   '@types/node': '24.19.2'
   '@vitest/coverage-v8': '5.0.5'
+  'bowser': '2.15.0'
   'dayjs': '1.11.23'
   'es-toolkit': '1.53.0'
   'pg-boss': '12.38.0'
