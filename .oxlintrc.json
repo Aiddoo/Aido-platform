@@ -109,7 +109,7 @@
                 "message": "Domain은 Application·Infrastructure·Presentation에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
@@ -137,7 +137,7 @@
                 "message": "Application은 Infrastructure·Presentation 구현에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
@@ -214,7 +214,7 @@
                 "message": "Shared Domain/Application은 framework·구현·개별 Context에 의존할 수 없습니다."
               },
               {
-                "regex": "^(?:pg|pg-boss|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "regex": "^(?:pg|pg-boss|drizzle-orm|drizzle-kit|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
