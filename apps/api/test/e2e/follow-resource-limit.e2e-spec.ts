@@ -1,4 +1,5 @@
 import { FOLLOW_LIMITS } from "@aido/api";
+import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
  * Follow 리소스 제한 E2E 테스트
@@ -14,7 +15,7 @@ import {
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -90,14 +91,12 @@ describe("팔로우 리소스 제한 E2E", () => {
     it("친구 자리 보너스만큼 한도가 늘고, 넘으면 FOLLOW_0909 details에 보너스를 더한 한도를 싣는다", async () => {
       // Given
       const user = await ctx.helpers.createVerifiedUser("follow-limit-bonus@test.com", password);
-      await ctx.testDatabase.getClient().orm.public.ResourceBonus.create(
-        encodeCreate("ResourceBonus", {
-          userId: user.userId,
-          resource: "FRIEND",
-          quantity: 1,
-          sourceKey: "invite:follow-limit-bonus",
-        }),
-      );
+      await ctx.testDatabase.getClient().insert(resourceBonus).values({
+        userId: user.userId,
+        resource: "FRIEND",
+        quantity: 1,
+        sourceKey: "invite:follow-limit-bonus",
+      });
       const friends: VerifiedUser[] = [];
       for (let i = 0; i < FREE_LIMIT + 2; i++) {
         friends.push(
@@ -130,14 +129,12 @@ describe("팔로우 리소스 제한 E2E", () => {
       try {
         const email = "follow-limit-grant@test.com";
         const user = await ctx.helpers.createVerifiedUser(email, password);
-        await ctx.testDatabase.getClient().orm.public.ResourceBonus.create(
-          encodeCreate("ResourceBonus", {
-            userId: user.userId,
-            resource: "FRIEND",
-            quantity: 1,
-            sourceKey: "invite:follow-limit-grant",
-          }),
-        );
+        await ctx.testDatabase.getClient().insert(resourceBonus).values({
+          userId: user.userId,
+          resource: "FRIEND",
+          quantity: 1,
+          sourceKey: "invite:follow-limit-grant",
+        });
         await ctx.module.get<PremiumGranterPort>(PREMIUM_GRANTER).grant({
           userId: user.userId,
           source: "INVITE",
@@ -171,23 +168,23 @@ describe("팔로우 리소스 제한 E2E", () => {
 
   describe("Premium 유저 무제한", () => {
     it("Free 한도 초과해도 친구 요청 성공하고 maxCount가 null (무제한)", async () => {
-      // Given - 프리미엄 유저 생성 및 구독 상태 변경
+      // Given
       const premiumUser = await ctx.helpers.createVerifiedUser(
         "follow-limit-premium@test.com",
         password,
       );
 
-      const prisma = ctx.testDatabase.getClient();
-      decodeRecord(
-        "User",
-        requireRecord(
-          await prisma.orm.public.User.where((row) => row.id.eq(premiumUser.userId)).update(
-            encodePatch("User", { subscriptionStatus: "ACTIVE" }),
-          ),
-        ),
+      requireRecord(
+        (
+          await ctx.testDatabase
+            .getClient()
+            .update(userTable)
+            .set({ subscriptionStatus: "ACTIVE" })
+            .where(eq(userTable.id, premiumUser.userId))
+            .returning({ id: userTable.id })
+        )[0],
       );
 
-      // FREE_LIMIT + 1명의 친구 후보 생성
       const friends: VerifiedUser[] = [];
       for (let i = 0; i < FREE_LIMIT + 1; i++) {
         const friend = await ctx.helpers.createVerifiedUser(
@@ -197,12 +194,11 @@ describe("팔로우 리소스 제한 E2E", () => {
         friends.push(friend);
       }
 
-      // FREE_LIMIT명과 친구 관계 성립
       for (const friend of friends.slice(0, FREE_LIMIT)) {
         await ctx.helpers.createFriendship(premiumUser, friend);
       }
 
-      // When - FREE_LIMIT + 1번째 친구 요청
+      // When
       const extraFriend = friends[FREE_LIMIT];
       expect(extraFriend).toBeDefined();
 
@@ -211,16 +207,16 @@ describe("팔로우 리소스 제한 E2E", () => {
         .set("Authorization", `Bearer ${premiumUser.accessToken}`)
         .expect(201);
 
-      // Then - 친구 요청 성공
+      // Then
       expect(response.body.data.autoAccepted).toBe(false);
 
-      // When - 리소스 제한 조회
+      // When
       const limitResponse = await request(ctx.app.getHttpServer())
         .get("/v1/follows/resource-limit")
         .set("Authorization", `Bearer ${premiumUser.accessToken}`)
         .expect(200);
 
-      // Then - maxCount가 null (무제한)이고 친구 수는 FREE_LIMIT
+      // Then
       expect(limitResponse.body.data.maxCount).toBeNull();
       expect(limitResponse.body.data.friendCount).toBe(FREE_LIMIT);
     });

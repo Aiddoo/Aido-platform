@@ -1,33 +1,31 @@
 import { ErrorCode } from "@aido/api/errors";
-import postgres from "@prisma/orm-postgres/runtime";
+import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
-import { Pool } from "pg";
-import sql from "sql-template-tag";
+import { z } from "zod";
 
 import { MyInviteReader } from "#api/modules/social/application/services/invites/my-invite.reader";
 import { InviteRedemption } from "#api/modules/social/domain/aggregates/invites/invite-redemption.aggregate";
 import { InviteCode } from "#api/modules/social/domain/value-objects/invites/invite-code.vo";
+import { DrizzleInviteRedemptionRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-invite-redemption.repository";
+import { DrizzleInviteRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-invite.repository";
+import { DrizzleRewardClaimRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-reward-claim.repository";
+import { DrizzleRewardGrantRepository } from "#api/modules/social/infrastructure/persistence/invites/drizzle-reward-grant.repository";
 import { InviteCodeGenerator } from "#api/modules/social/infrastructure/persistence/invites/invite-code.generator";
-import { PrismaInviteRedemptionRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-invite-redemption.repository";
-import { PrismaInviteRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-invite.repository";
-import { PrismaRewardClaimRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-reward-claim.repository";
-import { PrismaRewardGrantRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-reward-grant.repository";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { contract } from "#api/platform/database/database.service";
 import { createEntityId } from "#api/platform/database/entity-id";
-import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
+import {
+  inviteRedemption,
+  rewardClaim,
+  rewardGrant,
+  user as userTable,
+  userProfile,
+} from "#api/platform/database/schema/index";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/user.fixture";
-import { createDatabaseTransactionFixture } from "#test/setup/database-context";
-import { createStatementObserver } from "#test/setup/statement-observer";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 let statements: string[] | null = null;
-const trace = createStatementObserver("invite-query-observer", (statement) => {
-  statements?.push(statement.sql);
-});
 
 class SequenceInviteCodeGenerator extends InviteCodeGenerator {
   #codes: string[] = [];
@@ -43,50 +41,32 @@ class SequenceInviteCodeGenerator extends InviteCodeGenerator {
 
 describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
   const database = new TestDatabase({
-    createClient(url) {
-      // 운영 풀과 같은 설정으로 세션 TimeZone을 확인한다
-      const pool = new Pool({ ...createPostgresPoolConfig(url), max: 4 });
-      const native = postgres({ contract, pg: pool, middleware: [trace] });
-      let closed = false;
-      return {
-        ...native,
-        async close() {
-          if (closed) return;
-          closed = true;
-          await native.close();
-          await pool.end();
-        },
-      };
-    },
+    createClient: (url) =>
+      createTestClient(url, { max: 4 }, (statement) => {
+        statements?.push(statement);
+      }),
   });
   let client: TestDatabaseClient;
   let codeGenerator: SequenceInviteCodeGenerator;
-  let invites: PrismaInviteRepository;
-  let redemptions: PrismaInviteRedemptionRepository;
-  let grants: PrismaRewardGrantRepository;
-  let claims: PrismaRewardClaimRepository;
+  let invites: DrizzleInviteRepository;
+  let redemptions: DrizzleInviteRedemptionRepository;
+  let grants: DrizzleRewardGrantRepository;
+  let claims: DrizzleRewardClaimRepository;
   let unitOfWork: UnitOfWorkPort;
 
   async function createUser(overrides: { userTag: string; name?: string }): Promise<string> {
     const id = createEntityId();
-    await client.orm.public.User.create(
-      encodeCreate(
-        "User",
-        UserFixture.create({
-          id,
-          email: `${overrides.userTag}@example.test`,
-          userTag: overrides.userTag,
-        }),
-      ),
+    await client.insert(userTable).values(
+      UserFixture.create({
+        id,
+        email: `${overrides.userTag}@example.test`,
+        userTag: overrides.userTag,
+      }),
     );
     if (overrides.name != null) {
-      await client.orm.public.UserProfile.create(
-        encodeCreate("UserProfile", {
-          userId: id,
-          name: overrides.name,
-          profileImage: "orange_tabby",
-        }),
-      );
+      await client
+        .insert(userProfile)
+        .values({ userId: id, name: overrides.name, profileImage: "orange_tabby" });
     }
     return id;
   }
@@ -102,7 +82,9 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
         joinedAt,
       }),
     );
-    if (redemption == null) throw new Error("초대 수락 행이 필요합니다");
+    if (redemption == null) {
+      throw new Error("초대 수락 행이 필요합니다");
+    }
     return redemption;
   }
 
@@ -111,10 +93,10 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     unitOfWork = uow;
     codeGenerator = new SequenceInviteCodeGenerator();
-    invites = new PrismaInviteRepository(txHost, codeGenerator);
-    redemptions = new PrismaInviteRedemptionRepository(txHost);
-    grants = new PrismaRewardGrantRepository(txHost);
-    claims = new PrismaRewardClaimRepository(txHost);
+    invites = new DrizzleInviteRepository(txHost, codeGenerator);
+    redemptions = new DrizzleInviteRedemptionRepository(txHost);
+    grants = new DrizzleRewardGrantRepository(txHost);
+    claims = new DrizzleRewardClaimRepository(txHost);
   });
 
   beforeEach(async () => {
@@ -139,27 +121,20 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
       const before = Date.now();
 
       // When
-      const timezone = decodeSqlRows(
-        sqlRowSpec({ TimeZone: "pg/text@1" }),
-        await client.runtime().query(
-          sqlStatement(client, sql`SHOW TimeZone`)
-            .returnsRow(sqlRowSpec({ TimeZone: "pg/text@1" }))
-            .build(),
-        ),
-      );
+      const { rows: timezoneRows } = await client.execute<{ TimeZone: string }>(sql`SHOW TimeZone`);
       const invite = await invites.issue({
         inviterId,
         issuedAt: new Date("2028-02-29T23:59:59.123Z"),
       });
-      const [defaulted] = decodeRecord(
-        "RewardClaim",
-        await client.orm.public.RewardClaim.createAll([
-          encodeCreate("RewardClaim", { claimHash: "a".repeat(64), claimKind: "INSTALLATION" }),
-        ]),
-      );
+      const [defaulted] = await client
+        .insert(rewardClaim)
+        .values({ claimHash: "a".repeat(64), claimKind: "INSTALLATION" })
+        .returning();
 
       // Then
-      expect(timezone).toEqual([{ TimeZone: "UTC" }]);
+      expect(z.array(z.object({ TimeZone: z.string() })).parse(timezoneRows)).toEqual([
+        { TimeZone: "UTC" },
+      ]);
       expect((await invites.findActiveByInviterId(inviterId))?.createdAt).toEqual(
         new Date("2028-02-29T23:59:59.123Z"),
       );
@@ -248,7 +223,7 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
           joinedAt: new Date("2026-11-02T00:00:01Z"),
         }),
       );
-      await client.orm.public.User.where({ id: inviterId }).deleteAndCount();
+      await client.delete(userTable).where(eq(userTable.id, inviterId));
 
       // Then
       expect(duplicate).toBeNull();
@@ -307,25 +282,26 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
         sourceId: string,
         overrides: { status: "PENDING" | "FAILED" | "APPLIED"; attempts: number; at?: Date },
         rewardType: "PREMIUM_DAYS" | "FRIEND_SLOT" = "PREMIUM_DAYS",
-      ) =>
-        encodeCreate("RewardGrant", {
-          recipientId,
-          sourceType: "INVITE_REDEMPTION",
-          sourceId,
-          rewardType,
-          quantity: 1,
-          status: overrides.status,
-          attempts: overrides.attempts,
-          createdAt: overrides.at ?? createdAt,
-        });
-      await client.orm.public.RewardGrant.createAndCount([
-        grant("src-a", { status: "PENDING", attempts: 0 }),
-        grant("src-b", { status: "FAILED", attempts: 5 }),
-        grant("src-c", { status: "FAILED", attempts: 1 }),
-        grant("src-c", { status: "PENDING", attempts: 0 }, "FRIEND_SLOT"),
-        grant("src-d", { status: "APPLIED", attempts: 0 }),
-        grant("src-e", { status: "PENDING", attempts: 0, at: new Date("2026-11-03T00:00:00Z") }),
-      ]);
+      ) => ({
+        recipientId,
+        sourceType: "INVITE_REDEMPTION" as const,
+        sourceId,
+        rewardType,
+        quantity: 1,
+        status: overrides.status,
+        attempts: overrides.attempts,
+        createdAt: overrides.at ?? createdAt,
+      });
+      await client
+        .insert(rewardGrant)
+        .values([
+          grant("src-a", { status: "PENDING", attempts: 0 }),
+          grant("src-b", { status: "FAILED", attempts: 5 }),
+          grant("src-c", { status: "FAILED", attempts: 1 }),
+          grant("src-c", { status: "PENDING", attempts: 0 }, "FRIEND_SLOT"),
+          grant("src-d", { status: "APPLIED", attempts: 0 }),
+          grant("src-e", { status: "PENDING", attempts: 0, at: new Date("2026-11-03T00:00:00Z") }),
+        ]);
       const params = { maxAttempts: 5, createdBefore: new Date("2026-11-02T00:00:00Z"), limit: 1 };
 
       // When
@@ -427,46 +403,39 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
         joinedAt: new Date(Date.UTC(2026, 10, 1, 0, 0, index)),
         userTag: `BLK${String(index).padStart(5, "0")}`,
       }));
-      await client.orm.public.User.createAndCount(
+      await client.insert(userTable).values(
         rows.map((row) =>
-          encodeCreate(
-            "User",
-            UserFixture.create({
-              id: row.userId,
-              email: `${row.userTag}@example.test`,
-              userTag: row.userTag,
-            }),
-          ),
-        ),
-      );
-      await client.orm.public.InviteRedemption.createAndCount(
-        rows.map((row) =>
-          encodeCreate("InviteRedemption", {
-            id: row.redemptionId,
-            inviteId: invite.id,
-            inviterId,
-            inviteeId: row.userId,
-            status: row.status,
-            timezone: "Asia/Seoul",
-            joinedAt: row.joinedAt,
-            qualifiedAt: row.status === "QUALIFIED" ? now : null,
-            expiresAt: new Date("2026-11-15T00:00:00Z"),
+          UserFixture.create({
+            id: row.userId,
+            email: `${row.userTag}@example.test`,
+            userTag: row.userTag,
           }),
         ),
+      );
+      await client.insert(inviteRedemption).values(
+        rows.map((row) => ({
+          id: row.redemptionId,
+          inviteId: invite.id,
+          inviterId,
+          inviteeId: row.userId,
+          status: row.status,
+          timezone: "Asia/Seoul",
+          joinedAt: row.joinedAt,
+          qualifiedAt: row.status === "QUALIFIED" ? now : null,
+          expiresAt: new Date("2026-11-15T00:00:00Z"),
+        })),
       );
       const qualifiedRows = rows.filter((row) => row.status === "QUALIFIED");
-      await client.orm.public.RewardGrant.createAndCount(
-        qualifiedRows.map((row) =>
-          encodeCreate("RewardGrant", {
-            recipientId: inviterId,
-            sourceType: "INVITE_REDEMPTION",
-            sourceId: row.redemptionId,
-            rewardType: "FRIEND_SLOT",
-            quantity: 1,
-            status: "APPLIED",
-            appliedAt: now,
-          }),
-        ),
+      await client.insert(rewardGrant).values(
+        qualifiedRows.map((row) => ({
+          recipientId: inviterId,
+          sourceType: "INVITE_REDEMPTION" as const,
+          sourceId: row.redemptionId,
+          rewardType: "FRIEND_SLOT" as const,
+          quantity: 1,
+          status: "APPLIED" as const,
+          appliedAt: now,
+        })),
       );
       const reader = new MyInviteReader({
         inviteRedemptionRepository: redemptions,

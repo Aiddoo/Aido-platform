@@ -1,5 +1,5 @@
 import type { TestingModule } from "@nestjs/testing";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
@@ -8,12 +8,9 @@ import { RequestPasswordReset } from "#api/modules/identity/application/use-case
 import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
 import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { varchar } from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { securityLog, session as sessionTable } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
-import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -30,11 +27,10 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
   let loginWithPassword: LoginWithPassword;
   let fakeEmailService: FakeEmailService;
   let testDb: TestDatabase;
-  let databaseService: DatabaseService;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
-    databaseService = createTestDatabaseService(await testDb.start());
+    await testDb.start();
     fakeEmailService = new FakeEmailService();
 
     module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
@@ -70,25 +66,18 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
     provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
   ): Promise<string> {
     const userFixture = UserFixture.create({ email });
-    const user = await createUserDatabaseFixture(
-      testDb.getClient(),
-      encodeCreate("User", userFixture),
-      {
-        accounts: [
-          omit(
-            encodeCreate(
-              "Account",
-              AccountFixture.create({
-                userId: userFixture.id,
-                provider,
-                providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
-              }),
-            ),
-            ["id", "userId"],
-          ),
-        ],
-      },
-    );
+    const user = await createUserDatabaseFixture(testDb.getClient(), userFixture, {
+      accounts: [
+        omit(
+          AccountFixture.create({
+            userId: userFixture.id,
+            provider,
+            providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
+          }),
+          ["id", "userId"],
+        ),
+      ],
+    });
     return user.id;
   }
 
@@ -157,17 +146,9 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       // Then
       expect(result.message).toContain("비밀번호가 재설정되었습니다");
 
-      // DB 검증: 비밀번호 해시가 변경됨
-      const prisma = testDb.getClient();
-      const account = decodeRecord(
-        "Account",
-        await prisma.orm.public.Account.where((row) =>
-          and(
-            row.user.some((related) => related.email.eq(varchar(email, 255))),
-            row.provider.eq("CREDENTIAL"),
-          ),
-        ).first(),
-      );
+      const account = await testDb.getClient().query.account.findFirst({
+        where: { provider: "CREDENTIAL", user: { email } },
+      });
       expect(account?.password).toBeTruthy();
     });
 
@@ -215,8 +196,6 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "reset-sessions@example.com";
       const originalPassword = "Password123!";
       await createCredentialUser(email, originalPassword);
-
-      // 로그인하여 세션 생성
       await loginWithPassword.execute({ email, password: originalPassword });
       await loginWithPassword.execute({ email, password: originalPassword });
 
@@ -226,16 +205,13 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       // When
       await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
-      // Then - 모든 세션의 revokedAt이 설정됨
-      const prisma = testDb.getClient();
-      const user = decodeRecord(
-        "User",
-        await prisma.orm.public.User.where((row) => row.email.eq(varchar(email, 255))).first(),
-      );
-      const sessions = decodeRecord(
-        "Session",
-        await prisma.orm.public.Session.where((row) => row.userId.eq(requireRecord(user).id)).all(),
-      );
+      // Then
+      const client = testDb.getClient();
+      const user = await client.query.user.findFirst({ where: { email } });
+      const sessions = await client
+        .select()
+        .from(sessionTable)
+        .where(eq(sessionTable.userId, requireRecord(user).id));
 
       for (const session of sessions) {
         expect(session.revokedAt).not.toBeNull();
@@ -255,17 +231,17 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
       // Then
-      const prisma = testDb.getClient();
-      const user = decodeRecord(
-        "User",
-        await prisma.orm.public.User.where((row) => row.email.eq(varchar(email, 255))).first(),
-      );
-      const logs = decodeRecord(
-        "SecurityLog",
-        await prisma.orm.public.SecurityLog.where((row) =>
-          and(row.userId.eq(requireRecord(user).id), row.event.eq("PASSWORD_CHANGED")),
-        ).all(),
-      );
+      const client = testDb.getClient();
+      const user = await client.query.user.findFirst({ where: { email } });
+      const logs = await client
+        .select()
+        .from(securityLog)
+        .where(
+          and(
+            eq(securityLog.userId, requireRecord(user).id),
+            eq(securityLog.event, "PASSWORD_CHANGED"),
+          ),
+        );
       expect(logs.length).toBeGreaterThanOrEqual(1);
 
       const resetLog = logs.find(

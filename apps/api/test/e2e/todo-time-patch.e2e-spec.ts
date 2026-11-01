@@ -1,8 +1,6 @@
 import request from "supertest";
 import { vi } from "vitest";
 
-import { decodeRecord } from "#api/platform/database/database-records";
-
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("할 일 부분 수정의 로컬 시간 계약", () => {
@@ -56,14 +54,10 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
       .send(body);
   }
   async function savedSchedule() {
-    return decodeRecord(
-      "Todo",
-      await context.testDatabase
-        .getClient()
-        .orm.public.Todo.where({ id: todoId })
-        .select("startDate", "scheduledTime", "endDate")
-        .first(),
-    );
+    return context.testDatabase.getClient().query.todo.findFirst({
+      where: { id: todoId },
+      columns: { startDate: true, scheduledTime: true, endDate: true },
+    });
   }
 
   it("날짜 없이 시간만 수정하면 기존 DATE를 유지하고 요청한 UTC 시각을 저장한다", async () => {

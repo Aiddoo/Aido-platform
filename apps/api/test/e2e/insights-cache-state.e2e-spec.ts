@@ -1,10 +1,12 @@
 import { dailyCompletionsRangeResponseSchema } from "@aido/api";
+import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import {
   TODO_COMPLETION_REPOSITORY,
   type TodoCompletionRepositoryPort,
 } from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
+import { todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,
   destroyE2eApp,
@@ -32,9 +34,11 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   async function prepare(email: string) {
     const user = await context.helpers.createVerifiedUser(email, "CorrectPassword1!");
     const client = context.testDatabase.getClient();
-    const categories = await client.orm.public.TodoCategory.where({ userId: user.userId })
-      .select("id")
-      .all();
+    const categories = await client
+      .select({ id: todoCategory.id })
+      .from(todoCategory)
+      .where(eq(todoCategory.userId, user.userId))
+      .orderBy(todoCategory.id);
     const source = categories[0];
     const target = categories[1];
     if (source === undefined || target === undefined)
@@ -70,6 +74,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
     const { user, sourceId } = await prepare("insights-category-color@example.com");
     const warm = await read(user.accessToken);
     expect(warm.body.data.completions[0].categoryColors).toEqual(["#123456"]);
+
     // When
     await request(context.app.getHttpServer())
       .patch(`/v1/todo-categories/${sourceId}`)
@@ -79,6 +84,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
     const after = await read(user.accessToken);
     expect(after.status).toBe(200);
     dailyCompletionsRangeResponseSchema.parse(after.body.data);
+
     // Then
     expect(after.body.data.completions[0].categoryColors).toEqual(["#ABCDEF"]);
   });
@@ -87,6 +93,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
     // Given
     const { user, sourceId, targetId } = await prepare("insights-category-move@example.com");
     await read(user.accessToken);
+
     // When
     await request(context.app.getHttpServer())
       .delete(`/v1/todo-categories/${sourceId}`)
@@ -96,6 +103,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
     const after = await read(user.accessToken);
     expect(after.status).toBe(200);
     dailyCompletionsRangeResponseSchema.parse(after.body.data);
+
     // Then
     expect(after.body.data.completions[0].categoryColors).toEqual(["#654321"]);
   });
@@ -122,6 +130,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
         throw new Error("집계 gate 이전 종료");
       }),
     ]);
+
     // When
     try {
       await request(context.app.getHttpServer())
@@ -140,11 +149,11 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
     const after = await read(user.accessToken);
     expect(after.status).toBe(200);
     dailyCompletionsRangeResponseSchema.parse(after.body.data);
-    const persisted = await context.testDatabase
-      .getClient()
-      .orm.public.Todo.where({ id: todoId })
-      .select("completed")
-      .first();
+    const persisted = await context.testDatabase.getClient().query.todo.findFirst({
+      where: { id: todoId },
+      columns: { completed: true },
+    });
+
     // Then
     expect(persisted?.completed).toBe(true);
     expect(after.body.data.completions[0].completedTodos).toBe(1);
@@ -153,6 +162,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   it("윤년 2월 29일은 조회하고 존재하지 않는 2월 30일은 400으로 거절한다", async () => {
     // Given
     const { user } = await prepare("insights-invalid-date@example.com");
+
     // When
     const valid = await read(user.accessToken);
     const invalid = await request(context.app.getHttpServer())
@@ -160,6 +170,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
       .set("Authorization", `Bearer ${user.accessToken}`)
       .query({ startDate: "2028-02-30", endDate: "2028-02-30" })
       .expect(400);
+
     // Then
     expect(valid.status).toBe(200);
     const result = dailyCompletionsRangeResponseSchema.parse(valid.body.data);

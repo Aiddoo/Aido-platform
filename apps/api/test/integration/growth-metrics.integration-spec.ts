@@ -1,30 +1,35 @@
-import sql from "sql-template-tag";
+import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
+import { z } from "zod";
 
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { DrizzleAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-growth-metrics.adapter";
 import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import {
+  account,
+  todo,
+  todoCategory,
+  user as userTable,
+  userActivityDay,
+} from "#api/platform/database/schema/index";
 import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
-import { createMockTransactionHost } from "#test/mocks/database.mock";
-import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "../setup/test-database.js";
 
 describe("성장 지표 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
-  let prisma: TestDatabaseClient;
+  let client: TestDatabaseClient;
   let activityWriter: DrizzleUserRepository;
   let growthMetrics: DrizzleAdminGrowthMetricsAdapter;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
-    prisma = await testDb.start();
-    const txHost = createMockTransactionHost(createDatabaseContext(prisma));
+    client = await testDb.start();
+    const { txHost } = createDatabaseTransactionFixture(client);
     activityWriter = new DrizzleUserRepository(txHost);
-    growthMetrics = new DrizzleAdminGrowthMetricsAdapter(createTestDatabaseService(prisma));
+    growthMetrics = new DrizzleAdminGrowthMetricsAdapter(txHost);
   }, 60_000);
 
   beforeEach(async () => {
@@ -36,62 +41,44 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 
   it("현지 날짜 upsert가 firstSeenAt을 보존하고 병렬 writer에도 한 행만 남긴다", async () => {
-    // Given - 실제 PostgreSQL 사용자와 서울 타임존
-    decodeRecord(
-      "User",
-      await prisma.orm.public.User.create(
-        encodeCreate("User", {
-          id: "activity-user",
-          email: "activity@example.com",
-          userTag: "ACT00001",
-          status: "ACTIVE",
-        }),
-      ),
-    );
+    // Given
+    await client.insert(userTable).values({
+      id: "activity-user",
+      email: "activity@example.com",
+      userTag: "ACT00001",
+      status: "ACTIVE",
+    });
 
-    // When - 첫 기록 후 기존 firstSeenAt을 과거로 고정하고 병렬로 재기록하면
+    // When
     await activityWriter.updateLastActiveAt("activity-user", "Asia/Seoul");
-    const first = decodeRecord(
-      "UserActivityDay",
-      requireRecord(
-        await prisma.orm.public.UserActivityDay.where((row) =>
-          row.userId.eq("activity-user"),
-        ).first(),
-      ),
-    );
+    const first = await client.query.userActivityDay.findFirst({
+      where: { userId: "activity-user" },
+    });
     const preservedFirstSeenAt = new Date("2025-01-01T00:00:00.000Z");
-    decodeRecord(
-      "UserActivityDay",
-      requireRecord(
-        await prisma.orm.public.UserActivityDay.where((row) => row.id.eq(first.id)).update(
-          encodePatch("UserActivityDay", {
-            firstSeenAt: preservedFirstSeenAt,
-            lastSeenAt: preservedFirstSeenAt,
-          }),
-        ),
-      ),
-    );
+    await client
+      .update(userActivityDay)
+      .set({ firstSeenAt: preservedFirstSeenAt, lastSeenAt: preservedFirstSeenAt })
+      .where(eq(userActivityDay.id, requireRecord(first).id));
     await Promise.all(
       Array.from({ length: 6 }, () =>
         activityWriter.updateLastActiveAt("activity-user", "Asia/Seoul"),
       ),
     );
 
-    // Then - 사용자 현지 날짜와 원자적 최종 시각이 보존된다
-    const rows = decodeRecord(
-      "UserActivityDay",
-      await prisma.orm.public.UserActivityDay.where((row) => row.userId.eq("activity-user")).all(),
-    );
-    const user = decodeRecord(
-      "User",
-      requireRecord(
-        await prisma.orm.public.User.where((row) => row.id.eq("activity-user")).first(),
-      ),
+    // Then
+    const rows = await client
+      .select()
+      .from(userActivityDay)
+      .where(eq(userActivityDay.userId, "activity-user"));
+    const user = requireRecord(
+      await client.query.user.findFirst({ where: { id: "activity-user" } }),
     );
     expect(rows).toHaveLength(1);
     const row = rows[0];
     expect(row).toBeDefined();
-    if (!row) return;
+    if (!row) {
+      return;
+    }
     const expectedLocalDate = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Seoul",
       year: "numeric",
@@ -105,19 +92,14 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 
   it("늦게 커밋된 과거 활동이 최신 사용자·활동 시각을 되돌리지 않는다", async () => {
-    // Given - 서로 다른 인스턴스가 같은 사용자 활동을 기록한다
-    decodeRecord(
-      "User",
-      await prisma.orm.public.User.create(
-        encodeCreate("User", {
-          id: "out-of-order-user",
-          email: "out-of-order@example.com",
-          userTag: "ACT00002",
-          status: "ACTIVE",
-        }),
-      ),
-    );
-    const otherWriter = createActivityWriter(prisma);
+    // Given
+    await client.insert(userTable).values({
+      id: "out-of-order-user",
+      email: "out-of-order@example.com",
+      userTag: "ACT00002",
+      status: "ACTIVE",
+    });
+    const otherWriter = createActivityWriter(client);
     const earlier = new Date("2026-07-26T15:10:00.000Z");
     const later = new Date("2026-07-26T15:30:00.000Z");
     vi.useFakeTimers({
@@ -125,7 +107,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     });
 
     try {
-      // When - 최신 활동이 먼저 커밋되고 과거 시각의 writer가 나중에 커밋되면
+      // When
       vi.setSystemTime(later);
       await activityWriter.updateLastActiveAt("out-of-order-user", "Asia/Seoul");
       vi.setSystemTime(earlier);
@@ -134,20 +116,12 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       vi.useRealTimers();
     }
 
-    // Then - first는 최솟값, last와 사용자 활동은 최댓값을 유지한다
-    const row = decodeRecord(
-      "UserActivityDay",
-      requireRecord(
-        await prisma.orm.public.UserActivityDay.where((row) =>
-          row.userId.eq("out-of-order-user"),
-        ).first(),
-      ),
+    // Then
+    const row = requireRecord(
+      await client.query.userActivityDay.findFirst({ where: { userId: "out-of-order-user" } }),
     );
-    const user = decodeRecord(
-      "User",
-      requireRecord(
-        await prisma.orm.public.User.where((row) => row.id.eq("out-of-order-user")).first(),
-      ),
+    const user = requireRecord(
+      await client.query.user.findFirst({ where: { id: "out-of-order-user" } }),
     );
     expect(row.firstSeenAt).toEqual(earlier);
     expect(row.lastSeenAt).toEqual(later);
@@ -155,19 +129,14 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 
   it("병렬 최초 insert 충돌에서도 첫·마지막 활동 시각의 극값을 남긴다", async () => {
-    // Given - 아직 활동 행이 없는 사용자와 독립 writer 두 개
-    decodeRecord(
-      "User",
-      await prisma.orm.public.User.create(
-        encodeCreate("User", {
-          id: "parallel-insert-user",
-          email: "parallel-insert@example.com",
-          userTag: "ACT00003",
-          status: "ACTIVE",
-        }),
-      ),
-    );
-    const otherWriter = createActivityWriter(prisma);
+    // Given
+    await client.insert(userTable).values({
+      id: "parallel-insert-user",
+      email: "parallel-insert@example.com",
+      userTag: "ACT00003",
+      status: "ACTIVE",
+    });
+    const otherWriter = createActivityWriter(client);
     const earlier = new Date("2026-07-26T16:10:00.000Z");
     const later = new Date("2026-07-26T16:30:00.000Z");
     vi.useFakeTimers({
@@ -175,7 +144,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
     });
 
     try {
-      // When - 같은 현지 날짜의 서로 다른 시각을 병렬 기록하면
+      // When
       vi.setSystemTime(earlier);
       const earlierWrite = activityWriter.updateLastActiveAt("parallel-insert-user", "Asia/Seoul");
       vi.setSystemTime(later);
@@ -185,20 +154,12 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
       vi.useRealTimers();
     }
 
-    // Then - unique 충돌 순서와 무관하게 양 끝 시각이 보존된다
-    const row = decodeRecord(
-      "UserActivityDay",
-      requireRecord(
-        await prisma.orm.public.UserActivityDay.where((row) =>
-          row.userId.eq("parallel-insert-user"),
-        ).first(),
-      ),
+    // Then
+    const row = requireRecord(
+      await client.query.userActivityDay.findFirst({ where: { userId: "parallel-insert-user" } }),
     );
-    const user = decodeRecord(
-      "User",
-      requireRecord(
-        await prisma.orm.public.User.where((row) => row.id.eq("parallel-insert-user")).first(),
-      ),
+    const user = requireRecord(
+      await client.query.user.findFirst({ where: { id: "parallel-insert-user" } }),
     );
     expect(row.firstSeenAt).toEqual(earlier);
     expect(row.lastSeenAt).toEqual(later);
@@ -206,17 +167,17 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 
   it("가입 현지 날짜, 측정 시작, 성숙 cohort, DAU/WAU/MAU를 집계한다", async () => {
-    // Given - 타임존 경계·측정 전·미성숙 cohort를 포함한 실제 데이터
-    await seedGrowthScenario(prisma);
+    // Given
+    await seedGrowthScenario(client);
 
-    // When - 2026-07-30을 끝 날짜로 성장 요약을 집계하면
+    // When
     const result = await growthMetrics.getSummary({
       cohortFrom: "2026-06-01",
       cohortTo: "2026-07-30",
       asOf: new Date("2026-07-31T12:00:00.000Z"),
     });
 
-    // Then - 식별자 없이 cohort 산술과 trailing active windows를 반환한다
+    // Then
     expect(result).toEqual({
       measurementStartedAt: new Date("2026-06-01T00:00:00.000Z"),
       totalActiveUsers: 4,
@@ -237,18 +198,18 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 
   it("삭제된 사용자는 성장·활성·리텐션의 어떤 집계에도 포함하지 않는다", async () => {
-    // Given - 기존 시나리오에 모든 지표를 달성한 soft-delete 사용자를 추가하고
-    await seedGrowthScenario(prisma);
-    await seedDeletedGrowthUser(prisma);
+    // Given
+    await seedGrowthScenario(client);
+    await seedDeletedGrowthUser(client);
 
-    // When - 같은 cohort를 집계하면
+    // When
     const result = await growthMetrics.getSummary({
       cohortFrom: "2026-06-01",
       cohortTo: "2026-07-30",
       asOf: new Date("2026-07-31T12:00:00.000Z"),
     });
 
-    // Then - 삭제 사용자는 모든 count에서 빠지고 instrumentation 시작은 유지된다
+    // Then
     expect(result).toEqual({
       measurementStartedAt: new Date("2026-06-01T00:00:00.000Z"),
       totalActiveUsers: 4,
@@ -269,27 +230,16 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 
   it("측정 시작과 cohort 후보 범위를 위한 성장 지표 인덱스를 제공한다", async () => {
-    const sqlRows1 = sqlRowSpec({ indexdef: "pg/text@1" });
+    // When
+    const { rows } = await client.execute<{ indexdef: string }>(sql`
+      SELECT indexdef
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND tablename IN ('User', 'UserActivityDay')
+    `);
+    const indexes = z.array(z.object({ indexdef: z.string() })).parse(rows);
 
-    // When - 실제 migration이 만든 관련 인덱스를 조회하면
-    const indexes = decodeSqlRows(
-      sqlRows1,
-      await prisma.runtime().query(
-        sqlStatement(
-          prisma,
-          sql`
-			SELECT indexdef
-			FROM pg_indexes
-			WHERE schemaname = 'public'
-				AND tablename IN ('User', 'UserActivityDay')
-		`,
-        )
-          .returnsRow(sqlRows1)
-          .build(),
-      ),
-    );
-
-    // Then - 정확한 MIN과 삭제 제외 가입 범위가 index scan 가능한 구조다
+    // Then
     expect(indexes.map(({ indexdef }) => indexdef)).toEqual(
       expect.arrayContaining([
         expect.stringContaining('ON public."UserActivityDay" USING btree ("firstSeenAt")'),
@@ -299,12 +249,11 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   });
 });
 
-function createActivityWriter(prisma: TestDatabaseClient): DrizzleUserRepository {
-  const txHost = createMockTransactionHost(createDatabaseContext(prisma));
-  return new DrizzleUserRepository(txHost);
+function createActivityWriter(client: TestDatabaseClient): DrizzleUserRepository {
+  return new DrizzleUserRepository(createDatabaseTransactionFixture(client).txHost);
 }
 
-async function seedGrowthScenario(prisma: TestDatabaseClient): Promise<void> {
+async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
   const users = [
     {
       id: "pre-measurement",
@@ -331,33 +280,24 @@ async function seedGrowthScenario(prisma: TestDatabaseClient): Promise<void> {
       createdAt: new Date("2026-07-20T10:00:00.000Z"),
     },
   ];
-  await prisma.orm.public.User.createAndCount(
-    [
-      ...users.map(
-        (user) =>
-          ({ ...user, status: "ACTIVE" }) satisfies Parameters<typeof encodeCreate<"User">>[1],
-      ),
-      {
-        ...DELETED_COMMENT_AUTHOR,
-        status: "LOCKED",
-        createdAt: new Date("2026-06-05T00:00:00.000Z"),
-      } satisfies Parameters<typeof encodeCreate<"User">>[1],
-    ].map((value) => encodeCreate("User", value)),
+  await client.insert(userTable).values([
+    ...users.map((user) => ({ ...user, status: "ACTIVE" as const })),
+    {
+      ...DELETED_COMMENT_AUTHOR,
+      status: "LOCKED" as const,
+      createdAt: new Date("2026-06-05T00:00:00.000Z"),
+    },
+  ]);
+  await client.insert(account).values(
+    users.map((user) => ({
+      userId: user.id,
+      provider: "CREDENTIAL" as const,
+      providerAccountId: `growth-${user.id}`,
+    })),
   );
-  await prisma.orm.public.Account.createAndCount(
-    users
-      .map(
-        (user) =>
-          ({
-            userId: user.id,
-            provider: "CREDENTIAL",
-            providerAccountId: `growth-${user.id}`,
-          }) satisfies Parameters<typeof encodeCreate<"Account">>[1],
-      )
-      .map((value) => encodeCreate("Account", value)),
-  );
-  await prisma.orm.public.UserActivityDay.createAndCount(
-    [
+  await client
+    .insert(userActivityDay)
+    .values([
       activity("pre-measurement", "2026-06-02", "Pacific/Kiritimati", "2026-06-01T00:00:00.000Z"),
       activity("activated-retained", "2026-06-02", "Asia/Seoul", "2026-06-02T01:00:00.000Z"),
       activity("activated-retained", "2026-06-03", "Asia/Seoul", "2026-06-03T01:00:00.000Z"),
@@ -366,25 +306,16 @@ async function seedGrowthScenario(prisma: TestDatabaseClient): Promise<void> {
       activity("not-activated", "2026-06-11", "UTC", "2026-06-11T10:00:00.000Z"),
       activity("immature-d30", "2026-07-21", "UTC", "2026-07-21T10:00:00.000Z"),
       activity("immature-d30", "2026-07-27", "UTC", "2026-07-27T10:00:00.000Z"),
-    ].map((value) => encodeCreate("UserActivityDay", value)),
-  );
+    ]);
 
-  for (const user of users) {
-    decodeRecord(
-      "TodoCategory",
-      await prisma.orm.public.TodoCategory.create(
-        encodeCreate("TodoCategory", {
-          userId: user.id,
-          name: `category-${user.id}`,
-          color: "#000000",
-        }),
-      ),
+  await client
+    .insert(todoCategory)
+    .values(
+      users.map((user) => ({ userId: user.id, name: `category-${user.id}`, color: "#000000" })),
     );
-  }
-  const categories = decodeRecord(
-    "TodoCategory",
-    await prisma.orm.public.TodoCategory.select("id", "userId").all(),
-  );
+  const categories = await client
+    .select({ id: todoCategory.id, userId: todoCategory.userId })
+    .from(todoCategory);
   const categoryByUser = new Map(categories.map((row) => [row.userId, row.id]));
   const activatedCategory = categoryByUser.get("activated-retained");
   const immatureCategory = categoryByUser.get("immature-d30");
@@ -396,102 +327,83 @@ async function seedGrowthScenario(prisma: TestDatabaseClient): Promise<void> {
   if (!activatedSignup || !immatureSignup) {
     throw new Error("growth fixture users were not created");
   }
-  await prisma.orm.public.Todo.createAndCount(
-    [
-      {
-        userId: "activated-retained",
-        categoryId: activatedCategory,
-        title: "created within window",
-        startDate: new Date("2026-06-02T00:00:00.000Z"),
-        createdAt: new Date(activatedSignup.getTime() + 60 * 60 * 1000),
-        completed: false,
-      },
-      {
-        userId: "activated-retained",
-        categoryId: activatedCategory,
-        title: "completed within window",
-        startDate: new Date("2026-06-02T00:00:00.000Z"),
-        createdAt: new Date(activatedSignup.getTime() - 60 * 60 * 1000),
-        completed: true,
-        completedAt: new Date(activatedSignup.getTime() + 2 * 60 * 60 * 1000),
-      },
-      {
-        userId: "immature-d30",
-        categoryId: immatureCategory,
-        title: "activated",
-        startDate: new Date("2026-07-20T00:00:00.000Z"),
-        createdAt: new Date(immatureSignup.getTime() + 60 * 60 * 1000),
-        completed: true,
-        completedAt: new Date(immatureSignup.getTime() + 2 * 60 * 60 * 1000),
-      },
-    ].map((value) => encodeCreate("Todo", value)),
-  );
+  await client.insert(todo).values([
+    {
+      userId: "activated-retained",
+      categoryId: activatedCategory,
+      title: "created within window",
+      startDate: new Date("2026-06-02T00:00:00.000Z"),
+      createdAt: new Date(activatedSignup.getTime() + 60 * 60 * 1000),
+      completed: false,
+    },
+    {
+      userId: "activated-retained",
+      categoryId: activatedCategory,
+      title: "completed within window",
+      startDate: new Date("2026-06-02T00:00:00.000Z"),
+      createdAt: new Date(activatedSignup.getTime() - 60 * 60 * 1000),
+      completed: true,
+      completedAt: new Date(activatedSignup.getTime() + 2 * 60 * 60 * 1000),
+    },
+    {
+      userId: "immature-d30",
+      categoryId: immatureCategory,
+      title: "activated",
+      startDate: new Date("2026-07-20T00:00:00.000Z"),
+      createdAt: new Date(immatureSignup.getTime() + 60 * 60 * 1000),
+      completed: true,
+      completedAt: new Date(immatureSignup.getTime() + 2 * 60 * 60 * 1000),
+    },
+  ]);
 }
 
-async function seedDeletedGrowthUser(prisma: TestDatabaseClient): Promise<void> {
+async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> {
   const signupAt = new Date("2026-06-01T10:00:00.000Z");
-  decodeRecord(
-    "User",
-    await prisma.orm.public.User.create(
-      encodeCreate("User", {
-        id: "deleted-growth-user",
-        email: "deleted-growth@example.com",
-        userTag: "GROW0005",
-        status: "ACTIVE",
-        createdAt: signupAt,
-        deletedAt: new Date("2026-07-31T00:00:00.000Z"),
-      }),
-    ),
-  );
-  decodeRecord(
-    "Account",
-    await prisma.orm.public.Account.create(
-      encodeCreate("Account", {
-        userId: "deleted-growth-user",
-        provider: "CREDENTIAL",
-        providerAccountId: "growth-deleted-growth-user",
-      }),
-    ),
-  );
-  const category = decodeRecord(
-    "TodoCategory",
-    await prisma.orm.public.TodoCategory.create(
-      encodeCreate("TodoCategory", {
-        userId: "deleted-growth-user",
-        name: "deleted-user-category",
-        color: "#000000",
-      }),
-    ),
-  );
-  await prisma.orm.public.Todo.createAndCount(
-    [
-      {
-        userId: "deleted-growth-user",
-        categoryId: category.id,
-        title: "deleted created",
-        startDate: new Date("2026-06-01T00:00:00.000Z"),
-        createdAt: new Date(signupAt.getTime() + 60 * 60 * 1000),
-        completed: false,
-      },
-      {
-        userId: "deleted-growth-user",
-        categoryId: category.id,
-        title: "deleted completed",
-        startDate: new Date("2026-06-01T00:00:00.000Z"),
-        createdAt: signupAt,
-        completed: true,
-        completedAt: new Date(signupAt.getTime() + 2 * 60 * 60 * 1000),
-      },
-    ].map((value) => encodeCreate("Todo", value)),
-  );
-  await prisma.orm.public.UserActivityDay.createAndCount(
-    [
+  await client.insert(userTable).values({
+    id: "deleted-growth-user",
+    email: "deleted-growth@example.com",
+    userTag: "GROW0005",
+    status: "ACTIVE",
+    createdAt: signupAt,
+    deletedAt: new Date("2026-07-31T00:00:00.000Z"),
+  });
+  await client.insert(account).values({
+    userId: "deleted-growth-user",
+    provider: "CREDENTIAL",
+    providerAccountId: "growth-deleted-growth-user",
+  });
+  const [category] = await client
+    .insert(todoCategory)
+    .values({ userId: "deleted-growth-user", name: "deleted-user-category", color: "#000000" })
+    .returning();
+  const categoryId = requireRecord(category).id;
+  await client.insert(todo).values([
+    {
+      userId: "deleted-growth-user",
+      categoryId,
+      title: "deleted created",
+      startDate: new Date("2026-06-01T00:00:00.000Z"),
+      createdAt: new Date(signupAt.getTime() + 60 * 60 * 1000),
+      completed: false,
+    },
+    {
+      userId: "deleted-growth-user",
+      categoryId,
+      title: "deleted completed",
+      startDate: new Date("2026-06-01T00:00:00.000Z"),
+      createdAt: signupAt,
+      completed: true,
+      completedAt: new Date(signupAt.getTime() + 2 * 60 * 60 * 1000),
+    },
+  ]);
+  await client
+    .insert(userActivityDay)
+    .values([
       activity("deleted-growth-user", "2026-06-02", "UTC", "2026-06-02T10:00:00.000Z"),
       activity("deleted-growth-user", "2026-06-08", "UTC", "2026-06-08T10:00:00.000Z"),
       activity("deleted-growth-user", "2026-07-01", "UTC", "2026-07-01T10:00:00.000Z"),
       activity("deleted-growth-user", "2026-07-30", "UTC", "2026-07-30T10:00:00.000Z"),
-    ].map((value) => encodeCreate("UserActivityDay", value)),
-  );
+    ]);
 }
 
 function activity(userId: string, localDate: string, timezone: string, seenAt: string) {

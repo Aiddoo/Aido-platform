@@ -2,30 +2,27 @@ import dayjs from "dayjs";
 
 import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
 import { GetDailyCompletions } from "#api/modules/insights/application/use-cases/daily-completions/get-daily-completions.use-case";
-import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
-import { createEntityId } from "#api/platform/database/entity-id";
+import type { DrizzleTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/drizzle-todo-completion.repository";
+import { todo, todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
 import { UserFixture } from "#test/fixtures/index";
-import { createTestDatabaseService } from "#test/setup/database-context";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
-import { TestDatabase } from "../setup/test-database.js";
+import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   let context: E2eTestContext;
   let getDailyCompletionsUseCase: GetDailyCompletions;
-  let repository: PrismaTodoCompletionRepository;
+  let repository: DrizzleTodoCompletionRepository;
   let testDb: TestDatabase;
-  let databaseService: DatabaseService;
+  let client: TestDatabaseClient;
   beforeAll(async () => {
     testDb = new TestDatabase();
-    databaseService = createTestDatabaseService(await testDb.start());
+    client = await testDb.start();
     context = await createE2eApp({ testDatabase: testDb });
     getDailyCompletionsUseCase = context.module.get(GetDailyCompletions);
     repository = context.module.get(TODO_COMPLETION_REPOSITORY);
@@ -39,8 +36,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     await context.reset();
   });
   afterAll(async () => {
-    if (context !== undefined) await destroyE2eApp(context);
-    else if (testDb !== undefined) await testDb.stop();
+    if (context !== undefined) {
+      await destroyE2eApp(context);
+    } else if (testDb !== undefined) {
+      await testDb.stop();
+    }
   });
 
   /**
@@ -49,27 +49,20 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   async function createTestUser(
     email = "test@example.com",
   ): Promise<{ id: string; defaultCategoryId: number }> {
-    const user = decodeRecord(
-      "User",
-      await createUserDatabaseFixture(
-        databaseService.db,
-        encodeCreate("User", UserFixture.create({ email, status: "ACTIVE" })),
-        { profile: encodePatch("UserProfile", { id: createEntityId(), name: "Test User" }) },
-      ),
+    const user = await createUserDatabaseFixture(
+      client,
+      UserFixture.create({ email, status: "ACTIVE" }),
+      { profile: { name: "Test User" } },
     );
 
     // 기본 카테고리 생성
-    const category = decodeRecord(
-      "TodoCategory",
-      await databaseService.db.orm.public.TodoCategory.create(
-        encodeCreate("TodoCategory", {
-          userId: user.id,
-          name: "할 일",
-          color: "#FF6B43",
-          sortOrder: 0,
-        }),
-      ),
-    );
+    const [category] = await client
+      .insert(todoCategory)
+      .values({ userId: user.id, name: "할 일", color: "#FF6B43", sortOrder: 0 })
+      .returning();
+    if (category === undefined) {
+      throw new Error("category fixture was not created");
+    }
 
     return { id: user.id, defaultCategoryId: category.id };
   }
@@ -91,15 +84,20 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     const dateValue =
       typeof startDate === "string" ? dayjs.utc(startDate).startOf("day").toDate() : startDate;
 
-    return databaseService.db.orm.public.Todo.create(
-      encodeCreate("Todo", {
+    const [created] = await client
+      .insert(todo)
+      .values({
         userId,
         categoryId,
         title: "일일 완료 집계 fixture",
         startDate: dateValue,
         completed,
-      }),
-    ).then((row) => decodeRecord("Todo", row));
+      })
+      .returning({ id: todo.id });
+    if (created === undefined) {
+      throw new Error("todo fixture was not created");
+    }
+    return created;
   }
 
   /**
