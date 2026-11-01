@@ -1,7 +1,7 @@
 # @aido/api
 
 서버 `@aido/server`와 모바일 `@aido/mobile`이 공유하는 REST 계약이다. 서버 실행 코드와
-NestJS·Prisma·React Native 의존성을 포함하지 않는다.
+NestJS·ORM·React Native 의존성을 포함하지 않는다.
 
 | Entry point                     | 책임                                                |
 | ------------------------------- | --------------------------------------------------- |

@@ -99,7 +99,7 @@ export const getMemoProvider: FactoryProvider<GetMemo> = {
 
 ## 저장·효과·캐시
 
-DB 접근은 Prisma ORM을 기본으로 하고 raw SQL은 [Prisma 문서의 유지 목록](prisma.md#orm-전환-기준과-유지하는-raw-sql-rc20)처럼 ORM이 표현하지 못하는 원자성에만 쓴다. 목록·집계에서 행마다 다시 조회하는 N+1을 만들지 않는다. 필요한 id를 모아 한 번에 읽고(`where in`·relation projection) `keyBy`/`groupBy`로 붙인다.
+DB 접근은 Drizzle ORM(RQB·query builder)을 기본으로 하고 raw SQL은 [Drizzle 문서](drizzle.md#읽기쓰기와-transaction)처럼 ORM이 표현하지 못하는 원자성에만 쓴다. 목록·집계에서 행마다 다시 조회하는 N+1을 만들지 않는다. 필요한 id를 모아 한 번에 읽고(`where in`·relation projection) `keyBy`/`groupBy`로 붙인다.
 
 업무 원자성은 UoW와 실제 DB lock/constraint/conditional write로 구현한다. 활성 transaction은 CLS에서 읽고 tx 인자를 계층마다 전달하지 않는다. 실패 기록, commit 뒤 publish/queue, best-effort cache settle은 각 흐름의 기존 의미를 따른다. 외부 AI·push·email 호출은 긴 DB transaction 밖에 둔다.
 

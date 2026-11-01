@@ -20,15 +20,15 @@
 
 ## 기술 스택
 
-| 분류         | 기술                                                               |
-| ------------ | ------------------------------------------------------------------ |
-| Monorepo     | Turborepo 2.11, pnpm 12.15                                         |
-| Backend      | NestJS 12.3 ESM, Prisma 8 RC (ORM rc.20, CLI rc.27), PostgreSQL 16 |
-| Mobile       | Expo 58, React Native 0.88, React 19.3                             |
-| Validation   | Zod 4.6, Nest Standard Schema                                      |
-| Testing      | Jest Expo 58 (Jest 30), Vitest 5.0, Testcontainers                 |
-| Code Quality | Oxlint 1.90, Oxfmt 0.75                                            |
-| Runtime      | Node.js 24.22.1 LTS                                                |
+| 분류         | 기술                                               |
+| ------------ | -------------------------------------------------- |
+| Monorepo     | Turborepo 2.11, pnpm 12.15                         |
+| Backend      | NestJS 12.3 ESM, Drizzle ORM 1.0 RC, PostgreSQL 16 |
+| Mobile       | Expo 58, React Native 0.88, React 19.3             |
+| Validation   | Zod 4.6, Nest Standard Schema                      |
+| Testing      | Jest Expo 58 (Jest 30), Vitest 5.0, Testcontainers |
+| Code Quality | Oxlint 1.90, Oxfmt 0.75                            |
+| Runtime      | Node.js 24.22.1 LTS                                |
 
 ## 구조
 
@@ -80,12 +80,12 @@ pnpm dev
 
 ### 데이터베이스
 
-| 명령어             | 설명                                  |
-| ------------------ | ------------------------------------- |
-| `pnpm db:migrate`  | Prisma 마이그레이션                   |
-| `pnpm db:generate` | Prisma 8 contract의 runtime·타입 생성 |
-| `pnpm db:plan`     | migration graph 적용 계획 확인        |
-| `pnpm db:verify`   | DB와 contract의 일치 확인             |
+| 명령어             | 설명                              |
+| ------------------ | --------------------------------- |
+| `pnpm db:migrate`  | Drizzle 마이그레이션 적용         |
+| `pnpm db:generate` | 스키마 변경으로 마이그레이션 생성 |
+| `pnpm db:plan`     | migration graph 적용 계획 확인    |
+| `pnpm db:verify`   | DB와 contract의 일치 확인         |
 
 ### 테스트
 

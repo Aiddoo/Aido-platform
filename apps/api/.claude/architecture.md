@@ -1,6 +1,6 @@
 # 서버 구조와 책임
 
-모듈 경계나 상태·트랜잭션 소유를 바꿀 때 참고한다. 작성 형식은 [api-conventions.md](api-conventions.md), 저장소 구현은 [prisma.md](prisma.md)에 있다. 이 문서는 설계 기준과 실제 사례를 구분한다. 전체 전환 이력은 [migration.md](../../../docs/server/migration.md)가 소유한다.
+모듈 경계나 상태·트랜잭션 소유를 바꿀 때 참고한다. 작성 형식은 [api-conventions.md](api-conventions.md), 저장소 구현은 [drizzle.md](drizzle.md)에 있다. 이 문서는 설계 기준과 실제 사례를 구분한다. 전체 전환 이력은 [migration.md](../../../docs/server/migration.md)가 소유한다.
 
 ## 의존성과 실행 흐름
 
@@ -93,7 +93,7 @@ commit
 
 ## 댓글 읽기 모델의 현재 결정
 
-댓글 overview/conversation은 높은 변경성과 viewer 상태·cursor/focus 문맥 때문에 Redis 공유 payload를 사용하지 않는다. [PrismaTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment.reader.ts)는 root keyset, descendant 집계·DFS window를 SQL로 읽고 page 단위 like를 합친다. [Conversation presenter](../src/modules/engagement/application/presenters/comments/todo-conversation.presenter.ts)가 lane/focus 표시를 조립한다.
+댓글 overview/conversation은 높은 변경성과 viewer 상태·cursor/focus 문맥 때문에 Redis 공유 payload를 사용하지 않는다. [DrizzleTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader.ts)는 root keyset, descendant 집계·DFS window를 SQL로 읽고 page 단위 like를 합친다. [Conversation presenter](../src/modules/engagement/application/presenters/comments/todo-conversation.presenter.ts)가 lane/focus 표시를 조립한다.
 
 상세 조회수는 unique key로 멱등 기록하며 별도 기록 endpoint를 만들지 않는다. 삭제된 부모는 살아 있는 후손의 문맥을 위해 묘비로 남을 수 있다. 서명 cursor는 todo/sort/thread/scope를 묶는다. POPULAR traversal은 보지 않은 root의 실시간 순위 변경까지 고정하는 snapshot이 아니다. 변경 시 해당 UseCase·reader·presenter와 구 앱/HTTP 계약을 함께 확인한다.
 

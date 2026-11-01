@@ -30,15 +30,15 @@ Context는 `src/modules`, 공통 기술 구현은 `src/platform`, 순수 공통 
 | 작업                 | 참고                                                                                                             |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | API·Application 경계 | [.claude/architecture.md](./.claude/architecture.md), [.claude/api-conventions.md](./.claude/api-conventions.md) |
-| DB·migration         | [.claude/prisma.md](./.claude/prisma.md)                                                                         |
+| DB·migration         | [.claude/drizzle.md](./.claude/drizzle.md)                                                                       |
 | 테스트·CI            | [.claude/testing-guide.md](./.claude/testing-guide.md), [CI](../../docs/server/ci.md)                            |
 | 푸시 운영            | [push-notifications.md](./docs/push-notifications.md)                                                            |
 | 배포·롤백            | [DEPLOYMENT.md](./DEPLOYMENT.md)                                                                                 |
-| 변경 이력·측정       | [migration.md](../../docs/server/migration.md), [Prisma 검증 기록](./docs/prisma8-verification.md)               |
+| 변경 이력·측정       | [migration.md](../../docs/server/migration.md)                                                                   |
 
 ## 현재 런타임
 
-NestJS 12, TypeScript 6, Zod 4, Vitest 5와 PostgreSQL 16을 사용한다. Prisma ORM과 CLI는 서로 독립적인 RC 버전이다. 정확한 버전은 [API package.json](./package.json), [pnpm catalog](../../pnpm-workspace.yaml), [lockfile](../../pnpm-lock.yaml)을 따르며 RC 운영 전환 절차는 [Prisma 가이드](./.claude/prisma.md)에 둔다.
+NestJS 12, TypeScript 6, Zod 4, Vitest 5와 PostgreSQL 16을 사용한다. ORM은 Drizzle 1.0 RC다. 정확한 버전은 [API package.json](./package.json), [pnpm catalog](../../pnpm-workspace.yaml), [lockfile](../../pnpm-lock.yaml)을 따르며 DB 규칙은 [Drizzle 가이드](./.claude/drizzle.md)에 둔다.
 
 기본 job·push rate limit 저장소는 PostgreSQL/pg-boss다. Redis/BullMQ는 선택 backend와 기존 큐 drain 경로다. 외부 공급자는 Expo Push, Resend, AI SDK/Google이며 AI 모델은 `gemini-3.1-flash-lite`다. 설치 버전을 운영 배포 완료의 증거로 해석하지 않는다.
 

@@ -339,7 +339,7 @@ Google Play Console에서:
 - [ ] HTTPS 설정 (SSL 인증서)
 - [ ] 데이터베이스 마이그레이션 실행
   ```bash
-  pnpm prisma migrate deploy
+  pnpm db:migrate
   ```
 - [ ] Health Check 확인
   ```bash
