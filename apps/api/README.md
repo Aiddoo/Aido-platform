@@ -1,49 +1,72 @@
 # @aido/server
 
-NestJS REST API 서버다. 개발 시작은 이 문서, 코드 작업의 경계는 [AGENTS.md](./AGENTS.md), 운영 변경은 [배포 가이드](./DEPLOYMENT.md)에서 확인한다.
+Aido의 NestJS REST API 서버다. 기술 스택, 레이어 구조, 테스트 전략, CI/CD 개요는 [루트 README](../../README.md)에 있다. 이 문서는 서버만 다룰 때 필요한 실행 방법과 참고 문서를 모은다.
 
 ## 시작하기
 
-모노레포 루트에서 실행한다. `.nvmrc`와 루트 `packageManager`에 지정된 Node.js와 pnpm을 사용한다.
+모노레포 루트에서 실행한다. 요구 사항은 [루트 README](../../README.md#요구-사항)를 따른다.
 
 ```sh
-pnpm install --frozen-lockfile
-cp .env.example apps/api/.env.development
-pnpm docker:up
-pnpm --filter @aido/server db:generate
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm --filter @aido/server db:deploy
+pnpm install
+pnpm docker:up                                  # PostgreSQL 5432, Redis 6379
+cp .env.example apps/api/.env.development       # DATABASE_URL 포트를 5432로 맞춘다
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm db:migrate
 pnpm --filter @aido/server dev
 ```
 
-`apps/api/.env.development`의 연결·인증 설정을 로컬 환경에 맞춘 뒤 실행한다. `db:generate`는 Git에서 제외된 native contract를 생성한다. `dev`는 이를 자동 생성하지 않으므로 최초 실행이나 계약 변경 뒤 필요하다. `db:deploy`는 pg-boss와 application graph를 적용하고 실제 schema를 검증한다. API까지 Docker로 실행하려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up`을 사용한다.
+- 서버는 `NODE_ENV`에 따라 `apps/api`의 `.env.development` · `.env`(production) · `.env.test`를 읽는다. 설정 스키마는 `src/platform/config/schemas`다.
+- `pnpm db:migrate`는 [`tooling/database-migrate`](../../tooling/database-migrate/migrate.mjs)로 pg-boss 마이그레이션 후 Drizzle 마이그레이션(`drizzle/`)을 적용한다. 원격 DB는 `AIDO_ALLOW_REMOTE_DB=1` 없이 거부된다.
+- API까지 Docker로 띄우려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up`을 쓴다. 이 구성의 DB는 host 5433 포트다.
 
-## 구조와 참고 문서
+## 구조
 
 ```text
-presentation → application → domain
-                   ↑
-             infrastructure → DB / cache / queue / vendor
+src/
+├── modules/<context>/   # domain · application · infrastructure · presentation
+├── platform/            # DB transaction, HTTP filter, job, cache, logging 등 실행 기술
+├── shared/              # Context 공통 순수 규칙·Application 계약
+└── bootstrap.ts         # 진입점
+drizzle/                 # SQL 마이그레이션
+test/                    # integration · e2e · architecture · performance
 ```
 
-Context는 `src/modules`, 공통 기술 구현은 `src/platform`, 순수 공통 코드는 `src/shared`에 있다. Composition Root가 순수 Application 클래스와 port 구현을 연결한다.
+의존 방향은 HTTP → Presentation → UseCase → Domain/Port ← Infrastructure다. 상세 규칙은 [.claude/architecture.md](./.claude/architecture.md)에 있다.
 
-| 작업                 | 참고                                                                                                             |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| API·Application 경계 | [.claude/architecture.md](./.claude/architecture.md), [.claude/api-conventions.md](./.claude/api-conventions.md) |
-| DB·migration         | [.claude/drizzle.md](./.claude/drizzle.md)                                                                       |
-| 테스트·CI            | [.claude/testing-guide.md](./.claude/testing-guide.md), [CI](../../docs/server/ci.md)                            |
-| 푸시 운영            | [push-notifications.md](./docs/push-notifications.md)                                                            |
-| 배포·롤백            | [DEPLOYMENT.md](./DEPLOYMENT.md)                                                                                 |
-| 변경 이력·측정       | [migration.md](../../docs/server/migration.md)                                                                   |
+## 명령어
 
-## 현재 런타임
+`pnpm --filter @aido/server <명령>`으로 실행한다.
 
-NestJS 12, TypeScript 6, Zod 4, Vitest 5와 PostgreSQL 16을 사용한다. ORM은 Drizzle 1.0 RC다. 정확한 버전은 [API package.json](./package.json), [pnpm catalog](../../pnpm-workspace.yaml), [lockfile](../../pnpm-lock.yaml)을 따르며 DB 규칙은 [Drizzle 가이드](./.claude/drizzle.md)에 둔다.
+| 명령               | 설명                                                |
+| ------------------ | --------------------------------------------------- |
+| `dev`              | watch 모드 개발 서버 (`nest start --watch`)         |
+| `build`            | SWC 빌드 + 타입 검사 (`dist/`)                      |
+| `typecheck`        | `tsc --noEmit`                                      |
+| `test`             | unit (`--project unit`), `test:cov`로 커버리지 포함 |
+| `test:integration` | 실제 PostgreSQL integration                         |
+| `test:e2e`         | HTTP·OpenAPI·released-client 계약                   |
+| `test:performance` | 수동 성능 측정 (CI 밖)                              |
+| `db:generate`      | Drizzle 스키마 변경으로 마이그레이션 SQL 생성       |
+| `db:check`         | 마이그레이션 정합성 검사                            |
+| `db:studio`        | Drizzle Studio                                      |
+| `ai:eval`          | 실제 모델 호출 AI 평가 (유료, 승인된 경우만)        |
 
-기본 job·push rate limit 저장소는 PostgreSQL/pg-boss다. Redis/BullMQ는 선택 backend와 기존 큐 drain 경로다. 외부 공급자는 Expo Push, Resend, AI SDK/Google이며 AI 모델은 `gemini-3.1-flash-lite`다. 설치 버전을 운영 배포 완료의 증거로 해석하지 않는다.
+## API 문서
 
-## API 문서와 명령
+`NODE_ENV=development`에서만 등록된다.
 
-`NODE_ENV=development`에서 일반 Swagger는 `/api/docs`, JSON은 `/api/docs-json`, 관리자 Swagger는 `/api/admin/docs`다. 운영/test에서는 이 경로를 등록하지 않는다. HTTP·공개 스키마 정본은 presentation과 `packages/api`다.
+- Swagger UI: `http://localhost:8080/api/docs`, JSON: `/api/docs-json`
+- 관리자 Swagger: `/api/admin/docs`
 
-API 명령은 `pnpm --filter @aido/server <명령>`으로 실행한다: `dev`, `build`, `typecheck`, `lint`, `format:check`, `test`, `test:integration`, `test:e2e`, `db:generate`, `db:deploy`. 변경에 필요한 검증 범위와 최종 CI 절차는 위 참고 문서에 둔다.
+## 참고 문서
+
+| 작업                 | 문서                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| 작업 경계·완료 기준  | [AGENTS.md](./AGENTS.md)                                                                   |
+| 레이어·코드 규칙     | [architecture](./.claude/architecture.md), [api-conventions](./.claude/api-conventions.md) |
+| REST 계약·구 앱 호환 | [rest-contracts](./.claude/rest-contracts.md)                                              |
+| DB·마이그레이션      | [drizzle](./.claude/drizzle.md)                                                            |
+| 테스트               | [testing-guide](./.claude/testing-guide.md)                                                |
+| 로그·개인정보        | [logging-guide](./.claude/logging-guide.md)                                                |
+| 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md)                                         |
+| CI·배포·롤백         | [CI](../../docs/server/ci.md), [DEPLOYMENT.md](./DEPLOYMENT.md)                            |
+| 전체 서버 문서 안내  | [docs/server/README.md](../../docs/server/README.md)                                       |
