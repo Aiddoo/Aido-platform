@@ -1,80 +1,38 @@
+# Allowlist: turbo prune inputs and workspaces used by @aido/server and @aido/database-migrate
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!turbo.json
+!patches/
+!apps/api/
+!packages/api/
+!tooling/
+
 # Dependencies
 **/node_modules/
-.pnpm-store/
 
 # Build outputs
 **/dist/
-**/.turbo/
-**/build/
-**/out/
-**/.nest/
-**/web-build/
-**/.cache/
-**/.next/
-**/.expo/
 **/*.tsbuildinfo
 
-# Mobile app (API 빌드에 불필요)
-apps/mobile/
+# Tests & coverage
+**/coverage/
+**/test/
+**/*.spec.ts
+apps/api/scripts/ai-eval/
+apps/api/vitest.config.ts
+packages/api/vitest.config.ts
 
-# CI/배포 오케스트레이션 (이미지 빌드에 불필요 — 변경 시 COPY . . 레이어 캐시 무효화 방지)
-.github/
-scripts/
-docker-compose*.yml
-docker-compose*.yaml
-backups/
-
-# Environment (이미지에 시크릿·예제 파일을 넣지 않는다)
+# Environment & secrets
 **/.env*
 
-# IDE / 에디터 설정
-.idea/
-.vscode/
-.cursor/
-.zed/
-
-# AI tools (.claude/worktrees는 매우 커질 수 있다)
-**/.claude/
-.serena/
-.continue/
-.mcp.json
-
-# Git
-.git/
-.gitignore
-
-# 빌드에 쓰이지 않는 루트 설정·문서
+# Docs & agent guides
 **/*.md
-**/docs/
-LICENSE
-.easignore
-.turboignore
-.oxfmtrc.json
-.oxlintrc.json
-commitlint.config.ts
-myDocs/
-my-docs/
+**/.claude/
+apps/api/docs/
 
-# Tests (이미지에 불필요한 테스트·픽스처·산출물)
-**/coverage/
-**/*.spec.ts
-**/*.e2e-spec.ts
-**/test/
-**/*.test.ts
-**/*.test.tsx
-**/*.integration-spec.ts
-**/*.snap
-**/.jest-cache/
-**/.vitest/
-**/test-results/
-**/playwright-report/
-**/junit.xml
-
-# Local artifacts
-.worktrees/
-.secrets/
-**/AGENTS.md
-**/CLAUDE.md
+# Tool caches
+**/.turbo/
 **/.DS_Store
-**/Thumbs.db
 **/*.log
