@@ -1,6 +1,5 @@
-import postgres from "@prisma/orm-postgres/runtime";
+import { count } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import { Pool } from "pg";
 
 import {
   WEEKLY_ACHIEVEMENT_REPOSITORY,
@@ -9,59 +8,45 @@ import {
 import { GetWeeklyAchievement } from "#api/modules/insights/application/use-cases/weekly-achievements/get-weekly-achievement.use-case";
 import { GetWeeklyAchievements } from "#api/modules/insights/application/use-cases/weekly-achievements/get-weekly-achievements.use-case";
 import type { WeeklyAchievementUpsert } from "#api/modules/insights/domain/records/weekly-achievements/weekly-achievement.record";
-import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
+import { DrizzleTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/drizzle-todo-completion.repository";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { contract } from "#api/platform/database/database.service";
+import {
+  todo,
+  todoCategory,
+  user as userTable,
+  weeklyAchievement,
+} from "#api/platform/database/schema/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
-import { createDatabaseTransactionFixture } from "#test/setup/database-context";
-import { createStatementObserver } from "#test/setup/statement-observer";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const AT = new Date("2027-01-08T12:00:00Z");
 let statements: string[] | null = null;
-const trace = createStatementObserver("insights-query-observer", (statement) => {
-  if (statements !== null) {
-    statements.push(statement.sql);
-  }
-});
 describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   let db: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let userId: string;
-  let daily: PrismaTodoCompletionRepository;
+  let daily: DrizzleTodoCompletionRepository;
   let weekly: WeeklyAchievementRepositoryPort;
   beforeAll(async () => {
     db = new TestDatabase({
-      createClient(url) {
-        const pool = new Pool({ connectionString: url, max: 4 });
-        const native = postgres({
-          contract,
-          pg: pool,
-          middleware: [trace],
-        });
-        let closed = false;
-        return {
-          ...native,
-          async close() {
-            if (closed) return;
-            closed = true;
-            await native.close();
-            await pool.end();
-          },
-        };
-      },
+      createClient: (url) =>
+        createTestClient(url, { max: 4 }, (statement) => {
+          if (statements !== null) {
+            statements.push(statement);
+          }
+        }),
     });
     client = await db.start();
     context = await createE2eApp({ testDatabase: db });
     weekly = context.module.get(WEEKLY_ACHIEVEMENT_REPOSITORY);
-    daily = new PrismaTodoCompletionRepository(createDatabaseTransactionFixture(client).txHost);
+    daily = new DrizzleTodoCompletionRepository(createDatabaseTransactionFixture(client).txHost);
   });
   beforeEach(async () => {
     statements = null;
@@ -69,7 +54,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
     const user = UserFixture.create();
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
   });
   afterEach(() => {
@@ -85,15 +70,6 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       const result = await work();
       const sql = statements.filter(
         (value) => !/^\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE|SET)\b/i.test(value),
-      );
-      process.stdout.write(
-        "INSIGHTS_SQL_AFTER " +
-          JSON.stringify({
-            name,
-            count: sql.length,
-            statementHeads: sql.map((value) => value.trim().slice(0, 110)),
-          }) +
-          "\n",
       );
       return { result, count: sql.length };
     } finally {
@@ -118,9 +94,9 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     // Given
     const categories = [];
     for (let index = 0; index < 3; index++) {
-      const row = await client.orm.public.TodoCategory.create(
-        encodeCreate(
-          "TodoCategory",
+      const [row] = await client
+        .insert(todoCategory)
+        .values(
           omit(
             TodoCategoryFixture.create({
               userId,
@@ -130,27 +106,25 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
             }),
             ["id"],
           ),
-        ),
-      );
+        )
+        .returning();
+      if (row === undefined) throw new Error("category absent");
       categories.push(row);
     }
     for (let index = 0; index < 9; index++) {
       const category = categories[index % 3];
       if (category === undefined) throw new Error("category absent");
-      await client.orm.public.Todo.create(
-        encodeCreate(
-          "Todo",
-          omit(
-            TodoFixture.create({
-              userId,
-              categoryId: category.id,
-              startDate: new Date(`2027-01-0${1 + Math.floor(index / 3)}T00:00:00Z`),
-              completed: index % 2 === 0,
-              visibility: index === 0 ? "PRIVATE" : "PUBLIC",
-              sortOrder: index,
-            }),
-            ["id"],
-          ),
+      await client.insert(todo).values(
+        omit(
+          TodoFixture.create({
+            userId,
+            categoryId: category.id,
+            startDate: new Date(`2027-01-0${1 + Math.floor(index / 3)}T00:00:00Z`),
+            completed: index % 2 === 0,
+            visibility: index === 0 ? "PRIVATE" : "PUBLIC",
+            sortOrder: index,
+          }),
+          ["id"],
         ),
       );
     }
@@ -159,6 +133,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       startDate: new Date("2027-01-01T00:00:00Z"),
       endDate: new Date("2027-01-04T00:00:00Z"),
     };
+
     // When
     const all = await measure("daily-nine-todos-three-categories", () =>
       daily.aggregateByDateRange(range),
@@ -173,6 +148,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
         endDate: new Date("2028-01-04T00:00:00Z"),
       }),
     );
+
     // Then
     expect(all.count).toBe(2);
     expect(all.result).toHaveLength(3);
@@ -185,11 +161,13 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   it("주간 기록을 원자 저장하고 동일 키 갱신 시 달성 시각을 보존한다", async () => {
     // Given
     const records = [snapshot(1), snapshot(2), snapshot(3)];
+
     // When
     const insert = await measure("weekly-upsert-three-new", () => weekly.upsertMany(records));
     const update = await measure("weekly-upsert-three-existing", () =>
       weekly.upsertMany(records.map((row) => ({ ...row, completedTodos: 4 }))),
     );
+
     // Then
     expect(insert.count).toBe(3);
     expect(update.count).toBe(3);
@@ -198,10 +176,11 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       achievedAt: AT,
     });
   });
-  it("목록과 summary는 두 SQL, 유효 cursor도 두 SQL", async () => {
+  it("주간 목록은 summary와 함께 두 번, cursor가 있으면 기준 행 조회까지 세 번 조회한다", async () => {
     // Given
     await weekly.upsertMany([snapshot(1), snapshot(2), snapshot(3)]);
     const useCase = context.module.get(GetWeeklyAchievements);
+
     // When
     const first = await measure("weekly-list-no-cursor", () =>
       useCase.execute({ userId, year: 2027, cursor: undefined, size: 2, locale: "ko" }),
@@ -209,62 +188,64 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     const next = await measure("weekly-list-valid-cursor", () =>
       useCase.execute({ userId, year: 2027, cursor: 2, size: 2, locale: "en" }),
     );
+
     // Then
     expect(first.count).toBe(2);
     expect(first.result.items.map((row) => row.week)).toEqual([3, 2]);
     expect(first.result.summary.totalWeeks).toBe(3);
-    expect(next.count).toBe(2);
+    expect(next.count).toBe(3);
     expect(next.result.items.map((row) => row.week)).toEqual([1]);
   });
   it("같은 user/year/week 중복입력은 기존순서대로 마지막 값이 이긴다", async () => {
     // Given
     const records = [snapshot(1, { completedTodos: 1 }), snapshot(1, { completedTodos: 4 })];
+
     // When
     const result = await measure("weekly-duplicate-input", () => weekly.upsertMany(records));
+
     // Then
     expect(result.count).toBe(2);
     expect(await weekly.findByYearAndWeek(userId, 2027, 1)).toMatchObject({ completedTodos: 4 });
-    expect(
-      await client.orm.public.WeeklyAchievement.aggregate((a) => ({ count: a.count() })),
-    ).toEqual({ count: 1 });
+    expect(await client.select({ count: count() }).from(weeklyAchievement)).toEqual([{ count: 1 }]);
   });
   it("batch 두번째 FK 실패는 앞서 성공한 첫 행도 rollback한다", async () => {
     // Given
     const records = [snapshot(1), snapshot(2, { userId: "missing-user" })];
     let failure: unknown;
+
     // When
     try {
       await weekly.upsertMany(records);
     } catch (error) {
       failure = error;
     }
+
     // Then
     expect(databaseSqlState(failure)).toBe("23503");
-    expect(
-      await client.orm.public.WeeklyAchievement.aggregate((a) => ({ count: a.count() })),
-    ).toEqual({ count: 0 });
+    expect(await client.select({ count: count() }).from(weeklyAchievement)).toEqual([{ count: 0 }]);
   });
-  it("같은 owner/year에 존재하는 cursor만 주차 내림차순과 take를 한 SQL로 읽는다", async () => {
+  it("같은 사용자·연도에 존재하는 cursor만 기준으로 주차 내림차순 목록을 읽는다", async () => {
     // Given
     await weekly.upsertMany([snapshot(1), snapshot(2), snapshot(3), snapshot(4)]);
     const foreign = UserFixture.create();
-    await client.orm.public.User.create(encodeCreate("User", foreign));
+    await client.insert(userTable).values(foreign);
     await weekly.upsertMany([snapshot(7, { userId: foreign.id }), snapshot(8, { year: 2026 })]);
     const cases = [
-      { name: "valid-anchor", cursor: 4, expected: [3, 2, 1] },
-      { name: "no-anchor-input", cursor: undefined, expected: [4, 3, 2] },
-      { name: "missing-anchor", cursor: 99, expected: [] },
-      { name: "foreign-user-anchor", cursor: 7, expected: [] },
-      { name: "other-year-anchor", cursor: 8, expected: [] },
-      { name: "first-week-anchor", cursor: 1, expected: [] },
+      { name: "valid-anchor", cursor: 4, expected: [3, 2, 1], statements: 2 },
+      { name: "no-anchor-input", cursor: undefined, expected: [4, 3, 2], statements: 1 },
+      { name: "missing-anchor", cursor: 99, expected: [], statements: 1 },
+      { name: "foreign-user-anchor", cursor: 7, expected: [], statements: 1 },
+      { name: "other-year-anchor", cursor: 8, expected: [], statements: 1 },
+      { name: "first-week-anchor", cursor: 1, expected: [], statements: 2 },
     ];
     for (const item of cases) {
       // When
       const result = await measure("weekly-cursor-" + item.name, () =>
         weekly.findByYear(userId, 2027, item.cursor, 3),
       );
+
       // Then
-      expect(result.count).toBe(1);
+      expect(result.count).toBe(item.statements);
       expect(result.result.map((row) => row.week)).toEqual(item.expected);
       for (const record of result.result) {
         expect(record.year).toBe(2027);
@@ -276,9 +257,11 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     // Given
     await weekly.upsertMany([snapshot(1)]);
     const get = context.module.get(GetWeeklyAchievement);
+
     // When
     const ko = await get.execute({ userId, year: 2027, week: 1, locale: "ko" });
     const en = await get.execute({ userId, year: 2027, week: 1, locale: "en" });
+
     // Then
     expect(ko.achievedAt).toBe(AT.toISOString());
     expect(en.achievedAt).toBe(ko.achievedAt);

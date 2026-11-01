@@ -2,11 +2,11 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import { ErrorCode } from "@aido/api/errors";
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { type DynamicModule, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { ClsModule, ClsService } from "nestjs-cls";
-import sql, { join } from "sql-template-tag";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -32,29 +32,26 @@ import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send
 import { GetNudgeLimit } from "#api/modules/social/application/use-cases/nudges/get-nudge-limit.use-case";
 import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
 import { SendRemindNudge } from "#api/modules/social/application/use-cases/nudges/send-remind-nudge.use-case";
-import { PrismaCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/prisma-cheer.repository";
-import { PrismaNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/prisma-nudge.repository";
+import { DrizzleCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/drizzle-cheer.repository";
+import { DrizzleNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/drizzle-nudge.repository";
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
-import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { varchar } from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
-import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
-import type { Prisma8Transaction as TransactionClient } from "#api/platform/database/prisma8-transactional.adapter";
+import {
+  cheer,
+  nudge,
+  reminderNudge,
+  todo,
+  todoCategory,
+  user,
+} from "#api/platform/database/schema/index";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import {
-  createDatabaseContext,
-  createTestDatabaseService,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
@@ -157,9 +154,9 @@ class RequiredParticipantBarrier {
   }
 }
 
-class RacingCheerRepository extends PrismaCheerRepository {
+class RacingCheerRepository extends DrizzleCheerRepository {
   constructor(
-    txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
     private readonly dailyBarrier?: BestEffortRendezvous,
     private readonly cooldownBarrier?: BestEffortRendezvous,
   ) {
@@ -177,15 +174,15 @@ class RacingCheerRepository extends PrismaCheerRepository {
   }
 
   override async findLastCheerToUser(senderId: string, receiverId: string) {
-    const cheer = await super.findLastCheerToUser(senderId, receiverId);
+    const lastCheer = await super.findLastCheerToUser(senderId, receiverId);
     await this.cooldownBarrier?.wait();
-    return cheer;
+    return lastCheer;
   }
 }
 
-class RacingNudgeRepository extends PrismaNudgeRepository {
+class RacingNudgeRepository extends DrizzleNudgeRepository {
   constructor(
-    txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
     private readonly dailyBarrier?: BestEffortRendezvous,
     private readonly todoCooldownBarrier?: BestEffortRendezvous,
     private readonly reminderCooldownBarrier?: BestEffortRendezvous,
@@ -204,9 +201,9 @@ class RacingNudgeRepository extends PrismaNudgeRepository {
   }
 
   override async findLastNudgeForTodo(senderId: string, todoId: number) {
-    const nudge = await super.findLastNudgeForTodo(senderId, todoId);
+    const lastNudge = await super.findLastNudgeForTodo(senderId, todoId);
     await this.todoCooldownBarrier?.wait();
-    return nudge;
+    return lastNudge;
   }
 
   override async findLastRemindNudge(senderId: string, receiverId: string) {
@@ -276,7 +273,7 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
   #hasFirstHolder = false;
 
   constructor(
-    private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
     private readonly delegate: PostgresMutationLockAdapter,
     private readonly expectedKey: string,
     participants: number,
@@ -286,8 +283,6 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
   }
 
   async acquire(keys: readonly string[]): Promise<void> {
-    const sqlRows1 = sqlRowSpec({ pid: "pg/int4@1" });
-
     if (keys.length !== 1 || keys[0] !== this.expectedKey) {
       throw new Error(
         `unexpected category lock key: expected=${JSON.stringify(this.expectedKey)}, ` +
@@ -300,18 +295,8 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
       );
     }
 
-    const rows = decodeSqlRows(
-      sqlRows1,
-      await this.txHost.tx.query(
-        sqlStatement(
-          this.txHost.tx,
-          sql`
-			SELECT pg_backend_pid()::int AS pid
-		`,
-        )
-          .returnsRow(sqlRows1)
-          .build(),
-      ),
+    const { rows } = await this.txHost.tx.execute<{ pid: number }>(
+      sql`SELECT pg_backend_pid()::int AS pid`,
     );
     const pid = rows[0]?.pid;
     if (pid === undefined) {
@@ -346,43 +331,31 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
 }
 
 async function waitForBlockedAdvisoryLock(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   key: string,
   identity: AdvisoryLockIdentity,
   options: { timeoutMs?: number; pollIntervalMs?: number } = {},
 ): Promise<AdvisoryWaitObservation> {
-  const sqlRows2 = sqlRowSpec({ waitingCount: "pg/int4@1" });
-
   const timeoutMs = options.timeoutMs ?? 2_000;
   const pollIntervalMs = options.pollIntervalMs ?? 10;
   const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
   let lastWaitingCount = 0;
 
   for (let probe = 1; probe <= maxProbes; probe += 1) {
-    const rows = decodeSqlRows(
-      sqlRows2,
-      await prisma.runtime().query(
-        sqlStatement(
-          prisma,
-          sql`
-			WITH target AS (
-				SELECT hashtextextended(${key}, 0) AS lock_key
-			)
-			SELECT COUNT(*)::int AS "waitingCount"
-			FROM pg_locks, target
-			WHERE locktype = 'advisory'
-				AND granted = false
-				AND objsubid = 1
-				AND pid = ${identity.pid}
-				AND database = ${identity.databaseOid}::oid
-				AND classid::bigint = ((lock_key >> 32) & 4294967295)
-				AND objid::bigint = (lock_key & 4294967295)
-		`,
-        )
-          .returnsRow(sqlRows2)
-          .build(),
-      ),
-    );
+    const { rows } = await client.execute<{ waitingCount: number }>(sql`
+      WITH target AS (
+        SELECT hashtextextended(${key}, 0) AS lock_key
+      )
+      SELECT COUNT(*)::int AS "waitingCount"
+      FROM pg_locks, target
+      WHERE locktype = 'advisory'
+        AND granted = false
+        AND objsubid = 1
+        AND pid = ${identity.pid}
+        AND database = ${identity.databaseOid}::oid
+        AND classid::bigint = ((lock_key >> 32) & 4294967295)
+        AND objid::bigint = (lock_key & 4294967295)
+    `);
     lastWaitingCount = rows[0]?.waitingCount ?? 0;
     if (lastWaitingCount > 0) {
       return { probes: probe, waitingCount: lastWaitingCount };
@@ -401,13 +374,11 @@ async function waitForBlockedAdvisoryLock(
 }
 
 async function waitForCategoryAdvisoryLockState(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   key: string,
   expectedWaitingCount: number,
   options: { timeoutMs?: number; pollIntervalMs?: number } = {},
 ): Promise<AdvisoryLockState> {
-  const sqlRows3 = sqlRowSpec({ grantedCount: "pg/int4@1", waitingCount: "pg/int4@1" });
-
   const timeoutMs = options.timeoutMs ?? 5_000;
   const pollIntervalMs = options.pollIntervalMs ?? 10;
   const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
@@ -415,32 +386,22 @@ async function waitForCategoryAdvisoryLockState(
   let lastWaitingCount = 0;
 
   for (let probe = 1; probe <= maxProbes; probe += 1) {
-    const rows = decodeSqlRows(
-      sqlRows3,
-      await prisma.runtime().query(
-        sqlStatement(
-          prisma,
-          sql`
-			WITH target AS (
-				SELECT
-					hashtextextended(${key}, 0) AS lock_key,
-					(SELECT oid FROM pg_database WHERE datname = current_database()) AS database_oid
-			)
-			SELECT
-				(COUNT(*) FILTER (WHERE granted = true))::int AS "grantedCount",
-				(COUNT(*) FILTER (WHERE granted = false))::int AS "waitingCount"
-			FROM pg_locks, target
-			WHERE locktype = 'advisory'
-				AND objsubid = 1
-				AND database = database_oid
-				AND classid::bigint = ((lock_key >> 32) & 4294967295)
-				AND objid::bigint = (lock_key & 4294967295)
-		`,
-        )
-          .returnsRow(sqlRows3)
-          .build(),
-      ),
-    );
+    const { rows } = await client.execute<{ grantedCount: number; waitingCount: number }>(sql`
+      WITH target AS (
+        SELECT
+          hashtextextended(${key}, 0) AS lock_key,
+          (SELECT oid FROM pg_database WHERE datname = current_database()) AS database_oid
+      )
+      SELECT
+        (COUNT(*) FILTER (WHERE granted = true))::int AS "grantedCount",
+        (COUNT(*) FILTER (WHERE granted = false))::int AS "waitingCount"
+      FROM pg_locks, target
+      WHERE locktype = 'advisory'
+        AND objsubid = 1
+        AND database = database_oid
+        AND classid::bigint = ((lock_key >> 32) & 4294967295)
+        AND objid::bigint = (lock_key & 4294967295)
+    `);
     lastGrantedCount = rows[0]?.grantedCount ?? 0;
     lastWaitingCount = rows[0]?.waitingCount ?? 0;
     if (lastGrantedCount === 1 && lastWaitingCount === expectedWaitingCount) {
@@ -464,7 +425,7 @@ async function waitForCategoryAdvisoryLockState(
 }
 
 async function observeCategoryRace<T>(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   key: string,
   lock: CoordinatedCategoryMutationLock,
   operations: Promise<PromiseSettledResult<T>[]>,
@@ -484,7 +445,7 @@ async function observeCategoryRace<T>(
   try {
     participants = await lock.waitUntilAllTransactionsArrive();
     await lock.waitUntilFirstHolderAcquires();
-    lockState = await waitForCategoryAdvisoryLockState(prisma, key, CONCURRENCY - 1);
+    lockState = await waitForCategoryAdvisoryLockState(client, key, CONCURRENCY - 1);
   } catch (error) {
     observationFailure = error;
   } finally {
@@ -520,24 +481,26 @@ function summarize(results: PromiseSettledResult<unknown>[]): RaceSummary {
 
 @Module({})
 class CategoryDatabaseTestModule {
-  static register(prisma: TestDatabaseClient): DynamicModule {
+  static register(client: TestDatabaseClient): DynamicModule {
     return {
       module: CategoryDatabaseTestModule,
-      providers: [{ provide: DatabaseService, useValue: createTestDatabaseService(prisma) }],
-      exports: [DatabaseService],
+      providers: [{ provide: DRIZZLE, useValue: client }],
+      exports: [DRIZZLE],
     };
   }
 }
 
-function createTransactionHarness(prisma: TestDatabaseClient): {
-  txHost: TransactionHost<Prisma8TransactionalAdapter>;
+type ActiveTransaction = Parameters<Parameters<TestDatabaseClient["transaction"]>[0]>[0];
+
+function createTransactionHarness(client: TestDatabaseClient): {
+  txHost: TransactionHost<DrizzleTransactionalAdapter>;
   uow: UnitOfWorkPort;
 } {
-  const storage = new AsyncLocalStorage<TransactionClient>();
+  const storage = new AsyncLocalStorage<ActiveTransaction>();
   const cls = new ClsService(new AsyncLocalStorage());
-  const txHost = mock<TransactionHost<Prisma8TransactionalAdapter>>();
+  const txHost = mock<TransactionHost<DrizzleTransactionalAdapter>>();
   Object.defineProperty(txHost, "tx", {
-    get: (): TransactionClient => storage.getStore() ?? createDatabaseContext(prisma),
+    get: () => storage.getStore() ?? client,
   });
   Object.assign(txHost, {
     isTransactionActive(): boolean {
@@ -547,7 +510,7 @@ function createTransactionHarness(prisma: TestDatabaseClient): {
       if (storage.getStore()) {
         return cls.run({ ifNested: "inherit" }, work);
       }
-      return withDatabaseTransaction(prisma, (tx) =>
+      return client.transaction((tx) =>
         storage.run(tx, () => cls.run({ ifNested: "inherit" }, work)),
       );
     },
@@ -564,31 +527,22 @@ interface AdvisoryLockAttempt {
 }
 
 async function tryAcquireAdvisoryLocks(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   keys: readonly string[],
 ): Promise<AdvisoryLockAttempt[]> {
-  return withDatabaseTransaction(
-    prisma,
-    async (tx) =>
-      await tx
-        .query(
-          sqlStatement(
-            tx,
-            sql`
-			SELECT
-				requested."key",
-				pg_try_advisory_xact_lock(hashtextextended(requested."key", 0)) AS acquired
-			FROM unnest(ARRAY[${join(keys)}]::TEXT[]) AS requested("key")
-			ORDER BY requested."key"
-		`,
-          )
-            .returnsRow(sqlRowSpec({ key: "pg/text@1", acquired: "pg/bool@1" }))
-            .build(),
-        )
-        .then((rows) =>
-          decodeSqlRows(sqlRowSpec({ key: "pg/text@1", acquired: "pg/bool@1" }), rows),
-        ),
-  );
+  return client.transaction(async (tx) => {
+    const { rows } = await tx.execute<AdvisoryLockAttempt>(sql`
+      SELECT
+        requested."key",
+        pg_try_advisory_xact_lock(hashtextextended(requested."key", 0)) AS acquired
+      FROM unnest(ARRAY[${sql.join(
+        keys.map((key) => sql`${key}`),
+        sql`, `,
+      )}]::TEXT[]) AS requested("key")
+      ORDER BY requested."key"
+    `);
+    return rows;
+  });
 }
 
 async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -651,67 +605,59 @@ function createTodoCategoryCache(): TodoCategoryCachePort {
 }
 
 async function createUser(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   index: number,
   subscriptionStatus: "FREE" | "ACTIVE" = "FREE",
 ): Promise<string> {
   const suffix = index.toString().padStart(7, "0");
   const id = `mutation-user-${suffix}`;
-  decodeRecord(
-    "User",
-    await prisma.orm.public.User.create(
-      encodeCreate("User", {
-        id,
-        email: `mutation-${suffix}@example.com`,
-        userTag: `M${suffix}`,
-        status: "ACTIVE",
-        subscriptionStatus,
-      }),
-    ),
-  );
+  await client.insert(user).values({
+    id,
+    email: `mutation-${suffix}@example.com`,
+    userTag: `M${suffix}`,
+    status: "ACTIVE",
+    subscriptionStatus,
+  });
   return id;
 }
 
 async function createTodo(
-  prisma: TestDatabaseClient,
+  client: TestDatabaseClient,
   userId: string,
   title: string,
 ): Promise<number> {
-  const category = decodeRecord(
-    "TodoCategory",
-    await prisma.orm.public.TodoCategory.where((row) =>
-      and(row.userId.eq(userId), row.name.eq(varchar("Mutation", 50))),
-    ).upsert({
-      conflictOn: encodePatch("TodoCategory", { userId, name: "Mutation" }),
-      create: encodeCreate("TodoCategory", {
-        userId,
-        name: "Mutation",
-        color: "#112233",
-        sortOrder: 0,
-      }),
-      update: encodePatch("TodoCategory", {}),
-    }),
-  );
-  const todo = decodeRecord(
-    "Todo",
-    await prisma.orm.public.Todo.create(
-      encodeCreate("Todo", {
-        userId,
-        categoryId: category.id,
-        title,
-        startDate: TODAY,
-        visibility: "PUBLIC",
-      }),
-    ),
-  );
-  return todo.id;
+  const [category] = await client
+    .insert(todoCategory)
+    .values({ userId, name: "Mutation", color: "#112233", sortOrder: 0 })
+    .onConflictDoUpdate({
+      target: [todoCategory.userId, todoCategory.name],
+      set: { userId },
+    })
+    .returning({ id: todoCategory.id });
+  if (category === undefined) {
+    throw new Error("category fixture was not created");
+  }
+  const [created] = await client
+    .insert(todo)
+    .values({
+      userId,
+      categoryId: category.id,
+      title,
+      startDate: TODAY,
+      visibility: "PUBLIC",
+    })
+    .returning({ id: todo.id });
+  if (created === undefined) {
+    throw new Error("todo fixture was not created");
+  }
+  return created.id;
 }
 
 describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
-  let prisma: TestDatabaseClient;
+  let client: TestDatabaseClient;
   let categoryModule: TestingModule;
-  let categoryTxHost: TransactionHost<Prisma8TransactionalAdapter>;
+  let categoryTxHost: TransactionHost<DrizzleTransactionalAdapter>;
   let categoryUow: ClsUnitOfWork;
   let categoryRepository: DrizzleTodoCategoryRepository;
   let categoryLockAdapter: PostgresMutationLockAdapter;
@@ -722,9 +668,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       createClient: (connectionString) =>
         createTestClient(connectionString, { max: CATEGORY_POOL_MAX }),
     });
-    prisma = await testDatabase.start();
+    client = await testDatabase.start();
 
-    const categoryDatabaseModule = CategoryDatabaseTestModule.register(prisma);
+    const categoryDatabaseModule = CategoryDatabaseTestModule.register(client);
     categoryModule = await Test.createTestingModule({
       imports: [
         categoryDatabaseModule,
@@ -733,7 +679,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
           plugins: [
             new ClsPluginTransactional({
               imports: [categoryDatabaseModule],
-              adapter: new Prisma8TransactionalAdapter(),
+              adapter: new TransactionalAdapterDrizzleOrm({ drizzleInstanceToken: DRIZZLE }),
             }),
           ],
         }),
@@ -760,7 +706,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     await categoryModule.init();
 
     categoryTxHost =
-      categoryModule.get<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost);
+      categoryModule.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     categoryUow = categoryModule.get(ClsUnitOfWork);
     categoryRepository = categoryModule.get(DrizzleTodoCategoryRepository);
     categoryLockAdapter = categoryModule.get(PostgresMutationLockAdapter);
@@ -785,8 +731,8 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   });
 
   it("카테고리 검증 하네스는 실제 TransactionHost 인스턴스를 사용한다", async () => {
-    // Given - Nest testing module에서 주입받은 category transaction stack
-    let activeClient: TransactionClient | undefined;
+    // Given
+    let activeClient: unknown;
 
     // When
     await categoryUow.run(async () => {
@@ -794,47 +740,54 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       activeClient = categoryTxHost.tx;
     });
 
-    // Then - hand-built ALS 객체가 아닌 Nest/CLS 실제 구현체
+    // Then
     expect(categoryTxHost).toBeInstanceOf(TransactionHost);
     expect(categoryUow).toBeInstanceOf(ClsUnitOfWork);
     expect(categoryRepository).toBeInstanceOf(DrizzleTodoCategoryRepository);
     expect(categoryLockAdapter).toBeInstanceOf(PostgresMutationLockAdapter);
     expect(categoryLimitReader).toBeInstanceOf(TodoCategoryLimitReaderAdapter);
-    expect(activeClient).not.toBe(prisma);
+    expect(activeClient).not.toBe(client);
   });
 
   it("카테고리 사전 lock coordination은 참가자가 부족하면 진단과 함께 실패한다", async () => {
-    // Given - 요구 인원보다 한 명 적은 coordination
+    // Given
     const barrier = new RequiredParticipantBarrier(2, 1);
 
-    // When / Then - timeout을 성공으로 취급하지 않는다
-    await expect(barrier.arrive("pid-1")).rejects.toThrow("arrivals=1/2");
+    // When
+    const arrival = barrier.arrive("pid-1");
+
+    // Then
+    await expect(arrival).rejects.toThrow("arrivals=1/2");
   });
 
   it("배치 lock은 한 트랜잭션이 보유한 두 키를 모두 막고 commit 후 해제한다", async () => {
+    // Given
     const keys = ["mutation:v1:comment:batch:b", "mutation:v1:comment:batch:a"];
     const held = createDeferred();
     const release = createDeferred();
-    const { txHost, uow } = createTransactionHarness(prisma);
+    const { txHost, uow } = createTransactionHarness(client);
     const holding = uow.run(async () => {
       await new PostgresMutationLockAdapter(txHost).acquire(keys);
       held.resolve();
       await release.promise;
     });
-
     await held.promise;
+
+    // When
+    let blocked: AdvisoryLockAttempt[];
     try {
-      const blocked = await tryAcquireAdvisoryLocks(prisma, keys);
-      expect(blocked).toEqual([
-        { key: "mutation:v1:comment:batch:a", acquired: false },
-        { key: "mutation:v1:comment:batch:b", acquired: false },
-      ]);
+      blocked = await tryAcquireAdvisoryLocks(client, keys);
     } finally {
       release.resolve();
       await holding;
     }
+    const available = await tryAcquireAdvisoryLocks(client, keys);
 
-    const available = await tryAcquireAdvisoryLocks(prisma, keys);
+    // Then
+    expect(blocked).toEqual([
+      { key: "mutation:v1:comment:batch:a", acquired: false },
+      { key: "mutation:v1:comment:batch:b", acquired: false },
+    ]);
     expect(available).toEqual([
       { key: "mutation:v1:comment:batch:a", acquired: true },
       { key: "mutation:v1:comment:batch:b", acquired: true },
@@ -842,14 +795,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   });
 
   it("서로 반대 순서의 배치도 DB 내부 정렬 순서로 잠겨 교착 없이 완료한다", async () => {
+    // Given
     const barrier = new RequiredParticipantBarrier(2);
-    const first = createTransactionHarness(prisma);
-    const second = createTransactionHarness(prisma);
+    const first = createTransactionHarness(client);
+    const second = createTransactionHarness(client);
 
     const acquire = (
       participant: string,
       keys: readonly string[],
-      txHost: TransactionHost<Prisma8TransactionalAdapter>,
+      txHost: TransactionHost<DrizzleTransactionalAdapter>,
       uow: UnitOfWorkPort,
     ) =>
       uow.run(async () => {
@@ -857,6 +811,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         await new PostgresMutationLockAdapter(txHost).acquire(keys);
       });
 
+    // When
     await completeWithin(
       Promise.all([
         acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
@@ -864,16 +819,18 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ]),
       3_000,
     );
+
+    // Then
     expect(barrier.participantsSeen.toSorted()).toEqual(["ascending", "descending"]);
   });
 
   it("20개 Cheer 일일 한도 경쟁에서 3개만 저장하고 나머지는 CHEER_1201이어야 한다", async () => {
-    // Given - 한 발신자와 서로 다른 20개 수신자
-    const senderId = await createUser(prisma, 0);
+    // Given
+    const senderId = await createUser(client, 0);
     const receiverIds = await Promise.all(
-      Array.from({ length: CONCURRENCY }, (_, index) => createUser(prisma, index + 1)),
+      Array.from({ length: CONCURRENCY }, (_, index) => createUser(client, index + 1)),
     );
-    const { txHost, uow } = createTransactionHarness(prisma);
+    const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
     const useCase = new SendCheer({
       cheerRepository: repository,
@@ -885,30 +842,24 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
     });
 
-    // When - 같은 일일 한도를 동시에 소비
+    // When
     const summary = summarize(
       await Promise.allSettled(
         receiverIds.map((receiverId) => useCase.execute({ senderId, receiverId, timezone: "UTC" })),
       ),
     );
 
-    // Then - 성공 수와 실제 저장 수가 한도와 정확히 일치
+    // Then
     expect(summary.successes).toBe(DAILY_LIMIT);
     expect(summary.errorCodes).toEqual(Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.CHEER_1201));
-    expect(
-      (
-        await prisma.orm.public.Cheer.where((row) => row.senderId.eq(senderId)).aggregate(
-          (aggregate) => ({ count: aggregate.count() }),
-        )
-      ).count,
-    ).toBe(DAILY_LIMIT);
+    expect(await client.$count(cheer, eq(cheer.senderId, senderId))).toBe(DAILY_LIMIT);
   });
 
   it("20개 동일 대상 Cheer 경쟁에서 1개만 저장하고 나머지는 CHEER_1202여야 한다", async () => {
-    // Given - 무제한 발신자와 한 수신자
-    const senderId = await createUser(prisma, 0, "ACTIVE");
-    const receiverId = await createUser(prisma, 1);
-    const { txHost, uow } = createTransactionHarness(prisma);
+    // Given
+    const senderId = await createUser(client, 0, "ACTIVE");
+    const receiverId = await createUser(client, 1);
+    const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingCheerRepository(
       txHost,
       undefined,
@@ -924,7 +875,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
     });
 
-    // When - 동일 대상을 동시에 응원
+    // When
     const summary = summarize(
       await Promise.allSettled(
         Array.from({ length: CONCURRENCY }, () =>
@@ -933,27 +884,26 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ),
     );
 
-    // Then - 쿨다운 단위로 하나만 성공
+    // Then
     expect(summary.successes).toBe(1);
     expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.CHEER_1202));
     expect(
-      (
-        await prisma.orm.public.Cheer.where((row) =>
-          and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
-        ).aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
+      await client.$count(
+        cheer,
+        and(eq(cheer.senderId, senderId), eq(cheer.receiverId, receiverId)),
+      ),
     ).toBe(1);
   });
 
   it("20개 Nudge 일일 한도 경쟁에서 3개만 저장하고 나머지는 NUDGE_1101이어야 한다", async () => {
-    // Given - 한 발신자와 서로 다른 20개 공개 Todo
-    const senderId = await createUser(prisma, 0);
-    const receiverId = await createUser(prisma, 1);
+    // Given
+    const senderId = await createUser(client, 0);
+    const receiverId = await createUser(client, 1);
     const todoIds: number[] = [];
     for (let index = 0; index < CONCURRENCY; index += 1) {
-      todoIds.push(await createTodo(prisma, receiverId, `Todo ${index}`));
+      todoIds.push(await createTodo(client, receiverId, `Todo ${index}`));
     }
-    const { txHost, uow } = createTransactionHarness(prisma);
+    const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
     const useCase = new SendNudge({
       nudgeRepository: repository,
@@ -965,31 +915,25 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
     });
 
-    // When - 같은 일일 한도를 동시에 소비
+    // When
     const summary = summarize(
       await Promise.allSettled(
         todoIds.map((todoId) => useCase.execute({ senderId, receiverId, todoId, timezone: "UTC" })),
       ),
     );
 
-    // Then - 성공 수와 실제 저장 수가 한도와 정확히 일치
+    // Then
     expect(summary.successes).toBe(DAILY_LIMIT);
     expect(summary.errorCodes).toEqual(Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.NUDGE_1101));
-    expect(
-      (
-        await prisma.orm.public.Nudge.where((row) => row.senderId.eq(senderId)).aggregate(
-          (aggregate) => ({ count: aggregate.count() }),
-        )
-      ).count,
-    ).toBe(DAILY_LIMIT);
+    expect(await client.$count(nudge, eq(nudge.senderId, senderId))).toBe(DAILY_LIMIT);
   });
 
   it("20개 동일 Todo Nudge 경쟁에서 1개만 저장하고 나머지는 NUDGE_1102여야 한다", async () => {
-    // Given - 무제한 발신자와 한 공개 Todo
-    const senderId = await createUser(prisma, 0, "ACTIVE");
-    const receiverId = await createUser(prisma, 1);
-    const todoId = await createTodo(prisma, receiverId, "Same Todo");
-    const { txHost, uow } = createTransactionHarness(prisma);
+    // Given
+    const senderId = await createUser(client, 0, "ACTIVE");
+    const receiverId = await createUser(client, 1);
+    const todoId = await createTodo(client, receiverId, "Same Todo");
+    const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingNudgeRepository(
       txHost,
       undefined,
@@ -1005,7 +949,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
     });
 
-    // When - 동일 Todo를 동시에 찌름
+    // When
     const summary = summarize(
       await Promise.allSettled(
         Array.from({ length: CONCURRENCY }, () =>
@@ -1014,23 +958,19 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ),
     );
 
-    // Then - Todo 쿨다운 단위로 하나만 성공
+    // Then
     expect(summary.successes).toBe(1);
     expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.NUDGE_1102));
     expect(
-      (
-        await prisma.orm.public.Nudge.where((row) =>
-          and(row.senderId.eq(senderId), row.todoId.eq(todoId)),
-        ).aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
+      await client.$count(nudge, and(eq(nudge.senderId, senderId), eq(nudge.todoId, todoId))),
     ).toBe(1);
   });
 
   it("20개 reminder-Nudge 경쟁에서 1개만 저장하고 나머지는 NUDGE_1108이어야 한다", async () => {
-    // Given - 오늘 Todo가 없는 한 수신자
-    const senderId = await createUser(prisma, 0);
-    const receiverId = await createUser(prisma, 1);
-    const { txHost, uow } = createTransactionHarness(prisma);
+    // Given
+    const senderId = await createUser(client, 0);
+    const receiverId = await createUser(client, 1);
+    const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingNudgeRepository(
       txHost,
       undefined,
@@ -1046,7 +986,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof SendRemindNudge>[0]["logger"]>(),
     });
 
-    // When - 동일 친구에게 동시에 reminder-Nudge 전송
+    // When
     const summary = summarize(
       await Promise.allSettled(
         Array.from({ length: CONCURRENCY }, () =>
@@ -1055,21 +995,20 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ),
     );
 
-    // Then - 친구 쿨다운 단위로 하나만 성공
+    // Then
     expect(summary.successes).toBe(1);
     expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.NUDGE_1108));
     expect(
-      (
-        await prisma.orm.public.ReminderNudge.where((row) =>
-          and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
-        ).aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
+      await client.$count(
+        reminderNudge,
+        and(eq(reminderNudge.senderId, senderId), eq(reminderNudge.receiverId, receiverId)),
+      ),
     ).toBe(1);
   });
 
   it("20개 고유 이름 카테고리 생성 경쟁에서 FREE 한도와 연속 sortOrder를 보존한다", async () => {
-    // Given - FREE 사용자와 Nest가 주입한 실제 transaction stack
-    const userId = await createUser(prisma, 0);
+    // Given
+    const userId = await createUser(client, 0);
     const lockKey = MutationLockKeys.todoCategory(userId);
     const coordinatedLock = new CoordinatedCategoryMutationLock(
       categoryTxHost,
@@ -1086,9 +1025,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof CreateTodoCategory>[0]["logger"]>(),
     });
 
-    // When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
+    // When
     const race = await observeCategoryRace(
-      prisma,
+      client,
       lockKey,
       coordinatedLock,
       Promise.allSettled(
@@ -1103,45 +1042,43 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     );
     const summary = summarize(race.results);
 
-    // Then - pool 직렬화가 아닌 실제 동일-key advisory 대기열
+    // Then
     expect(race.participants).toHaveLength(CONCURRENCY);
     expect(new Set(race.participants).size).toBe(CONCURRENCY);
     expect(race.lockState.grantedCount).toBe(1);
     expect(race.lockState.waitingCount).toBe(CONCURRENCY - 1);
 
-    // Then - 성공은 FREE=3을 넘지 않고 저장 순번은 중복/공백 없는 0..2
+    // Then
     expect(summary.successes).toBe(DAILY_LIMIT);
     expect(summary.errorCodes).toEqual(
       Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.TODO_CATEGORY_0857),
     );
-    const persisted = decodeRecord(
-      "TodoCategory",
-      await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-        .orderBy((row) => row.sortOrder.asc())
-        .all(),
-    );
+    const persisted = await client
+      .select()
+      .from(todoCategory)
+      .where(eq(todoCategory.userId, userId))
+      .orderBy(asc(todoCategory.sortOrder));
     expect(persisted).toHaveLength(DAILY_LIMIT);
     expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([0, 1, 2]);
     expect(new Set(persisted.map(({ name }) => name)).size).toBe(DAILY_LIMIT);
   });
 
   it("20개 유효한 카테고리 재배치 경쟁 후 sortOrder가 완전한 permutation이다", async () => {
-    // Given - ACTIVE 사용자에게 0..19 순번의 카테고리와 실제 transaction stack
-    const userId = await createUser(prisma, 0, "ACTIVE");
-    await prisma.orm.public.TodoCategory.createAndCount(
+    // Given
+    const userId = await createUser(client, 0, "ACTIVE");
+    await client.insert(todoCategory).values(
       Array.from({ length: CONCURRENCY }, (_, index) => ({
         userId,
         name: `Reorder ${index.toString().padStart(2, "0")}`,
         color: "#112233",
         sortOrder: index,
-      })).map((value) => encodeCreate("TodoCategory", value)),
+      })),
     );
-    const categories = decodeRecord(
-      "TodoCategory",
-      await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-        .orderBy((row) => row.sortOrder.asc())
-        .all(),
-    );
+    const categories = await client
+      .select()
+      .from(todoCategory)
+      .where(eq(todoCategory.userId, userId))
+      .orderBy(asc(todoCategory.sortOrder));
     const lockKey = MutationLockKeys.todoCategory(userId);
     const coordinatedLock = new CoordinatedCategoryMutationLock(
       categoryTxHost,
@@ -1157,9 +1094,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof ReorderTodoCategory>[0]["logger"]>(),
     });
 
-    // When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
+    // When
     const race = await observeCategoryRace(
-      prisma,
+      client,
       lockKey,
       coordinatedLock,
       Promise.allSettled(
@@ -1173,20 +1110,19 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ),
     );
 
-    // Then - pool 직렬화가 아닌 실제 동일-key advisory 대기열
+    // Then
     expect(race.participants).toHaveLength(CONCURRENCY);
     expect(new Set(race.participants).size).toBe(CONCURRENCY);
     expect(race.lockState.grantedCount).toBe(1);
     expect(race.lockState.waitingCount).toBe(CONCURRENCY - 1);
 
-    // Then - 20개 모두 성공하고 persisted 순번이 정확히 0..19 permutation
+    // Then
     expect(race.results.every(({ status }) => status === "fulfilled")).toBe(true);
-    const persisted = decodeRecord(
-      "TodoCategory",
-      await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-        .orderBy((row) => row.sortOrder.asc())
-        .all(),
-    );
+    const persisted = await client
+      .select()
+      .from(todoCategory)
+      .where(eq(todoCategory.userId, userId))
+      .orderBy(asc(todoCategory.sortOrder));
     expect(persisted).toHaveLength(CONCURRENCY);
     expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([
       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -1195,122 +1131,97 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   });
 
   it("Cheer limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
-    // Given - KST 7/26 경계 바로 전/후의 두 row
-    const senderId = await createUser(prisma, 0);
-    const priorReceiverId = await createUser(prisma, 1);
-    const currentReceiverId = await createUser(prisma, 2);
-    await prisma.orm.public.Cheer.createAndCount(
-      [
-        {
-          senderId,
-          receiverId: priorReceiverId,
-          createdAt: new Date("2026-07-25T14:59:59.999Z"),
-        },
-        {
-          senderId,
-          receiverId: currentReceiverId,
-          createdAt: new Date("2026-07-25T15:00:00.001Z"),
-        },
-      ].map((value) => encodeCreate("Cheer", value)),
-    );
-    const { txHost } = createTransactionHarness(prisma);
+    // Given
+    const senderId = await createUser(client, 0);
+    const priorReceiverId = await createUser(client, 1);
+    const currentReceiverId = await createUser(client, 2);
+    await client.insert(cheer).values([
+      {
+        senderId,
+        receiverId: priorReceiverId,
+        createdAt: new Date("2026-07-25T14:59:59.999Z"),
+      },
+      {
+        senderId,
+        receiverId: currentReceiverId,
+        createdAt: new Date("2026-07-25T15:00:00.001Z"),
+      },
+    ]);
+    const { txHost } = createTransactionHarness(client);
     const reader = new GetCheerLimit({
-      cheerRepository: new PrismaCheerRepository(txHost),
+      cheerRepository: new DrizzleCheerRepository(txHost),
       entitlementReader: createReaderEntitlement(3),
     });
 
     // When
     const result = await reader.execute({ userId: senderId, timezone: "Asia/Seoul" });
 
-    // Then - prior local day는 제외하고 early local day는 포함
+    // Then
     expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
   });
 
   it("Nudge limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
-    // Given - KST 7/26 경계 바로 전/후의 두 row
-    const senderId = await createUser(prisma, 0);
-    const receiverId = await createUser(prisma, 1);
-    const todoId = await createTodo(prisma, receiverId, "Reader boundary");
-    await prisma.orm.public.Nudge.createAndCount(
-      [
-        {
-          senderId,
-          receiverId,
-          todoId,
-          createdAt: new Date("2026-07-25T14:59:59.999Z"),
-        },
-        {
-          senderId,
-          receiverId,
-          todoId,
-          createdAt: new Date("2026-07-25T15:00:00.001Z"),
-        },
-      ].map((value) => encodeCreate("Nudge", value)),
-    );
-    const { txHost } = createTransactionHarness(prisma);
+    // Given
+    const senderId = await createUser(client, 0);
+    const receiverId = await createUser(client, 1);
+    const todoId = await createTodo(client, receiverId, "Reader boundary");
+    await client.insert(nudge).values([
+      {
+        senderId,
+        receiverId,
+        todoId,
+        createdAt: new Date("2026-07-25T14:59:59.999Z"),
+      },
+      {
+        senderId,
+        receiverId,
+        todoId,
+        createdAt: new Date("2026-07-25T15:00:00.001Z"),
+      },
+    ]);
+    const { txHost } = createTransactionHarness(client);
     const reader = new GetNudgeLimit({
-      nudgeRepository: new PrismaNudgeRepository(txHost),
+      nudgeRepository: new DrizzleNudgeRepository(txHost),
       entitlementReader: createReaderEntitlement(3),
     });
 
     // When
     const result = await reader.execute({ userId: senderId, timezone: "Asia/Seoul" });
 
-    // Then - prior local day는 제외하고 early local day는 포함
+    // Then
     expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
   });
 
   it("Cheer lock 대기가 KST 자정을 넘어도 row는 캡처한 이전 날짜 시각으로 저장한다", async () => {
-    // Given - sender quota key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
+    // Given
     vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
-    const senderId = await createUser(prisma, 0);
-    const receiverId = await createUser(prisma, 1);
+    const senderId = await createUser(client, 0);
+    const receiverId = await createUser(client, 1);
     const held = createDeferred();
     const release = createDeferred();
     const dailyKey = MutationLockKeys.cheerDailyQuota(senderId);
-    const blocker = withDatabaseTransaction(prisma, async (tx) => {
-      await tx
-        .execute(
-          sqlStatement(
-            tx,
-            sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`,
-          )
-            .affectedCount()
-            .build(),
-        )
-        .then((result) => result.affectedRows);
+    const blocker = client.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`);
       held.resolve();
       await release.promise;
     });
     await held.promise;
 
-    const { txHost, uow } = createTransactionHarness(prisma);
+    const { txHost, uow } = createTransactionHarness(client);
     const sendingIdentity = createValueDeferred<AdvisoryLockIdentity>();
     const continueLockAttempt = createDeferred();
     const realLock = new PostgresMutationLockAdapter(txHost);
     const mutationLock: MutationLockPort = {
       async acquire(keys) {
-        const sqlRows4 = sqlRowSpec({ pid: "pg/int4@1", databaseOid: "pg/int4@1" });
-
-        const identities = decodeSqlRows(
-          sqlRows4,
-          await txHost.tx.query(
-            sqlStatement(
-              txHost.tx,
-              sql`
-					SELECT
-						pg_backend_pid() AS pid,
-						(
-							SELECT oid::int
-							FROM pg_database
-							WHERE datname = current_database()
-						) AS "databaseOid"
-				`,
-            )
-              .returnsRow(sqlRows4)
-              .build(),
-          ),
-        );
+        const { rows: identities } = await txHost.tx.execute<AdvisoryLockIdentity>(sql`
+          SELECT
+            pg_backend_pid() AS pid,
+            (
+              SELECT oid::int
+              FROM pg_database
+              WHERE datname = current_database()
+            ) AS "databaseOid"
+        `);
         const identity = identities[0];
         if (!identity) {
           throw new Error("Could not identify the sending transaction backend");
@@ -1321,7 +1232,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       },
     };
     const useCase = new SendCheer({
-      cheerRepository: new PrismaCheerRepository(txHost),
+      cheerRepository: new DrizzleCheerRepository(txHost),
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(1),
       mutationLock: mutationLock,
@@ -1330,19 +1241,19 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
     });
 
-    // When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
+    // When
     const sending = useCase.execute({ senderId, receiverId, timezone: "Asia/Seoul" });
     const identity = await sendingIdentity.promise;
     try {
       continueLockAttempt.resolve();
       const mismatchedIdentity = { pid: -1, databaseOid: -1 };
       await expect(
-        waitForBlockedAdvisoryLock(prisma, dailyKey, mismatchedIdentity, {
+        waitForBlockedAdvisoryLock(client, dailyKey, mismatchedIdentity, {
           timeoutMs: 40,
           pollIntervalMs: 10,
         }),
       ).rejects.toThrow("pid=-1, databaseOid=-1");
-      const observation = await waitForBlockedAdvisoryLock(prisma, dailyKey, identity);
+      const observation = await waitForBlockedAdvisoryLock(client, dailyKey, identity);
       expect(observation.waitingCount).toBe(1);
       vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
     } finally {
@@ -1350,14 +1261,11 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       release.resolve();
       await Promise.allSettled([sending, blocker]);
     }
-    const cheer = await sending;
+    const created = await sending;
 
-    // Then - row timestamp가 이전 날짜 key/window와 동일한 capturedAt에 고정됨
-    expect(cheer.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
-    const persisted = decodeRecord(
-      "Cheer",
-      requireRecord(await prisma.orm.public.Cheer.where((row) => row.id.eq(cheer.id)).first()),
-    );
-    expect(persisted.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
+    // Then
+    expect(created.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
+    const persisted = await client.query.cheer.findFirst({ where: { id: created.id } });
+    expect(persisted?.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
   });
 });

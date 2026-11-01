@@ -1,4 +1,4 @@
-import postgres from "@prisma/orm-postgres/runtime";
+import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
@@ -18,12 +18,19 @@ import { MarkCheerRead } from "#api/modules/social/application/use-cases/cheers/
 import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
 import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
 import { normalizeUserSearchQuery } from "#api/modules/social/domain/policies/friends/user-search-query.policy";
-import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { contract } from "#api/platform/database/database.service";
 import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  cheer,
+  follow,
+  nudge,
+  todo,
+  todoCategory,
+  user as userTable,
+  userProfile,
+} from "#api/platform/database/schema/index";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
-import { createStatementObserver } from "#test/setup/statement-observer";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
@@ -35,13 +42,8 @@ import {
 const AT = new Date("2027-01-04T20:00:00.000Z");
 const SEED_AT = new Date("2027-01-04T19:00:00.000Z");
 let recording: string[] | null = null;
-const trace = createStatementObserver("social-statement-observer", (statement) => {
-  if (recording !== null) {
-    recording.push(statement.sql);
-  }
-});
 
-describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () => {
+describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
@@ -51,24 +53,12 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
   let todoIds: number[];
   beforeAll(async () => {
     database = new TestDatabase({
-      createClient(url) {
-        const pool = new Pool({ connectionString: url, max: 4 });
-        const native = postgres({
-          contract,
-          pg: pool,
-          middleware: [trace],
-        });
-        let closed = false;
-        return {
-          ...native,
-          async close() {
-            if (closed) return;
-            closed = true;
-            await native.close();
-            await pool.end();
-          },
-        };
-      },
+      createClient: (url) =>
+        createTestClient(url, { max: 4 }, (statement) => {
+          if (recording !== null) {
+            recording.push(statement);
+          }
+        }),
     });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
@@ -86,43 +76,35 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
         email: `social-regression-${index}@example.com`,
         userTag: `SOCPG00${index}`,
       });
-      await client.orm.public.User.create(encodeCreate("User", user));
+      await client.insert(userTable).values(user);
       users.push(user.id);
     }
     senderId = users[0] ?? "";
     receiverIds = users.slice(1);
     todoIds = [];
     for (const [index, receiverId] of receiverIds.entries()) {
-      await client.orm.public.Follow.createAndCount([
-        encodeCreate("Follow", {
-          followerId: senderId,
-          followingId: receiverId,
-          status: "ACCEPTED",
-          sortOrder: index,
-        }),
-        encodeCreate("Follow", {
-          followerId: receiverId,
-          followingId: senderId,
-          status: "ACCEPTED",
-          sortOrder: 0,
-        }),
+      await client.insert(follow).values([
+        { followerId: senderId, followingId: receiverId, status: "ACCEPTED", sortOrder: index },
+        { followerId: receiverId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 },
       ]);
-      const { id: categoryId } = await client.orm.public.TodoCategory.create(
-        encodeCreate(
-          "TodoCategory",
-          TodoCategoryFixture.create({ userId: receiverId, sortOrder: 0 }),
-        ),
-      );
-      const todo = TodoFixture.create({
+      const [category] = await client
+        .insert(todoCategory)
+        .values(TodoCategoryFixture.create({ userId: receiverId, sortOrder: 0 }))
+        .returning({ id: todoCategory.id });
+      if (category === undefined) throw new Error("category fixture 누락");
+      const todoFixture = TodoFixture.create({
         userId: receiverId,
-        categoryId,
+        categoryId: category.id,
         visibility: "PUBLIC",
         startDate: new Date("2027-01-04"),
         endDate: new Date("2027-01-05"),
         sortOrder: 0,
       });
-      const input = omit(todo, ["id"]);
-      const row = await client.orm.public.Todo.create(encodeCreate("Todo", input));
+      const [row] = await client
+        .insert(todo)
+        .values(omit(todoFixture, ["id"]))
+        .returning({ id: todo.id });
+      if (row === undefined) throw new Error("todo fixture 누락");
       todoIds.push(row.id);
     }
   });
@@ -144,27 +126,17 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client
-            .runtime()
-            .query(
-              client.raw
-                .sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`
-                .returnsRow({ count: "pg/int4@1" })
-                .build(),
-            );
-          expect(waiting[0]?.count).toBe(2);
+          const waiting = await client.execute<{ count: number }>(
+            sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`,
+          );
+          expect(waiting.rows[0]?.count).toBe(2);
         },
         { timeout: 5000, interval: 10 },
       );
-      const waiting = await client
-        .runtime()
-        .query(
-          client.raw
-            .sql`SELECT query FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' ORDER BY query`
-            .returnsRow({ query: "pg/text@1" })
-            .build(),
-        );
-      expect(waiting).toHaveLength(2);
+      const waiting = await client.execute<{ query: string }>(
+        sql`SELECT query FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' ORDER BY query`,
+      );
+      expect(waiting.rows).toHaveLength(2);
     } finally {
       await holding.query("COMMIT");
       holding.release();
@@ -175,22 +147,16 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
     for (let index = 0; index < 2; index++) {
       const receiverId = receiverIds[index];
       if (receiverId === undefined) throw new Error("receiver fixture 누락");
-      if (kind === "Cheer")
-        await client.orm.public.Cheer.create(
-          encodeCreate("Cheer", { senderId, receiverId, message: null, createdAt: SEED_AT }),
-        );
-      else {
+      if (kind === "Cheer") {
+        await client
+          .insert(cheer)
+          .values({ senderId, receiverId, message: null, createdAt: SEED_AT });
+      } else {
         const todoId = todoIds[index];
         if (todoId === undefined) throw new Error("todo fixture 누락");
-        await client.orm.public.Nudge.create(
-          encodeCreate("Nudge", {
-            senderId,
-            receiverId,
-            todoId,
-            message: null,
-            createdAt: SEED_AT,
-          }),
-        );
+        await client
+          .insert(nudge)
+          .values({ senderId, receiverId, todoId, message: null, createdAt: SEED_AT });
       }
     }
   }
@@ -214,10 +180,9 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
   }
   for (const kind of ["Cheer", "Nudge"] as const) {
     for (const mixedTimezone of [false, true]) {
-      it(`${kind} 기존2회+동시2회는 ${mixedTimezone ? "서로 다른 localDate 시간대에서도" : "동일 시간대에서"} 일일3회만 허용해야 한다`, async () => {
-        // Given - 기존 두 기록은 두 시간대의 날짜 범위에 모두 포함된다.
+      it(`${kind} 기존 2회와 동시 2회 요청은 ${mixedTimezone ? "서로 다른 날짜 시간대에서도" : "같은 시간대에서"} 하루 3회까지만 허용한다`, async () => {
+        // Given
         await seed(kind);
-        const before = await usage(kind);
         const execute = (index: number, tz: string) => {
           const receiverId = receiverIds[index];
           const todoId = todoIds[index];
@@ -227,6 +192,7 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
             ? context.module.get(SendCheer).execute({ senderId, receiverId, timezone: tz })
             : context.module.get(SendNudge).execute({ senderId, receiverId, todoId, timezone: tz });
         };
+
         // When
         const results = await contend(
           () => execute(2, "UTC"),
@@ -234,58 +200,48 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
         );
         const after = await usage(kind);
         const fulfilled = results.filter((result) => result.status === "fulfilled").length;
-        console.log(
-          "SOCIAL_AFTER_QUOTA",
-          JSON.stringify({
-            kind,
-            mixedTimezone,
-            before,
-            after,
-            fulfilled,
-            rejected: results
-              .filter((result) => result.status === "rejected")
-              .map((result) => ({
-                errorCode: result.reason?.errorCode,
-                details: result.reason?.details,
-              })),
-          }),
-        );
+
         // Then
         expect(fulfilled).toBe(1);
         expect(after.every((row) => row.used === 3)).toBe(true);
       });
     }
   }
-  it("동일 친구 동시 Cheers는 다른 시간대에도 pair cooldown으로 하나만 허용한다", async () => {
+  it("같은 친구에게 동시에 보낸 응원은 시간대가 달라도 쿨다운으로 하나만 허용한다", async () => {
+    // Given
     const receiverId = receiverIds[0];
     if (receiverId === undefined) throw new Error("receiver fixture 누락");
     const send = context.module.get(SendCheer);
+
+    // When
     const results = await contend(
       () => send.execute({ senderId, receiverId, timezone: "UTC" }),
       () => send.execute({ senderId, receiverId, timezone: "Asia/Seoul" }),
     );
-    console.log(
-      "SOCIAL_AFTER_COOLDOWN",
-      JSON.stringify({
-        fulfilled: results.filter((result) => result.status === "fulfilled").length,
-        rejected: results
-          .filter((result) => result.status === "rejected")
-          .map((result) => result.reason?.errorCode),
-      }),
-    );
+
+    // Then
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(results.find((result) => result.status === "rejected")?.reason).toMatchObject({
       errorCode: "CHEER_1202",
     });
   });
-  it("관계 포함 3행 목록은 1 SQL이고 단건 읽음은 PK 선행 조회 없이 2 SQL이다", async () => {
+
+  it("관계를 포함한 3건 목록은 쿼리 1번이고 단건 읽음은 선행 조회 없이 쿼리 2번이다", async () => {
+    // Given
     const receiverId = receiverIds[0];
     if (receiverId === undefined) throw new Error("receiver fixture 누락");
-    for (let index = 0; index < 3; index++)
-      await client.orm.public.Cheer.create(
-        encodeCreate("Cheer", { senderId, receiverId, message: "목록", createdAt: SEED_AT }),
-      );
+    await client.insert(cheer).values(
+      Array.from({ length: 3 }, () => ({
+        senderId,
+        receiverId,
+        message: "목록",
+        createdAt: SEED_AT,
+      })),
+    );
     const listStatements: string[] = [];
+    const readStatements: string[] = [];
+
+    // When
     recording = listStatements;
     const list = await context.module
       .get<CheerRepositoryPort>(CHEER_REPOSITORY)
@@ -293,57 +249,42 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
     recording = null;
     const first = list[0];
     if (first === undefined) throw new Error("list fixture 누락");
-    const readStatements: string[] = [];
     recording = readStatements;
     await context.module.get(MarkCheerRead).execute({ userId: receiverId, cheerId: first.id });
     recording = null;
-    for (const [scenario, statements] of [
-      ["list-3-with-profile", listStatements],
-      ["mark-one-as-read", readStatements],
-    ] as const)
-      console.log(
-        "SOCIAL_AFTER_QUERY",
-        JSON.stringify({
-          scenario,
-          count: statements.length,
-          fixtureRows: 3,
-          transactionControlsAndFixtureExcluded: true,
-        }),
-      );
+
+    // Then
     expect(list).toHaveLength(3);
     expect(listStatements).toHaveLength(1);
     expect(readStatements).toHaveLength(2);
   });
-  it("맞팔 판정은 한 SQL로 양방향 ACCEPTED·PENDING·누락·기존 self 상태를 구분한다", async () => {
+
+  it("맞팔 판정은 쿼리 1번으로 양방향 수락·대기·누락·본인 팔로우 상태를 구분한다", async () => {
     // Given
     const receiverId = receiverIds[0];
     if (receiverId === undefined) throw new Error("receiver fixture 누락");
     const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
     const statements: string[] = [];
-    recording = statements;
+
     // When
+    recording = statements;
     const accepted = await repository.isMutualFriend(senderId, receiverId);
     recording = null;
-    await client.orm.public.Follow.where({
-      followerId: receiverId,
-      followingId: senderId,
-    }).updateAndCount({ status: "PENDING" });
+    await client
+      .update(follow)
+      .set({ status: "PENDING" })
+      .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
     const pending = await repository.isMutualFriend(senderId, receiverId);
-    await client.orm.public.Follow.where({
-      followerId: receiverId,
-      followingId: senderId,
-    }).deleteAndCount();
+    await client
+      .delete(follow)
+      .where(and(eq(follow.followerId, receiverId), eq(follow.followingId, senderId)));
     const missingReverse = await repository.isMutualFriend(senderId, receiverId);
-    await client.orm.public.Follow.create(
-      encodeCreate("Follow", {
-        followerId: senderId,
-        followingId: senderId,
-        status: "ACCEPTED",
-        sortOrder: 0,
-      }),
-    );
+    await client
+      .insert(follow)
+      .values({ followerId: senderId, followingId: senderId, status: "ACCEPTED", sortOrder: 0 });
     const self = await repository.isMutualFriend(senderId, senderId);
     const missingUser = await repository.isMutualFriend(senderId, createEntityId());
+
     // Then
     expect({ accepted, pending, missingReverse, self, missingUser }).toEqual({
       accepted: true,
@@ -352,35 +293,28 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
       self: true,
       missingUser: false,
     });
-    console.log(
-      "SOCIAL_AFTER_QUERY",
-      JSON.stringify({
-        scenario: "mutual-friend",
-        count: statements.length,
-        transactionControlsAndFixtureExcluded: true,
-      }),
-    );
     expect(statements).toHaveLength(1);
   });
 
-  it("native ORM 검색 count는 nullable profile·태그·이름·Unicode·wildcard에서 기존 ranked page와 일치한다", async () => {
+  it("사용자 검색 count는 프로필 없음·태그·이름·유니코드·와일드카드에서 검색 결과 페이지와 일치한다", async () => {
     // Given
     const firstId = receiverIds[0];
     const deletedId = receiverIds[2];
     const inactiveId = receiverIds[3];
-    if (firstId === undefined || deletedId === undefined || inactiveId === undefined)
+    if (firstId === undefined || deletedId === undefined || inactiveId === undefined) {
       throw new Error("검색 fixture 누락");
-    await client.orm.public.UserProfile.createAndCount([
-      encodeCreate("UserProfile", { userId: firstId, name: "민서 가나다" }),
-      encodeCreate("UserProfile", { userId: deletedId, name: "민서 가나다" }),
-      encodeCreate("UserProfile", { userId: inactiveId, name: "민서 가나다" }),
+    }
+    await client.insert(userProfile).values([
+      { userId: firstId, name: "민서 가나다" },
+      { userId: deletedId, name: "민서 가나다" },
+      { userId: inactiveId, name: "민서 가나다" },
     ]);
-    await client.orm.public.User.where({ id: deletedId }).updateAndCount(
-      encodePatch("User", { deletedAt: AT }),
-    );
-    await client.orm.public.User.where({ id: inactiveId }).updateAndCount({ status: "LOCKED" });
+    await client.update(userTable).set({ deletedAt: AT }).where(eq(userTable.id, deletedId));
+    await client.update(userTable).set({ status: "LOCKED" }).where(eq(userTable.id, inactiveId));
     const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
-    // When / Then
+
+    // When
+    const results = [];
     for (const { query, expected } of [
       { query: "SOCPG", expected: 2 },
       { query: "SOCPG001", expected: 1 },
@@ -401,6 +335,11 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
         repository.searchUsers(input),
         repository.countSearchUsers(input),
       ]);
+      results.push({ query, expected, page, count });
+    }
+
+    // Then
+    for (const { query, expected, page, count } of results) {
       expect(count, query).toBe(expected);
       expect(page, query).toHaveLength(count);
       expect(
@@ -410,18 +349,17 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
     }
   });
 
-  it("native updateAll은 실제 수정 상태와 nullable profile 관계를 반환한다", async () => {
+  it("팔로우 수정은 실제 수정된 상태와 프로필 없는 사용자 관계를 반환한다", async () => {
     // Given
     const receiverId = receiverIds[0];
     if (receiverId === undefined) throw new Error("receiver fixture 누락");
-    const row = await client.orm.public.Follow.where({
-      followerId: senderId,
-      followingId: receiverId,
-    })
-      .select("id")
-      .first();
-    if (row === null) throw new Error("follow fixture 누락");
+    const row = await client.query.follow.findFirst({
+      columns: { id: true },
+      where: { followerId: senderId, followingId: receiverId },
+    });
+    if (row === undefined) throw new Error("follow fixture 누락");
     const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
+
     // When
     const updated = await repository.update(row.id, { status: "PENDING", sortOrder: 4 });
     const reciprocal = await repository.updateByFollowerAndFollowing(senderId, receiverId, {
@@ -429,6 +367,7 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
       sortOrder: 0,
     });
     const projection = await repository.updateFollowSortOrder(row.id, 2);
+
     // Then
     expect(updated.isPending()).toBe(true);
     expect(updated.sortOrder).toBe(4);

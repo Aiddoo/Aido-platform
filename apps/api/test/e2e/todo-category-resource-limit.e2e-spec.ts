@@ -1,4 +1,5 @@
 import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/api";
+import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
  * TodoCategory 리소스 제한 E2E 테스트
@@ -9,8 +10,7 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { user as userTable } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -74,22 +74,16 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
   describe("Premium 유저 무제한", () => {
     it("Free 한도(3개)를 초과하여 카테고리 생성 성공하고 maxCount가 ACTIVE 구독 한도", async () => {
-      // Given - 기본 카테고리 2개가 있는 Premium 유저
+      // Given
       const user = await ctx.helpers.createVerifiedUser("cat-limit-premium@test.com", password);
       const accessToken = user.accessToken;
+      await ctx.testDatabase
+        .getClient()
+        .update(userTable)
+        .set({ subscriptionStatus: "ACTIVE" })
+        .where(eq(userTable.id, user.userId));
 
-      // 구독 상태를 ACTIVE로 변경
-      const prisma = ctx.testDatabase.getClient();
-      decodeRecord(
-        "User",
-        requireRecord(
-          await prisma.orm.public.User.where((row) => row.id.eq(user.userId)).update(
-            encodePatch("User", { subscriptionStatus: "ACTIVE" }),
-          ),
-        ),
-      );
-
-      // When - 3개 추가 생성 (기본 2 + 추가 3 = 5개, Free 한도 초과)
+      // When
       for (let i = 1; i <= 3; i++) {
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/todo-categories")
@@ -97,19 +91,19 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
           .send({ name: `프리미엄 카테고리 ${i}`, color: "#FF0000" })
           .expect(201);
 
-        // Then - 각 카테고리 생성 성공
+        // Then
         expect(response.body.data.category.name).toBe(`프리미엄 카테고리 ${i}`);
       }
 
-      // When - 리소스 제한 조회
+      // When
       const limitResponse = await request(ctx.app.getHttpServer())
         .get("/v1/todo-categories/resource-limit")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - maxCount가 ACTIVE 구독 한도(30)이고 카테고리 수는 5
+      // Then
       expect(limitResponse.body.data.maxCount).toBe(SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE);
-      expect(limitResponse.body.data.categoryCount).toBe(5); // 기본 2 + 추가 3
+      expect(limitResponse.body.data.categoryCount).toBe(5);
     });
   });
 });

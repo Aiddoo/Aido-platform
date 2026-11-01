@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
@@ -58,7 +58,14 @@ import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastruc
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { DatabaseService } from "#api/platform/database/database.service";
+import {
+  notification,
+  pushDispatch,
+  pushToken,
+  userConsent,
+  userPreference,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
 import { LOCK_PROVIDER } from "#api/platform/lock/interfaces/lock.interface";
 import {
@@ -68,18 +75,11 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { NotificationBuilder, PushTokenBuilder, UserPreferenceBuilder } from "#test/builders/index";
-import { asMock } from "#test/mocks/bull-job.mock";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
-import {
-  assertNativeWhere,
-  assertNativeWhereContains,
-  createMockDatabaseContext,
-  databaseFixture,
-  databaseWriteExpectation,
-  nativeRows,
-} from "#test/mocks/database.mock";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+import type { Notification, UserPreference } from "#test/types/database-rows";
 
 import {
   finalizeBatchNotificationProvider,
@@ -128,30 +128,12 @@ function buildNotificationTestApi(module: TestingModule) {
   };
 }
 
-describe("Notification 통합 테스트 (Mock DB)", () => {
+describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   let module: TestingModule;
   let facade: ReturnType<typeof buildNotificationTestApi>;
   let repository: DrizzleNotificationRepository;
-
-  // Mock 데이터베이스 서비스
-  const nativeContext = createMockDatabaseContext();
-  const mockNotificationDb = nativeContext.orm.public.Notification;
-
-  const mockPushDispatchDb = nativeContext.orm.public.PushDispatch;
-
-  const mockPushDeliveryAttemptDb = nativeContext.orm.public.PushDeliveryAttempt;
-
-  const mockPushTokenDb = nativeContext.orm.public.PushToken;
-
-  const mockUserPreferenceDb = nativeContext.orm.public.UserPreference;
-
-  const mockUserConsentDb = nativeContext.orm.public.UserConsent;
-
-  const mockDatabaseService = {
-    ...createMockDatabaseService(nativeContext),
-  };
-
-  // Mock Push Provider
+  let testDatabase: TestDatabase;
+  let client: TestDatabaseClient;
   const mockPushProvider = {
     send: vi.fn(),
     sendBatch: vi.fn(),
@@ -176,41 +158,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
     ),
   } satisfies PushDispatchStagingRepositoryPort;
   const mockAfterCommitPublisher = { register: vi.fn() };
-
-  // 테스트 데이터
   const mockUserId = "user-notification-123";
-  const mockNotificationId = 1;
   const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
-  const releasedNotificationTypes: import("#api/modules/notification/domain/types/delivery/notification-type").NotificationType[] =
-    [
-      "FOLLOW_NEW",
-      "FOLLOW_ACCEPTED",
-      "NUDGE_RECEIVED",
-      "CHEER_RECEIVED",
-      "DAILY_COMPLETE",
-      "FRIEND_COMPLETED",
-      "TODO_REMINDER",
-      "TODO_SHARED",
-      "MORNING_REMINDER",
-      "EVENING_REMINDER",
-      "WEEKLY_ACHIEVEMENT",
-      "WEEKLY_REPORT",
-      "MONTHLY_REPORT",
-      "AI_SUGGESTION",
-      "SYSTEM_NOTICE",
-      "ADMIN_BROADCAST",
-      "ADMIN_TARGETED",
-      "WINBACK",
-      "SOCIAL_DIGEST",
-      "NUDGE_SUGGEST",
-      "LUNCH_NUDGE",
-      "STREAK_AT_RISK",
-      "WEATHER_MORNING",
-      "WEATHER_EVENING",
-    ];
 
   beforeAll(async () => {
     suppressLogger();
+    testDatabase = new TestDatabase();
+    client = await testDatabase.start();
+    const transaction = createDatabaseTransactionFixture(client);
 
     module = await Test.createTestingModule({
       providers: [
@@ -232,7 +187,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         },
         {
           provide: UNIT_OF_WORK,
-          useValue: { run: (work) => work() } satisfies UnitOfWorkPort,
+          useValue: transaction.uow satisfies UnitOfWorkPort,
         },
         {
           provide: AFTER_COMMIT_TASK_REGISTRY,
@@ -272,7 +227,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
           useExisting: CachedNotificationRecipientPreferenceAdapter,
         },
-        // application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
         UserSettingsCacheAdapter,
         { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
         { provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
@@ -309,8 +263,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         DrizzleUserPreferenceRepository,
         DrizzleUserConsentRepository,
         {
-          // 푸시 발송 판단용 사용자 설정 포트 — 실제 저장소(mock DB)에 위임하여
-          // 프로덕션 UserNotificationSettingsAdapter의 읽기 시맨틱을 그대로 재현
           provide: USER_NOTIFICATION_SETTINGS,
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
@@ -334,13 +286,8 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           inject: [DrizzleUserPreferenceRepository, DrizzleUserConsentRepository],
         },
         {
-          provide: DatabaseService,
-          useValue: mockDatabaseService,
-        },
-        {
-          // CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 tx ?? database와 등가)
           provide: TransactionHost,
-          useValue: { tx: nativeContext },
+          useValue: transaction.txHost,
         },
         {
           provide: TypedConfigService,
@@ -396,316 +343,304 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
   afterAll(async () => {
     await module.close();
+    await testDatabase.stop();
     vi.restoreAllMocks();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await testDatabase.cleanup();
     NotificationBuilder.resetIdCounter();
     PushTokenBuilder.resetIdCounter();
-    asMock(mockPushDispatchDb.upsert).mockResolvedValue(databaseFixture("PushDispatch", { id: 1 }));
-    asMock(mockPushDispatchDb.update).mockResolvedValue(databaseFixture("PushDispatch", {}));
-    asMock(mockPushDispatchDb.updateAndCount).mockResolvedValue(1);
-    asMock(mockPushDeliveryAttemptDb.createAndCount).mockResolvedValue(0);
-    nativeContext.query.mockResolvedValue(
-      Array.from({ length: 20 }, (_, index) => ({
-        id: index + 1,
-        notificationId: index + 1,
+    await client.insert(userTable).values(
+      [
+        mockUserId,
+        "friend-1",
+        "friend-2",
+        "user-1",
+        "other-user",
+        "user-with-todos",
+        "user-without-todos",
+      ].map((id, index) => ({
+        id,
+        email: `notification-${index}@example.com`,
+        userTag: `NOTIF${String(index).padStart(3, "0")}`,
       })),
-    );
-    asMock(mockNotificationDb.createAll).mockImplementation((data) =>
-      nativeRows(
-        data.map((item, index) =>
-          databaseFixture("Notification", {
-            ...NotificationBuilder.create(item.userId)
-              .withId(index + 1)
-              .build(),
-            ...item,
-          }),
-        ),
-      ),
     );
   });
 
+  async function seedNotifications(rows: Notification[]) {
+    const inserted = [];
+    for (const row of rows) {
+      const { id: _id, ...values } = row;
+      const [created] = await client.insert(notification).values(values).returning();
+      if (created === undefined) {
+        throw new Error("notification fixture was not created");
+      }
+      inserted.push(created);
+    }
+    return inserted;
+  }
+
+  async function seedPushToken(userId: string, token: string) {
+    const { id: _id, ...values } = PushTokenBuilder.create(userId).withToken(token).build();
+    await client.insert(pushToken).values(values);
+  }
+
+  async function seedPreference(userId: string, overrides: Partial<UserPreference>) {
+    const { id: _id, ...values } = UserPreferenceBuilder.create(userId).build();
+    await client.insert(userPreference).values({ ...values, ...overrides });
+  }
+
+  async function findNotification(id: number) {
+    return client.query.notification.findFirst({ where: { id } });
+  }
+
   describe("DI 통합 테스트", () => {
     it("Notification endpoint UseCase와 발송 capability가 정상적으로 조립되어야 함", () => {
-      // Given - DI 컨테이너가 구성됨
+      // Given
+      const assembled = facade;
 
-      // When - 파사드 인스턴스 확인
+      // When
+      const { publish, getNotifications } = assembled;
 
-      // Then - 테스트 수직 경계가 정의되어 있어야 함
-      expect(facade).toBeDefined();
-      expect(facade.publish).toBeInstanceOf(Function);
-      expect(facade.getNotifications).toBeInstanceOf(Function);
+      // Then
+      expect(assembled).toBeDefined();
+      expect(publish).toBeInstanceOf(Function);
+      expect(getNotifications).toBeInstanceOf(Function);
     });
 
     it("DrizzleNotificationRepository가 정상적으로 주입되어야 함", () => {
-      // Given - DI 컨테이너가 구성됨
+      // Given
+      const injected = repository;
 
-      // When - 레포지토리 인스턴스 확인
+      // When
+      const isRepository = injected instanceof DrizzleNotificationRepository;
 
-      // Then - 레포지토리가 정의되어 있어야 함
-      expect(repository).toBeDefined();
-      expect(repository).toBeInstanceOf(DrizzleNotificationRepository);
+      // Then
+      expect(injected).toBeDefined();
+      expect(isRepository).toBe(true);
     });
   });
 
   describe("푸시 토큰 등록 통합 테스트", () => {
     it("새 푸시 토큰을 등록해야 함", async () => {
-      // Given - 유효한 푸시 토큰 준비
-      const mockToken = PushTokenBuilder.create(mockUserId)
-        .withToken(mockPushToken)
-        .asIos()
-        .build();
-      asMock(mockPushTokenDb.upsert).mockResolvedValue(databaseFixture("PushToken", mockToken));
+      // Given
       mockPushProvider.validateToken.mockReturnValue(true);
 
-      // When - 푸시 토큰 등록 (파사드는 void 반환 — 등록 자체가 목적)
-      await expect(
-        facade.registerPushToken({
-          userId: mockUserId,
-          token: mockPushToken,
-          platform: "IOS",
-        }),
-      ).resolves.toBeUndefined();
+      // When
+      const registration = facade.registerPushToken({
+        userId: mockUserId,
+        token: mockPushToken,
+        platform: "IOS",
+      });
 
-      // Then - upsert 수행 검증
-      expect(mockPushTokenDb.upsert).toHaveBeenCalled();
+      // Then
+      await expect(registration).resolves.toBeUndefined();
+      expect(
+        await client.query.pushToken.findFirst({
+          where: { userId: mockUserId, token: mockPushToken },
+        }),
+      ).toMatchObject({ platform: "IOS", isActive: true });
     });
 
     it("유효하지 않은 토큰이면 예외를 발생시켜야 함", async () => {
-      // Given - 유효하지 않은 토큰
+      // Given
       mockPushProvider.validateToken.mockReturnValue(false);
 
-      // When & Then - 예외 발생 검증
-      await expect(
-        facade.registerPushToken({
-          userId: mockUserId,
-          token: "invalid-token",
-          platform: "IOS",
-        }),
-      ).rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });
+      // When
+      const registration = facade.registerPushToken({
+        userId: mockUserId,
+        token: "invalid-token",
+        platform: "IOS",
+      });
+
+      // Then
+      await expect(registration).rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });
+      expect(await client.$count(pushToken)).toBe(0);
     });
   });
 
   describe("알림 목록 조회 통합 테스트", () => {
     it("알림 목록을 조회해야 함", async () => {
-      // Given - 알림 목록 준비
-      const mockNotifications = [
-        NotificationBuilder.create(mockUserId).withId(1).asNudgeReceived("friend-1", 1).build(),
-        NotificationBuilder.create(mockUserId).withId(2).asCheerReceived("friend-2", 1).build(),
-      ];
-      mockNotificationDb.all.mockReturnValue(
-        nativeRows(databaseFixture("Notification", mockNotifications)),
-      );
-      asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 2 });
+      // Given
+      await seedNotifications([
+        NotificationBuilder.create(mockUserId).asNudgeReceived("friend-1", 1).build(),
+        NotificationBuilder.create(mockUserId).asCheerReceived("friend-2", 1).build(),
+      ]);
 
-      // When - 알림 목록 조회
+      // When
       const result = await facade.getNotifications({ userId: mockUserId });
 
-      // Then - 목록 및 페이지네이션 검증
-      expect(result.items).toBeDefined();
+      // Then
+      expect(result.items).toHaveLength(2);
       expect(result.pagination).toBeDefined();
-      expect(mockNotificationDb.all).toHaveBeenCalled();
     });
 
     it("읽지 않은 알림만 필터링해야 함", async () => {
-      // Given - 읽지 않은 알림만 필터링
-      const mockNotifications = [
-        NotificationBuilder.create(mockUserId).withId(1).asUnread().build(),
-      ];
-      mockNotificationDb.all.mockReturnValue(
-        nativeRows(databaseFixture("Notification", mockNotifications)),
-      );
-      asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 1 });
-
-      // When - 읽지 않은 알림만 조회
-      await facade.getNotifications({ userId: mockUserId, unreadOnly: true });
-
-      // Then - 필터 조건 검증
-      assertNativeWhereContains(
-        "Notification",
-        mockNotificationDb.where.mock.calls.at(-1)?.[0],
-        (row) => and(row.userId.eq(mockUserId), row.isRead.eq(false)),
-      );
-    });
-
-    it("category='SOCIAL'이면 소셜 타입 배열로 Repository를 호출해야 한다", async () => {
       // Given
-      mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
+      const [unread] = await seedNotifications([
+        NotificationBuilder.create(mockUserId).asUnread().build(),
+        NotificationBuilder.create(mockUserId).asRead().build(),
+      ]);
 
       // When
-      await facade.getNotifications({
-        userId: "user-1",
-        category: "SOCIAL",
-      });
+      const result = await facade.getNotifications({ userId: mockUserId, unreadOnly: true });
 
       // Then
-      assertNativeWhereContains(
-        "Notification",
-        mockNotificationDb.where.mock.calls.at(-1)?.[0],
-        (row) =>
-          and(
-            row.userId.eq("user-1"),
-            row._type.in([
-              "FOLLOW_NEW",
-              "FOLLOW_ACCEPTED",
-              "NUDGE_RECEIVED",
-              "CHEER_RECEIVED",
-              "FRIEND_COMPLETED",
-              "SOCIAL_DIGEST",
-              "NUDGE_SUGGEST",
-            ]),
-          ),
-      );
+      expect(result.items.map((item) => item.id)).toEqual([unread?.id]);
+    });
+
+    it("category='SOCIAL'이면 소셜 타입 알림만 조회해야 한다", async () => {
+      // Given
+      await seedNotifications([
+        NotificationBuilder.create("user-1").withType("FOLLOW_NEW").build(),
+        NotificationBuilder.create("user-1").withType("CHEER_RECEIVED").build(),
+        NotificationBuilder.create("user-1").withType("SYSTEM_NOTICE").build(),
+        NotificationBuilder.create("user-1").withType("TODO_REMINDER").build(),
+        NotificationBuilder.create("other-user").withType("FOLLOW_NEW").build(),
+      ]);
+
+      // When
+      const result = await facade.getNotifications({ userId: "user-1", category: "SOCIAL" });
+
+      // Then
+      expect(result.items.map((item) => item.type).sort()).toEqual([
+        "CHEER_RECEIVED",
+        "FOLLOW_NEW",
+      ]);
     });
 
     it.each([undefined, "1.10.0", "1.10.1"])(
       "앱 버전 %s의 전체 목록은 구버전이 지원하는 알림만 페이지네이션한다",
       async (appVersion) => {
         // Given
-        mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
+        await seedNotifications([
+          NotificationBuilder.create(mockUserId).withType("FOLLOW_NEW").build(),
+          NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
+          NotificationBuilder.create(mockUserId).withType("INVITE_JOINED").build(),
+        ]);
 
         // When
-        await facade.getNotifications({
+        const result = await facade.getNotifications({
           userId: mockUserId,
           category: "ALL",
           appVersion,
         });
 
         // Then
-        assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-          and(row.userId.eq(mockUserId), row._type.in(releasedNotificationTypes)),
-        );
+        expect(result.items.map((item) => item.type)).toEqual(["FOLLOW_NEW"]);
       },
     );
 
     it("1.13.0의 전체 목록은 모든 알림 타입을 조회한다", async () => {
       // Given
-      mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
+      await seedNotifications([
+        NotificationBuilder.create("user-1").withType("FOLLOW_NEW").build(),
+        NotificationBuilder.create("user-1").withType("NUDGE_REPLIED").build(),
+        NotificationBuilder.create("user-1").withType("INVITE_JOINED").build(),
+      ]);
 
       // When
-      await facade.getNotifications({
+      const result = await facade.getNotifications({
         userId: "user-1",
         category: "ALL",
         appVersion: "1.13.0",
       });
 
       // Then
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls[0]?.[0], (row) =>
-        row.userId.eq("user-1"),
-      );
+      expect(result.items.map((item) => item.type).sort()).toEqual([
+        "FOLLOW_NEW",
+        "INVITE_JOINED",
+        "NUDGE_REPLIED",
+      ]);
     });
 
-    it("category와 unreadOnly를 함께 사용하면 두 조건 모두 전달해야 한다", async () => {
+    it("category와 unreadOnly를 함께 사용하면 두 조건을 모두 적용해야 한다", async () => {
       // Given
-      mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
+      const [match] = await seedNotifications([
+        NotificationBuilder.create("user-1").withType("SYSTEM_NOTICE").asUnread().build(),
+        NotificationBuilder.create("user-1").withType("SYSTEM_NOTICE").asRead().build(),
+        NotificationBuilder.create("user-1").withType("FOLLOW_NEW").asUnread().build(),
+      ]);
 
       // When
-      await facade.getNotifications({
+      const result = await facade.getNotifications({
         userId: "user-1",
         category: "NOTICE",
         unreadOnly: true,
       });
 
       // Then
-      assertNativeWhereContains(
-        "Notification",
-        mockNotificationDb.where.mock.calls.at(-1)?.[0],
-        (row) =>
-          and(
-            row.userId.eq("user-1"),
-            row.isRead.eq(false),
-            row._type.in(["SYSTEM_NOTICE", "ADMIN_BROADCAST", "ADMIN_TARGETED"]),
-          ),
-      );
+      expect(result.items.map((item) => item.id)).toEqual([match?.id]);
     });
 
     it("getNotifications + getUnreadCount 병렬 조회 시 두 결과 모두 정상 반환해야 한다", async () => {
       // Given
-      const notifications = [
-        NotificationBuilder.create(mockUserId).withId(1).asUnread().build(),
-        NotificationBuilder.create(mockUserId).withId(2).asRead().build(),
-      ];
-      mockNotificationDb.all.mockReturnValue(
-        nativeRows(databaseFixture("Notification", notifications)),
-      );
-      asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 1 });
+      await seedNotifications([
+        NotificationBuilder.create(mockUserId).asUnread().build(),
+        NotificationBuilder.create(mockUserId).asRead().build(),
+      ]);
 
-      // When - Promise.all로 병렬 호출 (컨트롤러에서 하는 것과 동일)
+      // When
       const [result, unreadCount] = await Promise.all([
         facade.getNotifications({ userId: mockUserId }),
         facade.getUnreadCount(mockUserId),
       ]);
 
       // Then
-      expect(result.items).toBeDefined();
+      expect(result.items).toHaveLength(2);
       expect(result.pagination).toBeDefined();
       expect(unreadCount).toBe(1);
-      expect(mockNotificationDb.all).toHaveBeenCalled();
-      expect(mockNotificationDb.aggregate).toHaveBeenCalled();
     });
 
     it("category + cursor 조합이 DB 쿼리에 함께 적용되어야 한다", async () => {
       // Given
-      mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
+      const rows = await seedNotifications([
+        NotificationBuilder.create(mockUserId).withType("FOLLOW_NEW").build(),
+        NotificationBuilder.create(mockUserId).withType("CHEER_RECEIVED").build(),
+        NotificationBuilder.create(mockUserId).withType("SYSTEM_NOTICE").build(),
+        NotificationBuilder.create(mockUserId).withType("FOLLOW_ACCEPTED").build(),
+      ]);
+      const cursor = rows[3]?.id;
 
       // When
-      asMock(mockNotificationDb.first).mockResolvedValue(
-        databaseFixture("Notification", NotificationBuilder.create(mockUserId).withId(10).build()),
-      );
-      await facade.getNotifications({
+      const result = await facade.getNotifications({
         userId: mockUserId,
         category: "SOCIAL",
-        cursor: 10,
+        cursor,
         size: 5,
       });
 
       // Then
-      assertNativeWhereContains(
-        "Notification",
-        mockNotificationDb.where.mock.calls[0]?.[0],
-        (row) =>
-          and(
-            row.userId.eq(mockUserId),
-            row._type.in([
-              "FOLLOW_NEW",
-              "FOLLOW_ACCEPTED",
-              "NUDGE_RECEIVED",
-              "CHEER_RECEIVED",
-              "FRIEND_COMPLETED",
-              "SOCIAL_DIGEST",
-              "NUDGE_SUGGEST",
-            ]),
-          ),
-      );
+      expect(result.items.map((item) => item.id)).toEqual([rows[1]?.id, rows[0]?.id]);
     });
   });
 
   describe("읽지 않은 알림 수 조회 통합 테스트", () => {
     it("구버전이 지원하는 읽지 않은 알림 수만 반환한다", async () => {
-      // Given - 읽지 않은 알림 수 설정
-      asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 5 });
+      // Given
+      await seedNotifications([
+        ...Array.from({ length: 5 }, () => NotificationBuilder.create(mockUserId).build()),
+        NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
+        NotificationBuilder.create(mockUserId).asRead().build(),
+      ]);
 
-      // When - 읽지 않은 알림 수 조회
+      // When
       const result = await facade.getUnreadCount(mockUserId);
 
-      // Then - 알림 수 검증
+      // Then
       expect(result).toBe(5);
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-        and(
-          row.userId.eq(mockUserId),
-          row.isRead.eq(false),
-          row._type.in(releasedNotificationTypes),
-        ),
-      );
     });
 
     it("1.13.0과 구버전의 읽지 않은 알림 수를 서로 다른 캐시 키로 조회한다", async () => {
       // Given
-      asMock(mockNotificationDb.aggregate)
-        .mockResolvedValueOnce({ count: 3 })
-        .mockResolvedValueOnce({ count: 5 });
+      await seedNotifications([
+        ...Array.from({ length: 3 }, () => NotificationBuilder.create(mockUserId).build()),
+        ...Array.from({ length: 2 }, () =>
+          NotificationBuilder.create(mockUserId).withType("INVITE_JOINED").build(),
+        ),
+      ]);
       const cacheService = module.get(CacheService);
 
       // When
@@ -715,9 +650,6 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       // Then
       expect(releasedUnreadCount).toBe(3);
       expect(currentUnreadCount).toBe(5);
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-        and(row.userId.eq(mockUserId), row.isRead.eq(false)),
-      );
       expect(cacheService.wrap).toHaveBeenNthCalledWith(
         1,
         `aido:v1:notification:unread-count:${mockUserId}:legacy`,
@@ -737,115 +669,130 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
   describe("알림 읽음 처리 통합 테스트", () => {
     it("단일 알림을 읽음 처리해야 함", async () => {
-      // Given - 읽음 처리할 알림 준비
-      const mockNotification = NotificationBuilder.create(mockUserId)
-        .withId(mockNotificationId)
-        .asUnread()
-        .build();
-      asMock(mockNotificationDb.first).mockResolvedValue(
-        databaseFixture("Notification", mockNotification),
-      );
-      asMock(mockNotificationDb.updateAndCount).mockResolvedValue(1);
+      // Given
+      const [unread] = await seedNotifications([
+        NotificationBuilder.create(mockUserId).asUnread().build(),
+      ]);
+      if (unread === undefined) {
+        throw new Error("notification fixture was not created");
+      }
 
-      // When - 알림 읽음 처리
-      await expect(facade.markAsRead(mockUserId, mockNotificationId)).resolves.toBeUndefined();
+      // When
+      const marking = facade.markAsRead(mockUserId, unread.id);
 
-      // Then - 읽음 처리 검증
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-        and(row.id.eq(mockNotificationId), row.userId.eq(mockUserId), row.isRead.eq(false)),
-      );
-      expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Notification", {
-            isRead: true,
-          }),
-        ),
-      );
+      // Then
+      await expect(marking).resolves.toBeUndefined();
+      expect(await findNotification(unread.id)).toMatchObject({
+        isRead: true,
+        readAt: expect.any(Date),
+      });
     });
 
     it("푸시 탭을 멱등 기록하고 읽음 상태로 맞춰야 함", async () => {
-      asMock(mockNotificationDb.updateAndCount).mockResolvedValue(1);
+      // Given
+      const [unread] = await seedNotifications([
+        NotificationBuilder.create(mockUserId).asUnread().build(),
+      ]);
+      if (unread === undefined) {
+        throw new Error("notification fixture was not created");
+      }
+      await client.insert(pushDispatch).values({
+        notificationId: unread.id,
+        userId: mockUserId,
+        purpose: "TRANSACTIONAL",
+      });
 
-      await expect(facade.markOpened(mockUserId, mockNotificationId)).resolves.toBe(true);
+      // When
+      const first = await facade.markOpened(mockUserId, unread.id);
+      const repeated = await facade.markOpened(mockUserId, unread.id);
 
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-        and(row.id.eq(mockNotificationId), row.userId.eq(mockUserId), row.openedAt.isNull()),
-      );
-      expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Notification", {
-            isRead: true,
-            openedAt: expect.any(String),
-          }),
-        ),
-      );
-      expect(mockPushDispatchDb.updateAndCount).toHaveBeenCalled();
+      // Then
+      expect(first).toBe(true);
+      expect(repeated).toBe(false);
+      expect(await findNotification(unread.id)).toMatchObject({
+        isRead: true,
+        openedAt: expect.any(Date),
+      });
+      expect(
+        await client.query.pushDispatch.findFirst({ where: { notificationId: unread.id } }),
+      ).toMatchObject({ openedAt: expect.any(Date) });
     });
 
     it("서명 토큰으로 광고성 푸시 동의를 철회해야 함", async () => {
-      asMock(mockUserConsentDb.upsert).mockResolvedValue(databaseFixture("UserConsent", {}));
+      // Given
+      await client.insert(userConsent).values({
+        userId: mockUserId,
+        marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
+      });
 
-      await expect(facade.optOutMarketingPush(`opt-out:${mockUserId}`)).resolves.toBe(true);
+      // When
+      const result = await facade.optOutMarketingPush(`opt-out:${mockUserId}`);
 
-      assertNativeWhere("UserConsent", mockUserConsentDb.where.mock.calls.at(-1)?.[0], (row) =>
-        row.userId.eq(mockUserId),
-      );
+      // Then
+      expect(result).toBe(true);
+      expect(
+        await client.query.userConsent.findFirst({ where: { userId: mockUserId } }),
+      ).toMatchObject({ marketingPushAgreedAt: null });
     });
 
     it("존재하지 않는 알림이면 예외를 발생시켜야 함", async () => {
-      // Given - 존재하지 않는 알림
-      asMock(mockNotificationDb.first).mockResolvedValue(databaseFixture("Notification", null));
+      // Given
+      const missingId = 999;
 
-      // When & Then - 예외 발생 검증
-      await expect(facade.markAsRead(mockUserId, 999)).rejects.toMatchObject({
-        errorCode: "NOTIFICATION_1004",
-      });
+      // When
+      const marking = facade.markAsRead(mockUserId, missingId);
+
+      // Then
+      await expect(marking).rejects.toMatchObject({ errorCode: "NOTIFICATION_1004" });
     });
 
     it("다른 사용자의 알림이면 예외를 발생시켜야 함", async () => {
-      // Given - 다른 사용자의 알림
-      const mockNotification = NotificationBuilder.create("other-user")
-        .withId(mockNotificationId)
-        .build();
-      asMock(mockNotificationDb.first).mockResolvedValue(
-        databaseFixture("Notification", mockNotification),
-      );
+      // Given
+      const [others] = await seedNotifications([NotificationBuilder.create("other-user").build()]);
+      if (others === undefined) {
+        throw new Error("notification fixture was not created");
+      }
 
-      // When & Then - 예외 발생 검증
-      await expect(facade.markAsRead(mockUserId, mockNotificationId)).rejects.toMatchObject({
-        errorCode: "NOTIFICATION_1005",
-      });
+      // When
+      const marking = facade.markAsRead(mockUserId, others.id);
+
+      // Then
+      await expect(marking).rejects.toMatchObject({ errorCode: "NOTIFICATION_1005" });
+      expect(await findNotification(others.id)).toMatchObject({ isRead: false });
     });
 
     it("구버전에서 전체 읽음 처리해도 신규 답장·고마움 알림은 읽지 않는다", async () => {
-      // Given - 전체 읽음 처리 준비
-      asMock(mockNotificationDb.updateAndCount).mockResolvedValue(5);
+      // Given
+      const [, , , , , newer] = await seedNotifications([
+        ...Array.from({ length: 5 }, () => NotificationBuilder.create(mockUserId).build()),
+        NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
+      ]);
+      if (newer === undefined) {
+        throw new Error("notification fixture was not created");
+      }
 
-      // When - 전체 알림 읽음 처리
+      // When
       const result = await facade.markAllAsRead(mockUserId);
 
-      // Then - 전체 읽음 처리 검증
+      // Then
       expect(result.count).toBe(5);
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-        and(
-          row.userId.eq(mockUserId),
-          row.isRead.eq(false),
-          row._type.in(releasedNotificationTypes),
+      expect(await findNotification(newer.id)).toMatchObject({ isRead: false, readAt: null });
+      expect(
+        await client.$count(
+          notification,
+          and(eq(notification.userId, mockUserId), eq(notification.isRead, true)),
         ),
-      );
-      expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Notification", {
-            isRead: true,
-            readAt: expect.any(String),
-          }),
-        ),
-      );
+      ).toBe(5);
     });
 
     it("1.13.0은 신규 알림까지 전체 읽음 처리하고 모든 버전 단계의 캐시를 무효화한다", async () => {
       // Given
-      asMock(mockNotificationDb.updateAndCount).mockResolvedValue(7);
+      await seedNotifications([
+        ...Array.from({ length: 5 }, () => NotificationBuilder.create(mockUserId).build()),
+        ...Array.from({ length: 2 }, () =>
+          NotificationBuilder.create(mockUserId).withType("NUDGE_REPLIED").build(),
+        ),
+      ]);
       const cacheService = module.get(CacheService);
 
       // When
@@ -853,14 +800,12 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
       // Then
       expect(result.count).toBe(7);
-      assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
-        and(row.userId.eq(mockUserId), row.isRead.eq(false)),
-      );
-      expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Notification", { isRead: true, readAt: expect.any(String) }),
+      expect(
+        await client.$count(
+          notification,
+          and(eq(notification.userId, mockUserId), eq(notification.isRead, false)),
         ),
-      );
+      ).toBe(0);
       expect(cacheService.del).toHaveBeenCalledTimes(3);
       expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}`,
@@ -876,31 +821,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
   describe("알림 생성 및 발송 통합 테스트", () => {
     it("알림과 SINGLE delivery outbox를 같은 흐름에서 준비해야 함", async () => {
-      // Given - 알림 및 푸시 토큰 준비
-      const mockNotification = NotificationBuilder.create(mockUserId)
-        .withId(mockNotificationId)
-        .asNudgeReceived("friend-1", 1)
-        .build();
-      const mockToken = PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build();
-
-      // UserPreference mock - pushEnabled가 true여야 푸시 발송
-      asMock(mockUserPreferenceDb.first).mockResolvedValue(
-        databaseFixture("UserPreference", {
-          userId: mockUserId,
-          pushEnabled: true,
-          nightPushEnabled: true,
-        }),
-      );
-      asMock(mockNotificationDb.create).mockResolvedValue(
-        databaseFixture("Notification", mockNotification),
-      );
-      mockPushTokenDb.all.mockReturnValue(nativeRows(databaseFixture("PushToken", [mockToken])));
+      // Given
+      await seedPreference(mockUserId, { pushEnabled: true, nightPushEnabled: true });
+      await seedPushToken(mockUserId, mockPushToken);
       mockPushProvider.sendBatch.mockResolvedValue({
         successful: [{ token: mockPushToken }],
         failed: [],
       });
 
-      // When - 알림 생성 및 발송
+      // When
       const result = await facade.publish({
         userId: mockUserId,
         type: "NUDGE_RECEIVED",
@@ -908,11 +837,17 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         body: "테스트 알림 내용입니다",
       });
 
-      // Then - 알림 생성과 durable delivery staging 검증
-      expect(result).toEqual(mockNotification);
-      expect(mockNotificationDb.create).toHaveBeenCalled();
+      // Then
+      expect(result).toMatchObject({
+        userId: mockUserId,
+        type: "NUDGE_RECEIVED",
+        title: "테스트 알림",
+        body: "테스트 알림 내용입니다",
+      });
+      const saved = await client.query.notification.findMany({ where: { userId: mockUserId } });
+      expect(saved).toHaveLength(1);
       expect(mockPushDispatchStaging.stage).toHaveBeenCalledWith({
-        notificationId: mockNotification.id,
+        notificationId: saved[0]?.id,
         userId: mockUserId,
         purpose: "TRANSACTIONAL",
         campaignKey: undefined,
@@ -920,39 +855,30 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         deliveryMode: "SINGLE",
         force: false,
       });
-      expect(mockAfterCommitPublisher.register).toHaveBeenCalledWith([mockNotification.id]);
+      expect(mockAfterCommitPublisher.register).toHaveBeenCalledWith([saved[0]?.id]);
     });
 
     it("푸시 토큰이 없어도 알림을 생성해야 함", async () => {
-      // Given - 푸시 토큰 없음
-      const mockNotification = NotificationBuilder.create(mockUserId)
-        .withId(mockNotificationId)
-        .asNudgeReceived("friend-1", 1)
-        .build();
-
-      asMock(mockNotificationDb.create).mockResolvedValue(
-        databaseFixture("Notification", mockNotification),
-      );
-      mockPushTokenDb.all.mockReturnValue(nativeRows(databaseFixture("PushToken", [])));
-
-      // When - 알림 생성 (푸시 토큰 없음)
-      const result = await facade.publish({
+      // Given
+      const input = {
         userId: mockUserId,
         type: "NUDGE_RECEIVED",
         title: "테스트 알림",
         body: "테스트 알림 내용입니다",
-      });
+      } as const;
 
-      // Then - 알림 생성만 수행됨
-      expect(result).toEqual(mockNotification);
+      // When
+      const result = await facade.publish(input);
+
+      // Then
+      expect(result).toMatchObject(input);
+      expect(await client.$count(notification, eq(notification.userId, mockUserId))).toBe(1);
       expect(mockPushProvider.sendBatch).not.toHaveBeenCalled();
     });
 
     it("MORNING_REMINDER publishBatch 시 title에 {count}가 치환된 값이 저장되어야 함", async () => {
-      // Given - morningReminder 템플릿으로 치환된 메시지 준비
-      const todoCount = 3;
-      const message = createMorningReminderNotificationMessage({ count: todoCount });
-
+      // Given
+      const message = createMorningReminderNotificationMessage({ count: 3 });
       const dataList = [
         {
           userId: mockUserId,
@@ -961,82 +887,30 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           body: message.body,
         },
       ];
+      await seedPreference(mockUserId, { pushEnabled: true, nightPushEnabled: true });
+      await seedPushToken(mockUserId, mockPushToken);
 
-      mockUserPreferenceDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture(
-            "UserPreference",
-            [{ userId: mockUserId, pushEnabled: true, nightPushEnabled: true }].map((value) => ({
-              ...UserPreferenceBuilder.create(value.userId).build(),
-              ...value,
-            })),
-          ),
-        ),
-      );
-      mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
-      mockPushTokenDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("PushToken", [
-            PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-          ]),
-        ),
-      );
-      mockPushProvider.sendBatch.mockResolvedValue({
-        total: 1,
-        successCount: 1,
-        failureCount: 0,
-        results: [{ token: mockPushToken, success: true }],
-        invalidTokens: [],
-      });
-
-      // When - 배치 알림 생성 및 발송
+      // When
       const result = await facade.publishBatch(dataList);
 
-      // Then - title이 치환된 값이어야 하며, {count}가 포함되지 않아야 함
+      // Then
       expect(result.count).toBe(1);
       expect(message.title).toContain("3");
       expect(message.title).not.toContain("{count}");
-
-      const createManyCall = mockNotificationDb.createAll.mock.calls[0]?.[0];
-      expect(createManyCall?.[0]?.title).toBe(message.title);
-      expect(createManyCall?.[0]?.title).not.toContain("{count}");
-      expect(createManyCall?.[0]?._type).toBe("MORNING_REMINDER");
+      const saved = await client.query.notification.findMany({ where: { userId: mockUserId } });
+      expect(saved).toHaveLength(1);
+      expect(saved[0]?.title).toBe(message.title);
+      expect(saved[0]?.title).not.toContain("{count}");
+      expect(saved[0]?.type).toBe("MORNING_REMINDER");
     });
 
     it("할일 없는 사용자에게 MORNING_NO_TODO 메시지로 알림이 정상 생성되어야 함", async () => {
-      // Given - morningNoTodo 템플릿 메시지 준비
+      // Given
       const message = createMorningNoTodoNotificationMessage();
-      const mockNotification = NotificationBuilder.create(mockUserId)
-        .withId(10)
-        .withType("MORNING_REMINDER")
-        .withContent(message.title, message.body)
-        .build();
+      await seedPreference(mockUserId, { pushEnabled: true, nightPushEnabled: true });
+      await seedPushToken(mockUserId, mockPushToken);
 
-      asMock(mockNotificationDb.create).mockResolvedValue(
-        databaseFixture("Notification", mockNotification),
-      );
-      asMock(mockUserPreferenceDb.first).mockResolvedValue(
-        databaseFixture("UserPreference", {
-          userId: mockUserId,
-          pushEnabled: true,
-          nightPushEnabled: true,
-        }),
-      );
-      mockPushTokenDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("PushToken", [
-            PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-          ]),
-        ),
-      );
-      mockPushProvider.sendBatch.mockResolvedValue({
-        total: 1,
-        successCount: 1,
-        failureCount: 0,
-        invalidTokens: [],
-      });
-
-      // When - 할일 없는 사용자용 알림 생성
+      // When
       const result = await facade.publish({
         userId: mockUserId,
         type: "MORNING_REMINDER",
@@ -1044,31 +918,27 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         body: message.body,
       });
 
-      // Then - morningNoTodo 메시지가 그대로 저장되어야 함
+      // Then
       expect(result).not.toBeNull();
       expect(result?.title).toBe(message.title);
       expect(result?.body).toBe(message.body);
       expect(result?.type).toBe("MORNING_REMINDER");
-      expect(mockNotificationDb.create).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Notification", {
-            userId: mockUserId,
-            type: "MORNING_REMINDER",
-            title: message.title,
-            body: message.body,
-          }),
-        ),
-      );
+      expect(
+        await client.query.notification.findFirst({ where: { userId: mockUserId } }),
+      ).toMatchObject({
+        userId: mockUserId,
+        type: "MORNING_REMINDER",
+        title: message.title,
+        body: message.body,
+      });
     });
 
     it("publishBatch에서 할일 있는 사용자와 없는 사용자 알림이 함께 저장되어야 함", async () => {
-      // Given - 할일 있는 사용자와 없는 사용자 메시지 준비
+      // Given
       const userWithTodos = "user-with-todos";
       const userWithoutTodos = "user-without-todos";
-
       const messageWithTodos = createMorningReminderNotificationMessage({ count: 5 });
       const messageNoTodos = createMorningNoTodoNotificationMessage();
-
       const dataList = [
         {
           userId: userWithTodos,
@@ -1083,55 +953,30 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           body: messageNoTodos.body,
         },
       ];
+      await seedPreference(userWithTodos, { pushEnabled: true, nightPushEnabled: true });
+      await seedPreference(userWithoutTodos, { pushEnabled: true, nightPushEnabled: true });
+      await seedPushToken(userWithTodos, "token-1");
+      await seedPushToken(userWithoutTodos, "token-2");
 
-      mockUserPreferenceDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture(
-            "UserPreference",
-            [
-              { userId: userWithTodos, pushEnabled: true, nightPushEnabled: true },
-              { userId: userWithoutTodos, pushEnabled: true, nightPushEnabled: true },
-            ].map((value) => ({ ...UserPreferenceBuilder.create(value.userId).build(), ...value })),
-          ),
-        ),
-      );
-      mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
-      mockPushTokenDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("PushToken", [
-            PushTokenBuilder.create(userWithTodos).withToken("token-1").build(),
-            PushTokenBuilder.create(userWithoutTodos).withToken("token-2").build(),
-          ]),
-        ),
-      );
-      mockPushProvider.sendBatch.mockResolvedValue({
-        total: 2,
-        successCount: 2,
-        failureCount: 0,
-        results: [
-          { token: "token-1", success: true },
-          { token: "token-2", success: true },
-        ],
-        invalidTokens: [],
-      });
-
-      // When - 배치 알림 생성 및 발송
+      // When
       const result = await facade.publishBatch(dataList);
 
-      // Then - 두 사용자 모두 알림이 생성되어야 함
+      // Then
       expect(result.count).toBe(2);
-
-      const createManyCall = mockNotificationDb.createAll.mock.calls[0]?.[0];
-      // 할일 있는 사용자: 치환된 title
-      expect(createManyCall?.[0]?.title).toBe(messageWithTodos.title);
-      expect(createManyCall?.[0]?.title).not.toContain("{count}");
-      // 할일 없는 사용자: morningNoTodo 메시지
-      expect(createManyCall?.[1]?.title).toBe(messageNoTodos.title);
-      expect(createManyCall?.[1]?.body).toBe(messageNoTodos.body);
+      const withTodos = await client.query.notification.findFirst({
+        where: { userId: userWithTodos },
+      });
+      const withoutTodos = await client.query.notification.findFirst({
+        where: { userId: userWithoutTodos },
+      });
+      expect(withTodos?.title).toBe(messageWithTodos.title);
+      expect(withTodos?.title).not.toContain("{count}");
+      expect(withoutTodos?.title).toBe(messageNoTodos.title);
+      expect(withoutTodos?.body).toBe(messageNoTodos.body);
     });
 
     it("force 항목은 BATCH delivery outbox에 손실 없이 저장되어야 함", async () => {
-      // Given - 푸시를 꺼둔 사용자와 force 지정된 관리자 브로드캐스트
+      // Given
       const dataList = [
         {
           userId: mockUserId,
@@ -1145,38 +990,13 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           },
         },
       ];
+      await seedPreference(mockUserId, { pushEnabled: false, nightPushEnabled: false });
+      await seedPushToken(mockUserId, mockPushToken);
 
-      mockUserPreferenceDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture(
-            "UserPreference",
-            [{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false }].map((value) => ({
-              ...UserPreferenceBuilder.create(value.userId).build(),
-              ...value,
-            })),
-          ),
-        ),
-      );
-      mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
-      mockPushTokenDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("PushToken", [
-            PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-          ]),
-        ),
-      );
-      mockPushProvider.sendBatch.mockResolvedValue({
-        total: 1,
-        successCount: 1,
-        failureCount: 0,
-        results: [{ token: mockPushToken, success: true }],
-        invalidTokens: [],
-      });
-
-      // When - 배치 알림 생성 및 발송 (재조립 경로 포함 end-to-end)
+      // When
       const result = await facade.publishBatch(dataList);
 
-      // Then - crash 뒤 worker가 같은 정책을 재현할 수 있도록 force가 staging됨
+      // Then
       expect(result.count).toBe(1);
       expect(mockPushDispatchStaging.stageMany).toHaveBeenCalledWith([
         expect.objectContaining({
@@ -1188,7 +1008,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
     });
 
     it("같은 사용자 배치에서도 각 outbox의 force 값을 독립적으로 보존해야 함", async () => {
-      // Given - 푸시를 꺼둔 사용자에게 force 알림과 일반 알림이 한 배치로 들어올 때
+      // Given
       const dataList = [
         {
           userId: mockUserId,
@@ -1204,38 +1024,13 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           body: "일반 발송 본문",
         },
       ];
+      await seedPreference(mockUserId, { pushEnabled: false, nightPushEnabled: false });
+      await seedPushToken(mockUserId, mockPushToken);
 
-      mockUserPreferenceDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture(
-            "UserPreference",
-            [{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false }].map((value) => ({
-              ...UserPreferenceBuilder.create(value.userId).build(),
-              ...value,
-            })),
-          ),
-        ),
-      );
-      mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
-      mockPushTokenDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("PushToken", [
-            PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-          ]),
-        ),
-      );
-      mockPushProvider.sendBatch.mockResolvedValue({
-        total: 1,
-        successCount: 1,
-        failureCount: 0,
-        results: [{ token: mockPushToken, success: true }],
-        invalidTokens: [],
-      });
-
-      // When - 배치 알림 생성 및 발송
+      // When
       const result = await facade.publishBatch(dataList);
 
-      // Then - worker가 각 dispatch 정책을 독립적으로 적용할 수 있음
+      // Then
       expect(result.count).toBe(2);
       expect(mockPushDispatchStaging.stageMany).toHaveBeenCalledWith([
         expect.objectContaining({

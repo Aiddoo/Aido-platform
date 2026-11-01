@@ -1,15 +1,14 @@
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { asc, eq, sql } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
-import sql from "sql-template-tag";
 
 import { databaseSqlState } from "#api/platform/database/database-error.util";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
+import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { DatabaseModule } from "#api/platform/database/database.module";
-import { DatabaseService } from "#api/platform/database/database.service";
 import { PostgresPool } from "#api/platform/database/postgres-pool";
-import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { memo, user } from "#api/platform/database/schema/index";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   SAVEPOINT_RUNNER,
@@ -19,16 +18,16 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
-import { createTestClient, createTestDatabaseService } from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
-describe("Prisma 8 동일 연결 savepoint (실제 PostgreSQL)", () => {
+describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let module: TestingModule;
   let unitOfWork: UnitOfWorkPort;
   let savepointRunner: SavepointRunnerPort;
   let afterCommitTasks: AfterCommitTaskRegistryPort;
-  let txHost: TransactionHost<Prisma8TransactionalAdapter>;
+  let txHost: TransactionHost<DrizzleTransactionalAdapter>;
   let userId: string;
 
   beforeAll(async () => {
@@ -42,14 +41,14 @@ describe("Prisma 8 동일 연결 savepoint (실제 PostgreSQL)", () => {
           plugins: [
             new ClsPluginTransactional({
               imports: [DatabaseModule],
-              adapter: new Prisma8TransactionalAdapter(),
+              adapter: new TransactionalAdapterDrizzleOrm({ drizzleInstanceToken: DRIZZLE }),
             }),
           ],
         }),
       ],
     })
-      .overrideProvider(DatabaseService)
-      .useValue(createTestDatabaseService(client))
+      .overrideProvider(DRIZZLE)
+      .useValue(client)
       .overrideProvider(PostgresPool)
       .useValue({})
       .compile();
@@ -57,14 +56,14 @@ describe("Prisma 8 동일 연결 savepoint (실제 PostgreSQL)", () => {
     unitOfWork = module.get<UnitOfWorkPort>(UNIT_OF_WORK);
     savepointRunner = module.get<SavepointRunnerPort>(SAVEPOINT_RUNNER);
     afterCommitTasks = module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
-    txHost = module.get<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost);
+    txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
   });
 
   beforeEach(async () => {
     await database.cleanup();
-    const user = UserFixture.create();
-    userId = user.id;
-    await database.getClient().orm.public.User.create(encodeCreate("User", user));
+    const userFixture = UserFixture.create();
+    userId = userFixture.id;
+    await database.getClient().insert(user).values(userFixture);
   });
 
   afterAll(async () => {
@@ -73,19 +72,14 @@ describe("Prisma 8 동일 연결 savepoint (실제 PostgreSQL)", () => {
   });
 
   async function connectionPid(): Promise<number | undefined> {
-    const tx = txHost.tx;
-    const rows = await tx.query(
-      sqlStatement(tx, sql`SELECT pg_backend_pid()::int AS "pid"`)
-        .returnsRow({ pid: "pg/int4@1" })
-        .build(),
+    const { rows } = await txHost.tx.execute<{ pid: number }>(
+      sql`SELECT pg_backend_pid()::int AS "pid"`,
     );
     return rows[0]?.pid;
   }
 
   async function createMemo(content: string, memoUserId = userId): Promise<void> {
-    await txHost.tx.orm.public.Memo.create(
-      encodeCreate("Memo", { userId: memoUserId, content, sortOrder: 0 }),
-    );
+    await txHost.tx.insert(memo).values({ userId: memoUserId, content, sortOrder: 0 });
   }
 
   it.each(["postgres", "application"])(
@@ -132,10 +126,10 @@ describe("Prisma 8 동일 연결 savepoint (실제 PostgreSQL)", () => {
       // Then
       const rows = await database
         .getClient()
-        .orm.public.Memo.where({ userId })
-        .orderBy((memo) => memo.id.asc())
-        .select("content")
-        .all();
+        .select({ content: memo.content })
+        .from(memo)
+        .where(eq(memo.userId, userId))
+        .orderBy(asc(memo.id));
       expect(rows).toEqual([{ content: "첫 성공 항목" }, { content: "후속 성공 항목" }]);
       expect(effects).toEqual(["첫 성공 항목", "후속 성공 항목"]);
       expect(outerPid).toBeDefined();
@@ -167,9 +161,9 @@ describe("Prisma 8 동일 연결 savepoint (실제 PostgreSQL)", () => {
     ).rejects.toBe(outerFailure);
 
     // Then
-    expect(await database.getClient().orm.public.Memo.where({ userId }).select("id").all()).toEqual(
-      [],
-    );
+    expect(
+      await database.getClient().select({ id: memo.id }).from(memo).where(eq(memo.userId, userId)),
+    ).toEqual([]);
     expect(effects).toEqual([]);
   });
 });

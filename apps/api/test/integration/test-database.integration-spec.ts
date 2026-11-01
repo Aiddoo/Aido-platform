@@ -1,4 +1,5 @@
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
+import { sql } from "drizzle-orm";
+
 import { TestDatabase } from "../setup/test-database.js";
 
 describe("TestDatabase 통합 테스트 (실제 DB)", () => {
@@ -13,65 +14,37 @@ describe("TestDatabase 통합 테스트 (실제 DB)", () => {
     await testDatabase.stop();
   });
 
-  it("globalSetup에서 Prisma migration이 적용되어 있어야 한다", async () => {
-    // Given - globalSetup이 완료된 관리형 테스트 DB
-    const prisma = testDatabase.getClient();
+  it("globalSetup에서 Drizzle migration이 적용되어 있어야 한다", async () => {
+    // Given
+    const client = testDatabase.getClient();
 
-    const markers = await prisma
-      .runtime()
-      .query(
-        prisma.raw.sql`SELECT core_hash FROM prisma_contract.marker WHERE space = 'app'`
-          .returnsRow({ core_hash: "pg/text@1" })
-          .build(),
-      );
-    expect(markers).toEqual([{ core_hash: contractJson.storage.storageHash }]);
-    const legacyHistory = await prisma
-      .runtime()
-      .query(
-        prisma.raw.sql`SELECT to_regclass('public._prisma_migrations')::text AS history`
-          .returnsRow({ history: { codecId: "pg/text@1", nullable: true } })
-          .build(),
-      );
-    expect(legacyHistory).toEqual([{ history: null }]);
+    const { rows } = await client.execute<{ history: string | null; user_table: string | null }>(
+      sql`SELECT to_regclass('drizzle.__drizzle_migrations')::text AS history, to_regclass('public."User"')::text AS user_table`,
+    );
+    expect(rows).toEqual([{ history: "drizzle.__drizzle_migrations", user_table: '"User"' }]);
   });
 
   it("cleanup이 public 데이터와 sequence를 초기화해야 한다", async () => {
-    // Given - 독립 컨테이너에 sequence 검증용 임시 테이블 생성
-    const prisma = testDatabase.getClient();
-    await prisma
-      .runtime()
-      .execute(
-        prisma.raw.sql`CREATE TABLE "TestSequenceReset" ("id" SERIAL PRIMARY KEY)`
-          .affectedCount()
-          .build(),
-      );
+    // Given
+    const client = testDatabase.getClient();
+    await client.execute(sql`CREATE TABLE "TestSequenceReset" ("id" SERIAL PRIMARY KEY)`);
 
     try {
-      const first = await prisma
-        .runtime()
-        .query(
-          prisma.raw.sql`INSERT INTO "TestSequenceReset" DEFAULT VALUES RETURNING "id"`
-            .returnsRow({ id: "pg/int4@1" })
-            .build(),
-        );
-      expect(first[0]?.id).toBe(1);
+      const first = await client.execute<{ id: number }>(
+        sql`INSERT INTO "TestSequenceReset" DEFAULT VALUES RETURNING "id"`,
+      );
+      expect(first.rows[0]?.id).toBe(1);
 
-      // When - 공용 cleanup 후 다시 insert
+      // When
       await testDatabase.cleanup();
-      const second = await prisma
-        .runtime()
-        .query(
-          prisma.raw.sql`INSERT INTO "TestSequenceReset" DEFAULT VALUES RETURNING "id"`
-            .returnsRow({ id: "pg/int4@1" })
-            .build(),
-        );
+      const second = await client.execute<{ id: number }>(
+        sql`INSERT INTO "TestSequenceReset" DEFAULT VALUES RETURNING "id"`,
+      );
 
-      // Then - 데이터와 sequence가 모두 초기화됨
-      expect(second[0]?.id).toBe(1);
+      // Then
+      expect(second.rows[0]?.id).toBe(1);
     } finally {
-      await prisma
-        .runtime()
-        .execute(prisma.raw.sql`DROP TABLE IF EXISTS "TestSequenceReset"`.affectedCount().build());
+      await client.execute(sql`DROP TABLE IF EXISTS "TestSequenceReset"`);
     }
   });
 });
