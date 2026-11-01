@@ -27,6 +27,7 @@ import type { PushDeliveryPublication } from "../../../application/types/deliver
 import {
   lockPublicationGenerations,
   matchesPublicationGeneration,
+  type OutboxStatus,
 } from "./push-outbox-generation.js";
 import { pushTokenFingerprint } from "./push-token-fingerprint.js";
 
@@ -36,8 +37,6 @@ function toNotificationMetadata(value: unknown): Record<string, unknown> | null 
   }
   return Object.fromEntries(Object.entries(value));
 }
-
-type OutboxStatus = typeof pushDispatchOutbox.$inferSelect.status;
 
 /** claim된 발행 세대는 처리 중이거나 이미 발행 표시된 상태다. */
 const CLAIMED_OUTBOX_STATUSES: readonly OutboxStatus[] = ["PROCESSING", "PUBLISHED"];

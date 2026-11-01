@@ -2,11 +2,11 @@ import type { TransactionHost } from "@nestjs-cls/transactional";
 import { and, asc, eq, inArray, or } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { pushDispatchOutbox } from "#api/platform/database/schema/index";
+import { pushDispatchOutbox, pushDispatchOutboxStatus } from "#api/platform/database/schema/index";
 
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
 
-type OutboxStatus = typeof pushDispatchOutbox.$inferSelect.status;
+export type OutboxStatus = (typeof pushDispatchOutboxStatus.enumValues)[number];
 
 /** 발행 세대(dispatchId, publishAttempts)가 일치하는 outbox 행만 고른다. */
 export function matchesPublicationGeneration(publications: readonly PushDeliveryPublication[]) {

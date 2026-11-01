@@ -25,7 +25,7 @@ import type { TodoCommentReaderPort } from "../../../application/ports/comments/
 import { buildTodoConversationTreeCtes } from "./todo-conversation-tree.sql.js";
 import { toTodoResponse } from "./todo-details.mapper.js";
 
-type CommentRow = typeof todoComment.$inferSelect & {
+type CommentWithRelationsRow = typeof todoComment.$inferSelect & {
   author: AuthorRow | null;
   parent: { authorId: string; author: { profile: { name: string | null } | null } | null } | null;
   todo: { userId: string } | null;
@@ -167,7 +167,7 @@ function toSafeCount(value: bigint, field: string): number {
   return count;
 }
 
-function toRecord(row: CommentRow): TodoCommentRecord {
+function toRecord(row: CommentWithRelationsRow): TodoCommentRecord {
   return {
     id: row.id,
     todoId: row.todoId,
