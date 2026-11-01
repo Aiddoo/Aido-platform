@@ -160,8 +160,10 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
           userId: result.userId,
           email: fixture.identityProvider.profile.email,
           provider: provider.toLowerCase(),
+          name: userName.slice(0, 20),
         },
       ]);
+      expect(fixture.adminEventNotifier.notifications[0]).not.toHaveProperty("devicePlatform");
       expect(fixture.securityLogRepository.entries).toMatchObject([
         {
           event: SECURITY_EVENT.REGISTRATION,
