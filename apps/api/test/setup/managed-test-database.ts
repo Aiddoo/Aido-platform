@@ -1,9 +1,12 @@
-import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
+
+import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 
 const TEST_DATABASE_NAME_PATTERN = /^aido_test_[a-z0-9]{6,32}$/;
 
@@ -28,12 +31,6 @@ export interface ManagedTestDatabaseHandle {
   readonly connectionUri: string;
   readonly databaseName: string;
   stop(): Promise<void>;
-}
-
-export function resolvePnpmCommand(
-  platform: NodeJS.Platform = process.platform,
-): "pnpm.cmd" | "pnpm" {
-  return platform === "win32" ? "pnpm.cmd" : "pnpm";
 }
 
 function getDatabaseName(connectionUri: string): string {
@@ -123,12 +120,15 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
       stop: async () => container.stop(),
     };
   },
-  migrate: (connectionUri) => {
-    execFileSync(resolvePnpmCommand(), ["exec", "prisma", "db", "migrate", "--format", "human"], {
-      cwd: path.resolve(import.meta.dirname, "../.."),
-      env: { ...process.env, DATABASE_URL: connectionUri },
-      stdio: "inherit",
-    });
+  migrate: async (connectionUri) => {
+    const pool = new Pool(createPostgresPoolConfig(connectionUri));
+    try {
+      await migrate(drizzle({ client: pool }), {
+        migrationsFolder: path.resolve(import.meta.dirname, "../../drizzle"),
+      });
+    } finally {
+      await pool.end();
+    }
   },
 };
 

@@ -1,13 +1,12 @@
-/** Managed PostgreSQL test client. Global setup owns containers and native migration graphs. */
-import { raw } from "sql-template-tag";
+/** Managed PostgreSQL test client. Global setup owns containers and migrations. */
+import { type SQL, sql } from "drizzle-orm";
+import { delay } from "es-toolkit";
 
 import { databaseSqlState } from "../../src/platform/database/database-error.util.js";
-import { sqlStatement } from "../../src/platform/database/database-sql.js";
-import type { DatabaseService } from "../../src/platform/database/database.service.js";
-import { createTestClient } from "./database-context.js";
+import { createTestClient, type TestDatabaseClient } from "./database-context.js";
 import { assertManagedTestDatabaseEnvironment } from "./managed-test-database.js";
 
-export type TestDatabaseClient = DatabaseService["db"];
+export type { TestDatabaseClient } from "./database-context.js";
 
 /** 교착으로 튕긴 TRUNCATE를 다시 시도하는 횟수. */
 const TRUNCATE_MAX_ATTEMPTS = 3;
@@ -22,11 +21,6 @@ function isDeadlock(error: unknown): boolean {
   return databaseSqlState(error) === DEADLOCK_DETECTED;
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
 
 interface TestDatabaseOptions {
   env?: NodeJS.ProcessEnv;
@@ -46,7 +40,7 @@ export class TestDatabase {
   }
 
   /**
-   * globalSetup이 준비한 PostgreSQL에 Prisma 클라이언트 연결
+   * globalSetup이 준비한 PostgreSQL에 연결
    *
    * @returns TestDatabaseClient 인스턴스
    */
@@ -57,9 +51,7 @@ export class TestDatabase {
     const client = this.createClient(connectionUri);
 
     try {
-      await client
-        .runtime()
-        .query(client.raw.sql`SELECT 1 AS value`.returnsRow({ value: "pg/int4@1" }).build());
+      await client.execute(sql`SELECT 1`);
     } catch (error) {
       // 실패한 연결을 공개하지 않고 부분 자원을 정리한다. 최초 probe 오류를 보존한다.
       await client.close().catch(() => undefined);
@@ -72,7 +64,7 @@ export class TestDatabase {
   }
 
   /**
-   * Prisma 클라이언트 반환
+   * 테스트 DB 클라이언트 반환
    */
   getClient(): TestDatabaseClient {
     if (!this.client) {
@@ -100,24 +92,22 @@ export class TestDatabase {
     }
 
     assertManagedTestDatabaseEnvironment(this.env);
-    const tables = await this.client.runtime().query(
-      this.client.raw.sql`
-			SELECT table_name
-			FROM information_schema.tables
-			WHERE table_schema = 'public'
-				AND table_type = 'BASE TABLE'
-			ORDER BY table_name
-  `
-        .returnsRow({ table_name: "pg/text@1" })
-        .build(),
+    const { rows } = await this.client.execute<{ table_name: string }>(sql`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+      ORDER BY table_name
+    `);
+    if (rows.length === 0) {
+      return;
+    }
+
+    const tableList = sql.join(
+      rows.map(({ table_name }) => sql`${sql.identifier("public")}.${sql.identifier(table_name)}`),
+      sql`, `,
     );
-
-    if (tables.length === 0) return;
-
-    const tableList = tables
-      .map(({ table_name }) => `"public"."${table_name.replaceAll('"', '""')}"`)
-      .join(", ");
-    await this.#truncate(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
+    await this.#truncate(sql`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
   }
 
   /**
@@ -128,14 +118,12 @@ export class TestDatabase {
    * 시간 상한으로 죽이지 않는 이유: 정상적으로 조금 오래 걸리는 정리까지 함께 죽고,
    * 실패가 "무엇이 잘못됐는지" 대신 "느렸다"만 말하게 된다.
    */
-  async #truncate(statement: string): Promise<void> {
+  async #truncate(statement: SQL): Promise<void> {
     const client = this.getClient();
 
     for (let attempt = 1; attempt <= TRUNCATE_MAX_ATTEMPTS; attempt += 1) {
       try {
-        await client
-          .runtime()
-          .execute(sqlStatement(client, raw(statement)).affectedCount().build());
+        await client.execute(statement);
         return;
       } catch (error) {
         const isLastAttempt = attempt === TRUNCATE_MAX_ATTEMPTS;
@@ -148,7 +136,7 @@ export class TestDatabase {
   }
 
   /**
-   * Prisma 클라이언트 연결 해제
+   * 테스트 DB 연결 해제
    */
   async stop(): Promise<void> {
     if (this.client) {
