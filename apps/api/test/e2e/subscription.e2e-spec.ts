@@ -28,11 +28,11 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   let context: E2eTestContext;
 
   beforeAll(async () => {
-    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     context = await createE2eApp();
   });
 
   beforeEach(async () => {
+    vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", webhookSecret);
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
@@ -43,11 +43,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   });
 
   afterAll(async () => {
-    try {
-      await destroyE2eApp(context);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    await destroyE2eApp(context);
   });
 
   function webhook(body: object, authorization = `Bearer ${webhookSecret}`) {

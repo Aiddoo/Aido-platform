@@ -23,13 +23,9 @@ import {
 
 const FROZEN_TIME = new Date("2026-03-03T12:00:00.000Z");
 
-beforeAll(() => {
+beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(FROZEN_TIME);
-});
-
-afterAll(() => {
-  vi.useRealTimers();
 });
 
 describe("arithmetic", () => {

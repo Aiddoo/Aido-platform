@@ -74,12 +74,20 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     const getCategory = context.module.get(GetTodoCategory);
 
     // When
-    const missing = getCategory.execute({ id: categoryId + 1, userId });
-    const foreign = getCategory.execute({ id: categoryId, userId: "another-user" });
+    const [missing, foreign] = await Promise.allSettled([
+      getCategory.execute({ id: categoryId + 1, userId }),
+      getCategory.execute({ id: categoryId, userId: "another-user" }),
+    ]);
 
     // Then
-    await expect(missing).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    await expect(foreign).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0852 });
+    expect(missing).toMatchObject({
+      status: "rejected",
+      reason: { errorCode: ErrorCode.TODO_CATEGORY_0851 },
+    });
+    expect(foreign).toMatchObject({
+      status: "rejected",
+      reason: { errorCode: ErrorCode.TODO_CATEGORY_0852 },
+    });
   });
 
   it("이름만 수정하면 색상을 유지하고 warm 목록 캐시도 갱신한다", async () => {

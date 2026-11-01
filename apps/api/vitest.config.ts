@@ -40,6 +40,8 @@ export default defineConfig({
     environment: "node",
     clearMocks: true,
     restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
     testTimeout: 60_000,
     hookTimeout: 60_000,
     coverage: {
