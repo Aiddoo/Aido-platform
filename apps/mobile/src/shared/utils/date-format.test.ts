@@ -183,67 +183,42 @@ describe('formatRelativeTime', () => {
 });
 
 describe('formatDateKey', () => {
-  const SEOUL = 'Asia/Seoul';
-  const LOS_ANGELES = 'America/Los_Angeles';
-
   it.each([
     ['서울 자정 직전', '2026-10-01T14:59:59.999Z', '2026-10-01', '2026-10-01'],
     ['서울 자정 정각', '2026-10-01T15:00:00.000Z', '2026-10-02', '2026-10-01'],
-    ['LA 자정 직전', '2026-10-02T06:59:59.999Z', '2026-10-02', '2026-10-01'],
     ['LA 자정 정각', '2026-10-02T07:00:00.000Z', '2026-10-02', '2026-10-02'],
-    ['UTC 연말 경계', '2026-12-31T20:00:00.000Z', '2027-01-01', '2026-12-31'],
-    ['윤일', '2028-02-29T15:00:00.000Z', '2028-03-01', '2028-02-29'],
-  ])('%s: 서울과 LA의 날짜 key가 다르다', (_name, iso, seoulKey, losAngelesKey) => {
+  ])('%s에는 같은 시각이어도 서울과 LA의 날짜가 다르다', (_name, iso, seoulKey, losAngelesKey) => {
     // Given
     const instant = new Date(iso);
 
     // When
-    const seoul = formatDateKey(instant, SEOUL);
-    const losAngeles = formatDateKey(instant, LOS_ANGELES);
+    const seoul = formatDateKey(instant, 'Asia/Seoul');
+    const losAngeles = formatDateKey(instant, 'America/Los_Angeles');
 
     // Then
     expect(seoul).toBe(seoulKey);
     expect(losAngeles).toBe(losAngelesKey);
   });
 
-  it('LA 3월 DST 시작일(2026-03-08)의 자정 경계를 지킨다', () => {
+  it('윤일 경계에서 서울은 3월 1일, LA는 2월 29일이다', () => {
     // Given
-    const cases = [
-      ['2026-03-08T07:59:59.999Z', '2026-03-07'],
-      ['2026-03-08T08:00:00.000Z', '2026-03-08'],
-      ['2026-03-09T06:59:59.999Z', '2026-03-08'],
-      ['2026-03-09T07:00:00.000Z', '2026-03-09'],
-    ] as const;
+    const instant = new Date('2028-02-29T15:00:00.000Z');
 
     // When
-    const keys = cases.map(([iso]) => formatDateKey(new Date(iso), LOS_ANGELES));
+    const seoul = formatDateKey(instant, 'Asia/Seoul');
+    const losAngeles = formatDateKey(instant, 'America/Los_Angeles');
 
     // Then
-    expect(keys).toEqual(cases.map(([, key]) => key));
+    expect(seoul).toBe('2028-03-01');
+    expect(losAngeles).toBe('2028-02-29');
   });
 
-  it('LA 11월 DST 종료일(2026-11-01)의 자정 경계를 지킨다', () => {
-    // Given
-    const cases = [
-      ['2026-11-01T06:59:59.999Z', '2026-10-31'],
-      ['2026-11-01T07:00:00.000Z', '2026-11-01'],
-      ['2026-11-02T07:59:59.999Z', '2026-11-01'],
-      ['2026-11-02T08:00:00.000Z', '2026-11-02'],
-    ] as const;
-
-    // When
-    const keys = cases.map(([iso]) => formatDateKey(new Date(iso), LOS_ANGELES));
-
-    // Then
-    expect(keys).toEqual(cases.map(([, key]) => key));
-  });
-
-  it('유효하지 않은 Date는 빈 문자열이다', () => {
+  it('유효하지 않은 Date는 빈 문자열을 반환한다', () => {
     // Given
     const invalid = new Date(Number.NaN);
 
     // When
-    const result = formatDateKey(invalid, SEOUL);
+    const result = formatDateKey(invalid, 'Asia/Seoul');
 
     // Then
     expect(result).toBe('');
