@@ -6,8 +6,8 @@ import { VerificationService } from "#api/modules/identity/application/services/
 import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
 import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
-import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
-import { VerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/verification.repository";
+import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
+import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -33,8 +33,8 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let module: TestingModule;
-  let repository: VerificationRepository;
-  let accountRepository: AccountRepository;
+  let repository: DrizzleVerificationRepository;
+  let accountRepository: DrizzleAccountRepository;
   let service: VerificationService;
   let passwordService: PasswordService;
   let resetPassword: ResetPassword;
@@ -46,8 +46,8 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await database.start();
     module = await createAuthTestModule(createTestDatabaseService(client), new FakeEmailService());
-    repository = module.get(VerificationRepository);
-    accountRepository = module.get(AccountRepository);
+    repository = module.get(DrizzleVerificationRepository);
+    accountRepository = module.get(DrizzleAccountRepository);
     service = module.get(VerificationService);
     passwordService = module.get(PasswordService);
     resetPassword = module.get(ResetPassword);

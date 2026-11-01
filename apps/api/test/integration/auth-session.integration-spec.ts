@@ -1,7 +1,7 @@
 import sql from "sql-template-tag";
 import { vi } from "vitest";
 
-import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -24,16 +24,16 @@ function createDeferred() {
   return { promise, resolve: () => resolve?.() };
 }
 
-describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자성", () => {
+describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 원자성", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
-  let repository: SessionRepository;
+  let repository: DrizzleSessionRepository;
   let userId: string;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await testDatabase.start();
-    repository = new SessionRepository(createDatabaseTransactionFixture(client).txHost);
+    repository = new DrizzleSessionRepository(createDatabaseTransactionFixture(client).txHost);
   });
 
   beforeEach(async () => {

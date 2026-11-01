@@ -18,8 +18,8 @@ import {
   AUTH_SECURITY_LOG_REPOSITORY,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
-import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
@@ -253,10 +253,10 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         notificationAccountCleanupProvider,
         { provide: NOTIFICATION_CACHE, useValue: notificationCache },
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },
-        UserRepository,
-        SecurityLogRepository,
-        { provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
-        { provide: AUTH_SECURITY_LOG_REPOSITORY, useExisting: SecurityLogRepository },
+        DrizzleUserRepository,
+        DrizzleSecurityLogRepository,
+        { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
+        { provide: AUTH_SECURITY_LOG_REPOSITORY, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,
         purgeDeletedAccountsProvider,

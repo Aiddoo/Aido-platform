@@ -7,12 +7,12 @@ import {
 } from "./application/ports/auth/user-mutation-lock.port.js";
 import { USER_PROFILE_INVALIDATOR } from "./application/ports/auth/user-profile-invalidator.port.js";
 import { AuthCacheAdapter } from "./infrastructure/adapters/auth/auth-cache.adapter.js";
-import { UserRepository } from "./infrastructure/persistence/auth/user.repository.js";
+import { DrizzleUserRepository } from "./infrastructure/persistence/auth/drizzle-user.repository.js";
 
 const userMutationLockProvider: FactoryProvider<UserMutationLockPort> = {
   provide: USER_MUTATION_LOCK,
-  inject: [UserRepository],
-  useFactory: (users: UserRepository) => ({
+  inject: [DrizzleUserRepository],
+  useFactory: (users: DrizzleUserRepository) => ({
     async lockById(userId) {
       return (await users.findByIdForUpdate(userId)) != null;
     },
@@ -21,11 +21,11 @@ const userMutationLockProvider: FactoryProvider<UserMutationLockPort> = {
 
 @Module({
   providers: [
-    UserRepository,
+    DrizzleUserRepository,
     AuthCacheAdapter,
     userMutationLockProvider,
     { provide: USER_PROFILE_INVALIDATOR, useExisting: AuthCacheAdapter },
-    { provide: USER_APP_VERSION_READER, useExisting: UserRepository },
+    { provide: USER_APP_VERSION_READER, useExisting: DrizzleUserRepository },
   ],
   exports: [USER_MUTATION_LOCK, USER_PROFILE_INVALIDATOR, USER_APP_VERSION_READER],
 })

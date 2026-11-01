@@ -9,8 +9,8 @@ import {
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import {
   createMorningNoTodoNotificationMessage,
   createMorningReminderNotificationMessage,
@@ -253,12 +253,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         },
         {
           provide: USER_PREFERENCE_READER,
-          useFactory: (preferenceRepository: UserPreferenceRepository, cache: CacheService) =>
+          useFactory: (
+            preferenceRepository: DrizzleUserPreferenceRepository,
+            cache: CacheService,
+          ) =>
             new UserPreferenceReader({
               preferenceRepository,
               cache: new UserSettingsCacheAdapter(cache),
             }),
-          inject: [UserPreferenceRepository, CacheService],
+          inject: [DrizzleUserPreferenceRepository, CacheService],
         },
         CachedNotificationRecipientPreferenceAdapter,
         {
@@ -303,15 +306,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           useValue: mockMarketingPushOptOutToken,
         },
         paginationServiceProvider,
-        UserPreferenceRepository,
-        UserConsentRepository,
+        DrizzleUserPreferenceRepository,
+        DrizzleUserConsentRepository,
         {
           // 푸시 발송 판단용 사용자 설정 포트 — 실제 저장소(mock DB)에 위임하여
           // 프로덕션 UserNotificationSettingsAdapter의 읽기 시맨틱을 그대로 재현
           provide: USER_NOTIFICATION_SETTINGS,
           useFactory: (
-            preferenceRepository: UserPreferenceRepository,
-            consentRepository: UserConsentRepository,
+            preferenceRepository: DrizzleUserPreferenceRepository,
+            consentRepository: DrizzleUserConsentRepository,
           ) => ({
             upsertPushTimezone: (userId: string, timezone: string) =>
               preferenceRepository.upsertTimezone(userId, timezone),
@@ -328,7 +331,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
                 .upsertMarketingPushConsent(userId, { agreedAt: agreed ? new Date() : null })
                 .then(() => undefined),
           }),
-          inject: [UserPreferenceRepository, UserConsentRepository],
+          inject: [DrizzleUserPreferenceRepository, DrizzleUserConsentRepository],
         },
         {
           provide: DatabaseService,

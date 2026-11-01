@@ -6,10 +6,10 @@ import { vi } from "vitest";
 import { ExchangeOAuthCode } from "#api/modules/identity/application/use-cases/auth/exchange-oauth-code.use-case";
 import { LinkOAuthAccountWithCode } from "#api/modules/identity/application/use-cases/auth/link-oauth-account-with-code.use-case";
 import { UnlinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/unlink-oauth-account.use-case";
-import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
-import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
-import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -33,10 +33,10 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let module: TestingModule;
-  let accounts: AccountRepository;
-  let states: OAuthStateRepository;
-  let users: UserRepository;
-  let securityLogs: SecurityLogRepository;
+  let accounts: DrizzleAccountRepository;
+  let states: DrizzleOAuthStateRepository;
+  let users: DrizzleUserRepository;
+  let securityLogs: DrizzleSecurityLogRepository;
   let exchange: ExchangeOAuthCode;
   let link: LinkOAuthAccountWithCode;
   let unlink: UnlinkOAuthAccount;
@@ -51,10 +51,10 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     module = await createAuthTestModule(createTestDatabaseService(client), new FakeEmailService(), {
       oauthProviderRegistry: new Map([[provider.provider, provider]]),
     });
-    accounts = module.get(AccountRepository);
-    states = module.get(OAuthStateRepository);
-    users = module.get(UserRepository);
-    securityLogs = module.get(SecurityLogRepository);
+    accounts = module.get(DrizzleAccountRepository);
+    states = module.get(DrizzleOAuthStateRepository);
+    users = module.get(DrizzleUserRepository);
+    securityLogs = module.get(DrizzleSecurityLogRepository);
     exchange = module.get(ExchangeOAuthCode);
     link = module.get(LinkOAuthAccountWithCode);
     unlink = module.get(UnlinkOAuthAccount);

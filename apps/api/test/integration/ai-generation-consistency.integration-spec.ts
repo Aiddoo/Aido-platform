@@ -3,7 +3,7 @@ import { Logger } from "@nestjs/common";
 
 import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
-import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/prisma-entitlement.reader";
+import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import type {
   GenerateStructuredOptions,
   GenerateStructuredResult,
@@ -22,8 +22,8 @@ import { PrismaAiSuggestionRepository } from "#api/modules/ai-assistance/infrast
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
 import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -80,7 +80,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   let entitlement: EntitlementService;
   let suggestions: PrismaAiSuggestionRepository;
   let reports: PrismaAiReportRepository;
-  let users: UserRepository;
+  let users: DrizzleUserRepository;
   let userId: string;
   let categoryId: number;
 
@@ -95,12 +95,12 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     fixture = createDatabaseTransactionFixture(client);
     memory = new InMemoryCacheAdapter({ defaultTtlMs: 600_000, maxItems: 20 });
     entitlement = new EntitlementService({
-      database: new PrismaEntitlementReader(fixture.txHost),
+      database: new DrizzleEntitlementReader(fixture.txHost),
       cacheService: new EntitlementCacheAdapter(new CacheService(memory)),
     });
     suggestions = new PrismaAiSuggestionRepository(fixture.txHost);
     reports = new PrismaAiReportRepository(fixture.txHost);
-    users = new UserRepository(fixture.txHost);
+    users = new DrizzleUserRepository(fixture.txHost);
     userId = createEntityId();
     await client.orm.public.User.create(
       encodeCreate("User", UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" })),
@@ -142,7 +142,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const logger = new Logger("AiGenerationIntegration");
     const service = createTestDatabaseService(client);
     const consentReader = new AiDataSharingConsentReader({
-      consentRepository: new UserConsentRepository(fixture.txHost),
+      consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
     });
     const contextBuilder = new SuggestionContextBuilder({
       repository,

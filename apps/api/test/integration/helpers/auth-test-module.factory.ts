@@ -27,15 +27,15 @@ import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
 import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
 import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
-import { LoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/login-attempt.repository";
-import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
-import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
-import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { VerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/verification.repository";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
+import { DrizzleLoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-login-attempt.repository";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
@@ -105,8 +105,8 @@ export async function createAuthTestModule(
             loginWithOAuthTokenProvider,
             startOAuthAuthorizationProvider,
             unlinkOAuthAccountProvider,
-            OAuthStateRepository,
-            { provide: AUTH_OAUTH_STATE_REPOSITORY, useExisting: OAuthStateRepository },
+            DrizzleOAuthStateRepository,
+            { provide: AUTH_OAUTH_STATE_REPOSITORY, useExisting: DrizzleOAuthStateRepository },
             { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
             { provide: OAUTH_IDENTITY_PROVIDER_REGISTRY, useValue: options.oauthProviderRegistry },
           ]),
@@ -136,26 +136,26 @@ export async function createAuthTestModule(
           decryptSafe: (value: string) => value,
         },
       },
-      AccountRepository,
-      UserRepository,
-      SessionRepository,
-      SecurityLogRepository,
-      LoginAttemptRepository,
-      VerificationRepository,
-      { provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
-      { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: AccountRepository },
-      { provide: AUTH_SESSION_REPOSITORY, useExisting: SessionRepository },
+      DrizzleAccountRepository,
+      DrizzleUserRepository,
+      DrizzleSessionRepository,
+      DrizzleSecurityLogRepository,
+      DrizzleLoginAttemptRepository,
+      DrizzleVerificationRepository,
+      { provide: AUTH_USER_REPOSITORY, useExisting: DrizzleUserRepository },
+      { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: DrizzleAccountRepository },
+      { provide: AUTH_SESSION_REPOSITORY, useExisting: DrizzleSessionRepository },
       {
         provide: AUTH_VERIFICATION_REPOSITORY,
-        useExisting: VerificationRepository,
+        useExisting: DrizzleVerificationRepository,
       },
       {
         provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
-        useExisting: LoginAttemptRepository,
+        useExisting: DrizzleLoginAttemptRepository,
       },
       {
         provide: AUTH_SECURITY_LOG_REPOSITORY,
-        useExisting: SecurityLogRepository,
+        useExisting: DrizzleSecurityLogRepository,
       },
       { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
       { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
@@ -166,8 +166,8 @@ export async function createAuthTestModule(
         provide: AUTH_REGISTRATION_NOTIFIER,
         useExisting: AdminEventNotifier,
       },
-      UserConsentRepository,
-      UserPreferenceRepository,
+      DrizzleUserConsentRepository,
+      DrizzleUserPreferenceRepository,
       DefaultTodoCategorySeeder,
       provisioningSeederTestProvider,
       retentionEnrollerTestProvider,

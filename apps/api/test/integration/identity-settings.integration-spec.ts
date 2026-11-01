@@ -16,8 +16,8 @@ import { RefreshPushTimezone } from "#api/modules/identity/application/use-cases
 import { SeedUserSettings } from "#api/modules/identity/application/use-cases/settings/seed-user-settings.use-case";
 import { UpdatePreference } from "#api/modules/identity/application/use-cases/settings/update-preference.use-case";
 import { UpsertPushTimezone } from "#api/modules/identity/application/use-cases/settings/upsert-push-timezone.use-case";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import {
   REMINDER_TIMEZONE_CACHE,
   type ReminderTimezoneCachePort,
@@ -53,8 +53,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   let database: TestDatabase;
   let context: E2eTestContext;
   let client: TestDatabaseClient;
-  let preferences: UserPreferenceRepository;
-  let consents: UserConsentRepository;
+  let preferences: DrizzleUserPreferenceRepository;
+  let consents: DrizzleUserConsentRepository;
   let unitOfWork: UnitOfWorkPort;
   let userId: string;
 
@@ -62,8 +62,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    preferences = context.module.get(UserPreferenceRepository);
-    consents = context.module.get(UserConsentRepository);
+    preferences = context.module.get(DrizzleUserPreferenceRepository);
+    consents = context.module.get(DrizzleUserConsentRepository);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });
 

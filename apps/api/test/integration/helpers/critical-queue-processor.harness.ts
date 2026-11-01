@@ -16,7 +16,7 @@ import {
   USER_SETTINGS_CACHE,
 } from "#api/modules/identity/identity-settings.public";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
@@ -329,15 +329,15 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     },
     CachedActivePushTokenReaderAdapter,
     { provide: ACTIVE_PUSH_TOKEN_READER, useExisting: CachedActivePushTokenReaderAdapter },
-    UserPreferenceRepository,
+    DrizzleUserPreferenceRepository,
     {
       provide: USER_PREFERENCE_READER,
-      useFactory: (preferenceRepository: UserPreferenceRepository, cache: CacheService) =>
+      useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheService) =>
         new UserPreferenceReader({
           preferenceRepository,
           cache: new UserSettingsCacheAdapter(cache),
         }),
-      inject: [UserPreferenceRepository, CacheService],
+      inject: [DrizzleUserPreferenceRepository, CacheService],
     },
     CachedNotificationRecipientPreferenceAdapter,
     {

@@ -3,8 +3,8 @@ import { vi } from "vitest";
 
 import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
 import { IdentityUser } from "#api/modules/identity/domain/aggregates/auth/identity-user.aggregate";
-import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -19,15 +19,15 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 const at = new Date("2027-01-01T00:00:00.000Z");
 const cutoff = new Date("2026-12-02T00:00:00.000Z");
 
-describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
+describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
-  let repository: UserRepository;
+  let repository: DrizzleUserRepository;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await testDatabase.start();
-    repository = new UserRepository(createDatabaseTransactionFixture(client).txHost);
+    repository = new DrizzleUserRepository(createDatabaseTransactionFixture(client).txHost);
   });
 
   beforeEach(async () => {
@@ -112,8 +112,8 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
 
   function givenPurge() {
     const transaction = createDatabaseTransactionFixture(client);
-    const userRepository = new UserRepository(transaction.txHost);
-    const securityLogRepository = new SecurityLogRepository(transaction.txHost);
+    const userRepository = new DrizzleUserRepository(transaction.txHost);
+    const securityLogRepository = new DrizzleSecurityLogRepository(transaction.txHost);
     const notificationCleanup = {
       cleanupInTransaction: async () => ({ affectedUserIds: [] }),
       settleAfterCommit: vi.fn(async () => {}),

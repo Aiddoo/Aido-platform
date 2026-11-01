@@ -19,7 +19,7 @@ import {
   KakaoOAuthProvider,
   NaverOAuthProvider,
 } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
-import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
@@ -57,7 +57,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   let fakeTokenVerifier: FakeOAuthTokenVerifierService;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
-  let oauthStateRepository: OAuthStateRepository;
+  let oauthStateRepository: DrizzleOAuthStateRepository;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
@@ -86,7 +86,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     listLinkedAccounts = module.get(ListLinkedAccounts);
     getOAuthRedirectUri = module.get(GetOAuthRedirectUri);
     exchangeOAuthCode = module.get(ExchangeOAuthCode);
-    oauthStateRepository = module.get(OAuthStateRepository);
+    oauthStateRepository = module.get(DrizzleOAuthStateRepository);
   });
 
   beforeEach(async () => {

@@ -17,7 +17,7 @@ import {
 import { ENTITLEMENT_CACHE } from "#api/modules/access/application/ports/entitlement/entitlement-cache.port";
 import { ENTITLEMENT_DATABASE } from "#api/modules/access/application/ports/entitlement/entitlement-state.port";
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
-import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/prisma-entitlement.reader";
+import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import type { TodoCategoryCachePort } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
 import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
 import { ReorderTodoCategory } from "#api/modules/planning/application/use-cases/categories/reorder-todo-category.use-case";
@@ -745,7 +745,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         { ...entitlementServiceProvider, provide: ENTITLEMENT_READER },
         EntitlementCacheAdapter,
         { provide: ENTITLEMENT_CACHE, useExisting: EntitlementCacheAdapter },
-        { provide: ENTITLEMENT_DATABASE, useClass: PrismaEntitlementReader },
+        { provide: ENTITLEMENT_DATABASE, useClass: DrizzleEntitlementReader },
         TodoCategoryLimitReaderAdapter,
         {
           provide: CacheService,
