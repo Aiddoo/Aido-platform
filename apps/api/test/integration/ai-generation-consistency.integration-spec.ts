@@ -30,7 +30,6 @@ import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
-import type { User } from "#api/platform/database/database.types";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import {
@@ -49,6 +48,7 @@ import {
 } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+import type { User } from "#test/types/database-rows";
 
 const CURRENT_TIME = new Date("2026-10-08T02:00:00Z");
 

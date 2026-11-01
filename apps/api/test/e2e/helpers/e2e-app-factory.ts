@@ -47,7 +47,7 @@ import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecas
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { DatabaseService } from "#api/platform/database/index";
+import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
@@ -201,8 +201,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakeJobRuntime)
     .overrideProvider(CACHE_SERVICE)
     .useValue(cacheAdapter)
-    .overrideProvider(DatabaseService)
-    .useValue({ db: testDatabase.getClient() })
+    .overrideProvider(DRIZZLE)
+    .useValue(testDatabase.getClient())
     .overrideProvider(TransactionalEmailSender)
     .useValue(fakeEmailService)
     .overrideProvider(OAuthTokenVerifierService)

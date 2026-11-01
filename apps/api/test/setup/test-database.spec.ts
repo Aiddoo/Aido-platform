@@ -23,7 +23,12 @@ function queryText(input: unknown): string {
   if (typeof input === "string") {
     return input;
   }
-  if (typeof input === "object" && input !== null && "text" in input && typeof input.text === "string") {
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "text" in input &&
+    typeof input.text === "string"
+  ) {
     return input.text;
   }
   return "";
@@ -147,7 +152,9 @@ describe("TestDatabase", () => {
         .mockRejectedValue(new Error("relation does not exist"));
       const testDatabase = await startWith(truncate);
 
-      await expect(testDatabase.cleanup()).rejects.toMatchObject({ cause: { message: "relation does not exist" } });
+      await expect(testDatabase.cleanup()).rejects.toMatchObject({
+        cause: { message: "relation does not exist" },
+      });
       expect(truncate).toHaveBeenCalledTimes(1);
     });
 

@@ -21,12 +21,7 @@
  * const verifiedUser = UserBuilder.create().verified().build();
  * ```
  */
-import type {
-  SubscriptionStatus,
-  User,
-  UserRole,
-  UserStatus,
-} from "#api/platform/database/database.types";
+import type { SubscriptionStatus, User, UserRole, UserStatus } from "#test/types/database-rows";
 
 export class UserBuilder {
   private data: User;

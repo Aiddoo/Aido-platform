@@ -21,7 +21,6 @@ function isDeadlock(error: unknown): boolean {
   return databaseSqlState(error) === DEADLOCK_DETECTED;
 }
 
-
 interface TestDatabaseOptions {
   env?: NodeJS.ProcessEnv;
   createClient?: (connectionUri: string) => TestDatabaseClient;
