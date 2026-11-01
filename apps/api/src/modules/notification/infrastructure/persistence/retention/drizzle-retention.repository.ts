@@ -7,6 +7,10 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
+  nullableRawTimestampSchema,
+  rawTimestampSchema,
+} from "#api/platform/database/raw-timestamp.schema";
+import {
   notification,
   pushDeliveryAttempt,
   pushDispatch,
@@ -47,14 +51,14 @@ const stageRowSchema = z.object({
   userId: z.string(),
   variant: z.enum(["CONTROL", "TREATMENT"]),
   stage: z.enum(["D0", "D1", "D3", "D7"]),
-  startedAt: z.coerce.date(),
+  startedAt: rawTimestampSchema,
   timezone: z.string(),
   locale: z.string(),
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
-  marketingPushAgreedAt: z.coerce.date().nullable(),
+  marketingPushAgreedAt: nullableRawTimestampSchema,
   activeTokenCount: z.number(),
-  lastActiveAt: z.coerce.date().nullable(),
+  lastActiveAt: nullableRawTimestampSchema,
   todoCount: z.number(),
   completedCount: z.number(),
   todoActionWithinWindow: z.boolean(),

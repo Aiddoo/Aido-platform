@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { nullableRawTimestampSchema } from "#api/platform/database/raw-timestamp.schema";
 import {
   account,
   todo,
@@ -281,10 +282,7 @@ export class DrizzleAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort 
     }
 
     return {
-      measurementStartedAt:
-        row.measurementStartedAt == null
-          ? null
-          : new Date(`${row.measurementStartedAt.replace(" ", "T")}Z`),
+      measurementStartedAt: nullableRawTimestampSchema.parse(row.measurementStartedAt),
       totalActiveUsers: Number(row.totalActiveUsers),
       signups: Number(row.signups),
       dau: Number(row.dau),

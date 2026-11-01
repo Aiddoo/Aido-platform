@@ -7,6 +7,9 @@ import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import {
+  nullableRawTimestampSchema,
+} from "#api/platform/database/raw-timestamp.schema";
 import { todo, todoComment, userProfile, user } from "#api/platform/database/schema/index";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
@@ -60,12 +63,6 @@ const previewParent = alias(todoComment, "preview_parent");
 const previewParentProfile = alias(userProfile, "preview_parent_profile");
 const participantProfile = alias(userProfile, "participant_profile");
 
-/** timestamp 컬럼은 드라이버가 UTC 기준 텍스트로 돌려주므로 Date로 좁힌다. */
-const timestampText = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{1,6})?$/)
-  .transform((value) => new Date(`${value.replace(" ", "T")}Z`));
-const nullableTimestamp = timestampText.nullable();
 const nullableText = z.string().nullable();
 const nullableInt = z.number().int().nullable();
 const pathSchema = z.array(z.string()).nullable();
@@ -89,9 +86,9 @@ const commentColumnsSchema = {
   replyCount: nullableInt,
   rootLikeCount: nullableInt,
   rootReplyCount: nullableInt,
-  deletedAt: nullableTimestamp,
-  editedAt: nullableTimestamp,
-  createdAt: nullableTimestamp,
+  deletedAt: nullableRawTimestampSchema,
+  editedAt: nullableRawTimestampSchema,
+  createdAt: nullableRawTimestampSchema,
 };
 
 const conversationRowSchema = z.object({
@@ -126,9 +123,9 @@ const overviewSummaryRowSchema = z.object({
   previewContent: nullableText,
   previewLikeCount: nullableInt,
   previewReplyCount: nullableInt,
-  previewDeletedAt: nullableTimestamp,
-  previewEditedAt: nullableTimestamp,
-  previewCreatedAt: nullableTimestamp,
+  previewDeletedAt: nullableRawTimestampSchema,
+  previewEditedAt: nullableRawTimestampSchema,
+  previewCreatedAt: nullableRawTimestampSchema,
   participantAuthorId: nullableText,
   participantAuthorName: nullableText,
   participantAuthorProfileImage: nullableText,
