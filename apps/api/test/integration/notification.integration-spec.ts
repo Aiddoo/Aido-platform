@@ -51,10 +51,10 @@ import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/in
 import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter";
 import { NotificationCacheAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-cache.adapter";
 import { NotificationDedupLockAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-dedup-lock.adapter";
-import { PrismaNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.reader";
-import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
-import { PrismaPushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-receipt.repository";
-import { PrismaPushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-token.repository";
+import { DrizzleNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.reader";
+import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
+import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
+import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -131,7 +131,7 @@ function buildNotificationTestApi(module: TestingModule) {
 describe("Notification 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let facade: ReturnType<typeof buildNotificationTestApi>;
-  let repository: PrismaNotificationRepository;
+  let repository: DrizzleNotificationRepository;
 
   // Mock 데이터베이스 서비스
   const nativeContext = createMockDatabaseContext();
@@ -214,18 +214,18 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        PrismaNotificationRepository,
+        DrizzleNotificationRepository,
         {
           provide: NOTIFICATION_REPOSITORY,
-          useExisting: PrismaNotificationRepository,
+          useExisting: DrizzleNotificationRepository,
         },
-        PrismaNotificationReader,
-        { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
-        { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
-        PrismaPushTokenRepository,
-        { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-        PrismaPushReceiptRepository,
-        { provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
+        DrizzleNotificationReader,
+        { provide: NOTIFICATION_INBOX_READER, useExisting: DrizzleNotificationReader },
+        { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
+        DrizzlePushTokenRepository,
+        { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
+        DrizzlePushReceiptRepository,
+        { provide: PUSH_RECEIPT_REPOSITORY, useExisting: DrizzlePushReceiptRepository },
         {
           provide: PUSH_DISPATCH_STAGING,
           useValue: mockPushDispatchStaging,
@@ -391,7 +391,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
     }).compile();
 
     facade = buildNotificationTestApi(module);
-    repository = module.get(PrismaNotificationRepository);
+    repository = module.get(DrizzleNotificationRepository);
   });
 
   afterAll(async () => {
@@ -439,14 +439,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       expect(facade.getNotifications).toBeInstanceOf(Function);
     });
 
-    it("PrismaNotificationRepository가 정상적으로 주입되어야 함", () => {
+    it("DrizzleNotificationRepository가 정상적으로 주입되어야 함", () => {
       // Given - DI 컨테이너가 구성됨
 
       // When - 레포지토리 인스턴스 확인
 
       // Then - 레포지토리가 정의되어 있어야 함
       expect(repository).toBeDefined();
-      expect(repository).toBeInstanceOf(PrismaNotificationRepository);
+      expect(repository).toBeInstanceOf(DrizzleNotificationRepository);
     });
   });
 

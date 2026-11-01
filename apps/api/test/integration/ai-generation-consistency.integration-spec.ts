@@ -24,7 +24,7 @@ import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastr
 import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
-import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
+import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
@@ -154,7 +154,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       repository,
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
-      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
+      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
@@ -168,7 +168,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost, service),
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
-      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
+      clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,

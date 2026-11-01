@@ -1,8 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
-import { decodeRecord } from "#api/platform/database/database-records";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
@@ -11,8 +10,8 @@ import type {
 } from "../../../application/ports/delivery/notification-todo-target.reader.port.js";
 
 @Injectable()
-export class PrismaNotificationTodoTargetReader implements NotificationTodoTargetReaderPort {
-  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+export class DrizzleNotificationTodoTargetReader implements NotificationTodoTargetReaderPort {
+  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
   async findTodoTargets(
     todoIds: readonly number[],
@@ -21,12 +20,10 @@ export class PrismaNotificationTodoTargetReader implements NotificationTodoTarge
       return new Map();
     }
 
-    const rows = decodeRecord(
-      "Todo",
-      await this.txHost.tx.orm.public.Todo.where((row) => row.id.in([...todoIds]))
-        .select("id", "userId", "startDate")
-        .all(),
-    );
+    const rows = await this.txHost.tx.query.todo.findMany({
+      columns: { id: true, userId: true, startDate: true },
+      where: { id: { in: [...todoIds] } },
+    });
 
     return new Map(
       rows.map((row) => [row.id, { ownerId: row.userId, date: toDateString(row.startDate) }]),

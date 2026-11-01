@@ -1,15 +1,17 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, or } from "@prisma/orm-postgres/orm-client";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { uniq } from "es-toolkit";
-import sql, { join } from "sql-template-tag";
+import { z } from "zod";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { varchar } from "#api/platform/database/database-values";
-import type { PushDispatchOutboxStatus } from "#api/platform/database/database.types";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import {
+  pushDeliveryAttempt,
+  pushDispatch,
+  pushDispatchOutbox,
+  pushToken,
+} from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   ClaimedPushDelivery,
@@ -22,54 +24,67 @@ import type {
   ReservePushDeliveryRateLimitInput,
 } from "../../../application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
-
-function toNotificationMetadata(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value == null || Array.isArray(value)) return null;
-  return Object.fromEntries(Object.entries(value));
-}
-
 import {
   lockPublicationGenerations,
   matchesPublicationGeneration,
 } from "./push-outbox-generation.js";
 import { pushTokenFingerprint } from "./push-token-fingerprint.js";
 
+function toNotificationMetadata(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+    return null;
+  }
+  return Object.fromEntries(Object.entries(value));
+}
+
+type OutboxStatus = typeof pushDispatchOutbox.$inferSelect.status;
+
 /** claim된 발행 세대는 처리 중이거나 이미 발행 표시된 상태다. */
-const CLAIMED_OUTBOX_STATUSES: readonly PushDispatchOutboxStatus[] = ["PROCESSING", "PUBLISHED"];
+const CLAIMED_OUTBOX_STATUSES: readonly OutboxStatus[] = ["PROCESSING", "PUBLISHED"];
+
+const claimRowSchema = z.object({
+  dispatchId: z.number().nullable(),
+  deliveryAttemptCount: z.number().nullable(),
+  publishAttempt: z.number().nullable(),
+  ownedOutboxCount: z.number(),
+});
+const dispatchRowsSchema = z.array(z.object({ dispatchId: z.number() }));
+const publicationRowsSchema = z.array(
+  z.object({ dispatchId: z.number(), publishAttempt: z.number() }),
+);
+const releaseRowsSchema = z.array(
+  z.object({ dispatchId: z.number(), publishAttempt: z.number(), reopenOutbox: z.boolean() }),
+);
+
+function excluded(column: { readonly name: string }) {
+  return sql`excluded.${sql.identifier(column.name)}`;
+}
 
 @Injectable()
-export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecycleRepositoryPort {
-  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifecycleRepositoryPort {
+  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
-  private get client() {
+  private get db() {
     return this.txHost.tx;
   }
 
   async claim(input: ClaimPushDeliveriesInput): Promise<readonly ClaimedPushDelivery[]> {
-    const sqlRows1 = sqlRowSpec({
-      dispatchId: { codecId: "pg/int4@1", nullable: true },
-      deliveryAttemptCount: { codecId: "pg/int4@1", nullable: true },
-      publishAttempt: { codecId: "pg/int4@1", nullable: true },
-      ownedOutboxCount: "pg/int4@1",
-    });
-
-    if (input.publications.length === 0) return [];
-    await lockPublicationGenerations(this.client, input.publications, CLAIMED_OUTBOX_STATUSES);
+    if (input.publications.length === 0) {
+      return [];
+    }
+    await lockPublicationGenerations(this.db, input.publications, CLAIMED_OUTBOX_STATUSES);
     const values = input.publications.map(
       (publication) =>
         sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
     );
-    const ownershipRows = decodeSqlRows(
-      sqlRows1,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const ownershipRows = z.array(claimRowSchema).parse(
+      (
+        await this.db.execute<Record<string, unknown>>(sql`
 			WITH requested("dispatchId", "publishAttempt") AS (
-				VALUES ${join(values)}
+				VALUES ${sql.join(values, sql`, `)}
 			),
 			locked_outboxes AS MATERIALIZED (
-				UPDATE "PushDispatchOutbox" AS outbox
+				UPDATE ${pushDispatchOutbox} AS outbox
 				SET
 					"status" = 'PUBLISHED'::"PushDispatchOutboxStatus",
 					"lockedAt" = NULL,
@@ -85,7 +100,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					)
 					AND EXISTS (
 						SELECT 1
-						FROM "PushDispatch" AS dispatch
+						FROM ${pushDispatch} AS dispatch
 						WHERE dispatch."id" = requested."dispatchId"
 							AND (
 								dispatch."status" = 'PENDING'::"PushDispatchStatus"
@@ -99,12 +114,12 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				RETURNING outbox."dispatchId", outbox."publishAttempts" AS "publishAttempt"
 			),
 			claimed_dispatches AS MATERIALIZED (
-				UPDATE "PushDispatch" AS dispatch
+				UPDATE ${pushDispatch} AS dispatch
 				SET
 					"status" = 'PROCESSING'::"PushDispatchStatus",
 					"processingJobId" = ${input.processingJobId},
 					"processingJobAttempt" = ${input.processingJobAttempt},
-					"processingStartedAt" = ${input.startedAt},
+					"processingStartedAt" = ${input.startedAt.toISOString()}::TIMESTAMP(3),
 					"deliveryAttemptCount" = dispatch."deliveryAttemptCount" + 1,
 					"skipReason" = NULL,
 					"lastError" = NULL,
@@ -140,11 +155,8 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 			FROM ownership
 			WHERE ownership."ownedOutboxCount" > 0
 				AND NOT EXISTS (SELECT 1 FROM claimed_dispatches)
-		`,
-        )
-          .returnsRow(sqlRows1)
-          .build(),
-      ),
+		`)
+      ).rows,
     );
     const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
     const claimedRows = ownershipRows.flatMap((row) => {
@@ -168,58 +180,55 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
         `Push delivery claim ownership fence mismatch: owned=${ownedOutboxCount}, claimed=${claimedRows.length}`,
       );
     }
-    if (claimedRows.length === 0) return [];
+    if (claimedRows.length === 0) {
+      return [];
+    }
 
     const claimByDispatchId = new Map(claimedRows.map((row) => [row.dispatchId, row]));
-    const dispatches = decodeRecord(
-      "PushDispatch",
-      await this.client.orm.public.PushDispatch.where((row) =>
-        or(
-          ...claimedRows.map((claim) =>
-            and(
-              row.id.eq(claim.dispatchId),
-              row.deliveryAttemptCount.eq(claim.deliveryAttemptCount),
-            ),
-          ),
-        ),
-      )
-        .where((row) =>
-          and(
-            row.processingJobId.eq(varchar(input.processingJobId, 255)),
-            row.status.eq("PROCESSING"),
-          ),
-        )
-        .select(
-          "id",
-          "notificationId",
-          "deliveryAttemptCount",
-          "rateLimitReservedAt",
-          "timezone",
-          "localDate",
-        )
-        .include("outbox", (related) => related.select("deliveryMode", "force"))
-        .include("notification", (related) =>
-          related.select(
-            "userId",
-            "_type",
-            "title",
-            "body",
-            "actionType",
-            "actionUrl",
-            "purpose",
-            "campaignKey",
-            "variantId",
-            "todoId",
-            "friendId",
-            "nudgeId",
-            "cheerId",
-            "metadata",
-            "notificationDate",
-          ),
-        )
-        .orderBy((row) => row.id.asc())
-        .all(),
-    );
+    const dispatches = await this.db.query.pushDispatch.findMany({
+      columns: {
+        id: true,
+        notificationId: true,
+        deliveryAttemptCount: true,
+        rateLimitReservedAt: true,
+        timezone: true,
+        localDate: true,
+      },
+      where: {
+        AND: [
+          {
+            OR: claimedRows.map((claim) => ({
+              id: claim.dispatchId,
+              deliveryAttemptCount: claim.deliveryAttemptCount,
+            })),
+          },
+          { processingJobId: input.processingJobId, status: "PROCESSING" },
+        ],
+      },
+      with: {
+        outbox: { columns: { deliveryMode: true, force: true } },
+        notification: {
+          columns: {
+            userId: true,
+            type: true,
+            title: true,
+            body: true,
+            actionType: true,
+            actionUrl: true,
+            purpose: true,
+            campaignKey: true,
+            variantId: true,
+            todoId: true,
+            friendId: true,
+            nudgeId: true,
+            cheerId: true,
+            metadata: true,
+            notificationDate: true,
+          },
+        },
+      },
+      orderBy: { id: "asc" },
+    });
 
     const claimedDeliveries = dispatches.flatMap((dispatch) => {
       const claim = claimByDispatchId.get(dispatch.id);
@@ -230,7 +239,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
       ) {
         return [];
       }
-      const notification = requireRecord(dispatch.notification);
+      const notification = dispatch.notification;
       return [
         {
           fence: {
@@ -281,28 +290,25 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
   async markRateLimitReserved(
     inputs: readonly ReservePushDeliveryRateLimitInput[],
   ): Promise<readonly number[]> {
-    const sqlRows2 = sqlRowSpec({ dispatchId: "pg/int4@1" });
-
-    if (inputs.length === 0) return [];
+    if (inputs.length === 0) {
+      return [];
+    }
     const values = inputs.map(
       (input) => sql`(
 				${input.fence.dispatchId}::INTEGER,
 				${input.fence.processingJobId}::VARCHAR(255),
 				${input.fence.deliveryAttemptCount}::INTEGER,
-				${input.reservedAt}::TIMESTAMP(3)
+				${input.reservedAt.toISOString()}::TIMESTAMP(3)
 			)`,
     );
-    const reserved = decodeSqlRows(
-      sqlRows2,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
-			UPDATE "PushDispatch" AS dispatch
+    const reserved = dispatchRowsSchema.parse(
+      (
+        await this.db.execute<Record<string, unknown>>(sql`
+			UPDATE ${pushDispatch} AS dispatch
 			SET
 				"rateLimitReservedAt" = requested."reservedAt",
 				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${join(values)}) AS requested(
+			FROM (VALUES ${sql.join(values, sql`, `)}) AS requested(
 				"dispatchId",
 				"processingJobId",
 				"deliveryAttemptCount",
@@ -314,11 +320,8 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
 				AND dispatch."rateLimitReservedAt" IS NULL
 			RETURNING dispatch."id" AS "dispatchId"
-		`,
-        )
-          .returnsRow(sqlRows2)
-          .build(),
-      ),
+		`)
+      ).rows,
     );
     return reserved.map((item) => item.dispatchId);
   }
@@ -332,9 +335,9 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
   }
 
   async finalizeSkipped(inputs: readonly FinalizeSkippedPushDeliveryInput[]): Promise<number> {
-    const sqlRows3 = sqlRowSpec({ dispatchId: "pg/int4@1", publishAttempt: "pg/int4@1" });
-
-    if (inputs.length === 0) return 0;
+    if (inputs.length === 0) {
+      return 0;
+    }
     const values = inputs.map(
       (input) => sql`(
 				${input.fence.dispatchId}::INTEGER,
@@ -342,16 +345,13 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				${input.fence.processingJobId}::VARCHAR(255),
 				${input.fence.deliveryAttemptCount}::INTEGER,
 				${input.context.timezone}::VARCHAR(50),
-				${input.context.localDate}::DATE,
+				${toDateString(input.context.localDate)}::DATE,
 				${input.reason}::VARCHAR(100)
 			)`,
     );
-    const finalized = decodeSqlRows(
-      sqlRows3,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const finalized = publicationRowsSchema.parse(
+      (
+        await this.db.execute<Record<string, unknown>>(sql`
 			WITH requested(
 				"dispatchId",
 				"publishAttempt",
@@ -361,12 +361,12 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				"localDate",
 				"reason"
 			) AS (
-				VALUES ${join(values)}
+				VALUES ${sql.join(values, sql`, `)}
 			),
 			locked_outboxes AS MATERIALIZED (
 				SELECT requested.*
 				FROM requested
-				INNER JOIN "PushDispatchOutbox" AS outbox
+				INNER JOIN ${pushDispatchOutbox} AS outbox
 					ON outbox."dispatchId" = requested."dispatchId"
 					AND outbox."publishAttempts" = requested."publishAttempt"
 					AND outbox."status" IN (
@@ -376,7 +376,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
 				FOR UPDATE OF outbox
 			)
-			UPDATE "PushDispatch" AS dispatch
+			UPDATE ${pushDispatch} AS dispatch
 			SET
 				"status" = 'SKIPPED'::"PushDispatchStatus",
 				"skipReason" = requested."reason",
@@ -393,32 +393,25 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				AND dispatch."processingJobId" = requested."processingJobId"
 				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
 			RETURNING dispatch."id" AS "dispatchId", requested."publishAttempt"
-		`,
-        )
-          .returnsRow(sqlRows3)
-          .build(),
-      ),
+		`)
+      ).rows,
     );
     await this.#markOutboxesTerminal(finalized);
     return finalized.length;
   }
 
   async finalizeResults(inputs: readonly FinalizePushDeliveryResultsInput[]): Promise<number> {
-    const sqlRows4 = sqlRowSpec({ dispatchId: "pg/int4@1", publishAttempt: "pg/int4@1" });
-
-    if (inputs.length === 0) return 0;
+    if (inputs.length === 0) {
+      return 0;
+    }
     const allTokens = uniq(inputs.flatMap((input) => input.results.map((result) => result.token)));
     const tokens =
       allTokens.length === 0
         ? []
-        : decodeRecord(
-            "PushToken",
-            await this.client.orm.public.PushToken.where((row) =>
-              row.token.in(allTokens.map((value) => varchar(value, 255))),
-            )
-              .select("id", "token")
-              .all(),
-          );
+        : await this.db
+            .select({ id: pushToken.id, token: pushToken.token })
+            .from(pushToken)
+            .where(inArray(pushToken.token, allTokens));
     const tokenIdByValue = new Map(tokens.map((token) => [token.token, token.id]));
     const finalizationValues = inputs.map((input) => {
       const sent = input.results.some((result) => result.success);
@@ -429,17 +422,14 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				${input.fence.processingJobId}::VARCHAR(255),
 				${input.fence.deliveryAttemptCount}::INTEGER,
 				${input.context.timezone}::VARCHAR(50),
-				${input.context.localDate}::DATE,
+				${toDateString(input.context.localDate)}::DATE,
 				${sent ? "SENT" : "FAILED"}::"PushDispatchStatus",
 				${sent ? null : (firstError?.slice(0, 500) ?? null)}::VARCHAR(500)
 			)`;
     });
-    const finalized = decodeSqlRows(
-      sqlRows4,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const finalized = publicationRowsSchema.parse(
+      (
+        await this.db.execute<Record<string, unknown>>(sql`
 			WITH requested(
 				"dispatchId",
 				"publishAttempt",
@@ -450,12 +440,12 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				"nextStatus",
 				"lastError"
 			) AS (
-				VALUES ${join(finalizationValues)}
+				VALUES ${sql.join(finalizationValues, sql`, `)}
 			),
 			locked_outboxes AS MATERIALIZED (
 				SELECT requested.*
 				FROM requested
-				INNER JOIN "PushDispatchOutbox" AS outbox
+				INNER JOIN ${pushDispatchOutbox} AS outbox
 					ON outbox."dispatchId" = requested."dispatchId"
 					AND outbox."publishAttempts" = requested."publishAttempt"
 					AND outbox."status" IN (
@@ -465,7 +455,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
 				FOR UPDATE OF outbox
 			)
-			UPDATE "PushDispatch" AS dispatch
+			UPDATE ${pushDispatch} AS dispatch
 			SET
 				"status" = requested."nextStatus",
 				"sentAt" = CASE
@@ -486,64 +476,47 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				AND dispatch."processingJobId" = requested."processingJobId"
 				AND dispatch."deliveryAttemptCount" = requested."deliveryAttemptCount"
 			RETURNING dispatch."id" AS "dispatchId", requested."publishAttempt"
-		`,
-        )
-          .returnsRow(sqlRows4)
-          .build(),
-      ),
+		`)
+      ).rows,
     );
     const finalizedDispatchIds = new Set(finalized.map((item) => item.dispatchId));
     const attemptValues = inputs.flatMap((input) => {
-      if (!finalizedDispatchIds.has(input.fence.dispatchId)) return [];
+      if (!finalizedDispatchIds.has(input.fence.dispatchId)) {
+        return [];
+      }
       return input.results.flatMap((result) => {
         const pushTokenId = tokenIdByValue.get(result.token);
-        if (!pushTokenId) return [];
+        if (!pushTokenId) {
+          return [];
+        }
         return [
-          sql`(
-						${input.fence.dispatchId}::INTEGER,
-						${pushTokenId}::INTEGER,
-						${result.success ? "TICKET_ACCEPTED" : "FAILED"}::"PushDeliveryStatus",
-						${result.ticketId ?? null},
-						${pushTokenFingerprint(result.token)}::VARCHAR(64),
-						${result.errorCode ?? null},
-						${result.error?.slice(0, 500) ?? null},
-						CURRENT_TIMESTAMP
-					)`,
+          {
+            dispatchId: input.fence.dispatchId,
+            pushTokenId,
+            status: result.success ? ("TICKET_ACCEPTED" as const) : ("FAILED" as const),
+            expoTicketId: result.ticketId ?? null,
+            tokenFingerprint: pushTokenFingerprint(result.token),
+            errorCode: result.errorCode ?? null,
+            errorMessage: result.error?.slice(0, 500) ?? null,
+          },
         ];
       });
     });
     if (attemptValues.length > 0) {
-      await this.client
-        .execute(
-          sqlStatement(
-            this.client,
-            sql`
-				INSERT INTO "PushDeliveryAttempt" (
-					"dispatchId",
-					"pushTokenId",
-					"status",
-					"expoTicketId",
-					"tokenFingerprint",
-					"errorCode",
-					"errorMessage",
-					"updatedAt"
-				)
-				VALUES ${join(attemptValues)}
-				ON CONFLICT ("dispatchId", "pushTokenId")
-				DO UPDATE SET
-					"status" = EXCLUDED."status",
-					"expoTicketId" = EXCLUDED."expoTicketId",
-					"tokenFingerprint" = EXCLUDED."tokenFingerprint",
-					"errorCode" = EXCLUDED."errorCode",
-					"errorMessage" = EXCLUDED."errorMessage",
-					"receiptCheckedAt" = NULL,
-					"updatedAt" = CURRENT_TIMESTAMP
-			`,
-          )
-            .affectedCount()
-            .build(),
-        )
-        .then((result) => result.affectedRows);
+      await this.db
+        .insert(pushDeliveryAttempt)
+        .values(attemptValues)
+        .onConflictDoUpdate({
+          target: [pushDeliveryAttempt.dispatchId, pushDeliveryAttempt.pushTokenId],
+          set: {
+            status: excluded(pushDeliveryAttempt.status),
+            expoTicketId: excluded(pushDeliveryAttempt.expoTicketId),
+            tokenFingerprint: excluded(pushDeliveryAttempt.tokenFingerprint),
+            errorCode: excluded(pushDeliveryAttempt.errorCode),
+            errorMessage: excluded(pushDeliveryAttempt.errorMessage),
+            receiptCheckedAt: null,
+          },
+        });
     }
 
     await this.#markOutboxesTerminal(finalized);
@@ -551,15 +524,9 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
   }
 
   async release(inputs: readonly ReleasePushDeliveryInput[]): Promise<number> {
-    const sqlRows5 = sqlRowSpec({
-      reopenOutbox: "pg/bool@1",
-      availableAt: "pg/timestamp-string@1",
-      lastError: "pg/text@1",
-      dispatchId: "pg/int4@1",
-      publishAttempt: "pg/int4@1",
-    });
-
-    if (inputs.length === 0) return 0;
+    if (inputs.length === 0) {
+      return 0;
+    }
     const values = inputs.map(
       (input) => sql`(
 				${input.fence.dispatchId}::INTEGER,
@@ -568,15 +535,12 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				${input.fence.deliveryAttemptCount}::INTEGER,
 				${input.error.slice(0, 500)}::VARCHAR(500),
 				${input.reopenOutbox}::BOOLEAN,
-				${input.availableAt}::TIMESTAMP(3)
+				${input.availableAt.toISOString()}::TIMESTAMP(3)
 			)`,
     );
-    const released = decodeSqlRows(
-      sqlRows5,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
+    const released = releaseRowsSchema.parse(
+      (
+        await this.db.execute<Record<string, unknown>>(sql`
 			WITH requested(
 				"dispatchId",
 				"publishAttempt",
@@ -586,12 +550,12 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				"reopenOutbox",
 				"availableAt"
 			) AS (
-				VALUES ${join(values)}
+				VALUES ${sql.join(values, sql`, `)}
 			),
 			locked_outboxes AS MATERIALIZED (
 				SELECT requested.*
 				FROM requested
-				INNER JOIN "PushDispatchOutbox" AS outbox
+				INNER JOIN ${pushDispatchOutbox} AS outbox
 					ON outbox."dispatchId" = requested."dispatchId"
 					AND outbox."publishAttempts" = requested."publishAttempt"
 					AND outbox."status" IN (
@@ -601,7 +565,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
 				FOR UPDATE OF outbox
 			)
-			UPDATE "PushDispatch" AS dispatch
+			UPDATE ${pushDispatch} AS dispatch
 			SET
 				"status" = 'PENDING'::"PushDispatchStatus",
 				"processingJobId" = NULL,
@@ -617,31 +581,31 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 			RETURNING
 				dispatch."id" AS "dispatchId",
 				requested."publishAttempt",
-				requested."reopenOutbox",
-				requested."availableAt",
-				requested."lastError"
-		`,
-        )
-          .returnsRow(sqlRows5)
-          .build(),
-      ),
+				requested."reopenOutbox"
+		`)
+      ).rows,
     );
+    const inputByDispatchId = new Map(inputs.map((input) => [input.fence.dispatchId, input]));
     const reopen = released.filter((item) => item.reopenOutbox);
     if (reopen.length > 0) {
-      const reopenValues = reopen.map(
-        (item) => sql`(
-					${item.dispatchId}::INTEGER,
-					${item.publishAttempt}::INTEGER,
-					${item.availableAt}::TIMESTAMP(3),
-					${item.lastError}::VARCHAR(500)
-				)`,
-      );
-      const reopened = await this.client
-        .execute(
-          sqlStatement(
-            this.client,
-            sql`
-				UPDATE "PushDispatchOutbox" AS outbox
+      const reopenValues = reopen.flatMap((item) => {
+        const input = inputByDispatchId.get(item.dispatchId);
+        if (!input) {
+          return [];
+        }
+        return [
+          sql`(
+            ${item.dispatchId}::INTEGER,
+            ${item.publishAttempt}::INTEGER,
+            ${input.availableAt.toISOString()}::TIMESTAMP(3),
+            ${input.error.slice(0, 500)}::VARCHAR(500)
+          )`,
+        ];
+      });
+      const reopened =
+        (await (
+          await this.db.execute<Record<string, unknown>>(sql`
+				UPDATE ${pushDispatchOutbox} AS outbox
 				SET
 					"status" = 'PENDING'::"PushDispatchOutboxStatus",
 					"availableAt" = requested."availableAt",
@@ -649,7 +613,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					"publishedAt" = NULL,
 					"lastError" = requested."lastError",
 					"updatedAt" = CURRENT_TIMESTAMP
-				FROM (VALUES ${join(reopenValues)}) AS requested(
+				FROM (VALUES ${sql.join(reopenValues, sql`, `)}) AS requested(
 					"dispatchId", "publishAttempt", "availableAt", "lastError"
 				)
 				WHERE outbox."dispatchId" = requested."dispatchId"
@@ -658,12 +622,8 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 						'PROCESSING'::"PushDispatchOutboxStatus",
 						'PUBLISHED'::"PushDispatchOutboxStatus"
 					)
-			`,
-          )
-            .affectedCount()
-            .build(),
-        )
-        .then((result) => result.affectedRows);
+			`)
+        ).rowCount) ?? 0;
       if (reopened !== reopen.length) {
         throw new Error(
           `Push delivery outbox reopen fence mismatch: expected=${reopen.length}, actual=${reopened}`,
@@ -673,24 +633,22 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     return released.length;
   }
 
-  recoverStaleProcessing(startedBefore: Date): Promise<number> {
-    return this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
+  async recoverStaleProcessing(startedBefore: Date): Promise<number> {
+    return (
+      (
+        await this.db.execute<Record<string, unknown>>(sql`
 			WITH locked_outboxes AS MATERIALIZED (
 				SELECT outbox."dispatchId"
-				FROM "PushDispatchOutbox" AS outbox
-				INNER JOIN "PushDispatch" AS dispatch
+				FROM ${pushDispatchOutbox} AS outbox
+				INNER JOIN ${pushDispatch} AS dispatch
 					ON dispatch."id" = outbox."dispatchId"
 				WHERE dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${startedBefore}
+					AND dispatch."processingStartedAt" < ${startedBefore.toISOString()}::TIMESTAMP(3)
 					ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
 				FOR UPDATE OF outbox SKIP LOCKED
 			),
 			recovered AS (
-				UPDATE "PushDispatch" AS dispatch
+				UPDATE ${pushDispatch} AS dispatch
 				SET
 					"status" = 'PENDING'::"PushDispatchStatus",
 					"processingJobId" = NULL,
@@ -701,10 +659,10 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				FROM locked_outboxes
 				WHERE dispatch."id" = locked_outboxes."dispatchId"
 					AND dispatch."status" = 'PROCESSING'::"PushDispatchStatus"
-					AND dispatch."processingStartedAt" < ${startedBefore}
+					AND dispatch."processingStartedAt" < ${startedBefore.toISOString()}::TIMESTAMP(3)
 				RETURNING dispatch."id"
 			)
-			UPDATE "PushDispatchOutbox" AS outbox
+			UPDATE ${pushDispatchOutbox} AS outbox
 			SET
 				"status" = 'PENDING'::"PushDispatchOutboxStatus",
 				"availableAt" = CURRENT_TIMESTAMP,
@@ -718,45 +676,38 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					'PROCESSING'::"PushDispatchOutboxStatus",
 					'PUBLISHED'::"PushDispatchOutboxStatus"
 				)
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
+		`)
+      ).rowCount ?? 0
+    );
   }
 
   async #markOutboxesTerminal(publications: readonly PushDeliveryPublication[]): Promise<void> {
-    if (publications.length === 0) return;
+    if (publications.length === 0) {
+      return;
+    }
     const values = publications.map(
       (publication) =>
         sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
     );
-    const terminal = await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			UPDATE "PushDispatchOutbox" AS outbox
+    const terminal =
+      (await (
+        await this.db.execute<Record<string, unknown>>(sql`
+			UPDATE ${pushDispatchOutbox} AS outbox
 			SET
 				"status" = 'PUBLISHED'::"PushDispatchOutboxStatus",
 				"lockedAt" = NULL,
 				"publishedAt" = COALESCE(outbox."publishedAt", CURRENT_TIMESTAMP),
 				"lastError" = NULL,
 				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${join(values)}) AS terminal("dispatchId", "publishAttempt")
+			FROM (VALUES ${sql.join(values, sql`, `)}) AS terminal("dispatchId", "publishAttempt")
 			WHERE outbox."dispatchId" = terminal."dispatchId"
 				AND outbox."publishAttempts" = terminal."publishAttempt"
 				AND outbox."status" IN (
 					'PROCESSING'::"PushDispatchOutboxStatus",
 					'PUBLISHED'::"PushDispatchOutboxStatus"
 				)
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
+		`)
+      ).rowCount) ?? 0;
     if (terminal !== publications.length) {
       throw new Error(
         `Push delivery terminal outbox fence mismatch: expected=${publications.length}, actual=${terminal}`,
@@ -767,24 +718,34 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
   async #reopenUnclaimedPublications(
     input: ReopenPushDeliveriesAfterClaimFailureInput,
   ): Promise<number> {
-    if (input.publications.length === 0) return 0;
-    await lockPublicationGenerations(this.client, input.publications, CLAIMED_OUTBOX_STATUSES);
-    const matchesGeneration = matchesPublicationGeneration(input.publications);
+    if (input.publications.length === 0) {
+      return 0;
+    }
+    await lockPublicationGenerations(this.db, input.publications, CLAIMED_OUTBOX_STATUSES);
     // dispatch가 아직 PENDING인 세대만 다시 연다. 이미 claim된 dispatch의 outbox를 되돌리지 않는다.
-    return this.client.orm.public.PushDispatchOutbox.where((outbox) =>
-      and(
-        matchesGeneration(outbox),
-        outbox.status.in([...CLAIMED_OUTBOX_STATUSES]),
-        outbox.dispatch.some((dispatch) => dispatch.status.eq("PENDING")),
-      ),
-    ).updateAndCount(
-      encodePatch("PushDispatchOutbox", {
+    const reopened = await this.db
+      .update(pushDispatchOutbox)
+      .set({
         status: "PENDING",
         availableAt: input.availableAt,
         lockedAt: null,
         publishedAt: null,
         lastError: input.error.slice(0, 500),
-      }),
-    );
+      })
+      .where(
+        and(
+          matchesPublicationGeneration(input.publications),
+          inArray(pushDispatchOutbox.status, [...CLAIMED_OUTBOX_STATUSES]),
+          inArray(
+            pushDispatchOutbox.dispatchId,
+            this.db
+              .select({ id: pushDispatch.id })
+              .from(pushDispatch)
+              .where(eq(pushDispatch.status, "PENDING")),
+          ),
+        ),
+      )
+      .returning({ dispatchId: pushDispatchOutbox.dispatchId });
+    return reopened.length;
   }
 }

@@ -3,7 +3,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { TransactionHost } from "@nestjs-cls/transactional";
 import { and } from "@prisma/orm-postgres/orm-client";
 
-import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -20,14 +20,14 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
   let prisma: TestDatabaseClient;
   let activeClient: TestDatabaseClient | Prisma8Transaction;
-  let repository: PrismaRetentionRepository;
+  let repository: DrizzleRetentionRepository;
   const transactionContext = new AsyncLocalStorage<Prisma8Transaction>();
 
   beforeAll(async () => {
     testDb = new TestDatabase();
     prisma = await testDb.start();
     activeClient = prisma;
-    repository = new PrismaRetentionRepository(
+    repository = new DrizzleRetentionRepository(
       asDep<TransactionHost<Prisma8TransactionalAdapter>>({
         get tx() {
           return (

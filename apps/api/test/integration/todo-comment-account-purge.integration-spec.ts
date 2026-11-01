@@ -25,7 +25,7 @@ import {
   type NotificationCachePort,
 } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
-import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
+import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
@@ -248,8 +248,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         },
         todoCommentAccountCleanupProvider,
         { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },
-        PrismaNotificationRepository,
-        { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
+        DrizzleNotificationRepository,
+        { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
         notificationAccountCleanupProvider,
         { provide: NOTIFICATION_CACHE, useValue: notificationCache },
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },

@@ -74,15 +74,15 @@ import { NotificationQueueProcessor } from "#api/modules/notification/infrastruc
 import { PushDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.processor";
 import { PushDeliveryQueueService } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.service";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
-import { PrismaNotificationTodoTargetReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification-todo-target.reader";
-import { PrismaNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.reader";
-import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
-import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository";
-import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository";
-import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
-import { PrismaPushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-receipt.repository";
-import { PrismaPushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-token.repository";
-import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification-todo-target.reader";
+import { DrizzleNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.reader";
+import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
+import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
+import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
+import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
+import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
+import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
 import { InMemoryPushRateLimiter } from "#api/modules/notification/infrastructure/rate-limiter/delivery/in-memory-push-rate-limiter";
 import {
   deliverPushNotificationsProvider,
@@ -151,7 +151,7 @@ export interface CriticalQueueProcessorHarness {
   readonly boss: PgBoss;
   readonly runtime: JobRuntimePort;
   readonly pushProvider: FakePushProvider;
-  readonly retentionRepository: PrismaRetentionRepository;
+  readonly retentionRepository: DrizzleRetentionRepository;
   readonly daytimeTimezone: string;
   cleanup(): Promise<void>;
   eventually(assertion: () => Promise<void>): Promise<void>;
@@ -224,7 +224,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     boss,
     runtime,
     pushProvider,
-    retentionRepository: module.get(PrismaRetentionRepository),
+    retentionRepository: module.get(DrizzleRetentionRepository),
     daytimeTimezone,
     cleanup: async () => {
       await testDatabase.cleanup();
@@ -271,28 +271,28 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: SendNotification, useValue: unexpectedUseCase },
     { provide: SendNotificationWithDedup, useValue: unexpectedUseCase },
     { provide: SendBatchNotification, useValue: unexpectedUseCase },
-    PrismaNotificationRepository,
-    { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
-    PrismaNotificationReader,
-    { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
-    { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
-    PrismaNotificationTodoTargetReader,
-    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: PrismaNotificationTodoTargetReader },
-    PrismaPushTokenRepository,
-    { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-    PrismaPushReceiptRepository,
-    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
-    PrismaPushDispatchStagingRepository,
-    { provide: PUSH_DISPATCH_STAGING, useExisting: PrismaPushDispatchStagingRepository },
-    PrismaPushDeliveryOutboxRepository,
+    DrizzleNotificationRepository,
+    { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
+    DrizzleNotificationReader,
+    { provide: NOTIFICATION_INBOX_READER, useExisting: DrizzleNotificationReader },
+    { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
+    DrizzleNotificationTodoTargetReader,
+    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: DrizzleNotificationTodoTargetReader },
+    DrizzlePushTokenRepository,
+    { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
+    DrizzlePushReceiptRepository,
+    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: DrizzlePushReceiptRepository },
+    DrizzlePushDispatchStagingRepository,
+    { provide: PUSH_DISPATCH_STAGING, useExisting: DrizzlePushDispatchStagingRepository },
+    DrizzlePushDeliveryOutboxRepository,
     {
       provide: PUSH_DELIVERY_OUTBOX_REPOSITORY,
-      useExisting: PrismaPushDeliveryOutboxRepository,
+      useExisting: DrizzlePushDeliveryOutboxRepository,
     },
-    PrismaPushDeliveryLifecycleRepository,
+    DrizzlePushDeliveryLifecycleRepository,
     {
       provide: PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-      useExisting: PrismaPushDeliveryLifecycleRepository,
+      useExisting: DrizzlePushDeliveryLifecycleRepository,
     },
     { provide: PUSH_PROVIDER, useValue: pushProvider },
     { provide: PUSH_RATE_LIMITER, useClass: InMemoryPushRateLimiter },
@@ -376,8 +376,8 @@ function retentionProviders(): Provider[] {
       useValue: unexpectedUseCase,
     },
     { provide: RelayRetentionOutbox, useValue: unexpectedUseCase },
-    PrismaRetentionRepository,
-    { provide: RETENTION_REPOSITORY, useExisting: PrismaRetentionRepository },
+    DrizzleRetentionRepository,
+    { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
     {
       provide: RETENTION_PUSH_SENDER,
       useClass: ExpoRetentionPushSenderAdapter,

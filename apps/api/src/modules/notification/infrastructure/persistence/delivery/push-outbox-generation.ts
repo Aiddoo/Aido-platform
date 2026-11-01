@@ -1,40 +1,40 @@
-import { and, or, type ModelAccessor } from "@prisma/orm-postgres/orm-client";
+import type { TransactionHost } from "@nestjs-cls/transactional";
+import { and, asc, eq, inArray, or } from "drizzle-orm";
 
-import type { Contract } from "#api/generated/prisma8/contract.d";
-import type { PushDispatchOutboxStatus } from "#api/platform/database/database.types";
-import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { pushDispatchOutbox } from "#api/platform/database/schema/index";
 
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
 
-type OutboxRow = ModelAccessor<Contract, "PushDispatchOutbox", "public">;
+type OutboxStatus = typeof pushDispatchOutbox.$inferSelect.status;
 
 /** 발행 세대(dispatchId, publishAttempts)가 일치하는 outbox 행만 고른다. */
-export function matchesPublicationGeneration(
-  publications: readonly PushDeliveryPublication[],
-): (outbox: OutboxRow) => ReturnType<typeof or> {
-  return (outbox) =>
-    or(
-      ...publications.map((publication) =>
-        and(
-          outbox.dispatchId.eq(publication.dispatchId),
-          outbox.publishAttempts.eq(publication.publishAttempt),
-        ),
+export function matchesPublicationGeneration(publications: readonly PushDeliveryPublication[]) {
+  return or(
+    ...publications.map((publication) =>
+      and(
+        eq(pushDispatchOutbox.dispatchId, publication.dispatchId),
+        eq(pushDispatchOutbox.publishAttempts, publication.publishAttempt),
       ),
-    );
+    ),
+  );
 }
 
 /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
 export async function lockPublicationGenerations(
-  client: Prisma8Transaction,
+  db: TransactionHost<DrizzleTransactionalAdapter>["tx"],
   publications: readonly PushDeliveryPublication[],
-  statuses: readonly PushDispatchOutboxStatus[],
+  statuses: readonly OutboxStatus[],
 ): Promise<void> {
-  const matchesGeneration = matchesPublicationGeneration(publications);
-  await client.orm.public.PushDispatchOutbox.where((outbox) =>
-    and(matchesGeneration(outbox), outbox.status.in([...statuses])),
-  )
-    .orderBy([(outbox) => outbox.availableAt.asc(), (outbox) => outbox.dispatchId.asc()])
-    .select("dispatchId")
-    .forUpdate()
-    .all();
+  await db
+    .select({ dispatchId: pushDispatchOutbox.dispatchId })
+    .from(pushDispatchOutbox)
+    .where(
+      and(
+        matchesPublicationGeneration(publications),
+        inArray(pushDispatchOutbox.status, [...statuses]),
+      ),
+    )
+    .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+    .for("update");
 }

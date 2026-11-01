@@ -3,11 +3,11 @@ import { createHash } from "node:crypto";
 import { vi } from "vitest";
 
 import { ReconcilePushReceipts } from "#api/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case";
-import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository";
-import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository";
-import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
-import { PrismaPushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-receipt.repository";
-import { PrismaPushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-token.repository";
+import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
+import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
+import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
+import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
@@ -45,8 +45,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     });
     await prisma.orm.public.User.create(encodeCreate("User", user));
     const { txHost, uow } = createDatabaseTransactionFixture(prisma);
-    const tokens = new PrismaPushTokenRepository(txHost);
-    const receipts = new PrismaPushReceiptRepository(txHost);
+    const tokens = new DrizzlePushTokenRepository(txHost);
+    const receipts = new DrizzlePushReceiptRepository(txHost);
     const token = await tokens.registerPushToken({
       userId: user.id,
       token: `ExponentPushToken[${suffix}-old]`,
@@ -252,9 +252,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         }),
       ),
     );
-    const staging = new PrismaPushDispatchStagingRepository(f.txHost);
-    const outbox = new PrismaPushDeliveryOutboxRepository(f.txHost);
-    const lifecycle = new PrismaPushDeliveryLifecycleRepository(f.txHost);
+    const staging = new DrizzlePushDispatchStagingRepository(f.txHost);
+    const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost);
+    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost);
     const staged = await f.uow.run(() =>
       staging.stage({
         notificationId: notification.id,

@@ -1,6 +1,6 @@
 import { LatestClientAppVersionAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/parsing/latest-client-app-version.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
+import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
@@ -10,7 +10,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let userId: string;
-  let reader: PrismaClientAppVersionReader;
+  let reader: DrizzleClientAppVersionReader;
   let users: DrizzleUserRepository;
 
   beforeAll(async () => {
@@ -24,7 +24,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
     await client.orm.public.User.create(encodeCreate("User", { ...user, status: "ACTIVE" }));
     userId = user.id;
     const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new PrismaClientAppVersionReader(txHost);
+    reader = new DrizzleClientAppVersionReader(txHost);
     users = new DrizzleUserRepository(txHost);
   });
 

@@ -1,23 +1,21 @@
 import { compareSemanticVersions, isSemanticVersionAtLeast } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and } from "@prisma/orm-postgres/orm-client";
 
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 
 import type { ClientAppVersionReaderPort } from "../../../application/ports/delivery/client-app-version.reader.port.js";
 
 /** 푸시 토큰에 남은 기기별 앱 버전 중 가장 높은 버전을 고른다. 형식이 틀린 버전은 무시한다 */
 @Injectable()
-export class PrismaClientAppVersionReader implements ClientAppVersionReaderPort {
-  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+export class DrizzleClientAppVersionReader implements ClientAppVersionReaderPort {
+  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
   async findLatestAppVersion(userId: string): Promise<string | null> {
-    const tokens = await this.txHost.tx.orm.public.PushToken.where((row) =>
-      and(row.userId.eq(userId), row.isActive.eq(true), row.appVersion.isNotNull()),
-    )
-      .select("appVersion")
-      .all();
+    const tokens = await this.txHost.tx.query.pushToken.findMany({
+      columns: { appVersion: true },
+      where: { userId, isActive: true, appVersion: { isNotNull: true } },
+    });
 
     let latest: string | null = null;
     for (const { appVersion } of tokens) {

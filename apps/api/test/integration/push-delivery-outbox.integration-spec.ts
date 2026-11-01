@@ -4,10 +4,10 @@ import sql from "sql-template-tag";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository";
-import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository";
-import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
-import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
+import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
+import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
@@ -113,25 +113,25 @@ function transactionHost(
 
 function staging(
   client: TestDatabaseClient | TransactionClient,
-): PrismaPushDispatchStagingRepository {
-  return new PrismaPushDispatchStagingRepository(transactionHost(client));
+): DrizzlePushDispatchStagingRepository {
+  return new DrizzlePushDispatchStagingRepository(transactionHost(client));
 }
 
 function outbox(
   client: TestDatabaseClient | TransactionClient,
-): PrismaPushDeliveryOutboxRepository {
-  return new PrismaPushDeliveryOutboxRepository(transactionHost(client));
+): DrizzlePushDeliveryOutboxRepository {
+  return new DrizzlePushDeliveryOutboxRepository(transactionHost(client));
 }
 
 function lifecycle(
   client: TestDatabaseClient | TransactionClient,
-): PrismaPushDeliveryLifecycleRepository {
-  return new PrismaPushDeliveryLifecycleRepository(transactionHost(client));
+): DrizzlePushDeliveryLifecycleRepository {
+  return new DrizzlePushDeliveryLifecycleRepository(transactionHost(client));
 }
 
-function retention(client: TestDatabaseClient | TransactionClient): PrismaRetentionRepository {
+function retention(client: TestDatabaseClient | TransactionClient): DrizzleRetentionRepository {
   const { txHost, uow } = createDatabaseTransactionFixture(client);
-  return new PrismaRetentionRepository(txHost, uow);
+  return new DrizzleRetentionRepository(txHost, uow);
 }
 
 describe("일반 push delivery outbox (실제 PostgreSQL)", () => {

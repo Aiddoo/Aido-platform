@@ -1,8 +1,8 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
-import { encodeCreate } from "#api/platform/database/database-records";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { pushDispatch, pushDispatchOutbox } from "#api/platform/database/schema/index";
 
 import type {
   PushDispatchStagingRepositoryPort,
@@ -11,10 +11,10 @@ import type {
 } from "../../../application/ports/delivery/push-dispatch-staging.repository.port.js";
 
 @Injectable()
-export class PrismaPushDispatchStagingRepository implements PushDispatchStagingRepositoryPort {
-  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+export class DrizzlePushDispatchStagingRepository implements PushDispatchStagingRepositoryPort {
+  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
-  private get client() {
+  private get db() {
     return this.txHost.tx;
   }
 
@@ -31,13 +31,23 @@ export class PrismaPushDispatchStagingRepository implements PushDispatchStagingR
   async stageMany(
     inputs: readonly StagePushDispatchInput[],
   ): Promise<readonly StagedPushDispatch[]> {
-    if (inputs.length === 0) return [];
+    if (inputs.length === 0) {
+      return [];
+    }
 
-    const dispatches = await this.client.orm.public.PushDispatch.select("id", "notificationId")
-      .createAll(inputs.map(toDispatchCreate))
-      .then((rows) =>
-        rows.map((row) => ({ dispatchId: row.id, notificationId: row.notificationId })),
-      );
+    const dispatches = await this.db
+      .insert(pushDispatch)
+      .values(
+        inputs.map((input) => ({
+          notificationId: input.notificationId,
+          userId: input.userId,
+          purpose: input.purpose,
+          campaignKey: input.campaignKey ?? null,
+          variantId: input.variantId ?? null,
+          status: "PENDING" as const,
+        })),
+      )
+      .returning({ dispatchId: pushDispatch.id, notificationId: pushDispatch.notificationId });
     if (dispatches.length !== inputs.length) {
       throw new Error(
         `Push dispatch staging returned partial rows: expected=${inputs.length}, actual=${dispatches.length}`,
@@ -45,7 +55,7 @@ export class PrismaPushDispatchStagingRepository implements PushDispatchStagingR
     }
 
     const inputByNotificationId = new Map(inputs.map((input) => [input.notificationId, input]));
-    await this.client.orm.public.PushDispatchOutbox.createAndCount(
+    await this.db.insert(pushDispatchOutbox).values(
       dispatches.map((dispatch) => {
         const input = inputByNotificationId.get(dispatch.notificationId);
         if (!input) {
@@ -53,29 +63,14 @@ export class PrismaPushDispatchStagingRepository implements PushDispatchStagingR
             `Push dispatch staging input missing: notificationId=${dispatch.notificationId}`,
           );
         }
-        return toOutboxCreate(dispatch.dispatchId, input);
+        return {
+          dispatchId: dispatch.dispatchId,
+          deliveryMode: input.deliveryMode,
+          force: input.force,
+        };
       }),
     );
 
     return dispatches;
   }
-}
-
-function toDispatchCreate(input: StagePushDispatchInput) {
-  return encodeCreate("PushDispatch", {
-    notificationId: input.notificationId,
-    userId: input.userId,
-    purpose: input.purpose,
-    campaignKey: input.campaignKey ?? null,
-    variantId: input.variantId ?? null,
-    status: "PENDING",
-  });
-}
-
-function toOutboxCreate(dispatchId: number, input: StagePushDispatchInput) {
-  return encodeCreate("PushDispatchOutbox", {
-    dispatchId,
-    deliveryMode: input.deliveryMode,
-    force: input.force,
-  });
 }
