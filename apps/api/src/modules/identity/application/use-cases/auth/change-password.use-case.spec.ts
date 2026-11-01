@@ -103,10 +103,14 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
         empty: state === "존재하지 않는",
         socialOnly: state === "소셜 전용",
       });
-      if (state === "탈퇴한")
+      if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
-      if (state === "비밀번호가 없는")
-        for (const account of fixture.accountRepository.accounts) account.password = null;
+      }
+      if (state === "비밀번호가 없는") {
+        for (const account of fixture.accountRepository.accounts) {
+          account.password = null;
+        }
+      }
       const useCase = new ChangePassword(fixture);
       const errorCode =
         state === "존재하지 않는"

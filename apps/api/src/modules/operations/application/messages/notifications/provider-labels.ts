@@ -21,7 +21,7 @@ export const PROVIDER_DEVICE_LABELS: Partial<Record<Provider, string>> = {
 };
 
 /**
- * 계정 provider(Prisma AccountProvider 값과 동일한 문자열) → 표시 라벨.
+ * 계정 provider(AccountProvider 값과 동일한 문자열) → 표시 라벨.
  *
  * 계정 공급자 사실을 관리자 채널 표시 라벨로 바꾸고,
  * 미매핑 값은 원문을 그대로 반환한다.

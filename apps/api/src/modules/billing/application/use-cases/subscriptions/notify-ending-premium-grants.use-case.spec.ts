@@ -44,7 +44,9 @@ function createNotify(candidates: readonly PremiumGrantEndingNotice[], quietUser
           .slice(0, params.limit);
       },
       markEndingNotified: async (grantIds) => {
-        for (const grantId of grantIds) notifiedGrantIds.add(grantId);
+        for (const grantId of grantIds) {
+          notifiedGrantIds.add(grantId);
+        }
       },
     },
     notifier: {

@@ -38,7 +38,9 @@ describe("CreateMemo — 메모 사용자 상태", () => {
 
   it("20개 한도에 도달하면 잘못된 내용보다 MEMO_2003을 우선하고 저장하지 않는다", async () => {
     // Given
-    for (let index = 0; index < 20; index++) fixture.addMemo(`메모 ${index}`);
+    for (let index = 0; index < 20; index++) {
+      fixture.addMemo(`메모 ${index}`);
+    }
     const recordsBefore = [...fixture.repository.records.values()];
     // When / Then
     await expect(

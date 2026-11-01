@@ -1,7 +1,7 @@
 import { LatestClientAppVersionAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/parsing/latest-client-app-version.adapter";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
-import { encodeCreate } from "#api/platform/database/database-records";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
+import { pushToken, user as userTable } from "#api/platform/database/schema/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -10,8 +10,8 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let userId: string;
-  let reader: PrismaClientAppVersionReader;
-  let users: UserRepository;
+  let reader: DrizzleClientAppVersionReader;
+  let users: DrizzleUserRepository;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 2 }) });
@@ -21,11 +21,11 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     const user = UserFixture.create();
-    await client.orm.public.User.create(encodeCreate("User", { ...user, status: "ACTIVE" }));
+    await client.insert(userTable).values({ ...user, status: "ACTIVE" });
     userId = user.id;
     const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new PrismaClientAppVersionReader(txHost);
-    users = new UserRepository(txHost);
+    reader = new DrizzleClientAppVersionReader(txHost);
+    users = new DrizzleUserRepository(txHost);
   });
 
   afterAll(async () => {
@@ -33,16 +33,14 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   });
 
   async function addToken(deviceId: string, appVersion: string | null, isActive = true) {
-    await client.orm.public.PushToken.create(
-      encodeCreate("PushToken", {
-        userId,
-        token: `ExponentPushToken[${deviceId}]`,
-        deviceId,
-        platform: "IOS",
-        isActive,
-        appVersion,
-      }),
-    );
+    await client.insert(pushToken).values({
+      userId,
+      token: `ExponentPushToken[${deviceId}]`,
+      deviceId,
+      platform: "IOS",
+      isActive,
+      appVersion,
+    });
   }
 
   it("활성 기기 중 가장 높은 앱 버전을 고르고, 비활성·형식이 틀린 버전은 무시한다", async () => {
@@ -72,7 +70,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
     // Given
     await users.updateLastActiveAt(userId, "Asia/Seoul", "1.13.0");
 
-    // When - 버전 헤더가 없는 요청
+    // When
     await users.updateLastActiveAt(userId, "Asia/Seoul");
 
     // Then
@@ -80,12 +78,15 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
   });
 
   it("푸시 권한이 없어도 인증 요청의 앱 버전으로 사용자의 최신 앱 버전을 안다", async () => {
-    // Given - 푸시 토큰은 1.12.1에 멈춰 있고, 1.13.0 앱으로 요청함
+    // Given
     await addToken("old-phone", "1.12.1");
     await users.updateLastActiveAt(userId, "Asia/Seoul", "1.13.0");
     const latest = new LatestClientAppVersionAdapter(reader, users);
 
-    // When / Then
-    await expect(latest.findLatestAppVersion(userId)).resolves.toBe("1.13.0");
+    // When
+    const version = await latest.findLatestAppVersion(userId);
+
+    // Then
+    expect(version).toBe("1.13.0");
   });
 });

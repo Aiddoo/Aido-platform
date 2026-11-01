@@ -14,15 +14,15 @@ import {
   USER_PROVISIONING_SEEDER,
   type UserProvisioningSeederPort,
 } from "#api/modules/identity/application/ports/auth/user-provisioning-seeder.port";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-preference.repository";
 import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
 
 export const provisioningSeederTestProvider: Provider = {
   provide: USER_PROVISIONING_SEEDER,
   useFactory: (
-    consentRepository: UserConsentRepository,
-    preferenceRepository: UserPreferenceRepository,
+    consentRepository: DrizzleUserConsentRepository,
+    preferenceRepository: DrizzleUserPreferenceRepository,
     defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
   ): UserProvisioningSeederPort => ({
     async seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
@@ -36,5 +36,9 @@ export const provisioningSeederTestProvider: Provider = {
       await defaultTodoCategorySeeder.seed(userId);
     },
   }),
-  inject: [UserConsentRepository, UserPreferenceRepository, DefaultTodoCategorySeeder],
+  inject: [
+    DrizzleUserConsentRepository,
+    DrizzleUserPreferenceRepository,
+    DefaultTodoCategorySeeder,
+  ],
 };

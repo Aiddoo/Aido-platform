@@ -9,7 +9,7 @@ import {
 
 import { ClsSavepointRunner } from "./cls-savepoint-runner.js";
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
-import { DatabaseService } from "./database.service.js";
+import { createDatabase, DRIZZLE } from "./database.client.js";
 import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
 import { PostgresPool } from "./postgres-pool.js";
 
@@ -17,19 +17,17 @@ import { PostgresPool } from "./postgres-pool.js";
 @Module({
   providers: [
     PostgresPool,
-    DatabaseService,
+    {
+      provide: DRIZZLE,
+      inject: [PostgresPool],
+      useFactory: (postgres: PostgresPool) => createDatabase(postgres.pool),
+    },
     ClsUnitOfWork,
     { provide: SAVEPOINT_RUNNER, useClass: ClsSavepointRunner },
     { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
     { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
     { provide: MUTATION_LOCK, useClass: PostgresMutationLockAdapter },
   ],
-  exports: [
-    DatabaseService,
-    UNIT_OF_WORK,
-    AFTER_COMMIT_TASK_REGISTRY,
-    MUTATION_LOCK,
-    SAVEPOINT_RUNNER,
-  ],
+  exports: [DRIZZLE, UNIT_OF_WORK, AFTER_COMMIT_TASK_REGISTRY, MUTATION_LOCK, SAVEPOINT_RUNNER],
 })
 export class DatabaseModule {}

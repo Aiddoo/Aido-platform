@@ -56,10 +56,14 @@ export class DispatchRetentionPush {
         this.#dependencies.repository.claimDispatch({ ...input, startedAt: new Date() }),
       );
     } catch (claimError) {
-      if (input.isFinalAttempt) await this.#recoverFinalClaimFailure(input, claimError);
+      if (input.isFinalAttempt) {
+        await this.#recoverFinalClaimFailure(input, claimError);
+      }
       throw claimError;
     }
-    if (candidate == null) return;
+    if (candidate == null) {
+      return;
+    }
     try {
       const now = new Date();
       if (!this.#dependencies.sender.isEligible(candidate, now)) {
@@ -86,7 +90,9 @@ export class DispatchRetentionPush {
             candidate.fence,
             new Date(),
           );
-          if (!reserved) throw new Error("Retention rate-limit reservation fence mismatch");
+          if (!reserved) {
+            throw new Error("Retention rate-limit reservation fence mismatch");
+          }
         });
       }
       const results = await this.#dependencies.sender.send(candidate);
@@ -132,7 +138,9 @@ export class DispatchRetentionPush {
           availableAt: new Date(),
           reason,
         });
-        if (!recovered) throw new Error("Retention final claim recovery fence mismatch");
+        if (!recovered) {
+          throw new Error("Retention final claim recovery fence mismatch");
+        }
       });
     } catch {
       this.#dependencies.logger.error({

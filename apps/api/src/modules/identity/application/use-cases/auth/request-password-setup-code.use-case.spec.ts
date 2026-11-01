@@ -42,8 +42,9 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
         empty: state === "존재하지 않는",
         socialOnly: state !== "이미 비밀번호가 있는",
       });
-      if (state === "탈퇴한")
+      if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+      }
       const useCase = new RequestPasswordSetupCode(fixture);
       const errorCode =
         state === "존재하지 않는"

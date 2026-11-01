@@ -91,7 +91,7 @@ endDate: z.iso.date().optional(),
 ## 5. 도메인·DB (서버)
 
 - DB nullable 컬럼은 도메인에서 `null`이다. 도메인 모델 안에서 같은 "없음"을 `null`과 `undefined`로 섞지 않는다.
-- 변환은 mapper·Adapter(경계)에서만 한다. 예: ORM 쓰기의 `undefined` = 변경 생략, `null` = 지우기는 Repository 구현이 해석한다([Prisma](../../apps/api/.claude/prisma.md)).
+- 변환은 mapper·Adapter(경계)에서만 한다. 예: ORM 쓰기의 `undefined` = 변경 생략, `null` = 지우기는 Repository 구현이 해석한다([Drizzle](../../apps/api/.claude/drizzle.md)).
 - Port의 조회 실패·cache miss는 각 Port가 정한 `null`/`undefined` 계약을 따른다.
 
 ```ts

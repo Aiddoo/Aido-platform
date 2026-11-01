@@ -200,7 +200,9 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       // Given
       const fixture = givenAccount();
       const account = fixture.accountRepository.accounts[0];
-      if (account == null) throw new Error("Credential fixture가 없습니다.");
+      if (account == null) {
+        throw new Error("Credential fixture가 없습니다.");
+      }
       account.password = storedPassword;
 
       // When
@@ -223,8 +225,11 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     async (scenario) => {
       // Given
       const fixture = givenAccount();
-      if (scenario === "존재하지 않는") fixture.userRepository.users.clear();
-      else await fixture.userRepository.softDelete(userId, currentTime);
+      if (scenario === "존재하지 않는") {
+        fixture.userRepository.users.clear();
+      } else {
+        await fixture.userRepository.softDelete(userId, currentTime);
+      }
 
       // When
       const pending = fixture.useCase.execute({ userId, password });

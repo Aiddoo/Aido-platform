@@ -59,7 +59,9 @@ export class NotifyEndingPremiumGrants {
       notifiedCount += result.notifiedCount;
       deferredCount += result.deferredCount;
       hasRemaining = result.candidateCount === PREMIUM_GRANT_ENDING_NOTICE.BATCH_SIZE;
-      if (!hasRemaining) break;
+      if (!hasRemaining) {
+        break;
+      }
       after = result.last;
     }
 

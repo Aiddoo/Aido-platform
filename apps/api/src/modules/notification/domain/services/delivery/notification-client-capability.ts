@@ -52,8 +52,12 @@ export function resolveNotificationInboxScope(
   appVersion: string | null | undefined,
 ): NotificationInboxScope {
   const supported = GATE_VERSIONS.find((version) => isSemanticVersionAtLeast(appVersion, version));
-  if (supported == null) return "legacy";
-  if (supported === GATE_VERSIONS[0]) return "all";
+  if (supported == null) {
+    return "legacy";
+  }
+  if (supported === GATE_VERSIONS[0]) {
+    return "all";
+  }
   return `since-${supported}`;
 }
 

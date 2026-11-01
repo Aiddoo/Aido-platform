@@ -87,7 +87,9 @@ export class PremiumAccessProjector {
     const remainders: PremiumGrantCreationPlan[] = [];
     for (const grantId of plan.rebankedGrantIds) {
       const grant = grantsById.get(grantId);
-      if (grant?.rebank(input.now)) changed.add(grant);
+      if (grant?.rebank(input.now)) {
+        changed.add(grant);
+      }
     }
     for (const grantId of plan.splitGrantIds) {
       const grant = grantsById.get(grantId);
@@ -100,11 +102,15 @@ export class PremiumAccessProjector {
     // 정리가 밀려 시작과 동시에 끝나는 기간이 있으므로 시작을 먼저 적용한다
     for (const activation of plan.activations) {
       const grant = grantsById.get(activation.grantId);
-      if (grant?.activate(activation.startsAt)) changed.add(grant);
+      if (grant?.activate(activation.startsAt)) {
+        changed.add(grant);
+      }
     }
     for (const grantId of plan.endedGrantIds) {
       const grant = grantsById.get(grantId);
-      if (grant?.end(input.now)) changed.add(grant);
+      if (grant?.end(input.now)) {
+        changed.add(grant);
+      }
     }
     await this.#dependencies.premiumGrantRepository.saveAll([...changed]);
     // 끊은 기간의 출처 키가 하나뿐이라 같은 끊기를 다시 처리해도 남은 기간은 한 번만 생긴다

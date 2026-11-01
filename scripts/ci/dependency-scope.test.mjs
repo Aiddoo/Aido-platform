@@ -20,8 +20,9 @@ test('shared code, lock/root inputs, unknown paths and unavailable diff fail ope
     ['tooling/vitest/base.ts'],
     ['new-workspace/file.ts'],
     null,
-  ])
+  ]) {
     assert.deepEqual(dependencyScope(paths), all);
+  }
 });
 test('cumulative stack diff includes the API ancestor even for a mobile tip', () => {
   assert.deepEqual(dependencyScope(['apps/api/src/todo.ts', 'apps/mobile/src/todo.tsx']), {

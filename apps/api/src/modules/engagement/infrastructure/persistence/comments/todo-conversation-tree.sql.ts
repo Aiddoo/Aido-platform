@@ -1,9 +1,15 @@
-import sql, { type Sql } from "sql-template-tag";
+import { sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+
+import { todoComment } from "#api/platform/database/schema/index";
 
 import type {
   ConversationPageMode,
   TodoConversationScope,
 } from "../../../application/models/comments/todo-comment.types.js";
+
+const targetComment = alias(todoComment, "target");
+const visibleComment = alias(todoComment, "comment");
 
 interface TodoConversationTreeInput {
   todoId: number;
@@ -17,15 +23,15 @@ interface TodoConversationTreeInput {
  * Focus와 thread cursor는 먼저 대상 root를 확정해 재귀 seed를 하나로 제한한다.
  * TODO 범위 페이지에서만 모든 root를 seed한다.
  */
-export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput): Sql {
+export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput): SQL {
   const targetThreadCte =
     input.mode === "FOCUS"
       ? sql`
 				target_thread AS (
-					SELECT COALESCE(target."rootId", target."id") AS "threadId"
-					FROM "TodoComment" AS target
-					WHERE target."todoId" = ${input.todoId}
-						AND target."id" = ${input.anchorCommentId ?? null}::TEXT
+					SELECT COALESCE(${targetComment.rootId}, ${targetComment.id}) AS "threadId"
+					FROM ${todoComment} AS ${targetComment}
+					WHERE ${targetComment.todoId} = ${input.todoId}
+						AND ${targetComment.id} = ${input.anchorCommentId ?? null}::TEXT
 				)
 			`
       : input.scope === "THREAD"
@@ -47,22 +53,22 @@ export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput):
   return sql`
 		visible_sibling_order AS (
 			SELECT
-				comment."id",
-				LEAD(comment."id") OVER (
-					PARTITION BY comment."parentId"
-					ORDER BY comment."createdAt" ASC, comment."id" ASC
+				${visibleComment.id},
+				LEAD(${visibleComment.id}) OVER (
+					PARTITION BY ${visibleComment.parentId}
+					ORDER BY ${visibleComment.createdAt} ASC, ${visibleComment.id} ASC
 				) AS "nextVisibleSiblingId"
-			FROM "TodoComment" AS comment
-			WHERE comment."todoId" = ${input.todoId}
-				AND (comment."deletedAt" IS NULL OR comment."replyCount" > 0)
+			FROM ${todoComment} AS ${visibleComment}
+			WHERE ${visibleComment.todoId} = ${input.todoId}
+				AND (${visibleComment.deletedAt} IS NULL OR ${visibleComment.replyCount} > 0)
 		),
 		conversation_comments AS (
 			SELECT
 				comment.*,
 				visible_order."nextVisibleSiblingId" IS NOT NULL AS "hasNextVisibleSibling"
-			FROM "TodoComment" AS comment
-			LEFT JOIN visible_sibling_order AS visible_order ON visible_order."id" = comment."id"
-			WHERE comment."todoId" = ${input.todoId}
+			FROM ${todoComment} AS ${visibleComment}
+			LEFT JOIN visible_sibling_order AS visible_order ON visible_order."id" = ${visibleComment.id}
+			WHERE ${visibleComment.todoId} = ${input.todoId}
 		),
 		${targetThreadCte},
 		tree AS (

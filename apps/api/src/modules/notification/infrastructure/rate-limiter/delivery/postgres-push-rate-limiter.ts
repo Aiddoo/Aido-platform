@@ -1,16 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { Inject, Injectable } from "@nestjs/common";
+import { and, count, eq, gt, inArray, max } from "drizzle-orm";
+import { delay } from "es-toolkit";
 
-import { encodeCreate } from "#api/platform/database/database-records";
-import {
-  applicationDate,
-  applicationTimestamp,
-  databaseDate,
-  databaseTimestamp,
-} from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
-import type { PushRateLimitPhase } from "#api/platform/database/database.types";
-import { isTransactionWriteConflict } from "#api/platform/database/prisma-error.util";
+import { isTransactionWriteConflict } from "#api/platform/database/database-error.util";
+import { DRIZZLE, type Database } from "#api/platform/database/database.client";
+import { pushDispatch, pushRateLimitReservation } from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   EngagementPushRateLimitRequest,
@@ -19,6 +14,8 @@ import type {
   PushRateLimiterPort,
 } from "../../../application/ports/delivery/push-rate-limiter.port.js";
 import { PUSH_RATE_LIMIT_POLICY } from "../../../domain/services/delivery/push-rate-limit-policy.js";
+
+type PushRateLimitPhase = typeof pushRateLimitReservation.$inferSelect.phase;
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const MAX_TRANSACTION_RETRIES = 5;
@@ -38,12 +35,6 @@ export function transactionRetryDelayMs(failedAttempt: number, random: () => num
   return ceiling / 2 + (ceiling / 2) * random();
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 interface ReservationRequest extends PushRateLimitRequest {
   readonly reserveGeneral: boolean;
 }
@@ -55,10 +46,10 @@ interface ReservationRecord {
   readonly localDate: Date | null;
 }
 
-/** Prisma ORM과 Serializable 트랜잭션으로 구현한 영속 푸시 rate limiter. */
+/** Drizzle ORM과 Serializable 트랜잭션으로 구현한 영속 푸시 rate limiter. */
 @Injectable()
 export class PostgresPushRateLimiter implements PushRateLimiterPort {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
     const [limited] = await this.#reserve([{ ...request, reserveGeneral: true }]);
@@ -82,74 +73,75 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
   }
 
   async #reserve(requests: readonly ReservationRequest[]): Promise<readonly boolean[]> {
-    if (requests.length === 0) return [];
+    if (requests.length === 0) {
+      return [];
+    }
     this.#assertRequests(requests);
     for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt += 1) {
       try {
-        const db = this.database.db;
-        return await db.transaction(async (transaction) => {
-          await transaction.execute(
-            db.raw.sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`.affectedCount().build(),
-          );
-          const dispatchIds = requests.map((request) => request.dispatchId);
-          const userIds = requests.map((request) => request.userId);
-          const generalWindowStart = databaseTimestamp(new Date(Date.now() - GENERAL.WINDOW_MS));
-          const engagementDates = requests.flatMap((request) =>
-            request.engagementLocalDate != null
-              ? [databaseDate(this.#toDate(request.engagementLocalDate))]
-              : [],
-          );
-          const dispatches = await transaction.orm.public.PushDispatch.where((row) =>
-            row.id.in(dispatchIds),
-          )
-            .select("id", "userId")
-            .all();
-          const reservations = transaction.orm.public.PushRateLimitReservation;
-          const existing = await reservations
-            .where((row) => row.dispatchId.in(dispatchIds))
-            .select("dispatchId", "phase")
-            .all();
-          const generalStats = await reservations
-            .where((row) =>
-              and(
-                row.phase.eq("GENERAL"),
-                row.userId.in(userIds),
-                row.reservedAt.gt(generalWindowStart),
-              ),
-            )
-            .groupBy("userId")
-            .aggregate((aggregate) => ({ count: aggregate.count() }));
-          const engagementRows = await reservations
-            .where((row) =>
-              and(
-                row.phase.eq("ENGAGEMENT"),
-                row.userId.in(userIds),
-                row.localDate.in(engagementDates),
-              ),
-            )
-            .groupBy("userId", "localDate")
-            .aggregate((aggregate) => ({
-              count: aggregate.count(),
-              lastReservedAt: aggregate.max("reservedAt"),
-            }));
-          const engagementStats = engagementRows.map((row) => ({
-            userId: row.userId,
-            count: row.count,
-            localDate: row.localDate == null ? null : applicationDate(row.localDate),
-            lastReservedAt:
-              row.lastReservedAt == null ? null : applicationTimestamp(row.lastReservedAt),
-          }));
-          this.#assertDispatchOwnership(requests, dispatches);
-          const decisions = this.#decide(requests, existing, generalStats, engagementStats);
-          if (decisions.reservations.length > 0) {
-            await reservations.createAndCount(
-              decisions.reservations.map((row) => encodeCreate("PushRateLimitReservation", row)),
+        return await this.db.transaction(
+          async (transaction) => {
+            const dispatchIds = requests.map((request) => request.dispatchId);
+            const userIds = requests.map((request) => request.userId);
+            const generalWindowStart = new Date(Date.now() - GENERAL.WINDOW_MS);
+            const engagementDates = requests.flatMap((request) =>
+              request.engagementLocalDate != null
+                ? [this.#toDate(request.engagementLocalDate)]
+                : [],
             );
-          }
-          return decisions.limited;
-        });
+            const dispatches = await transaction
+              .select({ id: pushDispatch.id, userId: pushDispatch.userId })
+              .from(pushDispatch)
+              .where(inArray(pushDispatch.id, dispatchIds));
+            const existing = await transaction
+              .select({
+                dispatchId: pushRateLimitReservation.dispatchId,
+                phase: pushRateLimitReservation.phase,
+              })
+              .from(pushRateLimitReservation)
+              .where(inArray(pushRateLimitReservation.dispatchId, dispatchIds));
+            const generalStats = await transaction
+              .select({ userId: pushRateLimitReservation.userId, count: count() })
+              .from(pushRateLimitReservation)
+              .where(
+                and(
+                  eq(pushRateLimitReservation.phase, "GENERAL"),
+                  inArray(pushRateLimitReservation.userId, userIds),
+                  gt(pushRateLimitReservation.reservedAt, generalWindowStart),
+                ),
+              )
+              .groupBy(pushRateLimitReservation.userId);
+            const engagementStats = await transaction
+              .select({
+                userId: pushRateLimitReservation.userId,
+                localDate: pushRateLimitReservation.localDate,
+                count: count(),
+                lastReservedAt: max(pushRateLimitReservation.reservedAt),
+              })
+              .from(pushRateLimitReservation)
+              .where(
+                and(
+                  eq(pushRateLimitReservation.phase, "ENGAGEMENT"),
+                  inArray(pushRateLimitReservation.userId, userIds),
+                  inArray(pushRateLimitReservation.localDate, engagementDates),
+                ),
+              )
+              .groupBy(pushRateLimitReservation.userId, pushRateLimitReservation.localDate);
+            this.#assertDispatchOwnership(requests, dispatches);
+            const decisions = this.#decide(requests, existing, generalStats, engagementStats);
+            if (decisions.reservations.length > 0) {
+              await transaction
+                .insert(pushRateLimitReservation)
+                .values([...decisions.reservations]);
+            }
+            return decisions.limited;
+          },
+          { isolationLevel: "serializable" },
+        );
       } catch (error) {
-        if (!isTransactionWriteConflict(error) || attempt === MAX_TRANSACTION_RETRIES) throw error;
+        if (!isTransactionWriteConflict(error) || attempt === MAX_TRANSACTION_RETRIES) {
+          throw error;
+        }
         await delay(transactionRetryDelayMs(attempt, Math.random));
       }
     }
@@ -195,7 +187,9 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
           ((engagement?.count ?? 0) >= ENGAGEMENT.DAILY_MAX ||
             (engagement?.lastReservedAt != null &&
               now - engagement.lastReservedAt.getTime() < ENGAGEMENT.MIN_INTERVAL_MS)));
-      if (isLimited) return true;
+      if (isLimited) {
+        return true;
+      }
 
       if (request.reserveGeneral && !generalReserved) {
         reservations.push({
@@ -225,7 +219,9 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
       if (!Number.isSafeInteger(request.dispatchId) || request.dispatchId <= 0) {
         throw new Error(`Invalid push dispatch id: ${request.dispatchId}`);
       }
-      if (request.userId.length === 0) throw new Error("Push rate limit user id is required");
+      if (request.userId.length === 0) {
+        throw new Error("Push rate limit user id is required");
+      }
       if (dispatchIds.has(request.dispatchId)) {
         throw new Error(`Duplicate push dispatch id: ${request.dispatchId}`);
       }
@@ -250,7 +246,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
   }
 
   #engagementKey(userId: string, localDate: Date | null): string {
-    return `${userId}:${localDate?.toISOString().slice(0, 10) ?? "none"}`;
+    return `${userId}:${localDate == null ? "none" : toDateString(localDate)}`;
   }
 
   #toDate(localDate: string): Date {

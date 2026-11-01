@@ -4,7 +4,7 @@ import { USER_BLOCK_READER } from "./application/ports/blocks/user-block-reader.
 import { USER_BLOCK_REPOSITORY } from "./application/ports/blocks/user-block.repository.port.js";
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FollowCacheAdapter } from "./infrastructure/adapters/friends/follow-cache.adapter.js";
-import { PrismaUserBlockRepository } from "./infrastructure/persistence/blocks/prisma-user-block.repository.js";
+import { DrizzleUserBlockRepository } from "./infrastructure/persistence/blocks/drizzle-user-block.repository.js";
 import { UserBlockController } from "./presentation/controllers/blocks/user-block.controller.js";
 import {
   blockUserProvider,
@@ -22,9 +22,9 @@ import {
 @Module({
   controllers: [UserBlockController],
   providers: [
-    PrismaUserBlockRepository,
-    { provide: USER_BLOCK_REPOSITORY, useExisting: PrismaUserBlockRepository },
-    { provide: USER_BLOCK_READER, useExisting: PrismaUserBlockRepository },
+    DrizzleUserBlockRepository,
+    { provide: USER_BLOCK_REPOSITORY, useExisting: DrizzleUserBlockRepository },
+    { provide: USER_BLOCK_READER, useExisting: DrizzleUserBlockRepository },
     { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
     blockUserProvider,
     unblockUserProvider,

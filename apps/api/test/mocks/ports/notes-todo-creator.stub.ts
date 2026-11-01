@@ -41,7 +41,9 @@ export class StubNotesTodoCreator implements StagedTodoCreatorPort {
 
   #stage(todos: readonly Todo[]): StagedTodoCreation {
     const staged = structuredClone(todos);
-    for (const todo of staged) this.stagedTodos.set(todo.id, todo);
+    for (const todo of staged) {
+      this.stagedTodos.set(todo.id, todo);
+    }
     return {
       todos: staged,
       afterCommit: async () => {

@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
+import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import sql from "sql-template-tag";
 
 import type { FollowCachePort } from "#api/modules/social/application/ports/friends/follow-cache.port";
 import type { FollowNotifierPort } from "#api/modules/social/application/ports/friends/follow-notifier.port";
@@ -8,13 +8,21 @@ import { FriendshipEffects } from "#api/modules/social/application/services/frie
 import { BlockUser } from "#api/modules/social/application/use-cases/blocks/block-user.use-case";
 import { AcceptFriendRequest } from "#api/modules/social/application/use-cases/friends/accept-friend-request.use-case";
 import { SendFriendRequest } from "#api/modules/social/application/use-cases/friends/send-friend-request.use-case";
-import { PrismaUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/prisma-user-block.repository";
-import { PrismaCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/prisma-cheer.repository";
-import { PrismaFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/prisma-follow.repository";
-import { PrismaNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/prisma-nudge.repository";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
+import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
+import { DrizzleCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/drizzle-cheer.repository";
+import { DrizzleFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/drizzle-follow.repository";
+import { DrizzleNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/drizzle-nudge.repository";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
+import {
+  cheer,
+  follow,
+  nudge,
+  todo,
+  todoCategory,
+  user,
+  userBlock,
+} from "#api/platform/database/schema/index";
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import {
   CheerFixture,
@@ -24,11 +32,7 @@ import {
   TodoFixture,
   UserFixture,
 } from "#test/fixtures/index";
-import {
-  createDatabaseTransactionFixture,
-  createTestClient,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const BLOCK_TIME = new Date("2027-01-08T12:00:00Z");
@@ -42,10 +46,10 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   let blockUser: BlockUser;
   let acceptFriendRequest: AcceptFriendRequest;
   let sendFriendRequest: SendFriendRequest;
-  let followRepository: PrismaFollowRepository;
-  let blockRepository: PrismaUserBlockRepository;
-  let nudgeRepository: PrismaNudgeRepository;
-  let cheerRepository: PrismaCheerRepository;
+  let followRepository: DrizzleFollowRepository;
+  let blockRepository: DrizzleUserBlockRepository;
+  let nudgeRepository: DrizzleNudgeRepository;
+  let cheerRepository: DrizzleCheerRepository;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
@@ -58,9 +62,10 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     vi.setSystemTime(BLOCK_TIME);
     const me = UserFixture.create();
     const other = UserFixture.create();
-    await client.orm.public.User.createAll(
-      [me, other].map((user) => encodeCreate("User", { ...user, status: "ACTIVE" })),
-    );
+    await client.insert(user).values([
+      { ...me, status: "ACTIVE" },
+      { ...other, status: "ACTIVE" },
+    ]);
     meId = me.id;
     otherId = other.id;
     otherTag = other.userTag;
@@ -82,10 +87,10 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       notifyFirstFriendMilestone() {},
     };
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
-    followRepository = new PrismaFollowRepository(txHost);
-    blockRepository = new PrismaUserBlockRepository(txHost);
-    nudgeRepository = new PrismaNudgeRepository(txHost);
-    cheerRepository = new PrismaCheerRepository(txHost);
+    followRepository = new DrizzleFollowRepository(txHost);
+    blockRepository = new DrizzleUserBlockRepository(txHost);
+    nudgeRepository = new DrizzleNudgeRepository(txHost);
+    cheerRepository = new DrizzleCheerRepository(txHost);
     const effects = new FriendshipEffects({ followRepository, cache, notifier, logger });
     blockUser = new BlockUser({
       userBlockRepository: blockRepository,
@@ -126,7 +131,9 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   });
 
   async function countFollowsBetween(): Promise<number> {
-    const rows = await client.orm.public.Follow.select("followerId", "followingId").all();
+    const rows = await client
+      .select({ followerId: follow.followerId, followingId: follow.followingId })
+      .from(follow);
     return rows.filter(
       (row) =>
         (row.followerId === meId && row.followingId === otherId) ||
@@ -139,15 +146,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
     const pairKey = MutationLockKeys.friendPair(meId, otherId);
-    const holding = withDatabaseTransaction(client, async (tx) => {
-      await tx.query(
-        sqlStatement(
-          tx,
-          sql`SELECT pg_advisory_xact_lock(hashtextextended(${pairKey}, 0))::TEXT AS "locked"`,
-        )
-          .returnsRow({ locked: "pg/text@1" })
-          .build(),
-      );
+    const holding = client.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${pairKey}, 0))`);
       acquired.resolve();
       await released.promise;
     });
@@ -156,15 +156,10 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client
-            .runtime()
-            .query(
-              client.raw
-                .sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`
-                .returnsRow({ count: "pg/int4@1" })
-                .build(),
-            );
-          expect(waiting[0]?.count).toBe(2);
+          const waiting = await client.execute<{ count: number }>(
+            sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`,
+          );
+          expect(waiting.rows[0]?.count).toBe(2);
         },
         { timeout: 5000, interval: 10 },
       );
@@ -177,9 +172,9 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
 
   it("대기 중인 친구 요청을 수락하는 동안 차단해도 차단 뒤에는 친구 관계가 남지 않는다", async () => {
     // Given
-    await client.orm.public.Follow.create(
-      encodeCreate("Follow", FollowFixture.create({ followerId: otherId, followingId: meId })),
-    );
+    await client
+      .insert(follow)
+      .values(FollowFixture.create({ followerId: otherId, followingId: meId }));
 
     // When
     const [acceptance, block] = await compete(
@@ -216,16 +211,12 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
 
   it("서로 동시에 차단하면 두 차단이 모두 남고 친구 관계가 끊긴다", async () => {
     // Given
-    await client.orm.public.Follow.createAll([
-      encodeCreate(
-        "Follow",
+    await client
+      .insert(follow)
+      .values([
         FollowFixture.create({ followerId: meId, followingId: otherId, status: "ACCEPTED" }),
-      ),
-      encodeCreate(
-        "Follow",
         FollowFixture.create({ followerId: otherId, followingId: meId, status: "ACCEPTED" }),
-      ),
-    ]);
+      ]);
 
     // When
     const outcomes = await compete(
@@ -251,33 +242,28 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
 
     // Then
     expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
-    const blocks = await client.orm.public.UserBlock.select("id").all();
+    const blocks = await client.select({ id: userBlock.id }).from(userBlock);
     expect(blocks).toHaveLength(1);
   });
 
   it("차단하면 서로의 콕·응원 기록과 개수, 사용자 검색에서 상대가 빠진다", async () => {
     // Given
-    const { id: categoryId } = await client.orm.public.TodoCategory.create(
-      encodeCreate("TodoCategory", TodoCategoryFixture.create({ userId: meId, sortOrder: 0 })),
-    );
-    const todo = await client.orm.public.Todo.create(
-      encodeCreate(
-        "Todo",
-        omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]),
-      ),
-    );
-    await client.orm.public.Nudge.create(
-      encodeCreate(
-        "Nudge",
-        omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId: todo.id }), ["id"]),
-      ),
-    );
-    await client.orm.public.Cheer.create(
-      encodeCreate(
-        "Cheer",
-        omit(CheerFixture.create({ senderId: meId, receiverId: otherId }), ["id"]),
-      ),
-    );
+    const [category] = await client
+      .insert(todoCategory)
+      .values(TodoCategoryFixture.create({ userId: meId, sortOrder: 0 }))
+      .returning();
+    const categoryId = requireRecord(category).id;
+    const [createdTodo] = await client
+      .insert(todo)
+      .values(omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]))
+      .returning();
+    const todoId = requireRecord(createdTodo).id;
+    await client
+      .insert(nudge)
+      .values(omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId }), ["id"]));
+    await client
+      .insert(cheer)
+      .values(omit(CheerFixture.create({ senderId: meId, receiverId: otherId }), ["id"]));
     await blockUser.execute({ blockerId: meId, blockedId: otherId });
 
     // When
@@ -312,36 +298,36 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
 
   it("차단하면 콕 하나를 열어도 보낸 사람·받은 사람 모두에게 없는 콕이다", async () => {
     // Given
-    const { id: categoryId } = await client.orm.public.TodoCategory.create(
-      encodeCreate("TodoCategory", TodoCategoryFixture.create({ userId: meId, sortOrder: 0 })),
-    );
-    const todo = await client.orm.public.Todo.create(
-      encodeCreate(
-        "Todo",
-        omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]),
-      ),
-    );
-    const nudge = await client.orm.public.Nudge.create(
-      encodeCreate(
-        "Nudge",
-        omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId: todo.id }), ["id"]),
-      ),
-    );
+    const [category] = await client
+      .insert(todoCategory)
+      .values(TodoCategoryFixture.create({ userId: meId, sortOrder: 0 }))
+      .returning();
+    const categoryId = requireRecord(category).id;
+    const [createdTodo] = await client
+      .insert(todo)
+      .values(omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]))
+      .returning();
+    const todoId = requireRecord(createdTodo).id;
+    const [createdNudge] = await client
+      .insert(nudge)
+      .values(omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId }), ["id"]))
+      .returning();
+    const nudgeId = requireRecord(createdNudge).id;
     const [receivedBeforeBlock, sentBeforeBlock] = await Promise.all([
-      nudgeRepository.findInteractionById(nudge.id, meId),
-      nudgeRepository.findInteractionById(nudge.id, otherId),
+      nudgeRepository.findInteractionById(nudgeId, meId),
+      nudgeRepository.findInteractionById(nudgeId, otherId),
     ]);
     await blockUser.execute({ blockerId: meId, blockedId: otherId });
 
     // When
     const [receivedAfterBlock, sentAfterBlock] = await Promise.all([
-      nudgeRepository.findInteractionById(nudge.id, meId),
-      nudgeRepository.findInteractionById(nudge.id, otherId),
+      nudgeRepository.findInteractionById(nudgeId, meId),
+      nudgeRepository.findInteractionById(nudgeId, otherId),
     ]);
 
     // Then
-    expect(receivedBeforeBlock?.id).toBe(nudge.id);
-    expect(sentBeforeBlock?.id).toBe(nudge.id);
+    expect(receivedBeforeBlock?.id).toBe(nudgeId);
+    expect(sentBeforeBlock?.id).toBe(nudgeId);
     expect(receivedAfterBlock).toBeNull();
     expect(sentAfterBlock).toBeNull();
   });

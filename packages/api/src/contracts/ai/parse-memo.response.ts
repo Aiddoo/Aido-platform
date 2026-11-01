@@ -1,11 +1,9 @@
 import { z } from "zod";
 
-import { dateSchema, nullableDateSchema } from "../../common/datetime.js";
+import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../common/datetime.js";
 import { AI_PARSE_LIMITS } from "../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../todo/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
-
-const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 // ============================================================================
 // 메모 파싱 결과 스키마 (API 응답용)
@@ -27,11 +25,7 @@ export const parsedMemoTodoSchema = z.object({
     .describe("AI가 추출한 할 일 제목"),
   startDate: dateSchema.describe("시작 날짜 (YYYY-MM-DD)"),
   endDate: nullableDateSchema.describe("종료 날짜 (YYYY-MM-DD, 단일 날짜는 null)"),
-  scheduledTime: z
-    .string()
-    .regex(timeRegex, "시간 형식이 올바르지 않습니다 (HH:mm)")
-    .nullable()
-    .describe("예정 시간 (HH:mm, 종일 일정은 null)"),
+  scheduledTime: timeOfDaySchema.nullable().describe("예정 시간 (HH:mm, 종일 일정은 null)"),
   isAllDay: z.boolean().describe("종일 일정 여부"),
   isRecurring: z.boolean().default(false).describe("반복 일정 여부"),
   recurrence: z

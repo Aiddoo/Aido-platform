@@ -18,7 +18,9 @@ describe("친구 요청 수락", () => {
       const fixture = createSocialFriendFixture();
       fixture.addUser("me");
       fixture.addUser("friend");
-      if (status === "ACCEPTED") fixture.addMutual("me", "friend");
+      if (status === "ACCEPTED") {
+        fixture.addMutual("me", "friend");
+      }
       const before = structuredClone([...fixture.followRepository.follows.values()]);
       // When / Then
       await expect(
@@ -39,7 +41,9 @@ describe("친구 요청 수락", () => {
       fixture.addUser("existing");
       fixture.addMutual("me", "existing", 2);
       fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
-      if (reverseExists) fixture.followRepository.seed({ followerId: "me", followingId: "friend" });
+      if (reverseExists) {
+        fixture.followRepository.seed({ followerId: "me", followingId: "friend" });
+      }
       // When
       const result = await new AcceptFriendRequest(fixture).execute({
         userId: "me",

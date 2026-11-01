@@ -1,5 +1,5 @@
 /**
- * 약관 동의 레코드(리포지토리 읽기 모델). Prisma UserConsent와 구조적 호환.
+ * 약관 동의 레코드(리포지토리 읽기 모델). DB UserConsent 행과 구조적으로 호환된다.
  */
 export interface UserConsentRecord {
   termsAgreedAt: Date | null;

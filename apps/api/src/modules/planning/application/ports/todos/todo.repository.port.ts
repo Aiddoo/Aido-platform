@@ -12,7 +12,7 @@ export const TODO_REPOSITORY = Symbol("TODO_REPOSITORY");
  * Todo 부분 수정 영속화 패치
  *
  * 도메인 패치에 전이로 파생된 completedAt을 더한 형태입니다.
- * undefined 필드는 변경하지 않습니다(Prisma partial update 시맨틱).
+ * undefined 필드는 변경하지 않습니다(부분 수정 시맨틱).
  */
 export type TodoUpdatePatch = TodoDetailsPatch & {
   completedAt?: Date | null;
@@ -21,7 +21,7 @@ export type TodoUpdatePatch = TodoDetailsPatch & {
 /**
  * Todo 쓰기 리포지토리 포트 (애그리게잇 경계)
  *
- * 커맨드 핸들러가 Prisma 구현체에 의존하지 않도록 하는 쓰기 측 경계입니다.
+ * 커맨드 핸들러가 영속 구현체에 의존하지 않도록 하는 쓰기 측 경계입니다.
  * 조회는 애그리게잇(Todo)을 반환하고, 응답 read model은 TodoReadRepositoryPort가 담당합니다.
  * 트랜잭션은 CLS(UnitOfWorkPort.run)로 전파되므로 tx 핸들을 전달하지 않습니다.
  */

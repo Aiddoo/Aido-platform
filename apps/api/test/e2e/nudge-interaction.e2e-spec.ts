@@ -10,17 +10,19 @@ import {
   type NudgeReplyKind,
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, count, eq, isNotNull, type SQL } from "drizzle-orm";
 import request from "supertest";
-import { z } from "zod";
 
 import { NUDGE_INTERACTION_CONFIG } from "#api/modules/social/application/ports/nudges/nudge-interaction.config.port";
 import {
   NUDGE_NOTIFIER,
   type NudgeNotifierPort,
 } from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import {
+  notification,
+  nudge as nudgeTable,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 
 import {
   createE2eApp,
@@ -46,6 +48,36 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   beforeEach(async () => {
     await ctx.reset();
   });
+
+  async function countNotifications(condition: SQL | undefined): Promise<number> {
+    const [row] = await ctx.testDatabase
+      .getClient()
+      .select({ count: count() })
+      .from(notification)
+      .where(condition);
+    return row?.count ?? 0;
+  }
+
+  async function countThankedNudges(condition?: SQL): Promise<number> {
+    const [row] = await ctx.testDatabase
+      .getClient()
+      .select({ count: count() })
+      .from(nudgeTable)
+      .where(and(isNotNull(nudgeTable.thankedAt), condition));
+    return row?.count ?? 0;
+  }
+
+  async function createNudgeRow(senderId: string, receiverId: string, todoId: number) {
+    const [created] = await ctx.testDatabase
+      .getClient()
+      .insert(nudgeTable)
+      .values({ senderId, receiverId, todoId })
+      .returning();
+    if (created === undefined) {
+      throw new Error("콕이 생성되지 않았습니다.");
+    }
+    return created;
+  }
 
   async function createTodo(owner: VerifiedUser) {
     const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
@@ -112,15 +144,11 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
       const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
       const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
       await ctx.helpers.createFriendship(sender, receiver);
-      decodeRecord(
-        "User",
-        requireRecord(
-          await ctx.testDatabase
-            .getClient()
-            .orm.public.User.where((row) => row.id.eq(receiver.userId))
-            .update(encodePatch("User", { subscriptionStatus })),
-        ),
-      );
+      await ctx.testDatabase
+        .getClient()
+        .update(userTable)
+        .set({ subscriptionStatus })
+        .where(eq(userTable.id, receiver.userId));
       const todo = await createTodo(receiver);
       const nudge = await sendNudge(sender, receiver, todo.id);
 
@@ -134,18 +162,13 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
       expect(interaction.repliedAt).not.toBeNull();
       expect(interaction.todo?.completed).toBe(false);
       expect(
-        (
-          await ctx.testDatabase
-            .getClient()
-            .orm.public.Notification.where((row) =>
-              and(
-                row._type.eq("NUDGE_REPLIED"),
-                row.nudgeId.eq(nudge.id),
-                row.userId.eq(sender.userId),
-              ),
-            )
-            .aggregate((aggregate) => ({ count: aggregate.count() }))
-        ).count,
+        await countNotifications(
+          and(
+            eq(notification.type, "NUDGE_REPLIED"),
+            eq(notification.nudgeId, nudge.id),
+            eq(notification.userId, sender.userId),
+          ),
+        ),
       ).toBe(1);
     },
   );
@@ -169,16 +192,10 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
         (response) => nudgeInteractionResponseSchema.parse(response.body.data).replyKind,
       ),
     ).toEqual(Array.from({ length: 20 }, () => "THANKFUL"));
-    const notifications = decodeRecord(
-      "Notification",
-      await ctx.testDatabase
-        .getClient()
-        .orm.public.Notification.where((row) =>
-          and(row.nudgeId.eq(nudge.id), row._type.eq("NUDGE_REPLIED")),
-        )
-        .include("pushDispatch", (related) => related.include("outbox"))
-        .all(),
-    );
+    const notifications = await ctx.testDatabase.getClient().query.notification.findMany({
+      where: { nudgeId: nudge.id, type: "NUDGE_REPLIED" },
+      with: { pushDispatch: { with: { outbox: true } } },
+    });
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.metadata).toMatchObject({ copyRevision: "1.12.0" });
     expect(notifications[0]?.pushDispatch?.outbox).toMatchObject({
@@ -209,14 +226,9 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     });
     expect(nudgeInteractionResponseSchema.parse(repeated.body.data)).toEqual(current);
     expect(
-      (
-        await ctx.testDatabase
-          .getClient()
-          .orm.public.Notification.where((row) =>
-            and(row.nudgeId.eq(nudge.id), row._type.eq("NUDGE_REPLIED")),
-          )
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
+      await countNotifications(
+        and(eq(notification.nudgeId, nudge.id), eq(notification.type, "NUDGE_REPLIED")),
+      ),
     ).toBe(1);
   });
 
@@ -241,14 +253,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     for (const response of [senderReply, strangerReply, strangerQuery]) {
       expect(response.body.error.code).toBe(ErrorCode.NUDGE_1105);
     }
-    expect(
-      (
-        await ctx.testDatabase
-          .getClient()
-          .orm.public.Notification.where((row) => row._type.eq("NUDGE_REPLIED"))
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
-    ).toBe(0);
+    expect(await countNotifications(eq(notification.type, "NUDGE_REPLIED"))).toBe(0);
   });
 
   it("차단하면 받은 사람·보낸 사람 모두 그 콕을 열 수 없고 답장도 NUDGE_1105로 거부한다", async () => {
@@ -362,22 +367,15 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     const todo = await createTodo(receiver);
     await sendNudge(firstFriend, receiver, todo.id);
     await sendNudge(secondFriend, receiver, todo.id);
-    decodeRecord(
-      "Nudge",
-      await ctx.testDatabase.getClient().orm.public.Nudge.create(
-        encodeCreate("Nudge", {
-          senderId: firstFriend.userId,
-          receiverId: receiver.userId,
-          todoId: todo.id,
-        }),
-      ),
-    );
+    await createNudgeRow(firstFriend.userId, receiver.userId, todo.id);
     await setCompleted(receiver, todo.id, true);
     const preview = await getThanksPreview(receiver, todo.id);
     expect(preview.recipients.map((friend) => friend.id).sort()).toEqual(
       [firstFriend.userId, secondFriend.userId].sort(),
     );
-    if (preview.throughNudgeId === null) throw new Error("감사 대상 콕이 필요합니다");
+    if (preview.throughNudgeId === null) {
+      throw new Error("감사 대상 콕이 필요합니다");
+    }
     const throughNudgeId = preview.throughNudgeId;
 
     // When
@@ -391,23 +389,11 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
         .map((response) => sendNudgeThanksResponseSchema.parse(response.body.data).sentCount)
         .sort((a, b) => b - a),
     ).toEqual([2, ...Array.from({ length: 19 }, () => 0)]);
-    const thanked = decodeRecord(
-      "Nudge",
-      await ctx.testDatabase
-        .getClient()
-        .orm.public.Nudge.where((row) => and(row.todoId.eq(todo.id), row.thankedAt.isNotNull()))
-        .all(),
-    );
-    expect(thanked).toHaveLength(2);
+    expect(await countThankedNudges(eq(nudgeTable.todoId, todo.id))).toBe(2);
     expect(
-      (
-        await ctx.testDatabase
-          .getClient()
-          .orm.public.Notification.where((row) =>
-            and(row._type.eq("NUDGE_THANKED"), row.todoId.eq(todo.id)),
-          )
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
+      await countNotifications(
+        and(eq(notification.type, "NUDGE_THANKED"), eq(notification.todoId, todo.id)),
+      ),
     ).toBe(2);
     expect((await getThanksPreview(receiver, todo.id)).recipients).toEqual([]);
   });
@@ -423,16 +409,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     const nudge = await sendNudge(firstFriend, receiver, todo.id);
     await setCompleted(receiver, todo.id, true);
     await getThanksPreview(receiver, todo.id);
-    const laterNudge = decodeRecord(
-      "Nudge",
-      await ctx.testDatabase.getClient().orm.public.Nudge.create(
-        encodeCreate("Nudge", {
-          senderId: secondFriend.userId,
-          receiverId: receiver.userId,
-          todoId: todo.id,
-        }),
-      ),
-    );
+    const laterNudge = await createNudgeRow(secondFriend.userId, receiver.userId, todo.id);
 
     // When
     const first = await sendThanks(receiver, todo.id, nudge.id).expect(200);
@@ -465,14 +442,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
     // Then
     expect(response.body.error.code).toBe(ErrorCode.NUDGE_1105);
-    expect(
-      (
-        await ctx.testDatabase
-          .getClient()
-          .orm.public.Nudge.where((row) => row.thankedAt.isNotNull())
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
-    ).toBe(0);
+    expect(await countThankedNudges()).toBe(0);
   });
 
   it("알림 저장이 실패하면 답장도 함께 롤백하고 다음 재시도는 성공한다", async () => {
@@ -489,27 +459,18 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
     // When
     await reply(receiver, nudge.id, "THANKFUL").expect(500);
-    const rolledBack = decodeRecord(
-      "Nudge",
-      await ctx.testDatabase
-        .getClient()
-        .orm.public.Nudge.where((row) => row.id.eq(nudge.id))
-        .first(),
-    );
+    const rolledBack = await ctx.testDatabase.getClient().query.nudge.findFirst({
+      where: { id: nudge.id },
+    });
     const retried = await reply(receiver, nudge.id, "THANKFUL").expect(200);
 
     // Then
     expect(rolledBack).toMatchObject({ replyKind: null, repliedAt: null, readAt: null });
     expect(nudgeInteractionResponseSchema.parse(retried.body.data).replyKind).toBe("THANKFUL");
     expect(
-      (
-        await ctx.testDatabase
-          .getClient()
-          .orm.public.Notification.where((row) =>
-            and(row._type.eq("NUDGE_REPLIED"), row.nudgeId.eq(nudge.id)),
-          )
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-      ).count,
+      await countNotifications(
+        and(eq(notification.type, "NUDGE_REPLIED"), eq(notification.nudgeId, nudge.id)),
+      ),
     ).toBe(1);
   });
 
@@ -520,16 +481,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     await ctx.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const firstNudge = await sendNudge(sender, receiver, todo.id);
-    const secondNudge = decodeRecord(
-      "Nudge",
-      await ctx.testDatabase.getClient().orm.public.Nudge.create(
-        encodeCreate("Nudge", {
-          senderId: sender.userId,
-          receiverId: receiver.userId,
-          todoId: todo.id,
-        }),
-      ),
-    );
+    const secondNudge = await createNudgeRow(sender.userId, receiver.userId, todo.id);
     await request(ctx.app.getHttpServer())
       .delete(`/v1/follows/${sender.userId}`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
@@ -560,8 +512,10 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   it("구버전 알림 API와 헤더 없는 알림함은 새 유형을 제외하고 최신 알림함만 전체 읽음 처리한다", async () => {
     // Given
     const user = await ctx.helpers.createVerifiedUser("user@test.com", "Test1234!");
-    await ctx.testDatabase.getClient().orm.public.Notification.createAndCount(
-      [
+    await ctx.testDatabase
+      .getClient()
+      .insert(notification)
+      .values([
         {
           userId: user.userId,
           type: "NUDGE_RECEIVED",
@@ -570,13 +524,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
         },
         { userId: user.userId, type: "NUDGE_REPLIED", title: "답장", body: "곧 시작해요" },
         { userId: user.userId, type: "NUDGE_THANKED", title: "감사", body: "함께 해줘 고마워요" },
-      ].map((value) =>
-        encodeCreate("Notification", {
-          ...value,
-          type: z.enum(["NUDGE_RECEIVED", "NUDGE_REPLIED", "NUDGE_THANKED"]).parse(value.type),
-        }),
-      ),
-    );
+      ]);
 
     // When
     const original = await request(ctx.app.getHttpServer())
@@ -678,16 +626,10 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     await sendThanks(owner, todo.id, nudge.id).expect(500);
 
     // Then
-    const stored = decodeRecord(
-      "Nudge",
-      requireRecord(
-        await ctx.testDatabase
-          .getClient()
-          .orm.public.Nudge.where((row) => row.id.eq(nudge.id))
-          .first(),
-      ),
-    );
-    expect(stored.thankedAt).toBeNull();
+    const stored = await ctx.testDatabase.getClient().query.nudge.findFirst({
+      where: { id: nudge.id },
+    });
+    expect(stored?.thankedAt).toBeNull();
     const retry = await sendThanks(owner, todo.id, nudge.id).expect(200);
     expect(retry.body.data.sentCount).toBe(1);
   });

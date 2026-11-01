@@ -1,7 +1,7 @@
 import type { Redis } from "ioredis";
 import { mock } from "vitest-mock-extended";
 
-import type { DatabaseService } from "#api/platform/database/database.service";
+import type { Database } from "#api/platform/database/database.client";
 
 import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.js";
 import { PostgresPushRateLimiter } from "./postgres-push-rate-limiter.js";
@@ -9,7 +9,7 @@ import { createPushRateLimiter } from "./push-rate-limiter.factory.js";
 import { RedisPushRateLimiter } from "./redis-push-rate-limiter.js";
 
 describe("createPushRateLimiter", () => {
-  const database = mock<DatabaseService>();
+  const database = mock<Database>();
 
   it("PostgreSQL을 기본 운영 구현으로 생성한다", () => {
     expect(createPushRateLimiter({ backend: "postgres", database })).toBeInstanceOf(

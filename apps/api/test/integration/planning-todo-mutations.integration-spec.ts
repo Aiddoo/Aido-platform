@@ -1,8 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
-import postgres from "@prisma/orm-postgres/runtime";
+import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
-import { Pool } from "pg";
-import sql from "sql-template-tag";
 
 import {
   TODO_REPOSITORY,
@@ -13,11 +11,14 @@ import { CreateRecurringTodos } from "#api/modules/planning/application/use-case
 import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
 import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
 import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
-import { contract } from "#api/platform/database/database.service";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  todo,
+  todoCategory,
+  todoItem,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 import {
   DOMAIN_EVENT_PUBLISHER,
   UNIT_OF_WORK,
@@ -25,8 +26,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
-import { withDatabaseTransaction } from "#test/setup/database-context";
-import { createStatementObserver, type ObservedStatement } from "#test/setup/statement-observer";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
@@ -36,48 +36,31 @@ import {
 } from "../e2e/helpers/e2e-app-factory.js";
 
 const AT = new Date("2027-01-04T12:00:00.000Z");
-function statementSummary(statements: readonly ObservedStatement[]) {
+function statementSummary(statements: readonly string[]) {
   const business = statements.filter(
-    ({ sql }) => !/^(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i.test(sql.trim()),
+    (statement) => !/^(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i.test(statement.trim()),
   );
-  const locks = business.filter(({ sql }) => sql.includes("pg_advisory_xact_lock"));
+  const locks = business.filter((statement) => statement.includes("pg_advisory_xact_lock"));
   return { total: business.length, orm: business.length - locks.length, locks: locks.length };
 }
 
-describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () => {
+describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let userId: string;
   let todoId: number;
   let categoryId: number;
-  let recording: ObservedStatement[] | null = null;
+  let recording: string[] | null = null;
 
   beforeAll(async () => {
-    const trace = createStatementObserver("planning-statement-observer", (statement) => {
-      if (recording !== null) {
-        recording.push(statement);
-      }
-    });
     database = new TestDatabase({
-      createClient(url) {
-        const pool = new Pool({ connectionString: url, max: 6 });
-        const native = postgres({
-          contract,
-          pg: pool,
-          middleware: [trace],
-        });
-        let closed = false;
-        return {
-          ...native,
-          async close() {
-            if (closed) return;
-            closed = true;
-            await native.close();
-            await pool.end();
-          },
-        };
-      },
+      createClient: (url) =>
+        createTestClient(url, { max: 6 }, (statement) => {
+          if (recording !== null) {
+            recording.push(statement);
+          }
+        }),
     });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
@@ -92,14 +75,15 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
       email: "planning-mutations@example.com",
       userTag: "PLANPG01",
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
-    const category = await client.orm.public.TodoCategory.create(
-      encodeCreate(
-        "TodoCategory",
-        omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]),
-      ),
-    );
+    const [category] = await client
+      .insert(todoCategory)
+      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .returning();
+    if (category === undefined) {
+      throw new Error("category fixture 누락");
+    }
     categoryId = category.id;
     todoId = await createTodo();
   });
@@ -108,44 +92,53 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     vi.useRealTimers();
   });
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function createTodo() {
-    const todo = await client.orm.public.Todo.create(
-      encodeCreate(
-        "Todo",
+    const [created] = await client
+      .insert(todo)
+      .values(
         omit(
           TodoFixture.create({ userId, categoryId, completed: false, startDate: AT, sortOrder: 0 }),
           ["id"],
         ),
-      ),
-    );
-    return todo.id;
+      )
+      .returning({ id: todo.id });
+    if (created === undefined) {
+      throw new Error("todo fixture 누락");
+    }
+    return created.id;
   }
 
-  async function createItems(count: number) {
-    await client.orm.public.TodoItem.createAndCount(
-      Array.from({ length: count }, (_, sortOrder) =>
-        encodeCreate("TodoItem", { todoId, title: `항목 ${sortOrder}`, sortOrder }),
-      ),
+  async function readItems() {
+    return client.query.todoItem.findMany({
+      columns: { id: true, sortOrder: true },
+      where: { todoId },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  async function createItems(itemCount: number) {
+    await client.insert(todoItem).values(
+      Array.from({ length: itemCount }, (_, sortOrder) => ({
+        todoId,
+        title: `항목 ${sortOrder}`,
+        sortOrder,
+      })),
     );
-    return client.orm.public.TodoItem.where({ todoId })
-      .select("id", "sortOrder")
-      .orderBy((row) => row.sortOrder.asc())
-      .all();
+    return readItems();
   }
 
   async function holdTodoRow() {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(transaction, sql`SELECT "id" FROM "Todo" WHERE "id"=${todoId} FOR UPDATE`)
-          .returnsRow({ id: "pg/int4@1" })
-          .build(),
-      );
+    const holding = client.transaction(async (transaction) => {
+      await transaction.select({ id: todo.id }).from(todo).where(eq(todo.id, todoId)).for("update");
       acquired.resolve();
       await released.promise;
     });
@@ -161,18 +154,14 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     };
   }
 
-  async function waitForBlockedRequests(count: number) {
+  async function waitForBlockedRequests(expected: number) {
     await vi.waitFor(
       async () => {
-        const waiting = await client.runtime().query(
-          client.raw.sql`
-        SELECT count(*)::int AS count FROM pg_stat_activity
-        WHERE datname=current_database() AND wait_event_type='Lock'
-      `
-            .returnsRow({ count: "pg/int4@1" })
-            .build(),
-        );
-        expect(waiting[0]?.count).toBe(count);
+        const waiting = await client.execute<{ count: number }>(sql`
+          SELECT count(*)::int AS count FROM pg_stat_activity
+          WHERE datname=current_database() AND wait_event_type='Lock'
+        `);
+        expect(waiting.rows[0]?.count).toBe(expected);
       },
       { timeout: 5000, interval: 10 },
     );
@@ -194,12 +183,17 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     // Given
     await createItems(19);
     const add = context.module.get(AddTodoItem);
+
     // When
     const outcomes = await contend(
       () => add.execute({ todoId, userId, title: "첫 요청" }),
       () => add.execute({ todoId, userId, title: "두 번째 요청" }),
     );
-    const items = await client.orm.public.TodoItem.where({ todoId }).select("sortOrder").all();
+    const items = await client.query.todoItem.findMany({
+      columns: { sortOrder: true },
+      where: { todoId },
+    });
+
     // Then
     expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
     expect(outcomes.find((outcome) => outcome.status === "rejected")?.reason).toMatchObject({
@@ -215,11 +209,13 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
     const publishAll = vi.spyOn(publisher, "publishAll");
     const toggle = context.module.get(ToggleTodoComplete);
+
     // When
     const outcomes = await contend(
       () => toggle.execute({ id: todoId, userId, completed: true, timezone: "Asia/Seoul" }),
       () => toggle.execute({ id: todoId, userId, completed: true, timezone: "Asia/Seoul" }),
     );
+
     // Then
     expect(outcomes.every((outcome) => outcome.status === "fulfilled")).toBe(true);
     expect(
@@ -228,7 +224,10 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
         .filter((event) => event instanceof TodoToggledEvent),
     ).toHaveLength(1);
     expect(
-      await client.orm.public.Todo.where({ id: todoId }).select("completed", "completedAt").first(),
+      await client.query.todo.findFirst({
+        columns: { completed: true, completedAt: true },
+        where: { id: todoId },
+      }),
     ).toMatchObject({ completed: true });
   });
 
@@ -238,10 +237,12 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     const add = context.module.get(AddTodoItem);
     const release = await holdTodoRow();
     const blocked = add.execute({ todoId, userId, title: "대기 중" });
+
     // When
     try {
       await waitForBlockedRequests(1);
       const response = await add.execute({ todoId: otherTodoId, userId, title: "독립 요청" });
+
       // Then
       expect(response.items.map((item) => item.title)).toEqual(["독립 요청"]);
       await waitForBlockedRequests(1);
@@ -255,19 +256,18 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     // Given
     const items = await createItems(2);
     const first = items.at(0);
-    if (first === undefined) throw new Error("item fixture 누락");
+    if (first === undefined) {
+      throw new Error("item fixture 누락");
+    }
     const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+
     // When
     const result = unitOfWork.run(() => repository.reorderItems([first.id, 999999]));
+
     // Then
     await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
-    expect(
-      await client.orm.public.TodoItem.where({ todoId })
-        .select("id", "sortOrder")
-        .orderBy((row) => row.sortOrder.asc())
-        .all(),
-    ).toEqual(items);
+    expect(await readItems()).toEqual(items);
   });
 
   it("부분 수정은 명시적 null·false를 저장하고 undefined는 이전 값을 유지한다", async () => {
@@ -282,6 +282,7 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
         endDate: new Date("2027-01-05"),
       }),
     );
+
     // When
     await unitOfWork.run(() =>
       repository.updateDetails(todoId, {
@@ -291,10 +292,12 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
         endDate: null,
       }),
     );
+
     // Then
-    const row = await client.orm.public.Todo.where({ id: todoId })
-      .select("title", "completed", "completedAt", "endDate")
-      .first();
+    const row = await client.query.todo.findFirst({
+      columns: { title: true, completed: true, completedAt: true, endDate: true },
+      where: { id: todoId },
+    });
     expect(row).toEqual({ title: "기존 제목", completed: false, completedAt: null, endDate: null });
   });
 
@@ -302,17 +305,23 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     // Given
     const items = await createItems(3);
     const itemIds = items.map((item) => item.id).reverse();
-    const statements: ObservedStatement[] = [];
+    const statements: string[] = [];
     recording = statements;
+
     // When
     const response = await context.module
       .get(ReorderTodoItems)
       .execute({ todoId, userId, itemIds });
     recording = null;
+
     // Then
     expect(response.items.map((item) => item.id)).toEqual(itemIds);
     expect(statementSummary(statements)).toEqual({ total: 4, orm: 3, locks: 1 });
-    expect(statements.filter(({ sql }) => /^SELECT "TodoItem"/.test(sql))).toHaveLength(0);
+    expect(
+      statements.filter((statement) =>
+        /^select (?:(?!\sfrom\s)[^])*\sfrom "TodoItem"/i.test(statement),
+      ),
+    ).toHaveLength(0);
     process.stdout.write(
       `PLANNING_QUERY_AFTER_RESULT ${JSON.stringify({ scenario: "reorder-3-items", ...statementSummary(statements), fixture: { items: 3 }, transactionControlsExcluded: true })}\n`,
     );
@@ -320,9 +329,10 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
 
   it("반복 부모 3개와 item 6개는 각 한 번의 bulk INSERT와 잠금 포함 7 SQL로 저장한다", async () => {
     // Given
-    await client.orm.public.Todo.where({ id: todoId }).deleteAndCount();
-    const statements: ObservedStatement[] = [];
+    await client.delete(todo).where(eq(todo.id, todoId));
+    const statements: string[] = [];
     recording = statements;
+
     // When
     const response = await context.module.get(CreateRecurringTodos).execute({
       timezone: "Asia/Seoul",
@@ -340,15 +350,16 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
       },
     });
     recording = null;
+
     // Then
     expect(response.count).toBe(3);
-    expect(response.todos.map((todo) => todo.items.map((item) => item.title))).toEqual(
+    expect(response.todos.map((created) => created.items.map((item) => item.title))).toEqual(
       Array.from({ length: 3 }, () => ["첫 항목", "둘째 항목"]),
     );
-    expect(response.todos.map((todo) => todo.sortOrder)).toEqual([0, 1, 2]);
+    expect(response.todos.map((created) => created.sortOrder)).toEqual([0, 1, 2]);
     expect(statementSummary(statements)).toEqual({ total: 7, orm: 6, locks: 1 });
     expect(
-      statements.filter(({ sql }) => /^INSERT INTO "public"\."TodoItem"/.test(sql)),
+      statements.filter((statement) => /^insert into "TodoItem"/i.test(statement)),
     ).toHaveLength(1);
     process.stdout.write(
       `PLANNING_QUERY_AFTER_RESULT ${JSON.stringify({ scenario: "recurring-3-todos-2-items", ...statementSummary(statements), fixture: { parents: 3, itemsPerParent: 2 }, transactionControlsExcluded: true })}\n`,
@@ -359,7 +370,8 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     // Given
     const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
-    const before = await client.orm.public.Todo.where({ userId }).select("id").all();
+    const before = await client.query.todo.findMany({ columns: { id: true }, where: { userId } });
+
     // When
     const result = unitOfWork.run(() =>
       repository.createMany(
@@ -378,9 +390,12 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
         [{ title: "x".repeat(201) }],
       ),
     );
+
     // Then
     await expect(result).rejects.toThrow();
-    expect(await client.orm.public.Todo.where({ userId }).select("id").all()).toEqual(before);
-    expect(await client.orm.public.TodoItem.select("id").all()).toEqual([]);
+    expect(await client.query.todo.findMany({ columns: { id: true }, where: { userId } })).toEqual(
+      before,
+    );
+    expect(await client.query.todoItem.findMany({ columns: { id: true } })).toEqual([]);
   });
 });

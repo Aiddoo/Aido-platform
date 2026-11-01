@@ -40,7 +40,9 @@ export class StubResendHttp {
 
   request(index = 0): Request {
     const request = this.requests[index];
-    if (request === undefined) throw new Error(`${index}번째 Resend 요청이 없습니다.`);
+    if (request === undefined) {
+      throw new Error(`${index}번째 Resend 요청이 없습니다.`);
+    }
     return request;
   }
 }

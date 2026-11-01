@@ -24,13 +24,9 @@ import {
 } from "./timezone.js";
 
 // 2026-03-03T12:00:00Z = KST 2026-03-03T21:00:00
-beforeAll(() => {
+beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-03-03T12:00:00Z"));
-});
-
-afterAll(() => {
-  vi.useRealTimers();
 });
 
 describe("timezone", () => {

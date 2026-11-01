@@ -1,4 +1,5 @@
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
@@ -46,8 +47,7 @@ import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.pub
 import { CacheModule } from "#api/platform/cache/index";
 import type { EnvConfig } from "#api/platform/config/index";
 import { AppConfigModule } from "#api/platform/config/index";
-import { DatabaseModule, DatabaseService } from "#api/platform/database/index";
-import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { DatabaseModule, DRIZZLE } from "#api/platform/database/index";
 import { DedupModule } from "#api/platform/dedup/index";
 import { EncryptionModule } from "#api/platform/encryption/index";
 import { DomainEventsModule } from "#api/platform/events/index";
@@ -74,16 +74,13 @@ import { AppService } from "./app.service.js";
     SentryModule.forRoot(),
 
     DatabaseModule,
-    // CLS 트랜잭션 플러그인 — UNIT_OF_WORK(ClsUnitOfWork)가 사용하는
-    // TransactionHost를 전역 제공. withTransaction이 자체 CLS 스코프를 열므로
-    // 미들웨어/가드 마운트는 불필요. 어댑터에 옵션을 지정하지 않아
-    // native transaction의 commit·rollback과 CLS 전파를 연결한다.
+    // UNIT_OF_WORK가 쓰는 TransactionHost를 전역 제공한다. nested 전파는 Drizzle savepoint로 처리된다.
     ClsModule.forRoot({
       global: true,
       plugins: [
         new ClsPluginTransactional({
           imports: [DatabaseModule],
-          adapter: new Prisma8TransactionalAdapter(DatabaseService),
+          adapter: new TransactionalAdapterDrizzleOrm({ drizzleInstanceToken: DRIZZLE }),
         }),
       ],
     }),

@@ -12,7 +12,6 @@ import {
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseModule } from "./database.module.js";
-import { DatabaseService } from "./database.service.js";
 import { PostgresPool } from "./postgres-pool.js";
 
 const transactionHost = {
@@ -32,8 +31,6 @@ describe("DatabaseModule", () => {
     const module = await Test.createTestingModule({
       imports: [ClsModule.forRoot({ global: true }), TestTransactionHostModule, DatabaseModule],
     })
-      .overrideProvider(DatabaseService)
-      .useValue({})
       .overrideProvider(PostgresPool)
       .useValue({})
       .compile();

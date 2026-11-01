@@ -36,7 +36,9 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
     await this.runtime.work(
       INVITE_MAINTENANCE_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.handle(job);
+        for (const job of jobs) {
+          await this.handle(job);
+        }
       },
       {
         teamSize: 1,

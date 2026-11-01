@@ -23,7 +23,7 @@
  * ```
  */
 import type { NudgeInteractionRecord } from "#api/modules/social/application/ports/nudges/nudge.repository.port";
-import type { Nudge } from "#api/platform/database/database.types";
+import type { Nudge } from "#test/types/database-rows";
 
 /**
  * 사용자 프로필 정보

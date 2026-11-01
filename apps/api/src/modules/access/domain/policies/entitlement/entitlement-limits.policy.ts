@@ -53,7 +53,9 @@ function resolveLimit(
   subscriptionStatus: string,
   limits: SubscriptionLimits,
 ): number | null {
-  if (role === "ADMIN") return null;
+  if (role === "ADMIN") {
+    return null;
+  }
   return match(toSubscriptionStatus(subscriptionStatus))
     .with("FREE", () => limits.FREE)
     .with("ACTIVE", () => limits.ACTIVE)
@@ -102,7 +104,9 @@ export interface PremiumAccessDeadlineInput {
  */
 export function resolvePremiumAccessDeadline(input: PremiumAccessDeadlineInput): Date | null {
   const { subscriptionExpiresAt } = input;
-  if (subscriptionExpiresAt == null) return null;
+  if (subscriptionExpiresAt == null) {
+    return null;
+  }
   return (
     maxBy(
       [subscriptionExpiresAt, ...input.renewingStoreExpiresAt.map(storeRenewalGraceEndsAt)],

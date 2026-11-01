@@ -1,16 +1,16 @@
-import { AsyncLocalStorage } from "node:async_hooks";
+import { eq, inArray } from "drizzle-orm";
 
-import type { TransactionHost } from "@nestjs-cls/transactional";
-import { and } from "@prisma/orm-postgres/orm-client";
-
-import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
-import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
-import { asDep } from "#test/mocks/index";
-import { createDatabaseContext, withDatabaseTransaction } from "#test/setup/database-context";
+import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
+import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  notification,
+  pushDispatch,
+  retentionPushOutbox,
+  todo,
+  todoCategory,
+  userPreference,
+} from "#api/platform/database/schema/index";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -18,36 +18,19 @@ import { TestDatabase } from "../setup/test-database.js";
 
 describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
-  let prisma: TestDatabaseClient;
-  let activeClient: TestDatabaseClient | Prisma8Transaction;
-  let repository: PrismaRetentionRepository;
-  const transactionContext = new AsyncLocalStorage<Prisma8Transaction>();
+  let db: TestDatabaseClient;
+  let repository: DrizzleRetentionRepository;
+  let unitOfWork: ReturnType<typeof createDatabaseTransactionFixture>["uow"];
 
   beforeAll(async () => {
     testDb = new TestDatabase();
-    prisma = await testDb.start();
-    activeClient = prisma;
-    repository = new PrismaRetentionRepository(
-      asDep<TransactionHost<Prisma8TransactionalAdapter>>({
-        get tx() {
-          return (
-            transactionContext.getStore() ??
-            ("runtime" in activeClient ? createDatabaseContext(activeClient) : activeClient)
-          );
-        },
-      }),
-      {
-        async run(work) {
-          if (transactionContext.getStore() !== undefined || !("runtime" in activeClient))
-            return work();
-          return withDatabaseTransaction(prisma, (tx) => transactionContext.run(tx, work));
-        },
-      },
-    );
+    db = await testDb.start();
+    const { txHost, uow } = createDatabaseTransactionFixture(db);
+    unitOfWork = uow;
+    repository = new DrizzleRetentionRepository(txHost, uow);
   }, 60_000);
 
   beforeEach(async () => {
-    activeClient = prisma;
     await testDb.cleanup();
   });
 
@@ -56,28 +39,22 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   });
 
   async function createUser(email: string): Promise<string> {
-    const user = decodeRecord(
-      "User",
-      await createUserDatabaseFixture(
-        prisma,
-        encodeCreate("User", {
-          email,
-          userTag: email.slice(0, 8).toUpperCase().padEnd(8, "X"),
-          status: "ACTIVE",
-        }),
-        {
-          preference: encodePatch("UserPreference", {
-            id: createEntityId(),
-            pushEnabled: true,
-            timezone: "Asia/Seoul",
-            locale: "ko",
-          }),
-          consent: encodePatch("UserConsent", {
-            id: createEntityId(),
-            marketingPushAgreedAt: new Date(),
-          }),
+    const user = await createUserDatabaseFixture(
+      db,
+      {
+        email,
+        userTag: email.slice(0, 8).toUpperCase().padEnd(8, "X"),
+        status: "ACTIVE",
+      },
+      {
+        preference: {
+          id: createEntityId(),
+          pushEnabled: true,
+          timezone: "Asia/Seoul",
+          locale: "ko",
         },
-      ),
+        consent: { id: createEntityId(), marketingPushAgreedAt: new Date() },
+      },
     );
     return user.id;
   }
@@ -85,13 +62,11 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   it("기존 사용자는 migration 이후에도 assignment가 자동 생성되지 않는다", async () => {
     const userId = await createUser("legacy01@example.com");
 
-    const count = (
-      await prisma.orm.public.RetentionExperimentAssignment.where((row) =>
-        row.userId.eq(userId),
-      ).aggregate((aggregate) => ({ count: aggregate.count() }))
-    ).count;
+    const assignmentCount = await db.query.retentionExperimentAssignment.findMany({
+      where: { userId },
+    });
 
-    expect(count).toBe(0);
+    expect(assignmentCount).toHaveLength(0);
   });
 
   it("신규 등록은 한 assignment와 네 단계만 멱등 생성한다", async () => {
@@ -101,12 +76,10 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     await repository.enroll({ userId, variant: "TREATMENT", startedAt });
     await repository.enroll({ userId, variant: "CONTROL", startedAt });
 
-    const assignments = decodeRecord(
-      "RetentionExperimentAssignment",
-      await prisma.orm.public.RetentionExperimentAssignment.where((row) => row.userId.eq(userId))
-        .include("stages")
-        .all(),
-    );
+    const assignments = await db.query.retentionExperimentAssignment.findMany({
+      where: { userId },
+      with: { stages: true },
+    });
     expect(assignments).toHaveLength(1);
     expect(assignments[0]?.variant).toBe("TREATMENT");
     expect(assignments[0]?.stages).toHaveLength(4);
@@ -139,46 +112,41 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const invalidTimezoneUserId = await createUser("invalidtz@example.com");
     const aliasTimezoneUserId = await createUser("aliastz1@example.com");
     await Promise.all([
-      prisma.orm.public.UserPreference.where((row) => row.userId.eq(invalidTimezoneUserId))
-        .update(encodePatch("UserPreference", { timezone: "Invalid/Timezone" }))
-        .then((row) => decodeRecord("UserPreference", requireRecord(row))),
-      prisma.orm.public.UserPreference.where((row) => row.userId.eq(aliasTimezoneUserId))
-        .update(encodePatch("UserPreference", { timezone: "US/Eastern" }))
-        .then((row) => decodeRecord("UserPreference", requireRecord(row))),
+      db
+        .update(userPreference)
+        .set({ timezone: "Invalid/Timezone" })
+        .where(eq(userPreference.userId, invalidTimezoneUserId)),
+      db
+        .update(userPreference)
+        .set({ timezone: "US/Eastern" })
+        .where(eq(userPreference.userId, aliasTimezoneUserId)),
     ]);
-    const [invalidCategory, aliasCategory] = await Promise.all([
-      prisma.orm.public.TodoCategory.create(
-        encodeCreate("TodoCategory", {
-          userId: invalidTimezoneUserId,
-          name: "업무",
-          color: "#FF6B43",
-        }),
-      ).then((row) => decodeRecord("TodoCategory", row)),
-      prisma.orm.public.TodoCategory.create(
-        encodeCreate("TodoCategory", {
-          userId: aliasTimezoneUserId,
-          name: "업무",
-          color: "#FF6B43",
-        }),
-      ).then((row) => decodeRecord("TodoCategory", row)),
+    const [[invalidCategory], [aliasCategory]] = await Promise.all([
+      db
+        .insert(todoCategory)
+        .values({ userId: invalidTimezoneUserId, name: "업무", color: "#FF6B43" })
+        .returning({ id: todoCategory.id }),
+      db
+        .insert(todoCategory)
+        .values({ userId: aliasTimezoneUserId, name: "업무", color: "#FF6B43" })
+        .returning({ id: todoCategory.id }),
     ]);
+    if (invalidCategory === undefined || aliasCategory === undefined) {
+      throw new Error("category fixture 누락");
+    }
     await Promise.all([
-      prisma.orm.public.Todo.create(
-        encodeCreate("Todo", {
-          userId: invalidTimezoneUserId,
-          categoryId: invalidCategory.id,
-          title: "잘못된 타임존에서도 조회되는 할 일",
-          startDate: new Date("2026-07-16T00:00:00.000Z"),
-        }),
-      ).then((row) => decodeRecord("Todo", row)),
-      prisma.orm.public.Todo.create(
-        encodeCreate("Todo", {
-          userId: aliasTimezoneUserId,
-          categoryId: aliasCategory.id,
-          title: "레거시 별칭에서도 조회되는 할 일",
-          startDate: new Date("2026-07-16T00:00:00.000Z"),
-        }),
-      ).then((row) => decodeRecord("Todo", row)),
+      db.insert(todo).values({
+        userId: invalidTimezoneUserId,
+        categoryId: invalidCategory.id,
+        title: "잘못된 타임존에서도 조회되는 할 일",
+        startDate: new Date("2026-07-16T00:00:00.000Z"),
+      }),
+      db.insert(todo).values({
+        userId: aliasTimezoneUserId,
+        categoryId: aliasCategory.id,
+        title: "레거시 별칭에서도 조회되는 할 일",
+        startDate: new Date("2026-07-16T00:00:00.000Z"),
+      }),
     ]);
     const startedAt = new Date("2026-07-15T00:00:00.000Z");
     await Promise.all([
@@ -223,21 +191,15 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       variant: "TREATMENT",
       startedAt: new Date(),
     });
-    const stage = decodeRecord(
-      "RetentionExperimentStage",
-      requireRecord(
-        await prisma.orm.public.RetentionExperimentStage.where((row) =>
-          and(
-            row.assignment.some((related) => related.userId.eq(userId)),
-            row.stage.eq("D0"),
-          ),
-        ).first(),
-      ),
-    );
+    const stage = await db.query.retentionExperimentStage.findFirst({
+      where: { stage: "D0", assignment: { userId } },
+    });
+    if (stage === undefined) {
+      throw new Error("stage fixture 누락");
+    }
 
     await expect(
-      withDatabaseTransaction(prisma, async (tx) => {
-        activeClient = tx;
+      unitOfWork.run(async () => {
         await repository.createDelivery({
           stageId: stage.id,
           userId,
@@ -250,23 +212,14 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
         throw new Error("force rollback");
       }),
     ).rejects.toThrow("force rollback");
-    activeClient = prisma;
 
     const [storedStage, notifications, dispatches, outboxes] = await Promise.all([
-      prisma.orm.public.RetentionExperimentStage.where((row) => row.id.eq(stage.id))
-        .first()
-        .then((row) => decodeRecord("RetentionExperimentStage", requireRecord(row))),
-      prisma.orm.public.Notification.where((row) => row.userId.eq(userId))
-        .aggregate((aggregate) => ({ count: aggregate.count() }))
-        .then(({ count }) => count),
-      prisma.orm.public.PushDispatch.where((row) => row.userId.eq(userId))
-        .aggregate((aggregate) => ({ count: aggregate.count() }))
-        .then(({ count }) => count),
-      prisma.orm.public.RetentionPushOutbox.aggregate((aggregate) => ({
-        count: aggregate.count(),
-      })).then(({ count }) => count),
+      db.query.retentionExperimentStage.findFirst({ where: { id: stage.id } }),
+      db.$count(notification, eq(notification.userId, userId)),
+      db.$count(pushDispatch, eq(pushDispatch.userId, userId)),
+      db.$count(retentionPushOutbox),
     ]);
-    expect(storedStage.status).toBe("SCHEDULED");
+    expect(storedStage?.status).toBe("SCHEDULED");
     expect([notifications, dispatches, outboxes]).toEqual([0, 0, 0]);
   });
 
@@ -279,17 +232,10 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       variant: "TREATMENT",
       startedAt: claimAt,
     });
-    const stages = decodeRecord(
-      "RetentionExperimentStage",
-      await prisma.orm.public.RetentionExperimentStage.where((row) =>
-        and(
-          row.assignment.some((related) => related.userId.eq(userId)),
-          row.stage.in(["D0", "D1"]),
-        ),
-      )
-        .orderBy((row) => row.stage.asc())
-        .all(),
-    );
+    const stages = await db.query.retentionExperimentStage.findMany({
+      where: { stage: { in: ["D0", "D1"] }, assignment: { userId } },
+      orderBy: { stage: "asc" },
+    });
     for (const stage of stages) {
       await repository.createDelivery({
         stageId: stage.id,
@@ -302,10 +248,15 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       });
     }
 
-    // DB DEFAULT availableAt과 Node Date.now의 clock 차이에 의존하지 않는다.
-    await prisma.orm.public.RetentionPushOutbox.where((row) =>
-      row.stageId.in(stages.map((stage) => stage.id)),
-    ).updateAndCount(encodePatch("RetentionPushOutbox", { availableAt: claimAt }));
+    await db
+      .update(retentionPushOutbox)
+      .set({ availableAt: claimAt })
+      .where(
+        inArray(
+          retentionPushOutbox.stageId,
+          stages.map((stage) => stage.id),
+        ),
+      );
 
     // When
     const batches = await Promise.all([
@@ -313,12 +264,9 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       repository.claimOutboxes(1, claimAt),
     ]);
     const claimed = batches.flat();
-    const stored = decodeRecord(
-      "RetentionPushOutbox",
-      await prisma.orm.public.RetentionPushOutbox.where((row) =>
-        row.id.in(claimed.map((outbox) => outbox.id)),
-      ).all(),
-    );
+    const stored = await db.query.retentionPushOutbox.findMany({
+      where: { id: { in: claimed.map((outbox) => outbox.id) } },
+    });
 
     // Then
     expect(claimed).toHaveLength(2);

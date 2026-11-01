@@ -31,9 +31,13 @@ export class ExchangeOAuthCode {
   async execute(input: ExchangeOAuthCodeInput): Promise<ExchangeCodeResult> {
     const at = now();
     const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(input.code, at);
-    if (state == null) throw this.#invalidCode();
+    if (state == null) {
+      throw this.#invalidCode();
+    }
     const authorization = AuthOAuthState.reconstitute(state);
-    if (authorization.validityAt(at) !== "valid") throw this.#invalidCode();
+    if (authorization.validityAt(at) !== "valid") {
+      throw this.#invalidCode();
+    }
     const { accessToken, refreshToken, userId } = state;
     if (
       accessToken == null ||
@@ -42,15 +46,18 @@ export class ExchangeOAuthCode {
       refreshToken === "" ||
       userId == null ||
       userId === ""
-    )
+    ) {
       throw this.#invalidCode();
+    }
     const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
       id: state.id,
       exchangeCode: input.code,
       at,
       purpose: "login",
     });
-    if (!consumed) throw this.#invalidCode();
+    if (!consumed) {
+      throw this.#invalidCode();
+    }
     authorization.consume(at);
     this.#dependencies.logger.debug({ event: IdentityLogEvent.OAUTH_EXCHANGE_CONSUMED, userId });
     return {

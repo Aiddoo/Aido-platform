@@ -230,7 +230,9 @@ export class GenerateReport {
       ) {
         return null;
       }
-      if (await aiReportRepository.exists(userId, type, year, period)) return null;
+      if (await aiReportRepository.exists(userId, type, year, period)) {
+        return null;
+      }
       return aiReportRepository.create({
         userId,
         type,
@@ -293,7 +295,9 @@ export class GenerateReport {
     options: { userId: string; locale: SupportedLocale; isFinalAttempt: boolean },
   ): Promise<ReportContent> {
     const { userId, locale, isFinalAttempt } = options;
-    if (!input.data.hasActivity) return buildNoActivityContent(input, locale);
+    if (!input.data.hasActivity) {
+      return buildNoActivityContent(input, locale);
+    }
 
     if (!(await canRunScheduledAi(this.#dependencies, userId))) {
       this.#dependencies.logger.debug({ event: AiReportLogEvent.AI_SKIPPED_NO_CONSENT, userId });

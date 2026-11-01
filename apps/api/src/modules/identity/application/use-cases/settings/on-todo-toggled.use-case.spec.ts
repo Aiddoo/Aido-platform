@@ -68,7 +68,9 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
       // Given
       const fixture = given();
       fixture.statsReader.days.set(`${fixture.userId}/2026-01-16`, stats);
-      if (missing) fixture.preferenceRepository.records.delete(fixture.userId);
+      if (missing) {
+        fixture.preferenceRepository.records.delete(fixture.userId);
+      }
       // When
       await fixture.useCase.execute({ userId: fixture.userId, completed: true });
       // Then

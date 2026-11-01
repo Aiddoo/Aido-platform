@@ -1,10 +1,9 @@
 /**
  * 테스트 데이터 빌더 모음
  *
- * Prisma 공식 권장 Builder 패턴 적용
+ * Builder 패턴 적용
  * 모델별 빌더를 통해 테스트 데이터 생성
  *
- * @see https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing
  */
 
 export { AccountBuilder } from "./account.builder.js";

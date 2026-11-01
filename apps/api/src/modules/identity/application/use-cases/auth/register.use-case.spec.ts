@@ -139,9 +139,11 @@ describe("Register — 이메일 계정 등록", () => {
       // When
       const pending = fixture.useCase.execute(input);
       // Then
-      if (emailConflict)
+      if (emailConflict) {
         await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.EMAIL_0501 });
-      else await expect(pending).rejects.toBe(error);
+      } else {
+        await expect(pending).rejects.toBe(error);
+      }
       expect(fixture.emailSender.getSentCount()).toBe(0);
       expect(fixture.adminEventNotifier.notifications).toEqual([]);
     },

@@ -54,7 +54,9 @@ export class ScheduleInviteQualifyReminders {
   async execute(
     input: ScheduleInviteQualifyRemindersInput,
   ): Promise<ScheduleInviteQualifyRemindersResult> {
-    if (!this.#dependencies.inviteConfig.isEnabled) return { scheduledCount: 0 };
+    if (!this.#dependencies.inviteConfig.isEnabled) {
+      return { scheduledCount: 0 };
+    }
 
     let after: QualifyReminderCandidate | undefined;
     let scheduledCount = 0;
@@ -72,7 +74,9 @@ export class ScheduleInviteQualifyReminders {
       await this.#dependencies.reminderScheduler.scheduleMany(reminders);
       scheduledCount += reminders.length;
 
-      if (candidates.length < QUALIFY_REMINDER_SCHEDULING.BATCH_SIZE) break;
+      if (candidates.length < QUALIFY_REMINDER_SCHEDULING.BATCH_SIZE) {
+        break;
+      }
       after = candidates.at(-1);
     }
 
@@ -85,9 +89,13 @@ export class ScheduleInviteQualifyReminders {
 }
 
 function toReminder(candidate: QualifyReminderCandidate, now: Date): ScheduledQualifyReminder[] {
-  if (!hasOneActiveDayLeft(candidate.activeDayCount)) return [];
+  if (!hasOneActiveDayLeft(candidate.activeDayCount)) {
+    return [];
+  }
   const sendAt = nextQualifyReminderAt(now, candidate.timezone);
   // 보낼 시각에 이미 마감됐다면 "하루만 더"가 맞지 않는다
-  if (sendAt.getTime() >= candidate.expiresAt.getTime()) return [];
+  if (sendAt.getTime() >= candidate.expiresAt.getTime()) {
+    return [];
+  }
   return [{ redemptionId: candidate.redemptionId, sendAt }];
 }

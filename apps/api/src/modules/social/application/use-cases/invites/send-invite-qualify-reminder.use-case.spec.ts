@@ -56,7 +56,9 @@ function createSender({
       findByIdForUpdate: async () =>
         stored == null ? null : InviteRedemption.reconstitute(stored),
       save: async (redemption) => {
-        if (stored == null) return;
+        if (stored == null) {
+          return;
+        }
         stored = { ...stored, qualifyReminderSentAt: redemption.qualifyReminderSentAt };
       },
       findDisplayName: async () => inviterName,

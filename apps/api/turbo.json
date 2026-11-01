@@ -5,93 +5,84 @@
     "build": {
       "inputs": [
         "src/**",
-        "prisma/**",
+        "drizzle/**",
         "package.json",
-        "prisma*.config.ts",
+        "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts"
       ],
-      "dependsOn": ["^build", "contract:emit"]
+      "dependsOn": ["^build"]
     },
     "test": {
       "inputs": [
         "src/**",
-        "prisma/**",
+        "drizzle/**",
         "package.json",
-        "prisma*.config.ts",
+        "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
         "test/**"
       ],
-      "dependsOn": ["^build", "contract:emit"]
+      "dependsOn": ["^build"]
     },
     "test:e2e": {
       "cache": false,
       "inputs": [
         "src/**",
-        "prisma/**",
+        "drizzle/**",
         "package.json",
-        "prisma*.config.ts",
+        "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
         "test/**"
       ],
-      "dependsOn": ["^build", "contract:emit"]
+      "dependsOn": ["^build"]
     },
     "test:integration": {
       "cache": false,
       "inputs": [
         "src/**",
-        "prisma/**",
+        "drizzle/**",
         "package.json",
-        "prisma*.config.ts",
+        "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
         "test/**"
       ],
-      "dependsOn": ["^build", "contract:emit"]
+      "dependsOn": ["^build"]
     },
     "typecheck": {
       "inputs": [
         "src/**",
-        "prisma/**",
+        "drizzle/**",
         "package.json",
-        "prisma*.config.ts",
+        "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
         "test/**"
       ],
-      "dependsOn": ["^build", "contract:emit"]
-    },
-    "contract:emit": {
-      "inputs": [
-        "src/prisma/contract.prisma",
-        "prisma.config.ts",
-        "scripts/guard-database-url.cjs",
-        "package.json"
-      ],
-      "outputs": ["src/generated/prisma8/**"]
+      "dependsOn": ["^build"]
     },
     "db:generate": {
       "cache": false
     },
     "test:cov": {
-      "dependsOn": ["^build", "contract:emit"],
+      "dependsOn": ["^build"],
       "inputs": [
         "src/**",
-        "prisma/**",
+        "drizzle/**",
         "package.json",
-        "prisma*.config.ts",
+        "drizzle.config.ts",
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",

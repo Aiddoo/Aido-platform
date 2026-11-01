@@ -101,7 +101,9 @@ export class StubAiSuggestionRepository implements AiSuggestionRepositoryPort {
   }
   async updateStatus(id: number, status: SuggestionStatus) {
     const row = this.rows.get(id);
-    if (!row) throw new Error("존재하지 않는 제안");
+    if (!row) {
+      throw new Error("존재하지 않는 제안");
+    }
     const updated = { ...row, status };
     this.rows.set(id, updated);
     this.writes.push("updateStatus");
@@ -132,11 +134,12 @@ export class StubAiSuggestionRepository implements AiSuggestionRepositoryPort {
   }
   private remove(predicate: (row: SuggestionProps) => boolean) {
     let count = 0;
-    for (const [id, row] of this.rows)
+    for (const [id, row] of this.rows) {
       if (predicate(row)) {
         this.rows.delete(id);
         count += 1;
       }
+    }
     return { count };
   }
   async findRecentTodos() {
@@ -230,7 +233,9 @@ export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
   calls = 0;
   async getForecastsByGridBatch(_grids: GridInput[], _date: Date) {
     this.calls += 1;
-    if (this.failure) throw this.failure;
+    if (this.failure) {
+      throw this.failure;
+    }
     return this.forecasts;
   }
 }

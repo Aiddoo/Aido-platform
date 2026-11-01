@@ -1,11 +1,9 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import dayjs from "dayjs";
 
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
-import { decodeRecord } from "#api/platform/database/database-records";
-import { databaseDate } from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
@@ -30,7 +28,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisJob.name);
 
   constructor(
-    private readonly database: DatabaseService,
+    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
     private readonly processor: SuggestionAnalysisProcessor,
     private readonly queueMaintenance: AiSuggestionQueueMaintenanceService,
@@ -85,29 +83,25 @@ export class SuggestionAnalysisJob implements OnModuleInit {
     await forEachBatch({
       batchSize: ENQUEUE_BATCH_SIZE,
       fetchPage: (cursor, take) =>
-        this.database.db.orm.public.User.where((row) =>
-          and(
-            cursor != null ? row.id.gt(cursor) : all(),
-            or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
-            row.status.eq("ACTIVE"),
-            row.deletedAt.isNull(),
-            row.todos.some((related) =>
-              and(
-                related.startDate.gte(databaseDate(twoWeeksAgo)),
-                related.recurrenceGroupId.isNull(),
-              ),
-            ),
-          ),
-        )
-          .select("id")
-          .include("preference", (related) => related.select("timezone"))
-          .include("location", (related) =>
-            related.select("gridX", "gridY", "latitude", "longitude"),
-          )
-          .orderBy((row) => row.id.asc())
-          .limit(take)
-          .all()
-          .then((row) => decodeRecord("User", row)),
+        this.txHost.tx.query.user.findMany({
+          columns: { id: true },
+          with: {
+            preference: { columns: { timezone: true } },
+            location: { columns: { gridX: true, gridY: true, latitude: true, longitude: true } },
+          },
+          where: {
+            id: cursor != null ? { gt: cursor } : undefined,
+            OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+            status: "ACTIVE",
+            deletedAt: { isNull: true },
+            todos: {
+              startDate: { gte: twoWeeksAgo },
+              recurrenceGroupId: { isNull: true },
+            },
+          },
+          orderBy: { id: "asc" },
+          limit: take,
+        }),
       onBatch: async (batch) => {
         await this.runtime.enqueueMany(
           AI_SUGGESTION_QUEUE,

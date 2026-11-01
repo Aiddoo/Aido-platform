@@ -59,7 +59,9 @@ function isTtlUnit(unit: string): unit is TtlUnit {
  * parseTtl(60000) // 60000
  */
 export function parseTtl(ttl: TtlValue): number {
-  if (typeof ttl === "number") return ttl;
+  if (typeof ttl === "number") {
+    return ttl;
+  }
 
   const unit = ttl.at(-1);
   const value = ttl.slice(0, -1);

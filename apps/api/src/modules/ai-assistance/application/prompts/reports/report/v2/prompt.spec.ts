@@ -31,7 +31,9 @@ const input: ReportPromptInput = {
 
 function readReportData(prompt: string) {
   const json = prompt.match(/<report_data>\n([\s\S]*?)\n<\/report_data>/)?.[1];
-  if (json == null) throw new Error("report_data missing");
+  if (json == null) {
+    throw new Error("report_data missing");
+  }
   return JSON.parse(json);
 }
 

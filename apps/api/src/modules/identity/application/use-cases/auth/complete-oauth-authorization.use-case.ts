@@ -45,11 +45,12 @@ export class CompleteOAuthAuthorization {
   async execute(input: CompleteOAuthAuthorizationInput): Promise<CompleteOAuthAuthorizationResult> {
     const { provider, code, state, metadata } = input;
     const strategy = this.#dependencies.registry.get(provider);
-    if (strategy == null)
+    if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
         provider,
         reason: `Unsupported provider: ${provider}`,
       });
+    }
     const authorization = await this.#dependencies.oauthStateRepository.findByState(state);
     if (authorization == null) {
       this.#dependencies.logger.warn({ event: IdentityLogEvent.OAUTH_STATE_REJECTED });
@@ -58,7 +59,9 @@ export class CompleteOAuthAuthorization {
     const redirectUri =
       authorization.redirectUri === "" ? "aido://auth/callback" : authorization.redirectUri;
     const exchanged = await strategy.exchangeCode(code, state);
-    if (exchanged == null) throw new ApplicationException(ErrorCode.USER_0602);
+    if (exchanged == null) {
+      throw new ApplicationException(ErrorCode.USER_0602);
+    }
     if (authorization.mode === "link") {
       const profile = await strategy.verifyToken(exchanged.token);
       const exchangeCode = this.#dependencies.oauthStateRepository.generateExchangeCode();

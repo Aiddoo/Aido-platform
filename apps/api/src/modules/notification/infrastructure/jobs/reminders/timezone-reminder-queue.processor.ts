@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -33,18 +34,24 @@ export class TimezoneReminderProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
     await this.runtime.work(
       TIMEZONE_REMINDER_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );
     await this.runtime.work(
       TIMEZONE_REMINDER_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process({ name: job.name, data: job.data });
+        for (const job of jobs) {
+          await this.process({ name: job.name, data: job.data });
+        }
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );
@@ -69,27 +76,23 @@ export class TimezoneReminderProcessor implements OnModuleInit {
       return;
     }
     const job = parsedJob.data;
-    switch (job.name) {
-      case TimezoneReminderJobName.SWEEP_REMINDERS:
-        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: job.name });
+    await match(job)
+      .with({ name: TimezoneReminderJobName.SWEEP_REMINDERS }, async ({ name }) => {
+        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: name });
         await this.orchestrator.handleMinuteSweep();
-        break;
-      case TimezoneReminderJobName.REMINDER_HOUR_CHANGED:
+      })
+      .with({ name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED }, async ({ name, data }) => {
         this.#logger.debug({
           event: NotificationProviderLogEvent.JOB_STARTED,
-          jobName: job.name,
-          userId: job.data.userId,
+          jobName: name,
+          userId: data.userId,
         });
-        await this.orchestrator.handleReminderHourChanged(job.data);
-        break;
-      case TimezoneReminderJobName.SOCIAL_DIGEST:
-        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: job.name });
-        await this.orchestrator.handleSocialDigest(job.data);
-        break;
-      default: {
-        const _exhaustive: never = job;
-        void _exhaustive;
-      }
-    }
+        await this.orchestrator.handleReminderHourChanged(data);
+      })
+      .with({ name: TimezoneReminderJobName.SOCIAL_DIGEST }, async ({ name, data }) => {
+        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: name });
+        await this.orchestrator.handleSocialDigest(data);
+      })
+      .exhaustive();
   }
 }

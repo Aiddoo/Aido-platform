@@ -1,4 +1,5 @@
 import { Logger } from "@nestjs/common";
+import { and, count, eq, inArray } from "drizzle-orm";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
@@ -38,8 +39,16 @@ import {
 } from "#api/modules/social/domain/policies/invites/invite-reward.policy";
 import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/domain/types/invites/reward-grant.types";
 import { InviteeActivitySubscriber } from "#api/modules/social/infrastructure/subscribers/invites/invitee-activity.subscriber";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  inviteActiveDay,
+  inviteRedemption,
+  notification,
+  premiumGrant,
+  resourceBonus,
+  rewardGrant,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
@@ -86,22 +95,22 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   afterEach(() => vi.useRealTimers());
 
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function createUser(userTag: string): Promise<string> {
     const id = createEntityId();
-    await client.orm.public.User.create(
-      encodeCreate(
-        "User",
-        UserFixture.create({
-          id,
-          userTag,
-          email: `${userTag.toLowerCase()}@example.test`,
-          createdAt: JOINED_AT,
-        }),
-      ),
+    await client.insert(userTable).values(
+      UserFixture.create({
+        id,
+        userTag,
+        email: `${userTag.toLowerCase()}@example.test`,
+        createdAt: JOINED_AT,
+      }),
     );
     return id;
   }
@@ -116,7 +125,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       installationId: inviteeTag,
       timezone: "Asia/Seoul",
     });
-    if (result.outcome !== "REDEEMED") throw new Error("새 사용자 수락이 필요합니다");
+    if (result.outcome !== "REDEEMED") {
+      throw new Error("새 사용자 수락이 필요합니다");
+    }
     return { inviterId, inviteeId, redemptionId: result.redemptionId };
   }
 
@@ -135,7 +146,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         ...appliers,
         PREMIUM_DAYS: {
           async apply(grant) {
-            if (overrides.failing?.() === true) throw new Error("billing unavailable");
+            if (overrides.failing?.() === true) {
+              throw new Error("billing unavailable");
+            }
             await appliers.PREMIUM_DAYS.apply(grant);
           },
         },
@@ -167,18 +180,21 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   }
 
   async function rewardedNotices() {
-    return client.orm.public.Notification.where((row) => row._type.eq("INVITE_REWARDED"))
-      .select("userId", "body")
-      .all();
+    return client
+      .select({ userId: notification.userId, body: notification.body })
+      .from(notification)
+      .where(eq(notification.type, "INVITE_REWARDED"));
   }
 
   async function premiumGrantsOf(userId: string) {
-    return decodeRecord(
-      "PremiumGrant",
-      await client.orm.public.PremiumGrant.where({ userId })
-        .select("durationDays", "status", "endsAt")
-        .all(),
-    );
+    return client
+      .select({
+        durationDays: premiumGrant.durationDays,
+        status: premiumGrant.status,
+        endsAt: premiumGrant.endsAt,
+      })
+      .from(premiumGrant)
+      .where(eq(premiumGrant.userId, userId));
   }
 
   it("초대받은 사람 보상은 수락 때 이미 적용돼 지급 작업이 다시 돌아도 보상 기간은 하나다", async () => {
@@ -191,7 +207,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Then
     expect(rerun.appliedCount).toBe(0);
     expect(
-      await client.orm.public.RewardGrant.where({ recipientId: inviteeId }).select("status").all(),
+      await client
+        .select({ status: rewardGrant.status })
+        .from(rewardGrant)
+        .where(eq(rewardGrant.recipientId, inviteeId)),
     ).toEqual([{ status: "APPLIED" }]);
     expect(await premiumGrantsOf(inviteeId)).toEqual([
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
@@ -216,7 +235,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
     ]);
     expect(
-      await client.orm.public.ResourceBonus.where({ userId: inviterId }).select("quantity").all(),
+      await client
+        .select({ quantity: resourceBonus.quantity })
+        .from(resourceBonus)
+        .where(eq(resourceBonus.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
   });
 
@@ -254,14 +276,12 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       rejectedCount: 0,
     });
     expect(
-      await client.orm.public.ResourceBonus.where({ userId: inviterId }).select("quantity").all(),
+      await client
+        .select({ quantity: resourceBonus.quantity })
+        .from(resourceBonus)
+        .where(eq(resourceBonus.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
-    const rewardedNotices = await client.orm.public.Notification.where((row) =>
-      row._type.eq("INVITE_REWARDED"),
-    )
-      .select("userId", "body")
-      .all();
-    expect(rewardedNotices).toEqual([
+    expect(await rewardedNotices()).toEqual([
       { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어" },
     ]);
   });
@@ -280,7 +300,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         ...appliers,
         PREMIUM_DAYS: {
           async apply(grant) {
-            if (shouldFail) throw new Error("billing unavailable");
+            if (shouldFail) {
+              throw new Error("billing unavailable");
+            }
             await appliers.PREMIUM_DAYS.apply(grant);
           },
         },
@@ -295,12 +317,16 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // When
     const failed = flaky.execute({ redemptionId, countsAttempt: true });
     await expect(failed).rejects.toMatchObject({ name: "InviteRewardGrantFailedError" });
-    const afterFailure = await client.orm.public.RewardGrant.where({
-      recipientId: inviterId,
-      rewardType: "PREMIUM_DAYS",
-    })
-      .select("status", "attempts", "lastErrorCode")
-      .all();
+    const afterFailure = await client
+      .select({
+        status: rewardGrant.status,
+        attempts: rewardGrant.attempts,
+        lastErrorCode: rewardGrant.lastErrorCode,
+      })
+      .from(rewardGrant)
+      .where(
+        and(eq(rewardGrant.recipientId, inviterId), eq(rewardGrant.rewardType, "PREMIUM_DAYS")),
+      );
     shouldFail = false;
     const retried = await flaky.execute({ redemptionId, countsAttempt: true });
 
@@ -317,31 +343,27 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const { inviterId, inviteeId, redemptionId } = await redeemed("CAPINVTR", "CAPINVTE");
     const earlierInviteeId = await createUser("CAPEARLY");
     const earlierRedemptionId = createEntityId();
-    await client.orm.public.InviteRedemption.create(
-      encodeCreate("InviteRedemption", {
-        id: earlierRedemptionId,
-        inviterId,
-        inviteeId: earlierInviteeId,
-        status: "REWARDED",
-        timezone: "Asia/Seoul",
-        joinedAt: JOINED_AT,
-        qualifiedAt: JOINED_AT,
-        rewardedAt: JOINED_AT,
-        expiresAt: JOINED_AT,
-      }),
-    );
-    await client.orm.public.RewardGrant.create(
-      encodeCreate("RewardGrant", {
-        recipientId: inviterId,
-        sourceType: "INVITE_REDEMPTION",
-        sourceId: earlierRedemptionId,
-        rewardType: "PREMIUM_DAYS",
-        quantity: 30,
-        status: "APPLIED",
-        appliedAt: JOINED_AT,
-        createdAt: JOINED_AT,
-      }),
-    );
+    await client.insert(inviteRedemption).values({
+      id: earlierRedemptionId,
+      inviterId,
+      inviteeId: earlierInviteeId,
+      status: "REWARDED",
+      timezone: "Asia/Seoul",
+      joinedAt: JOINED_AT,
+      qualifiedAt: JOINED_AT,
+      rewardedAt: JOINED_AT,
+      expiresAt: JOINED_AT,
+    });
+    await client.insert(rewardGrant).values({
+      recipientId: inviterId,
+      sourceType: "INVITE_REDEMPTION",
+      sourceId: earlierRedemptionId,
+      rewardType: "PREMIUM_DAYS",
+      quantity: 30,
+      status: "APPLIED",
+      appliedAt: JOINED_AT,
+      createdAt: JOINED_AT,
+    });
     await recordActivity.execute({
       inviteeId,
       occurredAt: new Date("2028-02-28T03:00:00.000Z"),
@@ -357,9 +379,14 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Then
     expect(qualified).toMatchObject({ status: "qualified", redemptionId, grantCount: 1 });
     expect(
-      await client.orm.public.RewardGrant.where({ recipientId: inviterId, sourceId: redemptionId })
-        .select("rewardType", "quantity", "status")
-        .all(),
+      await client
+        .select({
+          rewardType: rewardGrant.rewardType,
+          quantity: rewardGrant.quantity,
+          status: rewardGrant.status,
+        })
+        .from(rewardGrant)
+        .where(and(eq(rewardGrant.recipientId, inviterId), eq(rewardGrant.sourceId, redemptionId))),
     ).toEqual([{ rewardType: "FRIEND_SLOT", quantity: 1, status: "APPLIED" }]);
     expect(await premiumGrantsOf(inviterId)).toEqual([]);
     const repository = context.module.get<InviteRedemptionRepositoryPort>(
@@ -400,19 +427,16 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
     const reader = context.module.get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER);
     for (const { inviterId } of scenarios) {
-      // 지급이 먼저면 시작한 7일을 구매 시각에 끊어 남은 7일을, 구매가 먼저면 처음부터 7일을 쌓는다
       expect(await reader.getPremiumAccess(inviterId)).toMatchObject({
         source: "STORE",
         periodEndsAt: storeExpiry,
         bankedDays: 7,
       });
       expect(await entitlement.hasPremiumAccessInTx(inviterId)).toBe(true);
-      const projection = decodeRecord(
-        "User",
-        await client.orm.public.User.where({ id: inviterId })
-          .select("subscriptionStatus", "subscriptionExpiresAt")
-          .first(),
-      );
+      const projection = await client.query.user.findFirst({
+        where: { id: inviterId },
+        columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
+      });
       expect(projection?.subscriptionStatus).toBe("ACTIVE");
       expect(projection?.subscriptionExpiresAt?.getTime()).toBeGreaterThan(storeExpiry.getTime());
     }
@@ -429,18 +453,16 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       { sourceId: "leap-old", quantity: 76, createdAt: new Date("2027-12-01T00:00:00.000Z") },
     ];
     for (const grant of grants) {
-      await client.orm.public.RewardGrant.create(
-        encodeCreate("RewardGrant", {
-          recipientId: inviterId,
-          sourceType: "INVITE_REDEMPTION",
-          sourceId: grant.sourceId,
-          rewardType: "PREMIUM_DAYS",
-          quantity: grant.quantity,
-          status: "APPLIED",
-          appliedAt: grant.createdAt,
-          createdAt: grant.createdAt,
-        }),
-      );
+      await client.insert(rewardGrant).values({
+        recipientId: inviterId,
+        sourceType: "INVITE_REDEMPTION",
+        sourceId: grant.sourceId,
+        rewardType: "PREMIUM_DAYS",
+        quantity: grant.quantity,
+        status: "APPLIED",
+        appliedAt: grant.createdAt,
+        createdAt: grant.createdAt,
+      });
     }
     const repository = context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY);
 
@@ -458,9 +480,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   it("ADMIN이 초대한 사람이어도 보상 기간·친구 자리·보상 알림을 받고 role과 무제한 한도는 그대로다", async () => {
     // Given
     const { inviterId, redemptionId } = await qualified("ADMININV", "ADMINVTE");
-    await client.orm.public.User.where({ id: inviterId }).updateAndCount(
-      encodePatch("User", { role: "ADMIN" }),
-    );
+    await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, inviterId));
 
     // When
     await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
@@ -470,11 +490,15 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       expect.objectContaining({ durationDays: 7, status: "ACTIVE" }),
     ]);
     expect(
-      await client.orm.public.ResourceBonus.where({ userId: inviterId }).select("quantity").all(),
+      await client
+        .select({ quantity: resourceBonus.quantity })
+        .from(resourceBonus)
+        .where(eq(resourceBonus.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
     expect(await rewardedNotices()).toEqual([{ userId: inviterId, body: expect.any(String) }]);
     expect(
-      (await client.orm.public.User.where({ id: inviterId }).select("role").first())?.role,
+      (await client.query.user.findFirst({ where: { id: inviterId }, columns: { role: true } }))
+        ?.role,
     ).toBe("ADMIN");
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
     expect(
@@ -497,11 +521,14 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Then
     expect(result.expiredCount).toBe(1);
     expect(result.retriedCount).toBe(1);
-    const statuses = await client.orm.public.InviteRedemption.where((row) =>
-      row.id.in([stale.redemptionId, fresh.redemptionId]),
-    )
-      .select("id", "status", "rejectionReason")
-      .all();
+    const statuses = await client
+      .select({
+        id: inviteRedemption.id,
+        status: inviteRedemption.status,
+        rejectionReason: inviteRedemption.rejectionReason,
+      })
+      .from(inviteRedemption)
+      .where(inArray(inviteRedemption.id, [stale.redemptionId, fresh.redemptionId]));
     expect(statuses).toEqual(
       expect.arrayContaining([
         { id: stale.redemptionId, status: "REJECTED", rejectionReason: "EXPIRED" },
@@ -514,7 +541,6 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Given
     const { inviteeId, redemptionId } = await redeemed("TZINVITR", "TZINVITE");
     const subscriber = context.module.get(InviteeActivitySubscriber);
-    // KST 2028-02-28 23:00. 키리티마티(UTC+14)로는 이미 3월 1일이다
     vi.setSystemTime(new Date("2028-02-28T14:00:00.000Z"));
     await subscriber.handle(new TodoToggledEvent(1, inviteeId, true, "Asia/Seoul"));
 
@@ -523,11 +549,18 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     await subscriber.handle(new TodoToggledEvent(1, inviteeId, true, "Pacific/Kiritimati"));
 
     // Then
-    const redemption = await client.orm.public.InviteRedemption.where({ id: redemptionId })
-      .select("status")
-      .include("activeDays", (day) => day.count())
-      .first();
-    expect(redemption).toEqual({ status: "JOINED", activeDays: 1 });
+    const [redemption] = await client
+      .select({ status: inviteRedemption.status })
+      .from(inviteRedemption)
+      .where(eq(inviteRedemption.id, redemptionId));
+    const [activeDays] = await client
+      .select({ total: count() })
+      .from(inviteActiveDay)
+      .where(eq(inviteActiveDay.redemptionId, redemptionId));
+    expect({ status: redemption?.status, activeDays: activeDays?.total }).toEqual({
+      status: "JOINED",
+      activeDays: 1,
+    });
   });
 
   it("같은 기기로 이미 보상을 받은 수락은 사용 시작해도 초대한 사람 보상을 만들지 않는다", async () => {
@@ -563,7 +596,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(second).toMatchObject({ outcome: "REDEEMED", rewards: [] });
     expect(result).toMatchObject({ status: "qualified", grantCount: 0 });
     expect(
-      await client.orm.public.RewardGrant.where({ recipientId: inviterId }).select("id").all(),
+      await client
+        .select({ id: rewardGrant.id })
+        .from(rewardGrant)
+        .where(eq(rewardGrant.recipientId, inviterId)),
     ).toEqual([]);
   });
 
@@ -572,9 +608,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const { inviterId, redemptionId } = await qualified("OFFINVTR", "OFFINVTE");
     const disabled = grantRewardsWith({ isEnabled: false });
     const disabledResult = await disabled.execute({ redemptionId, countsAttempt: true });
-    const pending = await client.orm.public.RewardGrant.where({ recipientId: inviterId })
-      .select("status", "attempts")
-      .all();
+    const pending = await client
+      .select({ status: rewardGrant.status, attempts: rewardGrant.attempts })
+      .from(rewardGrant)
+      .where(eq(rewardGrant.recipientId, inviterId));
 
     // When
     const maintenance = await context.module.get(ExpireStaleRedemptions).execute({
@@ -592,7 +629,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(maintenance.retriedCount).toBe(1);
     expect(
       (
-        await client.orm.public.RewardGrant.where({ recipientId: inviterId }).select("status").all()
+        await client
+          .select({ status: rewardGrant.status })
+          .from(rewardGrant)
+          .where(eq(rewardGrant.recipientId, inviterId))
       ).map((grant) => grant.status),
     ).toEqual(["APPLIED", "APPLIED"]);
   });
@@ -626,16 +666,16 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const failing = grantRewardsWith({ failing: () => true, exhausted });
     await expect(failing.execute({ redemptionId, countsAttempt: true })).rejects.toThrow();
     await expect(failing.execute({ redemptionId, countsAttempt: false })).rejects.toThrow();
-    const afterQueueRetry = await client.orm.public.RewardGrant.where({
-      recipientId: inviterId,
-      rewardType: "PREMIUM_DAYS",
-    })
-      .select("attempts")
-      .first();
-    await client.orm.public.RewardGrant.where({
-      recipientId: inviterId,
-      rewardType: "PREMIUM_DAYS",
-    }).updateAndCount(encodePatch("RewardGrant", { attempts: 4 }));
+    const afterQueueRetry = await client.query.rewardGrant.findFirst({
+      where: { recipientId: inviterId, rewardType: "PREMIUM_DAYS" },
+      columns: { attempts: true },
+    });
+    await client
+      .update(rewardGrant)
+      .set({ attempts: 4 })
+      .where(
+        and(eq(rewardGrant.recipientId, inviterId), eq(rewardGrant.rewardType, "PREMIUM_DAYS")),
+      );
 
     // When
     await expect(failing.execute({ redemptionId, countsAttempt: true })).rejects.toThrow();
@@ -654,7 +694,6 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(afterQueueRetry).toEqual({ attempts: 1 });
     expect(exhausted).toHaveLength(1);
     expect(retryable).not.toContain(redemptionId);
-    // 재시도를 다 쓴 프리미엄은 받지 못한 보상이라 상한 집계에서 빠진다
     expect(totals.find((total) => total.rewardType === "PREMIUM_DAYS")).toBeUndefined();
   });
 });

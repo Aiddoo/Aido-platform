@@ -20,7 +20,9 @@ export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutT
 
   verify(token: string): string | null {
     const [payload, signature] = token.split(".");
-    if (!payload || !signature) return null;
+    if (!payload || !signature) {
+      return null;
+    }
     const expected = this.#sign(payload);
     const actualBuffer = Buffer.from(signature);
     const expectedBuffer = Buffer.from(expected);
@@ -32,10 +34,14 @@ export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutT
     }
     const decoded = Buffer.from(payload, "base64url").toString("utf8");
     const separator = decoded.lastIndexOf(".");
-    if (separator < 1) return null;
+    if (separator < 1) {
+      return null;
+    }
     const userId = decoded.slice(0, separator);
     const expiresAt = Number(decoded.slice(separator + 1));
-    if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1000) return null;
+    if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1000) {
+      return null;
+    }
     return userId;
   }
 

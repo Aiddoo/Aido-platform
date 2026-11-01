@@ -145,8 +145,9 @@ describe("반복 할 일 생성", () => {
   });
   it("그룹 전체가 활성 한도를 넘으면 생성하지 않는다", async () => {
     // Given
-    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY - 2; id++)
+    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY - 2; id++) {
       fixture.records.set(id, createPlanningTodo(fixture.userId, id));
+    }
     const count = fixture.records.size;
     const data: CreateRecurringTodoData = {
       userId: fixture.userId,
@@ -201,14 +202,15 @@ describe("반복 할 일 생성", () => {
       // Given
       fixture.records.clear();
       const failure = new Error(`${boundary} failure`);
-      if (boundary === "cache")
+      if (boundary === "cache") {
         fixture.todoCache.invalidateTodoCategories = async () => {
           throw failure;
         };
-      else
+      } else {
         fixture.eventPublisher.publishAll = async () => {
           throw failure;
         };
+      }
       const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyByRecurrenceGroupId");
       // When / Then
       await expect(

@@ -1,20 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
-import sql from "sql-template-tag";
+import { eq, sql } from "drizzle-orm";
 
 import type { FollowCachePort } from "#api/modules/social/application/ports/friends/follow-cache.port";
 import type { FollowNotifierPort } from "#api/modules/social/application/ports/friends/follow-notifier.port";
 import { FriendshipEffects } from "#api/modules/social/application/services/friends/friendship-effects.service";
 import { AcceptFriendRequest } from "#api/modules/social/application/use-cases/friends/accept-friend-request.use-case";
-import { PrismaFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/prisma-follow.repository";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
+import { DrizzleFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/drizzle-follow.repository";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
+import { follow, user } from "#api/platform/database/schema/index";
 import { UserFixture, FollowFixture } from "#test/fixtures/index";
-import {
-  createTestClient,
-  createDatabaseTransactionFixture,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createTestClient, createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const ACCEPTANCE_TIME = new Date("2027-01-08T12:00:00Z");
@@ -45,19 +40,20 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     const firstSender = UserFixture.create();
     const secondSender = UserFixture.create();
     const users = [receiver, firstSender, secondSender];
-    await client.orm.public.User.createAll(users.map((user) => encodeCreate("User", user)));
+    await client.insert(user).values(users);
     receiverId = receiver.id;
     firstSenderId = firstSender.id;
     secondSenderId = secondSender.id;
-    const request = await client.orm.public.Follow.create(
-      encodeCreate(
-        "Follow",
-        FollowFixture.create({ followerId: firstSenderId, followingId: receiverId }),
-      ),
-    );
+    const [request] = await client
+      .insert(follow)
+      .values(FollowFixture.create({ followerId: firstSenderId, followingId: receiverId }))
+      .returning();
+    if (request === undefined) {
+      throw new Error("친구 요청 fixture가 생성되지 않았습니다.");
+    }
     requestId = request.id;
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const followRepository = new PrismaFollowRepository(txHost);
+    const followRepository = new DrizzleFollowRepository(txHost);
     const cache: FollowCachePort = {
       getMutualFriend: async () => undefined,
       setMutualFriend: async () => {},
@@ -96,19 +92,15 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
   async function hold(kind: "request" | "receiver") {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (tx) => {
+    const holding = client.transaction(async (tx) => {
       if (kind === "request") {
-        await tx.query(
-          sqlStatement(tx, sql`SELECT "id" FROM "Follow" WHERE "id"=${requestId} FOR UPDATE`)
-            .returnsRow({ id: "pg/text@1" })
-            .build(),
-        );
+        await tx
+          .select({ id: follow.id })
+          .from(follow)
+          .where(eq(follow.id, requestId))
+          .for("update");
       } else {
-        await tx.query(
-          sqlStatement(tx, sql`SELECT "id" FROM "User" WHERE "id"=${receiverId} FOR UPDATE`)
-            .returnsRow({ id: "pg/text@1" })
-            .build(),
-        );
+        await tx.select({ id: user.id }).from(user).where(eq(user.id, receiverId)).for("update");
       }
       acquired.resolve();
       await released.promise;
@@ -135,15 +127,10 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client
-            .runtime()
-            .query(
-              client.raw
-                .sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`
-                .returnsRow({ count: "pg/int4@1" })
-                .build(),
-            );
-          expect(waiting[0]?.count).toBe(2);
+          const waiting = await client.execute<{ count: number }>(
+            sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`,
+          );
+          expect(waiting.rows[0]?.count).toBe(2);
         },
         { timeout: 5000, interval: 10 },
       );
@@ -157,6 +144,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
   it("순차 재수락은 기존 FOLLOW0903 오류와 알림 1세트를 유지한다", async () => {
     // Given
     await acceptFriendRequest.execute({ userId: receiverId, requesterUserId: firstSenderId });
+
     // When
     const repeatedAcceptance = acceptFriendRequest.execute({
       userId: receiverId,
@@ -169,16 +157,18 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
   });
 
   it("동일 요청 두 수락은 하나만 처리하고 친구 알림을 1세트 발행해야 한다", async () => {
-    // Given: 같은 요청 행을 잠가 두 수락이 실제 PostgreSQL에서 대기하도록 한다.
+    // Given
+
     // When
     const results = await compete(
       "request",
       () => acceptFriendRequest.execute({ userId: receiverId, requesterUserId: firstSenderId }),
       () => acceptFriendRequest.execute({ userId: receiverId, requesterUserId: firstSenderId }),
     );
-    const accepted = await client.orm.public.Follow.where({ status: "ACCEPTED" })
-      .select("id")
-      .all();
+    const accepted = await client.query.follow.findMany({
+      columns: { id: true },
+      where: { status: "ACCEPTED" },
+    });
     process.stdout.write(
       "FRIENDS_ACCEPT_RESULT " +
         JSON.stringify({
@@ -192,6 +182,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
         }) +
         "\n",
     );
+
     // Then
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(results.filter((result) => result.status === "rejected")).toEqual([
@@ -204,24 +195,20 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
 
   it("서로 다른 요청 두 수락은 사용자 친구 sortOrder가 겹치지 않아야 한다", async () => {
     // Given
-    await client.orm.public.Follow.create(
-      encodeCreate(
-        "Follow",
-        FollowFixture.create({ followerId: secondSenderId, followingId: receiverId }),
-      ),
-    );
+    await client
+      .insert(follow)
+      .values(FollowFixture.create({ followerId: secondSenderId, followingId: receiverId }));
+
     // When
     const results = await compete(
       "receiver",
       () => acceptFriendRequest.execute({ userId: receiverId, requesterUserId: firstSenderId }),
       () => acceptFriendRequest.execute({ userId: receiverId, requesterUserId: secondSenderId }),
     );
-    const accepted = await client.orm.public.Follow.where({
-      followerId: receiverId,
-      status: "ACCEPTED",
-    })
-      .select("sortOrder")
-      .all();
+    const accepted = await client.query.follow.findMany({
+      columns: { sortOrder: true },
+      where: { followerId: receiverId, status: "ACCEPTED" },
+    });
     process.stdout.write(
       "FRIENDS_ACCEPT_RESULT " +
         JSON.stringify({
@@ -234,6 +221,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
         }) +
         "\n",
     );
+
     // Then
     expect(results.every((result) => result.status === "fulfilled")).toBe(true);
     expect(accepted.map((row) => row.sortOrder).sort((first, second) => first - second)).toEqual([

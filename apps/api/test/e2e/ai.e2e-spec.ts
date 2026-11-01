@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
 
@@ -18,8 +19,7 @@ import {
  * - 월간 사용량 제한 (5회/월, KST 매월 1일 00:00 리셋)
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { user } from "#api/platform/database/schema/index";
 import {
   createParsedMemoResponse,
   createParsedTodoResponse,
@@ -45,61 +45,48 @@ describe("AI E2E", () => {
    * 사용량 리셋 헬퍼
    */
   async function resetUsage(userId: string): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
-    decodeRecord(
-      "User",
-      requireRecord(
-        await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
-          encodePatch("User", {
-            aiUsageCount: 0,
-            aiUsageResetAt: new Date(),
-          }),
-        ),
-      ),
-    );
+    const db = ctx.testDatabase.getClient();
+    await db
+      .update(user)
+      .set({
+        aiUsageCount: 0,
+        aiUsageResetAt: new Date(),
+      })
+      .where(eq(user.id, userId));
   }
 
   /**
    * 사용량 설정 헬퍼
    */
   async function setUsage(userId: string, count: number): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
-    decodeRecord(
-      "User",
-      requireRecord(
-        await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
-          encodePatch("User", {
-            aiUsageCount: count,
-            aiUsageResetAt: new Date(),
-          }),
-        ),
-      ),
-    );
+    const db = ctx.testDatabase.getClient();
+    await db
+      .update(user)
+      .set({
+        aiUsageCount: count,
+        aiUsageResetAt: new Date(),
+      })
+      .where(eq(user.id, userId));
   }
 
   /**
    * 사용량 + 리셋 시각 명시 설정 헬퍼 (월 경계 테스트용)
    */
   async function setUsageWithResetAt(userId: string, count: number, resetAt: Date): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
-    decodeRecord(
-      "User",
-      requireRecord(
-        await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
-          encodePatch("User", {
-            aiUsageCount: count,
-            aiUsageResetAt: resetAt,
-          }),
-        ),
-      ),
-    );
+    const db = ctx.testDatabase.getClient();
+    await db
+      .update(user)
+      .set({
+        aiUsageCount: count,
+        aiUsageResetAt: resetAt,
+      })
+      .where(eq(user.id, userId));
   }
 
   beforeAll(async () => {
     fakeAiProvider = new FakeAiProvider();
 
     ctx = await createE2eApp({
-      // 이 파일의 응답 fixture는 v1 모양이라 파싱 v1 롤백 경로를 검증한다. v2는 ai-parsing-v2.e2e-spec이 맡는다.
       customizeBuilder: (builder) =>
         builder
           .overrideProvider(AI_PROVIDER)
@@ -115,10 +102,8 @@ describe("AI E2E", () => {
   });
 
   beforeEach(async () => {
-    // 각 테스트 전에 DB 정리 및 사용자 재생성
     await ctx.reset();
 
-    // 테스트 사용자 생성 및 인증
     const user = await ctx.helpers.createVerifiedUser(testUser.email, testUser.password);
     accessToken = user.accessToken;
     testUserId = user.userId;
@@ -127,7 +112,7 @@ describe("AI E2E", () => {
   describe("POST /ai/parse-todo", () => {
     describe("성공 케이스", () => {
       it("인증된 사용자가 자연어를 성공적으로 파싱", async () => {
-        // Given - 인증된 사용자와 AI 응답 설정
+        // Given
         fakeAiProvider.setResponse({
           title: "팀 미팅",
           startDate: "2025-01-26",
@@ -135,14 +120,14 @@ describe("AI E2E", () => {
           isAllDay: false,
         });
 
-        // When - 자연어 파싱 API 호출 (X-Timezone 포함)
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "내일 오후 3시에 팀 미팅" });
 
-        // Then - 파싱 결과와 메타데이터 검증
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.data.success).toBe(true);
@@ -153,7 +138,6 @@ describe("AI E2E", () => {
           isAllDay: false,
         });
 
-        // 메타데이터 검증
         expect(response.body.data.meta).toMatchObject({
           model: "fake:test-model",
         });
@@ -163,12 +147,11 @@ describe("AI E2E", () => {
           output: 50,
         });
 
-        // AI Provider가 호출되었는지 검증
         expect(fakeAiProvider.getCallCount()).toBe(1);
       });
 
       it("categoryId가 포함된 요청 시 응답에 categoryId가 반환됨", async () => {
-        // Given - AI 응답 설정
+        // Given
         fakeAiProvider.setResponse({
           title: "팀 미팅",
           startDate: "2025-01-26",
@@ -176,20 +159,20 @@ describe("AI E2E", () => {
           isAllDay: false,
         });
 
-        // When - categoryId를 포함하여 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "내일 오후 3시에 팀 미팅", categoryId: 5 });
 
-        // Then - 응답에 categoryId가 포함됨
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.data.categoryId).toBe(5);
       });
 
       it("categoryId 없이 요청 시 응답에 categoryId가 없음", async () => {
-        // Given - AI 응답 설정
+        // Given
         fakeAiProvider.setResponse({
           title: "팀 미팅",
           startDate: "2025-01-26",
@@ -197,20 +180,20 @@ describe("AI E2E", () => {
           isAllDay: false,
         });
 
-        // When - categoryId 없이 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "내일 오후 3시에 팀 미팅" });
 
-        // Then - 응답에 categoryId가 없음
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.data).not.toHaveProperty("categoryId");
       });
 
       it("종일 일정을 올바르게 파싱", async () => {
-        // Given - 종일 일정 AI 응답 설정
+        // Given
         fakeAiProvider.setResponse({
           title: "출장",
           startDate: "2025-01-27",
@@ -219,14 +202,14 @@ describe("AI E2E", () => {
           isAllDay: true,
         });
 
-        // When - 종일 일정 자연어 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "다음주 월요일부터 금요일까지 출장" });
 
-        // Then - 종일 일정 파싱 결과 검증
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.data.isAllDay).toBe(true);
         expect(response.body.data.data.endDate).toBe("2025-01-31");
@@ -234,14 +217,14 @@ describe("AI E2E", () => {
       });
 
       it("연속 요청 시 사용량이 증가", async () => {
-        // Given - 기본 AI 응답 설정
+        // Given
         fakeAiProvider.setDefaultResponse({
           title: "테스트",
           startDate: "2025-01-26",
           isAllDay: true,
         });
 
-        // When - 3회 연속 파싱 요청
+        // When
         for (let i = 0; i < 3; i++) {
           await request(ctx.app.getHttpServer())
             .post("/v1/ai/parse-todo")
@@ -251,7 +234,7 @@ describe("AI E2E", () => {
             .expect(200);
         }
 
-        // Then - 사용량이 3으로 증가
+        // Then
         const usageResponse = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
@@ -263,7 +246,7 @@ describe("AI E2E", () => {
       });
 
       it("허용되지 않은 필드는 무시되고 정상 처리", async () => {
-        // Given - AI 응답 설정
+        // Given
         fakeAiProvider.setResponse({
           title: "테스트",
           startDate: "2025-01-25",
@@ -271,7 +254,7 @@ describe("AI E2E", () => {
           isAllDay: true,
         });
 
-        // When - 허용되지 않은 필드(unknownField)를 포함하여 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
@@ -279,13 +262,13 @@ describe("AI E2E", () => {
           .send({ text: "테스트", unknownField: "value" })
           .expect(200);
 
-        // Then - unknownField는 Zod에 의해 제거되고 정상 처리됨
+        // Then
         expect(response.body.data.data.title).toBe("테스트");
         expect(fakeAiProvider.getCallCount()).toBe(1);
       });
 
       it("다양한 한국어 자연어 입력을 파싱", async () => {
-        // Given - 다양한 테스트 케이스 준비
+        // Given
         const testCases = [
           {
             input: "아침 9시에 운동",
@@ -319,14 +302,14 @@ describe("AI E2E", () => {
         for (const testCase of testCases) {
           fakeAiProvider.setResponse(testCase.expected);
 
-          // When - 각 자연어 입력 파싱 요청
+          // When
           const response = await request(ctx.app.getHttpServer())
             .post("/v1/ai/parse-todo")
             .set("Authorization", `Bearer ${accessToken}`)
             .set("X-Timezone", "Asia/Seoul")
             .send({ text: testCase.input });
 
-          // Then - 예상 결과와 일치하는 파싱 결과
+          // Then
           expect(response.status).toBe(200);
           expect(response.body.data.data.title).toBe(testCase.expected.title);
           expect(response.body.data.data.scheduledTime).toBe(testCase.expected.scheduledTime);
@@ -338,27 +321,26 @@ describe("AI E2E", () => {
 
     describe("사용량 제한", () => {
       it("5회 초과 시 429 에러 반환 (AI_1303)", async () => {
-        // Given - 5회 사용 완료 상태 설정
+        // Given
         await setUsage(testUserId, 5);
 
-        // When - 6번째 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "테스트" });
 
-        // Then - 429 에러와 AI_1303 코드 반환
+        // Then
         expect(response.status).toBe(429);
         expect(response.body.error.code).toBe("AI_1303");
         expect(response.body.error.message).toContain("월간 AI 사용 횟수를 초과");
 
-        // AI Provider가 호출되지 않았는지 검증
         expect(fakeAiProvider.getCallCount()).toBe(0);
       });
 
       it("지난 달 resetsAt을 가진 사용자는 이번 달 첫 요청 시 사용량이 1로 리셋된다", async () => {
-        // Given - aiUsageCount=5 (소진), resetsAt은 이전 달 중간
+        // Given
         fakeAiProvider.setDefaultResponse({
           title: "테스트",
           startDate: "2026-05-01",
@@ -370,17 +352,16 @@ describe("AI E2E", () => {
         );
         await setUsageWithResetAt(testUserId, 5, previousMonthFirstDay);
 
-        // When - 새 달 첫 요청
+        // When
         const parseResponse = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "테스트" });
 
-        // Then - 429가 아닌 정상 응답
+        // Then
         expect(parseResponse.status).toBe(200);
 
-        // 사용량 조회하면 1로 리셋되어 있어야 함
         const usageResponse = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
@@ -400,25 +381,24 @@ describe("AI E2E", () => {
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
 
-        // Then - KST 다음 달 1일 00:00 = UTC 15:00 (offset -9)
+        // Then
         const resetsAt = new Date(response.body.data.data.resetsAt);
         expect(resetsAt.getUTCHours()).toBe(15);
         expect(resetsAt.getUTCMinutes()).toBe(0);
         expect(resetsAt.getUTCSeconds()).toBe(0);
-        // KST 기준 다음 달 1일임을 검증
         const kstDate = new Date(resetsAt.getTime() + 9 * 60 * 60 * 1000);
         expect(kstDate.getUTCDate()).toBe(1);
       });
 
       it("정확히 5회까지는 성공, 6회째에 429 에러", async () => {
-        // Given - 기본 AI 응답 설정
+        // Given
         fakeAiProvider.setDefaultResponse({
           title: "테스트",
           startDate: "2025-01-26",
           isAllDay: true,
         });
 
-        // When - 5회 연속 요청
+        // When
         for (let i = 0; i < 5; i++) {
           await request(ctx.app.getHttpServer())
             .post("/v1/ai/parse-todo")
@@ -428,7 +408,7 @@ describe("AI E2E", () => {
             .expect(200);
         }
 
-        // Then - 6회째 요청 시 429 에러
+        // Then
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
@@ -443,28 +423,28 @@ describe("AI E2E", () => {
 
     describe("인증 에러", () => {
       it("인증 토큰 없이 요청 시 401 에러", async () => {
-        // Given - 인증 토큰 없음
+        // Given
 
-        // When - 토큰 없이 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .send({ text: "내일 회의" });
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
         expect(fakeAiProvider.getCallCount()).toBe(0);
       });
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
-        // Given - 유효하지 않은 토큰
+        // Given
 
-        // When - 잘못된 토큰으로 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", "Bearer invalid-token")
           .send({ text: "내일 회의" });
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
         expect(fakeAiProvider.getCallCount()).toBe(0);
       });
@@ -472,46 +452,46 @@ describe("AI E2E", () => {
 
     describe("유효성 검증 에러", () => {
       it("빈 텍스트 요청 시 400 에러", async () => {
-        // Given - 인증된 사용자
+        // Given
 
-        // When - 빈 텍스트로 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ text: "" });
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
         expect(fakeAiProvider.getCallCount()).toBe(0);
       });
 
       it("text 필드 누락 시 400 에러", async () => {
-        // Given - 인증된 사용자
+        // Given
 
-        // When - text 필드 없이 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({});
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
         expect(fakeAiProvider.getCallCount()).toBe(0);
       });
 
       it("500자 초과 텍스트 요청 시 400 에러", async () => {
-        // Given - 500자 초과 텍스트 준비
+        // Given
         const longText = "가".repeat(501);
 
-        // When - 긴 텍스트로 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ text: longText });
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
         expect(fakeAiProvider.getCallCount()).toBe(0);
@@ -520,33 +500,33 @@ describe("AI E2E", () => {
 
     describe("AI 서비스 에러", () => {
       it("AI 서비스 불가 시 503 에러 (AI_1301)", async () => {
-        // Given - AI 서비스 비활성화 설정
+        // Given
         fakeAiProvider.setAvailable(false);
 
-        // When - 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "내일 회의" });
 
-        // Then - 503 Service Unavailable 반환
+        // Then
         expect(response.status).toBe(503);
         expect(response.body.error.code).toBe("AI_1301");
       });
 
       it("AI 파싱 실패 시 422 에러 (AI_1302)", async () => {
-        // Given - AI 파싱 실패 설정
+        // Given
         fakeAiProvider.setInvalidResponse(new Error("파싱 실패"));
 
-        // When - 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "알 수 없는 입력" });
 
-        // Then - 422 Unprocessable Entity 반환
+        // Then
         expect(response.status).toBe(422);
         expect(response.body.error.code).toBe("AI_1302");
       });
@@ -554,7 +534,7 @@ describe("AI E2E", () => {
 
     describe("토큰 사용량 추적", () => {
       it("응답에 토큰 사용량이 포함됨", async () => {
-        // Given - 커스텀 토큰 사용량과 AI 응답 설정
+        // Given
         fakeAiProvider.setTokenUsage({ input: 200, output: 80 });
         fakeAiProvider.setResponse({
           title: "테스트",
@@ -562,14 +542,14 @@ describe("AI E2E", () => {
           isAllDay: true,
         });
 
-        // When - 파싱 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: "테스트" });
 
-        // Then - 설정한 토큰 사용량이 응답에 포함
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.meta.tokenUsage).toEqual({
           input: 200,
@@ -582,14 +562,14 @@ describe("AI E2E", () => {
   describe("GET /ai/usage", () => {
     describe("성공 케이스", () => {
       it("사용량이 0인 경우", async () => {
-        // Given - 사용량 0인 상태 (beforeEach에서 리셋됨)
+        // Given
 
-        // When - 사용량 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
-        // Then - 0/5 사용량 반환
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.data.success).toBe(true);
@@ -601,15 +581,15 @@ describe("AI E2E", () => {
       });
 
       it("사용량이 있는 경우", async () => {
-        // Given - 3회 사용 상태 설정
+        // Given
         await setUsage(testUserId, 3);
 
-        // When - 사용량 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
-        // Then - 3/5 사용량 반환
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.data).toMatchObject({
           used: 3,
@@ -618,15 +598,15 @@ describe("AI E2E", () => {
       });
 
       it("사용량이 최대인 경우", async () => {
-        // Given - 5회 사용 완료 상태 설정
+        // Given
         await setUsage(testUserId, 5);
 
-        // When - 사용량 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
-        // Then - 5/5 사용량 반환
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.data).toMatchObject({
           used: 5,
@@ -635,19 +615,18 @@ describe("AI E2E", () => {
       });
 
       it("리셋 시간이 ISO 8601 형식임", async () => {
-        // Given - 인증된 사용자
+        // Given
 
-        // When - 사용량 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
-        // Then - ISO 8601 형식의 리셋 시간 반환
+        // Then
         expect(response.status).toBe(200);
         const resetsAt = response.body.data.data.resetsAt;
         expect(resetsAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
 
-        // 리셋 시간은 미래여야 함
         const resetDate = new Date(resetsAt);
         expect(resetDate.getTime()).toBeGreaterThan(Date.now());
       });
@@ -655,24 +634,24 @@ describe("AI E2E", () => {
 
     describe("인증 에러", () => {
       it("인증 토큰 없이 요청 시 401 에러", async () => {
-        // Given - 인증 토큰 없음
+        // Given
 
-        // When - 토큰 없이 사용량 조회
+        // When
         const response = await request(ctx.app.getHttpServer()).get("/v1/ai/usage");
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
       });
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
-        // Given - 유효하지 않은 토큰
+        // Given
 
-        // When - 잘못된 토큰으로 사용량 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", "Bearer invalid-token");
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
       });
     });
@@ -687,7 +666,7 @@ describe("AI E2E", () => {
         isAllDay: true,
       });
 
-      // When - Asia/Seoul 타임존으로 요청
+      // When
       await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -695,7 +674,7 @@ describe("AI E2E", () => {
         .send({ text: "테스트" })
         .expect(200);
 
-      // Then - 프롬프트에 사용자 입력이 포함됨
+      // Then
       const prompt = fakeAiProvider.getLastPrompt();
       expect(prompt).toContain("테스트");
       const system = fakeAiProvider.getLastSystem();
@@ -710,13 +689,13 @@ describe("AI E2E", () => {
         isAllDay: true,
       });
 
-      // When - X-Timezone 없이 요청
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ text: "테스트" });
 
-      // Then - 정상 응답
+      // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.title).toBe("테스트");
     });
@@ -724,23 +703,23 @@ describe("AI E2E", () => {
 
   describe("통합 시나리오", () => {
     it("파싱 요청 후 사용량이 정확히 반영됨", async () => {
-      // Given - 기본 AI 응답 설정
+      // Given
       fakeAiProvider.setDefaultResponse({
         title: "테스트",
         startDate: "2025-01-26",
         isAllDay: true,
       });
 
-      // When - 초기 사용량 확인
+      // When
       const initialUsage = await request(ctx.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 초기 사용량 0
+      // Then
       expect(initialUsage.body.data.data.used).toBe(0);
 
-      // When - 파싱 요청 2회
+      // When
       await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -755,7 +734,7 @@ describe("AI E2E", () => {
         .send({ text: "테스트 2" })
         .expect(200);
 
-      // Then - 사용량 2로 증가
+      // Then
       const finalUsage = await request(ctx.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -765,7 +744,7 @@ describe("AI E2E", () => {
     });
 
     it("사용량 제한 후 리셋되면 다시 사용 가능", async () => {
-      // Given - 기본 AI 응답과 5회 사용 완료 상태 설정
+      // Given
       fakeAiProvider.setDefaultResponse({
         title: "테스트",
         startDate: "2025-01-26",
@@ -773,17 +752,17 @@ describe("AI E2E", () => {
       });
       await setUsage(testUserId, 5);
 
-      // When - 6번째 요청 시도
+      // When
       const failedResponse = await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
         .send({ text: "테스트" });
 
-      // Then - 429 에러 반환
+      // Then
       expect(failedResponse.status).toBe(429);
 
-      // When - 사용량 리셋 후 다시 요청
+      // When
       await resetUsage(testUserId);
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-todo")
@@ -791,7 +770,7 @@ describe("AI E2E", () => {
         .set("X-Timezone", "Asia/Seoul")
         .send({ text: "테스트" });
 
-      // Then - 요청 성공
+      // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.title).toBe("테스트");
     });
@@ -1002,16 +981,18 @@ describe("AI E2E", () => {
   it.each(["ko", "en"] as const)(
     "%s parsing은 locale prompt를 선택하고 요청당 quota 한 회만 쓴다",
     async (locale) => {
-      // Given - 완전한 operation 응답, locale별 원문
+      // Given
       const title = locale === "ko" ? "책 읽기" : "Read a book";
       fakeAiProvider.setRawResponse(createParsedTodoResponse({ title }));
-      // When - 실제 HTTP와 locale decorator를 통과
+
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("Accept-Language", locale)
         .send({ text: title });
-      // Then - 해당 문구와 실제 저장 quota 1
+
+      // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.title).toBe(title);
       expect(fakeAiProvider.getLastSystem()).toContain(locale === "en" ? "You are" : "당신은");
@@ -1025,7 +1006,7 @@ describe("AI E2E", () => {
   it.each(["ko", "en"] as const)(
     "%s Memo의 다중 결과도 실제 quota는 한 회만 증가한다",
     async (locale) => {
-      // Given - 명시적인 완전 Memo 응답에 Todo 두 개
+      // Given
       const raw = createParsedMemoResponse(1);
       const [firstTodo] = raw.todos;
       assert.exists(firstTodo);
@@ -1035,13 +1016,15 @@ describe("AI E2E", () => {
         items: [],
       });
       fakeAiProvider.setRawResponse(raw);
-      // When - locale HTTP parsing
+
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/ai/parse-memo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("Accept-Language", locale)
         .send({ content: "일정 두 개", categoryId: 1 });
-      // Then - 결과 두 개, 외부 provider 호출과 quota 한 회
+
+      // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.todos).toHaveLength(2);
       expect(fakeAiProvider.getCallCount()).toBe(1);
@@ -1060,9 +1043,11 @@ describe("AI E2E", () => {
   ] as const)(
     "$locale $route는 혼합 지시 원문을 보존하고 납부 정답 fixture를 HTTP로 반환한다",
     async ({ locale, route }) => {
-      // Given - 실제 평가에서 실패한 원문, 명시적인 납부 정답을 주는 외부 대역
+      // Given
       const item = parsingIntentCases.find((candidate) => candidate.id === "mixed-command");
-      if (!item) throw new Error("혼합 지시 회귀 fixture가 필요합니다");
+      if (!item) {
+        throw new Error("혼합 지시 회귀 fixture가 필요합니다");
+      }
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
       const todo = createParsedTodoResponse({
         title: item.title[locale],
@@ -1076,7 +1061,7 @@ describe("AI E2E", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
       try {
-        // When - 실제 locale/시간대/HTTP 경계를 거친다. LLM 의미 판단은 이 대역이 검증하지 않는다
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post(`/v1/ai/${route}`)
           .set("Authorization", `Bearer ${accessToken}`)
@@ -1087,7 +1072,8 @@ describe("AI E2E", () => {
               ? { text: item.input[locale], categoryId }
               : { content: item.input[locale], categoryId },
           );
-        // Then - 정답 action/time, 소유 카테고리 보정, 원문 및 개선한 system 전달, 실제 quota 한 회
+
+        // Then
         expect(response.status).toBe(200);
         const data = response.body.data.data;
         const parsed = route === "parse-todo" ? data : data.todos[0];
@@ -1116,7 +1102,7 @@ describe("AI E2E", () => {
   ])(
     "$input의 원문과 반환 분량을 보존하고 매일 반복·시간 null·quota 한 회를 유지한다",
     async ({ input, title }) => {
-      // Given - 분량 없는 입력과 명시된 30분 대조 쌍. 실제 LLM 판단은 별도 실호출 평가가 소유한다
+      // Given
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
       const dailyDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
       fakeAiProvider.setRawResponse(
@@ -1135,7 +1121,7 @@ describe("AI E2E", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
       try {
-        // When - 실제 인증·locale·시간대·schema/mapper 경계
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
@@ -1143,7 +1129,8 @@ describe("AI E2E", () => {
           .set("X-Timezone", "Asia/Seoul")
           .send({ text: input, categoryId })
           .expect(200);
-        // Then - 서버가 30분을 보충/제거하지 않고 외부 결과와 요청 원문을 보존한다
+
+        // Then
         expect(response.body.data.data).toMatchObject({
           title,
           scheduledTime: null,
@@ -1168,14 +1155,16 @@ describe("AI E2E", () => {
   it.each(["parse-todo", "parse-memo"])(
     "%s의 필수 필드 누락 raw 출력은 실제 AI_1302와 quota 보상을 반환한다",
     async (route) => {
-      // Given - 기본 Todo 값을 보충하면 안 되는 원본 빈 객체
+      // Given
       fakeAiProvider.setRawResponse({});
-      // When - 실제 production schema로 parsing
+
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post(`/v1/ai/${route}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send(route === "parse-todo" ? { text: "회의" } : { content: "회의", categoryId: 1 });
-      // Then - schema 실패와 저장된 사용량 원복
+
+      // Then
       expect(response.status).toBe(422);
       expect(response.body.error.code).toBe("AI_1302");
       expect(fakeAiProvider.getCallCount()).toBe(1);

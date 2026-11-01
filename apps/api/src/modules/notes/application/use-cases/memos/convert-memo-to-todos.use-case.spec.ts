@@ -163,7 +163,9 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
     const failure = new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId: 999999 });
     const stageTodo = fixture.todoCreator.stageTodo.bind(fixture.todoCreator);
     vi.spyOn(fixture.todoCreator, "stageTodo").mockImplementation(async (data) => {
-      if (data.categoryId === 999999) throw failure;
+      if (data.categoryId === 999999) {
+        throw failure;
+      }
       return stageTodo(data);
     });
     const prepared = Promise.withResolvers<void>();
@@ -172,7 +174,9 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
       const result = await work();
       prepared.resolve();
       await finish.promise;
-      for (const task of fixture.registeredTasks) await task();
+      for (const task of fixture.registeredTasks) {
+        await task();
+      }
       return result;
     };
     let completed = false;

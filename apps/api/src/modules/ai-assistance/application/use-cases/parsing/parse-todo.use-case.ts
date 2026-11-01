@@ -112,7 +112,9 @@ export class ParseTodo {
       await this.#dependencies.quota.release(reservation);
       throw error;
     }
-    if (!parsed.charge) await this.#dependencies.quota.release(reservation);
+    if (!parsed.charge) {
+      await this.#dependencies.quota.release(reservation);
+    }
     return parsed.result;
   }
 

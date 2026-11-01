@@ -5,7 +5,7 @@ import {
   redeemInviteResponseSchema,
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 
 import {
@@ -13,7 +13,13 @@ import {
   type SubscriptionRepositoryPort,
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
-import { encodePatch } from "#api/platform/database/database-records";
+import {
+  follow,
+  notification,
+  premiumGrant,
+  rewardGrant,
+  user,
+} from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
@@ -57,17 +63,22 @@ describe("초대 수락 HTTP (실제 DB)", () => {
   async function rewardGrantsOf(userId: string) {
     return ctx.testDatabase
       .getClient()
-      .orm.public.RewardGrant.where((grant) => grant.recipientId.eq(userId))
-      .select("rewardType", "quantity", "status")
-      .all();
+      .select({
+        rewardType: rewardGrant.rewardType,
+        quantity: rewardGrant.quantity,
+        status: rewardGrant.status,
+      })
+      .from(rewardGrant)
+      .where(eq(rewardGrant.recipientId, userId));
   }
 
   async function premiumGrantCountOf(userId: string) {
-    const result = await ctx.testDatabase
+    const [result] = await ctx.testDatabase
       .getClient()
-      .orm.public.PremiumGrant.where((grant) => grant.userId.eq(userId))
-      .aggregate((aggregate) => ({ count: aggregate.count() }));
-    return result.count;
+      .select({ count: count() })
+      .from(premiumGrant)
+      .where(eq(premiumGrant.userId, userId));
+    return result?.count;
   }
 
   async function meOf(user: VerifiedUser) {
@@ -106,7 +117,6 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       isReplay: false,
     });
     expect(repeated.body.data).toEqual({ ...first.body.data, isReplay: true });
-    // 수락 화면이 바로 "프리미엄 7일"을 보여 주므로 응답 직후 /me도 이미 보상 기간이다
     expect(await rewardGrantsOf(invitee.userId)).toEqual([
       { rewardType: "PREMIUM_DAYS", quantity: 7, status: "APPLIED" },
     ]);
@@ -120,11 +130,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     });
     const joined = await ctx.testDatabase
       .getClient()
-      .orm.public.Notification.where((row) =>
-        and(row.userId.eq(inviter.userId), row._type.eq("INVITE_JOINED")),
-      )
-      .select("title", "metadata")
-      .all();
+      .select({ title: notification.title, metadata: notification.metadata })
+      .from(notification)
+      .where(and(eq(notification.userId, inviter.userId), eq(notification.type, "INVITE_JOINED")));
     expect(joined).toHaveLength(1);
     expect(joined[0]?.title).toContain("존");
     expect(joined[0]?.metadata).toMatchObject({ redemptionId: expect.any(String) });
@@ -156,8 +164,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     const veteran = await ctx.helpers.createVerifiedUser("old-invitee@test.com", PASSWORD);
     await ctx.testDatabase
       .getClient()
-      .orm.public.User.where({ id: veteran.userId })
-      .updateAndCount(encodePatch("User", { createdAt: subtractDays(8) }));
+      .update(user)
+      .set({ createdAt: subtractDays(8) })
+      .where(eq(user.id, veteran.userId));
     const code = await inviteCodeOf(inviter);
 
     // When
@@ -233,8 +242,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     const admin = await ctx.helpers.createVerifiedUser("admin-invitee@test.com", PASSWORD);
     await ctx.testDatabase
       .getClient()
-      .orm.public.User.where({ id: admin.userId })
-      .updateAndCount(encodePatch("User", { role: "ADMIN" }));
+      .update(user)
+      .set({ role: "ADMIN" })
+      .where(eq(user.id, admin.userId));
     const code = await inviteCodeOf(inviter);
 
     // When
@@ -325,11 +335,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     });
     const follows = await ctx.testDatabase
       .getClient()
-      .orm.public.Follow.where((row) =>
-        and(row.followerId.eq(inviter.userId), row.followingId.eq(invitee.userId)),
-      )
-      .select("status")
-      .all();
+      .select({ status: follow.status })
+      .from(follow)
+      .where(and(eq(follow.followerId, inviter.userId), eq(follow.followingId, invitee.userId)));
     expect(follows).toEqual([{ status: "ACCEPTED" }]);
   });
 
@@ -339,8 +347,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     const code = await inviteCodeOf(inviter);
     await ctx.testDatabase
       .getClient()
-      .orm.public.User.where({ id: inviter.userId })
-      .updateAndCount(encodePatch("User", { deletedAt: new Date() }));
+      .update(user)
+      .set({ deletedAt: new Date() })
+      .where(eq(user.id, inviter.userId));
 
     // When
     const preview = await request(ctx.app.getHttpServer()).get(`/v1/invites/${code}`).expect(404);

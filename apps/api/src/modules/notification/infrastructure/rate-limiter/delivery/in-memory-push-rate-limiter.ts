@@ -172,7 +172,9 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
         continue;
       }
 
-      if (!generalReserved) generalTimestamps.push(now);
+      if (!generalReserved) {
+        generalTimestamps.push(now);
+      }
       if (engagementKey && !engagementReserved) {
         engagementTimestamps.push(now);
         this.engagementTimestamps.set(engagementKey, engagementTimestamps);
@@ -258,9 +260,13 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
   #removeExpiredReservations(reservations: Map<string, Map<string, number>>, now: number): void {
     for (const [key, values] of reservations) {
       for (const [reservationId, expiresAt] of values) {
-        if (expiresAt <= now) values.delete(reservationId);
+        if (expiresAt <= now) {
+          values.delete(reservationId);
+        }
       }
-      if (values.size === 0) reservations.delete(key);
+      if (values.size === 0) {
+        reservations.delete(key);
+      }
     }
   }
 

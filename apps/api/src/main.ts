@@ -213,7 +213,9 @@ async function bootstrap() {
   // Graceful shutdown: NestJS 모듈 종료 (BullMQ Worker 포함) → Sentry flush
   let shutdownStarted = false;
   const shutdown = async (signal: string) => {
-    if (shutdownStarted) return;
+    if (shutdownStarted) {
+      return;
+    }
     shutdownStarted = true;
     logger.log(`Received ${signal}, shutting down gracefully...`);
     try {

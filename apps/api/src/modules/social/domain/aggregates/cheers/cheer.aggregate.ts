@@ -50,7 +50,9 @@ export class Cheer extends AggregateRoot<CheerProps> {
   }
 
   markRead(at: Date): boolean {
-    if (this.isRead()) return false;
+    if (this.isRead()) {
+      return false;
+    }
     this.props.readAt = new Date(at);
     return true;
   }

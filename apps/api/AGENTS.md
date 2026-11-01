@@ -9,7 +9,7 @@
 | 레이어·상태 소유·모듈 공개 경계 | [.claude/architecture.md](.claude/architecture.md)       |
 | Controller·UseCase·Port 작성    | [.claude/api-conventions.md](.claude/api-conventions.md) |
 | Zod·HTTP 응답·구 앱 호환        | [.claude/rest-contracts.md](.claude/rest-contracts.md)   |
-| ORM·트랜잭션·마이그레이션       | [.claude/prisma.md](.claude/prisma.md)                   |
+| ORM·트랜잭션·마이그레이션       | [.claude/drizzle.md](.claude/drizzle.md)                 |
 | 검증 범위·격리된 테스트 실행    | [.claude/testing-guide.md](.claude/testing-guide.md)     |
 | 로그·개인정보·공급자 오류       | [.claude/logging-guide.md](.claude/logging-guide.md)     |
 | 파일·역할 명명                  | [docs/server/naming.md](../../docs/server/naming.md)     |

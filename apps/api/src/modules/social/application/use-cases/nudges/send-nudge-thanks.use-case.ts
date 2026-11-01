@@ -90,7 +90,9 @@ export class SendNudgeThanks {
           const nudge = Nudge.reconstitute(record);
           return nudge.markThanked(thankedAt) ? [{ nudge, record }] : [];
         });
-        if (changed.length === 0) continue;
+        if (changed.length === 0) {
+          continue;
+        }
         await this.#dependencies.nudgeRepository.saveThanksBatch(
           changed.map(({ nudge }) => nudge.id),
           thankedAt,

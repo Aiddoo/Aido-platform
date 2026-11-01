@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import sql from "sql-template-tag";
+import { eq, sql } from "drizzle-orm";
 
 import {
   ENTITLEMENT_READER,
@@ -18,12 +18,11 @@ import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { user as userTable } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
-import { createTestClient, withDatabaseTransaction } from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
@@ -68,26 +67,24 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       createdAt: newMonthAt,
       updatedAt: newMonthAt,
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
   });
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function contend() {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(
-          transaction,
-          sql`SELECT "id" FROM "User" WHERE "id"=${userId} FOR NO KEY UPDATE`,
-        )
-          .returnsRow({ id: "pg/text@1" })
-          .build(),
+    const holding = client.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`SELECT "id" FROM "User" WHERE "id"=${userId} FOR NO KEY UPDATE`,
       );
       acquired.resolve();
       await released.promise;
@@ -103,16 +100,12 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client.runtime().query(
-            client.raw.sql`
-          SELECT count(*)::int AS count FROM pg_stat_activity
-          WHERE datname=current_database() AND wait_event_type='Lock'
-            AND query LIKE '%User%FOR NO KEY UPDATE%'
-        `
-              .returnsRow({ count: "pg/int4@1" })
-              .build(),
-          );
-          observedWaiters = waiting[0]?.count ?? 0;
+          const waiting = await client.execute<{ count: number }>(sql`
+            SELECT count(*)::int AS count FROM pg_stat_activity
+            WHERE datname=current_database() AND wait_event_type='Lock'
+            AND query ILIKE '%User%FOR NO KEY UPDATE%'
+          `);
+          observedWaiters = waiting.rows[0]?.count ?? 0;
           expect(observedWaiters).toBe(2);
         },
         { timeout: 5000, interval: 10 },
@@ -131,10 +124,12 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       count: 4,
       resetAt: newMonthAt,
     });
+
     // When
     const { outcomes, observedWaiters } = await contend();
     const usage = await repository.findQuotaState(userId);
     const fulfilled = outcomes.filter((outcome) => outcome.status === "fulfilled").length;
+
     // Then
     expect(observedWaiters).toBe(2);
     expect(fulfilled).toBe(1);
@@ -146,13 +141,16 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
 
   it("새 달의 동시 두 요청은 각각 소비되어 사용량 2를 저장해야 한다", async () => {
     // Given
-    await client.orm.public.User.where({ id: userId }).update(
-      encodePatch("User", { aiUsageCount: 5, aiUsageResetAt: oldMonthAt }),
-    );
+    await client
+      .update(userTable)
+      .set({ aiUsageCount: 5, aiUsageResetAt: oldMonthAt })
+      .where(eq(userTable.id, userId));
+
     // When
     const { outcomes, observedWaiters } = await contend();
     const usage = await repository.findQuotaState(userId);
     const fulfilled = outcomes.filter((outcome) => outcome.status === "fulfilled").length;
+
     // Then
     expect(observedWaiters).toBe(2);
     expect(fulfilled).toBe(2);
@@ -162,17 +160,20 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
   it("이전 달 요청의 실패 보상은 새 달에 성공한 사용량을 감소시키지 않아야 한다", async () => {
     // Given
     vi.setSystemTime(oldMonthAt);
-    await client.orm.public.User.where({ id: userId }).update(
-      encodePatch("User", { aiUsageCount: 0, aiUsageResetAt: oldMonthAt }),
-    );
+    await client
+      .update(userTable)
+      .set({ aiUsageCount: 0, aiUsageResetAt: oldMonthAt })
+      .where(eq(userTable.id, userId));
     const oldReservation = await quota.reserve(userId);
     const oldReserved = await repository.findQuotaState(userId);
     vi.setSystemTime(newMonthAt);
     await quota.reserve(userId);
     const newReserved = await repository.findQuotaState(userId);
+
     // When
     await quota.release(oldReservation);
     const usage = await repository.findQuotaState(userId);
+
     // Then
     expect(oldReserved?.count).toBe(1);
     expect(newReserved?.count).toBe(1);
@@ -191,14 +192,17 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     "캐시에 남은 $name 무제한 권한보다 잠금 안의 최신 무료 한도를 적용한다",
     async ({ role, subscriptionStatus }) => {
       // Given
-      await client.orm.public.User.where({ id: userId }).updateAndCount(
-        encodePatch("User", { role, subscriptionStatus, aiUsageCount: 5 }),
-      );
+      await client
+        .update(userTable)
+        .set({ role, subscriptionStatus, aiUsageCount: 5 })
+        .where(eq(userTable.id, userId));
       expect((await entitlement.getFeatureLimit(userId, Feature.AI_PARSE)).dailyLimit).toBeNull();
-      await client.orm.public.User.where({ id: userId }).updateAndCount(
-        encodePatch("User", { role: "USER", subscriptionStatus: "FREE" }),
-      );
-      // When / Then
+      await client
+        .update(userTable)
+        .set({ role: "USER", subscriptionStatus: "FREE" })
+        .where(eq(userTable.id, userId));
+
+      // When
       await expect(quota.reserve(userId)).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1303,
         details: { used: 5, limit: 5 },
@@ -209,9 +213,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
 
   it("보상 기간만 있는 사용자는 AI 파싱이 무제한이고 보상이 끝나는 시각부터 sweep 전에도 월 5회로 돌아간다", async () => {
     // Given
-    await client.orm.public.User.where({ id: userId }).updateAndCount(
-      encodePatch("User", { aiUsageCount: 5 }),
-    );
+    await client.update(userTable).set({ aiUsageCount: 5 }).where(eq(userTable.id, userId));
     await context.module
       .get<PremiumGranterPort>(PREMIUM_GRANTER)
       .grant({ userId, source: "INVITE", sourceKey: "invite:ai-quota", durationDays: 7 });
@@ -219,10 +221,12 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
     const limitDuringGrant = (await entitlement.getFeatureLimit(userId, Feature.AI_PARSE))
       .dailyLimit;
+
     // When
     const duringGrant = await quota.reserve(userId);
     vi.setSystemTime(grantEndsAt);
     const afterGrant = quota.reserve(userId);
+
     // Then
     expect(limitDuringGrant).toBeNull();
     expect(duringGrant).toBeDefined();
@@ -234,11 +238,14 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
 
   it("새 달의 사용량 조회는 0과 KST 다음 리셋을 반환하고 저장된 카운터는 변경하지 않는다", async () => {
     // Given
-    await client.orm.public.User.where({ id: userId }).updateAndCount(
-      encodePatch("User", { aiUsageCount: 5, aiUsageResetAt: oldMonthAt }),
-    );
+    await client
+      .update(userTable)
+      .set({ aiUsageCount: 5, aiUsageResetAt: oldMonthAt })
+      .where(eq(userTable.id, userId));
+
     // When
     const usage = await quota.read(userId);
+
     // Then
     expect(usage).toEqual({ used: 0, limit: 5, resetsAt: "2026-10-31T15:00:00.000Z" });
     expect(await repository.findQuotaState(userId)).toMatchObject({
@@ -250,6 +257,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
   it("상위 트랜잭션이 실패하면 quota 예약의 카운터 증가도 rollback한다", async () => {
     // Given
     const failure = new Error("업무 트랜잭션 실패");
+
     // When
     await expect(
       unitOfWork.run(async () => {
@@ -258,6 +266,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
         throw failure;
       }),
     ).rejects.toBe(failure);
+
     // Then
     expect((await repository.findQuotaState(userId))?.count).toBe(4);
   });
@@ -272,17 +281,12 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       aiUsageResetAt: newMonthAt,
       subscriptionStatus: "FREE",
     });
-    await client.orm.public.User.create(encodeCreate("User", other));
+    await client.insert(userTable).values(other);
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(
-          transaction,
-          sql`SELECT "id" FROM "User" WHERE "id"=${userId} FOR NO KEY UPDATE`,
-        )
-          .returnsRow({ id: "pg/text@1" })
-          .build(),
+    const holding = client.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`SELECT "id" FROM "User" WHERE "id"=${userId} FOR NO KEY UPDATE`,
       );
       acquired.resolve();
       await released.promise;
@@ -298,20 +302,17 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     const independent = quota.reserve(other.id).then(() => {
       completed = true;
     });
+
     // When
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client.runtime().query(
-            client.raw.sql`
-          SELECT count(*)::int AS count FROM pg_stat_activity
-          WHERE datname=current_database() AND wait_event_type='Lock'
-            AND query LIKE '%User%FOR NO KEY UPDATE%'
-        `
-              .returnsRow({ count: "pg/int4@1" })
-              .build(),
-          );
-          expect(waiting[0]?.count).toBe(1);
+          const waiting = await client.execute<{ count: number }>(sql`
+            SELECT count(*)::int AS count FROM pg_stat_activity
+            WHERE datname=current_database() AND wait_event_type='Lock'
+            AND query ILIKE '%User%FOR NO KEY UPDATE%'
+          `);
+          expect(waiting.rows[0]?.count).toBe(1);
           expect(completed).toBe(true);
         },
         { timeout: 5000 },
@@ -323,6 +324,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       await blocked;
       await independent;
     }
+
     // Then
     expect((await blocked)[0]?.status).toBe("fulfilled");
     expect((await repository.findQuotaState(userId))?.count).toBe(5);
@@ -330,10 +332,9 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
 
   it("저장소의 보상 UPDATE는 현재 resetAt과 양수 카운터가 일치할 때만 적용한다", async () => {
     // Given
-    await client.orm.public.User.where({ id: userId }).updateAndCount(
-      encodePatch("User", { aiUsageCount: 2 }),
-    );
-    // When / Then
+    await client.update(userTable).set({ aiUsageCount: 2 }).where(eq(userTable.id, userId));
+
+    // When
     expect(await repository.releaseUsage(userId, { count: 1, expectedResetAt: oldMonthAt })).toBe(
       false,
     );
@@ -341,9 +342,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     expect(await repository.releaseUsage(userId, { count: 1, expectedResetAt: newMonthAt })).toBe(
       true,
     );
-    await client.orm.public.User.where({ id: userId }).updateAndCount(
-      encodePatch("User", { aiUsageCount: 0 }),
-    );
+    await client.update(userTable).set({ aiUsageCount: 0 }).where(eq(userTable.id, userId));
     expect(await repository.releaseUsage(userId, { count: -1, expectedResetAt: newMonthAt })).toBe(
       false,
     );
@@ -352,8 +351,9 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
 
   it("삭제된 사용자의 quota 예약은 기존 USER_0601과 userId details를 반환한다", async () => {
     // Given
-    await client.orm.public.User.where({ id: userId }).deleteAndCount();
-    // When / Then
+    await client.delete(userTable).where(eq(userTable.id, userId));
+
+    // When
     await expect(quota.reserve(userId)).rejects.toMatchObject({
       errorCode: ErrorCode.USER_0601,
       details: { userId },

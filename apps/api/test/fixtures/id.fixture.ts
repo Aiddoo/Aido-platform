@@ -1,4 +1,4 @@
-/** Prisma `cuid()` 형식과 동일한 고정 테스트 ID. */
+/** `c`로 시작하는 25자 엔터티 ID 형식의 고정 테스트 ID. */
 export const TEST_CUID = {
   USER_1: "clz7x5p8k0001qz0z8z8z8z8z",
   USER_2: "clz7x5p8k0005qz0z8z8z8z8z",

@@ -45,7 +45,6 @@ services:
     ports:
       - '${API_HOST_PORT:-8080}:8080'
     environment:
-      TZ: Asia/Seoul
       JOB_BACKEND: ${JOB_BACKEND:-postgres}
       JOB_SCHEMA: ${JOB_SCHEMA:-pgboss}
       JOB_REDIS_DRAIN_ENABLED: 'false'
@@ -54,7 +53,7 @@ services:
       - ${AIDO_DEV_ENV_FILE:-.env.docker.dev}
     volumes:
       - ./apps/api/src:/app/apps/api/src
-      - ./apps/api/prisma:/app/apps/api/prisma
+      - ./apps/api/drizzle:/app/apps/api/drizzle
       - ./packages/api/src:/app/packages/api/src
       - ./packages/api/src:/app/packages/api/src
     healthcheck:

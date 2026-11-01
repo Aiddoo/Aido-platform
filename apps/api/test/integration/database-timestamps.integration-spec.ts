@@ -1,14 +1,15 @@
+import { eq, inArray } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
-import { createTestClient, withDatabaseTransaction } from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const AT = new Date("2027-01-04T12:00:00.123Z");
 const TIMEZONES = ["UTC", "Asia/Seoul", "America/Los_Angeles"];
 
-describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
+describe("자동 갱신 시각의 UTC 저장 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let userId: string;
@@ -24,17 +25,25 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
     await database.cleanup();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create();
-    await client.orm.public.User.create(encodeCreate("User", user));
-    userId = user.id;
-    const category = await client.orm.public.TodoCategory.create(
-      encodeCreate("TodoCategory", TodoCategoryFixture.create({ userId })),
-    );
+    const createdUser = UserFixture.create();
+    await client.insert(user).values(createdUser);
+    userId = createdUser.id;
+    const [category] = await client
+      .insert(todoCategory)
+      .values(TodoCategoryFixture.create({ userId }))
+      .returning();
+    if (category === undefined) {
+      throw new Error("category fixture was not created");
+    }
     categoryId = category.id;
-    const todo = await client.orm.public.Todo.create(
-      encodeCreate("Todo", omit(TodoFixture.create({ userId, categoryId }), ["id"])),
-    );
-    todoId = todo.id;
+    const [created] = await client
+      .insert(todo)
+      .values(omit(TodoFixture.create({ userId, categoryId }), ["id"]))
+      .returning();
+    if (created === undefined) {
+      throw new Error("todo fixture was not created");
+    }
+    todoId = created.id;
   });
 
   afterEach(() => {
@@ -47,10 +56,10 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
   });
 
   async function savedUpdatedAt() {
-    const row = decodeRecord(
-      "Todo",
-      await client.orm.public.Todo.where({ id: todoId }).select("updatedAt").first(),
-    );
+    const row = await client.query.todo.findFirst({
+      columns: { updatedAt: true },
+      where: { id: todoId },
+    });
     return row?.updatedAt;
   }
 
@@ -59,10 +68,10 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
     async (timezone) => {
       // Given
       vi.stubEnv("TZ", timezone);
+
       // When
-      await client.orm.public.Todo.where({ id: todoId }).update(
-        encodePatch("Todo", { title: "단건 수정" }),
-      );
+      await client.update(todo).set({ title: "단건 수정" }).where(eq(todo.id, todoId));
+
       // Then
       expect(await savedUpdatedAt()).toEqual(AT);
     },
@@ -73,12 +82,17 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
     async (timezone) => {
       // Given
       vi.stubEnv("TZ", timezone);
+
       // When
-      const affected = await withDatabaseTransaction(client, (transaction) =>
-        transaction.orm.public.Todo.where({ id: todoId }).updateAndCount(
-          encodePatch("Todo", { title: "트랜잭션 수정" }),
-        ),
-      );
+      const affected = await client.transaction(async (transaction) => {
+        const rows = await transaction
+          .update(todo)
+          .set({ title: "트랜잭션 수정" })
+          .where(eq(todo.id, todoId))
+          .returning({ id: todo.id });
+        return rows.length;
+      });
+
       // Then
       expect(affected).toBe(1);
       expect(await savedUpdatedAt()).toEqual(AT);
@@ -89,24 +103,30 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
     // Given
     vi.stubEnv("TZ", "Asia/Seoul");
     const items = [1, 2].map((sortOrder) =>
-      encodeCreate(
-        "Todo",
-        omit(TodoFixture.create({ userId, categoryId, sortOrder }), ["id", "updatedAt"]),
-      ),
+      omit(TodoFixture.create({ userId, categoryId, sortOrder }), ["id", "updatedAt"]),
     );
+
     // When
-    const created = decodeRecord("Todo", await client.orm.public.Todo.createAll(items));
+    const created = await client
+      .insert(todo)
+      .values(items)
+      .returning({ id: todo.id, updatedAt: todo.updatedAt });
     const nextAt = new Date("2027-01-04T12:30:00.456Z");
     vi.setSystemTime(nextAt);
-    const updated = decodeRecord(
-      "Todo",
-      await client.orm.public.Todo.where((row) => row.id.in(created.map((todo) => todo.id)))
-        .select("updatedAt")
-        .updateAll(encodePatch("Todo", { title: "일괄 수정" })),
-    );
+    const updated = await client
+      .update(todo)
+      .set({ title: "일괄 수정" })
+      .where(
+        inArray(
+          todo.id,
+          created.map((item) => item.id),
+        ),
+      )
+      .returning({ updatedAt: todo.updatedAt });
+
     // Then
-    expect(created.map((todo) => todo.updatedAt)).toEqual([AT, AT]);
-    expect(updated.map((todo) => todo.updatedAt)).toEqual([nextAt, nextAt]);
+    expect(created.map((item) => item.updatedAt)).toEqual([AT, AT]);
+    expect(updated.map((item) => item.updatedAt)).toEqual([nextAt, nextAt]);
   });
 
   it("명시적 timestamp와 DATE·timestamptz·null은 기존 저장 계약을 유지한다", async () => {
@@ -115,21 +135,17 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
     const explicitUpdatedAt = new Date("2026-12-31T23:59:59.789Z");
     const startDate = new Date("2027-01-05T00:00:00.000Z");
     const scheduledTime = new Date("2027-01-05T09:30:00.456+09:00");
+
     // When
-    await client.orm.public.Todo.where({ id: todoId }).updateAndCount(
-      encodePatch("Todo", {
-        updatedAt: explicitUpdatedAt,
-        startDate,
-        scheduledTime,
-        completedAt: null,
-      }),
-    );
-    const row = decodeRecord(
-      "Todo",
-      await client.orm.public.Todo.where({ id: todoId })
-        .select("updatedAt", "startDate", "scheduledTime", "completedAt")
-        .first(),
-    );
+    await client
+      .update(todo)
+      .set({ updatedAt: explicitUpdatedAt, startDate, scheduledTime, completedAt: null })
+      .where(eq(todo.id, todoId));
+    const row = await client.query.todo.findFirst({
+      columns: { updatedAt: true, startDate: true, scheduledTime: true, completedAt: true },
+      where: { id: todoId },
+    });
+
     // Then
     expect(row).toEqual({
       updatedAt: explicitUpdatedAt,
@@ -143,11 +159,14 @@ describe("Prisma 자동 timestamp의 UTC 계약 (실제 PostgreSQL)", () => {
     // Given
     vi.stubEnv("TZ", "Asia/Seoul");
     const independentClient = createTestClient(database.getConnectionUri(), { max: 1 });
+
     // When
     try {
-      await independentClient.orm.public.Todo.where({ id: todoId }).updateAndCount(
-        encodePatch("Todo", { title: "별도 연결 수정" }),
-      );
+      await independentClient
+        .update(todo)
+        .set({ title: "별도 연결 수정" })
+        .where(eq(todo.id, todoId));
+
       // Then
       expect(await savedUpdatedAt()).toEqual(AT);
     } finally {

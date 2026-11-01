@@ -85,8 +85,9 @@ describe("할 일 생성", () => {
   });
   it("활성 한도가 찬 카테고리는 생성을 거부한다", async () => {
     // Given
-    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY; id++)
+    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY; id++) {
       fixture.records.set(id, createPlanningTodo(fixture.userId, id));
+    }
     // When / Then
     await expect(
       useCase.execute({
@@ -132,14 +133,15 @@ describe("할 일 생성", () => {
       // Given
       fixture.records.clear();
       const failure = new Error(`${boundary} failure`);
-      if (boundary === "cache")
+      if (boundary === "cache") {
         fixture.todoCache.invalidateTodoCategories = async () => {
           throw failure;
         };
-      else
+      } else {
         fixture.eventPublisher.publishAll = async () => {
           throw failure;
         };
+      }
       const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
       // When / Then
       await expect(
