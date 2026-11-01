@@ -7,6 +7,7 @@
  */
 
 import dayjs from "dayjs";
+import { sumBy } from "es-toolkit";
 
 // ============================================================================
 // 타입
@@ -189,7 +190,8 @@ function countConsecutiveWeeks(sortedWeeks: number[]): number {
 }
 
 function computeCompletionRate(weekMap: Map<number, { total: number; completed: number }>): number {
-  const totalAll = Array.from(weekMap.values()).reduce((s, w) => s + w.total, 0);
-  const completedAll = Array.from(weekMap.values()).reduce((s, w) => s + w.completed, 0);
+  const weeks = [...weekMap.values()];
+  const totalAll = sumBy(weeks, (week) => week.total);
+  const completedAll = sumBy(weeks, (week) => week.completed);
   return totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0;
 }
