@@ -18,18 +18,18 @@ function formatDateString(yyyymmdd: string): string {
 }
 
 /**
- * non-zero PTY 코드 중 가장 빈도 높은 코드를 반환 (없으면 "0")
+ * 가장 빈도 높은 코드를 반환 (비어 있으면 fallback)
  */
-function mostFrequentPty(ptyCounts: Map<string, number>): string {
-  let dominantPty = "0";
+function mostFrequentCode(counts: Map<string, number>, fallback: string): string {
+  let dominantCode = fallback;
   let maxCount = 0;
-  for (const [code, count] of ptyCounts) {
+  for (const [code, count] of counts) {
     if (count > maxCount) {
       maxCount = count;
-      dominantPty = code;
+      dominantCode = code;
     }
   }
-  return dominantPty;
+  return dominantCode;
 }
 
 /**
@@ -84,20 +84,10 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
     }
   }
 
-  // 가장 빈도 높은 SKY 코드
-  let mostCommonSky = "1";
-  let maxSkyCount = 0;
-  for (const [code, count] of skyCounts) {
-    if (count > maxSkyCount) {
-      maxSkyCount = count;
-      mostCommonSky = code;
-    }
-  }
-
   return {
     date: formatDateString(dateStr),
-    skyCondition: SKY_CODE_MAP[mostCommonSky] ?? "CLEAR",
-    precipitationType: PTY_CODE_MAP[mostFrequentPty(ptyCounts)] ?? "NONE",
+    skyCondition: SKY_CODE_MAP[mostFrequentCode(skyCounts, "1")] ?? "CLEAR",
+    precipitationType: PTY_CODE_MAP[mostFrequentCode(ptyCounts, "0")] ?? "NONE",
     precipitationProbability: maxPrecipProb,
     temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
     temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,
@@ -265,23 +255,14 @@ export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): Weathe
     }));
 
   // 일별 예보 생성 (모든 날짜 대상)
-  const dateItemsMap = new Map<string, KmaResponseItem[]>();
-  for (const item of allItems) {
-    const existing = dateItemsMap.get(item.fcstDate) ?? [];
-    existing.push(item);
-    dateItemsMap.set(item.fcstDate, existing);
-  }
-
-  const dailyForecasts: DailyForecast[] = [...dateItemsMap.keys()].sort().map((dateStr) => {
-    const items = dateItemsMap.get(dateStr);
-    if (!items) return buildDailyForecast(dateStr, []);
-    return buildDailyForecast(dateStr, items);
-  });
+  const dailyForecasts: DailyForecast[] = [...Map.groupBy(allItems, (item) => item.fcstDate)]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([dateStr, items]) => buildDailyForecast(dateStr, items));
 
   return {
     date: targetDate,
     skyCondition: SKY_CODE_MAP[dominantSky] ?? "CLEAR",
-    precipitationType: PTY_CODE_MAP[mostFrequentPty(ptyCounts)] ?? "NONE",
+    precipitationType: PTY_CODE_MAP[mostFrequentCode(ptyCounts, "0")] ?? "NONE",
     precipitationProbability: maxPrecipProb,
     temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
     temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,
