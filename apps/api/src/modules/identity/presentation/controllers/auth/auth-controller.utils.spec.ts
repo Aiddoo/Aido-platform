@@ -24,6 +24,21 @@ describe("extractMetadata", () => {
       userAgent: "request-identity-test",
       deviceName: undefined,
       deviceType: undefined,
+      device: {},
     });
+  });
+
+  it("본문에 기기 정보가 있으면 헤더보다 우선해 정규화한다", () => {
+    // Given
+    const req = mockOf<Request>({
+      ip: "198.51.100.24",
+      headers: { "x-device-type": "ANDROID", "x-device-name": "Header Phone" },
+    });
+
+    // When
+    const metadata = extractMetadata(req, { deviceType: "ios", deviceName: "iPhone 15" });
+
+    // Then
+    expect(metadata.device).toEqual({ devicePlatform: "IOS", deviceModel: "iPhone 15" });
   });
 });

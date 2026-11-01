@@ -201,6 +201,8 @@ export class LoginWithOAuthToken {
         email: effectiveEmail,
         provider: ACCOUNT_PROVIDER_TO_EVENT[provider],
         registeredAt: toISOString(now()),
+        name: newUser.name,
+        ...options.metadata?.device,
       } satisfies AuthUserRegisteredNotification);
     }
 
@@ -250,7 +252,7 @@ export class LoginWithOAuthToken {
         metadata: { provider: data.provider },
       });
 
-      return user;
+      return { id: user.id, name: effectiveName };
     });
   }
 

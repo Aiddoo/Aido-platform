@@ -54,11 +54,22 @@ export interface RefreshTokensResult {
 /**
  * 요청 메타데이터
  */
+export type RequestDevicePlatform = "IOS" | "ANDROID" | "WEB";
+
+/**
+ * 요청 경계에서 정규화한 기기 정보. 관리자 알림 표시용이며 신뢰 판단에 쓰지 않는다.
+ */
+export interface RequestDevice {
+  readonly devicePlatform?: RequestDevicePlatform;
+  readonly deviceModel?: string;
+}
+
 export interface RequestMetadata {
   ip?: string;
   userAgent?: string;
   deviceName?: string;
   deviceType?: string;
+  device?: RequestDevice;
 }
 
 /**

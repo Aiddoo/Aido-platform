@@ -12,12 +12,14 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
   naver: "Naver",
 };
 
-/**
- * 가입 방식 → 기기 추정 라벨 (Apple/Google만 추정 가능)
- */
-export const PROVIDER_DEVICE_LABELS: Partial<Record<Provider, string>> = {
-  apple: "🍎 iOS (추정)",
-  google: "🤖 Android (추정)",
+/** 확인된 기기 플랫폼 → 표시 라벨 */
+export const DEVICE_PLATFORM_LABELS: Record<
+  NonNullable<UserRegisteredEventPayload["devicePlatform"]>,
+  string
+> = {
+  IOS: "🍎 iOS",
+  ANDROID: "🤖 Android",
+  WEB: "🌐 Web",
 };
 
 /**

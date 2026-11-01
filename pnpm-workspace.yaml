@@ -76,6 +76,7 @@ catalog:
   '@types/pg': '8.23.1'
   '@vitest/coverage-v8': '5.0.5'
   'ai': '7.0.159'
+  'bowser': '2.15.0'
   'bullmq': '6.5.3'
   'dayjs': '1.11.23'
   'es-toolkit': '1.53.1'

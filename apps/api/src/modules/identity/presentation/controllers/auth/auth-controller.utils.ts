@@ -3,15 +3,25 @@ import type { Request } from "express";
 import type { RequestMetadata } from "#api/modules/identity/application/types/auth/auth.types";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
+import { resolveRequestDevice } from "./request-device.utils.js";
+
 /**
  * 요청에서 메타데이터 추출
  */
-export function extractMetadata(req: Request): RequestMetadata {
+export function extractMetadata(
+  req: Request,
+  body?: { deviceName?: string; deviceType?: string },
+): RequestMetadata {
+  const userAgent = req.headers["user-agent"];
+  const deviceName = body?.deviceName ?? singleHeaderValue(req.headers["x-device-name"]);
+  const deviceType = body?.deviceType ?? singleHeaderValue(req.headers["x-device-type"]);
+
   return {
     ip: req.ip || undefined,
-    userAgent: req.headers["user-agent"],
-    deviceName: singleHeaderValue(req.headers["x-device-name"]),
-    deviceType: singleHeaderValue(req.headers["x-device-type"]),
+    userAgent,
+    deviceName,
+    deviceType,
+    device: resolveRequestDevice({ userAgent, deviceName, deviceType }),
   };
 }
 

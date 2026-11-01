@@ -200,6 +200,9 @@ catalogs:
     ai:
       specifier: 7.0.159
       version: 7.0.159
+    bowser:
+      specifier: 2.15.0
+      version: 2.15.0
     bullmq:
       specifier: 6.5.3
       version: 6.5.3
@@ -601,6 +604,9 @@ importers:
       argon2:
         specifier: 0.45.1
         version: 0.45.1
+      bowser:
+        specifier: 'catalog:'
+        version: 2.15.0
       bullmq:
         specifier: 'catalog:'
         version: 6.5.3(ioredis@5.11.1(supports-color@8.1.1))(pg@8.23.1)
@@ -6099,6 +6105,9 @@ packages:
 
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
+
+  bowser@2.15.0:
+    resolution: {integrity: sha512-xic6KSZglg/I4ymp45fdM4GWfYpBK79Fxd/TOvJktlaPgQqqDxvmGwOPZl2V0dyeS3Lj5c180bLhXF43iyAjZQ==}
 
   bplist-creator@0.1.0:
     resolution: {integrity: sha512-sXaHZicyEEmY86WyueLTQesbeoH/mquvarJaQNbjuOQO+7gbFcDEWqKmcWA4cOTLzFlfgvkiVxolk1k5bBIpmg==}
@@ -16357,6 +16366,8 @@ snapshots:
       - supports-color
 
   boolbase@1.0.0: {}
+
+  bowser@2.15.0: {}
 
   bplist-creator@0.1.0:
     dependencies:
