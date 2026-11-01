@@ -22,7 +22,7 @@ import type { TodoCategoryCachePort } from "#api/modules/planning/application/po
 import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
 import { ReorderTodoCategory } from "#api/modules/planning/application/use-cases/categories/reorder-todo-category.use-case";
 import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/infrastructure/adapters/categories/todo-category-limit-reader.adapter";
-import { PrismaTodoCategoryRepository } from "#api/modules/planning/infrastructure/persistence/categories/prisma-todo-category.repository";
+import { DrizzleTodoCategoryRepository } from "#api/modules/planning/infrastructure/persistence/categories/drizzle-todo-category.repository";
 import { type CheerLimitReaderPort } from "#api/modules/social/application/ports/cheers/cheer-limit-reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
 import type { NudgeLimitReaderPort } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
@@ -713,7 +713,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   let categoryModule: TestingModule;
   let categoryTxHost: TransactionHost<Prisma8TransactionalAdapter>;
   let categoryUow: ClsUnitOfWork;
-  let categoryRepository: PrismaTodoCategoryRepository;
+  let categoryRepository: DrizzleTodoCategoryRepository;
   let categoryLockAdapter: PostgresMutationLockAdapter;
   let categoryLimitReader: TodoCategoryLimitReaderAdapter;
 
@@ -740,7 +740,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ],
       providers: [
         ClsUnitOfWork,
-        PrismaTodoCategoryRepository,
+        DrizzleTodoCategoryRepository,
         PostgresMutationLockAdapter,
         { ...entitlementServiceProvider, provide: ENTITLEMENT_READER },
         EntitlementCacheAdapter,
@@ -762,7 +762,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     categoryTxHost =
       categoryModule.get<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost);
     categoryUow = categoryModule.get(ClsUnitOfWork);
-    categoryRepository = categoryModule.get(PrismaTodoCategoryRepository);
+    categoryRepository = categoryModule.get(DrizzleTodoCategoryRepository);
     categoryLockAdapter = categoryModule.get(PostgresMutationLockAdapter);
     categoryLimitReader = categoryModule.get(TodoCategoryLimitReaderAdapter);
   }, 60_000);
@@ -797,7 +797,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     // Then - hand-built ALS 객체가 아닌 Nest/CLS 실제 구현체
     expect(categoryTxHost).toBeInstanceOf(TransactionHost);
     expect(categoryUow).toBeInstanceOf(ClsUnitOfWork);
-    expect(categoryRepository).toBeInstanceOf(PrismaTodoCategoryRepository);
+    expect(categoryRepository).toBeInstanceOf(DrizzleTodoCategoryRepository);
     expect(categoryLockAdapter).toBeInstanceOf(PostgresMutationLockAdapter);
     expect(categoryLimitReader).toBeInstanceOf(TodoCategoryLimitReaderAdapter);
     expect(activeClient).not.toBe(prisma);

@@ -5,7 +5,7 @@ import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user
 import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import { KmaWeatherGridResolver } from "#api/modules/weather/infrastructure/adapters/forecast/kma-weather-grid.resolver";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { PrismaWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/prisma-weather-location.repository";
+import { DrizzleWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/drizzle-weather-location.repository";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
@@ -40,7 +40,7 @@ function coordinates(saved: UserLocation | null) {
 describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL)", () => {
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
   let client: TestDatabaseClient;
-  let repository: PrismaWeatherLocationRepository;
+  let repository: DrizzleWeatherLocationRepository;
   let uow: UnitOfWorkPort;
   let userId: string;
   let anotherUserId: string;
@@ -48,7 +48,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
   beforeAll(async () => {
     client = await database.start();
     const transaction = createDatabaseTransactionFixture(client);
-    repository = new PrismaWeatherLocationRepository(transaction.txHost);
+    repository = new DrizzleWeatherLocationRepository(transaction.txHost);
     uow = transaction.uow;
   });
 
@@ -139,7 +139,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     const released = Promise.withResolvers<void>();
     const holding = withDatabaseTransaction(client, async (tx) => {
       const transaction = createDatabaseTransactionFixture(tx);
-      await new PrismaWeatherLocationRepository(transaction.txHost).upsert(seoul);
+      await new DrizzleWeatherLocationRepository(transaction.txHost).upsert(seoul);
       acquired.resolve();
       await released.promise;
     });
