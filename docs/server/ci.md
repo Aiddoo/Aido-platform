@@ -31,12 +31,13 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 
 ## API 작업 흐름
 
-| Job                | 역할                                                                                                                                                                                                            |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                                                        |
-| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                                                         |
-| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→배포된 앱 API 계약 게이트(`test:contract`)→API 의존성 closure build. 전체 E2E는 Actions 사용량을 아끼려고 CI에서 돌리지 않고 로컬에서 `pnpm test:e2e`로 확인한다 |
-| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행                                    |
+| Job                | 역할                                                                                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                                                                                    |
+| Dependency Review  | heavy job과 같은 조건의 PR에서 공식 dependency-review-action으로 gate의 base~head 누적 범위에 high 이상 취약 의존성이 새로 들어오는지 확인                                                                                                  |
+| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                                                                                     |
+| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→배포된 앱 API 계약 게이트(`test:contract`)→API 의존성 closure build. 전체 E2E는 Actions 사용량을 아끼려고 CI에서 돌리지 않고 로컬에서 `pnpm test:e2e`로 확인한다                             |
+| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행하고, 공식 `actions/attest`로 두 digest에 빌드 출처 증명을 남김 |
 
 공식 setup action은 `.nvmrc` Node.js 버전, packageManager의 pnpm 버전, frozen lockfile과 pnpm cache를 사용한다. API만 영향이 있으면 API dependency closure를 설치하고 필요한 contract를 emit한다. GitHub Actions는 버전 주석과 commit SHA로 고정하며 업데이트의 정본은 workflow다.
 
@@ -51,6 +52,10 @@ API test 로그는 실패 시 upload-artifact로 14일 보관한다. Bash의 `-e
 수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [DEPLOYMENT.md](../../apps/api/DEPLOYMENT.md)의 동일 SHA 이미지·graph·health 절차를 따른다.
 
 ## 의존성·이미지 보안 검사
+
+- workflow 기본 권한은 `contents: read`이고 job이 필요한 권한만 더한다. `TURBO_TOKEN`은 turbo를 실행하는 job에만 주입한다.
+- 출처 증명은 GitHub attestations API에만 저장하고 registry에는 올리지 않는다(GHCR 버전 보존 개수 유지). `gh attestation verify oci://ghcr.io/aiddoo/aido-platform-api:<sha> --repo Aiddoo/Aido-platform`으로 확인한다.
+- CodeQL(actions, JavaScript/TypeScript)은 PR마다 돌리지 않고 기본 브랜치를 주 1회 스캔한다([codeql.yml](../../.github/workflows/codeql.yml)).
 
 - `pnpm audit --prod --audit-level high`가 high 이상 취약점을 막는다. 패치 버전이 없어 위험을 수용한 advisory는 `pnpm-workspace.yaml`의 `auditConfig.ignoreGhsas`에 사유·제거 조건 주석과 함께 둔다. 현재는 `@expo/cli`(Expo 빌드 도구) 내부의 `node-forge`(GHSA-86w9-cpqp-85rv)와 `zod` 3.x(GHSA-mrhx-c7xc-m3w5)이며, `@expo/cli`가 패치된 버전을 받으면 제거한다.
 - API/migrate 이미지는 runner에 load한 상태로 Trivy가 먼저 검사하고, 둘 다 고칠 수 있는 HIGH/CRITICAL이 없을 때만 GHCR에 push한다. 검사에 실패하면 그 SHA의 이미지가 발행되지 않으므로 deploy의 이미지 존재 확인(`docker buildx imagetools inspect`)에서 멈춘다.
