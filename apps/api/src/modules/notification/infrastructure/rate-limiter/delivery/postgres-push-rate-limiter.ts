@@ -11,6 +11,7 @@ import {
 import { DatabaseService } from "#api/platform/database/database.service";
 import type { PushRateLimitPhase } from "#api/platform/database/database.types";
 import { isTransactionWriteConflict } from "#api/platform/database/prisma-error.util";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   EngagementPushRateLimitRequest,
@@ -250,7 +251,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
   }
 
   #engagementKey(userId: string, localDate: Date | null): string {
-    return `${userId}:${localDate?.toISOString().slice(0, 10) ?? "none"}`;
+    return `${userId}:${localDate == null ? "none" : toDateString(localDate)}`;
   }
 
   #toDate(localDate: string): Date {
