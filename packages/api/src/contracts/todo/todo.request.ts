@@ -1,13 +1,11 @@
 import { z } from "zod";
 
-import { dateSchema } from "../../common/datetime.js";
+import { dateSchema, timeOfDaySchema } from "../../common/datetime.js";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from "../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../todo-category/todo-category.common.js";
 import { dayOfWeekSchema, todoVisibilitySchema } from "./todo.common.js";
 
 export { todoVisibilitySchema } from "./todo.common.js";
-
-const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const createTodoSchema = z
   .object({
@@ -28,9 +26,7 @@ export const createTodoSchema = z
       .date("유효한 날짜 형식이 아닙니다")
       .nullish()
       .describe("종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)"),
-    scheduledTime: z
-      .string()
-      .regex(timeRegex, "시간 형식이 올바르지 않습니다 (HH:mm)")
+    scheduledTime: timeOfDaySchema
       .nullish()
       .describe("예정 시간 (HH:mm 24시간 형식, 예: 15:30, 종일 일정은 null)"),
     isAllDay: z.boolean().default(true).describe("종일 일정 여부 (기본값: true)"),
@@ -91,11 +87,7 @@ export const updateTodoSchema = z
       .date("유효한 날짜 형식이 아닙니다")
       .nullish()
       .describe("종료 날짜 (선택, YYYY-MM-DD, 단일 날짜는 null)"),
-    scheduledTime: z
-      .string()
-      .regex(timeRegex, "시간 형식이 올바르지 않습니다 (HH:mm)")
-      .nullish()
-      .describe("예정 시간 (선택, HH:mm, 종일 일정은 null)"),
+    scheduledTime: timeOfDaySchema.nullish().describe("예정 시간 (선택, HH:mm, 종일 일정은 null)"),
     isAllDay: z.boolean().optional().describe("종일 일정 여부 (선택)"),
     visibility: todoVisibilitySchema
       .optional()
@@ -199,9 +191,7 @@ export const updateTodoScheduleSchema = z
       .nullable()
       .optional()
       .describe("종료 날짜 (YYYY-MM-DD, 단일 날짜는 null, 예: 2025-01-31)"),
-    scheduledTime: z
-      .string()
-      .regex(timeRegex, "시간 형식이 올바르지 않습니다 (HH:mm)")
+    scheduledTime: timeOfDaySchema
       .nullable()
       .optional()
       .describe("예정 시간 (HH:mm 24시간 형식, 종일 일정은 null, 예: 15:30)"),
@@ -270,11 +260,7 @@ export const createRecurringTodoSchema = z
       .min(1, "요일을 최소 1개 선택해주세요")
       .max(7, "요일은 최대 7개까지 선택할 수 있습니다")
       .describe("반복할 요일 (MON/TUE/WED/THU/FRI/SAT/SUN)"),
-    scheduledTime: z
-      .string()
-      .regex(timeRegex, "시간 형식이 올바르지 않습니다 (HH:mm)")
-      .nullish()
-      .describe("예정 시간 (HH:mm, 선택)"),
+    scheduledTime: timeOfDaySchema.nullish().describe("예정 시간 (HH:mm, 선택)"),
     isAllDay: z.boolean().default(true).describe("종일 일정 여부 (기본값: true)"),
     visibility: todoVisibilitySchema
       .default("PUBLIC")
