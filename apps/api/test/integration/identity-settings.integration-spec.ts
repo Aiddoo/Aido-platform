@@ -1,5 +1,5 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import sql from "sql-template-tag";
+import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
 import {
@@ -22,13 +22,18 @@ import {
   REMINDER_TIMEZONE_CACHE,
   type ReminderTimezoneCachePort,
 } from "#api/modules/notification/notification-reminders-cache.public";
-import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
+import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import {
+  todo,
+  todoCategory,
+  user as userTable,
+  userConsent,
+  userPreference,
+} from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
-import { createTestClient, withDatabaseTransaction } from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
@@ -36,6 +41,8 @@ import {
   destroyE2eApp,
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
+
+type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 const at = new Date("2027-01-01T12:00:00.000Z");
 const today = new Date("2027-01-01T00:00:00.000Z");
@@ -78,7 +85,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       createdAt: at,
       updatedAt: at,
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
   });
 
@@ -88,13 +95,11 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     else await database?.stop();
   });
 
-  async function holdRowLock(statement: ReturnType<typeof sql>) {
+  async function holdRowLock(lockRow: (transaction: DatabaseTransaction) => Promise<unknown>) {
     const released = Promise.withResolvers<void>();
     const acquired = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(transaction, statement).returnsRow({ id: "pg/text@1" }).build(),
-      );
+    const holding = client.transaction(async (transaction) => {
+      await lockRow(transaction);
       acquired.resolve();
       await released.promise;
     });
@@ -115,16 +120,12 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   async function expectTwoUpdateWaiters(table: "UserPreference" | "UserConsent") {
     await vi.waitFor(
       async () => {
-        const waiting = await client.runtime().query(
-          client.raw.sql`
-        SELECT count(*)::int AS count FROM pg_stat_activity
-        WHERE datname = current_database() AND wait_event_type = 'Lock'
-          AND query ILIKE '%UPDATE%' AND query LIKE ${`%${table}%`}
-      `
-            .returnsRow({ count: "pg/int4@1" })
-            .build(),
-        );
-        expect(waiting[0]?.count).toBe(2);
+        const waiting = await client.execute<{ count: number }>(sql`
+          SELECT count(*)::int AS count FROM pg_stat_activity
+          WHERE datname = current_database() AND wait_event_type = 'Lock'
+            AND query ILIKE '%UPDATE%' AND query LIKE ${`%${table}%`}
+        `);
+        expect(waiting.rows[0]?.count).toBe(2);
       },
       { timeout: 10_000 },
     );
@@ -132,16 +133,16 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   async function givenCompletedTodos() {
     const category = TodoCategoryFixture.create({ userId });
-    await client.orm.public.TodoCategory.create(encodeCreate("TodoCategory", category));
+    await client.insert(todoCategory).values(category);
     for (let index = 0; index < 2; index += 1) {
-      const todo = TodoFixture.create({
+      const created = TodoFixture.create({
         userId,
         categoryId: category.id,
         startDate: today,
         completed: true,
         completedAt: at,
       });
-      await client.orm.public.Todo.create(encodeCreate("Todo", todo));
+      await client.insert(todo).values(created);
     }
   }
 
@@ -228,18 +229,19 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   it("같은 날 두 완료 요청의 UPDATE가 대기해도 스트릭과 마일스톤은 한 번 반영된다", async () => {
     // Given
     await preferences.create(userId);
-    await client.orm.public.UserPreference.where((row) => row.userId.eq(userId)).update(
-      encodePatch("UserPreference", {
-        currentStreak: 2,
-        longestStreak: 2,
-        lastCompletedDate: yesterday,
-      }),
-    );
+    await client
+      .update(userPreference)
+      .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterday })
+      .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
     const notifier = context.module.get<StreakMilestoneNotifierPort>(STREAK_MILESTONE_NOTIFIER);
     const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockImplementation(() => {});
-    const lock = await holdRowLock(
-      sql`SELECT "id" FROM "UserPreference" WHERE "userId" = ${userId} FOR UPDATE`,
+    const lock = await holdRowLock((transaction) =>
+      transaction
+        .select({ id: userPreference.id })
+        .from(userPreference)
+        .where(eq(userPreference.userId, userId))
+        .for("update"),
     );
     const useCase = context.module.get(OnTodoToggled);
     const requests = Promise.allSettled([
@@ -266,13 +268,10 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   it("늦게 도착한 완료 취소 이벤트는 최신 Todo가 모두 완료된 상태를 되돌리지 않는다", async () => {
     // Given
     await preferences.create(userId);
-    await client.orm.public.UserPreference.where((row) => row.userId.eq(userId)).update(
-      encodePatch("UserPreference", {
-        currentStreak: 3,
-        longestStreak: 4,
-        lastCompletedDate: today,
-      }),
-    );
+    await client
+      .update(userPreference)
+      .set({ currentStreak: 3, longestStreak: 4, lastCompletedDate: today })
+      .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
 
     // When
@@ -291,8 +290,12 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       weatherMorningEnabled: true,
       weatherMorningMinute: 17,
     });
-    const lock = await holdRowLock(
-      sql`SELECT "id" FROM "UserPreference" WHERE "userId" = ${userId} FOR UPDATE`,
+    const lock = await holdRowLock((transaction) =>
+      transaction
+        .select({ id: userPreference.id })
+        .from(userPreference)
+        .where(eq(userPreference.userId, userId))
+        .for("update"),
     );
     const requests = Promise.allSettled([
       preferences.upsert(userId, { timezone: "Asia/Seoul" }),
@@ -331,8 +334,12 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       privacyAgreedAt: yesterday,
       agreedTermsVersion: "1.0.0",
     });
-    const lock = await holdRowLock(
-      sql`SELECT "id" FROM "UserConsent" WHERE "userId" = ${userId} FOR UPDATE`,
+    const lock = await holdRowLock((transaction) =>
+      transaction
+        .select({ id: userConsent.id })
+        .from(userConsent)
+        .where(eq(userConsent.userId, userId))
+        .for("update"),
     );
     const requests = Promise.allSettled([
       consents.upsertMarketingConsent(userId, { agreedAt: at }),
@@ -384,8 +391,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     // When
     const provision = unitOfWork.run(async () => {
       const transaction =
-        context.module.get<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost).tx;
-      await transaction.orm.public.User.create(encodeCreate("User", user));
+        context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost).tx;
+      await transaction.insert(userTable).values(user);
       await seed.execute({
         userId: user.id,
         consent: { termsAgreedAt: at, privacyAgreedAt: at, agreedTermsVersion: "1.0.0" },
@@ -395,7 +402,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     await expect(provision).rejects.toThrow("프로비저닝 후속 단계 실패");
-    expect(await client.orm.public.User.where((row) => row.id.eq(user.id)).first()).toBeNull();
+    expect(await client.query.user.findFirst({ where: { id: user.id } })).toBeUndefined();
     expect(await preferences.findByUserId(user.id)).toBeNull();
     expect(await consents.findByUserId(user.id)).toBeNull();
   });

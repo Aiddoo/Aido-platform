@@ -1,4 +1,5 @@
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { Module, type DynamicModule } from "@nestjs/common";
 /**
  * ReportAggregatorService 통합 테스트 (Testcontainers)
@@ -8,7 +9,7 @@ import { Module, type DynamicModule } from "@nestjs/common";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
  *
  * 통합 테스트의 목적:
- * - ReportAggregatorService → DatabaseService → Prisma → PostgreSQL 전체 스택 검증
+ * - TodoStatsReader → Drizzle → PostgreSQL 전체 스택 검증
  * - groupBy 결과를 기반으로 한 집계 로직 통합 검증
  *
  * 실행 조건:
@@ -20,10 +21,7 @@ import { Module, type DynamicModule } from "@nestjs/common";
  * ```
  */
 import { Test, type TestingModule } from "@nestjs/testing";
-import { and } from "@prisma/orm-postgres/orm-client";
-import postgres from "@prisma/orm-postgres/runtime";
 import { ClsModule } from "nestjs-cls";
-import { Pool } from "pg";
 import { vi } from "vitest";
 
 import {
@@ -37,13 +35,10 @@ import type {
 } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
 import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
-import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { varchar } from "#api/platform/database/database-values";
-import { DatabaseService, contract } from "#api/platform/database/database.service";
+import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
-import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
-import { createTestDatabaseService } from "#test/setup/database-context";
+import { todo, todoCategory, user } from "#api/platform/database/schema/index";
+import { createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -55,8 +50,8 @@ class ReportDatabaseTestModule {
   static register(client: TestDatabaseClient): DynamicModule {
     return {
       module: ReportDatabaseTestModule,
-      providers: [{ provide: DatabaseService, useValue: createTestDatabaseService(client) }],
-      exports: [DatabaseService],
+      providers: [{ provide: DRIZZLE, useValue: client }],
+      exports: [DRIZZLE],
     };
   }
 }
@@ -65,9 +60,8 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
   let reader: TodoStatsReaderPort;
   let testDb: TestDatabase;
-  let prismaClient: TestDatabaseClient;
-  let pool: Pool;
-  let txHost: TransactionHost<Prisma8TransactionalAdapter>;
+  let client: TestDatabaseClient;
+  let txHost: TransactionHost<DrizzleTransactionalAdapter>;
   let uow: ClsUnitOfWork;
 
   /**
@@ -89,24 +83,15 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     return result;
   };
 
-  // 테스트 사용자 ID
   let testUserId: string;
 
-  // 테스트 스위트 시작 시 한 번만 실행
   beforeAll(async () => {
     suppressLogger();
 
-    // TestContainer 시작 및 Database 연결
-    testDb = new TestDatabase({
-      createClient: (connectionUri) => {
-        pool = new Pool({ connectionString: connectionUri });
-        return postgres({ contract, pg: pool });
-      },
-    });
-    prismaClient = await testDb.start();
+    testDb = new TestDatabase({ createClient: (connectionUri) => createTestClient(connectionUri) });
+    client = await testDb.start();
 
-    // NestJS 테스트 모듈 생성
-    const databaseModule = ReportDatabaseTestModule.register(prismaClient);
+    const databaseModule = ReportDatabaseTestModule.register(client);
     module = await Test.createTestingModule({
       imports: [
         databaseModule,
@@ -115,7 +100,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
           plugins: [
             new ClsPluginTransactional({
               imports: [databaseModule],
-              adapter: new Prisma8TransactionalAdapter(),
+              adapter: new TransactionalAdapterDrizzleOrm({ drizzleInstanceToken: DRIZZLE }),
             }),
           ],
         }),
@@ -129,61 +114,33 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     uow = module.get(ClsUnitOfWork);
   }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
-  // 각 테스트 전 데이터 초기화
   beforeEach(async () => {
     vi.clearAllMocks();
     await testDb.cleanup();
 
-    // 테스트 사용자 생성
-    const prisma = testDb.getClient();
     const userTag = Date.now().toString(36).toUpperCase().slice(-8);
-    const user = decodeRecord(
-      "User",
-      await createUserDatabaseFixture(
-        prisma,
-        encodeCreate("User", { email: "test-aggregator@example.com", status: "ACTIVE", userTag }),
-        { profile: encodePatch("UserProfile", { id: createEntityId(), name: "테스트 유저" }) },
-      ),
+    const created = await createUserDatabaseFixture(
+      client,
+      { email: "test-aggregator@example.com", status: "ACTIVE", userTag },
+      { profile: { id: createEntityId(), name: "테스트 유저" } },
     );
-    testUserId = user.id;
+    testUserId = created.id;
 
-    // 기본 카테고리 생성
-    await prisma.orm.public.TodoCategory.createAndCount(
-      [
-        {
-          userId: testUserId,
-          name: "업무",
-          color: "#FF0000",
-          sortOrder: 0,
-        },
-        {
-          userId: testUserId,
-          name: "개인",
-          color: "#00FF00",
-          sortOrder: 1,
-        },
-      ].map((value) => encodeCreate("TodoCategory", value)),
-    );
+    await client.insert(todoCategory).values([
+      { userId: testUserId, name: "업무", color: "#FF0000", sortOrder: 0 },
+      { userId: testUserId, name: "개인", color: "#00FF00", sortOrder: 1 },
+    ]);
   });
 
-  // 테스트 스위트 종료 시 정리
   afterAll(async () => {
     try {
       if (module) {
-        await module.get(DatabaseService).onApplicationShutdown();
-        expect(
-          (
-            await prismaClient.orm.public.User.aggregate((aggregate) => ({
-              count: aggregate.count(),
-            }))
-          ).count,
-        ).toBeGreaterThan(0);
+        expect(await client.$count(user)).toBeGreaterThan(0);
         await module.close();
       }
     } finally {
       if (testDb) {
         await testDb.stop();
-        await pool.end();
       }
     }
   });
@@ -197,36 +154,25 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     completedAt?: Date;
     categoryName?: string;
   }): Promise<void> {
-    const prisma = testDb.getClient();
+    const category = await client.query.todoCategory.findFirst({
+      where: { userId: testUserId, name: data.categoryName ?? "업무" },
+    });
 
-    // 카테고리 조회
-    const category = decodeRecord(
-      "TodoCategory",
-      await prisma.orm.public.TodoCategory.where((row) =>
-        and(row.userId.eq(testUserId), row.name.eq(varchar(data.categoryName ?? "업무", 50))),
-      ).first(),
-    );
-
-    if (category === null) {
+    if (category === undefined) {
       throw new Error(`Category ${data.categoryName ?? "업무"} not found`);
     }
 
-    decodeRecord(
-      "Todo",
-      await prisma.orm.public.Todo.create(
-        encodeCreate("Todo", {
-          userId: testUserId,
-          categoryId: category.id,
-          title: "테스트 할 일",
-          startDate: data.startDate,
-          completed: data.completed ?? false,
-          completedAt: data.completedAt ?? null,
-          isAllDay: true,
-          visibility: "PUBLIC",
-          sortOrder: 0,
-        }),
-      ),
-    );
+    await client.insert(todo).values({
+      userId: testUserId,
+      categoryId: category.id,
+      title: "테스트 할 일",
+      startDate: data.startDate,
+      completed: data.completed ?? false,
+      completedAt: data.completedAt ?? null,
+      isAllDay: true,
+      visibility: "PUBLIC",
+      sortOrder: 0,
+    });
   }
 
   /**
@@ -235,7 +181,6 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
   function createParams(overrides?: Partial<AggregateParams>): AggregateParams {
     return {
       userId: testUserId,
-      // 2026-02-23 ~ 2026-03-02 (1주간)
       startDate: new Date("2026-02-23T00:00:00.000Z"),
       endDate: new Date("2026-03-02T00:00:00.000Z"),
       prevStartDate: new Date("2026-02-16T00:00:00.000Z"),
@@ -247,13 +192,13 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
   describe("빈 데이터", () => {
     it("할 일이 없으면 hasActivity: false, 모든 통계 0을 반환해야 한다", async () => {
-      // Given: 할 일이 없는 상태
+      // Given
       const params = createParams();
 
-      // When: aggregate를 호출하면
+      // When
       const result = await aggregate(params);
 
-      // Then: 모든 통계가 0이고 hasActivity가 false
+      // Then
       expect(result.hasActivity).toBe(false);
       expect(result.totalTodos).toBe(0);
       expect(result.completedTodos).toBe(0);
@@ -265,13 +210,13 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     });
 
     it("빈 데이터에서도 dayPatterns은 7개 요일을 반환해야 한다", async () => {
-      // Given: 할 일이 없는 상태
+      // Given
       const params = createParams();
 
-      // When: aggregate를 호출하면
+      // When
       const result = await aggregate(params);
 
-      // Then: 7개 요일이 모두 포함
+      // Then
       expect(result.dayPatterns).toHaveLength(7);
       const days = result.dayPatterns.map((p) => p.day);
       expect(days).toContain("MON");
@@ -281,7 +226,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
   describe("정상 데이터 집계", () => {
     it("전체/완료 할 일 수와 달성률을 정확하게 계산해야 한다", async () => {
-      // Given: 3개 할 일 중 2개 완료
+      // Given
       await createTodo({
         startDate: new Date("2026-02-24T00:00:00.000Z"),
         completed: true,
@@ -299,10 +244,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
       const params = createParams();
 
-      // When: aggregate를 호출하면
+      // When
       const result = await aggregate(params);
 
-      // Then: 3개 중 2개 완료, 달성률 67%
+      // Then
       expect(result.totalTodos).toBe(3);
       expect(result.completedTodos).toBe(2);
       expect(result.completionRate).toBe(67);
@@ -310,7 +255,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     });
 
     it("카테고리별 집계가 정확해야 한다", async () => {
-      // Given: 업무 2개, 개인 1개
+      // Given
       await createTodo({
         startDate: new Date("2026-02-24T00:00:00.000Z"),
         completed: true,
@@ -331,10 +276,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
       const params = createParams();
 
-      // When: aggregate를 호출하면
+      // When
       const result = await aggregate(params);
 
-      // Then: 카테고리별 집계가 정확
+      // Then
       expect(result.categoryBreakdown).toHaveLength(2);
 
       const work = result.categoryBreakdown.find((c) => c.name === "업무");
@@ -351,7 +296,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     });
 
     it("시간대별 패턴이 completedAt 기반으로 계산되어야 한다", async () => {
-      // Given: 같은 시간대에 2개 완료
+      // Given
       await createTodo({
         startDate: new Date("2026-02-24T00:00:00.000Z"),
         completed: true,
@@ -365,10 +310,10 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
       const params = createParams();
 
-      // When: aggregate를 호출하면
+      // When
       const result = await aggregate(params);
 
-      // Then: 10시에 2개 완료 패턴
+      // Then
       expect(result.timePatterns.length).toBeGreaterThan(0);
       const hourTen = result.timePatterns.find((p) => p.hour === 10);
       expect(hourTen).toBeDefined();
@@ -376,7 +321,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     });
 
     it("이전 기간 달성률을 정확하게 계산해야 한다", async () => {
-      // Given: 이전 기간에 2개 중 1개 완료
+      // Given
       await createTodo({
         startDate: new Date("2026-02-17T00:00:00.000Z"),
         completed: true,
@@ -387,7 +332,6 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
         completed: false,
       });
 
-      // 현재 기간에 1개 완료
       await createTodo({
         startDate: new Date("2026-02-24T00:00:00.000Z"),
         completed: true,
@@ -396,36 +340,30 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
       const params = createParams();
 
-      // When: aggregate를 호출하면
+      // When
       const result = await aggregate(params);
 
-      // Then: 이전 기간 달성률 50%
+      // Then
       expect(result.prevCompletionRate).toBe(50);
       expect(result.completionRate).toBe(100);
     });
   });
-  it("활성 UoW의 미커밋 쓰기를 읽고 롤백 후 Prisma 8 조회에 노출하지 않는다", async () => {
+  it("활성 UoW의 미커밋 쓰기를 읽고 롤백 후 조회에 노출하지 않는다", async () => {
     const params = createParams();
-    const category = decodeRecord(
-      "TodoCategory",
-      requireRecord(
-        await prismaClient.orm.public.TodoCategory.where((row) =>
-          row.userId.eq(testUserId),
-        ).first(),
-      ),
-    );
+    const category = await client.query.todoCategory.findFirst({ where: { userId: testUserId } });
+    if (category === undefined) {
+      throw new Error("category fixture 누락");
+    }
     await expect(
       uow.run(async () => {
-        await txHost.tx.orm.public.Todo.create(
-          encodeCreate("Todo", {
-            userId: testUserId,
-            categoryId: category.id,
-            title: "미커밋 할 일",
-            startDate: params.startDate,
-            completed: true,
-            completedAt: new Date("2026-02-23T23:30:00.000Z"),
-          }),
-        );
+        await txHost.tx.insert(todo).values({
+          userId: testUserId,
+          categoryId: category.id,
+          title: "미커밋 할 일",
+          startDate: params.startDate,
+          completed: true,
+          completedAt: new Date("2026-02-23T23:30:00.000Z"),
+        });
         const inputs = await reader.fetchAggregationInputs(params);
         expect(
           assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone)
@@ -446,40 +384,28 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       completedAt: new Date("2026-03-01T23:30:00.000Z"),
     });
     await createTodo({ startDate: params.endDate, completed: true, completedAt: params.endDate });
-    const otherUser = decodeRecord(
-      "User",
-      await prismaClient.orm.public.User.create(
-        encodeCreate("User", {
-          email: "other-aggregator@example.com",
-          userTag: "OTHER001",
-          status: "ACTIVE",
-        }),
-      ),
-    );
-    const otherCategory = decodeRecord(
-      "TodoCategory",
-      await prismaClient.orm.public.TodoCategory.create(
-        encodeCreate("TodoCategory", {
-          userId: otherUser.id,
-          name: "다른 사용자",
-          color: "#FF0000",
-          sortOrder: 0,
-        }),
-      ),
-    );
-    decodeRecord(
-      "Todo",
-      await prismaClient.orm.public.Todo.create(
-        encodeCreate("Todo", {
-          userId: otherUser.id,
-          categoryId: otherCategory.id,
-          title: "다른 사용자의 할 일",
-          startDate: params.startDate,
-          completed: true,
-          completedAt: params.startDate,
-        }),
-      ),
-    );
+    const [otherUser] = await client
+      .insert(user)
+      .values({ email: "other-aggregator@example.com", userTag: "OTHER001", status: "ACTIVE" })
+      .returning();
+    if (otherUser === undefined) {
+      throw new Error("other user fixture 누락");
+    }
+    const [otherCategory] = await client
+      .insert(todoCategory)
+      .values({ userId: otherUser.id, name: "다른 사용자", color: "#FF0000", sortOrder: 0 })
+      .returning();
+    if (otherCategory === undefined) {
+      throw new Error("other category fixture 누락");
+    }
+    await client.insert(todo).values({
+      userId: otherUser.id,
+      categoryId: otherCategory.id,
+      title: "다른 사용자의 할 일",
+      startDate: params.startDate,
+      completed: true,
+      completedAt: params.startDate,
+    });
     const result = await aggregate(params);
     expect(result.totalTodos).toBe(2);
     expect(result.completedTodos).toBe(2);

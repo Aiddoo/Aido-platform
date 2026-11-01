@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, count as countRows, eq, inArray } from "drizzle-orm";
 
 import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import {
@@ -10,8 +10,15 @@ import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/inv
 import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/get-my-invite.use-case";
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
 import { RotateInviteCode } from "#api/modules/social/application/use-cases/invites/rotate-invite-code.use-case";
-import { encodeCreate } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  follow,
+  inviteRedemption,
+  premiumGrant,
+  rewardClaim,
+  rewardGrant,
+  user,
+} from "#api/platform/database/schema/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -53,20 +60,17 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
 
   async function createUser(userTag: string): Promise<string> {
     const id = createEntityId();
-    await client.orm.public.User.create(
-      encodeCreate(
-        "User",
-        UserFixture.create({ id, userTag, email: `${userTag.toLowerCase()}@example.test` }),
-      ),
-    );
+    await client
+      .insert(user)
+      .values(UserFixture.create({ id, userTag, email: `${userTag.toLowerCase()}@example.test` }));
     return id;
   }
 
-  async function count(model: "InviteRedemption" | "RewardGrant" | "RewardClaim" | "PremiumGrant") {
-    const result = await client.orm.public[model].aggregate((aggregate) => ({
-      count: aggregate.count(),
-    }));
-    return result.count;
+  async function count(
+    table: typeof inviteRedemption | typeof rewardGrant | typeof rewardClaim | typeof premiumGrant,
+  ) {
+    const [result] = await client.select({ count: countRows() }).from(table);
+    return result?.count ?? 0;
   }
 
   it("같은 초대받은 사람이 동시에 여러 번 수락해도 수락 기록과 보상은 한 번만 남는다", async () => {
@@ -97,9 +101,9 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     expect(outcomes).toEqual(Array.from({ length: 6 }, () => "REDEEMED"));
     expect(fulfilled.filter((result) => !result.isReplay)).toHaveLength(1);
     expect(new Set(fulfilled.map((result) => result.redemptionId)).size).toBe(1);
-    expect(await count("InviteRedemption")).toBe(1);
-    expect(await count("RewardGrant")).toBe(1);
-    expect(await count("PremiumGrant")).toBe(1);
+    expect(await count(inviteRedemption)).toBe(1);
+    expect(await count(rewardGrant)).toBe(1);
+    expect(await count(premiumGrant)).toBe(1);
   });
 
   it("초대 수락과 초대받은 사람의 스토어 구매 웹훅이 동시에 와도 교착 없이 보상을 한 번만 남긴다", async () => {
@@ -133,12 +137,12 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const access = await context.module
       .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
       .getPremiumAccess(inviteeId);
-    // 수락이 먼저면 바로 시작한 7일을 구매 시각에 끊어 다시 쌓고, 구매가 먼저면 처음부터 쌓는다
     expect(access).toMatchObject({ source: "STORE", bankedDays: 7 });
     expect(
-      await client.orm.public.RewardGrant.where((grant) => grant.recipientId.eq(inviteeId))
-        .select("status")
-        .all(),
+      await client
+        .select({ status: rewardGrant.status })
+        .from(rewardGrant)
+        .where(eq(rewardGrant.recipientId, inviteeId)),
     ).toEqual([{ status: "APPLIED" }]);
   });
 
@@ -172,7 +176,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
       result.status === "fulfilled" ? result.value.outcome : "rejected",
     );
     expect(outcomes.sort()).toEqual(["ALREADY_FRIENDS", "REDEEMED"]);
-    expect(await count("InviteRedemption")).toBe(1);
+    expect(await count(inviteRedemption)).toBe(1);
   });
 
   it("수락 중에 초대 코드를 재발급하면 수락은 이전 코드 기준으로 끝나거나 INVITE_2102다", async () => {
@@ -196,10 +200,10 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     expect(rotated.status).toBe("fulfilled");
     if (redeemed.status === "fulfilled") {
       expect(redeemed.value.outcome).toBe("REDEEMED");
-      expect(await count("InviteRedemption")).toBe(1);
+      expect(await count(inviteRedemption)).toBe(1);
     } else {
       expect(redeemed.reason).toMatchObject({ errorCode: ErrorCode.INVITE_2102 });
-      expect(await count("InviteRedemption")).toBe(0);
+      expect(await count(inviteRedemption)).toBe(0);
     }
   });
 
@@ -234,15 +238,15 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
       (result) => result.outcome === "REDEEMED" && result.rewards.length > 0,
     );
     expect(rewarded).toHaveLength(1);
-    expect(await count("InviteRedemption")).toBe(4);
-    expect(await count("RewardGrant")).toBe(1);
-    // 기기 claim에서 진 수락은 초대한 사람 보상 자격도 없고, 함께 넣으려던 신원 claim도 남기지 않는다
-    const redemptions = await client.orm.public.InviteRedemption.where({ inviterId })
-      .select("inviterRewardEligible", "timezone")
-      .all();
+    expect(await count(inviteRedemption)).toBe(4);
+    expect(await count(rewardGrant)).toBe(1);
+    const redemptions = await client.query.inviteRedemption.findMany({
+      columns: { inviterRewardEligible: true, timezone: true },
+      where: { inviterId },
+    });
     expect(redemptions.filter((row) => row.inviterRewardEligible)).toHaveLength(1);
     expect(new Set(redemptions.map((row) => row.timezone))).toEqual(new Set(["Asia/Seoul"]));
-    expect(await count("RewardClaim")).toBe(2);
+    expect(await count(rewardClaim)).toBe(2);
   });
 
   it("처음 수락 뒤 친구를 끊고 같은 초대를 다시 누르면 추정하지 않고 친구 관계를 다시 맞춘다", async () => {
@@ -252,9 +256,14 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const { code } = await getMyInvite.execute({ inviterId });
     const request = { inviteeId, code, installationId: "replay-device", timezone: "Asia/Seoul" };
     const first = await redeemInvite.execute(request);
-    await client.orm.public.Follow.where((row) =>
-      and(row.followerId.in([inviterId, inviteeId]), row.followingId.in([inviterId, inviteeId])),
-    ).deleteAndCount();
+    await client
+      .delete(follow)
+      .where(
+        and(
+          inArray(follow.followerId, [inviterId, inviteeId]),
+          inArray(follow.followingId, [inviterId, inviteeId]),
+        ),
+      );
 
     // When
     const replayed = await redeemInvite.execute({ ...request, timezone: "Pacific/Kiritimati" });
@@ -262,9 +271,12 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     // Then
     expect(first).toMatchObject({ outcome: "REDEEMED", friendship: "FRIENDS", isReplay: false });
     expect(replayed).toMatchObject({ outcome: "REDEEMED", friendship: "FRIENDS", isReplay: true });
-    expect(await count("InviteRedemption")).toBe(1);
+    expect(await count(inviteRedemption)).toBe(1);
     expect(
-      await client.orm.public.InviteRedemption.where({ inviteeId }).select("timezone").first(),
+      await client.query.inviteRedemption.findFirst({
+        columns: { timezone: true },
+        where: { inviteeId },
+      }),
     ).toEqual({ timezone: "Asia/Seoul" });
   });
 });

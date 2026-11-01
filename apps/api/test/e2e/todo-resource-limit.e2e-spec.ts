@@ -1,5 +1,5 @@
 import { TODO_LIMITS } from "@aido/api";
-import request from "supertest";
+import { eq } from "drizzle-orm";
 /**
  * Todo 리소스 제한 E2E 테스트
  *
@@ -8,9 +8,9 @@ import request from "supertest";
  * 제한은 구독 유형에 관계없이 동일하게 적용됩니다.
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
+import request from "supertest";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { todo, user as userTable } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -35,7 +35,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
   describe("카테고리당 활성 Todo 제한", () => {
     it(`활성 Todo ${CATEGORY_LIMIT}개 도달 후 생성 시 403 에러, 리소스 제한 조회, categoryId 없이 조회`, async () => {
-      // Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-limit-cat@test.com", password);
       const accessToken = user.accessToken;
       const userId = user.userId;
@@ -49,11 +49,9 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.orm.public.Todo.createAndCount(
-        todos.map((value) => encodeCreate("Todo", value)),
-      );
+      await prisma.insert(todo).values(todos);
 
-      // When - 추가 Todo 생성 시도
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -64,27 +62,27 @@ describe("할 일 리소스 제한 E2E", () => {
         })
         .expect(403);
 
-      // Then - 403 에러와 TODO_0811 코드 반환
+      // Then
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("TODO_0811");
 
-      // When - categoryId로 리소스 제한 조회
+      // When
       const limitResponse = await request(ctx.app.getHttpServer())
         .get(`/v1/todos/resource-limit?categoryId=${categoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - activeCount와 maxPerCategory가 CATEGORY_LIMIT과 일치
+      // Then
       expect(limitResponse.body.data.activeCount).toBe(CATEGORY_LIMIT);
       expect(limitResponse.body.data.maxPerCategory).toBe(CATEGORY_LIMIT);
 
-      // When - categoryId 없이 리소스 제한 조회
+      // When
       const noIdResponse = await request(ctx.app.getHttpServer())
         .get("/v1/todos/resource-limit")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - maxPerCategory만 반환되고 activeCount는 없음
+      // Then
       expect(noIdResponse.body.data.maxPerCategory).toBe(CATEGORY_LIMIT);
       expect(noIdResponse.body.data.activeCount).toBeUndefined();
     });
@@ -92,7 +90,7 @@ describe("할 일 리소스 제한 E2E", () => {
 
   describe("활성 Todo 완료 후 생성 가능", () => {
     it("활성 Todo 1개 완료 후 새 Todo 생성 성공", async () => {
-      // Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-limit-complete@test.com", password);
       const accessToken = user.accessToken;
       const userId = user.userId;
@@ -106,24 +104,19 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.orm.public.Todo.createAndCount(
-        todos.map((value) => encodeCreate("Todo", value)),
-      );
+      await prisma.insert(todo).values(todos);
 
-      // 첫 번째 Todo ID 조회
-      const firstTodo = decodeRecord(
-        "Todo",
-        await prisma.orm.public.Todo.where((row) => row.userId.eq(userId))
-          .orderBy((row) => row.id.asc())
-          .first(),
-      );
+      const firstTodo = await prisma.query.todo.findFirst({
+        where: { userId },
+        orderBy: { id: "asc" },
+      });
       expect(firstTodo).toBeDefined();
       if (firstTodo == null) {
         throw new Error("첫 Todo가 있어야 한다");
       }
       const firstTodoId = firstTodo.id;
 
-      // When - 1개 완료 후 새 Todo 생성
+      // When
       await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${firstTodoId}/complete`)
         .set("Authorization", `Bearer ${accessToken}`)
@@ -140,20 +133,19 @@ describe("할 일 리소스 제한 E2E", () => {
         })
         .expect(201);
 
-      // Then - 새 Todo 생성 성공
+      // Then
       expect(response.body.data.todo.title).toBe("완료 후 새 할 일");
     });
   });
 
   describe("다른 카테고리에는 생성 가능", () => {
     it("한 카테고리가 꽉 차도 다른 카테고리에는 생성 가능", async () => {
-      // Given - fullCategoryId에 CATEGORY_LIMIT개, emptyCategoryId에 0개
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-limit-other-cat@test.com", password);
       const accessToken = user.accessToken;
       const userId = user.userId;
       const fullCategoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-      // 새 카테고리 생성
       const catResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -161,7 +153,6 @@ describe("할 일 리소스 제한 E2E", () => {
         .expect(201);
       const emptyCategoryId = catResponse.body.data.category.id;
 
-      // 첫 번째 카테고리에 CATEGORY_LIMIT개 삽입
       const prisma = ctx.testDatabase.getClient();
       const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
         userId,
@@ -170,11 +161,9 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.orm.public.Todo.createAndCount(
-        todos.map((value) => encodeCreate("Todo", value)),
-      );
+      await prisma.insert(todo).values(todos);
 
-      // When - 꽉 찬 카테고리에 생성 시도
+      // When
       await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -185,7 +174,7 @@ describe("할 일 리소스 제한 E2E", () => {
         })
         .expect(403);
 
-      // When - 빈 카테고리에 생성 시도
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -196,32 +185,26 @@ describe("할 일 리소스 제한 E2E", () => {
         })
         .expect(201);
 
-      // Then - 빈 카테고리에는 생성 성공
+      // Then
       expect(response.body.data.todo.title).toBe("다른 카테고리 할 일");
     });
   });
 
   describe("프리미엄/무료 동일 카테고리당 제한", () => {
     it("프리미엄 유저도 카테고리당 한도에 도달하면 생성 불가, 리소스 제한 조회 확인", async () => {
-      // Given - 카테고리에 활성 Todo가 CATEGORY_LIMIT개 존재하는 Premium 유저
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-limit-premium@test.com", password);
       const accessToken = user.accessToken;
       const userId = user.userId;
 
-      // 구독 상태를 ACTIVE로 변경
       const prisma = ctx.testDatabase.getClient();
-      decodeRecord(
-        "User",
-        requireRecord(
-          await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
-            encodePatch("User", { subscriptionStatus: "ACTIVE" }),
-          ),
-        ),
-      );
+      await prisma
+        .update(userTable)
+        .set({ subscriptionStatus: "ACTIVE" })
+        .where(eq(userTable.id, userId));
 
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-      // DB에 활성 Todo를 CATEGORY_LIMIT개 삽입
       const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
         userId,
         title: `프리미엄 할 일 ${i + 1}`,
@@ -229,11 +212,9 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.orm.public.Todo.createAndCount(
-        todos.map((value) => encodeCreate("Todo", value)),
-      );
+      await prisma.insert(todo).values(todos);
 
-      // When - 추가 Todo 생성 시도
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -244,17 +225,17 @@ describe("할 일 리소스 제한 E2E", () => {
         })
         .expect(403);
 
-      // Then - 403 에러와 TODO_0811 코드 반환
+      // Then
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("TODO_0811");
 
-      // When - categoryId로 리소스 제한 조회
+      // When
       const limitResponse = await request(ctx.app.getHttpServer())
         .get(`/v1/todos/resource-limit?categoryId=${categoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - maxPerCategory와 activeCount가 CATEGORY_LIMIT과 일치
+      // Then
       expect(limitResponse.body.data.maxPerCategory).toBe(CATEGORY_LIMIT);
       expect(limitResponse.body.data.activeCount).toBe(CATEGORY_LIMIT);
     });

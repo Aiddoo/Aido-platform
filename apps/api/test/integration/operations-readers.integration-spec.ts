@@ -2,9 +2,9 @@ import { vi } from "vitest";
 
 import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
 import { DrizzleSignupStatsReader } from "#api/modules/operations/infrastructure/adapters/notifications/drizzle-signup-stats.reader";
-import { encodeCreate } from "#api/platform/database/database-records";
+import { account, user } from "#api/platform/database/schema/index";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
-import { createTestDatabaseService } from "#test/setup/database-context";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const START = new Date("2026-10-07T15:00:00.000Z");
@@ -19,9 +19,9 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase();
     client = await database.start();
-    const service = createTestDatabaseService(client);
-    directory = new DrizzleAdminUserDirectoryAdapter(service);
-    signupStats = new DrizzleSignupStatsReader(service);
+    const { txHost } = createDatabaseTransactionFixture(client);
+    directory = new DrizzleAdminUserDirectoryAdapter(txHost);
+    signupStats = new DrizzleSignupStatsReader(txHost);
   });
   afterAll(async () => database?.stop());
   beforeEach(async () => {
@@ -40,16 +40,16 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
       { provider: "GOOGLE", createdAt: new Date(START.getTime() + 1) },
       { provider: "GOOGLE", createdAt: END },
     ] as const;
-    for (const account of accounts) {
-      const user = UserFixture.create();
-      await client.orm.public.User.create(encodeCreate("User", user));
-      await client.orm.public.Account.create(
-        encodeCreate("Account", AccountFixture.create({ ...account, userId: user.id })),
-      );
+    for (const item of accounts) {
+      const created = UserFixture.create();
+      await client.insert(user).values(created);
+      await client.insert(account).values(AccountFixture.create({ ...item, userId: created.id }));
     }
-    await client.orm.public.User.create(encodeCreate("User", UserFixture.create()));
+    await client.insert(user).values(UserFixture.create());
+
     // When
     const stats = await signupStats.getSignupStats(START, END);
+
     // Then
     expect(stats.totalUsers).toBe(4);
     expect(
@@ -65,19 +65,19 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     const activeUsers = Array.from({ length: 501 }, (_, index) =>
       UserFixture.create({ id: `active-${String(index).padStart(4, "0")}` }),
     );
-    await client.orm.public.User.createAndCount(
-      [
-        ...activeUsers,
-        UserFixture.create({ status: "SUSPENDED" }),
-        UserFixture.create({ deletedAt: END }),
-      ].map((user) => encodeCreate("User", user)),
-    );
+    await client.insert(user).values([
+      ...activeUsers,
+      UserFixture.create({ status: "SUSPENDED" }),
+      UserFixture.create({ deletedAt: END }),
+    ]);
+
     // When
     const batches = [];
     for await (const batch of directory.streamTargetUserIds("ALL")) batches.push(batch);
+
     // Then
     expect(batches.map((batch) => batch.length)).toEqual([500, 1]);
-    expect(batches.flat()).toEqual(activeUsers.map((user) => user.id));
+    expect(batches.flat()).toEqual(activeUsers.map((item) => item.id));
   });
 
   it("지정 발송은 기존 상태 필터를 바꾸지 않고 삭제되거나 없는 사용자만 제외한다", async () => {
@@ -85,9 +85,8 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     const active = UserFixture.create();
     const suspended = UserFixture.create({ status: "SUSPENDED" });
     const deleted = UserFixture.create({ deletedAt: END });
-    await client.orm.public.User.createAndCount(
-      [active, suspended, deleted].map((user) => encodeCreate("User", user)),
-    );
+    await client.insert(user).values([active, suspended, deleted]);
+
     // When
     const ids = await directory.findExistingUserIds([
       active.id,
@@ -96,6 +95,7 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
       "missing-user",
       active.id,
     ]);
+
     // Then
     expect(ids.toSorted()).toEqual([active.id, suspended.id].toSorted());
   });
