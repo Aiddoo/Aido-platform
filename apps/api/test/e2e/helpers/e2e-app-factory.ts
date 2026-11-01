@@ -24,6 +24,7 @@ import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
 import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
 import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
 import { createOAuthProviderRegistry } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
@@ -61,6 +62,7 @@ import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.pro
 import { FakeLogger } from "../../mocks/fake-logger.service.js";
 import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
 import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service.js";
+import { FakePasswordHasher } from "../../mocks/fake-password-hasher.js";
 import { FakePushProvider } from "../../mocks/fake-push.provider.js";
 import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider.js";
 import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
@@ -203,6 +205,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)
     .useValue(testDatabase.getClient())
+    .overrideProvider(PasswordService)
+    .useClass(FakePasswordHasher)
     .overrideProvider(TransactionalEmailSender)
     .useValue(fakeEmailService)
     .overrideProvider(OAuthTokenVerifierService)
