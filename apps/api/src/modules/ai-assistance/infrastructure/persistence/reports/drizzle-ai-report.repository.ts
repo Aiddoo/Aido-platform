@@ -66,7 +66,7 @@ export class DrizzleAiReportRepository implements AiReportRepositoryPort {
 
   async findMany(params: FindReportsParams): Promise<AiReport[]> {
     const rows = await this.db.query.aiReport.findMany({
-      where: { userId: params.userId, type: params.type },
+      where: { userId: params.userId, ...(params.type == null ? {} : { type: params.type }) },
       orderBy: { generatedAt: "desc" },
       limit: params.limit,
     });
