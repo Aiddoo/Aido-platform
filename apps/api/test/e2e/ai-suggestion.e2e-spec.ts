@@ -19,9 +19,9 @@ import {
  * - 인증 에러 (401)
  */
 import { CacheService } from "#api/platform/cache/cache.service";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

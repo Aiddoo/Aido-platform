@@ -6,15 +6,15 @@ import { Injectable } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";
 import sql, { join } from "sql-template-tag";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
+import {
+  isUniqueConstraintViolation,
+  uniqueConstraintTargets,
+} from "#api/platform/database/database-error.util";
 import type { DatabaseRecord } from "#api/platform/database/database-records";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { databaseTimestamp } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import {
-  isUniqueConstraintViolation,
-  uniqueConstraintTargets,
-} from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { ApplicationException } from "#api/shared/domain/index";
 

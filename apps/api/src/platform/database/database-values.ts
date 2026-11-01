@@ -1,5 +1,3 @@
-import { randomBytes } from "node:crypto";
-
 import type {
   Char,
   TimestampString,
@@ -11,11 +9,6 @@ import {
   pgTimestamptzStoredText,
 } from "@prisma/orm-postgres/target/data-types";
 import { z } from "zod";
-
-/** 기존 공개 계약의 c 접두사·25자 형식을 유지한다. 시간·프로세스 정보를 ID에 노출하지 않는다. */
-export function createEntityId(): string {
-  return `c${randomBytes(12).toString("hex")}`;
-}
 
 /** Prisma 8의 길이 brand를 인프라 경계에서 검증한다. PostgreSQL의 문자 길이를 따른다. */
 export function varchar<const Length extends number>(

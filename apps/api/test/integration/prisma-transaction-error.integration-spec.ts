@@ -1,11 +1,11 @@
 import { or } from "@prisma/orm-postgres/orm-client";
 
-import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import {
   databaseConstraint,
   databaseSqlState,
   isTransactionWriteConflict,
-} from "#api/platform/database/prisma-error.util";
+} from "#api/platform/database/database-error.util";
+import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";

@@ -5,9 +5,9 @@ import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import { OrderByItem } from "@prisma/orm-postgres/relational-core/ast";
 import { sumBy } from "es-toolkit";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type {

@@ -4,10 +4,10 @@ import { all, and } from "@prisma/orm-postgres/orm-client";
 import { uniq } from "es-toolkit";
 import sql from "sql-template-tag";
 
+import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { toInputJson } from "#api/platform/database/json.util";
-import { isUniqueConstraintViolation } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 

@@ -16,7 +16,7 @@ import {
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";

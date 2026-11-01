@@ -1,4 +1,4 @@
-import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import {
   createMockTransactionHost,
   databaseWriteExpectation,

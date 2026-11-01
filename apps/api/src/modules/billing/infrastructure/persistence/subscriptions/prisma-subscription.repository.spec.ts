@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { varchar } from "#api/platform/database/database-values";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import {
   assertNativeWhere,
   createMockTransactionHost,

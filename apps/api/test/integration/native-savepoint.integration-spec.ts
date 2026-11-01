@@ -3,12 +3,12 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import sql from "sql-template-tag";
 
+import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { DatabaseModule } from "#api/platform/database/database.module";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { PostgresPool } from "#api/platform/database/postgres-pool";
-import { databaseSqlState } from "#api/platform/database/prisma-error.util";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import {
   AFTER_COMMIT_TASK_REGISTRY,

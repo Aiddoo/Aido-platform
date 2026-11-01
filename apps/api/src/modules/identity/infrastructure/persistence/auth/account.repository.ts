@@ -6,11 +6,11 @@ import {
   type AuthAccountRepositoryPort,
   AuthPersistenceConflict,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import { requireRecord } from "#api/platform/database/database-error.util";
+import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
 import type { Account, AccountProvider } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { isUniqueConstraintViolation } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { EncryptionService } from "#api/platform/encryption/index";
 

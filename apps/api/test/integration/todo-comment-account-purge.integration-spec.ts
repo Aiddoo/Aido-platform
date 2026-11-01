@@ -27,10 +27,10 @@ import {
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
 import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";

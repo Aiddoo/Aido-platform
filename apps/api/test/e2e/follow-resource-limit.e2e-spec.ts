@@ -13,8 +13,8 @@ import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

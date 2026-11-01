@@ -1,5 +1,6 @@
 import request from "supertest";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 /**
  * Admin E2E 테스트
@@ -15,7 +16,6 @@ import { decodeRecord, encodePatch } from "#api/platform/database/database-recor
  * 4. 인증 없이 호출하면 401을 반환한다
  */
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

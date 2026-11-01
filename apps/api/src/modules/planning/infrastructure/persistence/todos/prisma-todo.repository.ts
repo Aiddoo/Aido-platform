@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { groupBy, sortBy } from "es-toolkit";
 import sql, { join } from "sql-template-tag";
 
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import {
   decodeRecord,
   encodeCreate,
@@ -11,7 +12,6 @@ import {
 } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { databaseTimestamp } from "#api/platform/database/database-values";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 

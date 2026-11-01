@@ -6,9 +6,9 @@ import { contractFromJson } from "@prisma/orm-postgres/static";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
+import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { isUniqueConstraintViolation } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import {
   USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS,
   UserFixture,

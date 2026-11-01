@@ -1,7 +1,7 @@
 import type { Todo } from "@aido/api";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DatabaseRecord } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import {
   toDateString,
   toDateStringOrNull,

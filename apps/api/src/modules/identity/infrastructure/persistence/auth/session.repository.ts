@@ -10,10 +10,10 @@ import type {
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import type { CreateSessionData } from "#api/modules/identity/application/types/auth/index";
 import { AUTH_DEFAULTS } from "#api/modules/identity/domain/constants/auth/auth.constants";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import type { Session } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 

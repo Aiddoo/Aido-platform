@@ -4,9 +4,9 @@ import {
   RETENTION_CONFIG,
   type RetentionConfigPort,
 } from "#api/modules/notification/application/ports/retention/retention-config.port";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

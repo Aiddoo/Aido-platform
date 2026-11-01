@@ -10,12 +10,12 @@ import {
   type AuthUserProfileRecord,
   type AuthUserRepositoryPort,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import { requireRecord } from "#api/platform/database/database-error.util";
+import { uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DatabaseCreate } from "#api/platform/database/database-records";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseDate, databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import type { User, UserStatus } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { uniqueConstraintTargets } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";

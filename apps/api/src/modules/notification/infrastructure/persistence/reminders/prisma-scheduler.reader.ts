@@ -9,10 +9,10 @@ import {
 } from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord } from "#api/platform/database/database-records";
 import { databaseDate, databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { toSupportedLocale } from "#api/shared/domain/locale";

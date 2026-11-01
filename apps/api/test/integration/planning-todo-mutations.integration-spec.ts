@@ -13,11 +13,11 @@ import { CreateRecurringTodos } from "#api/modules/planning/application/use-case
 import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
 import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
 import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
 import { contract } from "#api/platform/database/database.service";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import {
   DOMAIN_EVENT_PUBLISHER,
   UNIT_OF_WORK,

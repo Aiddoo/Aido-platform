@@ -8,9 +8,9 @@ import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/in
 import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
 import { PrismaPushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-receipt.repository";
 import { PrismaPushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-token.repository";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";

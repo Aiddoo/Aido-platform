@@ -19,10 +19,10 @@ import { buildTodoConversationTreeCtes } from "#api/modules/engagement/infrastru
 import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/infrastructure/security/comments/hmac-todo-comment-cursor.codec";
 import { PrismaUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/prisma-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";

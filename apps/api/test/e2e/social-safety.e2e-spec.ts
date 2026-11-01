@@ -7,9 +7,9 @@
 
 import request from "supertest";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import {
   createE2eApp,

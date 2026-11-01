@@ -1,4 +1,4 @@
-import { sqlQueryError } from "#test/mocks/database.mock";
+import { postgresError, sqlQueryError } from "#test/mocks/database.mock";
 
 import {
   databaseConstraint,
@@ -8,9 +8,9 @@ import {
   isTransactionWriteConflict,
   isUniqueConstraintViolation,
   uniqueConstraintTargets,
-} from "./prisma-error.util.js";
+} from "./database-error.util.js";
 
-describe("native PostgreSQL 오류 변환 경계", () => {
+describe("PostgreSQL 오류 변환 경계", () => {
   it.each(["40001", "40P01"])("transaction 오류 %s는 재시도한다", (state) => {
     expect(isTransactionWriteConflict(sqlQueryError(state))).toBe(true);
   });
@@ -24,7 +24,7 @@ describe("native PostgreSQL 오류 변환 경계", () => {
     expect(databaseSqlState(Object.assign(new Error("plain"), { code: "40001" }))).toBeUndefined();
     expect(isTransactionWriteConflict(new Error("TransactionWriteConflict"))).toBe(false);
   });
-  it("contract에서 native unique constraint의 필드를 조회한다", () => {
+  it("스키마에서 unique constraint의 컬럼을 조회한다", () => {
     const error = sqlQueryError("23505", "User_email_key");
     expect(isUniqueConstraintViolation(error)).toBe(true);
     expect(databaseConstraint(error)).toBe("User_email_key");
@@ -66,8 +66,8 @@ describe("native PostgreSQL 오류 변환 경계", () => {
 
   it("SQLSTATE와 constraint는 서로 다른 오류 노드에서 합치지 않는다", () => {
     // Given
-    const error = sqlQueryError("23505");
-    error.cause = sqlQueryError("23505", "User_email_key");
+    const error = postgresError("23505");
+    error.cause = postgresError("23505", "User_email_key");
     // When
     const constraint = databaseConstraint(error);
     // Then
@@ -117,9 +117,9 @@ describe("native PostgreSQL 오류 변환 경계", () => {
     expect(isTransactionWriteConflict(first)).toBe(false);
   });
 
-  it("자기 자신을 참조하는 native DB 오류는 자신의 metadata를 유지한다", () => {
+  it("자기 자신을 참조하는 DB 오류는 자신의 metadata를 유지한다", () => {
     // Given
-    const error = sqlQueryError("23505", "User_email_key");
+    const error = postgresError("23505", "User_email_key");
     error.cause = error;
     // When
     const targets = uniqueConstraintTargets(error);

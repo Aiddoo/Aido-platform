@@ -7,10 +7,10 @@ import { Register } from "#api/modules/identity/application/use-cases/auth/regis
 import { RequestPasswordReset } from "#api/modules/identity/application/use-cases/auth/request-password-reset.use-case";
 import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
 import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createTestDatabaseService } from "#test/setup/database-context";

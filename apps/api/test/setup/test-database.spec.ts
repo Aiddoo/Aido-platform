@@ -3,6 +3,7 @@ import { vi, type Mock } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { contract } from "#api/platform/database/database.service";
+import { sqlQueryError } from "#test/mocks/database.mock";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "./test-database.js";
@@ -27,7 +28,7 @@ function createFakeTestDatabaseClient(executeRawUnsafe: ExecuteRawMock) {
 }
 
 function deadlock() {
-  return Object.assign(new Error("deadlock detected"), { kind: "sql_query", sqlState: "40P01" });
+  return sqlQueryError("40P01");
 }
 
 describe("TestDatabase", () => {
@@ -137,7 +138,7 @@ describe("TestDatabase", () => {
         .mockRejectedValue(deadlock());
       const testDatabase = await startWith(executeRawUnsafe);
 
-      await expect(testDatabase.cleanup()).rejects.toThrow("deadlock detected");
+      await expect(testDatabase.cleanup()).rejects.toThrow("SELECT 1");
       expect(executeRawUnsafe).toHaveBeenCalledTimes(3);
     });
   });

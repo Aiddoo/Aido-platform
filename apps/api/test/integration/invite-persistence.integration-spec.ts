@@ -12,12 +12,12 @@ import { PrismaInviteRedemptionRepository } from "#api/modules/social/infrastruc
 import { PrismaInviteRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-invite.repository";
 import { PrismaRewardClaimRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-reward-claim.repository";
 import { PrismaRewardGrantRepository } from "#api/modules/social/infrastructure/persistence/invites/prisma-reward-grant.repository";
+import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
 import { contract } from "#api/platform/database/database.service";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
-import { isUniqueConstraintViolation } from "#api/platform/database/prisma-error.util";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";

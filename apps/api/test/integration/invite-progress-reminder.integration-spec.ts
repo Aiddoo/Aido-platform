@@ -9,7 +9,8 @@ import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/
 import { SendInviteQualifyReminder } from "#api/modules/social/application/use-cases/invites/send-invite-qualify-reminder.use-case";
 import { qualifyReminderExpiresBefore } from "#api/modules/social/domain/policies/invites/invite-qualify-reminder.policy";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { applicationDate, createEntityId } from "#api/platform/database/database-values";
+import { applicationDate } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";

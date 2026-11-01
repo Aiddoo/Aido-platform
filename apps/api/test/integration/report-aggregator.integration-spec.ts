@@ -37,10 +37,11 @@ import type {
 } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
 import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId, varchar } from "#api/platform/database/database-values";
+import { varchar } from "#api/platform/database/database-values";
 import { DatabaseService, contract } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";

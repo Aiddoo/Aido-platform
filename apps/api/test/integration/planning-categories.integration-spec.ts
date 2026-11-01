@@ -15,7 +15,7 @@ import {
   type TodoCategoryProvisionerPort,
 } from "#api/modules/planning/planning-categories.public";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 

@@ -48,9 +48,9 @@ import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";

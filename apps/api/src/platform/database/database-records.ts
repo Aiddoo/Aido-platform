@@ -9,12 +9,12 @@ import {
   applicationTimestamp,
   applicationTimestamptz,
   char,
-  createEntityId,
   databaseDate,
   databaseTimestamp,
   databaseTimestamptz,
   varchar,
 } from "./database-values.js";
+import { createEntityId } from "./entity-id.js";
 
 type Models = Contract["domain"]["namespaces"]["public"]["models"];
 export type ModelName = keyof Models;

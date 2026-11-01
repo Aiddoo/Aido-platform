@@ -6,8 +6,8 @@ import { contractFromJson } from "@prisma/orm-postgres/static";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { encodeCreate, encodePatch, decodeRecord } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import {
   USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS,
   UserFixture,

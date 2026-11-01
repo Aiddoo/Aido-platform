@@ -1,7 +1,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { databaseTimestamp } from "#api/platform/database/database-values";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import {
   assertNativeWhere,
   createMockTransactionHost,

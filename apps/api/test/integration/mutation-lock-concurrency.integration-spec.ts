@@ -37,12 +37,12 @@ import { PrismaNudgeRepository } from "#api/modules/social/infrastructure/persis
 import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { varchar } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import type { Prisma8Transaction as TransactionClient } from "#api/platform/database/prisma8-transactional.adapter";
 import {

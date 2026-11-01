@@ -3,13 +3,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and } from "@prisma/orm-postgres/orm-client";
 
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
-import type * as PrismaModels from "#api/platform/database/database.types";
 import {
   requireRecord,
   isUniqueConstraintViolation,
-} from "#api/platform/database/prisma-error.util";
+} from "#api/platform/database/database-error.util";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
+import type * as PrismaModels from "#api/platform/database/database.types";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";

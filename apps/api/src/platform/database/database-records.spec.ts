@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { decodeRecord, encodeCreate, encodePatch } from "./database-records.js";
-import { createEntityId } from "./database-values.js";
+import { createEntityId } from "./entity-id.js";
 
 describe("DB record 변환 경계", () => {
   it("relation count 집계 값을 숫자로 유지한다", () => {

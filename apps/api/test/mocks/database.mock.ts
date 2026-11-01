@@ -11,7 +11,9 @@ import {
   type AnyQueryAst,
 } from "@prisma/orm-postgres/relational-core/ast";
 import postgres from "@prisma/orm-postgres/runtime";
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { isPlainObject } from "es-toolkit";
+import { DatabaseError } from "pg";
 import { vi, type Mock } from "vitest";
 import { mock, mockDeep, mockReset, type DeepMockProxy } from "vitest-mock-extended";
 
@@ -125,12 +127,15 @@ export function nativeRows<Row>(rows: readonly Row[]): AsyncIterableResult<Row> 
   );
 }
 
-export function sqlQueryError(sqlState: string, constraint?: string): Error {
-  return Object.assign(new Error(`PostgreSQL ${sqlState}`), {
-    kind: "sql_query",
-    sqlState,
+export function postgresError(sqlState: string, constraint?: string): DatabaseError {
+  return Object.assign(new DatabaseError(`PostgreSQL ${sqlState}`, 0, "error"), {
+    code: sqlState,
     constraint,
   });
+}
+
+export function sqlQueryError(sqlState: string, constraint?: string): Error {
+  return new DrizzleQueryError("SELECT 1", [], postgresError(sqlState, constraint));
 }
 
 /** Compare native predicates using an actual accessor; no database connection is opened. */

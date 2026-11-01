@@ -8,9 +8,9 @@ import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapter
 import { PrismaWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/prisma-weather-location.repository";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { databaseSqlState } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {

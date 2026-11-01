@@ -9,9 +9,9 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";

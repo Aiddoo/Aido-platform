@@ -25,10 +25,10 @@ import {
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

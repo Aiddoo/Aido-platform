@@ -20,10 +20,10 @@ import {
   NaverOAuthProvider,
 } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
 import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
 import type { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { FakeEmailService } from "#test/mocks/fake-email.service";

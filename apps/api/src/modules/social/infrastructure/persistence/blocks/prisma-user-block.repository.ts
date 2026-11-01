@@ -2,9 +2,9 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { type UserBlock as UserBlockRow } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type {

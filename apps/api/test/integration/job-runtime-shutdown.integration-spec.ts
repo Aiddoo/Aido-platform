@@ -3,8 +3,8 @@ import { Pool } from "pg";
 import { mock } from "vitest-mock-extended";
 
 import { encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { PostgresPool } from "#api/platform/database/postgres-pool";
 import { JobRuntimeLifecycle } from "#api/platform/jobs/job-runtime.module";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";

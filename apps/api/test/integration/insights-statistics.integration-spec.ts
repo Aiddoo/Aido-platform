@@ -10,9 +10,9 @@ import { GetWeeklyAchievement } from "#api/modules/insights/application/use-case
 import { GetWeeklyAchievements } from "#api/modules/insights/application/use-cases/weekly-achievements/get-weekly-achievements.use-case";
 import type { WeeklyAchievementUpsert } from "#api/modules/insights/domain/records/weekly-achievements/weekly-achievement.record";
 import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
+import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { contract } from "#api/platform/database/database.service";
-import { databaseSqlState } from "#api/platform/database/prisma-error.util";
 import {
   createE2eApp,
   destroyE2eApp,

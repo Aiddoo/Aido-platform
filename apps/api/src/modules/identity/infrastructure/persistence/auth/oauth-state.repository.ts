@@ -10,10 +10,10 @@ import type {
   ConsumeAuthOAuthStateInput,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import type { OAuthMode } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import type { AccountProvider, OAuthState } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { addMinutes } from "#api/shared/domain/date/utils/arithmetic";

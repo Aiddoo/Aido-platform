@@ -1,9 +1,9 @@
 /** Managed PostgreSQL test client. Global setup owns containers and native migration graphs. */
 import { raw } from "sql-template-tag";
 
+import { databaseSqlState } from "../../src/platform/database/database-error.util.js";
 import { sqlStatement } from "../../src/platform/database/database-sql.js";
 import type { DatabaseService } from "../../src/platform/database/database.service.js";
-import { databaseSqlState } from "../../src/platform/database/prisma-error.util.js";
 import { createTestClient } from "./database-context.js";
 import { assertManagedTestDatabaseEnvironment } from "./managed-test-database.js";
 

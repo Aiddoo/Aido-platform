@@ -27,10 +27,11 @@ import { UserConsentRepository } from "#api/modules/identity/infrastructure/pers
 import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId, varchar } from "#api/platform/database/database-values";
+import { varchar } from "#api/platform/database/database-values";
 import type { User } from "#api/platform/database/database.types";
-import { databaseSqlState } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import {
   TEST_AI_TASK_SETTINGS,

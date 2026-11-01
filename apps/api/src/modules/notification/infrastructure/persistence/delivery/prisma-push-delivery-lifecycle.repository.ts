@@ -4,11 +4,11 @@ import { and, or } from "@prisma/orm-postgres/orm-client";
 import { uniq } from "es-toolkit";
 import sql, { join } from "sql-template-tag";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { varchar } from "#api/platform/database/database-values";
 import type { PushDispatchOutboxStatus } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type {

@@ -4,8 +4,8 @@ import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/application/po
 import { GetDailyCompletions } from "#api/modules/insights/application/use-cases/daily-completions/get-daily-completions.use-case";
 import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
+import { createEntityId } from "#api/platform/database/entity-id";
 import {
   createE2eApp,
   destroyE2eApp,

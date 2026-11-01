@@ -1,6 +1,6 @@
 import type { CreateInput } from "@prisma/orm-postgres/orm-client";
 
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type { Contract } from "../../src/generated/prisma8/contract.d.js";

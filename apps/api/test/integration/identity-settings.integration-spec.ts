@@ -24,7 +24,7 @@ import {
 } from "#api/modules/notification/notification-reminders-cache.public";
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";

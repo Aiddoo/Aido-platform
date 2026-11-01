@@ -5,10 +5,10 @@ import { and, or } from "@prisma/orm-postgres/orm-client";
 import sql, { join } from "sql-template-tag";
 import { z } from "zod";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DatabaseRecord } from "#api/platform/database/database-records";
 import { decodeRecord } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 

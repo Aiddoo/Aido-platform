@@ -13,12 +13,12 @@ import { CreateMemo } from "#api/modules/notes/application/use-cases/memos/creat
 import { ReorderMemo } from "#api/modules/notes/application/use-cases/memos/reorder-memo.use-case";
 import { UpdateMemo } from "#api/modules/notes/application/use-cases/memos/update-memo.use-case";
 import { TodoCreatedEvent } from "#api/modules/planning/domain/events/todos/todo-created.event";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { contract } from "#api/platform/database/database.service";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,
-} from "#api/platform/database/prisma-error.util";
+} from "#api/platform/database/database-error.util";
+import { encodeCreate } from "#api/platform/database/database-records";
+import { contract } from "#api/platform/database/database.service";
 import {
   DOMAIN_EVENT_PUBLISHER,
   UNIT_OF_WORK,

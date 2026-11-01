@@ -4,15 +4,15 @@ import { Injectable } from "@nestjs/common";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import sql, { empty } from "sql-template-tag";
 
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
-import { type Follow as FollowRow } from "#api/platform/database/database.types";
 import {
   DatabaseRecordNotFoundError,
   isUniqueConstraintViolation,
   requireRecord,
-} from "#api/platform/database/prisma-error.util";
+} from "#api/platform/database/database-error.util";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
+import { type Follow as FollowRow } from "#api/platform/database/database.types";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 

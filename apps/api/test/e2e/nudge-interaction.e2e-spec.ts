@@ -19,8 +19,8 @@ import {
   NUDGE_NOTIFIER,
   type NudgeNotifierPort,
 } from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import {
   createE2eApp,

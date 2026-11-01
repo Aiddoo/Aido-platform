@@ -5,6 +5,7 @@ import {
   AI_PROVIDER,
   AI_TASK_SETTINGS,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { requireRecord } from "#api/platform/database/database-error.util";
 /**
  * AI 모듈 E2E 테스트
  *
@@ -19,7 +20,6 @@ import {
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import {
   createParsedMemoResponse,
   createParsedTodoResponse,

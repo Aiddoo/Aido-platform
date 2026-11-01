@@ -8,9 +8,9 @@ import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification
 import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository";
 import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
 import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 import {

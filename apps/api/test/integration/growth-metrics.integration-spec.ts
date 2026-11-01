@@ -3,9 +3,9 @@ import { vi } from "vitest";
 
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
 import { PrismaAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-growth-metrics.adapter";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
 import { createMockTransactionHost } from "#test/mocks/database.mock";
 import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";

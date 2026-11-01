@@ -4,9 +4,9 @@ import type { TransactionHost } from "@nestjs-cls/transactional";
 import { and } from "@prisma/orm-postgres/orm-client";
 
 import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 import { asDep } from "#test/mocks/index";

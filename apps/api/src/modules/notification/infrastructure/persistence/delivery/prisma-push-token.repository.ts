@@ -2,10 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and } from "@prisma/orm-postgres/orm-client";
 
+import { requireRecord } from "#api/platform/database/database-error.util";
+import { isRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { isRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 

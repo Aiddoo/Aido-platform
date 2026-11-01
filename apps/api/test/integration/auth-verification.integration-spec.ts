@@ -10,7 +10,7 @@ import { AccountRepository } from "#api/modules/identity/infrastructure/persiste
 import { VerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/verification.repository";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture, VerificationFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";

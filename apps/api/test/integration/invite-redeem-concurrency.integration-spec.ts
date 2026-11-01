@@ -11,7 +11,7 @@ import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/g
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
 import { RotateInviteCode } from "#api/modules/social/application/use-cases/invites/rotate-invite-code.use-case";
 import { encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";

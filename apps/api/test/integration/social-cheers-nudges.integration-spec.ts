@@ -19,8 +19,8 @@ import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send
 import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
 import { normalizeUserSearchQuery } from "#api/modules/social/domain/policies/friends/user-search-query.policy";
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
 import { contract } from "#api/platform/database/database.service";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createStatementObserver } from "#test/setup/statement-observer";

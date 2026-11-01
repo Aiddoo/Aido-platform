@@ -39,7 +39,7 @@ import {
 import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/domain/types/invites/reward-grant.types";
 import { InviteeActivitySubscriber } from "#api/modules/social/infrastructure/subscribers/invites/invitee-activity.subscriber";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";

@@ -9,6 +9,7 @@ import {
   type MarketingPushOptOutTokenPort,
 } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
+import { requireRecord } from "#api/platform/database/database-error.util";
 /**
  * Notification E2E 테스트
  *
@@ -23,7 +24,6 @@ import { SendBillingIssueNotification } from "#api/modules/notification/applicat
  * 4. 알림 읽음 처리
  */
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
