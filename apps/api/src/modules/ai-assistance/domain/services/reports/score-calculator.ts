@@ -5,6 +5,8 @@
  * 순수 함수로 구성되어 외부 의존성이 없습니다.
  */
 
+import { clamp, meanBy } from "es-toolkit";
+
 /**
  * 일관성 점수 계산 (0-100)
  *
@@ -16,16 +18,15 @@ export function calculateConsistencyScore(dailyCounts: number[]): number {
     return 0;
   }
 
-  const mean = dailyCounts.reduce((a, b) => a + b, 0) / dailyCounts.length;
+  const mean = meanBy(dailyCounts, (count) => count);
   if (mean === 0) {
     return 0;
   }
 
-  const variance =
-    dailyCounts.reduce((sum, count) => sum + (count - mean) ** 2, 0) / dailyCounts.length;
+  const variance = meanBy(dailyCounts, (count) => (count - mean) ** 2);
   const cv = Math.sqrt(variance) / mean;
 
-  return Math.round(Math.max(0, Math.min(100, (1 - cv) * 100)));
+  return Math.round(clamp((1 - cv) * 100, 0, 100));
 }
 
 export interface ProductivityScoreInput {
@@ -44,7 +45,7 @@ export interface ProductivityScoreInput {
 export function calculateProductivityScore(input: ProductivityScoreInput): number {
   const streakRatio =
     input.periodDays > 0 ? Math.min(input.streakDays / input.periodDays, 1) * 100 : 0;
-  const trendBonus = input.rateChange != null ? Math.min(Math.max(input.rateChange, -10), 10) : 0;
+  const trendBonus = input.rateChange != null ? clamp(input.rateChange, -10, 10) : 0;
 
   return Math.round(
     input.completionRate * 0.4 +
