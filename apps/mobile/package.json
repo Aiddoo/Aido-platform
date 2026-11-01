@@ -64,7 +64,7 @@
     "@expo/metro-runtime": "catalog:expo58",
     "@expo/ui": "catalog:expo58",
     "@gorhom/bottom-sheet": "5.2.14",
-    "@hookform/resolvers": "6.0.0",
+    "@hookform/resolvers": "7.0.1",
     "@react-native-community/datetimepicker": "catalog:expo58",
     "@react-native-firebase/analytics": "26.4.1",
     "@react-native-firebase/app": "26.4.1",
