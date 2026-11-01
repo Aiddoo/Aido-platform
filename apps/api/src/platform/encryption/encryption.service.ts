@@ -50,17 +50,7 @@ export class EncryptionService {
   }
 
   isEncrypted(value: string): boolean {
-    const parts = value.split(":");
-    if (parts.length !== 3) return false;
-
-    try {
-      for (const part of parts) {
-        Buffer.from(part, "base64");
-      }
-      return true;
-    } catch {
-      return false;
-    }
+    return value.split(":").length === 3;
   }
 
   /**
