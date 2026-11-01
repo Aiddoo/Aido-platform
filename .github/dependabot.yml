@@ -39,9 +39,10 @@ updates:
         patterns:
           - '*'
     ignore:
-      # Prisma 8 RC는 RC마다 깨지는 변경과 공식 업그레이드 레시피가 있어 prisma8 catalog로 함께 올린다.
-      - dependency-name: '@prisma/*'
-      - dependency-name: 'prisma'
+      # Drizzle 1.0 RC는 RC마다 마이그레이션·타입 변경이 있어 drizzle1 catalog로 함께 올린다.
+      - dependency-name: 'drizzle-orm'
+      - dependency-name: 'drizzle-kit'
+      - dependency-name: '@nestjs-cls/transactional-adapter-drizzle-orm'
       # 12.27 uses pg-boss schema 37; later minor versions break old-image rollback.
       - dependency-name: 'pg-boss'
       # ── Expo SDK 58 관리(bundledNativeModules 핀) — `npx expo install --fix`가 소유.
