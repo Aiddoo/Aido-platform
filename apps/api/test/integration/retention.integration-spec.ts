@@ -18,14 +18,14 @@ import { TestDatabase } from "../setup/test-database.js";
 
 describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
-  let prisma: TestDatabaseClient;
+  let db: TestDatabaseClient;
   let repository: DrizzleRetentionRepository;
   let unitOfWork: ReturnType<typeof createDatabaseTransactionFixture>["uow"];
 
   beforeAll(async () => {
     testDb = new TestDatabase();
-    prisma = await testDb.start();
-    const { txHost, uow } = createDatabaseTransactionFixture(prisma);
+    db = await testDb.start();
+    const { txHost, uow } = createDatabaseTransactionFixture(db);
     unitOfWork = uow;
     repository = new DrizzleRetentionRepository(txHost, uow);
   }, 60_000);
@@ -40,7 +40,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 
   async function createUser(email: string): Promise<string> {
     const user = await createUserDatabaseFixture(
-      prisma,
+      db,
       {
         email,
         userTag: email.slice(0, 8).toUpperCase().padEnd(8, "X"),
@@ -62,7 +62,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   it("기존 사용자는 migration 이후에도 assignment가 자동 생성되지 않는다", async () => {
     const userId = await createUser("legacy01@example.com");
 
-    const assignmentCount = await prisma.query.retentionExperimentAssignment.findMany({
+    const assignmentCount = await db.query.retentionExperimentAssignment.findMany({
       where: { userId },
     });
 
@@ -76,7 +76,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     await repository.enroll({ userId, variant: "TREATMENT", startedAt });
     await repository.enroll({ userId, variant: "CONTROL", startedAt });
 
-    const assignments = await prisma.query.retentionExperimentAssignment.findMany({
+    const assignments = await db.query.retentionExperimentAssignment.findMany({
       where: { userId },
       with: { stages: true },
     });
@@ -112,21 +112,21 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const invalidTimezoneUserId = await createUser("invalidtz@example.com");
     const aliasTimezoneUserId = await createUser("aliastz1@example.com");
     await Promise.all([
-      prisma
+      db
         .update(userPreference)
         .set({ timezone: "Invalid/Timezone" })
         .where(eq(userPreference.userId, invalidTimezoneUserId)),
-      prisma
+      db
         .update(userPreference)
         .set({ timezone: "US/Eastern" })
         .where(eq(userPreference.userId, aliasTimezoneUserId)),
     ]);
     const [[invalidCategory], [aliasCategory]] = await Promise.all([
-      prisma
+      db
         .insert(todoCategory)
         .values({ userId: invalidTimezoneUserId, name: "업무", color: "#FF6B43" })
         .returning({ id: todoCategory.id }),
-      prisma
+      db
         .insert(todoCategory)
         .values({ userId: aliasTimezoneUserId, name: "업무", color: "#FF6B43" })
         .returning({ id: todoCategory.id }),
@@ -135,13 +135,13 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       throw new Error("category fixture 누락");
     }
     await Promise.all([
-      prisma.insert(todo).values({
+      db.insert(todo).values({
         userId: invalidTimezoneUserId,
         categoryId: invalidCategory.id,
         title: "잘못된 타임존에서도 조회되는 할 일",
         startDate: new Date("2026-07-16T00:00:00.000Z"),
       }),
-      prisma.insert(todo).values({
+      db.insert(todo).values({
         userId: aliasTimezoneUserId,
         categoryId: aliasCategory.id,
         title: "레거시 별칭에서도 조회되는 할 일",
@@ -191,7 +191,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       variant: "TREATMENT",
       startedAt: new Date(),
     });
-    const stage = await prisma.query.retentionExperimentStage.findFirst({
+    const stage = await db.query.retentionExperimentStage.findFirst({
       where: { stage: "D0", assignment: { userId } },
     });
     if (stage === undefined) {
@@ -214,10 +214,10 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     ).rejects.toThrow("force rollback");
 
     const [storedStage, notifications, dispatches, outboxes] = await Promise.all([
-      prisma.query.retentionExperimentStage.findFirst({ where: { id: stage.id } }),
-      prisma.$count(notification, eq(notification.userId, userId)),
-      prisma.$count(pushDispatch, eq(pushDispatch.userId, userId)),
-      prisma.$count(retentionPushOutbox),
+      db.query.retentionExperimentStage.findFirst({ where: { id: stage.id } }),
+      db.$count(notification, eq(notification.userId, userId)),
+      db.$count(pushDispatch, eq(pushDispatch.userId, userId)),
+      db.$count(retentionPushOutbox),
     ]);
     expect(storedStage?.status).toBe("SCHEDULED");
     expect([notifications, dispatches, outboxes]).toEqual([0, 0, 0]);
@@ -232,7 +232,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       variant: "TREATMENT",
       startedAt: claimAt,
     });
-    const stages = await prisma.query.retentionExperimentStage.findMany({
+    const stages = await db.query.retentionExperimentStage.findMany({
       where: { stage: { in: ["D0", "D1"] }, assignment: { userId } },
       orderBy: { stage: "asc" },
     });
@@ -248,7 +248,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       });
     }
 
-    await prisma
+    await db
       .update(retentionPushOutbox)
       .set({ availableAt: claimAt })
       .where(
@@ -264,7 +264,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       repository.claimOutboxes(1, claimAt),
     ]);
     const claimed = batches.flat();
-    const stored = await prisma.query.retentionPushOutbox.findMany({
+    const stored = await db.query.retentionPushOutbox.findMany({
       where: { id: { in: claimed.map((outbox) => outbox.id) } },
     });
 

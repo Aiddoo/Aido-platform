@@ -41,7 +41,7 @@ describe("할 일 리소스 제한 E2E", () => {
       const userId = user.userId;
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-      const prisma = ctx.testDatabase.getClient();
+      const db = ctx.testDatabase.getClient();
       const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
         userId,
         title: `활성 할 일 ${i + 1}`,
@@ -49,7 +49,7 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.insert(todo).values(todos);
+      await db.insert(todo).values(todos);
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -96,7 +96,7 @@ describe("할 일 리소스 제한 E2E", () => {
       const userId = user.userId;
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-      const prisma = ctx.testDatabase.getClient();
+      const db = ctx.testDatabase.getClient();
       const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
         userId,
         title: `활성 할 일 ${i + 1}`,
@@ -104,9 +104,9 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.insert(todo).values(todos);
+      await db.insert(todo).values(todos);
 
-      const firstTodo = await prisma.query.todo.findFirst({
+      const firstTodo = await db.query.todo.findFirst({
         where: { userId },
         orderBy: { id: "asc" },
       });
@@ -153,7 +153,7 @@ describe("할 일 리소스 제한 E2E", () => {
         .expect(201);
       const emptyCategoryId = catResponse.body.data.category.id;
 
-      const prisma = ctx.testDatabase.getClient();
+      const db = ctx.testDatabase.getClient();
       const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
         userId,
         title: `카테고리1 할 일 ${i + 1}`,
@@ -161,7 +161,7 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.insert(todo).values(todos);
+      await db.insert(todo).values(todos);
 
       // When
       await request(ctx.app.getHttpServer())
@@ -197,8 +197,8 @@ describe("할 일 리소스 제한 E2E", () => {
       const accessToken = user.accessToken;
       const userId = user.userId;
 
-      const prisma = ctx.testDatabase.getClient();
-      await prisma
+      const db = ctx.testDatabase.getClient();
+      await db
         .update(userTable)
         .set({ subscriptionStatus: "ACTIVE" })
         .where(eq(userTable.id, userId));
@@ -212,7 +212,7 @@ describe("할 일 리소스 제한 E2E", () => {
         startDate: new Date("2024-01-15"),
         completed: false,
       }));
-      await prisma.insert(todo).values(todos);
+      await db.insert(todo).values(todos);
 
       // When
       const response = await request(ctx.app.getHttpServer())

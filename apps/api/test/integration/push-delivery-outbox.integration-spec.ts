@@ -58,10 +58,10 @@ async function waitUntilTransactionHoldsLock(
   ]);
 }
 
-async function waitForBlockedDatabaseQuery(prisma: TestDatabaseClient): Promise<void> {
+async function waitForBlockedDatabaseQuery(db: TestDatabaseClient): Promise<void> {
   await vi.waitFor(
     async () => {
-      const waiting = await prisma.execute<{ blocked: boolean }>(sql`
+      const waiting = await db.execute<{ blocked: boolean }>(sql`
         SELECT EXISTS (
           SELECT 1 FROM pg_stat_activity
           WHERE datname = current_database() AND wait_event_type = 'Lock'
@@ -126,11 +126,11 @@ function retention(client: TestDatabaseClient | TransactionClient): DrizzleReten
 
 describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
-  let prisma: TestDatabaseClient;
+  let db: TestDatabaseClient;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase();
-    prisma = await testDatabase.start();
+    db = await testDatabase.start();
   });
 
   afterAll(async () => {
@@ -142,7 +142,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   });
 
   async function createUser(suffix: string): Promise<{ id: string }> {
-    const [created] = await prisma
+    const [created] = await db
       .insert(userTable)
       .values({
         email: `push-outbox-${suffix}@example.com`,
@@ -154,7 +154,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   }
 
   async function createNotification(userId: string, suffix: string) {
-    const [created] = await prisma
+    const [created] = await db
       .insert(notificationTable)
       .values({
         userId,
@@ -173,7 +173,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     readonly force?: boolean;
   }) {
     const notification = await createNotification(input.userId, input.suffix);
-    return staging(prisma).stage({
+    return staging(db).stage({
       notificationId: notification.id,
       userId: input.userId,
       purpose: "TRANSACTIONAL",
@@ -187,17 +187,17 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     readonly lockedAt: Date;
   }) {
     const user = await createUser(input.userTag);
-    await retention(prisma).enroll({
+    await retention(db).enroll({
       userId: user.id,
       variant: "TREATMENT",
       startedAt: new Date("2026-07-01T00:00:00.000Z"),
     });
     const stage = requireRecord(
-      await prisma.query.retentionExperimentStage.findFirst({
+      await db.query.retentionExperimentStage.findFirst({
         where: { stage: "D1", assignment: { userId: user.id } },
       }),
     );
-    const created = await retention(prisma).createDelivery({
+    const created = await retention(db).createDelivery({
       stageId: stage.id,
       userId: user.id,
       timezone: "UTC",
@@ -208,9 +208,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
     if (!created) throw new Error("Expected retention delivery to be staged");
     const pendingOutbox = requireRecord(
-      await prisma.query.retentionPushOutbox.findFirst({ where: { stageId: stage.id } }),
+      await db.query.retentionPushOutbox.findFirst({ where: { stageId: stage.id } }),
     );
-    const [updatedOutbox] = await prisma
+    const [updatedOutbox] = await db
       .update(retentionPushOutbox)
       .set({ status: "PROCESSING", attempts: 1, lockedAt: input.lockedAt })
       .where(eq(retentionPushOutbox.id, pendingOutbox.id))
@@ -231,10 +231,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     },
   ): Promise<void> {
     const [dispatch, dispatchOutbox] = await Promise.all([
-      prisma.query.pushDispatch
+      db.query.pushDispatch
         .findFirst({ where: { id: dispatchId } })
         .then((row) => requireRecord(row)),
-      prisma.query.pushDispatchOutbox
+      db.query.pushDispatchOutbox
         .findFirst({ where: { dispatchId: dispatchId } })
         .then((row) => requireRecord(row)),
     ]);
@@ -252,10 +252,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     },
   ): Promise<void> {
     const [dispatch, retentionOutbox] = await Promise.all([
-      prisma.query.pushDispatch
+      db.query.pushDispatch
         .findFirst({ where: { id: input.dispatchId } })
         .then((row) => requireRecord(row)),
-      prisma.query.retentionPushOutbox
+      db.query.retentionPushOutbox
         .findFirst({ where: { id: input.outboxId } })
         .then((row) => requireRecord(row)),
     ]);
@@ -267,7 +267,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
   it("notification, dispatch, outbox를 함께 commit하고 실패 시 모두 rollback한다", async () => {
     const committedUser = await createUser("COMMIT01");
-    await prisma.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(notificationTable)
         .values({
@@ -288,16 +288,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
 
     await expect(
-      prisma.$count(notificationTable, eq(notificationTable.userId, committedUser.id)),
+      db.$count(notificationTable, eq(notificationTable.userId, committedUser.id)),
     ).resolves.toBe(1);
-    await expect(
-      prisma.$count(pushDispatch, eq(pushDispatch.userId, committedUser.id)),
-    ).resolves.toBe(1);
-    await expect(prisma.$count(pushDispatchOutbox)).resolves.toBe(1);
+    await expect(db.$count(pushDispatch, eq(pushDispatch.userId, committedUser.id))).resolves.toBe(
+      1,
+    );
+    await expect(db.$count(pushDispatchOutbox)).resolves.toBe(1);
 
     const rolledBackUser = await createUser("ROLLBACK");
     await expect(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         const [created] = await tx
           .insert(notificationTable)
           .values({
@@ -320,12 +320,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     ).rejects.toThrow("rollback transaction");
 
     await expect(
-      prisma.$count(notificationTable, eq(notificationTable.userId, rolledBackUser.id)),
+      db.$count(notificationTable, eq(notificationTable.userId, rolledBackUser.id)),
     ).resolves.toBe(0);
-    await expect(
-      prisma.$count(pushDispatch, eq(pushDispatch.userId, rolledBackUser.id)),
-    ).resolves.toBe(0);
-    await expect(prisma.$count(pushDispatchOutbox)).resolves.toBe(1);
+    await expect(db.$count(pushDispatch, eq(pushDispatch.userId, rolledBackUser.id))).resolves.toBe(
+      0,
+    );
+    await expect(db.$count(pushDispatchOutbox)).resolves.toBe(1);
   });
 
   it("동시 relay claim은 SKIP LOCKED로 같은 outbox를 중복 소유하지 않는다", async () => {
@@ -336,14 +336,14 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const releaseFirst = deferred();
     const lockedAt = new Date(Date.now() + 1_000);
 
-    const firstTransaction = prisma.transaction(async (tx) => {
+    const firstTransaction = db.transaction(async (tx) => {
       const claimed = await outbox(tx).claimAvailable({ limit: 1, lockedAt });
       firstClaimed.resolve();
       await releaseFirst.promise;
       return claimed;
     });
     await firstClaimed.promise;
-    const secondClaim = await prisma.transaction((tx) =>
+    const secondClaim = await db.transaction((tx) =>
       outbox(tx).claimAvailable({ limit: 2, lockedAt }),
     );
     releaseFirst.resolve();
@@ -360,12 +360,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("OWNCLM01");
     const staged = await stageNotification({ userId: user.id, suffix: "claim-first" });
     const staleLockedAt = new Date("2026-08-29T00:00:00.000Z");
-    const publication = await prisma.transaction((tx) =>
+    const publication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], staleLockedAt),
     );
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
-    const claimTransaction = prisma.transaction(async (tx) => {
+    const claimTransaction = db.transaction(async (tx) => {
       const claimed = await lifecycle(tx).claim({
         publications: publication,
         processingJobId: "general-claim-first",
@@ -380,7 +380,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let recovered = -1;
     try {
       await waitUntilTransactionHoldsLock(claimOwnsRows, claimTransaction, "general claim");
-      recovered = await prisma.transaction((tx) =>
+      recovered = await db.transaction((tx) =>
         outbox(tx).recoverStaleProcessing(new Date("2026-08-29T00:15:00.000Z")),
       );
     } finally {
@@ -399,12 +399,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("stale recovery가 outbox lock을 먼저 잡으면 worker claim은 복구된 generation을 소유하지 않는다", async () => {
     const user = await createUser("OWNRCV01");
     const staged = await stageNotification({ userId: user.id, suffix: "recovery-first" });
-    const publication = await prisma.transaction((tx) =>
+    const publication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date("2026-08-29T00:00:00.000Z")),
     );
     const recoveryOwnsOutbox = deferred();
     const releaseRecovery = deferred();
-    const recoveryTransaction = prisma.transaction(async (tx) => {
+    const recoveryTransaction = db.transaction(async (tx) => {
       const recovered = await outbox(tx).recoverStaleProcessing(
         new Date("2026-08-29T00:15:00.000Z"),
       );
@@ -420,7 +420,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     );
     const claimStarted = deferred();
     const trackedClaim = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         claimStarted.resolve();
         return lifecycle(tx).claim({
           publications: publication,
@@ -433,7 +433,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let claimWaitedForRecovery = false;
     try {
       await claimStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       claimWaitedForRecovery = !trackedClaim.isSettled();
     } finally {
       releaseRecovery.resolve();
@@ -452,12 +452,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("worker claim이 먼저 commit되면 늦게 도착한 enqueue defer는 소유권을 되돌리지 않는다", async () => {
     const user = await createUser("OWNDEF01");
     const staged = await stageNotification({ userId: user.id, suffix: "claim-before-defer" });
-    const publication = await prisma.transaction((tx) =>
+    const publication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date()),
     );
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
-    const claimTransaction = prisma.transaction(async (tx) => {
+    const claimTransaction = db.transaction(async (tx) => {
       const claimed = await lifecycle(tx).claim({
         publications: publication,
         processingJobId: "general-claim-before-defer",
@@ -472,7 +472,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(claimOwnsRows, claimTransaction, "general claim");
     const deferStarted = deferred();
     const trackedDefer = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         deferStarted.resolve();
         return outbox(tx).defer({
           publications: publication,
@@ -484,7 +484,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let deferWaitedForClaim = false;
     try {
       await deferStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       deferWaitedForClaim = !trackedDefer.isSettled();
     } finally {
       releaseClaim.resolve();
@@ -503,12 +503,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("enqueue defer가 먼저 commit되면 worker claim은 되돌려진 generation을 소유하지 않는다", async () => {
     const user = await createUser("OWNDEF02");
     const staged = await stageNotification({ userId: user.id, suffix: "defer-before-claim" });
-    const publication = await prisma.transaction((tx) =>
+    const publication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date()),
     );
     const deferOwnsOutbox = deferred();
     const releaseDefer = deferred();
-    const deferTransaction = prisma.transaction(async (tx) => {
+    const deferTransaction = db.transaction(async (tx) => {
       const deferredCount = await outbox(tx).defer({
         publications: publication,
         availableAt: new Date(Date.now() + 60_000),
@@ -522,7 +522,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(deferOwnsOutbox, deferTransaction, "general defer");
     const claimStarted = deferred();
     const trackedClaim = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         claimStarted.resolve();
         return lifecycle(tx).claim({
           publications: publication,
@@ -535,7 +535,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let claimWaitedForDefer = false;
     try {
       await claimStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       claimWaitedForDefer = !trackedClaim.isSettled();
     } finally {
       releaseDefer.resolve();
@@ -557,11 +557,11 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       userId: user.id,
       suffix: "terminal-first",
     });
-    const terminalPublication = await prisma.transaction((tx) =>
+    const terminalPublication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([terminalFirst.dispatchId], new Date()),
     );
-    await prisma.transaction((tx) => outbox(tx).markPublished(terminalPublication, new Date()));
-    const [terminalInitialClaim] = await prisma.transaction((tx) =>
+    await db.transaction((tx) => outbox(tx).markPublished(terminalPublication, new Date()));
+    const [terminalInitialClaim] = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: terminalPublication,
         processingJobId: "terminal-first-job",
@@ -573,7 +573,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     const terminalOwnsRows = deferred();
     const releaseTerminal = deferred();
-    const terminalTransaction = prisma.transaction(async (tx) => {
+    const terminalTransaction = db.transaction(async (tx) => {
       const finalized = await lifecycle(tx).finalizeSkipped([
         {
           fence: terminalInitialClaim.fence,
@@ -588,7 +588,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(terminalOwnsRows, terminalTransaction, "terminal finalize");
     const terminalRetryStarted = deferred();
     const terminalRetry = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         terminalRetryStarted.resolve();
         return lifecycle(tx).claim({
           publications: terminalPublication,
@@ -601,7 +601,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let retryWaitedForTerminal = false;
     try {
       await terminalRetryStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       retryWaitedForTerminal = !terminalRetry.isSettled();
     } finally {
       releaseTerminal.resolve();
@@ -616,11 +616,11 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
 
     const claimFirst = await stageNotification({ userId: user.id, suffix: "claim-first" });
-    const claimPublication = await prisma.transaction((tx) =>
+    const claimPublication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([claimFirst.dispatchId], new Date()),
     );
-    await prisma.transaction((tx) => outbox(tx).markPublished(claimPublication, new Date()));
-    const [claimInitialLease] = await prisma.transaction((tx) =>
+    await db.transaction((tx) => outbox(tx).markPublished(claimPublication, new Date()));
+    const [claimInitialLease] = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: claimPublication,
         processingJobId: "claim-first-job",
@@ -632,7 +632,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     const retryOwnsRows = deferred();
     const releaseRetry = deferred();
-    const retryTransaction = prisma.transaction(async (tx) => {
+    const retryTransaction = db.transaction(async (tx) => {
       const [retry] = await lifecycle(tx).claim({
         publications: claimPublication,
         processingJobId: "claim-first-job",
@@ -646,7 +646,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(retryOwnsRows, retryTransaction, "retry claim");
     const staleFinalizeStarted = deferred();
     const staleFinalize = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         staleFinalizeStarted.resolve();
         return lifecycle(tx).finalizeSkipped([
           {
@@ -660,7 +660,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let finalizeWaitedForRetry = false;
     try {
       await staleFinalizeStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       finalizeWaitedForRetry = !staleFinalize.isSettled();
     } finally {
       releaseRetry.resolve();
@@ -688,12 +688,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       deliveryMode: "BATCH",
       force: true,
     });
-    const claimedOutbox = await prisma.transaction((tx) =>
+    const claimedOutbox = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date(Date.now() + 1_000)),
     );
     expect(claimedOutbox).toEqual([{ dispatchId: staged.dispatchId, publishAttempt: 1 }]);
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         outbox(tx).markPublished(
           [{ dispatchId: staged.dispatchId, publishAttempt: 99 }],
           new Date(),
@@ -701,10 +701,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       ),
     ).resolves.toBe(0);
     await expect(
-      prisma.transaction((tx) => outbox(tx).markPublished(claimedOutbox, new Date())),
+      db.transaction((tx) => outbox(tx).markPublished(claimedOutbox, new Date())),
     ).resolves.toBe(1);
 
-    const claimedDelivery = await prisma.transaction((tx) =>
+    const claimedDelivery = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: claimedOutbox,
         processingJobId: "delivery-job-1",
@@ -717,7 +717,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       expect.objectContaining({ deliveryMode: "BATCH", force: true }),
     );
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).claim({
           publications: claimedOutbox,
           processingJobId: "duplicate-job",
@@ -731,7 +731,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     expect(active).toBeDefined();
     if (!active) throw new Error("Expected claimed push delivery");
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).finalizeSkipped([
           {
             fence: active.fence,
@@ -745,7 +745,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       ),
     ).resolves.toBe(1);
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).release([
           {
             fence: active.fence,
@@ -757,7 +757,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       ),
     ).resolves.toBe(0);
     await expect(
-      prisma.query.pushDispatch
+      db.query.pushDispatch
         .findFirst({ where: { id: staged.dispatchId } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(expect.objectContaining({ status: "SKIPPED" }));
@@ -766,11 +766,11 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("같은 runtime job의 높은 attempt만 lease를 재claim하고 dispatch 정책 승인을 새 generation에서도 재사용한다", async () => {
     const user = await createUser("RECLAIM1");
     const staged = await stageNotification({ userId: user.id, suffix: "reclaim" });
-    const firstPublication = await prisma.transaction((tx) =>
+    const firstPublication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date()),
     );
-    await prisma.transaction((tx) => outbox(tx).markPublished(firstPublication, new Date()));
-    const firstClaim = await prisma.transaction((tx) =>
+    await db.transaction((tx) => outbox(tx).markPublished(firstPublication, new Date()));
+    const firstClaim = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: firstPublication,
         processingJobId: "stable-runtime-job",
@@ -781,7 +781,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const first = firstClaim[0];
     if (!first) throw new Error("Expected first delivery claim");
     await expect(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         await lifecycle(tx).release([
           {
             fence: first.fence,
@@ -794,7 +794,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       }),
     ).rejects.toThrow("release transaction rolled back");
     await expect(
-      prisma.query.pushDispatch
+      db.query.pushDispatch
         .findFirst({ where: { id: staged.dispatchId } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(
@@ -806,7 +806,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     );
 
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).claim({
           publications: firstPublication,
           processingJobId: "different-runtime-job",
@@ -815,7 +815,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         }),
       ),
     ).resolves.toEqual([]);
-    const retryClaim = await prisma.transaction((tx) =>
+    const retryClaim = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: firstPublication,
         processingJobId: "stable-runtime-job",
@@ -827,7 +827,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     if (!retry) throw new Error("Expected same-job retry claim");
     expect(retry.fence.deliveryAttemptCount).toBe(first.fence.deliveryAttemptCount + 1);
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).finalizeSkipped([
           {
             fence: first.fence,
@@ -842,12 +842,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     ).resolves.toBe(0);
 
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).markRateLimitReserved([{ fence: retry.fence, reservedAt: new Date() }]),
       ),
     ).resolves.toEqual([staged.dispatchId]);
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).release([
           {
             fence: retry.fence,
@@ -859,16 +859,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       ),
     ).resolves.toBe(1);
     await expect(
-      prisma.query.pushDispatchOutbox
+      db.query.pushDispatchOutbox
         .findFirst({ where: { dispatchId: staged.dispatchId } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(expect.objectContaining({ status: "PENDING", publishAttempts: 1 }));
 
-    const secondPublication = await prisma.transaction((tx) =>
+    const secondPublication = await db.transaction((tx) =>
       outbox(tx).claimAvailable({ limit: 1, lockedAt: new Date() }),
     );
     expect(secondPublication).toEqual([{ dispatchId: staged.dispatchId, publishAttempt: 2 }]);
-    const nextGenerationClaim = await prisma.transaction((tx) =>
+    const nextGenerationClaim = await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: secondPublication,
         processingJobId: "next-generation-job",
@@ -882,13 +882,13 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("release DB 실패로 남은 stale delivery lease는 dispatch와 일반 outbox를 함께 reopen한다", async () => {
     const user = await createUser("STALE001");
     const staged = await stageNotification({ userId: user.id, suffix: "stale" });
-    const publication = await prisma.transaction((tx) =>
+    const publication = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds([staged.dispatchId], new Date("2026-08-29T00:00:00Z")),
     );
-    await prisma.transaction((tx) =>
+    await db.transaction((tx) =>
       outbox(tx).markPublished(publication, new Date("2026-08-29T00:00:01Z")),
     );
-    await prisma.transaction((tx) =>
+    await db.transaction((tx) =>
       lifecycle(tx).claim({
         publications: publication,
         processingJobId: "final-attempt-release-failed",
@@ -898,22 +898,22 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     );
 
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).recoverStaleProcessing(new Date("2026-08-29T00:15:03Z")),
       ),
     ).resolves.toBe(1);
     await expect(
-      prisma.query.pushDispatch
+      db.query.pushDispatch
         .findFirst({ where: { id: staged.dispatchId } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(expect.objectContaining({ status: "PENDING", processingJobId: null }));
     await expect(
-      prisma.query.pushDispatchOutbox
+      db.query.pushDispatchOutbox
         .findFirst({ where: { dispatchId: staged.dispatchId } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(expect.objectContaining({ status: "PENDING", publishAttempts: 1 }));
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         outbox(tx).claimAvailable({ limit: 1, lockedAt: new Date("2026-08-29T00:15:04Z") }),
       ),
     ).resolves.toEqual([{ dispatchId: staged.dispatchId, publishAttempt: 2 }]);
@@ -926,7 +926,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
-    const claimTransaction = prisma.transaction(async (tx) => {
+    const claimTransaction = db.transaction(async (tx) => {
       const claimed = await retention(tx).claimDispatch({
         outboxId: publication.outboxId,
         publishAttempt: publication.publishAttempt,
@@ -942,7 +942,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let recovered = -1;
     try {
       await waitUntilTransactionHoldsLock(claimOwnsRows, claimTransaction, "retention claim");
-      recovered = await prisma.transaction((tx) =>
+      recovered = await db.transaction((tx) =>
         retention(tx).recoverStaleOutboxes(new Date("2026-08-29T00:15:00.000Z")),
       );
     } finally {
@@ -965,7 +965,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
     const recoveryOwnsOutbox = deferred();
     const releaseRecovery = deferred();
-    const recoveryTransaction = prisma.transaction(async (tx) => {
+    const recoveryTransaction = db.transaction(async (tx) => {
       const recovered = await retention(tx).recoverStaleOutboxes(
         new Date("2026-08-29T00:15:00.000Z"),
       );
@@ -981,7 +981,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     );
     const claimStarted = deferred();
     const trackedClaim = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         claimStarted.resolve();
         return retention(tx).claimDispatch({
           outboxId: publication.outboxId,
@@ -995,7 +995,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let claimWaitedForRecovery = false;
     try {
       await claimStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       claimWaitedForRecovery = !trackedClaim.isSettled();
     } finally {
       releaseRecovery.resolve();
@@ -1018,7 +1018,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
-    const claimTransaction = prisma.transaction(async (tx) => {
+    const claimTransaction = db.transaction(async (tx) => {
       const claimed = await retention(tx).claimDispatch({
         outboxId: publication.outboxId,
         publishAttempt: publication.publishAttempt,
@@ -1034,7 +1034,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(claimOwnsRows, claimTransaction, "retention claim");
     const deferStarted = deferred();
     const trackedDefer = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         deferStarted.resolve();
         return retention(tx).deferOutbox({
           outboxId: publication.outboxId,
@@ -1046,7 +1046,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let deferWaitedForClaim = false;
     try {
       await deferStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       deferWaitedForClaim = !trackedDefer.isSettled();
     } finally {
       releaseClaim.resolve();
@@ -1068,7 +1068,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     });
     const deferOwnsOutbox = deferred();
     const releaseDefer = deferred();
-    const deferTransaction = prisma.transaction(async (tx) => {
+    const deferTransaction = db.transaction(async (tx) => {
       await retention(tx).deferOutbox({
         outboxId: publication.outboxId,
         publishAttempt: publication.publishAttempt,
@@ -1081,7 +1081,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(deferOwnsOutbox, deferTransaction, "retention defer");
     const claimStarted = deferred();
     const trackedClaim = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         claimStarted.resolve();
         return retention(tx).claimDispatch({
           outboxId: publication.outboxId,
@@ -1095,7 +1095,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let claimWaitedForDefer = false;
     try {
       await claimStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       claimWaitedForDefer = !trackedClaim.isSettled();
     } finally {
       releaseDefer.resolve();
@@ -1115,7 +1115,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       userTag: "RTTERM01",
       lockedAt: new Date(),
     });
-    const terminalInitialClaim = await prisma.transaction((tx) =>
+    const terminalInitialClaim = await db.transaction((tx) =>
       retention(tx).claimDispatch({
         outboxId: terminalFirst.outboxId,
         publishAttempt: terminalFirst.publishAttempt,
@@ -1128,7 +1128,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     const terminalOwnsRows = deferred();
     const releaseTerminal = deferred();
-    const terminalTransaction = prisma.transaction(async (tx) => {
+    const terminalTransaction = db.transaction(async (tx) => {
       const finalized = await retention(tx).markDispatchSkipped(
         terminalInitialClaim.fence,
         "NO_ACTIVE_TOKEN",
@@ -1144,7 +1144,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     );
     const retryStarted = deferred();
     const trackedRetry = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         retryStarted.resolve();
         return retention(tx).claimDispatch({
           outboxId: terminalFirst.outboxId,
@@ -1158,7 +1158,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let retryWaitedForTerminal = false;
     try {
       await retryStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       retryWaitedForTerminal = !trackedRetry.isSettled();
     } finally {
       releaseTerminal.resolve();
@@ -1176,7 +1176,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       userTag: "RTTERM02",
       lockedAt: new Date(),
     });
-    const initialLease = await prisma.transaction((tx) =>
+    const initialLease = await db.transaction((tx) =>
       retention(tx).claimDispatch({
         outboxId: claimFirst.outboxId,
         publishAttempt: claimFirst.publishAttempt,
@@ -1189,7 +1189,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     const retryOwnsRows = deferred();
     const releaseRetry = deferred();
-    const retryTransaction = prisma.transaction(async (tx) => {
+    const retryTransaction = db.transaction(async (tx) => {
       const retry = await retention(tx).claimDispatch({
         outboxId: claimFirst.outboxId,
         publishAttempt: claimFirst.publishAttempt,
@@ -1204,7 +1204,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await waitUntilTransactionHoldsLock(retryOwnsRows, retryTransaction, "retention retry claim");
     const staleFinalizeStarted = deferred();
     const trackedFinalize = trackSettlement(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         staleFinalizeStarted.resolve();
         return retention(tx).markDispatchSkipped(initialLease.fence, "NO_ACTIVE_TOKEN");
       }),
@@ -1212,7 +1212,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     let finalizeWaitedForRetry = false;
     try {
       await staleFinalizeStarted.promise;
-      await waitForBlockedDatabaseQuery(prisma);
+      await waitForBlockedDatabaseQuery(db);
       finalizeWaitedForRetry = !trackedFinalize.isSettled();
     } finally {
       releaseRetry.resolve();
@@ -1236,22 +1236,22 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("CLAIMREC");
     const first = await stageNotification({ userId: user.id, suffix: "claim-first" });
     const terminal = await stageNotification({ userId: user.id, suffix: "claim-terminal" });
-    const publications = await prisma.transaction((tx) =>
+    const publications = await db.transaction((tx) =>
       outbox(tx).claimByDispatchIds(
         [first.dispatchId, terminal.dispatchId],
         new Date("2026-08-29T00:00:00Z"),
       ),
     );
-    await prisma.transaction((tx) =>
+    await db.transaction((tx) =>
       outbox(tx).markPublished(publications, new Date("2026-08-29T00:00:01Z")),
     );
-    await prisma
+    await db
       .update(pushDispatch)
       .set({ status: "SENT", sentAt: new Date() })
       .where(eq(pushDispatch.id, terminal.dispatchId));
 
     await expect(
-      prisma.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         const recovered = await lifecycle(tx).reopenAfterFinalClaimFailure({
           publications,
           availableAt: new Date(),
@@ -1261,11 +1261,11 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       }),
     ).rejects.toThrow("partial recovery");
     await expect(
-      prisma.$count(pushDispatchOutbox, eq(pushDispatchOutbox.status, "PUBLISHED")),
+      db.$count(pushDispatchOutbox, eq(pushDispatchOutbox.status, "PUBLISHED")),
     ).resolves.toBe(2);
 
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).reopenFailedPublications({
           publications,
           availableAt: new Date(),
@@ -1274,7 +1274,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       ),
     ).resolves.toBe(1);
     await expect(
-      prisma.transaction((tx) =>
+      db.transaction((tx) =>
         lifecycle(tx).reopenFailedPublications({
           publications: [{ dispatchId: terminal.dispatchId, publishAttempt: 999 }],
           availableAt: new Date(),
@@ -1287,7 +1287,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
   it("일반 recovery는 outbox가 없는 retention dispatch와 RetentionPushOutbox를 건드리지 않는다", async () => {
     const user = await createUser("RETAIN01");
     const notification = await createNotification(user.id, "retention");
-    const [createdDispatch] = await prisma
+    const [createdDispatch] = await db
       .insert(pushDispatch)
       .values({
         notificationId: notification.id,
@@ -1299,12 +1299,12 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       })
       .returning();
     const dispatch = requireRecord(createdDispatch);
-    const [createdAssignment] = await prisma
+    const [createdAssignment] = await db
       .insert(retentionExperimentAssignment)
       .values({ userId: user.id, experimentKey: "retention-isolation", variant: "TREATMENT" })
       .returning();
     const assignment = requireRecord(createdAssignment);
-    const [createdStage] = await prisma
+    const [createdStage] = await db
       .insert(retentionExperimentStage)
       .values({
         assignmentId: assignment.id,
@@ -1314,7 +1314,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       })
       .returning();
     const stage = requireRecord(createdStage);
-    const [createdOutbox] = await prisma
+    const [createdOutbox] = await db
       .insert(retentionPushOutbox)
       .values({
         stageId: stage.id,
@@ -1327,20 +1327,20 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       .returning();
     const retentionOutbox = requireRecord(createdOutbox);
 
-    await prisma.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       await lifecycle(tx).recoverStaleProcessing(new Date("2026-08-02T00:00:00Z"));
       await outbox(tx).recoverStaleProcessing(new Date("2026-08-02T00:00:00Z"));
     });
 
     await expect(
-      prisma.query.pushDispatch
+      db.query.pushDispatch
         .findFirst({ where: { id: dispatch.id } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(
       expect.objectContaining({ status: "PROCESSING", processingJobId: "retention-job" }),
     );
     await expect(
-      prisma.query.retentionPushOutbox
+      db.query.retentionPushOutbox
         .findFirst({ where: { id: retentionOutbox.id } })
         .then((row) => requireRecord(row)),
     ).resolves.toEqual(expect.objectContaining({ status: "PROCESSING", attempts: 2 }));
@@ -1348,7 +1348,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
   it("processing lease partial index가 migration 결과에 존재한다", async () => {
     async function indexNames(tableName: string) {
-      const { rows } = await prisma.execute<{ indexName: string }>(sql`
+      const { rows } = await db.execute<{ indexName: string }>(sql`
         SELECT indexname AS "indexName"
         FROM pg_indexes
         WHERE schemaname = 'public'

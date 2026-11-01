@@ -68,8 +68,8 @@ describe("AI 제안 E2E", () => {
       scheduledTime?: string | null;
     },
   ): Promise<number> {
-    const prisma = ctx.testDatabase.getClient();
-    const [suggestion] = await prisma
+    const db = ctx.testDatabase.getClient();
+    const [suggestion] = await db
       .insert(recurringSuggestion)
       .values({
         userId,

@@ -32,8 +32,8 @@ describe("할 일 카테고리 E2E", () => {
    */
   async function createPremiumUser(email: string, password: string) {
     const user = await ctx.helpers.createVerifiedUser(email, password);
-    const prisma = ctx.testDatabase.getClient();
-    await prisma
+    const db = ctx.testDatabase.getClient();
+    await db
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));

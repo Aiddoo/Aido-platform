@@ -45,8 +45,8 @@ describe("AI E2E", () => {
    * 사용량 리셋 헬퍼
    */
   async function resetUsage(userId: string): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
-    await prisma
+    const db = ctx.testDatabase.getClient();
+    await db
       .update(user)
       .set({
         aiUsageCount: 0,
@@ -59,8 +59,8 @@ describe("AI E2E", () => {
    * 사용량 설정 헬퍼
    */
   async function setUsage(userId: string, count: number): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
-    await prisma
+    const db = ctx.testDatabase.getClient();
+    await db
       .update(user)
       .set({
         aiUsageCount: count,
@@ -73,8 +73,8 @@ describe("AI E2E", () => {
    * 사용량 + 리셋 시각 명시 설정 헬퍼 (월 경계 테스트용)
    */
   async function setUsageWithResetAt(userId: string, count: number, resetAt: Date): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
-    await prisma
+    const db = ctx.testDatabase.getClient();
+    await db
       .update(user)
       .set({
         aiUsageCount: count,

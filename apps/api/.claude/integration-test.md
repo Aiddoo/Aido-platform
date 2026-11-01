@@ -39,7 +39,7 @@ DB/socket/job의 timer는 native로 유지한다. 날짜만 필요한 경우 Dat
 
 실제 예제:
 
-- [prisma8-transaction](../test/integration/prisma8-transaction.integration-spec.ts): 실제 CLS·Required·after-commit.
+- [transaction-propagation](../test/integration/transaction-propagation.integration-spec.ts), [transaction-error](../test/integration/transaction-error.integration-spec.ts): 실제 CLS·Required·Nested·after-commit.
 - [job-runtime-postgres](../test/integration/job-runtime-postgres.integration-spec.ts): business mutation과 durable job 원자성.
 - [ai-generation-consistency](../test/integration/ai-generation-consistency.integration-spec.ts): 실제 premium 상태·accept/rollback 정합성.
 - [weather-location](../test/integration/weather-location.integration-spec.ts): 위치 upsert·경합.

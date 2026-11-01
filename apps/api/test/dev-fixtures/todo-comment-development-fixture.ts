@@ -235,14 +235,14 @@ async function getFixtureAccessToken(input: {
 }
 
 async function provisionFixtureActor(input: {
-  prisma: TestDatabaseClient;
+  db: TestDatabaseClient;
   person: FixturePerson;
   ownerId: string;
   jwtSecret: string;
 }): Promise<FixtureActor> {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
-  const provisioned = await input.prisma.transaction(async (transaction) => {
+  const provisioned = await input.db.transaction(async (transaction) => {
     const [storedUser] = await transaction
       .insert(user)
       .values({
@@ -326,7 +326,7 @@ async function provisionFixtureActor(input: {
 }
 
 async function provisionTodoOwnerActor(input: {
-  prisma: TestDatabaseClient;
+  db: TestDatabaseClient;
   owner: {
     id: string;
     email: string;
@@ -337,7 +337,7 @@ async function provisionTodoOwnerActor(input: {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
   const ownerName = z.string().min(1).parse(input.owner.profile?.name);
-  const ownerSession = await input.prisma.transaction(async (transaction) => {
+  const ownerSession = await input.db.transaction(async (transaction) => {
     // 실제 앱 세션은 건드리지 않고 이 fixture가 만든 owner 세션만 교체합니다.
     await transaction
       .delete(session)
@@ -494,7 +494,7 @@ function assertStringArray(
 }
 
 async function verifyStoredCalculations(input: {
-  prisma: TestDatabaseClient;
+  db: TestDatabaseClient;
   todoId: number;
   ownerId: string;
   actors: FixtureActor[];
@@ -508,7 +508,7 @@ async function verifyStoredCalculations(input: {
   acceptedFollowCount: number;
 }> {
   const actorIds = input.actors.map((actor) => actor.userId);
-  const fixtureRows = await input.prisma.query.todoComment.findMany({
+  const fixtureRows = await input.db.query.todoComment.findMany({
     where: { todoId: input.todoId, clientRequestId: { in: Object.values(FIXTURE_COMMENTS) } },
     with: { likes: { where: { isActive: true } } },
   });
@@ -604,7 +604,7 @@ async function verifyStoredCalculations(input: {
 
   for (const row of fixtureRows) {
     assertEqual(row.likeCount, row.likes.length, `${row.id} active likes`);
-    const [visibleDirectReplies] = await input.prisma
+    const [visibleDirectReplies] = await input.db
       .select({ count: count() })
       .from(todoComment)
       .where(
@@ -618,16 +618,14 @@ async function verifyStoredCalculations(input: {
     assertEqual(row.replyCount, visibleDirectReplyCount, `${row.id} visible direct replies`);
   }
 
-  const todo = requireRecord(
-    await input.prisma.query.todo.findFirst({ where: { id: input.todoId } }),
-  );
-  const [liveComments] = await input.prisma
+  const todo = requireRecord(await input.db.query.todo.findFirst({ where: { id: input.todoId } }));
+  const [liveComments] = await input.db
     .select({ count: count() })
     .from(todoComment)
     .where(and(eq(todoComment.todoId, input.todoId), isNull(todoComment.deletedAt)));
   const liveCommentCount = requireRecord(liveComments).count;
   assertEqual(todo.commentCount, liveCommentCount, "Todo commentCount");
-  const [allComments] = await input.prisma
+  const [allComments] = await input.db
     .select({ count: count() })
     .from(todoComment)
     .where(eq(todoComment.todoId, input.todoId));
@@ -638,7 +636,7 @@ async function verifyStoredCalculations(input: {
     "Todo DB 행에 fixture 삭제 묘비 포함",
   );
 
-  const [acceptedFollows] = await input.prisma
+  const [acceptedFollows] = await input.db
     .select({ count: count() })
     .from(follow)
     .where(
@@ -965,7 +963,7 @@ async function applyLikes(input: {
 }
 
 async function applyTombstoneConversation(input: {
-  prisma: TestDatabaseClient;
+  db: TestDatabaseClient;
   apiBaseUrl: string;
   todoId: number;
   author: FixtureActor;
@@ -977,7 +975,7 @@ async function applyTombstoneConversation(input: {
     throw new Error("[todo-comment-fixture] 삭제 묘비 대상을 찾지 못했습니다.");
   }
   const storedParent = requireRecord(
-    await input.prisma.query.todoComment.findFirst({
+    await input.db.query.todoComment.findFirst({
       where: { id: deletedParent.id },
       columns: { deletedAt: true },
     }),
@@ -1015,7 +1013,7 @@ async function main(): Promise<void> {
     databaseUrl: process.env.DATABASE_URL,
   });
   const jwtSecret = z.string().min(16).parse(process.env.JWT_SECRET);
-  const prisma = createTestClient(target.databaseUrl);
+  const db = createTestClient(target.databaseUrl);
 
   try {
     await requestApi({
@@ -1023,14 +1021,14 @@ async function main(): Promise<void> {
       path: "/health",
       schema: HealthSchema,
     });
-    const owner = await prisma.query.user.findFirst({
+    const owner = await db.query.user.findFirst({
       where: { id: options.ownerId },
       with: { profile: true },
     });
     if (owner === undefined) {
       throw new Error("[todo-comment-fixture] 지정한 local owner 계정을 찾지 못했습니다.");
     }
-    const todo = await prisma.query.todo.findFirst({ where: { id: options.todoId } });
+    const todo = await db.query.todo.findFirst({ where: { id: options.todoId } });
     if (todo === undefined || todo.userId !== owner.id) {
       throw new Error("[todo-comment-fixture] Todo가 지정한 owner에게 속하지 않습니다.");
     }
@@ -1040,7 +1038,7 @@ async function main(): Promise<void> {
 
     const beforeCommentIds = new Set(
       (
-        await prisma.query.todoComment.findMany({
+        await db.query.todoComment.findMany({
           where: {
             todoId: options.todoId,
             clientRequestId: { in: Object.values(FIXTURE_COMMENTS) },
@@ -1079,31 +1077,31 @@ async function main(): Promise<void> {
     }
 
     const jiyun = await provisionFixtureActor({
-      prisma,
+      db,
       person: JIYUN,
       ownerId: owner.id,
       jwtSecret,
     });
     const hyunwoo = await provisionFixtureActor({
-      prisma,
+      db,
       person: HYUNWOO,
       ownerId: owner.id,
       jwtSecret,
     });
     const seoyeon = await provisionFixtureActor({
-      prisma,
+      db,
       person: SEOYEON,
       ownerId: owner.id,
       jwtSecret,
     });
     const minjae = await provisionFixtureActor({
-      prisma,
+      db,
       person: MINJAE,
       ownerId: owner.id,
       jwtSecret,
     });
     const actors = [jiyun, hyunwoo, seoyeon, minjae];
-    const todoOwner = await provisionTodoOwnerActor({ prisma, owner, jwtSecret });
+    const todoOwner = await provisionTodoOwnerActor({ db, owner, jwtSecret });
 
     for (const actor of [...actors, todoOwner]) {
       await verifyAuthenticatedActor(target.apiBaseUrl, actor);
@@ -1128,7 +1126,7 @@ async function main(): Promise<void> {
       comments,
     });
     await applyTombstoneConversation({
-      prisma,
+      db,
       apiBaseUrl: target.apiBaseUrl,
       todoId: todo.id,
       author: seoyeon,
@@ -1136,7 +1134,7 @@ async function main(): Promise<void> {
       comments,
     });
     const stored = await verifyStoredCalculations({
-      prisma,
+      db,
       todoId: todo.id,
       ownerId: owner.id,
       actors,
@@ -1173,7 +1171,7 @@ async function main(): Promise<void> {
       },
     });
   } finally {
-    await prisma.close();
+    await db.close();
   }
 }
 

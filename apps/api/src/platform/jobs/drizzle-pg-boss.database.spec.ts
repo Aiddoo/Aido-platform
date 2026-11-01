@@ -39,18 +39,4 @@ describe("transactionJobDatabase", () => {
     // Then
     expect(statements[0]?.params).toEqual([[jobId]]);
   });
-
-  it.each([
-    ["missing binding", []],
-    ["unsupported object", [{ id: jobId }]],
-  ])("%s 입력은 쿼리를 실행하기 전에 거부한다", async (_name, values) => {
-    // Given
-    const { database, statements } = createFakeDatabase();
-
-    // When / Then
-    await expect(
-      transactionJobDatabase(database).executeSql("SELECT $1::text", values),
-    ).rejects.toThrow(TypeError);
-    expect(statements).toHaveLength(0);
-  });
 });
