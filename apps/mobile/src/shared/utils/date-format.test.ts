@@ -1,6 +1,7 @@
 import {
   type DateFormatContext,
   formatClockTime,
+  formatDateKey,
   formatDateKeyLabel,
   formatDateKeyRange,
   formatDateLabel,
@@ -178,6 +179,49 @@ describe('formatRelativeTime', () => {
 
     // Then
     expect(result).toBe('1월 1일');
+  });
+});
+
+describe('formatDateKey', () => {
+  it.each([
+    ['서울 자정 직전', '2026-10-01T14:59:59.999Z', '2026-10-01', '2026-10-01'],
+    ['서울 자정 정각', '2026-10-01T15:00:00.000Z', '2026-10-02', '2026-10-01'],
+    ['LA 자정 정각', '2026-10-02T07:00:00.000Z', '2026-10-02', '2026-10-02'],
+  ])('%s에는 같은 시각이어도 서울과 LA의 날짜가 다르다', (_name, iso, seoulKey, losAngelesKey) => {
+    // Given
+    const instant = new Date(iso);
+
+    // When
+    const seoul = formatDateKey(instant, 'Asia/Seoul');
+    const losAngeles = formatDateKey(instant, 'America/Los_Angeles');
+
+    // Then
+    expect(seoul).toBe(seoulKey);
+    expect(losAngeles).toBe(losAngelesKey);
+  });
+
+  it('윤일 경계에서 서울은 3월 1일, LA는 2월 29일이다', () => {
+    // Given
+    const instant = new Date('2028-02-29T15:00:00.000Z');
+
+    // When
+    const seoul = formatDateKey(instant, 'Asia/Seoul');
+    const losAngeles = formatDateKey(instant, 'America/Los_Angeles');
+
+    // Then
+    expect(seoul).toBe('2028-03-01');
+    expect(losAngeles).toBe('2028-02-29');
+  });
+
+  it('유효하지 않은 Date는 빈 문자열을 반환한다', () => {
+    // Given
+    const invalid = new Date(Number.NaN);
+
+    // When
+    const result = formatDateKey(invalid, 'Asia/Seoul');
+
+    // Then
+    expect(result).toBe('');
   });
 });
 

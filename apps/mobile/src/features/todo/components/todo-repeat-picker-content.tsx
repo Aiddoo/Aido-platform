@@ -5,7 +5,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
-  formatDate,
   formatDaysOfWeek,
   getDayOfWeekLabel,
   isAfterDay,
@@ -13,7 +12,8 @@ import {
   isSameDay,
   isSameMonth,
 } from '@src/shared/utils/date';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
@@ -291,9 +291,14 @@ export const TodoRepeatPickerContent = ({
             </Text>
             {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) ? (
               <Text size="b3" tone="brand">
-                {formatDateKeyLabel(formatDate(startDate), 'monthDay', dateFormatContext)} -{' '}
                 {formatDateKeyLabel(
-                  formatDate(repeatSetting.endDate),
+                  formatDateKey(startDate, getDeviceTimezone()),
+                  'monthDay',
+                  dateFormatContext,
+                )}{' '}
+                -{' '}
+                {formatDateKeyLabel(
+                  formatDateKey(repeatSetting.endDate, getDeviceTimezone()),
                   'monthDay',
                   dateFormatContext,
                 )}
@@ -346,7 +351,11 @@ const RepeatCalendar = ({
           <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />
         </PressableFeedback>
         <Text size="b2" weight="semibold" tone="neutral" shade={9}>
-          {formatDateKeyLabel(formatDate(displayMonth), 'yearMonth', dateFormatContext)}
+          {formatDateKeyLabel(
+            formatDateKey(displayMonth, getDeviceTimezone()),
+            'yearMonth',
+            dateFormatContext,
+          )}
         </Text>
         <PressableFeedback onPress={goToNextMonth} hitSlop={12}>
           <ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />

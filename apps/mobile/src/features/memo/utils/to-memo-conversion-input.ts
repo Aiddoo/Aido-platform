@@ -1,6 +1,7 @@
 import { convertMemoToTodosSchema, type ConvertMemoToTodosInput } from '@aido/api';
 import type { AddTodoFormInput } from '@src/features/todo/domains/add-todo-form.schema';
-import { formatDate } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 
 export function toMemoConversionInput(formValues: AddTodoFormInput): ConvertMemoToTodosInput {
   return convertMemoToTodosSchema.parse({
@@ -8,15 +9,20 @@ export function toMemoConversionInput(formValues: AddTodoFormInput): ConvertMemo
       {
         title: formValues.title,
         categoryId: formValues.categoryId,
-        startDate: formatDate(formValues.startDate),
-        endDate: formValues.endDate ? formatDate(formValues.endDate) : undefined,
+        startDate: formatDateKey(formValues.startDate, getDeviceTimezone()),
+        endDate: formValues.endDate
+          ? formatDateKey(formValues.endDate, getDeviceTimezone())
+          : undefined,
         scheduledTime: formValues.isAllDay ? undefined : (formValues.scheduledTime ?? undefined),
         isAllDay: formValues.isAllDay,
         visibility: formValues.visibility,
         isRecurring: formValues.isRecurring,
         recurrence:
           formValues.isRecurring && formValues.repeatEndDate
-            ? { daysOfWeek: formValues.daysOfWeek, endDate: formatDate(formValues.repeatEndDate) }
+            ? {
+                daysOfWeek: formValues.daysOfWeek,
+                endDate: formatDateKey(formValues.repeatEndDate, getDeviceTimezone()),
+              }
             : undefined,
       },
     ],

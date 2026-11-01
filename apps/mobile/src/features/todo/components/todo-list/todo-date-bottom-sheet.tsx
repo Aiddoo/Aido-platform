@@ -12,7 +12,8 @@ import {
   Result,
   useSheetRoute,
 } from '@src/shared/ui';
-import { formatDate } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
@@ -79,7 +80,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
         updateSchedule.mutate({
           todoId: todo.id,
           input: {
-            startDate: formatDate(startDate),
+            startDate: formatDateKey(startDate, getDeviceTimezone()),
             endDate: null,
             scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
             isAllDay: todo.isAllDay,

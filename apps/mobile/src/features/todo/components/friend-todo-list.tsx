@@ -29,7 +29,9 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { formatDate, isSameDay } from '@src/shared/utils/date';
+import { isSameDay } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { useMemo, useState } from 'react';
@@ -49,7 +51,10 @@ export function FriendTodoList() {
   const [date] = useFeedDate();
   const [{ data: todos }] = useSuspenseQueries({
     queries: [
-      useGetFriendTodosQueryOptions({ friendUserId: friendId, date: formatDate(date) }),
+      useGetFriendTodosQueryOptions({
+        friendUserId: friendId,
+        date: formatDateKey(date, getDeviceTimezone()),
+      }),
       useGetPreferenceQueryOptions(),
     ],
   });

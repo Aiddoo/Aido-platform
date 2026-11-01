@@ -39,8 +39,9 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { formatDaysOfWeek } from '@src/shared/utils/date';
+import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
@@ -199,8 +200,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               todoId: todo.id,
               input: {
                 title: values.title,
-                startDate: formatDate(values.startDate),
-                endDate: values.endDate ? formatDate(values.endDate) : null,
+                startDate: formatDateKey(values.startDate, getDeviceTimezone()),
+                endDate: values.endDate ? formatDateKey(values.endDate, getDeviceTimezone()) : null,
                 scheduledTime: values.isAllDay ? null : (values.scheduledTime ?? null),
                 isAllDay: values.isAllDay,
                 visibility: values.visibility,
@@ -235,8 +236,11 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               {
                 input: {
                   title: values.title,
-                  startDate: formatDate(values.startDate),
-                  endDate: formatDate(values.repeatEndDate ?? values.startDate),
+                  startDate: formatDateKey(values.startDate, getDeviceTimezone()),
+                  endDate: formatDateKey(
+                    values.repeatEndDate ?? values.startDate,
+                    getDeviceTimezone(),
+                  ),
                   daysOfWeek: values.daysOfWeek,
                   scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
                   isAllDay: values.isAllDay,
@@ -252,7 +256,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               {
                 input: {
                   title: values.title,
-                  startDate: formatDate(values.startDate),
+                  startDate: formatDateKey(values.startDate, getDeviceTimezone()),
                   scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
                   isAllDay: values.isAllDay,
                   visibility: values.visibility,
@@ -487,7 +491,7 @@ const DateChip = ({ onPress }: { onPress: () => void }) => {
   const { t } = useTranslation('common');
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
-  const startDateKey = formatDate(startDate);
+  const startDateKey = formatDateKey(startDate, getDeviceTimezone());
   const label =
     startDateKey === todayDateKey
       ? t('dateSections.today')

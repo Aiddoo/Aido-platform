@@ -4,14 +4,14 @@ import dayjs from 'dayjs';
 import { range } from 'es-toolkit';
 
 import { getCalendarWeek, getCalendarWeekOfDateKey } from './calendar-week';
-import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';
+import {
+  type DateFormatContext,
+  formatDateKey,
+  formatDateKeyLabel,
+  formatRelativeTime,
+} from './date-format';
 import { addDaysToDateKey } from './date-key';
-
-// Format
-export const formatDate = (date: Date | string | number): string => {
-  const d = dayjs(date);
-  return d.isValid() ? d.format('YYYY-MM-DD') : '';
-};
+import { getDeviceTimezone } from './timezone';
 
 function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
   return context.locale === 'ko-KR' ? 'ko' : 'en';
@@ -199,16 +199,18 @@ export const todoOverlapsDate = (
 /** 캘린더 그리드 범위 (월간 뷰 - 앞뒤 패딩 주 포함) */
 export const getCalendarRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
   const display = dayjs(displayDate);
+  const timeZone = getDeviceTimezone();
   return {
-    rangeStart: getCalendarWeekOfDateKey(display.startOf('month').format('YYYY-MM-DD'))
+    rangeStart: getCalendarWeekOfDateKey(formatDateKey(display.startOf('month').toDate(), timeZone))
       .startDateKey,
-    rangeEnd: getCalendarWeekOfDateKey(display.endOf('month').format('YYYY-MM-DD')).endDateKey,
+    rangeEnd: getCalendarWeekOfDateKey(formatDateKey(display.endOf('month').toDate(), timeZone))
+      .endDateKey,
   };
 };
 
 /** 주간 뷰 범위 */
 export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
-  const week = getCalendarWeekOfDateKey(formatDate(displayDate));
+  const week = getCalendarWeekOfDateKey(formatDateKey(displayDate, getDeviceTimezone()));
   return { rangeStart: week.startDateKey, rangeEnd: week.endDateKey };
 };
 
