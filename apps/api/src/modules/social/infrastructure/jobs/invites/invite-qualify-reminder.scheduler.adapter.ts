@@ -18,7 +18,9 @@ export class InviteQualifyReminderSchedulerAdapter implements InviteQualifyRemin
   constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
   async scheduleMany(reminders: readonly ScheduledQualifyReminder[]): Promise<void> {
-    if (reminders.length === 0) return;
+    if (reminders.length === 0) {
+      return;
+    }
     await this.runtime.enqueueMany(
       INVITE_MAINTENANCE_QUEUE,
       reminders.map(({ redemptionId, sendAt }) => ({

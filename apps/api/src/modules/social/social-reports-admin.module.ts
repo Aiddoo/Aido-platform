@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { USER_REPORT_REPOSITORY } from "./application/ports/reports/user-report.repository.port.js";
-import { PrismaUserReportRepository } from "./infrastructure/persistence/reports/prisma-user-report.repository.js";
+import { DrizzleUserReportRepository } from "./infrastructure/persistence/reports/drizzle-user-report.repository.js";
 import { AdminUserReportController } from "./presentation/controllers/reports/admin-user-report.controller.js";
 import { resolveUserReportProvider } from "./social-reports-application.providers.js";
 
@@ -9,7 +9,7 @@ import { resolveUserReportProvider } from "./social-reports-application.provider
 @Module({
   controllers: [AdminUserReportController],
   providers: [
-    { provide: USER_REPORT_REPOSITORY, useClass: PrismaUserReportRepository },
+    { provide: USER_REPORT_REPOSITORY, useClass: DrizzleUserReportRepository },
     resolveUserReportProvider,
   ],
 })

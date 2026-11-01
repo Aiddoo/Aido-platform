@@ -16,12 +16,13 @@ describe("보낸 응원 목록 조회", () => {
     // Given
     const fixture = createSocialInteractionFixture();
     fixture.addUser("sender", null);
-    for (let index = 0; index < 3; index += 1)
+    for (let index = 0; index < 3; index += 1) {
       fixture.cheerRepository.seed({
         senderId: "sender",
         receiverId: "receiver",
         readAt: index === 0 ? SOCIAL_TIME : null,
       });
+    }
     // When
     const result = await new GetSentCheers(fixture).execute({ userId: "sender", size: 2 });
     // Then

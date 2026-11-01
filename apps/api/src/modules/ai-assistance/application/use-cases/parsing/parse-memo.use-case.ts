@@ -99,7 +99,9 @@ export class ParseMemo {
       throw error;
     }
     // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
-    if (!parsed.charge) await this.#dependencies.quota.release(reservation);
+    if (!parsed.charge) {
+      await this.#dependencies.quota.release(reservation);
+    }
     return parsed.result;
   }
 

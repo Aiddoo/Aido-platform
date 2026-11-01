@@ -9,7 +9,7 @@ import type {
   User,
   UserPreference,
   UserProfile,
-} from "#api/platform/database/database.types";
+} from "#test/types/database-rows";
 
 let userCounter = 0;
 

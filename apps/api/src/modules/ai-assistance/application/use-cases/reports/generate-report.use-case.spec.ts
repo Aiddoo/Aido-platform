@@ -292,7 +292,9 @@ describe("GenerateReport", () => {
       if (state === "deleted") {
         f.access.deletedAt = new Date();
         f.access.status = "SUSPENDED";
-      } else f.access.subscriptionStatus = state;
+      } else {
+        f.access.subscriptionStatus = state;
+      }
       // When - 실제 생성
       expect(
         await f.generateReport.execute({
@@ -323,11 +325,14 @@ describe("GenerateReport", () => {
         try {
           await gate.entered;
           // When - 저장 직전 최신 상태 또는 동일 기간 report 변경
-          if (state === "FREE") f.access.subscriptionStatus = "FREE";
-          else if (state === "deleted") {
+          if (state === "FREE") {
+            f.access.subscriptionStatus = "FREE";
+          } else if (state === "deleted") {
             f.access.status = "SUSPENDED";
             f.access.deletedAt = new Date();
-          } else f.reportRepository.duplicate = true;
+          } else {
+            f.reportRepository.duplicate = true;
+          }
         } finally {
           gate.release();
         }

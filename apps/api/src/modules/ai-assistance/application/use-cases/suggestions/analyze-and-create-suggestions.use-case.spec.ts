@@ -19,7 +19,9 @@ describe("AnalyzeAndCreateSuggestions", () => {
         // Given - 실제 독서 기록과 이전 pending, 응답 완료, 만료 이력
         const f = usePatternResponse(createAiAssistanceFixture());
         f.access.role = role;
-        if (role === "ADMIN") f.access.subscriptionStatus = "FREE";
+        if (role === "ADMIN") {
+          f.access.subscriptionStatus = "FREE";
+        }
         seedPendingSuggestion(f);
         seedPendingSuggestion(f, 2);
         seedPendingSuggestion(f, 3);
@@ -110,7 +112,9 @@ describe("AnalyzeAndCreateSuggestions", () => {
         if (state === "deleted") {
           f.access.deletedAt = new Date();
           f.access.status = "SUSPENDED";
-        } else f.access.subscriptionStatus = state;
+        } else {
+          f.access.subscriptionStatus = state;
+        }
         // When - 실행 순간 최신 capability 조회
         expect(await f.analyze.execute(f.userId, "Asia/Seoul")).toBe(0);
         // Then - 호출·쓰기 0, 이전 pending 유지
@@ -132,9 +136,11 @@ describe("AnalyzeAndCreateSuggestions", () => {
         try {
           await gate.entered;
           // When - 실제 응답 반환 전에 최신 계정 상태 변경
-          if (state === "FREE") f.access.subscriptionStatus = "FREE";
-          else if (state === "missing") f.access.exists = false;
-          else {
+          if (state === "FREE") {
+            f.access.subscriptionStatus = "FREE";
+          } else if (state === "missing") {
+            f.access.exists = false;
+          } else {
             f.access.deletedAt = new Date();
             f.access.status = "SUSPENDED";
           }
@@ -207,7 +213,9 @@ describe("AnalyzeAndCreateSuggestions", () => {
             matchedTitles: [],
           }),
         ]);
-        if (available) f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
+        if (available) {
+          f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
+        }
         // When - 실제 weather reader와 ContextBuilder를 통해 분석
         const count = await f.analyze.execute(f.userId, "Asia/Seoul", {
           gridX: 60,

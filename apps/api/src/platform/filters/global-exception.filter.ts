@@ -16,7 +16,7 @@ import {
   databaseConstraint,
   databaseSqlState,
   isRecordNotFoundError,
-} from "#api/platform/database/prisma-error.util";
+} from "#api/platform/database/database-error.util";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";

@@ -38,7 +38,9 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
   }
 
   async recordInteractions(payloads: readonly NudgeInteractionNotification[]): Promise<void> {
-    if (payloads.length === 0) return;
+    if (payloads.length === 0) {
+      return;
+    }
     const locales = await this.notificationRecipientLocaleReader.getLocales(
       payloads.map((payload) => payload.recipientId),
     );

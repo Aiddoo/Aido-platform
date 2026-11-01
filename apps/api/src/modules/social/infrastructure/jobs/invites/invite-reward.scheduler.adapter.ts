@@ -32,7 +32,9 @@ export class InviteRewardSchedulerAdapter implements InviteRewardSchedulerPort {
     redemptionIds: readonly string[],
     trigger: InviteRewardTrigger,
   ): Promise<void> {
-    if (redemptionIds.length === 0) return;
+    if (redemptionIds.length === 0) {
+      return;
+    }
     await this.runtime.enqueueMany<InviteRewardJobData>(
       INVITE_REWARD_QUEUE,
       redemptionIds.map((redemptionId) => ({

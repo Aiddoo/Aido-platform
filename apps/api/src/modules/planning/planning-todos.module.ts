@@ -28,8 +28,8 @@ import { StreakAdapter } from "./infrastructure/adapters/todos/streak.adapter.js
 import { TodoCacheAdapter } from "./infrastructure/adapters/todos/todo-cache.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todos/todo-notification.adapter.js";
 import { TodoReminderAdapter } from "./infrastructure/adapters/todos/todo-reminder.adapter.js";
-import { PrismaTodoReadRepository } from "./infrastructure/persistence/todos/prisma-todo-read.repository.js";
-import { PrismaTodoRepository } from "./infrastructure/persistence/todos/prisma-todo.repository.js";
+import { DrizzleTodoReadRepository } from "./infrastructure/persistence/todos/drizzle-todo-read.repository.js";
+import { DrizzleTodoRepository } from "./infrastructure/persistence/todos/drizzle-todo.repository.js";
 import { PlanningCategoriesModule } from "./planning-categories.module.js";
 import { TODO_PROVIDERS } from "./planning-todos.providers.js";
 import { TodoController } from "./presentation/controllers/todos/todo.controller.js";
@@ -44,10 +44,10 @@ import { TodoController } from "./presentation/controllers/todos/todo.controller
   ],
   controllers: [TodoController],
   providers: [
-    PrismaTodoRepository,
-    PrismaTodoReadRepository,
-    { provide: TODO_REPOSITORY, useExisting: PrismaTodoRepository },
-    { provide: TODO_READ_REPOSITORY, useExisting: PrismaTodoReadRepository },
+    DrizzleTodoRepository,
+    DrizzleTodoReadRepository,
+    { provide: TODO_REPOSITORY, useExisting: DrizzleTodoRepository },
+    { provide: TODO_READ_REPOSITORY, useExisting: DrizzleTodoReadRepository },
     { provide: CATEGORY_OWNERSHIP, useClass: CategoryOwnershipAdapter },
     { provide: TODO_CACHE, useClass: TodoCacheAdapter },
     { provide: FRIEND_PORT, useClass: FriendAdapter },

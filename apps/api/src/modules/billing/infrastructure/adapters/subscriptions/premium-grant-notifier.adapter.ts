@@ -29,7 +29,9 @@ export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
   }
 
   async notifyEndingSoon(notices: readonly PremiumGrantEndingNotice[]): Promise<void> {
-    if (notices.length === 0) return;
+    if (notices.length === 0) {
+      return;
+    }
     const locales = await this.localeReader.getLocales(notices.map((notice) => notice.userId));
     await this.notificationPublisher.publishBatch(
       notices.map((notice) => {

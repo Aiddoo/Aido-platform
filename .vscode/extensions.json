@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "oxc.oxc-vscode",
-    "prisma.prisma",
     "apollographql.vscode-apollo",
     "expo.vscode-expo-tools",
     "vitest.explorer",

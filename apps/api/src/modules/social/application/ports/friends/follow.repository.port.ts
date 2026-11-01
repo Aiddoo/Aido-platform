@@ -5,10 +5,10 @@ import type { FriendshipStatusValue } from "../../../domain/value-objects/friend
  * FollowRepositoryPort — 친구/팔로우 영속성 포트.
  *
  * 애플리케이션 계층이 의존하는 유일한 저장소 추상화.
- * - 단건 쓰기/조회는 **Friendship 애그리게잇**을 반환한다(어댑터가 Prisma 행 → 엔티티 매핑).
+ * - 단건 쓰기/조회는 **Friendship 애그리게잇**을 반환한다(어댑터가 DB 행 → 엔티티 매핑).
  * - 목록/사용자 포함 조회는 **FollowWithUser 읽기 프로젝션**(비정규화 뷰)을 반환한다.
  *
- * 반환 타입은 Prisma가 아닌 애플리케이션/도메인 소유 타입이며, 트랜잭션은 CLS UoW로 전파된다.
+ * 반환 타입은 ORM 행이 아닌 애플리케이션/도메인 소유 타입이며, 트랜잭션은 CLS UoW로 전파된다.
  */
 
 /** 팔로우 관계 읽기 프로젝션의 기본 필드 */

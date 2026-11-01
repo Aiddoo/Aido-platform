@@ -1,3 +1,5 @@
+import { sumBy } from "es-toolkit";
+
 import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 
 import { AdminNotificationMessage } from "../../../domain/value-objects/notifications/admin-notification-message.vo.js";
@@ -143,7 +145,7 @@ export function buildSubscriptionEventMessage(
  * 일일 가입 요약 관리자 알림 메시지 조립.
  */
 export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNotification {
-  const previousDayTotal = summary.signupsByProvider.reduce((sum, group) => sum + group.count, 0);
+  const previousDayTotal = sumBy(summary.signupsByProvider, (group) => group.count);
 
   const providerBreakdown = summary.signupsByProvider
     .map((group) => {

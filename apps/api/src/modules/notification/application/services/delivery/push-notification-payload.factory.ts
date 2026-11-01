@@ -77,10 +77,18 @@ export class PushNotificationPayloadFactory {
       url: undefined,
     };
     const context: PushNotificationData["context"] = {};
-    if (data.todoId) context.todoId = data.todoId;
-    if (data.friendId) context.friendId = data.friendId;
-    if (data.nudgeId) context.nudgeId = data.nudgeId;
-    if (data.cheerId) context.cheerId = data.cheerId;
+    if (data.todoId) {
+      context.todoId = data.todoId;
+    }
+    if (data.friendId) {
+      context.friendId = data.friendId;
+    }
+    if (data.nudgeId) {
+      context.nudgeId = data.nudgeId;
+    }
+    if (data.cheerId) {
+      context.cheerId = data.cheerId;
+    }
     const routing = toNotificationRouting(data.metadata);
 
     return {

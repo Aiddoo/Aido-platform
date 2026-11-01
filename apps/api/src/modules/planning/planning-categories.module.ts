@@ -10,7 +10,7 @@ import { TODO_CATEGORY_REPOSITORY } from "./application/ports/categories/todo-ca
 import { TodoCategoryReader } from "./application/services/categories/todo-category.reader.js";
 import { TodoCategoryCacheAdapter } from "./infrastructure/adapters/categories/todo-category-cache.adapter.js";
 import { TodoCategoryLimitReaderAdapter } from "./infrastructure/adapters/categories/todo-category-limit-reader.adapter.js";
-import { PrismaTodoCategoryRepository } from "./infrastructure/persistence/categories/prisma-todo-category.repository.js";
+import { DrizzleTodoCategoryRepository } from "./infrastructure/persistence/categories/drizzle-todo-category.repository.js";
 import { DefaultTodoCategorySeeder } from "./infrastructure/seeders/categories/default-todo-category.seeder.js";
 import {
   createTodoCategoryProvider,
@@ -30,7 +30,7 @@ import { TodoCategoryController } from "./presentation/controllers/categories/to
   providers: [
     {
       provide: TODO_CATEGORY_REPOSITORY,
-      useClass: PrismaTodoCategoryRepository,
+      useClass: DrizzleTodoCategoryRepository,
     },
     { provide: TODO_CATEGORY_CACHE, useClass: TodoCategoryCacheAdapter },
     {

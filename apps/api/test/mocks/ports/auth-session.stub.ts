@@ -47,7 +47,9 @@ export class StubAuthSessionRepository implements SessionOperations {
 
   async updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<void> {
     const session = this.sessions.get(id);
-    if (session === undefined) throw new Error(`존재하지 않는 세션: ${id}`);
+    if (session === undefined) {
+      throw new Error(`존재하지 않는 세션: ${id}`);
+    }
     this.sessions.set(id, { ...session, refreshTokenHash });
   }
 
@@ -75,8 +77,9 @@ export class StubAuthSessionRepository implements SessionOperations {
       session === undefined ||
       session.revokedAt !== null ||
       session.tokenVersion !== input.expectedTokenVersion
-    )
+    ) {
       return null;
+    }
     const rotated = {
       ...session,
       refreshTokenHash: input.refreshTokenHash,
@@ -91,7 +94,9 @@ export class StubAuthSessionRepository implements SessionOperations {
 
   async revoke(id: string, reason: string): Promise<void> {
     const session = this.sessions.get(id);
-    if (session === undefined) throw new Error(`존재하지 않는 세션: ${id}`);
+    if (session === undefined) {
+      throw new Error(`존재하지 않는 세션: ${id}`);
+    }
     this.sessions.set(id, { ...session, revokedAt: new Date() });
     this.revocationReasons.set(id, reason);
   }
@@ -100,7 +105,9 @@ export class StubAuthSessionRepository implements SessionOperations {
     const sessions = [...this.sessions.values()].filter(
       (session) => session.tokenFamily === tokenFamily && session.revokedAt === null,
     );
-    for (const session of sessions) await this.revoke(session.id, reason);
+    for (const session of sessions) {
+      await this.revoke(session.id, reason);
+    }
     return sessions.map((session) => session.id);
   }
 
@@ -113,7 +120,9 @@ export class StubAuthSessionRepository implements SessionOperations {
       (session) =>
         session.userId === userId && session.revokedAt === null && session.id !== excludeSessionId,
     );
-    for (const session of sessions) await this.revoke(session.id, reason);
+    for (const session of sessions) {
+      await this.revoke(session.id, reason);
+    }
     return sessions.map((session) => session.id);
   }
 }

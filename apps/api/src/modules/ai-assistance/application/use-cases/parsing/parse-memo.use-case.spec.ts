@@ -77,7 +77,9 @@ describe("ParseMemo — v1 롤백 경로", () => {
   it("한도가 소진된 요청은 provider를 호출하지 않고 AI_1303을 반환한다", async () => {
     // Given
     const fixture = createFixture();
-    for (let index = 0; index < 5; index += 1) await fixture.quota.reserve(fixture.userId);
+    for (let index = 0; index < 5; index += 1) {
+      await fixture.quota.reserve(fixture.userId);
+    }
     // When
     const execution = fixture.useCase.execute(fixture.input);
     // Then

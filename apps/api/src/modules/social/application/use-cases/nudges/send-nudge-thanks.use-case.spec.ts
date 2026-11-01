@@ -45,7 +45,9 @@ describe("콕에 감사 일괄 전하기", () => {
     expect(fixture.nudgeNotifier.batchSizes).toEqual(Array(10).fill(100));
     expect(fixture.nudgeNotifier.interactions).toHaveLength(1000);
     expect(save).toHaveBeenCalledTimes(10);
-    for (const [ids] of save.mock.calls) expect(ids).toHaveLength(100);
+    for (const [ids] of save.mock.calls) {
+      expect(ids).toHaveLength(100);
+    }
   });
   it("이미 감사한 상태는 추가 저장과 알림 없이 전송 개수에서 제외한다", async () => {
     // Given

@@ -1,6 +1,8 @@
-import type { Todo, TodoCategory } from "#api/platform/database/database.types";
+import type { todo, todoCategory } from "#api/platform/database/schema/index";
 
-export type TodoAggregateRow = Todo & { items: TodoItemData[] };
+type TodoCategoryRow = typeof todoCategory.$inferSelect;
+
+export type TodoAggregateRow = typeof todo.$inferSelect & { items: TodoItemData[] };
 
 export interface TodoItemData {
   id: number;
@@ -12,5 +14,5 @@ export interface TodoItemData {
 }
 
 export type TodoWithCategory = TodoAggregateRow & {
-  category: Pick<TodoCategory, "id" | "name" | "color" | "sortOrder"> | null;
+  category: Pick<TodoCategoryRow, "id" | "name" | "color" | "sortOrder"> | null;
 };

@@ -20,7 +20,7 @@ import {
 } from "pg-boss";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
+import type { Database } from "#api/platform/database/database.client";
 import type {
   DeadLetterQueue,
   EnqueueJobOptions,
@@ -39,7 +39,7 @@ import {
   resolveJobIdempotencyKey,
 } from "#api/shared/application/ports/job-runtime.port";
 
-import { nativeJobDatabase } from "./prisma8-pg-boss.database.js";
+import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
 
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
@@ -174,7 +174,7 @@ export class LazyPgBossClient implements PgBossClient {
 }
 
 interface JobTransactionSource {
-  readonly tx: Prisma8Transaction;
+  readonly tx: Database;
 }
 
 interface JobRuntimeConfigSource {
@@ -245,7 +245,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     await this.ensureQueue(queue);
     return this.boss.send(queue, data, {
       ...toPgBossJobOptions(queue, options),
-      db: nativeJobDatabase(this.txHost.tx, "id"),
+      db: transactionJobDatabase(this.txHost.tx),
     });
   }
 
@@ -253,7 +253,9 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     queue: string,
     jobs: readonly EnqueueJobRequest<T>[],
   ): Promise<void> {
-    if (jobs.length === 0) return;
+    if (jobs.length === 0) {
+      return;
+    }
     for (const deadLetter of uniqueDeadLetters(jobs)) {
       const deadLetterQueue = resolveDeadLetterQueue(deadLetter);
       if (deadLetterQueue) {
@@ -265,7 +267,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     await this.boss.insert(
       queue,
       jobs.map(({ data, options }) => ({ ...toPgBossJobOptions(queue, options), data })),
-      { db: nativeJobDatabase(this.txHost.tx, "id") },
+      { db: transactionJobDatabase(this.txHost.tx) },
     );
   }
 
@@ -286,7 +288,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       db: _transactionDb,
       singletonKey: _idempotencyKey,
       ...persistedOptions
-    } = this.toPgBossOptions(options, nativeJobDatabase(this.txHost.tx, "id"));
+    } = this.toPgBossOptions(options, transactionJobDatabase(this.txHost.tx));
     await this.boss.schedule(queue, cron, data, {
       ...persistedOptions,
       key: scheduleKey,
@@ -299,7 +301,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   }
 
   async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
-    const db = nativeJobDatabase(this.txHost.tx, "id");
+    const db = transactionJobDatabase(this.txHost.tx);
     const jobs = await this.boss.findJobs(queue, {
       key: idempotencyKey,
       queued: true,
@@ -312,7 +314,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     const result = await this.boss.cancel(
       queue,
       jobs.map(({ id }) => id),
-      { db: nativeJobDatabase(this.txHost.tx, "count") },
+      { db: transactionJobDatabase(this.txHost.tx) },
     );
     if (!hasAffectedCount(result)) {
       throw new Error("Invalid pg-boss cancellation response");

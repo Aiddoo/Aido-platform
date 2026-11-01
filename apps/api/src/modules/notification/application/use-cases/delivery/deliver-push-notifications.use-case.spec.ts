@@ -186,7 +186,9 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
         }),
         finalizeResults: vi.fn(async (inputs) => {
           observePersistence("finalizeResults");
-          if (finalizeResultsError) throw finalizeResultsError;
+          if (finalizeResultsError) {
+            throw finalizeResultsError;
+          }
           return inputs.length;
         }),
         release: vi.fn(async (inputs) => {

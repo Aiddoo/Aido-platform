@@ -9,6 +9,7 @@ import {
   type MarketingPushOptOutTokenPort,
 } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
+import { requireRecord } from "#api/platform/database/database-error.util";
 /**
  * Notification E2E 테스트
  *
@@ -22,8 +23,7 @@ import { SendBillingIssueNotification } from "#api/modules/notification/applicat
  * 3. 읽지 않은 알림 수 조회
  * 4. 알림 읽음 처리
  */
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { notification, userConsent } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -46,7 +46,7 @@ describe("알림 E2E", () => {
 
   /** 시드 알림 데이터 삽입 헬퍼 */
   async function seedNotifications(userId: string): Promise<void> {
-    const prisma = ctx.testDatabase.getClient();
+    const client = ctx.testDatabase.getClient();
     const notifications = [];
 
     // SOCIAL 타입 알림 5개
@@ -100,9 +100,7 @@ describe("알림 E2E", () => {
       isRead: false,
     });
 
-    await prisma.orm.public.Notification.createAndCount(
-      notifications.map((value) => encodeCreate("Notification", value)),
-    );
+    await client.insert(notification).values(notifications);
   }
 
   describe("푸시 토큰 관리", () => {
@@ -156,10 +154,10 @@ describe("알림 E2E", () => {
       });
 
       it("Accept-Language: en 헤더로 등록하면 UserPreference.locale이 en으로 저장된다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("notif-locale-en@test.com", password);
 
-        // When - Accept-Language 헤더와 함께 토큰 등록
+        // When
         await request(ctx.app.getHttpServer())
           .post("/v1/notifications/token")
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -170,17 +168,16 @@ describe("알림 E2E", () => {
           })
           .expect(201);
 
-        // Then - UserPreference.locale이 en으로 upsert된다
-        const prisma = ctx.testDatabase.getClient();
-        const preference = decodeRecord(
-          "UserPreference",
-          await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
-        );
+        // Then
+        const client = ctx.testDatabase.getClient();
+        const preference = await client.query.userPreference.findFirst({
+          where: { userId: user.userId },
+        });
         expect(preference?.locale).toBe("en");
       });
 
       it("Accept-Language 미전송(1.3.x 구버전)은 저장된 locale을 덮어쓰지 않는다", async () => {
-        // Given - en으로 저장된 사용자 (1.4.0 기기에서 영어 사용 중)
+        // Given
         const user = await ctx.helpers.createVerifiedUser("notif-locale-none@test.com", password);
         await request(ctx.app.getHttpServer())
           .post("/v1/notifications/token")
@@ -192,7 +189,7 @@ describe("알림 E2E", () => {
           })
           .expect(201);
 
-        // When - 구버전 기기가 헤더 없이 토큰 재등록
+        // When
         await request(ctx.app.getHttpServer())
           .post("/v1/notifications/token")
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -202,20 +199,19 @@ describe("알림 E2E", () => {
           })
           .expect(201);
 
-        // Then - en이 ko로 롤백되지 않고 유지된다
-        const prisma = ctx.testDatabase.getClient();
-        const preference = decodeRecord(
-          "UserPreference",
-          await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
-        );
+        // Then
+        const client = ctx.testDatabase.getClient();
+        const preference = await client.query.userPreference.findFirst({
+          where: { userId: user.userId },
+        });
         expect(preference?.locale).toBe("en");
       });
 
       it("미지원 언어(Accept-Language: ja)는 ko로 폴백된다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("notif-locale-ja@test.com", password);
 
-        // When - 미지원 언어 헤더로 토큰 등록
+        // When
         await request(ctx.app.getHttpServer())
           .post("/v1/notifications/token")
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -226,17 +222,16 @@ describe("알림 E2E", () => {
           })
           .expect(201);
 
-        // Then - 화이트리스트 밖 언어는 ko
-        const prisma = ctx.testDatabase.getClient();
-        const preference = decodeRecord(
-          "UserPreference",
-          await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
-        );
+        // Then
+        const client = ctx.testDatabase.getClient();
+        const preference = await client.query.userPreference.findFirst({
+          where: { userId: user.userId },
+        });
         expect(preference?.locale).toBe("ko");
       });
 
       it("언어 변경 후 재등록하면 locale이 갱신된다", async () => {
-        // Given - en으로 등록된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("notif-locale-switch@test.com", password);
         await request(ctx.app.getHttpServer())
           .post("/v1/notifications/token")
@@ -248,7 +243,7 @@ describe("알림 E2E", () => {
           })
           .expect(201);
 
-        // When - 앱 언어를 한국어로 바꾸고 재등록 (모바일의 언어 변경 → 토큰 재등록 흐름)
+        // When
         await request(ctx.app.getHttpServer())
           .post("/v1/notifications/token")
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -259,12 +254,11 @@ describe("알림 E2E", () => {
           })
           .expect(201);
 
-        // Then - locale이 ko로 갱신된다
-        const prisma = ctx.testDatabase.getClient();
-        const preference = decodeRecord(
-          "UserPreference",
-          await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
-        );
+        // Then
+        const client = ctx.testDatabase.getClient();
+        const preference = await client.query.userPreference.findFirst({
+          where: { userId: user.userId },
+        });
         expect(preference?.locale).toBe("ko");
       });
 
@@ -812,35 +806,31 @@ describe("알림 E2E", () => {
     describe("POST /notifications/:id/opened - 푸시 탭 기록", () => {
       it("탭을 멱등 기록하고 알림을 즉시 읽음 처리한다", async () => {
         const user = await ctx.helpers.createVerifiedUser("notif-opened@test.com", password);
-        const prisma = ctx.testDatabase.getClient();
-        const notification = decodeRecord(
-          "Notification",
-          await prisma.orm.public.Notification.create(
-            encodeCreate("Notification", {
-              userId: user.userId,
-              type: "TODO_REMINDER",
-              title: "열림 기록 테스트",
-              body: "본문",
-            }),
-          ),
-        );
+        const client = ctx.testDatabase.getClient();
+        const [created] = await client
+          .insert(notification)
+          .values({
+            userId: user.userId,
+            type: "TODO_REMINDER",
+            title: "열림 기록 테스트",
+            body: "본문",
+          })
+          .returning();
+        const target = requireRecord(created);
 
         const first = await request(ctx.app.getHttpServer())
-          .post(`/v1/notifications/${notification.id}/opened`)
+          .post(`/v1/notifications/${target.id}/opened`)
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
         const second = await request(ctx.app.getHttpServer())
-          .post(`/v1/notifications/${notification.id}/opened`)
+          .post(`/v1/notifications/${target.id}/opened`)
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
         expect(first.body.data.opened).toBe(true);
         expect(second.body.data.opened).toBe(false);
-        const persisted = decodeRecord(
-          "Notification",
-          requireRecord(
-            await prisma.orm.public.Notification.where((row) => row.id.eq(notification.id)).first(),
-          ),
+        const persisted = requireRecord(
+          await client.query.notification.findFirst({ where: { id: target.id } }),
         );
         expect(persisted.openedAt).toBeInstanceOf(Date);
         expect(persisted.isRead).toBe(true);
@@ -895,18 +885,14 @@ describe("알림 E2E", () => {
   describe("광고성 푸시 수신 철회", () => {
     it("서명 토큰으로 로그인 없이 동의를 철회한다", async () => {
       const user = await ctx.helpers.createVerifiedUser("notif-opt-out@test.com", password);
-      const prisma = ctx.testDatabase.getClient();
-      decodeRecord(
-        "UserConsent",
-        await prisma.orm.public.UserConsent.where((row) => row.userId.eq(user.userId)).upsert({
-          conflictOn: encodePatch("UserConsent", { userId: user.userId }),
-          create: encodeCreate("UserConsent", {
-            userId: user.userId,
-            marketingPushAgreedAt: new Date(),
-          }),
-          update: encodePatch("UserConsent", { marketingPushAgreedAt: new Date() }),
-        }),
-      );
+      const client = ctx.testDatabase.getClient();
+      await client
+        .insert(userConsent)
+        .values({ userId: user.userId, marketingPushAgreedAt: new Date() })
+        .onConflictDoUpdate({
+          target: userConsent.userId,
+          set: { marketingPushAgreedAt: new Date() },
+        });
       const tokenPort = ctx.app.get<MarketingPushOptOutTokenPort>(MARKETING_PUSH_OPT_OUT_TOKEN);
 
       const response = await request(ctx.app.getHttpServer())
@@ -915,11 +901,8 @@ describe("알림 E2E", () => {
         .expect(200);
 
       expect(response.body.data.optedOut).toBe(true);
-      const consent = decodeRecord(
-        "UserConsent",
-        requireRecord(
-          await prisma.orm.public.UserConsent.where((row) => row.userId.eq(user.userId)).first(),
-        ),
+      const consent = requireRecord(
+        await client.query.userConsent.findFirst({ where: { userId: user.userId } }),
       );
       expect(consent.marketingPushAgreedAt).toBeNull();
     });
@@ -940,10 +923,14 @@ describe("알림 E2E", () => {
       const user = await ctx.helpers.createVerifiedUser("notif-invite@test.com", password);
       await ctx.testDatabase
         .getClient()
-        .orm.public.Notification.createAndCount(
-          (["FOLLOW_NEW", "INVITE_JOINED", "PREMIUM_GRANT_ENDING"] as const).map((type) =>
-            encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
-          ),
+        .insert(notification)
+        .values(
+          (["FOLLOW_NEW", "INVITE_JOINED", "PREMIUM_GRANT_ENDING"] as const).map((type) => ({
+            userId: user.userId,
+            type,
+            title: type,
+            body: type,
+          })),
         );
 
       // When
@@ -1005,7 +992,8 @@ describe("알림 E2E", () => {
         );
         await ctx.testDatabase
           .getClient()
-          .orm.public.Notification.createAndCount(
+          .insert(notification)
+          .values(
             (
               [
                 "FOLLOW_NEW",
@@ -1015,9 +1003,7 @@ describe("알림 E2E", () => {
                 "INVITE_QUALIFY_REMINDER",
                 "PREMIUM_GRANT_ENDING",
               ] as const
-            ).map((type) =>
-              encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
-            ),
+            ).map((type) => ({ userId: user.userId, type, title: type, body: type })),
           );
         const get = (path: string) => {
           const call = request(ctx.app.getHttpServer())
@@ -1040,7 +1026,6 @@ describe("알림 E2E", () => {
             .notifications.map((item) => item.type)
             .sort(),
         ).toEqual(visible);
-        // 구 목록 API는 1.12.1 이하 앱만 쓰므로 헤더와 관계없이 새 알림 종류를 내보내지 않는다
         expect(
           notificationListResponseSchema
             .parse(list.body.data)

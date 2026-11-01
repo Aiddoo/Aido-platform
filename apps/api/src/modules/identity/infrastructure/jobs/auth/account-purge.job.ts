@@ -41,7 +41,9 @@ export class AccountPurgeJob implements OnModuleInit {
 
   async #catchUpIfNeeded(): Promise<void> {
     const currentTime = dayjs().tz(ACCOUNT_PURGE_SCHEDULE.timezone);
-    if (currentTime.hour() < ACCOUNT_PURGE_SCHEDULE.catchUpHour) return;
+    if (currentTime.hour() < ACCOUNT_PURGE_SCHEDULE.catchUpHour) {
+      return;
+    }
 
     const localDate = currentTime.format("YYYY-MM-DD");
     await this.runtime.enqueue(

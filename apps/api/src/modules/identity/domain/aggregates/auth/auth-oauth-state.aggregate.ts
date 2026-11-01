@@ -30,7 +30,9 @@ export class AuthOAuthState extends AggregateRoot<AuthOAuthStateProps> {
   }
 
   validityAt(at: Date): AuthOAuthStateValidity {
-    if (this.props.exchangedAt != null) return "exchanged";
+    if (this.props.exchangedAt != null) {
+      return "exchanged";
+    }
     return this.props.expiresAt <= at ? "expired" : "valid";
   }
 
@@ -44,7 +46,9 @@ export class AuthOAuthState extends AggregateRoot<AuthOAuthStateProps> {
   }
 
   consume(at: Date): boolean {
-    if (this.validityAt(at) !== "valid") return false;
+    if (this.validityAt(at) !== "valid") {
+      return false;
+    }
     this.props.exchangedAt = new Date(at);
     return true;
   }

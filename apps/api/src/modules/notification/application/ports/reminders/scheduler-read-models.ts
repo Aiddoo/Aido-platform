@@ -1,7 +1,7 @@
 /**
  * 스케줄러 리더 포트가 반환하는 읽기 모델(read-model) DTO 모음.
  *
- * Prisma select 형태를 애플리케이션 레이어에 노출하지 않기 위한 명시적 계약.
+ * ORM 조회 형태를 애플리케이션 레이어에 노출하지 않기 위한 명시적 계약.
  * 어댑터가 이 형태로 투영(projection)하고, 전략은 이 타입만 소비한다.
  */
 import type { SupportedLocale } from "#api/shared/domain/locale";

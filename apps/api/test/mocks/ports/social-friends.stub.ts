@@ -55,7 +55,9 @@ export class StubFollowRepository implements FollowRepositoryPort {
 
   async findByIdWithUser(id: string): Promise<FollowWithUser | null> {
     const record = this.follows.get(id);
-    if (!record) return null;
+    if (!record) {
+      return null;
+    }
     const follower = this.users.get(record.followerId);
     const following = this.users.get(record.followingId);
     return follower && following ? structuredClone({ ...record, follower, following }) : null;
@@ -63,7 +65,9 @@ export class StubFollowRepository implements FollowRepositoryPort {
 
   async update(id: string, input: UpdateFollowInput): Promise<Friendship> {
     const record = this.follows.get(id);
-    if (!record) throw new ApplicationException(ErrorCode.FOLLOW_0903);
+    if (!record) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0903);
+    }
     const next = { ...record, ...input, updatedAt: now() };
     this.follows.set(id, structuredClone(next));
     return Friendship.reconstitute(next);
@@ -75,7 +79,9 @@ export class StubFollowRepository implements FollowRepositoryPort {
     input: UpdateFollowInput,
   ): Promise<Friendship> {
     const follow = await this.findByFollowerAndFollowing(followerId, followingId);
-    if (!follow) throw new ApplicationException(ErrorCode.FOLLOW_0903);
+    if (!follow) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0903);
+    }
     return this.update(follow.id, input);
   }
 
@@ -148,7 +154,9 @@ export class StubFollowRepository implements FollowRepositoryPort {
   async updateFollowSortOrder(id: string, sortOrder: number): Promise<FollowWithUser> {
     await this.update(id, { sortOrder });
     const result = await this.findByIdWithUser(id);
-    if (!result) throw new ApplicationException(ErrorCode.FOLLOW_0910);
+    if (!result) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0910);
+    }
     return result;
   }
   async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
@@ -183,8 +191,9 @@ export class StubFollowRepository implements FollowRepositoryPort {
   async getMutualFriendIds(userId: string): Promise<string[]> {
     const ids: string[] = [];
     for (const record of this.follows.values()) {
-      if (record.followerId === userId && (await this.isMutualFriend(userId, record.followingId)))
+      if (record.followerId === userId && (await this.isMutualFriend(userId, record.followingId))) {
         ids.push(record.followingId);
+      }
     }
     return ids;
   }

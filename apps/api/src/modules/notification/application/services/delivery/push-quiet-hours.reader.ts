@@ -17,7 +17,9 @@ export class PushQuietHoursReader implements PushQuietHoursReaderPort {
   }
 
   async findUsersInQuietHours(userIds: readonly string[], at: Date): Promise<ReadonlySet<string>> {
-    if (userIds.length === 0) return new Set();
+    if (userIds.length === 0) {
+      return new Set();
+    }
 
     const preferences = await this.#dependencies.userSettings.getPreferenceRecordsByUserIds([
       ...userIds,

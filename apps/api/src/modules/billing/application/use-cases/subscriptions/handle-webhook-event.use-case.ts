@@ -167,7 +167,9 @@ export class HandleWebhookEvent {
             ? await subscriptionRepository.findByRevenueCatId(transactionId)
             : null;
         // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다.
-        if (eventId != null && subscription?.wasProcessedWith(eventId)) return null;
+        if (eventId != null && subscription?.wasProcessedWith(eventId)) {
+          return null;
+        }
         return this.#applyEvent(user, event, subscription, eventId);
       });
 
@@ -181,7 +183,9 @@ export class HandleWebhookEvent {
       }
       await this.#dependencies.cache.invalidate(user.id);
       this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
-      if (event.type === "BILLING_ISSUE") this.#dependencies.notifier.notifyBillingIssue(user.id);
+      if (event.type === "BILLING_ISSUE") {
+        this.#dependencies.notifier.notifyBillingIssue(user.id);
+      }
       this.#dependencies.logger.log({
         event: BillingLogEvent.WEBHOOK_COMPLETED,
         eventType: event.type,
@@ -229,7 +233,9 @@ export class HandleWebhookEvent {
       event.transaction_id,
       event.type,
     ).value;
-    if (event.type === "BILLING_ISSUE") return baseEventPayload(user, event, transactionId);
+    if (event.type === "BILLING_ISSUE") {
+      return baseEventPayload(user, event, transactionId);
+    }
     if (event.type === "INITIAL_PURCHASE" || event.type === "NON_RENEWING_PURCHASE") {
       return this.#createSubscription(user, event, transactionId, subscription, eventId);
     }
@@ -266,7 +272,9 @@ export class HandleWebhookEvent {
       eventId,
       renewalExpiresAt,
     );
-    if (transition == null) return null;
+    if (transition == null) {
+      return null;
+    }
     await subscriptionRepository.updateStatus(transactionId, subscription.persistenceState);
     await this.#projectUser(user.id, transactionId, transition.userState, transition.chainState);
     return transition.payload;
@@ -285,7 +293,9 @@ export class HandleWebhookEvent {
     const { subscriptionRepository } = this.#dependencies;
     for (const appUserId of uniq(transferredFrom)) {
       const previousOwner = await subscriptionRepository.findUserByAppUserId(appUserId);
-      if (previousOwner == null || previousOwner.id === user.id) continue;
+      if (previousOwner == null || previousOwner.id === user.id) {
+        continue;
+      }
       await subscriptionRepository.takeOverChains(previousOwner.id, user.id);
     }
   }
@@ -325,7 +335,9 @@ export class HandleWebhookEvent {
       event.type,
       "Missing expiration_at_ms for INITIAL_PURCHASE",
     );
-    if (existing != null) return null;
+    if (existing != null) {
+      return null;
+    }
     const { subscriptionRepository } = this.#dependencies;
     await subscriptionRepository.create({
       userId: user.id,
@@ -370,7 +382,9 @@ export class HandleWebhookEvent {
     });
     return match(event.type)
       .with("RENEWAL", () => {
-        if (renewalExpiresAt == null || !subscription.renew(renewalExpiresAt, eventId)) return null;
+        if (renewalExpiresAt == null || !subscription.renew(renewalExpiresAt, eventId)) {
+          return null;
+        }
         return {
           userState: { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: renewalExpiresAt },
           payload: {
@@ -401,7 +415,9 @@ export class HandleWebhookEvent {
         return { userState: activeUserState, payload: payloadWithExpiry() };
       })
       .with("EXPIRATION", () => {
-        if (!subscription.expire(nullableExpiresAt(event.expiration_at_ms), eventId)) return null;
+        if (!subscription.expire(nullableExpiresAt(event.expiration_at_ms), eventId)) {
+          return null;
+        }
         return {
           userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
           payload,

@@ -6,17 +6,12 @@
  * ISO 날짜 문자열을 Discord 타임스탬프 포맷으로 변환한다.
  */
 export function formatDate(isoString: string): string {
-  try {
-    const time = new Date(isoString).getTime();
-    // new Date(잘못된 문자열)은 예외 대신 Invalid Date(NaN)를 반환하므로 명시적으로 가드한다.
-    if (Number.isNaN(time)) {
-      return isoString;
-    }
-    const unixSeconds = Math.floor(time / 1000);
-    return `<t:${unixSeconds}:f>`;
-  } catch {
+  const time = new Date(isoString).getTime();
+  // new Date(잘못된 문자열)은 예외 대신 Invalid Date(NaN)를 반환한다.
+  if (Number.isNaN(time)) {
     return isoString;
   }
+  return `<t:${Math.floor(time / 1000)}:f>`;
 }
 
 /**

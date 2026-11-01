@@ -12,7 +12,7 @@ import { RetentionConfigAdapter } from "./infrastructure/adapters/retention/rete
 import { RetentionEnrollmentAdapter } from "./infrastructure/adapters/retention/retention-enrollment.adapter.js";
 import { RetentionQueueProcessor } from "./infrastructure/jobs/retention/retention-queue.processor.js";
 import { RetentionQueueService } from "./infrastructure/jobs/retention/retention-queue.service.js";
-import { PrismaRetentionRepository } from "./infrastructure/persistence/retention/prisma-retention.repository.js";
+import { DrizzleRetentionRepository } from "./infrastructure/persistence/retention/drizzle-retention.repository.js";
 import {
   activateRetentionExperimentProvider,
   dispatchRetentionPushProvider,
@@ -32,12 +32,12 @@ import {
     relayRetentionOutboxProvider,
     dispatchRetentionPushProvider,
     recoverFailedRetentionDeliveryProvider,
-    PrismaRetentionRepository,
+    DrizzleRetentionRepository,
     RetentionConfigAdapter,
     ExpoRetentionPushSenderAdapter,
     RetentionQueueService,
     RetentionQueueProcessor,
-    { provide: RETENTION_REPOSITORY, useExisting: PrismaRetentionRepository },
+    { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
     { provide: RETENTION_CONFIG, useExisting: RetentionConfigAdapter },
     {
       provide: RETENTION_PUSH_SENDER,

@@ -1,9 +1,9 @@
 import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
-import sql from "sql-template-tag";
+import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 
-import { sqlStatement } from "#api/platform/database/database-sql";
-import { createTestClient, withDatabaseTransaction } from "#test/setup/database-context";
+import { memo } from "#api/platform/database/schema/index";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -42,12 +42,8 @@ describe("메모 변환 상태 HTTP 계약", () => {
     const client = context.testDatabase.getClient();
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(transaction, sql`SELECT "id" FROM "Memo" WHERE "id" = ${memoId} FOR UPDATE`)
-          .returnsRow({ id: "pg/int4@1" })
-          .build(),
-      );
+    const holding = client.transaction(async (transaction) => {
+      await transaction.select({ id: memo.id }).from(memo).where(eq(memo.id, memoId)).for("update");
       acquired.resolve();
       await released.promise;
     });
@@ -63,20 +59,16 @@ describe("메모 변환 상태 HTTP 계약", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ categoryId, startDate: "2027-01-09" })
         .then((response) => response);
+
     // When
     const pendingResponses = Promise.all([convert(), convert()]);
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client
-            .runtime()
-            .query(
-              client.raw
-                .sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND (query LIKE '%Memo%' OR query LIKE '%pg_advisory_xact_lock%')`
-                .returnsRow({ count: "pg/int4@1" })
-                .build(),
-            );
-          expect(waiting[0]?.count).toBe(2);
+          const waiting = await client.execute<{ count: number }>(
+            sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND (query LIKE '%Memo%' OR query LIKE '%pg_advisory_xact_lock%')`,
+          );
+          expect(waiting.rows[0]?.count).toBe(2);
         },
         { timeout: 5000, interval: 10 },
       );
@@ -86,16 +78,20 @@ describe("메모 변환 상태 HTTP 계약", () => {
       await pendingResponses;
     }
     const responses = await pendingResponses;
+
     // Then
     expect(responses.map((response) => response.status).sort()).toEqual([201, 404]);
     const rejected = responses.find((response) => response.status === 404);
     expect(rejected?.body.error.code).toBe("MEMO_2001");
-    const todos = await client.orm.public.Todo.where({ userId: user.userId })
-      .select("id", "title")
-      .all();
+    const todos = await client.query.todo.findMany({
+      columns: { id: true, title: true },
+      where: { userId: user.userId },
+    });
     expect(todos).toHaveLength(1);
     expect(todos[0]?.title).toBe("동시 변환 대상");
-    expect(await client.orm.public.Memo.where({ id: memoId }).select("id").first()).toBeNull();
+    expect(
+      await client.query.memo.findFirst({ columns: { id: true }, where: { id: memoId } }),
+    ).toBeUndefined();
   });
 
   it("일괄 변환의 후속 카테고리 오류는 404를 반환하고 앞선 Todo와 원본 메모를 유지한다", async () => {
@@ -108,6 +104,7 @@ describe("메모 변환 상태 HTTP 계약", () => {
       .send({ content: "부분 변환 대상" })
       .expect(201);
     const memoId: number = created.body.data.memo.id;
+
     // When
     const response = await request(context.app.getHttpServer())
       .post(`/v1/memos/${memoId}/convert-to-todos`)
@@ -120,12 +117,18 @@ describe("메모 변환 상태 HTTP 계약", () => {
         ],
       })
       .expect(404);
+
     // Then
     expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
     const client = context.testDatabase.getClient();
-    const todos = await client.orm.public.Todo.where({ userId: user.userId }).select("title").all();
+    const todos = await client.query.todo.findMany({
+      columns: { title: true },
+      where: { userId: user.userId },
+    });
     expect(todos.map((todo) => todo.title)).toEqual(["성공한 첫 항목"]);
-    expect(await client.orm.public.Memo.where({ id: memoId }).select("content").first()).toEqual({
+    expect(
+      await client.query.memo.findFirst({ columns: { content: true }, where: { id: memoId } }),
+    ).toEqual({
       content: "부분 변환 대상",
     });
   });
@@ -140,6 +143,7 @@ describe("메모 변환 상태 HTTP 계약", () => {
       .send({ content: "혼합 변환 대상" })
       .expect(201);
     const memoId: number = created.body.data.memo.id;
+
     // When
     const response = await request(context.app.getHttpServer())
       .post(`/v1/memos/${memoId}/convert-to-todos`)
@@ -169,6 +173,7 @@ describe("메모 변환 상태 HTTP 계약", () => {
         ],
       })
       .expect(201);
+
     // Then
     const result = convertMemoToTodosResponseSchema.parse(response.body.data);
     expect(result.message).toBe("메모가 3개의 할 일로 변환되었습니다.");
@@ -195,9 +200,7 @@ describe("메모 변환 상태 HTTP 계약", () => {
     expect(
       await context.testDatabase
         .getClient()
-        .orm.public.Memo.where({ id: memoId })
-        .select("id")
-        .first(),
-    ).toBeNull();
+        .query.memo.findFirst({ columns: { id: true }, where: { id: memoId } }),
+    ).toBeUndefined();
   });
 });

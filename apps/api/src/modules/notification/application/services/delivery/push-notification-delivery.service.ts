@@ -81,7 +81,9 @@ export class PushNotificationDeliveryService {
     readonly payload: Omit<PushPayload, "token">;
   }): Promise<SinglePushNotificationDeliveryResult> {
     const tokenResolution = await this.#resolveSingleTokens(input.data);
-    if (tokenResolution.status === "skipped") return tokenResolution;
+    if (tokenResolution.status === "skipped") {
+      return tokenResolution;
+    }
 
     const result = await this.#dependencies.pushProvider.sendBatch(
       tokenResolution.tokens.map((token) => ({ ...input.payload, token })),
@@ -218,7 +220,9 @@ export class PushNotificationDeliveryService {
     const resultsByDispatch = new Map<number, PushResult[]>();
     for (const [index, pushResult] of result.results.entries()) {
       const dispatchId = prepared.dispatchIds[index];
-      if (dispatchId == null) continue;
+      if (dispatchId == null) {
+        continue;
+      }
       const current = resultsByDispatch.get(dispatchId) ?? [];
       current.push(pushResult);
       resultsByDispatch.set(dispatchId, current);
@@ -239,7 +243,9 @@ export class PushNotificationDeliveryService {
         userId: data.userId,
         activeOnly: true,
       });
-      if (records.length === 0) return { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
+      if (records.length === 0) {
+        return { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
+      }
 
       const tokens = records
         .filter(

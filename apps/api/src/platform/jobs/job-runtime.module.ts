@@ -123,7 +123,9 @@ export function selectJobRuntime(
   redis: JobRuntimePort,
   redisDrainEnabled = false,
 ): JobRuntimePort {
-  if (backend === "redis") return redis;
+  if (backend === "redis") {
+    return redis;
+  }
   return redisDrainEnabled ? new RedisDrainJobRuntime(postgres, redis) : postgres;
 }
 

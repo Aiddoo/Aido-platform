@@ -5,11 +5,11 @@
  * 차단이 친구 요청을 막는 흐름을 실제 앱과 PostgreSQL로 확인한다.
  */
 
+import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { DRIZZLE, type Database } from "#api/platform/database/database.client";
+import { user as userTable } from "#api/platform/database/schema/index";
 
 import {
   createE2eApp,
@@ -213,15 +213,11 @@ describe("사용자 차단·신고 E2E", () => {
   describe("운영자 신고 처리", () => {
     async function createAdmin() {
       const admin = await ctx.helpers.createVerifiedUser("report-admin@example.com", "Test1234!");
-      decodeRecord(
-        "User",
-        requireRecord(
-          await ctx.module
-            .get(DatabaseService)
-            .db.orm.public.User.where((row) => row.id.eq(admin.userId))
-            .update(encodePatch("User", { role: "ADMIN" })),
-        ),
-      );
+      await ctx.module
+        .get<Database>(DRIZZLE)
+        .update(userTable)
+        .set({ role: "ADMIN" })
+        .where(eq(userTable.id, admin.userId));
       const login = await ctx.helpers.loginUser("report-admin@example.com", "Test1234!");
       return { ...admin, accessToken: login.accessToken };
     }

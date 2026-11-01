@@ -78,7 +78,9 @@ export class ConvertMemoToTodos {
         MutationLockKeys.todoSortOrder(userId),
       ]);
       const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (memo == null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      if (memo == null) {
+        throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      }
       const todos: Todo[] = [];
       for (const todoData of data.todos) {
         try {
@@ -125,7 +127,9 @@ export class ConvertMemoToTodos {
       await this.#dependencies.repository.delete(memoId);
       return { kind: "success", todos };
     });
-    if (outcome.kind === "failed") throw outcome.error;
+    if (outcome.kind === "failed") {
+      throw outcome.error;
+    }
     this.#dependencies.logger.log({
       event: NotesMemoLogEvent.CONVERTED,
       memoId,

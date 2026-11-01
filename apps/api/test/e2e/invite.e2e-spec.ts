@@ -8,7 +8,7 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
-import { encodeCreate } from "#api/platform/database/database-records";
+import { inviteRedemption } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -139,7 +139,6 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
           ctx.helpers.createVerifiedUser(`invite-filter-${suffix}@test.com`, PASSWORD),
         ),
       );
-      // 같은 수락 시각 두 명으로 tie-break까지 확인한다
       const sameJoinedAt = new Date("2026-10-20T00:00:00.000Z");
       const rows = [
         { invitee: invitees[0], status: "JOINED", joinedAt: sameJoinedAt },
@@ -155,20 +154,21 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
           joinedAt: new Date("2026-10-19T00:00:00.000Z"),
         },
       ] as const;
-      await ctx.testDatabase.getClient().orm.public.InviteRedemption.createAndCount(
-        rows.map((row) =>
-          encodeCreate("InviteRedemption", {
+      await ctx.testDatabase
+        .getClient()
+        .insert(inviteRedemption)
+        .values(
+          rows.map((row) => ({
             inviterId: inviter.userId,
             inviteeId: row.invitee?.userId ?? "",
             status: row.status,
             timezone: "Asia/Seoul",
             joinedAt: row.joinedAt,
             qualifiedAt: row.status === "QUALIFIED" ? row.joinedAt : null,
-            rejectionReason: row.status === "REJECTED" ? "EXPIRED" : null,
+            rejectionReason: row.status === "REJECTED" ? ("EXPIRED" as const) : null,
             expiresAt: new Date("2026-11-03T00:00:00.000Z"),
-          }),
-        ),
-      );
+          })),
+        );
       const list = (query: string) =>
         request(ctx.app.getHttpServer())
           .get(`/v1/invites/me/invitees?${query}`)

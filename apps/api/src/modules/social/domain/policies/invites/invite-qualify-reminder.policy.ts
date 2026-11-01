@@ -47,7 +47,9 @@ export function nextQualifyReminderAt(now: Date, inviteeTimezone: string): Date 
     INVITE_QUALIFY_REMINDER.LOCAL_TIME,
     timezone,
   );
-  if (todaySlot.getTime() > now.getTime()) return todaySlot;
+  if (todaySlot.getTime() > now.getTime()) {
+    return todaySlot;
+  }
   const tomorrow = dayWindowInTimezone(today.endsAt, timezone).localDate;
   return parseLocalDateTime(tomorrow, INVITE_QUALIFY_REMINDER.LOCAL_TIME, timezone);
 }

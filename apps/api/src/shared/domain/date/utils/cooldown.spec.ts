@@ -13,13 +13,9 @@ import { vi } from "vitest";
  */
 import { calculateCooldown } from "./cooldown.js";
 
-beforeAll(() => {
+beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-03-03T12:00:00Z"));
-});
-
-afterAll(() => {
-  vi.useRealTimers();
 });
 
 describe("calculateCooldown", () => {

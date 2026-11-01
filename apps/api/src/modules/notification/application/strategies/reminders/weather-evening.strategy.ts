@@ -1,3 +1,5 @@
+import { uniqBy } from "es-toolkit";
+
 import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -93,21 +95,15 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
       return 0;
     }
 
-    const gridGroups = this.#groupByGrid(filtered);
-    const gridInputs = [...gridGroups.values()].flatMap((group) => {
-      const first = group[0];
-      if (first == null) {
-        return [];
-      }
-      return [
-        {
-          gridX: first.location.gridX,
-          gridY: first.location.gridY,
-          lat: first.location.latitude,
-          lon: first.location.longitude,
-        },
-      ];
-    });
+    const gridInputs = uniqBy(
+      filtered,
+      (user) => `${user.location.gridX}:${user.location.gridY}`,
+    ).map(({ location }) => ({
+      gridX: location.gridX,
+      gridY: location.gridY,
+      lat: location.latitude,
+      lon: location.longitude,
+    }));
     const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
       gridInputs,
       ctx.tomorrow,
@@ -198,17 +194,5 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     return notifications.length;
-  }
-
-  #groupByGrid(users: VerifiedUserWithLocation[]): Map<string, VerifiedUserWithLocation[]> {
-    const groups = new Map<string, VerifiedUserWithLocation[]>();
-    for (const user of users) {
-      const loc = user.location;
-      const key = `${loc.gridX}:${loc.gridY}`;
-      const arr = groups.get(key) ?? [];
-      arr.push(user);
-      groups.set(key, arr);
-    }
-    return groups;
   }
 }

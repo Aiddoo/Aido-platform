@@ -281,7 +281,9 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     async (scenario) => {
       // Given
       const fixture = givenSession({ refreshTokenHash: "digest:current-token" });
-      if (scenario === "세션 없음") fixture.sessionRepository.sessions.clear();
+      if (scenario === "세션 없음") {
+        fixture.sessionRepository.sessions.clear();
+      }
       const payload =
         scenario === "세션 ID 누락" ? { ...verifiedPayload, sessionId: "" } : verifiedPayload;
 

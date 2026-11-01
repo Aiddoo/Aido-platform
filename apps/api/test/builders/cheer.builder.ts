@@ -22,7 +22,7 @@
  *   .buildWithRelations();
  * ```
  */
-import type { Cheer } from "#api/platform/database/database.types";
+import type { Cheer } from "#test/types/database-rows";
 
 /**
  * 사용자 프로필 정보

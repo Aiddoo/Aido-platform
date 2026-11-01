@@ -1,3 +1,5 @@
+import { clamp } from "es-toolkit";
+
 import {
   PAGINATION_DEFAULT,
   SORT_DEFAULT,
@@ -64,9 +66,10 @@ export class PaginationService {
    */
   normalizePagination(params: PaginationParams): NormalizedPagination {
     const page = Math.max(1, params.page ?? PAGINATION_DEFAULT.PAGE);
-    const size = Math.min(
+    const size = clamp(
+      params.size ?? PAGINATION_DEFAULT.SIZE,
+      PAGINATION_DEFAULT.MIN_SIZE,
       PAGINATION_DEFAULT.MAX_SIZE,
-      Math.max(PAGINATION_DEFAULT.MIN_SIZE, params.size ?? PAGINATION_DEFAULT.SIZE),
     );
 
     return {
@@ -104,9 +107,10 @@ export class PaginationService {
   normalizeCursorPagination<T extends CursorType>(
     params: CursorPaginationParams<T>,
   ): NormalizedCursorPagination<T> {
-    const size = Math.min(
+    const size = clamp(
+      params.size ?? PAGINATION_DEFAULT.SIZE,
+      PAGINATION_DEFAULT.MIN_SIZE,
       PAGINATION_DEFAULT.MAX_SIZE,
-      Math.max(PAGINATION_DEFAULT.MIN_SIZE, params.size ?? PAGINATION_DEFAULT.SIZE),
     );
 
     return {

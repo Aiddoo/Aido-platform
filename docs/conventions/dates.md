@@ -4,15 +4,17 @@
 
 ## 1. 값의 종류
 
-| 값        | 저장·전송                                                      | 예                                      |
-| --------- | -------------------------------------------------------------- | --------------------------------------- |
-| 순간      | DB `TimestampString(3)`(UTC 텍스트), API ISO datetime/epoch ms | `createdAt`, `expiresAt`, 리마인더 시각 |
-| 달력 날짜 | DB `DateString`, API `YYYY-MM-DD`                              | 할 일 `startDate`, 피드 `date`          |
-| 시간대    | IANA 이름(`Asia/Seoul`)                                        | `X-Timezone`, `UserPreference.timezone` |
-| 표시 언어 | `ko` / `en`                                                    | `Accept-Language`, 앱 언어 설정         |
+| 값          | 저장·전송                                         | 예                                        |
+| ----------- | ------------------------------------------------- | ----------------------------------------- |
+| 순간        | DB `timestamp(3)`(UTC), API ISO datetime/epoch ms | `createdAt`, `expiresAt`, 리마인더 시각   |
+| 달력 날짜   | DB `date`(UTC 자정 `Date`), API `YYYY-MM-DD`      | 할 일 `startDate`, 피드 `date`            |
+| 벽시계 시각 | API `HH:mm`(`timeOfDaySchema`)                    | 할 일 `scheduledTime` 입력, 리마인더 시각 |
+| 시간대      | IANA 이름(`Asia/Seoul`)                           | `X-Timezone`, `UserPreference.timezone`   |
+| 표시 언어   | `ko` / `en`                                       | `Accept-Language`, 앱 언어 설정           |
 
 - 달력 날짜를 process 시간대의 `Date`로 바꾼 뒤 요일·자정을 계산하지 않는다. 날짜 산술은 `YYYY-MM-DD` key로 한다.
-- PostgreSQL 세션은 `TimeZone=UTC`로 고정한다([Prisma](../../apps/api/.claude/prisma.md#읽기쓰기와-transaction)). 서버 process 시간대에 의존하는 코드를 쓰지 않는다.
+- 서버 process(Docker `ENV TZ=UTC`·CI `TZ: UTC`)와 PostgreSQL 세션(`TimeZone=UTC`)은 UTC로 고정한다. 그래도 코드는 process 시간대에 의존하지 않는다. 사용자 시간대가 필요하면 `dayjs.tz(…, timezone)`, 시간대가 없는 달력 계산은 `dayjs.utc(…)`를 쓴다.
+- dayjs plugin은 `apps/api/src/shared/domain/date/dayjs.setup.ts` 한 곳에서만 등록한다.
 
 ## 2. "오늘"과 시간대의 출처
 

@@ -12,7 +12,9 @@ export const ThrottleByUser = (): MethodDecorator & ClassDecorator =>
 
 function authenticatedUserId(request: Record<string, unknown>): string | null {
   const { user } = request;
-  if (typeof user !== "object" || user == null || !("userId" in user)) return null;
+  if (typeof user !== "object" || user == null || !("userId" in user)) {
+    return null;
+  }
   return typeof user.userId === "string" ? user.userId : null;
 }
 

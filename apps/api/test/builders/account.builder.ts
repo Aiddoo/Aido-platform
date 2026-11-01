@@ -18,7 +18,7 @@
  *   .build();
  * ```
  */
-import type { Account, AccountProvider } from "#api/platform/database/database.types";
+import type { Account, AccountProvider } from "#test/types/database-rows";
 
 export class AccountBuilder {
   private data: Account;

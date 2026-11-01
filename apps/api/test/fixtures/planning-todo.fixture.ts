@@ -28,11 +28,12 @@ export function createPlanningTodoFixture(
     [1, { id: 1, name: "기본 카테고리", color: "#FFB3B3", sortOrder: 0 }],
   ]);
   const categoryOwners = new Map<number, string>([[1, userId]]);
-  for (const record of records.values())
+  for (const record of records.values()) {
     if (record.category !== null) {
       categories.set(record.categoryId, structuredClone(record.category));
       categoryOwners.set(record.categoryId, record.userId);
     }
+  }
   const todoRepository = new StubPlanningTodoRepository(records);
   const todoReadRepository = new StubPlanningTodoReadRepository(records, categories);
   const todoCache = new StubPlanningTodoCache();

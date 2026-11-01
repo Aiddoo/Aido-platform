@@ -23,25 +23,25 @@ import { EntitlementService } from "./application/services/entitlement/entitleme
 import { ResourceBonusGranter } from "./application/services/entitlement/resource-bonus-granter.service.js";
 import { AiQuotaService } from "./application/services/quotas/ai-quota.service.js";
 import { EntitlementCacheAdapter } from "./infrastructure/adapters/entitlement/entitlement-cache.adapter.js";
-import { PrismaEntitlementReader } from "./infrastructure/persistence/entitlement/prisma-entitlement.reader.js";
-import { PrismaResourceBonusRepository } from "./infrastructure/persistence/entitlement/prisma-resource-bonus.repository.js";
-import { PrismaAiQuotaRepository } from "./infrastructure/persistence/quotas/prisma-ai-quota.repository.js";
+import { DrizzleEntitlementReader } from "./infrastructure/persistence/entitlement/drizzle-entitlement.reader.js";
+import { DrizzleResourceBonusRepository } from "./infrastructure/persistence/entitlement/drizzle-resource-bonus.repository.js";
+import { DrizzleAiQuotaRepository } from "./infrastructure/persistence/quotas/drizzle-ai-quota.repository.js";
 
 @Module({
   imports: [IdentityUserAccessModule],
   providers: [
     entitlementServiceProvider,
     aiQuotaServiceProvider,
-    PrismaEntitlementReader,
+    DrizzleEntitlementReader,
     EntitlementCacheAdapter,
     { provide: ENTITLEMENT_READER, useExisting: EntitlementService },
     { provide: ENTITLEMENT_SUBSCRIPTION_INVALIDATOR, useExisting: EntitlementCacheAdapter },
     { provide: ENTITLEMENT_CACHE, useExisting: EntitlementCacheAdapter },
-    { provide: ENTITLEMENT_DATABASE, useExisting: PrismaEntitlementReader },
+    { provide: ENTITLEMENT_DATABASE, useExisting: DrizzleEntitlementReader },
     { provide: AI_QUOTA, useExisting: AiQuotaService },
-    { provide: AI_QUOTA_REPOSITORY, useClass: PrismaAiQuotaRepository },
+    { provide: AI_QUOTA_REPOSITORY, useClass: DrizzleAiQuotaRepository },
     { provide: AI_QUOTA_USER_MUTATION_LOCK, useExisting: USER_MUTATION_LOCK },
-    { provide: RESOURCE_BONUS_REPOSITORY, useClass: PrismaResourceBonusRepository },
+    { provide: RESOURCE_BONUS_REPOSITORY, useClass: DrizzleResourceBonusRepository },
     resourceBonusGranterProvider,
     { provide: RESOURCE_BONUS_GRANTER, useExisting: ResourceBonusGranter },
   ],

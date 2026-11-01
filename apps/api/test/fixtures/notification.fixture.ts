@@ -3,11 +3,7 @@
  *
  * 타입 안전한 Notification 및 관련 엔티티 테스트 데이터 생성
  */
-import type {
-  Notification,
-  NotificationType,
-  PushToken,
-} from "#api/platform/database/database.types";
+import type { Notification, NotificationType, PushToken } from "#test/types/database-rows";
 
 let notificationCounter = 0;
 let pushTokenCounter = 0;

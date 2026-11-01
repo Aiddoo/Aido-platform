@@ -1,23 +1,20 @@
 import { ErrorCode } from "@aido/api/errors";
+import { count, eq, sql } from "drizzle-orm";
 
 import { UpsertLocation } from "#api/modules/weather/application/use-cases/forecast/upsert-location.use-case";
 import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
 import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import { KmaWeatherGridResolver } from "#api/modules/weather/infrastructure/adapters/forecast/kma-weather-grid.resolver";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
-import { PrismaWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/prisma-weather-location.repository";
+import { DrizzleWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/drizzle-weather-location.repository";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
-import { databaseSqlState } from "#api/platform/database/prisma-error.util";
+import { databaseSqlState } from "#api/platform/database/database-error.util";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { user, userLocation } from "#api/platform/database/schema/index";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserFixture } from "#test/fixtures/user.fixture";
-import {
-  createDatabaseTransactionFixture,
-  createTestClient,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -28,7 +25,9 @@ function location(userId: string, latitude = 37.5665, longitude = 126.978): User
 }
 
 function coordinates(saved: UserLocation | null) {
-  if (saved === null) return null;
+  if (saved === null) {
+    return null;
+  }
   return {
     latitude: saved.latitude,
     longitude: saved.longitude,
@@ -40,7 +39,7 @@ function coordinates(saved: UserLocation | null) {
 describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL)", () => {
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
   let client: TestDatabaseClient;
-  let repository: PrismaWeatherLocationRepository;
+  let repository: DrizzleWeatherLocationRepository;
   let uow: UnitOfWorkPort;
   let userId: string;
   let anotherUserId: string;
@@ -48,7 +47,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
   beforeAll(async () => {
     client = await database.start();
     const transaction = createDatabaseTransactionFixture(client);
-    repository = new PrismaWeatherLocationRepository(transaction.txHost);
+    repository = new DrizzleWeatherLocationRepository(transaction.txHost);
     uow = transaction.uow;
   });
 
@@ -57,19 +56,13 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     await database.cleanup();
     userId = createEntityId();
     anotherUserId = createEntityId();
-    await client.orm.public.User.createAndCount([
-      encodeCreate(
-        "User",
-        UserFixture.create({ id: userId, email: "weather-owner@example.com", userTag: "WEATHER1" }),
-      ),
-      encodeCreate(
-        "User",
-        UserFixture.create({
-          id: anotherUserId,
-          email: "weather-other@example.com",
-          userTag: "WEATHER2",
-        }),
-      ),
+    await client.insert(user).values([
+      UserFixture.create({ id: userId, email: "weather-owner@example.com", userTag: "WEATHER1" }),
+      UserFixture.create({
+        id: anotherUserId,
+        email: "weather-other@example.com",
+        userTag: "WEATHER2",
+      }),
     ]);
   });
 
@@ -80,13 +73,21 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
   it("위치가 없으면 null이며 다른 사용자의 위치를 반환하지 않는다", async () => {
     // Given
     await repository.upsert(location(anotherUserId));
-    // When / Then
-    expect(await repository.findByUserId(userId)).toBeNull();
+
+    // When
+    const found = await repository.findByUserId(userId);
+
+    // Then
+    expect(found).toBeNull();
   });
 
   it("위치를 처음 저장하면 좌표·격자 전체를 readback하고 사용자당 행 한 개다", async () => {
-    // Given / When
-    const saved = await repository.upsert(location(userId));
+    // Given
+    const input = location(userId);
+
+    // When
+    const saved = await repository.upsert(input);
+
     // Then
     expect(saved.userId).toBe(userId);
     expect(coordinates(saved)).toEqual({
@@ -97,19 +98,25 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     });
     expect(coordinates(await repository.findByUserId(userId))).toEqual(coordinates(saved));
     expect(
-      await client.orm.public.UserLocation.where({ userId }).aggregate((a) => ({
-        count: a.count(),
-      })),
-    ).toEqual({ count: 1 });
+      await client
+        .select({ count: count() })
+        .from(userLocation)
+        .where(eq(userLocation.userId, userId)),
+    ).toEqual([{ count: 1 }]);
   });
 
   it("반복 upsert는 기존 행 ID를 보존하고 다른 사용자의 위치를 바꾸지 않는다", async () => {
     // Given
     await repository.upsert(location(userId));
     await repository.upsert(location(anotherUserId));
-    const before = await client.orm.public.UserLocation.where({ userId }).select("id").first();
+    const before = await client.query.userLocation.findFirst({
+      where: { userId },
+      columns: { id: true },
+    });
+
     // When
     const saved = await repository.upsert(location(userId, 35.1796, 129.0756));
+
     // Then
     expect(coordinates(saved)).toEqual({
       latitude: 35.1796,
@@ -117,29 +124,27 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
       gridX: 98,
       gridY: 76,
     });
-    expect(await client.orm.public.UserLocation.where({ userId }).select("id").first()).toEqual(
-      before,
-    );
+    expect(
+      await client.query.userLocation.findFirst({ where: { userId }, columns: { id: true } }),
+    ).toEqual(before);
     expect(coordinates(await repository.findByUserId(anotherUserId))).toEqual({
       latitude: 37.5665,
       longitude: 126.978,
       gridX: 60,
       gridY: 127,
     });
-    expect(await client.orm.public.UserLocation.aggregate((a) => ({ count: a.count() }))).toEqual({
-      count: 2,
-    });
+    expect(await client.select({ count: count() }).from(userLocation)).toEqual([{ count: 2 }]);
   });
 
   it("두 upsert가 실제 unique 잠금에서 대기해도 행 한 개와 완전한 좌표·격자 후보가 남는다", async () => {
-    // Given: 미커밋 위치를 유지해 두 upsert가 같은 unique conflict에서 실제로 대기한다.
+    // Given
     const seoul = location(userId);
     const busan = location(userId, 35.1796, 129.0756);
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (tx) => {
-      const transaction = createDatabaseTransactionFixture(tx);
-      await new PrismaWeatherLocationRepository(transaction.txHost).upsert(seoul);
+    const holder = createDatabaseTransactionFixture(client);
+    const holding = holder.uow.run(async () => {
+      await new DrizzleWeatherLocationRepository(holder.txHost).upsert(seoul);
       acquired.resolve();
       await released.promise;
     });
@@ -149,20 +154,16 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
         throw new Error("unique 잠금 조기 종료");
       }),
     ]);
+
     // When
     const outcomes = Promise.allSettled([repository.upsert(seoul), repository.upsert(busan)]);
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client
-            .runtime()
-            .query(
-              client.raw
-                .sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`
-                .returnsRow({ count: "pg/int4@1" })
-                .build(),
-            );
-          expect(waiting[0]?.count).toBe(2);
+          const waiting = await client.execute<{ count: number }>(
+            sql`SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'`,
+          );
+          expect(waiting.rows[0]?.count).toBe(2);
         },
         { timeout: 5000, interval: 10 },
       );
@@ -171,28 +172,32 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
       await holding;
       await outcomes;
     }
+
     // Then
     expect((await outcomes).map((result) => result.status)).toEqual(["fulfilled", "fulfilled"]);
     expect([coordinates(seoul), coordinates(busan)]).toContainEqual(
       coordinates(await repository.findByUserId(userId)),
     );
     expect(
-      await client.orm.public.UserLocation.where({ userId }).aggregate((a) => ({
-        count: a.count(),
-      })),
-    ).toEqual({ count: 1 });
+      await client
+        .select({ count: count() })
+        .from(userLocation)
+        .where(eq(userLocation.userId, userId)),
+    ).toEqual([{ count: 1 }]);
   });
 
   it("상위 transaction 실패는 신규 위치를 rollback한다", async () => {
     // Given
     const failure = new Error("rollback-weather-insert");
-    // When / Then
-    await expect(
-      uow.run(async () => {
-        await repository.upsert(location(userId));
-        throw failure;
-      }),
-    ).rejects.toBe(failure);
+
+    // When
+    const outcome = uow.run(async () => {
+      await repository.upsert(location(userId));
+      throw failure;
+    });
+
+    // Then
+    await expect(outcome).rejects.toBe(failure);
     expect(await repository.findByUserId(userId)).toBeNull();
   });
 
@@ -200,13 +205,15 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     // Given
     await repository.upsert(location(userId));
     const failure = new Error("rollback-weather-update");
-    // When / Then
-    await expect(
-      uow.run(async () => {
-        await repository.upsert(location(userId, 35.1796, 129.0756));
-        throw failure;
-      }),
-    ).rejects.toBe(failure);
+
+    // When
+    const outcome = uow.run(async () => {
+      await repository.upsert(location(userId, 35.1796, 129.0756));
+      throw failure;
+    });
+
+    // Then
+    await expect(outcome).rejects.toBe(failure);
     expect(coordinates(await repository.findByUserId(userId))).toEqual(
       coordinates(location(userId)),
     );
@@ -215,8 +222,10 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
   it("없는 사용자 위치 저장은 실제 FK 오류이며 orphan 위치를 남기지 않는다", async () => {
     // Given
     const absentUserId = createEntityId();
+
     // When
     const result = await repository.upsert(location(absentUserId)).catch((error: unknown) => error);
+
     // Then
     expect(databaseSqlState(result)).toBe("23503");
     expect(await repository.findByUserId(absentUserId)).toBeNull();
@@ -226,8 +235,10 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     // Given
     await repository.upsert(location(userId));
     await repository.upsert(location(anotherUserId));
+
     // When
-    await client.orm.public.User.where({ id: userId }).deleteAndCount();
+    await client.delete(user).where(eq(user.id, userId));
+
     // Then
     expect(await repository.findByUserId(userId)).toBeNull();
     expect(await repository.findByUserId(anotherUserId)).not.toBeNull();
@@ -253,8 +264,10 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
         pm10: 10,
         pm25: 5,
       });
+
       // When
       await update.execute({ userId, latitude: 35.1796, longitude: 129.0756 });
+
       // Then
       expect(await cache.getConditions(60, 127, date)).toBeUndefined();
       expect(coordinates(await repository.findByUserId(userId))).toEqual(

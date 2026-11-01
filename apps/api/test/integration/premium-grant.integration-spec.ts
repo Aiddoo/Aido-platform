@@ -1,4 +1,4 @@
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, eq } from "drizzle-orm";
 
 import { ENTITLEMENT_READER, Resource } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
@@ -15,8 +15,8 @@ import {
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { createEntityId } from "#api/platform/database/database-values";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
 import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
@@ -64,14 +64,17 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       createdAt: AT,
       updatedAt: AT,
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
   });
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function givenStoreSubscription(): Promise<void> {
@@ -90,22 +93,18 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   }
 
   async function grantsOf(target: string) {
-    return decodeRecord(
-      "PremiumGrant",
-      await client.orm.public.PremiumGrant.where((grant) => grant.userId.eq(target))
-        .select("sourceKey", "status", "startsAt", "endsAt")
-        .orderBy((grant) => grant.sourceKey.asc())
-        .all(),
-    );
+    return client.query.premiumGrant.findMany({
+      columns: { sourceKey: true, status: true, startsAt: true, endsAt: true },
+      where: { userId: target },
+      orderBy: { sourceKey: "asc" },
+    });
   }
 
   async function userProjection() {
-    return decodeRecord(
-      "User",
-      await client.orm.public.User.where((row) => row.id.eq(userId))
-        .select("subscriptionStatus", "subscriptionExpiresAt")
-        .first(),
-    );
+    return client.query.user.findFirst({
+      columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
+      where: { id: userId },
+    });
   }
 
   it("구독 중 받은 보상은 쌓아 두고 스토어 만료 웹훅이 오면 이어서 시작해 프리미엄을 유지한다", async () => {
@@ -184,16 +183,16 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // Then
     expect([first.notifiedCount, repeated.notifiedCount]).toEqual([1, 0]);
     expect(
-      await client.orm.public.Notification.where((row) =>
-        and(row.userId.eq(userId), row._type.eq("PREMIUM_GRANT_ENDING")),
-      ).aggregate((aggregate) => ({ count: aggregate.count() })),
-    ).toEqual({ count: 1 });
+      await client.$count(
+        notification,
+        and(eq(notification.userId, userId), eq(notification.type, "PREMIUM_GRANT_ENDING")),
+      ),
+    ).toBe(1);
     expect(swept).toMatchObject({ userCount: 1, changedGrantCount: 1, failedUserCount: 0 });
     expect(await userProjection()).toEqual({
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    // sweep이 ENDED로 정리한 기간도 7일 동안은 끝난 보상으로 보인다
     vi.setSystemTime(new Date("2028-02-27T04:00:00.000Z"));
     expect(await premiumAccess()).toMatchObject({
       source: null,
@@ -212,7 +211,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       createdAt: AT,
       updatedAt: AT,
     });
-    await client.orm.public.User.create(encodeCreate("User", coveredUser));
+    await client.insert(userTable).values(coveredUser);
     await subscriptions.create({
       userId: coveredUser.id,
       revenueCatId: "premium-grant-covered-chain",
@@ -257,7 +256,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       createdAt: AT,
       updatedAt: AT,
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     return user.id;
   }
 
@@ -639,17 +638,15 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   it("스토어가 다시 유효해지면 예전에 미래 시작으로 저장한 기간을 sweep이 다시 쌓아 둔다", async () => {
     // Given
     await givenStoreSubscription();
-    await client.orm.public.PremiumGrant.create(
-      encodeCreate("PremiumGrant", {
-        userId,
-        source: "INVITE",
-        sourceKey: "invite:legacy-future",
-        durationDays: 7,
-        status: "ACTIVE",
-        startsAt: new Date("2028-03-01T04:00:00.000Z"),
-        endsAt: new Date("2028-03-08T04:00:00.000Z"),
-      }),
-    );
+    await client.insert(premiumGrant).values({
+      userId,
+      source: "INVITE",
+      sourceKey: "invite:legacy-future",
+      durationDays: 7,
+      status: "ACTIVE",
+      startsAt: new Date("2028-03-01T04:00:00.000Z"),
+      endsAt: new Date("2028-03-08T04:00:00.000Z"),
+    });
 
     // When
     const swept = await context.module.get(SweepPremiumGrants).execute({ now: AT });
@@ -662,18 +659,13 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   });
 
   async function roleOf(target: string) {
-    return (
-      await client.orm.public.User.where((row) => row.id.eq(target))
-        .select("role")
-        .first()
-    )?.role;
+    return (await client.query.user.findFirst({ columns: { role: true }, where: { id: target } }))
+      ?.role;
   }
 
   it("ADMIN도 보상 기간을 기록하고 종료 안내를 받지만 role과 무제한 한도는 그대로다", async () => {
     // Given
-    await client.orm.public.User.where((row) => row.id.eq(userId)).updateAndCount(
-      encodePatch("User", { role: "ADMIN" }),
-    );
+    await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, userId));
     const notify = context.module.get(NotifyEndingPremiumGrants);
     const sweep = context.module.get(SweepPremiumGrants);
 
@@ -710,9 +702,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     { name: "환불 CANCELLATION", builder: SubscriptionEventBuilder.refundCancellation },
   ])("ADMIN의 스토어 $name 웹훅은 role을 바꾸지 않는다", async ({ builder }) => {
     // Given
-    await client.orm.public.User.where((row) => row.id.eq(userId)).updateAndCount(
-      encodePatch("User", { role: "ADMIN" }),
-    );
+    await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, userId));
     await givenStoreSubscription();
     await granter.grant({
       userId,

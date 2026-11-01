@@ -26,8 +26,9 @@ describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
       );
       expect(fixture.reminderTimezoneCache.activeTimezones.size).toBe(0);
       expect(fixture.reminderEnqueuer.jobs).toEqual([]);
-      if (existing)
+      if (existing) {
         expect(fixture.preferenceRepository.records.get(fixture.userId)?.currentStreak).toBe(7);
+      }
     },
   );
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {

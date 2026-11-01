@@ -83,7 +83,9 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
 
   renew(expiresAt: Date, eventId?: string): boolean {
-    if (this.isActiveWithSameExpiry(expiresAt)) return false;
+    if (this.isActiveWithSameExpiry(expiresAt)) {
+      return false;
+    }
     this.props.status = "ACTIVE";
     this.props.expiresAt = new Date(expiresAt);
     this.props.cancelledAt = null;
@@ -105,8 +107,9 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
 
   expire(expirationAt: Date | null, eventId?: string): boolean {
-    if (expirationAt != null && expirationAt.getTime() < this.props.expiresAt.getTime())
+    if (expirationAt != null && expirationAt.getTime() < this.props.expiresAt.getTime()) {
       return false;
+    }
     this.props.status = "EXPIRED";
     this.#recordEvent(eventId);
     return true;
@@ -125,10 +128,14 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
 
   #changeExpiry(expiresAt: Date | undefined): void {
-    if (expiresAt != null) this.props.expiresAt = new Date(expiresAt);
+    if (expiresAt != null) {
+      this.props.expiresAt = new Date(expiresAt);
+    }
   }
 
   #recordEvent(eventId: string | undefined): void {
-    if (eventId != null && eventId !== "") this.props.lastProcessedEventId = eventId;
+    if (eventId != null && eventId !== "") {
+      this.props.lastProcessedEventId = eventId;
+    }
   }
 }

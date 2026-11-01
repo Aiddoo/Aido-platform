@@ -92,8 +92,9 @@ export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPor
           (record.initiatingUserId !== null &&
             record.initiatingUserId !== "" &&
             record.initiatingUserId !== input.actorUserId)))
-    )
+    ) {
       return false;
+    }
     this.states.set(input.id, {
       ...record,
       exchangedAt: new Date(input.at),
@@ -109,7 +110,9 @@ export class StubAuthOAuthStateRepository implements AuthOAuthStateRepositoryPor
 
   #requireState(id: number): AuthOAuthStateRecord {
     const record = this.states.get(id);
-    if (record === undefined) throw new Error(`OAuth state가 없습니다: ${id}`);
+    if (record === undefined) {
+      throw new Error(`OAuth state가 없습니다: ${id}`);
+    }
     return record;
   }
 }
@@ -147,13 +150,17 @@ export class CountingOAuthIdentityProvider implements OAuthIdentityProvider {
 
   async exchangeCode(code: string, state?: string) {
     this.exchanges.push({ code, state });
-    if (this.exchangeError !== null) throw this.exchangeError;
+    if (this.exchangeError !== null) {
+      throw this.exchangeError;
+    }
     return this.exchangedToken === null ? null : { token: this.exchangedToken };
   }
 
   async verifyToken(token: string, nonce?: string): Promise<VerifiedProfile> {
     this.verifications.push({ token, nonce });
-    if (this.verificationError !== null) throw this.verificationError;
+    if (this.verificationError !== null) {
+      throw this.verificationError;
+    }
     return { ...this.profile };
   }
 

@@ -1,6 +1,6 @@
 import type { Redis } from "ioredis";
 
-import type { DatabaseService } from "#api/platform/database/database.service";
+import type { Database } from "#api/platform/database/database.client";
 
 import type { PushRateLimiterPort } from "../../../application/ports/delivery/push-rate-limiter.port.js";
 import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.js";
@@ -11,7 +11,7 @@ export type PushRateLimitBackend = "postgres" | "redis" | "memory";
 
 interface CreatePushRateLimiterInput {
   readonly backend: PushRateLimitBackend;
-  readonly database: DatabaseService;
+  readonly database: Database;
   readonly redis?: Redis;
 }
 

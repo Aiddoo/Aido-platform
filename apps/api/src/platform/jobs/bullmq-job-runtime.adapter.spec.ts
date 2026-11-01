@@ -399,7 +399,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
       await runtime.enqueue(QUEUE, { documentId: 42 }, options());
       const queue = factory.queues.get(QUEUE);
       expect(queue).toBeDefined();
-      if (!queue) return;
+      if (!queue) {
+        return;
+      }
       queue.jobState = state;
 
       await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
@@ -413,7 +415,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
     await runtime.enqueue(QUEUE, { documentId: 42 }, options());
     const queue = factory.queues.get(QUEUE);
     expect(queue).toBeDefined();
-    if (!queue) return;
+    if (!queue) {
+      return;
+    }
     queue.missingJobIds.add(toBullMqJobId("document:42"));
 
     await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
@@ -429,7 +433,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
       await runtime.enqueue(QUEUE, { documentId: 42 }, options());
       const queue = factory.queues.get(QUEUE);
       expect(queue).toBeDefined();
-      if (!queue) return;
+      if (!queue) {
+        return;
+      }
       queue.jobState = state;
 
       await expect(runtime.cancel(QUEUE, "document:42")).resolves.toEqual({
@@ -443,7 +449,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
     await runtime.enqueue(QUEUE, { documentId: 42 }, options());
     const queue = factory.queues.get(QUEUE);
     expect(queue).toBeDefined();
-    if (!queue) return;
+    if (!queue) {
+      return;
+    }
     queue.jobExists = false;
 
     await expect(runtime.cancel(QUEUE, "missing")).resolves.toEqual({
@@ -456,7 +464,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
     await runtime.enqueue(QUEUE, { documentId: 42 }, options());
     const queue = factory.queues.get(QUEUE);
     expect(queue).toBeDefined();
-    if (!queue) return;
+    if (!queue) {
+      return;
+    }
     queue.removeError = new Error("redis unavailable");
 
     await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow("redis unavailable");
@@ -466,7 +476,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
     await runtime.enqueue(QUEUE, { documentId: 42 }, options());
     const queue = factory.queues.get(QUEUE);
     expect(queue).toBeDefined();
-    if (!queue) return;
+    if (!queue) {
+      return;
+    }
     queue.getStateError = new Error("redis state unavailable");
 
     await expect(runtime.cancel(QUEUE, "document:42")).rejects.toThrow("redis state unavailable");
@@ -478,7 +490,9 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
     await runtime.enqueue(QUEUE, { documentId: 42 }, options());
     const queue = factory.queues.get(QUEUE);
     expect(queue).toBeDefined();
-    if (!queue) return;
+    if (!queue) {
+      return;
+    }
     queue.counts = { wait: 2, delayed: 1, active: 1, failed: 3 };
     queue.oldestTimestamp = Date.now() - 10_000;
 

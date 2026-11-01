@@ -1,155 +1,217 @@
 # Aido
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-08-14 · **Owner**: Aido Platform Team
-
-메모가 할 일이 되고, 친구와 함께 끝내는 투두. Aido의 API 서버와 모바일 앱을
-관리하는 Turborepo + pnpm 모노레포입니다.
+메모가 할 일이 되고, 친구와 함께 끝내는 투두 앱. NestJS API 서버와 Expo 모바일 앱, 둘이 공유하는 REST 계약을 하나의 pnpm + Turborepo 모노레포에서 관리한다.
 
 ## 목차
 
+- [핵심 기능](#핵심-기능)
 - [기술 스택](#기술-스택)
-- [구조](#구조)
-- [시작하기](#시작하기)
-- [스크립트](#스크립트)
-- [Docker 워크플로우](#docker-워크플로우)
-- [패키지](#패키지)
-- [개발 가이드](#개발-가이드)
-- [API 문서](#api-문서)
-- [배포](#배포)
+- [아키텍처](#아키텍처)
+- [빠른 시작](#빠른-시작)
+- [주요 명령어](#주요-명령어)
+- [테스트 전략](#테스트-전략)
+- [CI/CD](#cicd)
+- [문서](#문서)
 - [라이선스](#라이선스)
+
+## 핵심 기능
+
+- **할 일·메모**: 날짜·시간·리마인더가 있는 할 일, 반복 할 일, 카테고리, 메모를 할 일로 바꾸는 AI 파싱
+- **친구와 함께**: 팔로우, 친구의 할 일 응원·찌르기(nudge), 할 일 댓글, 초대 링크
+- **알림**: Expo Push 발송, receipt 확인, 사용자 시간대 기준 리마인더 스케줄링
+- **기록·리포트**: 일일 완료와 주간 성취, AI 리포트
+- **기타**: 날씨, 구독, 홈 화면 위젯(iOS/Android), 신고·차단, 문의
 
 ## 기술 스택
 
-| 분류         | 기술                                                               |
-| ------------ | ------------------------------------------------------------------ |
-| Monorepo     | Turborepo 2.11, pnpm 12.15                                         |
-| Backend      | NestJS 12.2 ESM, Prisma 8 RC (ORM rc.20, CLI rc.27), PostgreSQL 16 |
-| Mobile       | Expo 58, React Native 0.88, React 19.3                             |
-| Validation   | Zod 4.3.6, Nest Standard Schema                                    |
-| Testing      | Jest Expo 58 (Jest 30), Vitest 5.0, Testcontainers                 |
-| Code Quality | Oxlint 1.89, Oxfmt 0.74                                            |
-| Runtime      | Node.js 24.22.1 LTS                                                |
+정확한 버전은 [`pnpm-workspace.yaml`](./pnpm-workspace.yaml)의 catalog와 각 `package.json`을 따른다.
 
-## 구조
+| 영역      | 기술                                                                                         |
+| --------- | -------------------------------------------------------------------------------------------- |
+| 서버      | NestJS 12.3 (ESM, SWC), Drizzle ORM 1.0 RC, PostgreSQL 16, pg-boss 12, AI SDK 7 (Google)     |
+| 공유 계약 | `@aido/api`: Zod 4.6 스키마·오류 코드·공용 vocabulary                                        |
+| 모바일    | Expo SDK 58, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky |
+| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                            |
+| 툴링      | Node.js 24.22.1, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.90, Oxfmt 0.75         |
+| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                      |
 
-```
-aido/
+## 아키텍처
+
+### 모노레포 구조
+
+```text
+.
 ├── apps/
-│   ├── api/          # NestJS 백엔드
-│   └── mobile/       # Expo 모바일 앱
+│   ├── api/                  # @aido/server — NestJS REST API
+│   │   ├── src/modules/      #   업무 Context (planning, social, notification, ...)
+│   │   ├── src/platform/     #   DB·HTTP·job·cache 등 실행 기술
+│   │   ├── src/shared/       #   Context 공통 순수 코드
+│   │   ├── drizzle/          #   SQL 마이그레이션
+│   │   └── test/             #   integration·e2e·architecture 테스트
+│   └── mobile/               # @aido/mobile — Expo 앱 (src/features/* 기능 단위)
 ├── packages/
-│   └── api/          # REST 계약·오류 코드·순수 공용 타입 (@aido/api)
+│   └── api/                  # @aido/api — 서버·모바일 공유 REST 계약
 ├── tooling/
-│   ├── typescript/   # TypeScript 프리셋
-│   ├── vitest/       # Vitest 프리셋
-│   └── database-migrate/ # 고정 lockfile 기반 migration CLI
-└── turbo.json
+│   ├── database-migrate/     # pg-boss + Drizzle 마이그레이션 CLI (migrate 이미지)
+│   ├── typescript/           # tsconfig 프리셋
+│   └── vitest/               # Vitest 프리셋
+├── docs/                     # 공통 컨벤션·서버 문서
+├── scripts/                  # CI 정책 스크립트, 배포 스크립트
+└── docker-compose*.yml       # 로컬 DB / Docker 개발 / 운영 구성
 ```
 
-## 시작하기
+### 서버 레이어
 
-서버 환경 파일·인증 설정·실행 준비는 [API README](apps/api/README.md#시작하기)를 따른다. 아래 DB 연결은 로컬 개발용이다.
+`src/modules/<context>`마다 Domain · Application · Infrastructure · Presentation 레이어를 둔 모듈러 모놀리스다. 의존은 안쪽(Domain)으로만 향하고, Infrastructure는 Application이 정의한 Port를 구현한다.
 
-```bash
-# 설치
+```mermaid
+flowchart LR
+  HTTP[HTTP 요청] --> P[Presentation<br/>Controller · Zod 검증]
+  P --> U[Application<br/>UseCase]
+  U --> D[Domain<br/>Aggregate · VO · Policy]
+  U --> Port[Port<br/>consumer-owned interface]
+  I[Infrastructure<br/>Drizzle · pg-boss · Redis · SDK] -. 구현 .-> Port
+  I --> DB[(PostgreSQL)]
+```
+
+- Domain·Application은 Nest·ORM·vendor SDK에 의존하지 않는다. Nest Module이 Composition Root로서 UseCase와 Port 구현을 연결한다.
+- Controller는 UseCase를 직접 호출한다. 다른 Context는 `*.public.ts`로 공개한 capability만 사용한다.
+- 트랜잭션은 `UNIT_OF_WORK`와 CLS transaction(`@nestjs-cls/transactional`)으로 관리하고, 외부 발송은 커밋 이후에 실행한다.
+- 기본 job·push rate limit 저장소는 PostgreSQL(pg-boss)이다. Redis/BullMQ는 선택 backend와 기존 큐 drain 용도로 남아 있다.
+
+상세: [apps/api/.claude/architecture.md](./apps/api/.claude/architecture.md)
+
+### 서버·클라이언트 타입 공유
+
+요청·응답 Zod 스키마와 오류 코드는 `@aido/api` 한 곳에서 정의한다. 서버 Presentation은 같은 스키마로 요청을 검증하고 Swagger 문서를 만들며, 모바일은 같은 스키마로 응답을 파싱하고 `z.infer` 타입을 쓴다. 두 앱 내부에 DTO를 다시 정의하지 않는다.
+
+```text
+packages/api (Zod 스키마, ErrorCode)
+   ├──▶ apps/api     요청 검증 · OpenAPI 생성 · 오류 응답
+   └──▶ apps/mobile  응답 파싱 · 타입 추론 · 오류 분기
+```
+
+`pnpm install`의 `postinstall`이 `packages/*`를 먼저 빌드하므로 설치 직후 두 앱에서 바로 import할 수 있다. 배포된 앱 버전과의 호환은 e2e의 OpenAPI·released-client fixture로 검증한다.
+
+### 시간 규칙
+
+| 값        | 저장·전송                               | 기준                                      |
+| --------- | --------------------------------------- | ----------------------------------------- |
+| 순간      | DB `timestamp(3)` UTC, API ISO datetime | 서버 process(`TZ=UTC`)와 DB 세션 모두 UTC |
+| 달력 날짜 | DB `date`, API `YYYY-MM-DD`             | 사용자 시간대 기준의 날짜 key             |
+| 시간대    | IANA 이름 (`Asia/Seoul`)                | 요청 헤더 `X-Timezone`, 사용자 설정       |
+
+서버는 `X-Timezone`으로 사용자의 오늘·주·기간을 계산하고, 배치는 사용자별 저장 시간대를 쓴다. 상세: [docs/conventions/dates.md](./docs/conventions/dates.md)
+
+## 빠른 시작
+
+### 요구 사항
+
+- Node.js `24.22.1` ([`.nvmrc`](./.nvmrc))
+- pnpm `12.15.0` (`packageManager`, `corepack enable`로 활성화)
+- Docker (로컬 PostgreSQL·Redis, integration/e2e 테스트의 Testcontainers)
+
+### 서버 실행
+
+```sh
+# 1. 의존성 설치 (packages/* 자동 빌드)
 pnpm install
 
-# DB 실행 (Docker)
+# 2. PostgreSQL 16(5432)·Redis(6379) 컨테이너 시작
 pnpm docker:up
 
-# 로컬 DB graph 적용·검증
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm --filter @aido/server db:deploy
+# 3. API 환경 파일 준비
+cp .env.example apps/api/.env.development
+#    예시의 DATABASE_URL은 Docker 개발 구성의 5433 포트다.
+#    pnpm docker:up을 썼다면 postgresql://postgres:postgres@localhost:5432/aido 로 바꾼다.
 
-# 개발 서버
+# 4. pg-boss·Drizzle 마이그레이션 적용
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm db:migrate
+
+# 5. 개발 서버 (API + Expo Metro)
 pnpm dev
 ```
 
-## 스크립트
+- API: `http://localhost:8080`, Swagger UI: `http://localhost:8080/api/docs` (`NODE_ENV=development`에서만)
+- 서버만 실행하려면 `pnpm --filter @aido/server dev`
+- API까지 Docker로 실행하려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up` (DB → migrate → API 순서로 기동)
+- 모바일 환경 변수와 기기 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
 
-### 개발
+## 주요 명령어
 
-| 명령어              | 설명                  |
-| ------------------- | --------------------- |
-| `pnpm dev`          | 전체 개발 서버        |
-| `pnpm build`        | 전체 빌드             |
-| `pnpm typecheck`    | 타입 검사             |
-| `pnpm lint`         | Oxlint 정적 검사      |
-| `pnpm format`       | 코드 포맷팅           |
-| `pnpm format:check` | Oxfmt 포맷 검사       |
-| `pnpm clean`        | 빌드 산출물 전체 삭제 |
+루트에서 실행한다. 패키지 단위 명령은 `pnpm --filter <패키지> <명령>`을 쓴다.
 
-### 데이터베이스
+| 명령어                  | 설명                                                       |
+| ----------------------- | ---------------------------------------------------------- |
+| `pnpm dev`              | 전체 개발 서버 (`turbo run dev`)                           |
+| `pnpm build`            | 전체 빌드                                                  |
+| `pnpm typecheck`        | 전체 타입 검사                                             |
+| `pnpm lint`             | Oxlint 정적 검사 (`lint:fix`로 자동 수정)                  |
+| `pnpm format`           | Oxfmt 포맷 적용 (`format:check`로 검사만)                  |
+| `pnpm check`            | lint + format:check + typecheck + 모바일 컨벤션 검사       |
+| `pnpm test`             | 전체 unit 테스트                                           |
+| `pnpm test:cov`         | unit 테스트 + 커버리지                                     |
+| `pnpm test:integration` | 서버 PostgreSQL integration 테스트                         |
+| `pnpm test:e2e`         | 서버 HTTP·계약 e2e 테스트                                  |
+| `pnpm test:all`         | unit → integration → e2e                                   |
+| `pnpm db:generate`      | Drizzle 스키마 변경으로 마이그레이션 SQL 생성              |
+| `pnpm db:check`         | Drizzle 마이그레이션 정합성 검사                           |
+| `pnpm db:migrate`       | pg-boss·Drizzle 마이그레이션 적용 (`DATABASE_URL` 필요)    |
+| `pnpm docker:up`        | 로컬 PostgreSQL·Redis 시작 (`docker:down`으로 중지)        |
+| `pnpm docker:dev:up`    | Docker 개발 환경(DB + migrate + API) 시작 (`docker:dev:*`) |
+| `pnpm docker:prod:up`   | 운영 구성 로컬 시험 (`docker:prod:*`, `.env.docker.prod`)  |
+| `pnpm commit`           | Conventional Commit 작성기 (commitizen)                    |
+| `pnpm clean`            | 빌드 산출물과 `node_modules` 삭제                          |
 
-| 명령어             | 설명                                  |
-| ------------------ | ------------------------------------- |
-| `pnpm db:migrate`  | Prisma 마이그레이션                   |
-| `pnpm db:generate` | Prisma 8 contract의 runtime·타입 생성 |
-| `pnpm db:plan`     | migration graph 적용 계획 확인        |
-| `pnpm db:verify`   | DB와 contract의 일치 확인             |
+## 테스트 전략
 
-### 테스트
+| 범위        | 위치·패턴                                           | 검증 대상                                                           |
+| ----------- | --------------------------------------------------- | ------------------------------------------------------------------- |
+| unit        | `apps/api/src/**/*.spec.ts`, `packages/api`, 모바일 | Domain 규칙, UseCase 분기, Adapter wire, 아키텍처 경계, 모바일 로직 |
+| integration | `apps/api/test/integration/*.integration-spec.ts`   | 실제 PostgreSQL의 transaction·row lock·동시성·마이그레이션·job      |
+| e2e         | `apps/api/test/e2e/*.e2e-spec.ts`                   | HTTP 검증·권한·응답, OpenAPI와 배포된 앱 버전의 계약 fixture        |
 
-| 명령어          | 설명                                   |
-| --------------- | -------------------------------------- |
-| `pnpm test`     | 단위 테스트                            |
-| `pnpm test:e2e` | E2E 테스트                             |
-| `pnpm test:all` | 전체 테스트 (Unit + Integration + E2E) |
-| `pnpm test:cov` | 커버리지 리포트                        |
+- **격리된 DB**: 실행마다 `aido_test_<run-id>` 템플릿 DB에 마이그레이션을 한 번 적용하고, worker 수만큼 복제한다. 각 worker는 자기 DB만 쓰고, 끝나면 자신이 만든 DB만 정리한다. 로컬은 Testcontainers, CI는 `AIDO_TEST_POSTGRES_URL`의 PostgreSQL service를 쓴다. `DATABASE_URL`은 테스트 DB로 쓰지 않는다.
+- **실행 방식**: unit은 worker 병렬(`maxWorkers: 50%`)이다. integration·e2e는 worker별 DB로 파일 단위 병렬(기본 2~4, `AIDO_TEST_DB_WORKERS`로 조정) + 무작위 순서(`sequence.shuffle`)로 실행해 순서 의존을 드러낸다. 테스트 사이 정리는 FK 트리거를 끈 `DELETE`로 처리한다.
+- **외부 공급자**: Expo Push·Resend·AI SDK는 Fake 또는 고정 HTTP fixture로 격리한다. 실제 유료 호출(`ai:eval`)과 `test:performance`는 CI 밖에서 별도로 실행한다.
 
-### Docker
+상세: [apps/api/.claude/testing-guide.md](./apps/api/.claude/testing-guide.md), [apps/mobile/.claude/testing-guide.md](./apps/mobile/.claude/testing-guide.md)
 
-| 명령어                  | 설명                               |
-| ----------------------- | ---------------------------------- |
-| `pnpm docker:up`        | DB 컨테이너 (로컬 개발)            |
-| `pnpm docker:down`      | DB 컨테이너 중지                   |
-| `pnpm docker:dev:up`    | 개발 환경 전체 (DB + API)          |
-| `pnpm docker:dev:down`  | 개발 환경 중지                     |
-| `pnpm docker:prod:up`   | 프로덕션 환경 (DB + Migrate + API) |
-| `pnpm docker:prod:down` | 프로덕션 환경 중지                 |
+## CI/CD
 
-## Docker 워크플로우
+```mermaid
+flowchart LR
+  PR[PR / push] --> Gate[CI Scope<br/>변경 범위 계산]
+  Gate --> Lint[Lint & Type Check]
+  Gate --> Unit[Test - Mobile & Contracts]
+  Gate --> API[Verify API<br/>unit · integration · 계약 게이트 · build]
+  Lint & Unit & API --> Img[Build & Push Image<br/>main 전용, GHCR]
+  Img --> Deploy[Deploy to EC2<br/>SSH · migrate → API · health]
+```
 
-| 모드        | Compose 파일              | 용도                 |
-| ----------- | ------------------------- | -------------------- |
-| DB Only     | `docker-compose.yml`      | 로컬 개발 (추천)     |
-| Development | `docker-compose.dev.yml`  | Docker 전체 개발     |
-| Production  | `docker-compose.prod.yml` | 프로덕션 배포 테스트 |
+- **E2E**: 전체 e2e는 Actions 사용량을 아끼려고 CI에서 돌리지 않는다. 배포된 앱(1.7.x·1.8.2)의 OpenAPI 계약 게이트(`test:contract`)만 돌리고, 전체 e2e는 로컬 `pnpm test:e2e`로 확인한다.
+- **보안**: 워크플로 권한은 job 단위 최소 권한이고, 액션은 SHA로 고정한다. PR은 Dependency Review, main 이미지는 출처 증명(attestation)과 Trivy, 저장소는 CodeQL로 검사한다.
+- **변경 범위**: `CI Scope` job이 diff로 API·모바일·공유 계약 범위를 계산해 필요한 job만 실행한다. 문서만 바뀌면 heavy job을 건너뛴다.
+- **Stack PR**: 의존하는 PR은 같은 `stack:<release>` 라벨을 달고, 맨 위 tip 하나에만 `ci:stack-tip`을 단다. 중간 PR과 draft의 heavy job은 미루고, tip이 base와 모든 ancestor를 포함한 누적 diff를 한 번 검증한다. 같은 Git tree가 develop·main에 올라가면 tip의 성공 결과를 재사용한다.
+- **이미지**: main의 API 변경이 검증되면 ARM64 API·migrate 이미지를 같은 커밋 SHA 태그로 빌드하고, Trivy(HIGH/CRITICAL) 검사를 통과한 경우에만 GHCR에 push한다.
+- **배포**: `Deploy to EC2` workflow가 두 이미지 태그를 확인한 뒤 SSH로 [`scripts/deploy.sh`](./scripts/deploy.sh)를 실행한다. **migrate 컨테이너가 먼저 실행되어** pg-boss·Drizzle 마이그레이션을 끝내야 API 컨테이너를 교체하며, health gate 실패 시 이전 API 이미지로 되돌린다.
+- **모바일**: Expo EAS로 빌드·제출한다 ([apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)).
 
-- **DB Only**: PostgreSQL만 Docker로 실행하고 API는 로컬에서 `pnpm dev`로 실행
-- **Development**: DB + API를 모두 Docker로 실행 (`.env.docker.dev` 필요)
-- **Production**: 프로덕션 이미지 빌드 + 자동 마이그레이션 (`.env.docker.prod` 필요)
+상세: [docs/server/ci.md](./docs/server/ci.md), [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
 
-## 패키지
+## 문서
 
-| 패키지                             | 설명              |
-| ---------------------------------- | ----------------- |
-| [@aido/server](./apps/api)         | NestJS 백엔드 API |
-| [@aido/mobile](./apps/mobile)      | Expo 모바일 앱    |
-| [@aido/api](./packages/api)        | Zod 스키마        |
-| [@aido/api/errors](./packages/api) | 에러 정의         |
-
-## 개발 가이드
-
-- **커밋**: Conventional Commits (`pnpm commit`)
-- **린트/포맷**: Oxlint + Oxfmt (`pnpm lint && pnpm format:check`)
-- **타입**: TypeScript strict 모드
-- **DTO**: Zod 스키마 (`@aido/api`)
-- **에러 코드**: `@aido/api/errors`의 `ErrorCode` 사용 (하드코딩 금지)
-- **AI 에이전트 워크플로우**: [AGENTS.md](./AGENTS.md) 참조
-
-## API 문서
-
-- Swagger UI: `http://localhost:8080/api/docs`
-- OpenAPI JSON: `http://localhost:8080/api/docs-json`
-
-## 배포
-
-- **서버 개발 문서**: [작업별 문서 안내](docs/server/README.md)
-- **API**: AWS EC2 + Docker Compose (GitHub Actions SSH 배포). [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
-- **Mobile**: Expo EAS 빌드. [apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)
+| 주제                       | 문서                                                                                                                                                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 작업 진입점 (사람·AI 공통) | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                            |
+| 공통 컨벤션                | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [Git·PR](./docs/conventions/git.md) |
+| 서버 문서 안내             | [docs/server/README.md](./docs/server/README.md)                                                                                                                                                                  |
+| 서버 구조·코드 규칙        | [architecture](./apps/api/.claude/architecture.md), [api-conventions](./apps/api/.claude/api-conventions.md), [naming](./docs/server/naming.md)                                                                   |
+| REST 계약·DB               | [rest-contracts](./apps/api/.claude/rest-contracts.md), [drizzle](./apps/api/.claude/drizzle.md)                                                                                                                  |
+| 테스트·로깅                | [testing-guide](./apps/api/.claude/testing-guide.md), [logging-guide](./apps/api/.claude/logging-guide.md)                                                                                                        |
+| 모바일 구조·UI             | [apps/mobile/.claude/](./apps/mobile/.claude/)                                                                                                                                                                    |
+| 배포                       | [서버](./apps/api/DEPLOYMENT.md), [모바일](./apps/mobile/DEPLOYMENT.md)                                                                                                                                           |
 
 ## 라이선스
 
-MIT
-
-1.10.0 변경과 검증 현황은 [클라이언트 Before/After](apps/mobile/docs/releases/1.10.0-client.md)와 [검증 기록](docs/releases/1.10.0-verification.json)을 참고하세요.
+[MIT](./LICENSE)

@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
-import postgres from "@prisma/orm-postgres/runtime";
+import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
@@ -13,12 +13,12 @@ import { CreateMemo } from "#api/modules/notes/application/use-cases/memos/creat
 import { ReorderMemo } from "#api/modules/notes/application/use-cases/memos/reorder-memo.use-case";
 import { UpdateMemo } from "#api/modules/notes/application/use-cases/memos/update-memo.use-case";
 import { TodoCreatedEvent } from "#api/modules/planning/domain/events/todos/todo-created.event";
-import { encodeCreate } from "#api/platform/database/database-records";
-import { contract } from "#api/platform/database/database.service";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,
-} from "#api/platform/database/prisma-error.util";
+  requireRecord,
+} from "#api/platform/database/database-error.util";
+import { memo, todoCategory, todoItem, user } from "#api/platform/database/schema/index";
 import {
   DOMAIN_EVENT_PUBLISHER,
   UNIT_OF_WORK,
@@ -28,7 +28,7 @@ import {
 } from "#api/shared/application/ports/index";
 import { MemoBuilder } from "#test/builders/memo.builder";
 import { UserFixture, TodoCategoryFixture } from "#test/fixtures/index";
-import { createStatementObserver } from "#test/setup/statement-observer";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
@@ -41,19 +41,21 @@ const AT = new Date("2027-01-08T12:00:00.000Z");
 
 function statementSummary(statements: readonly string[]) {
   const business = statements.filter(
-    (sql) => !/^(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE|SET)\b/i.test(sql.trim()),
+    (statement) => !/^(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE|SET)\b/i.test(statement.trim()),
   );
-  const mutationLocks = business.filter((sql) => sql.includes("pg_advisory_xact_lock")).length;
-  const rangeUpdates = business.filter((sql) => sql.includes('"sortOrder" +')).length;
+  const mutationLocks = business.filter((statement) =>
+    statement.includes("pg_advisory_xact_lock"),
+  ).length;
+  const rangeUpdates = business.filter((statement) => statement.includes('"sortOrder" +')).length;
   return {
     total: business.length,
-    nativeOrm: business.length - mutationLocks - rangeUpdates,
+    queries: business.length - mutationLocks - rangeUpdates,
     mutationLocks,
     rangeUpdates,
   };
 }
 
-describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
+describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
@@ -64,30 +66,13 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
   let recording: string[] | null = null;
 
   beforeAll(async () => {
-    const trace = createStatementObserver("notes-statement-observer", (statement) => {
-      if (recording !== null) {
-        recording.push(statement.sql);
-      }
-    });
     database = new TestDatabase({
-      createClient(url) {
-        const pool = new Pool({ connectionString: url, max: 5 });
-        const native = postgres({
-          contract,
-          pg: pool,
-          middleware: [trace],
-        });
-        let closed = false;
-        return {
-          ...native,
-          async close() {
-            if (closed) return;
-            closed = true;
-            await native.close();
-            await pool.end();
-          },
-        };
-      },
+      createClient: (url) =>
+        createTestClient(url, { max: 5 }, (statement) => {
+          if (recording !== null) {
+            recording.push(statement);
+          }
+        }),
     });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
@@ -102,8 +87,7 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     vi.setSystemTime(AT);
     const owner = UserFixture.create();
     const other = UserFixture.create();
-    await client.orm.public.User.create(encodeCreate("User", owner));
-    await client.orm.public.User.create(encodeCreate("User", other));
+    await client.insert(user).values([owner, other]);
     userId = owner.id;
     otherUserId = other.id;
   });
@@ -115,8 +99,11 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
 
   afterAll(async () => {
     await lockPool?.end();
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function seedMemo(sortOrder = 0, ownerId = userId) {
@@ -126,12 +113,18 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
       .withCreatedAt(new Date(AT))
       .build();
     record.updatedAt = new Date(AT);
-    return client.orm.public.Memo.create(encodeCreate("Memo", omit(record, ["id"])));
+    const [created] = await client
+      .insert(memo)
+      .values(omit(record, ["id"]))
+      .returning();
+    return requireRecord(created);
   }
 
   async function seedMemos(count: number) {
     const rows = [];
-    for (let index = 0; index < count; index++) rows.push(await seedMemo(index));
+    for (let index = 0; index < count; index++) {
+      rows.push(await seedMemo(index));
+    }
     return rows;
   }
 
@@ -153,16 +146,12 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
   async function waitForBlockedRequests(count: number) {
     await vi.waitFor(
       async () => {
-        const rows = await client.runtime().query(
-          client.raw.sql`
-            SELECT count(*)::int AS count FROM pg_stat_activity
-            WHERE datname=current_database() AND wait_event_type='Lock'
-              AND query LIKE '%pg_advisory_xact_lock%'
-          `
-            .returnsRow({ count: "pg/int4@1" })
-            .build(),
-        );
-        expect(rows.at(0)?.count).toBe(count);
+        const waiting = await client.execute<{ count: number }>(sql`
+          SELECT count(*)::int AS count FROM pg_stat_activity
+          WHERE datname=current_database() AND wait_event_type='Lock'
+            AND query LIKE '%pg_advisory_xact_lock%'
+        `);
+        expect(waiting.rows.at(0)?.count).toBe(count);
       },
       { timeout: 5000, interval: 10 },
     );
@@ -190,7 +179,10 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
       () => create.execute({ userId, content: "첫 번째 새 메모" }),
       () => create.execute({ userId, content: "두 번째 새 메모" }),
     );
-    const rows = await client.orm.public.Memo.where({ userId }).select("sortOrder").all();
+    const rows = await client
+      .select({ sortOrder: memo.sortOrder })
+      .from(memo)
+      .where(eq(memo.userId, userId));
 
     // Then
     expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
@@ -207,7 +199,9 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     const rows = await seedMemos(3);
     const source = rows.at(0);
     const target = rows.at(2);
-    if (source === undefined || target === undefined) throw new Error("메모 fixture 누락");
+    if (source === undefined || target === undefined) {
+      throw new Error("메모 fixture 누락");
+    }
     const reorder = context.module.get(ReorderMemo);
     const input = {
       userId,
@@ -221,10 +215,11 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
       () => reorder.execute(input),
       () => reorder.execute(input),
     );
-    const saved = await client.orm.public.Memo.where({ userId })
-      .select("id", "sortOrder")
-      .orderBy((row) => row.id.asc())
-      .all();
+    const saved = await client.query.memo.findMany({
+      columns: { id: true, sortOrder: true },
+      where: { userId },
+      orderBy: { id: "asc" },
+    });
 
     // Then
     expect(outcomes.every((outcome) => outcome.status === "fulfilled")).toBe(true);
@@ -242,6 +237,7 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     try {
       await waitForBlockedRequests(1);
       const response = await create.execute({ userId: otherUserId, content: "다른 사용자 메모" });
+
       // Then
       expect(response.memo).toMatchObject({ userId: otherUserId, content: "다른 사용자 메모" });
       await waitForBlockedRequests(1);
@@ -264,7 +260,10 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     // Then
     expect(response.memo).toMatchObject({ sortOrder: 4, updatedAt: AT.toISOString() });
     expect(
-      await client.orm.public.Memo.where({ id: row.id }).select("sortOrder", "updatedAt").first(),
+      await client.query.memo.findFirst({
+        columns: { sortOrder: true, updatedAt: true },
+        where: { id: row.id },
+      }),
     ).toMatchObject({ sortOrder: 4 });
   });
 
@@ -273,7 +272,7 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     const own = await seedMemo();
     const foreign = await seedMemo(1, otherUserId);
 
-    // When / Then
+    // When
     await expect(
       context.module.get(UpdateMemo).execute({ userId, memoId: foreign.id, content: "덮어쓰기" }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.MEMO_2001, details: { memoId: foreign.id } });
@@ -286,20 +285,24 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
       details: { targetMemoId: foreign.id },
     });
     expect(
-      await client.orm.public.Memo.where({ id: foreign.id }).select("content", "sortOrder").first(),
+      await client.query.memo.findFirst({
+        columns: { content: true, sortOrder: true },
+        where: { id: foreign.id },
+      }),
     ).toEqual({ content: "메모 1", sortOrder: 1 });
   });
 
   it("재정렬 도중 대상 행이 없으면 앞서 이동한 순서도 rollback한다", async () => {
     // Given
     await seedMemos(3);
-    const before = await client.orm.public.Memo.where({ userId })
-      .select("id", "sortOrder")
-      .orderBy((row) => row.id.asc())
-      .all();
+    const before = await client.query.memo.findMany({
+      columns: { id: true, sortOrder: true },
+      where: { userId },
+      orderBy: { id: "asc" },
+    });
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
 
-    // When / Then
+    // When
     await expect(
       unitOfWork.run(async () => {
         await repository.shiftSortOrders(userId, 1, 2, -1);
@@ -307,10 +310,11 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
       }),
     ).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
     expect(
-      await client.orm.public.Memo.where({ userId })
-        .select("id", "sortOrder")
-        .orderBy((row) => row.id.asc())
-        .all(),
+      await client.query.memo.findMany({
+        columns: { id: true, sortOrder: true },
+        where: { userId },
+        orderBy: { id: "asc" },
+      }),
     ).toEqual(before);
   });
 
@@ -320,8 +324,9 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     const pinned = rows.at(0);
     const last = rows.at(2);
     const middle = rows.at(1);
-    if (pinned === undefined || last === undefined || middle === undefined)
+    if (pinned === undefined || last === undefined || middle === undefined) {
       throw new Error("메모 fixture 누락");
+    }
     await repository.updatePinned(pinned.id, true);
     const tied = await seedMemo(2);
     const foreign = await seedMemo(1, otherUserId);
@@ -342,11 +347,11 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     expect(await repository.findManyByUserId({ userId, cursor: foreign.id, size: 2 })).toEqual([]);
   });
 
-  it("native 갱신·삭제에 행이 없으면 기존 not-found 예외를 유지한다", async () => {
+  it("갱신·삭제에 행이 없으면 기존 not-found 예외를 유지한다", async () => {
     // Given
     const missingId = 2147483647;
 
-    // When / Then
+    // When
     await expect(repository.updateContent(missingId, "내용")).rejects.toBeInstanceOf(
       DatabaseRecordNotFoundError,
     );
@@ -359,7 +364,7 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     await expect(repository.delete(missingId)).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
   });
 
-  it("native 갱신의 UTC 날짜와 false·0·기존 생성 시각을 정확히 보존한다", async () => {
+  it("갱신의 UTC 날짜와 false·0·기존 생성 시각을 정확히 보존한다", async () => {
     // Given
     const row = await seedMemo(4);
     await repository.updatePinned(row.id, true);
@@ -387,7 +392,9 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     const rows = await seedMemos(3);
     const source = rows.at(0);
     const target = rows.at(2);
-    if (source === undefined || target === undefined) throw new Error("메모 fixture 누락");
+    if (source === undefined || target === undefined) {
+      throw new Error("메모 fixture 누락");
+    }
     const measures = [];
     const actions = [
       {
@@ -396,17 +403,17 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
           context.module
             .get(UpdateMemo)
             .execute({ userId, memoId: source.id, content: "변경된 내용" }),
-        expected: { total: 3, nativeOrm: 2, mutationLocks: 1, rangeUpdates: 0 },
+        expected: { total: 3, queries: 2, mutationLocks: 1, rangeUpdates: 0 },
       },
       {
         name: "list-no-cursor",
         run: () => repository.findManyByUserId({ userId, size: 3 }),
-        expected: { total: 1, nativeOrm: 1, mutationLocks: 0, rangeUpdates: 0 },
+        expected: { total: 1, queries: 1, mutationLocks: 0, rangeUpdates: 0 },
       },
       {
         name: "list-own-cursor",
         run: () => repository.findManyByUserId({ userId, cursor: target.id, size: 3 }),
-        expected: { total: 2, nativeOrm: 2, mutationLocks: 0, rangeUpdates: 0 },
+        expected: { total: 2, queries: 2, mutationLocks: 0, rangeUpdates: 0 },
       },
       {
         name: "reorder-relative",
@@ -414,10 +421,11 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
           context.module
             .get(ReorderMemo)
             .execute({ userId, memoId: source.id, targetMemoId: target.id, position: "after" }),
-        expected: { total: 5, nativeOrm: 3, mutationLocks: 1, rangeUpdates: 1 },
+        expected: { total: 5, queries: 3, mutationLocks: 1, rangeUpdates: 1 },
       },
     ];
-    // When / Then
+
+    // When
     for (const action of actions) {
       recording = [];
       await action.run();
@@ -431,13 +439,12 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
 
   it("반복 부모 생성 후 item 저장이 실패하면 해당 항목만 rollback하고 이전 성공·메모를 보존한다", async () => {
     // Given
-    const memo = await seedMemo();
-    const category = await client.orm.public.TodoCategory.create(
-      encodeCreate(
-        "TodoCategory",
-        omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]),
-      ),
-    );
+    const seeded = await seedMemo();
+    const [category] = await client
+      .insert(todoCategory)
+      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .returning();
+    const categoryId = requireRecord(category).id;
     const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
     const publishAll = vi.spyOn(publisher, "publishAll");
 
@@ -447,14 +454,14 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
       .get(ConvertMemoToTodos)
       .execute({
         userId,
-        memoId: memo.id,
+        memoId: seeded.id,
         timezone: "UTC",
         data: {
           todos: [
-            { title: "앞선 성공 항목", categoryId: category.id, startDate: AT },
+            { title: "앞선 성공 항목", categoryId, startDate: AT },
             {
               title: "실패 반복 항목",
-              categoryId: category.id,
+              categoryId,
               startDate: AT,
               isRecurring: true,
               recurrence: { daysOfWeek: ["FRI", "SAT"], endDate: new Date("2027-01-09") },
@@ -470,16 +477,15 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
     // Then
     expect(failure).toBeInstanceOf(Error);
     expect(databaseSqlState(failure)).toBe("22021");
-    expect(writes.filter((sql) => sql.includes('INSERT INTO "public"."Todo"'))).toHaveLength(2);
-    const todos = await client.orm.public.Todo.where({ userId })
-      .select("id", "title", "recurrenceGroupId")
-      .all();
+    expect(writes.filter((statement) => statement.includes('insert into "Todo"'))).toHaveLength(2);
+    const todos = await client.query.todo.findMany({
+      columns: { id: true, title: true, recurrenceGroupId: true },
+      where: { userId },
+    });
     expect(todos).toHaveLength(1);
     expect(todos.at(0)).toMatchObject({ title: "앞선 성공 항목", recurrenceGroupId: null });
-    expect(
-      await client.orm.public.TodoItem.aggregate((aggregate) => ({ count: aggregate.count() })),
-    ).toEqual({ count: 0 });
-    expect(await repository.findByIdAndUserId(memo.id, userId)).not.toBeNull();
+    expect(await client.$count(todoItem)).toBe(0);
+    expect(await repository.findByIdAndUserId(seeded.id, userId)).not.toBeNull();
     const events = publishAll.mock.calls
       .flatMap(([published]) => published)
       .filter((event) => event instanceof TodoCreatedEvent);

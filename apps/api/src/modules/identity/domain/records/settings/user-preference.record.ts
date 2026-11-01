@@ -3,7 +3,7 @@ export type TimeFormatValue = "TWELVE_HOUR" | "TWENTY_FOUR_HOUR";
 /**
  * 설정 레코드(리포지토리 읽기 모델).
  *
- * Prisma UserPreference와 구조적으로 호환되며, 도메인은 Prisma enum에 의존하지
+ * DB UserPreference 행과 구조적으로 호환되며, 도메인은 ORM enum에 의존하지
  * 않으므로 timeFormat은 도메인 유니온으로 노출한다.
  */
 export interface UserPreferenceRecord {

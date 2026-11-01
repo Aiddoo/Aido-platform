@@ -13,7 +13,7 @@
  * const inactive = PushTokenBuilder.create('user-123').asInactive().build();
  * ```
  */
-import type { Platform, PushToken } from "#api/platform/database/database.types";
+import type { Platform, PushToken } from "#test/types/database-rows";
 
 export class PushTokenBuilder {
   private data: PushToken;

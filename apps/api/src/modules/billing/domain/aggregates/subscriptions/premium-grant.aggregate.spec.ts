@@ -113,8 +113,11 @@ describe("PremiumGrant", () => {
     const plan = () => PremiumGrant.planCreation(input);
 
     // Then
-    if (accepted) expect(plan()).toMatchObject({ status: "BANKED", sourceKey: input.sourceKey });
-    else expect(plan).toThrow(expect.objectContaining({ errorCode: "SYS_0002" }));
+    if (accepted) {
+      expect(plan()).toMatchObject({ status: "BANKED", sourceKey: input.sourceKey });
+    } else {
+      expect(plan).toThrow(expect.objectContaining({ errorCode: "SYS_0002" }));
+    }
   });
 
   it("아직 시작하지 않은 ACTIVE 기간만 다시 쌓아 두고 진행 중인 기간은 그대로 둔다", () => {

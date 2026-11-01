@@ -94,7 +94,9 @@ export class SocialDigestStrategy implements TimezoneReminderStrategy {
       for (const uid of candidateIds) {
         if (f.followerId === uid || f.followingId === uid) {
           const friendId = f.followerId === uid ? f.followingId : f.followerId;
-          if (!friendIdMap.has(uid)) friendIdMap.set(uid, new Set());
+          if (!friendIdMap.has(uid)) {
+            friendIdMap.set(uid, new Set());
+          }
           friendIdMap.get(uid)?.add(friendId);
           allFriendIds.add(friendId);
         }

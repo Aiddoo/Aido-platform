@@ -71,28 +71,41 @@ export function filterWeakPatterns(
   context: PatternEvidenceContext,
 ): Pattern[] {
   const titleCounts = new Map<string, number>();
-  for (const todo of context.todos)
+  for (const todo of context.todos) {
     titleCounts.set(todo.title, (titleCounts.get(todo.title) ?? 0) + 1);
+  }
 
   return patterns.filter((pattern) => {
-    if (context.weather == null && isWeatherRelated(pattern.reason)) return false;
-    if (pattern.matchedTitles.length === 0) return true;
+    if (context.weather == null && isWeatherRelated(pattern.reason)) {
+      return false;
+    }
+    if (pattern.matchedTitles.length === 0) {
+      return true;
+    }
 
     // 모델이 제시한 근거는 실제 기록의 제목과 개수를 넘을 수 없다.
     const claimedCounts = new Map<string, number>();
-    for (const title of pattern.matchedTitles)
+    for (const title of pattern.matchedTitles) {
       claimedCounts.set(title, (claimedCounts.get(title) ?? 0) + 1);
-    for (const [title, count] of claimedCounts) {
-      if (count > (titleCounts.get(title) ?? 0)) return false;
     }
-    if (claimedCounts.size > 1) return pattern.matchedTitles.length >= 2;
+    for (const [title, count] of claimedCounts) {
+      if (count > (titleCounts.get(title) ?? 0)) {
+        return false;
+      }
+    }
+    if (claimedCounts.size > 1) {
+      return pattern.matchedTitles.length >= 2;
+    }
     const repeatedTitle = pattern.matchedTitles[0];
     // 반복형은 기록의 활동을 알아볼 수 있어야 한다. 의미 전체를 검증하는 규칙은 아니다.
-    if (repeatedTitle == null || !hasRecordedActivityTitle(pattern.title, repeatedTitle))
+    if (repeatedTitle == null || !hasRecordedActivityTitle(pattern.title, repeatedTitle)) {
       return false;
+    }
 
     const count = titleCounts.get(repeatedTitle) ?? 0;
-    if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) return false;
+    if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) {
+      return false;
+    }
     const gate =
       count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
         ? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
@@ -106,7 +119,9 @@ function findRecordedActivity(
   activities: readonly RecordedActivityEvidence[],
 ): RecordedActivityEvidence | undefined {
   const exact = activities.find((activity) => activity.title === title);
-  if (exact != null) return exact;
+  if (exact != null) {
+    return exact;
+  }
   return activities
     .filter((activity) => hasRecordedActivityTitle(title, activity.title))
     .sort(
@@ -128,9 +143,13 @@ export function normalizeStarterSuggestions(
 ): StarterPatternCandidate[] {
   const activities = collectRecordedActivities(context.todos);
   return patterns.flatMap((pattern) => {
-    if (context.weather == null && isWeatherRelated(pattern.reason)) return [];
+    if (context.weather == null && isWeatherRelated(pattern.reason)) {
+      return [];
+    }
     const activity = findRecordedActivity(pattern.title, activities);
-    if (activity == null) return [];
+    if (activity == null) {
+      return [];
+    }
     return [
       {
         pattern: {
@@ -214,12 +233,16 @@ export function groundPatternCandidates(
       return activity == null ? [] : [activity];
     });
     const evidence = findRecordedActivity(pattern.title, matchedActivities);
-    if (matchedTitles.length > 0 && evidence == null) return [];
+    if (matchedTitles.length > 0 && evidence == null) {
+      return [];
+    }
     const relatedActivity =
       matchedTitles.length === 0
         ? findRecordedActivity(pattern.title, [...evidenceByTitle.values()])
         : undefined;
-    if (relatedActivity != null && pattern.title !== relatedActivity.title) return [];
+    if (relatedActivity != null && pattern.title !== relatedActivity.title) {
+      return [];
+    }
     if (excluded.has(pattern.title) || (evidence != null && excluded.has(evidence.title))) {
       return [];
     }

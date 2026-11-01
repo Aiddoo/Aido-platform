@@ -294,7 +294,9 @@ export class RedisPushRateLimiter implements PushRateLimiterPort {
   async reserveBatch(
     requests: readonly (PushRateLimitRequest | LegacyPushRateLimitRequest)[],
   ): Promise<readonly boolean[]> {
-    if (requests.length === 0) return [];
+    if (requests.length === 0) {
+      return [];
+    }
 
     const now = Date.now();
     const keys = requests.flatMap((request, index) => {

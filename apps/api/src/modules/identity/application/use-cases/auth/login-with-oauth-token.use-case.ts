@@ -88,11 +88,12 @@ export class LoginWithOAuthToken {
 
   async execute(input: LoginWithOAuthTokenInput): Promise<LoginResult> {
     const strategy = this.#dependencies.registry.get(input.provider);
-    if (strategy == null)
+    if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
         provider: input.provider,
         reason: `Unsupported provider: ${input.provider}`,
       });
+    }
     let profile: VerifiedProfile;
     let options: SocialLoginOptions;
     try {

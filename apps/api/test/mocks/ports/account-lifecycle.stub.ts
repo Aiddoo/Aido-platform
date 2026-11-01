@@ -55,12 +55,15 @@ export class StubAccountLifecycleRepository
     gracePeriodDays: number,
     at = new Date(),
   ): Promise<PurgeCandidate[]> {
-    if (this.candidateSnapshot !== null) return this.candidateSnapshot;
+    if (this.candidateSnapshot !== null) {
+      return this.candidateSnapshot;
+    }
     const cutoff = at.getTime() - gracePeriodDays * 86_400_000;
     const candidates: PurgeCandidate[] = [];
     for (const user of this.users.values()) {
-      if (user.deletedAt !== null && user.deletedAt.getTime() < cutoff)
+      if (user.deletedAt !== null && user.deletedAt.getTime() < cutoff) {
         candidates.push({ id: user.id, email: user.email, deletedAt: new Date(user.deletedAt) });
+      }
     }
     return candidates;
   }
@@ -72,7 +75,9 @@ export class StubAccountLifecycleRepository
 
   #requireUser(id: string): AuthUserRecord {
     const user = this.users.get(id);
-    if (user === undefined) throw new Error(`존재하지 않는 사용자: ${id}`);
+    if (user === undefined) {
+      throw new Error(`존재하지 않는 사용자: ${id}`);
+    }
     return user;
   }
 }
@@ -122,7 +127,9 @@ export class StubAccountRepository implements Pick<
     const index = this.accounts.findIndex(
       (account) => account.userId === userId && account.provider === provider,
     );
-    if (index !== -1) this.accounts.splice(index, 1);
+    if (index !== -1) {
+      this.accounts.splice(index, 1);
+    }
   }
 
   async createCredentialAccount(userId: string, password: string): Promise<void> {
@@ -146,7 +153,9 @@ export class StubAccountRepository implements Pick<
     const account = this.accounts.find(
       (account) => account.userId === userId && account.provider === "CREDENTIAL",
     );
-    if (account === undefined) throw new Error(`Credential 계정이 없습니다: ${userId}`);
+    if (account === undefined) {
+      throw new Error(`Credential 계정이 없습니다: ${userId}`);
+    }
     account.password = password;
   }
 
@@ -158,7 +167,9 @@ export class StubAccountRepository implements Pick<
     const account = this.accounts.find(
       (account) => account.userId === userId && account.provider === "CREDENTIAL",
     );
-    if (account === undefined || account.password !== expectedPasswordHash) return false;
+    if (account === undefined || account.password !== expectedPasswordHash) {
+      return false;
+    }
     account.password = passwordHash;
     return true;
   }

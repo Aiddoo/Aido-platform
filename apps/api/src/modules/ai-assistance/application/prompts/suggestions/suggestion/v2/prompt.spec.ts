@@ -25,7 +25,9 @@ const context: SuggestionContext = {
 
 function readData(prompt: string) {
   const json = prompt.match(/<suggestion_data>\n([\s\S]*?)\n<\/suggestion_data>/)?.[1];
-  if (json == null) throw new Error("suggestion_data missing");
+  if (json == null) {
+    throw new Error("suggestion_data missing");
+  }
   return JSON.parse(json);
 }
 
@@ -46,8 +48,9 @@ describe("반복 제안 프롬프트 v2", () => {
     );
     // When / Then
     expect(outputs).toHaveLength(2);
-    for (const output of outputs)
+    for (const output of outputs) {
       expect(suggestionDraftSchema.safeParse(output).success).toBe(true);
+    }
   });
 
   it("후보와 이력만 데이터로 넣고 제목은 80자로 줄이며 날씨·원본 배열은 넣지 않는다", () => {

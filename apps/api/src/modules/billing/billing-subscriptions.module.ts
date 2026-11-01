@@ -35,9 +35,9 @@ import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscr
 import { WebhookSignatureGuard } from "./infrastructure/guards/subscriptions/webhook-signature.guard.js";
 import { PremiumGrantSweepJob } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.job.js";
 import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/premium-grant-sweep.processor.js";
-import { PrismaPremiumGrantRepository } from "./infrastructure/persistence/subscriptions/prisma-premium-grant.repository.js";
-import { PrismaSubscriptionEventReceiptRepository } from "./infrastructure/persistence/subscriptions/prisma-subscription-event-receipt.repository.js";
-import { PrismaSubscriptionRepository } from "./infrastructure/persistence/subscriptions/prisma-subscription.repository.js";
+import { DrizzlePremiumGrantRepository } from "./infrastructure/persistence/subscriptions/drizzle-premium-grant.repository.js";
+import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription-event-receipt.repository.js";
+import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription.repository.js";
 import { SubscriptionController } from "./presentation/controllers/subscriptions/subscription.controller.js";
 
 @Module({
@@ -53,12 +53,12 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     { provide: SUBSCRIPTION_USER_MUTATION_LOCK, useExisting: USER_MUTATION_LOCK },
     {
       provide: SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY,
-      useClass: PrismaSubscriptionEventReceiptRepository,
+      useClass: DrizzleSubscriptionEventReceiptRepository,
     },
     WebhookSignatureGuard,
     {
       provide: SUBSCRIPTION_REPOSITORY,
-      useClass: PrismaSubscriptionRepository,
+      useClass: DrizzleSubscriptionRepository,
     },
     { provide: SUBSCRIPTION_CACHE, useClass: SubscriptionCacheAdapter },
     {
@@ -69,7 +69,7 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
       provide: SUBSCRIPTION_WEBHOOK_LOCK,
       useClass: SubscriptionWebhookLockAdapter,
     },
-    { provide: PREMIUM_GRANT_REPOSITORY, useClass: PrismaPremiumGrantRepository },
+    { provide: PREMIUM_GRANT_REPOSITORY, useClass: DrizzlePremiumGrantRepository },
     { provide: PREMIUM_GRANT_NOTIFIER, useClass: PremiumGrantNotifierAdapter },
     premiumAccessProjectorProvider,
     premiumAccessReaderProvider,

@@ -13,7 +13,9 @@ const SYMBOL_PATTERN = /^[A-Za-z0-9_.-]{1,64}$/;
 
 /** AI SDK가 던진 오류를 원문 없이 공급자 오류 종류로 분류한다. */
 export function classifyAiSdkError(error: unknown): AiProviderError {
-  if (error instanceof AiProviderError) return error;
+  if (error instanceof AiProviderError) {
+    return error;
+  }
   // 재시도가 바닥나면 SDK가 RetryError로 감싸므로 마지막 원인으로 분류한다.
   if (RetryError.isInstance(error)) {
     const last = classifyAiSdkError(error.lastError);
@@ -39,14 +41,22 @@ export function classifyAiSdkError(error: unknown): AiProviderError {
 }
 
 function apiCallErrorKind(error: APICallError): AiProviderErrorKind {
-  if (error.statusCode === 429) return "RATE_LIMITED";
-  if (error.statusCode === 400 && SAFETY_BLOCK_PATTERN.test(error.message)) return "BLOCKED";
+  if (error.statusCode === 429) {
+    return "RATE_LIMITED";
+  }
+  if (error.statusCode === 400 && SAFETY_BLOCK_PATTERN.test(error.message)) {
+    return "BLOCKED";
+  }
   return "UPSTREAM";
 }
 
 function noObjectErrorKind(error: NoObjectGeneratedError): AiProviderErrorKind {
-  if (error.finishReason === "length") return "TRUNCATED";
-  if (error.finishReason === "content-filter") return "BLOCKED";
+  if (error.finishReason === "length") {
+    return "TRUNCATED";
+  }
+  if (error.finishReason === "content-filter") {
+    return "BLOCKED";
+  }
   return "INVALID_OUTPUT";
 }
 
@@ -66,7 +76,9 @@ function describeUpstreamCause(error: unknown): AiUpstreamCause {
 
 /** Google 오류 본문 `{ error: { status: "UNAVAILABLE" } }`의 상태 기호 */
 function readProviderStatus(responseBody: string | undefined): string | undefined {
-  if (responseBody == null) return undefined;
+  if (responseBody == null) {
+    return undefined;
+  }
   try {
     const status: unknown = Reflect.get(
       Object(Reflect.get(Object(JSON.parse(responseBody)), "error")),
@@ -80,8 +92,12 @@ function readProviderStatus(responseBody: string | undefined): string | undefine
 
 /** cause를 따라가며 찾은 Node·undici 네트워크 오류 code(예: ECONNRESET, UND_ERR_CONNECT_TIMEOUT) */
 function readErrorCode(error: unknown, depth = 0): string | undefined {
-  if (error == null || depth > 3) return undefined;
+  if (error == null || depth > 3) {
+    return undefined;
+  }
   const code: unknown = Reflect.get(Object(error), "code");
-  if (typeof code === "string" && SYMBOL_PATTERN.test(code)) return code;
+  if (typeof code === "string" && SYMBOL_PATTERN.test(code)) {
+    return code;
+  }
   return readErrorCode(Reflect.get(Object(error), "cause"), depth + 1);
 }

@@ -39,7 +39,9 @@ export function createUserSettingsFixture(
   const reminderTimezoneCache = new StubReminderTimezoneCache();
   const preferenceReader = new UserPreferenceReader({ preferenceRepository, cache });
   const entitlement = new StubPreferenceEntitlement();
-  if (input.premium) entitlement.premiumUserIds.add(userId);
+  if (input.premium) {
+    entitlement.premiumUserIds.add(userId);
+  }
   const reminderEnqueuer = new StubReminderScheduleEnqueuer();
   const milestoneNotifier = new StubStreakMilestoneNotifier();
   const statsReader = new StubTodoCompletionStatsReader();

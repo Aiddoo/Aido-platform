@@ -1,5 +1,6 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE, toSupportedLocale } from "#api/shared/domain/locale";
 
@@ -48,7 +49,7 @@ export class SendFriendCompletionNotifications {
     }
 
     const notificationDate = todayInTimezone(input.timezone);
-    const localDate = notificationDate.toISOString().slice(0, 10);
+    const localDate = toDateString(notificationDate);
     const alreadyNotifiedUserIds =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
         userIds: input.notifyUserIds,
@@ -103,7 +104,9 @@ export class SendFriendCompletionNotifications {
         this.#dependencies.persistBatch.execute(notifications),
       );
     } catch (error) {
-      if (!(error instanceof DuplicateNotificationError)) throw error;
+      if (!(error instanceof DuplicateNotificationError)) {
+        throw error;
+      }
       this.#dependencies.logger.debug({
         event:
           NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_DUPLICATE_PREVENTED,

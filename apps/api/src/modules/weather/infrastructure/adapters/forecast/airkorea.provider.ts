@@ -117,7 +117,7 @@ export class AirkoreaProvider implements AirQualityProvider {
     }
     const data = parsed.data;
 
-    const items = data?.response?.body?.items;
+    const items = data.response?.body?.items;
     if (!items || items.length === 0) {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
@@ -182,7 +182,7 @@ export class AirkoreaProvider implements AirQualityProvider {
     }
     const data = parsed.data;
 
-    const items = data?.response?.body?.items;
+    const items = data.response?.body?.items;
     if (!items || items.length === 0) {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,

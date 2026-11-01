@@ -1,4 +1,5 @@
 import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
+import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
@@ -18,10 +19,6 @@ import {
   NotificationRuntimeJobSchema,
 } from "./notification-queue.constants.js";
 
-function assertUnreachableJob(job: never): never {
-  throw new Error(`Unhandled notification job: ${JSON.stringify(job)}`);
-}
-
 /** Queue adapter: validates transport input and routes it to application use cases. */
 @Injectable()
 export class NotificationQueueProcessor implements OnModuleInit {
@@ -40,12 +37,16 @@ export class NotificationQueueProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (!this.runtime) {
+      return;
+    }
 
     await this.runtime.work(
       NOTIFICATION_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       NOTIFICATION_WORKER_POLICY,
     );
@@ -63,25 +64,25 @@ export class NotificationQueueProcessor implements OnModuleInit {
   async process(untrustedJob: unknown): Promise<void> {
     const job = NotificationRuntimeJobSchema.parse(untrustedJob);
 
-    switch (job.name) {
-      case NotificationJobName.FOLLOW_NEW:
-        return this.sendFollowRequest.execute(job.data);
-      case NotificationJobName.FOLLOW_MUTUAL:
-        return this.sendFollowAccepted.execute(job.data);
-      case NotificationJobName.NUDGE_SENT:
-        return this.sendNudge.execute(job.data);
-      case NotificationJobName.CHEER_SENT:
-        return this.sendCheer.execute(job.data);
-      case NotificationJobName.BILLING_ISSUE:
-        return this.sendBillingIssue.execute(job.data);
-      case NotificationJobName.FRIEND_COMPLETED:
-        return this.sendFriendCompletion.execute(job.data);
-      case NotificationJobName.MILESTONE_REACHED:
-        return this.sendMilestone.execute(job.data);
-      case NotificationJobName.PUSH_RECEIPTS:
-        return this.reconcilePushReceipts.execute();
-    }
-
-    return assertUnreachableJob(job);
+    return match(job)
+      .with({ name: NotificationJobName.FOLLOW_NEW }, ({ data }) =>
+        this.sendFollowRequest.execute(data),
+      )
+      .with({ name: NotificationJobName.FOLLOW_MUTUAL }, ({ data }) =>
+        this.sendFollowAccepted.execute(data),
+      )
+      .with({ name: NotificationJobName.NUDGE_SENT }, ({ data }) => this.sendNudge.execute(data))
+      .with({ name: NotificationJobName.CHEER_SENT }, ({ data }) => this.sendCheer.execute(data))
+      .with({ name: NotificationJobName.BILLING_ISSUE }, ({ data }) =>
+        this.sendBillingIssue.execute(data),
+      )
+      .with({ name: NotificationJobName.FRIEND_COMPLETED }, ({ data }) =>
+        this.sendFriendCompletion.execute(data),
+      )
+      .with({ name: NotificationJobName.MILESTONE_REACHED }, ({ data }) =>
+        this.sendMilestone.execute(data),
+      )
+      .with({ name: NotificationJobName.PUSH_RECEIPTS }, () => this.reconcilePushReceipts.execute())
+      .exhaustive();
   }
 }

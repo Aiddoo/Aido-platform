@@ -13,7 +13,7 @@ export interface AggregateByDateRangeParams {
 /**
  * 일일 완료 집계 조회 포트 (읽기 전용).
  *
- * 날짜별 Todo 집계(전체/완료/카테고리 색상)를 반환한다. 집계 방식(Prisma
+ * 날짜별 Todo 집계(전체/완료/카테고리 색상)를 반환한다. 집계 방식(
  * groupBy 등)은 인프라 어댑터가 담당한다.
  */
 export interface TodoCompletionRepositoryPort {

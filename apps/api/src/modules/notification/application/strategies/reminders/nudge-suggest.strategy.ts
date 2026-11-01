@@ -83,7 +83,9 @@ export class NudgeSuggestStrategy implements TimezoneReminderStrategy {
       const userIds = [f.followerId, f.followingId].filter((id) => candidateSet.has(id));
       for (const uid of userIds) {
         const friend = f.followerId === uid ? f.following : f.follower;
-        if (!friendMap.has(uid)) friendMap.set(uid, []);
+        if (!friendMap.has(uid)) {
+          friendMap.set(uid, []);
+        }
         friendMap.get(uid)?.push({
           id: friend.id,
           name: friend.profile?.name ?? null,

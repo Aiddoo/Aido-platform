@@ -1,32 +1,44 @@
-/** Managed PostgreSQL test client. Global setup owns containers and native migration graphs. */
-import { raw } from "sql-template-tag";
+/** Managed PostgreSQL test client. Global setup owns containers and migrations. */
+import { sql } from "drizzle-orm";
 
-import { sqlStatement } from "../../src/platform/database/database-sql.js";
-import type { DatabaseService } from "../../src/platform/database/database.service.js";
-import { databaseSqlState } from "../../src/platform/database/prisma-error.util.js";
-import { createTestClient } from "./database-context.js";
+import { databaseSqlState } from "../../src/platform/database/database-error.util.js";
+import { createTestClient, type TestDatabaseClient } from "./database-context.js";
 import { assertManagedTestDatabaseEnvironment } from "./managed-test-database.js";
 
-export type TestDatabaseClient = DatabaseService["db"];
+export type { TestDatabaseClient } from "./database-context.js";
 
-/** 교착으로 튕긴 TRUNCATE를 다시 시도하는 횟수. */
-const TRUNCATE_MAX_ATTEMPTS = 3;
+/** PostgreSQL `insufficient_privilege`. superuser가 아니면 FK 트리거를 끌 수 없다. */
+const INSUFFICIENT_PRIVILEGE = "42501";
 
-/** 재시도 간격의 기준값. 시도마다 선형으로 늘려 경합이 풀릴 틈을 준다. */
-const TRUNCATE_RETRY_BASE_MS = 250;
+/**
+ * 모든 public 테이블을 비우고 serial 시퀀스를 처음 값으로 되돌린다(RESTART IDENTITY와 같은 결과).
+ * FK 트리거를 끈 DELETE는 빈 테이블 파일을 교체하는 TRUNCATE보다 테스트 규모에서 훨씬 빠르다.
+ */
+const RESET_ALL_TABLES = sql`
+  DO $$
+  DECLARE target record;
+  BEGIN
+    SET LOCAL session_replication_role = replica;
+    FOR target IN SELECT schemaname, tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+      EXECUTE format('DELETE FROM %I.%I', target.schemaname, target.tablename);
+    END LOOP;
+    FOR target IN SELECT schemaname, sequencename, start_value FROM pg_sequences WHERE schemaname = 'public' LOOP
+      EXECUTE format('SELECT setval(%L, %s, false)', format('%I.%I', target.schemaname, target.sequencename), target.start_value);
+    END LOOP;
+  END $$
+`;
 
-/** PostgreSQL `deadlock_detected`. 이것만 재시도하고, 나머지 실패는 그대로 올린다. */
-const DEADLOCK_DETECTED = "40P01";
-
-function isDeadlock(error: unknown): boolean {
-  return databaseSqlState(error) === DEADLOCK_DETECTED;
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
+const TRUNCATE_ALL_TABLES = sql`
+  DO $$
+  DECLARE tables text;
+  BEGIN
+    SELECT string_agg(format('%I.%I', schemaname, tablename), ', ') INTO tables
+    FROM pg_tables WHERE schemaname = 'public';
+    IF tables IS NOT NULL THEN
+      EXECUTE 'TRUNCATE TABLE ' || tables || ' RESTART IDENTITY CASCADE';
+    END IF;
+  END $$
+`;
 
 interface TestDatabaseOptions {
   env?: NodeJS.ProcessEnv;
@@ -36,6 +48,7 @@ interface TestDatabaseOptions {
 export class TestDatabase {
   private client: TestDatabaseClient | null = null;
   private connectionUri: string | null = null;
+  private canDisableTriggers = true;
   private readonly env: NodeJS.ProcessEnv;
   private readonly createClient: (connectionUri: string) => TestDatabaseClient;
 
@@ -46,20 +59,20 @@ export class TestDatabase {
   }
 
   /**
-   * globalSetup이 준비한 PostgreSQL에 Prisma 클라이언트 연결
+   * globalSetup이 준비한 PostgreSQL에 연결
    *
    * @returns TestDatabaseClient 인스턴스
    */
   async start(): Promise<TestDatabaseClient> {
-    if (this.client) return this.client;
+    if (this.client) {
+      return this.client;
+    }
 
     const { connectionUri } = assertManagedTestDatabaseEnvironment(this.env);
     const client = this.createClient(connectionUri);
 
     try {
-      await client
-        .runtime()
-        .query(client.raw.sql`SELECT 1 AS value`.returnsRow({ value: "pg/int4@1" }).build());
+      await client.execute(sql`SELECT 1`);
     } catch (error) {
       // 실패한 연결을 공개하지 않고 부분 자원을 정리한다. 최초 probe 오류를 보존한다.
       await client.close().catch(() => undefined);
@@ -72,7 +85,7 @@ export class TestDatabase {
   }
 
   /**
-   * Prisma 클라이언트 반환
+   * 테스트 DB 클라이언트 반환
    */
   getClient(): TestDatabaseClient {
     if (!this.client) {
@@ -100,55 +113,22 @@ export class TestDatabase {
     }
 
     assertManagedTestDatabaseEnvironment(this.env);
-    const tables = await this.client.runtime().query(
-      this.client.raw.sql`
-			SELECT table_name
-			FROM information_schema.tables
-			WHERE table_schema = 'public'
-				AND table_type = 'BASE TABLE'
-			ORDER BY table_name
-  `
-        .returnsRow({ table_name: "pg/text@1" })
-        .build(),
-    );
-
-    if (tables.length === 0) return;
-
-    const tableList = tables
-      .map(({ table_name }) => `"public"."${table_name.replaceAll('"', '""')}"`)
-      .join(", ");
-    await this.#truncate(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
-  }
-
-  /**
-   * TRUNCATE는 대상 테이블에 ACCESS EXCLUSIVE 락을 잡는다. 앞 테스트가 남긴 작업이
-   * 아직 같은 테이블을 쥐고 있으면 교착(40P01)으로 튕길 수 있다 — 드문 경합이지
-   * 설계 결함이 아니므로, 물러섰다 다시 잡는다.
-   *
-   * 시간 상한으로 죽이지 않는 이유: 정상적으로 조금 오래 걸리는 정리까지 함께 죽고,
-   * 실패가 "무엇이 잘못됐는지" 대신 "느렸다"만 말하게 된다.
-   */
-  async #truncate(statement: string): Promise<void> {
-    const client = this.getClient();
-
-    for (let attempt = 1; attempt <= TRUNCATE_MAX_ATTEMPTS; attempt += 1) {
+    if (this.canDisableTriggers) {
       try {
-        await client
-          .runtime()
-          .execute(sqlStatement(client, raw(statement)).affectedCount().build());
+        await this.client.execute(RESET_ALL_TABLES);
         return;
       } catch (error) {
-        const isLastAttempt = attempt === TRUNCATE_MAX_ATTEMPTS;
-        if (isLastAttempt || !isDeadlock(error)) {
+        if (databaseSqlState(error) !== INSUFFICIENT_PRIVILEGE) {
           throw error;
         }
-        await delay(TRUNCATE_RETRY_BASE_MS * attempt);
+        this.canDisableTriggers = false;
       }
     }
+    await this.client.execute(TRUNCATE_ALL_TABLES);
   }
 
   /**
-   * Prisma 클라이언트 연결 해제
+   * 테스트 DB 연결 해제
    */
   async stop(): Promise<void> {
     if (this.client) {

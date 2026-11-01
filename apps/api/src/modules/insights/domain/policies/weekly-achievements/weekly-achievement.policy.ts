@@ -1,8 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
-import isLeapYear from "dayjs/plugin/isLeapYear.js";
-import isoWeek from "dayjs/plugin/isoWeek.js";
-import isoWeeksInYear from "dayjs/plugin/isoWeeksInYear.js";
 import { sumBy } from "es-toolkit";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
@@ -15,10 +12,6 @@ import type {
   WeeklyAchievementSummary,
 } from "../../records/weekly-achievements/weekly-achievement.record.js";
 
-dayjs.extend(isoWeek);
-dayjs.extend(isoWeeksInYear);
-dayjs.extend(isLeapYear);
-
 /**
  * ISO year + week → 해당 주의 기준일(dayjs 인스턴스)을 반환합니다.
  *
@@ -26,7 +19,7 @@ dayjs.extend(isLeapYear);
  * 기준점으로 삼아 `.isoWeek(week)` setter 로 목표 주차를 설정합니다.
  */
 function dayjsFromIsoWeek(year: number, week: number): dayjs.Dayjs {
-  return dayjs(`${year}-01-04`).isoWeek(week);
+  return dayjs.utc(`${year}-01-04`).isoWeek(week);
 }
 
 export function completionRateOf(totalTodos: number, completedTodos: number): number {
