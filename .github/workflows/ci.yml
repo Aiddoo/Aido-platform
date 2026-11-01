@@ -324,8 +324,9 @@ jobs:
         run: pnpm turbo run test:cov --filter=@aido/server 2>&1 | tee /tmp/test-api-unit.log
       - name: PostgreSQL integration tests
         run: pnpm turbo run test:integration --filter=@aido/server 2>&1 | tee /tmp/test-api-integration.log
-      - name: HTTP and released-client E2E
-        run: pnpm turbo run test:e2e --filter=@aido/server 2>&1 | tee /tmp/test-api-e2e.log
+      # 전체 E2E는 Actions 사용량 때문에 로컬에서만 돌린다. 배포된 앱 계약 게이트만 CI에 남긴다.
+      - name: Released-client API contract
+        run: pnpm --filter @aido/server test:contract 2>&1 | tee /tmp/test-api-contract.log
       - name: Build API and dependency closure
         run: pnpm turbo run build --filter='!@aido/mobile'
       - name: Upload API test logs

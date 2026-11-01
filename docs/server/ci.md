@@ -31,12 +31,12 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 
 ## API 작업 흐름
 
-| Job                | 역할                                                                                                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                     |
-| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                      |
-| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→HTTP/released-client E2E→API 의존성 closure build                                                                             |
-| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행 |
+| Job                | 역할                                                                                                                                                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                                                        |
+| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                                                         |
+| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→배포된 앱 API 계약 게이트(`test:contract`)→API 의존성 closure build. 전체 E2E는 Actions 사용량을 아끼려고 CI에서 돌리지 않고 로컬에서 `pnpm test:e2e`로 확인한다 |
+| Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행                                    |
 
 공식 setup action은 `.nvmrc` Node.js 버전, packageManager의 pnpm 버전, frozen lockfile과 pnpm cache를 사용한다. API만 영향이 있으면 API dependency closure를 설치하고 필요한 contract를 emit한다. GitHub Actions는 버전 주석과 commit SHA로 고정하며 업데이트의 정본은 workflow다.
 
