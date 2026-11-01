@@ -241,7 +241,6 @@ jobs:
 
       - uses: ./.github/actions/setup
         with:
-          generate-prisma: ${{ needs.gate.outputs.api }}
           install-scope: ${{ needs.gate.outputs.mobile == 'true' && 'all' || 'api' }}
 
       # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
@@ -274,7 +273,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
         with:
-          generate-prisma: 'false'
           install-scope: all
       - name: Run mobile and contract unit tests
         run: pnpm turbo run test --filter='!@aido/server' 2>&1 | tee /tmp/test-unit.log

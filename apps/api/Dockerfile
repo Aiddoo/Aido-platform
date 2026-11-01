@@ -35,16 +35,12 @@ FROM base AS migrate-deps
 COPY --from=pruner /app/out/migrate/json/ ./
 COPY --from=pruner /app/out/migrate/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts && \
-    chmod a+r pnpm-workspace.yaml && \
-    pnpm --filter @aido/database-migrate exec prisma --version
+    chmod a+r pnpm-workspace.yaml
 
 FROM migrate-deps AS migrate
 COPY --from=pruner /app/out/migrate/full/tooling/database-migrate/ ./tooling/database-migrate/
-COPY apps/api/prisma/ ./apps/api/prisma/
-COPY apps/api/prisma.config.ts ./apps/api/
-COPY apps/api/src/prisma/contract.prisma ./apps/api/src/prisma/
-COPY apps/api/scripts/guard-database-url.cjs apps/api/scripts/migrate.sh ./apps/api/scripts/
-RUN pnpm --filter @aido/database-migrate exec prisma contract emit --format human
+COPY apps/api/drizzle/ ./apps/api/drizzle/
+COPY apps/api/scripts/guard-database-url.cjs ./apps/api/scripts/
 # 실행 시점은 corepack pnpm만 쓴다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 migrate

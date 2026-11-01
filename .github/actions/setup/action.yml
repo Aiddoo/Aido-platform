@@ -1,15 +1,11 @@
 name: Setup
-description: pnpm + Node.js + dependencies + native ORM contracts
+description: pnpm + Node.js + dependencies
 
 inputs:
   install-scope:
     description: Install API dependency closure or the complete workspace
     required: false
     default: all
-  generate-prisma:
-    description: Generate API ORM contracts only when API is affected
-    required: false
-    default: 'true'
 
 runs:
   using: composite
@@ -31,9 +27,4 @@ runs:
         else
           pnpm install --frozen-lockfile
         fi
-      shell: bash
-
-    - name: Emit ORM contracts
-      if: inputs.generate-prisma == 'true'
-      run: pnpm turbo run contract:emit --filter=@aido/server
       shell: bash

@@ -84,6 +84,7 @@ catalog:
   'jose': '6.2.14'
   'oxfmt': '0.75.0'
   'oxlint': '1.90.0'
+  'pg': '8.23.1'
   'pg-boss': '12.38.0'
   'react-native-reorderable-list': '0.18.2'
   'react-native-reserved-regions': '0.2.0'
