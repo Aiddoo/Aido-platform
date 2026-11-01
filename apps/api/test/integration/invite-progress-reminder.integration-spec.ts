@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm";
+
 import {
   INVITE_REDEMPTION_REPOSITORY,
   type InviteRedemptionRepositoryPort,
@@ -8,9 +10,8 @@ import { RecordInviteeActivity } from "#api/modules/social/application/use-cases
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
 import { SendInviteQualifyReminder } from "#api/modules/social/application/use-cases/invites/send-invite-qualify-reminder.use-case";
 import { qualifyReminderExpiresBefore } from "#api/modules/social/domain/policies/invites/invite-qualify-reminder.policy";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { applicationDate } from "#api/platform/database/database-values";
 import { createEntityId } from "#api/platform/database/entity-id";
+import { inviteActiveDay, inviteRedemption, user } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
@@ -69,16 +70,13 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
 
   async function createUser(userTag: string): Promise<string> {
     const id = createEntityId();
-    await client.orm.public.User.create(
-      encodeCreate(
-        "User",
-        UserFixture.create({
-          id,
-          userTag,
-          email: `${userTag.toLowerCase()}@example.test`,
-          createdAt: JOINED_AT,
-        }),
-      ),
+    await client.insert(user).values(
+      UserFixture.create({
+        id,
+        userTag,
+        email: `${userTag.toLowerCase()}@example.test`,
+        createdAt: JOINED_AT,
+      }),
     );
     return id;
   }
@@ -98,9 +96,10 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
   }
 
   async function noticesOf(type: "INVITE_PROGRESS" | "INVITE_QUALIFY_REMINDER") {
-    return client.orm.public.Notification.where((row) => row._type.eq(type))
-      .select("userId")
-      .all();
+    return client.query.notification.findMany({
+      columns: { userId: true },
+      where: { type },
+    });
   }
 
   it("첫날 할 일 완료가 동시에 두 번 와도 초대한 사람에게 첫날 알림은 한 번만 남는다", async () => {
@@ -121,9 +120,9 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
   it("배포 전에 이미 첫날이 있던 수락은 둘째 날에도 첫날 알림을 보내지 않는다", async () => {
     // Given
     const { inviteeId, redemptionId } = await redeemed("OLDINVTR", "OLDINVTE");
-    await client.orm.public.InviteActiveDay.create(
-      encodeCreate("InviteActiveDay", { redemptionId, localDate: applicationDate("2028-02-28") }),
-    );
+    await client
+      .insert(inviteActiveDay)
+      .values({ redemptionId, localDate: new Date("2028-02-28T00:00:00.000Z") });
 
     // When
     await recordActivity.execute({ inviteeId, occurredAt: new Date("2028-02-29T03:00:00.000Z") });
@@ -140,9 +139,10 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     for (const { inviteeId } of [due, ineligible]) {
       await recordActivity.execute({ inviteeId, occurredAt: JOINED_AT });
     }
-    await client.orm.public.InviteRedemption.where({ id: ineligible.redemptionId }).updateAndCount(
-      encodePatch("InviteRedemption", { inviterRewardEligible: false }),
-    );
+    await client
+      .update(inviteRedemption)
+      .set({ inviterRewardEligible: false })
+      .where(eq(inviteRedemption.id, ineligible.redemptionId));
     vi.setSystemTime(REMINDER_AT);
 
     // When
@@ -170,14 +170,11 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
     expect(results.map((result) => result.status).sort()).toEqual(["sent", "skipped"]);
     expect(rerun).toEqual({ status: "skipped", reason: "not-due" });
     expect(await noticesOf("INVITE_QUALIFY_REMINDER")).toEqual([{ userId: due.inviteeId }]);
-    const [stored] = decodeRecord(
-      "InviteRedemption",
-      await client.orm.public.InviteRedemption.where({ id: due.redemptionId })
-        .select("qualifyReminderSentAt")
-        .all(),
-    );
+    const stored = await client.query.inviteRedemption.findFirst({
+      columns: { qualifyReminderSentAt: true },
+      where: { id: due.redemptionId },
+    });
     expect(stored?.qualifyReminderSentAt).toEqual(REMINDER_AT);
-    // 보낸 수락은 다음 정비 실행의 후보에서 빠진다
     const nextRun = await unitOfWork.run(() =>
       repository.findQualifyReminderCandidates({
         now: REMINDER_AT,

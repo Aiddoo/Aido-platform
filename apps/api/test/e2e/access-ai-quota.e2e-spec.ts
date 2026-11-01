@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import {
@@ -15,7 +16,8 @@ import {
   type GenerateStructuredOptions,
   type GenerateStructuredResult,
 } from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { requireRecord } from "#api/platform/database/database-error.util";
+import { user as userTable } from "#api/platform/database/schema/index";
 import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 
@@ -98,14 +100,13 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   }) {
     await context.testDatabase
       .getClient()
-      .orm.public.User.where({ id: user.userId })
-      .update(
-        encodePatch("User", {
-          aiUsageCount: input.count,
-          aiUsageResetAt: input.resetAt,
-          subscriptionStatus: input.subscriptionStatus,
-        }),
-      );
+      .update(userTable)
+      .set({
+        aiUsageCount: input.count,
+        aiUsageResetAt: input.resetAt,
+        subscriptionStatus: input.subscriptionStatus,
+      })
+      .where(eq(userTable.id, user.userId));
   }
 
   function parseTodo() {
@@ -123,13 +124,11 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   }
 
   async function storedQuota() {
-    return decodeRecord(
-      "User",
-      await context.testDatabase
-        .getClient()
-        .orm.public.User.where({ id: user.userId })
-        .select("aiUsageCount", "aiUsageResetAt")
-        .first(),
+    return requireRecord(
+      await context.testDatabase.getClient().query.user.findFirst({
+        columns: { aiUsageCount: true, aiUsageResetAt: true },
+        where: { id: user.userId },
+      }),
     );
   }
 
@@ -148,6 +147,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
         }),
       ]);
       const denied = await Promise.race(requests);
+
       // Then
       expect(denied.status).toBe(429);
       expect(denied.body.error.code).toBe(ErrorCode.AI_1303);
@@ -165,8 +165,10 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Given
     await setQuota({ count: 2, resetAt: oldMonthAt });
     provider.setInvalidResponse(new AiProviderError("UPSTREAM", 503));
+
     // When
     const response = await parseTodo();
+
     // Then
     expect(response.status).toBe(503);
     expect(response.body.error.code).toBe(ErrorCode.AI_1301);
@@ -179,8 +181,10 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Given
     await setQuota({ count: 5, resetAt: oldMonthAt });
     vi.setSystemTime(newMonthAt);
+
     // When
     const response = await readUsage();
+
     // Then
     expect(response.status).toBe(200);
     expect(response.body.data.data).toEqual({ used: 0, limit: 5, resetsAt: nextResetAt });
@@ -204,9 +208,11 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       const currentResponse = await parseTodo();
       expect(currentResponse.status).toBe(200);
       expect((await storedQuota())?.aiUsageCount).toBe(1);
+
       // When
       deferred.release();
       const previousResponse = await previousRequest;
+
       // Then
       expect(previousResponse.status).toBe(503);
       expect(previousResponse.body.error.code).toBe(ErrorCode.AI_1301);
@@ -232,8 +238,10 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
     expect((await entitlement.getFeatureLimit(user.userId, Feature.AI_PARSE)).dailyLimit).toBe(5);
     await setQuota({ count: 5, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
+
     // When
     const response = await parseTodo();
+
     // Then
     expect(response.status).toBe(200);
     expect(provider.getCallCount()).toBe(1);
@@ -250,8 +258,10 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       (await entitlement.getFeatureLimit(user.userId, Feature.AI_PARSE)).dailyLimit,
     ).toBeNull();
     await setQuota({ count: 5, resetAt: oldMonthAt, subscriptionStatus: "FREE" });
+
     // When
     const response = await parseTodo();
+
     // Then
     expect(response.status).toBe(429);
     expect(response.body.error.code).toBe(ErrorCode.AI_1303);

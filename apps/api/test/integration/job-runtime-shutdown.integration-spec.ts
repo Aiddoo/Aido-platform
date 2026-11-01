@@ -1,25 +1,36 @@
 import { Test, type TestingModule } from "@nestjs/testing";
+import { eq } from "drizzle-orm";
 import { Pool } from "pg";
 import { mock } from "vitest-mock-extended";
 
-import { encodeCreate } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { createDatabase, DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
-import { PostgresPool } from "#api/platform/database/postgres-pool";
+import { createPostgresPoolConfig, PostgresPool } from "#api/platform/database/postgres-pool";
+import { user as userTable } from "#api/platform/database/schema/index";
 import { JobRuntimeLifecycle } from "#api/platform/jobs/job-runtime.module";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { UserFixture } from "#test/fixtures/user.fixture";
+import { createTestClient } from "#test/setup/database-context";
 import { assertManagedTestDatabaseEnvironment } from "#test/setup/managed-test-database";
 
-it("종료 중 활성 worker가 native DB 저장을 마친 뒤 연결이 닫힌다", async () => {
-  // Given: 관리형 PostgreSQL과 실제 Nest hook에 조립된 worker가 Promise gate에서 대기한다.
+it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", async () => {
+  // Given
   const { connectionUri } = assertManagedTestDatabaseEnvironment(process.env);
-  const pool = new Pool({ connectionString: connectionUri, max: 2 });
+  const pool = new Pool({ ...createPostgresPoolConfig(connectionUri), max: 2 });
+  const verifier = createTestClient(connectionUri);
   const events: string[] = [];
   const runtime = mock<JobRuntimePort>();
   const { promise: gate, resolve: release } = Promise.withResolvers<void>();
+  const postgres = {
+    pool,
+    async onApplicationShutdown() {
+      events.push("database-close-start");
+      await pool.end();
+      events.push("database-closed");
+    },
+  };
   let worker: Promise<{ error?: unknown }> | undefined;
-  let database: DatabaseService | undefined;
+  let database: Database | undefined;
   let userId: string | undefined;
   runtime.start.mockImplementation(async () => {
     const activeDatabase = database;
@@ -35,13 +46,10 @@ it("종료 중 활성 worker가 native DB 저장을 마친 뒤 연결이 닫힌�
       await gate;
       events.push("worker-write-start");
       try {
-        await activeDatabase.db.runtime().execute(
-          activeDatabase.db.raw.sql`
-          UPDATE public."User" SET "aiUsageCount" = ${1} WHERE "id" = ${activeUserId}
-        `
-            .affectedCount()
-            .build(),
-        );
+        await activeDatabase
+          .update(userTable)
+          .set({ aiUsageCount: 1 })
+          .where(eq(userTable.id, activeUserId));
         events.push("worker-write-completed");
         return {};
       } catch (error) {
@@ -63,32 +71,30 @@ it("종료 중 활성 worker가 native DB 저장을 마친 뒤 연결이 닫힌�
   try {
     module = await Test.createTestingModule({
       providers: [
-        { provide: PostgresPool, useValue: { pool } },
-        DatabaseService,
+        { provide: PostgresPool, useValue: postgres },
+        { provide: DRIZZLE, useValue: createDatabase(pool) },
         { provide: JOB_RUNTIME, useValue: runtime },
         JobRuntimeLifecycle,
       ],
     }).compile();
-    database = module.get<DatabaseService>(DatabaseService);
-    const originalShutdown = database.onApplicationShutdown.bind(database);
-    vi.spyOn(database, "onApplicationShutdown").mockImplementation(async () => {
-      events.push("database-close-start");
-      await originalShutdown();
-      events.push("database-closed");
-    });
-    const user = await database.db.orm.public.User.create(
-      encodeCreate(
-        "User",
+    database = module.get<Database>(DRIZZLE);
+    const [user] = await database
+      .insert(userTable)
+      .values(
         UserFixture.create({
           id: createEntityId(),
           email: "controlled-worker@shutdown.test",
           userTag: "SHUT0001",
         }),
-      ),
-    );
+      )
+      .returning();
+    if (user == null) {
+      throw new Error("Shutdown fixture user was not created");
+    }
     userId = user.id;
     await module.init();
-    // When: 실제 app.close()가 drain을 시작하고 worker는 native DB에 저장한다.
+
+    // When
     let closeError: unknown;
     try {
       await module.close();
@@ -96,14 +102,15 @@ it("종료 중 활성 worker가 native DB 저장을 마친 뒤 연결이 닫힌�
       closeError = error;
     }
     const outcome = await worker;
-    const result = await pool.query<{ aiUsageCount: number }>(
-      'SELECT "aiUsageCount" FROM public."User" WHERE "id" = $1',
-      [userId],
-    );
-    // Then: worker 저장 성공 뒤 DB가 닫히고 실제 PostgreSQL 저장값이 1이다.
+    const stored = await verifier.query.user.findFirst({
+      columns: { aiUsageCount: true },
+      where: { id: userId },
+    });
+
+    // Then
     expect(outcome?.error).toBeUndefined();
     expect(closeError).toBeUndefined();
-    expect(result.rows[0]?.aiUsageCount).toBe(1);
+    expect(stored?.aiUsageCount).toBe(1);
     expect(events.indexOf("worker-write-completed")).toBeLessThan(
       events.indexOf("database-closed"),
     );
@@ -111,9 +118,9 @@ it("종료 중 활성 worker가 native DB 저장을 마친 뒤 연결이 닫힌�
     release();
     await worker;
     if (userId !== undefined) {
-      await pool.query('DELETE FROM public."User" WHERE "id" = $1', [userId]);
+      await verifier.delete(userTable).where(eq(userTable.id, userId));
     }
-    await database?.db.close();
-    await pool.end();
+    await verifier.close();
+    await pool.end().catch(() => undefined);
   }
 });

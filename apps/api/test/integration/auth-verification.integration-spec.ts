@@ -1,5 +1,5 @@
 import type { TestingModule } from "@nestjs/testing";
-import sql from "sql-template-tag";
+import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
 import { VerificationService } from "#api/modules/identity/application/services/auth/verification.service";
@@ -8,17 +8,12 @@ import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infra
 import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
 import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-account.repository";
 import { DrizzleVerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-verification.repository";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/entity-id";
+import { user as userTable, verification } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture, VerificationFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
-import {
-  createTestClient,
-  createTestDatabaseService,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
@@ -65,7 +60,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       createdAt: at,
       updatedAt: at,
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
   });
 
@@ -90,15 +85,12 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       createdAt: at,
       ...overrides,
     });
-    await client.orm.public.Verification.create(encodeCreate("Verification", fixture));
+    await client.insert(verification).values(fixture);
     return fixture;
   }
 
   async function readVerification(id: number) {
-    return decodeRecord(
-      "Verification",
-      await client.orm.public.Verification.where((row) => row.id.eq(id)).first(),
-    );
+    return client.query.verification.findFirst({ where: { id } });
   }
 
   async function competeForRow<T>(
@@ -108,14 +100,12 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   ) {
     const locked = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
-    const holdingLock = withDatabaseTransaction(client, async (transaction) => {
+    const holdingLock = client.transaction(async (transaction) => {
       const lock =
         table === "Verification"
           ? sql`SELECT "id" FROM "Verification" WHERE "id" = ${id} FOR UPDATE`
           : sql`SELECT "id" FROM "Account" WHERE "id" = ${id} FOR UPDATE`;
-      await transaction.query(
-        sqlStatement(transaction, lock).returnsRow({ id: "pg/int4@1" }).build(),
-      );
+      await transaction.execute(lock);
       locked.resolve();
       await release.promise;
     });
@@ -129,16 +119,12 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     try {
       await vi.waitFor(
         async () => {
-          const waiting = await client.runtime().query(
-            client.raw.sql`
-          SELECT count(*)::int AS count FROM pg_stat_activity
-          WHERE datname = current_database() AND wait_event_type = 'Lock'
-            AND query ILIKE '%UPDATE%' AND query LIKE ${`%${table}%`}
-        `
-              .returnsRow({ count: "pg/int4@1" })
-              .build(),
-          );
-          expect(waiting[0]?.count).toBe(2);
+          const waiting = await client.execute<{ count: number }>(sql`
+            SELECT count(*)::int AS count FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'
+              AND query ILIKE '%UPDATE%' AND query LIKE ${`%${table}%`}
+          `);
+          expect(waiting.rows[0]?.count).toBe(2);
         },
         { timeout: 5000, interval: 10 },
       );
@@ -159,7 +145,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     const verification = await givenVerification();
     const nextPasswords = ["FirstNewPassword123!", "SecondNewPassword123!"];
 
-    // When - 실제 두 UPDATE가 같은 인증 행의 lock에서 대기한 뒤 진행한다.
+    // When
     const results = await competeForRow("Verification", verification.id, () =>
       nextPasswords.map((newPassword) => resetPassword.execute({ email, code, newPassword })),
     );
@@ -179,7 +165,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     expect(matches).toEqual(results.map((result) => result.status === "fulfilled"));
     expect((await readVerification(verification.id))?.usedAt).toBeInstanceOf(Date);
     expect(
-      await client.orm.public.SecurityLog.where((row) => row.event.eq("PASSWORD_CHANGED")).all(),
+      await client.query.securityLog.findMany({ where: { event: "PASSWORD_CHANGED" } }),
     ).toHaveLength(1);
   });
 
@@ -252,7 +238,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
         at,
       };
 
-      // When / Then
+      // When
       expect(await repository.consume(input)).toBe(false);
       await expect(service.verifyCode(userId, code, "PASSWORD_RESET")).rejects.toMatchObject({
         errorCode,
@@ -276,7 +262,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       at,
     };
 
-    // When / Then
+    // When
     expect(await repository.consume({ ...input, userId: "other-user" })).toBe(false);
     expect(await repository.consume({ ...input, type: "EMAIL_VERIFY" })).toBe(false);
     expect(await repository.consume({ ...input, tokenHash: security.hash("654321") })).toBe(false);

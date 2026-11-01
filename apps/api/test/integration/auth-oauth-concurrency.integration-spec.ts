@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { TestingModule } from "@nestjs/testing";
-import sql from "sql-template-tag";
+import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
 import { ExchangeOAuthCode } from "#api/modules/identity/application/use-cases/auth/exchange-oauth-code.use-case";
@@ -10,19 +10,14 @@ import { DrizzleAccountRepository } from "#api/modules/identity/infrastructure/p
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-oauth-state.repository";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/entity-id";
+import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { UserFixture } from "#test/fixtures/index";
 import { OAuthStateFixture } from "#test/fixtures/oauth-state.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { CountingOAuthIdentityProvider } from "#test/mocks/ports/auth-oauth.stub";
-import {
-  createTestClient,
-  createTestDatabaseService,
-  withDatabaseTransaction,
-} from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
@@ -73,7 +68,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       createdAt: at,
       updatedAt: at,
     });
-    await client.orm.public.User.create(encodeCreate("User", user));
+    await client.insert(userTable).values(user);
     userId = user.id;
   });
 
@@ -99,24 +94,19 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       expiresAt: new Date(at.getTime() + 600_000),
       ...overrides,
     });
-    await client.orm.public.OAuthState.create(encodeCreate("OAuthState", fixture));
+    await client.insert(oAuthState).values(fixture);
     return fixture;
   }
 
   async function savedState(id: number) {
-    return decodeRecord(
-      "OAuthState",
-      await client.orm.public.OAuthState.where((row) => row.id.eq(id)).first(),
-    );
+    return client.query.oAuthState.findFirst({ where: { id } });
   }
 
   async function holdRowLock(statement: ReturnType<typeof sql>) {
     const released = Promise.withResolvers<void>();
     const acquired = Promise.withResolvers<void>();
-    const holding = withDatabaseTransaction(client, async (transaction) => {
-      await transaction.query(
-        sqlStatement(transaction, statement).returnsRow({ id: "pg/text@1" }).build(),
-      );
+    const holding = client.transaction(async (transaction) => {
+      await transaction.execute(statement);
       acquired.resolve();
       await released.promise;
     });
@@ -137,16 +127,12 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   async function observeTwoWaiters(queryPart: string) {
     await vi.waitFor(
       async () => {
-        const waiting = await client.runtime().query(
-          client.raw.sql`
-        SELECT count(*)::int AS count FROM pg_stat_activity
-        WHERE datname = current_database() AND wait_event_type = 'Lock'
-          AND query LIKE ${queryPart}
-      `
-            .returnsRow({ count: "pg/int4@1" })
-            .build(),
-        );
-        expect(waiting[0]?.count).toBe(2);
+        const waiting = await client.execute<{ count: number }>(sql`
+          SELECT count(*)::int AS count FROM pg_stat_activity
+          WHERE datname = current_database() AND wait_event_type = 'Lock'
+            AND query ILIKE ${queryPart}
+        `);
+        expect(waiting.rows[0]?.count).toBe(2);
       },
       { timeout: 10_000 },
     );
@@ -162,6 +148,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       exchange.execute({ code: state.exchangeCode ?? "" }),
       exchange.execute({ code: state.exchangeCode ?? "" }),
     ]);
+
     // When
     try {
       await observeTwoWaiters("%UPDATE%OAuthState%");
@@ -170,6 +157,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       await results;
     }
     const outcomes = await results;
+
     // Then
     expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
@@ -193,6 +181,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       unlink.execute({ userId, provider: "GOOGLE" }),
       unlink.execute({ userId, provider: "KAKAO" }),
     ]);
+
     // When
     try {
       await observeTwoWaiters("%User%FOR NO KEY UPDATE%");
@@ -201,13 +190,14 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       await results;
     }
     const outcomes = await results;
+
     // Then
     expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
       reason: { errorCode: ErrorCode.USER_0610 },
     });
     expect(await accounts.findAllByUserId(userId)).toHaveLength(1);
-    const audits = decodeRecord("SecurityLog", await client.orm.public.SecurityLog.all());
+    const audits = await client.query.securityLog.findMany();
     expect(audits.filter((audit) => audit.event === "OAUTH_UNLINKED")).toHaveLength(1);
   });
 
@@ -225,18 +215,20 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     const failure = vi
       .spyOn(securityLogs, "create")
       .mockImplementationOnce((data) => createAudit({ ...data, userId: createEntityId() }));
+
     // When
     try {
       await expect(link.execute({ userId, code: state.exchangeCode ?? "" })).rejects.toMatchObject({
-        sqlState: "23503",
+        cause: { code: "23503" },
       });
     } finally {
       failure.mockRestore();
     }
+
     // Then
     expect(await savedState(state.id)).toMatchObject({ exchangedAt: null });
     expect(await accounts.findAllByUserId(userId)).toEqual([]);
-    expect(await client.orm.public.SecurityLog.all()).toEqual([]);
+    expect(await client.query.securityLog.findMany()).toEqual([]);
     await expect(link.execute({ userId, code: state.exchangeCode ?? "" })).resolves.toMatchObject({
       message: "계정이 연결되었습니다.",
     });
@@ -260,6 +252,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       link.execute({ userId, code: state.exchangeCode ?? "" }),
       link.execute({ userId, code: state.exchangeCode ?? "" }),
     ]);
+
     // When
     try {
       await observeTwoWaiters("%User%FOR NO KEY UPDATE%");
@@ -268,13 +261,14 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       await results;
     }
     const outcomes = await results;
+
     // Then
     expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(outcomes.find((result) => result.status === "rejected")).toMatchObject({
       reason: { errorCode: ErrorCode.USER_0602 },
     });
     expect(await accounts.findAllByUserId(userId)).toHaveLength(1);
-    expect(await client.orm.public.SecurityLog.all()).toHaveLength(1);
+    expect(await client.query.securityLog.findMany()).toHaveLength(1);
   });
 
   it("계정 연결과 해제가 경합해도 같은 User 잠금으로 최신 로그인 수단을 유지한다", async () => {
@@ -296,6 +290,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       link.execute({ userId, code: state.exchangeCode ?? "" }),
       unlink.execute({ userId, provider: "GOOGLE" }),
     ]);
+
     // When
     try {
       await observeTwoWaiters("%User%FOR NO KEY UPDATE%");
@@ -303,12 +298,13 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       await lock.release();
       await results;
     }
+
     // Then
     expect((await results).map((result) => result.status)).toEqual(["fulfilled", "fulfilled"]);
     expect(
       (await accounts.findAllByUserId(userId)).map((account) => account.provider).sort(),
     ).toEqual(["APPLE", "KAKAO"]);
-    expect(await client.orm.public.SecurityLog.all()).toHaveLength(2);
+    expect(await client.query.securityLog.findMany()).toHaveLength(2);
   });
 
   it.each([null, "", "owner"])(
@@ -323,6 +319,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         accessToken: null,
         refreshToken: null,
       });
+
       // When
       const consumed = await states.consumeExchangeCode({
         id: state.id,
@@ -331,6 +328,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         purpose: "link",
         actorUserId: userId,
       });
+
       // Then
       expect(consumed).toBe(true);
       expect(
@@ -350,7 +348,8 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     const actorMismatch = await givenState({ mode: "link", initiatingUserId: createEntityId() });
     const purposeMismatch = await givenState({ mode: "login" });
     const expired = await givenState({ mode: "link", expiresAt: at });
-    // When / Then
+
+    // When
     for (const state of [actorMismatch, purposeMismatch, expired]) {
       expect(
         await states.consumeExchangeCode({
@@ -387,6 +386,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       .then(() => {
         inserted = true;
       });
+
     // When
     try {
       await vi.waitFor(() => expect(inserted).toBe(true), { timeout: 10_000 });
@@ -395,7 +395,8 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       await holder;
       await audit;
     }
+
     // Then
-    expect(await client.orm.public.SecurityLog.all()).toHaveLength(1);
+    expect(await client.query.securityLog.findMany()).toHaveLength(1);
   });
 });

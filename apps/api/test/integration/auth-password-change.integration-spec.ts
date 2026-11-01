@@ -1,16 +1,12 @@
 import type { TestingModule } from "@nestjs/testing";
-import { and } from "@prisma/orm-postgres/orm-client";
 import { omit } from "es-toolkit";
 
 import { ChangePassword } from "#api/modules/identity/application/use-cases/auth/change-password.use-case";
 import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
 import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
 import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
-import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -26,11 +22,10 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
   let changePassword: ChangePassword;
   let fakeEmailService: FakeEmailService;
   let testDb: TestDatabase;
-  let databaseService: DatabaseService;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
-    databaseService = createTestDatabaseService(await testDb.start());
+    await testDb.start();
     fakeEmailService = new FakeEmailService();
 
     module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
@@ -88,25 +83,18 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
     provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
   ): Promise<string> {
     const userFixture = UserFixture.create({ email });
-    const user = await createUserDatabaseFixture(
-      testDb.getClient(),
-      encodeCreate("User", userFixture),
-      {
-        accounts: [
-          omit(
-            encodeCreate(
-              "Account",
-              AccountFixture.create({
-                userId: userFixture.id,
-                provider,
-                providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
-              }),
-            ),
-            ["id", "userId"],
-          ),
-        ],
-      },
-    );
+    const user = await createUserDatabaseFixture(testDb.getClient(), userFixture, {
+      accounts: [
+        omit(
+          AccountFixture.create({
+            userId: userFixture.id,
+            provider,
+            providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
+          }),
+          ["id", "userId"],
+        ),
+      ],
+    });
     return user.id;
   }
 
@@ -131,14 +119,9 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       // Then
       expect(result.message).toContain("비밀번호가 변경되었습니다");
 
-      // DB 검증: 비밀번호 해시가 변경됨
-      const prisma = testDb.getClient();
-      const account = decodeRecord(
-        "Account",
-        await prisma.orm.public.Account.where((row) =>
-          and(row.userId.eq(userId), row.provider.eq("CREDENTIAL")),
-        ).first(),
-      );
+      const account = await testDb.getClient().query.account.findFirst({
+        where: { userId, provider: "CREDENTIAL" },
+      });
       expect(account?.password).toBeTruthy();
     });
 
@@ -183,7 +166,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
         currentSessionId: sessionId,
       });
 
-      // When & Then
+      // When
       await expect(loginWithPassword.execute({ email, password: currentPassword })).rejects.toThrow(
         ApplicationException,
       );
@@ -196,7 +179,6 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       const newPassword = "NewPassword456!";
       const userId = await createCredentialUser(email, currentPassword);
 
-      // 두 세션 생성
       const currentSessionId = await loginAndGetSession(email, currentPassword);
       const otherSessionId = await loginAndGetSession(email, currentPassword);
 
@@ -204,18 +186,15 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       await changePassword.execute({ userId, currentPassword, newPassword, currentSessionId });
 
       // Then
-      const prisma = testDb.getClient();
-
-      const currentSession = decodeRecord(
-        "Session",
-        await prisma.orm.public.Session.where((row) => row.id.eq(currentSessionId)).first(),
-      );
+      const client = testDb.getClient();
+      const currentSession = await client.query.session.findFirst({
+        where: { id: currentSessionId },
+      });
       expect(currentSession?.revokedAt).toBeNull();
 
-      const otherSession = decodeRecord(
-        "Session",
-        await prisma.orm.public.Session.where((row) => row.id.eq(otherSessionId)).first(),
-      );
+      const otherSession = await client.query.session.findFirst({
+        where: { id: otherSessionId },
+      });
       expect(otherSession?.revokedAt).not.toBeNull();
       expect(otherSession?.revokedReason).toBe("PASSWORD_CHANGED");
     });
@@ -226,7 +205,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       const currentPassword = "Password123!";
       const userId = await createCredentialUser(email, currentPassword);
 
-      // When & Then
+      // When
       await expect(
         changePassword.execute({
           userId,
@@ -241,7 +220,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       const email = "social-change@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      // When & Then
+      // When
       await expect(
         changePassword.execute({
           userId,
@@ -269,15 +248,9 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       });
 
       // Then
-      const prisma = testDb.getClient();
-      const logs = decodeRecord(
-        "SecurityLog",
-        await prisma.orm.public.SecurityLog.where((row) =>
-          and(row.userId.eq(userId), row.event.eq("PASSWORD_CHANGED")),
-        ).all(),
-      );
-
-      // PASSWORD_CHANGED는 changePassword에서 기록됨
+      const logs = await testDb.getClient().query.securityLog.findMany({
+        where: { userId, event: "PASSWORD_CHANGED" },
+      });
       const changeLog = logs.find((log) => log.ipAddress === "10.0.0.1");
       expect(changeLog).toBeDefined();
       expect(changeLog?.userAgent).toBe("IntegrationTest/1.0");

@@ -1,17 +1,5 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-/**
- * Admin 클린아키텍처 수직 통합 테스트
- *
- * @description
- * endpoint use-case → 포트 어댑터(Prisma/Notification)까지의
- * 배선을 검증합니다. DatabaseService·NotificationPublisher는
- * mock으로 대체해 실제 DB/발송 없이 대상 필터링·배치 발송·예외를 확인합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test admin.integration-spec
- * ```
- */
 import { vi } from "vitest";
 
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
@@ -27,16 +15,12 @@ import {
   getGrowthSummaryProvider,
   sendTargetedNotificationProvider,
 } from "#api/modules/operations/operations-admin-application.providers";
-import { DatabaseService } from "#api/platform/database/database.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { UserBuilder } from "#test/builders/index";
 import {
-  assertNativeWhereContains,
-  createMockDatabaseContext,
-  databaseFixture,
-  nativeRows,
-} from "#test/mocks/database.mock";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+  createFakeTransactionHost,
+  type ExecutedStatement,
+  queryResult,
+} from "#test/mocks/drizzle.mock";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
@@ -44,10 +28,9 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
   let broadcastNotificationUseCase: BroadcastNotification;
   let sendTargetedNotificationUseCase: SendTargetedNotification;
 
-  const nativeContext = createMockDatabaseContext();
-  const mockUserDb = nativeContext.orm.public.User;
-
-  const mockDatabaseService = createMockDatabaseService(nativeContext);
+  let userRows: object[] = [];
+  const respond = vi.fn(async (_statement: ExecutedStatement) => queryResult(userRows));
+  const { host: txHost, statements } = createFakeTransactionHost(respond);
 
   const mockNotificationPublisher = {
     publishBatch: vi.fn().mockResolvedValue({ count: 0 }),
@@ -73,7 +56,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
           provide: ADMIN_BROADCAST_NOTIFIER,
           useClass: NotificationAdminBroadcastNotifierAdapter,
         },
-        { provide: DatabaseService, useValue: mockDatabaseService },
+        { provide: TransactionHost, useValue: txHost },
         { provide: NotificationPublisher, useValue: mockNotificationPublisher },
       ],
     }).compile();
@@ -90,26 +73,19 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    statements.length = 0;
     mockNotificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
   });
 
   describe("브로드캐스트", () => {
     it("ALL — 모든 사용자에게 알림이 발송된다", async () => {
-      // Given - 3명의 활성 사용자 (배치 크기 미만이라 1회 조회로 종료)
-      mockUserDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("User", [
-            UserBuilder.create().withId("user-1").build(),
-            UserBuilder.create().withId("user-2").build(),
-            UserBuilder.create().withId("user-3").build(),
-          ]),
-        ),
-      );
+      // Given
+      userRows = [["user-1"], ["user-2"], ["user-3"]];
       mockNotificationPublisher.publishBatch.mockResolvedValue({
         count: 3,
       });
 
-      // When - ALL 대상 브로드캐스트
+      // When
       const result = await broadcastNotificationUseCase.execute({
         title: "테스트 알림",
         body: "전체 사용자 알림입니다",
@@ -118,27 +94,20 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
         force: false,
       });
 
-      // Then - 모든 사용자에게 발송되어야 함
+      // Then
       expect(result.totalTargets).toBe(3);
       expect(result.successCount).toBe(3);
       expect(mockNotificationPublisher.publishBatch).toHaveBeenCalled();
     });
 
     it("WITH_PUSH_TOKEN — 푸시 토큰 조건이 where 절에 반영된다", async () => {
-      // Given - 푸시 토큰이 있는 사용자 2명
-      mockUserDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("User", [
-            UserBuilder.create().withId("user-push-1").build(),
-            UserBuilder.create().withId("user-push-2").build(),
-          ]),
-        ),
-      );
+      // Given
+      userRows = [["user-push-1"], ["user-push-2"]];
       mockNotificationPublisher.publishBatch.mockResolvedValue({
         count: 2,
       });
 
-      // When - WITH_PUSH_TOKEN 대상 브로드캐스트
+      // When
       const result = await broadcastNotificationUseCase.execute({
         title: "푸시 알림",
         body: "푸시 토큰 사용자 알림입니다",
@@ -147,19 +116,17 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
         force: false,
       });
 
-      // Then - 조건이 반영되고 대상에게만 발송되어야 함
+      // Then
       expect(result.totalTargets).toBe(2);
       expect(result.successCount).toBe(2);
-      assertNativeWhereContains("User", mockUserDb.where.mock.calls[0]?.[0], (row) =>
-        row.pushTokens.some(),
-      );
+      expect(statements[0]?.text).toContain('"PushToken"');
     });
 
     it("대상 없음 — BusinessException을 던진다", async () => {
-      // Given - 대상 사용자가 없음 (빈 페이지로 즉시 종료)
-      mockUserDb.all.mockReturnValueOnce(nativeRows(databaseFixture("User", [])));
+      // Given
+      userRows = [];
 
-      // When & Then - 대상 없음은 ADMIN_1402(ApplicationException)로 실패
+      // When
       await expect(
         broadcastNotificationUseCase.execute({
           title: "테스트 알림",
@@ -174,20 +141,13 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
   describe("타겟 발송", () => {
     it("지정된 userId 목록에 ADMIN_TARGETED 알림이 발송된다", async () => {
-      // Given - 존재하는 사용자 2명
-      mockUserDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("User", [
-            UserBuilder.create().withId("target-user-1").build(),
-            UserBuilder.create().withId("target-user-2").build(),
-          ]),
-        ),
-      );
+      // Given
+      userRows = [["target-user-1"], ["target-user-2"]];
       mockNotificationPublisher.publishBatch.mockResolvedValue({
         count: 2,
       });
 
-      // When - 타겟 알림 발송
+      // When
       const result = await sendTargetedNotificationUseCase.execute({
         title: "타겟 알림",
         body: "지정 사용자 알림입니다",
@@ -196,7 +156,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
         force: false,
       });
 
-      // Then - 지정 사용자에게 ADMIN_TARGETED로 발송되어야 함
+      // Then
       expect(result.totalTargets).toBe(2);
       expect(result.successCount).toBe(2);
       expect(mockNotificationPublisher.publishBatch).toHaveBeenCalledWith(
@@ -216,20 +176,13 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
     });
 
     it("존재하지 않는 userId는 필터링된다", async () => {
-      // Given - 3개 userId 중 2개만 존재
-      mockUserDb.all.mockReturnValue(
-        nativeRows(
-          databaseFixture("User", [
-            UserBuilder.create().withId("existing-1").build(),
-            UserBuilder.create().withId("existing-2").build(),
-          ]),
-        ),
-      );
+      // Given
+      userRows = [["existing-1"], ["existing-2"]];
       mockNotificationPublisher.publishBatch.mockResolvedValue({
         count: 2,
       });
 
-      // When - 타겟 알림 발송
+      // When
       const result = await sendTargetedNotificationUseCase.execute({
         title: "타겟 알림",
         body: "일부 사용자 알림입니다",
@@ -238,7 +191,7 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
         force: false,
       });
 
-      // Then - 존재하는 사용자에게만 발송되어야 함
+      // Then
       expect(result.totalTargets).toBe(2);
       expect(mockNotificationPublisher.publishBatch).toHaveBeenCalledWith(
         expect.not.arrayContaining([expect.objectContaining({ userId: "non-existing" })]),
