@@ -1,4 +1,4 @@
-import { chunk, range } from 'es-toolkit';
+import { chunk, clamp, range } from 'es-toolkit';
 
 import { type Invite, InvitePolicy } from '../../domains/invite.model';
 
@@ -100,9 +100,10 @@ export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
   const width = Math.max(availableWidth, 0);
   const columns = calculatePawPrintColumns(width);
   const gapCount = columns - 1;
-  const cellSize = Math.max(
-    Math.min(PAW_PRINT_CELL_SIZE, Math.floor((width - gapCount * MIN_CONNECTOR_WIDTH) / columns)),
+  const cellSize = clamp(
+    Math.floor((width - gapCount * MIN_CONNECTOR_WIDTH) / columns),
     0,
+    PAW_PRINT_CELL_SIZE,
   );
   const connectorLength = Math.max(Math.floor((width - columns * cellSize) / gapCount), 0);
 
