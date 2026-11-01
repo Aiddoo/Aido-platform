@@ -19,7 +19,7 @@ export const dailyCompletion = pgTable(
     achievedAt: timestamp({ precision: 3 }).notNull(),
     completedTodos: integer().notNull(),
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    date: date().notNull(),
+    date: date({ mode: "date" }).notNull(),
     id: text().primaryKey().$defaultFn(createEntityId),
     totalTodos: integer().notNull(),
     updatedAt: timestamp({ precision: 3 })

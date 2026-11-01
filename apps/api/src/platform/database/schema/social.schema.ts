@@ -373,7 +373,7 @@ export const inviteActiveDay = pgTable(
   "InviteActiveDay",
   {
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    localDate: date().notNull(),
+    localDate: date({ mode: "date" }).notNull(),
     redemptionId: text().notNull(),
   },
   (table) => [

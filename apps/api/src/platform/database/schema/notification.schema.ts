@@ -48,7 +48,7 @@ export const notification = pgTable(
     id: serial().primaryKey(),
     isRead: boolean().default(false).notNull(),
     metadata: jsonb(),
-    notificationDate: date(),
+    notificationDate: date({ mode: "date" }),
     nudgeId: integer(),
     openedAt: timestamp({ precision: 3 }),
     purpose: notificationPurpose().default("TRANSACTIONAL").notNull(),
@@ -165,7 +165,7 @@ export const pushDailyBudget = pgTable(
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     id: serial().primaryKey(),
     lastSentAt: timestamp({ precision: 3 }),
-    localDate: date().notNull(),
+    localDate: date({ mode: "date" }).notNull(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()
       .$defaultFn(() => new Date())
@@ -238,7 +238,7 @@ export const pushDispatch = pgTable(
     deliveryAttemptCount: integer().default(0).notNull(),
     id: serial().primaryKey(),
     lastError: varchar({ length: 500 }),
-    localDate: date(),
+    localDate: date({ mode: "date" }),
     notificationId: integer().notNull(),
     openedAt: timestamp({ precision: 3 }),
     processingJobAttempt: integer(),
@@ -341,7 +341,7 @@ export const pushRateLimitReservation = pgTable(
   "PushRateLimitReservation",
   {
     dispatchId: integer().notNull(),
-    localDate: date(),
+    localDate: date({ mode: "date" }),
     phase: pushRateLimitPhase().notNull(),
     reservedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     userId: text().notNull(),

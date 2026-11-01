@@ -24,13 +24,13 @@ export const todo = pgTable(
     completed: boolean().default(false).notNull(),
     completedAt: timestamp({ precision: 3 }),
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    endDate: date(),
+    endDate: date({ mode: "date" }),
     id: serial().primaryKey(),
     isAllDay: boolean().default(true).notNull(),
     recurrenceGroupId: varchar({ length: 36 }),
     scheduledTime: timestamp({ precision: 3, withTimezone: true }),
     sortOrder: integer().default(0).notNull(),
-    startDate: date().notNull(),
+    startDate: date({ mode: "date" }).notNull(),
     title: varchar({ length: 200 }).notNull(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()
