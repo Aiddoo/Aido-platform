@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import { createDatabase } from "#api/platform/database/database.client";
-import { postgresError } from "#test/mocks/database.mock";
+import { postgresError } from "#test/mocks/drizzle.mock";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "./test-database.js";

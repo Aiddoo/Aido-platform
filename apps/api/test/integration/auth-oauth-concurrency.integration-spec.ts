@@ -48,7 +48,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
     const provider = new CountingOAuthIdentityProvider();
-    module = await createAuthTestModule(createTestDatabaseService(client), new FakeEmailService(), {
+    module = await createAuthTestModule(client, new FakeEmailService(), {
       oauthProviderRegistry: new Map([[provider.provider, provider]]),
     });
     accounts = module.get(DrizzleAccountRepository);

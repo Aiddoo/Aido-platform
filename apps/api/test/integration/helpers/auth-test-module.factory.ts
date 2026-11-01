@@ -43,11 +43,14 @@ import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { DRIZZLE } from "#api/platform/database/database.client";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
-import { createDatabaseTransactionFixture } from "#test/setup/database-context";
+import {
+  createDatabaseTransactionFixture,
+  type TestDatabaseClient,
+} from "#test/setup/database-context";
 
 import {
   completeOAuthAuthorizationProvider,
@@ -79,11 +82,11 @@ import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.j
 import { retentionEnrollerTestProvider } from "./retention-enroller.provider.js";
 
 export async function createAuthTestModule(
-  databaseService: DatabaseService,
+  client: TestDatabaseClient,
   fakeEmailService: FakeEmailService,
   options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistry } = {},
 ): Promise<TestingModule> {
-  const transaction = createDatabaseTransactionFixture(databaseService.db);
+  const transaction = createDatabaseTransactionFixture(client);
   return Test.createTestingModule({
     imports: [
       JwtModule.register({
@@ -172,8 +175,8 @@ export async function createAuthTestModule(
       provisioningSeederTestProvider,
       retentionEnrollerTestProvider,
       {
-        provide: DatabaseService,
-        useValue: databaseService,
+        provide: DRIZZLE,
+        useValue: client,
       },
       {
         provide: TransactionHost,

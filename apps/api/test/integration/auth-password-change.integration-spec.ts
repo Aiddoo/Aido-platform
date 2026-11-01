@@ -33,7 +33,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
     databaseService = createTestDatabaseService(await testDb.start());
     fakeEmailService = new FakeEmailService();
 
-    module = await createAuthTestModule(databaseService, fakeEmailService);
+    module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
     register = module.get(Register);
     verifyEmail = module.get(VerifyEmail);
     loginWithPassword = module.get(LoginWithPassword);

@@ -1,7 +1,8 @@
 import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { SQL } from "drizzle-orm";
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { PgDialect } from "drizzle-orm/pg-core";
-import type { Pool, QueryResult } from "pg";
+import { DatabaseError, type Pool, type QueryResult } from "pg";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -59,4 +60,15 @@ export function createFakeTransactionHost(
   const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
   Object.defineProperty(host, "tx", { get: () => database });
   return { host, database, statements };
+}
+
+export function postgresError(sqlState: string, constraint?: string): DatabaseError {
+  return Object.assign(new DatabaseError(`PostgreSQL ${sqlState}`, 0, "error"), {
+    code: sqlState,
+    constraint,
+  });
+}
+
+export function sqlQueryError(sqlState: string, constraint?: string): Error {
+  return new DrizzleQueryError("SELECT 1", [], postgresError(sqlState, constraint));
 }

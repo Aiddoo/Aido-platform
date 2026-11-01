@@ -3,7 +3,7 @@ import { ErrorCode, Errors } from "@aido/api/errors";
 /**
  * GlobalExceptionFilter 테스트
  *
- * Prisma SQLSTATE 23505 매핑, 업무 오류, HttpException, 알 수 없는 에러 처리 검증
+ * PostgreSQL SQLSTATE 23505 매핑, 업무 오류, HttpException, 알 수 없는 에러 처리 검증
  */
 import { type ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
@@ -15,7 +15,7 @@ import type { TypedConfigService } from "#api/platform/config/services/config.se
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { sqlQueryError } from "#test/mocks/database.mock";
+import { sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import { GlobalExceptionFilter } from "./global-exception.filter.js";
 
@@ -136,7 +136,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
     });
 
-    it("처리되지 않은 Prisma 에러는 500 SYS_0001로 처리해야 한다", () => {
+    it("처리되지 않은 DB 에러는 500 SYS_0001로 처리해야 한다", () => {
       // Given
       const error = sqlQueryError("XX000");
 

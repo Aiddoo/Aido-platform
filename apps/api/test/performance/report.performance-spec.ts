@@ -2,31 +2,26 @@ import { performance } from "node:perf_hooks";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { and } from "@prisma/orm-postgres/orm-client";
-import postgres from "@prisma/orm-postgres/runtime";
-import { Pool } from "pg";
+import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 
 import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/services/reports/report-aggregation";
 import type { AggregateParams } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
 import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/drizzle-todo-stats.reader";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { DatabaseService, contract } from "#api/platform/database/database.service";
-import { toDateString } from "#api/shared/domain/date/utils/format";
+import { requireRecord } from "#api/platform/database/database-error.util";
+import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { parseLocalDateTime, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
-import { createStatementObserver } from "#test/setup/statement-observer";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
 /** 수동 측정 전용. 일반 unit/integration/E2E와 CI에는 포함하지 않는다. */
 it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집계 5쿼리를 교차 측정한다", async () => {
-  let pool: Pool | undefined;
   let module: TestingModule | undefined;
   let recordedStatements: number | undefined;
-  const trace = createStatementObserver("report-query-observer", () => {
+  const onStatement = () => {
     if (recordedStatements !== undefined) {
       recordedStatements += 1;
     }
-  });
+  };
   const countStatements = async (fetch: () => Promise<unknown>): Promise<number> => {
     recordedStatements = 0;
     try {
@@ -36,25 +31,22 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
       recordedStatements = undefined;
     }
   };
+  let pooledConnections: (() => number) | undefined;
   const testDb = new TestDatabase({
     createClient: (connectionUri) => {
-      pool = new Pool({ connectionString: connectionUri });
-      return postgres({
-        contract,
-        pg: pool,
-        middleware: [trace],
-      });
+      const client = createTestClient(connectionUri, {}, onStatement);
+      pooledConnections = () => client.$client.totalCount;
+      return client;
     },
   });
   try {
-    const prisma = await testDb.start();
+    const client = await testDb.start();
     module = await Test.createTestingModule({
       providers: [
-        { provide: DatabaseService, useValue: createTestDatabaseService(prisma) },
         DrizzleTodoStatsReader,
         {
           provide: TransactionHost,
-          useValue: { tx: createDatabaseContext(prisma), isTransactionActive: () => false },
+          useValue: { tx: client, isTransactionActive: () => false },
         },
       ],
     }).compile();
@@ -81,7 +73,9 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
     // 같은 날짜 계약의 8조회 기준이다. 과거 날짜 버그나 서로 다른 ORM 버전의 성능을 비교하지 않는다.
     const baseline = async (params: AggregateParams) => {
       const { userId, startDate, endDate, prevStartDate, prevEndDate } = params;
-      const date = (value: Date) => toDateString(startOfDayInTimezone(value, params.timezone));
+      const day = (value: Date) => startOfDayInTimezone(value, params.timezone);
+      const inRange = (from: Date, to: Date) =>
+        and(eq(todo.userId, userId), gte(todo.startDate, day(from)), lt(todo.startDate, day(to)));
       const [
         dailyTotalGroups,
         dailyCompletedGroups,
@@ -92,91 +86,46 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         categories,
         completedTodos,
       ] = await Promise.all([
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(startDate)),
-            row.startDate.lt(date(endDate)),
+        client
+          .select({ startDate: todo.startDate, _count: { id: count() } })
+          .from(todo)
+          .where(inRange(startDate, endDate))
+          .groupBy(todo.startDate),
+        client
+          .select({ startDate: todo.startDate, _count: { id: count() } })
+          .from(todo)
+          .where(and(inRange(startDate, endDate), eq(todo.completed, true)))
+          .groupBy(todo.startDate),
+        client
+          .select({ count: count() })
+          .from(todo)
+          .where(inRange(prevStartDate, prevEndDate))
+          .then((rows) => requireRecord(rows[0]).count),
+        client
+          .select({ count: count() })
+          .from(todo)
+          .where(and(inRange(prevStartDate, prevEndDate), eq(todo.completed, true)))
+          .then((rows) => requireRecord(rows[0]).count),
+        client
+          .select({ categoryId: todo.categoryId, _count: { id: count() } })
+          .from(todo)
+          .where(inRange(startDate, endDate))
+          .groupBy(todo.categoryId),
+        client
+          .select({ categoryId: todo.categoryId, _count: { id: count() } })
+          .from(todo)
+          .where(and(inRange(startDate, endDate), eq(todo.completed, true)))
+          .groupBy(todo.categoryId),
+        client
+          .select({ id: todoCategory.id, name: todoCategory.name, color: todoCategory.color })
+          .from(todoCategory)
+          .where(eq(todoCategory.userId, userId)),
+        client
+          .select({ startDate: todo.startDate, completedAt: todo.completedAt })
+          .from(todo)
+          .where(
+            and(inRange(startDate, endDate), eq(todo.completed, true), isNotNull(todo.completedAt)),
           ),
-        )
-          .groupBy("startDate")
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-          .then((rows) =>
-            rows.map((row) => ({ ...decodeRecord("Todo", row), _count: { id: row.count } })),
-          ),
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(startDate)),
-            row.startDate.lt(date(endDate)),
-            row.completed.eq(true),
-          ),
-        )
-          .groupBy("startDate")
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-          .then((rows) =>
-            rows.map((row) => ({ ...decodeRecord("Todo", row), _count: { id: row.count } })),
-          ),
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(prevStartDate)),
-            row.startDate.lt(date(prevEndDate)),
-          ),
-        )
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-          .then(({ count }) => count),
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(prevStartDate)),
-            row.startDate.lt(date(prevEndDate)),
-            row.completed.eq(true),
-          ),
-        )
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-          .then((row) => row.count),
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(startDate)),
-            row.startDate.lt(date(endDate)),
-          ),
-        )
-          .groupBy("categoryId")
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-          .then((rows) =>
-            rows.map((row) => ({ ...decodeRecord("Todo", row), _count: { id: row.count } })),
-          ),
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(startDate)),
-            row.startDate.lt(date(endDate)),
-            row.completed.eq(true),
-          ),
-        )
-          .groupBy("categoryId")
-          .aggregate((aggregate) => ({ count: aggregate.count() }))
-          .then((rows) =>
-            rows.map((row) => ({ ...decodeRecord("Todo", row), _count: { id: row.count } })),
-          ),
-        prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-          .select("id", "name", "color")
-          .all()
-          .then((row) => decodeRecord("TodoCategory", row)),
-        prisma.orm.public.Todo.where((row) =>
-          and(
-            row.userId.eq(userId),
-            row.startDate.gte(date(startDate)),
-            row.startDate.lt(date(endDate)),
-            row.completed.eq(true),
-            row.completedAt.isNotNull(),
-          ),
-        )
-          .select("startDate", "completedAt")
-          .all()
-          .then((rows) => decodeRecord("Todo", rows)),
       ]);
       return {
         dailyTotalGroups,
@@ -189,33 +138,30 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         completedTodos,
       };
     };
-    for (const count of [1000, 10_000, 100_000]) {
+    for (const rowCount of [1000, 10_000, 100_000]) {
       await testDb.cleanup();
-      const user = decodeRecord(
-        "User",
-        await prisma.orm.public.User.create(
-          encodeCreate("User", {
-            email: "benchmark@test.aido.app",
-            userTag: "BENCH001",
-            status: "ACTIVE",
-          }),
-        ),
+      const user = requireRecord(
+        (
+          await client
+            .insert(userTable)
+            .values({ email: "benchmark@test.aido.app", userTag: "BENCH001", status: "ACTIVE" })
+            .returning()
+        )[0],
       );
-      const categories = await Promise.all(
-        Array.from({ length: 5 }, (_, i) =>
-          prisma.orm.public.TodoCategory.create(
-            encodeCreate("TodoCategory", {
-              userId: user.id,
-              name: `category-${i}`,
-              color: "#FF0000",
-              sortOrder: i,
-            }),
-          ).then((row) => decodeRecord("TodoCategory", row)),
-        ),
-      );
-      for (let offset = 0; offset < count; offset += 1000) {
-        await prisma.orm.public.Todo.createAndCount(
-          Array.from({ length: Math.min(1000, count - offset) }, (_, index) => {
+      const categories = await client
+        .insert(todoCategory)
+        .values(
+          Array.from({ length: 5 }, (_, i) => ({
+            userId: user.id,
+            name: `category-${i}`,
+            color: "#FF0000",
+            sortOrder: i,
+          })),
+        )
+        .returning();
+      for (let offset = 0; offset < rowCount; offset += 1000) {
+        await client.insert(todo).values(
+          Array.from({ length: Math.min(1000, rowCount - offset) }, (_, index) => {
             const i = offset + index;
             const startDate = new Date(Date.UTC(2026, 1, 16 + (i % 14)));
             const category = categories[i % categories.length];
@@ -231,7 +177,7 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
                   ? new Date(startDate.getTime() + (i % 24) * 3600_000 + (i % 3600) * 1000)
                   : null,
             };
-          }).map((value) => encodeCreate("Todo", value)),
+          }),
         );
       }
       const params = {
@@ -274,18 +220,14 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         sharedPeakRssMiB = Math.max(sharedPeakRssMiB, process.memoryUsage().rss / 1024 / 1024);
       }
       process.stdout.write(
-        `${JSON.stringify({ count, before: { ...summarize(beforeRounds), statements: beforeStatements }, after: { ...summarize(afterRounds), statements: afterStatements }, sharedPeakRssMiB, connections: pool?.totalCount })}\n`,
+        `${JSON.stringify({ count: rowCount, before: { ...summarize(beforeRounds), statements: beforeStatements }, after: { ...summarize(afterRounds), statements: afterStatements }, sharedPeakRssMiB, connections: pooledConnections?.() })}\n`,
       );
     }
   } finally {
     try {
       await module?.close();
     } finally {
-      try {
-        await testDb.stop();
-      } finally {
-        await pool?.end();
-      }
+      await testDb.stop();
     }
   }
 }, 180_000);

@@ -1,10 +1,9 @@
 /**
  * User 모델 테스트 데이터 빌더
  *
- * Prisma 공식 권장 Builder 패턴으로 테스트 데이터 생성
+ * Builder 패턴으로 테스트 데이터 생성
  * 필드 추가 시 이 파일만 수정하면 됨
  *
- * @see https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing
  *
  * @example
  * ```typescript

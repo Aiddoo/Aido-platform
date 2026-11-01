@@ -45,7 +45,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await database.start();
-    module = await createAuthTestModule(createTestDatabaseService(client), new FakeEmailService());
+    module = await createAuthTestModule(client, new FakeEmailService());
     repository = module.get(DrizzleVerificationRepository);
     accountRepository = module.get(DrizzleAccountRepository);
     service = module.get(VerificationService);

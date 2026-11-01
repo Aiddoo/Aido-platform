@@ -1,4 +1,4 @@
-import { postgresError, sqlQueryError } from "#test/mocks/database.mock";
+import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import {
   databaseConstraint,

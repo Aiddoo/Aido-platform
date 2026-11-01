@@ -1,4 +1,5 @@
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
@@ -107,9 +108,12 @@ import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cac
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
-import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { DatabaseService } from "#api/platform/database/database.service";
-import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import {
+  type Database,
+  DRIZZLE,
+  type DrizzleTransactionalAdapter,
+} from "#api/platform/database/database.client";
+import { userConsent, userPreference } from "#api/platform/database/schema/index";
 import { InMemoryDedupAdapter } from "#api/platform/dedup/adapters/in-memory-dedup.adapter";
 import { DEDUP_PROVIDER } from "#api/platform/dedup/interfaces/dedup.interface";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
@@ -120,7 +124,6 @@ import {
   UNIT_OF_WORK,
 } from "#api/shared/application/ports/index";
 import { FakePushProvider } from "#test/mocks/fake-push.provider";
-import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
@@ -137,17 +140,17 @@ const unexpectedUseCase = {
 
 @Module({})
 class CriticalQueueDatabaseModule {
-  static register(prisma: TestDatabaseClient): DynamicModule {
+  static register(client: TestDatabaseClient): DynamicModule {
     return {
       module: CriticalQueueDatabaseModule,
-      providers: [{ provide: DatabaseService, useValue: createTestDatabaseService(prisma) }],
-      exports: [DatabaseService],
+      providers: [{ provide: DRIZZLE, useValue: client }],
+      exports: [DRIZZLE],
     };
   }
 }
 
 export interface CriticalQueueProcessorHarness {
-  readonly prisma: TestDatabaseClient;
+  readonly client: TestDatabaseClient;
   readonly boss: PgBoss;
   readonly runtime: JobRuntimePort;
   readonly pushProvider: FakePushProvider;
@@ -161,7 +164,7 @@ export interface CriticalQueueProcessorHarness {
 export async function createCriticalQueueProcessorHarness(): Promise<CriticalQueueProcessorHarness> {
   suppressLogger();
   const testDatabase = new TestDatabase();
-  const prisma = await testDatabase.start();
+  const client = await testDatabase.start();
   const connectionString = testDatabase.getConnectionUri();
   const daytimeTimezone = findDaytimeTimezone(new Date());
 
@@ -184,7 +187,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     useListenNotify: false,
   });
   const pushProvider = new FakePushProvider();
-  const databaseModule = CriticalQueueDatabaseModule.register(prisma);
+  const databaseModule = CriticalQueueDatabaseModule.register(client);
   const module = await Test.createTestingModule({
     imports: [
       databaseModule,
@@ -193,7 +196,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         plugins: [
           new ClsPluginTransactional({
             imports: [databaseModule],
-            adapter: new Prisma8TransactionalAdapter(),
+            adapter: new TransactionalAdapterDrizzleOrm({ drizzleInstanceToken: DRIZZLE }),
           }),
         ],
       }),
@@ -205,7 +208,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       {
         provide: JOB_RUNTIME,
         inject: [TransactionHost],
-        useFactory: (txHost: TransactionHost<Prisma8TransactionalAdapter>) =>
+        useFactory: (txHost: TransactionHost<DrizzleTransactionalAdapter>) =>
           new PgBossJobRuntimeAdapter(boss, txHost, {
             job: { shutdownTimeoutMs: 10_000 },
           }),
@@ -220,7 +223,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
   await module.init();
 
   return {
-    prisma,
+    client,
     boss,
     runtime,
     pushProvider,
@@ -323,8 +326,8 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: NOTIFICATION_DEDUP, useExisting: NotificationDedupAdapter },
     {
       provide: USER_NOTIFICATION_SETTINGS,
-      inject: [DatabaseService],
-      useFactory: (database: DatabaseService): UserNotificationSettingsPort =>
+      inject: [DRIZZLE],
+      useFactory: (database: Database): UserNotificationSettingsPort =>
         createDatabaseBackedSettingsPort(database),
     },
     CachedActivePushTokenReaderAdapter,
@@ -386,58 +389,40 @@ function retentionProviders(): Provider[] {
   ];
 }
 
-function createDatabaseBackedSettingsPort(database: DatabaseService): UserNotificationSettingsPort {
+function createDatabaseBackedSettingsPort(database: Database): UserNotificationSettingsPort {
+  const upsertPreference = async (
+    userId: string,
+    values: Partial<Pick<typeof userPreference.$inferInsert, "timezone" | "locale">>,
+  ): Promise<void> => {
+    await database
+      .insert(userPreference)
+      .values({ userId, ...values })
+      .onConflictDoUpdate({ target: userPreference.userId, set: { userId, ...values } });
+  };
   return {
-    upsertPushTimezone: async (userId, timezone) => {
-      decodeRecord(
-        "UserPreference",
-        await database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId)).upsert({
-          conflictOn: encodePatch("UserPreference", { userId }),
-          create: encodeCreate("UserPreference", { userId, timezone }),
-          update: encodePatch("UserPreference", { timezone }),
-        }),
-      );
-    },
-    upsertPushLocale: async (userId, locale) => {
-      decodeRecord(
-        "UserPreference",
-        await database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId)).upsert({
-          conflictOn: encodePatch("UserPreference", { userId }),
-          create: encodeCreate("UserPreference", { userId, locale }),
-          update: encodePatch("UserPreference", { locale }),
-        }),
-      );
-    },
+    upsertPushTimezone: (userId, timezone) => upsertPreference(userId, { timezone }),
+    upsertPushLocale: (userId, locale) => upsertPreference(userId, { locale }),
     getPreferenceRecord: async (userId): Promise<UserPreferenceRecord | null> =>
-      database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId))
-        .first()
-        .then((row) => decodeRecord("UserPreference", row)),
+      (await database.query.userPreference.findFirst({ where: { userId } })) ?? null,
     getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceRecordWithId[]> =>
-      database.db.orm.public.UserPreference.where((row) => row.userId.in(userIds))
-        .all()
-        .then((row) => decodeRecord("UserPreference", row)),
+      userIds.length === 0
+        ? []
+        : database.query.userPreference.findMany({ where: { userId: { in: [...userIds] } } }),
     getConsentRecord: async (userId): Promise<UserConsentRecord | null> =>
-      database.db.orm.public.UserConsent.where((row) => row.userId.eq(userId))
-        .first()
-        .then((row) => decodeRecord("UserConsent", row)),
+      (await database.query.userConsent.findFirst({ where: { userId } })) ?? null,
     getConsentRecordsByUserIds: async (userIds): Promise<UserConsentRecordWithId[]> =>
-      database.db.orm.public.UserConsent.where((row) => row.userId.in(userIds))
-        .all()
-        .then((row) => decodeRecord("UserConsent", row)),
+      userIds.length === 0
+        ? []
+        : database.query.userConsent.findMany({ where: { userId: { in: [...userIds] } } }),
     updateMarketingPushConsent: async (userId, agreed) => {
-      decodeRecord(
-        "UserConsent",
-        await database.db.orm.public.UserConsent.where((row) => row.userId.eq(userId)).upsert({
-          conflictOn: encodePatch("UserConsent", { userId }),
-          create: encodeCreate("UserConsent", {
-            userId,
-            marketingPushAgreedAt: agreed ? new Date() : null,
-          }),
-          update: encodePatch("UserConsent", {
-            marketingPushAgreedAt: agreed ? new Date() : null,
-          }),
-        }),
-      );
+      const marketingPushAgreedAt = agreed ? new Date() : null;
+      await database
+        .insert(userConsent)
+        .values({ userId, marketingPushAgreedAt })
+        .onConflictDoUpdate({
+          target: userConsent.userId,
+          set: { marketingPushAgreedAt },
+        });
     },
   };
 }

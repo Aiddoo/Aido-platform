@@ -38,9 +38,11 @@ export function createTestClient(
   });
 }
 
+type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
 /** 저장소 integration fixture가 실제 트랜잭션과 Required 전파를 공유한다. */
 export function createDatabaseTransactionFixture(client: Database) {
-  const active = new AsyncLocalStorage<Database>();
+  const active = new AsyncLocalStorage<DatabaseTransaction>();
   const host = mock<TransactionHost<DrizzleTransactionalAdapter>>();
   Object.defineProperty(host, "tx", { get: () => active.getStore() ?? client });
   host.isTransactionActive.mockImplementation(() => active.getStore() !== undefined);

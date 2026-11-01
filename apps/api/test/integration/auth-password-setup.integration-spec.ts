@@ -31,7 +31,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
     databaseService = createTestDatabaseService(await testDb.start());
     fakeEmailService = new FakeEmailService();
 
-    module = await createAuthTestModule(databaseService, fakeEmailService);
+    module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
     requestPasswordSetupCode = module.get(RequestPasswordSetupCode);
     setPassword = module.get(SetPassword);
     loginWithPassword = module.get(LoginWithPassword);

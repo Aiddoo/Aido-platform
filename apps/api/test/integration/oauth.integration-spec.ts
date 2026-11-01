@@ -77,7 +77,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       ["KAKAO", new KakaoOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
       ["NAVER", new NaverOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
     ]);
-    module = await createAuthTestModule(databaseService, new FakeEmailService(), {
+    module = await createAuthTestModule(testDb.getClient(), new FakeEmailService(), {
       oauthProviderRegistry: registry,
     });
     loginWithOAuthToken = module.get(LoginWithOAuthToken);
