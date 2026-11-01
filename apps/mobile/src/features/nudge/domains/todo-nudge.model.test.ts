@@ -1,11 +1,11 @@
 import type { NudgeLimitInfo } from './todo-nudge.model';
 import { TodoNudgePolicy } from './todo-nudge.model';
 
-const NOW = new Date('2026-02-25T09:00:00.000+09:00');
-const SAME_DAY_LATE = new Date('2026-02-25T23:59:59.000+09:00');
-const SAME_DAY_MORNING = new Date('2026-02-25T10:00:00.000+09:00');
-const PREVIOUS_DAY = new Date('2026-02-24T23:59:59.000+09:00');
-const NEXT_DAY = new Date('2026-02-26T10:00:00.000+09:00');
+const NOW = new Date(2026, 1, 25, 9, 0, 0);
+const SAME_DAY_LATE = new Date(2026, 1, 25, 23, 59, 59);
+const SAME_DAY_MORNING = new Date(2026, 1, 25, 10, 0, 0);
+const PREVIOUS_DAY = new Date(2026, 1, 24, 23, 59, 59);
+const NEXT_DAY = new Date(2026, 1, 26, 10, 0, 0);
 
 const createLimitInfo = (overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo => ({
   dailyLimit: 3,

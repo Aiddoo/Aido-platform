@@ -17,7 +17,7 @@ describe('repeatSettingReducer', () => {
       const next = repeatSettingReducer(state, {
         type: 'toggle',
         enabled: true,
-        startDate: new Date('2025-03-15'), // SAT
+        startDate: new Date(2025, 2, 15), // SAT
       });
 
       // Then
@@ -33,7 +33,7 @@ describe('repeatSettingReducer', () => {
       const next = repeatSettingReducer(state, {
         type: 'toggle',
         enabled: true,
-        startDate: new Date('2025-03-15'),
+        startDate: new Date(2025, 2, 15),
       });
 
       // Then
@@ -48,11 +48,11 @@ describe('repeatSettingReducer', () => {
       const next = repeatSettingReducer(state, {
         type: 'toggle',
         enabled: true,
-        startDate: new Date('2025-03-15'),
+        startDate: new Date(2025, 2, 15),
       });
 
       // Then
-      expect(next.endDate).toEqual(new Date('2025-03-22'));
+      expect(next.endDate).toEqual(new Date(2025, 2, 22));
     });
 
     it('비활성화하면 isEnabled=false, selectedDays=[], endDate=null로 초기화한다', () => {
@@ -60,14 +60,14 @@ describe('repeatSettingReducer', () => {
       const state = createState({
         isEnabled: true,
         selectedDays: ['MON', 'WED'],
-        endDate: new Date('2025-03-22'),
+        endDate: new Date(2025, 2, 22),
       });
 
       // When
       const next = repeatSettingReducer(state, {
         type: 'toggle',
         enabled: false,
-        startDate: new Date('2025-03-15'),
+        startDate: new Date(2025, 2, 15),
       });
 
       // Then
@@ -85,18 +85,18 @@ describe('repeatSettingReducer', () => {
       // When
       const next = repeatSettingReducer(state, {
         type: 'setEndDate',
-        date: new Date('2025-03-25'),
+        date: new Date(2025, 2, 25),
       });
 
       // Then
-      expect(next.endDate).toEqual(new Date('2025-03-25'));
+      expect(next.endDate).toEqual(new Date(2025, 2, 25));
     });
   });
 
   describe('clearEndDate', () => {
     it('endDate를 null로 초기화한다', () => {
       // Given
-      const state = createState({ isEnabled: true, endDate: new Date('2025-03-22') });
+      const state = createState({ isEnabled: true, endDate: new Date(2025, 2, 22) });
 
       // When
       const next = repeatSettingReducer(state, { type: 'clearEndDate' });

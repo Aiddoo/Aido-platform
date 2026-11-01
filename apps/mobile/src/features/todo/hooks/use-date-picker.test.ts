@@ -1,8 +1,8 @@
 import { type DatePickerState, datePickerReducer } from './use-date-picker';
 
 const createState = (overrides?: Partial<DatePickerState>): DatePickerState => ({
-  startDate: new Date('2025-03-15'),
-  displayMonth: new Date('2025-03-01'),
+  startDate: new Date(2025, 2, 15),
+  displayMonth: new Date(2025, 2, 1),
   ...overrides,
 });
 
@@ -15,18 +15,18 @@ describe('datePickerReducer', () => {
       // When
       const next = datePickerReducer(state, {
         type: 'selectDate',
-        date: new Date('2025-03-20'),
+        date: new Date(2025, 2, 20),
       });
 
       // Then
-      expect(next.startDate).toEqual(new Date('2025-03-20'));
+      expect(next.startDate).toEqual(new Date(2025, 2, 20));
     });
   });
 
   describe('prevMonth', () => {
     it('displayMonth를 이전 달로 변경해야 한다', () => {
       // Given
-      const state = createState({ displayMonth: new Date('2025-03-01') });
+      const state = createState({ displayMonth: new Date(2025, 2, 1) });
 
       // When
       const next = datePickerReducer(state, { type: 'prevMonth' });
@@ -40,7 +40,7 @@ describe('datePickerReducer', () => {
   describe('nextMonth', () => {
     it('displayMonth를 다음 달로 변경해야 한다', () => {
       // Given
-      const state = createState({ displayMonth: new Date('2025-03-01') });
+      const state = createState({ displayMonth: new Date(2025, 2, 1) });
 
       // When
       const next = datePickerReducer(state, { type: 'nextMonth' });
