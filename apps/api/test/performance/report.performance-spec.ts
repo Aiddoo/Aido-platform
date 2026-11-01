@@ -165,7 +165,9 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
             const i = offset + index;
             const startDate = new Date(Date.UTC(2026, 1, 16 + (i % 14)));
             const category = categories[i % categories.length];
-            if (category === undefined) throw new Error("Benchmark category missing");
+            if (category === undefined) {
+              throw new Error("Benchmark category missing");
+            }
             return {
               userId: user.id,
               categoryId: category.id,

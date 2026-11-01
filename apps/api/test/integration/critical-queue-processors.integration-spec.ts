@@ -157,7 +157,9 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       },
       { ...JOB_OPTIONS, idempotencyKey: `retention-dispatch:${outbox.id}` },
     );
-    if (publication) await harness.retentionRepository.markOutboxPublished(publication);
+    if (publication) {
+      await harness.retentionRepository.markOutboxPublished(publication);
+    }
 
     // Then
     expect(jobId).not.toBeNull();
@@ -385,7 +387,9 @@ async function claimReadyRetentionOutbox(harness: CriticalQueueProcessorHarness,
     .set({ availableAt: claimAt })
     .where(eq(retentionPushOutbox.id, outboxId));
   const [publication] = await harness.retentionRepository.claimOutboxes(1, claimAt);
-  if (publication === undefined) throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+  if (publication === undefined) {
+    throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+  }
   return publication;
 }
 

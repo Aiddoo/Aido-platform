@@ -1045,7 +1045,9 @@ describe("AI E2E", () => {
     async ({ locale, route }) => {
       // Given
       const item = parsingIntentCases.find((candidate) => candidate.id === "mixed-command");
-      if (!item) throw new Error("혼합 지시 회귀 fixture가 필요합니다");
+      if (!item) {
+        throw new Error("혼합 지시 회귀 fixture가 필요합니다");
+      }
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
       const todo = createParsedTodoResponse({
         title: item.title[locale],

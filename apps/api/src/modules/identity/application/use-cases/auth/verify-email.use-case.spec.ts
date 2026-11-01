@@ -100,8 +100,9 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
     async (state) => {
       // Given
       const fixture = given({ pending: state !== "verified", empty: state === "missing" });
-      if (state === "deleted")
+      if (state === "deleted") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+      }
       const expected =
         state === "missing"
           ? ErrorCode.EMAIL_0502

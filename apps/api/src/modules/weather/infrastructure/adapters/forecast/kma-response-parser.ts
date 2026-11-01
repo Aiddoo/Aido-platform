@@ -56,12 +56,16 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
       }
       case KMA_CATEGORY.TMN: {
         const v = Number.parseFloat(value);
-        if (!Number.isNaN(v)) tempMin = Math.min(tempMin, v);
+        if (!Number.isNaN(v)) {
+          tempMin = Math.min(tempMin, v);
+        }
         break;
       }
       case KMA_CATEGORY.TMX: {
         const v = Number.parseFloat(value);
-        if (!Number.isNaN(v)) tempMax = Math.max(tempMax, v);
+        if (!Number.isNaN(v)) {
+          tempMax = Math.max(tempMax, v);
+        }
         break;
       }
       case KMA_CATEGORY.POP: {
@@ -157,7 +161,9 @@ export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): Weathe
       case KMA_CATEGORY.POP: {
         const prob = Number.parseInt(value, 10);
         if (!Number.isNaN(prob)) {
-          if (!isNextDay) maxPrecipProb = Math.max(maxPrecipProb, prob);
+          if (!isNextDay) {
+            maxPrecipProb = Math.max(maxPrecipProb, prob);
+          }
           const entry = getOrCreate();
           entry.precipitationProbability = prob;
           hourlyMap.set(key, entry);
@@ -165,7 +171,9 @@ export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): Weathe
         break;
       }
       case KMA_CATEGORY.SKY: {
-        if (!isNextDay) dominantSky = value;
+        if (!isNextDay) {
+          dominantSky = value;
+        }
         const entry = getOrCreate();
         entry.skyCondition = SKY_CODE_MAP[value] ?? "CLEAR";
         hourlyMap.set(key, entry);
@@ -192,14 +200,18 @@ export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): Weathe
       case KMA_CATEGORY.TMN: {
         if (!isNextDay) {
           const v = Number.parseFloat(value);
-          if (!Number.isNaN(v)) tempMin = Math.min(tempMin, v);
+          if (!Number.isNaN(v)) {
+            tempMin = Math.min(tempMin, v);
+          }
         }
         break;
       }
       case KMA_CATEGORY.TMX: {
         if (!isNextDay) {
           const v = Number.parseFloat(value);
-          if (!Number.isNaN(v)) tempMax = Math.max(tempMax, v);
+          if (!Number.isNaN(v)) {
+            tempMax = Math.max(tempMax, v);
+          }
         }
         break;
       }

@@ -43,15 +43,21 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 
   afterAll(async () => {
     try {
-      if (module) await module.close();
+      if (module) {
+        await module.close();
+      }
     } finally {
-      if (testDb) await testDb.stop();
+      if (testDb) {
+        await testDb.stop();
+      }
     }
   });
 
   function getCode(email: string): string {
     const code = fakeEmailService.getLastCode(email);
-    if (code == null) throw new Error(`No code found for ${email}`);
+    if (code == null) {
+      throw new Error(`No code found for ${email}`);
+    }
     return code;
   }
 

@@ -70,7 +70,9 @@ function normalizeV2(
     .filter((tip) => tip !== "")
     .slice(0, MAX_TIPS);
   // 비어 있는 결과는 저장하지 않고 폴백으로 넘긴다.
-  if (summary === "" || tips.length === 0) throw new ReportDraftRejectedError();
+  if (summary === "" || tips.length === 0) {
+    throw new ReportDraftRejectedError();
+  }
   return { aiSummary: summary, aiTips: tips };
 }
 

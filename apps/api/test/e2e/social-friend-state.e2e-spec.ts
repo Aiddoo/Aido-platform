@@ -121,8 +121,9 @@ describe("친구 상태 변경 HTTP 계약", () => {
     const secondFollowId = friends.find((friend) => friend.id === second.userId)?.followId;
     expect(firstFollowId).toBeDefined();
     expect(secondFollowId).toBeDefined();
-    if (firstFollowId === undefined || secondFollowId === undefined)
+    if (firstFollowId === undefined || secondFollowId === undefined) {
       throw new Error("생성한 친구 관계가 목록에 없습니다.");
+    }
 
     // When
     const moved = await request(context.app.getHttpServer())

@@ -10,7 +10,9 @@ const EN_MEOW = /,?[ \t]*\bmeow\b[ \t]*/gi;
  * ko는 해요체 뒤에 붙은 "냥"만 지우고, en은 "meow"를 지운다.
  */
 export function normalizeReportPersona(text: string, locale: SupportedLocale): string {
-  if (locale === "ko") return text.replace(KO_TRAILING_NYANG, "요");
+  if (locale === "ko") {
+    return text.replace(KO_TRAILING_NYANG, "요");
+  }
   return text
     .replace(EN_MEOW, " ")
     .replace(/ {2,}/g, " ")

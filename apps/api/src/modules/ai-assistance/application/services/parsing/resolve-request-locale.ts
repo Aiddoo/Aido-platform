@@ -20,7 +20,9 @@ export async function resolveRequestLocale(
   requested: RequestedLocale,
 ): Promise<UserLocalePreference> {
   const { timezone, locale } = requested;
-  if (timezone != null && locale != null) return { timezone, locale };
+  if (timezone != null && locale != null) {
+    return { timezone, locale };
+  }
   const stored = await reader.read(userId);
   return { timezone: timezone ?? stored.timezone, locale: locale ?? stored.locale };
 }

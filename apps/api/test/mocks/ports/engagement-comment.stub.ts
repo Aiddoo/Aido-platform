@@ -58,15 +58,18 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
     const stored = command.items.map((item) =>
       this.replays.get(`${command.authorId}:${item.clientRequestId}`),
     );
-    if (stored.every((replay) => replay === undefined)) return null;
+    if (stored.every((replay) => replay === undefined)) {
+      return null;
+    }
     const replay = stored[0];
     if (
       replay === undefined ||
       stored.some(
         (entry) => entry === undefined || JSON.stringify(entry.command) !== JSON.stringify(command),
       )
-    )
+    ) {
       throw new TodoCommentIdempotencyConflict();
+    }
     return [...replay.commentIds];
   }
   async createCommentChain(input: CreateTodoCommentChainInput) {
@@ -89,7 +92,9 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
         updatedAt: at,
       });
       const created = this.comments.get(id);
-      if (created === undefined) throw new Error("댓글 fixture 저장 실패");
+      if (created === undefined) {
+        throw new Error("댓글 fixture 저장 실패");
+      }
       placement = placement.under(TodoComment.reconstitute(created).id);
       commentIds.push(id);
     }
@@ -99,15 +104,18 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
       parentId: input.placement.parentId?.getValue() ?? null,
       items: structuredClone(input.items),
     };
-    for (const item of input.items)
+    for (const item of input.items) {
       this.replays.set(`${input.authorId}:${item.clientRequestId}`, {
         command,
         commentIds: [...commentIds],
       });
+    }
     return { commentIds, createdCount: commentIds.length };
   }
   async updateComment(comment: TodoComment): Promise<boolean> {
-    if (!this.comments.has(comment.id.getValue())) return false;
+    if (!this.comments.has(comment.id.getValue())) {
+      return false;
+    }
     this.seed(comment.snapshot);
     return true;
   }
@@ -119,13 +127,17 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
   }
   async decrementTodoCommentCount(todoId: number): Promise<boolean> {
     const count = this.commentCounts.get(todoId) ?? 0;
-    if (count === 0) return false;
+    if (count === 0) {
+      return false;
+    }
     this.commentCounts.set(todoId, count - 1);
     return true;
   }
   async incrementReplyCount(parentId: string): Promise<boolean> {
     const parent = this.comments.get(parentId);
-    if (parent === undefined || parent.deletedAt !== null) return false;
+    if (parent === undefined || parent.deletedAt !== null) {
+      return false;
+    }
     this.replyCounts.set(parentId, (this.replyCounts.get(parentId) ?? 0) + 1);
     return true;
   }
@@ -178,8 +190,9 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
     isLiked: boolean,
   ): TodoCommentLikeTransition {
     const comment = this.comments.get(commentId);
-    if (comment?.todoId !== todoId)
+    if (comment?.todoId !== todoId) {
       throw new ApplicationException(ErrorCode.TODO_0831, { commentId });
+    }
     const key = `${commentId}:${userId}`;
     const previous = this.likes.get(key) ?? { isLiked: false, wasEverNotified: false };
     const changed = previous.isLiked !== isLiked;
@@ -221,7 +234,9 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   }
   async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null> {
     const comment = this.repository.comments.get(commentId);
-    if (comment?.todoId !== todoId) return null;
+    if (comment?.todoId !== todoId) {
+      return null;
+    }
     return {
       id: comment.id,
       todoId,

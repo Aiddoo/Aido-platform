@@ -94,7 +94,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       .insert(todoCategory)
       .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
       .returning({ id: todoCategory.id });
-    if (category === undefined) throw new Error("category fixture missing");
+    if (category === undefined) {
+      throw new Error("category fixture missing");
+    }
     const [createdTodo] = await client
       .insert(todo)
       .values(
@@ -111,7 +113,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         ),
       )
       .returning({ id: todo.id });
-    if (createdTodo === undefined) throw new Error("todo fixture missing");
+    if (createdTodo === undefined) {
+      throw new Error("todo fixture missing");
+    }
     todoId = createdTodo.id;
     roots = [];
     focusId = "";
@@ -154,7 +158,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         depth: 2,
         createdAt: new Date(AT.getTime() + index * 1000 + 200),
       });
-      if (index === 0) focusId = grandId;
+      if (index === 0) {
+        focusId = grandId;
+      }
     }
   });
   afterEach(() => {
@@ -162,8 +168,11 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     vi.useRealTimers();
   });
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database.stop();
+    }
   });
   async function measure<T>(work: () => Promise<T>) {
     statements = [];
@@ -239,7 +248,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   it("좋아요와 좋아요 취소는 조건부 쓰기와 카운터 재조회를 정해진 쿼리 수로 수행한다", async () => {
     // Given
     const commentId = roots[0];
-    if (commentId === undefined) throw new Error("root fixture missing");
+    if (commentId === undefined) {
+      throw new Error("root fixture missing");
+    }
 
     // When
     const like = await measure(() => uow.run(() => repository.setLike(todoId, commentId, userId)));
@@ -257,7 +268,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   it("활성 상태이고 아직 알리지 않은 좋아요만 해당 댓글의 알림 대상으로 쿼리 1번에 읽는다", async () => {
     // Given
     const commentId = roots[0];
-    if (commentId === undefined) throw new Error("root fixture missing");
+    if (commentId === undefined) {
+      throw new Error("root fixture missing");
+    }
     await uow.run(() => repository.setLike(todoId, commentId, userId));
 
     // When
@@ -301,7 +314,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   it("알림 완료 표시가 외래 키 오류로 실패하면 알림과 outbox와 커밋 후 작업을 취소하고 원래 좋아요는 보존한다", async () => {
     // Given
     const commentId = roots[0];
-    if (commentId === undefined) throw new Error("root fixture missing");
+    if (commentId === undefined) {
+      throw new Error("root fixture missing");
+    }
     const like = context.module.get(LikeTodoComment);
     const txHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
@@ -358,7 +373,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   it("푸시 준비 단계가 외래 키 오류로 실패해도 원래 좋아요만 남기고 저장 중인 알림을 취소한다", async () => {
     // Given
     const commentId = roots[0];
-    if (commentId === undefined) throw new Error("root fixture missing");
+    if (commentId === undefined) {
+      throw new Error("root fixture missing");
+    }
     const txHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     const staging = context.module.get<PushDispatchStagingRepositoryPort>(PUSH_DISPATCH_STAGING);
@@ -393,7 +410,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   it("좋아요 알림을 저장하는 중의 취소 요청은 같은 댓글 잠금을 기다리고 다시 좋아요해도 알림이 중복되지 않는다", async () => {
     // Given
     const commentId = roots[0];
-    if (commentId === undefined) throw new Error("root fixture missing");
+    if (commentId === undefined) {
+      throw new Error("root fixture missing");
+    }
     const adapter = context.module.get<TodoCommentNotificationPort>(TODO_COMMENT_NOTIFICATION);
     const notify = adapter.notifyCommentLiked.bind(adapter);
     const entered = Promise.withResolvers<void>();

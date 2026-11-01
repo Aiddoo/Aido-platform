@@ -150,7 +150,9 @@ export class RecordInviteeActivity {
       }
       const inviteeName =
         await this.#dependencies.inviteRedemptionRepository.findDisplayName(inviteeId);
-      if (inviteeName == null) return;
+      if (inviteeName == null) {
+        return;
+      }
       await this.#dependencies.notifier.notifyInviteProgress({
         inviterId,
         inviteeName,
@@ -174,7 +176,9 @@ export class RecordInviteeActivity {
     inviterId: string,
   ): Promise<"disabled" | "unreachable" | null> {
     // 꺼져 있는 동안은 INVITE_REWARDED처럼 초대 알림을 보내지 않는다
-    if (!this.#dependencies.inviteConfig.isEnabled) return "disabled";
+    if (!this.#dependencies.inviteConfig.isEnabled) {
+      return "disabled";
+    }
     if (!(await isInvitePairReachable(this.#dependencies, inviteeId, inviterId))) {
       return "unreachable";
     }

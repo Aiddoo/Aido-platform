@@ -19,7 +19,9 @@ export class InviteeActivitySubscriber {
 
   @OnEvent(TODO_EVENTS.TOGGLED)
   async handle(event: TodoToggledEvent): Promise<void> {
-    if (!event.completed) return;
+    if (!event.completed) {
+      return;
+    }
     try {
       await this.recordInviteeActivity.execute({
         inviteeId: event.userId,

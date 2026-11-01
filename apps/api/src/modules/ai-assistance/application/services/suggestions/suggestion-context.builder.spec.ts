@@ -52,7 +52,9 @@ describe("SuggestionContextBuilder", () => {
     withAiAssistanceTime(async () => {
       // Given - 읽기 결과 누락 또는 provider 실패
       const f = createAiAssistanceFixture();
-      if (state === "failed") f.weatherForecastReader.failure = new Error("날씨 실패");
+      if (state === "failed") {
+        f.weatherForecastReader.failure = new Error("날씨 실패");
+      }
       // When - 위치는 있지만 조회 결과가 없음
       const result = await f.contextBuilder.build(f.userId, "Asia/Seoul", grid);
       // Then - 통계는 보존하고 날씨만 null

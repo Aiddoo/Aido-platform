@@ -94,8 +94,12 @@ export class GrantInviteRewards {
     // 한 수락의 지급은 보상 종류 수만큼이라 순서대로 적용한다
     for (const grant of retryable) {
       const outcome = await this.#apply(grant, capturedAt, input.countsAttempt);
-      if (outcome === "applied") appliedCount += 1;
-      if (outcome === "failed") failedCount += 1;
+      if (outcome === "applied") {
+        appliedCount += 1;
+      }
+      if (outcome === "failed") {
+        failedCount += 1;
+      }
     }
 
     const rewarded = await this.#markRewardedIfComplete(input.redemptionId, capturedAt);
@@ -125,7 +129,9 @@ export class GrantInviteRewards {
     try {
       return await this.#dependencies.unitOfWork.run(async () => {
         const isFenced = await this.#dependencies.rewardGrantRepository.markApplied(grant.id, at);
-        if (!isFenced) return "already-applied" as const;
+        if (!isFenced) {
+          return "already-applied" as const;
+        }
         await this.#dependencies.rewardAppliers[grant.rewardType].apply(grant);
         return "applied" as const;
       });
@@ -188,17 +194,25 @@ export class GrantInviteRewards {
     return this.#dependencies.unitOfWork.run(async () => {
       const redemption =
         await this.#dependencies.inviteRedemptionRepository.findByIdForUpdate(redemptionId);
-      if (redemption == null) return null;
+      if (redemption == null) {
+        return null;
+      }
       const { inviterId } = redemption;
-      if (redemption.status !== REDEMPTION_STATUS.QUALIFIED || inviterId == null) return null;
+      if (redemption.status !== REDEMPTION_STATUS.QUALIFIED || inviterId == null) {
+        return null;
+      }
 
       const grants = await this.#dependencies.rewardGrantRepository.findBySource(
         "INVITE_REDEMPTION",
         redemptionId,
       );
       const inviterGrants = grants.filter((grant) => grant.recipientId === inviterId);
-      if (!inviterGrants.every((grant) => grant.status === "APPLIED")) return null;
-      if (!redemption.markRewarded(at)) return null;
+      if (!inviterGrants.every((grant) => grant.status === "APPLIED")) {
+        return null;
+      }
+      if (!redemption.markRewarded(at)) {
+        return null;
+      }
       await this.#dependencies.inviteRedemptionRepository.save(redemption);
       return { inviterId, grants: inviterGrants };
     });
@@ -209,7 +223,9 @@ export class GrantInviteRewards {
     redemptionId: string,
     rewarded: { readonly inviterId: string; readonly grants: readonly RewardGrantRecord[] },
   ): Promise<void> {
-    if (rewarded.grants.length === 0) return;
+    if (rewarded.grants.length === 0) {
+      return;
+    }
 
     const quantityOf = (rewardType: RewardType) =>
       sumBy(

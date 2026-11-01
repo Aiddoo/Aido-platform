@@ -72,8 +72,11 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
   });
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function contend() {

@@ -44,7 +44,9 @@ export class NotificationQueueProcessor implements OnModuleInit {
     await this.runtime.work(
       NOTIFICATION_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       NOTIFICATION_WORKER_POLICY,
     );

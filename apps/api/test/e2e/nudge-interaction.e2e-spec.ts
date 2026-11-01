@@ -373,7 +373,9 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     expect(preview.recipients.map((friend) => friend.id).sort()).toEqual(
       [firstFriend.userId, secondFriend.userId].sort(),
     );
-    if (preview.throughNudgeId === null) throw new Error("감사 대상 콕이 필요합니다");
+    if (preview.throughNudgeId === null) {
+      throw new Error("감사 대상 콕이 필요합니다");
+    }
     const throughNudgeId = preview.throughNudgeId;
 
     // When

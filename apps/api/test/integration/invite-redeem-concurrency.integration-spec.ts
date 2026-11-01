@@ -54,8 +54,11 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
   });
 
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function createUser(userTag: string): Promise<string> {

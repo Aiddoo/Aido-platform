@@ -47,7 +47,9 @@ function partitionEligibility<TCandidate>(
   for (const decision of decisions) {
     if (decision.status === "eligible") {
       eligible.push(decision.candidate);
-    } else skipped.push({ candidate: decision.candidate, reason: decision.reason });
+    } else {
+      skipped.push({ candidate: decision.candidate, reason: decision.reason });
+    }
   }
   return { eligible, skipped };
 }

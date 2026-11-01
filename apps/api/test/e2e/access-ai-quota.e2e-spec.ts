@@ -46,15 +46,21 @@ class DeferredAiProvider extends FakeAiProvider {
   ): Promise<GenerateStructuredResult<T>> {
     const deferred = this.#pending.shift();
     const result = await super.generateStructured(options);
-    if (deferred === undefined) return result;
+    if (deferred === undefined) {
+      return result;
+    }
     deferred.entered.resolve();
     await deferred.continued.promise;
-    if (deferred.error !== undefined) throw deferred.error;
+    if (deferred.error !== undefined) {
+      throw deferred.error;
+    }
     return result;
   }
 
   override clear(): this {
-    for (const deferred of this.#pending) deferred.continued.resolve();
+    for (const deferred of this.#pending) {
+      deferred.continued.resolve();
+    }
     this.#pending.length = 0;
     return super.clear();
   }

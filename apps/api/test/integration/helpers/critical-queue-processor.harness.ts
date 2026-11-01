@@ -483,7 +483,9 @@ function findDaytimeTimezone(now: Date): string {
         .formatToParts(now)
         .find((part) => part.type === "hour")?.value ?? "0",
     );
-    if (hour >= 9 && hour < 20) return timezone;
+    if (hour >= 9 && hour < 20) {
+      return timezone;
+    }
   }
   throw new Error("No daytime IANA timezone available for retention test");
 }

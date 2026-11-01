@@ -41,8 +41,9 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
       .orderBy(todoCategory.id);
     const source = categories[0];
     const target = categories[1];
-    if (source === undefined || target === undefined)
+    if (source === undefined || target === undefined) {
       throw new Error("서로 다른 기본 카테고리가 필요합니다.");
+    }
     await request(context.app.getHttpServer())
       .patch(`/v1/todo-categories/${source.id}`)
       .set("Authorization", `Bearer ${user.accessToken}`)

@@ -77,7 +77,9 @@ describe("Logout — 현재 기기의 세션 종료", () => {
         userId: state === "other-owner" ? "other-user" : userId,
         revokedAt: state === "revoked" ? currentTime : null,
       });
-      if (state === "missing") fixture.sessionRepository.sessions.clear();
+      if (state === "missing") {
+        fixture.sessionRepository.sessions.clear();
+      }
 
       // When
       const pending = fixture.useCase.execute({ userId, sessionId });

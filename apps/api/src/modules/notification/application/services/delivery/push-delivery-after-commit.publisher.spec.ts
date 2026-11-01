@@ -9,7 +9,9 @@ import { PushDeliveryAfterCommitPublisher } from "./push-delivery-after-commit.p
 
 function firstRegisteredTask(tasks: readonly AfterCommitTask[]): AfterCommitTask {
   const task = tasks[0];
-  if (!task) throw new Error("Expected an after-commit task to be registered");
+  if (!task) {
+    throw new Error("Expected an after-commit task to be registered");
+  }
   return task;
 }
 

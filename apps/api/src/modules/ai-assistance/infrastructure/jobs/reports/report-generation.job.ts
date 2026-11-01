@@ -123,7 +123,9 @@ export class ReportGenerationJob implements OnModuleInit {
           const timezone = resolveTimezone(user.preference?.timezone ?? DEFAULT_REPORT_TIMEZONE);
           return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
         });
-        if (due.length === 0) return;
+        if (due.length === 0) {
+          return;
+        }
         await this.runtime.enqueueMany(
           AI_REPORT_QUEUE,
           due.map(({ user, timezone }) => ({

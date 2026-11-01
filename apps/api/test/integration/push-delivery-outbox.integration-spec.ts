@@ -206,7 +206,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       route: "/feed",
       variantId: "d1_return",
     });
-    if (!created) throw new Error("Expected retention delivery to be staged");
+    if (!created) {
+      throw new Error("Expected retention delivery to be staged");
+    }
     const pendingOutbox = requireRecord(
       await db.query.retentionPushOutbox.findFirst({ where: { stageId: stage.id } }),
     );
@@ -569,7 +571,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         startedAt: new Date(),
       }),
     );
-    if (!terminalInitialClaim) throw new Error("Expected terminal-first initial claim");
+    if (!terminalInitialClaim) {
+      throw new Error("Expected terminal-first initial claim");
+    }
 
     const terminalOwnsRows = deferred();
     const releaseTerminal = deferred();
@@ -628,7 +632,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         startedAt: new Date(),
       }),
     );
-    if (!claimInitialLease) throw new Error("Expected claim-first initial claim");
+    if (!claimInitialLease) {
+      throw new Error("Expected claim-first initial claim");
+    }
 
     const retryOwnsRows = deferred();
     const releaseRetry = deferred();
@@ -729,7 +735,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
 
     const active = claimedDelivery[0];
     expect(active).toBeDefined();
-    if (!active) throw new Error("Expected claimed push delivery");
+    if (!active) {
+      throw new Error("Expected claimed push delivery");
+    }
     await expect(
       db.transaction((tx) =>
         lifecycle(tx).finalizeSkipped([
@@ -779,7 +787,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       }),
     );
     const first = firstClaim[0];
-    if (!first) throw new Error("Expected first delivery claim");
+    if (!first) {
+      throw new Error("Expected first delivery claim");
+    }
     await expect(
       db.transaction(async (tx) => {
         await lifecycle(tx).release([
@@ -824,7 +834,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       }),
     );
     const retry = retryClaim[0];
-    if (!retry) throw new Error("Expected same-job retry claim");
+    if (!retry) {
+      throw new Error("Expected same-job retry claim");
+    }
     expect(retry.fence.deliveryAttemptCount).toBe(first.fence.deliveryAttemptCount + 1);
     await expect(
       db.transaction((tx) =>
@@ -1124,7 +1136,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         startedAt: new Date(),
       }),
     );
-    if (!terminalInitialClaim) throw new Error("Expected retention terminal-first claim");
+    if (!terminalInitialClaim) {
+      throw new Error("Expected retention terminal-first claim");
+    }
 
     const terminalOwnsRows = deferred();
     const releaseTerminal = deferred();
@@ -1185,7 +1199,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         startedAt: new Date(),
       }),
     );
-    if (!initialLease) throw new Error("Expected retention claim-first lease");
+    if (!initialLease) {
+      throw new Error("Expected retention claim-first lease");
+    }
 
     const retryOwnsRows = deferred();
     const releaseRetry = deferred();
@@ -1257,7 +1273,9 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           availableAt: new Date(),
           error: "claim unavailable",
         });
-        if (recovered !== publications.length) throw new Error("partial recovery");
+        if (recovered !== publications.length) {
+          throw new Error("partial recovery");
+        }
       }),
     ).rejects.toThrow("partial recovery");
     await expect(

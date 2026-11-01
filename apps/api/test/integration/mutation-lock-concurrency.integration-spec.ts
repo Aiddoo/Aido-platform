@@ -461,7 +461,9 @@ async function observeCategoryRace<T>(
 
 function summarize(results: PromiseSettledResult<unknown>[]): RaceSummary {
   const errorCodes = results.flatMap((result) => {
-    if (result.status === "fulfilled") return [];
+    if (result.status === "fulfilled") {
+      return [];
+    }
     const reason = result.reason;
     if (
       typeof reason === "object" &&

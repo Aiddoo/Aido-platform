@@ -60,7 +60,9 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
 
   const dateExplicit = draft.date.kind !== "NONE";
   const resolvedDate = resolveDateRef(draft.date, today);
-  if (resolvedDate.warning != null) warnings.push(resolvedDate.warning);
+  if (resolvedDate.warning != null) {
+    warnings.push(resolvedDate.warning);
+  }
 
   const recurrenceBase = resolveRecurrenceWindow(draft.repeat, today, resolvedDate.day);
   const isRecurringDraft = recurrenceBase != null;
@@ -96,13 +98,20 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
   let endDate: string | null = null;
   if (draft.endDate != null && draft.endDate.kind !== "NONE") {
     const end = resolveDateRef(draft.endDate, today);
-    if (end.warning != null) warnings.push(end.warning);
-    if (end.day.isBefore(startDay)) warnings.push("END_BEFORE_START");
-    else if (end.day.isAfter(startDay)) endDate = formatDay(end.day);
+    if (end.warning != null) {
+      warnings.push(end.warning);
+    }
+    if (end.day.isBefore(startDay)) {
+      warnings.push("END_BEFORE_START");
+    } else if (end.day.isAfter(startDay)) {
+      endDate = formatDay(end.day);
+    }
   }
 
   let recurrence: ResolvedSchedule["recurrence"] = null;
-  if (draft.repeat.pattern === "UNSUPPORTED") warnings.push("UNSUPPORTED_RECURRENCE");
+  if (draft.repeat.pattern === "UNSUPPORTED") {
+    warnings.push("UNSUPPORTED_RECURRENCE");
+  }
   if (recurrenceBase != null) {
     if (recurrenceBase.days.length === 0) {
       warnings.push("EMPTY_RECURRENCE");
@@ -151,7 +160,9 @@ function isoIndex(day: DayOfWeek): number {
 }
 
 function resolveWeekday(ref: DateRef, today: CalendarDay): DayResolution {
-  if (ref.weekday == null) return { day: today, warning: "INVALID_DATE" };
+  if (ref.weekday == null) {
+    return { day: today, warning: "INVALID_DATE" };
+  }
   const target = isoIndex(ref.weekday);
   if (ref.weekOffset == null) {
     // 요일만 말하면 오늘을 포함해 가장 가까운 그 요일이다.
@@ -170,7 +181,9 @@ function calendarDay(year: number, month: number, day: number): CalendarDay | nu
 
 function resolveCalendarDate(ref: DateRef, today: CalendarDay): DayResolution {
   const { day, month, year } = ref;
-  if (day == null) return { day: today, warning: "INVALID_DATE" };
+  if (day == null) {
+    return { day: today, warning: "INVALID_DATE" };
+  }
   if (year != null && month != null) {
     const exact = calendarDay(year, month, day);
     return exact == null ? { day: today, warning: "INVALID_DATE" } : { day: exact };
@@ -218,18 +231,29 @@ function resolveTime(
     };
   }
   if (ref.hour == null) {
-    if (ref.partOfDay == null) return null;
-    if (ref.partOfDay === "MIDNIGHT") return { day: targetDay.add(1, "day"), minutes: 0 };
+    if (ref.partOfDay == null) {
+      return null;
+    }
+    if (ref.partOfDay === "MIDNIGHT") {
+      return { day: targetDay.add(1, "day"), minutes: 0 };
+    }
     return { day: targetDay, minutes: PART_OF_DAY_MINUTES[ref.partOfDay] };
   }
   const minute = ref.minute ?? 0;
-  if (!Number.isInteger(ref.hour) || ref.hour < 0 || ref.hour > 23) return "INVALID";
-  if (!Number.isInteger(minute) || minute < 0 || minute > 59) return "INVALID";
+  if (!Number.isInteger(ref.hour) || ref.hour < 0 || ref.hour > 23) {
+    return "INVALID";
+  }
+  if (!Number.isInteger(minute) || minute < 0 || minute > 59) {
+    return "INVALID";
+  }
   const hour = ref.hour;
 
-  if (ref.meridiem === "PM" && hour < 12)
+  if (ref.meridiem === "PM" && hour < 12) {
     return { day: targetDay, minutes: (hour + 12) * 60 + minute };
-  if (ref.meridiem === "AM" && hour === 12) return { day: targetDay, minutes: minute };
+  }
+  if (ref.meridiem === "AM" && hour === 12) {
+    return { day: targetDay, minutes: minute };
+  }
   if (ref.meridiem === "AM" || ref.meridiem === "PM" || hour === 0 || hour > 12) {
     return { day: targetDay, minutes: hour * 60 + minute };
   }
@@ -247,15 +271,23 @@ function resolveAmbiguousHour(
 ): TimeResolution {
   const morning = (hour % 12) * 60 + minute;
   const evening = morning + HALF_DAY_MINUTES;
-  if (hour === 12) return { day: targetDay, minutes: HALF_DAY_MINUTES + minute };
+  if (hour === 12) {
+    return { day: targetDay, minutes: HALF_DAY_MINUTES + minute };
+  }
   if (partOfDay === "AFTERNOON" || partOfDay === "EVENING" || partOfDay === "NIGHT") {
     return { day: targetDay, minutes: evening };
   }
-  if (partOfDay === "DAWN" || partOfDay === "MORNING") return { day: targetDay, minutes: morning };
+  if (partOfDay === "DAWN" || partOfDay === "MORNING") {
+    return { day: targetDay, minutes: morning };
+  }
   // 날짜를 말하지 않았으면 오늘 남은 시각 중 가장 이른 것, 둘 다 지났으면 내일의 일반적 시각이다.
   if (targetDay.isSame(today)) {
-    if (morning > nowMinutes) return { day: today, minutes: morning };
-    if (evening > nowMinutes) return { day: today, minutes: evening };
+    if (morning > nowMinutes) {
+      return { day: today, minutes: morning };
+    }
+    if (evening > nowMinutes) {
+      return { day: today, minutes: evening };
+    }
     return { day: today.add(1, "day"), minutes: conventionalMinutes(hour, minute) };
   }
   return { day: targetDay, minutes: conventionalMinutes(hour, minute) };

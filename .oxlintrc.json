@@ -25,6 +25,7 @@
         "null": "ignore"
       }
     ],
+    "eslint/curly": ["error", "all"],
     "eslint/no-unused-vars": "error",
     "eslint/prefer-const": "error",
     "import/no-cycle": "error",

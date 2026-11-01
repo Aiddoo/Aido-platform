@@ -18,7 +18,9 @@ describe("친구 요청 거절", () => {
       const fixture = createSocialFriendFixture();
       fixture.addUser("me");
       fixture.addUser("friend");
-      if (status === "ACCEPTED") fixture.addMutual("me", "friend");
+      if (status === "ACCEPTED") {
+        fixture.addMutual("me", "friend");
+      }
       const before = structuredClone([...fixture.followRepository.follows.values()]);
       // When / Then
       await expect(

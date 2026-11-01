@@ -63,7 +63,9 @@ describe("할 일 부분 수정", () => {
   it("명시한 null은 시간을 지우고 생략한 endDate와 false 값은 보존한다", async () => {
     // Given
     const saved = fixture.records.get(1);
-    if (saved == null) throw new Error("Todo fixture missing");
+    if (saved == null) {
+      throw new Error("Todo fixture missing");
+    }
     saved.scheduledTime = new Date("2026-05-15T00:00:00Z");
     saved.endDate = new Date("2026-05-16T00:00:00Z");
     // When
@@ -102,8 +104,9 @@ describe("할 일 부분 수정", () => {
     fixture.categories.set(2, { id: 2, name: "대상", color: "#123456", sortOrder: 1 });
     fixture.categoryOwners.set(2, fixture.userId);
     fixture.todoCache.categoryUsers.add(fixture.userId);
-    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY + 1; id++)
+    for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY + 1; id++) {
       fixture.records.set(id, { ...createPlanningTodo(fixture.userId, id), categoryId: 2 });
+    }
     // When
     const result = await useCase.execute({
       id: 1,

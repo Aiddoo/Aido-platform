@@ -41,7 +41,9 @@ export class RetentionQueueProcessor implements OnModuleInit {
     await this.runtime.work(
       RETENTION_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.id, job.attempt, job.data);
+        for (const job of jobs) {
+          await this.process(job.id, job.attempt, job.data);
+        }
       },
       RETENTION_WORKER_POLICY,
     );

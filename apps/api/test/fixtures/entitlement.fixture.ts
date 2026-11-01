@@ -13,12 +13,13 @@ export function createEntitlementFixture(
   const user = UserFixture.create();
   const database = new StubEntitlementDatabase();
   const cache = new StubEntitlementCache();
-  if (input.exists !== false)
+  if (input.exists !== false) {
     database.users.set(user.id, {
       role: input.role ?? "USER",
       subscriptionStatus: input.subscriptionStatus ?? "FREE",
       accessDeadline: input.accessDeadline ?? null,
     });
+  }
   const service = new EntitlementService({ database, cacheService: cache });
   return { userId: user.id, database, cache, service };
 }

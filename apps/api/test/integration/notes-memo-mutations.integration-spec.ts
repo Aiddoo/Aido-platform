@@ -99,8 +99,11 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
 
   afterAll(async () => {
     await lockPool?.end();
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function seedMemo(sortOrder = 0, ownerId = userId) {
@@ -119,7 +122,9 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
 
   async function seedMemos(count: number) {
     const rows = [];
-    for (let index = 0; index < count; index++) rows.push(await seedMemo(index));
+    for (let index = 0; index < count; index++) {
+      rows.push(await seedMemo(index));
+    }
     return rows;
   }
 
@@ -194,7 +199,9 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const rows = await seedMemos(3);
     const source = rows.at(0);
     const target = rows.at(2);
-    if (source === undefined || target === undefined) throw new Error("메모 fixture 누락");
+    if (source === undefined || target === undefined) {
+      throw new Error("메모 fixture 누락");
+    }
     const reorder = context.module.get(ReorderMemo);
     const input = {
       userId,
@@ -317,8 +324,9 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const pinned = rows.at(0);
     const last = rows.at(2);
     const middle = rows.at(1);
-    if (pinned === undefined || last === undefined || middle === undefined)
+    if (pinned === undefined || last === undefined || middle === undefined) {
       throw new Error("메모 fixture 누락");
+    }
     await repository.updatePinned(pinned.id, true);
     const tied = await seedMemo(2);
     const foreign = await seedMemo(1, otherUserId);
@@ -384,7 +392,9 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const rows = await seedMemos(3);
     const source = rows.at(0);
     const target = rows.at(2);
-    if (source === undefined || target === undefined) throw new Error("메모 fixture 누락");
+    if (source === undefined || target === undefined) {
+      throw new Error("메모 fixture 누락");
+    }
     const measures = [];
     const actions = [
       {

@@ -91,7 +91,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         .insert(todoCategory)
         .values(TodoCategoryFixture.create({ userId: receiverId, sortOrder: 0 }))
         .returning({ id: todoCategory.id });
-      if (category === undefined) throw new Error("category fixture 누락");
+      if (category === undefined) {
+        throw new Error("category fixture 누락");
+      }
       const todoFixture = TodoFixture.create({
         userId: receiverId,
         categoryId: category.id,
@@ -104,7 +106,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         .insert(todo)
         .values(omit(todoFixture, ["id"]))
         .returning({ id: todo.id });
-      if (row === undefined) throw new Error("todo fixture 누락");
+      if (row === undefined) {
+        throw new Error("todo fixture 누락");
+      }
       todoIds.push(row.id);
     }
   });
@@ -114,8 +118,11 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   });
   afterAll(async () => {
     await lockPool?.end();
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function contend<T>(first: () => Promise<T>, second: () => Promise<T>) {
@@ -146,14 +153,18 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   async function seed(kind: "Cheer" | "Nudge") {
     for (let index = 0; index < 2; index++) {
       const receiverId = receiverIds[index];
-      if (receiverId === undefined) throw new Error("receiver fixture 누락");
+      if (receiverId === undefined) {
+        throw new Error("receiver fixture 누락");
+      }
       if (kind === "Cheer") {
         await client
           .insert(cheer)
           .values({ senderId, receiverId, message: null, createdAt: SEED_AT });
       } else {
         const todoId = todoIds[index];
-        if (todoId === undefined) throw new Error("todo fixture 누락");
+        if (todoId === undefined) {
+          throw new Error("todo fixture 누락");
+        }
         await client
           .insert(nudge)
           .values({ senderId, receiverId, todoId, message: null, createdAt: SEED_AT });
@@ -186,8 +197,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
         const execute = (index: number, tz: string) => {
           const receiverId = receiverIds[index];
           const todoId = todoIds[index];
-          if (receiverId === undefined || todoId === undefined)
+          if (receiverId === undefined || todoId === undefined) {
             throw new Error("요청 fixture 누락");
+          }
           return kind === "Cheer"
             ? context.module.get(SendCheer).execute({ senderId, receiverId, timezone: tz })
             : context.module.get(SendNudge).execute({ senderId, receiverId, todoId, timezone: tz });
@@ -210,7 +222,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   it("같은 친구에게 동시에 보낸 응원은 시간대가 달라도 쿨다운으로 하나만 허용한다", async () => {
     // Given
     const receiverId = receiverIds[0];
-    if (receiverId === undefined) throw new Error("receiver fixture 누락");
+    if (receiverId === undefined) {
+      throw new Error("receiver fixture 누락");
+    }
     const send = context.module.get(SendCheer);
 
     // When
@@ -229,7 +243,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   it("관계를 포함한 3건 목록은 쿼리 1번이고 단건 읽음은 선행 조회 없이 쿼리 2번이다", async () => {
     // Given
     const receiverId = receiverIds[0];
-    if (receiverId === undefined) throw new Error("receiver fixture 누락");
+    if (receiverId === undefined) {
+      throw new Error("receiver fixture 누락");
+    }
     await client.insert(cheer).values(
       Array.from({ length: 3 }, () => ({
         senderId,
@@ -248,7 +264,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       .findReceivedCheers({ userId: receiverId, size: 3 });
     recording = null;
     const first = list[0];
-    if (first === undefined) throw new Error("list fixture 누락");
+    if (first === undefined) {
+      throw new Error("list fixture 누락");
+    }
     recording = readStatements;
     await context.module.get(MarkCheerRead).execute({ userId: receiverId, cheerId: first.id });
     recording = null;
@@ -262,7 +280,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   it("맞팔 판정은 쿼리 1번으로 양방향 수락·대기·누락·본인 팔로우 상태를 구분한다", async () => {
     // Given
     const receiverId = receiverIds[0];
-    if (receiverId === undefined) throw new Error("receiver fixture 누락");
+    if (receiverId === undefined) {
+      throw new Error("receiver fixture 누락");
+    }
     const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
     const statements: string[] = [];
 
@@ -352,12 +372,16 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
   it("팔로우 수정은 실제 수정된 상태와 프로필 없는 사용자 관계를 반환한다", async () => {
     // Given
     const receiverId = receiverIds[0];
-    if (receiverId === undefined) throw new Error("receiver fixture 누락");
+    if (receiverId === undefined) {
+      throw new Error("receiver fixture 누락");
+    }
     const row = await client.query.follow.findFirst({
       columns: { id: true },
       where: { followerId: senderId, followingId: receiverId },
     });
-    if (row === undefined) throw new Error("follow fixture 누락");
+    if (row === undefined) {
+      throw new Error("follow fixture 누락");
+    }
     const repository = context.module.get<FollowRepositoryPort>(FOLLOW_REPOSITORY);
 
     // When

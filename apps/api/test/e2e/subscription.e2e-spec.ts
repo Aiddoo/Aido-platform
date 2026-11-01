@@ -246,7 +246,9 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const user = await context.helpers.createVerifiedUser("billing-lock@example.com", "Test1234!");
     const lock = context.module.get<SubscriptionWebhookLockPort>(SUBSCRIPTION_WEBHOOK_LOCK);
     const release = await lock.acquire(user.userId);
-    if (release === null) throw new Error("테스트 Webhook 잠금 획득 실패");
+    if (release === null) {
+      throw new Error("테스트 Webhook 잠금 획득 실패");
+    }
     const payload = purchase(user.userId, "billing-lock");
 
     // When

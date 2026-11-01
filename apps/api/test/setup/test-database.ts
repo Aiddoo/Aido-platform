@@ -44,7 +44,9 @@ export class TestDatabase {
    * @returns TestDatabaseClient 인스턴스
    */
   async start(): Promise<TestDatabaseClient> {
-    if (this.client) return this.client;
+    if (this.client) {
+      return this.client;
+    }
 
     const { connectionUri } = assertManagedTestDatabaseEnvironment(this.env);
     const client = this.createClient(connectionUri);

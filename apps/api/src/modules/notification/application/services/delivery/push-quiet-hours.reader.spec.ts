@@ -6,7 +6,9 @@ function createReader(timezones: Readonly<Record<string, string>>) {
       getPreferenceRecordsByUserIds: async (userIds) =>
         userIds.flatMap((userId) => {
           const timezone = timezones[userId];
-          if (timezone == null) return [];
+          if (timezone == null) {
+            return [];
+          }
           return [
             {
               userId,

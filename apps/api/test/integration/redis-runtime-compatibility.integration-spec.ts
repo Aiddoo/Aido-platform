@@ -160,7 +160,9 @@ class RedisRuntimeHarness {
     try {
       do {
         const job = await observer.getJob(jobId);
-        if ((await job?.getState()) === "completed") return;
+        if ((await job?.getState()) === "completed") {
+          return;
+        }
         await delay(25);
       } while (Date.now() < deadline);
 
@@ -197,7 +199,9 @@ async function cleanupResources(
   }
 
   for (const client of clients) {
-    if (!client) continue;
+    if (!client) {
+      continue;
+    }
     try {
       await closeRedis(client);
     } catch (error) {
@@ -215,7 +219,9 @@ async function cleanupResources(
 }
 
 async function waitUntilReady(client: Redis): Promise<void> {
-  if (client.status === "ready") return;
+  if (client.status === "ready") {
+    return;
+  }
 
   await withTimeout(
     new Promise<void>((resolve, reject) => {
@@ -234,7 +240,9 @@ async function waitUntilReady(client: Redis): Promise<void> {
 
       client.once("ready", onReady);
       client.once("error", onError);
-      if (client.status === "ready") onReady();
+      if (client.status === "ready") {
+        onReady();
+      }
     }),
     CONNECTION_TIMEOUT_MS,
     "Redis readiness",
@@ -263,7 +271,9 @@ async function withTimeout<T>(work: Promise<T>, timeoutMs: number, name: string)
   try {
     return await Promise.race([work, timeout]);
   } finally {
-    if (timer) clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+    }
   }
 }
 

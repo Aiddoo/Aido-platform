@@ -215,13 +215,14 @@ export class ExpoPushProvider implements PushProvider {
         nextSendableEntryIndex++;
 
         if (!ticket || !entry) {
-          if (entry)
+          if (entry) {
             orderedResults[entry.originalIndex] = {
               token: entry.payload.token,
               success: false,
               error: "No ticket or payload",
               errorCode: "NOTIFICATION_1003",
             };
+          }
           continue;
         }
 

@@ -5,7 +5,9 @@ import type { TodoBuilder } from "#test/builders/index";
 export type PlanningTodoRecord = ReturnType<TodoBuilder["build"]>;
 
 export function createTodoResponseFixture(record: PlanningTodoRecord): TodoResponse {
-  if (record.category === null) throw new Error("Todo fixture category is missing");
+  if (record.category === null) {
+    throw new Error("Todo fixture category is missing");
+  }
   const items = record.items.map((item) => ({
     ...item,
     createdAt: item.createdAt.toISOString(),

@@ -75,7 +75,9 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
 
     // When
     const batches = [];
-    for await (const batch of directory.streamTargetUserIds("ALL")) batches.push(batch);
+    for await (const batch of directory.streamTargetUserIds("ALL")) {
+      batches.push(batch);
+    }
 
     // Then
     expect(batches.map((batch) => batch.length)).toEqual([500, 1]);

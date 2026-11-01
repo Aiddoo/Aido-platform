@@ -40,14 +40,18 @@ export class TimezoneReminderProcessor implements OnModuleInit {
     await this.runtime.work(
       TIMEZONE_REMINDER_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );
     await this.runtime.work(
       TIMEZONE_REMINDER_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process({ name: job.name, data: job.data });
+        for (const job of jobs) {
+          await this.process({ name: job.name, data: job.data });
+        }
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );

@@ -183,7 +183,9 @@ export class HandleWebhookEvent {
       }
       await this.#dependencies.cache.invalidate(user.id);
       this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
-      if (event.type === "BILLING_ISSUE") this.#dependencies.notifier.notifyBillingIssue(user.id);
+      if (event.type === "BILLING_ISSUE") {
+        this.#dependencies.notifier.notifyBillingIssue(user.id);
+      }
       this.#dependencies.logger.log({
         event: BillingLogEvent.WEBHOOK_COMPLETED,
         eventType: event.type,

@@ -55,7 +55,9 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
       entry = { members: new Set(), expiresAt: Date.now() + ttlMs };
       this.#sets.set(setKey, entry);
     }
-    for (const m of members) entry.members.add(m);
+    for (const m of members) {
+      entry.members.add(m);
+    }
     entry.expiresAt = Date.now() + ttlMs;
   }
 

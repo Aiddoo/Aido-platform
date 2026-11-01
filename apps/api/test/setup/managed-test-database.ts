@@ -178,7 +178,9 @@ export async function startManagedTestDatabase(
       connectionUri,
       databaseName,
       stop: async () => {
-        if (stopped) return;
+        if (stopped) {
+          return;
+        }
         stopped = true;
         try {
           await database?.stop();

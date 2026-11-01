@@ -406,8 +406,9 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       "HTTP 요청 실패",
     );
     const recorded = JSON.stringify(mockLogger.error.mock.calls);
-    for (const secret of ["secret-code", "secret-state", "secret-token"])
+    for (const secret of ["secret-code", "secret-state", "secret-token"]) {
       expect(recorded).not.toContain(secret);
+    }
   });
 
   describe("공유 errorEnvelopeSchema 계약", () => {

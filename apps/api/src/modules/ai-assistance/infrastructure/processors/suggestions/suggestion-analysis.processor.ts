@@ -46,18 +46,24 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.runtime == null) return;
+    if (this.runtime == null) {
+      return;
+    }
     await this.runtime.work(
       AI_SUGGESTION_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) {
+          await this.process(job.data);
+        }
       },
       AI_SUGGESTION_WORKER_POLICY,
     );
     await this.runtime.work(
       AI_SUGGESTION_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process({ name: job.name, data: job.data });
+        for (const job of jobs) {
+          await this.process({ name: job.name, data: job.data });
+        }
       },
       AI_SUGGESTION_WORKER_POLICY,
     );

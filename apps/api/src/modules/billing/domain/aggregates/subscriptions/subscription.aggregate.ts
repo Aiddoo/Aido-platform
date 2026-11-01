@@ -128,10 +128,14 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   }
 
   #changeExpiry(expiresAt: Date | undefined): void {
-    if (expiresAt != null) this.props.expiresAt = new Date(expiresAt);
+    if (expiresAt != null) {
+      this.props.expiresAt = new Date(expiresAt);
+    }
   }
 
   #recordEvent(eventId: string | undefined): void {
-    if (eventId != null && eventId !== "") this.props.lastProcessedEventId = eventId;
+    if (eventId != null && eventId !== "") {
+      this.props.lastProcessedEventId = eventId;
+    }
   }
 }

@@ -25,7 +25,9 @@ function location(userId: string, latitude = 37.5665, longitude = 126.978): User
 }
 
 function coordinates(saved: UserLocation | null) {
-  if (saved === null) return null;
+  if (saved === null) {
+    return null;
+  }
   return {
     latitude: saved.latitude,
     longitude: saved.longitude,

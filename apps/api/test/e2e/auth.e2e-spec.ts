@@ -1083,7 +1083,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(true);
       expect(latestAttempt.failureReason).toBeNull();
     });
@@ -1110,7 +1112,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(true);
       expect(latestAttempt.failureReason).toBeNull();
     });
@@ -1189,7 +1193,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(true);
       expect(latestAttempt.failureReason).toBeNull();
     });
@@ -1216,7 +1222,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(true);
       expect(latestAttempt.failureReason).toBeNull();
     });
@@ -1244,7 +1252,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(false);
       expect(latestAttempt.failureReason).toBe("OAUTH_TOKEN_INVALID");
     });
@@ -1272,7 +1282,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(false);
       expect(latestAttempt.failureReason).toBe("OAUTH_TOKEN_INVALID");
     });
@@ -1300,7 +1312,9 @@ describe("인증 E2E", () => {
 
       const latestAttempt = loginAttempts[0];
       expect(latestAttempt).toBeDefined();
-      if (!latestAttempt) throw new Error("latestAttempt is undefined");
+      if (!latestAttempt) {
+        throw new Error("latestAttempt is undefined");
+      }
       expect(latestAttempt.success).toBe(true);
       expect(latestAttempt.ipAddress).toBeTruthy();
       expect(latestAttempt.userAgent).toBeTruthy();

@@ -82,8 +82,9 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
         empty: state === "존재하지 않는",
         socialOnly: state !== "이미 비밀번호가 있는",
       });
-      if (state === "탈퇴한")
+      if (state === "탈퇴한") {
         await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+      }
       const errorCode =
         state === "존재하지 않는"
           ? ErrorCode.USER_0601

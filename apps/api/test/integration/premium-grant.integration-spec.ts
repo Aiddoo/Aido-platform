@@ -70,8 +70,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function givenStoreSubscription(): Promise<void> {

@@ -92,8 +92,11 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     vi.useRealTimers();
   });
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function createTodo() {
@@ -253,7 +256,9 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     // Given
     const items = await createItems(2);
     const first = items.at(0);
-    if (first === undefined) throw new Error("item fixture 누락");
+    if (first === undefined) {
+      throw new Error("item fixture 누락");
+    }
     const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
     const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
 

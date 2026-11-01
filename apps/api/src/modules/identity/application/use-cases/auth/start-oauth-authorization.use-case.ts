@@ -67,13 +67,14 @@ export class StartOAuthAuthorization {
       /^https:\/\/aido\.kr(\/.*)?$/,
       /^https:\/\/(api|www|app)\.aido\.kr(\/.*)?$/,
     ];
-    if (this.#dependencies.configService.isDevelopment)
+    if (this.#dependencies.configService.isDevelopment) {
       patterns.push(
         /^aido-dev:\/\/auth(\/.*)?$/,
         /^aido-dev:\/\/\/auth(\/.*)?$/,
         /^http:\/\/localhost(:\d+)?(\/.*)?$/,
         /^exp:\/\/[\d.:]+(\/.*)?$/,
       );
+    }
     if (patterns.some((pattern) => pattern.test(redirectUri))) {
       return redirectUri;
     }

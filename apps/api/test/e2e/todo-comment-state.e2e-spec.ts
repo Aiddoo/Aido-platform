@@ -58,7 +58,9 @@ describe("댓글 상태 HTTP 회귀", () => {
       .send({ parentId, items: [{ clientRequestId: randomUUID(), content }] })
       .expect(201);
     const comment = todoCommentChainResponseSchema.parse(response.body.data).comments[0];
-    if (comment === undefined) throw new Error("댓글 fixture 응답이 비어 있습니다.");
+    if (comment === undefined) {
+      throw new Error("댓글 fixture 응답이 비어 있습니다.");
+    }
     return comment.id;
   }
 
@@ -157,7 +159,9 @@ describe("댓글 상태 HTTP 회귀", () => {
     expect(conversation.items[0]?.isFocused).toBe(true);
     expect(conversation.pagination.hasNext).toBe(true);
     const nextCursor = conversation.pagination.nextCursor;
-    if (nextCursor === null) throw new Error("후속 답글 cursor가 없습니다.");
+    if (nextCursor === null) {
+      throw new Error("후속 답글 cursor가 없습니다.");
+    }
     const nextResponse = await request(context.app.getHttpServer())
       .get(`/v1/todos/${todoId}/conversation`)
       .set("Authorization", `Bearer ${owner.accessToken}`)

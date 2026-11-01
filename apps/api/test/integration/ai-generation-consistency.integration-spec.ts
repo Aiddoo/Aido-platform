@@ -551,7 +551,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       columns: { id: true },
       where: { userId },
     });
-    if (row == null) throw new Error("제안 fixture 생성 실패");
+    if (row == null) {
+      throw new Error("제안 fixture 생성 실패");
+    }
     return row.id;
   }
 

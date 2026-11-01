@@ -110,8 +110,11 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   function expiration(eventId: string): RevenueCatWebhookPayload {

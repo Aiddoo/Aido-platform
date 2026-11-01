@@ -64,8 +64,11 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
   afterEach(() => vi.useRealTimers());
 
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function createUser(userTag: string): Promise<string> {
@@ -91,7 +94,9 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
       installationId: inviteeTag,
       timezone: "Asia/Seoul",
     });
-    if (result.outcome !== "REDEEMED") throw new Error("새 사용자 수락이 필요합니다");
+    if (result.outcome !== "REDEEMED") {
+      throw new Error("새 사용자 수락이 필요합니다");
+    }
     return { inviterId, inviteeId, redemptionId: result.redemptionId };
   }
 

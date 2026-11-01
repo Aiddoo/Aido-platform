@@ -80,7 +80,9 @@ test('마지막 PR 중복·부모 누락·순환·분리된 스택은 검증을 
     pattern,
   ]);
   // Then
-  for (const [plan, pattern] of plans) assert.throws(plan, pattern);
+  for (const [plan, pattern] of plans) {
+    assert.throws(plan, pattern);
+  }
 });
 
 test('다른 저장소의 브랜치는 누적 검증을 승인할 수 없다', () => {

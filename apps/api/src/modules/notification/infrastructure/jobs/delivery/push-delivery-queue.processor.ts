@@ -36,14 +36,18 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
     await this.runtime.work(
       PUSH_DELIVERY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.id, job.attempt, job.data);
+        for (const job of jobs) {
+          await this.process(job.id, job.attempt, job.data);
+        }
       },
       PUSH_DELIVERY_WORKER_POLICY,
     );
     await this.runtime.work(
       PUSH_DELIVERY_DEAD_LETTER_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.processDeadLetter(job.data);
+        for (const job of jobs) {
+          await this.processDeadLetter(job.data);
+        }
       },
       PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
     );

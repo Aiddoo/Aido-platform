@@ -64,7 +64,9 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
+    if (context) {
+      await destroyE2eApp(context);
+    }
   });
 
   it("없는 카테고리와 다른 사용자 카테고리는 각각 기존 404·403 업무 오류를 유지한다", async () => {

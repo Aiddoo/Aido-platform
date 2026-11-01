@@ -303,7 +303,9 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
 
     // Then
     const updated = results.map((result) => {
-      if (result.status === "rejected") throw result.reason;
+      if (result.status === "rejected") {
+        throw result.reason;
+      }
       return result.value;
     });
     expect(updated.filter(Boolean)).toHaveLength(1);

@@ -85,7 +85,9 @@ function unwrapRootDefinition(schema: JsonSchema): {
     ? schema.$ref.slice(ROOT_DEFINITION_PREFIX.length)
     : undefined;
   const rootDefinition = name == null ? undefined : definitions[name];
-  if (name == null || rootDefinition == null) return { root: schema, definitions };
+  if (name == null || rootDefinition == null) {
+    return { root: schema, definitions };
+  }
 
   const { [name]: _unwrapped, ...rest } = definitions;
   return { root: rootDefinition, definitions: rest };
@@ -110,7 +112,9 @@ export const convertStandardSchema: NonNullable<
     ]),
   );
   const id = schema.meta()?.id;
-  if (!id || schema.meta()?.apiParameter === true) return { schema: converted, components };
+  if (!id || schema.meta()?.apiParameter === true) {
+    return { schema: converted, components };
+  }
 
   return {
     schema: { $ref: `#/components/schemas/${id}` },

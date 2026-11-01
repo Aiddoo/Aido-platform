@@ -108,12 +108,16 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
           ),
         )
         .returning();
-      if (row === undefined) throw new Error("category absent");
+      if (row === undefined) {
+        throw new Error("category absent");
+      }
       categories.push(row);
     }
     for (let index = 0; index < 9; index++) {
       const category = categories[index % 3];
-      if (category === undefined) throw new Error("category absent");
+      if (category === undefined) {
+        throw new Error("category absent");
+      }
       await client.insert(todo).values(
         omit(
           TodoFixture.create({

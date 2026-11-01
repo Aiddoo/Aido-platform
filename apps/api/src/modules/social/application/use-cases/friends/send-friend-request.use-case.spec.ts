@@ -26,12 +26,13 @@ describe("친구 요청 보내기", () => {
     const fixture = createSocialFriendFixture();
     fixture.addUser("me");
     fixture.addUser("friend");
-    if (input.status)
+    if (input.status) {
       fixture.followRepository.seed({
         followerId: "me",
         followingId: "friend",
         status: input.status,
       });
+    }
     const before = structuredClone([...fixture.followRepository.follows.values()]);
     // When / Then
     await expect(

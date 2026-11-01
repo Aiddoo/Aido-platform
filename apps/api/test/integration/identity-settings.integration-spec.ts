@@ -91,8 +91,11 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   afterEach(() => vi.useRealTimers());
   afterAll(async () => {
-    if (context) await destroyE2eApp(context);
-    else await database?.stop();
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
   });
 
   async function holdRowLock(lockRow: (transaction: DatabaseTransaction) => Promise<unknown>) {
@@ -150,7 +153,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     "weather 부분 변경은 설정 행 존재 여부(%s)와 관계없이 요청값을 저장한다",
     async (exists) => {
       // Given
-      if (exists) await preferences.create(userId);
+      if (exists) {
+        await preferences.create(userId);
+      }
 
       // When
       const response = await context.module.get(UpdatePreference).execute({ userId, ...weather });

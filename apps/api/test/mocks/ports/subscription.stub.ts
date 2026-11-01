@@ -54,8 +54,12 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
 
   async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
     const record = this.subscriptions.get(revenueCatId);
-    if (record == null) return false;
-    if (record.userId === userId) return false;
+    if (record == null) {
+      return false;
+    }
+    if (record.userId === userId) {
+      return false;
+    }
     this.subscriptions.set(revenueCatId, { ...record, userId });
     return true;
   }
@@ -88,10 +92,11 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
 
   async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {
     const record = this.subscriptions.get(revenueCatId);
-    if (!record)
+    if (!record) {
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
         reason: `Subscription not found: ${revenueCatId}`,
       });
+    }
     const cancelledAt = data.cancelledAt === undefined ? record.cancelledAt : data.cancelledAt;
     this.subscriptions.set(revenueCatId, {
       ...record,
@@ -106,7 +111,9 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     data: UpdateUserSubscriptionStatusData,
   ): Promise<void> {
     const user = this.users.get(userId);
-    if (!user) throw new Error("사용자 저장 상태가 없습니다.");
+    if (!user) {
+      throw new Error("사용자 저장 상태가 없습니다.");
+    }
     this.users.set(
       userId,
       this.#copyUser({ ...user, ...pickBy(data, (value) => value !== undefined) }),
@@ -153,7 +160,9 @@ export class StubSubscriptionWebhookLock implements SubscriptionWebhookLockPort 
   readonly heldKeys = new Set<string>();
 
   async acquire(appUserId: string): Promise<(() => Promise<void>) | null> {
-    if (this.heldKeys.has(appUserId)) return null;
+    if (this.heldKeys.has(appUserId)) {
+      return null;
+    }
     this.heldKeys.add(appUserId);
     return async () => {
       this.heldKeys.delete(appUserId);
@@ -165,7 +174,9 @@ export class StubSubscriptionReceiptRepository implements SubscriptionEventRecei
   readonly receipts = new Map<string, { eventId: string; eventType: string; processedAt: Date }>();
 
   async claim(input: ClaimSubscriptionEventReceiptInput): Promise<boolean> {
-    if (this.receipts.has(input.eventId)) return false;
+    if (this.receipts.has(input.eventId)) {
+      return false;
+    }
     this.receipts.set(input.eventId, { ...input, processedAt: new Date(input.processedAt) });
     return true;
   }
@@ -197,7 +208,9 @@ export class StubPremiumGrantRepository implements Pick<
   }
 
   async create(plan: PremiumGrantCreationPlan): Promise<boolean> {
-    if ([...this.grants.values()].some((grant) => grant.sourceKey === plan.sourceKey)) return false;
+    if ([...this.grants.values()].some((grant) => grant.sourceKey === plan.sourceKey)) {
+      return false;
+    }
     const id = `grant-${this.grants.size + 1}`;
     this.grants.set(id, {
       ...plan,
@@ -211,7 +224,9 @@ export class StubPremiumGrantRepository implements Pick<
   async saveAll(grants: readonly PremiumGrant[]): Promise<void> {
     for (const grant of grants) {
       const current = this.grants.get(grant.id);
-      if (current == null) continue;
+      if (current == null) {
+        continue;
+      }
       this.grants.set(grant.id, { ...current, ...grant.toPersistence() });
     }
   }

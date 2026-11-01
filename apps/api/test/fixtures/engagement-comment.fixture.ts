@@ -121,23 +121,29 @@ export class StubEngagementCursorCodec implements TodoCommentCursorCodecPort {
   encodedConversations = ["previous", "next"];
   encodedOverviews = ["previous", "next"];
   decodeConversation() {
-    if (this.decodedConversation === undefined)
+    if (this.decodedConversation === undefined) {
       throw new Error("대화 cursor fixture가 준비되지 않았습니다.");
+    }
     return structuredClone(this.decodedConversation);
   }
   decodeOverview() {
-    if (this.decodedOverview === undefined)
+    if (this.decodedOverview === undefined) {
       throw new Error("개요 cursor fixture가 준비되지 않았습니다.");
+    }
     return structuredClone(this.decodedOverview);
   }
   encodeConversation() {
     const cursor = this.encodedConversations.shift();
-    if (cursor === undefined) throw new Error("대화 cursor 응답 fixture가 준비되지 않았습니다.");
+    if (cursor === undefined) {
+      throw new Error("대화 cursor 응답 fixture가 준비되지 않았습니다.");
+    }
     return cursor;
   }
   encodeOverview() {
     const cursor = this.encodedOverviews.shift();
-    if (cursor === undefined) throw new Error("개요 cursor 응답 fixture가 준비되지 않았습니다.");
+    if (cursor === undefined) {
+      throw new Error("개요 cursor 응답 fixture가 준비되지 않았습니다.");
+    }
     return cursor;
   }
 }

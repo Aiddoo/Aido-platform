@@ -71,13 +71,17 @@ const suggestionContext: SuggestionContext = {
 
 function readContext(prompt: string) {
   const json = prompt.match(/<context_json>\n([\s\S]*?)\n<\/context_json>/)?.[1];
-  if (!json) throw new Error("context_json missing");
+  if (!json) {
+    throw new Error("context_json missing");
+  }
   return JSON.parse(json);
 }
 
 function readUserInput(prompt: string) {
   const json = prompt.match(/<user_input_json>\n([\s\S]*?)\n<\/user_input_json>/)?.[1];
-  if (!json) throw new Error("user_input_json missing");
+  if (!json) {
+    throw new Error("user_input_json missing");
+  }
   return JSON.parse(json);
 }
 
@@ -147,7 +151,9 @@ describe("AI 프롬프트 v1 — ko/en 입력 경계·출력 검증 계약", () 
         prevTips: [injected],
       });
       const suggestion = aiPromptCatalog[locale].suggestion.build(suggestionContext, 3);
-      for (const result of [report, suggestion]) expectDataBoundary(result.system, result.prompt);
+      for (const result of [report, suggestion]) {
+        expectDataBoundary(result.system, result.prompt);
+      }
       const reportContext = readContext(report.prompt);
       expect(reportContext.stats).toEqual({
         totalTodos: reportData.totalTodos,
@@ -196,7 +202,9 @@ describe("AI 프롬프트 v1 — ko/en 입력 경계·출력 검증 계약", () 
         [],
       );
       const example = result.system.match(/(?:출력|Output):\n(\{[^\n]+\})/)?.[1];
-      if (!example) throw new Error("memo example missing");
+      if (!example) {
+        throw new Error("memo example missing");
+      }
       expect(JSON.parse(example).todos[0]?.endDate).toBe(friday);
     }
   });
