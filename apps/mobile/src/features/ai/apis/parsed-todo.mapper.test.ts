@@ -1,4 +1,5 @@
-import { formatDate } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 
 import { createParseTodoResponseDto } from '../__tests__/parsed-todo.factories';
 import { toParsedTodoResult } from './parsed-todo.mapper';
@@ -74,11 +75,15 @@ describe('toParsedTodoResult', () => {
     const result = toParsedTodoResult(dto);
 
     // Then - 로컬 달력 날짜가 서버 문자열과 같다
-    expect(formatDate(result.data.startDate)).toBe('2026-10-29');
-    expect(result.data.endDate == null ? null : formatDate(result.data.endDate)).toBe('2026-10-31');
-    expect(result.data.recurrence == null ? null : formatDate(result.data.recurrence.endDate)).toBe(
-      '2026-11-26',
-    );
+    expect(formatDateKey(result.data.startDate, getDeviceTimezone())).toBe('2026-10-29');
+    expect(
+      result.data.endDate == null ? null : formatDateKey(result.data.endDate, getDeviceTimezone()),
+    ).toBe('2026-10-31');
+    expect(
+      result.data.recurrence == null
+        ? null
+        : formatDateKey(result.data.recurrence.endDate, getDeviceTimezone()),
+    ).toBe('2026-11-26');
     expect(result.data.startDate.getHours()).toBe(0);
   });
 
@@ -122,9 +127,15 @@ describe('toParsedTodoResult', () => {
       const { data } = toParsedTodoResult(dto);
 
       // Then
-      expect(formatDate(data.startDate)).toBe(startDate);
-      expect(data.endDate == null ? null : formatDate(data.endDate)).toBe(endDate);
-      expect(data.recurrence == null ? null : formatDate(data.recurrence.endDate)).toBe(until);
+      expect(formatDateKey(data.startDate, getDeviceTimezone())).toBe(startDate);
+      expect(data.endDate == null ? null : formatDateKey(data.endDate, getDeviceTimezone())).toBe(
+        endDate,
+      );
+      expect(
+        data.recurrence == null
+          ? null
+          : formatDateKey(data.recurrence.endDate, getDeviceTimezone()),
+      ).toBe(until);
       expect([data.startDate.getHours(), data.startDate.getMinutes()]).toEqual([0, 0]);
     },
   );

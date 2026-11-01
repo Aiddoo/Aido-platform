@@ -9,7 +9,6 @@ import {
   addWeeks,
   diffMonths,
   diffWeeks,
-  formatDate,
   formatWeekOfMonthLabel,
   getMonthStart,
   getMonthWeeks,
@@ -20,7 +19,8 @@ import {
   withDayOfMonth,
   withDayOfWeek,
 } from '@src/shared/utils/date';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { range } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -301,7 +301,7 @@ function WeekRow({ week, completions }: WeekRowProps) {
     <HStack px={8}>
       {dates.map((date) => (
         <CalendarDateCell key={date.toISOString()} date={date}>
-          <CompletionIndicator completion={completions[formatDate(date)]} />
+          <CompletionIndicator completion={completions[formatDateKey(date, getDeviceTimezone())]} />
         </CalendarDateCell>
       ))}
     </HStack>
@@ -327,7 +327,9 @@ function MonthGrid({ month, completions }: MonthGridProps) {
               date={date}
               className={isSameMonth(date, month) ? undefined : 'opacity-20'}
             >
-              <CompletionIndicator completion={completions[formatDate(date)]} />
+              <CompletionIndicator
+                completion={completions[formatDateKey(date, getDeviceTimezone())]}
+              />
             </CalendarDateCell>
           ))}
         </HStack>

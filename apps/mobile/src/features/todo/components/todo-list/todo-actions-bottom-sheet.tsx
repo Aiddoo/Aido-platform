@@ -27,7 +27,9 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { formatDate, isDateToday } from '@src/shared/utils/date';
+import { isDateToday } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -111,8 +113,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
       {
         todoId: todo.id,
         input: {
-          startDate: formatDate(startDate),
-          endDate: endDate ? formatDate(endDate) : null,
+          startDate: formatDateKey(startDate, getDeviceTimezone()),
+          endDate: endDate ? formatDateKey(endDate, getDeviceTimezone()) : null,
           scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
           isAllDay: todo.isAllDay,
         },

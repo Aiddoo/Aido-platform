@@ -17,8 +17,13 @@ import {
   useOverlay,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { formatDate, formatDaysOfWeek, toDate } from '@src/shared/utils/date';
-import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-format';
+import { formatDaysOfWeek, toDate } from '@src/shared/utils/date';
+import {
+  formatDateKey,
+  formatDateKeyLabel,
+  formatDateKeyRange,
+} from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { CloseButton } from 'heroui-native';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -67,7 +72,9 @@ export function MemoTodoEditor({ index, onRemove }: MemoTodoEditorProps) {
         onExit={exit}
         value={toDate(todo.startDate)}
         onChange={(date) => {
-          setValue(`todos.${index}.startDate`, formatDate(date), { shouldDirty: true });
+          setValue(`todos.${index}.startDate`, formatDateKey(date, getDeviceTimezone()), {
+            shouldDirty: true,
+          });
           close(date);
         }}
         onCancel={() => close(null)}
