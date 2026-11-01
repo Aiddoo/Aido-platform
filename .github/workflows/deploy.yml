@@ -20,17 +20,19 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  actions: read
-  packages: read # GHCR 이미지 pull (서버로 임시 GITHUB_TOKEN 전달 — 런 종료 시 자동 만료)
+permissions: {}
 
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # workflow_run의 branches 필터는 head 브랜치 이름만 본다. 같은 저장소 main push/dispatch로 끝난 CI만 배포한다.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && contains(fromJSON('["push","workflow_dispatch"]'), github.event.workflow_run.event) && github.event.workflow_run.head_repository.full_name == github.repository) }}
+    permissions:
+      actions: read # CI run·job 조회
+      packages: read # GHCR 이미지 pull (서버로 임시 GITHUB_TOKEN 전달 — 런 종료 시 자동 만료)
 
     steps:
       # 공식 Octokit pagination으로 이미지가 실제 발행된 CI run만 선택한다.
@@ -77,7 +79,7 @@ jobs:
             core.setOutput('sha', sha);
             core.info(`배포 대상 SHA: ${sha}`);
 
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         if: steps.sha.outputs.sha != ''
         with:
           registry: ghcr.io
@@ -104,6 +106,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          # 비어 있으면 host key를 검증하지 않는다. 서버 SHA256 fingerprint를 secret으로 등록하면 MITM을 막는다.
+          fingerprint: ${{ secrets.EC2_SSH_HOST_FINGERPRINT }}
           command_timeout: 20m
           envs: DEPLOY_SHA,FORCE_DEPLOY,GHCR_TOKEN
           script: |
