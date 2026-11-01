@@ -6,6 +6,7 @@ import type { Database } from "#api/platform/database/database.client";
 type JobSqlParameter = string | number | boolean | null | readonly string[];
 
 function isJobSqlParameter(value: unknown): value is JobSqlParameter {
+  // nullish-strict: undefined는 빠뜨린 바인딩이라 거부하고 null만 SQL NULL로 넘긴다
   if (value === null || ["string", "number", "boolean"].includes(typeof value)) {
     return true;
   }
