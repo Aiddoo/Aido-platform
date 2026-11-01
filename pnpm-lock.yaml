@@ -658,9 +658,6 @@ importers:
       sql-template-tag:
         specifier: 5.2.1
         version: 5.2.1
-      temporal-polyfill:
-        specifier: 1.0.6
-        version: 1.0.6
       ts-pattern:
         specifier: 'catalog:'
         version: 5.9.2

@@ -83,7 +83,6 @@
     "resend": "catalog:",
     "rxjs": "7.8.2",
     "sql-template-tag": "5.2.1",
-    "temporal-polyfill": "1.0.6",
     "ts-pattern": "catalog:",
     "zod": "catalog:"
   },
