@@ -1,4 +1,4 @@
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';

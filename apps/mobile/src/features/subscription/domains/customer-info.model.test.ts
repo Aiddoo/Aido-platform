@@ -1,4 +1,4 @@
-import { CustomerInfoPolicy } from './customer-info.policy';
+import { CustomerInfoPolicy } from './customer-info.model';
 
 describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
   it('스토어에서 결제한 엔타이틀먼트가 있으면 true를 반환한다', () => {

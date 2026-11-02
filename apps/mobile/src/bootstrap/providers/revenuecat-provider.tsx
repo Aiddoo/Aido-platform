@@ -1,5 +1,5 @@
-import { CustomerInfoPolicy } from '@src/features/subscription/apis/customer-info.policy';
 import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/webhook-sync';
+import { CustomerInfoPolicy } from '@src/features/subscription/domains/customer-info.model';
 import { watchPremiumEntitlementChanges } from '@src/features/subscription/queries/subscription-cache';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { invalidateMe } from '@src/features/user/queries/user-cache';

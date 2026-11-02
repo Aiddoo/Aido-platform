@@ -2,7 +2,7 @@ import { useFriendService } from '@src/bootstrap/providers/di-context';
 import type { FriendUser } from '@src/features/friend/domains/friend.model';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 import { notifyError } from '@src/shared/utils/haptics';
 import type { InfiniteData } from '@tanstack/react-query';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';

@@ -1,7 +1,7 @@
 import { USER_BLOCK_LIMITS } from '@aido/api';
 import { useModerationService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
 import type { ModerationService } from '../apis/moderation.service';

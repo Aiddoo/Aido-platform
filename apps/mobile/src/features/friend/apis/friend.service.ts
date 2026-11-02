@@ -15,7 +15,7 @@ import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 
 import { type FriendError, FriendErrors } from '../domains/friend.error';
 import {

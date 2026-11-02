@@ -9,7 +9,7 @@ import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 
 import type { BlockedUser } from '../domains/user-block.model';
 import { BlockedUsersPageSchema, toBlockedUsersPage } from './user-block.mapper';
