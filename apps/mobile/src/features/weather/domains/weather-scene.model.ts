@@ -1,4 +1,5 @@
 import type { WeatherCondition } from '@aido/api';
+import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -242,7 +243,7 @@ function clampUnit(value: number): number {
   if (Number.isNaN(value)) {
     return 0;
   }
-  return Math.min(1, Math.max(0, value));
+  return clamp(value, 0, 1);
 }
 
 export function normalizePrecipitationIntensity(millimetersPerHour: number): number {
@@ -261,7 +262,7 @@ export function normalizeCloudCover(percent: number, range: readonly [number, nu
   if (Number.isNaN(percent)) {
     return min;
   }
-  return Math.min(max, Math.max(min, percent / 100));
+  return clamp(percent / 100, min, max);
 }
 
 export function precipitationAngle(wind: number): number {

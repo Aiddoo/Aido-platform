@@ -1,4 +1,5 @@
 import type { SkRSXform } from '@shopify/react-native-skia';
+import { clamp } from 'es-toolkit';
 
 export const PARTICLE_SEED_STRIDE = 4;
 
@@ -56,7 +57,7 @@ export function getParticleCount(
   const budget = PARTICLE_BUDGETS[kind];
   const areaRatio = (screen.width * screen.height) / REFERENCE_SCREEN_AREA;
   const cap = isLowEndDevice ? budget.lowEndCap : budget.standardCap;
-  return Math.min(cap, Math.round(budget.full * Math.min(1, density) * areaRatio));
+  return Math.min(cap, Math.round(budget.full * clamp(density, 0, 1) * areaRatio));
 }
 
 export function wrap(value: number, length: number): number {

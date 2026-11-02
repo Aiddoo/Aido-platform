@@ -1,4 +1,5 @@
 import { Group, Path, Skia, type SkPath } from '@shopify/react-native-skia';
+import { range } from 'es-toolkit';
 import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { createSeededRandom } from './weather-scene-particles';
@@ -13,7 +14,7 @@ function buildStarPaths(width: number, height: number): SkPath[] {
   const random = createSeededRandom(STAR_SEED);
   const builders = Array.from({ length: STAR_GROUP_COUNT }, () => Skia.PathBuilder.Make());
   const count = Math.min(MAX_STARS, Math.round((width * height) / SCREEN_AREA_PER_STAR));
-  for (let index = 0; index < count; index += 1) {
+  for (const index of range(count)) {
     const x = random() * width;
     const y = random() ** 1.6 * height * STAR_FIELD_HEIGHT_RATIO;
     const radius = 0.45 + random() ** 3 * 1.1;
