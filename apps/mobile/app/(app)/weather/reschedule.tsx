@@ -2,8 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/todo/queries/get-todos-by-date-query-options';
-import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
-import { useUpdateTodoScheduleMutationOptions } from '@src/features/todo/queries/use-update-todo-schedule-mutation-options';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import {
   type RainyTodo,
@@ -29,6 +27,7 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '@src/features/weather/queries/get-weather-report-query-options';
+import { useRescheduleTodoMutationOptions } from '@src/features/weather/queries/use-reschedule-todo-mutation-options';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -58,7 +57,7 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { formatClockTime, formatDateKey, type TimeFormat } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
-import { useMutation, useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { clamp, keyBy } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -358,23 +357,16 @@ function RescheduleFooter({ onDone }: { onDone: () => void }) {
   );
 }
 
-/**
- * 할 일 수정 mutation은 그대로 쓰되 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다.
- * 실패한 할 일은 기존 mutation의 오류 토스트가 알린다.
- */
+/** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
 function RescheduleSubmitButton({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation('weather');
-  const queryClient = useQueryClient();
   const toast = useAppToast();
   const { trackEvent } = useTrack();
   const [todoIds] = useRescheduleTodoIdsParam();
   const { handleSubmit, control } = useFormContext<WeatherRescheduleFormValues>();
   const { isSubmitting } = useFormState({ control });
   const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: useTodayKey() }));
-  const updateSchedule = useMutation({
-    ...useUpdateTodoScheduleMutationOptions(),
-    onSuccess: () => invalidateTodos(queryClient),
-  });
+  const updateSchedule = useMutation(useRescheduleTodoMutationOptions());
   const todosById = keyBy(todoList?.todos ?? [], (todo) => todo.id);
 
   const handleUndo = async (todos: Todo[]) => {
