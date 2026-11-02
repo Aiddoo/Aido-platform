@@ -137,14 +137,11 @@
     "veryBad": "매우 나쁨"
   },
   "attribution": {
-    "provider": " Weather",
-    "providerText": "Apple 날씨",
-    "updatedAt": "{{time}} 업데이트",
     "sources": "데이터 출처",
-    "openSources": "Apple 날씨 데이터 출처를 열어요"
+    "openSources": "{{serviceName}} 데이터 출처 보기"
   },
   "badge": {
-    "temperature": "날씨 보기, 지금 {{temperature}}도"
+    "temperature": "날씨 보기, 지금 {{temperature}}도, {{serviceName}} 제공"
   },
   "locationPrompt": {
     "title": "위치를 등록하면 날씨를 볼 수 있어요",
@@ -194,5 +191,8 @@
     "undone": "원래 시간으로 되돌렸어요",
     "chartLabel": "오늘 남은 시간의 시간별 강수 확률 그래프",
     "todoNotFound": "옮길 할 일을 찾지 못했어요"
+  },
+  "airQualitySource": {
+    "AIRKOREA": "출처: 에어코리아"
   }
 }

@@ -4,6 +4,7 @@ import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/todo/queries/get-todos-by-date-query-options';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { useUpdateTodoScheduleMutationOptions } from '@src/features/todo/queries/use-update-todo-schedule-mutation-options';
+import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import {
   type RainyTodo,
   type RescheduleOption,
@@ -33,6 +34,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useTheme } from '@src/shared/providers/theme-provider';
 import {
   BottomSheet,
   Box,
@@ -98,7 +100,7 @@ function WeatherRescheduleSheet() {
       <BottomSheet
         isOpen={sheet.isOpen}
         onOpenChange={sheet.onOpenChange}
-        footer={<RescheduleSubmitButton onDone={() => sheet.close()} />}
+        footer={<RescheduleFooter onDone={() => sheet.close()} />}
       >
         {sheet.isOpen && (
           <QueryErrorBoundary
@@ -337,6 +339,22 @@ function PrecipitationTimeline({ hours }: { hours: HourlyForecast[] }) {
         />
       ))}
     </HStack>
+  );
+}
+
+/** 시트도 Apple 날씨 데이터를 보여 주므로 주 버튼 위에 출처 표기를 고정한다. 바탕은 앱 테마를 따른다. */
+function RescheduleFooter({ onDone }: { onDone: () => void }) {
+  const { resolvedTheme } = useTheme();
+
+  return (
+    <VStack gap={8}>
+      <QueryErrorBoundary fallback={() => null}>
+        <Suspense fallback={<WeatherAttribution.Loading />}>
+          <WeatherAttribution background={resolvedTheme} />
+        </Suspense>
+      </QueryErrorBoundary>
+      <RescheduleSubmitButton onDone={onDone} />
+    </VStack>
   );
 }
 

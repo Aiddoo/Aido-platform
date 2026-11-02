@@ -68,6 +68,7 @@ const weatherReportModelSchema = z.object({
   fetchedAt: z.date(),
 });
 export type WeatherReport = z.infer<typeof weatherReportModelSchema>;
+export type WeatherAttribution = WeatherReport['attribution'];
 
 const HOUR_MS = 60 * 60_000;
 const MINUTE_MS = 60_000;
@@ -249,7 +250,9 @@ function gradeIndex(value: number, upperBounds: readonly number[]): number {
 }
 
 /** 미세먼지·초미세먼지 중 더 나쁜 등급. 두 값이 모두 없으면 null이다. */
-export function getAirQualityGrade(airQuality: AirQuality): AirQualityGrade | null {
+export function getAirQualityGrade(
+  airQuality: Pick<AirQuality, 'pm10' | 'pm25'>,
+): AirQualityGrade | null {
   const indexes = [
     airQuality.pm10 == null ? null : gradeIndex(airQuality.pm10, PM10_UPPER_BOUNDS),
     airQuality.pm25 == null ? null : gradeIndex(airQuality.pm25, PM25_UPPER_BOUNDS),
@@ -258,6 +261,26 @@ export function getAirQualityGrade(airQuality: AirQuality): AirQualityGrade | nu
     return null;
   }
   return AIR_QUALITY_GRADES[Math.max(...indexes)] ?? null;
+}
+
+export interface AirQualitySummary {
+  grade: AirQualityGrade | null;
+  pm10: number | null;
+  pm25: number | null;
+  source: AirQuality['source'];
+}
+
+/** 대기질이 없는 지역(null)은 타일과 출처 표기를 모두 숨긴다. 한쪽 값만 없으면 그 값만 "—"로 둔다. */
+export function toAirQualitySummary(airQuality: AirQuality | null): AirQualitySummary | null {
+  if (airQuality == null) {
+    return null;
+  }
+  return {
+    grade: getAirQualityGrade(airQuality),
+    pm10: airQuality.pm10,
+    pm25: airQuality.pm25,
+    source: airQuality.source,
+  };
 }
 
 export type UvLevel = 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme';
@@ -348,7 +371,36 @@ export function compareFeelsLike(current: CurrentWeather): FeelsLikeComparison {
   return difference < 0 ? 'colder' : 'warmer';
 }
 
+export type AttributionBackground = 'light' | 'dark';
+
+export type AttributionMark =
+  | { kind: 'logo'; sources: { uri: string; scale: number }[] }
+  | { kind: 'text'; serviceName: string };
+
+/**
+ * 어두운 바탕(하늘 장면·다크 테마)에는 흰 글자 로고(dark), 밝은 바탕에는 검은 글자 로고(light)를 쓴다.
+ * 로고를 받지 못하면 서비스 이름을 글자로 표기해 출처 표기가 빠지지 않게 한다.
+ */
+export function getAttributionMark(
+  attribution: WeatherAttribution,
+  background: AttributionBackground,
+): AttributionMark {
+  if (attribution.logo == null) {
+    return { kind: 'text', serviceName: attribution.serviceName };
+  }
+  const logo = attribution.logo[background];
+  return {
+    kind: 'logo',
+    sources: [
+      { uri: logo['1x'], scale: 1 },
+      { uri: logo['2x'], scale: 2 },
+      { uri: logo['3x'], scale: 3 },
+    ],
+  };
+}
+
 export const WeatherReportPolicy = {
+  attributionMark: getAttributionMark,
   isWetHour,
   upcomingHours: selectUpcomingHours,
   precipitationWindow: getPrecipitationWindow,
@@ -363,6 +415,7 @@ export const WeatherReportPolicy = {
   compassDirection: toCompassDirection,
   feelsLike: compareFeelsLike,
   airQualityGrade: getAirQualityGrade,
+  airQualitySummary: toAirQualitySummary,
   uvLevel: getUvLevel,
   displayTemperature: toDisplayTemperature,
   sceneInput: toSceneInput,

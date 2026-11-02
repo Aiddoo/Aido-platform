@@ -1,4 +1,5 @@
 import type {
+  WeatherAirQualitySource,
   WeatherCondition,
   WeatherMoonPhase,
   WeatherPrecipitationType,
@@ -91,3 +92,8 @@ export const FEELS_LIKE_LABEL_KEYS = {
   similar: 'details.feelsSimilar',
   warmer: 'details.feelsWarmer',
 } as const satisfies Record<FeelsLikeComparison, string>;
+
+/** 공공데이터(에어코리아) 이용 조건: 대기질을 보여 주는 곳에 출처를 함께 표기한다. */
+export const AIR_QUALITY_SOURCE_LABEL_KEYS = {
+  AIRKOREA: 'airQualitySource.AIRKOREA',
+} as const satisfies Record<WeatherAirQualitySource, string>;

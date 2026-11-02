@@ -106,7 +106,7 @@ function WeatherReportSections() {
             <WeatherDetailGrid />
           </Suspense>
           <Suspense fallback={<WeatherAttribution.Loading />}>
-            <WeatherAttribution />
+            <WeatherAttribution background="dark" />
           </Suspense>
         </VStack>
       </VStack>

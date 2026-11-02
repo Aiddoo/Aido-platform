@@ -13,6 +13,7 @@ import { match } from 'ts-pattern';
 
 import {
   AIR_GRADE_LABEL_KEYS,
+  AIR_QUALITY_SOURCE_LABEL_KEYS,
   COMPASS_LABEL_KEYS,
   FEELS_LIKE_LABEL_KEYS,
   MOON_PHASE_LABEL_KEYS,
@@ -49,7 +50,7 @@ export function WeatherDetailGrid() {
   const { current, airQuality } = data;
   const today = WeatherReportPolicy.todayForecast(data, new Date(dataUpdatedAt));
   const direction = WeatherReportPolicy.compassDirection(current.windDirection);
-  const airGrade = airQuality == null ? null : WeatherReportPolicy.airQualityGrade(airQuality);
+  const airQualitySummary = WeatherReportPolicy.airQualitySummary(airQuality);
   const columns = fontScale >= SINGLE_COLUMN_FONT_SCALE ? 1 : 2;
 
   return (
@@ -132,15 +133,22 @@ export function WeatherDetailGrid() {
           />
         </GridItem>
       )}
-      {airQuality != null && (
+      {airQualitySummary != null && (
         <GridItem colSpan={columns}>
           <WeatherDetailGrid.Tile
             title={t('details.airQuality')}
-            value={airGrade == null ? t('details.noValue') : t(AIR_GRADE_LABEL_KEYS[airGrade])}
-            note={t('details.pm', {
-              pm10: airQuality.pm10 ?? t('details.noValue'),
-              pm25: airQuality.pm25 ?? t('details.noValue'),
-            })}
+            value={
+              airQualitySummary.grade == null
+                ? t('details.noValue')
+                : t(AIR_GRADE_LABEL_KEYS[airQualitySummary.grade])
+            }
+            note={[
+              t('details.pm', {
+                pm10: airQualitySummary.pm10 ?? t('details.noValue'),
+                pm25: airQualitySummary.pm25 ?? t('details.noValue'),
+              }),
+              t(AIR_QUALITY_SOURCE_LABEL_KEYS[airQualitySummary.source]),
+            ].join('\n')}
           />
         </GridItem>
       )}

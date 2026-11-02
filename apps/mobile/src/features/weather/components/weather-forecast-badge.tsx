@@ -6,14 +6,21 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { type CurrentWeather, WeatherReportPolicy } from '../domains/weather-report.model';
+import {
+  type CurrentWeather,
+  type WeatherReport,
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
 import { formatDegrees } from '../utils/format-degrees';
 import { WeatherIcon } from './weather-icon';
 
-const selectCurrent = (report: { current: CurrentWeather }) => report.current;
+const selectBadge = (report: WeatherReport) => ({
+  current: report.current,
+  serviceName: report.attribution.serviceName,
+});
 
 /**
  * 피드·메모 헤더의 날씨 진입점. 날씨 화면과 같은 리포트 key를 구독해 화면에 들어가면 캐시를 그대로 쓴다.
@@ -21,24 +28,34 @@ const selectCurrent = (report: { current: CurrentWeather }) => report.current;
  */
 export function WeatherForecastBadge() {
   const location = useWeatherLocation();
-  const { data: current, isPending } = useQuery({
+  const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
-    select: selectCurrent,
+    select: selectBadge,
     enabled: location.status !== 'needsPermission' && location.status !== 'denied',
   });
 
   return match(location)
     .with({ status: 'needsPermission' }, { status: 'denied' }, () => null)
     .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => {
-      if (current == null) {
+      if (badge == null) {
         return isPending ? <WeatherForecastBadge.Loading /> : null;
       }
-      return <WeatherForecastBadge.Item current={current} />;
+      return <WeatherForecastBadge.Item current={badge.current} serviceName={badge.serviceName} />;
     })
     .exhaustive();
 }
 
-WeatherForecastBadge.Item = function Item({ current }: { current: CurrentWeather }) {
+/**
+ * 헤더 왼쪽 자리는 아이콘과 온도만 들어가는 폭이라 로고(1x 38pt)를 줄이지 않고는 넣을 수 없다.
+ * 로고를 줄이는 대신 날씨 화면(로고·출처 링크 표기)으로 보내고, 접근성 이름에 공급자를 밝힌다.
+ */
+WeatherForecastBadge.Item = function Item({
+  current,
+  serviceName,
+}: {
+  current: CurrentWeather;
+  serviceName: string;
+}) {
   const { t } = useTranslation('weather');
   const push = useSingleTap(router.push);
   const unit = useTemperatureUnit();
@@ -48,7 +65,7 @@ WeatherForecastBadge.Item = function Item({ current }: { current: CurrentWeather
     <PressableFeedback
       onPress={() => push('/weather')}
       accessibilityRole="button"
-      accessibilityLabel={t('badge.temperature', { temperature })}
+      accessibilityLabel={t('badge.temperature', { temperature, serviceName })}
       hitSlop={4}
       className="min-h-11 min-w-16 justify-center"
     >

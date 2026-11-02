@@ -138,14 +138,11 @@
     "veryBad": "Very unhealthy"
   },
   "attribution": {
-    "provider": " Weather",
-    "providerText": "Apple Weather",
-    "updatedAt": "Updated {{time}}",
-    "sources": "Data sources",
-    "openSources": "Opens the Apple Weather data sources"
+    "sources": "Other data sources",
+    "openSources": "View {{serviceName}} data sources"
   },
   "badge": {
-    "temperature": "View weather, {{temperature}} degrees now"
+    "temperature": "View weather, {{temperature}} degrees now, provided by {{serviceName}}"
   },
   "locationPrompt": {
     "title": "Register your location to see the weather",
@@ -198,5 +195,8 @@
     "undone": "Moved back to the original time",
     "chartLabel": "Hourly chance of precipitation for the rest of today",
     "todoNotFound": "Couldn't find the to-dos to move"
+  },
+  "airQualitySource": {
+    "AIRKOREA": "Source: AirKorea"
   }
 }

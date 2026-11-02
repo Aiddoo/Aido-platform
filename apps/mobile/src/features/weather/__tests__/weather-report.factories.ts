@@ -37,6 +37,31 @@ export function createHourlySeries(startsAt: string, chances: readonly number[])
   );
 }
 
+const LOGO_BASE_URL = 'https://weatherkit.apple.com/assets/branding/ko/Apple_Weather';
+
+export function createAttributionDto(
+  overrides: Partial<WeatherReportResponse['attribution']> = {},
+): WeatherReportResponse['attribution'] {
+  return {
+    provider: 'APPLE_WEATHER',
+    serviceName: 'Apple Weather',
+    legalPageUrl: 'https://developer.apple.com/weatherkit/data-source-attribution/',
+    logo: {
+      light: {
+        '1x': `${LOGO_BASE_URL}_blk_ko_1X_090122.png`,
+        '2x': `${LOGO_BASE_URL}_blk_ko_2X_090122.png`,
+        '3x': `${LOGO_BASE_URL}_blk_ko_3X_090122.png`,
+      },
+      dark: {
+        '1x': `${LOGO_BASE_URL}_wht_ko_1X_090122.png`,
+        '2x': `${LOGO_BASE_URL}_wht_ko_2X_090122.png`,
+        '3x': `${LOGO_BASE_URL}_wht_ko_3X_090122.png`,
+      },
+    },
+    ...overrides,
+  };
+}
+
 export function createWeatherReportDto(
   overrides: Partial<WeatherReportResponse> = {},
 ): WeatherReportResponse {
@@ -86,11 +111,8 @@ export function createWeatherReportDto(
       },
     ],
     alerts: [],
-    airQuality: { pm10: 32, pm25: 18 },
-    attribution: {
-      provider: 'APPLE_WEATHER',
-      legalPageUrl: 'https://developer.apple.com/weatherkit/data-source-attribution/',
-    },
+    airQuality: { pm10: 32, pm25: 18, source: 'AIRKOREA' },
+    attribution: createAttributionDto(),
     fetchedAt: '2026-11-02T06:20:00.000Z',
     ...overrides,
   };

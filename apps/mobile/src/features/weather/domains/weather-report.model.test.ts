@@ -5,6 +5,7 @@ import {
   createHourlySeries,
   createSeoulReportDto,
   createTokyoReportDto,
+  createAttributionDto,
   createWeatherReport,
 } from '../__tests__/weather-report.factories';
 import { toWeatherReport } from '../apis/weather.mapper';
@@ -508,5 +509,60 @@ describe('WeatherReportPolicy.temperatureBars', () => {
 
     // Then
     expect(bars).toEqual([]);
+  });
+});
+
+describe('WeatherReportPolicy.attributionMark', () => {
+  it.each([
+    ['dark', '_wht_ko_'],
+    ['light', '_blk_ko_'],
+  ] as const)('%s 바탕에는 그에 맞는 로고를 1x·2x·3x 밀도로 고른다', (background, fileMarker) => {
+    // Given
+    const { attribution } = createWeatherReport();
+
+    // When
+    const mark = WeatherReportPolicy.attributionMark(attribution, background);
+
+    // Then
+    expect(mark.kind).toBe('logo');
+    expect(mark.kind === 'logo' && mark.sources.map((source) => source.scale)).toEqual([1, 2, 3]);
+    expect(
+      mark.kind === 'logo' && mark.sources.every((source) => source.uri.includes(fileMarker)),
+    ).toBe(true);
+  });
+
+  it('로고를 받지 못하면 서비스 이름을 글자로 표기한다', () => {
+    // Given
+    const { attribution } = createWeatherReport({
+      attribution: createAttributionDto({ logo: null }),
+    });
+
+    // When
+    const mark = WeatherReportPolicy.attributionMark(attribution, 'dark');
+
+    // Then
+    expect(mark).toEqual({ kind: 'text', serviceName: 'Apple Weather' });
+  });
+});
+
+describe('WeatherReportPolicy.airQualitySummary', () => {
+  it('대기질이 있으면 등급과 함께 출처(에어코리아)를 표기한다', () => {
+    // When
+    const summary = WeatherReportPolicy.airQualitySummary({
+      pm10: 32,
+      pm25: null,
+      source: 'AIRKOREA',
+    });
+
+    // Then
+    expect(summary).toEqual({ grade: 'moderate', pm10: 32, pm25: null, source: 'AIRKOREA' });
+  });
+
+  it('대기질이 없는 지역은 타일과 출처를 모두 숨긴다', () => {
+    // When
+    const summary = WeatherReportPolicy.airQualitySummary(null);
+
+    // Then
+    expect(summary).toBeNull();
   });
 });
