@@ -213,7 +213,7 @@ function proofFixture() {
       workflow_run: { id: 101, head_sha: headSha },
     },
     pull: source,
-    jobs: ['Lint & Type Check', 'Verify API', 'Test - Mobile & Contracts'].map((name) => ({
+    jobs: ['Lint & Type Check', 'Verify API'].map((name) => ({
       name,
       run_id: 101,
       status: 'completed',
@@ -366,12 +366,6 @@ const invalidProofCases = [
     },
   ],
   [
-    'Contracts failed',
-    (f) => {
-      f.jobs[2].conclusion = 'failure';
-    },
-  ],
-  [
     '다른 attempt job',
     (f) => {
       f.jobsAttempt = 1;
@@ -392,11 +386,10 @@ for (const [scenario, mutate] of invalidProofCases) {
   });
 }
 
-test('API-only tip은 mobile/shared 증거를 요구하지 않지만 해당 범위로 확대할 수 없다', () => {
+test('API-only tip은 API 증거만으로 재사용하지만 mobile 범위로 확대할 수 없다', () => {
   const input = proofFixture();
   input.proof.scopes = { api: true, mobile: false, shared: false };
   input.requiredScope = { api: true, mobile: false, shared: false };
-  input.jobs.pop();
   assert.equal(validateTreeProof(input).reusable, true);
   input.requiredScope.mobile = true;
   assert.deepEqual(validateTreeProof(input), { reusable: false, reason: 'insufficient-scope' });

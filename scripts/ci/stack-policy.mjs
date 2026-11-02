@@ -166,9 +166,6 @@ export function validateTreeProof({
   if (proof.scopes.api) {
     requiredJobs.push('Verify API');
   }
-  if (proof.scopes.mobile || proof.scopes.shared) {
-    requiredJobs.push('Test - Mobile & Contracts');
-  }
   if (
     jobsAttempt !== proof.attempt ||
     !Array.isArray(jobs) ||

@@ -2,8 +2,9 @@ name: CI
 
 on:
   workflow_dispatch:
+  # develop은 스택 tip PR에서 이미 검증한다. 배포가 일어나는 main push만 돌고, 같은 tree의 성공한 tip 검증이 있으면 재사용한다.
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     types:
       [
@@ -136,7 +137,7 @@ jobs:
                 core.setOutput('proof_name', validationProofName(context.runId, attempt));
               }
             }
-            if (context.eventName !== 'push' || !['refs/heads/main', 'refs/heads/develop'].includes(context.ref)) return;
+            if (context.eventName !== 'push' || context.ref !== 'refs/heads/main') return;
             try {
               const { data: activeRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: context.runId });
               const { data: candidates } = await github.rest.actions.listWorkflowRuns({
@@ -299,10 +300,11 @@ jobs:
       - name: Conventions
         run: node apps/mobile/scripts/check-mobile-conventions.mjs
 
-  test-unit:
-    name: Test - Mobile & Contracts
+  # 테스트(단위·통합·계약)는 커밋 전 로컬 훅(simple-git-hooks)에서 돌리고 CI는 정적 검사와 빌드만 확인한다.
+  verify-api:
+    name: Verify API
     needs: gate
-    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
+    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -312,79 +314,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
         with:
-          install-scope: all
-      - name: Run mobile and contract unit tests
-        run: pnpm turbo run test --filter='!@aido/server' 2>&1 | tee /tmp/test-unit.log
-      - name: Upload unit test logs
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: test-unit-logs-${{ github.run_id }}
-          path: /tmp/test-unit.log
-          retention-days: 14
-
-  verify-api:
-    name: Verify API
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # GitHub starts, health-checks and stops the service; no container wrapper script.
-    services:
-      postgres:
-        image: postgres:16.15-alpine
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      AIDO_TEST_POSTGRES_URL: postgresql://test_user:test_password@127.0.0.1:5432/postgres
-      JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
-      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
-      JWT_EXPIRES_IN: 15m
-      JWT_REFRESH_EXPIRES_IN: 7d
-      EMAIL_FROM: noreply@test.aido.app
-      EMAIL_FROM_NAME: Aido Test
-      TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
-      NODE_ENV: test
-      AIDO_TEST_DB_WORKERS: 2
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-        with:
           install-scope: api
-      - name: Unit tests and coverage
-        run: pnpm turbo run test:cov --filter=@aido/server 2>&1 | tee /tmp/test-api-unit.log
-      - name: PostgreSQL integration tests
-        run: pnpm turbo run test:integration --filter=@aido/server 2>&1 | tee /tmp/test-api-integration.log
-      # 전체 E2E는 Actions 사용량 때문에 로컬에서만 돌린다. 배포된 앱 계약 게이트만 CI에 남긴다.
-      - name: Released-client API contract
-        run: pnpm --filter @aido/server test:contract 2>&1 | tee /tmp/test-api-contract.log
       - name: Build API and dependency closure
         run: pnpm turbo run build --filter='!@aido/mobile'
-      - name: Upload API test logs
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: test-api-logs-${{ github.run_id }}
-          path: /tmp/test-api-*.log
-          retention-days: 14
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
   # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
   docker:
     name: Build & Push Image
-    needs: [gate, lint, test-unit, verify-api]
+    needs: [gate, lint, verify-api]
     if: >-
-      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.lint.result == 'skipped' && needs.verify-api.result == 'skipped' && needs.test-unit.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success' && (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped'))) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.lint.result == 'skipped' && needs.verify-api.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success')) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:

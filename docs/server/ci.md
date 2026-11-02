@@ -10,14 +10,14 @@ PR 또는 배포 검증을 준비할 때 참고한다. 정본은 [ci.yml](../../
 
 ## 동일 source 검증 재사용
 
-최종 ready stack tip에서 heavy job을 실행하고, develop landing과 main release의 Git tree가 같으면 그 성공 결과를 재사용한다. Commit SHA가 달라져도 파일·파일 모드·경로를 포함한 tree가 같아야 한다. CI 정책·workflow·lockfile 변경도 tree에 포함되므로 새 source는 이전 결과를 재사용할 수 없다.
+최종 ready stack tip에서 heavy job을 실행한다. develop push는 CI를 돌리지 않고, main push는 Git tree가 같은 성공 tip 결과가 있으면 재사용해 이미지 빌드·배포만 진행한다. Commit SHA가 달라져도 파일·파일 모드·경로를 포함한 tree가 같아야 한다. CI 정책·workflow·lockfile 변경도 tree에 포함되므로 새 source는 이전 결과를 재사용할 수 없다.
 
 PR의 head `H`와 실제 checkout한 merge commit `P`는 별개다. 후보 artifact `ci-tree-proof-<run-id>-<attempt>`에 `H`, `P`, `git rev-parse HEAD^{tree}`, repository, run/attempt, PR 번호, stack label, base/ancestor, API·mobile·shared 범위와 `cumulative-stack-tip` 정책을 기록한다. `P`와 `H`의 tree가 같은 경우에만 후보를 발행하며, heavy job 실행 전 업로드된 artifact 자체는 성공 증거가 아니다.
 
-main·develop gate는 같은 저장소·CI workflow의 성공 PR run에서 후보를 찾고, 공식 download-artifact와 `actions: read` 권한으로 해당 run의 정확한 artifact를 다운로드한다. 재사용 전에 다음 조건을 독립적으로 확인한다.
+main gate는 같은 저장소·CI workflow의 성공 PR run에서 후보를 찾고, 공식 download-artifact와 `actions: read` 권한으로 해당 run의 정확한 artifact를 다운로드한다. 재사용 전에 다음 조건을 독립적으로 확인한다.
 
 - 원본 run은 현재 attempt에서 `completed/success`이고, 해당 PR은 같은 저장소의 ready stack tip이며 head가 `H`로 유지된다. 일반 PR·fork·중간 PR의 결과는 사용하지 않는다.
-- 공식 attempt별 jobs API에서 `Lint & Type Check`와 증거 범위에 필요한 `Verify API`, `Test - Mobile & Contracts`가 실제 `completed/success`여야 한다. skipped job은 성공 검증을 대신하지 않는다. 조회 후 원본 run의 attempt를 다시 확인한다.
+- 공식 attempt별 jobs API에서 `Lint & Type Check`와 API 범위일 때 `Verify API`가 실제 `completed/success`여야 한다. skipped job은 성공 검증을 대신하지 않는다. 조회 후 원본 run의 attempt를 다시 확인한다.
 - Artifact는 해당 run/attempt의 유일한 이름·메타데이터와 일치하고 만료되지 않아야 한다. 다운로드 digest 검증 실패도 재사용을 거부한다.
 - 원본 `P`, `H`와 현재 checkout의 tree가 같고 현재 commit이 `H`를 포함해야 한다. 현재 변경 범위는 증거가 검증한 API·mobile·shared 범위에 모두 포함되어야 한다.
 
@@ -36,7 +36,7 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 | CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                                                                                    |
 | Dependency Review  | heavy job과 같은 조건의 PR에서 공식 dependency-review-action으로 gate의 base~head 누적 범위에 high 이상 취약 의존성이 새로 들어오는지 확인                                                                                                  |
 | Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                                                                                     |
-| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→배포된 앱 API 계약 게이트(`test:contract`)→API 의존성 closure build. 전체 E2E는 Actions 사용량을 아끼려고 CI에서 돌리지 않고 로컬에서 `pnpm test:e2e`로 확인한다                             |
+| Verify API         | API 의존성 closure build. 단위·통합·계약·E2E 테스트는 Actions 사용량을 아끼려고 CI에서 돌리지 않고 로컬 훅에서 실행한다(pre-commit `pnpm test`, pre-push `pnpm test:integration`·`test:contract`)                                           |
 | Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행하고, 공식 `actions/attest`로 두 digest에 빌드 출처 증명을 남김 |
 
 공식 setup action은 `.nvmrc` Node.js 버전, packageManager의 pnpm 버전, frozen lockfile과 pnpm cache를 사용한다. API만 영향이 있으면 API dependency closure를 설치하고 필요한 contract를 emit한다. GitHub Actions는 버전 주석과 commit SHA로 고정하며 업데이트의 정본은 workflow다.
