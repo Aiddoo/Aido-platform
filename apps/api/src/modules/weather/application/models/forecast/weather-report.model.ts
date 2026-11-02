@@ -48,7 +48,8 @@ export interface WeatherReportNextHour {
 
 interface WeatherReportNextHourPeriod {
   readonly condition: WeatherNextHourCondition;
-  readonly precipitationType: WeatherPrecipitationType;
+  /** 공급자가 형태 없이 강수로만 알리면 null */
+  readonly precipitationType: WeatherPrecipitationType | null;
   readonly startsAt: Date;
   readonly endsAt: Date | null;
   readonly precipitationChance: number;
@@ -101,6 +102,10 @@ export interface WeatherReportDay {
   readonly sunrise: Date | null;
   readonly sunset: Date | null;
   readonly moonPhase: WeatherMoonPhase;
+  readonly moonrise: Date | null;
+  readonly moonset: Date | null;
+  /** 지금부터 그날 끝까지. 공급자는 오늘 항목에만 준다 */
+  readonly restOfDay: WeatherReportDayPart | null;
   readonly daytime: WeatherReportDayPart | null;
   readonly overnight: WeatherReportDayPart | null;
 }

@@ -19,7 +19,11 @@ export async function requestVendorJson(
   http: HttpClient,
   url: string,
   query: HttpQuery,
-  options: { readonly headers?: HttpHeadersInit; readonly signal?: AbortSignal } = {},
+  options: {
+    readonly headers?: HttpHeadersInit;
+    readonly signal?: AbortSignal;
+    readonly timeoutMs?: number;
+  } = {},
 ): Promise<VendorJsonOutcome> {
   try {
     const response = await http.request(url, {
@@ -27,6 +31,7 @@ export async function requestVendorJson(
       responseType: "json",
       headers: options.headers,
       signal: options.signal,
+      timeout: options.timeoutMs,
     });
     if (!response.ok) {
       return { kind: "http_failure", statusCode: response.status };

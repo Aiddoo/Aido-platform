@@ -68,15 +68,16 @@ const WEATHERKIT_KEYS = [
 ] as const;
 
 /**
- * WeatherKit 자격은 일부만 있으면 서명이 항상 실패하므로 모두 있거나 모두 없어야 한다. 모두 없으면
- * 날씨 v2가 WEATHER_1901로 응답할 뿐 다른 기능은 동작하므로 기동을 막지 않는다.
+ * WeatherKit 자격은 일부만 있으면 서명이 항상 실패하므로 모두 있거나 모두 없어야 한다.
+ * 운영에서는 날씨 v2가 항상 WEATHER_1901이 되지 않도록 네 값을 모두 요구한다.
  */
 export function validateWeatherKitConfig({
   value: config,
   issues,
-}: z.core.ParsePayload<ExternalConfig>): void {
+}: z.core.ParsePayload<ExternalConfig & { readonly NODE_ENV: string }>): void {
   const missing = WEATHERKIT_KEYS.filter((key) => (config[key] ?? "") === "");
-  if (missing.length === 0 || missing.length === WEATHERKIT_KEYS.length) {
+  const isProduction = config.NODE_ENV === "production";
+  if (missing.length === 0 || (missing.length === WEATHERKIT_KEYS.length && !isProduction)) {
     return;
   }
   for (const key of missing) {
@@ -84,7 +85,9 @@ export function validateWeatherKitConfig({
       code: "custom",
       input: config,
       path: [key],
-      message: `${key} is required when any WEATHERKIT_* value is set`,
+      message: isProduction
+        ? `${key} is required in production`
+        : `${key} is required when any WEATHERKIT_* value is set`,
     });
   }
 }

@@ -18,7 +18,10 @@ import {
 } from "../../cache/forecast/weather-report.keyspace.js";
 import { WeatherKitLogEvent } from "../../observability/forecast/weatherkit-log.events.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
-import { WeatherKitTokenResolver } from "./weatherkit-token.resolver.js";
+import {
+  WeatherKitNotConfiguredError,
+  WeatherKitTokenResolver,
+} from "./weatherkit-token.resolver.js";
 import { type WeatherKitWeather, weatherKitWeatherSchema } from "./weatherkit.schema.js";
 
 const WEATHERKIT_API_URL = "https://weatherkit.apple.com/api/v1";
@@ -42,6 +45,11 @@ const availabilitySchema = z
   .transform((names) => DATA_SETS.filter((dataSet) => names.includes(dataSet)));
 const cachedAvailabilitySchema = z.array(z.enum(DATA_SETS));
 
+/** 사용자 요청 경로라 모듈 공용 10초보다 짧게 끊고 폴백으로 넘긴다. */
+const WEATHER_TIMEOUT_MS = 4_000;
+const AVAILABILITY_TIMEOUT_MS = 3_000;
+const AUTH_REJECTED_STATUSES: readonly number[] = [401, 403];
+
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
 /** 응답 24시간·10일에 최신 폴백(6시간)과 자정 경계 여유를 더해 받는다. */
@@ -49,9 +57,19 @@ const HOURLY_RANGE_MS = 30 * HOUR_MS;
 const DAILY_RANGE_MS = 11 * DAY_MS;
 const COORDINATE_DECIMALS = 4;
 
-/** 429·5xx·형식 오류 모두 호출자에게는 같은 공급자 실패이며 폴백 대상이다. */
+type WeatherKitFailureReason =
+  | "http_failure"
+  | "auth_rejected"
+  | "invalid_structure"
+  | "missing_current"
+  | "recent_failure";
+
+/** 429·5xx·인증 거절·형식 오류 모두 호출자에게는 같은 공급자 실패이며 폴백 대상이다. */
 export class WeatherKitRequestError extends Error {
-  constructor(readonly reason: "http_failure" | "invalid_structure" | "missing_current") {
+  constructor(
+    readonly reason: WeatherKitFailureReason,
+    readonly status: number | null = null,
+  ) {
     super(`WeatherKit request failed: ${reason}`);
     this.name = "WeatherKitRequestError";
   }
@@ -73,6 +91,10 @@ function errorTypeOf(error: unknown): string {
   return error instanceof Error ? error.name : "UnknownError";
 }
 
+function statusOf(error: unknown): number | null {
+  return error instanceof WeatherKitRequestError ? error.status : null;
+}
+
 @Injectable()
 export class WeatherKitReportProvider implements WeatherReportProviderPort {
   readonly #logger = new Logger(WeatherKitReportProvider.name);
@@ -80,21 +102,71 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
   constructor(
     @InjectHttpClient("weather") private readonly http: HttpClient,
     @Inject(WeatherKitTokenResolver)
-    private readonly tokenResolver: Pick<WeatherKitTokenResolver, "resolve">,
-    @Inject(CacheService) private readonly cacheService: Pick<CacheService, "wrap">,
+    private readonly tokenResolver: Pick<WeatherKitTokenResolver, "resolve" | "invalidate">,
+    @Inject(CacheService)
+    private readonly cacheService: Pick<CacheService, "wrap" | "has" | "set">,
   ) {}
 
   async getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport> {
-    const startedAtMs = performance.now();
-    const latencyMs = () => Math.round(performance.now() - startedAtMs);
-    let status: number | null = null;
-    try {
-      const token = await this.tokenResolver.resolve();
-      const dataSets = await this.#availableDataSets(cell, request, token);
-      const requestedAt = now();
-      const hourlyStart = new Date(Math.floor(requestedAt.getTime() / HOUR_MS) * HOUR_MS);
+    const failureKey = WeatherReportCacheKey.providerFailure(cell.key);
+    // 장애 중에는 요청마다 시간 초과를 기다리지 않고 바로 폴백하도록 칸별로 잠시 호출을 멈춘다.
+    if (await this.cacheService.has(failureKey)) {
+      this.#logger.debug({ event: WeatherKitLogEvent.REQUEST_SKIPPED, cellKey: cell.key });
+      throw new WeatherKitRequestError("recent_failure");
+    }
 
-      const outcome = await requestVendorJson(
+    const startedAtMs = performance.now();
+    try {
+      const requestedAt = now();
+      const dataSets = await this.#availableDataSets(cell, request);
+      const weather = await this.#fetchWeather(cell, request, dataSets, requestedAt);
+      const received = receivedDataSets(weather);
+      const dropped = dataSets.filter((dataSet) => !received.includes(dataSet));
+      if (dropped.length > 0) {
+        this.#logger.warn({
+          event: WeatherKitLogEvent.DATASET_DROPPED,
+          cellKey: cell.key,
+          dataSets: dropped,
+        });
+      }
+      const { currentWeather } = weather;
+      if (currentWeather == null) {
+        throw new WeatherKitRequestError("missing_current", 200);
+      }
+
+      this.#logger.log({
+        event: WeatherKitLogEvent.REQUEST_COMPLETED,
+        cellKey: cell.key,
+        status: 200,
+        latencyMs: Math.round(performance.now() - startedAtMs),
+        dataSets: received,
+      });
+      return toWeatherReport({ ...weather, currentWeather }, request.timezone, requestedAt);
+    } catch (error) {
+      this.#logger.warn({
+        event: WeatherKitLogEvent.REQUEST_FAILED,
+        cellKey: cell.key,
+        status: statusOf(error),
+        latencyMs: Math.round(performance.now() - startedAtMs),
+        errorType: errorTypeOf(error),
+      });
+      if (!(error instanceof WeatherKitNotConfiguredError)) {
+        await this.cacheService.set(failureKey, true, WEATHER_REPORT_CACHE_TTL_MS.PROVIDER_FAILURE);
+      }
+      throw error;
+    }
+  }
+
+  /** 거절된 토큰은 한 번만 새로 서명해 다시 보낸다. 두 번째 거절은 그대로 실패한다. */
+  async #fetchWeather(
+    cell: GeoCell,
+    request: WeatherReportRequest,
+    dataSets: readonly WeatherKitDataSet[],
+    requestedAt: Date,
+  ): Promise<WeatherKitWeather> {
+    const hourlyStart = new Date(Math.floor(requestedAt.getTime() / HOUR_MS) * HOUR_MS);
+    const send = async () =>
+      requestVendorJson(
         this.http,
         this.#cellUrl("weather", cell, request.language),
         {
@@ -105,41 +177,30 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
           hourlyEnd: new Date(hourlyStart.getTime() + HOURLY_RANGE_MS).toISOString(),
           dailyEnd: new Date(requestedAt.getTime() + DAILY_RANGE_MS).toISOString(),
         },
-        { headers: { authorization: `Bearer ${token}` }, signal: request.signal },
+        {
+          headers: { authorization: `Bearer ${await this.tokenResolver.resolve()}` },
+          signal: request.signal,
+          timeoutMs: WEATHER_TIMEOUT_MS,
+        },
       );
-      if (outcome.kind === "http_failure") {
-        status = outcome.statusCode;
-        throw new WeatherKitRequestError("http_failure");
-      }
-      status = 200;
 
-      const parsed = weatherKitWeatherSchema.safeParse(outcome.body);
-      if (!parsed.success) {
-        throw new WeatherKitRequestError("invalid_structure");
-      }
-      const { currentWeather } = parsed.data;
-      if (currentWeather == null) {
-        throw new WeatherKitRequestError("missing_current");
-      }
-
-      this.#logger.log({
-        event: WeatherKitLogEvent.REQUEST_COMPLETED,
-        cellKey: cell.key,
-        status,
-        latencyMs: latencyMs(),
-        dataSets: receivedDataSets(parsed.data),
-      });
-      return toWeatherReport({ ...parsed.data, currentWeather }, request.timezone, requestedAt);
-    } catch (error) {
-      this.#logger.warn({
-        event: WeatherKitLogEvent.REQUEST_FAILED,
-        cellKey: cell.key,
-        status,
-        latencyMs: latencyMs(),
-        errorType: errorTypeOf(error),
-      });
-      throw error;
+    let outcome = await send();
+    if (outcome.kind === "http_failure" && AUTH_REJECTED_STATUSES.includes(outcome.statusCode)) {
+      this.tokenResolver.invalidate();
+      outcome = await send();
     }
+    if (outcome.kind === "http_failure") {
+      const reason = AUTH_REJECTED_STATUSES.includes(outcome.statusCode)
+        ? "auth_rejected"
+        : "http_failure";
+      throw new WeatherKitRequestError(reason, outcome.statusCode);
+    }
+
+    const parsed = weatherKitWeatherSchema.safeParse(outcome.body);
+    if (!parsed.success) {
+      throw new WeatherKitRequestError("invalid_structure", 200);
+    }
+    return parsed.data;
   }
 
   /**
@@ -149,7 +210,6 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
   async #availableDataSets(
     cell: GeoCell,
     request: WeatherReportRequest,
-    token: string,
   ): Promise<readonly WeatherKitDataSet[]> {
     try {
       return await this.cacheService.wrap(
@@ -160,23 +220,31 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
             this.http,
             this.#cellUrl("availability", cell),
             { country: request.countryCode },
-            { headers: { authorization: `Bearer ${token}` }, signal: request.signal },
+            {
+              headers: { authorization: `Bearer ${await this.tokenResolver.resolve()}` },
+              signal: request.signal,
+              timeoutMs: AVAILABILITY_TIMEOUT_MS,
+            },
           );
           if (outcome.kind === "http_failure") {
-            throw new WeatherKitRequestError("http_failure");
+            throw new WeatherKitRequestError("http_failure", outcome.statusCode);
           }
           const parsed = availabilitySchema.safeParse(outcome.body);
           if (!parsed.success || !parsed.data.includes("currentWeather")) {
-            throw new WeatherKitRequestError("invalid_structure");
+            throw new WeatherKitRequestError("invalid_structure", 200);
           }
           return parsed.data;
         },
         WEATHER_REPORT_CACHE_TTL_MS.AVAILABILITY,
       );
     } catch (error) {
+      if (error instanceof WeatherKitNotConfiguredError) {
+        throw error;
+      }
       this.#logger.warn({
         event: WeatherKitLogEvent.AVAILABILITY_FAILED,
         cellKey: cell.key,
+        status: statusOf(error),
         errorType: errorTypeOf(error),
       });
       return BASE_DATA_SETS;

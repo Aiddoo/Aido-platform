@@ -88,15 +88,17 @@ describe("envSchema — WeatherKit 자격", () => {
   };
 
   it.each([
-    ["모두 없음", {}],
-    ["모두 있음", weatherKit],
-  ])("%s이면 통과한다", (_case, values) => {
+    ["개발에서 네 값이 모두 없으면 통과한다", "development", {}, true],
+    ["개발에서 네 값이 모두 있으면 통과한다", "development", weatherKit, true],
+    ["운영에서 네 값이 모두 있으면 통과한다", "production", weatherKit, true],
+    ["운영에서 네 값이 없으면 기동을 막는다", "production", {}, false],
+  ])("%s", (_case, nodeEnv, values, expected) => {
     // Given
-    const environment = { ...requiredEnvironment, ...values };
+    const environment = { ...requiredEnvironment, NODE_ENV: nodeEnv, ...values };
     // When
     const result = envSchema.safeParse(environment);
     // Then
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(expected);
   });
 
   it("한 줄 PEM의 \\n을 실제 줄바꿈으로 복원한다", () => {

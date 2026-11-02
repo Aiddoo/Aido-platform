@@ -156,7 +156,7 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
     "1.13.1 이하 앱 전용. 기상청 단기예보·격자 캐시 기반. 1.14.0부터 앱은 `/v2/weather`를 사용한다.",
 
   [SWAGGER_TAGS.WEATHER_V2]:
-    "1.14.0 이상 앱용. 전 세계 좌표의 현재·1시간·시간별·일별 날씨와 특보를 Apple WeatherKit에서 받아 약 5km 칸 단위로 캐시합니다. 한국 위치는 에어코리아 대기질을 함께 제공합니다.",
+    "1.14.0 이상 앱용. 전 세계 좌표의 현재·다음 1시간·시간별·일별 날씨와 특보를 Apple WeatherKit에서 받아 약 5km 칸 단위로 15분 캐시하고, 공급자 장애 때는 6시간 안의 마지막 데이터를 돌려줍니다. 한국 위치는 에어코리아 대기질을 함께 제공합니다.",
 
   [SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 

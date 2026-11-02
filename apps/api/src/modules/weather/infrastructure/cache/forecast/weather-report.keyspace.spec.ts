@@ -10,6 +10,7 @@ describe("날씨 v2 캐시 키와 TTL", () => {
       WeatherReportCacheKey.latestReport(cell, "en"),
       WeatherReportCacheKey.airQuality(cell),
       WeatherReportCacheKey.availability(cell),
+      WeatherReportCacheKey.providerFailure(cell),
     ];
     // Then
     expect(keys).toEqual([
@@ -17,16 +18,18 @@ describe("날씨 v2 캐시 키와 TTL", () => {
       "aido:v1:weather:v2:report-latest:wydm9:en",
       "aido:v1:weather:v2:air-quality:wydm9",
       "aido:v1:weather:v2:availability:wydm9",
+      "aido:v1:weather:v2:provider-failure:wydm9",
     ]);
   });
 
-  it("리포트 15분, 최신 폴백 6시간, 대기질 1시간, dataset 가용성 7일을 유지한다", () => {
+  it("리포트 15분, 최신 폴백 6시간, 대기질 1시간, dataset 가용성 7일, 장애 차단 1분을 유지한다", () => {
     // Given
     const expected = {
       REPORT: 900_000,
       LATEST_REPORT: 21_600_000,
       AIR_QUALITY: 3_600_000,
       AVAILABILITY: 604_800_000,
+      PROVIDER_FAILURE: 60_000,
     };
     // When
     const ttl = WEATHER_REPORT_CACHE_TTL_MS;

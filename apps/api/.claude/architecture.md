@@ -48,7 +48,7 @@ Aggregate 행동은 생성 factory(`planCreation`/`create`)와 저장 복원(`re
 
 Port는 소비자가 필요한 외부 공급자·캐시·큐·cross-context capability·원자적 저장 동작을 표현한다. 기존 구현을 그대로 한 번 전달하기 위한 인터페이스나 DB 호출마다 Port를 추가하지 않는다. UseCase dependency는 실제 사용하는 메서드의 `Pick`으로 좁힐 수 있다.
 
-현재 Weather는 하나의 provider에 새 Registry를 추가하지 않고 Module에서 직접 연결한다. 외부에는 [weather-forecast.public.ts](../src/modules/weather/weather-forecast.public.ts)의 read model과 최소 Reader만 공개한다. 내부 KMA token·resolver·ancillary provider를 함께 export하지 않는다.
+현재 Weather는 v1(KMA)과 v2(WeatherKit)가 서로 다른 Port라 공급자 선택 Registry 없이 Module에서 직접 연결한다. 외부에는 [weather-forecast.public.ts](../src/modules/weather/weather-forecast.public.ts)의 read model과 최소 Reader만 공개한다. 내부 KMA token·resolver·ancillary provider를 함께 export하지 않는다.
 
 ```ts
 // weather-forecast.module.ts의 실제 조립 발췌

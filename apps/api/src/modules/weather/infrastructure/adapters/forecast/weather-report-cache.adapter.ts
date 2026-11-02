@@ -59,7 +59,7 @@ const WEATHER_REPORT_SCHEMA = z.object({
       periods: z.array(
         z.object({
           condition: z.enum(WEATHER_NEXT_HOUR_CONDITIONS),
-          precipitationType: precipitationTypeSchema,
+          precipitationType: precipitationTypeSchema.nullable(),
           startsAt: z.coerce.date(),
           endsAt: z.coerce.date().nullable(),
           precipitationChance: z.number(),
@@ -107,6 +107,9 @@ const WEATHER_REPORT_SCHEMA = z.object({
       sunrise: z.coerce.date().nullable(),
       sunset: z.coerce.date().nullable(),
       moonPhase: z.enum(WEATHER_MOON_PHASES),
+      moonrise: z.coerce.date().nullable(),
+      moonset: z.coerce.date().nullable(),
+      restOfDay: dayPartSchema.nullable(),
       daytime: dayPartSchema.nullable(),
       overnight: dayPartSchema.nullable(),
     }),

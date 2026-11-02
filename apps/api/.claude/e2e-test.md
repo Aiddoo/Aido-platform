@@ -4,7 +4,7 @@ HTTP pipeline의 인증·권한·validation·status·응답·저장 결과를 �
 
 ## 기존 테스트 앱 사용
 
-[createE2eApp](../test/e2e/helpers/e2e-app-factory.ts)은 실제 AppModule과 configureApplication을 조립한다. 관리형 PostgreSQL client를 연결하고 Email/OAuth/Push/AI/Discord/Weather/job runtime은 기존 Fake로 격리한다. cache/Redis 대역과 domain event drain도 함께 관리한다. HTTP 서버는 suite 동안 `127.0.0.1`의 임의 포트를 사용한다.
+[createE2eApp](../test/e2e/helpers/e2e-app-factory.ts)은 실제 AppModule과 configureApplication을 조립한다. 관리형 PostgreSQL client를 연결하고 Email/OAuth/Push/AI/Discord/Weather(WeatherKit 포함)/job runtime은 기존 Fake·Stub으로 격리한다. cache/Redis 대역과 domain event drain도 함께 관리한다. HTTP 서버는 suite 동안 `127.0.0.1`의 임의 포트를 사용한다.
 
 일반 흐름은 `createE2eApp()`·`ctx.reset()`·`destroyE2eApp()` 및 `ctx.helpers`를 재사용한다. 전용 raw/public route의 작은 Nest HTTP Integration처럼 목적에 맞는 기존 harness가 있다면 그것을 사용할 수 있다. 문서 형식 때문에 모든 테스트를 하나의 거대한 앱이나 새 wrapper로 바꾸지 않는다.
 

@@ -111,6 +111,9 @@ export function weatherReportFixture(
     sunrise: new Date(firstDay + index * 24 * HOUR_MS - 2 * HOUR_MS),
     sunset: new Date(firstDay + index * 24 * HOUR_MS + 8 * HOUR_MS),
     moonPhase: "WANING_CRESCENT" as const,
+    moonrise: null,
+    moonset: new Date(firstDay + index * 24 * HOUR_MS + 5 * HOUR_MS),
+    restOfDay: null,
     daytime: null,
     overnight: null,
   }));

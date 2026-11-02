@@ -64,27 +64,29 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 
 ## 환경 설정과 공개 버전
 
-설정 정본은 `src/platform/config/schemas`와 `.env*.example`이다. env 원문·secret·backup은 로그나 Git에 넣지 않는다. 운영은 OAuth 최소 1개와 Resend key가 필요하다.
+설정 정본은 `src/platform/config/schemas`와 `.env*.example`이다. env 원문·secret·backup은 로그나 Git에 넣지 않는다. 운영은 OAuth 최소 1개, Resend key, WeatherKit 자격 네 값이 필요하다.
 
-| 설정                                                     | 기본/용도                                                |
-| -------------------------------------------------------- | -------------------------------------------------------- |
-| DATABASE_URL / PGBOSS_DATABASE_URL                       | API DB / 별도 미설정 시 같은 pg-boss DB                  |
-| NODE_ENV / APP_ENV                                       | 런타임 / 배포 환경. Sentry는 production APP_ENV에서 발송 |
-| PORT                                                     | host 기본 8080, API container 8080                       |
-| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY   | 시작 검증에 필요한 32자 이상 값                          |
-| JOB_BACKEND / JOB_SCHEMA                                 | postgres / pgboss                                        |
-| JOB_REDIS_DRAIN_ENABLED                                  | false; 잔존 Redis job 전환은 확인한 경우에만 사용        |
-| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                     | memory / postgres; 서로 다른 capability                  |
-| REDIS_*                                                  | Redis backend 또는 drain 연결 설정                       |
-| EXPO_ACCESS_TOKEN / RESEND_API_KEY                       | Expo / 이메일 공급자                                     |
-| GOOGLE_GENERATIVE_AI_API_KEY                             | 기존 Gemini 모델 공급자; 유료 호출은 별도 범위           |
-| RETENTION_ONBOARDING_V2_ENABLED                          | 기본 false; treatment 배정은 별도 운영 설정              |
-| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL | 운영 가입/결제 채널                                      |
+| 설정                                                          | 기본/용도                                                                                                         |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| DATABASE_URL / PGBOSS_DATABASE_URL                            | API DB / 별도 미설정 시 같은 pg-boss DB                                                                           |
+| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS | 10 / 비우면 pg 기본값(유휴 10초, 연결 대기 무제한)                                                                |
+| NODE_ENV / APP_ENV                                            | 런타임 / 배포 환경. Sentry는 production APP_ENV에서 발송                                                          |
+| PORT                                                          | host 기본 8080, API container 8080                                                                                |
+| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY        | 시작 검증에 필요한 32자 이상 값                                                                                   |
+| JOB_BACKEND / JOB_SCHEMA                                      | postgres / pgboss                                                                                                 |
+| JOB_REDIS_DRAIN_ENABLED                                       | false; 잔존 Redis job 전환은 확인한 경우에만 사용                                                                 |
+| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                          | memory / postgres; 서로 다른 capability                                                                           |
+| REDIS_*                                                       | Redis backend 또는 drain 연결 설정                                                                                |
+| EXPO_ACCESS_TOKEN / RESEND_API_KEY                            | Expo / 이메일 공급자                                                                                              |
+| GOOGLE_GENERATIVE_AI_API_KEY                                  | 기존 Gemini 모델 공급자; 유료 호출은 별도 범위                                                                    |
+| WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY     | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
+| RETENTION_ONBOARDING_V2_ENABLED                               | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
+| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL      | 운영 가입/결제 채널                                                                                               |
 
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
 스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 
-env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
+1.14.0 운영 env는 서버의 `~/apps/env-staging/1.14.0/apply.sh pre-deploy|store-release`로 단계별 반영한다(pre-deploy 적용됨). env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
 릴리스 `develop`→`main`은 merge commit으로 공통 조상을 유지한다. main 반영 뒤 develop 이력을 동기화하고 다음 release diff를 확인한다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

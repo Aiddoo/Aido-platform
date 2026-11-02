@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { importPKCS8, SignJWT } from "jose";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { WeatherKitLogEvent } from "../../observability/forecast/weatherkit-log.events.js";
 
@@ -35,13 +36,18 @@ export class WeatherKitTokenResolver {
   ) {}
 
   resolve(): Promise<string> {
-    if (this.#current != null && Date.now() < this.#current.refreshAtMs) {
+    if (this.#current != null && now().getTime() < this.#current.refreshAtMs) {
       return Promise.resolve(this.#current.token);
     }
     this.#signing ??= this.#sign().finally(() => {
       this.#signing = null;
     });
     return this.#signing;
+  }
+
+  /** 공급자가 토큰을 거절했을 때 다음 resolve가 새로 서명하게 한다. */
+  invalidate(): void {
+    this.#current = null;
   }
 
   async #sign(): Promise<string> {
@@ -51,7 +57,7 @@ export class WeatherKitTokenResolver {
     }
 
     const key = await importPKCS8(credentials.privateKey, "ES256");
-    const issuedAtSeconds = Math.floor(Date.now() / 1000);
+    const issuedAtSeconds = Math.floor(now().getTime() / 1000);
     const expiresAtSeconds = issuedAtSeconds + TOKEN_LIFETIME_SECONDS;
     const token = await new SignJWT({})
       .setProtectedHeader({

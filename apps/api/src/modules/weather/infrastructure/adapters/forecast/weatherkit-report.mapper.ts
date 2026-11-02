@@ -127,6 +127,20 @@ function toPrecipitationType(type: WeatherKitPrecipitationType | null): WeatherP
   );
 }
 
+/** 다음 1시간 구간은 형태를 모르는 강수를 비로 단정하지 않고 null로 남긴다(계약). */
+function toPeriodPrecipitationType(
+  type: WeatherKitPrecipitationType | null,
+): WeatherPrecipitationType | null {
+  if (type == null) {
+    return null;
+  }
+  return match(type)
+    .returnType<WeatherPrecipitationType | null>()
+    .with("precipitation", () => null)
+    .with("clear", "rain", "snow", "sleet", "hail", "mixed", (known) => toPrecipitationType(known))
+    .exhaustive();
+}
+
 function toPressureTrend(trend: WeatherKitPressureTrend | null): WeatherPressureTrend {
   if (trend == null) {
     return "STEADY";
@@ -179,7 +193,7 @@ function toPercent(ratio: number): number {
   return clamp(Math.round(ratio * 100), 0, 100);
 }
 
-function toWindDirection(degrees: number | undefined): number | null {
+function toWindDirection(degrees: number | null | undefined): number | null {
   if (degrees == null) {
     return null;
   }
@@ -214,10 +228,10 @@ function toNextHour(nextHour: WeatherKitNextHour | undefined): WeatherReportNext
   }
   return {
     periods: nextHour.summary.map((period) => {
-      const precipitationType = toPrecipitationType(period.condition);
+      const isClear = period.condition === "clear";
       return {
-        condition: precipitationType === "NONE" ? "CLEAR" : "PRECIPITATION",
-        precipitationType,
+        condition: isClear ? "CLEAR" : "PRECIPITATION",
+        precipitationType: toPeriodPrecipitationType(period.condition),
         startsAt: period.startTime,
         endsAt: period.endTime ?? null,
         precipitationChance: toPercent(period.precipitationChance),
@@ -249,7 +263,7 @@ function toHour(hour: WeatherKitHour): WeatherReportHour {
   };
 }
 
-function toDayPart(part: WeatherKitDayPart | undefined): WeatherReportDayPart | null {
+function toDayPart(part: WeatherKitDayPart | null | undefined): WeatherReportDayPart | null {
   if (part == null) {
     return null;
   }
@@ -283,6 +297,9 @@ function toDay(day: WeatherKitDay, timezone: string): WeatherReportDay {
     sunrise: day.sunrise ?? null,
     sunset: day.sunset ?? null,
     moonPhase: toMoonPhase(day.moonPhase),
+    moonrise: day.moonrise ?? null,
+    moonset: day.moonset ?? null,
+    restOfDay: toDayPart(day.restOfDayForecast),
     daytime: toDayPart(day.daytimeForecast),
     overnight: toDayPart(day.overnightForecast),
   };
@@ -305,7 +322,7 @@ function toAlert(alert: WeatherKitAlert): WeatherReportAlert {
 export function toWeatherReport(
   weather: WeatherKitWeather & { readonly currentWeather: WeatherKitCurrentWeather },
   timezone: string,
-  fetchedAt: Date,
+  requestedAt: Date,
 ): WeatherReport {
   return {
     current: toCurrent(weather.currentWeather),
@@ -316,6 +333,7 @@ export function toWeatherReport(
       (alert) => SEVERITY_ORDER[alert.severity],
     ]),
     attribution: { provider: "APPLE_WEATHER", legalPageUrl: WEATHERKIT_LEGAL_PAGE_URL },
-    fetchedAt,
+    // 공급자가 데이터를 읽은 시각이 있으면 그것을, 없으면 요청 시각을 쓴다.
+    fetchedAt: weather.currentWeather.metadata?.readTime ?? requestedAt,
   };
 }

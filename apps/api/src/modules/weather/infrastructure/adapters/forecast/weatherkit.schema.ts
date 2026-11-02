@@ -3,8 +3,8 @@ import { z } from "zod";
 /**
  * WeatherKit REST `GET /api/v1/weather` 응답 중 사용하는 필드.
  *
- * optional 필드는 Apple 문서에서 선택 항목인 값(돌풍·풍향·일출입·낮/밤 예보 등)이며, mapper는 이를
- * 0 같은 기본값이 아닌 null(알 수 없음)로 옮긴다.
+ * nullish 필드는 Apple이 생략하거나 null로 보내는 값(돌풍·풍향·일출입·월출몰·낮/밤 예보 등)이며,
+ * mapper는 이를 0 같은 기본값이 아닌 null(알 수 없음)로 옮긴다.
  *
  * 지역마다 제공 dataset이 달라 dataset은 모두 optional이고, 부가 dataset 형태가 깨지면 그
  * dataset만 버린다. enum 값은 Apple이 늘릴 수 있어 문자열로 받고 mapper가 안전한 값으로 좁힌다.
@@ -99,6 +99,7 @@ const precipitationTypeSchema = knownValue(PRECIPITATION_TYPES);
 const instantSchema = z.iso.datetime({ offset: true }).transform((value) => new Date(value));
 
 const currentWeatherSchema = z.object({
+  metadata: z.object({ readTime: instantSchema.nullish() }).optional().catch(undefined),
   asOf: instantSchema,
   cloudCover: z.number(),
   conditionCode: conditionCodeSchema,
@@ -112,8 +113,8 @@ const currentWeatherSchema = z.object({
   temperatureDewPoint: z.number(),
   uvIndex: z.number(),
   visibility: z.number(),
-  windDirection: z.number().optional(),
-  windGust: z.number().optional(),
+  windDirection: z.number().nullish(),
+  windGust: z.number().nullish(),
   windSpeed: z.number(),
 });
 
@@ -121,7 +122,7 @@ const nextHourSchema = z.object({
   summary: z.array(
     z.object({
       startTime: instantSchema,
-      endTime: instantSchema.optional(),
+      endTime: instantSchema.nullish(),
       condition: precipitationTypeSchema,
       precipitationChance: z.number(),
       precipitationIntensity: z.number(),
@@ -147,7 +148,7 @@ const hourSchema = z.object({
   temperature: z.number(),
   temperatureApparent: z.number(),
   uvIndex: z.number(),
-  windDirection: z.number().optional(),
+  windDirection: z.number().nullish(),
   windSpeed: z.number(),
 });
 
@@ -156,8 +157,8 @@ const dayPartSchema = z.object({
   precipitationAmount: z.number(),
   precipitationChance: z.number(),
   precipitationType: precipitationTypeSchema,
-  temperatureMax: z.number().optional(),
-  temperatureMin: z.number().optional(),
+  temperatureMax: z.number().nullish(),
+  temperatureMin: z.number().nullish(),
 });
 
 const daySchema = z.object({
@@ -169,14 +170,17 @@ const daySchema = z.object({
   precipitationChance: z.number(),
   precipitationType: precipitationTypeSchema,
   snowfallAmount: z.number(),
-  sunrise: instantSchema.optional(),
-  sunset: instantSchema.optional(),
+  sunrise: instantSchema.nullish(),
+  sunset: instantSchema.nullish(),
+  moonrise: instantSchema.nullish(),
+  moonset: instantSchema.nullish(),
   temperatureMax: z.number(),
   temperatureMin: z.number(),
-  windGustSpeedMax: z.number().optional(),
-  windSpeedMax: z.number().optional(),
-  daytimeForecast: dayPartSchema.optional().catch(undefined),
-  overnightForecast: dayPartSchema.optional().catch(undefined),
+  windGustSpeedMax: z.number().nullish(),
+  windSpeedMax: z.number().nullish(),
+  restOfDayForecast: dayPartSchema.nullish().catch(undefined),
+  daytimeForecast: dayPartSchema.nullish().catch(undefined),
+  overnightForecast: dayPartSchema.nullish().catch(undefined),
 });
 
 const alertSchema = z.object({
@@ -184,7 +188,7 @@ const alertSchema = z.object({
   description: z.string(),
   severity: knownValue(ALERT_SEVERITIES),
   source: z.string(),
-  areaName: z.string().optional(),
+  areaName: z.string().nullish(),
   effectiveTime: instantSchema,
   expireTime: instantSchema,
   detailsUrl: z.url(),

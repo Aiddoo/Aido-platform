@@ -90,6 +90,32 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
     });
   });
 
+  it("형태 없이 강수로만 온 구간은 precipitationType을 비로 단정하지 않고 null로 둔다", () => {
+    // Given
+    const storm = WeatherKitReportFixture.newYorkStorm();
+    const body = {
+      ...storm,
+      forecastNextHour: {
+        ...storm.forecastNextHour,
+        summary: [
+          {
+            startTime: "2026-11-02T06:20:00Z",
+            condition: "precipitation",
+            precipitationChance: 0.5,
+            precipitationIntensity: 0.4,
+          },
+        ],
+      },
+    };
+    // When
+    const { nextHour } = mapFixture(body, "America/New_York");
+    // Then
+    expect(nextHour?.periods[0]).toMatchObject({
+      condition: "PRECIPITATION",
+      precipitationType: null,
+    });
+  });
+
   it("특보를 심각도 높은 순으로 정렬하고 description을 제목으로 쓴다", () => {
     // Given
     const body = WeatherKitReportFixture.newYorkStorm();

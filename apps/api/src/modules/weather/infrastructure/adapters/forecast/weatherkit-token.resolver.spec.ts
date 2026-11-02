@@ -82,6 +82,19 @@ describe("WeatherKitTokenResolver — ES256 개발자 토큰", () => {
     expect(signCount()).toBe(2);
   });
 
+  it("공급자가 거절해 무효화하면 만료 전이라도 새로 서명한다", async () => {
+    // Given
+    const { resolver, signCount } = createResolver();
+    const first = await resolver.resolve();
+    vi.setSystemTime(new Date("2026-11-02T06:00:01.000Z"));
+    // When
+    resolver.invalidate();
+    const second = await resolver.resolve();
+    // Then
+    expect(second).not.toBe(first);
+    expect(signCount()).toBe(2);
+  });
+
   it("동시에 들어온 요청은 서명 한 번을 공유한다", async () => {
     // Given
     const { resolver, signCount } = createResolver();

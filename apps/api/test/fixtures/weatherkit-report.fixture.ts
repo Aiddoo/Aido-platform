@@ -2,7 +2,16 @@
  * WeatherKit REST `GET /api/v1/weather` 응답 fixture
  *
  * Apple 문서의 필드 이름·단위(km/h, 0~1 비율, mb)를 그대로 쓴 고정 JSON이다. 실제 공급자를 호출하지 않는다.
+ * `weatherkit/*-observed.json`은 2026-11-02 운영 키로 한 번 받아 둔 실제 응답(비밀값 없음)이다.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+function observed(name: "seoul" | "tokyo"): unknown {
+  return JSON.parse(
+    readFileSync(path.join(import.meta.dirname, "weatherkit", `${name}-observed.json`), "utf8"),
+  );
+}
 
 const FETCHED_AT = "2026-11-02T06:20:00Z";
 
@@ -294,6 +303,8 @@ function availability(...dataSets: readonly string[]): string[] {
 export const WeatherKitReportFixture = {
   fetchedAt: FETCHED_AT,
   availability,
+  seoulObserved: () => observed("seoul"),
+  tokyoObserved: () => observed("tokyo"),
   seoulRain,
   newYorkStorm,
   tokyoClear,
