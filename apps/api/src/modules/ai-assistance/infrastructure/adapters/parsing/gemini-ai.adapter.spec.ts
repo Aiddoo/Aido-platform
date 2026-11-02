@@ -101,6 +101,11 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       responseJsonSchema: { type: "object", required: ["title", "scheduledTime", "categoryId"] },
       thinkingConfig: { thinkingLevel: "low" },
     });
+    expect(body.safetySettings).toHaveLength(4);
+    for (const setting of body.safetySettings) {
+      expect(setting.threshold).toBe("BLOCK_ONLY_HIGH");
+    }
+    expect(body).not.toHaveProperty("tools");
     expect(body.generationConfig).not.toHaveProperty("temperature");
     expect(body.generationConfig).not.toHaveProperty("topP");
     expect(body.generationConfig).not.toHaveProperty("topK");
@@ -390,6 +395,24 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
 
     // Then
     await expect(execution).rejects.toMatchObject({ kind: "TRUNCATED" });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("응답 후보가 safety로 막히면 BLOCKED로 분류하고 재시도하지 않는다", async () => {
+    // Given
+    fetchSpy.mockResolvedValue(
+      Response.json({
+        candidates: [{ content: { role: "model", parts: [] }, finishReason: "SAFETY" }],
+      }),
+    );
+    // When
+    const execution = createProvider("fixture-key").generateStructured({
+      ...base,
+      prompt: "독서",
+      schema,
+    });
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "BLOCKED" });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 

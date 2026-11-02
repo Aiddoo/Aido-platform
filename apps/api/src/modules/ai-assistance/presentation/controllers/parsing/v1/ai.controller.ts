@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -18,6 +19,7 @@ import {
   ApiUnprocessableError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetAiUsage } from "../../../../application/use-cases/parsing/get-ai-usage.use-case.js";
@@ -71,6 +73,9 @@ export class AiController {
    */
   @Post("parse-todo")
   @HttpCode(HttpStatus.OK)
+  // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
+  @ThrottleByUser()
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
   @ApiHeader({
     name: "x-app-version",
@@ -279,6 +284,9 @@ if (confirmed) {
    */
   @Post("parse-memo")
   @HttpCode(HttpStatus.OK)
+  // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
+  @ThrottleByUser()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
   @ApiHeader({
     name: "x-app-version",

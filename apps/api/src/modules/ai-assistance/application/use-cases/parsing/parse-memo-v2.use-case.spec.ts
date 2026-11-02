@@ -235,4 +235,52 @@ describe("ParseMemo — v2 정규화", () => {
     expect(result.data.todos.map((todo) => todo.title)).toEqual(["전기요금 납부"]);
     expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
   });
+
+  it("모델이 전체 할 일 수를 터무니없이 크게 주면 상한 100개 기준으로 남은 수를 알린다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setRawResponse({
+      totalTaskCount: 99_999_999,
+      todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.meta.omittedTodoCount).toBe(95);
+  });
+
+  it("모델 출력의 스키마 밖 필드는 버리고 제목·항목의 보이지 않는 문자는 지운다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setRawResponse({
+      userId: "other-user",
+      todos: [
+        draftTodo("우유\u200B 사기\u202E\u{E0041}", {
+          categoryId: 999_999,
+          ownerId: "other-user",
+          items: [{ title: "\u2066마트\u2069", url: "https://evil.example" }],
+        }),
+      ],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos).toEqual([
+      expect.objectContaining({ title: "우유 사기", categoryId: 1, items: [{ title: "마트" }] }),
+    ]);
+    expect(JSON.stringify(result)).not.toContain("other-user");
+    expect(JSON.stringify(result)).not.toContain("evil.example");
+  });
+
+  it("성공 로그에는 메모 원문과 모델이 만든 제목을 남기지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setRawResponse({ todos: [draftTodo("PRIVATE_TITLE")] });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO_TEXT" });
+    // Then
+    const logged = JSON.stringify([fixture.logger.log.mock.calls, fixture.logger.warn.mock.calls]);
+    expect(logged).not.toContain("PRIVATE_MEMO_TEXT");
+    expect(logged).not.toContain("PRIVATE_TITLE");
+  });
 });

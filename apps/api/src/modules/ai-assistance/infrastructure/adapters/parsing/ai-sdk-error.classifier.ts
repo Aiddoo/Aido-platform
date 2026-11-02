@@ -1,4 +1,4 @@
-import { APICallError, NoObjectGeneratedError, RetryError } from "ai";
+import { APICallError, NoObjectGeneratedError, NoOutputGeneratedError, RetryError } from "ai";
 
 import {
   AiProviderError,
@@ -33,6 +33,9 @@ export function classifyAiSdkError(error: unknown): AiProviderError {
   }
   if (NoObjectGeneratedError.isInstance(error)) {
     return new AiProviderError(noObjectErrorKind(error), undefined, { cause: error, upstream });
+  }
+  if (NoOutputGeneratedError.isInstance(error)) {
+    return new AiProviderError("INVALID_OUTPUT", undefined, { cause: error, upstream });
   }
   if (error instanceof Error && ABORT_ERROR_NAMES.has(error.name)) {
     return new AiProviderError("TIMEOUT", undefined, { cause: error, upstream });

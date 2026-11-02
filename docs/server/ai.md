@@ -43,6 +43,18 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 모든 작업은 `ai.generation.completed`/`ai.generation.failed` 하나의 형식으로 남긴다: `task`, `promptVersion`, `model`, `latencyMs`, 입력·출력·사고 토큰, `finishReason`, `outcome`, `errorKind`, `statusCode`, `quotaCharged`, `userId`. 공급자 실패는 `upstream`(`errorName`, Google 오류 본문의 `providerStatus` 예: `UNAVAILABLE`, 네트워크 `errorCode` 예: `ECONNRESET`)으로 원인을 남긴다. 고정 기호만 담고 공급자 message·응답 본문·사용자 원문·제목·카테고리 이름은 남기지 않는다.
 
+## 프롬프트 보안
+
+- 지시는 AI SDK `instructions`(system)에만 둔다. system은 서버 상수이고 사용자·저장 데이터는 user 턴의 데이터 블록(`<user_input>`·`<context>`·`<report_data>`·`<suggestion_data>`)에만 들어간다. 각 system의 `<security>`·`<grounding>`이 블록 안 문자열을 데이터로 다루라고 명시한다.
+- 데이터 블록은 모두 `shared/domain/prompt/sanitize.ts`의 `encodeUntrustedJson`으로 만든다. JSON 문자열로 넣고 `<`·`>`·`&`를 이스케이프해 태그를 닫거나 열 수 없고, 모든 문자열 값에서 보이지 않는 문자(태그 문자·보조 변형 선택자·폭 없는 공백·bidi 제어·제어 문자, `removeInvisibleCharacters`)를 지운다. 이모지 ZWJ·VS15/16·탭·줄바꿈은 남긴다.
+- 사용자 원문은 `sanitizeForPrompt`(parse-todo, 500자)·`sanitizeMemoForPrompt`(5000자)가 NFKC 정규화(전각 `＜/task＞` → `</task>` 뒤 이스케이프) → 보이지 않는 문자 제거 → 계약 길이 자르기를 한다. 길이 초과 요청은 그 전에 `@aido/api` 요청 schema가 거절한다.
+- 데이터 최소화: 프롬프트에는 요청한 사용자 본인의 할 일·카테고리·통계만 들어간다. 친구·댓글·공유 데이터, 비밀 값, 날씨(제안 v2)는 넣지 않는다. 제안 v2는 서버가 만든 후보와 응답 이력만, 리포트는 집계 수치와 카테고리 이름·이전 팁만 넣는다.
+- 출력은 AI SDK `Output.object`(zod)로 받는다. zod object는 스키마 밖 필드를 버린다. 서버가 id·날짜·개수를 다시 정한다: 카테고리는 소유한 id만, 제안은 서버 후보 id와 기록된 요일만, 할 일 5개·항목 5개·팁 3개·길이 상한, 메모 `totalTaskCount`는 100개 상한. 제목·리포트 문장·제안 사유의 보이지 않는 문자도 지운다. 푸시 문구는 고정 copy라 모델 출력이 들어가지 않고, 앱은 모델 출력을 일반 텍스트로만 그린다(링크·Markdown 없음).
+- 도구 호출(function calling)은 쓰지 않는다. 모델은 구조화 출력만 낸다.
+- Gemini `safetySettings`는 괴롭힘·혐오·성적·위험 4종을 `BLOCK_ONLY_HIGH`로 둔다. 응답 후보가 safety로 막히면(`finishReason: content-filter`) `BLOCKED`(AI_1302)로 분류한다.
+- 남용 방지: 파싱 endpoint는 사용자 기준 분당 parse-todo 20회·parse-memo 10회(`@ThrottleByUser`), 무료 월 한도(`AiUsageGuard` + 원자적 quota 예약)를 공급자 호출 전에 적용한다. 작업별 `maxOutputTokens`·전체 timeout·`maxRetries`는 `ai-generation-policy.ts`가 정한다.
+- 개인정보: 로그는 위 관측 필드만 남긴다. `/ai/` 요청은 5xx Sentry 이벤트에 요청 본문을 붙이지 않는다(`httpIntegration`의 `ignoreRequestBody`).
+
 ## 버전과 호환
 
 - 프롬프트를 크게 바꾸면 기능 폴더에 새 버전 폴더(`v1`, `v2`, …)를 만들고 이전 버전은 롤백용으로만 남긴다. 이전 버전 모듈에는 `@deprecated`와 제거 조건이 담긴 `TODO`를 단다.
