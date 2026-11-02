@@ -252,6 +252,35 @@ describe('useWeatherLocation', () => {
   });
 });
 
+describe('리포트와 위치 등록의 경쟁', () => {
+  it('리포트를 아직 받는 중에 등록이 끝나면 그 리포트를 기다려 비교하고, 같은 격자면 다시 받지 않는다', async () => {
+    // Given
+    const gateway = createGateway();
+    const { httpClient, wrapper, queryClient } = setup(gateway);
+    let resolveReport: (value: { ok: true; value: unknown }) => void = () => undefined;
+    httpClient.get.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveReport = resolve;
+        }),
+    );
+
+    // When
+    const { result } = await renderHook(
+      () => ({ ...useLocationAndRevision(), report: useQuery(useGetWeatherReportQueryOptions()) }),
+      { wrapper },
+    );
+    await waitFor(() => expect(httpClient.put).toHaveBeenCalledTimes(1));
+    await act(async () => resolveReport({ ok: true, value: createSeoulReportDto() }));
+
+    // Then
+    await waitFor(() => expect(result.current.location.status).toBe('ready'));
+    expect(result.current.revision).toBe(0);
+    expect(httpClient.get).toHaveBeenCalledTimes(1);
+    queryClient.clear();
+  });
+});
+
 describe('리포트 요청의 위치 재등록', () => {
   it('서버가 위치를 잃었다고(WEATHER_1902) 하면 마지막 위치를 한 번 다시 등록하고 다시 받는다', async () => {
     // Given

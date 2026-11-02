@@ -13,7 +13,7 @@ import {
 import type { Logger } from '@src/core/ports/logger';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import { isApiError, isBusinessError, toError, unwrap } from '@src/shared/errors';
-import { queryOptions, type Query } from '@tanstack/react-query';
+import { type Query, type QueryClient, queryOptions } from '@tanstack/react-query';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
@@ -80,6 +80,21 @@ async function registerLocation(
 }
 
 /**
+ * 등록을 마쳤을 때 같은 리비전의 리포트를 아직 받는 중이면 그 요청을 기다려 서버가 쓴 위치와 비교한다.
+ * 리포트가 늦게 와도 같은 격자면 리비전을 올리지 않아 같은 요청을 두 번 보내지 않는다.
+ * fetchQuery는 진행 중인 요청이 있으면 새로 보내지 않고 그 요청을 기다린다.
+ */
+async function readReportLocation(client: QueryClient, revision: number) {
+  const queryKey = WEATHER_QUERY_KEYS.report({ locationRevision: revision });
+  const state = client.getQueryState<WeatherReport>(queryKey);
+  if (state?.data == null && state?.fetchStatus === 'fetching') {
+    const report = await client.fetchQuery<WeatherReport>({ queryKey }).catch(() => null);
+    return report?.location ?? null;
+  }
+  return state?.data?.location ?? null;
+}
+
+/**
  * 기기 위치를 읽고, 직전에 등록한 위치에서 충분히 움직였을 때만 서버에 다시 등록한다.
  * 등록을 이 query 안에서 하는 이유: 피드 배지·날씨 화면·안내가 같은 key를 구독하므로
  * 동시에 열려도 위치 읽기와 PUT이 한 번만 일어난다.
@@ -115,18 +130,12 @@ export function getWeatherLocationQueryOptions(dependencies: WeatherLocationDepe
       }
 
       const registered = await registerLocation(dependencies, coordinates, signal);
-      const report = client.getQueryData<WeatherReport>(
-        WEATHER_QUERY_KEYS.report({ locationRevision: revision }),
-      );
+      const reportLocation = await readReportLocation(client, revision);
       return {
         status: 'located',
         registered,
         placeName: place.name,
-        revision: WeatherLocationPolicy.nextRevision(
-          revision,
-          registered,
-          report?.location ?? null,
-        ),
+        revision: WeatherLocationPolicy.nextRevision(revision, registered, reportLocation),
       };
     },
     staleTime: LOCATION_STALE_TIME_MS,
