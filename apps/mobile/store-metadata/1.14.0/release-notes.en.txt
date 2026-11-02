@@ -1,7 +1,0 @@
-- A fresh weather screen: an animated sky, hourly and 10-day forecasts, air quality, and sunrise and sunset at a glance.
-- Weather now works overseas too, with morning and evening weather notifications for where you are.
-- Aido tells you when rain or heat overlaps with today's to-dos, and lets you move them to a better time.
-- Even without a connection, you can still see what you viewed last, and we let you know when you're offline.
-- Clearer guidance and an easy way to contact us if the subscription screen has trouble loading.
-- Friendlier, easier-to-read notification messages.
-- You can now dismiss the friends tip on your feed.

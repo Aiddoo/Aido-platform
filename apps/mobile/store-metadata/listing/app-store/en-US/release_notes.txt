@@ -1,13 +1,14 @@
 New
-- Friends you invite get 7 days of Premium when they join.
-- You get 7 days of Premium + 1 more friend once they complete to-dos on 2 days.
-- Report to-dos, comments, or nudges and block the sender.
+- Hourly and 10-day weather, anywhere in the world.
+- Aido briefing moves to-dos away from rain or heat.
+- Morning and evening weather notifications.
 
 Improvements
-- AI asks for your consent before using your data.
-- AI reads dates like “tomorrow at 3 PM” better.
-- Widgets switch to the new day after midnight.
+- See your last-viewed to-dos and weather offline.
+- Help and contact options if subscriptions can’t load.
+- Premium stays on if a payment is briefly delayed.
+- Easier-to-read notifications.
 
 Bug fixes
-- Fixed recurring to-dos missing in daylight saving time.
-- Fixed notifications opening the wrong screen.
+- Retry or contact us instead of getting stuck.
+- The friends tip on your feed can now be dismissed.
