@@ -67,7 +67,7 @@ async function bootstrap() {
 - 토큰 갱신: \`POST /v1/auth/refresh\`
 
 ## API 버저닝
-- 모든 API는 \`/v1\` 프리픽스 사용
+- 경로에 버전을 둡니다(\`/v1\`, \`/v2\`). Deprecated 표시된 작업은 설명에 적힌 앱 버전까지만 지원합니다.
 - Health 체크만 예외: \`GET /health\`
 `)
       .setVersion(apiVersion)
@@ -99,6 +99,7 @@ async function bootstrap() {
         SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.DAILY_COMPLETIONS],
       )
       // 시스템 APIs
+      .addTag(SWAGGER_TAGS.WEATHER_V1, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER_V1])
       .addTag(SWAGGER_TAGS.COMMON_HEALTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.COMMON_HEALTH])
       .build();
 

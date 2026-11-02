@@ -14,7 +14,7 @@ import { FriendshipEstablisher } from "./application/services/friends/friendship
 import { FollowCacheAdapter } from "./infrastructure/adapters/friends/follow-cache.adapter.js";
 import { FollowNotifierAdapter } from "./infrastructure/adapters/friends/follow-notifier.adapter.js";
 import { DrizzleFollowRepository } from "./infrastructure/persistence/friends/drizzle-follow.repository.js";
-import { FollowController } from "./presentation/controllers/friends/follow.controller.js";
+import { FollowController } from "./presentation/controllers/friends/v1/follow.controller.js";
 import {
   acceptFriendRequestProvider,
   followReaderProvider,

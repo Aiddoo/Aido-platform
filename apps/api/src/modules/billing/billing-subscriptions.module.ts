@@ -38,7 +38,7 @@ import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/
 import { DrizzlePremiumGrantRepository } from "./infrastructure/persistence/subscriptions/drizzle-premium-grant.repository.js";
 import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription-event-receipt.repository.js";
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription.repository.js";
-import { SubscriptionController } from "./presentation/controllers/subscriptions/subscription.controller.js";
+import { SubscriptionController } from "./presentation/controllers/subscriptions/v1/subscription.controller.js";
 
 @Module({
   imports: [

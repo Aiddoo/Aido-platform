@@ -4,20 +4,21 @@
 
 ## 경로와 실제 사례
 
-| 역할                     | 경로/접미사                                       | 현재 사례                                                                    |
-| ------------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Slice 조립               | `<context>-<slice>.module.ts`                     | `PlanningTodosModule`, `WeatherForecastModule`, `NotificationDeliveryModule` |
-| 순수 Application factory | `<context>-<slice>-application.providers.ts`      | `getMemoProvider`                                                            |
-| 최소 공개 capability     | `<context>-<slice>.public.ts`                     | `weather-forecast.public.ts`                                                 |
-| 상태 일관성 경계         | `domain/aggregates/<slice>/*.aggregate.ts`        | `Todo`, `Notification`                                                       |
-| 식별되는 모델            | `domain/entities/<slice>/*.entity.ts`             | `TodoItem`, `AiReport`                                                       |
-| 검증·불변 값             | `domain/value-objects/<slice>/*.vo.ts`            | `TodoSchedule`, `Coordinate`                                                 |
-| 흐름/조회                | `application/use-cases/<slice>/*.use-case.ts`     | `CreateTodo`, `GetMemo`                                                      |
-| Port                     | `application/ports/<slice>/*.<role>.port.ts`      | `WeatherGridResolverPort`, `WeatherForecastReaderPort`                       |
-| 외부 경계 구현           | `infrastructure/adapters/<slice>/*.<role>.ts`     | `KmaWeatherGridResolver`                                                     |
-| 저장 구현                | `infrastructure/persistence/<slice>/*.<role>.ts`  | `DrizzleWeatherLocationRepository`                                           |
-| 조회/응답 projection     | `application/read-models`, `presentation/mappers` | `NotificationRecord`, `toAiReportView`                                       |
-| key/TTL                  | `infrastructure/cache/<slice>/*.keyspace.ts`      | `weather-cache.keyspace.ts`                                                  |
+| 역할                     | 경로/접미사                                                | 현재 사례                                                                    |
+| ------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Slice 조립               | `<context>-<slice>.module.ts`                              | `PlanningTodosModule`, `WeatherForecastModule`, `NotificationDeliveryModule` |
+| 순수 Application factory | `<context>-<slice>-application.providers.ts`               | `getMemoProvider`                                                            |
+| 최소 공개 capability     | `<context>-<slice>.public.ts`                              | `weather-forecast.public.ts`                                                 |
+| 상태 일관성 경계         | `domain/aggregates/<slice>/*.aggregate.ts`                 | `Todo`, `Notification`                                                       |
+| 식별되는 모델            | `domain/entities/<slice>/*.entity.ts`                      | `TodoItem`, `AiReport`                                                       |
+| 검증·불변 값             | `domain/value-objects/<slice>/*.vo.ts`                     | `TodoSchedule`, `Coordinate`                                                 |
+| 흐름/조회                | `application/use-cases/<slice>/*.use-case.ts`              | `CreateTodo`, `GetMemo`                                                      |
+| Port                     | `application/ports/<slice>/*.<role>.port.ts`               | `WeatherGridResolverPort`, `WeatherForecastReaderPort`                       |
+| 외부 경계 구현           | `infrastructure/adapters/<slice>/*.<role>.ts`              | `KmaWeatherGridResolver`                                                     |
+| 저장 구현                | `infrastructure/persistence/<slice>/*.<role>.ts`           | `DrizzleWeatherLocationRepository`                                           |
+| 조회/응답 projection     | `application/read-models`, `presentation/mappers`          | `NotificationRecord`, `toAiReportView`                                       |
+| HTTP 경계(버전별)        | `presentation/{controllers,schemas,mappers}/<slice>/v<n>/` | `controllers/forecast/v1/weather.controller.ts`                              |
+| key/TTL                  | `infrastructure/cache/<slice>/*.keyspace.ts`               | `weather-cache.keyspace.ts`                                                  |
 
 역할을 이름으로 설명한다. Repository는 영속 상태, Reader는 조회, Sender는 발송, Recorder는 기록, Publisher는 발행, Resolver는 해석, Adapter는 경계 변환, Policy는 순수 판단이다. Registry는 실제 여러 구현의 선택 정책이 있을 때 사용한다. 기존 Processor/JobHandler는 queue 소비 역할을 따른다. 새 `Impl`·`Manager`·전달 전용 Facade로 실제 역할을 감추지 않는다.
 

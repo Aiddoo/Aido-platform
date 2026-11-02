@@ -12,7 +12,7 @@ import {
   getDailyCompletionsProvider,
   getFriendDailyCompletionsProvider,
 } from "./insights-daily-completions-application.providers.js";
-import { DailyCompletionController } from "./presentation/controllers/daily-completions/daily-completion.controller.js";
+import { DailyCompletionController } from "./presentation/controllers/daily-completions/v1/daily-completion.controller.js";
 
 @Module({
   imports: [SocialFriendsModule],

@@ -1,2 +1,2 @@
-export * from "./daily-completion.request.js";
-export * from "./daily-completion.response.js";
+export * from "./v1/daily-completion.request.js";
+export * from "./v1/daily-completion.response.js";

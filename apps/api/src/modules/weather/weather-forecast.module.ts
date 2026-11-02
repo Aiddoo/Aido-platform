@@ -17,7 +17,7 @@ import { KmaWeatherGridResolver } from "./infrastructure/adapters/forecast/kma-w
 import { KmaWeatherProvider } from "./infrastructure/adapters/forecast/kma-weather.provider.js";
 import { WeatherCacheAdapter } from "./infrastructure/adapters/forecast/weather-cache.adapter.js";
 import { DrizzleWeatherLocationRepository } from "./infrastructure/persistence/forecast/drizzle-weather-location.repository.js";
-import { WeatherController } from "./presentation/controllers/forecast/weather.controller.js";
+import { WeatherController } from "./presentation/controllers/forecast/v1/weather.controller.js";
 import { weatherForecastReaderProvider } from "./weather-forecast-application.providers.js";
 import { WEATHER_PROVIDERS } from "./weather-forecast.providers.js";
 

@@ -1,2 +1,2 @@
-export * from "./follow.request.js";
-export * from "./follow.response.js";
+export * from "./v1/follow.request.js";
+export * from "./v1/follow.response.js";

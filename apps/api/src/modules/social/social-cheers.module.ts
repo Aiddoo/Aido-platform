@@ -10,7 +10,7 @@ import { CHEER_REPOSITORY } from "./application/ports/cheers/cheer.repository.po
 import { CheerLimitReaderAdapter } from "./infrastructure/adapters/cheers/cheer-limit-reader.adapter.js";
 import { CheerNotifierAdapter } from "./infrastructure/adapters/cheers/cheer-notifier.adapter.js";
 import { DrizzleCheerRepository } from "./infrastructure/persistence/cheers/drizzle-cheer.repository.js";
-import { CheerController } from "./presentation/controllers/cheers/cheer.controller.js";
+import { CheerController } from "./presentation/controllers/cheers/v1/cheer.controller.js";
 import {
   getReceivedCheersProvider,
   getSentCheersProvider,

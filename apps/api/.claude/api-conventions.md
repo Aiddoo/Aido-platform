@@ -34,7 +34,7 @@ SOLID를 새 Base class나 계층을 만드는 이유로 사용하지 않는다.
 
 Controller는 decorator/guard/Swagger, DTO 검증, 원시값의 Application 입력 변환, 결과의 HTTP 매핑을 담당한다. Repository·SDK·transaction·업무 상태 판단은 Controller에 두지 않는다. UseCase를 직접 주입한다.
 
-[TodoController](../src/modules/planning/presentation/controllers/todos/todo.controller.ts)의 실제 시그니처 발췌:
+[TodoController](../src/modules/planning/presentation/controllers/todos/v1/todo.controller.ts)의 실제 시그니처 발췌:
 
 ```ts
 async create(

@@ -23,7 +23,7 @@ import { AiSuggestionQueueMaintenanceService } from "./infrastructure/jobs/sugge
 import { SuggestionAnalysisJob } from "./infrastructure/jobs/suggestions/suggestion-analysis.job.js";
 import { DrizzleAiSuggestionRepository } from "./infrastructure/persistence/suggestions/drizzle-ai-suggestion.repository.js";
 import { SuggestionAnalysisProcessor } from "./infrastructure/processors/suggestions/suggestion-analysis.processor.js";
-import { AiSuggestionController } from "./presentation/controllers/suggestions/ai-suggestion.controller.js";
+import { AiSuggestionController } from "./presentation/controllers/suggestions/v1/ai-suggestion.controller.js";
 
 /**
  * AI 반복 제안 모듈 (DDD 클린아키텍처 · use-case 기반).

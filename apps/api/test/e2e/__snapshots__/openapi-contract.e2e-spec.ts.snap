@@ -47815,7 +47815,9 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
   },
   "/v1/weather/conditions": {
     "get": {
+      "deprecated": true,
       "description": "
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
 체감온도, 자외선지수, 일출/일몰, 미세먼지 등 부가 정보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -47967,13 +47969,15 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
       ],
       "summary": "날씨 부가 정보 조회",
       "tags": [
-        "Weather",
+        "Weather v1 · Deprecated",
       ],
     },
   },
   "/v1/weather/forecast": {
     "get": {
+      "deprecated": true,
       "description": "
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
 기상청 단기예보 기반 날씨 예보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -48141,13 +48145,15 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
       ],
       "summary": "날씨 예보 조회",
       "tags": [
-        "Weather",
+        "Weather v1 · Deprecated",
       ],
     },
   },
   "/v1/weather/location": {
     "put": {
+      "deprecated": true,
       "description": "
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
 GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)로 자동 변환됩니다.
 날씨 예보, 부가 정보 조회, 오전/오후 날씨 알림의 기준 위치로 사용됩니다.
 
@@ -48268,7 +48274,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
       ],
       "summary": "위치 등록/수정",
       "tags": [
-        "Weather",
+        "Weather v1 · Deprecated",
       ],
     },
   },

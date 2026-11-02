@@ -57,7 +57,7 @@ export const SWAGGER_TAGS = {
   MEMOS: "Memos",
 
   /** 날씨 - 위치 등록, 날씨 예보 조회 */
-  WEATHER: "Weather",
+  WEATHER_V1: "Weather v1 · Deprecated",
 
   // ============================================
   // Admin APIs (관리자/백오피스용) - 추후 확장
@@ -149,7 +149,8 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
   [SWAGGER_TAGS.MEMOS]: "빠른 메모 CRUD. 핀 고정, 순서 변경, 할 일 변환 지원. 최대 20개/유저",
 
-  [SWAGGER_TAGS.WEATHER]: "날씨 알림용 위치 등록, 날씨 예보 조회. 기상청 단기예보 기반, 격자 캐싱",
+  [SWAGGER_TAGS.WEATHER_V1]:
+    "1.13.1 이하 앱 전용. 기상청 단기예보·격자 캐시 기반. 1.14.0부터 앱은 `/v2/weather`를 사용한다.",
 
   [SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 

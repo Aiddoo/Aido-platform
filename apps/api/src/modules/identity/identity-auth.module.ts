@@ -104,7 +104,7 @@ import {
   AuthController,
   OAuthController,
   SessionController,
-} from "./presentation/controllers/auth/index.js";
+} from "./presentation/controllers/auth/v1/index.js";
 import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-active.interceptor.js";
 
 /**

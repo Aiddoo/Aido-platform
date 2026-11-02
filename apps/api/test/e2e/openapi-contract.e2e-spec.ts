@@ -28,10 +28,12 @@ const RELEASED_OPENAPI_CONTRACTS = [
 ] as const;
 
 const DOCUMENTATION_ONLY_FIELDS = new Set([
+  "deprecated",
   "description",
   "example",
   "examples",
   "summary",
+  "tags",
   "title",
 ]);
 

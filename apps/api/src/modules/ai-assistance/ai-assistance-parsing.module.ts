@@ -24,7 +24,7 @@ import { UserLocalePreferenceReader } from "./infrastructure/adapters/parsing/us
 import { aiTaskSettingsProvider } from "./infrastructure/config/parsing/ai-task-config.js";
 import { AiDataSharingConsentGuard } from "./infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "./infrastructure/guards/parsing/ai-usage.guard.js";
-import { AiController } from "./presentation/controllers/parsing/ai.controller.js";
+import { AiController } from "./presentation/controllers/parsing/v1/ai.controller.js";
 
 @Module({
   imports: [

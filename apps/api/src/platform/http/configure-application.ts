@@ -8,6 +8,7 @@ import helmet from "helmet";
 import type { EnvConfig } from "#api/platform/config/index";
 import { createCorsOptions } from "#api/platform/config/utils/cors-options";
 
+import { API_VERSIONING_OPTIONS } from "./api-versioning.js";
 import { configureRequestIdentity } from "./configure-request-identity.js";
 
 export interface ApplicationConfiguration {
@@ -39,7 +40,7 @@ export function configureApplication(
         }),
     }),
   );
-  app.setGlobalPrefix("v1", { exclude: ["health"] });
+  app.enableVersioning(API_VERSIONING_OPTIONS);
 
   if (config.enableShutdownHooks !== false) {
     app.enableShutdownHooks();

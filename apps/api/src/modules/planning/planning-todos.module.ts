@@ -32,7 +32,7 @@ import { DrizzleTodoReadRepository } from "./infrastructure/persistence/todos/dr
 import { DrizzleTodoRepository } from "./infrastructure/persistence/todos/drizzle-todo.repository.js";
 import { PlanningCategoriesModule } from "./planning-categories.module.js";
 import { TODO_PROVIDERS } from "./planning-todos.providers.js";
-import { TodoController } from "./presentation/controllers/todos/todo.controller.js";
+import { TodoController } from "./presentation/controllers/todos/v1/todo.controller.js";
 
 @Module({
   imports: [

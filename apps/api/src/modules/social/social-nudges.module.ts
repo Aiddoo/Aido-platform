@@ -15,8 +15,8 @@ import { NUDGE_REPOSITORY } from "./application/ports/nudges/nudge.repository.po
 import { NudgeLimitReaderAdapter } from "./infrastructure/adapters/nudges/nudge-limit-reader.adapter.js";
 import { NudgeNotifierAdapter } from "./infrastructure/adapters/nudges/nudge-notifier.adapter.js";
 import { DrizzleNudgeRepository } from "./infrastructure/persistence/nudges/drizzle-nudge.repository.js";
-import { NudgeInteractionController } from "./presentation/controllers/nudges/nudge-interaction.controller.js";
-import { NudgeController } from "./presentation/controllers/nudges/nudge.controller.js";
+import { NudgeInteractionController } from "./presentation/controllers/nudges/v1/nudge-interaction.controller.js";
+import { NudgeController } from "./presentation/controllers/nudges/v1/nudge.controller.js";
 import {
   getNudgeInteractionAvailabilityProvider,
   getNudgeInteractionsProvider,

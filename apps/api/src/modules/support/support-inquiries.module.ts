@@ -4,7 +4,7 @@ import { NotificationEmailModule } from "#api/modules/notification/notification-
 
 import { INQUIRY_MAILER } from "./application/ports/inquiries/inquiry-mailer.port.js";
 import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/inquiries/email-inquiry-mailer.adapter.js";
-import { InquiryController } from "./presentation/controllers/inquiries/inquiry.controller.js";
+import { InquiryController } from "./presentation/controllers/inquiries/v1/inquiry.controller.js";
 import { INQUIRY_PROVIDERS } from "./support-inquiries.providers.js";
 
 /**

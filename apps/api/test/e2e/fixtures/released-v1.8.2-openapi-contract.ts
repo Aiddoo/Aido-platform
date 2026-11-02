@@ -77,6 +77,9 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: AI 할 일·메모 정리 라우트에만 선택 x-app-version 헤더와 403 AI_1311을 추가. 리포트·제안 조회·처리는 그대로다. 헤더가 없거나 1.13.0 미만이면 동의 없이도 기존처럼 처리한다. */
 	preAiDataSharingConsentPathsFingerprint:
 		"b717111ffbc46d9cbdd8019424d953dac7702ee838605c6e9d6bf4317b7afa4d",
-	pathsFingerprint:
+	/** 1.14.0: 날씨 v1을 Swagger에서 Deprecated(태그 `Weather v1 · Deprecated`, operation `deprecated: true`)로 표시했다. 태그·deprecated는 문서 표시용이라 fingerprint에서 description처럼 제외한다. 제외 전 값이 위 sourceCommit 문서와 같았으므로 같은 문서에서 다시 계산한 값이다. 경로·요청·응답·상태 코드는 같다. */
+	preDocumentationMetadataPathsFingerprint:
 		"e4d5933e1acf6d9839b39f0a1d220c8b33a046af81305306e5ba03cb1fc28369",
+	pathsFingerprint:
+		"04721187159f3c02480c9f884ef2227b54067060af59612da5ab31fee46a1f1f",
 } as const;

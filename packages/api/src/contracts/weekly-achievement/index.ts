@@ -1,2 +1,2 @@
-export * from "./weekly-achievement.request.js";
-export * from "./weekly-achievement.response.js";
+export * from "./v1/weekly-achievement.request.js";
+export * from "./v1/weekly-achievement.response.js";
