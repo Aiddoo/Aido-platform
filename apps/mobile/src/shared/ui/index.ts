@@ -117,13 +117,15 @@ export {
   type ListRowProps,
   type ListRowVerticalPadding,
 } from './list-row';
+export { OfflineBanner } from './offline-banner';
 export { OverlayProvider, type OverlayRender, useOverlay, useOverlayState } from './overlay';
-export { PremiumDialog, type PremiumDialogProps, usePremiumDialog } from './premium-dialog';
+export { PremiumDialog, type PremiumDialogProps } from './premium-dialog';
 export type { QueryErrorFallbackProps } from './query-error-boundary';
 export {
   BUG_REPORT_INQUIRY_HREF,
   INQUIRY_SHEET_EXIT,
   openBugReportInquiry,
+  openSupportMail,
   QueryErrorActions,
   QueryErrorBoundary,
   QueryErrorFallback,

@@ -10,6 +10,7 @@ export function getAiUsageQueryOptions(aiService: AiService) {
     queryKey: AI_QUERY_KEYS.usage(),
     queryFn: async ({ signal }) => unwrap(await aiService.getAiUsage(signal)),
     staleTime: 60 * 1000,
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

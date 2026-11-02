@@ -1,0 +1,73 @@
+import type { WeatherRescheduleReason } from '@aido/api';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useTranslation } from '@src/shared/i18n';
+import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
+import { formatClockTime, type TimeFormat } from '@src/shared/utils/date-format';
+import { useFormContext } from 'react-hook-form';
+
+import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
+import type { ForecastTodo, RescheduleOption } from '../../domains/weather-briefing.model';
+import type { WeatherRescheduleFormValues } from '../../domains/weather-reschedule-form.schema';
+import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
+
+interface WeatherRescheduleTodoProps {
+  todo: ForecastTodo;
+  options: RescheduleOption[];
+  reason: WeatherRescheduleReason;
+  timeFormat: TimeFormat;
+  onExclude: () => void;
+}
+
+/** 할 일 하나의 옮길 시각 선택. 기본 선택(추천 시간)은 FormField의 defaultValue로 처음 그릴 때 한 번 정한다. */
+export function WeatherRescheduleTodo({
+  todo,
+  options,
+  reason,
+  timeFormat,
+  onExclude,
+}: WeatherRescheduleTodoProps) {
+  const { t } = useTranslation('weather');
+  const { control } = useFormContext<WeatherRescheduleFormValues>();
+  const dateFormat = useDateFormatContext();
+  const [recommended] = options;
+
+  return (
+    <VStack gap={8}>
+      <HStack align="center" gap={8}>
+        <Text size="b2" weight="semibold" className="shrink" maxLines={2}>
+          {todo.title}
+        </Text>
+        <Text size="b4" shade={6}>
+          {formatClockTime(todo.scheduledAt, timeFormat, dateFormat)}
+        </Text>
+      </HStack>
+      {recommended == null ? (
+        <Text size="b3" shade={6}>
+          {t(RESCHEDULE_COPY_KEYS[reason].noTime)}
+        </Text>
+      ) : (
+        <FormField
+          control={control}
+          name={`selections.${todo.todoId}`}
+          defaultValue={recommended.startsAt.toISOString()}
+        >
+          {({ value, onChange }) => (
+            <WeatherRescheduleTimeInput
+              value={value}
+              onChange={onChange}
+              options={options}
+              reason={reason}
+              timeFormat={timeFormat}
+            />
+          )}
+        </FormField>
+      )}
+      <Box className="items-start">
+        <TextButton size="small" onPress={onExclude}>
+          {t('reschedule.exclude')}
+        </TextButton>
+      </Box>
+    </VStack>
+  );
+}

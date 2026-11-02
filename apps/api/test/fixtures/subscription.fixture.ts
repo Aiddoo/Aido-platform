@@ -32,6 +32,7 @@ export function createSubscriptionRecord(
     status: "ACTIVE",
     startedAt: SUBSCRIPTION_TIME,
     expiresAt: SUBSCRIPTION_EXPIRY,
+    gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: null,
     ...overrides,

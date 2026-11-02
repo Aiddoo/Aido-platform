@@ -1,6 +1,6 @@
-export * from "./notification.content.js";
-export * from "./notification.payload.js";
-export * from "./notification.request.js";
-export * from "./notification.response.js";
+export * from "./v1/notification.content.js";
+export * from "./v1/notification.payload.js";
+export * from "./v1/notification.request.js";
+export * from "./v1/notification.response.js";
 
-export { notificationTypeSchema } from "./notification.common.js";
+export { notificationTypeSchema } from "./v1/notification.common.js";

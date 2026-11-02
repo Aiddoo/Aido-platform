@@ -1,7 +1,14 @@
 export {
   ENTITLEMENT_READER,
+  type AccessSnapshot,
   type EntitlementReaderPort,
+  type FeatureAccess,
 } from "./application/ports/entitlement/entitlement-reader.port.js";
+export {
+  assertEntitled,
+  assertEntitledInTx,
+  premiumFeatureDenied,
+} from "./application/services/entitlement/entitlement-guard.js";
 export {
   ENTITLEMENT_SUBSCRIPTION_INVALIDATOR,
   type EntitlementSubscriptionInvalidatorPort,

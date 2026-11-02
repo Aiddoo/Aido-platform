@@ -7,6 +7,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { tv } from '@src/shared/utils/tv';
 import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
@@ -129,20 +130,41 @@ export function TodoLabel({ isChecked, children, ...props }: TodoLabelProps) {
   );
 }
 
+type TodoProgressTone = 'surface' | 'onSky';
+
+const todoProgress = tv({
+  slots: { track: 'h-1 w-10 overflow-hidden rounded-full', label: '' },
+  variants: {
+    tone: {
+      surface: { track: 'bg-gray-2' },
+      onSky: { track: 'bg-on-sky/20', label: 'text-on-sky/60 tabular-nums' },
+    },
+  },
+  defaultVariants: { tone: 'surface' },
+});
+
 interface TodoProgressProps {
   value: number;
   total: number;
+  /** 날씨 하늘처럼 늘 어두운 면 위에서는 onSky로 흰 막대·글자를 쓴다. */
+  tone?: TodoProgressTone;
 }
 
-export function TodoProgress({ value, total }: TodoProgressProps) {
+export function TodoProgress({ value, total, tone = 'surface' }: TodoProgressProps) {
   const percentage = total > 0 ? (value / total) * 100 : 0;
+  const styles = todoProgress({ tone });
 
   return (
     <HStack gap={6} align="center">
-      <Box className="h-1 w-10 rounded-full bg-gray-2 overflow-hidden">
+      <Box className={styles.track()}>
         <Box className="h-full rounded-full bg-main" style={{ width: `${percentage}%` }} />
       </Box>
-      <Text size="e1" shade={6}>
+      <Text
+        size="e1"
+        tone={tone === 'onSky' ? 'onSky' : undefined}
+        shade={tone === 'onSky' ? undefined : 6}
+        className={styles.label()}
+      >
         {value}/{total}
       </Text>
     </HStack>

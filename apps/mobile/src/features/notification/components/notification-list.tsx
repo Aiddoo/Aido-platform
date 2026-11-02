@@ -3,6 +3,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
 import { userReportSheetHref } from '@src/features/moderation/utils/navigation/moderation-href';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -17,7 +18,6 @@ import {
   Button,
   NotiIcon,
   Result,
-  usePremiumDialog,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -190,7 +190,7 @@ function useNotificationPress(notification: Notification) {
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('AI_REPORT');
 
   return useCallback(() => {
     if (!notification.isRead) {
@@ -200,8 +200,7 @@ function useNotificationPress(notification: Notification) {
     if (NotificationPolicy.isAiFeature(notification)) {
       const user = getCachedMe(queryClient);
       if (user && !UserPolicy.isPremiumUser(user)) {
-        trackEvent('premium_gate_shown', { feature: 'ai_report' });
-        premiumDialog.open({
+        premiumGate.open({
           description: tGlobal('notification:list.premiumDescription'),
         });
         return;
@@ -229,7 +228,7 @@ function useNotificationPress(notification: Notification) {
     markAsRead,
     trackEvent,
     queryClient,
-    premiumDialog,
+    premiumGate,
     navigateToDestination,
     today,
     windowSizeClass,

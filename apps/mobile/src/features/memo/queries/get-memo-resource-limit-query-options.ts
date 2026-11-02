@@ -12,6 +12,7 @@ export function getMemoResourceLimitQueryOptions(service: MemoService) {
       const result = await service.getResourceLimit(signal);
       return unwrap(result);
     },
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

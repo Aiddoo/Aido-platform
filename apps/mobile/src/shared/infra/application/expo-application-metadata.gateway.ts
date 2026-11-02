@@ -14,6 +14,7 @@ export const expoApplicationMetadataGateway: NativeApplicationMetadataGateway = 
     return {
       platform: Platform.OS,
       currentVersion: Application.nativeApplicationVersion ?? undefined,
+      currentBuild: Application.nativeBuildVersion ?? undefined,
     };
   },
 };

@@ -48,6 +48,12 @@ const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   day: '2-digit',
 };
 const ZONED_HOUR_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', hourCycle: 'h23' };
+const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
+  ...DATE_KEY_OPTIONS,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+};
 const PARTS_LOCALE: DateFormatContext['locale'] = 'en-US';
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
@@ -184,6 +190,15 @@ export function formatHourLabel(
   }).format(date);
 }
 
+/** 순간이 놓인 시각을 정시로 표시한다. 시는 context 시간대로 읽는다 (서울 15:20 → "오후 3시"). */
+export function formatInstantHour(
+  date: Date,
+  timeFormat: TimeFormat,
+  context: DateFormatContext,
+): string {
+  return formatHourLabel(getZonedHour(date, context.timeZone), timeFormat, context);
+}
+
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
@@ -252,4 +267,14 @@ export function getZonedHour(date: Date, timeZone: string): number {
       'hour',
     ),
   );
+}
+
+/** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */
+export function hasSameWallClock(date: Date, timeZone: string, otherTimeZone: string): boolean {
+  if (!isValidDate(date)) {
+    return true;
+  }
+  const read = (zone: string) =>
+    getFormatter({ locale: PARTS_LOCALE, timeZone: zone }, WALL_CLOCK_OPTIONS).format(date);
+  return read(timeZone) === read(otherTimeZone);
 }

@@ -1,8 +1,20 @@
+import { i18n } from '@src/shared/i18n';
+import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { PropsWithChildren } from 'react';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import * as Application from 'expo-application';
+import * as Updates from 'expo-updates';
+import { type PropsWithChildren, useEffect, useState } from 'react';
 import type { AppStateStatus } from 'react-native';
 import { AppState, Platform } from 'react-native';
 
+import {
+  createQueryCacheBuster,
+  createQueryPersistOptions,
+  type QueryCacheStorage,
+  removePlaintextQueryCache,
+} from './query-cache-persistence';
 import { shouldRetryQuery } from './query-retry';
 
 /**
@@ -47,7 +59,62 @@ const queryClient = new QueryClient({
   },
 });
 
-/** 앱 전역 React Query 캐시 및 기본 옵션을 제공하는 Provider. */
-export function QueryProvider({ children }: PropsWithChildren) {
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+// OTA 업데이트도 모델 모양을 바꿀 수 있어 번들 id까지 버전에 넣는다
+const appVersion = `${Application.nativeApplicationVersion}+${Updates.updateId ?? 'embedded'}`;
+
+// 복원한 데이터는 앱이 꺼지기 전 낙관적 반영(서버에 닿지 못한 변경)일 수 있어 stale로만 표시한다.
+// 화면이 붙을 때 서버 값으로 다시 맞추고, 여기서 요청을 기다리지 않아 복원 대기가 네트워크에 묶이지 않는다
+const markRestoredQueriesStale = () => queryClient.invalidateQueries({ refetchType: 'none' });
+
+interface QueryProviderProps extends PropsWithChildren {
+  /** 암호화 저장소를 열지 못하면 `null`. 이때는 캐시를 기기에 남기지 않는다 */
+  cacheStorage: QueryCacheStorage | null;
+}
+
+/**
+ * 앱 전역 React Query 캐시 및 기본 옵션을 제공하는 Provider.
+ * opt-in한 조회는 기기(암호화 MMKV)에 저장해 오프라인으로 다시 열어도 마지막 데이터를 먼저 보여 준다.
+ *
+ * @see https://tanstack.com/query/latest/docs/framework/react/plugins/persistQueryClient
+ */
+export function QueryProvider({ children, cacheStorage }: QueryProviderProps) {
+  const { resolvedLanguage } = useLanguage();
+  const [persistOptions] = useState(() => {
+    removePlaintextQueryCache(mmkvSyncStorage);
+    return cacheStorage == null
+      ? null
+      : createQueryPersistOptions({
+          storage: cacheStorage,
+          buster: createQueryCacheBuster({ appVersion, language: resolvedLanguage }),
+        });
+  });
+
+  // 서버가 Accept-Language로 만든 값(날씨·알림·AI 결과)은 키에 언어가 없어, 언어가 바뀌면 한 번 모두 다시 받는다
+  useEffect(() => {
+    let currentLanguage = i18n.language;
+    const handleLanguageChanged = (language: string) => {
+      if (language === currentLanguage) {
+        return;
+      }
+      currentLanguage = language;
+      queryClient.invalidateQueries();
+    };
+
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => i18n.off('languageChanged', handleLanguageChanged);
+  }, []);
+
+  if (persistOptions == null) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  }
+
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={persistOptions}
+      onSuccess={markRestoredQueriesStale}
+    >
+      {children}
+    </PersistQueryClientProvider>
+  );
 }

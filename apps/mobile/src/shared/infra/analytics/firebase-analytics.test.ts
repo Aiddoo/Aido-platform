@@ -1,4 +1,9 @@
-import { resetAnalyticsData, setUserId, setUserProperty } from '@react-native-firebase/analytics';
+import {
+  resetAnalyticsData,
+  setUserId,
+  setUserProperties,
+  setUserProperty,
+} from '@react-native-firebase/analytics';
 import type { Logger } from '@src/core/ports/logger';
 
 import { createFirebaseAnalytics } from './firebase-analytics';
@@ -15,12 +20,14 @@ jest.mock('@react-native-firebase/analytics', () => ({
   },
   resetAnalyticsData: jest.fn(),
   setUserId: jest.fn(),
+  setUserProperties: jest.fn(),
   setUserProperty: jest.fn(),
 }));
 
 const mockResetAnalyticsData = jest.mocked(resetAnalyticsData);
 const mockSetUserId = jest.mocked(setUserId);
 const mockSetUserProperty = jest.mocked(setUserProperty);
+const mockSetUserProperties = jest.mocked(setUserProperties);
 
 const createLogger = (): jest.Mocked<Logger> => ({
   debug: jest.fn(),
@@ -34,6 +41,7 @@ describe('createFirebaseAnalytics', () => {
     mockAnalyticsLogEvent.mockResolvedValue(undefined);
     mockSetUserId.mockResolvedValue(undefined);
     mockSetUserProperty.mockResolvedValue(undefined);
+    mockSetUserProperties.mockResolvedValue(undefined);
     mockResetAnalyticsData.mockResolvedValue(undefined);
   });
 
@@ -130,19 +138,42 @@ describe('createFirebaseAnalytics', () => {
     const analytics = createFirebaseAnalytics(logger);
     mockSetUserProperty.mockRejectedValueOnce(new Error('property rejected'));
 
-    analytics.setUserProperties({ streak: 7, premium: true });
+    analytics.setUserProperties({
+      is_premium: true,
+      subscription_status: 'ACTIVE',
+      premium_source: 'store',
+    });
     await Promise.resolve();
 
-    expect(mockSetUserProperty).toHaveBeenNthCalledWith(1, mockFirebaseAnalytics, 'streak', '7');
     expect(mockSetUserProperty).toHaveBeenNthCalledWith(
-      2,
+      1,
       mockFirebaseAnalytics,
-      'premium',
+      'is_premium',
       'true',
     );
+    expect(mockSetUserProperty).toHaveBeenNthCalledWith(
+      3,
+      mockFirebaseAnalytics,
+      'premium_source',
+      'store',
+    );
     expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.set-user-property.failed', {
-      key: 'streak',
+      key: 'is_premium',
       error: 'property rejected',
+    });
+  });
+
+  it('로그아웃하면 사용자 id와 모든 사용자 속성을 지워 다음 계정에 남기지 않는다', () => {
+    // Given 로그인했던 기기 / When 사용자를 지우면 / Then id와 모든 속성이 null이 된다
+    const analytics = createFirebaseAnalytics(createLogger());
+
+    analytics.clearUser();
+
+    expect(mockSetUserId).toHaveBeenCalledWith(mockFirebaseAnalytics, null);
+    expect(mockSetUserProperties).toHaveBeenCalledWith(mockFirebaseAnalytics, {
+      is_premium: null,
+      subscription_status: null,
+      premium_source: null,
     });
   });
 

@@ -3,6 +3,7 @@ import { sumBy } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
@@ -147,7 +148,7 @@ export class GrantInviteRewards {
         grantId: grant.id,
         rewardType: grant.rewardType,
         attempts: attempts ?? grant.attempts,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
       if (countsAttempt && attempts === INVITE_REWARD_MAX_ATTEMPTS) {
         this.#reportExhausted(grant, attempts, errorCode);
@@ -178,7 +179,7 @@ export class GrantInviteRewards {
       this.#dependencies.logger.warn({
         event: SocialInviteLogEvent.REWARD_RETRY_EXHAUSTED,
         grantId: grant.id,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
   }
@@ -243,7 +244,7 @@ export class GrantInviteRewards {
       this.#dependencies.logger.warn({
         event: SocialInviteLogEvent.REWARDED_NOTIFICATION_FAILED,
         redemptionId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
   }

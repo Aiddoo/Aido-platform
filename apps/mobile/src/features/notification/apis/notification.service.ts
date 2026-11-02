@@ -8,7 +8,7 @@ import {
   registerTokenResponseSchema,
   unreadCountResponseSchema,
 } from '@aido/api';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
@@ -83,12 +83,14 @@ export class NotificationService {
     return ok(parsed.data);
   };
 
-  unregisterPushToken = async (): Promise<Result<void, ApiError>> => {
+  unregisterPushToken = async (
+    config?: Pick<RequestConfig, 'timeout'>,
+  ): Promise<Result<void, ApiError>> => {
     const deviceId = await this.#deviceIdService.get();
-    const result = await this.#httpClient.delete(
-      'v1/notifications/token',
-      deviceId ? { params: { deviceId } } : undefined,
-    );
+    const result = await this.#httpClient.delete('v1/notifications/token', {
+      ...config,
+      ...(deviceId && { params: { deviceId } }),
+    });
 
     if (!result.ok) {
       return result;

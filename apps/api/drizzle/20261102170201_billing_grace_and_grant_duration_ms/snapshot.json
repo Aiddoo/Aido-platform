@@ -1,0 +1,81 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "df3e26d8-19ce-48ba-82ac-3dc40a4d4be3",
+  "prevIds": [
+    "2920fa77-8f25-4d49-8758-a064c22a76ab"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "PremiumGrant",
+        "durationMs"
+      ],
+      "writes": [
+        "s|col|public.PremiumGrant.durationMs",
+        "n|col|public.PremiumGrant.durationMs",
+        "e|col|public.PremiumGrant.durationMs"
+      ],
+      "reads": [
+        "n|tbl|public.PremiumGrant",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Subscription",
+        "gracePeriodEndsAt"
+      ],
+      "writes": [
+        "s|col|public.Subscription.gracePeriodEndsAt",
+        "n|col|public.Subscription.gracePeriodEndsAt",
+        "e|col|public.Subscription.gracePeriodEndsAt"
+      ],
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PremiumGrant",
+        "name": "durationMs",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Subscription",
+        "name": "gracePeriodEndsAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

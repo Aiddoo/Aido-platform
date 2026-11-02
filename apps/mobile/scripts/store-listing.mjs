@@ -13,7 +13,10 @@ import { parseArgs } from 'node:util';
 
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LISTING_ROOT = join(MOBILE_ROOT, 'store-metadata/listing');
-export const RELEASE_VERSION = '1.13.0';
+// 출시 노트 기준 버전은 앱 버전 하나다(docs/conventions/git.md#버전).
+export const RELEASE_VERSION = JSON.parse(
+  readFileSync(join(MOBILE_ROOT, 'package.json'), 'utf8'),
+).version;
 
 // 한도 출처: App Store Connect 도움말(platform-version-information, app-information),
 // Play Console 도움말(9859152, 9866151). keywords는 Apple 문서상 100바이트지만 App Store Connect는

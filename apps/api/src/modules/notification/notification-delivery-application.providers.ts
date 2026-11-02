@@ -392,15 +392,23 @@ export const recoverFailedPushDeliveriesProvider: FactoryProvider<RecoverFailedP
 
 export const registerPushTokenProvider: FactoryProvider<RegisterPushToken> = {
   provide: RegisterPushToken,
-  inject: [PUSH_TOKEN_REPOSITORY, PUSH_PROVIDER, USER_NOTIFICATION_SETTINGS, NOTIFICATION_CACHE],
+  inject: [
+    PUSH_TOKEN_REPOSITORY,
+    UNIT_OF_WORK,
+    PUSH_PROVIDER,
+    USER_NOTIFICATION_SETTINGS,
+    NOTIFICATION_CACHE,
+  ],
   useFactory: (
     pushTokenRepository: ConstructorParameters<typeof RegisterPushToken>[0]["pushTokenRepository"],
+    unitOfWork: ConstructorParameters<typeof RegisterPushToken>[0]["unitOfWork"],
     pushProvider: ConstructorParameters<typeof RegisterPushToken>[0]["pushProvider"],
     userSettings: ConstructorParameters<typeof RegisterPushToken>[0]["userSettings"],
     cache: ConstructorParameters<typeof RegisterPushToken>[0]["cache"],
   ) =>
     new RegisterPushToken({
       pushTokenRepository,
+      unitOfWork,
       pushProvider,
       userSettings,
       cache,

@@ -169,4 +169,19 @@ describe("리포트 프롬프트 v2", () => {
       ReportDraftRejectedError,
     );
   });
+
+  it("저장할 summary·팁의 보이지 않는 문자와 방향 제어 문자를 지운다", async () => {
+    // Given
+    const provider = new FakeAiProvider().setRawResponse({
+      summary: "20개 중 15개를\u200B 끝냈어요.\u202E",
+      tips: ["운동은\u{E0041} 하루만 골라 등록해보세요."],
+    });
+    // When
+    const { value } = await reportPromptV2.ko.output.generate(provider, request, input);
+    // Then
+    expect(value).toEqual({
+      aiSummary: "20개 중 15개를 끝냈어요.",
+      aiTips: ["운동은 하루만 골라 등록해보세요."],
+    });
+  });
 });

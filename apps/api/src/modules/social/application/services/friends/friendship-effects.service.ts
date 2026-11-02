@@ -1,4 +1,5 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
 import { type FollowNotifierPort } from "../../ports/friends/follow-notifier.port.js";
@@ -40,7 +41,7 @@ export class FriendshipEffects {
       this.#dependencies.logger.error({
         event: SocialFriendLogEvent.MILESTONE_CHECK_FAILED,
         userId,
-        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorName: toErrorType(error),
       });
     }
   }

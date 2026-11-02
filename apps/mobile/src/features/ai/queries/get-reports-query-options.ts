@@ -16,6 +16,7 @@ export function getReportsQueryOptions(
       const result = await aiService.getReports(params, signal);
       return unwrap(result);
     },
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/api";
+import { PREMIUM_FEATURES, TODO_CATEGORY_LIMITS } from "@aido/api";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -102,7 +102,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
         .expect(200);
 
       // Then
-      expect(limitResponse.body.data.maxCount).toBe(SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE);
+      expect(limitResponse.body.data.maxCount).toBe(PREMIUM_FEATURES.TODO_CATEGORY.premium);
       expect(limitResponse.body.data.categoryCount).toBe(5);
     });
   });

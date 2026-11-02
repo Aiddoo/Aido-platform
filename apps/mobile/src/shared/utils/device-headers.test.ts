@@ -9,10 +9,15 @@ const setModelName = (value: string | null) => {
   Object.defineProperty(Device, 'modelName', { value, configurable: true });
 };
 
+const setOsVersion = (value: string | null) => {
+  Object.defineProperty(Device, 'osVersion', { value, configurable: true });
+};
+
 describe('getDeviceHeaders', () => {
   afterEach(() => {
     Platform.OS = 'ios';
     setModelName('iPhone 15 Pro');
+    setOsVersion(null);
   });
 
   it('iOS 플랫폼과 모델명을 반환한다', () => {
@@ -62,5 +67,33 @@ describe('getDeviceHeaders', () => {
     setModelName('갤럭시 S24');
 
     expect(getDeviceHeaders()).toEqual({ 'X-Device-Type': 'IOS' });
+  });
+
+  it('OS 버전을 함께 보낸다', () => {
+    // Given
+    Platform.OS = 'android';
+    setModelName('Pixel 9');
+    setOsVersion('15');
+
+    // When
+    const headers = getDeviceHeaders();
+
+    // Then
+    expect(headers).toEqual({
+      'X-Device-Type': 'ANDROID',
+      'X-Device-Name': 'Pixel 9',
+      'X-OS-Version': '15',
+    });
+  });
+
+  it('형식에 맞지 않는 OS 버전은 헤더에서 제외한다', () => {
+    // Given
+    setOsVersion('18.1 beta (22B5034e)');
+
+    // When
+    const headers = getDeviceHeaders();
+
+    // Then
+    expect(headers).toEqual({ 'X-Device-Type': 'IOS', 'X-Device-Name': 'iPhone 15 Pro' });
   });
 });

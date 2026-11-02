@@ -18,7 +18,7 @@ import { ReportGenerationJob } from "./infrastructure/jobs/reports/report-genera
 import { DrizzleAiReportRepository } from "./infrastructure/persistence/reports/drizzle-ai-report.repository.js";
 import { DrizzleTodoStatsReader } from "./infrastructure/persistence/reports/drizzle-todo-stats.reader.js";
 import { ReportGenerationProcessor } from "./infrastructure/processors/reports/report-generation.processor.js";
-import { AiReportController } from "./presentation/controllers/reports/ai-report.controller.js";
+import { AiReportController } from "./presentation/controllers/reports/v1/ai-report.controller.js";
 
 /**
  * AI 리포트 모듈

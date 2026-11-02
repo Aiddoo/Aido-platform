@@ -30,14 +30,16 @@ import { StoreReviewService } from '@src/features/store-review/apis/store-review
 import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
+import { createFriendStripHintRepository } from '@src/features/todo/apis/friend-strip-hint.repository';
+import { FriendStripHintService } from '@src/features/todo/apis/friend-strip-hint.service';
 import { createReorderCoachmarkRepository } from '@src/features/todo/apis/reorder-coachmark.repository';
 import { ReorderCoachmarkService } from '@src/features/todo/apis/reorder-coachmark.service';
 import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
-import { createWeatherLocationStateRepository } from '@src/features/weather/apis/weather-location-state.repository';
-import { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
+import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
+import { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createWidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
@@ -46,7 +48,7 @@ import { createFeatureAttributionStore } from '@src/shared/analytics/feature-att
 import { ENV } from '@src/shared/config/env';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
-import { toError } from '@src/shared/errors';
+import { errorMessageOf, isKeychainLockedError, toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
@@ -68,12 +70,13 @@ import {
   createSentryLogger,
   setGlobalLogger,
 } from '@src/shared/infra/logger';
+import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status.gateway';
 import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
 import { rnSystemShareGateway } from '@src/shared/infra/share/rn-system-share.gateway';
-import type { DraftStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
@@ -81,13 +84,21 @@ import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-naviga
 import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
+import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
+import type { QueryCacheStorage } from './query-cache-persistence';
 
 interface DIProviderProps extends PropsWithChildren {
-  /** 암호화 키 조회가 끝난 초안 저장소. 비동기 준비는 앱 부트스트랩에서 마친다. */
-  draftStorageBootstrap: DraftStorageBootstrap;
+  /** 암호화 키 조회가 끝난 초안·조회 캐시 저장소. 비동기 준비는 앱 부트스트랩에서 마친다. */
+  encryptedStorageBootstrap: EncryptedStorageBootstrap;
+  /** `QueryProvider`와 같은 조회 캐시 저장소. 주인 지정·삭제는 인증 상태를 아는 쪽이 쓴다 */
+  queryCacheStorage: QueryCacheStorage;
 }
 
-export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps) {
+export function DIProvider({
+  children,
+  encryptedStorageBootstrap,
+  queryCacheStorage,
+}: DIProviderProps) {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
     const tokenStore = createSecureTokenStore(storage);
@@ -104,7 +115,9 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
 
     const analytics = createEnvironmentAnalytics(logger);
     const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
-    const draftService = new DraftService(createDraftRepository(draftStorageBootstrap.storage));
+    const draftService = new DraftService(
+      createDraftRepository(encryptedStorageBootstrap.draftStorage),
+    );
     draftService.removeExpired();
 
     // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
@@ -113,13 +126,22 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);
 
-    if (draftStorageBootstrap.failure != null) {
-      errorReporter.captureException(toError(draftStorageBootstrap.failure), { feature: 'draft' });
+    const storageFailure = encryptedStorageBootstrap.failure;
+    if (storageFailure != null) {
+      // 이번 실행은 초안·조회 캐시를 기기에 남기지 않는다. 앱은 서버 값만으로 동작한다
+      logger.warn(QUERY_CACHE_LOG_EVENT.ENCRYPTED_STORAGE_UNAVAILABLE, {
+        error: errorMessageOf(storageFailure),
+      });
+      // 잠금 해제 전 실행처럼 키체인을 잠시 못 읽는 것은 예상된 상태라 이벤트로 올리지 않는다
+      if (!isKeychainLockedError(storageFailure)) {
+        errorReporter.captureException(toError(storageFailure), { feature: 'draft' });
+      }
     }
 
-    const appVersion =
-      expoApplicationMetadataGateway.getInstallation()?.currentVersion ?? ENV.APP_VERSION;
-    const publicKyInstance = createPublicClient({ appVersion });
+    const installation = expoApplicationMetadataGateway.getInstallation();
+    const appVersion = installation?.currentVersion ?? ENV.APP_VERSION;
+    const appBuild = installation?.currentBuild;
+    const publicKyInstance = createPublicClient({ appVersion, appBuild });
     const publicHttpClient = new KyHttpClient(publicKyInstance);
     const publicJsonFetcher = new KyJsonFetcher(publicKyInstance);
 
@@ -135,6 +157,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
 
     const authKyInstance = createAuthClient({
       appVersion,
+      appBuild,
       tokenStore,
       refresh: tokenRefresher,
       endSession: (reason) => sessionManager.end(reason),
@@ -221,6 +244,9 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     const reorderCoachmarkService = new ReorderCoachmarkService(
       createReorderCoachmarkRepository(mmkvSyncStorage),
     );
+    const friendStripHintService = new FriendStripHintService(
+      createFriendStripHintRepository(mmkvSyncStorage),
+    );
 
     // Store review
     const storeReviewService = new StoreReviewService(
@@ -232,7 +258,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     const userService = new UserService(authHttpClient);
 
     // Subscription
-    const revenueCatSdkManager = new RevenueCatSdkManager(logger);
+    const revenueCatSdkManager = new RevenueCatSdkManager(logger, analytics);
     const subscriptionService = new SubscriptionService(revenueCatSdkManager, logger);
 
     // Weather
@@ -253,6 +279,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       tokenRefresher,
       featureAttribution,
       draftService,
+      queryCacheStorage,
       achievementService,
       aiService,
       authService,
@@ -275,16 +302,18 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       notificationService,
       todoNudgeService,
       reorderCoachmarkService,
+      friendStripHintService,
       storeReviewService,
       userService,
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
-      weatherLocationStateService: new WeatherLocationStateService(
-        createWeatherLocationStateRepository(mmkvSyncStorage),
+      weatherIntroductionService: new WeatherIntroductionService(
+        createWeatherIntroductionRepository(mmkvSyncStorage),
       ),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,
+      networkStatus: expoNetworkStatusGateway,
       widgetSyncService,
       widgetNavigationRepository,
     };

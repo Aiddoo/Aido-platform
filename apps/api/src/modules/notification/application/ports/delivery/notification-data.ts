@@ -77,8 +77,8 @@ export interface NotificationAction {
  * {
  *   userId: "user-123",
  *   type: "FOLLOW_NEW",
- *   title: "홍길동이 친구 문을 두드렸어",
- *   body: "서로의 하루에 작은 응원을 나누고 싶대 🐾",
+ *   title: "홍길동님이 친구 요청을 보냈어요",
+ *   body: "수락하면 서로의 할 일을 보고 응원할 수 있어요",
  *   friendId: "friend-456",  // context로 전달
  * }
  *

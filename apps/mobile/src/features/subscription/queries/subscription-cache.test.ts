@@ -1,20 +1,28 @@
 import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
 import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
 import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/preference/constants/preference-query-keys';
+import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { toUser } from '@src/features/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/render-ui';
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
-import { syncMeUntilStorePremium, watchPremiumEntitlementChanges } from './subscription-cache';
+import {
+  isPremiumDependentQuery,
+  syncMeUntilStorePremium,
+  watchPremiumEntitlementChanges,
+} from './subscription-cache';
 
 const DEPENDENT_KEYS = [
   NUDGE_QUERY_KEYS.limit(),
   AI_QUERY_KEYS.usage(),
   AI_QUERY_KEYS.suggestions(),
   MEMO_QUERY_KEYS.resourceLimit(),
+  PREFERENCE_QUERY_KEYS.current(),
 ];
+const INDEPENDENT_KEY = TODO_QUERY_KEYS.all;
 
 const FREE_ME = toUser(createCurrentUserDto({ subscriptionStatus: 'FREE' }));
 const GRANT_ME = toUser(
@@ -28,15 +36,47 @@ const GRANT_ME = toUser(
   }),
 );
 
-function seedDependentQueries(queryClient: QueryClient) {
-  for (const queryKey of DEPENDENT_KEYS) {
-    queryClient.setQueryData(queryKey, { seeded: true });
-  }
+function seedQuery(queryClient: QueryClient, queryKey: QueryKey, refreshOnPremiumChange: boolean) {
+  queryClient.getQueryCache().build(queryClient, { queryKey, meta: { refreshOnPremiumChange } });
+  queryClient.setQueryData(queryKey, { seeded: true });
 }
 
-function invalidatedDependentKeys(queryClient: QueryClient) {
-  return DEPENDENT_KEYS.filter((queryKey) => queryClient.getQueryState(queryKey)?.isInvalidated);
+function seedDependentQueries(queryClient: QueryClient) {
+  for (const queryKey of DEPENDENT_KEYS) {
+    seedQuery(queryClient, queryKey, true);
+  }
+  seedQuery(queryClient, INDEPENDENT_KEY, false);
 }
+
+function invalidatedKeys(queryClient: QueryClient) {
+  return [...DEPENDENT_KEYS, INDEPENDENT_KEY].filter(
+    (queryKey) => queryClient.getQueryState(queryKey)?.isInvalidated,
+  );
+}
+
+describe('isPremiumDependentQuery', () => {
+  it('조회 옵션이 프리미엄 갱신을 밝힌 쿼리만 고른다', () => {
+    // Given
+    const queryClient = createTestQueryClient();
+    seedDependentQueries(queryClient);
+
+    // When
+    const dependentKeys = queryClient
+      .getQueryCache()
+      .findAll({ predicate: isPremiumDependentQuery })
+      .map((query) => query.queryKey);
+
+    // Then
+    expect(dependentKeys).toEqual(DEPENDENT_KEYS);
+    queryClient.clear();
+  });
+
+  it('오프라인 복원 같은 다른 meta만 있으면 고르지 않는다', () => {
+    // Given / When / Then
+    expect(isPremiumDependentQuery({ meta: { persist: true } })).toBe(false);
+    expect(isPremiumDependentQuery({ meta: undefined })).toBe(false);
+  });
+});
 
 describe('watchPremiumEntitlementChanges', () => {
   let queryClient: QueryClient;
@@ -51,7 +91,7 @@ describe('watchPremiumEntitlementChanges', () => {
     queryClient.clear();
   });
 
-  it('보상 기간이 시작돼 내 정보의 프리미엄이 바뀌면 의존 쿼리를 모두 무효화한다', () => {
+  it('보상 기간이 시작돼 내 정보의 프리미엄이 바뀌면 의존 쿼리만 모두 무효화한다', () => {
     // Given
     queryClient.setQueryData(USER_QUERY_KEYS.me(), FREE_ME);
     seedDependentQueries(queryClient);
@@ -61,7 +101,7 @@ describe('watchPremiumEntitlementChanges', () => {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), GRANT_ME);
 
     // Then
-    expect(invalidatedDependentKeys(queryClient)).toEqual(DEPENDENT_KEYS);
+    expect(invalidatedKeys(queryClient)).toEqual(DEPENDENT_KEYS);
   });
 
   it('보상 기간이 끝나 무료로 돌아와도 의존 쿼리를 무효화한다', () => {
@@ -74,7 +114,7 @@ describe('watchPremiumEntitlementChanges', () => {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), FREE_ME);
 
     // Then
-    expect(invalidatedDependentKeys(queryClient)).toEqual(DEPENDENT_KEYS);
+    expect(invalidatedKeys(queryClient)).toEqual(DEPENDENT_KEYS);
   });
 
   it('프로필만 바뀌면 의존 쿼리를 그대로 둔다', () => {
@@ -87,7 +127,7 @@ describe('watchPremiumEntitlementChanges', () => {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), { ...GRANT_ME, name: '새 이름' });
 
     // Then
-    expect(invalidatedDependentKeys(queryClient)).toEqual([]);
+    expect(invalidatedKeys(queryClient)).toEqual([]);
   });
 
   it('처음 내 정보를 받을 때는 비교할 이전 값이 없어 의존 쿼리를 그대로 둔다', () => {
@@ -99,7 +139,7 @@ describe('watchPremiumEntitlementChanges', () => {
     queryClient.setQueryData(USER_QUERY_KEYS.me(), GRANT_ME);
 
     // Then
-    expect(invalidatedDependentKeys(queryClient)).toEqual([]);
+    expect(invalidatedKeys(queryClient)).toEqual([]);
   });
 });
 

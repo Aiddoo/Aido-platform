@@ -15,6 +15,7 @@ import { PremiumAccessReader } from "./application/services/subscriptions/premiu
 import { PremiumGranter } from "./application/services/subscriptions/premium-granter.service.js";
 import { HandleWebhookEvent } from "./application/use-cases/subscriptions/handle-webhook-event.use-case.js";
 import { NotifyEndingPremiumGrants } from "./application/use-cases/subscriptions/notify-ending-premium-grants.use-case.js";
+import { RevokePremiumGrant } from "./application/use-cases/subscriptions/revoke-premium-grant.use-case.js";
 import { SweepPremiumGrants } from "./application/use-cases/subscriptions/sweep-premium-grants.use-case.js";
 
 export const premiumAccessProjectorProvider: FactoryProvider<PremiumAccessProjector> = {
@@ -80,6 +81,7 @@ export const sweepPremiumGrantsProvider: FactoryProvider<SweepPremiumGrants> = {
   provide: SweepPremiumGrants,
   inject: [
     PREMIUM_GRANT_REPOSITORY,
+    SUBSCRIPTION_REPOSITORY,
     PremiumAccessProjector,
     SUBSCRIPTION_USER_MUTATION_LOCK,
     UNIT_OF_WORK,
@@ -89,6 +91,9 @@ export const sweepPremiumGrantsProvider: FactoryProvider<SweepPremiumGrants> = {
     premiumGrantRepository: ConstructorParameters<
       typeof SweepPremiumGrants
     >[0]["premiumGrantRepository"],
+    subscriptionRepository: ConstructorParameters<
+      typeof SweepPremiumGrants
+    >[0]["subscriptionRepository"],
     premiumAccessProjector: ConstructorParameters<
       typeof SweepPremiumGrants
     >[0]["premiumAccessProjector"],
@@ -98,11 +103,42 @@ export const sweepPremiumGrantsProvider: FactoryProvider<SweepPremiumGrants> = {
   ) =>
     new SweepPremiumGrants({
       premiumGrantRepository,
+      subscriptionRepository,
       premiumAccessProjector,
       userMutationLock,
       unitOfWork,
       cache,
       logger: new Logger(SweepPremiumGrants.name),
+    }),
+};
+
+export const revokePremiumGrantProvider: FactoryProvider<RevokePremiumGrant> = {
+  provide: RevokePremiumGrant,
+  inject: [
+    PREMIUM_GRANT_REPOSITORY,
+    PremiumAccessProjector,
+    SUBSCRIPTION_USER_MUTATION_LOCK,
+    UNIT_OF_WORK,
+    SUBSCRIPTION_CACHE,
+  ],
+  useFactory: (
+    premiumGrantRepository: ConstructorParameters<
+      typeof RevokePremiumGrant
+    >[0]["premiumGrantRepository"],
+    premiumAccessProjector: ConstructorParameters<
+      typeof RevokePremiumGrant
+    >[0]["premiumAccessProjector"],
+    userMutationLock: ConstructorParameters<typeof RevokePremiumGrant>[0]["userMutationLock"],
+    unitOfWork: ConstructorParameters<typeof RevokePremiumGrant>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof RevokePremiumGrant>[0]["cache"],
+  ) =>
+    new RevokePremiumGrant({
+      premiumGrantRepository,
+      premiumAccessProjector,
+      userMutationLock,
+      unitOfWork,
+      cache,
+      logger: new Logger(RevokePremiumGrant.name),
     }),
 };
 

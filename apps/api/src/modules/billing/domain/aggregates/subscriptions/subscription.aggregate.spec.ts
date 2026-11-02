@@ -14,6 +14,7 @@ function subscription(overrides: Partial<SubscriptionProps> = {}) {
     status: "ACTIVE",
     startedAt,
     expiresAt,
+    gracePeriodEndsAt: null,
     cancelledAt: null,
     lastProcessedEventId: "seed",
     ...overrides,
@@ -45,6 +46,7 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
       productId: "monthly",
       status: "ACTIVE",
       expiresAt: nextExpiry,
+      gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: "renewal",
     });
@@ -138,5 +140,75 @@ describe("Subscription — 구독 기간과 이벤트 상태 전이", () => {
     expect(aggregate.isActiveWithSameExpiry(nextExpiry)).toBe(true);
     expect(aggregate.expire(expiresAt, "old-expiry")).toBe(false);
     expect(aggregate.wasProcessedWith("renewal")).toBe(true);
+  });
+
+  describe("결제 유예", () => {
+    const graceEndsAt = new Date("2027-01-19T12:00:00.000Z");
+
+    it("BILLING_ISSUE는 취소 상태에서도 유예 끝을 남기고, 지난 기간의 늦은 이벤트는 무시한다", () => {
+      // Given
+      const cancelled = subscription({ status: "CANCELLED" });
+      const renewed = subscription({ expiresAt: nextExpiry });
+
+      // When
+      const results = [
+        cancelled.enterBillingGrace({ gracePeriodEndsAt: graceEndsAt, periodExpiresAt: expiresAt }),
+        renewed.enterBillingGrace({ gracePeriodEndsAt: graceEndsAt, periodExpiresAt: expiresAt }),
+        subscription({ status: "EXPIRED" }).enterBillingGrace({
+          gracePeriodEndsAt: graceEndsAt,
+          periodExpiresAt: expiresAt,
+        }),
+      ];
+
+      // Then
+      expect(results).toEqual([true, false, false]);
+      expect(cancelled.gracePeriodEndsAt).toEqual(graceEndsAt);
+      expect(renewed.gracePeriodEndsAt).toBeNull();
+    });
+
+    it("RENEWAL은 유예를 지운다", () => {
+      // Given
+      const aggregate = subscription({ gracePeriodEndsAt: graceEndsAt });
+
+      // When
+      aggregate.renew(nextExpiry, "renew");
+
+      // Then
+      expect(aggregate.persistenceState).toMatchObject({
+        status: "ACTIVE",
+        expiresAt: nextExpiry,
+        gracePeriodEndsAt: null,
+      });
+    });
+
+    it.each([
+      {
+        name: "유예가 끝난 뒤",
+        expiredAt: new Date("2027-01-20T00:00:00.000Z"),
+        endedAt: graceEndsAt,
+      },
+      {
+        name: "유예 중",
+        expiredAt: new Date("2027-01-10T00:00:00.000Z"),
+        endedAt: new Date("2027-01-10T00:00:00.000Z"),
+      },
+    ])(
+      "$name 만료하면 유예를 지우고 만료 시각을 유예가 실제로 끝난 시각으로 남긴다",
+      ({ expiredAt, endedAt }) => {
+        // Given
+        const aggregate = subscription({ gracePeriodEndsAt: graceEndsAt });
+
+        // When
+        const result = aggregate.expire(expiresAt, "expire", expiredAt);
+
+        // Then
+        expect(result).toBe(true);
+        expect(aggregate.persistenceState).toMatchObject({
+          status: "EXPIRED",
+          expiresAt: endedAt,
+          gracePeriodEndsAt: null,
+        });
+      },
+    );
   });
 });

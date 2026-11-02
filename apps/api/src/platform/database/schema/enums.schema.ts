@@ -125,6 +125,7 @@ export const securityEvent = pgEnum("SecurityEvent", [
   "ACCOUNT_RESTORED",
   "PASSWORD_SETUP",
 ]);
+export const subscriptionEnvironment = pgEnum("SubscriptionEnvironment", ["SANDBOX", "PRODUCTION"]);
 export const subscriptionStatus = pgEnum("SubscriptionStatus", [
   "FREE",
   "ACTIVE",

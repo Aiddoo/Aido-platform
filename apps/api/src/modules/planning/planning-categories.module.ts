@@ -22,7 +22,7 @@ import {
   todoCategoryReaderProvider,
   updateTodoCategoryProvider,
 } from "./planning-categories-application.providers.js";
-import { TodoCategoryController } from "./presentation/controllers/categories/todo-category.controller.js";
+import { TodoCategoryController } from "./presentation/controllers/categories/v1/todo-category.controller.js";
 
 @Module({
   imports: [AccessModule],

@@ -55,8 +55,9 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(NotificationCacheKey.unreadCount("user-1", "legacy")).toBe(
       "aido:v1:notification:unread-count:user-1:legacy",
     );
-    expect(WeatherCacheKey.forecast(60, 127, "20260401", "0800")).toBe(
-      "aido:v1:weather:forecast:60:127:20260401:0800",
+    // #1156: 발표를 당겨 쓰면 한 발표가 여러 대상 날짜에 쓰이므로 대상 날짜를 키 끝에 더했다.
+    expect(WeatherCacheKey.forecast(60, 127, "20260401", "0800", "2026-04-02")).toBe(
+      "aido:v1:weather:forecast:60:127:20260401:0800:2026-04-02",
     );
     expect(WeatherCacheKey.latestForecast(60, 127)).toBe("aido:v1:weather:forecast-latest:60:127");
     expect(WeatherCacheKey.legacyConditions(60, 127)).toBe("aido:v1:weather:conditions:60:127");

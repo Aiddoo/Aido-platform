@@ -1,5 +1,6 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -258,7 +259,7 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
 
         <Spacing size={16} />
 
-        <Button size="medium" onPress={() => push('/settings/subscription')}>
+        <Button size="medium" onPress={() => push(subscriptionHref())}>
           {t('suggestions.paywall.subscribeCta')}
         </Button>
       </Box>

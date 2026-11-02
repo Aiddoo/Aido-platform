@@ -8,6 +8,7 @@ import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/application/ports/
 import type { SubscriptionRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
 import { NotifyEndingPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/notify-ending-premium-grants.use-case";
+import { RevokePremiumGrant } from "#api/modules/billing/application/use-cases/subscriptions/revoke-premium-grant.use-case";
 import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
 import {
   PREMIUM_ACCESS_READER,
@@ -136,7 +137,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: new Date("2028-03-17T04:00:00.000Z"),
     });
-    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
   });
 
   it("같은 보상을 동시에 여러 번 지급해도 한 번만 저장하고 다음 보상은 쌓아 두되 이어 붙인 끝까지 프리미엄이다", async () => {
@@ -260,6 +261,59 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     return user.id;
   }
 
+  it("RevenueCat 문서 샘플 TRANSFER는 넘겨받은 사용자에게 체인 행을 옮기고 두 사용자를 모두 다시 계산한다", async () => {
+    // Given 넘겨준 사용자(현재 사용자)는 구독 중, 넘겨받은 사용자는 무료
+    const giverAppUserId = "00005A1C-6091-4F81-BE77-F0A83A271AB6";
+    const receiverAppUserId = "4BEDB450-8EF2-11E9-B475-0800200C9A66";
+    const receiverId = await createUser("PGRANT0T");
+    await client
+      .update(userTable)
+      .set({ revenueCatUserId: giverAppUserId })
+      .where(eq(userTable.id, userId));
+    await client
+      .update(userTable)
+      .set({ revenueCatUserId: receiverAppUserId })
+      .where(eq(userTable.id, receiverId));
+    await givenStoreSubscription();
+
+    // When
+    await context.module.get(HandleWebhookEvent).execute({
+      body: {
+        event: {
+          app_id: "1234567890",
+          event_timestamp_ms: 78789789798798,
+          id: "CD489E0E-5D52-4E03-966B-A7F17788E432",
+          store: "APP_STORE",
+          transferred_from: [giverAppUserId],
+          transferred_to: [receiverAppUserId],
+          type: "TRANSFER",
+          environment: "PRODUCTION",
+        },
+        api_version: "1.0",
+      },
+    });
+
+    // Then
+    expect(
+      await client.query.subscription.findMany({
+        columns: { userId: true },
+        where: { revenueCatId: TRANSACTION_ID },
+      }),
+    ).toEqual([{ userId: receiverId }]);
+    expect(await entitlement.canInTx(receiverId, "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
+    expect(await userProjection()).toEqual({
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+    });
+    expect(
+      await client.query.subscriptionEventReceipt.findFirst({
+        columns: { eventType: true },
+        where: { eventId: "CD489E0E-5D52-4E03-966B-A7F17788E432" },
+      }),
+    ).toEqual({ eventType: "TRANSFER" });
+  });
+
   it("TRANSFER로 넘겨준 구독 행은 보상 기간이 User를 ACTIVE로 바꿔도 프리미엄을 늘리지 않는다", async () => {
     // Given
     const receiverId = await createUser("PGRANT03");
@@ -299,7 +353,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(false);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
     expect(
       await context.module
         .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
@@ -340,7 +394,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(await grantsOf(userId)).toEqual([
       { sourceKey: "invite:receiver", status: "BANKED", startsAt: null, endsAt: null },
     ]);
-    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
     expect(await premiumAccess()).toMatchObject({
       source: "STORE",
       periodEndsAt: STORE_EXPIRY,
@@ -364,11 +418,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
     const endsAt = new Date("2028-03-04T04:00:00.000Z");
     vi.setSystemTime(new Date(endsAt.getTime() - 1));
-    const before = await entitlement.hasPremiumAccessInTx(userId);
+    const before = await entitlement.canInTx(userId, "AI_REPORT");
 
     // When
     vi.setSystemTime(endsAt);
-    const atEnd = await entitlement.hasPremiumAccessInTx(userId);
+    const atEnd = await entitlement.canInTx(userId, "AI_REPORT");
 
     // Then
     expect([before, atEnd]).toEqual([true, false]);
@@ -386,7 +440,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // When
     vi.setSystemTime(inGrace);
     const duringGrace = await sweep.execute({ now: inGrace });
-    const premiumDuringGrace = await entitlement.hasPremiumAccessInTx(userId);
+    const premiumDuringGrace = await entitlement.canInTx(userId, "AI_REPORT");
     vi.setSystemTime(afterGrace);
     const pastGrace = await sweep.execute({ now: afterGrace });
 
@@ -543,9 +597,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // When
     const beforeHandoff = await notify.execute({ now: new Date("2028-03-09T06:00:00.000Z") });
     vi.setSystemTime(new Date(STORE_EXPIRY.getTime() - 1));
-    const premiumJustBefore = await entitlement.hasPremiumAccessInTx(userId);
+    const premiumJustBefore = await entitlement.canInTx(userId, "AI_REPORT");
     vi.setSystemTime(STORE_EXPIRY);
-    const premiumAtHandoff = await entitlement.hasPremiumAccessInTx(userId);
+    const premiumAtHandoff = await entitlement.canInTx(userId, "AI_REPORT");
     const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1_000);
     vi.setSystemTime(lateSweepAt);
     await sweep.execute({ now: lateSweepAt });
@@ -692,7 +746,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
     expect((await entitlement.getResourceLimitInTx(userId, Resource.FRIEND)).maxCount).toBeNull();
   });
 
@@ -720,7 +774,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // Then
     expect(await roleOf(userId)).toBe("ADMIN");
-    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
   });
 
   it("종료 안내 후보는 endsAt·id keyset으로 앞 묶음 다음부터 읽는다", async () => {
@@ -752,5 +806,73 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(first).toHaveLength(1);
     expect(rest).toHaveLength(2);
     expect(new Set([...first, ...rest].map((notice) => notice.userId))).toEqual(new Set(userIds));
+  });
+  it("만료 웹훅을 잃은 자동 갱신 구독자는 유예 안에서는 그대로 두고 유예가 지나면 sweep이 FREE로 정리한다", async () => {
+    // Given
+    await givenStoreSubscription();
+    const sweep = context.module.get(SweepPremiumGrants);
+    const inGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS - 1);
+    const afterGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS);
+
+    // When
+    vi.setSystemTime(inGrace);
+    const keptRun = await sweep.execute({ now: inGrace });
+    const keptProjection = await userProjection();
+    vi.setSystemTime(afterGrace);
+    const lapsedRun = await sweep.execute({ now: afterGrace });
+    const rerun = await sweep.execute({ now: afterGrace });
+
+    // Then
+    expect(keptRun.lapsedUserCount).toBe(0);
+    expect(keptProjection).toEqual({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: STORE_EXPIRY,
+    });
+    expect(lapsedRun).toMatchObject({ lapsedUserCount: 1, lapsedFailedUserCount: 0 });
+    expect(await userProjection()).toEqual({
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+    });
+    expect(rerun.lapsedUserCount).toBe(0);
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
+  });
+
+  it("만료 웹훅을 잃은 구독자에게 쌓아 둔 보상이 있으면 sweep이 스토어가 끝난 시각부터 이어서 시작한다", async () => {
+    // Given
+    await givenStoreSubscription();
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:lapsed", durationDays: 7 });
+    const afterGrace = new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS);
+    vi.setSystemTime(afterGrace);
+
+    // When
+    await context.module.get(SweepPremiumGrants).execute({ now: afterGrace });
+
+    // Then
+    expect(await userProjection()).toEqual({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: new Date(afterGrace.getTime() + 7 * DAY_MS),
+    });
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+  });
+  it("잘못 준 보상을 취소하면 REVOKED로 남기고 프리미엄을 바로 끝내며 같은 취소는 바꾸지 않는다", async () => {
+    // Given
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:wrong", durationDays: 7 });
+    const revoke = context.module.get(RevokePremiumGrant);
+
+    // When
+    const first = await revoke.execute({ sourceKey: "invite:wrong", now: AT });
+    const second = await revoke.execute({ sourceKey: "invite:wrong", now: AT });
+
+    // Then
+    expect(first).toEqual({ status: "revoked", userId, revokedGrantCount: 1 });
+    expect(second).toEqual({ status: "unchanged" });
+    expect(await grantsOf(userId)).toEqual([
+      { sourceKey: "invite:wrong", status: "REVOKED", startsAt: AT, endsAt: AT },
+    ]);
+    expect(await userProjection()).toEqual({
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+    });
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(false);
   });
 });

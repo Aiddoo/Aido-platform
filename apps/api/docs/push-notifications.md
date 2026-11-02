@@ -25,7 +25,7 @@
 | 시각/트리거                  | 알림                      |      무료 | 프리미엄·관리자 | 주요 조건                                                                                                                           |
 | ---------------------------- | ------------------------- | --------: | --------------: | ----------------------------------------------------------------------------------------------------------------------------------- |
 | 할 일 시각 -60분/-10분/정시  | `TODO_REMINDER`           |         O |               O | 활성·미완료 할 일, 단계별 중복 방지                                                                                                 |
-| 기본 07:00, 사용자 설정 가능 | `WEATHER_MORNING`         |         O |               O | 날씨 알림 사용. 위치가 없으면 안내 문구 사용                                                                                        |
+| 기본 07:00, 사용자 설정 가능 | `WEATHER_MORNING`         |         O |               O | 날씨 알림 사용. v2 리포트 + 오늘 할 일(아래 날씨 알림). 위치가 없으면 위치 설정 안내                                                |
 | 08:00                        | `MORNING_REMINDER`        |         O |               - | 오늘 할 일이 없어도 하루 1회                                                                                                        |
 | 사용자 설정 오전 시각        | `MORNING_REMINDER`        |         - |               O | 시간·분 커스텀, 하루 1회                                                                                                            |
 | 가입일 +2시간                | Retention V2 D0           | 실험 대상 |       실험 대상 | treatment 사용자, 야간이면 다음 허용 시각으로 이월                                                                                  |
@@ -36,7 +36,7 @@
 | 12:30                        | `LUNCH_NUDGE`             |         O |               O | 오늘 할 일은 있으나 완료가 0개                                                                                                      |
 | 15:00                        | `NUDGE_SUGGEST`           |         O |               O | 2~7일 비활성 맞팔 친구, 동일 조합 주 1회                                                                                            |
 | 16:00                        | `WINBACK`                 |         O |               O | 3·7·14·21·30일 비활성 단계별 1회                                                                                                    |
-| 기본 17:30, 사용자 설정 가능 | `WEATHER_EVENING`         |         O |               O | 다음 날 예보. 위치가 없으면 안내 문구 사용                                                                                          |
+| 기본 17:30, 사용자 설정 가능 | `WEATHER_EVENING`         |         O |               O | 내일 비·눈 시작과 쌀쌀함(v2 리포트). 위치가 없으면 위치 설정 안내                                                                   |
 | 19:00                        | `EVENING_REMINDER`        |         O |               - | 오늘 할 일이 있는 사용자, 하루 1회                                                                                                  |
 | 사용자 설정 오후 시각        | `EVENING_REMINDER`        |         - |               O | 시간·분 커스텀, 하루 1회                                                                                                            |
 | 20:15                        | `STREAK_AT_RISK`          |         O |               O | 유효 스트릭 3일 이상이며 오늘 미완료                                                                                                |
@@ -46,7 +46,7 @@
 
 월간 리포트와 주간 리포트는 같은 11:30 슬롯에서 동시에 보내지 않는다. 무료 주간 달성 요약은 프리미엄 리포트와 대상이 다르므로 별도로 집계한다. 일일 스케줄은 `notificationDate` 또는 전용 Redis 키로 중복 생성·예약을 제한한다.
 
-AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시각 이후의 누락 실행을 보정한다. 대상은 활성·미삭제 프리미엄(`subscriptionStatus=ACTIVE`) 또는 관리자이며 최근 14일에 반복 그룹이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `hasPremiumAccessInTx`로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. 할 일 파싱의 일일 quota와 제안·리포트의 premium 권한 검사는 별도 정책이다.
+AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시각 이후의 누락 실행을 보정한다. 대상은 활성·미삭제 프리미엄(`subscriptionStatus=ACTIVE`) 또는 관리자이며 최근 14일에 반복 그룹이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `canInTx(userId, "AI_SUGGESTION")`으로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. 할 일 파싱의 일일 quota와 제안·리포트의 premium 권한 검사는 별도 정책이다.
 
 이 권한 검사는 푸시 동의를 대신하지 않는다. AI 제안은 `purpose=ENGAGEMENT`이므로 마케팅 동의·참여 유도 한도·야간 억제와 공통 발송 조건을 추가로 적용한다. 주간·월간 AI 리포트는 premium 권한 대상의 서비스 알림이며 위 일정의 활동 조건을 따른다.
 
@@ -78,8 +78,8 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 | `NUDGE_SUGGEST`           | 비활성 맞팔 친구 감지                                                                    | 참여         | 친구 피드, ID가 없으면 피드            |
 | `LUNCH_NUDGE`             | 점심까지 완료 0개                                                                        | 참여         | 피드                                   |
 | `STREAK_AT_RISK`          | 스트릭 3일 이상 + 오늘 미완료                                                            | 참여         | 피드                                   |
-| `WEATHER_MORNING`         | 오늘 날씨 또는 위치 설정 안내                                                            | 서비스       | 피드                                   |
-| `WEATHER_EVENING`         | 내일 날씨 또는 위치 설정 안내                                                            | 서비스       | 피드                                   |
+| `WEATHER_MORNING`         | 오늘 할 일과 겹친 날씨·오늘 날씨 또는 위치 설정 안내                                     | 서비스       | 날씨 (옮기기 `DEEP_LINK` url, 아래)    |
+| `WEATHER_EVENING`         | 내일 날씨 또는 위치 설정 안내                                                            | 서비스       | 날씨                                   |
 | `PREMIUM_GRANT_ENDING`    | 보상 기간 종료 24시간 전 (1.13.0+)                                                       | 참여         | 구독 화면                              |
 | `INVITE_JOINED`           | 초대받은 사람이 수락해 친구가 됨 (1.13.0+)                                               | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
 | `INVITE_REWARDED`         | 초대한 사람의 발자국 보상 적용 (수락 1건에 1회, 프리미엄·친구 한도를 함께 적음, 1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
@@ -104,10 +104,26 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 
 초대 알림의 중복 방지는 저장 원장이 소유한다. `INVITE_JOINED`는 `InviteRedemption.inviteeId` UNIQUE로 수락 1건에 한 번, `INVITE_REWARDED`는 수락을 REWARDED로 바꾼 실행만 그 수락에서 초대한 사람이 받은 APPLIED 지급 합계로 보내므로 지급이 여러 번에 나뉘어 적용돼도 수락마다 한 번(초대받은 사람은 수락 응답에서 보상을 바로 보므로 보내지 않는다), `PREMIUM_GRANT_ENDING`은 같은 트랜잭션에서 `PremiumGrant.endingNotifiedAt`을 기록해 기간마다 한 번이다. `INVITE_PROGRESS`는 활동일 기록이 수락 행 잠금(`FOR UPDATE`)으로 직렬화되어 활동일이 0→1일로 바뀐 실행만 커밋 뒤 보낸다. 같은 날 다시 끝내거나 동시에 들어온 완료는 새 날짜가 아니라 보내지 않고, 배포 전에 이미 첫날이 있던 수락도 다시 첫날이 되지 않아 지난 소식을 보내지 않는다(백필 없음). `INVITE_QUALIFY_REMINDER`는 정비 작업이 후보(JOINED·미발송·초대한 사람 있음·보상 자격 있음·마감이 지금~3일 안)를 `(expiresAt, id)` keyset으로 500건씩 최대 20묶음 읽고, 할 일을 끝낸 날이 1일인 수락만 초대받은 사람 시간대(미상·UTC는 KST)의 다음 18:00에 보낼 작업을 정비 큐에 `startAfter`로 넣는다(키 `invite-qualify-reminder:<수락>:<발송 시각>`이라 같은 날 다시 돌려도 하나). 보낼 때 수락 행을 잠그고 자격(위 조건 + 오늘 아직 안 끝냄)·야간 여부·두 사람이 아직 친구이고 어느 쪽도 차단하지 않았는지·초대한 사람이 탈퇴하지 않았는지를 다시 확인한 뒤 `InviteRedemption.qualifyReminderSentAt`과 알림 기록을 같은 트랜잭션에 남기고 푸시는 커밋 뒤 나간다. 조건이 안 맞아 건너뛴 수락은 표시하지 않아 마감 전 다음 정비 실행이 다시 고른다. 참여 목적이라 마케팅 수신 동의·야간·참여 유도 하루 한도에 걸리면 알림함에만 남는다. 두 알림 모두 `INVITE_ENABLED=false`이면 보내지 않는다. `INVITE_ENABLED=false`인 동안은 초대받은 사람의 활동일·사용 시작과 지급 원장(PENDING)만 기록하고 지급 작업과 정비 재시도를 멈춰 `INVITE_REWARDED`도 보내지 않는다. 다시 켜면 다음 정비 작업(매일 03:30 KST)이 남은 PENDING·FAILED 지급을 골라 적용하므로 꺼진 동안의 보상은 잃지 않는다.
 
+## 날씨 알림
+
+`WeatherMorningStrategy`·`WeatherEveningStrategy`는 앱 날씨 화면과 같은 v2(WeatherKit) 리포트를 weather Context의 공개 capability(`WEATHER_REPORT_READER` → notification의 `REMINDER_WEATHER_REPORT_READER`)로 읽는다. v1 KMA 격자 예보는 쓰지 않으므로 격자가 없는 해외 위치(1.14.0+)도 날씨 알림을 받는다.
+
+1. 대상: 설정 시각이 맞고 날씨 알림을 켠 활성 사용자 중 위치가 있고 오늘 같은 알림을 받지 않은 사용자만. 이 단계 뒤에만 리포트·할 일을 조회하므로 대상이 아닌 사용자로 WeatherKit을 부르지 않는다. 날씨 알림은 야간 예외 타입이다.
+2. 리포트: `GetWeatherReport`와 같은 `WeatherReportReader.readReport`(geohash5 칸 캐시 `weather:v2:report:<칸>:<scope>`, `CacheService.wrap` single-flight, 평소 30분·2시간 안 강수 10분 TTL → 실패 시 6시간 latest 스냅샷 → 칸별 1분 공급자 실패 캐시)를 쓴다. 같은 칸·언어 요청은 한 번만 읽고 칸은 4개씩 동시에 읽는다. 화면과 캐시를 공유하므로 **리포트용 WeatherKit `weather` 호출은 칸·scope(특보가 있는 칸만 언어별, 나머지는 공유)마다 리포트 TTL당 최대 1회(프로세스별 single-flight)**이며 알림 사용자 수에 비례하지 않는다. 이와 별도로 가용성 조회는 칸마다 7일, 출처 표기(attribution)는 언어마다 7일 캐시하고, 둘 다 실패하면 1분 동안 다시 부르지 않는다(가용성은 기본 dataset, 표기는 로고 없이 진행).
+3. 할 일(아침만): 오늘(알림 시간대) 남은 시각 지정·미완료·종일 아님 할 일(`scheduledTime ∈ [지금, 오늘 자정)`).
+4. 판단(`weather-briefing.policy.ts`, 앱 아이두 브리핑과 같은 규칙·`@aido/api/vocabulary`의 `WEATHER_BRIEFING_RULES`): 시간별 강수 확률 50% 이상 = 비, 낮 체감 33°C 이상 = 더위, `THUNDERSTORMS` = 뇌우, 눈·진눈깨비·우박 = 눈, 최저 10°C 이하 = 쌀쌀. 아침은 할 일과 겹친 비·뇌우·눈 → 할 일과 겹친 더위 → 오늘 늦게 오는 비·눈 → 오늘 요약(상태·최고/최저·강수 확률) 순, 저녁은 내일 비·눈이 시작하는 때(새벽·오전·오후·저녁) 또는 내일 요약에 쌀쌀함을 더한다. 시각과 오늘·내일은 알림 시간대(기기), 일별 예보는 위치 시간대 날짜로 찾는다.
+5. 폴백: 캐시·latest 스냅샷까지 없으면 틀린 날씨 대신 "앱에서 확인" 안내(`weather.*.unavailable`)를 보낸다. KMA로 다시 읽지 않는다.
+
+비·뇌우·더위와 겹친 할 일 알림은 `action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain|heat" }`를 싣는다. url은 `@aido/api/vocabulary`의 `buildWeatherRescheduleDeepLink`(경로 `WEATHER_RESCHEDULE_DEEP_LINK`, 이유 `WEATHER_RESCHEDULE_REASONS`)로 만든다. 1.13.x 이하 앱은 날씨 알림을 종류로만 이동하므로 url을 무시하고 지금처럼 `/weather`를 연다. 1.14.0 앱은 `notification-destination.ts`가 이 url을 읽어 옮기기 화면을 바로 연다.
+
 ## 문구와 변형 선택
 
 - 한국어와 영어 카탈로그는 키, variant 수, 플레이스홀더가 항상 같아야 한다.
-- 한국어는 실제 앱 푸시에서 자연스러운 친근한 반말을 사용하고, 죄책감·조롱·과한 유행어는 쓰지 않는다.
+- 한국어 푸시는 모든 카탈로그가 앱 화면과 같은 해요체를 쓴다. 보조 용언은 붙여 쓰고(`해볼까요`, `적어봐요`), 합니다체와 섞지 않는다. 사람 이름에는 `님`을 붙이고 이름을 모르면 `친구`를 쓴다. 죄책감·조롱·가짜 긴급함·과한 유행어는 쓰지 않는다.
+- 친구가 앱에서 고른 콕 답장 라벨(`REPLY_LABEL`)처럼 사용자가 보낸 말은 앱 버튼 문구 그대로 인용한다.
+- 영어는 sentence case와 축약형을 쓰는 자연스러운 표현으로 쓰고 한국어를 직역하지 않는다. 문장 중간에서 이름을 모르는 친구는 `your friend`로 부른다.
+- 결제·계정·보안 알림은 농담 없이 명확하게 쓴다.
+- 카피를 바꾸면 `NOTIFICATION_COPY_REVISION`을 해당 릴리스 버전으로 올려 `metadata.copyRevision`으로 이전 문구와 성과를 나눈다.
 - 제목은 60자, 본문은 120자 이하이며 한 줄의 이모지는 최대 1개다.
 - 반복 캠페인은 `campaignKey + templateKey + recipientId + occurrenceKey`로 variant를 결정한다. 같은 사용자·같은 발생 건은 재시도나 서버 재시작 뒤에도 문구가 바뀌지 않는다.
 - `templateKey`는 아침 할 일 유무, 저녁 진행 상태, 날씨 조건처럼 한 캠페인 안의 의미상 다른 카피 풀을 구분한다. `variantId`에도 포함되므로 서로 다른 문구가 같은 ID로 집계되지 않는다.
@@ -119,6 +135,7 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 배송·야간 자격 경로는 미상/무효 및 저장 기본 UTC를 KST로 해석하는 `resolveDeliveryTimezone`을 사용한다. 일반 날짜 계산의 UTC fallback과 별도 정책이다.
 
 - 푸시 토큰 등록의 `x-timezone`이 없으면 기존 저장값을 유지한다.
+- 등록은 `(userId, deviceId)` 기준 upsert다. 같은 토큰을 다른 사용자나 다른 deviceId가 가지고 있으면(이전 사용자의 해제 요청이 실패한 기기에 새 사용자가 로그인 등) 같은 트랜잭션에서 그 등록을 지우고 새로 등록해 토큰 소유를 옮긴다. 이전 소유자의 토큰 캐시도 비우고 `notification.delivery.register-push-token.owner-transferred`(새·이전 userId만, 토큰 값 없음)를 남긴다. 같은 토큰이 동시에 등록돼 `PushToken_token_key` 충돌이 나면 `notification.delivery.register-push-token.conflict-retried`(warn)를 남기고 새 트랜잭션에서 해제+upsert를 한 번만 다시 한다. 재시도도 충돌하면 기존처럼 DB 오류로 응답한다. 요청 형태는 바뀌지 않는다.
 - 설정 API의 잘못된 IANA 타임존은 `400 SYS_0002`로 거부한다. 유효한 별칭은 런타임의 정규 IANA 이름으로 저장한다.
 - 일반 API에서 누락·오류 타임존 값은 `UTC`로 처리한다.
 - 과거에 잘못 저장된 값은 활성 스케줄 타임존 목록에서 제외하고, 날짜 계산이 필요한 방어 경로에서는 `UTC`로 폴백한다.

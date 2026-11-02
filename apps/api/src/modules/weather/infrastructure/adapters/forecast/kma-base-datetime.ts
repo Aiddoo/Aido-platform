@@ -2,7 +2,7 @@ import { subtractDays, subtractMinutes } from "#api/shared/domain/date/utils/ari
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
-import { KMA_TIMEZONE } from "./kma.constants.js";
+import { KMA_TIMEZONE } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 
 const KMA_BASE_TIMES = ["0200", "0500", "0800", "1100", "1400", "1700", "2000", "2300"] as const;
 const KMA_PUBLICATION_INTERVAL_MINUTES = 180;

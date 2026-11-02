@@ -9,6 +9,10 @@ import type {
   WeatherForecast,
   WeatherProvider,
 } from "../../../application/ports/forecast/weather-provider.port.js";
+import {
+  KMA_TIMEZONE,
+  type KmaForecastTiming,
+} from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import {
   type KmaBaseDateTime,
@@ -17,7 +21,7 @@ import {
 } from "./kma-base-datetime.js";
 import { parseKmaResponse } from "./kma-response-parser.js";
 import { type KmaApiResponse, kmaApiResponseSchema } from "./kma-response.schema.js";
-import { KMA_BASE_URL, KMA_ENDPOINTS, KMA_TIMEZONE } from "./kma.constants.js";
+import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants.js";
 import { convertToGrid } from "./lambert-projection.js";
 
 @Injectable()
@@ -31,12 +35,12 @@ export class KmaWeatherProvider implements WeatherProvider {
     @InjectHttpClient("weather") private readonly http: HttpClient,
   ) {}
 
-  async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
+  async getForecast(lat: number, lon: number, timing: KmaForecastTiming): Promise<WeatherForecast> {
     const grid = convertToGrid(lat, lon);
 
-    const current = await this.#requestForecast(grid, getKmaBaseDateTime(date));
+    const current = await this.#requestForecast(grid, getKmaBaseDateTime(timing.issuance));
     if (current.response.header.resultCode === "00") {
-      return parseKmaResponse(current, date);
+      return parseKmaResponse(current, timing.target);
     }
 
     // 실패 코드는 일시적으로 발생하고 3시간 전 직전 발표도 대상일 예보를 포함하므로 한 번만 대체한다.
@@ -46,9 +50,9 @@ export class KmaWeatherProvider implements WeatherProvider {
       operation: "forecast",
       resultCode: current.response.header.resultCode,
     });
-    const previous = await this.#requestForecast(grid, getPreviousKmaBaseDateTime(date));
+    const previous = await this.#requestForecast(grid, getPreviousKmaBaseDateTime(timing.issuance));
     if (previous.response.header.resultCode === "00") {
-      return parseKmaResponse(previous, date);
+      return parseKmaResponse(previous, timing.target);
     }
 
     this.#logger.error({

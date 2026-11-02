@@ -249,8 +249,13 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     fixture.cacheService.sessionIds.add(existingSession.id);
     const currentUser = new GetCurrentUser(fixture);
     expect(
-      (await currentUser.execute({ userId: fixture.user.id, sessionId: existingSession.id }))
-        .providers,
+      (
+        await currentUser.execute({
+          userId: fixture.user.id,
+          sessionId: existingSession.id,
+          timezone: "Asia/Seoul",
+        })
+      ).providers,
     ).toEqual(["CREDENTIAL"]);
     // When
     const result = await new LoginWithOAuthToken(fixture).execute({
@@ -262,7 +267,11 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     expect(result.userId).toBe(fixture.user.id);
     expect(fixture.cacheService.profiles.has(fixture.user.id)).toBe(false);
     expect(
-      await currentUser.execute({ userId: fixture.user.id, sessionId: existingSession.id }),
+      await currentUser.execute({
+        userId: fixture.user.id,
+        sessionId: existingSession.id,
+        timezone: "Asia/Seoul",
+      }),
     ).toMatchObject({
       name: "사용자",
       sessionId: existingSession.id,

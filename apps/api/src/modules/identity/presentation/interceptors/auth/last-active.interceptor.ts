@@ -1,4 +1,3 @@
-import { isSemanticVersionAtLeast } from "@aido/api";
 import {
   type CallHandler,
   type ExecutionContext,
@@ -15,6 +14,7 @@ import {
   AUTH_USER_ACTIVITY_WRITER,
   type AuthUserActivityWriterPort,
 } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import { normalizeAppVersion } from "#api/modules/identity/presentation/controllers/auth/v1/request-device.utils";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
@@ -57,7 +57,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
       this.#touchLastActive(
         userId,
         resolveTimezone(request.headers?.["x-timezone"]),
-        toAppVersion(request.headers?.["x-app-version"]),
+        normalizeAppVersion(request.headers?.["x-app-version"]),
       );
     }
 
@@ -102,13 +102,4 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
       this.#logger.debug(`Throttle cleanup: removed ${cleaned} expired entries`);
     }
   }
-}
-
-/** SemVer 형식인 앱 버전만 남긴다. 헤더가 없거나 형식이 틀리면 기존 기록을 그대로 둔다 */
-function toAppVersion(header: unknown): string | undefined {
-  return typeof header === "string" &&
-    header.length <= 30 &&
-    isSemanticVersionAtLeast(header, "0.0.0")
-    ? header
-    : undefined;
 }

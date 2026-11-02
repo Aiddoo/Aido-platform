@@ -48,11 +48,15 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
     }
 
     // 잠금 획득
-    this.#locks.set(resource, { expiresAt: now + ttlMs });
+    const entry: LockEntry = { expiresAt: now + ttlMs };
+    this.#locks.set(resource, entry);
     this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
 
-    // release 함수 반환
+    // TTL 만료 뒤 다른 소유자가 재획득한 잠금은 지우지 않는다 (Redis 어댑터의 compare-and-delete와 동일)
     const release = async (): Promise<void> => {
+      if (this.#locks.get(resource) !== entry) {
+        return;
+      }
       this.#locks.delete(resource);
       this.#logger.debug(`LOCK_RELEASED ${resource}`);
     };

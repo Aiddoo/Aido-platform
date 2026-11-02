@@ -31,6 +31,20 @@ describe('toSubscriptionInquiryDraft', () => {
     expect(draft).toBe('요금제를 불러오지 못했어요\n(오류 코드: NETWORK)\n\n');
   });
 
+  it('화면 제목의 줄바꿈은 문의 첫 줄에서 한 칸 띄어 이어 적는다', () => {
+    // When
+    const draft = toSubscriptionInquiryDraft({
+      subject: '지금은 구독 상품을\n보여드릴 수 없어요',
+      diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
+      installation: undefined,
+    });
+
+    // Then
+    expect(draft).toBe(
+      '지금은 구독 상품을 보여드릴 수 없어요\n(오류 코드: SUBSCRIPTION_STORE_UNAVAILABLE (23))\n\n',
+    );
+  });
+
   it('영어 사용자에게는 영어로 적는다', async () => {
     // Given
     await i18n.changeLanguage('en');

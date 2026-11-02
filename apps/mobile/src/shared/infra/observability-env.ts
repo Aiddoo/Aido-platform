@@ -3,7 +3,11 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { Logger } from '@src/core/ports/logger';
 import { ENV } from '@src/shared/config/env';
 
-import { createConsoleAnalytics, createFirebaseAnalytics } from './analytics';
+import {
+  createConsoleAnalytics,
+  createFirebaseAnalytics,
+  markFirebaseTrafficAsInternal,
+} from './analytics';
 import { createConsoleErrorReporter, createSentryErrorReporter } from './error-reporter';
 
 /**
@@ -11,7 +15,12 @@ import { createConsoleErrorReporter, createSentryErrorReporter } from './error-r
  * DIProvider(앱 트리)와 위젯 headless 컨텍스트가 같은 규칙을 공유해 드리프트를 막는다.
  */
 export function createEnvironmentAnalytics(logger: Logger): Analytics {
-  return ENV.IS_PRODUCTION ? createFirebaseAnalytics(logger) : createConsoleAnalytics();
+  if (ENV.IS_PRODUCTION) {
+    return createFirebaseAnalytics(logger);
+  }
+  // JS 이벤트는 콘솔로만 남기고, 네이티브 자동 수집 이벤트는 내부 트래픽으로 표시해 운영 지표에서 뺀다
+  markFirebaseTrafficAsInternal(logger);
+  return createConsoleAnalytics();
 }
 
 export function createEnvironmentErrorReporter(): ErrorReporter {

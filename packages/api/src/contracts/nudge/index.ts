@@ -1,5 +1,5 @@
-export * from "./nudge.request.js";
-export * from "./nudge.response.js";
-export * from "./nudge-interaction.response.js";
+export * from "./v1/nudge.request.js";
+export * from "./v1/nudge.response.js";
+export * from "./v1/nudge-interaction.response.js";
 
-export { nudgeReplyKindSchema } from "./nudge.common.js";
+export { nudgeReplyKindSchema } from "./v1/nudge.common.js";

@@ -90,4 +90,55 @@ describe("currentUserSchema", () => {
     // Then
     expect(result.success).toBe(true);
   });
+
+  describe("entitlements", () => {
+    const flag = { allowed: false, limit: null };
+    const entitlements = {
+      AI_PARSE: { allowed: true, limit: 5, used: 2, resetsAt: "2026-11-30T15:00:00.000Z" },
+      CHEER: { allowed: true, limit: 3, used: 0, resetsAt: "2026-11-03T15:00:00.000Z" },
+      NUDGE: { allowed: true, limit: 3, used: 3, resetsAt: "2026-11-03T15:00:00.000Z" },
+      FRIEND: { allowed: true, limit: 5 },
+      TODO_CATEGORY: { allowed: true, limit: 3 },
+      AI_REPORT: flag,
+      AI_SUGGESTION: flag,
+      CUSTOM_REMINDER_TIME: flag,
+      APP_ICON: flag,
+    };
+
+    it("무료 사용자의 기능별 권한과 isPremium을 읽는다", () => {
+      // Given
+      const response = { ...currentUser, isPremium: false, entitlements };
+
+      // When
+      const result = currentUserSchema.safeParse(response);
+
+      // Then
+      expect(result.success).toBe(true);
+    });
+
+    it("새 서버가 더한 기능 키가 있어도 이전 앱이 응답을 거절하지 않는다", () => {
+      // Given
+      const response = { ...currentUser, entitlements: { ...entitlements, FUTURE_FEATURE: flag } };
+
+      // When
+      const result = currentUserSchema.safeParse(response);
+
+      // Then
+      expect(result.success).toBe(true);
+    });
+
+    it("카탈로그 기능이 빠지거나 한도가 음수면 거절한다", () => {
+      // Given
+      const { APP_ICON: _omitted, ...missing } = entitlements;
+      const negative = { ...entitlements, FRIEND: { allowed: true, limit: -1 } };
+
+      // When
+      const results = [missing, negative].map(
+        (value) => currentUserSchema.safeParse({ ...currentUser, entitlements: value }).success,
+      );
+
+      // Then
+      expect(results).toEqual([false, false]);
+    });
+  });
 });

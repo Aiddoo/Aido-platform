@@ -26,7 +26,7 @@ import {
   updateMarketingPushConsentResponseSchema,
   type VerifyEmailInput,
 } from '@aido/api';
-import type { HttpClient } from '@src/core/ports/http';
+import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import type { TokenStore } from '@src/core/ports/token-store';
 import { ENV } from '@src/shared/config/env';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -338,14 +338,17 @@ export class AuthService {
     return ok(tokens);
   };
 
-  logout = async (): Promise<Result<void, ApiError>> => {
+  logout = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     try {
-      const result = await this.#authHttpClient.post('v1/auth/logout');
+      const result = await this.#authHttpClient.post('v1/auth/logout', undefined, config);
       return result.ok ? ok(undefined) : result;
     } finally {
       await this.#clearTokens();
     }
   };
+
+  /** 서버에 알리지 못할 때(오프라인) 이 기기의 세션만 끝낸다 */
+  clearLocalSession = (): Promise<void> => this.#clearTokens();
 
   verifyEmail = async (input: VerifyEmailInput): Promise<Result<AuthTokens, ApiError>> => {
     const result = await this.#publicHttpClient.post('v1/auth/verify-email', input);

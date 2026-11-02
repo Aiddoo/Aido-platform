@@ -11,7 +11,7 @@
  * pnpm --filter @aido/server test sentry-options
  * ```
  */
-import { resolveSentryOptions } from "./sentry-options.js";
+import { isRequestBodyIgnored, resolveSentryOptions } from "./sentry-options.js";
 
 const DSN = "https://key@o0.ingest.sentry.io/0";
 
@@ -149,5 +149,16 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
       expect(resolveSentryOptions({ APP_ENV: "production" }).tracesSampleRate).toBe(0.2);
       expect(resolveSentryOptions({ APP_ENV: "development" }).tracesSampleRate).toBe(1.0);
     });
+  });
+});
+
+describe("isRequestBodyIgnored — 5xx 이벤트의 요청 본문", () => {
+  it.each([
+    ["https://api.aido.kr/v1/ai/parse-todo", true],
+    ["https://api.aido.kr/v1/ai/parse-memo?x=1", true],
+    ["https://api.aido.kr/v1/todos", false],
+  ])("%s 본문 제외 여부는 %s다", (url, expected) => {
+    // Given / When / Then
+    expect(isRequestBodyIgnored(url)).toBe(expected);
   });
 });

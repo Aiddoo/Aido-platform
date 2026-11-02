@@ -15,6 +15,7 @@ import {
   type FeatureDiscoveryConfig,
 } from "#api/modules/app-config/application/ports/discovery/feature-discovery-config.port";
 import type { AppVersionConfig } from "#api/modules/app-config/application/read-models/discovery/app-version.read-model";
+import { API_VERSIONING_OPTIONS } from "#api/platform/http/api-versioning";
 import { ResponseTransformInterceptor } from "#api/platform/http/interceptors/response-transform.interceptor";
 
 class StubDiscoveryConfig implements AppVersionConfigPort, FeatureDiscoveryConfigPort {
@@ -56,7 +57,7 @@ describe("기능 발견 설정 route (Integration)", () => {
       .compile();
 
     app = module.createNestApplication();
-    app.setGlobalPrefix("v1");
+    app.enableVersioning(API_VERSIONING_OPTIONS);
     app.useGlobalInterceptors(module.get(ResponseTransformInterceptor));
     await app.init();
   });

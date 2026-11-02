@@ -2,13 +2,13 @@ import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useAiService, useLogger } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { usePremiumDialog } from '@src/shared/ui';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -27,7 +27,7 @@ export const useHandleSuggestionMutationOptions = () => {
   const logger = useLogger();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('AI_SUGGESTION');
 
   return mutationOptions({
     mutationFn: async ({ suggestionId, input }: HandleSuggestionParams) => {
@@ -53,8 +53,7 @@ export const useHandleSuggestionMutationOptions = () => {
       notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1309)) {
-        trackEvent('premium_gate_shown', { feature: 'ai_suggestion' });
-        premiumDialog.open({
+        premiumGate.open({
           description: t('ai:suggestions.toasts.premiumOnly'),
         });
         return;

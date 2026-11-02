@@ -42,13 +42,22 @@
     "title": "Premium Feature",
     "close": "Close",
     "subscribe": "Subscribe",
-    "subscribeUnlimited": "Go unlimited with Premium"
+    "subscribeUnlimited": "Go unlimited with Premium",
+    "resetsToday": "You can use it again later today",
+    "resetsTomorrow": "You can use it again tomorrow",
+    "resetsOn": "You can use it again on {{date}}"
   },
   "errorBoundary": {
     "title": "Something went wrong",
     "retry": "Retry",
     "description": "Please try again. If it keeps happening, let us know.",
-    "inquiry": "Contact us"
+    "inquiry": "Contact us",
+    "restart": "Restart app",
+    "mailSubject": "[Aido] Error report ({{code}})",
+    "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n"
+  },
+  "offlineBanner": {
+    "message": "You're offline. We'll reload when you're back online."
   },
   "toast": {
     "defaultError": "Something went wrong"
@@ -65,11 +74,6 @@
       "title": "Microphone Access Needed",
       "message": "Voice input requires microphone access. Please allow it in Settings.",
       "denied": "Microphone access is required."
-    },
-    "location": {
-      "title": "Location Access Needed",
-      "message": "Weather updates require location access. Please allow it in Settings.",
-      "denied": "Location access is required."
     }
   },
   "speechErrors": {

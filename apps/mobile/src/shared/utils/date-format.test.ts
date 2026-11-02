@@ -6,9 +6,11 @@ import {
   formatDateKeyRange,
   formatDateLabel,
   formatHourLabel,
+  formatInstantHour,
   formatRelativeTime,
   formatTimeOfDay,
   getZonedHour,
+  hasSameWallClock,
 } from './date-format';
 
 const date = new Date('2026-10-01T00:05:00Z');
@@ -87,6 +89,23 @@ describe('formatHourLabel', () => {
     expect(formatHourLabel(15, 'TWELVE_HOUR', KO_SEOUL)).toBe('오후 3시');
     expect(formatHourLabel(15, 'TWENTY_FOUR_HOUR', KO_SEOUL)).toBe('15시');
     expect(formatHourLabel(15, 'TWELVE_HOUR', EN_SEOUL)).toBe('3 PM');
+  });
+});
+
+describe('formatInstantHour', () => {
+  it('순간을 context 시간대의 정시로 표시하고 언어는 글자 모양만 바꾼다', () => {
+    // Given 서울 15:20이자 LA 23:20인 순간
+    const instant = new Date('2026-10-01T06:20:00Z');
+
+    // When / Then
+    expect(formatInstantHour(instant, 'TWELVE_HOUR', KO_SEOUL)).toBe('오후 3시');
+    expect(formatInstantHour(instant, 'TWELVE_HOUR', EN_SEOUL)).toBe('3 PM');
+    expect(
+      formatInstantHour(instant, 'TWENTY_FOUR_HOUR', {
+        locale: 'ko-KR',
+        timeZone: 'America/Los_Angeles',
+      }),
+    ).toBe('23시');
   });
 });
 
@@ -247,5 +266,29 @@ describe('formatDateLabel monthDay 윤일 경계', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('hasSameWallClock', () => {
+  const instant = new Date('2026-10-01T06:20:00Z');
+
+  it('이름이 달라도 오프셋이 같은 시간대는 같은 벽시계로 본다', () => {
+    // Given 서울과 도쿄 When 비교하면 Then 같다
+    expect(hasSameWallClock(instant, 'Asia/Seoul', 'Asia/Tokyo')).toBe(true);
+  });
+
+  it('30분 차이도 다른 벽시계로 본다', () => {
+    // Given 인도(+5:30)와 파키스탄(+5:00) When 비교하면 Then 다르다
+    expect(hasSameWallClock(instant, 'Asia/Kolkata', 'Asia/Karachi')).toBe(false);
+  });
+
+  it('서머타임으로 오프셋이 갈리는 날은 그날의 오프셋으로 판단한다', () => {
+    // Given LA 서머타임 해제(11월 1일) 전후의 LA·피닉스
+    const beforeFallBack = new Date('2026-10-31T20:00:00Z');
+    const afterFallBack = new Date('2026-11-02T20:00:00Z');
+
+    // When / Then 서머타임 동안(-7)만 같고 해제 뒤(-8 대 -7)에는 다르다
+    expect(hasSameWallClock(beforeFallBack, 'America/Los_Angeles', 'America/Phoenix')).toBe(true);
+    expect(hasSameWallClock(afterFallBack, 'America/Los_Angeles', 'America/Phoenix')).toBe(false);
   });
 });

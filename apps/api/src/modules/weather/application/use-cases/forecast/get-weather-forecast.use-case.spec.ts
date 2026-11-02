@@ -20,6 +20,9 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
   const date = new Date("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
+    // 예보 제공 범위가 현재 시각 기준이므로 요청 날짜의 KST 09:00을 지금으로 고정한다.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(date);
     suppressLogger();
     memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
@@ -32,7 +35,13 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     });
     useCase = new GetWeatherForecast({ weatherLocationRepository: repository, forecastReader });
   });
-  afterEach(() => memory.onModuleDestroy());
+  afterEach(() => {
+    try {
+      memory.onModuleDestroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("사용자의 저장 좌표와 예보 결과를 함께 반환한다", async () => {
     // Given
@@ -52,6 +61,16 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     await expect(useCase.execute({ userId: "weather-user", date })).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1902,
     });
+    expect(weatherProvider.calls).toEqual([]);
+  });
+
+  it("격자 없는 해외 위치는 위치 없음과 같은 WEATHER_1902이며 예보를 요청하지 않는다", async () => {
+    // Given
+    repository.records.set("weather-user", weatherLocationFixture("weather-user", "도쿄"));
+    // When
+    const result = useCase.execute({ userId: "weather-user", date });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
     expect(weatherProvider.calls).toEqual([]);
   });
 });

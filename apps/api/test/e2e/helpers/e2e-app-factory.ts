@@ -5,7 +5,7 @@ import type { INestApplication } from "@nestjs/common";
  * @description
  * 모든 E2E 테스트에서 반복되는 NestJS 앱 초기화 보일러플레이트를 통합합니다.
  * - TestDatabase (Testcontainers)
- * - 외부 서비스 Fake 처리 (Email, OAuth, Push, AI, Discord, Weather)
+ * - 외부 서비스 Fake 처리 (Email, OAuth, Push, AI, Discord, Weather, WeatherKit)
  * - Native StandardSchemaValidationPipe
  * - PinoLogger 억제
  */
@@ -45,6 +45,7 @@ import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/for
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
 import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -52,6 +53,7 @@ import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
+import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider.js";
@@ -134,6 +136,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakePushProvider = new FakePushProvider();
   const fakeAiProvider = new FakeAiProvider();
   const fakeWeatherProvider = new FakeWeatherProvider();
+  const stubWeatherReportProvider = new StubWeatherReportProvider();
   const fakeAirQualityProvider = new FakeAirQualityProvider();
   const fakeLifestyleIndexProvider = new FakeLifestyleIndexProvider();
   const fakeSunTimeProvider = new FakeSunTimeProvider();
@@ -234,6 +237,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakeAiProvider)
     .overrideProvider(WEATHER_PROVIDER)
     .useValue(fakeWeatherProvider)
+    .overrideProvider(WEATHER_REPORT_PROVIDER)
+    .useValue(stubWeatherReportProvider)
     .overrideProvider(AIR_QUALITY_PROVIDER)
     .useValue(fakeAirQualityProvider)
     .overrideProvider(LIFESTYLE_INDEX_PROVIDER)
@@ -303,6 +308,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakePushProvider.clear(),
         () => fakeAiProvider.clear(),
         () => fakeWeatherProvider.clear(),
+        () => stubWeatherReportProvider.clear(),
         () => fakeAirQualityProvider.clear(),
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),

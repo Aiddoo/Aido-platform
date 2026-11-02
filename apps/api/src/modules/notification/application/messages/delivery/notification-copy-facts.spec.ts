@@ -6,6 +6,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { WeeklyAchievementStrategy } from "../../strategies/reminders/weekly-achievement.strategy.js";
+import * as en from "./locales/en.js";
 import * as ko from "./locales/ko.js";
 import { createMorningReminderNotificationMessage } from "./scheduler-notification-message.js";
 import {
@@ -177,7 +178,7 @@ describe("완료 수와 기간을 실제 입력으로 안내한다", () => {
     });
     // Then
     expect(morning.title).toBe(`${expectedNoun} today ☀️`);
-    expect(onboarding.title).toBe(`${expectedNoun} finished`);
+    expect(onboarding.title).toBe(`${expectedNoun} done so far`);
   });
 
   it.each(locales)(
@@ -198,12 +199,22 @@ describe("완료 수와 기간을 실제 입력으로 안내한다", () => {
   );
 
   it.each([
-    ["민재", "민재와"],
-    ["민준", "민준과"],
-  ])("닉네임 %s를 보존하면서 친구 수락 조사를 맞춘다", (senderName, expected) => {
+    ["민재", "민재님과"],
+    ["민준", "민준님과"],
+    ["친구", "친구와"],
+  ])("닉네임 %s에는 님을 붙이고 이름을 모르는 친구에는 붙이지 않는다", (senderName, expected) => {
     // Given / When
     const message = ko.SOCIAL_TEMPLATES.FOLLOW_ACCEPTED.variants[1]({ senderName });
     // Then
-    expect(message.title).toContain(`${expected} 친구가 됐어`);
+    expect(message.title).toBe(`${expected} 친구가 됐어요 🎉`);
+  });
+
+  it("영어는 이름을 모르는 친구를 문장 중간에서 your friend로 부른다", () => {
+    // Given
+    const friendName = en.SOCIAL_SENDER_FALLBACK;
+    // When
+    const message = en.SOCIAL_TEMPLATES.NUDGE_SUGGEST.variants[0]({ friendName });
+    // Then
+    expect(message.title).toBe("Check in on your friend?");
   });
 });

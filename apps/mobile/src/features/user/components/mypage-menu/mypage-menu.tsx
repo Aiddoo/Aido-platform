@@ -6,6 +6,7 @@ import {
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/use-feature-discovery-hub';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { useTranslation } from '@src/shared/i18n';
 import { SettingNavigation, Spacing } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -88,7 +89,10 @@ export function MyPageMenu() {
       <SettingNavigation label={t('mypage.sections.subscription')}>
         <MyPageMenuItem label={t('mypage.items.aiReports')} pathname="/reports" />
         <MyPageMenuItem label={t('mypage.items.appIcon')} pathname="/settings/app-icon" />
-        <MyPageMenuItem label={t('mypage.items.subscription')} pathname="/settings/subscription" />
+        <MyPageMenuItem
+          label={t('mypage.items.subscription')}
+          pathname={subscriptionHref().pathname}
+        />
       </SettingNavigation>
 
       <Spacing size={12} />

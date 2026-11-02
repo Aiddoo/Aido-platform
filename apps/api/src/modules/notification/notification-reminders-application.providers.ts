@@ -1,9 +1,9 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { WEEKLY_ACHIEVEMENT_WRITER } from "#api/modules/insights/insights-weekly-achievements.public";
-import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 
 import { RE_ENGAGEMENT_READER } from "./application/ports/reminders/re-engagement-reader.port.js";
+import { REMINDER_WEATHER_REPORT_READER } from "./application/ports/reminders/reminder-weather-report.reader.port.js";
 import { SCHEDULED_REMINDER_READER } from "./application/ports/reminders/scheduled-reminder-reader.port.js";
 import { SCHEDULER_DEDUP } from "./application/ports/reminders/scheduler-dedup.port.js";
 import { SCHEDULER_PREFERENCE_READER } from "./application/ports/reminders/scheduler-preference-reader.port.js";
@@ -310,7 +310,7 @@ export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrat
     WEATHER_REMINDER_READER,
     NotificationPublisher,
     NotificationHistoryReader,
-    WEATHER_FORECAST_READER,
+    REMINDER_WEATHER_REPORT_READER,
   ],
   useFactory: (
     reader: ConstructorParameters<typeof WeatherEveningStrategy>[0]["reader"],
@@ -320,15 +320,15 @@ export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrat
     notificationHistoryReader: ConstructorParameters<
       typeof WeatherEveningStrategy
     >[0]["notificationHistoryReader"],
-    weatherForecastReader: ConstructorParameters<
+    weatherReportReader: ConstructorParameters<
       typeof WeatherEveningStrategy
-    >[0]["weatherForecastReader"],
+    >[0]["weatherReportReader"],
   ) =>
     new WeatherEveningStrategy({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      weatherForecastReader,
+      weatherReportReader,
       logger: new Logger(WeatherEveningStrategy.name),
     }),
 };
@@ -339,7 +339,7 @@ export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrat
     WEATHER_REMINDER_READER,
     NotificationPublisher,
     NotificationHistoryReader,
-    WEATHER_FORECAST_READER,
+    REMINDER_WEATHER_REPORT_READER,
   ],
   useFactory: (
     reader: ConstructorParameters<typeof WeatherMorningStrategy>[0]["reader"],
@@ -349,15 +349,15 @@ export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrat
     notificationHistoryReader: ConstructorParameters<
       typeof WeatherMorningStrategy
     >[0]["notificationHistoryReader"],
-    weatherForecastReader: ConstructorParameters<
+    weatherReportReader: ConstructorParameters<
       typeof WeatherMorningStrategy
-    >[0]["weatherForecastReader"],
+    >[0]["weatherReportReader"],
   ) =>
     new WeatherMorningStrategy({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      weatherForecastReader,
+      weatherReportReader,
       logger: new Logger(WeatherMorningStrategy.name),
     }),
 };

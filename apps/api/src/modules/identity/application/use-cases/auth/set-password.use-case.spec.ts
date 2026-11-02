@@ -39,7 +39,13 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     fixture.cacheService.sessionIds.add(session.id);
     const currentUser = new GetCurrentUser(fixture);
     expect(
-      (await currentUser.execute({ userId: fixture.user.id, sessionId: session.id })).providers,
+      (
+        await currentUser.execute({
+          userId: fixture.user.id,
+          sessionId: session.id,
+          timezone: "Asia/Seoul",
+        })
+      ).providers,
     ).toEqual(["GOOGLE"]);
     const metadata = { ip: "192.0.2.12", userAgent: "소셜 로그인 기기" };
 
@@ -62,7 +68,13 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     expect(fixture.sessionRepository.sessions.get(session.id)?.revokedAt).toBeNull();
     expect(fixture.cacheService.sessionIds.has(session.id)).toBe(true);
     expect(
-      (await currentUser.execute({ userId: fixture.user.id, sessionId: session.id })).providers,
+      (
+        await currentUser.execute({
+          userId: fixture.user.id,
+          sessionId: session.id,
+          timezone: "Asia/Seoul",
+        })
+      ).providers,
     ).toEqual(["GOOGLE", "CREDENTIAL"]);
     expect(fixture.securityLogRepository.entries).toEqual([
       {

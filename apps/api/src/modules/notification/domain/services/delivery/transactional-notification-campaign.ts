@@ -5,16 +5,16 @@
  * 카피 풀 또는 의미가 바뀌면 해당 항목만 버전을 올린다.
  */
 export const TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY = {
-  FOLLOW_REQUEST: "follow_request_v1",
-  FOLLOW_ACCEPTED: "follow_accepted_v1",
-  NUDGE_RECEIVED: "nudge_received_v1",
-  NUDGE_REPLIED: "nudge_replied_v1",
-  NUDGE_THANKED: "nudge_thanked_v1",
-  CHEER_RECEIVED: "cheer_received_v1",
-  FRIEND_COMPLETED: "friend_completed_v1",
-  TODO_COMMENT_ACTIVITY: "todo_comment_activity_v1",
-  INVITE_JOINED: "invite_joined_v1",
-  INVITE_REWARDED: "invite_rewarded_v1",
-  INVITE_PROGRESS: "invite_progress_v1",
-  INVITE_QUALIFY_REMINDER: "invite_qualify_reminder_v1",
+  FOLLOW_REQUEST: "follow_request_v2",
+  FOLLOW_ACCEPTED: "follow_accepted_v2",
+  NUDGE_RECEIVED: "nudge_received_v2",
+  NUDGE_REPLIED: "nudge_replied_v2",
+  NUDGE_THANKED: "nudge_thanked_v2",
+  CHEER_RECEIVED: "cheer_received_v2",
+  FRIEND_COMPLETED: "friend_completed_v2",
+  TODO_COMMENT_ACTIVITY: "todo_comment_activity_v2",
+  INVITE_JOINED: "invite_joined_v2",
+  INVITE_REWARDED: "invite_rewarded_v2",
+  INVITE_PROGRESS: "invite_progress_v2",
+  INVITE_QUALIFY_REMINDER: "invite_qualify_reminder_v2",
 } as const;

@@ -1,3 +1,5 @@
+import type { KmaForecastTiming } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
+
 export const WEATHER_PROVIDER = Symbol("WEATHER_PROVIDER");
 
 export interface HourlyForecast {
@@ -46,8 +48,8 @@ export interface WeatherProvider {
   readonly name: string;
   /** 정규화한 시간별 예보의 지역 시간대. */
   readonly timeZone: string;
-  /** WGS84 위경도로 예보를 조회한다 (격자 변환은 어댑터 내부 책임). */
-  getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast>;
+  /** WGS84 위경도로 timing.target 날짜의 예보를 timing.issuance 발표에서 조회한다. */
+  getForecast(lat: number, lon: number, timing: KmaForecastTiming): Promise<WeatherForecast>;
   /** 필수 자격(API 키 등) 구성 여부 — 지역 라우팅 시 가용성 판단. */
   isConfigured(): boolean;
 }

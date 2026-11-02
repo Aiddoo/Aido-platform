@@ -20,6 +20,7 @@
 | GitHub Actions·Stack 검증            | [CI](ci.md)                                                                                                                                                                                                           |
 | 운영 migration·이미지·배포·복구      | [Deployment](../../apps/api/DEPLOYMENT.md)                                                                                                                                                                            |
 | 단계별 Before/After·측정·미확인 사항 | [서버 구조 전환](migration.md)                                                                                                                                                                                        |
+| 1.14.0 날씨 v2·운영 변경             | [1.14.0 릴리스](../releases/1.14.0.md)                                                                                                                                                                                |
 
 ## 문서 유지 기준
 

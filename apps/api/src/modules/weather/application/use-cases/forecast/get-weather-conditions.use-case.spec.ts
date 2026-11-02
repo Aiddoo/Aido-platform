@@ -77,6 +77,17 @@ describe("GetWeatherConditions — 날짜별 부가정보와 부분 실패", () 
     expect(sunTimeProvider.calls).toEqual([]);
   });
 
+  it("격자 없는 해외 위치는 위치 없음과 같은 WEATHER_1902이며 공급자에 접근하지 않는다", async () => {
+    // Given
+    repository.records.set("weather-user", weatherLocationFixture("weather-user", "도쿄"));
+    // When
+    const result = conditions.execute({ userId: "weather-user", date });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
+    expect(weatherProvider.calls).toEqual([]);
+    expect(sunTimeProvider.calls).toEqual([]);
+  });
+
   it("같은 날짜 캐시가 있으면 공급자 장애에도 저장된 결과를 반환한다", async () => {
     // Given
     const saved = weatherConditionsFixture();

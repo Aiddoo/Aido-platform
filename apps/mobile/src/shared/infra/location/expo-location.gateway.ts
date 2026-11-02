@@ -5,6 +5,12 @@ import {
 } from '@src/core/ports/location-gateway';
 import * as Location from 'expo-location';
 
+import { toPlaceName } from './place-name';
+
+const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * 60_000;
+const LAST_KNOWN_LOCATION_ACCURACY_METERS = 5_000;
+const FRESH_LOCATION_TIMEOUT_MS = 10_000;
+
 function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> {
   return new Promise((resolve, reject) => {
     let finished = false;
@@ -24,7 +30,10 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
       }
     };
     const onAbort = () => finish(undefined, new Error('Location cancelled'));
-    const timer = setTimeout(() => finish(undefined, new Error('Location timeout')), 10_000);
+    const timer = setTimeout(
+      () => finish(undefined, new LocationUnavailableError('Location timeout')),
+      FRESH_LOCATION_TIMEOUT_MS,
+    );
     signal.addEventListener('abort', onAbort, { once: true });
     if (signal.aborted) {
       onAbort();
@@ -37,7 +46,7 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
         mayShowUserSettingsDialog: false,
       },
       ({ coords }) => finish({ latitude: coords.latitude, longitude: coords.longitude }),
-      () => finish(undefined, new Error('Location unavailable')),
+      () => finish(undefined, new LocationUnavailableError('Location unavailable')),
     ).then(
       (watch) => {
         subscription = watch;
@@ -45,7 +54,7 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
           watch.remove();
         }
       },
-      () => finish(undefined, new Error('Location unavailable')),
+      () => finish(undefined, new LocationUnavailableError('Location unavailable')),
     );
   });
 }
@@ -90,7 +99,7 @@ async function getPlace(coordinates: LocationCoordinates, signal: AbortSignal) {
   const place = places[0];
   return {
     countryCode: place?.isoCountryCode ?? null,
-    name: place ? [place.city, place.district].filter(Boolean).join(' ') || null : null,
+    name: place ? toPlaceName(place) : null,
   };
 }
 
@@ -98,11 +107,12 @@ export const expoLocationGateway: LocationGateway = {
   getPermission: () => Location.getForegroundPermissionsAsync(),
   requestPermission: () => Location.requestForegroundPermissionsAsync(),
   getCoordinates: async (signal) => {
-    // 위치 watch에만 자원을 할당하고, 취소되면 늦게 생성된 구독까지 제거한다.
+    // 날씨는 약 5km 칸 단위라 최근 위치면 충분하다. 움직이지 않는 기기는 새 위치 업데이트가 오지 않아
+    // watch만 기다리면 시간 초과가 나므로, 최근 위치가 없을 때만 새로 받는다.
     const cached = await waitForNativeResult(
       Location.getLastKnownPositionAsync({
-        maxAge: 5 * 60_000,
-        requiredAccuracy: 1_000,
+        maxAge: LAST_KNOWN_LOCATION_MAX_AGE_MS,
+        requiredAccuracy: LAST_KNOWN_LOCATION_ACCURACY_METERS,
       }),
       signal,
       2_000,

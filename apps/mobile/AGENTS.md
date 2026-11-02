@@ -21,6 +21,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)                 |
 | 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)             |
 | 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)             |
+| 1.14.0 날씨 화면 v2·Apple 날씨 표기·개발 빌드 분리·오프라인    | [docs/releases/1.14.0-client.md](docs/releases/1.14.0-client.md) |
 | 1.13.0 친구 초대 링크·보상·날짜·위젯 정비                      | [docs/releases/1.13.0-client.md](docs/releases/1.13.0-client.md) |
 | 1.12.1 Duo·Mac·SDK 58 정합성·구조 정비                         | [docs/releases/1.12.1-client.md](docs/releases/1.12.1-client.md) |
 | 1.10.1 변경 및 native QA                                       | [docs/releases/1.10.1-client.md](docs/releases/1.10.1-client.md) |
@@ -33,7 +34,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 기술 스택 (요약)
 
-Expo SDK 58.0.19 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · Uniwind · `react-hook-form`
+Expo SDK 58.0.22 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.6 · HeroUI Native · Uniwind · `react-hook-form`
 
 ---
 
@@ -59,7 +60,7 @@ Bootstrap (bootstrap/providers/)   ← DI 컨테이너, 전역 Provider
 features/{feature}/   # 단수 kebab-case
 ├── domains/        # 클라이언트 모델 + 순수 함수 + Policy + Error
 ├── apis/           # Service + Mapper (HTTP + Zod + 변환 + Policy 검증)
-├── components/     # 의미 있는 UI 블록 (.Loading·.Error·.Empty·.Item)
+├── components/     # 의미 있는 UI 블록 + 부모에 결합된 static(.Item·.Loading·.Error·.Empty 등)
 ├── hooks/          # 단일 책임 훅 ([value, setValue] 상태 튜플, 라우트 읽기)
 ├── queries/        # Query / Mutation Options, {feature}-cache.ts
 ├── constants/      # Query Keys, 라벨·옵션 상수

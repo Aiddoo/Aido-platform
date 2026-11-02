@@ -73,7 +73,7 @@ interface GenerateReportDependencies {
   readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
   readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
   readonly logger: Pick<ApplicationLogger, "log" | "debug" | "warn" | "error">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly settings: AiTaskSettings;
@@ -95,7 +95,7 @@ export class GenerateReport {
     isFinalAttempt?: boolean;
   }): Promise<AiReportDto | null> {
     const { userId, timezone, type, locale = "ko", isFinalAttempt = true } = input;
-    if (!(await this.#dependencies.entitlementReader.hasPremiumAccessInTx(userId))) {
+    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_REPORT"))) {
       this.#dependencies.logger.debug({
         event: AiReportLogEvent.SKIPPED,
         userId,
@@ -226,7 +226,7 @@ export class GenerateReport {
       const { userMutationLock, entitlementReader, aiReportRepository } = this.#dependencies;
       if (
         !(await userMutationLock.lockById(userId)) ||
-        !(await entitlementReader.hasPremiumAccessInTx(userId))
+        !(await entitlementReader.canInTx(userId, "AI_REPORT"))
       ) {
         return null;
       }
@@ -304,7 +304,7 @@ export class GenerateReport {
       return buildNoAiConsentContent(input, locale);
     }
 
-    if (!this.#dependencies.aiProvider.isAvailable()) {
+    if (!this.#dependencies.aiProvider.isAvailable("report")) {
       this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
       return buildFallbackContent(input, locale);
     }

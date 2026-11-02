@@ -325,6 +325,88 @@ describe('PremiumAccessPolicy', () => {
     });
   });
 
+  describe('hasEndedSince', () => {
+    // 기본 보상 기간은 11월 1일 14:30 KST(05:30Z)에 끝난다
+    it.each([
+      ['끝나기 1분 전이면 false다', '2026-11-01T05:28:00Z', '2026-11-01T05:29:00Z', false],
+      ['끝나는 시각에 닿으면 true다', '2026-11-01T05:29:00Z', '2026-11-01T05:30:00Z', true],
+      ['끝나고 1분 뒤 처음 확인하면 true다', '2026-11-01T05:29:00Z', '2026-11-01T05:31:00Z', true],
+      [
+        '이미 확인한 끝은 다시 알리지 않는다',
+        '2026-11-01T05:31:00Z',
+        '2026-11-01T05:32:00Z',
+        false,
+      ],
+      [
+        '백그라운드에 있는 동안 끝나고 돌아오면 true다',
+        '2026-10-31T10:00:00Z',
+        '2026-11-02T01:00:00Z',
+        true,
+      ],
+    ] as const)('%s', (_name, lastCheckedAt, now, expected) => {
+      // Given
+      const access = createPremiumAccess();
+
+      // When
+      const result = PremiumAccessPolicy.hasEndedSince(
+        access,
+        new Date(lastCheckedAt),
+        new Date(now),
+      );
+
+      // Then
+      expect(result).toBe(expected);
+    });
+
+    it('쌓아 둔 보상이 남아도 지금 기간이 끝나면 true다', () => {
+      // Given 지금 보상은 11월 1일에 끝나고 이어서 받을 7일이 있다
+      const access = createPremiumAccess({
+        endsAt: new Date('2026-11-08T05:30:00Z'),
+        bankedDays: 7,
+      });
+
+      // When
+      const result = PremiumAccessPolicy.hasEndedSince(
+        access,
+        new Date('2026-11-01T05:29:00Z'),
+        new Date('2026-11-01T05:31:00Z'),
+      );
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it('프리미엄이 아니라 끝나는 시각이 없으면 false다', () => {
+      // Given
+      const access = createPremiumAccess({ source: null, endsAt: null, periodEndsAt: null });
+
+      // When
+      const result = PremiumAccessPolicy.hasEndedSince(
+        access,
+        new Date('2026-10-01T00:00:00Z'),
+        new Date('2026-12-01T00:00:00Z'),
+      );
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('끝났다고 판단하는 순간 남은 기간 안내도 사라져 표시와 경계가 같다', () => {
+      // Given
+      const access = createPremiumAccess();
+      const justBefore = new Date('2026-11-01T05:29:00Z');
+      const atEnd = new Date('2026-11-01T05:30:00Z');
+
+      // When
+      const hasEnded = PremiumAccessPolicy.hasEndedSince(access, justBefore, atEnd);
+
+      // Then
+      expect(hasEnded).toBe(true);
+      expect(PremiumAccessPolicy.endingNotice(access, justBefore, SEOUL)).toBe('today');
+      expect(PremiumAccessPolicy.endingNotice(access, atEnd, SEOUL)).toBeNull();
+    });
+  });
+
   describe('recentGrantEndedAt', () => {
     it('D. 보상이 끝나 무료로 돌아왔으면 서버가 준 끝난 시각을 반환한다', () => {
       // Given

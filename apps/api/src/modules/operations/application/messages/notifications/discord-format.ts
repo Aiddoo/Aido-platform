@@ -23,6 +23,7 @@ export function formatPrice(price: number, currency?: string): string {
       return new Intl.NumberFormat("ko-KR", {
         style: "currency",
         currency,
+        currencyDisplay: "narrowSymbol",
       }).format(price);
     } catch {
       // 알 수 없는 통화 코드인 경우 fallback

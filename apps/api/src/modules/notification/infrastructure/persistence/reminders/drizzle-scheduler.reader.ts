@@ -1,8 +1,12 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, gte, inArray, lt, sql, type AnyColumn } from "drizzle-orm";
+import { and, asc, count, eq, gte, inArray, lt, sql, type AnyColumn } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  freeAccessCondition,
+  premiumAccessCondition,
+} from "#api/modules/access/access-entitlement-sql.public";
 import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,
@@ -12,6 +16,7 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
@@ -41,6 +46,7 @@ import type {
   UserTodoCount,
   UserWithTodosAndStreak,
   WeatherFallbackUser,
+  WeatherReminderTodo,
   WeatherReminderUser,
   WinbackUser,
 } from "../../../application/ports/reminders/scheduler-read-models.js";
@@ -48,6 +54,7 @@ import type { TodoReminderReaderPort } from "../../../application/ports/reminder
 import type {
   WeatherReminderParams,
   WeatherReminderReaderPort,
+  WeatherReminderTodoQuery,
 } from "../../../application/ports/reminders/weather-reminder-reader.port.js";
 import type {
   WeeklyAchievementStatsReaderPort,
@@ -92,7 +99,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         ...(userId && { id: userId }),
-        OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+        RAW: (target) => premiumAccessCondition(target, now()),
         preference: { timezone: tz, morningReminderHour: hour, morningReminderMinute: minute },
       },
       with: { preference: { columns: { locale: true } } },
@@ -108,8 +115,7 @@ export class DrizzleSchedulerReader
     const rows = await this.db.query.user.findMany({
       columns: { id: true },
       where: {
-        subscriptionStatus: { ne: "ACTIVE" },
-        role: { ne: "ADMIN" },
+        RAW: (target) => freeAccessCondition(target, now()),
         preference: { timezone: tz },
       },
       with: { preference: { columns: { locale: true } } },
@@ -126,7 +132,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         ...(userId && { id: userId }),
-        OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+        RAW: (target) => premiumAccessCondition(target, now()),
         preference: { timezone: tz, eveningReminderHour: hour, eveningReminderMinute: minute },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
@@ -145,8 +151,7 @@ export class DrizzleSchedulerReader
     return this.db.query.user.findMany({
       columns: { id: true },
       where: {
-        subscriptionStatus: { ne: "ACTIVE" },
-        role: { ne: "ADMIN" },
+        RAW: (target) => freeAccessCondition(target, now()),
         preference: { timezone: tz },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
@@ -189,7 +194,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         preference: { timezone: tz },
-        OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+        RAW: (target) => premiumAccessCondition(target, now()),
         todos: { startDate: { gte: periodStart, lt: periodEnd } },
       },
     });
@@ -381,7 +386,7 @@ export class DrizzleSchedulerReader
       },
       with: {
         preference: { columns: { locale: true } },
-        location: { columns: { latitude: true, longitude: true, gridX: true, gridY: true } },
+        location: { columns: { latitude: true, longitude: true } },
       },
     });
   }
@@ -426,7 +431,7 @@ export class DrizzleSchedulerReader
       },
       with: {
         preference: { columns: { locale: true } },
-        location: { columns: { latitude: true, longitude: true, gridX: true, gridY: true } },
+        location: { columns: { latitude: true, longitude: true } },
       },
     });
   }
@@ -449,6 +454,36 @@ export class DrizzleSchedulerReader
       },
       with: { preference: { columns: { locale: true } } },
     });
+  }
+
+  async findScheduledTodosBetween(
+    params: WeatherReminderTodoQuery,
+  ): Promise<WeatherReminderTodo[]> {
+    const { userIds, from, until } = params;
+    if (userIds.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select({
+        id: todo.id,
+        userId: todo.userId,
+        title: todo.title,
+        scheduledTime: todo.scheduledTime,
+      })
+      .from(todo)
+      .where(
+        and(
+          inArray(todo.userId, [...userIds]),
+          eq(todo.isAllDay, false),
+          eq(todo.completed, false),
+          gte(todo.scheduledTime, from),
+          lt(todo.scheduledTime, until),
+        ),
+      )
+      .orderBy(asc(todo.scheduledTime), asc(todo.id));
+    return rows.flatMap(({ scheduledTime, ...row }) =>
+      scheduledTime == null ? [] : [{ ...row, scheduledTime }],
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -490,8 +525,7 @@ export class DrizzleSchedulerReader
       columns: { id: true },
       where: {
         id: { in: userIds },
-        subscriptionStatus: { ne: "ACTIVE" },
-        role: { ne: "ADMIN" },
+        RAW: (target) => freeAccessCondition(target, now()),
       },
     });
     return new Set(rows.map((row) => row.id));

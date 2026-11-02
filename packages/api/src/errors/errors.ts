@@ -1334,7 +1334,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.WEATHER_1901]: {
     code: "WEATHER_1901",
     message: "날씨 정보를 가져올 수 없습니다.",
-    description: "기상청 API 호출에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    description:
+      "날씨 공급자 호출에 실패했고 보여 줄 이전 데이터도 없습니다. 잠시 후 다시 시도해주세요.",
     httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
   },
   [ErrorCode.WEATHER_1902]: {

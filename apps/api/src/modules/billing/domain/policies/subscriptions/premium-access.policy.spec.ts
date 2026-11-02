@@ -1,12 +1,14 @@
 import {
+  applyStoreEventChain,
   isPremiumGrantActive,
   isStoreEntitlementValid,
   isStoreSubscriptionRenewing,
   PremiumAccessPolicy,
   type PremiumGrantTerm,
   premiumGrantEndingNoticeUntil,
+  premiumGrantDaysOf,
   premiumGrantEndsAt,
-  remainingPremiumGrantDays,
+  remainingPremiumGrantMs,
   type StoreEntitlement,
 } from "./premium-access.policy.js";
 
@@ -87,6 +89,108 @@ describe("PremiumAccessPolicy", () => {
         expect(result).toBe(expected);
       },
     );
+  });
+
+  describe("결제 유예(billing grace)", () => {
+    const EXPIRED_AT = new Date("2028-02-20T00:00:00.000Z");
+    const GRACE_ENDS_AT = new Date("2028-03-07T00:00:00.000Z");
+
+    it.each([
+      { status: "ACTIVE" as const, expected: true },
+      // 결제 실패 때 RevenueCat은 BILLING_ISSUE와 함께 CANCELLATION(BILLING_ERROR)을 보낸다
+      { status: "CANCELLED" as const, expected: true },
+      { status: "EXPIRED" as const, expected: false },
+    ])(
+      "만료 6일 뒤에도 유예가 남은 $status 구독은 $expected를 반환한다",
+      ({ status, expected }) => {
+        // Given
+        const subscription = store({
+          status,
+          expiresAt: EXPIRED_AT,
+          gracePeriodEndsAt: GRACE_ENDS_AT,
+        });
+
+        // When
+        const result = isStoreEntitlementValid(subscription, NOW);
+
+        // Then
+        expect(result).toBe(expected);
+      },
+    );
+
+    it("유예 10일째에는 스토어 출처를 유지하고 쌓아 둔 보상을 시작하지 않는다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: EXPIRED_AT, gracePeriodEndsAt: GRACE_ENDS_AT })],
+        premiumGrants: [banked("grant-banked", "2028-02-01T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        periodEndsAt: GRACE_ENDS_AT,
+        endsAt: new Date("2028-03-14T00:00:00.000Z"),
+        bankedDays: 7,
+      });
+      expect(plan.activations).toEqual([]);
+    });
+
+    it("유예가 끝나면 쌓아 둔 보상을 유예 끝 시각부터 이어 시작한다", () => {
+      // Given
+      const afterGrace = new Date("2028-03-07T00:10:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [store({ expiresAt: EXPIRED_AT, gracePeriodEndsAt: GRACE_ENDS_AT })],
+        premiumGrants: [banked("grant-banked", "2028-02-01T00:00:00.000Z")],
+      };
+
+      // When
+      const plan = PremiumAccessPolicy.planReconciliation(entitlements, afterGrace);
+
+      // Then
+      expect(plan.activations).toEqual([{ grantId: "grant-banked", startsAt: GRACE_ENDS_AT }]);
+    });
+  });
+
+  describe("applyStoreEventChain", () => {
+    const stored = {
+      revenueCatId: "chain-1",
+      status: "CANCELLED" as const,
+      expiresAt: new Date("2028-03-10T00:00:00.000Z"),
+      gracePeriodEndsAt: new Date("2028-03-20T00:00:00.000Z"),
+    };
+
+    it("만료 시각이 없는 이벤트는 저장된 만료 시각과 결제 유예를 유지한다", () => {
+      // Given
+      const eventChain = { revenueCatId: "chain-1", status: "ACTIVE" as const };
+
+      // When
+      const applied = applyStoreEventChain([stored], eventChain);
+
+      // Then
+      expect(applied).toEqual([
+        {
+          revenueCatId: "chain-1",
+          status: "ACTIVE",
+          expiresAt: stored.expiresAt,
+          gracePeriodEndsAt: stored.gracePeriodEndsAt,
+        },
+      ]);
+    });
+
+    it("만료 시각이 null이면 체인의 엔타이틀먼트가 없다", () => {
+      // Given
+      const eventChain = { revenueCatId: "chain-1", status: "FREE" as const, expiresAt: null };
+
+      // When
+      const applied = applyStoreEventChain([stored], eventChain);
+
+      // Then
+      expect(applied).toEqual([]);
+    });
   });
 
   describe("premiumGrantEndingNoticeUntil", () => {
@@ -351,20 +455,31 @@ describe("PremiumAccessPolicy", () => {
     });
   });
 
-  describe("remainingPremiumGrantDays", () => {
+  describe("remainingPremiumGrantMs", () => {
     it.each([
       { endsAt: "2028-02-26T12:00:00.000Z", expected: 0 },
       { endsAt: "2028-02-26T12:00:00.001Z", expected: 1 },
-      { endsAt: "2028-02-28T12:00:00.000Z", expected: 2 },
-      { endsAt: "2028-02-28T12:00:00.001Z", expected: 3 },
+      { endsAt: "2028-02-28T12:00:00.001Z", expected: 2 * 24 * 60 * 60 * 1_000 + 1 },
       // 윤일 2028-02-29를 지나도 하루는 24시간이다
-      { endsAt: "2028-03-02T12:00:00.000Z", expected: 5 },
-    ])("$endsAt에 끝나는 기간을 지금 끊으면 $expected일이 남는다", ({ endsAt, expected }) => {
+      { endsAt: "2028-03-02T12:00:00.000Z", expected: 5 * 24 * 60 * 60 * 1_000 },
+    ])("$endsAt에 끝나는 기간을 지금 끊으면 $expected ms가 남는다", ({ endsAt, expected }) => {
       // Given
       const current = grant({ endsAt: new Date(endsAt) });
 
       // When
-      const days = remainingPremiumGrantDays(current, NOW);
+      const remainingMs = remainingPremiumGrantMs(current, NOW);
+
+      // Then
+      expect(remainingMs).toBe(expected);
+    });
+
+    it.each([
+      { remainingMs: 1, expected: 1 },
+      { remainingMs: 2 * 24 * 60 * 60 * 1_000, expected: 2 },
+      { remainingMs: 2 * 24 * 60 * 60 * 1_000 + 1, expected: 3 },
+    ])("남은 $remainingMs ms는 표시 일수 $expected일로 올린다", ({ remainingMs, expected }) => {
+      // Given / When
+      const days = premiumGrantDaysOf(remainingMs);
 
       // Then
       expect(days).toBe(expected);

@@ -1,4 +1,4 @@
-import type { SubscriptionStatus, UserRole } from "@aido/api";
+import type { PremiumEntitlements, SubscriptionStatus, UserRole } from "@aido/api";
 import type { PremiumSource } from "@aido/api/vocabulary";
 
 import type {
@@ -62,6 +62,13 @@ export type RequestDevicePlatform = "IOS" | "ANDROID" | "WEB";
 export interface RequestDevice {
   readonly devicePlatform?: RequestDevicePlatform;
   readonly deviceModel?: string;
+  readonly osVersion?: string;
+  readonly appVersion?: string;
+  readonly appBuild?: string;
+  /** Accept-Language 첫 언어 태그 (예: ko, en-US) */
+  readonly locale?: string;
+  /** X-Timezone IANA 시간대 */
+  readonly timezone?: string;
 }
 
 export interface RequestMetadata {
@@ -95,6 +102,8 @@ export interface CurrentUserResult {
   willRenew?: boolean;
   bankedPremiumDays?: number;
   premiumGrantEndedAt?: string | null;
+  isPremium?: boolean;
+  entitlements?: PremiumEntitlements;
 }
 
 /**

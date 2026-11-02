@@ -39,13 +39,22 @@
     "title": "프리미엄 기능",
     "close": "닫기",
     "subscribe": "구독하기",
-    "subscribeUnlimited": "프리미엄으로 무제한 쓰기"
+    "subscribeUnlimited": "프리미엄으로 무제한 쓰기",
+    "resetsToday": "오늘 중에 다시 쓸 수 있어요",
+    "resetsTomorrow": "내일 다시 쓸 수 있어요",
+    "resetsOn": "{{date}}에 다시 쓸 수 있어요"
   },
   "errorBoundary": {
     "title": "오류가 발생했어요",
     "retry": "재시도",
     "description": "잠시 후 다시 시도해주세요. 계속되면 알려주세요",
-    "inquiry": "문의하기"
+    "inquiry": "문의하기",
+    "restart": "앱 다시 시작",
+    "mailSubject": "[Aido] 오류 문의 ({{code}})",
+    "mailBody": "진단 코드: {{code}}\n\n어떤 화면에서 무엇을 하다가 문제가 생겼는지 알려주시면 빠르게 살펴볼게요.\n"
+  },
+  "offlineBanner": {
+    "message": "오프라인이에요. 연결되면 자동으로 다시 불러와요"
   },
   "toast": {
     "defaultError": "오류가 발생했어요"
@@ -62,11 +71,6 @@
       "title": "마이크 권한 필요",
       "message": "음성 인식을 쓰려면 마이크 권한이 필요해요. 설정에서 권한을 허용해 주세요.",
       "denied": "마이크 권한이 필요해요."
-    },
-    "location": {
-      "title": "위치 권한 필요",
-      "message": "날씨를 보여 드리려면 위치 권한이 필요해요. 설정에서 권한을 허용해 주세요.",
-      "denied": "위치 권한이 필요해요."
     }
   },
   "speechErrors": {

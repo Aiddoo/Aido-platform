@@ -16,6 +16,7 @@ import {
   type TodoUpdatedEvent,
   type TodoVisibilityChangedEvent,
 } from "#api/modules/planning/planning-todos.public";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";
 import {
@@ -61,7 +62,7 @@ export class DailyCompletionCacheInvalidator {
       this.#logger.warn({
         event: InsightsLogEvent.DAILY_COMPLETION_CACHE_INVALIDATION_FAILED,
         userId: event.userId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
   }

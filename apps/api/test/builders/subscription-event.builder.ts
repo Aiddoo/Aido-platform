@@ -159,6 +159,12 @@ export class SubscriptionEventBuilder {
     return this;
   }
 
+  /** BILLING_ISSUE의 스토어 결제 유예 끝 */
+  withGracePeriodExpirationAtMs(gracePeriodExpirationAtMs: number | null): this {
+    this.event.grace_period_expiration_at_ms = gracePeriodExpirationAtMs;
+    return this;
+  }
+
   withPrice(price: number, currency = "KRW", priceInPurchasedCurrency?: number): this {
     this.event.price = price;
     this.event.currency = currency;

@@ -22,7 +22,16 @@ export class PostgresPool implements OnApplicationShutdown {
   readonly pool: Pool;
 
   constructor(config: ConfigService<EnvConfig, true>) {
-    this.pool = new Pool(createPostgresPoolConfig(config.get("DATABASE_URL", { infer: true })));
+    const idleTimeoutMillis = config.get("DATABASE_POOL_IDLE_TIMEOUT_MS", { infer: true });
+    const connectionTimeoutMillis = config.get("DATABASE_POOL_CONNECTION_TIMEOUT_MS", {
+      infer: true,
+    });
+    this.pool = new Pool({
+      ...createPostgresPoolConfig(config.get("DATABASE_URL", { infer: true })),
+      max: config.get("DATABASE_POOL_MAX", { infer: true }),
+      ...(idleTimeoutMillis != null && { idleTimeoutMillis }),
+      ...(connectionTimeoutMillis != null && { connectionTimeoutMillis }),
+    });
   }
 
   async onApplicationShutdown() {

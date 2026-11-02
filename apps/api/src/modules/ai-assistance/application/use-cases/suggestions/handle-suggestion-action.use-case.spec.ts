@@ -57,12 +57,12 @@ describe("HandleSuggestionAction", () => {
     entitlement = handleSuggestionActionDependencies.entitlementReader;
     localePreferenceReader = handleSuggestionActionDependencies.localePreferenceReader;
 
-    entitlement.hasPremiumAccessInTx.mockResolvedValue(true);
+    entitlement.canInTx.mockResolvedValue(true);
     handleSuggestionActionDependencies.userMutationLock.lockById.mockResolvedValue(true);
   });
 
   it("비프리미엄 사용자면 AI_1309 예외를 던지고 조회하지 않아야 한다", async () => {
-    entitlement.hasPremiumAccessInTx.mockResolvedValue(false);
+    entitlement.canInTx.mockResolvedValue(false);
 
     await expect(
       useCase.execute({

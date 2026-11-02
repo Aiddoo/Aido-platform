@@ -12,7 +12,7 @@ import type { UserReportSubmission } from "../../../application/read-models/repo
 import {
   RESOLVE_USER_REPORT_OPERATION_ID,
   resolveUserReportPath,
-} from "../../../presentation/controllers/reports/admin-user-report.constants.js";
+} from "../../../presentation/controllers/reports/v1/admin-user-report.constants.js";
 
 const ADMIN_DOCS_PATH = "/api/admin/docs";
 

@@ -7,7 +7,9 @@ const thinkingLevel = (fallback: "minimal" | "low") =>
   z.enum(["minimal", "low", "medium"]).default(fallback);
 
 /**
- * AI 작업별 운영 설정. 값이 없으면 기본 모델(gemini-3.1-flash-lite)·v2 프롬프트를 쓴다.
+ * AI 작업별 운영 설정. 값이 없으면 기본 모델(google:gemini-3.1-flash-lite)·v2 프롬프트를 쓴다.
+ * 모델 값은 `<provider>:<model>`이고, provider 없이 쓴 기존 값(`gemini-…`)은 google로 읽는다.
+ * AI_FALLBACK_MODEL은 기본 모델이 일시 오류(429·5xx·네트워크)로 실패했을 때만 대신 쓴다.
  * thinking 기본값은 parse-todo만 minimal이고 나머지는 low다. 2026-10-26 live eval에서 parse-todo는
  * minimal이 low와 정확도가 같고 지연이 짧았지만, parse-memo는 minimal에서 남은 할 일 수를 잘못 셌다.
  * 모델 교체와 프롬프트 롤백을 배포 없이 env로만 할 수 있게 한다.
@@ -17,6 +19,7 @@ export const aiSchema = z.object({
   AI_MODEL_PARSE_MEMO: modelId,
   AI_MODEL_REPORT: modelId,
   AI_MODEL_SUGGESTION: modelId,
+  AI_FALLBACK_MODEL: modelId,
   AI_PROMPT_VERSION_PARSE_TODO: promptVersion,
   AI_PROMPT_VERSION_PARSE_MEMO: promptVersion,
   AI_PROMPT_VERSION_REPORT: promptVersion,

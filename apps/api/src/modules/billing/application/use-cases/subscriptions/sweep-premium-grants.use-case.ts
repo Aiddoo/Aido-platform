@@ -2,11 +2,13 @@ import { mapAsync, sum } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
 import type { PremiumGrantRepositoryPort } from "../../ports/subscriptions/premium-grant.repository.port.js";
 import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
 import type { SubscriptionUserMutationLockPort } from "../../ports/subscriptions/subscription-user-mutation-lock.port.js";
+import type { SubscriptionRepositoryPort } from "../../ports/subscriptions/subscription.repository.port.js";
 import type { PremiumAccessProjector } from "../../services/subscriptions/premium-access-projector.service.js";
 
 export const PREMIUM_GRANT_SWEEP = {
@@ -26,14 +28,32 @@ export interface SweepPremiumGrantsResult {
   readonly changedGrantCount: number;
   readonly failedUserCount: number;
   readonly hasRemaining: boolean;
+  /** 만료 웹훅 없이 프리미엄이 끝나 다시 계산한 사용자 */
+  readonly lapsedUserCount: number;
+  readonly lapsedFailedUserCount: number;
+  readonly hasRemainingLapsed: boolean;
 }
 
 type UserReconciliation =
   | { readonly status: "done"; readonly changedGrantCount: number }
   | { readonly status: "failed" };
 
+interface SweepBatchResult {
+  readonly userCount: number;
+  readonly changedGrantCount: number;
+  readonly failedUserCount: number;
+  readonly hasRemaining: boolean;
+}
+
+type FindUserIdsPage = (page: {
+  readonly now: Date;
+  readonly afterUserId?: string;
+  readonly limit: number;
+}) => Promise<string[]>;
+
 interface SweepPremiumGrantsDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findUserIdsToReconcile">;
+  readonly subscriptionRepository: Pick<SubscriptionRepositoryPort, "findLapsedPremiumUserIds">;
   readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
   readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -41,7 +61,10 @@ interface SweepPremiumGrantsDependencies {
   readonly logger: ApplicationLogger;
 }
 
-/** 끝난 보상 기간을 닫고 스토어가 끝난 사용자의 쌓인 기간을 시작한다. */
+/**
+ * 끝난 보상 기간을 닫고 스토어가 끝난 사용자의 쌓인 기간을 시작한다.
+ * 만료 웹훅을 잃어 User projection만 ACTIVE로 남은 사용자도 같은 계산으로 다시 정리한다.
+ */
 export class SweepPremiumGrants {
   readonly #dependencies: SweepPremiumGrantsDependencies;
 
@@ -50,6 +73,38 @@ export class SweepPremiumGrants {
   }
 
   async execute(input: SweepPremiumGrantsInput): Promise<SweepPremiumGrantsResult> {
+    const { premiumGrantRepository, subscriptionRepository, logger } = this.#dependencies;
+    const grants = await this.#sweep(input.now, (page) =>
+      premiumGrantRepository.findUserIdsToReconcile(page),
+    );
+    logger.log({
+      event: BillingLogEvent.PREMIUM_GRANT_SWEPT,
+      userCount: grants.userCount,
+      changedGrantCount: grants.changedGrantCount,
+      failedUserCount: grants.failedUserCount,
+      hasRemaining: grants.hasRemaining,
+    });
+
+    // 보상 기간 정리가 먼저 끝나야 남은 ACTIVE projection이 실제로 끝난 사용자만 남는다
+    const lapsed = await this.#sweep(input.now, (page) =>
+      subscriptionRepository.findLapsedPremiumUserIds(page),
+    );
+    logger.log({
+      event: BillingLogEvent.LAPSED_PREMIUM_SWEPT,
+      userCount: lapsed.userCount,
+      failedUserCount: lapsed.failedUserCount,
+      hasRemaining: lapsed.hasRemaining,
+    });
+
+    return {
+      ...grants,
+      lapsedUserCount: lapsed.userCount,
+      lapsedFailedUserCount: lapsed.failedUserCount,
+      hasRemainingLapsed: lapsed.hasRemaining,
+    };
+  }
+
+  async #sweep(now: Date, findUserIds: FindUserIdsPage): Promise<SweepBatchResult> {
     let afterUserId: string | undefined;
     let userCount = 0;
     let changedGrantCount = 0;
@@ -58,13 +113,13 @@ export class SweepPremiumGrants {
 
     for (let batch = 0; batch < PREMIUM_GRANT_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
       // 처리한 사용자는 조건에서 빠지지만 잠금 실패 등으로 남아도 keyset이 앞으로만 나아간다
-      const userIds = await this.#dependencies.premiumGrantRepository.findUserIdsToReconcile({
-        now: input.now,
+      const userIds = await findUserIds({
+        now,
         afterUserId,
         limit: PREMIUM_GRANT_SWEEP.BATCH_SIZE,
       });
 
-      const results = await mapAsync(userIds, (userId) => this.#reconcileUser(userId, input.now), {
+      const results = await mapAsync(userIds, (userId) => this.#reconcileUser(userId, now), {
         concurrency: PREMIUM_GRANT_SWEEP.USER_CONCURRENCY,
       });
       userCount += userIds.length;
@@ -79,14 +134,6 @@ export class SweepPremiumGrants {
       }
       afterUserId = userIds.at(-1);
     }
-
-    this.#dependencies.logger.log({
-      event: BillingLogEvent.PREMIUM_GRANT_SWEPT,
-      userCount,
-      changedGrantCount,
-      failedUserCount,
-      hasRemaining,
-    });
     return { userCount, changedGrantCount, failedUserCount, hasRemaining };
   }
 
@@ -105,7 +152,7 @@ export class SweepPremiumGrants {
       this.#dependencies.logger.error({
         event: BillingLogEvent.PREMIUM_GRANT_RECONCILE_FAILED,
         userId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
       return { status: "failed" };
     }
@@ -116,7 +163,7 @@ export class SweepPremiumGrants {
       this.#dependencies.logger.warn({
         event: BillingLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
         userId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
     return { status: "done", changedGrantCount };

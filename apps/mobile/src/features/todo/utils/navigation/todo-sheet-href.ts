@@ -36,8 +36,26 @@ export function todoThanksSheetHref({ todoId }: Pick<TodoSheetTarget, 'todoId'>)
   return { pathname: '/todo/[todoId]/thanks', params: { todoId } } as const;
 }
 
-export function todoCreateSheetHref({ date, categoryId }: { date: string; categoryId: number }) {
-  return { pathname: '/todo/new', params: { date, categoryId } } as const;
+interface TodoCreateSheetTarget {
+  date: string;
+  /** 없으면 시트가 첫 카테고리를 고른다. */
+  categoryId?: number;
+  /** 다른 화면이 제안한 할 일을 미리 채운다. 사용자는 시트에서 고친 뒤 저장한다. */
+  title?: string;
+  /** HH:mm. 없으면 종일 할 일로 시작한다. */
+  time?: string;
+}
+
+export function todoCreateSheetHref({ date, categoryId, title, time }: TodoCreateSheetTarget) {
+  return {
+    pathname: '/todo/new',
+    params: {
+      date,
+      ...(categoryId != null && { categoryId }),
+      ...(title != null && { title }),
+      ...(time != null && { time }),
+    },
+  } as const;
 }
 
 export function subTodoCreateSheetHref({ todoId, date }: TodoSheetTarget) {

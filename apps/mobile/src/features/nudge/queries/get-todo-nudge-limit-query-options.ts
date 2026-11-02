@@ -12,6 +12,7 @@ export function getTodoNudgeLimitQueryOptions(todoNudgeService: TodoNudgeService
       return unwrap(result);
     },
     staleTime: 1_000 * 60,
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

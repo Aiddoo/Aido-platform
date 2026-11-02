@@ -13,8 +13,8 @@ import {
   getGrowthSummaryProvider,
   sendTargetedNotificationProvider,
 } from "./operations-admin-application.providers.js";
-import { AdminGrowthController } from "./presentation/controllers/admin/admin-growth.controller.js";
-import { AdminController } from "./presentation/controllers/admin/admin.controller.js";
+import { AdminGrowthController } from "./presentation/controllers/admin/v1/admin-growth.controller.js";
+import { AdminController } from "./presentation/controllers/admin/v1/admin.controller.js";
 
 @Module({
   imports: [NotificationDeliveryModule],

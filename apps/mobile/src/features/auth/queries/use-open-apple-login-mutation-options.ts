@@ -1,5 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
@@ -9,6 +10,7 @@ import { mutationOptions } from '@tanstack/react-query';
 export const useOpenAppleLoginMutationOptions = () => {
   const authService = useAuthService();
   const { setStatus } = useAuth();
+  const { trackEvent } = useTrack();
   const toast = useAppToast();
 
   return mutationOptions({
@@ -21,6 +23,8 @@ export const useOpenAppleLoginMutationOptions = () => {
       if (data.accountRestored) {
         toast.success(t('auth:toasts.accountRestored'));
       }
+
+      trackEvent('auth_login', { method: 'apple' });
     },
     onError: () => {
       notifyError();

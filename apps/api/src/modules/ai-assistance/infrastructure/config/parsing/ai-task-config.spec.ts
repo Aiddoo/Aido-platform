@@ -1,6 +1,6 @@
 import { ConfigService } from "@nestjs/config";
 
-import { readAiModelIds, readAiTaskSettings } from "./ai-task-config.js";
+import { readAiFallbackModelId, readAiModelIds, readAiTaskSettings } from "./ai-task-config.js";
 
 describe("AI 작업 설정", () => {
   it("env가 없으면 모든 작업에 기본 모델을 쓰고 parse-todo만 minimal, 나머지는 low thinking이다", () => {
@@ -10,7 +10,8 @@ describe("AI 작업 설정", () => {
     const models = readAiModelIds(config);
     const settings = readAiTaskSettings(config);
     // Then
-    expect(Object.values(models)).toEqual(Array(4).fill("gemini-3.1-flash-lite"));
+    expect(Object.values(models)).toEqual(Array(4).fill("google:gemini-3.1-flash-lite"));
+    expect(readAiFallbackModelId(config)).toBeNull();
     expect(settings["parse-todo"]).toEqual({ promptVersion: "v2", thinking: "minimal" });
     expect(settings["parse-memo"].thinking).toBe("low");
     expect(settings.report).toEqual({ promptVersion: "v2", thinking: "low" });
@@ -36,8 +37,8 @@ describe("AI 작업 설정", () => {
     const models = readAiModelIds(config);
     const settings = readAiTaskSettings(config);
     // Then
-    expect(models["parse-todo"]).toBe("gemini-3.5-flash-lite");
-    expect(models["parse-memo"]).toBe("gemini-3.1-flash-lite");
+    expect(models["parse-todo"]).toBe("google:gemini-3.5-flash-lite");
+    expect(models["parse-memo"]).toBe("google:gemini-3.1-flash-lite");
     expect(settings["parse-todo"].thinking).toBe("minimal");
     expect(settings.suggestion.thinking).toBe("low");
   });
@@ -57,5 +58,20 @@ describe("AI 작업 설정", () => {
     const config = new ConfigService({ AI_THINKING_REPORT: "high" });
     // When / Then
     expect(() => readAiTaskSettings(config)).toThrow();
+  });
+
+  it("모델 env는 provider를 쓴 값을 그대로, provider 없는 기존 값은 google로 읽는다", () => {
+    // Given
+    const config = new ConfigService({
+      AI_MODEL_REPORT: "anthropic:claude-x",
+      AI_MODEL_SUGGESTION: " gemini-2.5-flash-lite ",
+      AI_FALLBACK_MODEL: "gemini-3.5-flash-lite",
+    });
+    // When
+    const models = readAiModelIds(config);
+    // Then
+    expect(models.report).toBe("anthropic:claude-x");
+    expect(models.suggestion).toBe("google:gemini-2.5-flash-lite");
+    expect(readAiFallbackModelId(config)).toBe("google:gemini-3.5-flash-lite");
   });
 });

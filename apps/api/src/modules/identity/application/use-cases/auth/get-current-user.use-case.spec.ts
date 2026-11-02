@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
 import {
@@ -21,6 +22,10 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       userRepository: fixture.userRepository,
       cacheService: fixture.cacheService,
       premiumAccessReader: fixture.premiumAccessReader,
+      entitlementReader: fixture.entitlementReader,
+      aiQuota: fixture.aiQuota,
+      cheerUsageReader: fixture.cheerUsageReader,
+      nudgeUsageReader: fixture.nudgeUsageReader,
     });
     return { ...fixture, useCase };
   }
@@ -37,11 +42,13 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     const first = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-1",
+      timezone: "Asia/Seoul",
     });
     fixture.userRepository.users.delete(fixture.user.id);
     const second = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-2",
+      timezone: "Asia/Seoul",
     });
     // Then
     expect(first).toMatchObject({
@@ -61,7 +68,11 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     // Given
     const fixture = given({ empty: true });
     // When
-    const pending = fixture.useCase.execute({ userId: fixture.user.id, sessionId: "session-1" });
+    const pending = fixture.useCase.execute({
+      userId: fixture.user.id,
+      sessionId: "session-1",
+      timezone: "Asia/Seoul",
+    });
     // Then
     await expect(pending).rejects.toMatchObject({
       errorCode: ErrorCode.USER_0601,
@@ -87,6 +98,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     const result = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-1",
+      timezone: "Asia/Seoul",
     });
 
     // Then
@@ -115,6 +127,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     const result = await fixture.useCase.execute({
       userId: fixture.user.id,
       sessionId: "session-1",
+      timezone: "Asia/Seoul",
     });
 
     // Then
@@ -125,5 +138,67 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       willRenew: true,
       bankedPremiumDays: 14,
     });
+  });
+
+  it("권한은 프로필 캐시와 별개로 매번 계산하고 횟수 기능에는 사용량과 초기화 시각을 붙인다", async () => {
+    // Given
+    const fixture = given();
+    fixture.aiQuota.used = 2;
+    fixture.cheerUsageReader.used = 1;
+    fixture.nudgeUsageReader.used = 3;
+    const input = {
+      userId: fixture.user.id,
+      sessionId: "session-1",
+      timezone: "America/Los_Angeles",
+    };
+    await fixture.useCase.execute(input);
+    fixture.entitlementReader.tiers.set(fixture.user.id, "PREMIUM");
+    fixture.entitlementReader.activeSubscriptionUserIds.add(fixture.user.id);
+
+    // When
+    const result = await fixture.useCase.execute(input);
+
+    // Then
+    expect(result.isPremium).toBe(true);
+    expect(result.entitlements?.AI_PARSE).toEqual({
+      allowed: true,
+      limit: null,
+      used: 2,
+      resetsAt: "2026-11-30T15:00:00.000Z",
+    });
+    expect(result.entitlements?.NUDGE).toEqual({
+      allowed: true,
+      limit: null,
+      used: 3,
+      resetsAt: "2026-11-03T15:00:00.000Z",
+    });
+    expect(result.entitlements?.FRIEND).toEqual({ allowed: true, limit: null });
+    expect(result.entitlements?.AI_REPORT).toEqual({ allowed: true, limit: null });
+    expect(fixture.cheerUsageReader.timezones).toEqual([
+      "America/Los_Angeles",
+      "America/Los_Angeles",
+    ]);
+  });
+
+  it("ADMIN은 isPremium이 아니어도 모든 기능 권한이 무제한이다", async () => {
+    // Given
+    const fixture = given();
+    fixture.entitlementReader.tiers.set(fixture.user.id, "ADMIN");
+
+    // When
+    const result = await fixture.useCase.execute({
+      userId: fixture.user.id,
+      sessionId: "session-1",
+      timezone: "Asia/Seoul",
+    });
+
+    // Then
+    expect(result.isPremium).toBe(false);
+    expect(
+      PREMIUM_FEATURE_KEYS.every((feature) => {
+        const access = result.entitlements?.[feature];
+        return access?.allowed === true && access.limit == null;
+      }),
+    ).toBe(true);
   });
 });

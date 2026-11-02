@@ -89,7 +89,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
           userId: USER_ID,
           type: "TODO_REMINDER",
           campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
-          variantId: expect.stringMatching(/^todo_reminder_v3\.60min\.v[1-3]$/),
+          variantId: expect.stringMatching(/^todo_reminder_v4\.60min\.v[1-3]$/),
           todoId: 1,
           metadata: { stage: "60min" },
         }),

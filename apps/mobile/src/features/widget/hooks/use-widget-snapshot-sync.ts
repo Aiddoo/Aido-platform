@@ -98,7 +98,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     ],
   });
   const { data: completions } = useQuery({
-    ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd, userId }),
+    ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
     enabled: isUserDataEnabled,
     throwOnError: false,
   });

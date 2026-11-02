@@ -18,6 +18,7 @@
   },
   "errors": {
     "storeUnavailable": "스토어를 사용할 수 없어요",
+    "storeProblem": "스토어가 잠시 응답하지 않아요",
     "offeringsUnavailable": "구독 상품을 불러오지 못했어요",
     "network": "스토어에 연결하지 못했어요",
     "purchaseCancelled": "구매가 취소되었어요",
@@ -28,11 +29,11 @@
   "benefits": {
     "aiParsing": {
       "title": "AI 할 일 만들기 무제한",
-      "description": "월 5회 제한 없이, 자연어로 할 일을 마음껏 정리해요"
+      "description": "월 {{limit}}회 제한 없이, 자연어로 할 일을 마음껏 정리해요"
     },
     "nudge": {
       "title": "콕 찌르기 무제한",
-      "description": "하루 3회 제한 없이, 친구에게 마음껏 찔러요"
+      "description": "하루 {{limit}}회 제한 없이, 친구에게 마음껏 찔러요"
     },
     "reminder": {
       "title": "리마인더 시간 자유 설정",
@@ -44,11 +45,11 @@
     },
     "friends": {
       "title": "친구 무제한 추가",
-      "description": "5명 제한 없이, 친구를 자유롭게 추가해요"
+      "description": "{{limit}}명 제한 없이, 친구를 자유롭게 추가해요"
     },
     "categories": {
-      "title": "카테고리 최대 30개",
-      "description": "3개 제한에서 최대 30개까지 늘어나요"
+      "title": "카테고리 최대 {{premium}}개",
+      "description": "{{free}}개 제한에서 최대 {{premium}}개까지 늘어나요"
     },
     "aiRepeat": {
       "title": "AI 반복 제안",
@@ -111,6 +112,7 @@
       "rewardRecord": "초대 보상 기록",
       "until": "{{date}}까지",
       "nextBillingDate": "다음 결제일",
+      "renewalPending": "갱신 확인 중",
       "subscriptionEndsOn": "구독 종료일",
       "subscriptionStatus": "구독 상태",
       "autoRenewalOn": "자동 갱신",
@@ -133,19 +135,29 @@
       "receipt": "구독 정보를 불러오지 못했어요",
       "plans": "요금제를 불러오지 못했어요",
       "purchase": "결제를 마치지 못했어요",
-      "restore": "구매 내역을 불러오지 못했어요"
+      "restore": "구매 내역을 불러오지 못했어요",
+      "storeUnavailable": "지금은 구독 상품을\n보여드릴 수 없어요",
+      "manage": "스토어 구독 관리를 열지 못했어요"
     },
     "description": {
       "network": "인터넷 연결을 확인하고 다시 시도해주세요",
       "server": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
       "store": "스토어에 연결하지 못했어요. 잠시 후 다시 시도해주세요",
       "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요",
-      "restore": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요"
+      "restore": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
+      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주시면 빠르게 확인할게요",
+      "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 후 다시 시도하거나 문의를 남겨주세요"
     },
     "contactSupport": "문의하기"
   },
   "inquiryDraft": {
     "withDevice": "{{subject}}\n(오류 코드: {{code}} / 앱 {{appVersion}} / {{platform}})\n\n",
     "withoutDevice": "{{subject}}\n(오류 코드: {{code}})\n\n"
+  },
+  "offline": {
+    "receiptTitle": "인터넷에 연결되면 구독 정보를 보여드릴게요",
+    "plansTitle": "인터넷에 연결되면 구독 상품을 보여드릴게요",
+    "description": "연결되면 자동으로 다시 불러와요",
+    "actionsDisabled": "인터넷에 연결되면 구독하거나 구매 내역을 복원할 수 있어요"
   }
 }

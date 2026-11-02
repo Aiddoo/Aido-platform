@@ -1,3 +1,5 @@
+import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
+
 import type {
   Subscription,
   SubscriptionStatusValue,
@@ -25,12 +27,15 @@ export interface CreateSubscriptionData {
   startedAt: Date;
   expiresAt: Date;
   lastProcessedEventId?: string | null;
+  /** 구매 웹훅의 결제 환경. 웹훅이 보내지 않으면 null(알 수 없음)이다. */
+  environment?: SubscriptionEnvironment | null;
 }
 
 /** 구독 상태 업데이트 데이터 */
 export interface UpdateSubscriptionStatusData {
   status?: SubscriptionStatusValue;
   expiresAt?: Date;
+  gracePeriodEndsAt?: Date | null;
   cancelledAt?: Date | null;
   productId?: string;
   lastProcessedEventId?: string | null;
@@ -41,6 +46,12 @@ export interface UpdateUserSubscriptionStatusData {
   subscriptionStatus: SubscriptionStatusValue;
   subscriptionExpiresAt?: Date | null;
   revenueCatUserId?: string;
+}
+
+export interface FindLapsedPremiumUsersParams {
+  readonly now: Date;
+  readonly afterUserId?: string;
+  readonly limit: number;
 }
 
 /**
@@ -57,6 +68,11 @@ export interface SubscriptionRepositoryPort {
   claimChain(revenueCatId: string, userId: string): Promise<boolean>;
   /** TRANSFER로 넘겨준 사용자의 삭제되지 않은 행을 받은 사용자에게 옮기고 옮긴 행 수를 반환한다. */
   takeOverChains(fromUserId: string, toUserId: string): Promise<number>;
+  /**
+   * User projection은 ACTIVE인데 Access 판단으로는 프리미엄이 끝난 사용자를 userId 순으로 읽는다.
+   * 만료 웹훅을 잃은 스토어 구독자가 대상이고, 다시 계산하면 조건에서 빠진다.
+   */
+  findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]>;
   create(data: CreateSubscriptionData): Promise<void>;
   updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
   updateUserSubscriptionStatus(

@@ -6,6 +6,8 @@ import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
 import { memoAiReviewHref } from '@src/features/memo/utils/navigation/memo-href';
+import { useQuotaResetMessage } from '@src/features/subscription/hooks/use-quota-reset-message';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -43,6 +45,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
   const parseMutation = useMutation(useParseMemoMutationOptions());
   const defaultCategoryId = categoriesQuery.data.categories[0]?.id;
   const close = () => onOpenChange(false);
+  const toQuotaResetMessage = useQuotaResetMessage();
 
   if (defaultCategoryId == null) {
     return (
@@ -57,6 +60,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
   const remaining = AiUsagePolicy.getRemainingCount(aiUsage);
 
   if (remaining === 0) {
+    const resetMessage = toQuotaResetMessage(aiUsage);
     return (
       <ConfirmDialog
         isOpen={isOpen}
@@ -64,7 +68,9 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
         title={<ConfirmDialog.Title>{t('memo:aiDialog.limitTitle')}</ConfirmDialog.Title>}
         description={
           <ConfirmDialog.Description>
-            {t('memo:aiDialog.subscribeUnlimited')}
+            {resetMessage == null
+              ? t('memo:aiDialog.subscribeUnlimited')
+              : `${t('memo:aiDialog.subscribeUnlimited')}\n${resetMessage}`}
           </ConfirmDialog.Description>
         }
         cancelButton={
@@ -73,7 +79,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
-          <ConfirmDialog.ConfirmButton onPress={() => replace('/settings/subscription')}>
+          <ConfirmDialog.ConfirmButton onPress={() => replace(subscriptionHref())}>
             {t('common:premiumDialog.subscribe')}
           </ConfirmDialog.ConfirmButton>
         }

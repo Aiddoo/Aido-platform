@@ -80,7 +80,7 @@ export class ParseMemo {
     const { userId } = input;
     const startTime = Date.now();
 
-    if (!this.#dependencies.aiProvider.isAvailable()) {
+    if (!this.#dependencies.aiProvider.isAvailable("parse-memo")) {
       this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
       throw new ApplicationException(ErrorCode.AI_1301);
     }

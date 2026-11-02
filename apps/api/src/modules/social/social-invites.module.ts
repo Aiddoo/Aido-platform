@@ -37,7 +37,7 @@ import { DrizzleRewardClaimRepository } from "./infrastructure/persistence/invit
 import { DrizzleRewardGrantRepository } from "./infrastructure/persistence/invites/drizzle-reward-grant.repository.js";
 import { InviteCodeGenerator } from "./infrastructure/persistence/invites/invite-code.generator.js";
 import { InviteeActivitySubscriber } from "./infrastructure/subscribers/invites/invitee-activity.subscriber.js";
-import { InviteController } from "./presentation/controllers/invites/invite.controller.js";
+import { InviteController } from "./presentation/controllers/invites/v1/invite.controller.js";
 import {
   expireStaleRedemptionsProvider,
   getInviteAvailabilityProvider,

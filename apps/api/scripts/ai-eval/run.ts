@@ -24,7 +24,7 @@ import { parseTodoPrompts } from "../../src/modules/ai-assistance/application/pr
 import { todoDraftSchema } from "../../src/modules/ai-assistance/application/prompts/parsing/shared/v2/todo-draft.schema.js";
 import { resolveGenerationPolicy } from "../../src/modules/ai-assistance/application/services/parsing/ai-generation-policy.js";
 import { normalizeTodoDraft } from "../../src/modules/ai-assistance/application/services/parsing/todo-draft.normalizer.js";
-import { GeminiAiAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/parsing/gemini-ai.adapter.js";
+import { AiSdkAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/parsing/ai-sdk.adapter.js";
 import { readAiTaskSettings } from "../../src/modules/ai-assistance/infrastructure/config/parsing/ai-task-config.js";
 import {
   loadParseTodoGoldenCases,
@@ -75,8 +75,8 @@ const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.st
 
 async function main(): Promise<number> {
   const config = new ConfigService(process.env);
-  const provider = new GeminiAiAdapter(config);
-  if (!provider.isAvailable()) {
+  const provider = new AiSdkAdapter(config);
+  if (!provider.isAvailable("parse-todo")) {
     console.log("GOOGLE_GENERATIVE_AI_API_KEY가 없어 live eval을 건너뜁니다.");
     return 0;
   }

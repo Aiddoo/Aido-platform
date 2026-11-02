@@ -11,6 +11,9 @@ import type {
 import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 
+/** 응답 없는 webhook이 관리자 알림 worker 슬롯을 붙잡지 않도록 요청마다 끊는다. */
+export const DISCORD_WEBHOOK_TIMEOUT_MS = 10_000;
+
 /**
  * Discord Webhook Provider
  *
@@ -48,6 +51,7 @@ export class DiscordWebhookProvider implements AdminNotifier {
         responseType: "response",
         retry: false,
         throwOnHttpError: false,
+        timeout: DISCORD_WEBHOOK_TIMEOUT_MS,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           embeds: [

@@ -46,7 +46,7 @@ import { UserSettingsCacheAdapter } from "./infrastructure/adapters/settings/use
 import { DrizzleTodoCompletionStatsReader } from "./infrastructure/persistence/settings/drizzle-todo-completion-stats.reader.js";
 import { DrizzleUserConsentRepository } from "./infrastructure/persistence/settings/drizzle-user-consent.repository.js";
 import { DrizzleUserPreferenceRepository } from "./infrastructure/persistence/settings/drizzle-user-preference.repository.js";
-import { SettingsController } from "./presentation/controllers/settings/user-settings.controller.js";
+import { SettingsController } from "./presentation/controllers/settings/v1/user-settings.controller.js";
 import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/settings/timezone-self-heal.interceptor.js";
 
 @Module({

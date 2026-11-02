@@ -9,7 +9,7 @@ import {
   getWeeklyAchievementsProvider,
   upsertWeeklyAchievementsProvider,
 } from "./insights-weekly-achievements-application.providers.js";
-import { WeeklyAchievementController } from "./presentation/controllers/weekly-achievements/weekly-achievement.controller.js";
+import { WeeklyAchievementController } from "./presentation/controllers/weekly-achievements/v1/weekly-achievement.controller.js";
 
 @Module({
   controllers: [WeeklyAchievementController],

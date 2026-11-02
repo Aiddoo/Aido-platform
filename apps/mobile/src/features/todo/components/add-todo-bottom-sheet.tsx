@@ -6,8 +6,8 @@ import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage
 import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import type { Todo } from '@src/features/todo/domains/todo.model';
-import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -31,10 +31,10 @@ import {
   MicIcon,
   ModalBottomSheet,
   PauseIcon,
+  QueryErrorBoundary,
   RepeatIcon,
   Text,
   useOverlay,
-  usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
@@ -322,20 +322,22 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           focusTodoInput();
         }}
       >
-        <Suspense fallback={<ActivityIndicator />}>
-          <TodoTimePickerContent
-            date={methods.getValues('startDate')}
-            value={{
-              scheduledTime: methods.getValues('scheduledTime') ?? undefined,
-              isAllDay: methods.getValues('isAllDay') ?? true,
-            }}
-            onChange={(value) => {
-              pickerResult = value;
-              close(value);
-            }}
-            onCancel={() => close(null)}
-          />
-        </Suspense>
+        <QueryErrorBoundary>
+          <Suspense fallback={<ActivityIndicator />}>
+            <TodoTimePickerContent
+              date={methods.getValues('startDate')}
+              value={{
+                scheduledTime: methods.getValues('scheduledTime') ?? undefined,
+                isAllDay: methods.getValues('isAllDay') ?? true,
+              }}
+              onChange={(value) => {
+                pickerResult = value;
+                close(value);
+              }}
+              onCancel={() => close(null)}
+            />
+          </Suspense>
+        </QueryErrorBoundary>
       </ModalBottomSheet>
     ));
   };
@@ -395,16 +397,18 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           focusTodoInput();
         }}
       >
-        <Suspense fallback={<ActivityIndicator />}>
-          <CategorySelectInput
-            value={methods.getValues('categoryId')}
-            onChange={(categoryId) => {
-              pickerResult = categoryId;
-              close(categoryId);
-            }}
-            submitLabel={t('add.submit')}
-          />
-        </Suspense>
+        <QueryErrorBoundary>
+          <Suspense fallback={<ActivityIndicator />}>
+            <CategorySelectInput
+              value={methods.getValues('categoryId')}
+              onChange={(categoryId) => {
+                pickerResult = categoryId;
+                close(categoryId);
+              }}
+              submitLabel={t('add.submit')}
+            />
+          </Suspense>
+        </QueryErrorBoundary>
       </ModalBottomSheet>
     ));
   };
@@ -446,7 +450,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             <TimeChip onPress={handleTimeChipPress} />
             <RepeatChip onPress={handleRepeatChipPress} />
             <VisibilityChip />
-            <CategoryChip onPress={handleCategoryChipPress} />
+            {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
+            <QueryErrorBoundary fallback={() => null}>
+              <Suspense fallback={null}>
+                <CategoryChip onPress={handleCategoryChipPress} />
+              </Suspense>
+            </QueryErrorBoundary>
           </ScrollView>
 
           <Box className="h-px bg-gray-2" />
@@ -688,9 +697,8 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const methods = useFormContext<AddTodoFormInput>();
-  const { trackEvent } = useTrack();
   const toast = useAppToast();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('AI_PARSE');
 
   const { data: aiUsage } = useQuery(useGetAiUsageQueryOptions());
   const isAiLimitReached = aiUsage != null && AiUsagePolicy.isLimitReached(aiUsage);
@@ -763,10 +771,9 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
     }
 
     if (isAiLimitReached) {
-      trackEvent('premium_gate_shown', { feature: 'ai_parse' });
-      premiumDialog.open({
+      premiumGate.open({
         description: t('premium.unlimitedParse'),
-        onConfirm: onExit,
+        onSubscribe: onExit,
       });
       return;
     }

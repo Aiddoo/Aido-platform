@@ -6,7 +6,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
+import { Chip, PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -151,38 +151,50 @@ function ActivationInviteStep({ isCompleted, onPress }: ActivationInviteStepProp
 interface ActivationStepProps {
   label: string;
   isCompleted: boolean;
-  /** 단계를 마치면 받는 보상(오른쪽 강조 문구) */
+  /** 단계를 마치면 받는 보상. 단계 이름 아래 칩으로 보여 큰 글자에서도 이름을 좁히지 않는다 */
   reward?: string;
 }
 
 function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
   const { t } = useTranslation('todo');
   const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
+  const hasReward = reward != null && !isCompleted;
 
   return (
     <HStack
       gap={10}
-      align="center"
+      align={hasReward ? 'start' : 'center'}
       accessible
       accessibilityRole="text"
       accessibilityLabel={t('activation.stepAccessibilityLabel', { label, status })}
       accessibilityState={{ checked: isCompleted }}
     >
       <ActivationStepIndicator isCompleted={isCompleted} />
-      <Text
-        size="b3"
-        weight={isCompleted ? 'medium' : 'normal'}
-        shade={isCompleted ? 5 : 8}
-        className="flex-1"
-      >
-        {label}
-      </Text>
-      {/* 보상 문구가 길어도 단계 이름이 글자 단위로 꺾이지 않게 행의 절반까지만 쓰고 줄바꿈한다 */}
-      {reward != null && !isCompleted && (
-        <Text size="e1" weight="bold" tone="brand" align="right" className="max-w-[50%] shrink">
-          {reward}
+      <VStack flex={1} gap={6} align="start">
+        <Text
+          size="b3"
+          weight={isCompleted ? 'medium' : 'normal'}
+          shade={isCompleted ? 5 : 8}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
+          {label}
         </Text>
-      )}
+        {hasReward && (
+          <Chip size="sm" variant="soft" color="accent" className="max-w-full">
+            <Text
+              size="e1"
+              weight="semibold"
+              tone="brand"
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+              className="shrink"
+            >
+              {reward}
+            </Text>
+          </Chip>
+        )}
+      </VStack>
     </HStack>
   );
 }

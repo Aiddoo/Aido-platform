@@ -1,10 +1,12 @@
-import type { RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { pickBy } from "es-toolkit";
 
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
 import type { SubscriptionCachePort } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
-import type { SubscriptionEventNotifierPort } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
+import type {
+  SubscriptionEventNotifierPort,
+  WebhookFailureContext,
+} from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
 import type {
   ClaimSubscriptionEventReceiptInput,
   SubscriptionEventReceiptRepositoryPort,
@@ -13,6 +15,7 @@ import type { SubscriptionUserMutationLockPort } from "#api/modules/billing/appl
 import type { SubscriptionWebhookLockPort } from "#api/modules/billing/application/ports/subscriptions/subscription-webhook-lock.port";
 import type {
   CreateSubscriptionData,
+  FindLapsedPremiumUsersParams,
   SubscriptionRepositoryPort,
   SubscriptionUser,
   UpdateSubscriptionStatusData,
@@ -34,6 +37,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
   readonly users = new Map<string, SubscriptionUser>();
   readonly subscriptions = new Map<string, SubscriptionProps>();
+  readonly lapsedPremiumUserIds: string[] = [];
 
   async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
     const user = [...this.users.values()].find(
@@ -74,6 +78,14 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     return records.length;
   }
 
+  async findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]> {
+    const { afterUserId } = params;
+    return this.lapsedPremiumUserIds
+      .filter((userId) => afterUserId == null || userId > afterUserId)
+      .sort()
+      .slice(0, params.limit);
+  }
+
   async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
     const record = this.subscriptions.get(revenueCatId);
     return record ? Subscription.reconstitute(record) : null;
@@ -85,6 +97,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
       id: this.subscriptions.size + 1,
       startedAt: new Date(data.startedAt),
       expiresAt: new Date(data.expiresAt),
+      gracePeriodEndsAt: null,
       cancelledAt: null,
       lastProcessedEventId: data.lastProcessedEventId ?? null,
     });
@@ -143,7 +156,7 @@ export class StubSubscriptionCache implements SubscriptionCachePort {
 export class StubSubscriptionNotifier implements SubscriptionEventNotifierPort {
   readonly events: SubscriptionEventPayload[] = [];
   readonly billingIssueUserIds: string[] = [];
-  readonly failures: Array<{ error: unknown; payload: RevenueCatWebhookPayload }> = [];
+  readonly failures: Array<{ error: unknown; context: WebhookFailureContext }> = [];
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
     this.events.push(payload);
@@ -151,8 +164,8 @@ export class StubSubscriptionNotifier implements SubscriptionEventNotifierPort {
   notifyBillingIssue(userId: string): void {
     this.billingIssueUserIds.push(userId);
   }
-  reportWebhookFailure(error: unknown, payload: RevenueCatWebhookPayload): void {
-    this.failures.push({ error, payload });
+  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
+    this.failures.push({ error, context });
   }
 }
 
@@ -194,9 +207,14 @@ export class StubSubscriptionUserMutationLock implements SubscriptionUserMutatio
 /** 사용자 한 명의 보상 기간 상태만 다루는 저장소 대역. 집합 SQL 동작은 실제 PG에서 확인한다. */
 export class StubPremiumGrantRepository implements Pick<
   PremiumGrantRepositoryPort,
-  "findOpenByUserId" | "create" | "saveAll"
+  "findOpenByUserId" | "findBySourceKey" | "create" | "saveAll"
 > {
   readonly grants = new Map<string, PremiumGrantProps>();
+
+  async findBySourceKey(sourceKey: string): Promise<PremiumGrant | null> {
+    const grant = [...this.grants.values()].find((candidate) => candidate.sourceKey === sourceKey);
+    return grant == null ? null : PremiumGrant.reconstitute(grant);
+  }
 
   async findOpenByUserId(userId: string): Promise<PremiumGrant[]> {
     return [...this.grants.values()]
@@ -214,6 +232,7 @@ export class StubPremiumGrantRepository implements Pick<
     const id = `grant-${this.grants.size + 1}`;
     this.grants.set(id, {
       ...plan,
+      durationMs: plan.durationMs ?? null,
       id,
       endingNotifiedAt: null,
       createdAt: plan.createdAt ?? new Date(),

@@ -16,11 +16,16 @@ import { Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { TestBed } from "@suites/unit";
 
-import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
-import { SubscriptionEventBuilder } from "#test/builders/index";
+import {
+  AdminEventNotifier,
+  PAYMENT_NOTIFIER,
+} from "#api/modules/operations/operations-notifications.public";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { SUBSCRIPTION_TIME } from "#test/fixtures/subscription.fixture";
 import { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
 
+import type { WebhookFailureContext } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
+import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 const captureException = vi.mocked(Sentry.captureException);
@@ -28,17 +33,20 @@ const captureException = vi.mocked(Sentry.captureException);
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
   let adapter: SubscriptionEventNotifierAdapter;
   let notifier: FakeAdminNotifier;
-  let payload: ReturnType<SubscriptionEventBuilder["build"]>;
+  let context: WebhookFailureContext;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(SUBSCRIPTION_TIME);
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
     notifier = new FakeAdminNotifier();
-    payload = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId("user-123")
-      .withProductId("premium_monthly")
-      .build();
+    context = {
+      eventType: "INITIAL_PURCHASE",
+      eventId: "evt-1",
+      store: "APP_STORE",
+      appUserId: "user-123",
+      productId: "premium_monthly",
+    };
 
     const { unit } = await TestBed.solitary(SubscriptionEventNotifierAdapter)
       .mock(PAYMENT_NOTIFIER)
@@ -58,7 +66,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     const error = new Error("Processing failed");
 
     // When
-    adapter.reportWebhookFailure(error, payload);
+    adapter.reportWebhookFailure(error, context);
 
     // Then — 컨트롤러에서 옮겨온 태그/extra 그대로 유지
     expect(mockScope.setTag).toHaveBeenCalledWith("domain", "payment");
@@ -74,7 +82,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     const error = new Error("Processing failed");
 
     // When
-    adapter.reportWebhookFailure(error, payload);
+    adapter.reportWebhookFailure(error, context);
 
     // Then
     expect(notifier.getSentNotifications()).toEqual([
@@ -100,7 +108,56 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     vi.spyOn(notifier, "send").mockRejectedValueOnce(new Error("Discord down"));
 
     // When & Then — 동기 호출은 throw하지 않는다
-    expect(() => adapter.reportWebhookFailure(new Error("x"), payload)).not.toThrow();
+    expect(() => adapter.reportWebhookFailure(new Error("x"), context)).not.toThrow();
     await vi.waitFor(() => expect(Logger.prototype.warn).toHaveBeenCalledTimes(1));
+  });
+
+  describe("구독 이벤트 운영 알림", () => {
+    async function adapterWithProjectId(projectId: string | undefined) {
+      const forwarded: SubscriptionEventPayload[] = [];
+      const { unit } = await TestBed.solitary(SubscriptionEventNotifierAdapter)
+        .mock(PAYMENT_NOTIFIER)
+        .impl(() => notifier)
+        .mock(AdminEventNotifier)
+        .impl(() => ({
+          notifySubscriptionEvent: (event: SubscriptionEventPayload) => forwarded.push(event),
+        }))
+        .mock(TypedConfigService)
+        .impl((stubFn) => ({ get: stubFn().mockReturnValue(projectId) }))
+        .compile();
+      return { unit, forwarded };
+    }
+
+    const event: SubscriptionEventPayload = {
+      userId: "user-1",
+      email: "user@example.com",
+      eventType: "INITIAL_PURCHASE",
+      productId: "premium_monthly",
+      appUserId: "app user/1",
+    };
+
+    it("프로젝트 ID가 있으면 RevenueCat 고객 화면 주소를 붙여 넘긴다", async () => {
+      // Given
+      const { unit, forwarded } = await adapterWithProjectId("6a6ea506");
+
+      // When
+      unit.notifySubscriptionEvent(event);
+
+      // Then
+      expect(forwarded[0]?.revenueCatCustomerUrl).toBe(
+        "https://app.revenuecat.com/projects/6a6ea506/customers/app%20user%2F1",
+      );
+    });
+
+    it("프로젝트 ID가 없으면 받은 그대로 넘긴다", async () => {
+      // Given
+      const { unit, forwarded } = await adapterWithProjectId(undefined);
+
+      // When
+      unit.notifySubscriptionEvent(event);
+
+      // Then
+      expect(forwarded).toEqual([event]);
+    });
   });
 });

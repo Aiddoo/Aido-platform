@@ -34,6 +34,17 @@ const DISPLAY_NAMES: Record<AppEnvironment, { ko: string; en: string }> = {
   development: { ko: '아이두 Dev', en: 'Aido Development' },
 };
 
+// 환경마다 번들 id가 달라 Firebase iOS 앱도 다르다. 로컬에서 서로 덮어쓰지 않게 파일을 나눈다.
+// Android google-services.json은 한 파일에 패키지별 client가 함께 들어 있어 하나를 쓴다.
+const GOOGLE_SERVICE_INFO_PLISTS: Record<AppEnvironment, string> = {
+  production: 'GoogleService-Info.plist',
+  preview: 'GoogleService-Info.preview.plist',
+  development: 'GoogleService-Info.development.plist',
+};
+
+// Apple 개발자 팀. prebuild가 서명 팀을 프로젝트에 넣어 로컬 기기 빌드가 자동 서명된다.
+const APPLE_TEAM_ID = '6XKZSBB9HH';
+
 const BRAND_COLOR = '#FF6B43';
 
 // 초대 링크 https://aido.kr/i/{inviteCode} (AASA·assetlinks는 랜딩이 /i/* 만 연다)
@@ -93,32 +104,29 @@ const restoreBase64File = ({
 const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig => {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-  return (
-    match(environment)
-      .with('production', () => ({
-        name: APP_NAME,
-        bundleIdentifier: BUNDLE_IDENTIFIER,
-        packageName: PACKAGE_NAME,
-        scheme: SCHEME,
-        apiUrl: apiUrl ?? 'https://api.aido.kr',
-      }))
-      .with('preview', () => ({
-        name: `${APP_NAME} Preview`,
-        bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
-        packageName: `${PACKAGE_NAME}.preview`,
-        scheme: `${SCHEME}-preview`,
-        apiUrl: apiUrl ?? 'https://api.aido.kr',
-      }))
-      // TODO: google-services.json에 .dev 패키지 추가 후 suffix 복원 (`${BUNDLE_IDENTIFIER}.dev`, `${PACKAGE_NAME}.dev`)
-      .with('development', () => ({
-        name: `${APP_NAME} Development`,
-        bundleIdentifier: BUNDLE_IDENTIFIER,
-        packageName: PACKAGE_NAME,
-        scheme: `${SCHEME}-dev`,
-        apiUrl: apiUrl ?? 'http://localhost:8080',
-      }))
-      .exhaustive()
-  );
+  return match(environment)
+    .with('production', () => ({
+      name: APP_NAME,
+      bundleIdentifier: BUNDLE_IDENTIFIER,
+      packageName: PACKAGE_NAME,
+      scheme: SCHEME,
+      apiUrl: apiUrl ?? 'https://api.aido.kr',
+    }))
+    .with('preview', () => ({
+      name: `${APP_NAME} Preview`,
+      bundleIdentifier: `${BUNDLE_IDENTIFIER}.preview`,
+      packageName: `${PACKAGE_NAME}.preview`,
+      scheme: `${SCHEME}-preview`,
+      apiUrl: apiUrl ?? 'https://api.aido.kr',
+    }))
+    .with('development', () => ({
+      name: `${APP_NAME} Development`,
+      bundleIdentifier: `${BUNDLE_IDENTIFIER}.dev`,
+      packageName: `${PACKAGE_NAME}.dev`,
+      scheme: `${SCHEME}-dev`,
+      apiUrl: apiUrl ?? 'http://localhost:8080',
+    }))
+    .exhaustive();
 };
 
 const resolveEnvironment = (rawEnv: string): AppEnvironment =>
@@ -144,10 +152,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     label: 'google-services.json',
   });
 
+  const googleServiceInfoPlist = GOOGLE_SERVICE_INFO_PLISTS[env];
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_INFO_PLIST,
-    outputPath: path.resolve(PROJECT_ROOT, 'GoogleService-Info.plist'),
-    label: 'GoogleService-Info.plist',
+    outputPath: path.resolve(PROJECT_ROOT, googleServiceInfoPlist),
+    label: googleServiceInfoPlist,
   });
 
   const envConfig = getEnvironmentConfig(env);
@@ -155,7 +164,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const kakaoNativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
 
   // 홈 위젯 데이터 공유용 App Group — 번들 id를 따라 환경별로 분리된다
-  // (development는 프로덕션 번들 id를 공유 중이므로 그룹도 공유 — 라인 87 TODO 복원 시 함께 분리됨)
   const appGroupIdentifier = `group.${envConfig.bundleIdentifier}`;
 
   return {
@@ -190,10 +198,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       appStoreUrl: 'https://apps.apple.com/app/id6757722325',
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
+      appleTeamId: APPLE_TEAM_ID,
       usesAppleSignIn: true,
       // 운영 앱만 aido.kr AASA에 등록돼 있다
       ...(isProduction && { associatedDomains: [`applinks:${INVITE_LINK_HOST}`] }),
-      googleServicesFile: './GoogleService-Info.plist',
+      googleServicesFile: `./${googleServiceInfoPlist}`,
       config: {
         // false: HTTPS만 사용, 커스텀 암호화 없음 (App Store 제출 시 수출 규정 질문 스킵)
         usesNonExemptEncryption: false,

@@ -16,9 +16,10 @@ import { useGetOfferingsQueryOptions } from '../queries/get-offerings-query-opti
 type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 
 export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
-  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
-  const monthlyPlan = offering.plans.find((plan) => plan.planType === 'monthly');
-  const annualPlan = offering.plans.find((plan) => plan.planType === 'annual');
+  const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
+  const plans = availability.status === 'available' ? availability.offering.plans : [];
+  const monthlyPlan = plans.find((plan) => plan.planType === 'monthly');
+  const annualPlan = plans.find((plan) => plan.planType === 'annual');
   const annualDiscountPercent =
     monthlyPlan && annualPlan ? getAnnualDiscountPercent(monthlyPlan.price, annualPlan.price) : 0;
 

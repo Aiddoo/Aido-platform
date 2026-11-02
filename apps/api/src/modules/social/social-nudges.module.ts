@@ -12,11 +12,12 @@ import {
 import { NUDGE_LIMIT_READER } from "./application/ports/nudges/nudge-limit-reader.port.js";
 import { NUDGE_NOTIFIER } from "./application/ports/nudges/nudge-notifier.port.js";
 import { NUDGE_REPOSITORY } from "./application/ports/nudges/nudge.repository.port.js";
+import { NUDGE_USAGE_READER } from "./application/ports/quotas/daily-send-usage-reader.port.js";
 import { NudgeLimitReaderAdapter } from "./infrastructure/adapters/nudges/nudge-limit-reader.adapter.js";
 import { NudgeNotifierAdapter } from "./infrastructure/adapters/nudges/nudge-notifier.adapter.js";
 import { DrizzleNudgeRepository } from "./infrastructure/persistence/nudges/drizzle-nudge.repository.js";
-import { NudgeInteractionController } from "./presentation/controllers/nudges/nudge-interaction.controller.js";
-import { NudgeController } from "./presentation/controllers/nudges/nudge.controller.js";
+import { NudgeInteractionController } from "./presentation/controllers/nudges/v1/nudge-interaction.controller.js";
+import { NudgeController } from "./presentation/controllers/nudges/v1/nudge.controller.js";
 import {
   getNudgeInteractionAvailabilityProvider,
   getNudgeInteractionsProvider,
@@ -32,12 +33,14 @@ import {
   sendNudgeThanksProvider,
   sendNudgeProvider,
   sendRemindNudgeProvider,
+  nudgeUsageReaderProvider,
 } from "./social-nudges-application.providers.js";
 
 @Module({
   imports: [AccessModule, SocialFriendsModule, NotificationDeliveryModule],
   controllers: [NudgeController, NudgeInteractionController],
   providers: [
+    nudgeUsageReaderProvider,
     {
       provide: NUDGE_INTERACTION_CONFIG,
       inject: [TypedConfigService],
@@ -63,5 +66,6 @@ import {
     replyToNudgeProvider,
     sendNudgeThanksProvider,
   ],
+  exports: [NUDGE_USAGE_READER],
 })
 export class SocialNudgesModule {}

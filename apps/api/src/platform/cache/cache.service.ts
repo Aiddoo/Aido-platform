@@ -6,6 +6,7 @@ import {
   type CacheValueSchema,
   type ICacheService,
   type TtlValue,
+  type WrapTtl,
 } from "./interfaces/cache.interface.js";
 
 @Injectable()
@@ -45,7 +46,7 @@ export class CacheService {
     key: string,
     schema: CacheValueSchema<T>,
     factory: () => Promise<T>,
-    ttl?: TtlValue,
+    ttl?: WrapTtl<T>,
   ): Promise<T> {
     return this.cache.wrap(key, schema, factory, ttl);
   }

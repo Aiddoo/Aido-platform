@@ -10,7 +10,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { invalidateTodos } from './todo-cache';
 
-interface UpdateTodoScheduleMutationParams {
+export interface UpdateTodoScheduleMutationParams {
   todoId: number;
   input: UpdateTodoScheduleInput;
 }

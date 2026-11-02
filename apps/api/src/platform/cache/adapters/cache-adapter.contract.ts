@@ -151,6 +151,18 @@ export function describeCacheAdapterContract(context: {
       expect(factory).toHaveBeenCalledTimes(1);
     });
 
+    it("wrap의 TTL이 함수면 factory 결과로 보관 시간을 정한다", async () => {
+      // Given 값이 짧으면 1분, 길면 1시간을 돌려주는 TTL
+      const ttlOf = vi.fn((value: string) => (value.length < 5 ? 60_000 : 3_600_000));
+
+      // When
+      await cache.wrap("contract:wrap-ttl", z.string(), async () => "rain", ttlOf);
+
+      // Then
+      expect(ttlOf).toHaveBeenCalledWith("rain");
+      expect(await cache.ttl("contract:wrap-ttl")).toBeLessThanOrEqual(60_000);
+    });
+
     it("delByPattern은 패턴에 매칭되는 키를 삭제하고 개수를 반환한다", async () => {
       // Given
       await cache.set("contract:user:1", "a");

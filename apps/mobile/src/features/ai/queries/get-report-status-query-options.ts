@@ -12,6 +12,7 @@ export function getReportStatusQueryOptions(aiService: AiService) {
       const result = await aiService.getReportStatus(signal);
       return unwrap(result);
     },
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

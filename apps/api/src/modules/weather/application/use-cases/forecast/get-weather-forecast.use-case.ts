@@ -38,6 +38,7 @@ export class GetWeatherForecast {
     if (location == null) {
       throw new ApplicationException(ErrorCode.WEATHER_1902);
     }
+    location.requireKmaGrid();
 
     const forecast = await this.#dependencies.forecastReader.fetchForLocation(location, input.date);
     return { forecast, location };

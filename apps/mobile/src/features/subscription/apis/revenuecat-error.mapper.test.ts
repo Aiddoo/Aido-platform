@@ -40,8 +40,15 @@ describe('toSubscriptionError', () => {
       '스토어 자체에 문제가 있으면',
       'offerings',
       storeError(PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR),
-      SubscriptionErrorCode.STORE_UNAVAILABLE,
+      SubscriptionErrorCode.STORE_PROBLEM,
       '2',
+    ],
+    [
+      'API 키가 잘못됐으면',
+      'offerings',
+      storeError(PURCHASES_ERROR_CODE.INVALID_CREDENTIALS_ERROR),
+      SubscriptionErrorCode.STORE_UNAVAILABLE,
+      '11',
     ],
     [
       '요금제 조회가 알 수 없는 백엔드 오류로 실패하면',

@@ -1,15 +1,29 @@
+import type { WeatherRescheduleReason } from '@aido/api';
 import type {
   InviteFriendship,
   RedeemOutcome,
   ReplyToNudgeInput,
   UserReportReason,
   UserReportTargetType,
+  WeatherAlertSeverity,
 } from '@aido/api';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
+import type { ReportType } from '@src/features/ai/domains/ai.model';
 import type { OAuthProviderSlug } from '@src/features/auth/domains/oauth.model';
 import type { InviteLinkSource } from '@src/features/invite/domains/invite-redemption.model';
 import type { InviteShareChannel } from '@src/features/invite/domains/invite-share.model';
 import type { RedeemFailureReason } from '@src/features/invite/domains/invite.error';
+import type { PremiumGateAnalyticsFeature } from '@src/features/subscription/domains/premium-feature.model';
+import type { SubscriptionView } from '@src/features/subscription/hooks/use-subscription-view-param';
+import type { PurchaseFailedReason } from '@src/features/subscription/utils/analytics/purchase-failed-reason';
+import type { SubscriptionStatus } from '@src/features/user/domains/user.model';
+import type {
+  WeatherBriefingKind,
+  WeatherLocationRegisteredResult,
+  WeatherOpenedEntry,
+  WeatherReportFailedCause,
+} from '@src/features/weather/utils/analytics/weather-analytics';
+import type { TodoSuggestionReason } from '@src/features/weather/utils/view-models/weather-briefing.view-model';
 
 // 관측 키의 단일 원본. Analytics 이벤트·Sentry feature/tag·breadcrumb 카테고리를 여기서만 정의한다.
 // 포트(core/ports)는 이 파일의 타입만 import한다.
@@ -57,8 +71,38 @@ export const BREADCRUMB_CATEGORIES = [
   'ui',
   'widget',
   'invite',
+  'network',
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
+
+/**
+ * 개발·프리뷰 빌드의 모든 이벤트(네이티브 자동 수집 포함)에 붙이는 기본 파라미터.
+ * GA 데이터 필터 "내부 트래픽"이 `traffic_type = internal`을 수집 시점에 제외한다.
+ */
+export const INTERNAL_TRAFFIC_EVENT_PARAMETERS = { traffic_type: 'internal' } as const;
+
+/** 프리미엄 출처. `is_premium`은 ADMIN·보상 기간(GRANT)을 포함하므로 유료 전환은 `store`로만 센다 */
+export type PremiumSourceProperty = 'store' | 'grant' | 'admin' | 'none';
+
+/** Firebase 사용자 속성. 이름·값은 GA 커스텀 측정기준이므로 바꾸지 않는다 */
+export interface UserPropertyMap {
+  is_premium: boolean;
+  subscription_status: SubscriptionStatus;
+  premium_source: PremiumSourceProperty;
+}
+
+/** 로그아웃 시 다음 계정에 속성이 남지 않도록 모든 사용자 속성을 지우는 값 */
+export const CLEARED_USER_PROPERTIES = {
+  is_premium: null,
+  subscription_status: null,
+  premium_source: null,
+} as const satisfies Record<keyof UserPropertyMap, null>;
+
+/**
+ * GA 예약 구매 이벤트. 매출 원본은 RevenueCat이 Firebase로 보내는 `purchase`이고,
+ * Firebase가 스토어 결제를 자동 수집하는 `in_app_purchase`도 있으므로 앱은 이 이름을 쓰지 않는다.
+ */
+type GaReservedPurchaseEventName = 'purchase' | 'in_app_purchase' | 'refund';
 
 // 새 이벤트는 해당 기능의 `*EventMap`에 먼저 정의한다 → `AppEventMap`으로 합쳐진다.
 
@@ -202,6 +246,9 @@ export interface GrowthEventMap {
   friend_search_submitted: {
     query_length_bucket: FriendSearchLengthBucket;
   };
+  friend_strip_hint_dismissed: {
+    hint: 'invite' | 'search';
+  };
   activation_completed: {
     campaign_id: string;
     days_since_signup: number;
@@ -229,27 +276,26 @@ export interface LifecycleEventMap {
   };
 }
 
-/** 프리미엄 안내를 띄운 기능. 대시보드 집계 값이므로 이름을 바꾸지 않는다. */
-export type PremiumGateFeature =
-  | 'ai_parse'
-  | 'ai_report'
-  | 'ai_suggestion'
-  | 'app_icon'
-  | 'friend_limit'
-  | 'friend_todo_view'
-  | 'nudge_limit'
-  | 'reminder_time';
-
 export interface SubscriptionEventMap {
+  /**
+   * 앱에서 결제가 끝난 순간(UI·퍼널 단계). **매출·전환 집계에 쓰지 않는다** — 매출 원본은 RevenueCat `purchase`다.
+   * 대시보드 이력을 지키려고 이름은 유지한다.
+   */
   subscription_started: { product_id: string };
   subscription_restored: undefined;
-  premium_gate_shown: { feature: PremiumGateFeature };
+  premium_gate_shown: { feature: PremiumGateAnalyticsFeature };
+  /** 게이트 다이얼로그에서 구독하기를 눌렀다 */
+  premium_gate_cta_tapped: { feature: PremiumGateAnalyticsFeature };
+  /** 요금제를 받아 페이월을 보여 줬다. `plans`는 보상 기간 영수증에서 요금제로 넘어온 경우다 */
+  paywall_viewed: { view: SubscriptionView };
+  /** 문의로 안내한 결제 실패. 직접 취소·승인 대기는 세지 않는다 */
+  purchase_failed: { reason: PurchaseFailedReason };
 }
 
 export interface AiEventMap {
   ai_parse_used: { success: boolean };
   ai_suggestion_acted: { action: 'accept' | 'dismiss' };
-  ai_report_viewed: { report_id: number; report_type: string };
+  ai_report_viewed: { report_id: number; report_type: ReportType };
   ai_data_sharing_consent_changed: { agreed: boolean };
 }
 
@@ -302,6 +348,28 @@ export interface MemoEventMap {
   memo_converted_to_todos: { memo_id: number; todo_count: number; source: string };
 }
 
+export interface WeatherEventMap {
+  weather_location_permission_result: { result: 'granted' | 'needs_permission' | 'denied' };
+  weather_alert_opened: { severity: WeatherAlertSeverity };
+  weather_reschedule_opened: { todo_count: number; reason: WeatherRescheduleReason };
+  weather_reschedule_applied: { moved_count: number };
+  weather_reschedule_undone: { moved_count: number };
+  weather_todo_suggestion_opened: { reason: TodoSuggestionReason };
+  /** 날씨 화면 진입. 화면이 열릴 때 한 번 */
+  weather_opened: { entry: WeatherOpenedEntry };
+  /** 브리핑 노출. 화면이 열려 있는 동안 처음 보인 종류로 한 번 */
+  weather_briefing_shown: { kind: WeatherBriefingKind };
+  /** 화면을 연 뒤 위치 확인이 끝난 결과. 화면이 열려 있는 동안 한 번 */
+  weather_location_registered: { result: WeatherLocationRegisteredResult };
+  /** 리포트 경계가 실패를 보였다. 실패 화면마다 한 번 */
+  weather_report_failed: { cause: WeatherReportFailedCause };
+}
+
+/** 연결 상태. 오프라인 배너가 뜨는 전환(오프라인 구간)마다 한 번 */
+export interface ConnectivityEventMap {
+  offline_banner_shown: undefined;
+}
+
 export type AppEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
@@ -316,4 +384,12 @@ export type AppEventMap = AuthEventMap &
   UserEventMap &
   NotificationEventMap &
   BadgeEventMap &
-  MemoEventMap;
+  MemoEventMap &
+  WeatherEventMap &
+  ConnectivityEventMap;
+
+/** 앱 이벤트가 GA 예약 구매 이벤트 이름을 쓰면 여기서 컴파일 오류가 난다 */
+export type AssertNoReservedPurchaseEvent<Name extends never> = Name;
+export type AppReservedPurchaseEventGuard = AssertNoReservedPurchaseEvent<
+  Extract<keyof AppEventMap, GaReservedPurchaseEventName>
+>;

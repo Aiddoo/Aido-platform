@@ -1,13 +1,15 @@
+import { PREMIUM_FEATURES } from '@aido/api';
 import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsing.webp';
 import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.webp';
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
-import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
 import { InvitePawPrintBoard } from '@src/features/invite/components/invite-paw-print-board';
 import { ReceiptBenefitRow } from '@src/features/subscription/components/receipt-benefit-row';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
+import { SubscriptionResult } from '@src/features/subscription/components/subscription-result';
+import { SubscriptionStoreUnavailable } from '@src/features/subscription/components/subscription-store-unavailable';
 import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
-import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
+import type { SubscriptionOffering } from '@src/features/subscription/domains/subscription.model';
 import { useOpenSubscriptionInquiry } from '@src/features/subscription/hooks/use-open-subscription-inquiry';
 import { useOpenSubscriptionManagement } from '@src/features/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
@@ -15,6 +17,7 @@ import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-s
 import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
 import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import {
   getSubscriptionStore,
   type SubscriptionStore,
@@ -26,8 +29,10 @@ import {
 import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/view-models/subscription-receipt.view-model';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useTrack } from '@src/shared/analytics';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -42,10 +47,9 @@ import {
   ListIcon,
   ListRow,
   PersonIcon,
+  QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
-  ReadableContent,
-  Result,
   Spacing,
   type StyledIconType,
   StyledSafeAreaView,
@@ -64,47 +68,42 @@ import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Separator, Skeleton, Spinner } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
-import {
-  AccessibilityInfo,
-  Image,
-  type ImageSourcePropType,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import { match, P } from 'ts-pattern';
+import { Image, type ImageSourcePropType, Platform, ScrollView } from 'react-native';
+import { match } from 'ts-pattern';
 
 function SubscriptionScreen() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const sdkManager = useRevenueCatSdkManager();
   const receipt = useSubscriptionReceipt();
   const [view] = useSubscriptionViewParam();
 
   // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
   // 영수증은 서버의 내 정보로만 그려 스토어가 실패해도 이용 중인 사람은 영수증을 본다.
+  // 스토어를 쓸 수 없으면 요금제 자리에서 안내한다.
   return match({
     isPremium: UserPolicy.isPremiumUser(user),
     canSubscribe: receipt.primaryAction === 'subscribe',
-    isStoreConfigured: sdkManager.isConfigured(),
     view,
   })
-    .with(
-      { canSubscribe: true, view: 'plans' },
-      { isPremium: false, isStoreConfigured: true },
-      () => (
-        <QueryErrorBoundary fallback={PaywallPane.Error}>
-          <Suspense fallback={<PaywallPane.Loading />}>
-            <PaywallPane />
-          </Suspense>
-        </QueryErrorBoundary>
-      ),
-    )
+    .with({ canSubscribe: true, view: 'plans' }, { isPremium: false }, () => (
+      <QueryErrorBoundary fallback={PaywallPane.Error}>
+        <Suspense fallback={<PaywallPane.Loading />}>
+          <PaywallPane />
+        </Suspense>
+      </QueryErrorBoundary>
+    ))
     .with({ isPremium: true }, () => <SubscriberPane />)
-    .with({ isStoreConfigured: false }, () => <StoreUnavailablePane />)
     .exhaustive();
 }
 
 /** 내 정보를 받기 전에는 영수증과 같은 자리·모양의 스켈레톤을 둔다 */
 SubscriptionScreen.Loading = function Loading() {
+  const isOnline = useIsOnline();
+
+  // 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 화면을 채운다
+  if (!isOnline) {
+    return <SubscriptionOfflineResult target="receipt" />;
+  }
+
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8" scrollEnabled={false}>
       <StyledSafeAreaView edges={['left', 'right']} accessibilityState={{ busy: true }}>
@@ -117,6 +116,12 @@ SubscriptionScreen.Loading = function Loading() {
 
 /** 요금제는 스토어에서 받아 모양이 정해지지 않아 가운데 표시기만 둔다 */
 PaywallPane.Loading = function Loading() {
+  const isOnline = useIsOnline();
+
+  if (!isOnline) {
+    return <SubscriptionOfflineResult target="plans" />;
+  }
+
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
       <Spinner size="lg" color="default" />
@@ -139,6 +144,7 @@ function SubscriberPane() {
   const { primaryAction } = useSubscriptionReceipt();
   const restore = useMutation(useRestoreMutationOptions());
   const openSubscriptionManagement = useOpenSubscriptionManagement();
+  const isOnline = useIsOnline();
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -153,11 +159,7 @@ function SubscriberPane() {
 
         {match(primaryAction)
           .with('subscribe', () => (
-            <Button
-              onPress={() =>
-                router.push({ pathname: '/settings/subscription', params: { view: 'plans' } })
-              }
-            >
+            <Button onPress={() => router.push(subscriptionHref({ view: 'plans' }))}>
               {t('subscriber.subscribeAfterGrantButton')}
             </Button>
           ))
@@ -171,41 +173,60 @@ function SubscriberPane() {
 
         <Spacing size={16} />
 
-        <Box className="items-center">
+        <VStack gap={8} className="items-center">
           <TextButton
             size="medium"
             variant="underline"
             onPress={() => restore.mutate()}
-            isDisabled={restore.isPending}
+            isDisabled={restore.isPending || !isOnline}
           >
             {t('subscriber.restoreButton')}
           </TextButton>
-        </Box>
+          {!isOnline && <SubscriptionOfflineActionsNotice />}
+        </VStack>
       </StyledSafeAreaView>
     </ScrollView>
   );
 }
 
-/** 스토어 SDK를 쓸 수 없으면 다시 시도해도 같아 문의로만 안내한다 */
-function StoreUnavailablePane() {
-  return (
-    <SubscriptionFailureResult
-      failure={toSubscriptionLoadFailure('plans', SubscriptionErrors.storeUnavailable())}
-    />
-  );
+/** 스토어를 쓸 수 없으면 예상한 상태라 오류 경계 대신 안내 화면을 보인다 */
+function PaywallPane() {
+  const {
+    data: availability,
+    refetch,
+    isRefetching,
+  } = useSuspenseQuery(useGetOfferingsQueryOptions());
+
+  return match(availability)
+    .with({ status: 'available' }, ({ offering }) => <Paywall offering={offering} />)
+    .with({ status: 'unavailable' }, ({ unavailable }) => (
+      <SubscriptionStoreUnavailable
+        unavailable={unavailable}
+        onRetry={() => refetch()}
+        isRetrying={isRefetching}
+      />
+    ))
+    .exhaustive();
 }
 
-function PaywallPane() {
+function Paywall({ offering }: { offering: SubscriptionOffering }) {
   const { t } = useTranslation('subscription');
-  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const purchase = useMutation(usePurchaseMutationOptions());
   const restore = useMutation(useRestoreMutationOptions());
   const [view] = useSubscriptionViewParam();
+  const isOnline = useIsOnline();
+  const { trackEvent } = useTrack();
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const [chosenPlanId, setChosenPlanId] = useState<string>();
   const defaultPlan =
     offering.plans.find((plan) => plan.planType === 'annual') ?? offering.plans[0];
   const selectedPlanId = chosenPlanId ?? defaultPlan?.identifier;
   const selectedPlan = offering.plans.find((plan) => plan.identifier === selectedPlanId);
+
+  // 요금제를 받아 페이월이 실제로 보였을 때 한 번 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널)
+  useEffect(() => {
+    trackEvent('paywall_viewed', { view });
+  }, [trackEvent, view]);
 
   const handlePurchase = () => {
     if (!selectedPlan || purchase.isPending) {
@@ -244,12 +265,16 @@ function PaywallPane() {
               <VStack gap={20}>
                 <SubscriptionBenefitCard
                   title={t('benefits.aiParsing.title')}
-                  description={t('benefits.aiParsing.description')}
+                  description={t('benefits.aiParsing.description', {
+                    limit: UserPolicy.freeFeatureLimit(user, 'AI_PARSE'),
+                  })}
                   image={benefitAiParsingImage}
                 />
                 <SubscriptionBenefitCard
                   title={t('benefits.nudge.title')}
-                  description={t('benefits.nudge.description')}
+                  description={t('benefits.nudge.description', {
+                    limit: UserPolicy.freeFeatureLimit(user, 'NUDGE'),
+                  })}
                   image={benefitNudgeImage}
                 />
                 <SubscriptionBenefitCard
@@ -291,7 +316,7 @@ function PaywallPane() {
               size="small"
               variant="underline"
               onPress={() => restore.mutate()}
-              isDisabled={restore.isPending}
+              isDisabled={restore.isPending || !isOnline}
             >
               {t('subscriber.restoreButton')}
             </TextButton>
@@ -300,10 +325,15 @@ function PaywallPane() {
       </ScrollView>
 
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+        {!isOnline && (
+          <Box className="pb-2">
+            <SubscriptionOfflineActionsNotice />
+          </Box>
+        )}
         <Button
           onPress={handlePurchase}
           isLoading={purchase.isPending}
-          isDisabled={!selectedPlan || purchase.isPending}
+          isDisabled={!selectedPlan || purchase.isPending || !isOnline}
         >
           {t('paywall.subscribeButton')}
         </Button>
@@ -322,47 +352,52 @@ PaywallPane.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackP
   );
 };
 
+interface SubscriptionOfflineResultProps {
+  target: 'receipt' | 'plans';
+}
+
+/** 오프라인은 실패가 아니라 기다리면 풀리는 상태라 다시 시도·문의 대신 자동으로 이어진다고 알린다 */
+function SubscriptionOfflineResult({ target }: SubscriptionOfflineResultProps) {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <SubscriptionResult
+      title={t(target === 'receipt' ? 'offline.receiptTitle' : 'offline.plansTitle')}
+      description={t('offline.description')}
+      testID="subscription-offline"
+    />
+  );
+}
+
+/** 오프라인에서 결제·복원 버튼을 잠근 이유 */
+function SubscriptionOfflineActionsNotice() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+      {t('offline.actionsDisabled')}
+    </Text>
+  );
+}
+
 interface SubscriptionFailureResultProps {
   failure: SubscriptionSupportFailure;
-  /** 다시 해도 결과가 같으면 넘기지 않는다 */
-  onRetry?: () => void;
+  onRetry: () => void;
 }
 
 /** 구독 실패 안내. 무엇이 실패했는지 → 할 일 → 다시 시도 → 문의하기 순서를 모든 실패에서 지킨다 */
 function SubscriptionFailureResult({ failure, onRetry }: SubscriptionFailureResultProps) {
-  const { t } = useTranslation(['subscription', 'common']);
+  const { t } = useTranslation(['subscription']);
   const openInquiry = useOpenSubscriptionInquiry();
-  const title = t(failure.titleKey);
-  const description = t(failure.descriptionKey);
-
-  // 화면이 오류로 바뀐 것을 스크린 리더에도 알린다
-  useEffect(() => {
-    AccessibilityInfo.announceForAccessibilityWithOptions(`${title}. ${description}`, {
-      queue: true,
-    });
-  }, [title, description]);
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
-      <ReadableContent className="flex-1 px-6" accessibilityRole="alert">
-        <Result
-          icon={<DocsIcon width={72} height={72} />}
-          title={title}
-          description={description}
-          testID="subscription-load-failure"
-          button={
-            <VStack gap={12} align="center">
-              {onRetry != null && (
-                <Result.Button onPress={onRetry}>{t('common:actions.retry')}</Result.Button>
-              )}
-              <TextButton size="medium" variant="underline" onPress={() => openInquiry(failure)}>
-                {t('subscription:failure.contactSupport')}
-              </TextButton>
-            </VStack>
-          }
-        />
-      </ReadableContent>
-    </StyledSafeAreaView>
+    <SubscriptionResult
+      isAlert
+      title={t(failure.titleKey)}
+      description={t(failure.descriptionKey)}
+      testID="subscription-load-failure"
+      button={<QueryErrorActions onRetry={onRetry} onInquiry={() => openInquiry(failure)} />}
+    />
   );
 }
 
@@ -445,7 +480,12 @@ function SubscriptionReceipt() {
           <ReceiptBenefitRow shade={8} title={t('benefits.reminder.title')} />
           <ReceiptBenefitRow shade={8} title={t('benefits.appIcon.title')} />
           <ReceiptBenefitRow shade={8} title={t('benefits.friends.title')} />
-          <ReceiptBenefitRow shade={8} title={t('benefits.categories.title')} />
+          <ReceiptBenefitRow
+            shade={8}
+            title={t('benefits.categories.title', {
+              premium: PREMIUM_FEATURES.TODO_CATEGORY.premium,
+            })}
+          />
           <ReceiptBenefitRow shade={8} title={t('benefits.aiRepeat.title')} />
           <ReceiptBenefitRow shade={8} title={t('benefits.aiReport.title')} />
           <ReceiptBenefitRow shade={8} title={t('benefits.future')} />
@@ -528,6 +568,11 @@ function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
       value: formatDate(date),
       tone: 'default',
     }))
+    .with({ type: 'renewalPending' }, () => ({
+      label: t('receipt.rows.nextBillingDate'),
+      value: t('receipt.rows.renewalPending'),
+      tone: 'muted',
+    }))
     .with({ type: 'subscriptionEndsOn' }, ({ date }) => ({
       label: t('receipt.rows.subscriptionEndsOn'),
       value: formatDate(date),
@@ -594,11 +639,12 @@ function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
 /** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
 function PremiumEndingNotice() {
   const { t } = useTranslation('subscription');
-  const { variant, endingNotice } = useSubscriptionReceipt();
+  const receipt = useSubscriptionReceipt();
 
-  if (endingNotice == null) {
+  if (receipt.endingNotice == null) {
     return null;
   }
+  const { variant, endingNotice } = receipt;
 
   // 보상 기간은 구독 버튼으로, 취소한 결제 구독은 스토어에서 자동 갱신을 다시 켜서 이어 간다
   const { badge, message } = match({ variant, endingNotice })
@@ -610,11 +656,11 @@ function PremiumEndingNotice() {
       badge: t('endingNotice.badgeTomorrow'),
       message: t('endingNotice.paidTomorrow'),
     }))
-    .with({ variant: P.union('reward', 'admin'), endingNotice: 'today' }, () => ({
+    .with({ variant: 'reward', endingNotice: 'today' }, () => ({
       badge: t('endingNotice.badgeToday'),
       message: t('endingNotice.today'),
     }))
-    .with({ variant: P.union('reward', 'admin'), endingNotice: 'tomorrow' }, () => ({
+    .with({ variant: 'reward', endingNotice: 'tomorrow' }, () => ({
       badge: t('endingNotice.badgeTomorrow'),
       message: t('endingNotice.tomorrow'),
     }))
@@ -725,6 +771,7 @@ function AdditionalBenefit({ Icon, title, description }: AdditionalBenefitProps)
 
 function AdditionalSubscriptionBenefits() {
   const { t } = useTranslation('subscription');
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
 
   return (
     <VStack gap={16}>
@@ -735,13 +782,18 @@ function AdditionalSubscriptionBenefits() {
       <AdditionalBenefit
         Icon={PersonIcon}
         title={t('benefits.friends.title')}
-        description={t('benefits.friends.description')}
+        description={t('benefits.friends.description', {
+          limit: UserPolicy.freeFeatureLimit(user, 'FRIEND'),
+        })}
       />
       <Separator className="bg-gray-2 dark:bg-gray-3" />
       <AdditionalBenefit
         Icon={ListIcon}
-        title={t('benefits.categories.title')}
-        description={t('benefits.categories.description')}
+        title={t('benefits.categories.title', { premium: PREMIUM_FEATURES.TODO_CATEGORY.premium })}
+        description={t('benefits.categories.description', {
+          free: UserPolicy.freeFeatureLimit(user, 'TODO_CATEGORY'),
+          premium: PREMIUM_FEATURES.TODO_CATEGORY.premium,
+        })}
       />
       <Separator className="bg-gray-2 dark:bg-gray-3" />
       <AdditionalBenefit

@@ -287,8 +287,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: 약관 동의 응답(ConsentResponseDto)에 optional aiDataSharingDecision·aiDataSharingAgreedAt·aiDataSharingConsentVersion만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preAiDataSharingConsentSchemasFingerprint:
 		"8e924ba837a2727c5c6198c3f34d09f8ac3158a88b2de4ec58fc299c8db2c7b4",
-	schemasFingerprint:
+	/** 1.14.0: /me(CurrentUserDto)에 optional isPremium·entitlements만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	prePremiumEntitlementsSchemasFingerprint:
 		"3e9c8aa0825e84970bd63164bc03cd7be96db5e5b65c9ab4b8d71356a11b347b",
+	schemasFingerprint:
+		"f1dc466cac426fe4252f6d06896a74db883035680a27fb6845b33f437f72ba09",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
@@ -313,6 +316,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: AI 할 일·메모 정리 라우트에만 선택 x-app-version 헤더와 403 AI_1311을 추가. 리포트·제안 조회·처리는 그대로다. 헤더가 없거나 1.13.0 미만이면 동의 없이도 기존처럼 처리한다. */
 	preAiDataSharingConsentPathsFingerprint:
 		"7c517f2efce3afa4832d61055fb28954d8d108c5c5426848532aa4e02f154506",
-	pathsFingerprint:
+	/** 1.14.0: 날씨 v1을 Swagger에서 Deprecated(태그 `Weather v1 · Deprecated`, operation `deprecated: true`)로 표시했다. 태그·deprecated는 문서 표시용이라 fingerprint에서 description처럼 제외한다. 제외 전 값이 위 sourceCommit 문서와 같았으므로 같은 문서에서 다시 계산한 값이다. 경로·요청·응답·상태 코드는 같다. */
+	preDocumentationMetadataPathsFingerprint:
 		"5a0384f8da8af27e97e2607f372d505cae3bffb6be2dc66658af6886adace8a9",
+	pathsFingerprint:
+		"acaf29b73c6284c5ee7122d51074301477f133fbf57fbfdcb7b532ce75b2ed0b",
 } as const;

@@ -26,7 +26,7 @@ describe("SendFollowAcceptedNotification", () => {
         type: "FOLLOW_ACCEPTED",
         friendId: "u2",
         campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_ACCEPTED,
-        variantId: expect.stringMatching(/^follow_accepted_v1\./),
+        variantId: expect.stringMatching(/^follow_accepted_v2\./),
       }),
     );
   });

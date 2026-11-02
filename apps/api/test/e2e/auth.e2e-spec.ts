@@ -1671,8 +1671,9 @@ describe("인증 E2E", () => {
       expect(response1.body.success).toBe(true);
       expect(response1.body.data.email).toBe("cache-test@example.com");
 
+      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다
       const statsAfterFirst = cacheService.getStats();
-      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 2);
+      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3);
 
       // When
       const response2 = await request(ctx.app.getHttpServer())
@@ -1685,7 +1686,7 @@ describe("인증 E2E", () => {
       expect(response2.body.data.email).toBe("cache-test@example.com");
 
       const statsAfterSecond = cacheService.getStats();
-      expect(statsAfterSecond.hits).toBe(statsAfterFirst.hits + 2);
+      expect(statsAfterSecond.hits).toBe(statsAfterFirst.hits + 3);
 
       expect(response1.body.data.userId).toBeDefined();
       expect(response2.body.data).toEqual(response1.body.data);
@@ -1781,8 +1782,8 @@ describe("인증 E2E", () => {
 
       // Then
       const finalStats = cacheService.getStats();
-      expect(finalStats.misses).toBe(initialStats.misses + 2);
-      expect(finalStats.hits).toBe(initialStats.hits + 8);
+      expect(finalStats.misses).toBe(initialStats.misses + 3);
+      expect(finalStats.hits).toBe(initialStats.hits + 12);
     });
   });
 

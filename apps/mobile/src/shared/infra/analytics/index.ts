@@ -1,2 +1,2 @@
 export { createConsoleAnalytics } from './console-analytics';
-export { createFirebaseAnalytics } from './firebase-analytics';
+export { createFirebaseAnalytics, markFirebaseTrafficAsInternal } from './firebase-analytics';

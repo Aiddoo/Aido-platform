@@ -5,5 +5,7 @@ export const createMockAnalytics = (): jest.Mocked<Analytics> => ({
   trackScreenView: jest.fn(),
   setUserId: jest.fn(),
   setUserProperties: jest.fn(),
+  clearUser: jest.fn(),
   resetData: jest.fn(),
+  getAppInstanceId: jest.fn().mockResolvedValue(null),
 });

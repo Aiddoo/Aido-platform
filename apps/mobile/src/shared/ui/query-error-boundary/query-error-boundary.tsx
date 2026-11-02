@@ -1,5 +1,12 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { classifyBoundaryError, isApiError, toError } from '@src/shared/errors';
+import {
+  classifyBoundaryError,
+  errorMessageOf,
+  isApiError,
+  isConnectivityError,
+  toError,
+} from '@src/shared/errors';
+import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -38,13 +45,15 @@ function Fallback({
 
 export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryErrorBoundaryProps) {
   const errorReporter = useErrorReporter();
+  const isOnline = useIsOnline();
 
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <ErrorBoundary
           onReset={reset}
-          resetKeys={resetKeys}
+          // 연결이 바뀌면 다시 그린다: 오프라인이면 쿼리가 멈춰 로딩을, 복귀하면 새로 불러온다
+          resetKeys={[...(resetKeys ?? []), isOnline]}
           onError={(error) => {
             match(classifyBoundaryError(error))
               // 로컬에 담기는 일시적 401은 에러 이슈 대신 warning 이벤트로 남긴다 —
@@ -65,9 +74,18 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
                     : undefined,
                 }),
               )
-              .with('error', () =>
-                errorReporter.captureException(toError(error), { feature: 'error_boundary' }),
-              )
+              .with('error', () => {
+                if (isConnectivityError(error)) {
+                  errorReporter.addBreadcrumb({
+                    category: 'network',
+                    level: 'warning',
+                    message: 'query_boundary_connectivity',
+                    data: { error: errorMessageOf(error) },
+                  });
+                  return;
+                }
+                errorReporter.captureException(toError(error), { feature: 'error_boundary' });
+              })
               .exhaustive();
           }}
           fallbackRender={({ error, resetErrorBoundary }) =>

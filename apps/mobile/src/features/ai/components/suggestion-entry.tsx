@@ -1,4 +1,5 @@
 import MagicIcon from '@assets/icons/ic_magic.svg';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -46,7 +47,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
     return (
       <InfoCard
         label={t('ai:suggestions.toasts.premiumOnly')}
-        onPress={() => push('/settings/subscription')}
+        onPress={() => push(subscriptionHref())}
       />
     );
   }

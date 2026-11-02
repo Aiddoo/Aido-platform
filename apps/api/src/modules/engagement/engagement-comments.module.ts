@@ -30,7 +30,7 @@ import { DrizzleTodoCommentAccountCleanupStore } from "./infrastructure/persiste
 import { DrizzleTodoCommentReader } from "./infrastructure/persistence/comments/drizzle-todo-comment.reader.js";
 import { DrizzleTodoCommentRepository } from "./infrastructure/persistence/comments/drizzle-todo-comment.repository.js";
 import { HmacTodoCommentCursorCodec } from "./infrastructure/security/comments/hmac-todo-comment-cursor.codec.js";
-import { TodoCommentController } from "./presentation/controllers/comments/todo-comment.controller.js";
+import { TodoCommentController } from "./presentation/controllers/comments/v1/todo-comment.controller.js";
 
 @Module({
   imports: [NotificationDeliveryModule, PlanningTodosModule, SocialBlocksModule],
