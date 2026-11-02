@@ -36,7 +36,7 @@
     "test:e2e": "turbo run test:e2e --filter=@aido/server",
     "test:integration": "turbo run test:integration --filter=@aido/server",
     "typecheck": "turbo run typecheck",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version && node scripts/release/sync-versions.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

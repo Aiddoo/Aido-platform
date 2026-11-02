@@ -20,13 +20,16 @@
 
 ## 버전
 
-| 대상                                        | 버전 출처                                                                | 올리는 방법                                                      |
-| ------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| 앱(`@aido/mobile`)                          | `apps/mobile/package.json`의 `version`. `app.config.ts`가 이 값을 읽는다 | 스토어 릴리스마다 직접 올린다. 빌드 번호는 EAS remote가 관리한다 |
-| 서버(`@aido/server`)·공유 계약(`@aido/api`) | 각 `package.json`의 `version`                                            | [Changesets](../../.changeset/README.md)로 관리한다              |
+릴리스 버전은 하나다. 앱 버전(`apps/mobile/package.json`)을 올리면 서버(`@aido/server`)·공유 계약(`@aido/api`)도 같은 버전이 된다. 스토어 1.14.0과 Swagger·CHANGELOG 1.14.0이 같은 릴리스를 가리킨다.
 
-- 서버나 계약을 바꾸는 PR은 `pnpm changeset`으로 변경 파일(`.changeset/*.md`)을 함께 올린다. 계약에 필드·엔드포인트를 더하면 minor, 동작 수정은 patch, `/v{n}` 제거처럼 구 앱을 깨는 변경은 major다.
-- 릴리스 stack의 마지막 PR에서 `pnpm version-packages`로 버전과 `CHANGELOG.md`를 갱신한다. 비공개 패키지라 npm에 배포하거나 태그를 만들지 않는다.
+| 대상                                        | 버전 출처                                                                | 올리는 방법                                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 앱(`@aido/mobile`)                          | `apps/mobile/package.json`의 `version`. `app.config.ts`가 이 값을 읽는다 | 스토어 릴리스마다 직접 올린다. 빌드 번호는 EAS remote가 관리한다                                                   |
+| 서버(`@aido/server`)·공유 계약(`@aido/api`) | 앱 버전                                                                  | 릴리스 PR의 `pnpm version-packages`가 앱 버전으로 맞춘다([sync-versions](../../scripts/release/sync-versions.mjs)) |
+
+- 서버나 계약을 바꾸는 PR은 `pnpm changeset`으로 변경 파일(`.changeset/*.md`)을 함께 올린다. 변경 파일은 CHANGELOG 항목이 되며, 계약에 필드·엔드포인트를 더하면 minor, 동작 수정은 patch, `/v{n}` 제거처럼 구 앱을 깨는 변경은 major로 적어 변경 성격을 남긴다.
+- 릴리스 stack의 마지막 PR에서 앱 버전을 올린 뒤 `pnpm version-packages`를 실행한다. `changeset version`이 변경 파일을 CHANGELOG로 소비하고, 이어서 서버·계약 버전과 CHANGELOG 제목을 앱 버전으로 맞춘다. 비공개 패키지라 npm에 배포하거나 태그를 만들지 않는다.
+- 서버만 고치는 핫픽스도 앱과 같은 patch 버전(예: 1.14.1)으로 릴리스한다. 스토어 배포가 없는 버전은 앱 빌드를 올리지 않는다.
 - Swagger 문서 버전은 서버 `package.json`의 `version`을 그대로 보여 준다.
 
 ## 이슈

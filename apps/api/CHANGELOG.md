@@ -1,6 +1,6 @@
 # @aido/server
 
-## 1.1.0
+## 1.14.0
 
 ### Minor Changes
 
@@ -13,4 +13,4 @@
 - a197862: pg-boss 종료 중 작업 등록, 메모리 락, Discord·OAuth 호출 시간 제한, WeatherKit 장애 회로와 리포트 폴백을 정리한다.
 - Updated dependencies [b4aa0e6]
 - Updated dependencies [a0e0ff8]
-  - @aido/api@1.1.0
+  - @aido/api@1.14.0
