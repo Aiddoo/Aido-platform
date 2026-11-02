@@ -111,14 +111,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
               data: {
                 userId: user.id,
                 timezone: user.preference?.timezone ?? "Asia/Seoul",
-                weatherGrid: user.location
-                  ? {
-                      gridX: user.location.gridX,
-                      gridY: user.location.gridY,
-                      lat: user.location.latitude,
-                      lon: user.location.longitude,
-                    }
-                  : null,
+                weatherGrid: toWeatherGrid(user.location),
               } satisfies AiSuggestionAnalyzeData,
             },
             options: {
@@ -178,4 +171,24 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       timezone: "Asia/Seoul",
     };
   }
+}
+
+/** 제안의 날씨 문맥은 KMA 격자 예보만 쓰므로 격자 없는 해외 위치는 날씨 없이 분석한다. */
+function toWeatherGrid(
+  location: {
+    readonly gridX: number | null;
+    readonly gridY: number | null;
+    readonly latitude: number;
+    readonly longitude: number;
+  } | null,
+): AiSuggestionAnalyzeData["weatherGrid"] {
+  if (location == null || location.gridX == null || location.gridY == null) {
+    return null;
+  }
+  return {
+    gridX: location.gridX,
+    gridY: location.gridY,
+    lat: location.latitude,
+    lon: location.longitude,
+  };
 }

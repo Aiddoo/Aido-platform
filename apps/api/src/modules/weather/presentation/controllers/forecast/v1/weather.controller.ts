@@ -58,16 +58,18 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateLocationDto }) dto: UpdateLocationDto,
   ) {
-    const location = await this.upsertLocation.execute({
+    const { location } = await this.upsertLocation.execute({
       userId: user.userId,
       latitude: dto.latitude,
       longitude: dto.longitude,
     });
+    // DTO가 한국 범위만 받으므로 격자는 항상 있다.
+    const grid = location.requireKmaGrid();
     return {
       latitude: location.latitude,
       longitude: location.longitude,
-      gridX: location.gridX,
-      gridY: location.gridY,
+      gridX: grid.gridX,
+      gridY: grid.gridY,
     };
   }
 

@@ -39,4 +39,18 @@ describe("한국 날씨 지원 범위", () => {
       );
     },
   );
+
+  it.each([
+    [37.5665, 126.978, true],
+    [33, 124, true],
+    [35.6762, 139.6503, false],
+    [21.0285, 105.8542, false],
+  ])("한국 공급자 범위 포함 여부를 판단한다: %p, %p → %p", (latitude, longitude, expected) => {
+    // Given
+    const coordinate = Coordinate.of(latitude, longitude);
+    // When
+    const covered = KoreanWeatherCoveragePolicy.covers(coordinate);
+    // Then
+    expect(covered).toBe(expected);
+  });
 });

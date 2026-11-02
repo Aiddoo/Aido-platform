@@ -32,6 +32,7 @@ export class UserLocationBuilder {
       longitude: 126.978,
       gridX: 60,
       gridY: 127,
+      timezone: "Asia/Seoul",
       updatedAt: new Date(),
     };
   }
@@ -69,6 +70,11 @@ export class UserLocationBuilder {
     return this;
   }
 
+  withTimezone(timezone: string | null): UserLocationBuilder {
+    this.data.timezone = timezone;
+    return this;
+  }
+
   // ========================================
   // 프리셋 상태
   // ========================================
@@ -88,6 +94,16 @@ export class UserLocationBuilder {
     this.data.longitude = 126.5312;
     this.data.gridX = 52;
     this.data.gridY = 38;
+    return this;
+  }
+
+  /** 해외 좌표 프리셋 (도쿄, 기상청 격자 없음) */
+  asTokyo(): UserLocationBuilder {
+    this.data.latitude = 35.6762;
+    this.data.longitude = 139.6503;
+    this.data.gridX = null;
+    this.data.gridY = null;
+    this.data.timezone = "Asia/Tokyo";
     return this;
   }
 

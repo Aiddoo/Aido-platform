@@ -79,6 +79,58 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
     expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
   });
 
+  it("기상청 격자가 없는 해외 위치 유저는 날씨·폴백 알림 없이 건너뛴다", async () => {
+    // Given
+    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
+      {
+        id: "user-abroad",
+        preference: null,
+        location: { latitude: 35.6762, longitude: 139.6503, gridX: null, gridY: null },
+      },
+    ]);
+
+    // When
+    const result = await strategy.execute(makeCtx());
+
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(notificationHistoryReader.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
+    expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
+    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
+  });
+
+  it("격자 있는 유저와 해외 유저가 섞이면 격자 있는 유저만 예보를 조회한다", async () => {
+    // Given
+    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
+      {
+        id: "user-seoul",
+        preference: null,
+        location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
+      },
+      {
+        id: "user-abroad",
+        preference: null,
+        location: { latitude: 35.6762, longitude: 139.6503, gridX: null, gridY: null },
+      },
+    ]);
+    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(
+      new Map([["60:127", makeForecast()]]),
+    );
+
+    // When
+    const result = await strategy.execute(makeCtx());
+
+    // Then
+    expect(result).toEqual({ sent: 1 });
+    expect(notificationHistoryReader.findAlreadyNotifiedUserIds).toHaveBeenCalledWith(
+      expect.objectContaining({ userIds: ["user-seoul"] }),
+    );
+    expect(weatherForecastReader.getForecastsByGridBatch).toHaveBeenCalledWith(
+      [{ gridX: 60, gridY: 127, lat: 37.5, lon: 126.9 }],
+      expect.any(Date),
+    );
+  });
+
   it("이미 알림 받은 유저는 제외해야 한다", async () => {
     // Given
     reader.findWeatherMorningUsersWithLocation.mockResolvedValue([

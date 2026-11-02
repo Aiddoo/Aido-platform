@@ -95,6 +95,44 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
     ]);
   });
 
+  it("기상청 격자가 있는 위치만 날씨 격자를 싣고 해외 위치는 날씨 없이 분석한다", async () => {
+    // Given
+    findMany.mockResolvedValue(
+      [
+        {
+          id: "user-seoul",
+          preference: { timezone: "Asia/Seoul" },
+          location: { gridX: 60, gridY: 127, latitude: 37.5665, longitude: 126.978 },
+        },
+        {
+          id: "user-tokyo",
+          preference: { timezone: "Asia/Tokyo" },
+          location: { gridX: null, gridY: null, latitude: 35.6762, longitude: 139.6503 },
+        },
+      ].map((value) => ({ ...UserBuilder.create().build(), ...value })),
+    );
+
+    // When
+    await job.dispatchAnalysis();
+
+    // Then
+    expect(runtime.enqueueMany).toHaveBeenCalledWith(AI_SUGGESTION_QUEUE, [
+      expect.objectContaining({
+        data: expect.objectContaining({
+          data: expect.objectContaining({
+            userId: "user-seoul",
+            weatherGrid: { gridX: 60, gridY: 127, lat: 37.5665, lon: 126.978 },
+          }),
+        }),
+      }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          data: expect.objectContaining({ userId: "user-tokyo", weatherGrid: null }),
+        }),
+      }),
+    ]);
+  });
+
   it("사용자가 없으면 분석 작업을 만들지 않는다", async () => {
     findMany.mockResolvedValue([]);
     await job.dispatchAnalysis();

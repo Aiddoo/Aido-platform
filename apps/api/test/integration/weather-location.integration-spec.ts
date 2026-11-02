@@ -1,10 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
 import { count, eq, sql } from "drizzle-orm";
 
 import { UpsertLocation } from "#api/modules/weather/application/use-cases/forecast/upsert-location.use-case";
 import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
 import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import { KmaWeatherGridResolver } from "#api/modules/weather/infrastructure/adapters/forecast/kma-weather-grid.resolver";
+import { TzLookupTimezoneResolver } from "#api/modules/weather/infrastructure/adapters/forecast/tz-lookup-timezone.resolver";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { DrizzleWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/drizzle-weather-location.repository";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
@@ -19,20 +19,26 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const resolver = new KmaWeatherGridResolver();
+const timezoneResolver = new TzLookupTimezoneResolver();
 function location(userId: string, latitude = 37.5665, longitude = 126.978): UserLocation {
   const coordinate = Coordinate.of(latitude, longitude);
-  return UserLocation.create(userId, coordinate, resolver.resolveGrid(coordinate));
+  return UserLocation.create({
+    userId,
+    coordinate,
+    grid: resolver.resolveGrid(coordinate),
+    timezone: "Asia/Seoul",
+  });
 }
 
 function coordinates(saved: UserLocation | null) {
-  if (saved === null) {
+  if (saved == null) {
     return null;
   }
   return {
     latitude: saved.latitude,
     longitude: saved.longitude,
-    gridX: saved.gridX,
-    gridY: saved.gridY,
+    gridX: saved.grid?.gridX ?? null,
+    gridY: saved.grid?.gridY ?? null,
   };
 }
 
@@ -244,7 +250,7 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
     expect(await repository.findByUserId(anotherUserId)).not.toBeNull();
   });
 
-  it("실제 위치 변경은 이전 격자의 날짜별 조건 캐시를 무효화하고 새 위치를 보존한다", async () => {
+  it("실제 위치 변경은 이전 격자 캐시를 무효화하고 해외 좌표는 격자 없이 저장한다", async () => {
     // Given
     const memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
     const cache = new WeatherCacheAdapter(new CacheService(memory));
@@ -252,18 +258,20 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
       weatherLocationRepository: repository,
       weatherCache: cache,
       weatherGridResolver: resolver,
+      timezoneResolver,
     });
     const date = new Date("2026-07-23T00:00:00Z");
+    const weatherConditions = {
+      feelsLikeTemperature: 25,
+      uvIndex: 1,
+      sunrise: "05:23",
+      sunset: "19:00",
+      pm10: 10,
+      pm25: 5,
+    };
     try {
       await repository.upsert(location(userId));
-      await cache.setConditions(60, 127, date, {
-        feelsLikeTemperature: 25,
-        uvIndex: 1,
-        sunrise: "05:23",
-        sunset: "19:00",
-        pm10: 10,
-        pm25: 5,
-      });
+      await cache.setConditions(60, 127, date, weatherConditions);
 
       // When
       await update.execute({ userId, latitude: 35.1796, longitude: 129.0756 });
@@ -273,14 +281,55 @@ describe("Weather 위치 저장·unique·외래 키·rollback (실제 PostgreSQL
       expect(coordinates(await repository.findByUserId(userId))).toEqual(
         coordinates(location(userId, 35.1796, 129.0756)),
       );
-      await expect(
-        update.execute({ userId, latitude: 48.8566, longitude: 2.3522 }),
-      ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-      expect(coordinates(await repository.findByUserId(userId))).toEqual(
-        coordinates(location(userId, 35.1796, 129.0756)),
-      );
+      await cache.setConditions(98, 76, date, weatherConditions);
+      await update.execute({ userId, latitude: 48.8566, longitude: 2.3522 });
+      expect(await cache.getConditions(98, 76, date)).toBeUndefined();
+      expect(coordinates(await repository.findByUserId(userId))).toEqual({
+        latitude: 48.8566,
+        longitude: 2.3522,
+        gridX: null,
+        gridY: null,
+      });
     } finally {
       memory.onModuleDestroy();
     }
+  });
+
+  it("시간대와 빈 격자를 저장하고 그대로 읽는다", async () => {
+    // Given
+    const tokyo = UserLocation.create({
+      userId,
+      coordinate: Coordinate.of(35.6762, 139.6503),
+      grid: null,
+      timezone: "Asia/Tokyo",
+    });
+
+    // When
+    await repository.upsert(tokyo);
+    const found = await repository.findByUserId(userId);
+
+    // Then
+    expect(found?.timezone).toBe("Asia/Tokyo");
+    expect(found?.grid).toBeNull();
+    expect(
+      await client.query.userLocation.findFirst({
+        where: { userId },
+        columns: { gridX: true, gridY: true, timezone: true },
+      }),
+    ).toEqual({ gridX: null, gridY: null, timezone: "Asia/Tokyo" });
+  });
+
+  it("v2 이전 행처럼 시간대가 null인 위치도 그대로 읽는다", async () => {
+    // Given
+    await client
+      .insert(userLocation)
+      .values({ userId, latitude: 37.5665, longitude: 126.978, gridX: 60, gridY: 127 });
+
+    // When
+    const found = await repository.findByUserId(userId);
+
+    // Then
+    expect(found?.timezone).toBeNull();
+    expect(found?.grid?.gridX).toBe(60);
   });
 });

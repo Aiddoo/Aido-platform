@@ -4,18 +4,25 @@ import { HttpClientModule } from "@nestjs/http-client";
 import { AIR_QUALITY_PROVIDER } from "./application/ports/forecast/air-quality-provider.port.js";
 import { LIFESTYLE_INDEX_PROVIDER } from "./application/ports/forecast/lifestyle-index-provider.port.js";
 import { SUN_TIME_PROVIDER } from "./application/ports/forecast/sun-time-provider.port.js";
+import { TIMEZONE_RESOLVER } from "./application/ports/forecast/timezone.resolver.port.js";
 import { WEATHER_CACHE } from "./application/ports/forecast/weather-cache.port.js";
 import { WEATHER_FORECAST_READER } from "./application/ports/forecast/weather-forecast.reader.port.js";
 import { WEATHER_GRID_RESOLVER } from "./application/ports/forecast/weather-grid-resolver.port.js";
 import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/forecast/weather-location.repository.port.js";
 import { WEATHER_PROVIDER } from "./application/ports/forecast/weather-provider.port.js";
+import { WEATHER_REPORT_CACHE } from "./application/ports/forecast/weather-report.cache.port.js";
+import { WEATHER_REPORT_PROVIDER } from "./application/ports/forecast/weather-report.provider.port.js";
 import { WeatherForecastReader } from "./application/services/forecast/weather-forecast.reader.js";
 import { AirkoreaProvider } from "./infrastructure/adapters/forecast/airkorea.provider.js";
 import { KasiSunTimeProvider } from "./infrastructure/adapters/forecast/kasi-sun-time.provider.js";
 import { KmaLifestyleIndexProvider } from "./infrastructure/adapters/forecast/kma-lifestyle-index.provider.js";
 import { KmaWeatherGridResolver } from "./infrastructure/adapters/forecast/kma-weather-grid.resolver.js";
 import { KmaWeatherProvider } from "./infrastructure/adapters/forecast/kma-weather.provider.js";
+import { TzLookupTimezoneResolver } from "./infrastructure/adapters/forecast/tz-lookup-timezone.resolver.js";
 import { WeatherCacheAdapter } from "./infrastructure/adapters/forecast/weather-cache.adapter.js";
+import { WeatherReportCacheAdapter } from "./infrastructure/adapters/forecast/weather-report-cache.adapter.js";
+import { WeatherKitReportProvider } from "./infrastructure/adapters/forecast/weatherkit-report.provider.js";
+import { WeatherKitTokenResolver } from "./infrastructure/adapters/forecast/weatherkit-token.resolver.js";
 import { DrizzleWeatherLocationRepository } from "./infrastructure/persistence/forecast/drizzle-weather-location.repository.js";
 import { WeatherController } from "./presentation/controllers/forecast/v1/weather.controller.js";
 import { weatherForecastReaderProvider } from "./weather-forecast-application.providers.js";
@@ -47,6 +54,10 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
     { provide: LIFESTYLE_INDEX_PROVIDER, useClass: KmaLifestyleIndexProvider },
     { provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
     { provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
+    WeatherKitTokenResolver,
+    { provide: WEATHER_REPORT_PROVIDER, useClass: WeatherKitReportProvider },
+    { provide: WEATHER_REPORT_CACHE, useClass: WeatherReportCacheAdapter },
+    { provide: TIMEZONE_RESOLVER, useClass: TzLookupTimezoneResolver },
     ...WEATHER_PROVIDERS,
   ],
   exports: [WEATHER_FORECAST_READER],

@@ -81,15 +81,15 @@ export interface FriendWithTodos {
   readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
 }
 
-/** 날씨 알림 수신자 (위치 있음 — 위치는 조회 후 필터로 non-null 확정) */
+/** 날씨 알림 수신자 (위치 있음 — 위치·KMA 격자는 조회 후 필터로 non-null 확정. 해외 위치는 격자가 없다) */
 export interface WeatherReminderUser {
   readonly id: string;
   readonly preference: { readonly locale: string } | null;
   readonly location: {
     readonly latitude: number;
     readonly longitude: number;
-    readonly gridX: number;
-    readonly gridY: number;
+    readonly gridX: number | null;
+    readonly gridY: number | null;
   } | null;
 }
 

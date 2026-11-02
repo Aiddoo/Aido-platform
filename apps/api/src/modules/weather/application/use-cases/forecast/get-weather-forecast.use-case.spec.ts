@@ -54,4 +54,14 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     });
     expect(weatherProvider.calls).toEqual([]);
   });
+
+  it("격자 없는 해외 위치는 위치 없음과 같은 WEATHER_1902이며 예보를 요청하지 않는다", async () => {
+    // Given
+    repository.records.set("weather-user", weatherLocationFixture("weather-user", "도쿄"));
+    // When
+    const result = useCase.execute({ userId: "weather-user", date });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
+    expect(weatherProvider.calls).toEqual([]);
+  });
 });

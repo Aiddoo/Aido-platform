@@ -77,9 +77,14 @@ export class WeatherMorningStrategy implements TimezoneReminderStrategy {
       userId: ctx.userId,
     });
 
-    const usersWithLocation = users.filter(
-      (u): u is VerifiedUserWithLocation => u.location != null,
-    );
+    // 날씨 예보는 KMA 격자로만 조회하므로 격자 없는 해외 위치는 날씨·폴백 알림 모두 보내지 않는다.
+    const usersWithLocation = users.flatMap((u): VerifiedUserWithLocation[] => {
+      const location = u.location;
+      if (location == null || location.gridX == null || location.gridY == null) {
+        return [];
+      }
+      return [{ ...u, location: { ...location, gridX: location.gridX, gridY: location.gridY } }];
+    });
     if (usersWithLocation.length === 0) {
       return 0;
     }

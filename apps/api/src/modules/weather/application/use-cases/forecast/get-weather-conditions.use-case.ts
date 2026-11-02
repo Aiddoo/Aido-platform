@@ -48,10 +48,11 @@ export class GetWeatherConditions {
     if (location == null) {
       throw new ApplicationException(ErrorCode.WEATHER_1902);
     }
+    const grid = location.requireKmaGrid();
 
     const cached = await this.#dependencies.weatherCache.getConditions(
-      location.gridX,
-      location.gridY,
+      grid.gridX,
+      grid.gridY,
       input.date,
     );
     if (cached != null) {
@@ -90,8 +91,8 @@ export class GetWeatherConditions {
     };
 
     await this.#dependencies.weatherCache.setConditions(
-      location.gridX,
-      location.gridY,
+      grid.gridX,
+      grid.gridY,
       input.date,
       conditions,
     );

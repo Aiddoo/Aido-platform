@@ -1,3 +1,4 @@
+import type { WeatherReport } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   AirQuality,
   AirQualityProvider,
@@ -10,16 +11,25 @@ import type {
   SunTime,
   SunTimeProvider,
 } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
+import type {
+  ResolvedRegion,
+  TimezoneResolverPort,
+} from "#api/modules/weather/application/ports/forecast/timezone.resolver.port";
 import type { WeatherGridResolverPort } from "#api/modules/weather/application/ports/forecast/weather-grid-resolver.port";
 import type { WeatherLocationRepositoryPort } from "#api/modules/weather/application/ports/forecast/weather-location.repository.port";
 import type {
   WeatherForecast,
   WeatherProvider,
 } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import type {
+  WeatherReportProviderPort,
+  WeatherReportRequest,
+} from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
 import type { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
 import type { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
+import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
-import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
+import { weatherForecastFixture, weatherReportFixture } from "#test/fixtures/weather.fixture";
 
 export class StubWeatherLocationRepository implements WeatherLocationRepositoryPort {
   readonly records = new Map<string, UserLocation>();
@@ -164,6 +174,41 @@ export class StubSunTimeProvider implements SunTimeProvider {
     this.calls.length = 0;
     this.dates.clear();
     this.result = { sunrise: "05:23", sunset: "19:00" };
+    this.failure = null;
+  }
+}
+
+export class StubTimezoneResolver implements TimezoneResolverPort {
+  readonly coordinates: Coordinate[] = [];
+  region: ResolvedRegion = { timezone: "Asia/Seoul", countryCode: "KR" };
+
+  resolve(coordinate: Coordinate): ResolvedRegion {
+    this.coordinates.push(coordinate);
+    return { ...this.region };
+  }
+
+  clear(): void {
+    this.coordinates.length = 0;
+    this.region = { timezone: "Asia/Seoul", countryCode: "KR" };
+  }
+}
+
+export class StubWeatherReportProvider implements WeatherReportProviderPort {
+  readonly calls: { cellKey: string; request: WeatherReportRequest }[] = [];
+  report: WeatherReport = weatherReportFixture();
+  failure: Error | null = null;
+
+  async getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport> {
+    this.calls.push({ cellKey: cell.key, request: { ...request } });
+    if (this.failure !== null) {
+      throw this.failure;
+    }
+    return this.report;
+  }
+
+  clear(): void {
+    this.calls.length = 0;
+    this.report = weatherReportFixture();
     this.failure = null;
   }
 }

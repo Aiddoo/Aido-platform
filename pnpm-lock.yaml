@@ -170,6 +170,9 @@ catalogs:
     '@changesets/cli':
       specifier: 3.0.3
       version: 3.0.3
+    '@photostructure/tz-lookup':
+      specifier: 11.7.0
+      version: 11.7.0
     '@react-native-kakao/core':
       specifier: 2.4.11
       version: 2.4.11
@@ -191,6 +194,9 @@ catalogs:
     '@swc/core':
       specifier: 1.16.21
       version: 1.16.21
+    '@types/ngeohash':
+      specifier: 0.6.8
+      version: 0.6.8
     '@types/node':
       specifier: 26.6.6
       version: 26.6.6
@@ -209,6 +215,9 @@ catalogs:
     bullmq:
       specifier: 6.5.3
       version: 6.5.3
+    countries-and-timezones:
+      specifier: 3.11.0
+      version: 3.11.0
     dayjs:
       specifier: 1.11.23
       version: 1.11.23
@@ -221,6 +230,9 @@ catalogs:
     jose:
       specifier: 6.2.14
       version: 6.2.14
+    ngeohash:
+      specifier: 0.6.4
+      version: 0.6.4
     oxfmt:
       specifier: 0.75.0
       version: 0.75.0
@@ -601,6 +613,9 @@ importers:
       '@nestjs/throttler':
         specifier: catalog:nest12
         version: 6.7.1(@nestjs/common@12.3.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.3.2)(reflect-metadata@0.2.2)
+      '@photostructure/tz-lookup':
+        specifier: 'catalog:'
+        version: 11.7.0
       '@sentry/nestjs':
         specifier: 'catalog:'
         version: 11.10.0(@nestjs/common@12.3.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.3.2)(rollup@4.62.2)(webpack@5.106.2(@swc/core@1.16.21)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.31))
@@ -616,6 +631,9 @@ importers:
       bullmq:
         specifier: 'catalog:'
         version: 6.5.3(ioredis@5.11.1(supports-color@8.1.1))(pg@8.23.1)
+      countries-and-timezones:
+        specifier: 'catalog:'
+        version: 3.11.0
       dayjs:
         specifier: 'catalog:'
         version: 1.11.23
@@ -649,6 +667,9 @@ importers:
       nestjs-pino:
         specifier: 5.3.1
         version: 5.3.1(@nestjs/common@12.3.2(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.3.2)(pino-http@11.0.0)(pino@10.4.0)(rxjs@7.8.2)
+      ngeohash:
+        specifier: 'catalog:'
+        version: 0.6.4
       passport:
         specifier: 0.7.0
         version: 0.7.0
@@ -719,6 +740,9 @@ importers:
       '@types/ioredis-mock':
         specifier: 8.2.8
         version: 8.2.8(ioredis@5.11.1(supports-color@8.1.1))
+      '@types/ngeohash':
+        specifier: 'catalog:'
+        version: 0.6.8
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -4087,6 +4111,9 @@ packages:
     resolution: {integrity: sha512-m7X9U6BG2+J+R1lSOdCiITLLrxm+cWlNI3HUFA92oLO77ObGNzaKdh8pMLqdZcshtkKuV84olNNXDfMc4FezBQ==}
     engines: {node: '>=10'}
 
+  '@photostructure/tz-lookup@11.7.0':
+    resolution: {integrity: sha512-QbKHXvleluMIlAHf2JiQTJNU5rLQBeQhLobyRqgXZ6NNGKqNikaRkjYviJ4nMU7Y75QE7bBYM8xjiFGjAukyhw==}
+
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
@@ -5493,6 +5520,9 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
+  '@types/ngeohash@0.6.8':
+    resolution: {integrity: sha512-A90x3HMwE1yXbWCnd0ztHzv8rAQPjwTzX2diYI/6OrWm/3oairDaehw5WPWJFgZ+8+J/OuF99IbipmMa2le6tQ==}
+
   '@types/node@18.19.130':
     resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
@@ -6642,6 +6672,10 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  countries-and-timezones@3.11.0:
+    resolution: {integrity: sha512-amqnHZJyuaFol6Z9gmyDb/D5cS6OSZUMfT6Ovj2HMmEBykHfwfA6dih59rulQ2kWynW7XeCAOzJr60hWL64Anw==}
+    engines: {node: '>=8.x', npm: '>=5.x'}
 
   cpu-features@0.0.10:
     resolution: {integrity: sha512-9IkYqtX3YHPCzoVg1Py+o9057a3i0fp7S530UWokCSaFVTc7CwXPRiOjRjBQQ18ZCNafx78YfnG+HALxtVmOGA==}
@@ -9256,6 +9290,10 @@ packages:
       pino: ^10.0.0
       pino-http: ^11.0.0
       rxjs: ^7.1.0
+
+  ngeohash@0.6.4:
+    resolution: {integrity: sha512-+dEKu+Be7xkK6gVQ2wZSGLbr+iWO+0ZGaLi98iE7F0/1WCSqQDRmS8LAlZBNLD2z/3zFKE9v9BvUfCrhyDhXbg==}
+    engines: {node: '>=v0.2.0'}
 
   no-case@3.0.4:
     resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
@@ -14562,6 +14600,8 @@ snapshots:
 
   '@phc/format@1.0.0': {}
 
+  '@photostructure/tz-lookup@11.7.0': {}
+
   '@pinojs/redact@0.4.0': {}
 
   '@pkgjs/parseargs@0.11.0':
@@ -15832,6 +15872,8 @@ snapshots:
   '@types/methods@1.1.4': {}
 
   '@types/ms@2.1.0': {}
+
+  '@types/ngeohash@0.6.8': {}
 
   '@types/node@18.19.130':
     dependencies:
@@ -17129,6 +17171,8 @@ snapshots:
       parse-json: 5.2.0
     optionalDependencies:
       typescript: 6.0.3
+
+  countries-and-timezones@3.11.0: {}
 
   cpu-features@0.0.10:
     dependencies:
@@ -20022,6 +20066,8 @@ snapshots:
       pino: 10.4.0
       pino-http: 11.0.0
       rxjs: 7.8.2
+
+  ngeohash@0.6.4: {}
 
   no-case@3.0.4:
     dependencies:

@@ -48,11 +48,8 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
 
   /** 단일 위치의 예보를 조회한다 (캐시 → 프로바이더 → latest 폴백 → WEATHER_1901). */
   async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
-    const cached = await this.#dependencies.weatherCache.getForecast(
-      location.gridX,
-      location.gridY,
-      date,
-    );
+    const grid = location.requireKmaGrid();
+    const cached = await this.#dependencies.weatherCache.getForecast(grid.gridX, grid.gridY, date);
     if (cached != null) {
       return cached;
     }
@@ -65,12 +62,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       );
 
       // 성공 시 정규 캐시 (3h) + latest 캐시 (24h) 모두 저장
-      await this.#dependencies.weatherCache.saveForecast(
-        location.gridX,
-        location.gridY,
-        date,
-        forecast,
-      );
+      await this.#dependencies.weatherCache.saveForecast(grid.gridX, grid.gridY, date, forecast);
 
       return forecast;
     } catch (error) {
@@ -81,10 +73,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       });
     }
 
-    const latest = await this.#dependencies.weatherCache.getLatestForecast(
-      location.gridX,
-      location.gridY,
-    );
+    const latest = await this.#dependencies.weatherCache.getLatestForecast(grid.gridX, grid.gridY);
     if (latest != null) {
       this.#dependencies.logger.warn({ event: WeatherLogEvent.FORECAST_FALLBACK_USED });
       return latest;
