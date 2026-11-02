@@ -25,7 +25,7 @@ import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { type PropsWithChildren, Suspense } from 'react';
+import { type ComponentProps, type PropsWithChildren, Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
@@ -73,7 +73,7 @@ function WeatherReportSections() {
   const locationRevision = useWeatherLocationRevision();
 
   return (
-    <QueryErrorBoundary fallback={WeatherHero.Error} resetKeys={[locationRevision]}>
+    <QueryErrorBoundary fallback={WeatherReportFallback} resetKeys={[locationRevision]}>
       <VStack px={SCREEN_GUTTER}>
         <WeatherLocationPrompt.SavedLocationNotice />
 
@@ -111,6 +111,15 @@ function WeatherReportSections() {
         </VStack>
       </VStack>
     </QueryErrorBoundary>
+  );
+}
+
+/** 리포트 오류·위치 안내는 권한 안내와 같은 자리(가로 여백, 세로 가운데)에 둔다. */
+function WeatherReportFallback(props: ComponentProps<typeof WeatherHero.Error>) {
+  return (
+    <Box px={SCREEN_GUTTER} className="flex-1 justify-center">
+      <WeatherHero.Error {...props} />
+    </Box>
   );
 }
 

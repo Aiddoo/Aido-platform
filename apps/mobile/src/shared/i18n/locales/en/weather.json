@@ -32,7 +32,7 @@
   },
   "hero": {
     "currentLocation": "Current location",
-    "highLow": "H:{{high}}° · L:{{low}}°",
+    "highLow": "H:{{high}} · L:{{low}}",
     "summary": "{{place}}, {{temperature}} degrees now, {{condition}}",
     "restOfDay": "Rest of the day: {{condition}} · {{chance}}% chance of precipitation",
     "stale": "Data from {{relative}}"
@@ -80,7 +80,7 @@
     "windGust": "Gusts up to {{speed}} m/s",
     "humidity": "Humidity",
     "percentValue": "{{value}}%",
-    "dewPoint": "Dew point {{value}}°",
+    "dewPoint": "Dew point {{value}}",
     "dewPointTitle": "Dew point",
     "visibility": "Visibility",
     "kilometerValue": "{{value}} km",
@@ -142,7 +142,8 @@
     "openSources": "View {{serviceName}} data sources"
   },
   "badge": {
-    "temperature": "View weather, {{temperature}} degrees now, provided by {{serviceName}}"
+    "temperature": "View weather, {{temperature}} degrees now, provided by {{serviceName}}",
+    "entry": "Weather"
   },
   "locationPrompt": {
     "title": "Register your location to see the weather",

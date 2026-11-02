@@ -32,7 +32,7 @@
   },
   "hero": {
     "currentLocation": "현재 위치",
-    "highLow": "최고 {{high}}° · 최저 {{low}}°",
+    "highLow": "최고 {{high}} · 최저 {{low}}",
     "summary": "{{place}}, 지금 {{temperature}}도, {{condition}}",
     "restOfDay": "남은 시간 {{condition}} · 강수 확률 {{chance}}%",
     "stale": "{{relative}} 정보예요"
@@ -79,7 +79,7 @@
     "windGust": "돌풍 최대 {{speed}}m/s",
     "humidity": "습도",
     "percentValue": "{{value}}%",
-    "dewPoint": "이슬점 {{value}}°",
+    "dewPoint": "이슬점 {{value}}",
     "dewPointTitle": "이슬점",
     "visibility": "가시거리",
     "kilometerValue": "{{value}}km",
@@ -141,7 +141,8 @@
     "openSources": "{{serviceName}} 데이터 출처 보기"
   },
   "badge": {
-    "temperature": "날씨 보기, 지금 {{temperature}}도, {{serviceName}} 제공"
+    "temperature": "날씨 보기, 지금 {{temperature}}도, {{serviceName}} 제공",
+    "entry": "날씨"
   },
   "locationPrompt": {
     "title": "위치를 등록하면 날씨를 볼 수 있어요",

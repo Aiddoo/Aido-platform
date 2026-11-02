@@ -24,7 +24,8 @@ const selectBadge = (report: WeatherReport) => ({
 
 /**
  * 피드·메모 헤더의 날씨 진입점. 날씨 화면과 같은 리포트 key를 구독해 화면에 들어가면 캐시를 그대로 쓴다.
- * 헤더라 Suspense·오류 경계 대신 상태별로 그리고, 위치가 없거나 받지 못하면 아무것도 그리지 않는다.
+ * 헤더라 Suspense·오류 경계 대신 상태별로 그린다. 위치가 없거나 리포트를 받지 못해도 날씨 화면
+ * (권한 안내·다시 시도)으로 들어갈 수 있게 진입 배지를 남긴다.
  */
 export function WeatherForecastBadge() {
   const location = useWeatherLocation();
@@ -35,10 +36,10 @@ export function WeatherForecastBadge() {
   });
 
   return match(location)
-    .with({ status: 'needsPermission' }, { status: 'denied' }, () => null)
+    .with({ status: 'needsPermission' }, { status: 'denied' }, () => <WeatherForecastBadge.Entry />)
     .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => {
       if (badge == null) {
-        return isPending ? <WeatherForecastBadge.Loading /> : null;
+        return isPending ? <WeatherForecastBadge.Loading /> : <WeatherForecastBadge.Entry />;
       }
       return <WeatherForecastBadge.Item current={badge.current} serviceName={badge.serviceName} />;
     })
@@ -79,6 +80,34 @@ WeatherForecastBadge.Item = function Item({
         />
         <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
           {formatDegrees(temperature)}
+        </Text>
+      </HStack>
+    </PressableFeedback>
+  );
+};
+
+WeatherForecastBadge.Entry = function Entry() {
+  const { t } = useTranslation('weather');
+  const push = useSingleTap(router.push);
+
+  return (
+    <PressableFeedback
+      onPress={() => push('/weather')}
+      accessibilityRole="button"
+      accessibilityLabel={t('badge.entry')}
+      hitSlop={4}
+      className="min-h-11 min-w-16 justify-center"
+    >
+      <HStack align="center" gap={6} px={4}>
+        <WeatherIcon
+          condition="PARTLY_CLOUDY"
+          isDaylight
+          width={18}
+          height={18}
+          colorClassName="text-gray-6"
+        />
+        <Text size="b4" shade={6}>
+          {t('badge.entry')}
         </Text>
       </HStack>
     </PressableFeedback>
