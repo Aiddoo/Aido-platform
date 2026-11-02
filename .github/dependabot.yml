@@ -104,7 +104,6 @@ updates:
         update-types: ['version-update:semver-major']
     labels:
       - 'dependencies'
-      - 'docker'
       - 'automated'
     commit-message:
       prefix: 'chore(deps)'

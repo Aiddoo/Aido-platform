@@ -32,7 +32,7 @@
 | 공유 계약 | `@aido/api`: Zod 4.6 스키마·오류 코드·공용 vocabulary                                        |
 | 모바일    | Expo SDK 58, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky |
 | 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                            |
-| 툴링      | Node.js 24.22.1, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.90, Oxfmt 0.75         |
+| 툴링      | Node.js 24.22.2, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.90, Oxfmt 0.75         |
 | 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                      |
 
 ## 아키텍처
@@ -107,7 +107,7 @@ packages/api (Zod 스키마, ErrorCode)
 
 ### 요구 사항
 
-- Node.js `24.22.1` ([`.nvmrc`](./.nvmrc))
+- Node.js `24.22.2` ([`.nvmrc`](./.nvmrc))
 - pnpm `12.15.0` (`packageManager`, `corepack enable`로 활성화)
 - Docker (로컬 PostgreSQL·Redis, integration/e2e 테스트의 Testcontainers)
 
