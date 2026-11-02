@@ -78,10 +78,11 @@ export interface HttpClient {
 | ----------------------- | --------------------------------------------------------- | -------------------------------------------- |
 | `HttpClient`            | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`             |
 | `Storage`               | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts`     |
-| `EnumerableSyncStorage` | 초안 전용 MMKV 인스턴스(AES-256)                          | `shared/infra/storage/mmkv-draft-storage.ts` |
+| `EnumerableSyncStorage` | 초안·조회 캐시용 암호화 MMKV 인스턴스(AES-256, 키 공유)   | `shared/infra/storage/mmkv-draft-storage.ts` |
 | `Logger`                | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                       |
 | `Analytics`             | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                    |
 | `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
+| `NetworkStatusGateway`  | `expoNetworkStatusGateway`(expo-network)                  | `shared/infra/network/`                      |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 > 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
@@ -388,7 +389,7 @@ function useView() {
   `ownerId`(사용자 id)가 항상 들어가며, 명시적 로그아웃·회원 탈퇴 때만 `AuthProvider`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 하고,
   로그인 후 `useUserIdentity`가 현재 사용자 외 소유자의 초안을 지운다. 7일 지난 초안은 앱 시작 때 정리한다.
 - 초안 저장소는 MMKV `encryptionKey`(AES-256)로 암호화한다. 키는 SecureStore에 최초 1회 만들어 보관한다. 키 조회가 비동기라
-  `app/_layout.tsx`가 `useDraftStorageBootstrap`으로 스플래시 구간에 미리 열어 `DIProvider`에 넘긴다(초안 화면은 여전히 동기 복원).
+  `app/_layout.tsx`가 `useEncryptedStorageBootstrap`으로 스플래시 구간에 초안·조회 캐시 저장소를 같은 키로 미리 열어 `DIProvider`에 넘긴다(초안 화면은 여전히 동기 복원).
   열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 정상 동작하며 Sentry에 보고한다. 평문 `aido.drafts`는 첫 실행에 옮긴 뒤 삭제한다.
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.

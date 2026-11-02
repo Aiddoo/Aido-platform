@@ -81,7 +81,8 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `ActionChip`                                                         | 아이콘 + 라벨 선택 칩 (필터·옵션)                                           | `src/shared/ui/action-chip/action-chip.md`                       |
 | `ListRow`                                                            | 썸네일·텍스트가 있는 목록 행                                                | `src/shared/ui/list-row/list-row.md`                             |
 | `Overlay`, `useOverlay`                                              | 루트에 다이얼로그·시트를 띄우고 값을 Promise로 반환                         | `src/shared/ui/overlay/overlay.md`                               |
-| `PremiumDialog`, `usePremiumDialog`                                  | 프리미엄 전용 기능 구독 안내 다이얼로그                                     | `src/shared/ui/premium-dialog/premium-dialog.md`                 |
+| `PremiumDialog`                                                      | 프리미엄 안내 다이얼로그(UI만). 기능에서는 `usePremiumGate`로 띄움          | `src/shared/ui/premium-dialog/premium-dialog.md`                 |
+| `OfflineBanner`                                                      | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                 | `src/shared/ui/offline-banner/offline-banner.md`                 |
 | `QueryErrorBoundary`                                                 | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                  | `src/shared/ui/query-error-boundary/query-error-boundary.md`     |
 | `ScrollProgressWidget`                                               | 스크롤 진행률 플로팅 위젯                                                   | `src/shared/ui/scroll-progress-widget/scroll-progress-widget.md` |
 | `AppToast`                                                           | 토스트 본문 (`useAppToast`로 사용)                                          | `src/shared/ui/toast/toast.md`                                   |

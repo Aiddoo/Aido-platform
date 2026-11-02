@@ -36,6 +36,26 @@ session_expired: {
 track(analytics, 'session_expired', { reason });
 ```
 
+### 측정 규칙 (1.14.0)
+
+- **화면 조회**: `useScreenTracking`이 `screen_view.screen_name`에 실제 경로가 아닌 **라우트 템플릿**(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 그룹(`(app)`)·`index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
+- **내부 트래픽**: 운영이 아닌 빌드(`APP_ENV` = development·preview)는 JS 이벤트를 `console` 어댑터로만 남긴다. 그래도 네이티브 SDK가 자동 수집 이벤트를 같은 속성으로 보내므로 `markFirebaseTrafficAsInternal`이 `setDefaultEventParameters({ traffic_type: 'internal' })`를 건다. GA 데이터 필터 "내부 트래픽"을 활성화해야 제외된다. JS가 뜨기 전 첫 실행의 `first_open`에는 붙지 않는다.
+- **매출 원본**: RevenueCat이 Firebase로 보내는 `purchase`(·`rc_*`)만 매출·전환에 쓴다. 앱 `subscription_started`는 결제 UI 퍼널 단계일 뿐이고, Firebase 자동 수집 `in_app_purchase`는 iOS에서 끌 수 없으므로 GA 키 이벤트에서 해제만 한다. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
+- **사용자 속성**(`UserPropertyMap`): `is_premium`·`subscription_status`(연속성 유지) + `premium_source`(`store`·`grant`·`admin`·`none`). 유료 전환은 `premium_source = store`로 센다. 로그아웃(비인증)이면 `Analytics.clearUser()`가 사용자 id와 모든 속성을 `null`로 지운다.
+- **한 번만**: 노출 이벤트는 화면·구간마다 한 번이다. 재렌더·분 단위 갱신으로 다시 보내지 않는다.
+
+| 이벤트                        | 파라미터                                                                                                  | 시점                                              |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `premium_gate_cta_tapped`     | `feature`(`PremiumFeature`)                                                                               | `usePremiumGate().subscribe`                      |
+| `paywall_viewed`              | `view`: `status`·`plans`                                                                                  | 요금제를 받아 페이월이 보였을 때                  |
+| `purchase_failed`             | `reason`: `network`·`server`·`store_unavailable`·`store_error`                                            | 결제 실패를 문의로 안내할 때(취소·승인 대기 제외) |
+| `ai_report_viewed`            | `report_id` · `report_type`: `WEEKLY`·`MONTHLY`                                                           | 저장된 리포트 상세                                |
+| `weather_opened`              | `entry`: `feed_badge`·`notification`·`other`                                                              | 날씨 화면 진입(`weatherHref(entry)`의 `?entry`)   |
+| `weather_briefing_shown`      | `kind`: `rainy`·`stormy`·`snowy`·`hot`·`rain_later`·`clear`·`tomorrow_morning`·`dry`·`no_scheduled_todos` | 브리핑이 처음 보였을 때                           |
+| `weather_location_registered` | `result`: `located`·`denied`·`unavailable`                                                                | 날씨 화면에서 위치 확인이 처음 끝났을 때          |
+| `weather_report_failed`       | `cause`: `no_location`·`provider_unavailable`·`offline`·`other`                                           | 리포트 실패 화면(위치 등록 대기 중 로딩은 제외)   |
+| `offline_banner_shown`        | –                                                                                                         | 오프라인 전환마다(`connectOnlineManager`)         |
+
 ---
 
 ## Sentry — 관측 (3원소)

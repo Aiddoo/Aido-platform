@@ -1,6 +1,6 @@
 # EAS Secrets 설정 가이드
 
-**Version**: 1.1.0 · **Last Updated**: 2026-07-06 · **Owner**: Aido Mobile Team
+**Version**: 1.2.0 · **Last Updated**: 2026-11-02 · **Owner**: Aido Mobile Team
 
 EAS Build에서 민감한 파일들을 환경변수로 관리하는 방법입니다.
 
@@ -25,17 +25,28 @@ eas secret:create --scope project --name GOOGLE_SERVICES_JSON --value "붙여넣
 # eas secret:create --scope project --name GOOGLE_SERVICES_JSON --value "붙여넣기" --type string --environment production
 ```
 
-### 3. Google Service Info Plist (iOS) - 선택사항
+### 3. Google Service Info Plist (iOS)
 
-iOS용 Firebase 설정 파일도 같은 방식으로:
+환경마다 번들 ID가 달라(`com.aido.mobile` · `.preview` · `.dev`) Firebase iOS 앱과 plist도 환경별로 하나씩이다.
+같은 이름 `GOOGLE_SERVICES_INFO_PLIST`를 EAS 환경마다 다른 값으로 등록하면 `app.config.ts`가 환경별 파일로 복원한다.
+
+| APP_ENV     | 번들 ID                   | 로컬 파일                              |
+| ----------- | ------------------------- | -------------------------------------- |
+| production  | `com.aido.mobile`         | `GoogleService-Info.plist`             |
+| preview     | `com.aido.mobile.preview` | `GoogleService-Info.preview.plist`     |
+| development | `com.aido.mobile.dev`     | `GoogleService-Info.development.plist` |
 
 ```bash
-# 인코딩
-base64 -i GoogleService-Info.plist | pbcopy
-
-# EAS Secret에 저장
-eas secret:create --scope project --name GOOGLE_SERVICES_INFO_PLIST --value "붙여넣기" --type string
+base64 -i GoogleService-Info.development.plist | pbcopy
+eas env:create --name GOOGLE_SERVICES_INFO_PLIST --value "붙여넣기" \
+  --environment development --visibility secret
 ```
+
+Android `google-services.json`은 패키지별 client가 한 파일에 함께 들어 있어 모든 환경이 같은 파일을 쓴다.
+Firebase 콘솔에 `.dev`·`.preview` Android 앱을 추가한 뒤 다시 받은 파일을 등록한다.
+
+> 운영(`com.aido.mobile`)과 개발 빌드는 번들 ID가 달라 한 기기에 함께 설치되고, 키체인·App Group·푸시 토큰도 분리된다.
+> 개발 빌드가 운영 앱을 덮어써 운영 토큰을 개발 서버로 보내는 일이 없다.
 
 ### 4. Sentry (관측)
 
