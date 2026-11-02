@@ -1,0 +1,50 @@
+import { and, eq, gt, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+
+import { subscription, type user } from "#api/platform/database/schema/index";
+import { storeRenewalCutoff } from "#api/shared/domain/store-renewal-grace";
+
+type PremiumUserColumns = Pick<
+  typeof user,
+  "id" | "role" | "subscriptionStatus" | "subscriptionExpiresAt"
+>;
+
+/** 스토어 구독 행(또는 그 alias)의 엔타이틀먼트 판단 열 */
+export interface StoreEntitlementColumns {
+  readonly status: AnyPgColumn;
+  readonly expiresAt: AnyPgColumn;
+  readonly gracePeriodEndsAt: AnyPgColumn;
+}
+
+/**
+ * storeEntitlementEndsAt(store-renewal-grace)와 같은 규칙: 자동 갱신 중이면 만료 뒤 웹훅 대기 유예까지,
+ * 취소했으면 만료 전까지, 결제 유예 중이면 그 끝까지 유효하다. 규칙을 바꾸면 두 곳을 함께 바꾼다.
+ */
+export function validStoreEntitlementCondition(store: StoreEntitlementColumns, at: Date): SQL {
+  return sql`(${or(
+    and(eq(store.status, "ACTIVE"), gt(store.expiresAt, storeRenewalCutoff(at))),
+    and(eq(store.status, "CANCELLED"), gt(store.expiresAt, at)),
+    and(inArray(store.status, ["ACTIVE", "CANCELLED"]), gt(store.gracePeriodEndsAt, at)),
+  )})`;
+}
+
+/**
+ * EntitlementService와 같은 유료 구독 판단(resolvePremiumAccessDeadline + resolveEffectiveSubscriptionStatus)을
+ * 여러 사용자를 한 번에 고르는 SQL 조건으로 표현한다. User projection이 ACTIVE이고, 만료 시각이 없거나
+ * (웹훅이 바꿀 때까지 유지) projection 만료 시각 또는 옮겨 가지 않은 스토어 구독의 엔타이틀먼트 끝이
+ * 아직 지나지 않았다. 판단 규칙을 바꾸면 entitlement-limits.policy와 함께 바꾼다.
+ */
+export function activeSubscriptionCondition(target: PremiumUserColumns, at: Date): SQL {
+  const validStore = sql`exists (select 1 from ${subscription} where ${eq(subscription.userId, target.id)} and ${isNull(subscription.deletedAt)} and ${validStoreEntitlementCondition(subscription, at)})`;
+  return sql`(${eq(target.subscriptionStatus, "ACTIVE")} and (${isNull(target.subscriptionExpiresAt)} or ${gt(target.subscriptionExpiresAt, at)} or ${validStore}))`;
+}
+
+/** EntitlementService의 프리미엄 등급 판단(resolveAccessTier)과 같다: ADMIN이거나 유효한 유료 구독이 있다. */
+export function premiumAccessCondition(target: PremiumUserColumns, at: Date): SQL {
+  return sql`(${eq(target.role, "ADMIN")} or ${activeSubscriptionCondition(target, at)})`;
+}
+
+/** premiumAccessCondition의 반대. 두 조건은 NULL 없이 사용자를 정확히 둘로 나눈다. */
+export function freeAccessCondition(target: PremiumUserColumns, at: Date): SQL {
+  return sql`not ${premiumAccessCondition(target, at)}`;
+}

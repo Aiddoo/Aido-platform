@@ -7,8 +7,9 @@ import type {
   HourlyForecast,
   WeatherForecast,
 } from "../../../application/ports/forecast/weather-provider.port.js";
+import { KMA_TIMEZONE } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 import type { KmaApiResponse, KmaResponseItem } from "./kma-response.schema.js";
-import { KMA_CATEGORY, KMA_TIMEZONE, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
+import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
 
 /**
  * YYYYMMDD 형식을 YYYY-MM-DD로 변환

@@ -5,6 +5,7 @@ import {
   useReportScreenParams,
 } from '@src/features/ai/hooks/use-report-screen-params';
 import { useGetReportDetailQueryOptions } from '@src/features/ai/queries/get-report-detail-query-options';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useTrack } from '@src/shared/analytics';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
@@ -15,7 +16,6 @@ import {
   Spacing,
   StyledSafeAreaView,
   Text,
-  usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -27,8 +27,7 @@ import { match } from 'ts-pattern';
 function ReportDetailScreen() {
   const { id: report } = useReportScreenParams();
   const { t } = useTranslation('ai');
-  const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('AI_REPORT');
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -51,8 +50,7 @@ function ReportDetailScreen() {
                 <Button
                   size="medium"
                   onPress={() => {
-                    trackEvent('premium_gate_shown', { feature: 'ai_report' });
-                    premiumDialog.open({
+                    premiumGate.open({
                       description: t('report.lockedDetail.premiumDialogDescription'),
                     });
                   }}

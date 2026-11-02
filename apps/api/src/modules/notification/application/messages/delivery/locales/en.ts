@@ -1,3 +1,6 @@
+import type { WeatherCondition } from "@aido/api/vocabulary";
+
+import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
   NotificationCopy,
   NotificationCopyFactory,
@@ -24,6 +27,9 @@ const pluralRules = new Intl.PluralRules("en");
 const countLabel = (count: number, singular: string, plural = `${singular}s`): string =>
   `${count} ${pluralRules.select(count) === "one" ? singular : plural}`;
 
+/** 문장 중간에서는 이름을 모를 때의 `A friend` 대신 `your friend`로 읽히게 한다. */
+const mention = (name: string): string => (name === SOCIAL_SENDER_FALLBACK ? "your friend" : name);
+
 const REPLY_LABEL = {
   STARTING: "I’ll get started",
   THANKFUL: "Thanks for cheering me on",
@@ -33,178 +39,199 @@ const REPLY_LABEL = {
 export const SCHEDULER_TEMPLATES = {
   TODO_REMINDER_60MIN: {
     variants: [
-      ({ todoTitle }) => copy("A to-do in one hour ⏰", `Get ready for “${todoTitle}”`),
-      ({ todoTitle }) => copy("A little time to prepare", `“${todoTitle}” is in one hour`),
-      ({ todoTitle }) => copy("Your next plan is coming", `One hour until “${todoTitle}”`),
+      ({ todoTitle }) => copy("Coming up in 1 hour ⏰", `“${todoTitle}” is on deck`),
+      ({ todoTitle }) => copy("One-hour heads-up", `Time to get ready for “${todoTitle}”`),
+      ({ todoTitle }) => copy("Next up in an hour", `“${todoTitle}” starts in 60 minutes`),
     ],
   },
   TODO_REMINDER_10MIN: {
     variants: [
-      ({ todoTitle }) =>
-        copy("Your to-do is in 10 minutes ⏰", `Check the plan for “${todoTitle}”`),
-      ({ todoTitle }) => copy("A quick reminder", `Ten minutes to “${todoTitle}”`),
-      ({ todoTitle }) => copy("Nearly time to start", `Get set for “${todoTitle}”`),
+      ({ todoTitle }) => copy("Starting in 10 minutes ⏰", `Get set for “${todoTitle}”`),
+      ({ todoTitle }) => copy("10-minute heads-up", `“${todoTitle}” is almost here`),
+      ({ todoTitle }) => copy("Almost time 🐾", `“${todoTitle}” starts in 10 minutes`),
     ],
   },
   TODO_REMINDER_IMMEDIATE: {
     variants: [
-      ({ todoTitle }) => copy("Time for your to-do 🐾", `Let’s start “${todoTitle}”`),
-      ({ todoTitle }) => copy("It’s time for your reminder", `Take a look at “${todoTitle}”`),
-      ({ todoTitle }) => copy("One small start", `Begin with “${todoTitle}”`),
+      ({ todoTitle }) => copy("It’s go time 🐾", `Ready to start “${todoTitle}”?`),
+      ({ todoTitle }) => copy("Your reminder is here", `Time to check off “${todoTitle}”`),
+      ({ todoTitle }) => copy("Starting is half the work", `Take step one on “${todoTitle}”`),
     ],
   },
   MORNING_REMINDER: {
     variants: [
-      ({ count }) => copy(`${countLabel(count, "to-do")} today ☀️`, "Start with one easy task"),
+      ({ count }) => copy(`${countLabel(count, "to-do")} today ☀️`, "Start with the easiest one"),
       ({ count }) =>
-        copy(`Morning! ${countLabel(count, "plan")} ready`, "Choose what matters today"),
+        copy(`Morning! ${countLabel(count, "to-do")} on deck`, "One check gets the day rolling"),
       ({ count }) =>
-        copy(`${countLabel(count, "to-do")} on today’s list`, "Take a look and pick your first"),
+        copy(
+          `${countLabel(count, "to-do")} on today’s list`,
+          "Pick an order and you’re halfway there",
+        ),
       ({ count }) =>
-        copy(`${countLabel(count, "plan")}, at your pace`, "The cat will walk with you 🐾"),
+        copy(`${countLabel(count, "to-do")}, at your pace`, "Aido’s right here with you 🐾"),
       ({ count }) =>
-        copy("A small start for today", `Choose from your ${countLabel(count, "to-do")}`),
+        copy(`Today’s list: ${countLabel(count, "to-do")}`, "Knock out one and you’re rolling"),
     ],
   },
   EVENING_COMPLETE: {
     variants: [
-      staticCopy("All done for today 🎉", "You’ve earned a quiet evening"),
-      staticCopy("You did it today", "Every to-do has its checkmark"),
-      staticCopy("Every box is checked", "A happy finish with your cat 🐾"),
-      staticCopy("Your plans are complete", "Take a look at what you finished"),
-      staticCopy("A day well spent", "Your finished tasks tell the story"),
+      staticCopy("All done for today 🎉", "You’ve earned a cozy evening"),
+      staticCopy("You crushed it today", "Every box checked, nothing left"),
+      staticCopy("A perfect day", "Aido is purring with pride 🐾"),
+      staticCopy("Your to-do list is clear", "Take a peek at everything you did"),
+      staticCopy("Nice work today", "Your finished to-dos filled the day"),
     ],
   },
   EVENING_PARTIAL: {
     variants: [
       ({ remaining }) =>
-        copy(`${countLabel(remaining, "to-do")} left today`, "Try one more if you have time"),
+        copy(`${countLabel(remaining, "to-do")} left today`, "Got a minute? Try one more"),
       ({ remaining }) =>
         copy(
-          `${countLabel(remaining, "to-do")} not checked off`,
-          "Check your list and choose what’s next",
+          `${countLabel(remaining, "to-do")} still open`,
+          "Check your to-do list and pick what’s next",
         ),
       ({ remaining }) =>
-        copy(`${countLabel(remaining, "plan")} to go`, "One small task is a fine next step 🐾"),
-      ({ remaining }) => copy(`${remaining} on today’s list`, "Finish what fits your evening"),
+        copy(`${countLabel(remaining, "to-do")} to go`, "Wrap up an easy one first 🐾"),
+      ({ remaining }) =>
+        copy(`${remaining} left on today’s list`, "Do what you can. That’s enough"),
     ],
   },
   EVENING_NONE: {
     variants: [
-      staticCopy("A look at today’s list? 🌙", "See which plans still fit today"),
-      staticCopy("Time to review today’s plans?", "Check your list and adjust what you need"),
-      staticCopy("One small task tonight?", "Take a look at today’s list"),
-      staticCopy("Go at your own pace", "It’s okay to need a rest day"),
+      staticCopy("Check your to-do list? 🌙", "One before bed is plenty"),
+      staticCopy("Revisit today’s plan?", "It’s fine to push things to tomorrow"),
+      staticCopy("Just one small thing tonight?", "Start with a 5-minute task"),
+      staticCopy("Rest day? That’s okay", "Maybe jot down tomorrow’s plans"),
     ],
   },
   MORNING_NO_TODO: {
     variants: [
-      staticCopy("One plan for today? ☀️", "Start with a small thing on your mind"),
-      staticCopy("Keep a small plan handy", "Write one thing you want to do"),
-      staticCopy("What’s your first to-do?", "Make a little plan with your cat 🐾"),
+      staticCopy("What’s one thing for today? ☀️", "One small to-do sets up your day"),
+      staticCopy("Your to-do list is empty today", "Add one thing that comes to mind"),
+      staticCopy("What’s first today?", "Let’s plan it with Aido 🐾"),
     ],
   },
   EVENING_STREAK: {
     variants: [
-      ({ streak, next }) => copy(`${streak}-day streak 🔥`, `Tomorrow could make it ${next}`),
       ({ streak, next }) =>
-        copy(`${streak} days of steady steps`, `Your next step could be day ${next}`),
-      ({ streak }) => copy(`${streak} days recorded`, "Another day of paw prints 🐾"),
+        copy(`${streak}-day streak 🔥`, `Keep it up and tomorrow makes ${next}`),
+      ({ streak, next }) => copy(`${streak} days in a row`, `See you on day ${next} tomorrow`),
+      ({ streak }) => copy(`${streak}-day streak and counting`, "Aido saw every check today 🐾"),
     ],
   },
   EVENING_STREAK_7: {
-    copy: staticCopy("A 7-day streak 🎉", "Every planned to-do done for a week"),
+    copy: staticCopy("7-day streak 🎉", "Every to-do done, all week long"),
   },
   EVENING_STREAK_14: {
-    copy: staticCopy("A 14-day streak 🏆", "Two weeks of completed plans"),
+    copy: staticCopy("14-day streak 🏆", "Two weeks straight. It’s a habit now"),
   },
   EVENING_STREAK_30: {
-    copy: ({ streak }) => copy(`${streak}-day streak 🐾`, "Look back at a month of progress"),
+    copy: ({ streak }) => copy(`${streak}-day streak 🐾`, "Consistency is officially your thing"),
   },
   EVENING_STREAK_RISK_PARTIAL: {
     variants: [
       ({ streak, remaining }) =>
-        copy(`${streak}-day streak, ${remaining} left`, "Keep going one task at a time"),
+        copy(`${streak}-day streak, ${remaining} to go`, "Finish them all to keep it going"),
       ({ remaining, streak }) =>
-        copy(`${remaining} left to keep your streak`, `Take your time after ${streak} days 🔥`),
-      ({ remaining }) => copy(`${remaining} left for today`, "Pick a small task that fits"),
+        copy(`Finish ${remaining} to keep your streak`, `${streak} days strong. No rush 🔥`),
+      ({ remaining }) => copy(`${remaining} left for today`, "Start with the easiest one"),
     ],
   },
   EVENING_STREAK_RISK_NONE: {
     variants: [
       ({ streak }) =>
-        copy(`Continue your ${streak}-day streak?`, "Check today’s list and what’s left"),
+        copy(`Keep your ${streak}-day streak going?`, "See what’s left on your to-do list"),
       ({ streak }) =>
-        copy(`Check your ${streak}-day streak 🐾`, "Review what’s left on today’s list"),
+        copy(`Your ${streak}-day streak is waiting 🐾`, "Finish what’s left to keep it going"),
       ({ streak }) =>
-        copy(`You’ve kept going for ${streak} days`, "Start with something you can do"),
+        copy(`${streak} days strong so far`, "Wrap up today’s to-dos to keep it going"),
     ],
   },
   LUNCH_NUDGE: {
     variants: [
-      staticCopy("Your afternoon plans?", "Choose a task you can do now"),
-      staticCopy("Ready for an afternoon to-do?", "Pick one from your list"),
-      staticCopy("A quick look at your list? 🐾", "One doable task is enough"),
-      staticCopy("Start small today", "Finish one task and find your rhythm"),
+      staticCopy("Post-lunch to-do?", "Pick something you can do now"),
+      staticCopy("First check of the afternoon?", "Your easiest to-do is enough"),
+      staticCopy("Peek at your to-do list? 🐾", "One done makes the afternoon lighter"),
+      staticCopy("Start small today", "Finish one and find your rhythm"),
     ],
   },
   STREAK_AT_RISK: {
     variants: [
-      ({ streak }) => copy(`Check your ${streak}-day streak 🔥`, "See what’s left on today’s list"),
-      ({ streak }) => copy("One more small step today?", `Check your ${streak}-day streak`),
-      ({ streak }) => copy(`${streak} days of steady progress`, "Choose one doable task for today"),
+      ({ streak }) =>
+        copy(`Keep your ${streak}-day streak alive 🔥`, "Check what’s left on your to-do list"),
+      ({ streak }) =>
+        copy("Finish what’s left today?", `Wrap it all up to keep your ${streak}-day streak`),
+      ({ streak }) => copy(`${streak} days and counting`, "Tidy up what’s left before bed"),
     ],
   },
 } satisfies SchedulerNotificationCopyCatalog;
 
 export const WEATHER_TEMPLATES = {
-  MORNING_CLEAR: {
-    variants: [
-      ({ skyLabel, tempMin, tempMax }) =>
-        copy(`Today: ${skyLabel} ☀️`, `${tempMin}–${tempMax}°C. Plan your time outside`),
-      ({ tempMin, tempMax, skyLabel }) =>
-        copy(`${tempMin}–${tempMax}°C today`, `${skyLabel}. Dress for your plans`),
-    ],
+  MORNING_TODO_RAIN: {
+    copy: ({ time, todoTitle, precipChance, otherCount }) =>
+      copy(
+        `Rain likely at ${time} for “${todoTitle}” ☔`,
+        otherCount > 0
+          ? `${otherCount} more ${otherCount === 1 ? "to-do overlaps" : "to-dos overlap"} · Move to a dry time`
+          : `${precipChance}% chance · Move to a dry time`,
+      ),
   },
-  MORNING_RAIN: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(`${precipProb}% chance of rain ☔`, `${tempMin}–${tempMax}°C. Take an umbrella`),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy("Rain in today’s forecast", `${precipProb}% chance, ${tempMin}–${tempMax}°C`),
-    ],
+  MORNING_TODO_STORM: {
+    copy: ({ time, todoTitle }) =>
+      copy(`Lightning risk at ${time} for “${todoTitle}” ⚡`, "Do it indoors or move the time"),
   },
-  MORNING_SNOW: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(`${precipProb}% chance of snow ❄️`, `${tempMin}–${tempMax}°C. Wrap up warm`),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy("Snow in today’s forecast", `${precipProb}% chance, ${tempMin}–${tempMax}°C`),
-    ],
+  MORNING_TODO_SNOW: {
+    copy: ({ time, todoTitle }) =>
+      copy(`Snow at ${time} for “${todoTitle}” ❄️`, "Leave 20 min early for the snow"),
   },
-  EVENING_CLEAR: {
-    variants: [
-      ({ skyLabel, tempMin, tempMax }) =>
-        copy(`Tomorrow: ${skyLabel} 🌙`, `${tempMin}–${tempMax}°C. Get ready for tomorrow`),
-      ({ tempMin, tempMax, skyLabel }) =>
-        copy(`${tempMin}–${tempMax}°C tomorrow`, `${skyLabel}. Check before heading out`),
-    ],
+  MORNING_TODO_HEAT: {
+    copy: ({ time, todoTitle, apparentTemp }) =>
+      copy(
+        `Feels like ${apparentTemp}°C at ${time} for “${todoTitle}” ☀️`,
+        "Move it to cooler hours",
+      ),
+  },
+  MORNING_RAIN_LATER: {
+    copy: ({ time }) => copy(`Rain from ${time} today ☔`, "Take an umbrella when you head out"),
+  },
+  MORNING_SNOW_LATER: {
+    copy: ({ time }) => copy(`Snow from ${time} today ❄️`, "Roads may be slippery. Dress warm"),
+  },
+  MORNING_SUMMARY: {
+    copy: ({ conditionLabel, tempMin, tempMax, precipChance }) =>
+      copy(
+        `${conditionLabel} today, ${tempMin}–${tempMax}°C`,
+        `${precipChance}% chance of precipitation. Have a good day`,
+      ),
   },
   EVENING_RAIN: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(`${precipProb}% rain tomorrow ☔`, `${tempMin}–${tempMax}°C. Have an umbrella ready`),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy("Rain forecast for tomorrow", `${precipProb}% chance, ${tempMin}–${tempMax}°C`),
-    ],
+    copy: ({ dayPartLabel, chillyTemp }) =>
+      copy(
+        dayPartLabel == null ? "Rain expected tomorrow ☔" : `Rain starting ${dayPartLabel} ☔`,
+        chillyTemp == null
+          ? "Keep an umbrella handy"
+          : `A chilly ${chillyTemp}°C morning. Bring an umbrella and a jacket`,
+      ),
   },
   EVENING_SNOW: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(`${precipProb}% snow tomorrow ❄️`, `${tempMin}–${tempMax}°C. Allow extra travel time`),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy("Snow forecast for tomorrow", `${precipProb}% chance, ${tempMin}–${tempMax}°C`),
-    ],
+    copy: ({ dayPartLabel, chillyTemp }) =>
+      copy(
+        dayPartLabel == null ? "Snow expected tomorrow ❄️" : `Snow starting ${dayPartLabel} ❄️`,
+        chillyTemp == null
+          ? "Allow extra travel time"
+          : `${chillyTemp}°C in the morning. Dress warm and leave early`,
+      ),
+  },
+  EVENING_SUMMARY: {
+    copy: ({ conditionLabel, tempMin, tempMax, isChilly }) =>
+      isChilly
+        ? copy(
+            `Chilly ${tempMin}°C tomorrow morning 🌙`,
+            `Bring a jacket. It warms to ${tempMax}°C later`,
+          )
+        : copy(`${conditionLabel} tomorrow, ${tempMin}–${tempMax}°C 🌙`, "Plan your day with it"),
   },
 } satisfies WeatherNotificationCopyCatalog;
 
@@ -215,40 +242,39 @@ export const SOCIAL_TEMPLATES = {
   },
   NUDGE_THANKED: {
     copy: ({ senderName, todoTitle }) =>
-      copy(
-        `A thank-you from ${senderName} 🐾`,
-        `“${todoTitle}” is done. Thanks for cheering them on!`,
-      ),
+      copy(`${senderName} says thanks 🐾`, `“${todoTitle}” is done. Your cheer worked!`),
   },
   FOLLOW_NEW: {
     variants: [
       ({ senderName }) =>
-        copy(`A friend request from ${senderName}`, "Accept to cheer each other on"),
+        copy(`${senderName} sent you a friend request`, "Accept to cheer each other on"),
       ({ senderName }) =>
-        copy(`${senderName} wants to be friends`, "Share your plans and cheer each other on 🐾"),
-      ({ senderName }) => copy("A new friend request", `Meet ${senderName} in Aido`),
+        copy(`${senderName} wants to be friends`, "To-dos are easier with a buddy 🐾"),
+      ({ senderName }) =>
+        copy("New friend request", `Connect with ${mention(senderName)} and cheer each other on`),
     ],
   },
   FOLLOW_ACCEPTED: {
     variants: [
       ({ senderName }) =>
-        copy(`${senderName} accepted your request`, "You can cheer each other on now"),
+        copy(`${senderName} accepted your friend request`, "Now you can cheer each other on"),
       ({ senderName }) =>
-        copy(`You’re friends with ${senderName} 🎉`, "A little support for each other’s day"),
-      ({ senderName }) => copy("One more friend in Aido", `Say hello to ${senderName} 🐾`),
+        copy(`You and ${mention(senderName)} are friends now 🎉`, "Why not send the first cheer?"),
+      ({ senderName }) =>
+        copy("You’ve got a new friend", `Say hi to ${mention(senderName)} with a nudge 🐾`),
     ],
   },
   INVITE_PROGRESS: {
     copy: ({ inviteeName }) =>
-      copy(`${inviteeName} finished day one 🐾`, "Send a nudge to cheer them on for day two"),
+      copy(`${inviteeName} finished day one 🐾`, "Nudge them to keep it going tomorrow"),
   },
   INVITE_QUALIFY_REMINDER: {
     copy: ({ inviterName }) =>
-      copy("One more day to go 🐾", `Finish a to-do today and ${inviterName} gets a paw print`),
+      copy("Just one more day 🐾", `Finish a to-do today and ${inviterName} gets a paw print`),
   },
   INVITE_JOINED: {
     copy: ({ inviteeName }) =>
-      copy(`${inviteeName} accepted your invite 🐾`, "You’re now friends. Cheer each other on"),
+      copy(`${inviteeName} accepted your invite 🐾`, "You’re friends now. Send a welcome cheer"),
   },
   INVITE_REWARDED: {
     copy: ({ premiumDays, friendSlots }) => {
@@ -267,22 +293,20 @@ export const SOCIAL_TEMPLATES = {
     variants: [
       ({ senderName, todoTitle }) =>
         copy(
-          `A nudge from ${senderName} 🐾`,
-          todoTitle
-            ? `They’re cheering you on for “${todoTitle}”`
-            : "They’re cheering you on today",
+          `${senderName} nudged you 🐾`,
+          todoTitle ? `Let’s get “${todoTitle}” started` : "Let’s get today’s to-dos started",
         ),
       ({ senderName, todoTitle }) =>
         copy(
-          `${senderName} is cheering you on`,
+          `A nudge from ${mention(senderName)}`,
           todoTitle ? `Ready to start “${todoTitle}”?` : "Pick one thing you can do now",
         ),
       ({ todoTitle, senderName }) =>
         copy(
-          "A little encouragement from a friend",
+          "A friend is cheering you on",
           todoTitle
-            ? `${senderName} nudged “${todoTitle}”`
-            : `${senderName} is cheering you on today`,
+            ? `${senderName} is rooting for “${todoTitle}”`
+            : `${senderName} is rooting for you today`,
         ),
     ],
   },
@@ -296,34 +320,35 @@ export const SOCIAL_TEMPLATES = {
   REMIND_NUDGE_RECEIVED: {
     variants: [
       ({ senderName }) =>
-        copy(`${senderName} is cheering you on today`, "Start with one small to-do 🐾"),
+        copy(`${senderName} wants to get started with you 🐾`, "Add one to-do for today?"),
       ({ senderName }) =>
-        copy(`A nudge from ${senderName}`, "Start with a small thing on your mind"),
+        copy(`A nudge from ${mention(senderName)}`, "Jot down one thing on your mind"),
       ({ senderName }) =>
         copy("A friend is cheering you on", `${senderName} sent a little check-in`),
     ],
   },
   REMIND_NUDGE_RECEIVED_WITH_MESSAGE: {
-    copy: ({ senderName, message }) => copy(`A nudge and note from ${senderName}`, message),
+    copy: ({ senderName, message }) =>
+      copy(`A nudge and a note from ${mention(senderName)}`, message),
   },
   CHEER_RECEIVED: {
-    copy: ({ senderName, message }) => copy(`A cheer from ${senderName}`, message),
+    copy: ({ senderName, message }) => copy(`A cheer from ${mention(senderName)}`, message),
   },
   CHEER_RECEIVED_NO_MESSAGE: {
     variants: [
-      ({ senderName }) => copy(`${senderName} sent a cheer 🐾`, "Keep going at your own pace"),
-      ({ senderName }) =>
-        copy(`A little cheer from ${senderName}`, "A little support for your day"),
-      ({ senderName }) => copy("A friend is cheering you on", `${senderName} is rooting for you`),
+      ({ senderName }) => copy(`${senderName} sent you a cheer 🐾`, "Keep going at your own pace"),
+      ({ senderName }) => copy(`${senderName} is cheering you on`, "You’ve got this today"),
+      ({ senderName }) => copy("A friend is in your corner", `${senderName} is rooting for you`),
     ],
   },
   FRIEND_COMPLETED: {
     variants: [
       ({ friendName }) =>
-        copy(`${friendName} finished today’s plans ✨`, "Every to-do is checked off"),
+        copy(`${friendName} finished all of today’s to-dos ✨`, "Send a quick congrats?"),
       ({ friendName }) =>
-        copy(`All done today for ${friendName}`, "Send a little cheer to your friend"),
-      ({ friendName }) => copy("Your friend’s to-dos are done", `Cheer for ${friendName} 🐾`),
+        copy(`${friendName} is all done for today`, "A little cheer goes a long way"),
+      ({ friendName }) =>
+        copy("Your friend wrapped up the day", `Tell ${mention(friendName)} nice job 🐾`),
     ],
   },
   SOCIAL_DIGEST_MULTI: {
@@ -331,94 +356,93 @@ export const SOCIAL_TEMPLATES = {
       ({ completedFriendCount }) =>
         copy(
           `${countLabel(completedFriendCount, "friend")} finished today ✨`,
-          "Send them a little cheer",
+          "Knock out one too and send a cheer?",
         ),
       ({ completedFriendCount }) =>
         copy(
-          `${countLabel(completedFriendCount, "friend")} finished their to-dos`,
-          "Take a moment to say well done",
+          `${countLabel(completedFriendCount, "friend")} wrapped up their to-dos`,
+          "Send them a quick congrats",
         ),
       ({ completedFriendCount }) =>
         copy(
-          `${countLabel(completedFriendCount, "friend")} completed their plans`,
-          "See their progress together 🐾",
+          `${countLabel(completedFriendCount, "friend")} crossed everything off`,
+          "Peek at their progress, then do one 🐾",
         ),
     ],
   },
   SOCIAL_DIGEST_SINGLE: {
     variants: [
-      ({ friendName }) => copy(`${friendName} is all done today ✨`, "Send a little cheer"),
       ({ friendName }) =>
-        copy(`${friendName} finished today’s to-dos`, "Send a little encouragement"),
-      ({ friendName }) => copy("Your friend finished today’s plans", `Cheer for ${friendName} 🐾`),
+        copy(`${friendName} is all done today ✨`, "Cheer them on, then knock out one?"),
+      ({ friendName }) => copy(`${friendName} finished today’s to-dos`, "Send a quick congrats?"),
+      ({ friendName }) =>
+        copy("Your friend wrapped up the day", `Cheer on ${mention(friendName)} and keep pace 🐾`),
     ],
   },
   NUDGE_SUGGEST: {
     variants: [
-      ({ friendName }) => copy(`Check in with ${friendName}?`, "Send a gentle nudge 🐾"),
       ({ friendName }) =>
-        copy("A little cheer for your friend", `Say hello to ${friendName} with a nudge`),
+        copy(`Check in on ${mention(friendName)}?`, "A quick nudge goes a long way 🐾"),
       ({ friendName }) =>
-        copy("A little company for today?", `Take a look at ${friendName}’s plans`),
+        copy("Send a friend some cheer?", `Say hi to ${mention(friendName)} with a nudge`),
+      ({ friendName }) => copy(`How’s ${mention(friendName)} doing?`, "Send a nudge to say hi"),
     ],
   },
   TODO_COMMENT: {
     variants: [
       ({ senderName }) =>
-        copy(`${senderName} left a comment`, "There’s a new comment on your to-do"),
+        copy(`${senderName} commented on your to-do`, "Tap to read the new comment"),
+      ({ senderName }) => copy(`New comment from ${mention(senderName)}`, "See what they said 🐾"),
       ({ senderName }) =>
-        copy(`A new comment from ${senderName}`, "Read the conversation in Aido 🐾"),
-      ({ senderName }) => copy("Your to-do has a new comment", `Read what ${senderName} shared`),
+        copy("Your to-do has a new comment", `See what ${mention(senderName)} said`),
     ],
   },
   TODO_COMMENT_CHAIN: {
     variants: [
       ({ count, senderName }) =>
-        copy(`${countLabel(count, "comment")} from ${senderName}`, "Read the new comments in Aido"),
-      ({ senderName, count }) =>
         copy(
-          `${senderName} added ${countLabel(count, "comment")}`,
-          "Your to-do’s conversation continues 🐾",
+          `${countLabel(count, "comment")} from ${mention(senderName)}`,
+          "Catch up on the new comments",
         ),
+      ({ senderName, count }) =>
+        copy(`${senderName} left ${countLabel(count, "comment")}`, "The conversation’s going 🐾"),
       ({ count, senderName }) =>
-        copy(`${countLabel(count, "new comment")} to read`, `See what ${senderName} shared`),
+        copy(`${countLabel(count, "new comment")} to read`, `See what ${mention(senderName)} said`),
     ],
   },
   TODO_COMMENT_REPLY: {
     variants: [
+      ({ senderName }) => copy(`${senderName} replied to your comment`, "Tap to read the reply"),
       ({ senderName }) =>
-        copy(`${senderName} replied to your comment`, "There’s a new reply to read"),
-      ({ senderName }) =>
-        copy(`A reply from ${senderName}`, "Continue the conversation in Aido 🐾"),
-      ({ senderName }) => copy("Your comment has a new reply", `Read what ${senderName} added`),
+        copy(`New reply from ${mention(senderName)}`, "Keep the conversation going 🐾"),
+      ({ senderName }) => copy("Your comment got a reply", `See what ${mention(senderName)} said`),
     ],
   },
   TODO_COMMENT_REPLY_CHAIN: {
     variants: [
       ({ count, senderName }) =>
         copy(
-          `${countLabel(count, "reply", "replies")} from ${senderName}`,
-          "See the conversation in Aido",
+          `${countLabel(count, "reply", "replies")} from ${mention(senderName)}`,
+          "Catch up on the conversation",
         ),
       ({ senderName, count }) =>
         copy(
-          `${senderName} added ${countLabel(count, "reply", "replies")}`,
+          `${senderName} left ${countLabel(count, "reply", "replies")}`,
           "Catch up on the new replies 🐾",
         ),
       ({ count, senderName }) =>
         copy(
           `${countLabel(count, "new reply", "new replies")} to read`,
-          `${senderName} continued the conversation`,
+          `${senderName} kept the conversation going`,
         ),
     ],
   },
   TODO_COMMENT_LIKE: {
     variants: [
       ({ senderName }) =>
-        copy(`${senderName} liked your comment`, "A little heart for your words ❤️"),
-      ({ senderName }) =>
-        copy(`${senderName} liked what you shared`, "A little support for your comment"),
-      ({ senderName }) => copy("Someone liked your comment", `${senderName} left a heart`),
+        copy(`${senderName} liked your comment`, "Your words got a little love ❤️"),
+      ({ senderName }) => copy(`${senderName} liked what you shared`, "Your comment got a heart"),
+      ({ senderName }) => copy("Your comment got a heart", `It’s from ${mention(senderName)}`),
     ],
   },
 } satisfies SocialNotificationCopyCatalog;
@@ -426,37 +450,37 @@ export const SOCIAL_TEMPLATES = {
 export const SYSTEM_TEMPLATES = {
   WINBACK_DAY3: {
     variants: [
-      staticCopy("Ready to ease back in?", "Write one small thing you need today"),
-      staticCopy("Ready to update your plans?", "Take a look at what fits today"),
-      staticCopy("One step with your cat? 🐾", "Choose your first to-do for today"),
+      staticCopy("Ready to ease back in?", "Add just one to-do for today"),
+      staticCopy("Plan today together?", "One small thing is enough"),
+      staticCopy("One small step with Aido? 🐾", "Pick your first to-do for today"),
     ],
   },
   WINBACK_DAY7: {
     variants: [
-      staticCopy("A fresh plan for today?", "Write one thing you need now"),
-      staticCopy("Begin again at your pace", "One small plan is enough"),
-      staticCopy("Make room for a new plan 🐾", "Write down what’s on your mind"),
+      staticCopy("One thing for today?", "No big plan needed to restart"),
+      staticCopy("Start again, nice and slow", "One small to-do is plenty"),
+      staticCopy("Blank list, fresh start 🐾", "Add one to-do that’s on your mind"),
     ],
   },
   WINBACK_DAY14: {
     variants: [
-      staticCopy("Ready for a fresh plan?", "Begin with what you need today"),
-      staticCopy("A restart is a good start", "One small to-do is enough"),
-      staticCopy("Plan today with your cat 🐾", "Choose what fits your day now"),
+      staticCopy("A good day for a fresh plan", "Start with what you need today"),
+      staticCopy("Restarts count too", "One small to-do is a great start"),
+      staticCopy("Plan today with Aido 🐾", "Skip the backlog. Start with today"),
     ],
   },
   WINBACK_DAY21: {
     variants: [
-      staticCopy("Take your time getting started", "Write one task you can do now"),
-      staticCopy("Room for a new plan", "Start with what you need today"),
-      staticCopy("Ready when you are 🐾", "Make one small plan with your cat"),
+      staticCopy("Come back anytime", "Add one thing you can do now"),
+      staticCopy("There’s room for a new plan", "Start with what you need today"),
+      staticCopy("Aido’s still here 🐾", "Let’s pick up with one small plan"),
     ],
   },
   WINBACK_DAY30: {
     variants: [
-      staticCopy("A fresh plan for today?", "Choose what matters to you now"),
-      staticCopy("A familiar place to begin", "Write one to-do and take your time"),
-      staticCopy("A fresh start with your cat 🐾", "Plan only what fits today"),
+      staticCopy("Plan something new today?", "Start with what matters now"),
+      staticCopy("Familiar place, fresh start", "Write one to-do and take it slow"),
+      staticCopy("Fresh start, with Aido 🐾", "Plan only what fits today"),
     ],
   },
   WEEKLY_ACHIEVEMENT: {
@@ -468,39 +492,38 @@ export const SYSTEM_TEMPLATES = {
         ),
       ({ completedCount }) =>
         copy(
-          `${countLabel(completedCount, "to-do")} done last week`,
-          "See last week’s progress in one place",
+          `Last week: ${countLabel(completedCount, "to-do")} done`,
+          "Keep that momentum this week",
         ),
       ({ completedCount }) =>
         copy(
-          `${countLabel(completedCount, "little achievement")}`,
-          "See the small wins from last week",
+          `You finished ${countLabel(completedCount, "to-do")} last week`,
+          "Your small wins, in one place",
         ),
     ],
   },
   WEEKLY_ACHIEVEMENT_PERFECT: {
     variants: [
-      staticCopy("100% complete last week 🏆", "You finished every planned to-do"),
-      staticCopy("Every plan done last week", "Look back at what you finished"),
-      staticCopy("Last week’s to-dos, all done", "Look back with your cat 🐾"),
+      staticCopy("100% done last week 🏆", "You finished every to-do. Amazing"),
+      staticCopy("Every to-do done last week", "Carry that energy into this week"),
+      staticCopy("Last week: all done", "Even Aido is impressed 🐾"),
     ],
   },
   WEEKLY_ACHIEVEMENT_ALMOST: {
     variants: [
-      ({ rate }) => copy(`${rate}% complete last week`, "Look back at what you finished"),
-      ({ rate }) =>
-        copy(`You completed ${rate}% of your plans`, "Look back at last week’s plans 🐾"),
-      ({ rate }) => copy(`Last week: ${rate}% complete`, "Start with the things you did well"),
+      ({ rate }) => copy(`${rate}% done last week`, "So close! Take a look back"),
+      ({ rate }) => copy(`${rate}% of last week’s plans done 🐾`, "Go for 100% this week?"),
+      ({ rate }) => copy(`Last week: ${rate}% complete`, "Start with what went well"),
     ],
   },
   WEEKLY_REPORT: {
-    copy: staticCopy("Review last week’s record? 📊", "Explore last week in Reports"),
+    copy: staticCopy("How did last week go? 📊", "Explore last week in Reports"),
   },
   MONTHLY_REPORT: {
-    copy: staticCopy("Review last month’s record? 📈", "Explore last month in Reports"),
+    copy: staticCopy("How did last month go? 📈", "Explore last month in Reports"),
   },
   AI_SUGGESTION: {
-    copy: staticCopy("A to-do suggestion is here ✨", "See if it fits your plans"),
+    copy: staticCopy("New to-do ideas for you ✨", "Based on your recent to-dos. Take a look"),
   },
   BILLING_ISSUE: {
     copy: staticCopy("Check your payment details", "Update payment to keep your plan active."),
@@ -509,102 +532,140 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("Your Premium ends tomorrow", "Subscribe to keep Premium going"),
   },
   ONBOARDING_DAY0: {
-    copy: staticCopy("Let’s make your first to-do 🌱", "One small thing is enough to start"),
+    copy: staticCopy("Let’s add your first to-do 🌱", "One small thing is all it takes"),
   },
   ONBOARDING_DAY1: {
-    copy: staticCopy("A small plan for today", "Write it down and take one step 🐾"),
+    copy: staticCopy("Start today with one to-do", "Write it, do it, check it off 🐾"),
   },
   ONBOARDING_DAY2: {
-    copy: staticCopy("Share your day with a friend?", "See each other’s plans and send cheers"),
+    copy: staticCopy("To-dos are better with friends", "See each other’s lists and send nudges"),
   },
   ONBOARDING_DAY3: {
-    copy: staticCopy("A reminder when you need it ⏰", "Set the times that work for you"),
+    copy: staticCopy("Reminders that fit your day ⏰", "Set up notifications your way"),
   },
   ONBOARDING_DAY5: {
     copy: ({ completedCount }) =>
       completedCount === 0
-        ? copy("Take a look at your plans? 🐾", "Choose what’s next from your list")
-        : copy(`${countLabel(completedCount, "to-do")} finished`, "See what you’ve checked off 🐾"),
+        ? copy("Peek at your to-do list? 🐾", "Pick what’s next from the list")
+        : copy(
+            `${countLabel(completedCount, "to-do")} done so far`,
+            "See everything you’ve checked off 🐾",
+          ),
   },
   ONBOARDING_DAY7: {
     copy: ({ completedCount }) =>
       copy(
-        "Your first week in Aido 🎉",
-        `Look back at ${countLabel(completedCount, "finished to-do")}`,
+        "Your first week with Aido 🎉",
+        completedCount === 0
+          ? "Take a look at your first week"
+          : `Look back at ${countLabel(completedCount, "finished to-do")}`,
       ),
   },
   MILESTONE_FIRST_COMPLETE: {
-    copy: staticCopy("Your first to-do is done ✨", "Your first little win, saved"),
+    copy: staticCopy("First to-do done! ✨", "Starting is the hardest part. You did it"),
   },
   MILESTONE_10: {
-    copy: staticCopy("Ten to-dos completed", "Your small wins are adding up 🐾"),
+    copy: staticCopy("10 to-dos done 🐾", "Your small wins are stacking up"),
   },
   MILESTONE_50: {
-    copy: staticCopy("Fifty to-dos completed 🎉", "A little progress, time after time"),
+    copy: staticCopy("50 to-dos done already 🎉", "Your consistency is showing"),
   },
   MILESTONE_100: {
-    copy: staticCopy("One hundred to-dos done 🏆", "One task at a time brought you here"),
+    copy: staticCopy("100 to-dos done 🏆", "One at a time got you here"),
   },
   MILESTONE_STREAK_3: {
-    copy: staticCopy("Three days in a row 🔥", "Another day, another small step"),
+    copy: staticCopy("3 days in a row 🔥", "Nice rhythm. Keep it going tomorrow"),
   },
   MILESTONE_FIRST_FRIEND: {
-    copy: staticCopy("Your first friend in Aido 🐾", "Share a little support for your days"),
+    copy: staticCopy("You made your first friend 🐾", "Now you can cheer each other on"),
   },
 } satisfies SystemNotificationCopyCatalog;
 
-export const SKY_LABEL_MAP = { CLEAR: "Clear", PARTLY_CLOUDY: "Partly cloudy", CLOUDY: "Cloudy" };
+export const WEATHER_CONDITION_LABEL = {
+  CLEAR: "Clear",
+  MOSTLY_CLEAR: "Mostly clear",
+  PARTLY_CLOUDY: "Partly cloudy",
+  MOSTLY_CLOUDY: "Mostly cloudy",
+  CLOUDY: "Cloudy",
+  FOGGY: "Foggy",
+  HAZY: "Hazy",
+  WINDY: "Windy",
+  DRIZZLE: "Drizzle",
+  RAIN: "Rain",
+  HEAVY_RAIN: "Heavy rain",
+  THUNDERSTORMS: "Thunderstorms",
+  SLEET: "Sleet",
+  SNOW: "Snow",
+  HEAVY_SNOW: "Heavy snow",
+  HAIL: "Hail",
+  HOT: "Hot",
+  FRIGID: "Frigid",
+} satisfies Record<WeatherCondition, string>;
+
+/** 영어는 "tomorrow"의 위치가 시간대마다 달라 내일을 포함한 완결된 구로 둔다. */
+export const WEATHER_DAY_PART_LABEL = {
+  dawn: "before dawn tomorrow",
+  morning: "tomorrow morning",
+  afternoon: "tomorrow afternoon",
+  evening: "tomorrow evening",
+} satisfies Record<WeatherDayPart, string>;
 
 export const WEATHER_FALLBACK = {
   MORNING: {
-    copy: staticCopy("Add weather to your plans? ☀️", "Set a location in Korea for forecasts"),
+    copy: staticCopy("Add weather to your plans? ☀️", "Set a weather location for daily updates"),
   },
   EVENING: {
-    copy: staticCopy("Plan with tomorrow’s weather 🌙", "Choose a location in Korea for forecasts"),
+    copy: staticCopy("Plan with tomorrow’s weather 🌙", "Set a weather location for forecasts"),
+  },
+  MORNING_UNAVAILABLE: {
+    copy: staticCopy("Check today’s weather ☀️", "See the hourly forecast in the app"),
+  },
+  EVENING_UNAVAILABLE: {
+    copy: staticCopy("Check tomorrow’s weather 🌙", "See tomorrow’s forecast in the app"),
   },
 } satisfies WeatherFallbackCopyCatalog;
 
 export const RETENTION_TEMPLATES = {
   "D0:d0_no_todo": {
     variants: [
-      staticCopy("Start with one small to-do 🌱", "Write down what’s on your mind"),
-      staticCopy("A first plan with your cat?", "Write one thing to remember 🐾"),
-      staticCopy("Create your first to-do", "One doable thing is enough"),
+      staticCopy("Start with one tiny to-do 🌱", "Whatever’s on your mind works"),
+      staticCopy("Make a first plan with Aido?", "Jot down one thing to remember 🐾"),
+      staticCopy("Create your first to-do", "Even “drink water” counts"),
     ],
   },
   "D1:d1_no_todo": {
     variants: [
-      staticCopy("What’s one plan for today?", "Write one thing you want to do"),
-      staticCopy("There’s room to make a plan", "Start with one thing on your mind 🐾"),
-      staticCopy("Keep one small plan handy", "Begin with something that fits today"),
+      staticCopy("What’s on for today?", "Write down one thing you want to do"),
+      staticCopy("No big plans needed", "Start with whatever comes to mind 🐾"),
+      staticCopy("Anything you can’t forget?", "Jot it down and clear your head"),
     ],
   },
   "D1:d1_has_todo_no_completion": {
     variants: [
       staticCopy("Ready for your first check? ✅", "Pick your easiest to-do"),
-      staticCopy("Start with a plan you wrote", "Choose one to-do from your list"),
-      staticCopy("A first check with your cat 🐾", "Start with one doable task"),
+      staticCopy("Start with what you wrote", "Choose one to-do from your list"),
+      staticCopy("Try that first checkmark 🐾", "Finishing one changes the day"),
     ],
   },
   "D3:d3_restart": {
     variants: [
-      staticCopy("A fresh start for today 🌱", "Write one thing you need now"),
-      staticCopy("Keep today’s plan simple", "Restart with one small task"),
-      staticCopy("Another step with your cat 🐾", "Start with what fits today"),
+      staticCopy("Start fresh today 🌱", "Add one thing you need right now"),
+      staticCopy("Keep today’s plan simple", "One small to-do is a fine restart"),
+      staticCopy("Another step with Aido 🐾", "Start with what fits today"),
     ],
   },
   "D7:d7_has_progress": {
     variants: [
-      staticCopy("Look back at your first week 🎉", "Your finished to-dos are all here"),
-      staticCopy("See your first week’s record", "Look back at what you finished 🐾"),
-      staticCopy("See your first week’s rhythm", "Use your progress to plan what’s next"),
+      staticCopy("Your first week, wrapped up 🎉", "See what you got done this week"),
+      staticCopy("Here’s your first week", "Use it to plan the week ahead 🐾"),
+      staticCopy("How did your first week go?", "Check your progress and plan what’s next"),
     ],
   },
   "D7:d7_restart": {
     variants: [
-      staticCopy("Ready for a small plan today?", "Write one thing you can do now"),
-      staticCopy("It’s okay to begin again", "One useful to-do is enough to restart"),
-      staticCopy("Plan today with your cat? 🐾", "Choose one to-do to begin"),
+      staticCopy("A small plan for today?", "Add one thing you can do now"),
+      staticCopy("It’s never too late to restart", "One to-do is all it takes"),
+      staticCopy("Plan today with Aido? 🐾", "Pick one to-do to start"),
     ],
   },
 } satisfies RetentionNotificationCopyCatalog;

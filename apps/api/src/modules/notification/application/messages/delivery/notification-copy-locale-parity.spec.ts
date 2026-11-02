@@ -73,12 +73,51 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(scheduler.EVENING_STREAK_RISK_NONE, { streak: 999 }),
     ...render(scheduler.LUNCH_NUDGE, undefined),
     ...render(scheduler.STREAK_AT_RISK, { streak: 999 }),
-    ...render(weather.MORNING_CLEAR, { skyLabel: "Partly cloudy", tempMin: -99, tempMax: 99 }),
-    ...render(weather.MORNING_RAIN, { precipProb: 100, tempMin: -99, tempMax: 99 }),
-    ...render(weather.MORNING_SNOW, { precipProb: 100, tempMin: -99, tempMax: 99 }),
-    ...render(weather.EVENING_CLEAR, { skyLabel: "Partly cloudy", tempMin: -99, tempMax: 99 }),
-    ...render(weather.EVENING_RAIN, { precipProb: 100, tempMin: -99, tempMax: 99 }),
-    ...render(weather.EVENING_SNOW, { precipProb: 100, tempMin: -99, tempMax: 99 }),
+    ...render(weather.MORNING_TODO_RAIN, {
+      time: "오후 12시 30분",
+      todoTitle,
+      precipChance: 100,
+      otherCount: 0,
+    }),
+    ...render(weather.MORNING_TODO_RAIN, {
+      time: "오후 12시 30분",
+      todoTitle,
+      precipChance: 100,
+      otherCount: 1,
+    }),
+    ...render(weather.MORNING_TODO_RAIN, {
+      time: "오후 12시 30분",
+      todoTitle,
+      precipChance: 100,
+      otherCount: 99,
+    }),
+    ...render(weather.MORNING_TODO_STORM, { time: "오후 12시 30분", todoTitle }),
+    ...render(weather.MORNING_TODO_SNOW, { time: "오후 12시 30분", todoTitle }),
+    ...render(weather.MORNING_TODO_HEAT, { time: "오후 12시 30분", todoTitle, apparentTemp: 99 }),
+    ...render(weather.MORNING_RAIN_LATER, { time: "오후 12시 30분" }),
+    ...render(weather.MORNING_SNOW_LATER, { time: "오후 12시 30분" }),
+    ...render(weather.MORNING_SUMMARY, {
+      conditionLabel: "Mostly cloudy",
+      tempMin: -99,
+      tempMax: 99,
+      precipChance: 100,
+    }),
+    ...render(weather.EVENING_RAIN, { dayPartLabel: "before dawn tomorrow", chillyTemp: -99 }),
+    ...render(weather.EVENING_RAIN, { dayPartLabel: null, chillyTemp: null }),
+    ...render(weather.EVENING_SNOW, { dayPartLabel: "before dawn tomorrow", chillyTemp: -99 }),
+    ...render(weather.EVENING_SNOW, { dayPartLabel: null, chillyTemp: null }),
+    ...render(weather.EVENING_SUMMARY, {
+      conditionLabel: "Mostly cloudy",
+      tempMin: -99,
+      tempMax: 99,
+      isChilly: true,
+    }),
+    ...render(weather.EVENING_SUMMARY, {
+      conditionLabel: "Mostly cloudy",
+      tempMin: -99,
+      tempMax: 99,
+      isChilly: false,
+    }),
     ...render(social.FOLLOW_NEW, { senderName: longName }),
     ...render(social.FOLLOW_ACCEPTED, { senderName: longName }),
     ...render(social.INVITE_JOINED, { inviteeName: longName }),
@@ -138,6 +177,8 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(retention["D7:d7_restart"], undefined),
     ...render(fallback.MORNING, undefined),
     ...render(fallback.EVENING, undefined),
+    ...render(fallback.MORNING_UNAVAILABLE, undefined),
+    ...render(fallback.EVENING_UNAVAILABLE, undefined),
   ];
 }
 
@@ -197,6 +238,8 @@ function renderNoVariableCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(retention["D7:d7_restart"], undefined),
     ...render(catalog.WEATHER_FALLBACK.MORNING, undefined),
     ...render(catalog.WEATHER_FALLBACK.EVENING, undefined),
+    ...render(catalog.WEATHER_FALLBACK.MORNING_UNAVAILABLE, undefined),
+    ...render(catalog.WEATHER_FALLBACK.EVENING_UNAVAILABLE, undefined),
   ];
 }
 

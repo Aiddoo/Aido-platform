@@ -23,4 +23,14 @@ export interface UserRegisteredEventPayload {
   readonly devicePlatform?: "IOS" | "ANDROID" | "WEB";
   /** 요청에서 확인된 기기 모델 */
   readonly deviceModel?: string;
+  /** 기기 OS 버전 (X-OS-Version) */
+  readonly osVersion?: string;
+  /** 앱 버전 (X-App-Version) */
+  readonly appVersion?: string;
+  /** 앱 빌드 번호 (X-App-Build) */
+  readonly appBuild?: string;
+  /** 요청 언어 태그 (Accept-Language 첫 항목) */
+  readonly locale?: string;
+  /** IANA 시간대 (X-Timezone) */
+  readonly timezone?: string;
 }

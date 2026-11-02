@@ -5,8 +5,10 @@ import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 import {
   isPremiumGrantActive,
   isPremiumGrantEnded,
+  premiumGrantDaysOf,
   premiumGrantEndsAt,
-  remainingPremiumGrantDays,
+  premiumGrantTermEndsAt,
+  remainingPremiumGrantMs,
   type PremiumGrantStart,
   type PremiumGrantStatusValue,
 } from "../../policies/subscriptions/premium-access.policy.js";
@@ -20,6 +22,8 @@ export interface PremiumGrantProps {
   source: PremiumGrantSourceValue;
   sourceKey: string;
   durationDays: number;
+  /** 끊고 남은 기간의 정확한 길이. null이면 durationDays일이다. */
+  durationMs: number | null;
   status: PremiumGrantStatusValue;
   startsAt: Date | null;
   endsAt: Date | null;
@@ -39,12 +43,14 @@ export type PremiumGrantCreationPlan = Pick<
   PremiumGrantProps,
   "userId" | "source" | "sourceKey" | "durationDays" | "status" | "startsAt" | "endsAt"
 > & {
+  /** 끊고 남은 기간의 정확한 길이. 비우면 durationDays일이다. */
+  readonly durationMs?: number | null;
   /** 받은 순서(이어 붙이는 순서). 비우면 저장 시각이다. */
   readonly createdAt?: Date;
 };
 
 /** 진행 중에 끊은 기간의 남은 일수를 다시 쌓아 둔 기간의 출처 키. 끊긴 기간마다 하나뿐이다. */
-function rebankedRemainderSourceKey(grantId: string): string {
+export function rebankedRemainderSourceKey(grantId: string): string {
   return `rebank:${grantId}`;
 }
 
@@ -122,6 +128,10 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
     return this.props.durationDays;
   }
 
+  get durationMs(): number | null {
+    return this.props.durationMs;
+  }
+
   get status(): PremiumGrantStatusValue {
     return this.props.status;
   }
@@ -145,7 +155,7 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
     }
     this.props.status = "ACTIVE";
     this.props.startsAt = new Date(startsAt);
-    this.props.endsAt = premiumGrantEndsAt(startsAt, this.props.durationDays);
+    this.props.endsAt = premiumGrantTermEndsAt(startsAt, this.props);
     return true;
   }
 
@@ -165,7 +175,8 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
   }
 
   /**
-   * 진행 중인 기간을 지금 끝내고 남은 일수를 이어 받을 BANKED 기간 계획을 반환한다.
+   * 진행 중인 기간을 지금 끝내고 남은 기간을 이어 받을 BANKED 기간 계획을 반환한다.
+   * 남은 길이는 ms 그대로 남기고 표시 일수만 올린다. 같은 기간을 여러 번 끊어도 늘거나 줄지 않는다.
    * 아직 시작하지 않았거나 이미 끝난 기간이면 null이다. 처음 받은 순서를 지켜 다른 쌓아 둔 기간보다
    * 먼저 이어 붙는다.
    */
@@ -177,14 +188,15 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
     ) {
       return null;
     }
-    const remainingDays = remainingPremiumGrantDays(this, at);
+    const remainingMs = remainingPremiumGrantMs(this, at);
     this.props.status = "ENDED";
     this.props.endsAt = new Date(at);
     return {
       userId: this.props.userId,
       source: this.props.source,
       sourceKey: rebankedRemainderSourceKey(this.props.id),
-      durationDays: remainingDays,
+      durationDays: premiumGrantDaysOf(remainingMs),
+      durationMs: remainingMs,
       status: "BANKED",
       startsAt: null,
       endsAt: null,
@@ -198,6 +210,28 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
       return false;
     }
     this.props.status = "ENDED";
+    return true;
+  }
+
+  /**
+   * 지급을 취소한다. 쌓아 둔 기간은 시작하지 않고, 진행 중인 기간은 지금 끝낸다.
+   * 이미 끝났거나 취소한 기간은 바꾸지 않고 false다.
+   */
+  revoke(at: Date): boolean {
+    if (this.props.status !== "BANKED" && this.props.status !== "ACTIVE") {
+      return false;
+    }
+    if (this.props.status === "ACTIVE" && isPremiumGrantEnded(this, at)) {
+      return false;
+    }
+    if (
+      this.props.status === "ACTIVE" &&
+      this.props.endsAt != null &&
+      this.props.endsAt.getTime() > at.getTime()
+    ) {
+      this.props.endsAt = new Date(at);
+    }
+    this.props.status = "REVOKED";
     return true;
   }
 

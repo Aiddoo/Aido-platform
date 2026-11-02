@@ -7,7 +7,7 @@ import { APP_VERSION_CONFIG } from "./application/ports/discovery/app-version-co
 import { FEATURE_DISCOVERY_CONFIG } from "./application/ports/discovery/feature-discovery-config.port.js";
 import { AppVersionConfigAdapter } from "./infrastructure/adapters/discovery/app-version-config.adapter.js";
 import { FeatureDiscoveryConfigAdapter } from "./infrastructure/adapters/discovery/feature-discovery-config.adapter.js";
-import { AppConfigController } from "./presentation/controllers/discovery/app-config.controller.js";
+import { AppConfigController } from "./presentation/controllers/discovery/v1/app-config.controller.js";
 
 @Module({
   imports: [EnvironmentConfigModule],

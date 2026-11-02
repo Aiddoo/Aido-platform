@@ -27,6 +27,7 @@ import {
   premiumAccessReaderProvider,
   premiumGranterProvider,
   sweepPremiumGrantsProvider,
+  revokePremiumGrantProvider,
 } from "./billing-subscriptions-application.providers.js";
 import { PremiumGrantNotifierAdapter } from "./infrastructure/adapters/subscriptions/premium-grant-notifier.adapter.js";
 import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscriptions/subscription-cache.adapter.js";
@@ -38,7 +39,7 @@ import { PremiumGrantSweepProcessor } from "./infrastructure/jobs/subscriptions/
 import { DrizzlePremiumGrantRepository } from "./infrastructure/persistence/subscriptions/drizzle-premium-grant.repository.js";
 import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription-event-receipt.repository.js";
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/subscriptions/drizzle-subscription.repository.js";
-import { SubscriptionController } from "./presentation/controllers/subscriptions/subscription.controller.js";
+import { SubscriptionController } from "./presentation/controllers/subscriptions/v1/subscription.controller.js";
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     premiumAccessReaderProvider,
     premiumGranterProvider,
     sweepPremiumGrantsProvider,
+    revokePremiumGrantProvider,
     notifyEndingPremiumGrantsProvider,
     { provide: PREMIUM_GRANTER, useExisting: PremiumGranter },
     { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReader },

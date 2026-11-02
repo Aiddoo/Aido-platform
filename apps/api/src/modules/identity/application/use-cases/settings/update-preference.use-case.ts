@@ -4,6 +4,7 @@ import type {
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import { assertEntitled } from "#api/modules/access/access-entitlement.public";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -46,10 +47,7 @@ export class UpdatePreference {
       input.eveningReminderMinute != null;
 
     if (changesReminder) {
-      const hasPremium = await this.#dependencies.entitlement.hasPremiumAccess(userId);
-      if (!hasPremium) {
-        throw new ApplicationException(ErrorCode.PREFERENCE_1701);
-      }
+      await assertEntitled(this.#dependencies.entitlement, userId, "CUSTOM_REMINDER_TIME");
     }
 
     ReminderTime.assertValidRanges(input);

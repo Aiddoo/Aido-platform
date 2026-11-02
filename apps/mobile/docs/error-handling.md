@@ -102,6 +102,14 @@ export const isFriendError = (error: unknown): error is FriendError => error ins
 
 SDK 오류 변환은 어댑터·Service 경계에서만 한다(예: `AuthErrors.fromExpoAppleError`, RevenueCat `revenuecat-error.mapper`). 원래 SDK 코드는 진단용으로만 남긴다.
 
+조회에서도 예상한 상태는 경계로 던지지 않는다. 구독 요금제 조회는 Service가 `Result`를 그대로 주고, query options가 `toOfferingsAvailability`로 `{ status: 'available' | 'unavailable' }`를 캐시에 둔다.
+
+| 상황                                                                    | 결과          | 화면                                      | 관측(앱 실행마다 코드별 한 번)                  |
+| ----------------------------------------------------------------------- | ------------- | ----------------------------------------- | ----------------------------------------------- |
+| SDK 미초기화·`CONFIGURATION`·`INVALID_CREDENTIALS`·`UNSUPPORTED` (설정) | `unavailable` | `SubscriptionStoreUnavailable` 문의하기만 | 배포 `captureMessage` error, 개발 `logger.warn` |
+| `STORE_PROBLEM` (스토어 일시 문제)                                      | `unavailable` | 문의하기 + 다시 시도                      | 배포 `captureMessage` warning                   |
+| 연결 오류·요금제 없음·그 밖                                             | `throw`       | 경계 fallback(다시 시도 + 문의하기)       | 경계가 리포트                                   |
+
 ## Track 3: InfraError와 QueryErrorBoundary
 
 | 서브클래스            | 발생               | `message`                               |
@@ -122,6 +130,24 @@ SDK 오류 변환은 어댑터·Service 경계에서만 한다(예: `AuthErrors.
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다.
 - 기능 fallback은 `fallback={X.Error}`로 연결하고, 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. route 시트 안에서는 `sheet.close(INQUIRY_SHEET_EXIT)`로 닫고 이동한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
 - mutation은 경계로 가지 않는다(`throwOnError` 미사용). `ParseError`의 message는 개발용이므로, 기능 오류가 아닌 경우의 토스트는 `fallback` 문구를 쓴다.
+
+## 오프라인
+
+연결 감지는 `NetworkStatusGateway`(expo-network) → `OnlineManagerProvider` → React Query `onlineManager` 한 곳이다.
+기본 `networkMode: 'online'`이라 오프라인이면 쿼리·뮤테이션이 멈추고(fetchStatus `paused`) 다시 연결되면 이어서 실행된다.
+
+| 상황                 | 화면                                             | 관측                                |
+| -------------------- | ------------------------------------------------ | ----------------------------------- |
+| 오프라인             | 루트 `OfflineBanner` 하나, 블록은 로딩·캐시 유지 | 전환마다 `network` breadcrumb 한 번 |
+| 온라인인데 연결 오류 | 블록 fallback(다시 시도 + 문의하기)              | `network` breadcrumb(warning)       |
+| 온라인인데 5xx·파싱  | 블록 fallback(다시 시도 + 문의하기)              | `captureException`                  |
+
+- 경계는 연결 상태를 `resetKeys`에 더해 오프라인 전환·복귀 때 오류 화면을 풀고 다시 불러온다.
+- 기기 안에서만 처리하는 쿼리·뮤테이션(앱 아이콘, 클립보드, 알림 권한, 공유)과 로그아웃은 `networkMode: 'always'`다.
+- 로그아웃은 오프라인이면 서버 요청 없이 토큰만 지우고, 온라인이면 요청마다 짧은 `timeout`을 건다(`logOutDevice`).
+- 화면 뒤 작업(배지 동기화 등)의 연결 오류는 `logger.warn`이다. `logger.error`는 Sentry 이벤트가 된다.
+- 오프라인으로 앱을 다시 열어도 마지막 데이터를 보이도록 opt-in한 조회만 기기(초안과 같은 SecureStore 키로 연 AES-256 MMKV `aido.query-cache.encrypted`)에 24시간 보관한다. 키를 읽지 못한 실행(잠금 해제 전 실행·키체인 오류)은 `query-cache.encrypted-storage.unavailable` warn만 남기고 저장하지 않는다. 암호화 이전 평문 캐시(기본 MMKV의 `aido.query-cache:*`·주인 키)는 시작할 때 지운다. 복원 직후 전체를 invalidate해 앱이 꺼지기 전의 낙관적 반영이 서버 값처럼 남지 않게 한다. 조회 옵션에 `...PERSISTED_QUERY_OPTIONS`(`meta.persist` + `gcTime` 24시간)를 붙이고, 토큰·결제·배지 수·AI 제안은 붙이지 않는다. 캐시는 로그인한 사용자 키에만 쓰고(`useUserIdentity`가 주인 지정), 미인증 전환 때 `AuthProvider`가 `queryClient.clear()`와 함께 지운다. 앱 버전·OTA가 바뀌면 버린다(`query-cache-persistence.ts`).
+- 구독 화면은 오프라인이면 스피너 대신 「연결되면 보여드릴게요」 안내를 보이고 결제·복원 버튼을 이유와 함께 잠근다. 프리미엄 판정은 서버 내 정보(복원된 캐시) 기준이라 오프라인에서 내려가지 않는다.
 
 ## 저장소 에러: KeychainLockedError
 

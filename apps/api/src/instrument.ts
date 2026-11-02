@@ -1,6 +1,9 @@
 import * as Sentry from "@sentry/nestjs";
 
-import { resolveSentryOptions } from "./platform/config/utils/sentry-options.js";
+import {
+  isRequestBodyIgnored,
+  resolveSentryOptions,
+} from "./platform/config/utils/sentry-options.js";
 
 const options = resolveSentryOptions(process.env);
 
@@ -14,6 +17,7 @@ Sentry.init({
   tracesSampleRate: options.tracesSampleRate,
   // 추적 헤더는 우리 서비스에만 전파한다 (외부 API가 baggage를 거부하는 사례 방지)
   tracePropagationTargets: [...options.tracePropagationTargets],
+  integrations: [Sentry.httpIntegration({ ignoreRequestBody: isRequestBodyIgnored })],
 
   beforeSend(event) {
     // 요청 헤더에서 민감 정보 제거

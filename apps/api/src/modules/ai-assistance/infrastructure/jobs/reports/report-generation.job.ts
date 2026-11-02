@@ -1,6 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
+import { premiumAccessCondition } from "#api/modules/access/access-entitlement-sql.public";
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
@@ -111,7 +112,7 @@ export class ReportGenerationJob implements OnModuleInit {
           with: { preference: { columns: { timezone: true, locale: true } } },
           where: {
             id: cursor != null ? { gt: cursor } : undefined,
-            OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+            RAW: (target) => premiumAccessCondition(target, now()),
             status: "ACTIVE",
             deletedAt: { isNull: true },
           },

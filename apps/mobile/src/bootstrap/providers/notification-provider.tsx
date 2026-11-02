@@ -4,8 +4,10 @@ import { NOTIFICATION_LOG_EVENT } from '@src/features/notification/constants/not
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
 import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
+import { syncNotificationBadge } from '@src/features/notification/utils/sync-notification-badge';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
+import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { i18n } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
@@ -325,20 +327,11 @@ function usePushLocaleSync({
 function useNotificationBadgeSync(isAuthenticated: boolean) {
   const notificationService = useNotificationService();
   const logger = useLogger();
+  const isOnline = useIsOnline();
 
   useEffect(() => {
-    const task = isAuthenticated
-      ? notificationService.syncBadgeCount()
-      : notificationService.clearBadge();
-    task.catch((error) =>
-      logger.error(
-        isAuthenticated
-          ? NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED
-          : NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED,
-        toError(error),
-      ),
-    );
-  }, [isAuthenticated, logger, notificationService]);
+    syncNotificationBadge({ isAuthenticated, isOnline, notificationService, logger });
+  }, [isAuthenticated, isOnline, logger, notificationService]);
 }
 
 function WebNotificationProvider({ children }: PropsWithChildren) {

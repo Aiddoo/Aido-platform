@@ -93,4 +93,24 @@ describe("파싱 프롬프트 v2", () => {
     expect(readBlock(result.prompt, "user_input")).toEqual({ memo: injected });
     expect(readBlock(result.prompt, "context").weekday).toMatch(/수요일|Wednesday/);
   });
+
+  it.each(builders)(
+    "$name은 원문·카테고리 이름의 보이지 않는 문자를 지우고 system에는 사용자 값을 넣지 않는다",
+    ({ build, field }) => {
+      // Given
+      const smuggled = "\u{E0049}\u{E0047}\u{E004E}";
+      const categories = [{ id: 3, name: `업무\u200B${smuggled}` }];
+      // When
+      const result = build({
+        text: `우유\u202E 사기${smuggled}`,
+        timezone: "Asia/Seoul",
+        now: NOW,
+        categories,
+      });
+      // Then
+      expect(readBlock(result.prompt, "user_input")).toEqual({ [field]: "우유 사기" });
+      expect(readBlock(result.prompt, "context").categories).toEqual([{ id: 3, name: "업무" }]);
+      expect([PARSE_TODO_SYSTEM_KO, PARSE_TODO_SYSTEM_EN]).toContain(result.system);
+    },
+  );
 });

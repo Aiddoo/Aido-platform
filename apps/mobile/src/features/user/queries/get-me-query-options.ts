@@ -1,6 +1,7 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { UserService } from '@src/features/user/apis/user.service';
 import { type User, UserPolicy } from '@src/features/user/domains/user.model';
+import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
@@ -24,6 +25,8 @@ export function getMeQueryOptions(
     queryKey: USER_QUERY_KEYS.me(),
     queryFn: async ({ signal }) => unwrap(await userService.getCurrentUser(signal)),
     select,
+    // 오프라인으로 다시 열어도 프로필·프리미엄 판정이 마지막 서버 값을 유지한다
+    ...PERSISTED_QUERY_OPTIONS,
   });
 }
 

@@ -8,6 +8,7 @@ import type { ReportType } from '@src/features/ai/domains/ai.model';
 import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
 import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -157,7 +158,7 @@ function FreeReportPreview() {
         <ReportCard report={sampleReport} isSample isLast />
       </Box>
 
-      <Button size="medium" onPress={() => push('/settings/subscription')}>
+      <Button size="medium" onPress={() => push(subscriptionHref())}>
         {t('report.list.subscribeCta')}
       </Button>
     </VStack>

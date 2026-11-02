@@ -1,12 +1,12 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
 import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { usePremiumDialog } from '@src/shared/ui';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -17,7 +17,7 @@ export const useParseTodoMutationOptions = () => {
   const aiService = useAiService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('AI_PARSE');
   const toast = useAppToast();
 
   return mutationOptions({
@@ -40,8 +40,7 @@ export const useParseTodoMutationOptions = () => {
       notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
-        trackEvent('premium_gate_shown', { feature: 'ai_parse' });
-        premiumDialog.open({
+        premiumGate.open({
           description: t('todo:premium.unlimitedParse'),
         });
         return;

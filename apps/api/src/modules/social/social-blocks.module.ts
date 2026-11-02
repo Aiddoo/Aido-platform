@@ -5,7 +5,7 @@ import { USER_BLOCK_REPOSITORY } from "./application/ports/blocks/user-block.rep
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FollowCacheAdapter } from "./infrastructure/adapters/friends/follow-cache.adapter.js";
 import { DrizzleUserBlockRepository } from "./infrastructure/persistence/blocks/drizzle-user-block.repository.js";
-import { UserBlockController } from "./presentation/controllers/blocks/user-block.controller.js";
+import { UserBlockController } from "./presentation/controllers/blocks/v1/user-block.controller.js";
 import {
   blockUserProvider,
   getBlockedUsersProvider,

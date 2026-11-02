@@ -1,7 +1,11 @@
+import type { PremiumEntitlements } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { AiQuotaPort } from "#api/modules/access/access-quota.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
 import type { CurrentUserResult } from "#api/modules/identity/application/types/auth/index";
+import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -11,12 +15,18 @@ import type { AuthUserRepositoryPort } from "../../ports/auth/auth-persistence.p
 export interface GetCurrentUserInput {
   readonly userId: string;
   readonly sessionId: string;
+  /** 응원·찌르기 일간 사용량의 하루 기준(X-Timezone) */
+  readonly timezone: string;
 }
 
 interface GetCurrentUserDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
+  readonly aiQuota: Pick<AiQuotaPort, "read">;
+  readonly cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
+  readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
 }
 
 export class GetCurrentUser {
@@ -64,6 +74,8 @@ export class GetCurrentUser {
     if (cachedProfile == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId });
     }
+    // 만료 경계를 넘긴 프로필 캐시를 쓰지 않도록 권한은 기한을 함께 담은 Access 판단으로 매번 계산한다
+    const { isPremium, entitlements } = await this.#entitlements(userId, input.timezone);
 
     return {
       userId: cachedProfile.id,
@@ -85,6 +97,39 @@ export class GetCurrentUser {
       willRenew: cachedProfile.willRenew,
       bankedPremiumDays: cachedProfile.bankedPremiumDays,
       premiumGrantEndedAt: cachedProfile.premiumGrantEndedAt,
+      isPremium,
+      entitlements,
+    };
+  }
+
+  async #entitlements(
+    userId: string,
+    timezone: string,
+  ): Promise<{ isPremium: boolean; entitlements: PremiumEntitlements }> {
+    const { entitlementReader, aiQuota, cheerUsageReader, nudgeUsageReader } = this.#dependencies;
+    const [snapshot, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
+      entitlementReader.getAccessSnapshot(userId),
+      aiQuota.read(userId),
+      cheerUsageReader.readDailyUsage(userId, timezone),
+      nudgeUsageReader.readDailyUsage(userId, timezone),
+    ]);
+    const { features } = snapshot;
+    return {
+      isPremium: snapshot.isPremium,
+      entitlements: {
+        ...features,
+        AI_PARSE: { ...features.AI_PARSE, used: aiUsage.used, resetsAt: aiUsage.resetsAt },
+        CHEER: {
+          ...features.CHEER,
+          used: cheerUsage.used,
+          resetsAt: toISOString(cheerUsage.resetsAt),
+        },
+        NUDGE: {
+          ...features.NUDGE,
+          used: nudgeUsage.used,
+          resetsAt: toISOString(nudgeUsage.resetsAt),
+        },
+      },
     };
   }
 }

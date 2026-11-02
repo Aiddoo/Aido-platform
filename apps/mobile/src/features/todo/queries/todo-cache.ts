@@ -129,6 +129,11 @@ export function invalidateTodoCompletions(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
 }
 
+/** 순서처럼 완료와 무관하게 홈 위젯 요약에 보이는 값이 바뀐 뒤 위젯 요약만 다시 불러온다. */
+export function invalidateWidgetSummary(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.widgetSummary() });
+}
+
 /** 댓글 수처럼 목록·친구 목록·상세에 함께 보이는 할 일 요약 값을 다시 불러온다. */
 export async function invalidateTodoSummaries(
   queryClient: QueryClient,

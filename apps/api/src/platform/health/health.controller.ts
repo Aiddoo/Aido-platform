@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Controller, Get, Logger } from "@nestjs/common";
+import { Controller, Get, Logger, VERSION_NEUTRAL } from "@nestjs/common";
 import { ApiResponse, ApiTags, type SchemaObject } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
@@ -31,7 +31,7 @@ function describeHealthResponse(status: "ok" | "error"): SchemaObject {
 }
 
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
-@Controller("health")
+@Controller({ path: "health", version: VERSION_NEUTRAL })
 export class HealthController {
   readonly #logger = new Logger(HealthController.name);
   readonly #instanceId: string;

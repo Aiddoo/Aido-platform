@@ -1,0 +1,33 @@
+Aido 1.14.0 rebuilds weather on Apple WeatherKit and adds Aido briefing. Friend invites from 1.13.0 are unchanged.
+
+What's new in 1.14.0
+- Weather: current conditions, next-hour precipitation (where available), hourly and 10-day forecasts, and details for the current location, anywhere in the world.
+- Aido briefing: matches today's scheduled to-dos with the hourly forecast. If rain or heat overlaps a to-do, "Move to a dry time" or "Move to cooler hours" moves it to a better time, and it can be undone.
+- Optional morning and evening weather notifications.
+- Offline: a banner appears and the last-viewed to-dos and weather stay on screen.
+
+How to test weather
+1. Sign in with the demo account.
+2. Home tab: tap the weather badge to open Weather, and allow location "While Using the App".
+3. The briefing card is below the current weather. Add a to-do with a time later today to see it there. A move is suggested only if the forecast shows rain or heat then.
+4. Weather alerts: the bell button on the weather screen, or Me tab > Notifications > Weather alerts.
+5. If location is denied, the screen explains why; to-dos keep working.
+
+Weather data and location
+- Weather data is from Apple Weather (WeatherKit). The Apple Weather mark and the legal attribution link (https://weatherkit.apple.com/legal-attribution.html) are shown on the weather screen. Air quality in Korea is from AirKorea, with its source shown.
+- Only "While Using the App" location is requested (no background location). Location is used only for weather and weather notifications, grouped into a ~5 km area on our server, and never used for tracking or advertising. It is declared in App Privacy (Location, App Functionality).
+
+Friend invites (since 1.13.0)
+- Me tab > "Invites · paw prints" (or Friends > Invite a friend): share an invite link or a 6-character invite code.
+- A person who signed up within the last 7 days and accepts an invite gets 7 days of Aido Premium and becomes friends with the inviter. The inviter gets 7 days of Premium + 1 more friend after the friend completes to-dos on 2 different days within 14 days of joining. Inviter Premium is capped at 30 days per 30 days and 90 days in total.
+- Rewards are free Premium time inside Aido only: no cash value, not exchangeable or transferable, no purchase required, nothing for ratings, reviews, or other app downloads, and inviting is never required. Reward Premium involves no payment, does not auto-renew, and starts after an active subscription ends. Terms, Article 13-2: https://aido.kr/en/terms
+- To test: sign out > "Sign up" > "Invite code" (or "Have an invite code?" on sign-in) and enter the demo account's code from Me tab > "Invites · paw prints". The new account gets 7 days of Premium (Me tab > Manage Subscription). The inviter reward needs 2 calendar days, so it can't complete in one session. KakaoTalk sharing needs the KakaoTalk app; "Copy link" and "Share" work without it.
+- Invites stay enabled after release. The server switch is only an emergency stop.
+
+Where to find other items
+- Subscription price and period, Restore Purchases, Terms/Privacy: Me tab > Manage Subscription.
+- Account deletion: Me tab > Delete Account (bottom). Web: https://aido.kr/en/account-deletion
+- Report and block (Guideline 1.2): report a friend's to-do or comment (••• menu), a cheer/nudge, a notification, or a friend (Me tab > Manage Friends); the same sheet offers Block. Blocking removes the friendship, prevents new requests, and hides their comments. Manage blocks in Me tab > Blocked users. Reports reach our moderation inbox immediately; we act within 24 hours. Contact: matthew@redband.co.kr
+
+Privacy
+Accepting an invite sends identifierForVendor once. The server stores only a one-way HMAC hash of it (and of the verified email or social sign-in ID) to stop repeat new-friend rewards. The hash has no account column, is declared in App Privacy (Identifiers > Device ID, App Functionality), and is not used for tracking or advertising.

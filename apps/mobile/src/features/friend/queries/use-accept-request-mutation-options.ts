@@ -6,7 +6,7 @@ import { t } from '@src/shared/i18n';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
+import { invalidateFriends } from './friend-cache';
 
 export const useAcceptRequestMutationOptions = () => {
   const friendService = useFriendService();
@@ -20,11 +20,7 @@ export const useAcceptRequestMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.received() }),
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() }),
-        queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() }),
-      ]);
+      await invalidateFriends(queryClient);
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
     },

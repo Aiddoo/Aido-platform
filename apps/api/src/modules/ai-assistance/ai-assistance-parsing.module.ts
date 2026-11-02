@@ -17,14 +17,14 @@ import { AI_TASK_SETTINGS } from "./application/ports/parsing/ai-task-settings.p
 import { AI_CLIENT_APP_VERSION_READER } from "./application/ports/parsing/client-app-version.reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "./application/ports/parsing/user-locale-preference.reader.port.js";
-import { GeminiAiAdapter } from "./infrastructure/adapters/parsing/gemini-ai.adapter.js";
+import { AiSdkAdapter } from "./infrastructure/adapters/parsing/ai-sdk.adapter.js";
 import { LatestClientAppVersionAdapter } from "./infrastructure/adapters/parsing/latest-client-app-version.adapter.js";
 import { TodoCategoryReaderAdapter } from "./infrastructure/adapters/parsing/todo-category-reader.adapter.js";
 import { UserLocalePreferenceReader } from "./infrastructure/adapters/parsing/user-locale-preference.reader.js";
 import { aiTaskSettingsProvider } from "./infrastructure/config/parsing/ai-task-config.js";
 import { AiDataSharingConsentGuard } from "./infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "./infrastructure/guards/parsing/ai-usage.guard.js";
-import { AiController } from "./presentation/controllers/parsing/ai.controller.js";
+import { AiController } from "./presentation/controllers/parsing/v1/ai.controller.js";
 
 @Module({
   imports: [
@@ -43,7 +43,7 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
       useExisting: AI_DATA_SHARING_CONSENT_READER,
     },
     { provide: AI_CLIENT_APP_VERSION_READER, useClass: LatestClientAppVersionAdapter },
-    { provide: AI_PROVIDER, useClass: GeminiAiAdapter },
+    { provide: AI_PROVIDER, useClass: AiSdkAdapter },
     { provide: AI_QUOTA, useExisting: ACCESS_AI_QUOTA },
     { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
     { provide: USER_LOCALE_PREFERENCE_READER, useClass: UserLocalePreferenceReader },

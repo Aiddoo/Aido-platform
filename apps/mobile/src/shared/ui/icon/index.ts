@@ -59,14 +59,7 @@ export {
   ToastSuccessIcon,
   ToastWarningIcon,
   TrashIcon,
-  WeatherClearIcon,
-  WeatherCloudyIcon,
-  WeatherPartlyCloudyIcon,
   WeatherRainIcon,
-  WeatherShowerIcon,
-  WeatherSnowIcon,
-  WeatherSunriseIcon,
-  WeatherSunsetIcon,
 } from './icons';
 
 export { NATIVE_TAB_ICON_SOURCES } from './native-tab-icons';

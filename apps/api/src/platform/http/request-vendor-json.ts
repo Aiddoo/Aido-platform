@@ -1,4 +1,9 @@
-import { type HttpClient, type HttpQuery, HttpParseError } from "@nestjs/http-client";
+import {
+  type HttpClient,
+  type HttpHeadersInit,
+  type HttpQuery,
+  HttpParseError,
+} from "@nestjs/http-client";
 
 export type VendorJsonOutcome =
   | { readonly kind: "success"; readonly body: unknown }
@@ -14,9 +19,20 @@ export async function requestVendorJson(
   http: HttpClient,
   url: string,
   query: HttpQuery,
+  options: {
+    readonly headers?: HttpHeadersInit;
+    readonly signal?: AbortSignal;
+    readonly timeoutMs?: number;
+  } = {},
 ): Promise<VendorJsonOutcome> {
   try {
-    const response = await http.request(url, { query, responseType: "json" });
+    const response = await http.request(url, {
+      query,
+      responseType: "json",
+      headers: options.headers,
+      signal: options.signal,
+      timeout: options.timeoutMs,
+    });
     if (!response.ok) {
       return { kind: "http_failure", statusCode: response.status };
     }

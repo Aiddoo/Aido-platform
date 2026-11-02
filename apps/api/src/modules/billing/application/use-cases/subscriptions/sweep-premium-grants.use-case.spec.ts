@@ -7,7 +7,11 @@ import { PREMIUM_GRANT_SWEEP, SweepPremiumGrants } from "./sweep-premium-grants.
 
 const NOW = new Date("2028-03-04T00:00:00.000Z");
 
-function createSweep(pages: readonly (readonly string[])[], failingUserIds: ReadonlySet<string>) {
+function createSweep(
+  pages: readonly (readonly string[])[],
+  failingUserIds: ReadonlySet<string>,
+  lapsedUserIds: readonly string[] = [],
+) {
   const requestedCursors: (string | undefined)[] = [];
   const projectedUserIds: string[] = [];
   const invalidatedUserIds: string[] = [];
@@ -18,6 +22,10 @@ function createSweep(pages: readonly (readonly string[])[], failingUserIds: Read
         requestedCursors.push(afterUserId);
         return [...(pages[requestedCursors.length - 1] ?? [])];
       },
+    },
+    subscriptionRepository: {
+      findLapsedPremiumUserIds: async ({ afterUserId }) =>
+        afterUserId == null ? [...lapsedUserIds] : [],
     },
     premiumAccessProjector: {
       project: async ({ userId }) => {
@@ -70,7 +78,30 @@ describe("SweepPremiumGrants", () => {
       changedGrantCount: PREMIUM_GRANT_SWEEP.BATCH_SIZE + 1,
       failedUserCount: 0,
       hasRemaining: false,
+      lapsedUserCount: 0,
+      lapsedFailedUserCount: 0,
+      hasRemainingLapsed: false,
     });
+  });
+
+  it("보상 기간 정리 뒤 만료 웹훅을 잃어 ACTIVE로 남은 사용자도 다시 계산하고 캐시를 비운다", async () => {
+    // Given
+    const { sweep, projectedUserIds, invalidatedUserIds, logger } = createSweep(
+      [["grant-user"]],
+      new Set(),
+      ["lapsed-user"],
+    );
+
+    // When
+    const result = await sweep.execute({ now: NOW });
+
+    // Then
+    expect(projectedUserIds).toEqual(["grant-user", "lapsed-user"]);
+    expect(invalidatedUserIds).toEqual(["grant-user", "lapsed-user"]);
+    expect(result).toMatchObject({ userCount: 1, lapsedUserCount: 1, lapsedFailedUserCount: 0 });
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "billing.premium-access.lapsed.swept", userCount: 1 }),
+    );
   });
 
   it("한 사용자의 정리가 실패해도 나머지 사용자를 처리하고 실패를 오류 로그로 남긴다", async () => {

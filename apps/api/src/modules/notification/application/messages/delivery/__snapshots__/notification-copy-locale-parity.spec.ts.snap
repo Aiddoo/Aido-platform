@@ -299,31 +299,55 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       "EVENING",
       0,
     ],
+    [
+      "MORNING_UNAVAILABLE",
+      0,
+    ],
+    [
+      "EVENING_UNAVAILABLE",
+      0,
+    ],
   ],
   "WEATHER_TEMPLATES": [
     [
-      "MORNING_CLEAR",
-      2,
+      "MORNING_TODO_RAIN",
+      0,
     ],
     [
-      "MORNING_RAIN",
-      2,
+      "MORNING_TODO_STORM",
+      0,
     ],
     [
-      "MORNING_SNOW",
-      2,
+      "MORNING_TODO_SNOW",
+      0,
     ],
     [
-      "EVENING_CLEAR",
-      2,
+      "MORNING_TODO_HEAT",
+      0,
+    ],
+    [
+      "MORNING_RAIN_LATER",
+      0,
+    ],
+    [
+      "MORNING_SNOW_LATER",
+      0,
+    ],
+    [
+      "MORNING_SUMMARY",
+      0,
     ],
     [
       "EVENING_RAIN",
-      2,
+      0,
     ],
     [
       "EVENING_SNOW",
-      2,
+      0,
+    ],
+    [
+      "EVENING_SUMMARY",
+      0,
     ],
   ],
 }

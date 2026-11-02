@@ -1,4 +1,9 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import {
+  createQueryCacheStorage,
+  QUERY_CACHE_STORAGE_KEY,
+  type QueryCacheStorage,
+} from '@src/bootstrap/providers/query-cache-persistence';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { UserService } from '@src/features/user/apis/user.service';
 import {
@@ -34,16 +39,19 @@ const createMemoDraftKey = (ownerId: string) =>
 
 describe('useUserIdentity', () => {
   let draftService: DraftService;
+  let queryCacheStorage: QueryCacheStorage;
   let queryClient: QueryClient;
   let wrapper: (props: PropsWithChildren) => React.JSX.Element;
 
   beforeEach(() => {
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
+    queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     const httpClient = createMockHttpClient();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const container = createMockDIContainer({
       draftService,
+      queryCacheStorage,
       analytics: createMockAnalytics(),
       errorReporter: {
         captureException: jest.fn(),
@@ -80,5 +88,19 @@ describe('useUserIdentity', () => {
       status: 'restored',
       value: { content: '내 초안' },
     });
+  });
+
+  it('로그인한 사용자를 오프라인 캐시 주인으로 정하고 이전 사용자의 캐시는 지운다', async () => {
+    // Given — 이전 사용자가 남긴 캐시
+    queryCacheStorage.setOwner('user-2');
+    queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '이전 사용자 캐시');
+
+    // When
+    await renderHook(useUserIdentity, { wrapper });
+
+    // Then
+    await waitFor(() => expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull());
+    queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '내 캐시');
+    expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBe('내 캐시');
   });
 });

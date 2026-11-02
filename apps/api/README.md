@@ -69,5 +69,6 @@ test/                    # integration · e2e · architecture · performance
 | 테스트               | [testing-guide](./.claude/testing-guide.md)                                                |
 | 로그·개인정보        | [logging-guide](./.claude/logging-guide.md)                                                |
 | 푸시 알림 운영       | [push-notifications](./docs/push-notifications.md)                                         |
+| 관리자 Discord 알림  | [admin-notifications](./docs/admin-notifications.md)                                       |
 | CI·배포·롤백         | [CI](../../docs/server/ci.md), [DEPLOYMENT.md](./DEPLOYMENT.md)                            |
 | 전체 서버 문서 안내  | [docs/server/README.md](../../docs/server/README.md)                                       |

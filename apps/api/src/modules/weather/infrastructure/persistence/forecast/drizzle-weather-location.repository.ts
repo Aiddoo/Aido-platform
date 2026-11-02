@@ -14,6 +14,7 @@ const locationColumns = {
   longitude: userLocation.longitude,
   gridX: userLocation.gridX,
   gridY: userLocation.gridY,
+  timezone: userLocation.timezone,
 };
 
 @Injectable()
@@ -26,7 +27,14 @@ export class DrizzleWeatherLocationRepository implements WeatherLocationReposito
 
   async findByUserId(userId: string): Promise<UserLocation | null> {
     const row = await this.db.query.userLocation.findFirst({
-      columns: { userId: true, latitude: true, longitude: true, gridX: true, gridY: true },
+      columns: {
+        userId: true,
+        latitude: true,
+        longitude: true,
+        gridX: true,
+        gridY: true,
+        timezone: true,
+      },
       where: { userId },
     });
     return row == null ? null : UserLocation.reconstitute(row);
@@ -36,8 +44,9 @@ export class DrizzleWeatherLocationRepository implements WeatherLocationReposito
     const data = {
       latitude: location.latitude,
       longitude: location.longitude,
-      gridX: location.gridX,
-      gridY: location.gridY,
+      gridX: location.grid?.gridX ?? null,
+      gridY: location.grid?.gridY ?? null,
+      timezone: location.timezone,
     };
     const [row] = await this.db
       .insert(userLocation)

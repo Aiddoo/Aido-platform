@@ -12,6 +12,7 @@ export function getReportDetailQueryOptions(aiService: AiService, { id }: { id: 
       const result = await aiService.getReportById(id, signal);
       return unwrap(result);
     },
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

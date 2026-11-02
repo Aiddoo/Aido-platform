@@ -5,6 +5,7 @@ import {
   type JobEnvelope,
   type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { SocialInviteLogEvent } from "../../../application/observability/invites/social-invite-log.events.js";
 import { GrantInviteRewards } from "../../../application/use-cases/invites/grant-invite-rewards.use-case.js";
@@ -57,7 +58,7 @@ export class InviteRewardProcessor implements OnModuleInit {
           jobId: job.id,
           attempt: job.attempt,
           redemptionId: parsed.data.redemptionId,
-          errorType: error instanceof Error ? error.name : "UnknownError",
+          errorType: toErrorType(error),
         });
         throw error;
       }

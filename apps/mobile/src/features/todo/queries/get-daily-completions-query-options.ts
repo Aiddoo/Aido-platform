@@ -1,5 +1,6 @@
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
+import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 import { keyBy } from 'es-toolkit';
@@ -17,29 +18,25 @@ export const toCompletionsViewModel = (data: {
 
 export function getDailyCompletionsQueryOptions(
   service: TodoService,
-  { startDate, endDate, userId }: { startDate: string; endDate: string; userId?: string },
+  { startDate, endDate }: { startDate: string; endDate: string },
 ) {
   return queryOptions({
-    queryKey:
-      userId == null
-        ? TODO_QUERY_KEYS.completionsByRange({ startDate, endDate })
-        : [...TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }), { userId }],
+    queryKey: TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }),
     queryFn: async ({ signal }) => {
       const result = await service.getDailyCompletions(startDate, endDate, signal);
       return unwrap(result);
     },
     select: toCompletionsViewModel,
+    ...PERSISTED_QUERY_OPTIONS,
   });
 }
 
 export function useGetDailyCompletionsQueryOptions({
   startDate,
   endDate,
-  userId,
 }: {
   startDate: string;
   endDate: string;
-  userId?: string;
 }) {
-  return getDailyCompletionsQueryOptions(useTodoService(), { startDate, endDate, userId });
+  return getDailyCompletionsQueryOptions(useTodoService(), { startDate, endDate });
 }

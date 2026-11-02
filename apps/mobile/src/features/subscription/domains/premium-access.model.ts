@@ -96,6 +96,16 @@ export const PremiumAccessPolicy = {
     return access?.source === PREMIUM_SOURCE.GRANT ? 'restoreEmptyWithReward' : 'restoreEmpty';
   },
 
+  /**
+   * 지난 확인 뒤 지금까지 사이에 지금 기간이나 전체 프리미엄이 끝났는지. 끝나는 순간에는 서버 이벤트가 없어
+   * 앱이 켜져 있으면 내 정보를 다시 받아야 한다. 경계는 남은 일수 표시(hasPassed)와 같이 끝나는 시각 자체를 포함한다
+   */
+  hasEndedSince(access: PremiumAccess, lastCheckedAt: Date, now: Date) {
+    return [access.periodEndsAt, access.endsAt].some(
+      (endsAt) => endsAt != null && !hasPassed(endsAt, lastCheckedAt) && hasPassed(endsAt, now),
+    );
+  },
+
   // 서버가 다시 계산한 값이 하나라도 바뀌면 한도·사용량 같은 프리미엄 의존 데이터도 달라진다
   hasChanged(previous: PremiumAccess, next: PremiumAccess) {
     return (

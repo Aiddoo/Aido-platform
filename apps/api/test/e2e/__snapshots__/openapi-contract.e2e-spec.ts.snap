@@ -3150,6 +3150,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "createdAt": "2026-01-01T09:00:00.000Z",
         "email": "dydals3440@gmail.com",
         "emailVerifiedAt": "2026-01-15T10:30:00.000Z",
+        "isPremium": false,
         "name": "매튜",
         "premiumEndsAt": null,
         "premiumGrantEndedAt": null,
@@ -3193,6 +3194,325 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "nullable": true,
           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
           "type": "string",
+        },
+        "entitlements": {
+          "additionalProperties": {},
+          "description": "기능별 현재 권한입니다. 앱은 기능 한도를 하드코딩하지 않고 이 값으로 막습니다. 구버전 서버는 생략합니다.",
+          "properties": {
+            "AI_PARSE": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "AI_REPORT": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "AI_SUGGESTION": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "APP_ICON": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "CHEER": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "CUSTOM_REMINDER_TIME": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "FRIEND": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "NUDGE": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+            "TODO_CATEGORY": {
+              "description": "유료 기능 하나의 현재 권한",
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "allowed",
+                "limit",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "AI_PARSE",
+            "CHEER",
+            "NUDGE",
+            "FRIEND",
+            "TODO_CATEGORY",
+            "AI_REPORT",
+            "AI_SUGGESTION",
+            "CUSTOM_REMINDER_TIME",
+            "APP_ICON",
+          ],
+          "type": "object",
+        },
+        "isPremium": {
+          "description": "지금 유효한 스토어 구독이나 보상 기간이 있는지입니다. 만료 시각과 자동 갱신 유예(3시간)를 반영하므로 subscriptionStatus가 ACTIVE여도 false일 수 있습니다. ADMIN role은 반영하지 않으며 ADMIN의 무제한은 entitlements가 나타냅니다. 구버전 서버는 생략합니다.",
+          "type": "boolean",
         },
         "name": {
           "description": "사용자 이름",
@@ -13881,6 +14201,27 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "UpdateWeatherLocationDto": {
+      "properties": {
+        "latitude": {
+          "description": "위도 (WGS84, -90~90)",
+          "maximum": 90,
+          "minimum": -90,
+          "type": "number",
+        },
+        "longitude": {
+          "description": "경도 (WGS84, -180~180)",
+          "maximum": 180,
+          "minimum": -180,
+          "type": "number",
+        },
+      },
+      "required": [
+        "latitude",
+        "longitude",
+      ],
+      "type": "object",
+    },
     "VerifyEmailDto": {
       "description": "이메일 인증 요청",
       "properties": {
@@ -14186,6 +14527,1110 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "windSpeed",
         "hourlyForecasts",
         "dailyForecasts",
+      ],
+      "type": "object",
+    },
+    "WeatherLocationResponseDto": {
+      "properties": {
+        "latitude": {
+          "description": "위도 (WGS84)",
+          "type": "number",
+        },
+        "longitude": {
+          "description": "경도 (WGS84)",
+          "type": "number",
+        },
+        "timezone": {
+          "description": "IANA 시간대 (예: Asia/Seoul)",
+          "maxLength": 50,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "latitude",
+        "longitude",
+        "timezone",
+      ],
+      "type": "object",
+    },
+    "WeatherReportResponseDto": {
+      "example": {
+        "airQuality": {
+          "pm10": 32,
+          "pm25": 18,
+          "source": "AIRKOREA",
+        },
+        "alerts": [],
+        "attribution": {
+          "legalPageUrl": "https://developer.apple.com/weatherkit/data-source-attribution/",
+          "logo": {
+            "dark": {
+              "1x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_1X_090122.png",
+              "2x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_2X_090122.png",
+              "3x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_3X_090122.png",
+            },
+            "light": {
+              "1x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_1X_090122.png",
+              "2x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_2X_090122.png",
+              "3x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_3X_090122.png",
+            },
+          },
+          "provider": "APPLE_WEATHER",
+          "serviceName": "Apple Weather",
+        },
+        "current": {
+          "apparentTemperature": 9.1,
+          "cloudCover": 100,
+          "condition": "RAIN",
+          "dewPoint": 10.5,
+          "humidity": 88,
+          "isDaylight": true,
+          "observedAt": "2026-11-02T06:26:00.000Z",
+          "precipitationIntensity": 1.2,
+          "pressure": 1012.3,
+          "pressureTrend": "FALLING",
+          "temperature": 12.4,
+          "uvIndex": 1,
+          "visibility": 8000,
+          "windDirection": 315,
+          "windGust": 9.2,
+          "windSpeed": 4.6,
+        },
+        "daily": [
+          {
+            "condition": "RAIN",
+            "date": "2026-11-02",
+            "daytime": {
+              "condition": "RAIN",
+              "precipitationAmount": 5.1,
+              "precipitationChance": 80,
+              "precipitationType": "RAIN",
+              "temperatureMax": 14,
+              "temperatureMin": 10,
+            },
+            "moonPhase": "THIRD_QUARTER",
+            "moonrise": null,
+            "moonset": "2026-11-02T04:50:15.000Z",
+            "overnight": {
+              "condition": "CLOUDY",
+              "precipitationAmount": 1.4,
+              "precipitationChance": 30,
+              "precipitationType": "RAIN",
+              "temperatureMax": 11,
+              "temperatureMin": 8,
+            },
+            "precipitationAmount": 6.5,
+            "precipitationChance": 80,
+            "precipitationType": "RAIN",
+            "restOfDay": null,
+            "snowfallAmount": 0,
+            "sunrise": "2026-11-01T21:51:00.000Z",
+            "sunset": "2026-11-02T08:28:00.000Z",
+            "temperatureMax": 14,
+            "temperatureMin": 8,
+            "uvIndexMax": 2,
+            "windGustMax": 11.4,
+            "windSpeedMax": 6.1,
+          },
+        ],
+        "fetchedAt": "2026-11-02T06:20:00.000Z",
+        "hourly": [
+          {
+            "apparentTemperature": 9.1,
+            "condition": "RAIN",
+            "humidity": 88,
+            "isDaylight": true,
+            "precipitationAmount": 0.8,
+            "precipitationChance": 60,
+            "precipitationType": "RAIN",
+            "startsAt": "2026-11-02T06:00:00.000Z",
+            "temperature": 12.4,
+            "uvIndex": 1,
+            "windDirection": 315,
+            "windSpeed": 4.6,
+          },
+        ],
+        "location": {
+          "latitude": 37.5636,
+          "longitude": 126.9976,
+          "timezone": "Asia/Seoul",
+        },
+        "nextHour": {
+          "minutes": [
+            {
+              "precipitationChance": 20,
+              "precipitationIntensity": 0,
+              "startsAt": "2026-11-02T06:26:00.000Z",
+            },
+          ],
+          "periods": [
+            {
+              "condition": "PRECIPITATION",
+              "endsAt": null,
+              "precipitationChance": 80,
+              "precipitationIntensity": 2.4,
+              "precipitationType": "RAIN",
+              "startsAt": "2026-11-02T06:43:00.000Z",
+            },
+          ],
+        },
+      },
+      "properties": {
+        "airQuality": {
+          "description": "대기질. 제공하지 않는 지역은 null",
+          "nullable": true,
+          "properties": {
+            "pm10": {
+              "description": "미세먼지 (μg/m³)",
+              "minimum": 0,
+              "nullable": true,
+              "type": "number",
+            },
+            "pm25": {
+              "description": "초미세먼지 (μg/m³)",
+              "minimum": 0,
+              "nullable": true,
+              "type": "number",
+            },
+            "source": {
+              "description": "대기질 출처. 화면에 출처를 함께 표기한다",
+              "enum": [
+                "AIRKOREA",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "pm10",
+            "pm25",
+            "source",
+          ],
+          "type": "object",
+        },
+        "alerts": {
+          "description": "발효 중인 기상 특보. 심각도 높은 순",
+          "items": {
+            "properties": {
+              "areaName": {
+                "description": "대상 지역 이름",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "detailsUrl": {
+                "description": "공급자 상세 페이지",
+                "format": "uri",
+                "type": "string",
+              },
+              "effectiveAt": {
+                "description": "발효 시각",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "expiresAt": {
+                "description": "만료 시각",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "id": {
+                "description": "공급자 특보 ID",
+                "type": "string",
+              },
+              "severity": {
+                "description": "심각도",
+                "enum": [
+                  "EXTREME",
+                  "SEVERE",
+                  "MODERATE",
+                  "MINOR",
+                  "UNKNOWN",
+                ],
+                "type": "string",
+              },
+              "source": {
+                "description": "발표 기관",
+                "type": "string",
+              },
+              "title": {
+                "description": "특보 이름 (요청 언어로 번역됨)",
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "title",
+              "severity",
+              "source",
+              "areaName",
+              "effectiveAt",
+              "expiresAt",
+              "detailsUrl",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "attribution": {
+          "properties": {
+            "legalPageUrl": {
+              "description": "공급자 데이터 출처 고지 페이지. 로고와 함께 링크로 노출해야 한다",
+              "format": "uri",
+              "type": "string",
+            },
+            "logo": {
+              "description": "공급자 로고. 크기를 줄이거나 변형하지 않고 1x 크기 이상으로 표시한다. 받지 못하면 null",
+              "nullable": true,
+              "properties": {
+                "dark": {
+                  "description": "어두운 배경용 로고 (흰 글자)",
+                  "properties": {
+                    "1x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "2x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "3x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "1x",
+                    "2x",
+                    "3x",
+                  ],
+                  "type": "object",
+                },
+                "light": {
+                  "description": "밝은 배경용 로고 (검은 글자)",
+                  "properties": {
+                    "1x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "2x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "3x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "1x",
+                    "2x",
+                    "3x",
+                  ],
+                  "type": "object",
+                },
+              },
+              "required": [
+                "light",
+                "dark",
+              ],
+              "type": "object",
+            },
+            "provider": {
+              "description": "데이터 공급자",
+              "enum": [
+                "APPLE_WEATHER",
+              ],
+              "type": "string",
+            },
+            "serviceName": {
+              "description": "공급자 서비스 표기 (예: Apple Weather)",
+              "type": "string",
+            },
+          },
+          "required": [
+            "provider",
+            "serviceName",
+            "legalPageUrl",
+            "logo",
+          ],
+          "type": "object",
+        },
+        "current": {
+          "properties": {
+            "apparentTemperature": {
+              "description": "체감 온도 (°C)",
+              "type": "number",
+            },
+            "cloudCover": {
+              "description": "운량 (%)",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "condition": {
+              "description": "날씨 상태",
+              "enum": [
+                "CLEAR",
+                "MOSTLY_CLEAR",
+                "PARTLY_CLOUDY",
+                "MOSTLY_CLOUDY",
+                "CLOUDY",
+                "FOGGY",
+                "HAZY",
+                "WINDY",
+                "DRIZZLE",
+                "RAIN",
+                "HEAVY_RAIN",
+                "THUNDERSTORMS",
+                "SLEET",
+                "SNOW",
+                "HEAVY_SNOW",
+                "HAIL",
+                "HOT",
+                "FRIGID",
+              ],
+              "type": "string",
+            },
+            "dewPoint": {
+              "description": "이슬점 (°C)",
+              "type": "number",
+            },
+            "humidity": {
+              "description": "상대 습도 (%)",
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "isDaylight": {
+              "description": "관측 시각이 낮인지 여부",
+              "type": "boolean",
+            },
+            "observedAt": {
+              "description": "관측 시각",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "precipitationIntensity": {
+              "description": "강수 강도 (mm/h)",
+              "minimum": 0,
+              "type": "number",
+            },
+            "pressure": {
+              "description": "해면기압 (hPa)",
+              "minimum": 0,
+              "type": "number",
+            },
+            "pressureTrend": {
+              "description": "기압 추세",
+              "enum": [
+                "RISING",
+                "FALLING",
+                "STEADY",
+              ],
+              "type": "string",
+            },
+            "temperature": {
+              "description": "기온 (°C)",
+              "type": "number",
+            },
+            "uvIndex": {
+              "description": "자외선 지수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "visibility": {
+              "description": "가시거리 (m)",
+              "minimum": 0,
+              "type": "number",
+            },
+            "windDirection": {
+              "description": "풍향 (도, 북=0)",
+              "maximum": 359,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "windGust": {
+              "description": "돌풍 (m/s)",
+              "minimum": 0,
+              "nullable": true,
+              "type": "number",
+            },
+            "windSpeed": {
+              "description": "풍속 (m/s)",
+              "minimum": 0,
+              "type": "number",
+            },
+          },
+          "required": [
+            "observedAt",
+            "condition",
+            "isDaylight",
+            "temperature",
+            "apparentTemperature",
+            "dewPoint",
+            "humidity",
+            "cloudCover",
+            "uvIndex",
+            "windSpeed",
+            "windGust",
+            "windDirection",
+            "visibility",
+            "pressure",
+            "pressureTrend",
+            "precipitationIntensity",
+          ],
+          "type": "object",
+        },
+        "daily": {
+          "description": "오늘부터 최대 10일",
+          "items": {
+            "properties": {
+              "condition": {
+                "description": "날씨 상태",
+                "enum": [
+                  "CLEAR",
+                  "MOSTLY_CLEAR",
+                  "PARTLY_CLOUDY",
+                  "MOSTLY_CLOUDY",
+                  "CLOUDY",
+                  "FOGGY",
+                  "HAZY",
+                  "WINDY",
+                  "DRIZZLE",
+                  "RAIN",
+                  "HEAVY_RAIN",
+                  "THUNDERSTORMS",
+                  "SLEET",
+                  "SNOW",
+                  "HEAVY_SNOW",
+                  "HAIL",
+                  "HOT",
+                  "FRIGID",
+                ],
+                "type": "string",
+              },
+              "date": {
+                "description": "위치 시간대 기준 날짜",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
+              "daytime": {
+                "description": "낮(07~19시) 예보",
+                "nullable": true,
+                "properties": {
+                  "condition": {
+                    "description": "날씨 상태",
+                    "enum": [
+                      "CLEAR",
+                      "MOSTLY_CLEAR",
+                      "PARTLY_CLOUDY",
+                      "MOSTLY_CLOUDY",
+                      "CLOUDY",
+                      "FOGGY",
+                      "HAZY",
+                      "WINDY",
+                      "DRIZZLE",
+                      "RAIN",
+                      "HEAVY_RAIN",
+                      "THUNDERSTORMS",
+                      "SLEET",
+                      "SNOW",
+                      "HEAVY_SNOW",
+                      "HAIL",
+                      "HOT",
+                      "FRIGID",
+                    ],
+                    "type": "string",
+                  },
+                  "precipitationAmount": {
+                    "description": "강수량 (mm)",
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "precipitationChance": {
+                    "description": "강수 확률 (%)",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "precipitationType": {
+                    "description": "강수 형태",
+                    "enum": [
+                      "NONE",
+                      "RAIN",
+                      "SNOW",
+                      "SLEET",
+                      "HAIL",
+                      "MIXED",
+                    ],
+                    "type": "string",
+                  },
+                  "temperatureMax": {
+                    "description": "최고 기온 (°C)",
+                    "type": [
+                      "number",
+                      "null",
+                    ],
+                  },
+                  "temperatureMin": {
+                    "description": "최저 기온 (°C)",
+                    "type": [
+                      "number",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "condition",
+                  "temperatureMin",
+                  "temperatureMax",
+                  "precipitationChance",
+                  "precipitationAmount",
+                  "precipitationType",
+                ],
+                "type": "object",
+              },
+              "moonPhase": {
+                "description": "달 위상",
+                "enum": [
+                  "NEW",
+                  "WAXING_CRESCENT",
+                  "FIRST_QUARTER",
+                  "WAXING_GIBBOUS",
+                  "FULL",
+                  "WANING_GIBBOUS",
+                  "THIRD_QUARTER",
+                  "WANING_CRESCENT",
+                ],
+                "type": "string",
+              },
+              "moonrise": {
+                "description": "월출 시각 (그날 뜨지 않으면 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "moonset": {
+                "description": "월몰 시각 (그날 지지 않으면 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "overnight": {
+                "description": "밤(19~다음 날 07시) 예보",
+                "nullable": true,
+                "properties": {
+                  "condition": {
+                    "description": "날씨 상태",
+                    "enum": [
+                      "CLEAR",
+                      "MOSTLY_CLEAR",
+                      "PARTLY_CLOUDY",
+                      "MOSTLY_CLOUDY",
+                      "CLOUDY",
+                      "FOGGY",
+                      "HAZY",
+                      "WINDY",
+                      "DRIZZLE",
+                      "RAIN",
+                      "HEAVY_RAIN",
+                      "THUNDERSTORMS",
+                      "SLEET",
+                      "SNOW",
+                      "HEAVY_SNOW",
+                      "HAIL",
+                      "HOT",
+                      "FRIGID",
+                    ],
+                    "type": "string",
+                  },
+                  "precipitationAmount": {
+                    "description": "강수량 (mm)",
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "precipitationChance": {
+                    "description": "강수 확률 (%)",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "precipitationType": {
+                    "description": "강수 형태",
+                    "enum": [
+                      "NONE",
+                      "RAIN",
+                      "SNOW",
+                      "SLEET",
+                      "HAIL",
+                      "MIXED",
+                    ],
+                    "type": "string",
+                  },
+                  "temperatureMax": {
+                    "description": "최고 기온 (°C)",
+                    "type": [
+                      "number",
+                      "null",
+                    ],
+                  },
+                  "temperatureMin": {
+                    "description": "최저 기온 (°C)",
+                    "type": [
+                      "number",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "condition",
+                  "temperatureMin",
+                  "temperatureMax",
+                  "precipitationChance",
+                  "precipitationAmount",
+                  "precipitationType",
+                ],
+                "type": "object",
+              },
+              "precipitationAmount": {
+                "description": "강수량 (mm)",
+                "minimum": 0,
+                "type": "number",
+              },
+              "precipitationChance": {
+                "description": "강수 확률 (%)",
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "precipitationType": {
+                "description": "강수 형태",
+                "enum": [
+                  "NONE",
+                  "RAIN",
+                  "SNOW",
+                  "SLEET",
+                  "HAIL",
+                  "MIXED",
+                ],
+                "type": "string",
+              },
+              "restOfDay": {
+                "description": "지금부터 그날 끝까지 예보. 오늘 항목에만 있고 나머지는 null",
+                "nullable": true,
+                "properties": {
+                  "condition": {
+                    "description": "날씨 상태",
+                    "enum": [
+                      "CLEAR",
+                      "MOSTLY_CLEAR",
+                      "PARTLY_CLOUDY",
+                      "MOSTLY_CLOUDY",
+                      "CLOUDY",
+                      "FOGGY",
+                      "HAZY",
+                      "WINDY",
+                      "DRIZZLE",
+                      "RAIN",
+                      "HEAVY_RAIN",
+                      "THUNDERSTORMS",
+                      "SLEET",
+                      "SNOW",
+                      "HEAVY_SNOW",
+                      "HAIL",
+                      "HOT",
+                      "FRIGID",
+                    ],
+                    "type": "string",
+                  },
+                  "precipitationAmount": {
+                    "description": "강수량 (mm)",
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "precipitationChance": {
+                    "description": "강수 확률 (%)",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "precipitationType": {
+                    "description": "강수 형태",
+                    "enum": [
+                      "NONE",
+                      "RAIN",
+                      "SNOW",
+                      "SLEET",
+                      "HAIL",
+                      "MIXED",
+                    ],
+                    "type": "string",
+                  },
+                  "temperatureMax": {
+                    "description": "최고 기온 (°C)",
+                    "type": [
+                      "number",
+                      "null",
+                    ],
+                  },
+                  "temperatureMin": {
+                    "description": "최저 기온 (°C)",
+                    "type": [
+                      "number",
+                      "null",
+                    ],
+                  },
+                },
+                "required": [
+                  "condition",
+                  "temperatureMin",
+                  "temperatureMax",
+                  "precipitationChance",
+                  "precipitationAmount",
+                  "precipitationType",
+                ],
+                "type": "object",
+              },
+              "snowfallAmount": {
+                "description": "적설량 (mm, 물 환산 전 눈 깊이)",
+                "minimum": 0,
+                "type": "number",
+              },
+              "sunrise": {
+                "description": "일출 시각 (극야면 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "sunset": {
+                "description": "일몰 시각 (백야면 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "temperatureMax": {
+                "description": "최고 기온 (°C)",
+                "type": "number",
+              },
+              "temperatureMin": {
+                "description": "최저 기온 (°C)",
+                "type": "number",
+              },
+              "uvIndexMax": {
+                "description": "최고 자외선 지수",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "windGustMax": {
+                "description": "최대 돌풍 (m/s)",
+                "minimum": 0,
+                "nullable": true,
+                "type": "number",
+              },
+              "windSpeedMax": {
+                "description": "최대 풍속 (m/s)",
+                "minimum": 0,
+                "nullable": true,
+                "type": "number",
+              },
+            },
+            "required": [
+              "date",
+              "condition",
+              "temperatureMin",
+              "temperatureMax",
+              "precipitationChance",
+              "precipitationAmount",
+              "precipitationType",
+              "snowfallAmount",
+              "uvIndexMax",
+              "windSpeedMax",
+              "windGustMax",
+              "sunrise",
+              "sunset",
+              "moonPhase",
+              "moonrise",
+              "moonset",
+              "restOfDay",
+              "daytime",
+              "overnight",
+            ],
+            "type": "object",
+          },
+          "maxItems": 10,
+          "type": "array",
+        },
+        "fetchedAt": {
+          "description": "공급자에서 데이터를 받은 시각. 공급자 장애 때는 마지막 성공 시각",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "hourly": {
+          "description": "현재 시각이 속한 시간부터 최대 24시간",
+          "items": {
+            "properties": {
+              "apparentTemperature": {
+                "description": "체감 온도 (°C)",
+                "type": "number",
+              },
+              "condition": {
+                "description": "날씨 상태",
+                "enum": [
+                  "CLEAR",
+                  "MOSTLY_CLEAR",
+                  "PARTLY_CLOUDY",
+                  "MOSTLY_CLOUDY",
+                  "CLOUDY",
+                  "FOGGY",
+                  "HAZY",
+                  "WINDY",
+                  "DRIZZLE",
+                  "RAIN",
+                  "HEAVY_RAIN",
+                  "THUNDERSTORMS",
+                  "SLEET",
+                  "SNOW",
+                  "HEAVY_SNOW",
+                  "HAIL",
+                  "HOT",
+                  "FRIGID",
+                ],
+                "type": "string",
+              },
+              "humidity": {
+                "description": "상대 습도 (%)",
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "isDaylight": {
+                "description": "낮인지 여부",
+                "type": "boolean",
+              },
+              "precipitationAmount": {
+                "description": "강수량 (mm)",
+                "minimum": 0,
+                "type": "number",
+              },
+              "precipitationChance": {
+                "description": "강수 확률 (%)",
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "precipitationType": {
+                "description": "강수 형태",
+                "enum": [
+                  "NONE",
+                  "RAIN",
+                  "SNOW",
+                  "SLEET",
+                  "HAIL",
+                  "MIXED",
+                ],
+                "type": "string",
+              },
+              "startsAt": {
+                "description": "시간 구간 시작 시각",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "temperature": {
+                "description": "기온 (°C)",
+                "type": "number",
+              },
+              "uvIndex": {
+                "description": "자외선 지수",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "windDirection": {
+                "description": "풍향 (도, 북=0)",
+                "maximum": 359,
+                "minimum": 0,
+                "nullable": true,
+                "type": "integer",
+              },
+              "windSpeed": {
+                "description": "풍속 (m/s)",
+                "minimum": 0,
+                "type": "number",
+              },
+            },
+            "required": [
+              "startsAt",
+              "condition",
+              "isDaylight",
+              "temperature",
+              "apparentTemperature",
+              "humidity",
+              "uvIndex",
+              "windSpeed",
+              "windDirection",
+              "precipitationChance",
+              "precipitationAmount",
+              "precipitationType",
+            ],
+            "type": "object",
+          },
+          "maxItems": 24,
+          "type": "array",
+        },
+        "location": {
+          "properties": {
+            "latitude": {
+              "description": "위도 (WGS84)",
+              "type": "number",
+            },
+            "longitude": {
+              "description": "경도 (WGS84)",
+              "type": "number",
+            },
+            "timezone": {
+              "description": "IANA 시간대 (예: Asia/Seoul)",
+              "maxLength": 50,
+              "minLength": 1,
+              "type": "string",
+            },
+          },
+          "required": [
+            "latitude",
+            "longitude",
+            "timezone",
+          ],
+          "type": "object",
+        },
+        "nextHour": {
+          "description": "분 단위 강수 예보. 지원하지 않는 지역은 null",
+          "nullable": true,
+          "properties": {
+            "minutes": {
+              "description": "지금부터 공급자 예보 끝(최대 약 90분)까지 1분 간격",
+              "items": {
+                "properties": {
+                  "precipitationChance": {
+                    "description": "강수 확률 (%)",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "precipitationIntensity": {
+                    "description": "강수 강도 (mm/h)",
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "startsAt": {
+                    "description": "분 단위 구간 시작 시각",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "startsAt",
+                  "precipitationChance",
+                  "precipitationIntensity",
+                ],
+                "type": "object",
+              },
+              "type": "array",
+            },
+            "periods": {
+              "description": "맑음·강수가 바뀌는 구간 요약",
+              "items": {
+                "properties": {
+                  "condition": {
+                    "description": "구간 상태",
+                    "enum": [
+                      "CLEAR",
+                      "PRECIPITATION",
+                    ],
+                    "type": "string",
+                  },
+                  "endsAt": {
+                    "description": "구간 끝 시각. 예보 범위 끝까지 이어지면 null",
+                    "format": "date-time",
+                    "nullable": true,
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                    "type": "string",
+                  },
+                  "precipitationChance": {
+                    "description": "구간 최대 강수 확률 (%)",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "precipitationIntensity": {
+                    "description": "구간 최대 강수 강도 (mm/h)",
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "precipitationType": {
+                    "description": "강수 형태. 맑음 구간은 NONE, 공급자가 형태 없이 '강수'로만 알리면 null",
+                    "enum": [
+                      "NONE",
+                      "RAIN",
+                      "SNOW",
+                      "SLEET",
+                      "HAIL",
+                      "MIXED",
+                      null,
+                    ],
+                    "nullable": true,
+                    "type": "string",
+                  },
+                  "startsAt": {
+                    "description": "구간 시작 시각",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "condition",
+                  "precipitationType",
+                  "startsAt",
+                  "endsAt",
+                  "precipitationChance",
+                  "precipitationIntensity",
+                ],
+                "type": "object",
+              },
+              "type": "array",
+            },
+          },
+          "required": [
+            "periods",
+            "minutes",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "location",
+        "current",
+        "nextHour",
+        "hourly",
+        "daily",
+        "alerts",
+        "airQuality",
+        "attribution",
+        "fetchedAt",
       ],
       "type": "object",
     },
@@ -47815,7 +49260,9 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
   },
   "/v1/weather/conditions": {
     "get": {
+      "deprecated": true,
       "description": "
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
 체감온도, 자외선지수, 일출/일몰, 미세먼지 등 부가 정보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -47856,7 +49303,7 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
 ### 에러 코드
 | 코드 | 상황 | 클라이언트 처리 |
 |------|------|----------------|
-| WEATHER_1902 | 위치 미등록 | PUT /weather/location 호출 유도 |
+| WEATHER_1902 | 위치 미등록, 또는 기상청 격자가 없는 한국 밖 위치(\`PUT /v2/weather/location\`으로 저장) | 위치 미등록이면 PUT /weather/location 호출 유도, 해외 위치면 날씨 화면 대신 안내 표시 |
 		",
       "operationId": "getWeatherConditions",
       "parameters": [
@@ -47967,13 +49414,15 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
       ],
       "summary": "날씨 부가 정보 조회",
       "tags": [
-        "Weather",
+        "Weather v1 · Deprecated",
       ],
     },
   },
   "/v1/weather/forecast": {
     "get": {
+      "deprecated": true,
       "description": "
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
 기상청 단기예보 기반 날씨 예보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -48005,16 +49454,15 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
 - 3시간 TTL (기상청 발표 주기에 맞춤)
 - API 장애 시 최대 24시간 이전 데이터를 fallback으로 반환
 
-### 미래 날짜 조회 시 주의사항
-\`date=2026-04-02\` 처럼 미래 날짜를 지정하면, 기상청에 해당 날짜 전용 예보가
-아직 없을 경우 **fallback으로 오늘 데이터가 반환**됩니다.
-이때 응답의 최상위 필드(skyCondition, temperatureMin 등)는 오늘 기준이지만,
-**\`dailyForecasts\` 배열에는 해당 날짜의 예보가 포함**되어 있습니다.
+### 조회할 수 있는 날짜
+기상청 단기예보는 오늘을 포함한 최근 3일의 발표만 주고, 한 발표는 발표일부터 모레까지를 예보합니다.
+그래서 \`date\`는 오늘(KST) 기준 이틀 전부터 모레까지만 받습니다.
+- 아직 발표되지 않은 시각에 해당하는 날짜(예: 새벽의 오늘, 내일·모레)는 지금의 최신 발표로 조회합니다.
+- 범위 밖 날짜는 기상청을 호출하지 않고 400 SYS_0002로 응답합니다.
 
 **클라이언트 권장 사용법:**
 - 오늘 날씨 → 최상위 필드 + \`hourlyForecasts\` 사용
 - 내일 이후 날씨 → \`dailyForecasts\`에서 해당 \`date\`를 찾아 사용
-- \`date\` 파라미터를 생략(오늘 기본)하면 항상 최신 데이터 보장
 
 ### 00:00 ~ 02:15 데이터 공백
 기상청 단기예보는 하루 8회 발표 (02, 05, 08, 11, 14, 17, 20, 23시)하며,
@@ -48029,8 +49477,9 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
 ### 에러 코드
 | 코드 | 상황 | 클라이언트 처리 |
 |------|------|----------------|
+| SYS_0002 | 기상청이 제공하지 않는 \`date\` (오늘 기준 이틀 전보다 이르거나 모레보다 늦음) | 오늘 날짜로 다시 조회 |
 | WEATHER_1901 | 기상청 API 장애 + fallback 캐시 없음 | "날씨 정보를 불러올 수 없습니다" 표시 후 재시도 |
-| WEATHER_1902 | 위치 미등록 | PUT /weather/location 호출 유도 |
+| WEATHER_1902 | 위치 미등록, 또는 기상청 격자가 없는 한국 밖 위치(\`PUT /v2/weather/location\`으로 저장) | 위치 미등록이면 PUT /weather/location 호출 유도, 해외 위치면 날씨 화면 대신 안내 표시 |
 		",
       "operationId": "getWeatherForecast",
       "parameters": [
@@ -48141,13 +49590,15 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
       ],
       "summary": "날씨 예보 조회",
       "tags": [
-        "Weather",
+        "Weather v1 · Deprecated",
       ],
     },
   },
   "/v1/weather/location": {
     "put": {
+      "deprecated": true,
       "description": "
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
 GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)로 자동 변환됩니다.
 날씨 예보, 부가 정보 조회, 오전/오후 날씨 알림의 기준 위치로 사용됩니다.
 
@@ -48268,7 +49719,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
       ],
       "summary": "위치 등록/수정",
       "tags": [
-        "Weather",
+        "Weather v1 · Deprecated",
       ],
     },
   },
@@ -48687,6 +50138,427 @@ GET /weekly-achievements/2026/10
       "summary": "주간 달성 현황 상세 조회",
       "tags": [
         "Weekly Achievements",
+      ],
+    },
+  },
+  "/v2/weather": {
+    "get": {
+      "description": "
+등록한 위치의 현재 날씨, 다음 1시간 강수, 시간별·일별 예보, 기상 특보, 대기질을 한 번에 조회합니다.
+
+### 동작
+- 위치를 geohash 정밀도 5(약 5km) 칸으로 묶고, Apple WeatherKit에는 사용자 좌표 대신 칸 중심 좌표를 보냅니다. 같은 칸의 요청은 캐시를 공유합니다. 번역되는 문구(특보 제목)가 있는 칸만 언어별로 캐시를 나눕니다.
+- 칸마다 제공되는 데이터 종류를 7일 캐시하고 그 종류만 요청합니다. 한국은 다음 1시간 강수와 특보를 제공하지 않아 \`nextHour\`는 null, \`alerts\`는 빈 배열입니다.
+- 리포트는 30분 캐시합니다. 지금 강수 중이거나 2시간 안에 강수(확률 50% 이상·다음 1시간 강수 구간)가 예보되면 10분만 캐시합니다. 공급자 호출이 실패하면(429·5xx·인증 거절·4초 시간 초과) 그 칸은 1분 동안 공급자를 부르지 않고, 최근 6시간 안의 마지막 성공 데이터를 돌려줍니다. 이때 \`fetchedAt\`은 공급자가 그 데이터를 읽은 시각입니다.
+- 시간별·일별 예보는 응답 시각을 기준으로 지난 구간을 잘라 냅니다.
+- 대기질은 한국 위치에서만 에어코리아로 조회하고 1시간 캐시합니다. 조회에 실패해도 리포트는 정상 응답하며 \`airQuality\`만 null입니다.
+
+### 요청 조건
+- \`PUT /v2/weather/location\`으로 위치를 먼저 등록해야 합니다.
+- 특보 제목은 \`Accept-Language\`가 en이면 영어, ko(또는 그 밖의 언어)면 한국어로 받습니다. 헤더가 없으면 영어입니다.
+- 사용자마다 분당 60회까지입니다.
+
+### 응답 규칙
+- 단위는 기온 °C, 풍속 m/s, 강수량 mm, 강수 강도 mm/h, 기압 hPa, 가시거리 m입니다. 확률·습도·운량은 0~100 정수입니다.
+- 시각은 UTC ISO 8601이고, 일별 \`date\`는 위치 시간대의 달력 날짜(YYYY-MM-DD)입니다. \`location.timezone\`은 그 날짜를 정한 시간대(칸 중심 좌표의 시간대)입니다.
+- 값이 없으면 키를 빼지 않고 null로 보냅니다. \`nextHour\`·\`airQuality\`가 null이면 그 지역에서 제공하지 않거나 이번 조회에서 받지 못한 것입니다.
+
+### 책임 분담
+| 서버가 계산 | 앱이 계산 |
+|------------|----------|
+| 공급자 인증·호출·장애 시 이전 데이터 사용, \`fetchedAt\` | 표시 문구, 화씨 변환 |
+| 미터법·0~100 정수로 단위 정규화 | "N분 뒤 비" 같은 강수 시작 안내 |
+| 칸·캐시, 위치 시간대와 일별 \`date\` | 브리핑·배경 장면 |
+| 한국 대기질 병합, 특보 심각도 정렬 | 대기질 등급, 데이터 경과 시간 표시 |
+
+### 오류
+| 코드 | 상태 | 언제 | 클라이언트 대응 |
+|------|------|------|----------------|
+| WEATHER_1902 | 404 | 위치를 등록하지 않았을 때 | 위치 권한을 받은 뒤 \`PUT /v2/weather/location\`을 호출합니다 |
+| SYS_0001 | 429 | 분당 요청 한도를 넘었을 때 | 잠시 뒤 다시 조회합니다 |
+| WEATHER_1901 | 503 | 공급자 호출이 실패했고 6시간 안의 이전 데이터도 없을 때 | 오류 화면에 다시 시도를 제공합니다 |
+",
+      "operationId": "getWeatherReport",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/WeatherReportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "WEATHER_1902",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "위치 정보가 등록되지 않았습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "위치 정보가 등록되지 않았습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+        "503": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "WEATHER_1901",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "날씨 정보를 가져올 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "날씨 정보를 가져올 수 없습니다.",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "날씨 리포트 조회",
+      "tags": [
+        "Weather v2",
+      ],
+    },
+  },
+  "/v2/weather/location": {
+    "put": {
+      "description": "
+날씨 리포트와 날씨 알림의 기준 위치를 저장합니다.
+
+### 동작
+- 전 세계 좌표를 받고, 좌표의 IANA 시간대를 계산해 함께 저장합니다.
+- 한국 범위(위도 33.0~39.0, 경도 124.0~132.0) 안이면 기상청 격자도 저장합니다. 격자는 v1 예보(1.13.x 이하 앱)와 AI 제안이 씁니다.
+- 오전·오후 날씨 알림은 이 API와 같은 v2 리포트로 만들므로 한국 밖 위치도 받습니다. 한국 밖 위치는 격자가 없어 v1 예보·부가 정보 조회가 \`WEATHER_1902\`입니다.
+- 사용자당 위치는 하나이며, 같은 요청을 반복해도 결과가 같습니다.
+
+### 요청 조건
+- 사용자마다 분당 10회까지입니다.
+
+### 응답 규칙
+- \`timezone\`은 저장한 위치가 속한 칸 중심의 IANA 시간대로, \`GET /v2/weather\`의 \`location.timezone\`과 같습니다.
+
+### 오류
+| 코드 | 상태 | 언제 | 클라이언트 대응 |
+|------|------|------|----------------|
+| SYS_0002 | 400 | 위도·경도가 범위를 벗어났거나 숫자가 아닐 때 | 좌표를 다시 받아 재요청합니다 |
+| SYS_0001 | 429 | 분당 요청 한도를 넘었을 때 | 위치가 크게 바뀔 때만 다시 등록합니다 |
+",
+      "operationId": "updateWeatherLocation",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateWeatherLocationDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/WeatherLocationResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "날씨 위치 등록",
+      "tags": [
+        "Weather v2",
       ],
     },
   },

@@ -84,7 +84,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 ### 초대·보상 용어
 
-앱·서버 푸시·스토어·랜딩이 같은 말을 쓴다. 앱 UI는 해요체, 서버 푸시는 기존 반말 + 가벼운 이모지 톤을 유지한다.
+앱·서버 푸시·스토어·랜딩이 같은 말을 쓴다. 앱 UI와 서버 푸시 모두 해요체를 쓰고, 푸시는 가벼운 이모지(알림 하나에 최대 1개)를 더한다.
 
 **누가·언제·무엇을 받는지 항상 함께 쓴다.** 조건 없이 `함께`·`둘 다`·`친구도 나도 7일`·`both`·`together`로 보상을 말하지 않는다. 보상을 말할 때는 받는 사람과 시점을 짝지어 쓴다.
 
@@ -107,7 +107,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 - 그대로 쓰는 말: 아이두/Aido, 프리미엄/Premium, 발자국/paw print, 발자국 모으기/Collect paw prints, 콕 찌르기/nudge, 할 일/to-do, 초대 링크·초대 코드/invite link·invite code
 - 쓰지 않는 말: `친구 자리`, `자리가 꽉 찼어요`, `friend slot(s)`, `slots are full`, `활동일`, `active days`, `qualify`. 코드·계약 이름(`FRIEND_SLOT`, `friendSlots`)은 바꾸지 않는다.
-- 푸시 예: `발자국이 찍혔어 🐾` / `프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어` · `You got a paw print 🐾` / `You got 7 days of Premium and can add 1 more friend`
+- 푸시 예: `발자국이 찍혔어요 🐾` / `프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어요` · `You got a paw print 🐾` / `You got 7 days of Premium and can add 1 more friend`
 
 ### 비번역 대상
 

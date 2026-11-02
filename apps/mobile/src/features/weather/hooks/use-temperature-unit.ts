@@ -1,0 +1,9 @@
+import { useLocales } from 'expo-localization';
+
+import type { TemperatureUnit } from '../domains/weather-report.model';
+
+/** 기기 지역 설정의 온도 단위. 실행 중 설정을 바꾸면 다시 렌더된다. */
+export function useTemperatureUnit(): TemperatureUnit {
+  const [locale] = useLocales();
+  return locale?.temperatureUnit ?? 'celsius';
+}

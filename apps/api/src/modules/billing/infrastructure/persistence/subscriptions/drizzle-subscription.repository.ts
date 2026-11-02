@@ -1,8 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, ne, isNull } from "drizzle-orm";
+import { and, eq, gt, ne, isNull, not } from "drizzle-orm";
 
+import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { subscription, user } from "#api/platform/database/schema/index";
@@ -10,6 +11,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import type {
   CreateSubscriptionData,
+  FindLapsedPremiumUsersParams,
   SubscriptionRepositoryPort,
   SubscriptionUser,
   UpdateSubscriptionStatusData,
@@ -47,6 +49,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
         status: true,
         startedAt: true,
         expiresAt: true,
+        gracePeriodEndsAt: true,
         cancelledAt: true,
         lastProcessedEventId: true,
       },
@@ -78,9 +81,26 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
 
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
     return this.db.query.subscription.findMany({
-      columns: { revenueCatId: true, status: true, expiresAt: true },
+      columns: { revenueCatId: true, status: true, expiresAt: true, gracePeriodEndsAt: true },
       where: { userId, deletedAt: { isNull: true } },
     });
+  }
+
+  async findLapsedPremiumUserIds(params: FindLapsedPremiumUsersParams): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: user.id })
+      .from(user)
+      .where(
+        and(
+          eq(user.subscriptionStatus, "ACTIVE"),
+          isNull(user.deletedAt),
+          not(activeSubscriptionCondition(user, params.now)),
+          params.afterUserId == null ? undefined : gt(user.id, params.afterUserId),
+        ),
+      )
+      .orderBy(user.id)
+      .limit(params.limit);
+    return rows.map((row) => row.id);
   }
 
   /**
@@ -95,6 +115,7 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
       startedAt: data.startedAt,
       expiresAt: data.expiresAt,
       lastProcessedEventId: data.lastProcessedEventId,
+      environment: data.environment,
     });
   }
 

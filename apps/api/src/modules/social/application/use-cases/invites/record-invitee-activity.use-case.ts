@@ -4,6 +4,7 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import type { InviteRedemption } from "../../../domain/aggregates/invites/invite-redemption.aggregate.js";
 import {
@@ -166,7 +167,7 @@ export class RecordInviteeActivity {
       this.#dependencies.logger.warn({
         event: SocialInviteLogEvent.PROGRESS_NOTIFICATION_FAILED,
         redemptionId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
   }

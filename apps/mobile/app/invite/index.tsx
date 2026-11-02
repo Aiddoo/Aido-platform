@@ -29,7 +29,7 @@ import {
   Text,
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
@@ -48,6 +48,7 @@ function InviteCodeEntryScreen() {
   const { trackEvent } = useTrack();
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
   const { control, handleSubmit, setValue, setError, clearErrors, formState } =
     useForm<InviteCodeForm>({ defaultValues: { inviteCode: '' } });
   const inviteCodeInputRef = useRef<InputOTPRef>(null);
@@ -93,6 +94,10 @@ function InviteCodeEntryScreen() {
     try {
       // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
       await queryClient.fetchQuery(getInvitePreviewQueryOptions(inviteService, { inviteCode }));
+      // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않는다
+      if (!navigation.isFocused()) {
+        return;
+      }
       // 시스템 링크로 이 화면에 왔으면 착지할 때 이미 한 번 셌다. 앱 안에서 연 코드 입력만 여기서 센다
       if (openedAt == null) {
         trackEvent('invite_link_opened', { source: 'code_entry' });

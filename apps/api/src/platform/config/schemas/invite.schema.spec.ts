@@ -5,6 +5,11 @@ const requiredEnvironment = {
   JWT_SECRET: "a".repeat(32),
   JWT_REFRESH_SECRET: "b".repeat(32),
   TOKEN_ENCRYPTION_KEY: "c".repeat(32),
+  // 운영 검증은 WeatherKit 자격을 요구한다.
+  WEATHERKIT_TEAM_ID: "XXXXXXXXXX",
+  WEATHERKIT_KEY_ID: "XXXXXXXXXX",
+  WEATHERKIT_SERVICE_ID: "com.example.weatherkit-client",
+  WEATHERKIT_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\\nREPLACE_ME\\n-----END PRIVATE KEY-----",
 };
 
 describe("친구 초대 환경 설정", () => {

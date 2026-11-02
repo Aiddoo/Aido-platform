@@ -1,6 +1,6 @@
-import { useTrack } from '@src/shared/analytics';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useTranslation } from '@src/shared/i18n';
-import { useOverlay, usePremiumDialog } from '@src/shared/ui';
+import { useOverlay } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -26,9 +26,8 @@ export function TodoNudgeButton({
   ...pressableProps
 }: TodoNudgeButtonProps) {
   const { t } = useTranslation('todo');
-  const { trackEvent } = useTrack();
   const overlay = useOverlay();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('NUDGE');
   const limitQuery = useQuery(useGetTodoNudgeLimitQueryOptions());
   const isLimitReached = limitQuery.data != null && TodoNudgePolicy.isLimitReached(limitQuery.data);
   const isUnavailable = isDisabled || limitQuery.isPending;
@@ -53,8 +52,7 @@ export function TodoNudgeButton({
 
   const handlePress = () => {
     if (isLimitReached) {
-      trackEvent('premium_gate_shown', { feature: 'friend_todo_view' });
-      premiumDialog.open({
+      premiumGate.open({
         title: t('nudge.limitTitle'),
         description: t('nudge.subscribeUnlimited'),
       });

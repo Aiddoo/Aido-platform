@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -111,7 +112,7 @@ export class AiQuotaService implements AiQuotaPort {
       this.#dependencies.logger.error({
         event: AccessQuotaLogEvent.RESERVATION_RELEASE_FAILED,
         userId: reservation.userId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
   }

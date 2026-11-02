@@ -9,7 +9,19 @@ import {
   type AiTaskSettingsMap,
 } from "../../../application/ports/parsing/ai-task-settings.port.js";
 
-export const DEFAULT_AI_MODEL_ID = "gemini-3.1-flash-lite";
+/** provider와 모델을 함께 쓴 AI SDK provider registry 모델 ID */
+export type AiModelId = `${string}:${string}`;
+
+/** 2026-10-26 live eval로 고른 가장 싼 충분한 모델. 네 작업 모두 같은 flash-lite를 쓴다. */
+export const DEFAULT_AI_MODEL_ID: AiModelId = "google:gemini-3.1-flash-lite";
+
+/** provider를 생략한 기존 env 값(`gemini-…`)은 지금까지처럼 Google 모델로 읽는다. */
+export function toAiModelId(value: string): AiModelId {
+  const separator = value.indexOf(":");
+  return separator > 0
+    ? `${value.slice(0, separator)}:${value.slice(separator + 1)}`
+    : `google:${value}`;
+}
 
 const AI_TASK_ENV_SUFFIX = {
   "parse-todo": "PARSE_TODO",
@@ -26,15 +38,24 @@ function readAiConfig(config: Pick<ConfigService, "get">) {
 }
 
 /** env AI_MODEL_<TASK>가 없으면 기본 모델을 쓴다. */
-export function readAiModelIds(config: Pick<ConfigService, "get">): Record<AiTaskId, string> {
+export function readAiModelIds(config: Pick<ConfigService, "get">): Record<AiTaskId, AiModelId> {
   const env = readAiConfig(config);
-  const model = (suffix: AiTaskEnvSuffix) => env[`AI_MODEL_${suffix}`] ?? DEFAULT_AI_MODEL_ID;
+  const model = (suffix: AiTaskEnvSuffix) => {
+    const value = env[`AI_MODEL_${suffix}`];
+    return value == null ? DEFAULT_AI_MODEL_ID : toAiModelId(value);
+  };
   return {
     "parse-todo": model(AI_TASK_ENV_SUFFIX["parse-todo"]),
     "parse-memo": model(AI_TASK_ENV_SUFFIX["parse-memo"]),
     report: model(AI_TASK_ENV_SUFFIX.report),
     suggestion: model(AI_TASK_ENV_SUFFIX.suggestion),
   };
+}
+
+/** env AI_FALLBACK_MODEL. 없으면 대체 모델 없이 기본 모델만 쓴다. */
+export function readAiFallbackModelId(config: Pick<ConfigService, "get">): AiModelId | null {
+  const value = readAiConfig(config).AI_FALLBACK_MODEL;
+  return value == null ? null : toAiModelId(value);
 }
 
 export function readAiTaskSettings(config: Pick<ConfigService, "get">): AiTaskSettingsMap {

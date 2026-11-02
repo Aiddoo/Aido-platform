@@ -1,6 +1,7 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/queries/use-create-todo-category-mutation-options';
 import { isApiError } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -38,6 +39,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
   const { t } = useTranslation(['todo', 'common']);
   const createMutation = useMutation(useCreateTodoCategoryMutationOptions());
   const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
+  const premiumGate = usePremiumGate('TODO_CATEGORY');
 
   const formMethods = useForm({
     resolver: zodResolver(createTodoCategorySchema),
@@ -53,6 +55,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
             sheet.close();
+            premiumGate.trackShown();
             setIsPremiumDialogOpen(true);
           }
         },
@@ -120,7 +123,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
               sheet.exit();
             }
           }}
-          onConfirm={() => sheet.exit()}
+          onSubscribe={premiumGate.subscribe}
           description={t('category.premiumMore')}
         />
       </>

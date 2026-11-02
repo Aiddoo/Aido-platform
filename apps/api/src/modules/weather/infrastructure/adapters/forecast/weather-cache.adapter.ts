@@ -14,11 +14,14 @@ import type {
   WeatherForecast,
 } from "../../../application/ports/forecast/weather-provider.port.js";
 import {
+  KMA_TIMEZONE,
+  type KmaForecastTiming,
+} from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
+import {
   WEATHER_CACHE_TTL_MS,
   WeatherCacheKey,
 } from "../../cache/forecast/weather-cache.keyspace.js";
 import { getKmaBaseDateTime } from "./kma-base-datetime.js";
-import { KMA_TIMEZONE } from "./kma.constants.js";
 
 const SKY_CONDITION_SCHEMA = z.enum(["CLEAR", "PARTLY_CLOUDY", "CLOUDY"]);
 const PRECIPITATION_TYPE_SCHEMA = z.enum(["NONE", "RAIN", "RAIN_SNOW", "SNOW", "SHOWER"]);
@@ -64,28 +67,33 @@ const WEATHER_CONDITIONS_SCHEMA = z.object({
   pm25: z.number().nullable(),
 }) satisfies z.ZodType<WeatherConditions>;
 
+function forecastKey(gridX: number, gridY: number, timing: KmaForecastTiming): string {
+  const { baseDate, baseTime } = getKmaBaseDateTime(timing.issuance);
+  const targetDate = dayWindowInTimezone(timing.target, KMA_TIMEZONE).localDate;
+  return WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime, targetDate);
+}
+
 @Injectable()
 export class WeatherCacheAdapter implements WeatherCachePort {
   constructor(private readonly cacheService: CacheService) {}
 
-  getForecast(gridX: number, gridY: number, date: Date): Promise<WeatherForecast | undefined> {
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
-    return this.cacheService.get(
-      WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime),
-      WEATHER_FORECAST_SCHEMA,
-    );
+  getForecast(
+    gridX: number,
+    gridY: number,
+    timing: KmaForecastTiming,
+  ): Promise<WeatherForecast | undefined> {
+    return this.cacheService.get(forecastKey(gridX, gridY, timing), WEATHER_FORECAST_SCHEMA);
   }
 
   async saveForecast(
     gridX: number,
     gridY: number,
-    date: Date,
+    timing: KmaForecastTiming,
     forecast: WeatherForecast,
   ): Promise<void> {
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
     await Promise.all([
       this.cacheService.set(
-        WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime),
+        forecastKey(gridX, gridY, timing),
         forecast,
         WEATHER_CACHE_TTL_MS.FORECAST,
       ),
@@ -106,20 +114,21 @@ export class WeatherCacheAdapter implements WeatherCachePort {
 
   getForecastBatch(
     grids: readonly WeatherGridRef[],
-    date: Date,
+    timing: KmaForecastTiming,
   ): Promise<(WeatherForecast | undefined)[]> {
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
     return this.cacheService.mget(
-      grids.map((grid) => WeatherCacheKey.forecast(grid.gridX, grid.gridY, baseDate, baseTime)),
+      grids.map((grid) => forecastKey(grid.gridX, grid.gridY, timing)),
       WEATHER_FORECAST_SCHEMA,
     );
   }
 
-  async saveForecastBatch(entries: readonly WeatherForecastEntry[], date: Date): Promise<void> {
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
+  async saveForecastBatch(
+    entries: readonly WeatherForecastEntry[],
+    timing: KmaForecastTiming,
+  ): Promise<void> {
     const cacheEntries = entries.flatMap((entry) => [
       {
-        key: WeatherCacheKey.forecast(entry.gridX, entry.gridY, baseDate, baseTime),
+        key: forecastKey(entry.gridX, entry.gridY, timing),
         value: entry.forecast,
         ttl: WEATHER_CACHE_TTL_MS.FORECAST,
       },

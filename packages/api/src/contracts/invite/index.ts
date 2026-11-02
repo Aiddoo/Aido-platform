@@ -1,3 +1,3 @@
-export * from "./invite.common.js";
-export * from "./invite.request.js";
-export * from "./invite.response.js";
+export * from "./v1/invite.common.js";
+export * from "./v1/invite.request.js";
+export * from "./v1/invite.response.js";

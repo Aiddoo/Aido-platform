@@ -55,12 +55,12 @@ describe("GetReportStatus", () => {
     mockRepository = getReportStatusDependencies.aiReportRepository;
     mockEntitlement = getReportStatusDependencies.entitlementReader;
     mockPreference = getReportStatusDependencies.localePreferenceReader;
-    mockEntitlement.hasPremiumAccess.mockResolvedValue(true);
+    mockEntitlement.can.mockResolvedValue(true);
     mockRepository.findLatest.mockResolvedValue(null);
   });
 
   it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
-    mockEntitlement.hasPremiumAccess.mockResolvedValue(false);
+    mockEntitlement.can.mockResolvedValue(false);
 
     await expect(useCase.execute("user-123", tz)).rejects.toBeInstanceOf(ApplicationException);
     expect(mockRepository.findLatest).not.toHaveBeenCalled();

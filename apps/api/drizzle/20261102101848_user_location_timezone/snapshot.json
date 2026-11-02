@@ -1,0 +1,97 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "f880569a-b12a-4a6d-9c39-74f50cd9f447",
+  "prevIds": [
+    "bcfae448-825a-4b88-86b4-899b10c0aaa3"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "UserLocation",
+        "timezone"
+      ],
+      "writes": [
+        "s|col|public.UserLocation.timezone",
+        "n|col|public.UserLocation.timezone",
+        "e|col|public.UserLocation.timezone"
+      ],
+      "reads": [
+        "n|tbl|public.UserLocation",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "UserLocation",
+        "gridX"
+      ],
+      "writes": [
+        "s|colprop|public.UserLocation.gridX.notNull"
+      ],
+      "reads": [
+        "n|tbl|public.UserLocation",
+        "n|sch|public",
+        "n|col|public.UserLocation.gridX"
+      ],
+      "sqlHash": "03e9b2441e68a3f7"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "UserLocation",
+        "gridY"
+      ],
+      "writes": [
+        "s|colprop|public.UserLocation.gridY.notNull"
+      ],
+      "reads": [
+        "n|tbl|public.UserLocation",
+        "n|sch|public",
+        "n|col|public.UserLocation.gridY"
+      ],
+      "sqlHash": "347ba9f7d58c02ef"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "UserLocation",
+        "name": "timezone",
+        "type": "varchar(50)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"UserLocation\",\"gridX\"]",
+      "set": {
+        "notNull": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"UserLocation\",\"gridY\"]",
+      "set": {
+        "notNull": false
+      }
+    }
+  ]
+}

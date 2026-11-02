@@ -1,5 +1,5 @@
 import { TodoTimePickerContent } from '@src/features/todo/components/todo-time-picker-content';
-import { ModalBottomSheet } from '@src/shared/ui';
+import { ModalBottomSheet, QueryErrorBoundary } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -16,9 +16,16 @@ export function MemoTodoTimeBottomSheet({
 }: MemoTodoTimeBottomSheetProps) {
   return (
     <ModalBottomSheet {...props}>
-      <Suspense fallback={<ActivityIndicator />}>
-        <TodoTimePickerContent date={date} value={value} onChange={onChange} onCancel={onCancel} />
-      </Suspense>
+      <QueryErrorBoundary>
+        <Suspense fallback={<ActivityIndicator />}>
+          <TodoTimePickerContent
+            date={date}
+            value={value}
+            onChange={onChange}
+            onCancel={onCancel}
+          />
+        </Suspense>
+      </QueryErrorBoundary>
     </ModalBottomSheet>
   );
 }

@@ -80,8 +80,10 @@ export default function FeedScreen() {
 function MyFeed() {
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
-  useWeatherIntroduction();
-  const featureDiscovery = useFeatureDiscoveryFeed();
+  const weatherIntroduction = useWeatherIntroduction();
+  const featureDiscovery = useFeatureDiscoveryFeed({
+    isWeatherIntroductionPending: weatherIntroduction.isPending,
+  });
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );

@@ -95,6 +95,22 @@ describe("InMemoryLockAdapter — 인메모리 락 어댑터", () => {
       expect(secondAttempt).toBeNull();
     });
 
+    it("TTL 만료 뒤 늦게 호출한 release는 다른 소유자의 잠금을 해제하지 않는다", async () => {
+      // Given
+      const resource = "todo:123:reminder";
+      const staleRelease = await lock.acquire(resource, 1000);
+      vi.advanceTimersByTime(1001);
+      const currentRelease = await lock.acquire(resource, 5000);
+      expect(currentRelease).not.toBeNull();
+
+      // When
+      await staleRelease?.();
+
+      // Then
+      expect(await lock.isLocked(resource)).toBe(true);
+      expect(await lock.acquire(resource, 5000)).toBeNull();
+    });
+
     it("서로 다른 리소스는 독립적으로 잠금을 획득할 수 있다", async () => {
       // Given
       const resource1 = "todo:123:reminder";

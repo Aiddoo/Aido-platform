@@ -3,9 +3,9 @@ import { err, ok, type Result } from '@src/shared/errors/result';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
+import { CustomerInfoPolicy } from '../domains/customer-info.model';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
 import type { SubscriptionOffering } from '../domains/subscription.model';
-import { CustomerInfoPolicy } from './customer-info.policy';
 import { toSubscriptionError } from './revenuecat-error.mapper';
 import type { RevenueCatSdkManager } from './revenuecat-sdk-manager';
 import { toSubscriptionOfferingWithPackages } from './subscription.mapper';

@@ -57,14 +57,7 @@ import ToastErrorIconSvg from '@assets/icons/ic_toast_error.svg';
 import ToastSuccessIconSvg from '@assets/icons/ic_toast_success.svg';
 import ToastWarningIconSvg from '@assets/icons/ic_toast_warning.svg';
 import TrashIconSvg from '@assets/icons/ic_trash.svg';
-import WeatherClearIconSvg from '@assets/icons/ic_weather_clear.svg';
-import WeatherCloudyIconSvg from '@assets/icons/ic_weather_cloudy.svg';
-import WeatherPartlyCloudyIconSvg from '@assets/icons/ic_weather_partly_cloudy.svg';
 import WeatherRainIconSvg from '@assets/icons/ic_weather_rain.svg';
-import WeatherShowerIconSvg from '@assets/icons/ic_weather_shower.svg';
-import WeatherSnowIconSvg from '@assets/icons/ic_weather_snow.svg';
-import WeatherSunriseIconSvg from '@assets/icons/ic_weather_sunrise.svg';
-import WeatherSunsetIconSvg from '@assets/icons/ic_weather_sunset.svg';
 
 import { createStyledIcon } from './create-styled-icon';
 
@@ -128,11 +121,4 @@ export const TrashIcon = createStyledIcon(TrashIconSvg);
 export const RefreshIcon = createStyledIcon(RefreshIconSvg);
 export const RobotIcon = createStyledIcon(RobotIconSvg);
 export const RobotPixelIcon = createStyledIcon(RobotPixelIconSvg);
-export const WeatherClearIcon = createStyledIcon(WeatherClearIconSvg);
-export const WeatherCloudyIcon = createStyledIcon(WeatherCloudyIconSvg);
-export const WeatherPartlyCloudyIcon = createStyledIcon(WeatherPartlyCloudyIconSvg);
 export const WeatherRainIcon = createStyledIcon(WeatherRainIconSvg);
-export const WeatherShowerIcon = createStyledIcon(WeatherShowerIconSvg);
-export const WeatherSnowIcon = createStyledIcon(WeatherSnowIconSvg);
-export const WeatherSunriseIcon = createStyledIcon(WeatherSunriseIconSvg);
-export const WeatherSunsetIcon = createStyledIcon(WeatherSunsetIconSvg);

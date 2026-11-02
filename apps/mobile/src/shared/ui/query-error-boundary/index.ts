@@ -5,5 +5,6 @@ export {
   BUG_REPORT_INQUIRY_HREF,
   INQUIRY_SHEET_EXIT,
   openBugReportInquiry,
+  openSupportMail,
   QueryErrorActions,
 } from './query-error-actions';

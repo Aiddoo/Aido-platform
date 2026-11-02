@@ -27,6 +27,16 @@ export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
  */
 const TRACE_PROPAGATION_TARGETS = [/^https:\/\/api\.aido\.kr/] as const;
 
+/**
+ * 5xx 이벤트에 요청 본문을 붙이지 않을 경로. AI 요청 본문은 사용자 할 일 문장·메모 원문이고
+ * AI_1301(503)처럼 공급자 장애로 5xx가 날 때 Sentry로 그대로 나가므로 본문 수집을 끈다.
+ */
+const BODYLESS_PATH = /\/ai\//;
+
+export function isRequestBodyIgnored(url: string): boolean {
+  return BODYLESS_PATH.test(url);
+}
+
 export interface SentryInstrumentOptions {
   enabled: boolean;
   environment: AppEnvironment;

@@ -7,6 +7,7 @@ import {
 import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { removeInvisibleCharacters } from "#api/shared/domain/prompt/sanitize";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
@@ -14,6 +15,12 @@ import type { TodoDraft } from "../../../domain/types/parsing/todo-draft.types.j
 
 /** 공개 계약의 제목 상한 */
 const TITLE_MAX_LENGTH = 200;
+
+/**
+ * 모델이 센 메모 전체 할 일 수의 상한. 입력에 심은 지시로 터무니없는 수("나머지 99999개")를
+ * 앱에 보이지 않게 한다. 5000자 메모에서 현실적인 할 일 수보다 넉넉하다.
+ */
+const MEMO_TOTAL_TASK_COUNT_MAX = 100;
 
 /** 모델 대상 명령만 있는 입력에 앱 언어로 보여 줄 제목 */
 export const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
@@ -39,7 +46,10 @@ export interface DraftNormalizeContext {
 }
 
 function cleanTitle(value: string): string {
-  return truncateGraphemes(value.replace(/\s+/g, " ").trim(), TITLE_MAX_LENGTH);
+  return truncateGraphemes(
+    removeInvisibleCharacters(value).replace(/\s+/g, " ").trim(),
+    TITLE_MAX_LENGTH,
+  );
 }
 
 interface NormalizedTodo {
@@ -132,7 +142,9 @@ export function normalizeMemoDraft(
   const tasks = memo.todos.filter((todo) => todo.intent === "TASK");
   const kept = tasks.slice(0, AI_PARSE_LIMITS.MEMO_MAX_TODOS);
   const noAction = kept.length === 0;
-  const totalTaskCount = noAction ? 0 : Math.max(tasks.length, memo.totalTaskCount ?? 0);
+  const totalTaskCount = noAction
+    ? 0
+    : Math.min(Math.max(tasks.length, memo.totalTaskCount ?? 0), MEMO_TOTAL_TASK_COUNT_MAX);
   if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) {
     warnings.push("TODOS_TRUNCATED");
   }

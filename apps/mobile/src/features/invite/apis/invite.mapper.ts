@@ -1,5 +1,5 @@
 import { invitedFriendsListResponseSchema, type InvitePreviewResponse } from '@aido/api';
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 import { z } from 'zod';
 
 import type { InvitePreview } from '../domains/invite-preview.model';

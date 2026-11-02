@@ -9,13 +9,6 @@ export const AI_PARSE_LIMITS = {
   MEMO_MAX_ITEMS: 5,
 } as const;
 
-export const SUBSCRIPTION_AI_PARSE_LIMITS = {
-  FREE: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-  ACTIVE: null, // 무제한
-  EXPIRED: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-  CANCELLED: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-} as const;
-
 // TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤 사용하지 않는 AI_REPORT_LIMITS를 제거한다
 /**
  * @deprecated 어디에서도 쓰지 않고 실제 디스패치(매시, 사용자 로컬 월요일·1일)와도 다르다.

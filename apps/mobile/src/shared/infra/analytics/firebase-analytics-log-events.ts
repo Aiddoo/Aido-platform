@@ -4,4 +4,6 @@ export const FIREBASE_ANALYTICS_LOG_EVENT = {
   SET_USER_ID_FAILED: 'firebase-analytics.set-user-id.failed',
   SET_USER_PROPERTY_FAILED: 'firebase-analytics.set-user-property.failed',
   RESET_DATA_FAILED: 'firebase-analytics.reset-data.failed',
+  CLEAR_USER_FAILED: 'firebase-analytics.clear-user.failed',
+  SET_DEFAULT_EVENT_PARAMETERS_FAILED: 'firebase-analytics.set-default-event-parameters.failed',
 } as const;

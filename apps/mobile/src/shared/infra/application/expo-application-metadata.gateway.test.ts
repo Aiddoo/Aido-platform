@@ -4,10 +4,14 @@ import { Platform } from 'react-native';
 import { expoApplicationMetadataGateway } from './expo-application-metadata.gateway';
 
 let mockNativeApplicationVersion: string | null = '1.10.0';
+let mockNativeBuildVersion: string | null = '123';
 
 jest.mock('expo-application', () => ({
   get nativeApplicationVersion() {
     return mockNativeApplicationVersion;
+  },
+  get nativeBuildVersion() {
+    return mockNativeBuildVersion;
   },
 }));
 
@@ -18,6 +22,7 @@ describe('expoApplicationMetadataGateway', () => {
 
   beforeEach(() => {
     mockNativeApplicationVersion = '1.10.0';
+    mockNativeBuildVersion = '123';
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
     Object.defineProperty(Constants, 'executionEnvironment', {
       configurable: true,
@@ -50,6 +55,7 @@ describe('expoApplicationMetadataGateway', () => {
     expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
       platform: 'ios',
       currentVersion: '1.10.0',
+      currentBuild: '123',
     });
   });
 
@@ -62,14 +68,17 @@ describe('expoApplicationMetadataGateway', () => {
     expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
       platform: 'android',
       currentVersion: '1.10.0',
+      currentBuild: '123',
     });
   });
 
   it('설치 버전을 알 수 없을 때 package 또는 OTA 버전으로 대체하지 않는다', () => {
     mockNativeApplicationVersion = null;
+    mockNativeBuildVersion = null;
     expect(expoApplicationMetadataGateway.getInstallation()).toEqual({
       platform: 'ios',
       currentVersion: undefined,
+      currentBuild: undefined,
     });
   });
 

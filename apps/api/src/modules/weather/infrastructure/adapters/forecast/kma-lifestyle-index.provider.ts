@@ -10,8 +10,8 @@ import type {
   LifestyleIndex,
   LifestyleIndexProvider,
 } from "../../../application/ports/forecast/lifestyle-index-provider.port.js";
+import { KMA_TIMEZONE } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
-import { KMA_TIMEZONE } from "./kma.constants.js";
 import { getRegionCode } from "./region-code.js";
 
 const uvIndexResponseSchema = z.object({

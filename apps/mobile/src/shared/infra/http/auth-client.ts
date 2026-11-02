@@ -11,6 +11,7 @@ import type { TokenRefresher } from './token-refresher';
 
 interface AuthClientDeps {
   appVersion?: string;
+  appBuild?: string;
   tokenStore: TokenStore;
   /** 앱 전체 단일 인스턴스. 갈라지면 single-flight mutex가 분리돼 토큰 패밀리를 소모한다. */
   refresh: TokenRefresher;
@@ -25,6 +26,7 @@ interface AuthClientDeps {
  */
 export const createAuthClient = ({
   appVersion,
+  appBuild,
   tokenStore,
   refresh,
   endSession,
@@ -41,6 +43,7 @@ export const createAuthClient = ({
     headers: {
       'Content-Type': 'application/json',
       ...(appVersion && { 'X-App-Version': appVersion }),
+      ...(appBuild && { 'X-App-Build': appBuild }),
       ...getDeviceHeaders(),
     },
     hooks: {

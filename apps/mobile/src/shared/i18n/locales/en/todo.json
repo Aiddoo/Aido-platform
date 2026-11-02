@@ -164,7 +164,8 @@
     "loadMoreFailedLabel": "Couldn't load more friends. Retry",
     "emptyInvite": "Invite",
     "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",
-    "emptySearchHint": "Find friends to see and cheer on each other's to-dos"
+    "emptySearchHint": "Find friends to see and cheer on each other's to-dos",
+    "hintDismiss": "Dismiss the friends tip"
   },
   "activation": {
     "title": "Create and complete your first to-do",

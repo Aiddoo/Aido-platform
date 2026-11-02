@@ -95,6 +95,18 @@ export function formatCount(value: number, locale: DateFormatContext['locale']):
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
+/** 소수를 앱 표시 언어의 소수점·자릿수 구분으로 자릿수를 맞춰 표시한다 (en 1.0, 1,234.5). */
+export function formatDecimal(
+  value: number,
+  locale: DateFormatContext['locale'],
+  fractionDigits = 1,
+): string {
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value);
+}
+
 export function formatPrice(amount: number, currencyCode: string) {
   return new Intl.NumberFormat(getLocaleForCurrency(currencyCode), {
     style: 'currency',

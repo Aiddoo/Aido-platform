@@ -9,6 +9,9 @@ export function getClipboardPresenceQueryOptions(clipboard: ClipboardGateway) {
   return queryOptions({
     queryKey: INVITE_QUERY_KEYS.clipboardPresence(),
     queryFn: () => clipboard.hasString(),
+    // 기기 안에서만 처리해 연결 상태와 무관하다
+    networkMode: 'always',
+
     staleTime: 0,
     gcTime: 0,
   });

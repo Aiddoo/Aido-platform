@@ -1,10 +1,7 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
-import { useOverlay } from '@src/shared/ui/overlay';
 import { TextButton } from '@src/shared/ui/text-button';
-import { router } from 'expo-router';
-import { useMemo } from 'react';
 
 import type { PremiumDialogAlternativeAction, PremiumDialogProps } from './premium-dialog.types';
 
@@ -13,17 +10,16 @@ export function PremiumDialog({
   onOpenChange,
   title,
   description,
-  onConfirm,
+  onSubscribe,
   alternativeAction,
 }: PremiumDialogProps) {
-  const navigate = useSingleTap(router.navigate);
+  const subscribe = useSingleTap(onSubscribe);
 
   const { t } = useTranslation();
 
   const handleSubscribe = () => {
     onOpenChange(false);
-    onConfirm?.();
-    navigate('/settings/subscription');
+    subscribe();
   };
 
   const handleAlternative = (action: PremiumDialogAlternativeAction) => {
@@ -74,37 +70,5 @@ export function PremiumDialog({
         </ConfirmDialog.ConfirmButton>
       }
     />
-  );
-}
-
-export function usePremiumDialog() {
-  const overlay = useOverlay();
-
-  return useMemo(
-    () => ({
-      open: (
-        options: Pick<
-          PremiumDialogProps,
-          'title' | 'description' | 'onConfirm' | 'alternativeAction'
-        >,
-      ) => {
-        overlay.open(({ isOpen, close, exit }) => (
-          <PremiumDialog
-            isOpen={isOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                close();
-                exit();
-              }
-            }}
-            title={options.title}
-            description={options.description}
-            onConfirm={options.onConfirm}
-            alternativeAction={options.alternativeAction}
-          />
-        ));
-      },
-    }),
-    [overlay],
   );
 }

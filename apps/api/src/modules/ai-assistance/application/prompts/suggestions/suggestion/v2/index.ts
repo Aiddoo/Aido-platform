@@ -2,6 +2,7 @@ import { dayOfWeekSchema } from "@aido/api";
 import { z } from "zod";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { removeInvisibleCharacters } from "#api/shared/domain/prompt/sanitize";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import {
@@ -57,7 +58,10 @@ function definition(
     });
     const patterns = resolved.map(
       ({ candidate, daysOfWeek, scheduledTime, confidence, modelReason }) => {
-        const reason = truncateGraphemes(modelReason.trim(), REASON_MAX_LENGTH);
+        const reason = truncateGraphemes(
+          removeInvisibleCharacters(modelReason).trim(),
+          REASON_MAX_LENGTH,
+        );
         // 근거 밖 수치·날씨·빈 사유는 서버 문장으로 바꾼다.
         const grounded =
           reason !== "" && !isWeatherRelated(reason) && isReasonGrounded(reason, candidate);

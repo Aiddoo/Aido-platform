@@ -186,7 +186,7 @@ describe("EntitlementService", () => {
     // Then
     expect(feature.dailyLimit).toBe(AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT);
     expect(resource.maxCount).toBe(TODO_CATEGORY_LIMITS.FREE_MAX_COUNT);
-    expect(await fixture.service.hasPremiumAccess(fixture.userId)).toBe(false);
+    expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(false);
   });
 
   it.each([
@@ -199,7 +199,7 @@ describe("EntitlementService", () => {
     // Given
     const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
     // When
-    const result = await fixture.service.hasPremiumAccess(fixture.userId);
+    const result = await fixture.service.can(fixture.userId, "AI_REPORT");
     // Then
     expect(result).toBe(allowed);
   });
@@ -220,17 +220,17 @@ describe("EntitlementService", () => {
     "fresh premium은 warm ACTIVE cache와 달라진 %s 상태를 읽는다",
     async (status) => {
       const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-      expect(await fixture.service.hasPremiumAccess(fixture.userId)).toBe(true);
+      expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(true);
       fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: status });
-      expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(false);
-      expect(await fixture.service.hasPremiumAccess(fixture.userId)).toBe(true);
+      expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
+      expect(await fixture.service.can(fixture.userId, "AI_REPORT")).toBe(true);
     },
   );
   it("fresh premium은 존재하지 않는 사용자와 ADMIN 삭제를 허용하지 않는다", async () => {
     const fixture = createEntitlementFixture({ role: "ADMIN" });
-    expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(true);
+    expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(true);
     fixture.database.users.delete(fixture.userId);
-    expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(false);
+    expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
   });
 
   describe("보상 기간 종료 경계", () => {
@@ -245,12 +245,12 @@ describe("EntitlementService", () => {
         subscriptionStatus: "ACTIVE",
         accessDeadline: ENDS_AT,
       });
-      const before = await fixture.service.hasPremiumAccess(fixture.userId);
+      const before = await fixture.service.can(fixture.userId, "AI_REPORT");
 
       // When
       vi.setSystemTime(ENDS_AT);
-      const cached = await fixture.service.hasPremiumAccess(fixture.userId);
-      const fresh = await fixture.service.hasPremiumAccessInTx(fixture.userId);
+      const cached = await fixture.service.can(fixture.userId, "AI_REPORT");
+      const fresh = await fixture.service.canInTx(fixture.userId, "AI_REPORT");
       const limit = await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
 
       // Then
@@ -268,7 +268,7 @@ describe("EntitlementService", () => {
       });
 
       // When
-      const premium = await fixture.service.hasPremiumAccess(fixture.userId);
+      const premium = await fixture.service.can(fixture.userId, "AI_REPORT");
 
       // Then
       expect(premium).toBe(true);

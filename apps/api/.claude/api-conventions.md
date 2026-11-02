@@ -8,13 +8,13 @@ Controller·UseCase·Port를 작성하거나 역할을 정리할 때 참고한�
 
 현재 사례에서 판단할 수 있는 기준:
 
-| 기준                               | 실제 사례                                                           |
-| ---------------------------------- | ------------------------------------------------------------------- |
-| 상태 행동과 조회 projection 분리   | Notification Aggregate와 Application NotificationRecord             |
-| 작은 consumer 계약                 | UpsertLocation이 location 저장·cache invalidate·grid resolve만 소비 |
-| 공급자 구현에서 정책/계산 격리     | Coordinate와 KmaWeatherGridResolver                                 |
-| 한 객체를 최소 공개 token으로 연결 | WeatherForecastReader의 `useExisting` binding                       |
-| 사용자 표시와 숫자 규칙 분리       | AI report read model/locale label과 Domain report 집계              |
+| 기준                               | 실제 사례                                                         |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| 상태 행동과 조회 projection 분리   | Notification Aggregate와 Application NotificationRecord           |
+| 작은 consumer 계약                 | UpsertLocation이 위치 저장·격자 캐시 정리·격자·시간대 해석만 소비 |
+| 공급자 구현에서 정책/계산 격리     | Coordinate와 KmaWeatherGridResolver                               |
+| 한 객체를 최소 공개 token으로 연결 | WeatherForecastReader의 `useExisting` binding                     |
+| 사용자 표시와 숫자 규칙 분리       | AI report read model/locale label과 Domain report 집계            |
 
 SOLID를 새 Base class나 계층을 만드는 이유로 사용하지 않는다. 실제 변경 이유, 교체 지점, 필요한 capability로 설명한다.
 
@@ -34,7 +34,7 @@ SOLID를 새 Base class나 계층을 만드는 이유로 사용하지 않는다.
 
 Controller는 decorator/guard/Swagger, DTO 검증, 원시값의 Application 입력 변환, 결과의 HTTP 매핑을 담당한다. Repository·SDK·transaction·업무 상태 판단은 Controller에 두지 않는다. UseCase를 직접 주입한다.
 
-[TodoController](../src/modules/planning/presentation/controllers/todos/todo.controller.ts)의 실제 시그니처 발췌:
+[TodoController](../src/modules/planning/presentation/controllers/todos/v1/todo.controller.ts)의 실제 시그니처 발췌:
 
 ```ts
 async create(
@@ -82,6 +82,7 @@ readonly weatherLocationRepository: Pick<
 >;
 readonly weatherCache: Pick<WeatherCachePort, "invalidateGrid">;
 readonly weatherGridResolver: Pick<WeatherGridResolverPort, "resolveGrid">;
+readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
 ```
 
 순수 Application에 Nest decorator를 붙이지 않는다. Context root의 factory provider가 실제 token/구현을 주입한다. [Notes factory](../src/modules/notes/notes-memos-application.providers.ts)의 실제 발췌:

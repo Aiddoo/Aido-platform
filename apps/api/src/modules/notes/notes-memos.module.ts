@@ -8,7 +8,7 @@ import { MEMO_REPOSITORY } from "./application/ports/memos/memo.repository.port.
 import { STAGED_TODO_CREATOR } from "./application/ports/memos/staged-todo-creator.port.js";
 import { DrizzleMemoRepository } from "./infrastructure/persistence/memos/drizzle-memo.repository.js";
 import { MEMO_PROVIDERS } from "./notes-memos.providers.js";
-import { MemoController } from "./presentation/controllers/memos/memo.controller.js";
+import { MemoController } from "./presentation/controllers/memos/v1/memo.controller.js";
 
 @Module({
   imports: [PlanningTodosModule],

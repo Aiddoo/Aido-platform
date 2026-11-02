@@ -5,7 +5,9 @@ import {
   type CacheValueSchema,
   type ICacheService,
   parseTtl,
+  resolveWrapTtl,
   type TtlValue,
+  type WrapTtl,
 } from "../interfaces/cache.interface.js";
 
 interface CacheEntry {
@@ -148,7 +150,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     key: string,
     schema: CacheValueSchema<T>,
     factory: () => Promise<T>,
-    ttl?: TtlValue,
+    ttl?: WrapTtl<T>,
   ): Promise<T> {
     const cached = await this.get(key, schema);
     // nullish-strict: undefined는 cache miss, null은 저장해 둔 값이다
@@ -168,7 +170,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     const promise = factory()
       .then(async (value) => {
         if (value != null) {
-          await this.set(key, value, ttl);
+          await this.set(key, value, resolveWrapTtl(ttl, value));
         }
         return value;
       })

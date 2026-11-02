@@ -1,2 +1,2 @@
-export * from "./admin.request.js";
-export * from "./admin.response.js";
+export * from "./v1/admin.request.js";
+export * from "./v1/admin.response.js";

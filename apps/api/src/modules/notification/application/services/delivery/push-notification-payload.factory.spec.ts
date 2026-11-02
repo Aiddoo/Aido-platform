@@ -133,6 +133,32 @@ describe("PushNotificationPayloadFactory", () => {
     });
   });
 
+  it("날씨 옮기기 링크는 DEEP_LINK url에만 실려 종류로 이동하는 구 앱은 그대로 /weather를 연다", () => {
+    // Given 1.13.x 앱은 WEATHER_* 종류만 보고 action url·context·routing은 읽지 않는다
+    const data = {
+      userId: "user-1",
+      type: "WEATHER_MORNING" as const,
+      purpose: "SCHEDULED_SERVICE" as const,
+      title: "오후 3시 ‘한강 산책’ 때 비 소식이 있어요 ☔",
+      body: "강수 확률 70% · 시간 옮기기",
+      action: { type: "DEEP_LINK" as const, url: "/weather/reschedule?todoIds=12,15&reason=rain" },
+    };
+
+    // When
+    const payload = factory.createBatch({ data, notificationId: 1, dispatchId: 2 });
+
+    // Then
+    expect(payload.minAppVersion).toBeUndefined();
+    expect(payload.data).toEqual({
+      notificationId: 1,
+      dispatchId: 2,
+      type: "WEATHER_MORNING",
+      purpose: "SCHEDULED_SERVICE",
+      action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain" },
+    });
+    expect(pushNotificationDataSchema.parse(payload.data)).toEqual(payload.data);
+  });
+
   it.each([
     { type: "INVITE_JOINED" as const, purpose: "TRANSACTIONAL" as const },
     { type: "INVITE_REWARDED" as const, purpose: "TRANSACTIONAL" as const },

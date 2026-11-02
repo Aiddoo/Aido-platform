@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { HttpClient } from "@nestjs/http-client";
 
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
-import { DiscordWebhookProvider } from "./discord-webhook.provider.js";
+import { DISCORD_WEBHOOK_TIMEOUT_MS, DiscordWebhookProvider } from "./discord-webhook.provider.js";
 
 const WEBHOOK = "https://discord.com/api/webhooks/synthetic-id/synthetic-private-token";
 const PRIVATE_BODY = "synthetic-private-notification-body";
@@ -134,6 +134,30 @@ describe("DiscordWebhookProvider 실제 HTTP wire와 로그 경계", () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain(WEBHOOK);
     expect(fetch).toHaveBeenCalledTimes(1);
+    expect(errorLog).toHaveBeenCalledExactlyOnceWith({
+      event: AdminNotificationInfraEvent.REQUEST_FAILED,
+      provider: "discord",
+      errorType: "transport",
+    });
+  });
+
+  it("응답이 없는 webhook은 제한 시간 뒤 transport 실패로 끊는다", async () => {
+    // Given
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    nativeFetch.mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    );
+
+    // When
+    const pending = provider().send({ title: "응답 없음", body: PRIVATE_BODY });
+    await vi.advanceTimersByTimeAsync(DISCORD_WEBHOOK_TIMEOUT_MS);
+    const result = await pending;
+
+    // Then
+    expect(result.success).toBe(false);
     expect(errorLog).toHaveBeenCalledExactlyOnceWith({
       event: AdminNotificationInfraEvent.REQUEST_FAILED,
       provider: "discord",

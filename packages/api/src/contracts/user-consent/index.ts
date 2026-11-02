@@ -1,2 +1,2 @@
-export * from "./user-consent.request.js";
-export * from "./user-consent.response.js";
+export * from "./v1/user-consent.request.js";
+export * from "./v1/user-consent.response.js";

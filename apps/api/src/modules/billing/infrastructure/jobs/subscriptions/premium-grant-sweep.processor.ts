@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";
@@ -41,7 +42,7 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
     } catch (error) {
       this.#logger.error({
         event: BillingLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
       throw error;
     }

@@ -13,6 +13,10 @@ import {
   FishIcon,
   H3,
   HStack,
+  INQUIRY_SHEET_EXIT,
+  QueryErrorActions,
+  QueryErrorBoundary,
+  Result,
   Spacing,
   Text,
   TextButton,
@@ -20,7 +24,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { type ComponentProps, useEffect } from 'react';
+import { type ComponentProps, Suspense, useEffect } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -46,6 +50,7 @@ type InviteWelcomeBottomSheetProps = Omit<
 
 /** 초대를 수락한 뒤 누구와 친구가 됐는지, 무엇을 받았는지 보여 주고 첫 할 일로 이끈다 */
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
+  const { t } = useTranslation('common');
   const { friendId } = useInviteWelcomeParams();
   const sheet = useSheetRoute(createFeedHref());
   const { data: result } = useQuery(getRedemptionResultQueryOptions({ inviterId: friendId }));
@@ -81,7 +86,23 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
       }
       {...props}
     >
-      <InviteWelcomeBottomSheet.Contents result={result} />
+      <QueryErrorBoundary
+        fallback={({ reset }) => (
+          <Result
+            title={t('errorBoundary.title')}
+            button={
+              <QueryErrorActions
+                onRetry={reset}
+                onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+              />
+            }
+          />
+        )}
+      >
+        <Suspense fallback={null}>
+          <InviteWelcomeBottomSheet.Contents result={result} />
+        </Suspense>
+      </QueryErrorBoundary>
     </BottomSheet>
   );
 }

@@ -7,10 +7,11 @@ import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { CHEER_LIMIT_READER } from "./application/ports/cheers/cheer-limit-reader.port.js";
 import { CHEER_NOTIFIER } from "./application/ports/cheers/cheer-notifier.port.js";
 import { CHEER_REPOSITORY } from "./application/ports/cheers/cheer.repository.port.js";
+import { CHEER_USAGE_READER } from "./application/ports/quotas/daily-send-usage-reader.port.js";
 import { CheerLimitReaderAdapter } from "./infrastructure/adapters/cheers/cheer-limit-reader.adapter.js";
 import { CheerNotifierAdapter } from "./infrastructure/adapters/cheers/cheer-notifier.adapter.js";
 import { DrizzleCheerRepository } from "./infrastructure/persistence/cheers/drizzle-cheer.repository.js";
-import { CheerController } from "./presentation/controllers/cheers/cheer.controller.js";
+import { CheerController } from "./presentation/controllers/cheers/v1/cheer.controller.js";
 import {
   getReceivedCheersProvider,
   getSentCheersProvider,
@@ -19,12 +20,14 @@ import {
   markCheerReadProvider,
   markManyCheersReadProvider,
   sendCheerProvider,
+  cheerUsageReaderProvider,
 } from "./social-cheers-application.providers.js";
 
 @Module({
   imports: [AccessModule, SocialFriendsModule, NotificationDeliveryModule],
   controllers: [CheerController],
   providers: [
+    cheerUsageReaderProvider,
     { provide: CHEER_REPOSITORY, useClass: DrizzleCheerRepository },
     { provide: CHEER_NOTIFIER, useClass: CheerNotifierAdapter },
     { provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
@@ -36,5 +39,6 @@ import {
     markCheerReadProvider,
     markManyCheersReadProvider,
   ],
+  exports: [CHEER_USAGE_READER],
 })
 export class SocialCheersModule {}

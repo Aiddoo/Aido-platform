@@ -31,6 +31,13 @@ export type CacheValueSchema<T> = z.ZodType<T>;
  */
 export type TtlValue = number | `${number}${TtlUnit}`;
 
+/** 값을 받은 뒤에 TTL을 정해야 할 때(예: 곧 비가 오면 더 짧게) 함수로 넘긴다. */
+export type WrapTtl<T> = TtlValue | ((value: T) => TtlValue);
+
+export function resolveWrapTtl<T>(ttl: WrapTtl<T> | undefined, value: T): TtlValue | undefined {
+  return typeof ttl === "function" ? ttl(value) : ttl;
+}
+
 const TTL_UNIT_MILLISECONDS = {
   s: 1000,
   m: 60 * 1000,
@@ -133,7 +140,7 @@ export interface ICacheService {
    * @param key 캐시 키
    * @param schema 캐시 값과 factory 결과를 함께 설명하는 스키마
    * @param factory 캐시 미스 시 호출될 함수
-   * @param ttl TTL (선택)
+   * @param ttl TTL (선택). 함수면 factory 결과로 TTL을 정한다
    * @returns factory 결과 또는 캐시된 값
    *
    * Redis: GET + SET (atomic하지 않음, 필요시 Lua 스크립트 사용)
@@ -150,7 +157,7 @@ export interface ICacheService {
     key: string,
     schema: CacheValueSchema<T>,
     factory: () => Promise<T>,
-    ttl?: TtlValue,
+    ttl?: WrapTtl<T>,
   ): Promise<T>;
 
   /**

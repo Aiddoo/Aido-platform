@@ -1,8 +1,9 @@
 import type { AiReport as AiReportDto } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import {
+  assertEntitled,
+  type EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
 
 import type { ReportType } from "../../../domain/types/reports/ai-report.types.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
@@ -10,7 +11,7 @@ import { toAiReportView } from "../../read-models/reports/ai-report.read-model.j
 
 interface GetReportsDependencies {
   readonly aiReportRepository: Pick<AiReportRepositoryPort, "findMany">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
 }
 
 export class GetReports {
@@ -24,10 +25,7 @@ export class GetReports {
     userId: string,
     params: { type?: ReportType; limit: number },
   ): Promise<AiReportDto[]> {
-    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
-    if (!hasPremium) {
-      throw new ApplicationException(ErrorCode.AI_1308);
-    }
+    await assertEntitled(this.#dependencies.entitlementReader, userId, "AI_REPORT");
 
     const reports = await this.#dependencies.aiReportRepository.findMany({
       userId,

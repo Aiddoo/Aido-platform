@@ -47,6 +47,7 @@ export function createNotificationHistoryReaderMock(): NotificationHistoryReader
 
 export function createPushTokenRepositoryMock(): PushTokenRepositoryPort {
   return {
+    releasePushTokenHeldElsewhere: vi.fn().mockResolvedValue({ userIds: [] }),
     registerPushToken: vi.fn(),
     findPushTokensByUser: vi.fn(),
     findActivePushTokensByUsers: vi.fn(),

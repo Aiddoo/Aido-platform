@@ -94,7 +94,7 @@ export class ParseTodo {
     const { userId } = input;
     const startTime = Date.now();
 
-    if (!this.#dependencies.aiProvider.isAvailable()) {
+    if (!this.#dependencies.aiProvider.isAvailable("parse-todo")) {
       this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
       throw new ApplicationException(ErrorCode.AI_1301);
     }

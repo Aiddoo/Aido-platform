@@ -1,0 +1,112 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "2920fa77-8f25-4d49-8758-a064c22a76ab",
+  "prevIds": [
+    "f880569a-b12a-4a6d-9c39-74f50cd9f447"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "SubscriptionEnvironment"
+      ],
+      "writes": [
+        "s|enum|public.SubscriptionEnvironment",
+        "n|enum|public.SubscriptionEnvironment",
+        "e|enum|public.SubscriptionEnvironment",
+        "n|type|public.SubscriptionEnvironment"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Subscription",
+        "environment"
+      ],
+      "writes": [
+        "s|col|public.Subscription.environment",
+        "n|col|public.Subscription.environment",
+        "e|col|public.Subscription.environment"
+      ],
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public",
+        "n|enum|public.SubscriptionEnvironment"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "SubscriptionEventReceipt",
+        "environment"
+      ],
+      "writes": [
+        "s|col|public.SubscriptionEventReceipt.environment",
+        "n|col|public.SubscriptionEventReceipt.environment",
+        "e|col|public.SubscriptionEventReceipt.environment"
+      ],
+      "reads": [
+        "n|tbl|public.SubscriptionEventReceipt",
+        "n|sch|public",
+        "n|enum|public.SubscriptionEnvironment"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "SubscriptionEnvironment",
+        "values": [
+          "SANDBOX",
+          "PRODUCTION"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Subscription",
+        "name": "environment",
+        "type": "SubscriptionEnvironment",
+        "typeSchema": "public",
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SubscriptionEventReceipt",
+        "name": "environment",
+        "type": "SubscriptionEnvironment",
+        "typeSchema": "public",
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

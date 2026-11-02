@@ -38,6 +38,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get clipboard() {
       return dependency('clipboard');
     },
+    get networkStatus() {
+      return dependency('networkStatus');
+    },
     get logger() {
       return dependency('logger');
     },
@@ -61,6 +64,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get draftService() {
       return dependency('draftService');
+    },
+    get queryCacheStorage() {
+      return dependency('queryCacheStorage');
     },
     get achievementService() {
       return dependency('achievementService');
@@ -128,6 +134,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get reorderCoachmarkService() {
       return dependency('reorderCoachmarkService');
     },
+    get friendStripHintService() {
+      return dependency('friendStripHintService');
+    },
     get storeReviewService() {
       return dependency('storeReviewService');
     },
@@ -143,8 +152,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get weatherService() {
       return dependency('weatherService');
     },
-    get weatherLocationStateService() {
-      return dependency('weatherLocationStateService');
+    get weatherIntroductionService() {
+      return dependency('weatherIntroductionService');
     },
     get widgetSyncService() {
       return dependency('widgetSyncService');

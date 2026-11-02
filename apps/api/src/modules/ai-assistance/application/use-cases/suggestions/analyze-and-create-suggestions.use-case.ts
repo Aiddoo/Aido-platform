@@ -45,7 +45,7 @@ interface AnalyzeAndCreateSuggestionsDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly contextBuilder: Pick<SuggestionContextBuilder, "build">;
   readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly settings: AiTaskSettings;
 }
@@ -63,7 +63,7 @@ export class AnalyzeAndCreateSuggestions {
     weatherGrid?: GridInput | null,
     locale: SupportedLocale = "ko",
   ): Promise<number> {
-    if (!(await this.#dependencies.entitlementReader.hasPremiumAccessInTx(userId))) {
+    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
@@ -71,7 +71,7 @@ export class AnalyzeAndCreateSuggestions {
       });
       return 0;
     }
-    if (!this.#dependencies.aiProvider.isAvailable()) {
+    if (!this.#dependencies.aiProvider.isAvailable("suggestion")) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
@@ -162,7 +162,7 @@ export class AnalyzeAndCreateSuggestions {
       const { userMutationLock, entitlementReader } = this.#dependencies;
       if (
         !(await userMutationLock.lockById(userId)) ||
-        !(await entitlementReader.hasPremiumAccessInTx(userId))
+        !(await entitlementReader.canInTx(userId, "AI_SUGGESTION"))
       ) {
         return 0;
       }

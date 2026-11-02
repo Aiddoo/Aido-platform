@@ -38,6 +38,10 @@ export {
 export {
   createWeatherEveningFallbackNotificationMessage,
   createWeatherEveningNotificationMessage,
+  createWeatherEveningUnavailableNotificationMessage,
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
+  createWeatherMorningUnavailableNotificationMessage,
+  createWeatherRescheduleAction,
+  formatWeatherNotificationTime,
 } from "./weather-notification-message.js";

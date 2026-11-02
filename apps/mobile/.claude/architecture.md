@@ -78,10 +78,11 @@ export interface HttpClient {
 | ----------------------- | --------------------------------------------------------- | -------------------------------------------- |
 | `HttpClient`            | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`             |
 | `Storage`               | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts`     |
-| `EnumerableSyncStorage` | 초안 전용 MMKV 인스턴스(AES-256)                          | `shared/infra/storage/mmkv-draft-storage.ts` |
+| `EnumerableSyncStorage` | 초안·조회 캐시용 암호화 MMKV 인스턴스(AES-256, 키 공유)   | `shared/infra/storage/mmkv-draft-storage.ts` |
 | `Logger`                | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                       |
 | `Analytics`             | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                    |
 | `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
+| `NetworkStatusGateway`  | `expoNetworkStatusGateway`(expo-network)                  | `shared/infra/network/`                      |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 > 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
@@ -194,8 +195,13 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
   같은 직렬화 가능한 객체를 넣는다. 이 저장소는 Expo Router + TanStack Query + Ky를 사용하므로
   TanStack Router의 `loaderDeps`나 oRPC 패턴을 억지로 추가하지 않는다. 전환 전 데이터가 필요하면
   기존 query options로 prefetch한 뒤 URL search state를 바꾼다.
-- 특정 목록에만 결합된 `Loading`, `Error`, `Empty`, `Item`은 `TodoComments.Loading`처럼 compound
-  namespace로 묶는다. 독립적으로 재사용되지 않는 상태 UI를 전역 이름으로 흩뜨리지 않는다.
+- compound namespace(`Parent.X`)의 기준은 응집도다. 부모 없이는 의미가 없는 하위 컴포넌트를 부모 파일에
+  `TodoComments.Loading`, `DailyForecast.TemperatureBar`처럼 묶어 한 곳에서 찾고 이해하게 한다.
+  `Item`·`Loading`·`Error`·`Empty`는 흔한 예일 뿐이고, 부모에 강하게 결합된 구성 요소(`.Cell`, `.Chart`,
+  `.Tile`, `.StaleNotice` 등)도 같은 방식으로 둔다. 패턴을 채우려고 쓰지 않는 static을 만들지 않는다.
+- 파일 안 순서는 본체 → 구성 요소(읽는 순서) → `.Loading` → `.Error` → `.Empty`다. 같은 피처의 여러 블록이
+  함께 쓰는 표시 조각은 `components/`의 독립 파일로, 그 파일에서만 쓰지만 부모의 일부가 아닌 조각은 파일
+  아래 지역 함수로 둔다.
 - 한 화면 block에서만 의미가 있는 작은 조립 조각은 소유 파일의 지역 컴포넌트로 둔다. 둘 이상의
   화면 surface가 공유할 때만 독립 파일로 승격하고, 함께 바뀌는 목록·행·작성기 family는 같은 하위
   폴더에 모은다. 폴더 `index.ts` re-export는 만들지 않고 정의 파일에서 직접 import한다.
@@ -286,7 +292,7 @@ export function FriendCalendar() {
 #### 목록·스켈레톤
 
 - 목록 컴포넌트는 자기 데이터를 `useSuspenseQuery`/`useSuspenseInfiniteQuery`로 구독하고 statics를
-  `.Item` → `.Loading` → `.Error` → `.Empty` 순서로 둔다. Screen은 `QueryErrorBoundary(fallback=X.Error)`
+  `.Item`(과 다른 구성 요소) → `.Loading` → `.Error` → `.Empty` 순서로 둔다. Screen은 `QueryErrorBoundary(fallback=X.Error)`
   → `Suspense(fallback=<X.Loading />)` → `<X />`를 위에서 아래로 쌓는다.
 - 원본을 그대로 넘기는 래퍼(`X.Item = (props) => <UserList.Item {...props} />`)를 만들지 않는다. 공용 행을
   직접 쓰거나, 행 액션 mutation처럼 실제 책임을 가진 행만 `.Item`으로 둔다. 같은 fallback은 `X.Error = UserList.Error`처럼 참조로 연결한다.
@@ -383,7 +389,7 @@ function useView() {
   `ownerId`(사용자 id)가 항상 들어가며, 명시적 로그아웃·회원 탈퇴 때만 `AuthProvider`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 하고,
   로그인 후 `useUserIdentity`가 현재 사용자 외 소유자의 초안을 지운다. 7일 지난 초안은 앱 시작 때 정리한다.
 - 초안 저장소는 MMKV `encryptionKey`(AES-256)로 암호화한다. 키는 SecureStore에 최초 1회 만들어 보관한다. 키 조회가 비동기라
-  `app/_layout.tsx`가 `useDraftStorageBootstrap`으로 스플래시 구간에 미리 열어 `DIProvider`에 넘긴다(초안 화면은 여전히 동기 복원).
+  `app/_layout.tsx`가 `useEncryptedStorageBootstrap`으로 스플래시 구간에 초안·조회 캐시 저장소를 같은 키로 미리 열어 `DIProvider`에 넘긴다(초안 화면은 여전히 동기 복원).
   열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 정상 동작하며 Sentry에 보고한다. 평문 `aido.drafts`는 첫 실행에 옮긴 뒤 삭제한다.
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.
@@ -432,22 +438,22 @@ export type Preference = z.infer<typeof preferenceSchema>;
 `MemoPolicy.isCreatable(limit)`처럼 Policy만 호출한다.
 
 ```typescript
-const PM10_GRADE_THRESHOLDS = [30, 80, 150] as const;
+// features/weather/domains/weather-report.model.ts
+const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
+const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
 
-export function calculateDustGrade(value: number, thresholds: readonly [number, number, number]) {
+/** 미세먼지·초미세먼지 중 더 나쁜 등급. 두 값이 모두 없으면 null이다. */
+export function getAirQualityGrade(airQuality: AirQuality): AirQualityGrade | null {
   // 순수 계산
 }
 
-export function getPm10Grade(conditions: WeatherConditions) {
-  if (conditions.pm10 == null) {
-    return null;
-  }
-
-  return calculateDustGrade(conditions.pm10, PM10_GRADE_THRESHOLDS);
+export function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
+  return now.getTime() - report.fetchedAt.getTime() > STALE_AFTER_MS;
 }
 
-export const WeatherPolicy = {
-  pm10Grade: getPm10Grade,
+export const WeatherReportPolicy = {
+  airQualityGrade: getAirQualityGrade,
+  isStale: isReportStale,
 } as const;
 ```
 
@@ -623,13 +629,14 @@ UI 표시 문구는 i18n 카탈로그 키를 참조한다 (하드코딩 금지 �
 
 ```typescript
 // 라벨 맵은 값 대신 i18n 키를 담는다 (satisfies로 enum 누락 방지)
-const DUST_GRADE_LABEL_KEYS = {
-  good: 'weather:dust.good',
-  moderate: 'weather:dust.moderate',
-  bad: 'weather:dust.bad',
-  veryBad: 'weather:dust.veryBad',
-} as const satisfies Record<DustGrade, string>;
-// 사용처: t(DUST_GRADE_LABEL_KEYS[grade])
+// features/weather/constants/weather-labels.ts — 키는 useTranslation('weather') 기준
+export const AIR_GRADE_LABEL_KEYS = {
+  good: 'airGrade.good',
+  moderate: 'airGrade.moderate',
+  bad: 'airGrade.bad',
+  veryBad: 'airGrade.veryBad',
+} as const satisfies Record<AirQualityGrade, string>;
+// 사용처: t(AIR_GRADE_LABEL_KEYS[grade])
 ```
 
 **Query Keys**
@@ -863,7 +870,7 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 - [ ] `constants/{feature}-query-keys.ts`
 - [ ] `queries/get-…-query-options.ts`, `queries/use-…-mutation-options.ts`
 - [ ] (다른 피처가 무효화해야 하면) `queries/{feature}-cache.ts`
-- [ ] `components/` — 의미 있는 UI 블록과 `.Loading`·`.Error`·`.Empty`·`.Item`
+- [ ] `components/` — 의미 있는 UI 블록과 그 블록에 결합된 static(`.Item`·`.Loading`·`.Error`·`.Empty` 등)
 - [ ] (필요 시) `hooks/`, `utils/`
 
 ---

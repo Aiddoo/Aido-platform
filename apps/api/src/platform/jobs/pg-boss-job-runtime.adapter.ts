@@ -69,6 +69,7 @@ export class LazyPgBossClient implements PgBossClient {
   private client?: PgBossClient;
   private starting?: Promise<PgBossClient>;
   private readonly errorListeners = new Set<(error: Error) => void>();
+  private stopped = false;
 
   constructor(private readonly load: PgBossClientLoader) {}
 
@@ -77,6 +78,8 @@ export class LazyPgBossClient implements PgBossClient {
   }
 
   async stop(options?: StopOptions): Promise<void> {
+    // 종료 뒤 늦게 도착한 enqueue가 새 pg-boss(풀·타이머)를 띄워 프로세스 종료를 막지 않게 한다
+    this.stopped = true;
     const client = this.starting ? await this.starting : this.client;
     await client?.stop(options);
     this.client = undefined;
@@ -141,6 +144,9 @@ export class LazyPgBossClient implements PgBossClient {
   private async ensureStarted(): Promise<PgBossClient> {
     if (this.client) {
       return this.client;
+    }
+    if (this.stopped && !this.starting) {
+      throw new Error("pg-boss client is stopped");
     }
 
     this.starting ??= this.loadAndStart().catch((error: unknown) => {

@@ -6,10 +6,6 @@ export function invalidateNudgeInteractions(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
 }
 
-export function invalidateNudgeLimit(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.limit() });
-}
-
 export function invalidateNudges(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.all });
 }

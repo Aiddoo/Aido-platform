@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { IdentitySettingsLogEvent } from "../../../application/observability/settings/identity-settings-log.events.js";
@@ -68,7 +69,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
         event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
         userId,
         timezone,
-        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorName: toErrorType(error),
       });
     });
   }

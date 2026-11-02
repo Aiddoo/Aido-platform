@@ -2,11 +2,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
+import { premiumAccessCondition } from "#api/modules/access/access-entitlement-sql.public";
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
@@ -91,7 +93,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
           },
           where: {
             id: cursor != null ? { gt: cursor } : undefined,
-            OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+            RAW: (target) => premiumAccessCondition(target, now()),
             status: "ACTIVE",
             deletedAt: { isNull: true },
             todos: {
@@ -111,14 +113,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
               data: {
                 userId: user.id,
                 timezone: user.preference?.timezone ?? "Asia/Seoul",
-                weatherGrid: user.location
-                  ? {
-                      gridX: user.location.gridX,
-                      gridY: user.location.gridY,
-                      lat: user.location.latitude,
-                      lon: user.location.longitude,
-                    }
-                  : null,
+                weatherGrid: toWeatherGrid(user.location),
               } satisfies AiSuggestionAnalyzeData,
             },
             options: {
@@ -178,4 +173,24 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       timezone: "Asia/Seoul",
     };
   }
+}
+
+/** 제안의 날씨 문맥은 KMA 격자 예보만 쓰므로 격자 없는 해외 위치는 날씨 없이 분석한다. */
+function toWeatherGrid(
+  location: {
+    readonly gridX: number | null;
+    readonly gridY: number | null;
+    readonly latitude: number;
+    readonly longitude: number;
+  } | null,
+): AiSuggestionAnalyzeData["weatherGrid"] {
+  if (location == null || location.gridX == null || location.gridY == null) {
+    return null;
+  }
+  return {
+    gridX: location.gridX,
+    gridY: location.gridY,
+    lat: location.latitude,
+    lon: location.longitude,
+  };
 }

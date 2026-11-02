@@ -1,31 +1,39 @@
 Keep putting off your to-dos? Get them done with friends.
 
-Aido is a social to-do app that helps you follow through every day, with AI to plan and friends to keep you going.
-Just say what you need to do and it becomes a to-do. With friends by your side, sticking with it gets easier.
+Aido is a social to-do app that helps you follow through, with AI to plan and friends to keep you going.
+Just say it and it becomes a to-do. With friends by your side, sticking with it gets easier.
 
 [ Invite friends and earn Premium ]
-- Send your invite link on KakaoTalk or any app, or share your 6-character invite code
+- Share your invite link on KakaoTalk or any app, or a 6-character invite code
 - Your friend: 7 days of Premium right when they accept, if they joined within the last 7 days
 - You: 7 days of Premium + 1 more friend once they complete to-dos on 2 days within 14 days of joining
-- See your paw prints and rewards at a glance in “Collect paw prints”
+- Track paw prints and rewards in “Collect paw prints”
 - Rewards are in-app Premium with no cash value, once per device and account
-- Earn up to 30 days of Premium every 30 days, 90 days in total (see Terms of Use)
+- Up to 30 days of Premium per 30 days, 90 days in total (see Terms of Use)
 
 [ Smart to-dos with AI ]
 - Type or say it, and AI picks out the to-do, date, and time
-- “Next Friday” or “in 3 days” is worked out from today in your time zone
-- Say “work out every Mon, Wed, and Fri” to set up a repeating to-do
-- Turn a single note into several to-dos with AI
-- Get routine suggestions based on to-dos you repeat (Premium)
-- Weekly and monthly AI reports break down your completion rate, categories, and best days (Premium)
+- Understands “next Friday” or “in 3 days” in your time zone
+- Say “work out every Mon, Wed, and Fri” for a repeating to-do
+- Turn one note into several to-dos with AI
+- Routine suggestions from to-dos you repeat (Premium)
+- Weekly and monthly AI reports on your completion rate and patterns (Premium)
+
+[ Plan around the weather ]
+- Hourly and 10-day forecasts, anywhere in the world
+- Minute-by-minute rain for the next hour (supported areas)
+- Aido briefing matches today’s to-dos with the weather
+- Move to-dos that clash with rain or heat, and undo anytime
+- Morning and evening weather notifications
+- UV, wind, sunrise and sunset, and air quality in Korea
 
 [ Stay motivated with friends ]
-- Find friends by user tag (#) and see each other’s to-dos in the feed
+- Find friends by user tag (#) and see their to-dos in the feed
 - Nudge a friend who’s slacking off
 - Send a cheer to friends who finish their day
 
 [ See your progress ]
-- Check your daily completion rate on weekly and monthly calendars
+- Daily completion rates on weekly and monthly calendars
 - Build streaks and stay consistent
 
 [ Stay organized ]
@@ -35,6 +43,7 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 - Set up repeating to-dos for your weekly routine
 - Drag and drop to prioritize
 - Choose what’s public and what stays private
+- See your last-viewed to-dos and weather offline
 
 [ Reminders that fit your day ]
 - Morning and evening reminders to start and wrap up your day
@@ -44,7 +53,7 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 [ Home Screen widgets ]
 - Small, medium, and large sizes show today’s to-dos, progress, and streak
 - The large widget adds your week, with paw prints on days you finished it all
-- Tap a to-do or date to open it, or “+ Add to-do” to start one
+- Tap a to-do or date to open it, or “+ Add to-do” to add one
 - After midnight, widgets switch to the new day without opening the app
 
 [ Make it yours ]
@@ -52,7 +61,7 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 - 8 cat-themed Premium app icons
 
 [ Made for bigger screens ]
-- Unfold iPhone Duo to see your list and details side by side, and pick up right where you left off
+- Unfold iPhone Duo to see your list and details side by side
 
 [ Easy to start ]
 - Sign in with Kakao, Google, Naver, or Apple
@@ -74,19 +83,16 @@ Subscribe to Aido Premium to unlock:
 - Up to 30 categories
 - Premium app icons (8 cat themes)
 
-Premium you earn by inviting friends includes the same features. Rewards earned while you’re subscribed start after your subscription ends.
+Premium from invites includes the same features. Rewards earned while subscribed start after your subscription ends.
 
-- Aido Premium is a monthly or yearly auto-renewing subscription. The price and period are shown in the app before you buy.
+- Aido Premium is a monthly or yearly auto-renewing subscription. Price and period are shown in the app before you buy.
 - Payment is charged to your Apple Account at confirmation of purchase.
-- Your subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period.
-- You can manage your subscription in your device settings after purchase.
+- It renews automatically unless auto-renew is turned off at least 24 hours before the current period ends.
+- Manage your subscription in your device settings after purchase.
 
 Terms of Use: https://aido.kr/en/terms
 Privacy Policy: https://aido.kr/en/privacy
 
 [ Data sources ]
-Aido uses public data from Korea’s Public Data Portal (data.go.kr).
-
-- Korea Meteorological Administration: short-term forecasts, UV index
-- AirKorea (Korea Environment Corporation): real-time air quality (PM10, PM2.5)
-- Korea Astronomy and Space Science Institute: sunrise and sunset times
+- Weather: Apple Weather (https://weatherkit.apple.com/legal-attribution.html)
+- Air quality in Korea: AirKorea via data.go.kr

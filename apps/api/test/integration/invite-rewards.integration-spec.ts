@@ -282,7 +282,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         .where(eq(resourceBonus.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
     expect(await rewardedNotices()).toEqual([
-      { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어" },
+      { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어요" },
     ]);
   });
 
@@ -432,7 +432,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         periodEndsAt: storeExpiry,
         bankedDays: 7,
       });
-      expect(await entitlement.hasPremiumAccessInTx(inviterId)).toBe(true);
+      expect(await entitlement.canInTx(inviterId, "AI_REPORT")).toBe(true);
       const projection = await client.query.user.findFirst({
         where: { id: inviterId },
         columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
@@ -655,7 +655,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // Then
     expect(afterFirst).toEqual([]);
     expect(await rewardedNotices()).toEqual([
-      { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어" },
+      { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어요" },
     ]);
   });
 

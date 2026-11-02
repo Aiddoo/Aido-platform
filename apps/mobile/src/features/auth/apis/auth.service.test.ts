@@ -183,7 +183,7 @@ describe('AuthService', () => {
       const result = await service.logout();
 
       // Then
-      expect(authHttpClient.post).toHaveBeenCalledWith('v1/auth/logout');
+      expect(authHttpClient.post).toHaveBeenCalledWith('v1/auth/logout', undefined, undefined);
       expect(tokenStore.clear).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ ok: true, value: undefined });
     });

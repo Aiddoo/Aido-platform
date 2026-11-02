@@ -1,4 +1,4 @@
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 
 import type { FriendUser } from '../domains/friend.model';
 

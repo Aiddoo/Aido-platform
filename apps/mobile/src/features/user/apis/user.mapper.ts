@@ -1,9 +1,23 @@
-import type { CurrentUser, UpdateProfileResponse } from '@aido/api';
+import {
+  type CurrentUser,
+  PREMIUM_FEATURE_KEYS,
+  type PremiumEntitlements as PremiumEntitlementsDto,
+  type UpdateProfileResponse,
+} from '@aido/api';
+import type { PremiumEntitlements } from '@src/features/subscription/domains/premium-entitlement.model';
+import { mapValues, pick } from 'es-toolkit';
 
 import type { UpdateProfileResult, User } from '../domains/user.model';
 
 const toNullableDate = (value: string | null | undefined) =>
   value == null ? null : new Date(value);
+
+// 새 서버가 더한 모르는 기능 키는 버리고, 초기화 시각만 Date로 바꾼다
+const toPremiumEntitlements = (dto: PremiumEntitlementsDto): PremiumEntitlements =>
+  mapValues(pick(dto, PREMIUM_FEATURE_KEYS), ({ resetsAt, ...entitlement }) => ({
+    ...entitlement,
+    resetsAt: resetsAt == null ? undefined : new Date(resetsAt),
+  }));
 
 export const toUser = (dto: CurrentUser): User => ({
   id: dto.userId,
@@ -29,6 +43,9 @@ export const toUser = (dto: CurrentUser): User => ({
     bankedDays: dto.bankedPremiumDays ?? 0,
     grantEndedAt: toNullableDate(dto.premiumGrantEndedAt),
   },
+  // 구버전 서버는 생략하므로 null로 두고 정책이 프리미엄 출처·카탈로그로 판단한다
+  isPremium: dto.isPremium ?? null,
+  entitlements: dto.entitlements == null ? null : toPremiumEntitlements(dto.entitlements),
   createdAt: new Date(dto.createdAt),
 });
 

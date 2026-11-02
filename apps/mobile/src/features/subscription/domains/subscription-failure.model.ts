@@ -29,6 +29,7 @@ function causeOfSubscriptionError(error: SubscriptionError): SubscriptionFailure
     .with(SubscriptionErrorCode.NETWORK, () => 'network' as const)
     .with(
       SubscriptionErrorCode.STORE_UNAVAILABLE,
+      SubscriptionErrorCode.STORE_PROBLEM,
       SubscriptionErrorCode.OFFERINGS_UNAVAILABLE,
       () => 'store' as const,
     )
@@ -39,6 +40,16 @@ function causeOfSubscriptionError(error: SubscriptionError): SubscriptionFailure
     .exhaustive();
 }
 
+/**
+ * 스토어를 쓸 수 없어 요금제를 보여 줄 수 없는 상태. 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다.
+ * - setup: 앱·스토어 설정 문제라 다시 해도 같다. 문의로만 잇는다
+ * - temporary: 스토어가 잠시 응답하지 못했다. 나중에 다시 하면 풀릴 수 있다
+ */
+export interface StoreUnavailable {
+  kind: 'setup' | 'temporary';
+  diagnosticCode: string;
+}
+
 export const SubscriptionFailurePolicy = {
   /** 던져진 값이 무엇이든 사용자가 할 수 있는 일이 같은 원인으로 묶는다 */
   causeOf(error: unknown): SubscriptionFailureCause {
@@ -46,6 +57,26 @@ export const SubscriptionFailurePolicy = {
       .with(P.instanceOf(SubscriptionError), causeOfSubscriptionError)
       .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network' as const)
       .otherwise(() => 'server' as const);
+  },
+
+  /** 스토어를 쓸 수 없는 상태면 그 종류를, 그 밖의 오류면 null을 준다 */
+  storeUnavailableOf(error: unknown): StoreUnavailable | null {
+    return match(error)
+      .with(
+        P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_UNAVAILABLE }),
+        (storeError) => ({
+          kind: 'setup' as const,
+          diagnosticCode: SubscriptionFailurePolicy.diagnosticCodeOf(storeError),
+        }),
+      )
+      .with(
+        P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_PROBLEM }),
+        (storeError) => ({
+          kind: 'temporary' as const,
+          diagnosticCode: SubscriptionFailurePolicy.diagnosticCodeOf(storeError),
+        }),
+      )
+      .otherwise(() => null);
   },
 
   /**

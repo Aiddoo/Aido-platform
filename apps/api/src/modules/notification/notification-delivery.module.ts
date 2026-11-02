@@ -94,8 +94,8 @@ import {
   sendNudgeNotificationProvider,
   unregisterPushTokenProvider,
 } from "./notification-delivery-application.providers.js";
-import { NotificationInboxController } from "./presentation/controllers/delivery/notification-inbox.controller.js";
-import { NotificationController } from "./presentation/controllers/delivery/notification.controller.js";
+import { NotificationInboxController } from "./presentation/controllers/delivery/v1/notification-inbox.controller.js";
+import { NotificationController } from "./presentation/controllers/delivery/v1/notification.controller.js";
 
 @Module({
   // Identity 설정의 역방향 큐 참조는 jobs.public 경계로 분리한다.

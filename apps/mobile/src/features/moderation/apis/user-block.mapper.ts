@@ -1,5 +1,5 @@
 import { blockedUsersResponseSchema } from '@aido/api';
-import type { Page } from '@src/shared/types/page.type';
+import type { Page } from '@src/shared/types/page.types';
 import { z } from 'zod';
 
 import { type BlockedUser, BlockedUserSchema } from '../domains/user-block.model';

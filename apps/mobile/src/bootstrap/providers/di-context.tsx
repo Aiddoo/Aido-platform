@@ -3,6 +3,7 @@ import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
+import type { NetworkStatusGateway } from '@src/core/ports/network-status';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionManager } from '@src/core/session/session-manager';
@@ -27,12 +28,13 @@ import type { StoreReviewService } from '@src/features/store-review/apis/store-r
 import type { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import type { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import type { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
+import type { FriendStripHintService } from '@src/features/todo/apis/friend-strip-hint.service';
 import type { ReorderCoachmarkService } from '@src/features/todo/apis/reorder-coachmark.service';
 import type { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import type { UserService } from '@src/features/user/apis/user.service';
-import type { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
+import type { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import type { WidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
@@ -41,11 +43,14 @@ import type { DraftService } from '@src/shared/draft/draft.service';
 import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createContext, type PropsWithChildren, use } from 'react';
 
+import type { QueryCacheStorage } from './query-cache-persistence';
+
 export interface DIContainer {
   // Infrastructure
   storage: Storage;
   locationGateway: LocationGateway;
   clipboard: ClipboardGateway;
+  networkStatus: NetworkStatusGateway;
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
@@ -58,6 +63,8 @@ export interface DIContainer {
   featureAttribution: FeatureAttributionStore;
   /** 작성 중 초안(사용자 범위 로컬 상태) */
   draftService: DraftService;
+  /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
+  queryCacheStorage: QueryCacheStorage;
 
   // Services
   achievementService: AchievementService;
@@ -82,12 +89,13 @@ export interface DIContainer {
   notificationService: NotificationService;
   todoNudgeService: TodoNudgeService;
   reorderCoachmarkService: ReorderCoachmarkService;
+  friendStripHintService: FriendStripHintService;
   storeReviewService: StoreReviewService;
   userService: UserService;
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
   weatherService: WeatherService;
-  weatherLocationStateService: WeatherLocationStateService;
+  weatherIntroductionService: WeatherIntroductionService;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
 }
@@ -119,12 +127,14 @@ export const useDI = (): DIContainer => {
 // Infrastructure Hooks
 export const useLocationGateway = () => useDI().locationGateway;
 export const useClipboard = () => useDI().clipboard;
+export const useNetworkStatus = () => useDI().networkStatus;
 export const useTokenStore = () => useDI().tokenStore;
 export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;
 export const useErrorReporter = () => useDI().errorReporter;
 export const useDraftService = () => useDI().draftService;
+export const useQueryCacheStorage = () => useDI().queryCacheStorage;
 
 // Service Hooks
 export const useAchievementService = () => useDI().achievementService;
@@ -148,11 +158,12 @@ export const useTodoCategoryService = () => useDI().todoCategoryService;
 export const useNotificationService = () => useDI().notificationService;
 export const useTodoNudgeService = () => useDI().todoNudgeService;
 export const useReorderCoachmarkService = () => useDI().reorderCoachmarkService;
+export const useFriendStripHintService = () => useDI().friendStripHintService;
 export const useStoreReviewService = () => useDI().storeReviewService;
 export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
-export const useWeatherLocationStateService = () => useDI().weatherLocationStateService;
+export const useWeatherIntroductionService = () => useDI().weatherIntroductionService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
 export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;

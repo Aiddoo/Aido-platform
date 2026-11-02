@@ -3,6 +3,7 @@ import type { User } from '@src/features/user/domains/user.model';
 import { match, P } from 'ts-pattern';
 
 import {
+  hasPassed,
   type PremiumAccess,
   PremiumAccessPolicy,
   type PremiumEndingNotice,
@@ -15,6 +16,8 @@ export type SubscriptionReceiptRow =
   | { type: 'account' }
   | { type: 'rewardRecord'; endsAt: Date }
   | { type: 'nextBillingDate'; date: Date }
+  /** 결제 예정 시각이 지났는데 스토어 갱신이 아직 서버에 반영되지 않았다(최대 유예 3시간) */
+  | { type: 'renewalPending' }
   | { type: 'subscriptionEndsOn'; date: Date }
   | { type: 'autoRenewal'; willRenew: boolean }
   | { type: 'rewardPeriod'; endsAt: Date }
@@ -30,13 +33,19 @@ export type SubscriptionReceiptFootnote =
 
 export type SubscriptionReceiptAction = 'subscribe' | 'manage';
 
-export interface SubscriptionReceiptViewModel {
-  variant: SubscriptionReceiptVariant;
+interface SubscriptionReceiptContents {
   rows: SubscriptionReceiptRow[];
   footnote: SubscriptionReceiptFootnote | null;
   primaryAction: SubscriptionReceiptAction | null;
-  endingNotice: PremiumEndingNotice | null;
 }
+
+/** 관리자는 기간이 끝나도 모든 기능을 쓰므로 끝남 안내가 없다 */
+export type SubscriptionReceiptViewModel =
+  | (SubscriptionReceiptContents & { variant: 'admin'; endingNotice: null })
+  | (SubscriptionReceiptContents & {
+      variant: Exclude<SubscriptionReceiptVariant, 'admin'>;
+      endingNotice: PremiumEndingNotice | null;
+    });
 
 interface SubscriptionReceiptContext {
   isStoreConfigured: boolean;
@@ -65,18 +74,30 @@ function toAdminReceipt(access: PremiumAccess): SubscriptionReceiptViewModel {
   };
 }
 
-function toPaidRows(access: PremiumAccess): SubscriptionReceiptRow[] {
+function toBillingRow(
+  access: PremiumAccess,
+  periodEndsAt: Date,
+  now: Date,
+): SubscriptionReceiptRow {
+  if (!access.willRenew) {
+    return { type: 'subscriptionEndsOn', date: periodEndsAt };
+  }
+  return hasPassed(periodEndsAt, now)
+    ? { type: 'renewalPending' }
+    : { type: 'nextBillingDate', date: periodEndsAt };
+}
+
+function toPaidRows(access: PremiumAccess, now: Date): SubscriptionReceiptRow[] {
   const { periodEndsAt } = access;
   if (periodEndsAt == null) {
     return [];
   }
 
+  // 자동 갱신 중이면 보상이 시작하는 날이 갱신마다 밀려 날짜 없이 일수만 보인다(시작 시점은 footnote가 설명한다)
   return [
-    access.willRenew
-      ? { type: 'nextBillingDate', date: periodEndsAt }
-      : { type: 'subscriptionEndsOn', date: periodEndsAt },
+    toBillingRow(access, periodEndsAt, now),
     { type: 'autoRenewal', willRenew: access.willRenew },
-    ...toBankedRows(access, access.endsAt),
+    ...toBankedRows(access, access.willRenew ? null : access.endsAt),
   ];
 }
 
@@ -98,7 +119,7 @@ function toPaidReceipt(
 ): SubscriptionReceiptViewModel {
   return {
     variant: 'paid',
-    rows: toPaidRows(access),
+    rows: toPaidRows(access, now),
     footnote: toPaidFootnote(access),
     primaryAction: 'manage',
     endingNotice: PremiumAccessPolicy.endingNotice(access, now, timeZone),

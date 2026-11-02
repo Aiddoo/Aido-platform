@@ -1,2 +1,2 @@
-export * from "./inquiry.request.js";
-export * from "./inquiry.response.js";
+export * from "./v1/inquiry.request.js";
+export * from "./v1/inquiry.response.js";

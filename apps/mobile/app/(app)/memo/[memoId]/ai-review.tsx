@@ -10,6 +10,9 @@ import {
 } from '@src/features/memo/hooks/use-memo-screen-params';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toReviewedMemoConversionInput } from '@src/features/memo/utils/to-reviewed-memo-conversion-input';
+import { useQuotaResetMessage } from '@src/features/subscription/hooks/use-quota-reset-message';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -145,14 +148,21 @@ AiReviewScreen.Error = function ErrorFallback({ error }: Pick<QueryErrorFallback
   const { t } = useTranslation(['memo', 'common']);
   const replace = useSingleTap(router.replace);
   const goBack = useSingleTap(router.back);
+  const queryClient = useQueryClient();
+  const toQuotaResetMessage = useQuotaResetMessage();
 
   if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
+    const resetMessage = toQuotaResetMessage(getCachedMe(queryClient)?.entitlements?.AI_PARSE);
     return (
       <Result
         title={t('memo:aiReview.limitTitle')}
-        description={t('memo:aiDialog.subscribeUnlimited')}
+        description={
+          resetMessage == null
+            ? t('memo:aiDialog.subscribeUnlimited')
+            : `${t('memo:aiDialog.subscribeUnlimited')}\n${resetMessage}`
+        }
         button={
-          <Result.Button onPress={() => replace('/settings/subscription')}>
+          <Result.Button onPress={() => replace(subscriptionHref())}>
             {t('common:premiumDialog.subscribe')}
           </Result.Button>
         }

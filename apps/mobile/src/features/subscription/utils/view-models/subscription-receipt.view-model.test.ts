@@ -21,17 +21,17 @@ function receiptOf(me: CurrentUser, { isStoreConfigured = true, now = NOW }: Rec
 
 describe('toSubscriptionReceiptViewModel', () => {
   describe('스토어 구독', () => {
-    it('A. 보상 중에 구독했으면 다음 결제일은 스토어 만료로, 쌓아 둔 보상은 전체 끝까지로 보인다', () => {
+    it('A. 보상 중에 구독했으면 다음 결제일은 스토어 만료로 보이고, 자동 갱신 중이라 쌓아 둔 보상은 날짜 없이 일수만 보인다', () => {
       // When
       const result = receiptOf(PREMIUM_ME_EXAMPLES.buyDuringReward);
 
-      // Then 결제일(3월 10일)과 보상 끝(3월 15일)이 서로 다른 날짜다
+      // Then 갱신마다 밀리는 보상 끝 날짜는 고정 날짜처럼 보이지 않게 뺀다
       expect(result).toEqual({
         variant: 'paid',
         rows: [
           { type: 'nextBillingDate', date: new Date('2028-03-10T04:00:00.000Z') },
           { type: 'autoRenewal', willRenew: true },
-          { type: 'bankedReward', days: 5, endsAt: new Date('2028-03-15T07:00:00.000Z') },
+          { type: 'bankedReward', days: 5, endsAt: null },
         ],
         footnote: { type: 'rewardStartsAfterSubscription', days: 5 },
         primaryAction: 'manage',
@@ -44,20 +44,18 @@ describe('toSubscriptionReceiptViewModel', () => {
         'C. 자동 갱신 구독 중에 보상을 받았으면',
         PREMIUM_ME_EXAMPLES.rewardDuringRenewingSubscription,
         7,
-        '2028-03-17T07:00:00.000Z',
       ],
       [
         'F. 쌓아 둔 보상이 시작된 뒤 다시 구독했으면',
         PREMIUM_ME_EXAMPLES.resubscribedAfterBankedStarted,
         5,
-        '2028-04-17T07:00:00.000Z',
       ],
-    ] as const)('%s 쌓아 둔 %i일을 서버의 전체 끝(%s)까지로 보인다', (_case, me, days, endsAt) => {
+    ] as const)('%s 자동 갱신 중이라 쌓아 둔 %i일을 날짜 없이 보인다', (_case, me, days) => {
       // When
       const result = receiptOf(me);
 
       // Then
-      expect(result.rows).toContainEqual({ type: 'bankedReward', days, endsAt: new Date(endsAt) });
+      expect(result.rows).toContainEqual({ type: 'bankedReward', days, endsAt: null });
       expect(result.footnote).toEqual({ type: 'rewardStartsAfterSubscription', days });
     });
 
@@ -97,6 +95,29 @@ describe('toSubscriptionReceiptViewModel', () => {
         date: new Date('2028-03-10T04:00:00.000Z'),
       });
       expect(result.endingNotice).toBe('tomorrow');
+    });
+
+    it('자동 갱신 결제 예정 시각이 지났는데 갱신이 아직 반영되지 않았으면 지난 날짜 대신 갱신 확인 중으로 보인다', () => {
+      // When 다음 결제 예정(3월 10일 13:00 KST) 1시간 뒤, 갱신 웹훅 전이다
+      const result = receiptOf(PREMIUM_ME_EXAMPLES.buyDuringReward, {
+        now: new Date('2028-03-10T05:00:00Z'),
+      });
+
+      // Then
+      expect(result.rows[0]).toEqual({ type: 'renewalPending' });
+    });
+
+    it('자동 갱신 결제 예정 시각 1분 전에는 다음 결제일을 그대로 보인다', () => {
+      // When
+      const result = receiptOf(PREMIUM_ME_EXAMPLES.buyDuringReward, {
+        now: new Date('2028-03-10T03:59:00Z'),
+      });
+
+      // Then
+      expect(result.rows[0]).toEqual({
+        type: 'nextBillingDate',
+        date: new Date('2028-03-10T04:00:00.000Z'),
+      });
     });
 
     it('구버전 서버라 출처가 없으면 날짜 행 없이 구독 관리만 보인다', () => {

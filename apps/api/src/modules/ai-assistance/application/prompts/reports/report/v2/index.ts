@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import { removeInvisibleCharacters } from "#api/shared/domain/prompt/sanitize";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { numbersIn } from "../../../../../domain/services/grounding/grounded-numbers.js";
@@ -63,7 +64,10 @@ function normalizeV2(
   const evidence = numberEvidence(input, locale);
   // persona 말투를 고친 뒤, 근거 밖 숫자가 있는 문장은 빼고 남은 문장만 쓴다.
   const clean = (text: string) =>
-    keepGroundedSentences(normalizeReportPersona(text.trim(), locale).trim(), evidence);
+    keepGroundedSentences(
+      normalizeReportPersona(removeInvisibleCharacters(text).trim(), locale).trim(),
+      evidence,
+    );
   const summary = truncateGraphemes(clean(draft.summary), SUMMARY_MAX_LENGTH);
   const tips = draft.tips
     .map((tip) => truncateGraphemes(clean(tip), TIP_MAX_LENGTH))

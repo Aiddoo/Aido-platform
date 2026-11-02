@@ -1,3 +1,4 @@
+import type { PremiumFeature } from "@aido/api/vocabulary";
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { pickBy } from "es-toolkit";
 
@@ -246,7 +247,7 @@ export class StubReminderTimezoneCache implements ReminderTimezoneCachePort {
 
 export class StubPreferenceEntitlement implements PreferenceEntitlementPort {
   readonly premiumUserIds = new Set<string>();
-  async hasPremiumAccess(userId: string): Promise<boolean> {
+  async can(userId: string, _feature: PremiumFeature): Promise<boolean> {
     return this.premiumUserIds.has(userId);
   }
 }

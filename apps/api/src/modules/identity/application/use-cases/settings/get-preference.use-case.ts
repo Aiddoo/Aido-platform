@@ -22,7 +22,10 @@ export class GetPreference {
 
   async execute(input: GetPreferenceInput): Promise<PreferenceResponse> {
     const snapshot = await this.#dependencies.preferenceReader.read(input.userId);
-    const hasPremium = await this.#dependencies.entitlement.hasPremiumAccess(input.userId);
-    return buildPreferenceView(snapshot, hasPremium);
+    const canCustomizeReminder = await this.#dependencies.entitlement.can(
+      input.userId,
+      "CUSTOM_REMINDER_TIME",
+    );
+    return buildPreferenceView(snapshot, canCustomizeReminder);
   }
 }

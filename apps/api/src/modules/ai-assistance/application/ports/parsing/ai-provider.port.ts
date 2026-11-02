@@ -88,7 +88,8 @@ export interface AiProvider {
   generateStructured<T>(
     options: GenerateStructuredOptions<T>,
   ): Promise<GenerateStructuredResult<T>>;
-  isAvailable(): boolean;
+  /** 작업의 기본 모델 공급자가 등록돼 있는지(API 키 설정) */
+  isAvailable(task: AiTaskId): boolean;
 }
 
 export const AI_PROVIDER = Symbol("AI_PROVIDER");

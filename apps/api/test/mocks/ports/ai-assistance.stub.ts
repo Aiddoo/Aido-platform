@@ -1,3 +1,4 @@
+import type { PremiumFeature } from "@aido/api/vocabulary";
 import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
@@ -52,7 +53,7 @@ export class StubAiGenerationUnitOfWork implements UnitOfWorkPort {
 }
 
 export class StubAiGenerationAccess
-  implements Pick<EntitlementReaderPort, "hasPremiumAccessInTx">, UserMutationLockPort
+  implements Pick<EntitlementReaderPort, "canInTx">, UserMutationLockPort
 {
   role = "USER";
   subscriptionStatus = "ACTIVE";
@@ -62,7 +63,7 @@ export class StubAiGenerationAccess
   readonly reads: Array<{ inUnitOfWork: boolean; eligible: boolean }> = [];
   readonly locks: boolean[] = [];
   constructor(readonly unitOfWork: StubAiGenerationUnitOfWork) {}
-  async hasPremiumAccessInTx(_userId: string): Promise<boolean> {
+  async canInTx(_userId: string, _feature: PremiumFeature): Promise<boolean> {
     const eligible =
       this.exists &&
       this.status === "ACTIVE" &&

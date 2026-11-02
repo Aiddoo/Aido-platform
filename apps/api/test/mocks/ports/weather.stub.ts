@@ -1,3 +1,6 @@
+import type { WeatherReportLanguage } from "#api/modules/weather/application/models/forecast/weather-report-language";
+import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
+import type { WeatherReport } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   AirQuality,
   AirQualityProvider,
@@ -10,16 +13,30 @@ import type {
   SunTime,
   SunTimeProvider,
 } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
+import type {
+  ResolvedRegion,
+  TimezoneResolverPort,
+} from "#api/modules/weather/application/ports/forecast/timezone.resolver.port";
 import type { WeatherGridResolverPort } from "#api/modules/weather/application/ports/forecast/weather-grid-resolver.port";
 import type { WeatherLocationRepositoryPort } from "#api/modules/weather/application/ports/forecast/weather-location.repository.port";
 import type {
   WeatherForecast,
   WeatherProvider,
 } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import type {
+  WeatherReportProviderPort,
+  WeatherReportRequest,
+} from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
 import type { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
+import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 import type { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
+import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
-import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
+import {
+  weatherAttributionFixture,
+  weatherForecastFixture,
+  weatherReportFixture,
+} from "#test/fixtures/weather.fixture";
 
 export class StubWeatherLocationRepository implements WeatherLocationRepositoryPort {
   readonly records = new Map<string, UserLocation>();
@@ -68,13 +85,17 @@ export class StubWeatherGridResolver implements WeatherGridResolverPort {
 export class StubWeatherProvider implements WeatherProvider {
   readonly name = "fixture";
   constructor(readonly timeZone = "Asia/Seoul") {}
-  readonly calls: { lat: number; lon: number; date: Date }[] = [];
+  readonly calls: { lat: number; lon: number; date: Date; issuance: Date }[] = [];
   readonly results = new Map<string, WeatherForecast | Error>();
   failure: Error | null = null;
   forecast = weatherForecastFixture();
 
-  async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
-    this.calls.push({ lat, lon, date: new Date(date) });
+  async getForecast(
+    lat: number,
+    lon: number,
+    { target: date, issuance }: KmaForecastTiming,
+  ): Promise<WeatherForecast> {
+    this.calls.push({ lat, lon, date: new Date(date), issuance: new Date(issuance) });
     const result = this.results.get(`${lat}:${lon}`) ?? this.failure ?? this.forecast;
     if (result instanceof Error) {
       throw result;
@@ -165,5 +186,86 @@ export class StubSunTimeProvider implements SunTimeProvider {
     this.dates.clear();
     this.result = { sunrise: "05:23", sunset: "19:00" };
     this.failure = null;
+  }
+}
+
+export class StubTimezoneResolver implements TimezoneResolverPort {
+  readonly coordinates: Coordinate[] = [];
+  region: ResolvedRegion = { timezone: "Asia/Seoul", countryCode: "KR" };
+
+  resolve(coordinate: Coordinate): ResolvedRegion {
+    this.coordinates.push(coordinate);
+    return { ...this.region };
+  }
+
+  clear(): void {
+    this.coordinates.length = 0;
+    this.region = { timezone: "Asia/Seoul", countryCode: "KR" };
+  }
+}
+
+export class StubWeatherReportProvider implements WeatherReportProviderPort {
+  readonly calls: { cellKey: string; request: WeatherReportRequest }[] = [];
+  readonly attributionLanguages: WeatherReportLanguage[] = [];
+  report: WeatherReport = weatherReportFixture();
+  failure: Error | null = null;
+  localizationFailure: Error | null = null;
+  hasLocalizedContent = false;
+
+  async localizesContent(): Promise<boolean> {
+    if (this.localizationFailure !== null) {
+      throw this.localizationFailure;
+    }
+    return this.hasLocalizedContent;
+  }
+
+  async getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport> {
+    this.calls.push({ cellKey: cell.key, request: { ...request } });
+    if (this.failure !== null) {
+      throw this.failure;
+    }
+    return this.report;
+  }
+
+  async getAttribution(language: WeatherReportLanguage): Promise<WeatherReportAttribution> {
+    this.attributionLanguages.push(language);
+    return weatherAttributionFixture(language);
+  }
+
+  clear(): void {
+    this.calls.length = 0;
+    this.attributionLanguages.length = 0;
+    this.report = weatherReportFixture();
+    this.failure = null;
+    this.localizationFailure = null;
+  }
+}
+
+/** 서명 대신 순서대로 토큰을 내주고 무효화 횟수를 기록한다. */
+export class StubWeatherKitTokenResolver {
+  readonly issued: string[] = [];
+  invalidations = 0;
+  failure: Error | null = null;
+
+  async resolve(): Promise<string> {
+    if (this.failure !== null) {
+      throw this.failure;
+    }
+    const token = `synthetic.jwt.token-${this.invalidations + 1}`;
+    this.issued.push(token);
+    return token;
+  }
+
+  invalidate(): void {
+    this.invalidations += 1;
+  }
+}
+
+export class StubWeatherKitAttributionResolver {
+  readonly languages: string[] = [];
+
+  async resolve(language: string): Promise<WeatherReportAttribution> {
+    this.languages.push(language);
+    return weatherAttributionFixture(language);
   }
 }

@@ -15,7 +15,8 @@ import {
 interface ReorderSubTodosParams {
   todoId: number;
   subTodoIds: number[];
-  startDate: string;
+  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
+  date: string;
 }
 
 export const useReorderSubTodosMutationOptions = () => {
@@ -28,17 +29,17 @@ export const useReorderSubTodosMutationOptions = () => {
       const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
       return unwrap(result);
     },
-    onMutate: async ({ todoId, subTodoIds, startDate }) => {
-      await cancelTodoListQuery(queryClient, { date: startDate });
-      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
+    onMutate: async ({ todoId, subTodoIds, date }) => {
+      await cancelTodoListQuery(queryClient, { date });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      updateTodoInList(queryClient, { date, todoId }, (todo) => ({
         ...todo,
         subTodos: subTodoIds
           .map((id) => todo.subTodos.find((subTodo) => subTodo.id === id))
           .filter((subTodo) => subTodo != null),
       }));
 
-      return { snapshot, startDate };
+      return { snapshot, date };
     },
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
@@ -49,8 +50,8 @@ export const useReorderSubTodosMutationOptions = () => {
         restoreTodo(queryClient, context.snapshot);
       }
     },
-    onSettled: (_data, _error, { todoId, startDate }) => {
-      invalidateTodoInList(queryClient, { date: startDate, todoId });
+    onSettled: (_data, _error, { todoId, date }) => {
+      invalidateTodoInList(queryClient, { date, todoId });
     },
   });
 };

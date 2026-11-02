@@ -23,6 +23,7 @@ export class DrizzleSubscriptionEventReceiptRepository implements SubscriptionEv
         eventId: input.eventId,
         eventType: input.eventType,
         processedAt: input.processedAt,
+        environment: input.environment,
       })
       .onConflictDoNothing({
         target: [subscriptionEventReceipt.provider, subscriptionEventReceipt.eventId],

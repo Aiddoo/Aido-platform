@@ -7,6 +7,7 @@ import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { invalidateWidgetSummary } from './todo-cache';
 
 interface ReorderTodoParams {
   id: number;
@@ -25,6 +26,7 @@ export const useReorderTodoMutationOptions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+      invalidateWidgetSummary(queryClient);
       trackEvent('todo_reordered', { source: 'feed' });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {

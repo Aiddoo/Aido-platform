@@ -9,12 +9,15 @@ import {
   todoCommentIdSchema,
 } from '@aido/api';
 import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import {
   createTodoCommentScreenHrefs,
   createTodoCommentThreadHref,
 } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { createTodoDetailHref } from '@src/features/todo/utils/navigation/todo-detail-href';
+import { weatherHref } from '@src/features/weather/utils/navigation/weather-href';
+import { parseWeatherRescheduleUrl } from '@src/features/weather/utils/navigation/weather-reschedule-href';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
@@ -138,6 +141,15 @@ export function resolveNotificationDestination(
     return toNoticeDestination(source.action?.url, today);
   }
 
+  // 아침 날씨 알림이 할 일과 겹친 비·더위를 알리면 옮기기 시트로 바로 연다. 링크가 없거나 낯설면 날씨 화면이다.
+  const rescheduleHref =
+    source.type === NOTIFICATION_TYPE.WEATHER_MORNING
+      ? parseWeatherRescheduleUrl(source.action?.url)
+      : null;
+  if (rescheduleHref != null) {
+    return { kind: 'route', href: rescheduleHref };
+  }
+
   const routing = parseNotificationRouting(source);
   return routing == null
     ? NO_DESTINATION
@@ -150,17 +162,12 @@ function toNoticeDestination(url: string | undefined, today?: string): Notificat
   return match(url)
     .with('/feed', () => ({ kind: 'route' as const, href: createFeedHref({ date: feedDate }) }))
     .with('/friends/invite', () => ({ kind: 'route' as const, href: myInviteHref() }))
-    .with(
-      '/achievements',
-      '/weather',
-      '/friends',
-      '/settings/subscription',
-      '/settings/notifications',
-      (href) => ({
-        kind: 'route' as const,
-        href,
-      }),
-    )
+    .with('/settings/subscription', () => ({ kind: 'route' as const, href: subscriptionHref() }))
+    .with('/weather', () => ({ kind: 'route' as const, href: weatherHref('notification') }))
+    .with('/achievements', '/friends', '/settings/notifications', (href) => ({
+      kind: 'route' as const,
+      href,
+    }))
     .otherwise(() => NO_DESTINATION);
 }
 
@@ -224,7 +231,7 @@ function toRouteDestination(
     }))
     .with({ type: P.union('WEATHER_MORNING', 'WEATHER_EVENING') }, () => ({
       kind: 'route' as const,
-      href: '/weather' as const,
+      href: weatherHref('notification'),
     }))
     .with({ type: 'TODO_SHARED', commentId: P.string }, (routing) =>
       windowSizeClass === 'compact'
@@ -276,7 +283,7 @@ function toRouteDestination(
     }))
     .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
       kind: 'route' as const,
-      href: '/settings/subscription' as const,
+      href: subscriptionHref(),
     }))
     .with({ type: 'FEED' }, () => ({
       kind: 'route' as const,
