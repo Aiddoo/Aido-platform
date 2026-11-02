@@ -18,6 +18,17 @@
 - 의존하는 PR은 같은 `stack:<release>` 라벨(예: `stack:1.13.0`)을 단다. 맨 위 tip 하나만 `ci:stack-tip`을 달고, 그 tip이 누적 diff를 검증한다([CI](../server/ci.md#실행-범위), [stack-policy](../../scripts/ci/stack-policy.mjs)). 중간 PR에 `ci:stack-tip`을 달지 않는다.
 - 공유 브랜치의 이력을 바꾸는 rebase·force push는 그 stack의 담당 범위에서만 한다.
 
+## 버전
+
+| 대상                                        | 버전 출처                                                                | 올리는 방법                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| 앱(`@aido/mobile`)                          | `apps/mobile/package.json`의 `version`. `app.config.ts`가 이 값을 읽는다 | 스토어 릴리스마다 직접 올린다. 빌드 번호는 EAS remote가 관리한다 |
+| 서버(`@aido/server`)·공유 계약(`@aido/api`) | 각 `package.json`의 `version`                                            | [Changesets](../../.changeset/README.md)로 관리한다              |
+
+- 서버나 계약을 바꾸는 PR은 `pnpm changeset`으로 변경 파일(`.changeset/*.md`)을 함께 올린다. 계약에 필드·엔드포인트를 더하면 minor, 동작 수정은 patch, `/v{n}` 제거처럼 구 앱을 깨는 변경은 major다.
+- 릴리스 stack의 마지막 PR에서 `pnpm version-packages`로 버전과 `CHANGELOG.md`를 갱신한다. 비공개 패키지라 npm에 배포하거나 태그를 만들지 않는다.
+- Swagger 문서 버전은 서버 `package.json`의 `version`을 그대로 보여 준다.
+
 ## 이슈
 
 배경·목표·완료 조건을 적는다. 완료 조건은 확인할 수 있는 동작이나 검사로 쓴다.

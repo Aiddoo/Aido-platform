@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "changeset": "changeset",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm --filter @aido/mobile check:conventions",
     "clean": "turbo run clean && rm -rf node_modules",
     "commit": "cz",
@@ -34,9 +35,11 @@
     "test:cov": "turbo run test:cov",
     "test:e2e": "turbo run test:e2e --filter=@aido/server",
     "test:integration": "turbo run test:integration --filter=@aido/server",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "version-packages": "changeset version"
   },
   "devDependencies": {
+    "@changesets/cli": "catalog:",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@commitlint/types": "21.2.3",

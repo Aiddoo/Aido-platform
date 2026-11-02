@@ -31,6 +31,7 @@ async function bootstrap() {
   });
 
   if (nodeEnv === "development") {
+    const apiVersion = process.env.npm_package_version ?? "development";
     const config = new DocumentBuilder()
       .setTitle("Aido API")
       .setDescription(`AI TodoList 앱을 위한 백엔드 API
@@ -69,7 +70,7 @@ async function bootstrap() {
 - 모든 API는 \`/v1\` 프리픽스 사용
 - Health 체크만 예외: \`GET /health\`
 `)
-      .setVersion("1.0.0")
+      .setVersion(apiVersion)
       // 환경별 서버 URL
       .addServer("http://localhost:8080", "Local Development")
       .addServer("https://api-staging.aido.kr", "Staging")
@@ -155,7 +156,7 @@ async function bootstrap() {
 | ADMIN_1403 | 400 | 유효하지 않은 필터 조건입니다 |
 | REPORT_2255 | 404 | 신고를 찾을 수 없습니다 |
 `)
-      .setVersion("1.0.0")
+      .setVersion(apiVersion)
       .addServer("http://localhost:8080", "Local Development")
       .addServer("https://api-staging.aido.kr", "Staging")
       .addServer("https://api.aido.kr", "Production")

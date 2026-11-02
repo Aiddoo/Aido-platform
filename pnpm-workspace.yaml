@@ -65,6 +65,7 @@ packageExtensions:
 
 catalog:
   '@ai-sdk/google': '4.0.109'
+  '@changesets/cli': '3.0.3'
   '@react-native-kakao/core': '2.4.11'
   '@react-native-kakao/share': '2.4.11'
   '@react-native-kakao/social': '2.4.11'
