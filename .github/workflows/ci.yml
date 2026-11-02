@@ -258,7 +258,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Changeset 검사가 PR base부터의 변경 패키지를 계산한다.
-          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
+          # 표현식에서 숫자 0은 거짓이라 `&& 0 || 1`은 항상 1이 된다. 문자열로 비교해 PR에서만 전체 이력을 받는다.
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
 
       - uses: ./.github/actions/setup
         with:
