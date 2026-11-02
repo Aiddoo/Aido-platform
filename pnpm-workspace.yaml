@@ -110,6 +110,7 @@ catalogs:
     '@react-native/jest-preset': '0.88.1'
     '@sentry/react-native': '~8.28.0'
     '@shopify/flash-list': '2.3.2'
+    '@shopify/react-native-skia': '2.14.0'
     '@types/jest': '30.0.0'
     '@types/react': '19.3.0'
     'babel-preset-expo': '~58.0.20'

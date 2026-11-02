@@ -74,6 +74,7 @@
     "@react-native-kakao/user": "catalog:",
     "@sentry/react-native": "catalog:expo58",
     "@shopify/flash-list": "catalog:expo58",
+    "@shopify/react-native-skia": "catalog:expo58",
     "@tanstack/react-query": "5.105.1",
     "clsx": "2.1.1",
     "dayjs": "catalog:",
