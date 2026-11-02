@@ -1,4 +1,5 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -12,15 +13,11 @@ describe('todo cache invalidation', () => {
   const categoryKey = TODO_CATEGORY_QUERY_KEYS.list();
 
   beforeEach(() => {
-    client = new QueryClient();
+    client = createTestQueryClient();
     client.setQueryData(listKey, { todos: [] });
     client.setQueryData(completionKey, []);
     client.setQueryData(friendKey, []);
     client.setQueryData(categoryKey, { categories: [] });
-  });
-
-  afterEach(() => {
-    client.clear();
   });
 
   it('Given 할 일과 카테고리 캐시, When invalidateTodos를 호출하면, Then 모두 무효화한다', async () => {

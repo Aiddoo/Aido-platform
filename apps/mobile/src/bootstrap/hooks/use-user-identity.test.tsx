@@ -12,11 +12,13 @@ import {
   createMockDIContainer,
   createMockHttpClient,
 } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { ok } from '@src/shared/errors/result';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { z } from 'zod';
@@ -46,7 +48,7 @@ describe('useUserIdentity', () => {
   beforeEach(() => {
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
-    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    queryClient = createTestQueryClient();
     const httpClient = createMockHttpClient();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const container = createMockDIContainer({
@@ -66,10 +68,6 @@ describe('useUserIdentity', () => {
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       </StaticDIProvider>
     );
-  });
-
-  afterEach(() => {
-    queryClient.clear();
   });
 
   it('로그인한 사용자의 초안은 남기고 이전 사용자의 초안은 삭제한다', async () => {

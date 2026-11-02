@@ -4,7 +4,8 @@ import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/dom
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { toUser } from '@src/features/user/apis/user.mapper';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { createActivationProgressRepository } from '../apis/activation-progress.repository';
 import { ActivationService } from '../apis/activation.service';
@@ -40,10 +41,7 @@ const user = toUser(
 describe('activation mutation bridge', () => {
   let queryClient: QueryClient;
   beforeEach(() => {
-    queryClient = new QueryClient();
-  });
-  afterEach(() => {
-    queryClient.clear();
+    queryClient = createTestQueryClient();
   });
   it('생성 진행 상태를 공용 Query 캐시에 반영한다', () => {
     // Given

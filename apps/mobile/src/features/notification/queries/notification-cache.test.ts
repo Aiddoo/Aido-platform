@@ -1,5 +1,6 @@
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import type { InfiniteData } from '@tanstack/react-query';
-import { QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import type { NotificationListResult } from '../domains/notification.model';
@@ -34,10 +35,9 @@ const makeData = (...ids: number[]): InfiniteData<NotificationListResult> => ({
 describe('notification cache optimistic update', () => {
   let client: QueryClient;
   beforeEach(() => {
-    client = new QueryClient();
+    client = createTestQueryClient();
   });
   afterEach(() => {
-    client.clear();
     jest.useRealTimers();
   });
   test('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {

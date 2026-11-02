@@ -47,3 +47,12 @@ jest.mock('react-native-svg', () => {
   const mockSvg = require('react-native-reanimated/src/mock-svg');
   return { ...mockSvg, default: mockSvg.Svg };
 });
+
+// 화면을 먼저 정리(unmount)한 뒤 테스트 QueryClient를 비운다.
+// 순서가 반대면 unmount 때 쿼리별 gcTime으로 정리 타이머가 다시 걸려 Jest 종료를 붙잡는다.
+const { cleanup } = require('@testing-library/react-native');
+const { clearTestQueryClients } = require('./src/shared/__tests__/query-client');
+afterEach(async () => {
+  await cleanup();
+  clearTestQueryClients();
+});

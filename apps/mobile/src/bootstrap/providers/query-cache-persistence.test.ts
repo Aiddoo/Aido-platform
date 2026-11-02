@@ -1,6 +1,7 @@
 import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
   persistQueryClientSave,
@@ -17,19 +18,7 @@ import {
   shouldPersistQuery,
 } from './query-cache-persistence';
 
-const clients: QueryClient[] = [];
-
-const createClient = () => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  clients.push(client);
-  return client;
-};
-
-afterEach(() => {
-  for (const client of clients.splice(0)) {
-    client.clear();
-  }
-});
+const createClient = () => createTestQueryClient();
 
 const queryOf = (client: QueryClient, queryKey: readonly unknown[]) => {
   const query = client.getQueryCache().find({ queryKey, exact: true });

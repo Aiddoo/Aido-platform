@@ -3,11 +3,15 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement, ReactNode } from 'react';
 
 import { createMockDIContainer } from './create-mock-di-container';
+import { createTestQueryClient } from './query-client';
+
+export { createTestQueryClient } from './query-client';
 
 jest.mock('expo-router', () => {
   const router = {
@@ -18,15 +22,6 @@ jest.mock('expo-router', () => {
   };
   return { router, useRouter: () => router, useLocalSearchParams: jest.fn(() => ({})) };
 });
-
-export function createTestQueryClient(): QueryClient {
-  return new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0 },
-      mutations: { retry: false, gcTime: 0 },
-    },
-  });
-}
 
 interface RenderUiOptions {
   /**

@@ -1,6 +1,7 @@
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
-import { QueryClient, QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -9,10 +10,7 @@ import { FriendService } from '../apis/friend.service';
 import { useGetUserSearchQueryOptions } from './get-user-search-query-options';
 
 const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
-  const queryClient = new QueryClient({
-    // 테스트 프로세스에 기본 5분 Query GC 타이머를 남기지 않는다.
-    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
-  });
+  const queryClient = createTestQueryClient();
   const container = createMockDIContainer({
     friendService: new FriendService(httpClient),
   });

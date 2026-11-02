@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderHook } from '@testing-library/react-native';
 
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
@@ -31,7 +31,7 @@ jest.mock('@src/shared/i18n', () => ({
 
 jest.mock('@src/shared/utils/haptics');
 
-const MUTATION_CONTEXT = { client: new QueryClient(), meta: undefined };
+const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
 
 describe('useExchangeCodeMutationOptions', () => {
   beforeEach(() => {

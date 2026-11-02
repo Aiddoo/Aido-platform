@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -37,11 +39,7 @@ describe('활성화 진행 상태의 기존 사용자 호환성', () => {
   let client: QueryClient;
 
   beforeEach(() => {
-    client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
-  });
-
-  afterEach(() => {
-    client.clear();
+    client = createTestQueryClient();
   });
 
   it('캠페인 설정 요청이 실패해도 사용자 조회가 끝나면 기존 동작을 계속할 수 있다', async () => {

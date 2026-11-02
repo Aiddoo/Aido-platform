@@ -1,6 +1,7 @@
 import { FRIEND_QUERY_KEYS } from '@src/features/friend/constants/friend-query-keys';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { createInvite, createRedemptionResult } from '../__tests__/invite.factories';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
@@ -14,7 +15,7 @@ import {
 } from './invite-cache';
 
 function createQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, retry: false } } });
+  return createTestQueryClient();
 }
 
 describe('invite-cache', () => {
@@ -22,10 +23,6 @@ describe('invite-cache', () => {
 
   beforeEach(() => {
     queryClient = createQueryClient();
-  });
-
-  afterEach(() => {
-    queryClient.clear();
   });
 
   describe('replaceMyInvite', () => {

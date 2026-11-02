@@ -141,6 +141,8 @@ Reanimated 4.7의 공식 Jest resolver와 `setUpTests()`를 사용한다. `jest.
 
 SVG는 Reanimated가 제공하는 SVG mock을 사용한다. 공용 `renderUi`는 실제 HeroUI provider를 유지하고, provider의 원본 config prop으로 테스트에서만 애니메이션을 끈다. 모바일 단위 테스트에는 DOM 레이아웃·네이티브 네비게이터를 만들지 않는다. 경로 이동은 테스트 harness의 router 경계에서 대체하며, 실제 Expo Router/Native Tabs 동작은 Android/iOS 앱에서 확인한다.
 
-테스트 종료 시 QueryClient를 비우고 구독·대기 중인 idle callback을 해제한다. `--forceExit`로 미정리 타이머를 감추지 않는다. 재현 순서 검증은 `--runInBand --randomize --seed <number> --showSeed`, 종료 핸들 검증은 `--detectOpenHandles`로 실행한다.
+QueryClient는 `@src/shared/__tests__/query-client`의 `createTestQueryClient()`로만 만든다(TanStack Query 테스트 가이드 권장값 `retry: false`, `gcTime: Infinity`). `jest.setup.ts`의 `afterEach`가 Testing Library `cleanup()`으로 화면을 먼저 unmount한 뒤 팩토리가 만든 클라이언트를 `clear()`하므로, 테스트 안에서 `queryClient.clear()`를 따로 부르지 않는다. 순서가 반대면 unmount 때 쿼리별 `gcTime` 타이머가 다시 걸려 Jest 종료를 붙잡는다. 의존성은 `createMockDIContainer`에 스텁으로 넣는다. `check:conventions`가 테스트의 `new QueryClient`를 막는다.
+
+테스트 종료 시 구독·대기 중인 idle callback을 해제한다. `--forceExit`로 미정리 타이머를 감추지 않는다. 재현 순서 검증은 `--runInBand --randomize --seed <number> --showSeed`, 종료 핸들 검증은 `--detectOpenHandles`로 실행한다.
 
 공식 문서: [Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/).

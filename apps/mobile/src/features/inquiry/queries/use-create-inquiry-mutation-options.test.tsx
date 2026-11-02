@@ -1,8 +1,10 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
 import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { NetworkError } from '@src/shared/errors';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -28,16 +30,13 @@ describe('문의 접수 실패 안내', () => {
   let unmount: (() => Promise<void>) | undefined;
 
   beforeEach(() => {
-    client = new QueryClient({
-      defaultOptions: { mutations: { retry: false, gcTime: Infinity } },
-    });
+    client = createTestQueryClient();
     http = createMockHttpClient();
     unmount = undefined;
   });
 
   afterEach(async () => {
     await unmount?.();
-    client.clear();
   });
 
   const submitInquiry = async () => {
