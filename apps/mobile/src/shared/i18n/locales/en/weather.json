@@ -171,5 +171,32 @@
   },
   "introduction": {
     "description": "We use your current location to show today's weather. You can also set location access later on the weather screen."
+  },
+  "briefing": {
+    "title": "Aido briefing",
+    "noScheduledTodos": "No more scheduled to-dos today",
+    "dry": "Your to-dos today should stay dry",
+    "rainyOne": "It may rain during “{{title}}”",
+    "rainyMany_one": "{{count}} to-do overlaps with rain",
+    "rainyMany_other": "{{count}} to-dos overlap with rain",
+    "todoDetail": "{{time}} · {{chance}}% chance of precipitation",
+    "reschedule": "Move to a dry time",
+    "loadFailed": "Couldn't load today's to-dos"
+  },
+  "reschedule": {
+    "title": "Move to a dry time",
+    "description": "We will move them to a time with less rain",
+    "recommended": "Recommended",
+    "option": "{{chance}}% chance of precipitation",
+    "noDryTime": "No dry time left today",
+    "exclude": "Keep this to-do as is",
+    "submit_one": "Move {{count}} to-do",
+    "submit_other": "Move {{count}} to-dos",
+    "moved_one": "Moved {{count}} to-do",
+    "moved_other": "Moved {{count}} to-dos",
+    "undo": "Undo",
+    "undone": "Moved back to the original time",
+    "chartLabel": "Hourly chance of precipitation for the rest of today",
+    "todoNotFound": "Couldn't find the to-dos to move"
   }
 }

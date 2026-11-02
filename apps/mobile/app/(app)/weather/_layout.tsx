@@ -1,7 +1,7 @@
 import Settings from '@expo/material-symbols/settings.xml';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useStackBackToolbar } from '@src/shared/ui';
+import { SHEET_ROUTE_SCREEN_OPTIONS, useStackBackToolbar } from '@src/shared/ui';
 import { router, Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
@@ -35,6 +35,7 @@ export default function WeatherLayout() {
           />
         </Stack.Toolbar>
       </Stack.Screen>
+      <Stack.Screen name="reschedule" options={SHEET_ROUTE_SCREEN_OPTIONS} />
     </Stack>
   );
 }

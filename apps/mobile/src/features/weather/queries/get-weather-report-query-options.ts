@@ -74,6 +74,7 @@ export const WeatherReportSelect = {
   precipitation: (report: WeatherReport) =>
     pick(report, ['location', 'nextHour', 'hourly', 'fetchedAt']),
   hourly: (report: WeatherReport) => pick(report, ['location', 'hourly']),
+  briefing: (report: WeatherReport) => pick(report, ['location', 'hourly', 'fetchedAt']),
   daily: (report: WeatherReport) => pick(report, ['location', 'daily']),
   details: (report: WeatherReport) => pick(report, ['location', 'current', 'daily', 'airQuality']),
   attribution: (report: WeatherReport) => pick(report, ['location', 'attribution', 'fetchedAt']),

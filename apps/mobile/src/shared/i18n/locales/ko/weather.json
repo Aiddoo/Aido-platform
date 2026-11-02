@@ -170,5 +170,29 @@
   },
   "introduction": {
     "description": "현재 위치를 사용해 오늘 날씨를 알려드려요. 위치 권한은 나중에 날씨 화면에서도 설정할 수 있어요."
+  },
+  "briefing": {
+    "title": "아이두 브리핑",
+    "noScheduledTodos": "오늘 시간이 정해진 남은 할 일이 없어요",
+    "dry": "오늘 할 일은 비를 피할 수 있어요",
+    "rainyOne": "‘{{title}}’ 할 때 비가 올 수 있어요",
+    "rainyMany": "할 일 {{count}}개가 비와 겹쳐요",
+    "todoDetail": "{{time}} · 강수 확률 {{chance}}%",
+    "reschedule": "비 피해서 시간 옮기기",
+    "loadFailed": "오늘 할 일을 불러오지 못했어요"
+  },
+  "reschedule": {
+    "title": "비 피해서 시간 옮기기",
+    "description": "비가 덜 오는 시간으로 옮겨 드려요",
+    "recommended": "추천",
+    "option": "강수 확률 {{chance}}%",
+    "noDryTime": "오늘은 비를 피할 시간이 없어요",
+    "exclude": "이 할 일은 그대로 두기",
+    "submit": "{{count}}개 옮기기",
+    "moved": "할 일 {{count}}개를 옮겼어요",
+    "undo": "되돌리기",
+    "undone": "원래 시간으로 되돌렸어요",
+    "chartLabel": "오늘 남은 시간의 시간별 강수 확률 그래프",
+    "todoNotFound": "옮길 할 일을 찾지 못했어요"
   }
 }

@@ -3,6 +3,7 @@ import { HourlyForecast } from '@src/features/weather/components/hourly-forecast
 import { NextHourPrecipitation } from '@src/features/weather/components/next-hour-precipitation';
 import { WeatherAlerts } from '@src/features/weather/components/weather-alerts';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
+import { WeatherBriefing } from '@src/features/weather/components/weather-briefing';
 import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
@@ -83,6 +84,11 @@ function WeatherReportSections() {
         <Spacing size={28} />
 
         <VStack gap={BLOCK_GAP}>
+          <QueryErrorBoundary fallback={WeatherBriefing.Error}>
+            <Suspense fallback={<WeatherBriefing.Loading />}>
+              <WeatherBriefing />
+            </Suspense>
+          </QueryErrorBoundary>
           <Suspense fallback={<NextHourPrecipitation.Loading />}>
             <NextHourPrecipitation />
           </Suspense>
