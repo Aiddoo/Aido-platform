@@ -216,10 +216,10 @@ describe("알림 문구 생성", () => {
   );
 
   it.each([
-    { inviteeName: "매튜", expected: "매튜가 내 초대로 친구가 됐어 🐾" },
-    { inviteeName: "존", expected: "존이 내 초대로 친구가 됐어 🐾" },
+    { inviteeName: "매튜", expected: "매튜님이 내 초대로 친구가 됐어요 🐾" },
+    { inviteeName: "존", expected: "존님이 내 초대로 친구가 됐어요 🐾" },
   ])(
-    "초대 수락 알림은 다른 소셜 알림처럼 반말로 이름에 조사를 붙인다 ($inviteeName)",
+    "초대 수락 알림은 앱처럼 이름에 님을 붙여 해요체로 알린다 ($inviteeName)",
     ({ inviteeName, expected }) => {
       // Given
       const input = { inviteeName, locale: "ko" as const, variantContext: VARIANT_CONTEXT };
@@ -228,20 +228,24 @@ describe("알림 문구 생성", () => {
       const message = createInviteJoinedNotificationMessage(input);
 
       // Then
-      expect(message).toMatchObject({ title: expected, body: "서로의 하루를 응원해봐" });
+      expect(message).toMatchObject({ title: expected, body: "환영 인사로 첫 응원을 보내봐요" });
     },
   );
 
   it.each([
     {
       inviteeName: "매튜",
-      ko: "매튜가 첫날 할 일을 끝냈어 🐾",
+      ko: "매튜님이 첫날 할 일을 끝냈어요 🐾",
       en: "매튜 finished day one 🐾",
     },
-    { inviteeName: "존", ko: "존이 첫날 할 일을 끝냈어 🐾", en: "존 finished day one 🐾" },
-    { inviteeName: "Mina", ko: "Mina가 첫날 할 일을 끝냈어 🐾", en: "Mina finished day one 🐾" },
+    { inviteeName: "존", ko: "존님이 첫날 할 일을 끝냈어요 🐾", en: "존 finished day one 🐾" },
+    {
+      inviteeName: "Mina",
+      ko: "Mina님이 첫날 할 일을 끝냈어요 🐾",
+      en: "Mina finished day one 🐾",
+    },
   ])(
-    "초대한 친구의 첫날 알림은 이름에 조사를 붙이고 콕으로 응원하자고 권한다 ($inviteeName)",
+    "초대한 친구의 첫날 알림은 이름에 님과 조사를 붙이고 콕으로 응원하자고 권한다 ($inviteeName)",
     ({ inviteeName, ko, en }) => {
       // Given
       const input = { inviteeName, variantContext: VARIANT_CONTEXT };
@@ -251,10 +255,10 @@ describe("알림 문구 생성", () => {
       const english = createInviteProgressNotificationMessage({ ...input, locale: "en" });
 
       // Then
-      expect(korean).toMatchObject({ title: ko, body: "콕 찔러서 내일도 해내게 응원해줘" });
+      expect(korean).toMatchObject({ title: ko, body: "내일도 해낼 수 있게 콕 찔러 응원해줘요" });
       expect(english).toMatchObject({
         title: en,
-        body: "Send a nudge to cheer them on for day two",
+        body: "Nudge them to keep it going tomorrow",
       });
     },
   );
@@ -269,11 +273,11 @@ describe("알림 문구 생성", () => {
 
     // Then
     expect(korean).toMatchObject({
-      title: "하루만 더 할 일을 끝내볼까? 🐾",
-      body: "오늘 할 일을 끝내면 매튜에게 발자국을 선물할 수 있어",
+      title: "오늘 하루만 더 해볼까요? 🐾",
+      body: "오늘 할 일을 끝내면 매튜님에게 발자국을 선물할 수 있어요",
     });
     expect(english).toMatchObject({
-      title: "One more day to go 🐾",
+      title: "Just one more day 🐾",
       body: "Finish a to-do today and 매튜 gets a paw print",
     });
   });
@@ -281,22 +285,22 @@ describe("알림 문구 생성", () => {
   it.each([
     {
       rewards: { premiumDays: 7, friendSlots: 1 },
-      ko: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어",
+      ko: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어요",
       en: "You got 7 days of Premium and can add 1 more friend",
     },
     {
       rewards: { premiumDays: 2, friendSlots: 1 },
-      ko: "프리미엄 2일을 받았고, 친구도 1명 더 추가할 수 있어",
+      ko: "프리미엄 2일을 받았고, 친구도 1명 더 추가할 수 있어요",
       en: "You got 2 days of Premium and can add 1 more friend",
     },
     {
       rewards: { premiumDays: 0, friendSlots: 2 },
-      ko: "이제 친구를 2명 더 추가할 수 있어",
+      ko: "이제 친구를 2명 더 추가할 수 있어요",
       en: "You can now add 2 more friends",
     },
     {
       rewards: { premiumDays: 1, friendSlots: 0 },
-      ko: "프리미엄 1일을 받았어",
+      ko: "프리미엄 1일을 받았어요",
       en: "You got 1 day of Premium",
     },
   ])("발자국 알림은 받은 보상을 모두 적고 영어는 복수형을 맞춘다 ($ko)", ({ rewards, ko, en }) => {
@@ -308,7 +312,7 @@ describe("알림 문구 생성", () => {
     const english = createInviteRewardedNotificationMessage({ ...input, locale: "en" });
 
     // Then
-    expect(korean).toMatchObject({ title: "발자국이 찍혔어 🐾", body: ko });
+    expect(korean).toMatchObject({ title: "발자국이 찍혔어요 🐾", body: ko });
     expect(english).toMatchObject({ title: "You got a paw print 🐾", body: en });
   });
 
@@ -351,7 +355,7 @@ describe("알림 문구 생성", () => {
     // Given
     const expected = {
       title: "결제 정보 확인이 필요해요",
-      body: "구독을 이어가려면 결제 수단을 확인해 주세요.",
+      body: "구독을 이어가려면 결제 수단을 확인해주세요",
       variantId: "default",
     };
 
