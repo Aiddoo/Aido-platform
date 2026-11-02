@@ -104,20 +104,48 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     expect(provider.calls).toHaveLength(1);
   });
 
-  it("15분 안의 재조회는 캐시를 쓰고 15분이 지나면 공급자를 다시 부른다", async () => {
-    // Given
+  it("2시간 안에 강수 예보가 없으면 30분 동안 캐시를 쓰고 그 뒤 공급자를 다시 부른다", async () => {
+    // Given 맑은 리포트
     await useCase.execute({ userId: "weather-user", language: "ko", now });
     // When
-    const withinTtl = moveClockTo("2026-11-02T06:34:59.000Z");
+    const withinTtl = moveClockTo("2026-11-02T06:49:59.000Z");
     await useCase.execute({ userId: "weather-user", language: "ko", now: withinTtl });
-    const afterTtl = moveClockTo("2026-11-02T06:35:01.000Z");
+    const afterTtl = moveClockTo("2026-11-02T06:50:01.000Z");
     await useCase.execute({ userId: "weather-user", language: "ko", now: afterTtl });
     // Then
     expect(provider.calls).toHaveLength(2);
   });
 
-  it("언어가 다르면 캐시를 나눠 공급자를 다시 부른다", async () => {
-    // Given
+  it("2시간 안에 강수 확률 50% 이상이면 10분만 캐시를 쓴다", async () => {
+    // Given 1시간 뒤 강수 확률 70%
+    const rainy = weatherReportFixture(now);
+    provider.report = {
+      ...rainy,
+      hourly: rainy.hourly.map((hour, index) =>
+        index === 1 ? { ...hour, precipitationChance: 70, precipitationType: "RAIN" } : hour,
+      ),
+    };
+    await useCase.execute({ userId: "weather-user", language: "ko", now });
+    // When
+    const afterShortTtl = moveClockTo("2026-11-02T06:30:01.000Z");
+    await useCase.execute({ userId: "weather-user", language: "ko", now: afterShortTtl });
+    // Then
+    expect(provider.calls).toHaveLength(2);
+  });
+
+  it("번역 문구가 없는 칸은 언어가 달라도 캐시를 함께 쓴다", async () => {
+    // Given 특보를 제공하지 않는 칸(한국)
+    provider.hasLocalizedContent = false;
+    await useCase.execute({ userId: "weather-user", language: "ko", now });
+    // When
+    await useCase.execute({ userId: "weather-user", language: "en", now });
+    // Then
+    expect(provider.calls).toHaveLength(1);
+  });
+
+  it("특보처럼 번역 문구가 있는 칸은 언어별로 캐시를 나눈다", async () => {
+    // Given 특보를 제공하는 칸
+    provider.hasLocalizedContent = true;
     await useCase.execute({ userId: "weather-user", language: "ko", now });
     // When
     await useCase.execute({ userId: "weather-user", language: "en", now });
@@ -125,7 +153,7 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     expect(provider.calls.map((call) => call.request.language)).toEqual(["ko", "en"]);
   });
 
-  it("15분이 지나 공급자가 실패하면 6시간 안의 마지막 스냅샷을 응답 시각 기준으로 잘라 돌려준다", async () => {
+  it("캐시가 지나 공급자가 실패하면 6시간 안의 마지막 스냅샷을 응답 시각 기준으로 잘라 돌려준다", async () => {
     // Given
     provider.report = weatherReportFixture(now);
     await useCase.execute({ userId: "weather-user", language: "ko", now });

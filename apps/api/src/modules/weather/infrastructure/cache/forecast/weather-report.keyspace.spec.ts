@@ -6,7 +6,7 @@ describe("날씨 v2 캐시 키와 TTL", () => {
     const cell = "wydm9";
     // When
     const keys = [
-      WeatherReportCacheKey.report(cell, "ko"),
+      WeatherReportCacheKey.report(cell, "shared"),
       WeatherReportCacheKey.latestReport(cell, "en"),
       WeatherReportCacheKey.airQuality(cell),
       WeatherReportCacheKey.availability(cell),
@@ -15,7 +15,7 @@ describe("날씨 v2 캐시 키와 TTL", () => {
     ];
     // Then
     expect(keys).toEqual([
-      "aido:v1:weather:v2:report:wydm9:ko",
+      "aido:v1:weather:v2:report:wydm9:shared",
       "aido:v1:weather:v2:report-latest:wydm9:en",
       "aido:v1:weather:v2:air-quality:wydm9",
       "aido:v1:weather:v2:availability:wydm9",
@@ -24,10 +24,9 @@ describe("날씨 v2 캐시 키와 TTL", () => {
     ]);
   });
 
-  it("리포트 15분, 최신 폴백 6시간, 대기질 1시간, dataset 가용성 7일, 장애 차단 1분, 출처 표기 7일을 유지한다", () => {
+  it("최신 폴백 6시간, 대기질 1시간, dataset 가용성 7일, 장애 차단 1분, 출처 표기 7일을 유지한다", () => {
     // Given
     const expected = {
-      REPORT: 900_000,
       LATEST_REPORT: 21_600_000,
       AIR_QUALITY: 3_600_000,
       AVAILABILITY: 604_800_000,

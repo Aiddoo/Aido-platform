@@ -15,4 +15,7 @@ export interface WeatherReportRequest {
 /** 칸 중심 좌표의 날씨 스냅샷을 공급자에서 받는다. 실패는 예외로 알린다. */
 export interface WeatherReportProviderPort {
   getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport>;
+
+  /** 이 칸의 응답에 요청 언어로 번역되는 문구(특보 제목)가 있는지. 없으면 언어별로 캐시를 나누지 않는다. */
+  localizesContent(cell: GeoCell, request: WeatherReportRequest): Promise<boolean>;
 }

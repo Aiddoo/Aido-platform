@@ -7,8 +7,9 @@ import type {
   CacheValueSchema,
   ICacheService,
   TtlValue,
+  WrapTtl,
 } from "../interfaces/cache.interface.js";
-import { parseTtl } from "../interfaces/cache.interface.js";
+import { parseTtl, resolveWrapTtl } from "../interfaces/cache.interface.js";
 
 /**
  * Redis 캐시 어댑터
@@ -154,7 +155,7 @@ export class RedisCacheAdapter implements ICacheService {
     key: string,
     schema: CacheValueSchema<T>,
     factory: () => Promise<T>,
-    ttl?: TtlValue,
+    ttl?: WrapTtl<T>,
   ): Promise<T> {
     // get/set이 fail-open이므로 Redis 장애 시 자동으로 factory 직행 (DB 폴백)
     const cached = await this.get(key, schema);
@@ -176,7 +177,7 @@ export class RedisCacheAdapter implements ICacheService {
     const promise = factory()
       .then(async (value) => {
         if (value != null) {
-          await this.set(key, value, ttl);
+          await this.set(key, value, resolveWrapTtl(ttl, value));
         }
         return value;
       })

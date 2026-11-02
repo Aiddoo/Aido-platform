@@ -173,6 +173,12 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
     }
   }
 
+  /** 특보 제목만 요청 언어로 번역된다. 가용성 조회(7일 캐시)가 실패하면 특보를 요청하지 않으므로 false다. */
+  async localizesContent(cell: GeoCell, request: WeatherReportRequest): Promise<boolean> {
+    const dataSets = await this.#availableDataSets(cell, request);
+    return dataSets.includes("weatherAlerts");
+  }
+
   /** 거절된 토큰은 한 번만 새로 서명해 다시 보낸다. 두 번째 거절은 그대로 실패한다. */
   async #fetchWeather(
     cell: GeoCell,

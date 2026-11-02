@@ -5,7 +5,10 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import { KoreanWeatherCoveragePolicy } from "../../../domain/policies/forecast/korean-weather-coverage.policy.js";
 import { GeoCell } from "../../../domain/value-objects/forecast/geo-cell.vo.js";
-import type { WeatherReportLanguage } from "../../models/forecast/weather-report-language.js";
+import {
+  SHARED_WEATHER_REPORT_SCOPE,
+  type WeatherReportLanguage,
+} from "../../models/forecast/weather-report-language.js";
 import {
   type WeatherReport,
   windowWeatherReport,
@@ -43,7 +46,7 @@ export interface WeatherReportResult {
 
 interface GetWeatherReportDependencies {
   readonly weatherLocationRepository: Pick<WeatherLocationRepositoryPort, "findByUserId">;
-  readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getReport">;
+  readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getReport" | "localizesContent">;
   readonly weatherReportCache: Pick<
     WeatherReportCachePort,
     "getOrLoadReport" | "getLatestReport" | "getOrLoadAirQuality"
@@ -104,17 +107,17 @@ export class GetWeatherReport {
     region: ResolvedRegion,
     language: WeatherReportLanguage,
   ): Promise<WeatherReport> {
+    const request = { timezone: region.timezone, countryCode: region.countryCode, language };
+    const scope = (await this.#dependencies.weatherReportProvider.localizesContent(cell, request))
+      ? language
+      : SHARED_WEATHER_REPORT_SCOPE;
     try {
-      return await this.#dependencies.weatherReportCache.getOrLoadReport(cell, language, () =>
-        this.#dependencies.weatherReportProvider.getReport(cell, {
-          timezone: region.timezone,
-          countryCode: region.countryCode,
-          language,
-        }),
+      return await this.#dependencies.weatherReportCache.getOrLoadReport(cell, scope, () =>
+        this.#dependencies.weatherReportProvider.getReport(cell, request),
       );
     } catch (error) {
       // 공급자 실패의 상세(status·latency)는 adapter가 이미 기록했다. 여기서는 폴백 결과만 남긴다.
-      const latest = await this.#dependencies.weatherReportCache.getLatestReport(cell, language);
+      const latest = await this.#dependencies.weatherReportCache.getLatestReport(cell, scope);
       if (latest == null) {
         this.#dependencies.logger.error({
           event: WeatherLogEvent.REPORT_UNAVAILABLE,

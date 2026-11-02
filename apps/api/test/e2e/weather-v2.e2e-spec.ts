@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
+import { SHARED_WEATHER_REPORT_SCOPE } from "#api/modules/weather/application/models/forecast/weather-report-language";
 import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import { WEATHER_REPORT_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
 import { WeatherKitRequestError } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-report.provider";
@@ -179,7 +180,9 @@ describe("날씨 v2 E2E", () => {
       const fetchedAt = new Date();
       reportProvider.report = weatherReportFixture(fetchedAt);
       await getReport(user.accessToken).expect(200);
-      await ctx.module.get(CacheService).del(WeatherReportCacheKey.report(SEOUL_CELL, "ko"));
+      await ctx.module
+        .get(CacheService)
+        .del(WeatherReportCacheKey.report(SEOUL_CELL, SHARED_WEATHER_REPORT_SCOPE));
       reportProvider.failure = new WeatherKitRequestError("http_failure");
       // When
       const response = await getReport(user.accessToken).expect(200);

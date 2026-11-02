@@ -11,8 +11,10 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
+import { now } from "#api/shared/domain/date/utils/core";
 
-import type { WeatherReportLanguage } from "../../../application/models/forecast/weather-report-language.js";
+import { weatherReportTtlMs } from "../../../application/models/forecast/weather-report-freshness.js";
+import type { WeatherReportCacheScope } from "../../../application/models/forecast/weather-report-language.js";
 import type { WeatherReport } from "../../../application/models/forecast/weather-report.model.js";
 import type { AirQuality } from "../../../application/ports/forecast/air-quality-provider.port.js";
 import type { WeatherReportCachePort } from "../../../application/ports/forecast/weather-report.cache.port.js";
@@ -153,31 +155,31 @@ export class WeatherReportCacheAdapter implements WeatherReportCachePort {
 
   getOrLoadReport(
     cell: GeoCell,
-    language: WeatherReportLanguage,
+    scope: WeatherReportCacheScope,
     load: () => Promise<WeatherReport>,
   ): Promise<WeatherReport> {
     return this.cacheService.wrap(
-      WeatherReportCacheKey.report(cell.key, language),
+      WeatherReportCacheKey.report(cell.key, scope),
       WEATHER_REPORT_SCHEMA,
       async () => {
         const report = await load();
         await this.cacheService.set(
-          WeatherReportCacheKey.latestReport(cell.key, language),
+          WeatherReportCacheKey.latestReport(cell.key, scope),
           report,
           WEATHER_REPORT_CACHE_TTL_MS.LATEST_REPORT,
         );
         return report;
       },
-      WEATHER_REPORT_CACHE_TTL_MS.REPORT,
+      (report) => weatherReportTtlMs(report, now()),
     );
   }
 
   getLatestReport(
     cell: GeoCell,
-    language: WeatherReportLanguage,
+    scope: WeatherReportCacheScope,
   ): Promise<WeatherReport | undefined> {
     return this.cacheService.get(
-      WeatherReportCacheKey.latestReport(cell.key, language),
+      WeatherReportCacheKey.latestReport(cell.key, scope),
       WEATHER_REPORT_SCHEMA,
     );
   }

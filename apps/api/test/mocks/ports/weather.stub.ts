@@ -207,6 +207,11 @@ export class StubWeatherReportProvider implements WeatherReportProviderPort {
   readonly calls: { cellKey: string; request: WeatherReportRequest }[] = [];
   report: WeatherReport = weatherReportFixture();
   failure: Error | null = null;
+  hasLocalizedContent = false;
+
+  async localizesContent(): Promise<boolean> {
+    return this.hasLocalizedContent;
+  }
 
   async getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport> {
     this.calls.push({ cellKey: cell.key, request: { ...request } });

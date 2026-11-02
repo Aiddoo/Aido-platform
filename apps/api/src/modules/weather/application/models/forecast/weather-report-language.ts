@@ -11,3 +11,8 @@ export function resolveWeatherReportLanguage(
 ): WeatherReportLanguage {
   return locale ?? "en";
 }
+
+/** 번역 문구가 없는 지역의 리포트는 언어와 관계없이 한 캐시를 같이 쓴다. */
+export const SHARED_WEATHER_REPORT_SCOPE = "shared";
+
+export type WeatherReportCacheScope = WeatherReportLanguage | typeof SHARED_WEATHER_REPORT_SCOPE;
