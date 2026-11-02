@@ -43,5 +43,5 @@ DB adapter를 고칠 때는 "읽기·쓰기와 transaction"을 본다. 스키마
 ## 배포와 롤백
 
 - `db:deploy`(migrate 이미지)는 URL guard → pg-boss migrate → Drizzle migrate 순서로 실행한다. 원격 DB는 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하고, DDL lock 대기는 5초다.
-- Prisma로 만든 기존 DB(`public."User"`는 있고 `drizzle.__drizzle_migrations`는 없음)는 예약 댓글 작성자 불변식을 확인한 뒤, 공식 마이그레이터의 `migrate(db, { init: true })`로 baseline을 실행하지 않고 적용됨으로 기록한다. `init`은 로컬 마이그레이션이 baseline 하나일 때만 성공하므로, baseline 도입 배포에는 다른 마이그레이션을 함께 넣지 않는다.
+- migrate는 Drizzle 기록(`drizzle.__drizzle_migrations`)을 기준으로 남은 마이그레이션만 적용한다. 기록이 없는 오래된 로컬 DB는 볼륨을 지우고 빈 DB에서 다시 만든다(Prisma DB 인수 경로는 전환 완료로 제거).
 - 이미지 롤백은 DB를 되돌리지 않는다. 배포 스크립트는 migrate를 다시 실행하지 않고 이전 API만 복구한다.

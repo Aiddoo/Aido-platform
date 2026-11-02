@@ -38,13 +38,13 @@ migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴�
 
 `migrate.mjs`는 API·pg-boss URL을 먼저 검증한 뒤 pg-boss migration, Drizzle migration 순서로 실행한다. 원격 DB는 의도한 배포의 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하며, DDL lock_timeout은 5초다.
 
-| DB 상태                                   | 처리                                                                                                                 |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 빈 DB                                     | baseline부터 모든 마이그레이션 적용                                                                                  |
-| Prisma로 만든 기존 DB (Drizzle 기록 없음) | 예약 댓글 작성자 불변식 확인 → `migrate(db, { init: true })`로 baseline을 적용됨으로만 기록 → 이후 마이그레이션 적용 |
-| Drizzle 기록이 있는 DB                    | 아직 적용하지 않은 마이그레이션만 적용                                                                               |
+| DB 상태                       | 처리                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------- |
+| 빈 DB                         | baseline부터 모든 마이그레이션 적용                                                           |
+| Drizzle 기록이 있는 DB(운영)  | 아직 적용하지 않은 마이그레이션만 적용                                                        |
+| Drizzle 기록이 없는 오래된 DB | 지원하지 않는다. 로컬 개발 볼륨이면 `docker compose … down -v`로 지우고 빈 DB에서 다시 만든다 |
 
-`init`은 로컬 마이그레이션이 baseline 하나일 때만 성공한다. 그래서 Drizzle 도입 배포에는 다른 스키마 변경을 넣지 않고, 다음 배포부터 새 마이그레이션을 더한다. baseline 기록은 업무 데이터와 기존 `prisma_contract` 스키마를 지우지 않는다. 운영 DB가 baseline과 같은지는 운영 스냅샷 복제본에서 `pg_dump --schema-only` 비교로 먼저 확인한다. 로컬 성공을 운영 도입 성공으로 대신하지 않는다.
+운영 DB는 1.13.1 배포 때 baseline 기록이 생겼다. Prisma DB를 baseline으로 넘겨받던 `init` 경로는 전환이 끝나 지웠다.
 
 ## Job 전환과 잔존 작업
 
