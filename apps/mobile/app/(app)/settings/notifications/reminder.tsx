@@ -10,9 +10,9 @@ import {
 } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import {
   CrownIcon,
@@ -20,7 +20,6 @@ import {
   SettingsCard,
   Spacing,
   StyledSafeAreaView,
-  usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
@@ -108,8 +107,7 @@ function ReminderTimeInput({
   period: keyof typeof REMINDER_TIME;
 }) {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('CUSTOM_REMINDER_TIME');
   const [{ data: user }, { data: preference }] = useSuspenseQueries({
     queries: [useGetMeQueryOptions(), useGetPreferenceQueryOptions()],
   });
@@ -131,8 +129,7 @@ function ReminderTimeInput({
         if (isPremium) {
           return true;
         }
-        trackEvent('premium_gate_shown', { feature: 'reminder_time' });
-        premiumDialog.open({ description: t('settings.reminderPremium') });
+        premiumGate.open({ description: t('settings.reminderPremium') });
         return false;
       }}
     />

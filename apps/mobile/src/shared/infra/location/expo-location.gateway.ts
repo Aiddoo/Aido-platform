@@ -5,6 +5,8 @@ import {
 } from '@src/core/ports/location-gateway';
 import * as Location from 'expo-location';
 
+import { toPlaceName } from './place-name';
+
 const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * 60_000;
 const LAST_KNOWN_LOCATION_ACCURACY_METERS = 5_000;
 const FRESH_LOCATION_TIMEOUT_MS = 10_000;
@@ -97,7 +99,7 @@ async function getPlace(coordinates: LocationCoordinates, signal: AbortSignal) {
   const place = places[0];
   return {
     countryCode: place?.isoCountryCode ?? null,
-    name: place ? [place.city, place.district].filter(Boolean).join(' ') || null : null,
+    name: place ? toPlaceName(place) : null,
   };
 }
 

@@ -1,5 +1,7 @@
 import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/webhook-sync';
 import { CustomerInfoPolicy } from '@src/features/subscription/domains/customer-info.model';
+import type { PremiumAccess } from '@src/features/subscription/domains/premium-access.model';
+import { useRefreshOnPremiumEnd } from '@src/features/subscription/hooks/use-refresh-on-premium-end';
 import { watchPremiumEntitlementChanges } from '@src/features/subscription/queries/subscription-cache';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { invalidateMe } from '@src/features/user/queries/user-cache';
@@ -85,5 +87,16 @@ export function RevenueCatProvider({ children }: PropsWithChildren) {
     };
   }, [isAuthenticated, sdkManager, onCustomerInfoUpdated, syncServerAfterWebhook]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {user?.premiumAccess.endsAt != null && <PremiumEndSync access={user.premiumAccess} />}
+      {children}
+    </>
+  );
+}
+
+/** 끝나는 시각이 있는 프리미엄일 때만 분 시계를 구독해, 무료 사용자에게는 타이머를 두지 않는다 */
+function PremiumEndSync({ access }: { access: PremiumAccess }) {
+  useRefreshOnPremiumEnd(access);
+  return null;
 }

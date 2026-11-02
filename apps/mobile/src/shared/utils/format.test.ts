@@ -2,6 +2,7 @@ import {
   COUNT_BADGE_MAX,
   formatCappedCount,
   formatCompactCount,
+  formatDecimal,
   formatPercent,
   formatPrice,
 } from './format';
@@ -90,5 +91,18 @@ describe('formatCompactCount', () => {
 
     // Then
     expect(results).toEqual([korean, english]);
+  });
+});
+
+describe('formatDecimal', () => {
+  test('정한 자릿수까지 반올림하고 정수도 같은 자릿수로 맞춘다', () => {
+    // Given / When / Then
+    expect(formatDecimal(3.46, 'ko-KR')).toBe('3.5');
+    expect(formatDecimal(3, 'en-US')).toBe('3.0');
+  });
+
+  test('큰 수는 표시 언어의 자릿수 구분을 쓴다', () => {
+    // Given / When / Then
+    expect(formatDecimal(1234.56, 'en-US')).toBe('1,234.6');
   });
 });

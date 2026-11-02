@@ -18,17 +18,17 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 
 ## Props
 
-| Prop            | 타입                                                                                        | 기본값      | 설명                                   |
-| --------------- | ------------------------------------------------------------------------------------------- | ----------- | -------------------------------------- |
-| `tone`          | `'neutral' \| 'brand' \| 'danger' \| 'warning' \| 'success' \| 'info'`                      | `'neutral'` | 시맨틱 색상                            |
-| `shade`         | `1 \| 2 \| 3 \| ... \| 10`                                                                  | -           | 회색 명도 (tone="neutral"일 때만 적용) |
-| `size`          | `'display' \| 'h1' \| 't1' \| 't2' \| 't3' \| 'b1' \| 'b2' \| 'b3' \| 'b4' \| 'e1' \| 'e2'` | `'b3'`      | 텍스트 크기                            |
-| `weight`        | `'normal' \| 'medium' \| 'semibold' \| 'bold'`                                              | `'normal'`  | 폰트 굵기                              |
-| `align`         | `'left' \| 'center' \| 'right'`                                                             | `'left'`    | 텍스트 정렬                            |
-| `maxLines`      | `number`                                                                                    | -           | 최대 줄 수 (numberOfLines)             |
-| `strikethrough` | `boolean`                                                                                   | `false`     | 취소선                                 |
-| `underline`     | `boolean`                                                                                   | `false`     | 밑줄                                   |
-| `className`     | `string`                                                                                    | -           | 추가 Tailwind 클래스                   |
+| Prop            | 타입                                                                                         | 기본값      | 설명                                   |
+| --------------- | -------------------------------------------------------------------------------------------- | ----------- | -------------------------------------- |
+| `tone`          | `'neutral' \| 'brand' \| 'danger' \| 'warning' \| 'success' \| 'info' \| 'white' \| 'onSky'` | `'neutral'` | 시맨틱 색상                            |
+| `shade`         | `1 \| 2 \| 3 \| ... \| 10`                                                                   | -           | 회색 명도 (tone="neutral"일 때만 적용) |
+| `size`          | `'display' \| 'h1' \| 't1' \| 't2' \| 't3' \| 'b1' \| 'b2' \| 'b3' \| 'b4' \| 'e1' \| 'e2'`  | `'b3'`      | 텍스트 크기                            |
+| `weight`        | `'normal' \| 'medium' \| 'semibold' \| 'bold'`                                               | `'normal'`  | 폰트 굵기                              |
+| `align`         | `'left' \| 'center' \| 'right'`                                                              | `'left'`    | 텍스트 정렬                            |
+| `maxLines`      | `number`                                                                                     | -           | 최대 줄 수 (numberOfLines)             |
+| `strikethrough` | `boolean`                                                                                    | `false`     | 취소선                                 |
+| `underline`     | `boolean`                                                                                    | `false`     | 밑줄                                   |
+| `className`     | `string`                                                                                     | -           | 추가 Tailwind 클래스                   |
 
 ## 크기 (size)
 
@@ -57,6 +57,8 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 <Text tone="warning">경고</Text>
 <Text tone="success">성공</Text>
 <Text tone="info">정보</Text>
+<Text tone="white">테마를 따르는 흰색(다크 테마에서는 어두워짐)</Text>
+<Text tone="onSky">날씨 하늘 위 고정 흰색(테마와 무관)</Text>
 ```
 
 ### Shade (회색 명도)

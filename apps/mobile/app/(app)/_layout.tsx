@@ -3,6 +3,7 @@ import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
+import { useQueryErrorResetBoundary } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
@@ -74,6 +75,7 @@ interface ErrorBoundaryProps {
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { status, setStatus } = useAuth();
   const errorReporter = useErrorReporter();
+  const { reset: resetQueryErrors } = useQueryErrorResetBoundary();
   const { t } = useTranslation();
 
   // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘긴다. 세션이 살아있는데 401이 여기까지
@@ -97,6 +99,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
   const handleLogout = () => setStatus('unauthenticated');
 
+  // 실패한 Suspense 조회는 리셋 없이 다시 마운트하면 재요청 없이 같은 오류를 다시 던진다
+  const handleRetry = () => {
+    resetQueryErrors();
+    retry();
+  };
+
   return (
     <StyledSafeAreaView className="flex-1 bg-white">
       <Result
@@ -104,7 +112,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         description={t('appError.description')}
         button={
           <HStack gap={8}>
-            <Result.Button onPress={retry}>{t('appError.retry')}</Result.Button>
+            <Result.Button onPress={handleRetry}>{t('appError.retry')}</Result.Button>
             <Result.Button color="primary" onPress={handleLogout}>
               {t('appError.logout')}
             </Result.Button>

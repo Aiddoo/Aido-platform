@@ -17,7 +17,8 @@ interface ToggleSubTodoParams {
   todoId: number;
   subTodoId: number;
   isCompleted: boolean;
-  startDate: string;
+  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
+  date: string;
 }
 
 export const useToggleSubTodoMutationOptions = () => {
@@ -32,10 +33,10 @@ export const useToggleSubTodoMutationOptions = () => {
       });
       return unwrap(result);
     },
-    onMutate: async ({ todoId, subTodoId, isCompleted, startDate }) => {
-      await cancelTodoListQuery(queryClient, { date: startDate });
-      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) =>
+    onMutate: async ({ todoId, subTodoId, isCompleted, date }) => {
+      await cancelTodoListQuery(queryClient, { date });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      updateTodoInList(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoToggled(todo, subTodoId, isCompleted),
       );
 
@@ -54,8 +55,8 @@ export const useToggleSubTodoMutationOptions = () => {
         restoreTodo(queryClient, context.snapshot);
       }
     },
-    onSettled: (_data, _error, { todoId, startDate }) => {
-      invalidateTodoInList(queryClient, { date: startDate, todoId });
+    onSettled: (_data, _error, { todoId, date }) => {
+      invalidateTodoInList(queryClient, { date, todoId });
     },
   });
 };

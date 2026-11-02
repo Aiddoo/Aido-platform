@@ -5,11 +5,15 @@ import { useInstallReferrerCapture } from '@src/features/invite/hooks/use-instal
 import { useInviteAppEntry } from '@src/features/invite/hooks/use-invite-app-entry';
 import { useScreenTracking } from '@src/shared/hooks/use-screen-tracking';
 import { useTheme } from '@src/shared/providers/theme-provider';
+import { useIsRestoring } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
 
 export function AuthGateLayout() {
   const { status } = useAuth();
+  const isRestoring = useIsRestoring();
   const { resolvedTheme } = useTheme();
   useScreenTracking();
   useUserIdentity();
@@ -19,7 +23,16 @@ export function AuthGateLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const isAuthenticated = status === 'authenticated';
   // `locked`(키체인 잠김)는 미인증이 아니라 "아직 모름"이다 — 로그인 화면으로 내려보내지 않는다.
-  const isLoading = status === 'loading' || status === 'locked';
+  // 저장한 조회 캐시를 복원하는 동안에도 기다려야 화면의 Suspense 조회가 복원과 겹쳐 새로 요청하지 않는다.
+  const isLoading = status === 'loading' || status === 'locked' || isRestoring;
+  // 첫 화면이 정해질 때까지 스플래시를 둬 로딩 스피너가 한 번 깜빡이지 않게 한다. 잠긴 키체인은 기다림이 길어 스피너로 넘긴다
+  const isSplashDone = status !== 'loading' && !isRestoring;
+
+  useEffect(() => {
+    if (isSplashDone) {
+      SplashScreen.hideAsync();
+    }
+  }, [isSplashDone]);
 
   // Stack을 항상 렌더링하여 expo-router의 navigationRef가 즉시 ready 상태가 되도록 함.
   // 이를 통해 cold start 시 push notification 탭으로 인한

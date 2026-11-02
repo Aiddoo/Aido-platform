@@ -4,25 +4,41 @@ import { DIProvider } from '@src/bootstrap/providers/di-provider';
 import { GestureHandlerProvider } from '@src/bootstrap/providers/gesture-handler-provider';
 import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
+import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
+import {
+  createQueryCacheStorage,
+  disabledQueryCacheStorage,
+} from '@src/bootstrap/providers/query-cache-persistence';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { RevenueCatProvider } from '@src/bootstrap/providers/revenuecat-provider';
-import type { DraftStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
+import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
-import { OverlayProvider, QueryErrorBoundary } from '@src/shared/ui';
+import {
+  OfflineBanner,
+  openSupportMail,
+  OverlayProvider,
+  QueryErrorBoundary,
+  QueryErrorFallback,
+} from '@src/shared/ui';
 import { usePathname } from 'expo-router';
-import type { PropsWithChildren } from 'react';
+import { type PropsWithChildren, useState } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ReservedRegionsProvider } from 'react-native-reserved-regions';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 interface AppProvidersProps extends PropsWithChildren {
-  draftStorageBootstrap: DraftStorageBootstrap;
+  encryptedStorageBootstrap: EncryptedStorageBootstrap;
 }
 
-export function AppProviders({ children, draftStorageBootstrap }: AppProvidersProps) {
+export function AppProviders({ children, encryptedStorageBootstrap }: AppProvidersProps) {
   const pathname = usePathname();
+  const [queryCacheStorage] = useState(() => {
+    const storage = encryptedStorageBootstrap.queryCacheStorage;
+    return storage == null ? null : createQueryCacheStorage(storage);
+  });
 
   return (
     <GestureHandlerProvider>
@@ -31,23 +47,42 @@ export function AppProviders({ children, draftStorageBootstrap }: AppProvidersPr
           <LanguageProvider>
             <ThemeProvider>
               <HeroUIProvider>
-                <QueryProvider>
-                  <DIProvider draftStorageBootstrap={draftStorageBootstrap}>
-                    <LocalDateProvider>
-                      <AuthProvider>
-                        <RevenueCatProvider>
-                          <NotificationProvider>
-                            <ReservedRegionsProvider style={{ flex: 1 }}>
-                              <BottomSheetModalProvider>
-                                <QueryErrorBoundary>
-                                  <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>
-                                </QueryErrorBoundary>
-                              </BottomSheetModalProvider>
-                            </ReservedRegionsProvider>
-                          </NotificationProvider>
-                        </RevenueCatProvider>
-                      </AuthProvider>
-                    </LocalDateProvider>
+                <QueryProvider cacheStorage={queryCacheStorage}>
+                  <DIProvider
+                    encryptedStorageBootstrap={encryptedStorageBootstrap}
+                    queryCacheStorage={queryCacheStorage ?? disabledQueryCacheStorage}
+                  >
+                    <OnlineManagerProvider>
+                      <LocalDateProvider>
+                        <AuthProvider>
+                          <RevenueCatProvider>
+                            <NotificationProvider>
+                              <ReservedRegionsProvider style={{ flex: 1 }}>
+                                <BottomSheetModalProvider>
+                                  {/* 이 경계가 그리면 내비게이터가 내려가 있어 문의는 화면 이동 대신 메일로 연다 */}
+                                  <QueryErrorBoundary
+                                    fallback={({ reset }) => (
+                                      <QueryErrorFallback
+                                        reset={reset}
+                                        onInquiry={openSupportMail}
+                                      />
+                                    )}
+                                  >
+                                    <OverlayProvider resetKey={pathname}>
+                                      <OfflineBanner />
+                                      {/* 배너가 상태 표시줄 inset을 차지하면 아래 화면은 남은 inset만 받는다 */}
+                                      <SafeAreaProvider style={{ flex: 1 }}>
+                                        {children}
+                                      </SafeAreaProvider>
+                                    </OverlayProvider>
+                                  </QueryErrorBoundary>
+                                </BottomSheetModalProvider>
+                              </ReservedRegionsProvider>
+                            </NotificationProvider>
+                          </RevenueCatProvider>
+                        </AuthProvider>
+                      </LocalDateProvider>
+                    </OnlineManagerProvider>
                   </DIProvider>
                 </QueryProvider>
               </HeroUIProvider>

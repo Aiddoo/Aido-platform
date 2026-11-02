@@ -74,7 +74,14 @@ route 시트 안에서는 시트를 먼저 닫고 그 자리를 문의 화면으
 ## 오류 보고
 
 `classifyBoundaryError` 결과에 따라 보고 강도를 나눕니다. 인증 전환 401은 warning 메시지, 예상된 404와
-기능이 꺼진 코드(`INVITE_2105`)는 breadcrumb, 그 밖은 `captureException`입니다.
+기능이 꺼진 코드(`INVITE_2105`)는 breadcrumb, 연결 오류(`NetworkError`·`TimeoutError`)는 `network` breadcrumb,
+그 밖(5xx·파싱 등)은 `captureException`입니다.
+
+## 오프라인
+
+경계는 `onlineManager` 연결 상태를 `resetKeys`에 더합니다. 오프라인이 되면 오류 화면을 풀어 멈춘 쿼리의 로딩(또는
+캐시)을 보이고, 다시 연결되면 한 번 더 풀어 새로 불러옵니다. 오프라인 안내는 루트의 `OfflineBanner` 한 곳에서만 합니다.
+온라인인데 5xx·타임아웃이면 지금처럼 블록마다 다시 시도 + 문의하기를 보입니다.
 
 ## 파일 구조
 

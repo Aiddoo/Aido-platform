@@ -28,6 +28,7 @@ export const textVariants = tv({
       success: 'text-success',
       info: 'text-info',
       white: 'text-white',
+      onSky: 'text-on-sky',
     },
     weight: {
       normal: 'font-normal',

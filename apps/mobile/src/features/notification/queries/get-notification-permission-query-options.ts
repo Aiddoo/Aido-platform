@@ -8,6 +8,9 @@ export function getNotificationPermissionQueryOptions(notificationService: Notif
   return queryOptions({
     queryKey: NOTIFICATION_QUERY_KEYS.permission(),
     queryFn: () => notificationService.hasPermission(),
+    // 기기 안에서만 처리해 연결 상태와 무관하다
+    networkMode: 'always',
+
     // 설정 앱에서 바꾸고 돌아올 수 있어 화면을 열 때마다 다시 본다
     staleTime: 0,
   });

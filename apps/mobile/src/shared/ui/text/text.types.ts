@@ -1,6 +1,14 @@
 import type { TextProps as RNTextProps } from 'react-native';
 
-export type TextTone = 'neutral' | 'brand' | 'danger' | 'warning' | 'success' | 'info' | 'white';
+export type TextTone =
+  | 'neutral'
+  | 'brand'
+  | 'danger'
+  | 'warning'
+  | 'success'
+  | 'info'
+  | 'white'
+  | 'onSky';
 export type TextShade = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type TextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 export type TextSize =

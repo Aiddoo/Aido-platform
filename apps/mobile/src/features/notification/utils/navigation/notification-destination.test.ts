@@ -169,10 +169,10 @@ describe('공지 알림의 앱 경로', () => {
   test.each([
     ['/feed', { pathname: '/feed', params: { date: 'today' } }],
     ['/achievements', '/achievements'],
-    ['/weather', '/weather'],
+    ['/weather', { pathname: '/weather', params: { entry: 'notification' } }],
     ['/friends', '/friends'],
     ['/friends/invite', { pathname: '/friends/invite' }],
-    ['/settings/subscription', '/settings/subscription'],
+    ['/settings/subscription', { pathname: '/settings/subscription' }],
     ['/settings/notifications', '/settings/notifications'],
   ])('리텐션·운영 공지의 DEEP_LINK %s를 그 화면으로 연다', (url, href) => {
     expect(
@@ -315,9 +315,38 @@ describe('콕과 오늘의 알림 이동', () => {
       // When
       const destination = resolveNotificationDestination(source, COMPACT);
       // Then
-      expect(destination).toEqual({ kind: 'route', href: '/weather' });
+      expect(destination).toEqual({
+        kind: 'route',
+        href: { pathname: '/weather', params: { entry: 'notification' } },
+      });
     },
   );
+
+  test('아침 날씨 알림이 옮길 할 일을 실으면 옮기기 시트를 연다', () => {
+    // Given 비와 겹친 할 일 링크 When 목적지를 구하면 Then 옮기기 시트 경로다
+    const source = {
+      type: 'WEATHER_MORNING' as const,
+      action: { type: 'DEEP_LINK' as const, url: '/weather/reschedule?todoIds=12,15&reason=rain' },
+    };
+
+    expect(resolveNotificationDestination(source, COMPACT)).toEqual({
+      kind: 'route',
+      href: { pathname: '/weather/reschedule', params: { todoIds: '12,15', reason: 'rain' } },
+    });
+  });
+
+  test('아침 날씨 알림의 링크가 낯설면 날씨 화면을 연다', () => {
+    // Given 모르는 경로 When 목적지를 구하면 Then 날씨 화면이다
+    const source = {
+      type: 'WEATHER_MORNING' as const,
+      action: { type: 'DEEP_LINK' as const, url: '/settings' },
+    };
+
+    expect(resolveNotificationDestination(source, COMPACT)).toEqual({
+      kind: 'route',
+      href: { pathname: '/weather', params: { entry: 'notification' } },
+    });
+  });
 
   test('잘못된 할 일 ID로 상세 화면을 열지 않는다', () => {
     // Given
@@ -380,13 +409,21 @@ describe('알림 타입별 목적지', () => {
     ['NUDGE_SUGGEST', { friendId: 'friend-1' }, friendFeed],
     ['LUNCH_NUDGE', {}, todayFeed],
     ['STREAK_AT_RISK', {}, todayFeed],
-    ['WEATHER_MORNING', {}, { kind: 'route', href: '/weather' }],
-    ['WEATHER_EVENING', {}, { kind: 'route', href: '/weather' }],
+    [
+      'WEATHER_MORNING',
+      {},
+      { kind: 'route', href: { pathname: '/weather', params: { entry: 'notification' } } },
+    ],
+    [
+      'WEATHER_EVENING',
+      {},
+      { kind: 'route', href: { pathname: '/weather', params: { entry: 'notification' } } },
+    ],
     ['INVITE_JOINED', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
     ['INVITE_REWARDED', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
     ['INVITE_PROGRESS', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
     ['INVITE_QUALIFY_REMINDER', {}, todayFeed],
-    ['PREMIUM_GRANT_ENDING', {}, { kind: 'route', href: '/settings/subscription' }],
+    ['PREMIUM_GRANT_ENDING', {}, { kind: 'route', href: { pathname: '/settings/subscription' } }],
   ];
 
   test('모든 알림 타입의 목적지를 검증한다', () => {

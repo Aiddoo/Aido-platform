@@ -24,6 +24,11 @@ import { z } from 'zod';
 
 import { AuthProvider, useAuth, useAuthStatus } from './auth-provider';
 import { StaticDIProvider } from './di-context';
+import {
+  createQueryCacheStorage,
+  QUERY_CACHE_STORAGE_KEY,
+  type QueryCacheStorage,
+} from './query-cache-persistence';
 
 const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => ({
   captureException: jest.fn(),
@@ -49,6 +54,7 @@ describe('AuthProvider', () => {
   let analytics: ReturnType<typeof createMockAnalytics>;
   let queryClient: QueryClient;
   let draftService: DraftService;
+  let queryCacheStorage: QueryCacheStorage;
   let unsubscribes: Array<() => void>;
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
 
@@ -59,6 +65,7 @@ describe('AuthProvider', () => {
     analytics = createMockAnalytics();
     queryClient = new QueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
+    queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     unsubscribes = [];
     mountedProviders = [];
   });
@@ -98,6 +105,7 @@ describe('AuthProvider', () => {
           userService,
           widgetSyncService,
           draftService,
+          queryCacheStorage,
         })}
       >
         <QueryClientProvider client={queryClient}>
@@ -352,6 +360,24 @@ describe('AuthProvider', () => {
       // Then
       await expectStatus('unauthenticated');
       expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
+    });
+
+    it('로그아웃하면 기기에 저장한 조회 캐시를 지워 다음 사용자에게 복원되지 않게 한다', async () => {
+      // Given
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+      queryCacheStorage.setOwner('user-1');
+      queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '내 캐시');
+
+      // When
+      await fireEvent.press(screen.getByTestId('logout'));
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull();
+      queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '주인 없는 캐시');
+      expect(queryCacheStorage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull();
     });
 
     it('세션이 만료되어도 작성 중 초안은 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 한다', async () => {

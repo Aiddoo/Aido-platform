@@ -97,6 +97,9 @@
 
   --color-fish: #23a2ff;
 
+  /* 날씨 하늘 장면 위 글자·면. 하늘은 테마와 무관하게 늘 어두운 색이라 다크 테마에서도 흰색으로 고정한다. */
+  --color-on-sky: #ffffff;
+
   /* Social Login Brand Colors */
   --color-kakao: #fee500;
   --color-naver: #03c75a;

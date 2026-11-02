@@ -1,21 +1,48 @@
-import { useReorderCoachmarkService } from '@src/bootstrap/providers/di-context';
+import { useLogger, useReorderCoachmarkService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { errorMessageOf } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { ReorderCoachmarkKind } from '../apis/reorder-coachmark.repository';
 
-/** 처음 재정렬이 가능해진 계정에 한 번만 길게 눌러 옮기는 방법을 알린다. */
+/**
+ * 처음 재정렬이 가능해진 계정에 한 번만 길게 눌러 옮기는 방법을 알린다.
+ * 보조 안내라 내 정보를 못 읽으면 목록을 막지 않고 조용히 빠진다.
+ */
 export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
+  const logger = useLogger();
+  const { data: user, error } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+
+  useEffect(() => {
+    if (error == null) {
+      return;
+    }
+    logger.warn('todo.reorder-coachmark.unavailable', { kind, error: errorMessageOf(error) });
+  }, [error, kind, logger]);
+
+  if (user == null) {
+    return null;
+  }
+
+  return <ReorderCoachmark.Contents kind={kind} accountId={user.id} />;
+}
+
+ReorderCoachmark.Contents = function Contents({
+  kind,
+  accountId,
+}: {
+  kind: ReorderCoachmarkKind;
+  accountId: string;
+}) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const service = useReorderCoachmarkService();
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const [isVisible, setIsVisible] = useState(() => service.claim({ accountId: user.id, kind }));
+  const [isVisible, setIsVisible] = useState(() => service.claim({ accountId, kind }));
 
   if (!isVisible) {
     return null;
@@ -46,4 +73,4 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
       </PressableFeedback>
     </HStack>
   );
-}
+};

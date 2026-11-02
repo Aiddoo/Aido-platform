@@ -7,6 +7,7 @@ export { type BoundaryErrorKind, classifyBoundaryError } from './classify-bounda
 // Infrastructure Errors
 export {
   InfraError,
+  isConnectivityError,
   isInfraError,
   NetworkError,
   ParseError,

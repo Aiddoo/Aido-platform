@@ -1,15 +1,19 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import { useFriendStripHintService } from '@src/bootstrap/providers/di-context';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/utils/view-models/friend-user.view-model';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useTrack } from '@src/shared/analytics';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   Box,
+  CloseIcon,
   HStack,
   PlusIcon,
   QueryErrorActions,
@@ -32,7 +36,16 @@ import { noop } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
+import {
+  memo,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { useResolveClassNames } from 'uniwind';
 
 import { useFeedFriendIdParam } from '../hooks/use-feed-friend-id-param';
@@ -46,6 +59,8 @@ const MIN_ITEM_WIDTH = 56;
 /** 이름 칸은 글자 배율이 커져도 한글 네 글자 정도가 보이게 넓힌다 */
 const LABEL_WIDTH_IN_EM = 4.5;
 const DIVIDER_HEIGHT = 32;
+/** 안내 말풍선 꼬리(45도 돌린 정사각형) 한 변 */
+const HINT_CARET_SIZE = 10;
 const LOADING_ITEM_COUNT = 8;
 /** 가로 목록이라 1은 목록 폭 한 번. 끝에서 두 화면 앞에서 다음 페이지를 미리 부른다 */
 const END_REACHED_THRESHOLD = 2;
@@ -81,52 +96,55 @@ export function FriendStrip() {
   };
 
   return (
-    <HStack align="start" style={{ height }}>
-      <Box pl={16} pr={ITEM_GAP}>
-        <FriendStrip.Item
-          name={t('friendStrip.me')}
-          profileImage={user.profileImage}
-          width={width}
-        />
-      </Box>
-      <Divider />
-      {friends.length === 0 ? (
-        <FriendStrip.Empty />
-      ) : (
-        <>
-          <FlashList
-            ref={listRef}
-            horizontal
-            data={friends}
-            keyExtractor={(friend) => friend.followId}
-            renderItem={({ item: friend }) => (
-              <FriendStrip.Item
-                friendId={friend.id}
-                name={friend.displayName}
-                profileImage={friend.profileImage}
-                width={width}
-              />
-            )}
-            ItemSeparatorComponent={ItemGap}
-            ListFooterComponent={
-              <ListEnd
-                hasNextPage={hasNextPage}
-                isFetchNextPageError={isFetchNextPageError}
-                onRetry={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
-              />
-            }
-            onEndReached={handleEndReached}
-            onEndReachedThreshold={END_REACHED_THRESHOLD}
-            drawDistance={DRAW_DISTANCE}
-            onLoad={() => setIsListLoaded(true)}
-            showsHorizontalScrollIndicator={false}
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingRight: 16 }}
+    <VStack>
+      <HStack align="start" style={{ height }}>
+        <Box pl={16} pr={ITEM_GAP}>
+          <FriendStrip.Item
+            name={t('friendStrip.me')}
+            profileImage={user.profileImage}
+            width={width}
           />
-          <SelectedFriendReveal listRef={listRef} friends={friends} isListLoaded={isListLoaded} />
-        </>
-      )}
-    </HStack>
+        </Box>
+        <Divider />
+        {friends.length === 0 ? (
+          <FriendStrip.Empty />
+        ) : (
+          <>
+            <FlashList
+              ref={listRef}
+              horizontal
+              data={friends}
+              keyExtractor={(friend) => friend.followId}
+              renderItem={({ item: friend }) => (
+                <FriendStrip.Item
+                  friendId={friend.id}
+                  name={friend.displayName}
+                  profileImage={friend.profileImage}
+                  width={width}
+                />
+              )}
+              ItemSeparatorComponent={ItemGap}
+              ListFooterComponent={
+                <ListEnd
+                  hasNextPage={hasNextPage}
+                  isFetchNextPageError={isFetchNextPageError}
+                  onRetry={() => fetchNextPage({ cancelRefetch: false }).catch(noop)}
+                />
+              }
+              onEndReached={handleEndReached}
+              onEndReachedThreshold={END_REACHED_THRESHOLD}
+              drawDistance={DRAW_DISTANCE}
+              onLoad={() => setIsListLoaded(true)}
+              showsHorizontalScrollIndicator={false}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingRight: 16 }}
+            />
+            <SelectedFriendReveal listRef={listRef} friends={friends} isListLoaded={isListLoaded} />
+          </>
+        )}
+      </HStack>
+      {friends.length === 0 && <FriendStrip.Hint userId={user.id} />}
+    </VStack>
   );
 }
 
@@ -234,15 +252,16 @@ FriendStrip.Empty = function Empty() {
   const push = useSingleTap(router.push);
   const openMyInvite = useOpenMyInvite();
   const isInviteAvailable = useInviteAvailability();
-  const hint = isInviteAvailable
-    ? t('friendStrip.emptyInviteHint')
-    : t('friendStrip.emptySearchHint');
+  const label = isInviteAvailable ? t('friendStrip.emptyInvite') : t('friendStrip.findFriends');
 
   return (
     <PressableFeedback
       testID="friend-strip-empty"
       accessibilityRole="button"
-      accessibilityLabel={hint}
+      accessibilityLabel={label}
+      accessibilityHint={
+        isInviteAvailable ? t('friendStrip.emptyInviteHint') : t('friendStrip.emptySearchHint')
+      }
       onPress={() => {
         if (isInviteAvailable) {
           openMyInvite('friend_strip_empty');
@@ -250,20 +269,77 @@ FriendStrip.Empty = function Empty() {
         }
         push('/friends/search');
       }}
-      className="flex-1"
     >
-      <HStack align="start" gap={12} pr={16}>
-        <ActionCell
-          icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
-          label={isInviteAvailable ? t('friendStrip.emptyInvite') : t('friendStrip.findFriends')}
-        />
-        <Box flex={1} className="justify-center" style={{ height: AVATAR_FRAME_SIZE }}>
-          <Text size="b4" shade={6} maxLines={2}>
-            {hint}
-          </Text>
-        </Box>
-      </HStack>
+      <ActionCell
+        icon={<PlusIcon width={16} height={16} colorClassName="text-gray-6" />}
+        label={label}
+      />
     </PressableFeedback>
+  );
+};
+
+/**
+ * 친구가 없을 때 친구 줄 아래에 붙는 안내 말풍선. 꼬리가 초대 칸을 가리키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
+ * 친구 줄 옆에 두면 큰 글자에서 글이 좁은 칸에 갇히므로 줄 아래 전체 폭을 쓴다
+ */
+FriendStrip.Hint = function Hint({ userId }: { userId: string }) {
+  const { t } = useTranslation('todo');
+  const { trackEvent } = useTrack();
+  const fontScaledSize = useFontScaledSize();
+  const hintService = useFriendStripHintService();
+  const isInviteAvailable = useInviteAvailability();
+  const { width } = useFriendStripItemSize();
+  // 닫힘은 저장소가 원본이다. 저장소 변경을 구독해 닫는 즉시 사라진다
+  const subscribe = useCallback(
+    (listener: () => void) => hintService.subscribe(userId, listener),
+    [hintService, userId],
+  );
+  const isDismissed = useSyncExternalStore(subscribe, () => hintService.isDismissed(userId));
+
+  if (isDismissed) {
+    return null;
+  }
+
+  // "나" 칸 + 구분선 뒤 초대 칸의 가운데. 말풍선은 좌우 16 안쪽에서 시작한다
+  const caretLeft = width + ITEM_GAP + 1 + ITEM_GAP + width / 2 - HINT_CARET_SIZE / 2;
+
+  const dismiss = () => {
+    hintService.dismiss(userId);
+    trackEvent('friend_strip_hint_dismissed', { hint: isInviteAvailable ? 'invite' : 'search' });
+  };
+
+  return (
+    <Box mx={16} mt={8} pt={HINT_CARET_SIZE / 2}>
+      <Box
+        className="absolute top-0 rotate-45 rounded-[2px] bg-gray-2"
+        style={{ left: caretLeft, width: HINT_CARET_SIZE, height: HINT_CARET_SIZE }}
+      />
+      <HStack gap={8} align="center" className="rounded-xl bg-gray-2 py-1.5 pl-3 pr-1.5">
+        <Text
+          size="b4"
+          shade={7}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+          className="flex-1 shrink"
+        >
+          {isInviteAvailable ? t('friendStrip.emptyInviteHint') : t('friendStrip.emptySearchHint')}
+        </Text>
+        <PressableFeedback
+          testID="friend-strip-hint-dismiss"
+          accessibilityRole="button"
+          accessibilityLabel={t('friendStrip.hintDismiss')}
+          hitSlop={8}
+          onPress={dismiss}
+          className="size-8 items-center justify-center rounded-full"
+        >
+          <CloseIcon
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
+            colorClassName="text-gray-6"
+          />
+        </PressableFeedback>
+      </HStack>
+    </Box>
   );
 };
 

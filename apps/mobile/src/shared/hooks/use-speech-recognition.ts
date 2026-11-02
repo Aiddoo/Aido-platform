@@ -2,7 +2,7 @@ import { i18n, tDynamic } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import type { ExpoSpeechRecognitionErrorCode } from 'expo-speech-recognition';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { useMicrophonePermission } from './use-microphone-permission';
 import { useSpeechRecognitionEvents } from './use-speech-recognition-events';
@@ -85,8 +85,31 @@ export const useSpeechRecognition = (
   // 권한 관리
   const { requestPermissionAndExecute } = useMicrophonePermission(onError);
 
-  // 음성 인식 시작
+  const isMountedRef = useRef(false);
+  const hasStartedRef = useRef(false);
+
+  useEffect(() => {
+    hasStartedRef.current = isRecognizing;
+  }, [isRecognizing]);
+
+  // 시트가 닫혀 버튼이 내려가면 결과를 받을 곳이 없으므로 마이크를 끈다
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (hasStartedRef.current) {
+        hasStartedRef.current = false;
+        ExpoSpeechRecognitionModule.abort();
+      }
+    };
+  }, []);
+
+  // 음성 인식 시작. 권한을 묻는 사이 내려갔으면 시작하지 않는다
   const startRecognition = useCallback(() => {
+    if (!isMountedRef.current) {
+      return;
+    }
+    hasStartedRef.current = true;
     ExpoSpeechRecognitionModule.start({ lang, interimResults, continuous });
   }, [lang, interimResults, continuous]);
 

@@ -20,7 +20,13 @@ import { AppState } from 'react-native';
 
 import { type ResolvedAuthStatus, resolveInitialAuthStatus } from './auth-boot';
 // di-context에서 직접 가져온다 — di-provider를 경유하면 벤더 초기화 모듈까지 끌려온다.
-import { useAnalytics, useDraftService, useErrorReporter, useTokenStore } from './di-context';
+import {
+  useAnalytics,
+  useDraftService,
+  useErrorReporter,
+  useQueryCacheStorage,
+  useTokenStore,
+} from './di-context';
 
 /**
  * 인증 상태 머신 = 아직 판정 전(`loading`) 또는 판정 결과(`ResolvedAuthStatus`).
@@ -43,6 +49,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const analytics = useAnalytics();
   const queryClient = useQueryClient();
   const draftService = useDraftService();
+  const queryCacheStorage = useQueryCacheStorage();
 
   const [status, setStatusState] = useState<AuthStatus>('loading');
 
@@ -176,14 +183,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
   // 던져져 "재시도/로그아웃" 화면을 띄운다. effect는 인증 화면이 언마운트된 뒤 실행된다.
   // 초안은 사용자가 로그아웃·탈퇴했을 때만 같은 시점에 비운다. 세션 만료 때는 남기고,
   // 다른 사용자가 로그인하면 `useUserIdentity`가 이전 소유자의 초안을 정리한다.
+  // 기기에 저장한 조회 캐시는 세션 만료 때도 지워 다음에 로그인한 사람에게 복원되지 않게 한다.
   useEffect(() => {
     if (status === 'unauthenticated') {
       queryClient.clear();
+      queryCacheStorage.clear();
       if (isUserInitiatedSignOutRef.current) {
         draftService.removeAll();
       }
     }
-  }, [status, queryClient, draftService]);
+  }, [status, queryClient, draftService, queryCacheStorage]);
 
   return <AuthContext.Provider value={{ status, setStatus }}>{children}</AuthContext.Provider>;
 }

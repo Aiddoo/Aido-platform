@@ -16,6 +16,7 @@ const mockQueryClient = {
   getQueryData: jest.fn(),
   setQueryData: jest.fn(),
   invalidateQueries: jest.fn(),
+  isMutating: jest.fn(),
 };
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
@@ -57,12 +58,12 @@ const givenTodayTodos = (todos: Todo[]) => {
   mockQueryClient.getQueryData.mockReturnValue({ todos, hasNext: false, nextCursor: null });
 };
 
-const completeTodo = async (todoId: number, completed = true, startDate = TODAY) => {
+const completeTodo = async (todoId: number, completed = true, date = TODAY) => {
   const { result } = await renderHook(() => useToggleTodoMutationOptions());
   await result.current.onSuccess?.(
     createParentTodo({ id: todoId }),
-    { todoId, body: { completed }, startDate },
-    { completed: !completed, startDate },
+    { todoId, body: { completed }, date },
+    { completed: !completed, date },
     MUTATION_CONTEXT,
   );
 };
@@ -88,8 +89,8 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
     expect(mockRequestReviewAt).toHaveBeenCalledWith('all_todos_done');
   });
 
-  it('어제 시작한 여러 날 할 일을 오늘 마지막으로 끝내면 리뷰 순간을 알리고 남은 할 일이 있으면 알리지 않는다', async () => {
-    // Given 낙관적 갱신은 시작일(어제) 목록에만 반영돼 오늘 목록에는 아직 미완료다
+  it('어제 목록에서 여러 날 할 일을 끝내 오늘 할 일이 모두 끝나면 리뷰 순간을 알리고 남은 할 일이 있으면 알리지 않는다', async () => {
+    // Given 낙관적 갱신은 보고 있는 어제 목록에만 반영돼 오늘 목록에는 아직 미완료다
     const multiDay = createParentTodo({
       id: 7,
       startDate: YESTERDAY,
@@ -139,7 +140,7 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
     await completeTodo(42, false);
     await result.current.onError?.(
       new Error('request failed'),
-      { todoId: 42, body: { completed: true }, startDate: TODAY },
+      { todoId: 42, body: { completed: true }, date: TODAY },
       undefined,
       MUTATION_CONTEXT,
     );
@@ -147,5 +148,62 @@ describe('useToggleTodoMutationOptions store review wiring', () => {
     // Then
     expect(mockRecordActiveDay).not.toHaveBeenCalled();
     expect(mockRequestReviewAt).not.toHaveBeenCalled();
+  });
+});
+
+describe('useToggleTodoMutationOptions settle', () => {
+  const settle = async (date = TODAY) => {
+    const { result } = await renderHook(() => useToggleTodoMutationOptions());
+    await result.current.onSettled?.(
+      createParentTodo({ id: 42 }),
+      null,
+      { todoId: 42, body: { completed: true }, date },
+      { completed: false, date },
+      MUTATION_CONTEXT,
+    );
+  };
+  const invalidatedKeys = () =>
+    mockQueryClient.invalidateQueries.mock.calls.map(([filters]) => filters.queryKey);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('다른 체크가 아직 진행 중이면 목록을 다시 부르지 않아 낙관적 값이 깜빡이지 않는다', async () => {
+    // Given
+    mockQueryClient.isMutating.mockReturnValue(2);
+
+    // When
+    await settle();
+
+    // Then
+    expect(invalidatedKeys()).not.toContainEqual(['todo', 'list']);
+  });
+
+  it('마지막 체크가 끝나면 목록과 완료 기록을 다시 부른다', async () => {
+    // Given
+    mockQueryClient.isMutating.mockReturnValue(1);
+
+    // When
+    await settle();
+
+    // Then
+    expect(invalidatedKeys()).toEqual(
+      expect.arrayContaining([
+        ['todo', 'list'],
+        ['todo', 'completion'],
+      ]),
+    );
+  });
+
+  it('지난 날짜를 체크하면 그 해의 주간 달성 목록을 다시 부른다', async () => {
+    // Given
+    mockQueryClient.isMutating.mockReturnValue(1);
+
+    // When
+    await settle(YESTERDAY);
+
+    // Then
+    expect(invalidatedKeys()).toContainEqual(['achievement', 'weekly-list', { year: 2026 }]);
   });
 });

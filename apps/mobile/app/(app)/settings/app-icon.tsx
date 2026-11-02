@@ -3,9 +3,9 @@ import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker
 import type { AppIconKey } from '@src/features/app-icon/domains/app-icon.model';
 import { useGetCurrentAppIconQueryOptions } from '@src/features/app-icon/queries/get-current-app-icon-query-options';
 import { useChangeAppIconMutationOptions } from '@src/features/app-icon/queries/use-change-app-icon-mutation-options';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useTrack } from '@src/shared/analytics';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -16,7 +16,6 @@ import {
   StyledSafeAreaView,
   Text,
   useOverlay,
-  usePremiumDialog,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
@@ -40,9 +39,8 @@ function AppIconScreen() {
   const isLoading = isSupported && isCurrentIconPending;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
-  const { trackEvent } = useTrack();
   const overlay = useOverlay();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('APP_ICON');
 
   const handleIconPress = (key: AppIconKey) => {
     if (isChanging || key === currentIcon) {
@@ -50,8 +48,7 @@ function AppIconScreen() {
     }
 
     if (!isPremium && key !== 'default') {
-      trackEvent('premium_gate_shown', { feature: 'app_icon' });
-      premiumDialog.open({
+      premiumGate.open({
         description: t('screen.premiumRequired'),
       });
       return;

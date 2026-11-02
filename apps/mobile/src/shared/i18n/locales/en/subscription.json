@@ -18,6 +18,7 @@
   },
   "errors": {
     "storeUnavailable": "The store isn't available",
+    "storeProblem": "The store isn't responding right now",
     "offeringsUnavailable": "Couldn't load subscription products",
     "network": "Couldn't connect to the store",
     "purchaseCancelled": "Purchase canceled",
@@ -28,11 +29,11 @@
   "benefits": {
     "aiParsing": {
       "title": "Unlimited AI to-dos",
-      "description": "Organize to-dos in natural language, without the 5-per-month limit"
+      "description": "Organize to-dos in natural language, without the {{limit}}-per-month limit"
     },
     "nudge": {
       "title": "Unlimited nudges",
-      "description": "Nudge your friends freely, without the 3-per-day limit"
+      "description": "Nudge your friends freely, without the {{limit}}-per-day limit"
     },
     "reminder": {
       "title": "Custom reminder times",
@@ -44,11 +45,11 @@
     },
     "friends": {
       "title": "Unlimited friends",
-      "description": "Add friends freely, without the 5-friend limit"
+      "description": "Add friends freely, without the {{limit}}-friend limit"
     },
     "categories": {
-      "title": "Up to 30 categories",
-      "description": "Grow from the 3-category limit up to 30"
+      "title": "Up to {{premium}} categories",
+      "description": "Grow from the {{free}}-category limit up to {{premium}}"
     },
     "aiRepeat": {
       "title": "AI repeat suggestions",
@@ -111,6 +112,7 @@
       "rewardRecord": "Invite reward record",
       "until": "Until {{date}}",
       "nextBillingDate": "Next billing date",
+      "renewalPending": "Confirming renewal",
       "subscriptionEndsOn": "Subscription ends",
       "subscriptionStatus": "Subscription status",
       "autoRenewalOn": "Auto-renews",
@@ -136,19 +138,29 @@
       "receipt": "Couldn't load your subscription",
       "plans": "Couldn't load plans",
       "purchase": "Couldn't complete your payment",
-      "restore": "Couldn't load your purchases"
+      "restore": "Couldn't load your purchases",
+      "storeUnavailable": "Plans aren't available\nright now",
+      "manage": "Couldn't open subscription settings"
     },
     "description": {
       "network": "Check your internet connection and try again",
       "server": "Please try again in a moment. If it keeps happening, contact us",
       "store": "Couldn't connect to the store. Please try again in a moment",
       "purchase": "If you were charged but don't see Premium, contact us",
-      "restore": "Please try again in a moment. If it keeps happening, contact us"
+      "restore": "Please try again in a moment. If it keeps happening, contact us",
+      "storeSetup": "We couldn't reach the store. Send us a message and we'll look into it",
+      "storeTemporary": "The store isn't responding right now. Try again in a moment, or send us a message"
     },
     "contactSupport": "Contact us"
   },
   "inquiryDraft": {
     "withDevice": "{{subject}}\n(Error code: {{code}} / App {{appVersion}} / {{platform}})\n\n",
     "withoutDevice": "{{subject}}\n(Error code: {{code}})\n\n"
+  },
+  "offline": {
+    "receiptTitle": "We'll show your subscription once you're online",
+    "plansTitle": "We'll show subscription plans once you're online",
+    "description": "They'll load automatically when you reconnect",
+    "actionsDisabled": "Connect to the internet to subscribe or restore purchases"
   }
 }

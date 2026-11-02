@@ -1,4 +1,9 @@
-import { todoCategoryIdParamSchema, todoItemIdParamSchema } from '@aido/api';
+import {
+  createTodoSchema,
+  timeOfDaySchema,
+  todoCategoryIdParamSchema,
+  todoItemIdParamSchema,
+} from '@aido/api';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
 import { useLocalSearchParams } from 'expo-router';
@@ -13,6 +18,11 @@ const createCategorySearchSchema = z.object({
     .pipe(todoCategoryIdParamSchema.shape.id)
     .optional()
     .catch(undefined),
+});
+
+const createPrefillSearchSchema = z.object({
+  title: createTodoSchema.shape.title.optional().catch(undefined),
+  time: timeOfDaySchema.optional().catch(undefined),
 });
 
 type SheetDateParam = z.output<typeof sheetDateSearchSchema>['date'];
@@ -40,6 +50,11 @@ export function useTodoSheetDateParam(): readonly [string] {
 export function useTodoCreateCategoryParam(): readonly [CreateCategoryParam] {
   const { categoryId } = createCategorySearchSchema.parse(useLocalSearchParams());
   return [categoryId] as const;
+}
+
+/** 다른 화면이 제안한 제목·시각. 잘못된 값은 버리고 빈 시트로 연다. */
+export function useTodoCreatePrefillParam(): readonly [z.output<typeof createPrefillSearchSchema>] {
+  return [createPrefillSearchSchema.parse(useLocalSearchParams())] as const;
 }
 
 export function useSubTodoScreenParams() {

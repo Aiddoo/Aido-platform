@@ -221,7 +221,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
       reorderSubTodos.mutate({
         todoId: todo.id,
         subTodoIds: reorderedSubTodos.map((subTodo) => subTodo.id),
-        startDate: todo.startDate,
+        date,
       });
     },
   });
@@ -230,7 +230,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
     toggleTodo.mutate({
       todoId: todo.id,
       body: { completed: !todo.completed },
-      startDate: todo.startDate,
+      date,
     });
 
   /** 행이 하나의 접근성 요소로 읽히므로 안쪽 체크박스·댓글·더보기를 VoiceOver/TalkBack 동작으로 제공한다. */
@@ -335,7 +335,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
                     todoId: todo.id,
                     subTodoId: item.id,
                     isCompleted,
-                    startDate: todo.startDate,
+                    date,
                   })
                 }
                 onMorePress={() => handleSubTodoMorePress(item)}

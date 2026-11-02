@@ -30,9 +30,11 @@
     "hail": "Hail",
     "mixed": "Rain or snow"
   },
+  "localTime": "{{time}} local time",
   "hero": {
     "currentLocation": "Current location",
-    "highLow": "H:{{high}} · L:{{low}}",
+    "currentLocationInCountry": "Current location · {{country}}",
+    "highLow": "H:{{high}} L:{{low}}",
     "summary": "{{place}}, {{temperature}} degrees now, {{condition}}",
     "restOfDay": "Rest of the day: {{condition}} · {{chance}}% chance of precipitation",
     "stale": "Data from {{relative}}"
@@ -42,7 +44,12 @@
     "area": "{{source}} · {{area}}",
     "until": "Until {{time}}",
     "startsAt": "From {{time}}",
-    "openDetails": "Opens the full alert"
+    "openDetails": "Opens the full alert",
+    "more_one": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "period": "{{title}} · {{period}}",
+    "sourceWithMore": "{{source}} · {{more}}",
+    "label": "{{title}}, {{subtitle}}"
   },
   "nextHour": {
     "title": "Next-hour precipitation",
@@ -55,49 +62,150 @@
     "dry": "No precipitation in the next hour",
     "now": "Now",
     "minutesLater": "{{minutes}} min",
-    "chartLabel": "Minute-by-minute precipitation for the next hour. {{summary}}"
+    "chartLabel": "Minute-by-minute precipitation for the next hour. {{summary}}",
+    "summary": "{{headline}} · {{detail}}",
+    "level": {
+      "light": "Light",
+      "moderate": "Moderate",
+      "heavy": "Heavy"
+    },
+    "fallback": {
+      "rain": "{{chance}}% chance of rain around {{time}}",
+      "snow": "{{chance}}% chance of snow around {{time}}",
+      "rainNow": "{{chance}}% chance of rain now",
+      "snowNow": "{{chance}}% chance of snow now",
+      "hourlyOnly": "Minute-by-minute forecasts aren't available here, so this is hourly",
+      "label": "{{title}}. {{subtitle}}"
+    }
   },
   "hourly": {
-    "title": "Hourly forecast",
     "now": "Now",
-    "item": "{{time}}, {{temperature}} degrees, {{condition}}, {{chance}}% chance of precipitation"
+    "item": "{{time}}, {{temperature}} degrees, {{condition}}, {{chance}}% chance of precipitation",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "sunItem": "{{event}} at {{time}}",
+    "summary": {
+      "ongoing": "{{subject}} until {{time}}",
+      "ongoingTomorrow": "{{subject}} until {{time}} tomorrow",
+      "ongoingAllDay": "{{subject}} through the day",
+      "upcoming": "{{subject}} from {{time}}, {{sky}} until then",
+      "upcomingTomorrow": "{{subject}} from {{time}} tomorrow, {{sky}} until then",
+      "skyChange": "Until {{time}} it's {{from}}, then {{to}}",
+      "skyChangeTomorrow": "Until {{time}} tomorrow it's {{from}}, then {{to}}",
+      "highest": "Up to {{temperature}} at {{time}}, {{sky}} throughout",
+      "lowest": "Down to {{temperature}} by {{time}}, {{sky}} throughout",
+      "skyBefore": {
+        "clear": "clear",
+        "partlyCloudy": "partly cloudy",
+        "cloudy": "cloudy",
+        "hazy": "hazy"
+      },
+      "skyAfter": {
+        "clear": "clearing up",
+        "partlyCloudy": "some clouds",
+        "cloudy": "clouds roll in",
+        "hazy": "turning hazy"
+      },
+      "steady": {
+        "clear": "Clear for now",
+        "partlyCloudy": "Partly cloudy for now",
+        "cloudy": "Cloudy for now",
+        "hazy": "Hazy for now"
+      }
+    }
   },
   "daily": {
     "title_one": "{{count}}-day forecast",
     "title_other": "{{count}}-day forecast",
     "today": "Today",
-    "item": "{{day}}, {{condition}}, high {{high}}, low {{low}}, {{chance}}% chance of precipitation"
+    "item": "{{day}}, {{condition}}, high {{high}}, low {{low}}, {{chance}}% chance of precipitation",
+    "itemWithTodo": "{{item}}, has to-dos",
+    "todoDay": "Has to-dos",
+    "expandHint": "Shows the day and night forecast",
+    "daytime": "Day · {{start}}–{{end}}",
+    "overnight": "Night · {{start}}–{{end}}",
+    "dayPart": "{{condition}} · {{temperature}}",
+    "nightPart": "{{condition}} · Low {{temperature}}",
+    "precipitation": "Precip {{amount}} mm",
+    "uvMax": "Max UV {{value}}",
+    "windMax": "Max wind {{speed}} m/s",
+    "sun": "Sun {{sunrise}}–{{sunset}}"
   },
   "details": {
     "feelsLike": "Feels like",
-    "feelsColder": "Feels colder than it is",
-    "feelsSimilar": "Close to the actual temperature",
-    "feelsWarmer": "Feels warmer than it is",
+    "feelsColder": "Colder",
+    "feelsSimilar": "Similar",
+    "feelsWarmer": "Warmer",
+    "feelsColderNote": "Feels {{difference}} colder than it is",
+    "feelsSimilarNote": "Similar to the actual temperature",
+    "feelsWarmerNote": "Feels {{difference}} warmer than it is",
     "uv": "UV index",
+    "uvSunscreen": "Use sunscreen {{start}}–{{end}}",
+    "uvLowToday": "No UV worries today",
     "wind": "Wind",
-    "windValue": "{{speed}} m/s",
-    "windDirection": "From the {{direction}}",
-    "windGust": "Gusts up to {{speed}} m/s",
+    "windUnit": "m/s",
+    "windUnitWithDirection": "m/s · {{direction}}",
+    "windSpeedValue": "{{speed}} m/s",
+    "windGust": "Gusts {{speed}} m/s",
+    "windSummary": "{{speed}} m/s from the {{direction}}",
+    "precipitation": "Precipitation",
+    "millimeterValue": "{{value}} mm",
+    "nextDay": "Next 24 hours",
+    "precipitatingNow": "Now {{value}} mm per hour",
+    "dryNow": "Dry right now",
     "humidity": "Humidity",
     "percentValue": "{{value}}%",
     "dewPoint": "Dew point {{value}}",
-    "dewPointTitle": "Dew point",
+    "muggy": "Muggy · Dry laundry indoors",
+    "comfortable": "Comfortable",
     "visibility": "Visibility",
     "kilometerValue": "{{value}} km",
+    "visibilityClear": "Clear",
+    "visibilityModerate": "Moderate",
+    "visibilityPoor": "Poor",
+    "visibilityFar": "You can see far",
+    "visibilityDriveCarefully": "Drive carefully",
     "pressure": "Pressure",
+    "pressureUnit": "hPa",
     "pressureValue": "{{value}} hPa",
-    "sun": "Sun",
-    "sunrise": "Sunrise {{time}}",
-    "sunset": "Sunset {{time}}",
-    "polarDay": "The sun stays up all day",
-    "polarNight": "The sun stays down all day",
-    "moon": "Moon",
-    "airQuality": "Air quality",
-    "pm": "PM10 {{pm10}} · PM2.5 {{pm25}}",
+    "pressureLow": "Low",
+    "pressureHigh": "High",
+    "cloudCover": "Cloud cover",
+    "cloudOvercast": "Overcast",
+    "cloudMostlyCloudy": "Mostly cloudy",
+    "cloudMostlyClear": "Mostly clear",
+    "cloudOvercastNote": "The sky is covered",
+    "cloudBrokenDayNote": "Sun peeks through the clouds",
+    "cloudBrokenNightNote": "Stars peek through the clouds",
+    "cloudClearDayNote": "Plenty of sunshine",
+    "cloudClearNightNote": "A good night for stars",
+    "windCalm": "Barely any wind",
+    "windBreeze": "A light breeze",
+    "windStrong": "Strong wind · Mind your umbrella",
     "noValue": "—",
     "tile": "{{title}}, {{value}}, {{note}}",
-    "moonrise": "Moonrise {{time}}",
-    "moonset": "Moonset {{time}}"
+    "tileValue": "{{value}} {{sub}}"
+  },
+  "sunMoon": {
+    "title": "Sun & moon",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "sunriseTomorrow": "Sunrise tomorrow",
+    "daylight": "Daylight",
+    "daylightValue": "{{hours}}h {{minutes}}m",
+    "polarDay": "The sun stays up all day",
+    "polarNight": "The sun stays down all day",
+    "moonrise": "Rise {{time}}",
+    "moonset": "Set {{time}}",
+    "nextFullMoon": "Full moon {{date}}",
+    "summary": "{{label}} {{time}}"
+  },
+  "airQuality": {
+    "title": "Air quality",
+    "pm10": "PM10",
+    "pm25": "PM2.5",
+    "value": "{{value}} ㎍/㎥",
+    "item": "{{label}} {{grade}}, {{value}}"
   },
   "uvLevel": {
     "low": "Low",
@@ -107,8 +215,8 @@
     "extreme": "Extreme"
   },
   "pressureTrend": {
-    "rising": "Rising",
-    "falling": "Falling",
+    "rising": "Rising · settled weather",
+    "falling": "Falling · low moving in",
     "steady": "Steady"
   },
   "compass": {
@@ -120,6 +228,16 @@
     "sw": "southwest",
     "w": "west",
     "nw": "northwest"
+  },
+  "compassShort": {
+    "n": "N",
+    "ne": "NE",
+    "e": "E",
+    "se": "SE",
+    "s": "S",
+    "sw": "SW",
+    "w": "W",
+    "nw": "NW"
   },
   "moonPhase": {
     "new": "New moon",
@@ -139,7 +257,9 @@
   },
   "attribution": {
     "sources": "Other data sources",
-    "openSources": "View {{serviceName}} data sources"
+    "openSources": "View {{serviceName}} data sources",
+    "updatedAt": "{{source}} · Updated {{time}}",
+    "refresh": "Refresh weather"
   },
   "badge": {
     "temperature": "View weather, {{temperature}} degrees now, provided by {{serviceName}}",
@@ -147,22 +267,23 @@
   },
   "locationPrompt": {
     "title": "Register your location to see the weather",
-    "subtitle": "Share your location to see the weather where you are and when to avoid the rain",
+    "subtitle": "See your local weather and when to dodge the rain",
     "register": "Register location",
     "permissionDenied": "Turn on location access in Settings",
     "allow": "Allow location",
-    "permissionDeniedDescription": "Come back after turning it on and we will show the weather right away",
+    "permissionDeniedDescription": "Come back after turning it on and we'll show the weather right away",
     "openSettings": "Open Settings",
     "unavailableTitle": "Couldn't find your location",
     "unavailableDescription": "Check that Location Services is on",
-    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location"
+    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location",
+    "footnote": "Your to-dos and reminders work without location"
   },
   "screen": {
     "loadFailed": "Couldn't load the weather",
     "retryLater": "Please try again in a moment",
     "providerUnavailable": "Weather is temporarily unavailable",
     "offline": "Check your internet connection",
-    "offlineDescription": "Try again once you are connected"
+    "offlineDescription": "We'll reload once you're back online"
   },
   "toasts": {
     "locationUpdateFailed": "Couldn't register your location"
@@ -172,18 +293,78 @@
   },
   "briefing": {
     "title": "Aido briefing",
+    "itemLabel": "{{title}}, {{time}}, {{advice}}, {{chip}}",
     "noScheduledTodos": "No more scheduled to-dos today",
-    "dry": "Your to-dos today should stay dry",
-    "rainyOne": "It may rain during “{{title}}”",
+    "dry": "No weather worries for your to-dos",
+    "rainyOne": "It may rain during \"{{title}}\"",
     "rainyMany_one": "{{count}} to-do overlaps with rain",
     "rainyMany_other": "{{count}} to-dos overlap with rain",
-    "todoDetail": "{{time}} · {{chance}}% chance of precipitation",
     "reschedule": "Move to a dry time",
-    "loadFailed": "Couldn't load today's to-dos"
+    "loadFailed": "Couldn't load today's to-dos",
+    "noScheduledTodosBody": "Give a to-do a time and we'll check it against the rain",
+    "dryBody": "No rain or heat during your scheduled to-dos",
+    "rainyBody": "Shift them a little to stay dry",
+    "dryAt": "Dry at {{time}}",
+    "noDryTime": "No dry time left today",
+    "range": "{{start}}–{{end}}",
+    "more_one": "{{count}} more",
+    "more_other": "{{count}} more",
+    "stormy": {
+      "title": "Lightning is possible during your to-dos",
+      "body": "Lightning risk {{range}}. Shift the time or do it indoors",
+      "advice": "Lightning risk · go indoors",
+      "action": "Move to a safer time"
+    },
+    "snowy": {
+      "title": "Snow will slow you down",
+      "body": "Leave 20 min early for your {{time}} to-do",
+      "advice": "Leave 20 min early"
+    },
+    "hot": {
+      "title": "Avoid outdoor to-dos midday",
+      "body": "Feels like {{temperature}} {{range}}. It's cooler around {{time}}",
+      "bodyNoCoolTime": "Feels like {{temperature}} {{range}}. Drink plenty of water",
+      "coolAt": "Go at {{time}}",
+      "noCoolTime": "No cooler time left today",
+      "action": "Move to cooler hours"
+    },
+    "rainLater": {
+      "title": "No rain during your to-dos",
+      "titleGray": "Gray skies, but no rain for your to-dos",
+      "todayBody": "Rain starts at {{time}}. Finish outdoor errands before then",
+      "tomorrowRainBody": "Rain starts tomorrow {{dayPart}}. Do laundry or a car wash today",
+      "tomorrowSnowBody": "Snow starts tomorrow {{dayPart}}. Shop or wash the car today",
+      "beforeRain": "Before the rain",
+      "beforeTomorrowRain": "Before tomorrow's rain",
+      "suggestion": "Laundry",
+      "action": "Add a to-do before the rain"
+    },
+    "dayPart": {
+      "dawn": "before dawn",
+      "morning": "morning",
+      "afternoon": "afternoon",
+      "evening": "evening"
+    },
+    "clear": {
+      "title": "A great day to be outside",
+      "body": "{{range}} is the warmest. Try your postponed outdoor to-dos then",
+      "emptyTitle": "Such a clear day — how about this?",
+      "emptyBody": "Your day is open. {{range}} is the warmest, great for a walk",
+      "bestTime": "Best time today",
+      "noRain": "No rain expected",
+      "suggestion": "30-min walk",
+      "action": "Add a walk at {{time}}"
+    },
+    "tomorrowMorning": {
+      "chillyTitle": "Chilly {{temperature}} tomorrow morning",
+      "title": "{{temperature}} tomorrow morning",
+      "chillyBody": "Bring a jacket in the morning. It warms to {{temperature}} later",
+      "body": "It warms to {{temperature}} later"
+    }
   },
   "reschedule": {
     "title": "Move to a dry time",
-    "description": "We will move them to a time with less rain",
+    "description": "We'll move them to a time with less rain",
     "recommended": "Recommended",
     "option": "{{chance}}% chance of precipitation",
     "noDryTime": "No dry time left today",
@@ -195,7 +376,13 @@
     "undo": "Undo",
     "undone": "Moved back to the original time",
     "chartLabel": "Hourly chance of precipitation for the rest of today",
-    "todoNotFound": "Couldn't find the to-dos to move"
+    "todoNotFound": "Couldn't find the to-dos to move",
+    "heat": {
+      "title": "Move to cooler hours",
+      "description": "We'll move them to a time that feels cooler",
+      "option": "Feels like {{temperature}}",
+      "noCoolTime": "No cooler time left today"
+    }
   },
   "airQualitySource": {
     "AIRKOREA": "Source: AirKorea"
