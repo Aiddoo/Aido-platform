@@ -41,4 +41,34 @@ describe("extractMetadata", () => {
     // Then
     expect(metadata.device).toEqual({ devicePlatform: "IOS", deviceModel: "iPhone 15" });
   });
+
+  it("앱이 보낸 버전·OS·언어·시간대 헤더를 기기 정보로 정규화한다", () => {
+    // Given
+    const req = mockOf<Request>({
+      ip: "198.51.100.24",
+      headers: {
+        "x-device-type": "IOS",
+        "x-device-name": "iPhone 16 Pro",
+        "x-os-version": "18.1",
+        "x-app-version": "1.14.0",
+        "x-app-build": "123",
+        "accept-language": "ko",
+        "x-timezone": "Asia/Seoul",
+      },
+    });
+
+    // When
+    const metadata = extractMetadata(req);
+
+    // Then
+    expect(metadata.device).toEqual({
+      devicePlatform: "IOS",
+      deviceModel: "iPhone 16 Pro",
+      osVersion: "18.1",
+      appVersion: "1.14.0",
+      appBuild: "123",
+      locale: "ko",
+      timezone: "Asia/Seoul",
+    });
+  });
 });

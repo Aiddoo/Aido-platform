@@ -88,12 +88,13 @@ describe("AccountController — 계정 컨트롤러", () => {
       const expectedResponse = AuthMapper.toCurrentUserResponse(serviceResult);
 
       // When - getMe를 호출하면
-      const result = await controller.getMe(mockUser);
+      const result = await controller.getMe(mockUser, "Asia/Seoul");
 
       // Then - UseCase에 userId와 sessionId를 전달하고 매핑된 결과를 반환해야 한다
       expect(getCurrentUserQuery.execute).toHaveBeenCalledWith({
         userId: mockUser.userId,
         sessionId: mockUser.sessionId,
+        timezone: "Asia/Seoul",
       });
       expect(result).toEqual(expectedResponse);
     });

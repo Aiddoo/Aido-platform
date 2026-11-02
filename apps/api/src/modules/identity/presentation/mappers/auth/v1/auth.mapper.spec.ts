@@ -10,7 +10,10 @@
  * pnpm --filter @aido/server test auth.mapper.spec.ts
  * ```
  */
-
+import {
+  NO_RESOURCE_BONUSES,
+  resolveAllFeatureAccess,
+} from "#api/modules/access/domain/policies/entitlement/entitlement-limits.policy";
 import type {
   CurrentUserResult,
   ExchangeCodeResult,
@@ -176,6 +179,8 @@ describe("AuthMapper — 인증 매퍼", () => {
         willRenew: false,
         bankedPremiumDays: 7,
         premiumGrantEndedAt: null,
+        isPremium: true,
+        entitlements: resolveAllFeatureAccess("PREMIUM", NO_RESOURCE_BONUSES),
       };
 
       // When
@@ -183,7 +188,7 @@ describe("AuthMapper — 인증 매퍼", () => {
 
       // Then
       expect(response).toEqual(result);
-      expect(Object.keys(response)).toHaveLength(19);
+      expect(Object.keys(response)).toHaveLength(21);
     });
   });
 

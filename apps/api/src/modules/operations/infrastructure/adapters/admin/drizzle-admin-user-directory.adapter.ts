@@ -3,8 +3,11 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
+import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import type { user } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import type { AdminUserDirectoryPort } from "../../../application/ports/admin/admin-user-directory.port.js";
 
@@ -71,7 +74,7 @@ export class DrizzleAdminUserDirectoryAdapter implements AdminUserDirectoryPort 
         }))
         // User projection이 보상 기간도 ACTIVE로 쓰므로 "구독자"에는 초대 보상으로 프리미엄인 사용자도 들어간다
         .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => ({
-          subscriptionStatus: "ACTIVE" as const,
+          RAW: (target: typeof user) => activeSubscriptionCondition(target, now()),
         }))
         .exhaustive()
     );

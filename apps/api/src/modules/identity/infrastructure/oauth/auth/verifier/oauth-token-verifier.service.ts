@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import type { VerifiedProfile } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { readJson } from "#api/platform/http/read-json";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 export type { VerifiedProfile };
@@ -58,6 +59,9 @@ interface AppleIdTokenClaims {
   nonce?: string;
 }
 
+/** 공급자가 응답하지 않아도 로그인 요청을 오래 붙잡지 않도록 OAuth 공급자 호출마다 거는 시간 제한 */
+export const OAUTH_PROVIDER_TIMEOUT_MS = 10_000;
+
 // 모바일 클라이언트 토큰을 서버에서 직접 검증 (각 OAuth Provider의 공식 API/JWKS 사용)
 @Injectable()
 export class OAuthTokenVerifierService {
@@ -77,7 +81,11 @@ export class OAuthTokenVerifierService {
     private readonly configService: ConfigService,
     @InjectHttpClient("oauth") private readonly http: HttpClient,
   ) {
-    this.#googleClient = new OAuth2Client(this.configService.get("GOOGLE_CLIENT_ID"));
+    this.#googleClient = new OAuth2Client({
+      clientId: this.configService.get("GOOGLE_CLIENT_ID"),
+      // Google 공개키(cert) 조회도 같은 시간 제한을 쓴다
+      transporterOptions: { timeout: OAUTH_PROVIDER_TIMEOUT_MS },
+    });
   }
 
   /**
@@ -190,7 +198,7 @@ export class OAuthTokenVerifierService {
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       const isExpired =
         errorMessage.includes("expired") || errorMessage.includes("token used too late");
-      const errorType = error instanceof Error ? error.name : "UnknownError";
+      const errorType = toErrorType(error);
 
       // Google v11 오류 문자열에는 decoded payload가 포함될 수 있어 원문을 로그하지 않는다.
       this.#logger.error(

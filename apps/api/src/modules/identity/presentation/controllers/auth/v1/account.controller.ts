@@ -30,6 +30,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/v1/auth.mapper";
+import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
   ApiDoc,
@@ -94,11 +95,13 @@ export class AccountController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getMe(
     @CurrentUser() user: CurrentUserPayload,
+    @Timezone() timezone: string,
     @Headers("x-app-version") appVersion?: string,
   ) {
     const result = await this.getCurrentUserQuery.execute({
       userId: user.userId,
       sessionId: user.sessionId,
+      timezone,
     });
     return AuthMapper.toCurrentUserResponse(result, appVersion);
   }

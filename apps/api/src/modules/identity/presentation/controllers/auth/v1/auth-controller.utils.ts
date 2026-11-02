@@ -21,7 +21,16 @@ export function extractMetadata(
     userAgent,
     deviceName,
     deviceType,
-    device: resolveRequestDevice({ userAgent, deviceName, deviceType }),
+    device: resolveRequestDevice({
+      userAgent,
+      deviceName,
+      deviceType,
+      osVersion: req.headers["x-os-version"],
+      appVersion: req.headers["x-app-version"],
+      appBuild: req.headers["x-app-build"],
+      acceptLanguage: req.headers["accept-language"],
+      timezone: req.headers["x-timezone"],
+    }),
   };
 }
 

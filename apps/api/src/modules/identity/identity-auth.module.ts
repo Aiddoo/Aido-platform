@@ -3,6 +3,7 @@ import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-c
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
@@ -17,6 +18,8 @@ import {
   OperationsNotificationsModule,
 } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
+import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
+import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import {
@@ -88,7 +91,10 @@ import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards/auth/inde
 import { AccountPurgeJob } from "./infrastructure/jobs/auth/account-purge.job.js";
 import { AccountPurgeProcessor } from "./infrastructure/jobs/auth/account-purge.processor.js";
 import { createOAuthProviderRegistry } from "./infrastructure/oauth/auth/adapters/index.js";
-import { OAuthTokenVerifierService } from "./infrastructure/oauth/auth/verifier/oauth-token-verifier.service.js";
+import {
+  OAUTH_PROVIDER_TIMEOUT_MS,
+  OAuthTokenVerifierService,
+} from "./infrastructure/oauth/auth/verifier/oauth-token-verifier.service.js";
 import {
   DrizzleAccountRepository,
   DrizzleLoginAttemptRepository,
@@ -114,7 +120,12 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
  */
 @Module({
   imports: [
-    HttpClientModule.register({ name: "oauth", retry: false, throwOnHttpError: false }),
+    HttpClientModule.register({
+      name: "oauth",
+      retry: false,
+      throwOnHttpError: false,
+      timeout: OAUTH_PROVIDER_TIMEOUT_MS,
+    }),
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.registerAsync({
       inject: [TypedConfigService],
@@ -131,6 +142,9 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     NotificationRetentionModule,
     EngagementCommentsModule,
     BillingSubscriptionsModule,
+    AccessModule,
+    SocialCheersModule,
+    SocialNudgesModule,
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [

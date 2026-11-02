@@ -3,6 +3,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 
+import type { SubscriptionAlertInput } from "../../types/notifications/subscription-alert.input.js";
 import { EnqueueSubscriptionEvent } from "./enqueue-subscription-event.use-case.js";
 
 describe("EnqueueSubscriptionEvent", () => {
@@ -34,10 +35,10 @@ describe("EnqueueSubscriptionEvent", () => {
 
     await useCase.execute(payload);
 
-    expect(queue.enqueueSend).toHaveBeenCalledWith("payment", expect.any(Object));
+    expect(queue.enqueueSend).toHaveBeenCalledWith("payment", expect.any(Object), undefined);
   });
 
-  it("구매 통화 기준으로 금액을 표시한다 (KRW ₩3,900)", async () => {
+  it("구매 통화 기준 금액에 USD 금액을 병기한다 (KRW ₩3,900)", async () => {
     const payload: SubscriptionEventPayload = {
       userId: "user-1",
       email: "test@example.com",
@@ -51,7 +52,9 @@ describe("EnqueueSubscriptionEvent", () => {
     await useCase.execute(payload);
 
     expect(getNotification()?.fields).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: "금액", value: "₩3,900" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ name: "금액", value: "₩3,900 (≈ $2.99)" }),
+      ]),
     );
   });
 
@@ -93,6 +96,25 @@ describe("EnqueueSubscriptionEvent", () => {
     expect(notification?.fields).toEqual(
       expect.arrayContaining([expect.objectContaining({ name: "이름", value: "매튜" })]),
     );
+  });
+
+  it("이벤트 ID가 있으면 같은 이벤트 알림을 한 번만 등록하도록 멱등 잡 ID를 넘긴다", async () => {
+    // Given
+    const payload: SubscriptionAlertInput = {
+      userId: "user-1",
+      email: "test@example.com",
+      eventType: "RENEWAL",
+      productId: "aido_premium_monthly",
+      eventId: "rc-event-1",
+    };
+
+    // When
+    await useCase.execute(payload);
+
+    // Then
+    expect(queue.enqueueSend).toHaveBeenCalledWith("payment", expect.any(Object), {
+      jobId: "subscription-event_rc-event-1",
+    });
   });
 
   it("큐 등록 실패 시 에러를 전파한다", async () => {

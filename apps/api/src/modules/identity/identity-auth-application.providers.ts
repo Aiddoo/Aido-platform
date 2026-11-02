@@ -1,7 +1,11 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import { AI_QUOTA } from "#api/modules/access/access-quota.public";
 import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
+import { NUDGE_USAGE_READER } from "#api/modules/social/social-nudges.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import {
@@ -66,16 +70,32 @@ import { VerifyEmail } from "./application/use-cases/auth/verify-email.use-case.
 
 export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
   provide: GetCurrentUser,
-  inject: [AUTH_USER_REPOSITORY, AUTH_CACHE, PREMIUM_ACCESS_READER],
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_CACHE,
+    PREMIUM_ACCESS_READER,
+    ENTITLEMENT_READER,
+    AI_QUOTA,
+    CHEER_USAGE_READER,
+    NUDGE_USAGE_READER,
+  ],
   useFactory: (
     userRepository: ConstructorParameters<typeof GetCurrentUser>[0]["userRepository"],
     cacheService: ConstructorParameters<typeof GetCurrentUser>[0]["cacheService"],
     premiumAccessReader: ConstructorParameters<typeof GetCurrentUser>[0]["premiumAccessReader"],
+    entitlementReader: ConstructorParameters<typeof GetCurrentUser>[0]["entitlementReader"],
+    aiQuota: ConstructorParameters<typeof GetCurrentUser>[0]["aiQuota"],
+    cheerUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["cheerUsageReader"],
+    nudgeUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["nudgeUsageReader"],
   ) =>
     new GetCurrentUser({
       userRepository,
       cacheService,
       premiumAccessReader,
+      entitlementReader,
+      aiQuota,
+      cheerUsageReader,
+      nudgeUsageReader,
     }),
 };
 

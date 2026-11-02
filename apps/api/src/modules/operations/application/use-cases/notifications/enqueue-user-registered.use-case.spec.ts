@@ -30,8 +30,8 @@ describe("EnqueueUserRegistered", () => {
     expect(queue.enqueueSend).toHaveBeenCalledWith(
       "admin",
       expect.objectContaining({
-        title: "새로운 회원가입",
-        body: expect.stringContaining("test@example.com"),
+        title: "👋 새로운 회원가입",
+        body: "**test** 님이 가입했습니다.",
       }),
     );
   });

@@ -1,5 +1,16 @@
+import type { AiUsageData } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
+import type {
+  AccessSnapshot,
+  EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
+import type { AiQuotaPort } from "#api/modules/access/access-quota.public";
+import {
+  type AccessTier,
+  NO_RESOURCE_BONUSES,
+  resolveAllFeatureAccess,
+} from "#api/modules/access/domain/policies/entitlement/entitlement-limits.policy";
 import type {
   PremiumAccess,
   PremiumAccessReaderPort,
@@ -9,6 +20,10 @@ import { VerificationService } from "#api/modules/identity/application/services/
 import { IssueLogin } from "#api/modules/identity/application/use-cases/auth/issue-login.use-case";
 import { ProvisionUser } from "#api/modules/identity/application/use-cases/auth/provision-user.use-case";
 import { RestoreAccount } from "#api/modules/identity/application/use-cases/auth/restore-account.use-case";
+import type {
+  DailySendUsage,
+  DailySendUsageReaderPort,
+} from "#api/modules/social/social-cheers.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { StubAccountRepository } from "#test/mocks/ports/account-lifecycle.stub";
@@ -118,7 +133,46 @@ export function createAuthCredentialFixture(
     issueLoginUseCase,
     restoreAccount,
     premiumAccessReader: new StubPremiumAccessReader(),
+    entitlementReader: new StubCurrentUserAccess(),
+    aiQuota: new StubCurrentUserAiQuota(),
+    cheerUsageReader: new StubDailySendUsage(),
+    nudgeUsageReader: new StubDailySendUsage(),
   };
+}
+
+/** 사용자별 권한 주체를 정해 두는 대역. 기능 권한은 실제 Access 정책으로 계산한다. */
+export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getAccessSnapshot"> {
+  readonly tiers = new Map<string, AccessTier>();
+  readonly activeSubscriptionUserIds = new Set<string>();
+
+  async getAccessSnapshot(userId: string): Promise<AccessSnapshot> {
+    const tier = this.tiers.get(userId) ?? "FREE";
+    return {
+      tier,
+      isPremium: this.activeSubscriptionUserIds.has(userId),
+      features: resolveAllFeatureAccess(tier, NO_RESOURCE_BONUSES),
+    };
+  }
+}
+
+export class StubCurrentUserAiQuota implements Pick<AiQuotaPort, "read"> {
+  used = 0;
+  resetsAt = "2026-11-30T15:00:00.000Z";
+
+  async read(_userId: string): Promise<AiUsageData> {
+    return { used: this.used, limit: null, resetsAt: this.resetsAt };
+  }
+}
+
+export class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsage"> {
+  used = 0;
+  resetsAt = new Date("2026-11-03T15:00:00.000Z");
+  readonly timezones: string[] = [];
+
+  async readDailyUsage(_userId: string, timezone: string): Promise<DailySendUsage> {
+    this.timezones.push(timezone);
+    return { used: this.used, resetsAt: new Date(this.resetsAt) };
+  }
 }
 
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */

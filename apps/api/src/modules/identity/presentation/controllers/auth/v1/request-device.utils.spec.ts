@@ -163,4 +163,48 @@ describe("resolveRequestDevice", () => {
       expect(result).toEqual({});
     });
   });
+
+  describe("앱·OS 정보", () => {
+    it("앱 버전·빌드·OS 버전·언어·시간대를 정규화해 남긴다", () => {
+      // Given
+      const source = {
+        osVersion: " 18.1 ",
+        appVersion: "1.14.0",
+        appBuild: "123",
+        acceptLanguage: "en-US,en;q=0.9",
+        timezone: "Asia/Seoul",
+      };
+
+      // When
+      const result = resolveRequestDevice(source);
+
+      // Then
+      expect(result).toEqual({
+        osVersion: "18.1",
+        appVersion: "1.14.0",
+        appBuild: "123",
+        locale: "en-US",
+        timezone: "Asia/Seoul",
+      });
+    });
+
+    it.each([
+      ["SemVer가 아닌 앱 버전", { appVersion: "latest" }],
+      ["너무 긴 앱 버전", { appVersion: `1.0.0-${"a".repeat(40)}` }],
+      ["허용하지 않는 문자가 섞인 OS 버전", { osVersion: "18.1<script>" }],
+      ["너무 긴 OS 버전", { osVersion: "1".repeat(21) }],
+      ["공백이 섞인 빌드 번호", { appBuild: "12 3" }],
+      ["언어 태그가 아닌 Accept-Language", { acceptLanguage: "*" }],
+      ["IANA가 아닌 시간대", { timezone: "Mars/Olympus" }],
+      ["중복 헤더(배열)", { appVersion: ["1.14.0", "1.13.1"] }],
+    ])("%s는 버린다", (_name, source) => {
+      // Given
+
+      // When
+      const result = resolveRequestDevice(source);
+
+      // Then
+      expect(result).toEqual({});
+    });
+  });
 });

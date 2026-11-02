@@ -78,6 +78,11 @@ export interface AuthUserRegisteredNotification {
   name?: string;
   devicePlatform?: "IOS" | "ANDROID" | "WEB";
   deviceModel?: string;
+  osVersion?: string;
+  appVersion?: string;
+  appBuild?: string;
+  locale?: string;
+  timezone?: string;
 }
 
 export interface AuthRegistrationNotifierPort {

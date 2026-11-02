@@ -9,6 +9,7 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import type {
   AuthCachedSession,
@@ -18,6 +19,7 @@ import type {
 import {
   IDENTITY_CACHE_TTL_MS,
   IdentityCacheKey,
+  userProfileTtlMs,
 } from "../../cache/auth/identity-cache.keyspace.js";
 
 /** in-memory는 Date, Redis는 ISO 문자열을 돌려주므로 둘 다 받는다(포트 타입과 같다). */
@@ -84,7 +86,7 @@ export class AuthCacheAdapter implements AuthCachePort {
       IdentityCacheKey.userProfile(userId),
       AUTH_CACHED_USER_PROFILE_SCHEMA.optional(),
       factory,
-      IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+      (profile) => userProfileTtlMs(profile, now()),
     );
   }
 }

@@ -10,7 +10,10 @@ import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
 import type { Mocked } from "vitest";
 import { vi, type Mock } from "vitest";
 
-import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import {
+  OAUTH_PROVIDER_TIMEOUT_MS,
+  OAuthTokenVerifierService,
+} from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { asMock } from "#test/mocks/index";
 
@@ -71,6 +74,17 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("Google 공개키 조회에도 OAuth 공급자 시간 제한(10초)을 건다", async () => {
+    // Given
+    const { OAuth2Client } = await vi.importMock<{ OAuth2Client: Mock }>("google-auth-library");
+
+    // Then
+    expect(OAUTH_PROVIDER_TIMEOUT_MS).toBe(10_000);
+    expect(OAuth2Client).toHaveBeenCalledWith(
+      expect.objectContaining({ transporterOptions: { timeout: OAUTH_PROVIDER_TIMEOUT_MS } }),
+    );
   });
 
   describe("Google ID Token 검증", () => {

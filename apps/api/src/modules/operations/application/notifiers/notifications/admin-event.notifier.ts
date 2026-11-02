@@ -1,7 +1,7 @@
-import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
+import type { SubscriptionAlertInput } from "../../types/notifications/subscription-alert.input.js";
 import type { UserRegisteredEventPayload } from "../../types/notifications/user-registered.payload.js";
 import type { EnqueueSubscriptionEvent } from "../../use-cases/notifications/enqueue-subscription-event.use-case.js";
 import type { EnqueueUserRegistered } from "../../use-cases/notifications/enqueue-user-registered.use-case.js";
@@ -30,7 +30,7 @@ export class AdminEventNotifier {
     });
   }
 
-  notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
+  notifySubscriptionEvent(payload: SubscriptionAlertInput): void {
     this.#dependencies.enqueueSubscriptionEvent.execute(payload).catch(() => {
       this.#dependencies.logger.error({
         event: OperationsNotificationsLogEvent.SUBSCRIPTION_ENQUEUE_FAILED,

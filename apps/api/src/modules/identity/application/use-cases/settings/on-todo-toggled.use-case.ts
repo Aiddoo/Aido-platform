@@ -1,4 +1,5 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { addDays, subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "#api/shared/domain/date/utils/range";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -89,7 +90,7 @@ export class OnTodoToggled {
       this.#dependencies.logger.error({
         event: IdentitySettingsLogEvent.STREAK_UPDATE_FAILED,
         userId: input.userId,
-        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorName: toErrorType(error),
       });
     }
   }
