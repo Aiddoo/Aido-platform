@@ -1,11 +1,11 @@
 import type { WeatherAlert as WeatherAlertDto, WeatherNextHourPeriod } from '@aido/api';
 
 import {
+  createAttributionDto,
   createHanoiReportDto,
   createHourlySeries,
   createSeoulReportDto,
   createTokyoReportDto,
-  createAttributionDto,
   createWeatherReport,
 } from '../__tests__/weather-report.factories';
 import { toWeatherReport } from '../apis/weather.mapper';
@@ -514,55 +514,94 @@ describe('WeatherReportPolicy.temperatureBars', () => {
 
 describe('WeatherReportPolicy.attributionMark', () => {
   it.each([
-    ['dark', '_wht_ko_'],
-    ['light', '_blk_ko_'],
-  ] as const)('%s 바탕에는 그에 맞는 로고를 1x·2x·3x 밀도로 고른다', (background, fileMarker) => {
-    // Given
-    const { attribution } = createWeatherReport();
+    ['dark', 1, '_wht_ko_1X_'],
+    ['dark', 2, '_wht_ko_2X_'],
+    ['dark', 3, '_wht_ko_3X_'],
+    ['light', 2.625, '_blk_ko_3X_'],
+    ['light', 4, '_blk_ko_3X_'],
+  ] as const)(
+    '%s 바탕·화면 밀도 %s에는 %s 로고 하나를 고른다',
+    (background, pixelRatio, marker) => {
+      // Given 로고가 있는 리포트 When 바탕과 화면 밀도로 고르면 Then 그 밀도 이상의 해상도 하나를 고른다
+      const { attribution } = createWeatherReport();
 
-    // When
-    const mark = WeatherReportPolicy.attributionMark(attribution, background);
+      const mark = WeatherReportPolicy.attributionMark(attribution, background, pixelRatio);
 
-    // Then
-    expect(mark.kind).toBe('logo');
-    expect(mark.kind === 'logo' && mark.sources.map((source) => source.scale)).toEqual([1, 2, 3]);
-    expect(
-      mark.kind === 'logo' && mark.sources.every((source) => source.uri.includes(fileMarker)),
-    ).toBe(true);
-  });
+      expect(mark.kind === 'logo' && mark.uri.includes(marker)).toBe(true);
+    },
+  );
 
   it('로고를 받지 못하면 서비스 이름을 글자로 표기한다', () => {
-    // Given
+    // Given 로고가 없는 리포트 When 표기를 고르면 Then 서비스 이름 글자를 쓴다
     const { attribution } = createWeatherReport({
       attribution: createAttributionDto({ logo: null }),
     });
 
-    // When
-    const mark = WeatherReportPolicy.attributionMark(attribution, 'dark');
+    const mark = WeatherReportPolicy.attributionMark(attribution, 'dark', 3);
 
-    // Then
     expect(mark).toEqual({ kind: 'text', serviceName: 'Apple Weather' });
   });
 });
 
-describe('WeatherReportPolicy.airQualitySummary', () => {
-  it('대기질이 있으면 등급과 함께 출처(에어코리아)를 표기한다', () => {
-    // When
-    const summary = WeatherReportPolicy.airQualitySummary({
-      pm10: 32,
-      pm25: null,
-      source: 'AIRKOREA',
-    });
+describe('WeatherReportPolicy.isDifferentWallClock', () => {
+  const now = new Date('2026-10-01T06:00:00Z');
 
-    // Then
-    expect(summary).toEqual({ grade: 'moderate', pm10: 32, pm25: null, source: 'AIRKOREA' });
+  it.each([
+    ['Asia/Seoul', false],
+    ['Asia/Tokyo', false],
+    ['Asia/Bangkok', true],
+    ['America/Los_Angeles', true],
+  ])('기기 시간대가 %s이면 서울 리포트의 벽시계가 다른지는 %s다', (deviceTimeZone, expected) => {
+    // Given 서울 리포트 When 기기 시간대와 지금 벽시계를 비교하면 Then 오프셋이 다를 때만 다르다
+    const report = createWeatherReport();
+
+    expect(WeatherReportPolicy.isDifferentWallClock(report, deviceTimeZone, now)).toBe(expected);
+  });
+});
+
+describe('WeatherReportPolicy.precipitationCondition', () => {
+  it.each([
+    ['SNOW', 'SNOW'],
+    ['SLEET', 'SNOW'],
+    ['HAIL', 'SNOW'],
+    ['RAIN', 'RAIN'],
+    ['MIXED', 'RAIN'],
+    ['NONE', 'RAIN'],
+  ] as const)('%s는 %s 아이콘으로 그린다', (type, expected) => {
+    // Given / When / Then 얼어 내리면 눈, 그 밖에는 비다
+    expect(WeatherReportPolicy.precipitationCondition(type)).toBe(expected);
+    expect(WeatherReportPolicy.isFrozenPrecipitation(type)).toBe(expected === 'SNOW');
+  });
+});
+
+describe('WeatherReportPolicy.todayKey', () => {
+  it('오늘 날짜는 기기가 아니라 예보 위치 시간대로 정한다', () => {
+    // Given 서울 자정 직후(UTC로는 전날)
+    const report = createWeatherReport();
+    const justAfterSeoulMidnight = new Date('2026-09-30T15:05:00Z');
+
+    // When / Then
+    expect(WeatherReportPolicy.todayKey(report, justAfterSeoulMidnight)).toBe('2026-10-01');
+  });
+});
+
+describe('오프라인에서 저장한 리포트를 실제 지금 기준으로 볼 때', () => {
+  const restored = createWeatherReport({
+    fetchedAt: '2026-11-02T06:00:00.000Z',
+    hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10, 10, 10, 10, 10, 10]),
+  });
+  const now = new Date('2026-11-02T13:10:00.000Z');
+
+  it('7시간 전에 받은 리포트는 오래된 정보이고 곧 올 비 안내도 만료된다', () => {
+    // Given 06:00에 받은 리포트 When 13:10에 다시 열면 Then 오래됨·nowcast 만료다
+    expect(WeatherReportPolicy.isStale(restored, now)).toBe(true);
+    expect(WeatherReportPolicy.isNowcastExpired(restored, now)).toBe(true);
   });
 
-  it('대기질이 없는 지역은 타일과 출처를 모두 숨긴다', () => {
-    // When
-    const summary = WeatherReportPolicy.airQualitySummary(null);
+  it('받은 시각이 아니라 지금 이후 시간만 남겨 지난 시간 칸을 보이지 않는다', () => {
+    // Given 06:00~13:00 시간별 예보 When 13:10 기준으로 고르면 Then 13시 칸만 남는다
+    const hours = WeatherReportPolicy.upcomingHours(restored.hourly, now);
 
-    // Then
-    expect(summary).toBeNull();
+    expect(hours.map((hour) => hour.startsAt.toISOString())).toEqual(['2026-11-02T13:00:00.000Z']);
   });
 });

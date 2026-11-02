@@ -1,23 +1,36 @@
-import catImage from '@assets/images/cat_weather_anchor.png';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaleRatio, useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import {
   type DateFormatContext,
-  formatHourLabel,
-  getZonedHour,
+  formatClockTime,
+  formatInstantHour,
   type TimeFormat,
 } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { FlatList, useWindowDimensions } from 'react-native';
+import { memo, type ReactNode } from 'react';
+import { FlatList } from 'react-native';
+import { match } from 'ts-pattern';
 
-import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
+import { PRECIPITATION_CHANCE_TEXT_CLASS } from '../constants/weather-colors';
 import {
-  type HourlyForecast as HourlyForecastItem,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
+  PRECIPITATION_SUBJECT_LABEL_KEYS,
+  SKY_AFTER_KEYS,
+  SKY_BEFORE_KEYS,
+  SKY_STEADY_KEYS,
+  WEATHER_CONDITION_LABEL_KEYS,
+} from '../constants/weather-labels';
+import {
+  type HourlySummary,
+  type HourlyTimelineItem,
+  WeatherHourlyPolicy,
+} from '../domains/weather-hourly.model';
+import { type HourlyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import { useLocalTimeLabel, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
   useGetWeatherReportQueryOptions,
@@ -26,49 +39,84 @@ import {
 import { formatDegrees } from '../utils/format-degrees';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
-import { WeatherMascot } from './weather-mascot';
 
 /** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. */
 const VISIBLE_CHANCE = 20;
-/** 칸 폭은 글자 배율에 비례해 늘려 시각·온도가 잘리지 않게 한다. */
-const CELL_WIDTH = 56;
+/**
+ * 모든 칸은 같은 폭으로 리듬을 맞춘다. 12시간제는 "오후 10시"가 15pt 그대로 들어가도록 넓히고,
+ * 글자 배율에 비례해 늘린다.
+ */
+const CELL_WIDTH = { TWELVE_HOUR: 70, TWENTY_FOUR_HOUR: 58 } as const satisfies Record<
+  TimeFormat,
+  number
+>;
+const ICON_SIZE = 28;
+/** 시안 온도 줄 19/24 -0.4. 맞는 토큰이 없어 앱 글자 크기 비율만 곱한다. */
+const VALUE_TYPE = { fontSize: 19, lineHeight: 24, letterSpacing: -0.4 };
+
+function useValueType() {
+  const ratio = useFontScaleRatio();
+  const minimumFontScale = useMinimumFontScale(VALUE_TYPE.fontSize);
+  return {
+    style: {
+      ...VALUE_TYPE,
+      fontSize: VALUE_TYPE.fontSize * ratio,
+      lineHeight: VALUE_TYPE.lineHeight * ratio,
+    },
+    minimumFontScale,
+  };
+}
+
+interface TimelineContext {
+  dateFormat: DateFormatContext;
+  timeFormat: TimeFormat;
+  now: Date;
+}
+
+function timelineKey(item: HourlyTimelineItem): string {
+  return item.kind === 'hour'
+    ? String(item.hour.startsAt.getTime())
+    : `${item.kind}-${item.at.getTime()}`;
+}
 
 export function HourlyForecast() {
-  const { t } = useTranslation('weather');
-  const [{ data, dataUpdatedAt }, { data: preference }] = useSuspenseQueries({
+  const [{ data }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.hourly },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const dateFormat = { ...useDateFormatContext(), timeZone: data.location.timezone };
-  const hours = WeatherReportPolicy.upcomingHours(data.hourly, new Date(dataUpdatedAt));
+  const fontScaleRatio = useFontScaleRatio();
+  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const now = useMinuteNow();
+  const timeline = WeatherHourlyPolicy.timeline(data, now);
+  const summary = WeatherHourlyPolicy.summary(data, now);
+  const cellWidth = CELL_WIDTH[preference.timeFormat] * fontScaleRatio;
+  const context: TimelineContext = { dateFormat, timeFormat: preference.timeFormat, now };
 
-  if (hours.length === 0) {
+  if (timeline.length === 0) {
     return <HourlyForecast.Empty />;
   }
 
   return (
     <Box>
-      <WeatherMascot
-        source={catImage}
-        className="absolute -top-[72px] right-6 h-[73px] w-[100px]"
-        fallbackCondition="PARTLY_CLOUDY"
-      />
-      <WeatherCard title={t('hourly.title')}>
+      <WeatherCard className="gap-0 px-0 py-3.5">
+        {summary != null && (
+          <>
+            <HourlyForecast.Summary summary={summary} context={context} />
+            <Box className="mx-4 mt-3 h-[0.5px] bg-on-sky/[0.18]" />
+          </>
+        )}
         <FlatList
           horizontal
-          data={hours}
-          keyExtractor={(hour) => String(hour.startsAt.getTime())}
+          data={timeline}
+          keyExtractor={timelineKey}
           showsHorizontalScrollIndicator={false}
           initialNumToRender={8}
-          renderItem={({ item, index }) => (
-            <HourlyForecast.Item
-              hour={item}
-              isNow={index === 0}
-              dateFormat={dateFormat}
-              timeFormat={preference.timeFormat}
-            />
+          className="mt-3"
+          contentContainerClassName="px-1.5"
+          renderItem={({ item }) => (
+            <HourlyForecast.Item item={item} width={cellWidth} context={context} />
           )}
         />
       </WeatherCard>
@@ -76,32 +124,109 @@ export function HourlyForecast() {
   );
 }
 
-interface HourlyForecastItemProps {
-  hour: HourlyForecastItem;
-  isNow: boolean;
-  dateFormat: DateFormatContext;
-  timeFormat: TimeFormat;
-}
-
-HourlyForecast.Item = function Item({
-  hour,
-  isNow,
-  dateFormat,
-  timeFormat,
-}: HourlyForecastItemProps) {
+/** 문장 속 시각은 위치 벽시계가 기기와 다를 때만 '현지'를 붙인다. 칸마다 붙이면 좁은 칸이 넘쳐 문장에서만 밝힌다. */
+HourlyForecast.Summary = function Summary({
+  summary,
+  context: { dateFormat, timeFormat, now },
+}: {
+  summary: HourlySummary;
+  context: TimelineContext;
+}) {
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
-  const { fontScale } = useWindowDimensions();
-  const time = isNow
-    ? t('hourly.now')
-    : formatHourLabel(getZonedHour(hour.startsAt, dateFormat.timeZone), timeFormat, dateFormat);
+  const localTime = useLocalTimeLabel(dateFormat.timeZone, now);
+  const hourLabel = (date: Date) => localTime(formatInstantHour(date, timeFormat, dateFormat));
+
+  const sentence = match(summary)
+    .with({ kind: 'precipitationOngoing' }, ({ precipitationType, endsAt, endsOnLaterDay }) => {
+      const subject = t(PRECIPITATION_SUBJECT_LABEL_KEYS[precipitationType]);
+      if (endsAt == null) {
+        return t('hourly.summary.ongoingAllDay', { subject });
+      }
+      const time = hourLabel(endsAt);
+      return endsOnLaterDay
+        ? t('hourly.summary.ongoingTomorrow', { subject, time })
+        : t('hourly.summary.ongoing', { subject, time });
+    })
+    .with({ kind: 'precipitationUpcoming' }, (upcoming) => {
+      const params = {
+        subject: t(PRECIPITATION_SUBJECT_LABEL_KEYS[upcoming.precipitationType]),
+        time: hourLabel(upcoming.startsAt),
+        sky: t(SKY_BEFORE_KEYS[upcoming.skyBefore]),
+      };
+      return upcoming.startsOnLaterDay
+        ? t('hourly.summary.upcomingTomorrow', params)
+        : t('hourly.summary.upcoming', params);
+    })
+    .with({ kind: 'skyChange' }, (change) => {
+      const params = {
+        time: hourLabel(change.changesAt),
+        from: t(SKY_BEFORE_KEYS[change.from]),
+        to: t(SKY_AFTER_KEYS[change.to]),
+      };
+      return change.changesOnLaterDay
+        ? t('hourly.summary.skyChangeTomorrow', params)
+        : t('hourly.summary.skyChange', params);
+    })
+    .with({ kind: 'steady' }, ({ sky, peak }) => {
+      if (peak == null) {
+        return t(SKY_STEADY_KEYS[sky]);
+      }
+      const params = {
+        sky: t(SKY_BEFORE_KEYS[sky]),
+        time: hourLabel(peak.at),
+        temperature: formatDegrees(WeatherReportPolicy.displayTemperature(peak.temperature, unit)),
+      };
+      return peak.extreme === 'highest'
+        ? t('hourly.summary.highest', params)
+        : t('hourly.summary.lowest', params);
+    })
+    .exhaustive();
+
+  return (
+    <Text size="b3" weight="medium" tone="onSky" className="mx-4 leading-[22px]">
+      {sentence}
+    </Text>
+  );
+};
+
+interface HourlyForecastItemProps {
+  item: HourlyTimelineItem;
+  width: number;
+  context: TimelineContext;
+}
+
+HourlyForecast.Item = memo(function Item({ item, width, context }: HourlyForecastItemProps) {
+  return item.kind === 'hour' ? (
+    <HourCell hour={item.hour} isNow={item.isNow} width={width} context={context} />
+  ) : (
+    <SunCell kind={item.kind} at={item.at} width={width} context={context} />
+  );
+});
+
+function HourCell({
+  hour,
+  isNow,
+  width,
+  context: { dateFormat, timeFormat },
+}: {
+  hour: HourlyForecastEntry;
+  isNow: boolean;
+  width: number;
+  context: TimelineContext;
+}) {
+  const { t } = useTranslation('weather');
+  const unit = useTemperatureUnit();
+  const time = isNow ? t('hourly.now') : formatInstantHour(hour.startsAt, timeFormat, dateFormat);
   const temperature = WeatherReportPolicy.displayTemperature(hour.temperature, unit);
+  const isChanceVisible = hour.precipitationChance >= VISIBLE_CHANCE;
+  const labelMinScale = useMinimumFontScale('b3');
+  const value = useValueType();
 
   return (
     <VStack
       align="center"
-      gap={6}
-      style={{ width: CELL_WIDTH * fontScale }}
+      style={{ width }}
       accessible
       accessibilityLabel={t('hourly.item', {
         time,
@@ -110,36 +235,125 @@ HourlyForecast.Item = function Item({
         chance: hour.precipitationChance,
       })}
     >
-      <Text size="b4" weight="medium" tone="white">
+      <Text
+        size="b3"
+        weight={isNow ? 'semibold' : 'medium'}
+        tone="onSky"
+        maxLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={labelMinScale}
+        className="tabular-nums"
+      >
         {time}
       </Text>
-      <WeatherIcon condition={hour.condition} isDaylight={hour.isDaylight} />
-      {hour.precipitationChance >= VISIBLE_CHANCE ? (
-        <Text size="e2" weight="semibold" className="text-white/80">
-          {`${hour.precipitationChance}%`}
-        </Text>
-      ) : (
-        <Text size="e2" className="opacity-0" accessible={false}>
-          0%
-        </Text>
-      )}
-      <Text size="b2" weight="medium" tone="white">
+      <CellIcon
+        chance={
+          isChanceVisible ? t('details.percentValue', { value: hour.precipitationChance }) : null
+        }
+      >
+        <WeatherIcon
+          condition={hour.condition}
+          isDaylight={hour.isDaylight}
+          width={ICON_SIZE}
+          height={ICON_SIZE}
+        />
+      </CellIcon>
+      <Text
+        size="b1"
+        weight="medium"
+        tone="onSky"
+        maxLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={value.minimumFontScale}
+        className="tabular-nums"
+        style={value.style}
+      >
         {formatDegrees(temperature)}
       </Text>
     </VStack>
   );
-};
+}
+
+function SunCell({
+  kind,
+  at,
+  width,
+  context: { dateFormat, timeFormat },
+}: {
+  kind: 'sunrise' | 'sunset';
+  at: Date;
+  width: number;
+  context: TimelineContext;
+}) {
+  const { t } = useTranslation('weather');
+  const time = formatClockTime(at, timeFormat, dateFormat);
+  const event = kind === 'sunrise' ? t('hourly.sunrise') : t('hourly.sunset');
+  const Icon = kind === 'sunrise' ? WeatherIcon.Sunrise : WeatherIcon.Sunset;
+  const labelMinScale = useMinimumFontScale('b3');
+  const value = useValueType();
+
+  return (
+    <VStack
+      align="center"
+      style={{ width }}
+      accessible
+      accessibilityLabel={t('hourly.sunItem', { time, event })}
+    >
+      <Text
+        size="b3"
+        weight="medium"
+        tone="onSky"
+        maxLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={labelMinScale}
+        className="tabular-nums"
+      >
+        {time}
+      </Text>
+      <CellIcon chance={null}>
+        <Icon width={ICON_SIZE} height={ICON_SIZE} />
+      </CellIcon>
+      <Text
+        size="b1"
+        weight="medium"
+        tone="onSky"
+        maxLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={value.minimumFontScale}
+        style={value.style}
+      >
+        {event}
+      </Text>
+    </VStack>
+  );
+}
+
+/** 강수 확률이 없는 칸도 같은 높이를 차지해 온도 줄이 칸마다 어긋나지 않는다. */
+function CellIcon({ chance, children }: { chance: string | null; children: ReactNode }) {
+  return (
+    <VStack align="center" justify="center" className="h-[50px]">
+      {children}
+      <Text
+        size="e1"
+        weight="semibold"
+        className={cn('min-h-[14px] tabular-nums', PRECIPITATION_CHANCE_TEXT_CLASS)}
+      >
+        {chance ?? ''}
+      </Text>
+    </VStack>
+  );
+}
 
 HourlyForecast.Loading = function Loading() {
   return (
-    <WeatherCard>
-      <TextSkeleton size="e1" className="w-24 opacity-40" />
-      <Box className="flex-row">
+    <WeatherCard className="px-0">
+      <TextSkeleton size="b3" className="mx-4 w-48 opacity-40" />
+      <Box className="flex-row px-1.5">
         {times(6, (index) => (
-          <VStack key={index} align="center" gap={6} style={{ width: CELL_WIDTH }}>
-            <TextSkeleton size="b4" className="w-8 opacity-40" />
-            <Spacing size={24} />
-            <TextSkeleton size="b2" className="w-8 opacity-40" />
+          <VStack key={index} align="center" gap={6} style={{ width: CELL_WIDTH.TWENTY_FOUR_HOUR }}>
+            <TextSkeleton size="b3" className="w-8 opacity-40" />
+            <Spacing size={ICON_SIZE} />
+            <TextSkeleton size="b1" className="w-8 opacity-40" />
           </VStack>
         ))}
       </Box>

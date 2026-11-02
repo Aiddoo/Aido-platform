@@ -1,26 +1,23 @@
 import { Group, Path, Skia, type SkPath } from '@shopify/react-native-skia';
 import { range } from 'es-toolkit';
-import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
+import { useEffect, useMemo } from 'react';
+import { interpolate, type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
-import { createSeededRandom } from './weather-scene-particles';
+import { createStarField, STAR_TWINKLE_GROUPS, type Star } from './weather-scene-particles';
 
 const STAR_SEED = 0x57a2;
-const STAR_GROUP_COUNT = 3;
-const SCREEN_AREA_PER_STAR = 3600;
-const MAX_STARS = 140;
-const STAR_FIELD_HEIGHT_RATIO = 0.62;
+/** 시안 wxTwinkle: 3.4초 주기로 0.15↔0.9. 그룹마다 주기·위상을 달리해 한꺼번에 깜빡이지 않게 한다. */
+const TWINKLE_PERIOD_SECONDS = 3.4;
+const TWINKLE_OPACITY = [0.15, 0.9];
+const UNIT = [0, 1];
+const HALO_RADIUS_RATIO = 3.2;
 
-function buildStarPaths(width: number, height: number): SkPath[] {
-  const random = createSeededRandom(STAR_SEED);
-  const builders = Array.from({ length: STAR_GROUP_COUNT }, () => Skia.PathBuilder.Make());
-  const count = Math.min(MAX_STARS, Math.round((width * height) / SCREEN_AREA_PER_STAR));
-  for (const index of range(count)) {
-    const x = random() * width;
-    const y = random() ** 1.6 * height * STAR_FIELD_HEIGHT_RATIO;
-    const radius = 0.45 + random() ** 3 * 1.1;
-    builders[index % STAR_GROUP_COUNT]?.addCircle(x, y, radius);
+function buildPath(stars: Star[], radiusRatio = 1): SkPath {
+  const builder = Skia.PathBuilder.Make();
+  for (const star of stars) {
+    builder.addCircle(star.x, star.y, star.radius * radiusRatio);
   }
-  return builders.map((builder) => builder.detach());
+  return builder.detach();
 }
 
 type StarLayerProps = {
@@ -31,13 +28,33 @@ type StarLayerProps = {
 };
 
 export function StarLayer({ clouds, width, height, time }: StarLayerProps) {
-  const paths = buildStarPaths(width, height);
-  const visibility = 1 - clouds;
+  const { groups, halos } = useMemo(() => {
+    const stars = createStarField(width, height, STAR_SEED);
+    return {
+      groups: range(STAR_TWINKLE_GROUPS).map((group) =>
+        buildPath(stars.filter((star) => star.group === group)),
+      ),
+      halos: buildPath(
+        stars.filter((star) => star.isBright),
+        HALO_RADIUS_RATIO,
+      ),
+    };
+  }, [width, height]);
+
+  useEffect(
+    () => () => {
+      for (const path of [...groups, halos]) {
+        path.dispose();
+      }
+    },
+    [groups, halos],
+  );
 
   return (
-    <Group opacity={visibility}>
-      {paths.map((path, index) => (
-        <TwinklingStars key={index} path={path} phase={index} time={time} />
+    <Group opacity={1 - clouds}>
+      <Path path={halos} color="rgba(220,230,255,0.07)" />
+      {groups.map((path, group) => (
+        <TwinklingStars key={group} path={path} group={group} time={time} />
       ))}
     </Group>
   );
@@ -45,13 +62,16 @@ export function StarLayer({ clouds, width, height, time }: StarLayerProps) {
 
 type TwinklingStarsProps = {
   path: SkPath;
-  phase: number;
+  group: number;
   time: SharedValue<number>;
 };
 
-function TwinklingStars({ path, phase, time }: TwinklingStarsProps) {
-  const opacity = useDerivedValue(
-    () => 0.6 + 0.4 * Math.sin(time.get() * (0.7 + phase * 0.45) + phase * 2.1),
-  );
-  return <Path path={path} color="rgba(255,255,255,0.9)" opacity={opacity} />;
+function TwinklingStars({ path, group, time }: TwinklingStarsProps) {
+  const period = TWINKLE_PERIOD_SECONDS * (0.85 + group * 0.12);
+  const phase = group * 2.3;
+  const opacity = useDerivedValue(() => {
+    const wave = 0.5 - 0.5 * Math.cos((time.get() / period) * Math.PI * 2 + phase);
+    return interpolate(wave, UNIT, TWINKLE_OPACITY);
+  });
+  return <Path path={path} color="white" opacity={opacity} />;
 }

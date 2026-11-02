@@ -1,10 +1,11 @@
 import { Atlas, rect, Skia, type SkImage, useRSXformBuffer } from '@shopify/react-native-skia';
-import type { SharedValue } from 'react-native-reanimated';
+import { interpolate, type SharedValue } from 'react-native-reanimated';
 
+import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
 import type { WeatherSceneSky } from '../../domains/weather-scene.model';
-import { WEATHER_SCENE_PALETTES } from './weather-scene-palette';
 import {
   createParticleSeeds,
+  getCloudCount,
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
@@ -12,14 +13,15 @@ import {
 import { CLOUD_SPRITE } from './weather-scene-textures';
 
 const CLOUD_SEED = 0xc10d;
-const MIN_VISIBLE_CLOUDS = 0.02;
-const MAX_CLOUDS = 9;
-const BASE_DRIFT = 6;
-const WIND_DRIFT = 28;
-const SCALE = [0.9, 2] as const;
-const CLOUD_BAND_HEIGHT_RATIO = 0.42;
+const CLOUD_BODY_WIDTH = 262;
+const MAX_REFERENCE_WIDTH = 600;
+const BODY_WIDTH_RATIO = [0.5, 1];
+const BASE_DRIFT = 8;
+const WIND_DRIFT = 26;
+const CLOUD_BAND = { top: 0.06, height: 0.5 } as const;
+const ALPHA = [0.1, 0.26];
+const UNIT = [0, 1];
 const SPRITE_ORIGIN = { x: 0, y: 0 };
-const MAX_SIZE_JITTER = 1.15;
 
 type CloudLayerProps = {
   amount: number;
@@ -31,39 +33,39 @@ type CloudLayerProps = {
   texture: SharedValue<SkImage | null>;
 };
 
+/** 시안 wxDrift처럼 흐린 구름 덩이가 깊이에 따라 다른 속도로 흘러가고, 운량이 많을수록 수와 농도가 는다. */
 export function CloudLayer({ amount, wind, sky, width, height, time, texture }: CloudLayerProps) {
-  const count = amount < MIN_VISIBLE_CLOUDS ? 0 : Math.round(2 + amount * (MAX_CLOUDS - 2));
+  const count = getCloudCount(amount);
   const seeds = createParticleSeeds(count, CLOUD_SEED);
   const sprites = Array.from({ length: count }, () =>
     rect(CLOUD_SPRITE.x, CLOUD_SPRITE.y, CLOUD_SPRITE.width, CLOUD_SPRITE.height),
   );
   const rgb = WEATHER_SCENE_PALETTES[sky].cloud;
-  const coverage = 0.45 + amount * 0.55;
+  const coverage = 0.55 + amount * 0.45;
   const colors = Array.from({ length: count }, (_, index) => {
     const depth = (index + 0.5) / count;
-    return Skia.Color(`rgba(${rgb},${(0.3 + depth * 0.45) * coverage})`);
+    return Skia.Color(`rgba(${rgb},${interpolate(depth, UNIT, ALPHA) * coverage})`);
   });
 
-  const widthScale = width / CLOUD_SPRITE.width;
+  const referenceWidth = Math.min(width, MAX_REFERENCE_WIDTH);
+  const maxScale = (referenceWidth * Math.max(...BODY_WIDTH_RATIO)) / CLOUD_BODY_WIDTH;
   const drift = BASE_DRIFT + wind * WIND_DRIFT;
-  const travelWidth = width + CLOUD_SPRITE.width * widthScale * SCALE[1] * MAX_SIZE_JITTER;
-  const bandHeight = height * CLOUD_BAND_HEIGHT_RATIO;
+  const travelWidth = width + CLOUD_SPRITE.width * maxScale;
 
   const transforms = useRSXformBuffer(count, (transform, index) => {
     'worklet';
     const base = index * PARTICLE_SEED_STRIDE;
     const depth = (index + 0.5) / count;
-    const scale =
-      widthScale *
-      (SCALE[0] + depth * (SCALE[1] - SCALE[0])) *
-      (0.85 + (MAX_SIZE_JITTER - 0.85) * (seeds[base + 2] ?? 0));
-    const spriteWidth = CLOUD_SPRITE.width * scale;
+    const size = 0.5 * depth + 0.5 * (seeds[base + 2] ?? 0);
+    const scale = (referenceWidth * interpolate(size, UNIT, BODY_WIDTH_RATIO)) / CLOUD_BODY_WIDTH;
     const x = wrap(
-      (seeds[base] ?? 0) * travelWidth + time.get() * drift * (0.4 + 0.6 * depth),
+      (seeds[base] ?? 0) * travelWidth + time.get() * drift * (0.45 + 0.55 * depth),
       travelWidth,
     );
-    const y = (seeds[base + 1] ?? 0) * bandHeight - CLOUD_SPRITE.height * scale * 0.45;
-    placeSprite(transform, scale, 0, SPRITE_ORIGIN, x - spriteWidth, y);
+    const y =
+      height * (CLOUD_BAND.top + (seeds[base + 1] ?? 0) * CLOUD_BAND.height) -
+      CLOUD_SPRITE.height * scale * 0.55;
+    placeSprite(transform, scale, 0, SPRITE_ORIGIN, x - CLOUD_SPRITE.width * scale, y);
   });
 
   return (

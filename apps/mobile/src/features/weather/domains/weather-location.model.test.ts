@@ -106,13 +106,14 @@ describe('WeatherLocationPolicy.status', () => {
         status: 'located',
         registered: { ...SEOUL, timezone: 'Asia/Seoul' },
         placeName: '서울 중구',
+        countryCode: 'KR',
         revision: 1,
       },
       { hasFailed: false },
     );
 
     // Then
-    expect(status).toEqual({ status: 'ready', placeName: '서울 중구' });
+    expect(status).toEqual({ status: 'ready', placeName: '서울 중구', countryCode: 'KR' });
   });
 
   it.each(['needsPermission', 'denied'] as const)('권한 상태 %s를 그대로 전달한다', (state) => {
@@ -136,5 +137,44 @@ describe('WeatherLocationPolicy.permissionResult', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('WeatherLocationPolicy.foreignCountryName', () => {
+  it('기기 지역과 다른 나라에 있으면 앱 언어로 나라 이름을 돌려준다', () => {
+    // Given 베트남에 있고 기기 지역은 한국 When 한국어로 나라 이름을 구하면 Then 베트남이다
+    const name = WeatherLocationPolicy.foreignCountryName({ countryCode: 'VN' }, 'KR', 'ko');
+
+    expect(name).toBe('베트남');
+  });
+
+  it('기기 지역과 같은 나라면 나라 이름을 붙이지 않는다', () => {
+    // Given 한국에 있고 기기 지역도 한국 When 나라 이름을 구하면 Then 없다
+    const name = WeatherLocationPolicy.foreignCountryName({ countryCode: 'kr' }, 'KR', 'ko');
+
+    expect(name).toBeNull();
+  });
+
+  it.each([
+    [null, 'KR'],
+    ['JP', null],
+  ])('나라(%s)나 기기 지역(%s)을 모르면 나라 이름을 붙이지 않는다', (countryCode, region) => {
+    // Given 나라나 기기 지역 중 하나를 모르고 When 나라 이름을 구하면 Then 없다
+    const name = WeatherLocationPolicy.foreignCountryName({ countryCode }, region, 'ko');
+
+    expect(name).toBeNull();
+  });
+});
+
+describe('리포트 요청 가능 여부', () => {
+  it.each([
+    ['checking', true],
+    ['unavailable', true],
+    ['ready', true],
+    ['needsPermission', false],
+    ['denied', false],
+  ] as const)('%s 상태에서 리포트를 받을 수 있는지는 %p이다', (status, expected) => {
+    // Given / When / Then
+    expect(WeatherLocationPolicy.canFetchReport(status)).toBe(expected);
   });
 });

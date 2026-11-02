@@ -19,9 +19,10 @@ import type { PropsWithChildren } from 'react';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.factories';
 import { WeatherService } from '../apis/weather.service';
+import { useWeatherLocationRevision } from '../queries/get-weather-location-query-options';
 import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
 import { refetchWeatherLocation } from '../queries/weather-cache';
-import { useWeatherLocation, useWeatherLocationRevision } from './use-weather-location';
+import { useWeatherLocation } from './use-weather-location';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
@@ -101,7 +102,11 @@ describe('useWeatherLocation', () => {
 
     // Then
     await waitFor(() =>
-      expect(result.current).toEqual({ status: 'ready', placeName: '서울 중구' }),
+      expect(result.current).toEqual({
+        status: 'ready',
+        placeName: '서울 중구',
+        countryCode: 'KR',
+      }),
     );
     expect(httpClient.put).toHaveBeenCalledWith('v2/weather/location', SEOUL, {
       signal: expect.any(AbortSignal),

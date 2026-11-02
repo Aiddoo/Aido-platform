@@ -3,13 +3,15 @@ import { clamp } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-export const WEATHER_SCENE_SKIES = [
+const WEATHER_SCENE_SKIES = [
   'clearDay',
   'clearNight',
   'cloudyDay',
   'cloudyNight',
   'overcastDay',
   'overcastNight',
+  'rainDay',
+  'rainNight',
   'stormDay',
   'stormNight',
   'snowDay',
@@ -23,11 +25,11 @@ export const WEATHER_SCENE_SKIES = [
 
 export type WeatherSceneSky = (typeof WEATHER_SCENE_SKIES)[number];
 
-export const WEATHER_SCENE_PRECIPITATION_KINDS = ['none', 'rain', 'snow', 'sleet', 'hail'] as const;
+const WEATHER_SCENE_PRECIPITATION_KINDS = ['none', 'rain', 'snow', 'sleet', 'hail'] as const;
 
 export type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
 
-export const WEATHER_SCENE_MAX_PRECIPITATION_ANGLE = Math.PI / 6;
+export const WEATHER_SCENE_MAX_PRECIPITATION_ANGLE = Math.PI / 9;
 
 const HEAVY_PRECIPITATION_MM_PER_HOUR = 10;
 const STRONG_WIND_METERS_PER_SECOND = 15;
@@ -80,6 +82,7 @@ type ConditionProfile = {
 const CLEAR_SKY: SkyPair = { day: 'clearDay', night: 'clearNight' };
 const CLOUDY_SKY: SkyPair = { day: 'cloudyDay', night: 'cloudyNight' };
 const OVERCAST_SKY: SkyPair = { day: 'overcastDay', night: 'overcastNight' };
+const RAIN_SKY: SkyPair = { day: 'rainDay', night: 'rainNight' };
 const STORM_SKY: SkyPair = { day: 'stormDay', night: 'stormNight' };
 const SNOW_SKY: SkyPair = { day: 'snowDay', night: 'snowNight' };
 
@@ -104,7 +107,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       ...DRY,
       sky: { day: 'hotDay', night: 'clearNight' },
       clouds: [0, 0.15],
-      fog: 0.1,
+      fog: 0.3,
       minWind: 0,
     }))
     .with('MOSTLY_CLEAR', () => ({
@@ -157,7 +160,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       minWind: 0,
     }))
     .with('DRIZZLE', () => ({
-      sky: OVERCAST_SKY,
+      sky: RAIN_SKY,
       precipitation: 'rain',
       minDensity: 0.15,
       speed: 0.45,
@@ -167,7 +170,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       lightning: false,
     }))
     .with('RAIN', () => ({
-      sky: OVERCAST_SKY,
+      sky: RAIN_SKY,
       precipitation: 'rain',
       minDensity: 0.4,
       speed: 0.7,
@@ -177,7 +180,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       lightning: false,
     }))
     .with('HEAVY_RAIN', () => ({
-      sky: STORM_SKY,
+      sky: RAIN_SKY,
       precipitation: 'rain',
       minDensity: 0.8,
       speed: 0.9,
@@ -197,7 +200,7 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       lightning: true,
     }))
     .with('SLEET', () => ({
-      sky: OVERCAST_SKY,
+      sky: RAIN_SKY,
       precipitation: 'sleet',
       minDensity: 0.4,
       speed: 0.55,
@@ -246,18 +249,18 @@ function clampUnit(value: number): number {
   return clamp(value, 0, 1);
 }
 
-export function normalizePrecipitationIntensity(millimetersPerHour: number): number {
+function normalizePrecipitationIntensity(millimetersPerHour: number): number {
   if (!(millimetersPerHour > 0)) {
     return 0;
   }
   return clampUnit(Math.log1p(millimetersPerHour) / Math.log1p(HEAVY_PRECIPITATION_MM_PER_HOUR));
 }
 
-export function normalizeWindSpeed(metersPerSecond: number): number {
+function normalizeWindSpeed(metersPerSecond: number): number {
   return clampUnit(metersPerSecond / STRONG_WIND_METERS_PER_SECOND);
 }
 
-export function normalizeCloudCover(percent: number, range: readonly [number, number]): number {
+function normalizeCloudCover(percent: number, range: readonly [number, number]): number {
   const [min, max] = range;
   if (Number.isNaN(percent)) {
     return min;
@@ -265,23 +268,19 @@ export function normalizeCloudCover(percent: number, range: readonly [number, nu
   return clamp(percent / 100, min, max);
 }
 
-export function precipitationAngle(wind: number): number {
+function precipitationAngle(wind: number): number {
   return clampUnit(wind) * WEATHER_SCENE_MAX_PRECIPITATION_ANGLE;
 }
 
-export function hasPrecipitation(scene: WeatherScene): boolean {
-  return scene.precipitation.kind !== 'none';
-}
-
-export function showsSun(scene: Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'>): boolean {
+function showsSun(scene: Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'>): boolean {
   return scene.isDaylight && scene.clouds < SUN_MAX_CLOUDS && scene.fog < CELESTIAL_MAX_FOG;
 }
 
-export function showsStars(scene: Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'>): boolean {
+function showsStars(scene: Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'>): boolean {
   return !scene.isDaylight && scene.clouds < STARS_MAX_CLOUDS && scene.fog < CELESTIAL_MAX_FOG;
 }
 
-export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
+function toWeatherScene(input: WeatherSceneInput): WeatherScene {
   const profile = getConditionProfile(input.condition);
   const isDry = profile.precipitation === 'none';
   const wind = Math.max(profile.minWind, normalizeWindSpeed(input.windSpeed));
@@ -313,11 +312,4 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
 
 export const WeatherScenePolicy = {
   fromInput: toWeatherScene,
-  precipitationDensity: normalizePrecipitationIntensity,
-  wind: normalizeWindSpeed,
-  clouds: normalizeCloudCover,
-  precipitationAngle,
-  hasPrecipitation,
-  showsSun,
-  showsStars,
 } as const;

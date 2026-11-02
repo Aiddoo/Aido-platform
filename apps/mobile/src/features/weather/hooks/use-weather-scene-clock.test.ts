@@ -10,9 +10,8 @@ jest.mock('expo-router', () => ({
   useIsFocused: () => mockIsFocused,
 }));
 
-jest.mock('react-native-reanimated', () => ({
-  ...jest.requireActual('react-native-reanimated'),
-  useReducedMotion: () => mockIsReducedMotion,
+jest.mock('@src/shared/hooks/use-reduce-motion', () => ({
+  useReduceMotion: () => mockIsReducedMotion,
 }));
 
 describe('날씨 장면 시계', () => {

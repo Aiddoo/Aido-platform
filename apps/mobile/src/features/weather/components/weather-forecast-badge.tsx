@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
+import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import {
   type CurrentWeather,
   type WeatherReport,
@@ -15,6 +16,7 @@ import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
 import { formatDegrees } from '../utils/format-degrees';
+import { weatherHref } from '../utils/navigation/weather-href';
 import { WeatherIcon } from './weather-icon';
 
 const selectBadge = (report: WeatherReport) => ({
@@ -32,7 +34,7 @@ export function WeatherForecastBadge() {
   const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: selectBadge,
-    enabled: location.status !== 'needsPermission' && location.status !== 'denied',
+    enabled: WeatherLocationPolicy.canFetchReport(location.status),
   });
 
   return match(location)
@@ -64,7 +66,7 @@ WeatherForecastBadge.Item = function Item({
 
   return (
     <PressableFeedback
-      onPress={() => push('/weather')}
+      onPress={() => push(weatherHref('feed_badge'))}
       accessibilityRole="button"
       accessibilityLabel={t('badge.temperature', { temperature, serviceName })}
       hitSlop={4}
@@ -76,6 +78,7 @@ WeatherForecastBadge.Item = function Item({
           isDaylight={current.isDaylight}
           width={18}
           height={18}
+          variant="mono"
           colorClassName="text-gray-6"
         />
         <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
@@ -92,7 +95,7 @@ WeatherForecastBadge.Entry = function Entry() {
 
   return (
     <PressableFeedback
-      onPress={() => push('/weather')}
+      onPress={() => push(weatherHref('feed_badge'))}
       accessibilityRole="button"
       accessibilityLabel={t('badge.entry')}
       hitSlop={4}
@@ -104,6 +107,7 @@ WeatherForecastBadge.Entry = function Entry() {
           isDaylight
           width={18}
           height={18}
+          variant="mono"
           colorClassName="text-gray-6"
         />
         <Text size="b4" shade={6}>

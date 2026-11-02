@@ -3,7 +3,8 @@ import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { getLightningIntensity } from './weather-scene-particles';
 
-const MAX_FLASH_OPACITY = 0.32;
+/** 시안 wxFlash의 첫 섬광 최대 불투명도 */
+const MAX_FLASH_OPACITY = 0.45;
 
 type LightningLayerProps = {
   width: number;
@@ -13,7 +14,5 @@ type LightningLayerProps = {
 
 export function LightningLayer({ width, height, time }: LightningLayerProps) {
   const opacity = useDerivedValue(() => getLightningIntensity(time.get()) * MAX_FLASH_OPACITY);
-  return (
-    <Rect x={0} y={0} width={width} height={height} color="rgb(222,230,255)" opacity={opacity} />
-  );
+  return <Rect x={0} y={0} width={width} height={height} color="white" opacity={opacity} />;
 }

@@ -1,6 +1,7 @@
 import {
   toMovedScheduleInput,
   toOriginalScheduleInput,
+  toRescheduleTargets,
   toScheduleChanges,
   weatherRescheduleFormSchema,
 } from './weather-reschedule-form.schema';
@@ -79,5 +80,44 @@ describe('할 일 일정 입력 변환', () => {
       isAllDay: false,
     });
     expect(allDay).toMatchObject({ scheduledTime: null, isAllDay: true });
+  });
+});
+
+describe('toRescheduleTargets', () => {
+  const values = {
+    selections: { '12': '2026-11-02T10:00:00.000Z', '15': '2026-11-02T12:00:00.000Z' },
+  };
+
+  it('시트를 연 사이 지워진 할 일은 옮기지 않는다', () => {
+    // Given: 15번은 목록에서 사라졌다
+    const todos = [{ id: 12, completed: false }];
+
+    // When
+    const targets = toRescheduleTargets(values, [12, 15], todos);
+
+    // Then
+    expect(targets).toEqual([{ todo: todos[0], startsAt: new Date('2026-11-02T10:00:00.000Z') }]);
+  });
+
+  it('시트를 연 사이 완료한 할 일은 옮기지 않는다', () => {
+    // Given
+    const todos = [
+      { id: 12, completed: true },
+      { id: 15, completed: false },
+    ];
+
+    // When
+    const targets = toRescheduleTargets(values, [12, 15], todos);
+
+    // Then
+    expect(targets.map(({ todo }) => todo.id)).toEqual([15]);
+  });
+
+  it('자정이 지나 오늘 목록에 없는 할 일만 남았으면 옮길 것이 없다', () => {
+    // When
+    const targets = toRescheduleTargets(values, [12, 15], [{ id: 99, completed: false }]);
+
+    // Then
+    expect(targets).toEqual([]);
   });
 });

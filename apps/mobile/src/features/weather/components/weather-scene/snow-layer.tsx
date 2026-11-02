@@ -1,5 +1,5 @@
 import { Atlas, rect, Skia, type SkImage, useRSXformBuffer } from '@shopify/react-native-skia';
-import type { SharedValue } from 'react-native-reanimated';
+import { Extrapolation, interpolate, type SharedValue } from 'react-native-reanimated';
 
 import {
   createParticleSeeds,
@@ -8,15 +8,23 @@ import {
   placeSprite,
   wrap,
 } from './weather-scene-particles';
-import { PARTICLE_SPRITES, PARTICLE_TEXTURE_SCALE } from './weather-scene-textures';
+import {
+  PARTICLE_SAMPLING,
+  PARTICLE_SPRITES,
+  PARTICLE_TEXTURE_SCALE,
+} from './weather-scene-textures';
 
 const SNOW_SEED = 0x5a0f;
 const EDGE_MARGIN = 24;
-const FALL_SPEED = [36, 150] as const;
-const MAX_WIND_DRIFT = 70;
-const SWAY_AMPLITUDE = 18;
-const SCALE = [0.3, 1] as const;
-const ALPHA = [0.35, 0.95] as const;
+const FALL_SPEED = [60, 160];
+const MAX_WIND_DRIFT = 60;
+const SWAY_AMPLITUDE = [8, 18];
+const SWAY_FREQUENCY = [0.7, 1.3];
+/** 이 깊이보다 가까운 눈송이는 초점이 나간 큰 송이로 그린다. */
+const BOKEH_DEPTH = 0.62;
+const FAR = { depth: [0, BOKEH_DEPTH], scale: [0.3, 0.6], alpha: [0.5, 0.85] };
+const NEAR = { depth: [BOKEH_DEPTH, 1], scale: [0.6, 1.1], alpha: [0.32, 0.55] };
+const UNIT = [0, 1];
 
 type SnowLayerProps = {
   density: number;
@@ -30,6 +38,7 @@ type SnowLayerProps = {
   texture: SharedValue<SkImage | null>;
 };
 
+/** 멀리 있는 눈송이는 작고 또렷하고 느리게, 가까운 송이는 크고 흐리게 그려 시차를 만든다. */
 export function SnowLayer({
   density,
   speed,
@@ -43,21 +52,26 @@ export function SnowLayer({
 }: SnowLayerProps) {
   const count = getParticleCount('snow', density, { width, height }, isLowEndDevice);
   const seeds = createParticleSeeds(count, SNOW_SEED);
-  const sprite = PARTICLE_SPRITES.flake;
-  const sprites = Array.from({ length: count }, () =>
-    rect(sprite.x, sprite.y, sprite.width, sprite.height),
-  );
-  const rgb = isDaylight ? '255,255,255' : '222,232,255';
+  const depthOf = (index: number) => seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0;
+  const sprites = Array.from({ length: count }, (_, index) => {
+    const sprite =
+      depthOf(index) < BOKEH_DEPTH ? PARTICLE_SPRITES.flake : PARTICLE_SPRITES.flakeSoft;
+    return rect(sprite.x, sprite.y, sprite.width, sprite.height);
+  });
+  const rgb = isDaylight ? '255,255,255' : '226,234,255';
   const colors = Array.from({ length: count }, (_, index) => {
-    const depth = seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0;
-    return Skia.Color(`rgba(${rgb},${ALPHA[0] + depth * (ALPHA[1] - ALPHA[0])})`);
+    const depth = depthOf(index);
+    const tier = depth < BOKEH_DEPTH ? FAR : NEAR;
+    const alpha = interpolate(depth, tier.depth, tier.alpha, Extrapolation.CLAMP);
+    return Skia.Color(`rgba(${rgb},${alpha})`);
   });
 
-  const fallSpeed = FALL_SPEED[0] + (FALL_SPEED[1] - FALL_SPEED[0]) * speed;
+  const fallSpeed = interpolate(speed, UNIT, FALL_SPEED, Extrapolation.CLAMP);
   const drift = wind * MAX_WIND_DRIFT;
   const travelHeight = height + EDGE_MARGIN * 2;
   const travelWidth = width + EDGE_MARGIN * 2;
-  const anchor = { x: sprite.width / 2, y: sprite.height / 2 };
+  const farAnchor = PARTICLE_SPRITES.flake.width / 2;
+  const nearAnchor = PARTICLE_SPRITES.flakeSoft.width / 2;
 
   const transforms = useRSXformBuffer(count, (transform, index) => {
     'worklet';
@@ -66,13 +80,19 @@ export function SnowLayer({
     const seedY = seeds[base + 1] ?? 0;
     const sway = seeds[base + 2] ?? 0;
     const depth = seeds[base + 3] ?? 0;
+    const isNear = depth >= BOKEH_DEPTH;
+    const tier = isNear ? NEAR : FAR;
+    const scale =
+      interpolate(depth, tier.depth, tier.scale, Extrapolation.CLAMP) / PARTICLE_TEXTURE_SCALE;
+    const anchor = isNear ? nearAnchor : farAnchor;
     const parallax = 0.45 + 0.55 * depth;
-    const scale = (SCALE[0] + depth * (SCALE[1] - SCALE[0])) / PARTICLE_TEXTURE_SCALE;
     const t = time.get();
-    const swayOffset = Math.sin(t * (0.5 + sway) + seedX * 40) * SWAY_AMPLITUDE * parallax;
+    const swayOffset =
+      Math.sin(t * interpolate(sway, UNIT, SWAY_FREQUENCY) + seedX * 40) *
+      interpolate(depth, UNIT, SWAY_AMPLITUDE);
     const x = wrap(seedX * travelWidth + t * drift * parallax + swayOffset, travelWidth);
     const y = wrap(seedY * travelHeight + t * fallSpeed * parallax, travelHeight);
-    placeSprite(transform, scale, 0, anchor, x - EDGE_MARGIN, y - EDGE_MARGIN);
+    placeSprite(transform, scale, 0, { x: anchor, y: anchor }, x - EDGE_MARGIN, y - EDGE_MARGIN);
   });
 
   return (
@@ -82,6 +102,7 @@ export function SnowLayer({
       transforms={transforms}
       colors={colors}
       colorBlendMode="modulate"
+      sampling={PARTICLE_SAMPLING}
     />
   );
 }

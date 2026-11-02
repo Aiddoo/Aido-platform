@@ -1,7 +1,7 @@
+import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
 import { useIsFocused } from 'expo-router';
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 
 function subscribeAppState(onChange: () => void) {
   const subscription = AppState.addEventListener('change', onChange);
@@ -15,6 +15,6 @@ function getIsAppActive() {
 export function useWeatherSceneClock(): boolean {
   const isFocused = useIsFocused();
   const isAppActive = useSyncExternalStore(subscribeAppState, getIsAppActive);
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useReduceMotion();
   return isFocused && isAppActive && !isReducedMotion;
 }

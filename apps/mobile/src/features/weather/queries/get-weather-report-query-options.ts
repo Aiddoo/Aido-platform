@@ -1,5 +1,6 @@
 import { useWeatherService } from '@src/bootstrap/providers/di-context';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
+import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { isBusinessError, unwrap } from '@src/shared/errors';
 import { type QueryClient, queryOptions } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
@@ -8,7 +9,8 @@ import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import type { LocationReading } from '../domains/weather-location.model';
 import { type WeatherReport, WeatherReportPolicy } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
-import { useWeatherLocationRevision } from '../hooks/use-weather-location';
+import { useWeatherLocationRevision } from './get-weather-location-query-options';
+import { removeOutdatedWeatherReports } from './weather-cache';
 
 const REPORT_STALE_TIME_MS = 10 * 60_000;
 /** 화면을 켜 둔 동안에도 분 단위 강수 안내가 어긋나지 않게 주기적으로 다시 받는다. */
@@ -51,10 +53,15 @@ export function getWeatherReportQueryOptions(
 ) {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision }),
-    queryFn: ({ signal, client }) => getReportWithRegistration(weatherService, client, signal),
+    queryFn: ({ signal, client }) => {
+      // 새 위치의 리포트를 받기 시작하면 화면은 이미 이 리비전을 보므로 이전 위치의 리포트는 기기 캐시에 남기지 않는다
+      removeOutdatedWeatherReports(client, { locationRevision });
+      return getReportWithRegistration(weatherService, client, signal);
+    },
     staleTime: REPORT_STALE_TIME_MS,
     refetchInterval: REPORT_REFETCH_INTERVAL_MS,
     retry: shouldRetryReport,
+    ...PERSISTED_QUERY_OPTIONS,
   });
 }
 
@@ -73,10 +80,12 @@ export const WeatherReportSelect = {
   alerts: (report: WeatherReport) => pick(report, ['location', 'alerts']),
   precipitation: (report: WeatherReport) =>
     pick(report, ['location', 'nextHour', 'hourly', 'fetchedAt']),
-  hourly: (report: WeatherReport) => pick(report, ['location', 'hourly']),
-  briefing: (report: WeatherReport) => pick(report, ['location', 'hourly', 'fetchedAt']),
-  daily: (report: WeatherReport) => pick(report, ['location', 'daily']),
-  details: (report: WeatherReport) => pick(report, ['location', 'current', 'daily', 'airQuality']),
+  hourly: (report: WeatherReport) => pick(report, ['location', 'current', 'hourly', 'daily']),
+  briefing: (report: WeatherReport) => pick(report, ['location', 'hourly', 'daily', 'fetchedAt']),
+  daily: (report: WeatherReport) => pick(report, ['location', 'daily', 'current']),
+  details: (report: WeatherReport) => pick(report, ['location', 'current', 'hourly']),
+  sunMoon: (report: WeatherReport) => pick(report, ['location', 'current', 'daily']),
+  airQuality: (report: WeatherReport) => report.airQuality,
   attribution: (report: WeatherReport) => pick(report, ['location', 'attribution', 'fetchedAt']),
   scene: (report: WeatherReport) => WeatherReportPolicy.sceneInput(report.current),
 } as const;

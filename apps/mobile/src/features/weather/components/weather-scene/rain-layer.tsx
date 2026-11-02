@@ -1,5 +1,5 @@
 import { Atlas, rect, Skia, type SkImage, useRSXformBuffer } from '@shopify/react-native-skia';
-import type { SharedValue } from 'react-native-reanimated';
+import { Extrapolation, interpolate, type SharedValue } from 'react-native-reanimated';
 
 import {
   createParticleSeeds,
@@ -9,6 +9,7 @@ import {
   wrap,
 } from './weather-scene-particles';
 import {
+  PARTICLE_SAMPLING,
   PARTICLE_SPRITES,
   PARTICLE_TEXTURE_SCALE,
   type ParticleSprite,
@@ -20,8 +21,8 @@ type RainVariantStyle = {
   sprite: ParticleSprite;
   seed: number;
   fallSpeed: readonly [min: number, max: number];
-  scale: readonly [min: number, max: number];
-  alpha: readonly [min: number, max: number];
+  scale: readonly [far: number, near: number];
+  alpha: readonly [far: number, near: number];
   rgb: { day: string; night: string };
 };
 
@@ -29,22 +30,27 @@ const RAIN_VARIANT_STYLES = {
   rain: {
     sprite: PARTICLE_SPRITES.streak,
     seed: 0x7a1d,
-    fallSpeed: [700, 1500],
-    scale: [0.45, 1],
-    alpha: [0.18, 0.5],
-    rgb: { day: '255,255,255', night: '196,212,255' },
+    fallSpeed: [560, 1050],
+    scale: [0.6, 1.5],
+    alpha: [0.16, 0.6],
+    rgb: { day: '220,236,255', night: '190,206,240' },
   },
   hail: {
     sprite: PARTICLE_SPRITES.pellet,
     seed: 0x4a11,
-    fallSpeed: [900, 1400],
-    scale: [0.5, 1],
-    alpha: [0.6, 0.95],
+    fallSpeed: [820, 1250],
+    scale: [0.45, 0.9],
+    alpha: [0.55, 0.95],
     rgb: { day: '246,250,255', night: '214,226,245' },
   },
 } as const satisfies Record<RainVariant, RainVariantStyle>;
 
 const EDGE_MARGIN = 48;
+/** 시안 wxFall의 900px 동안 왼쪽으로 24px 기우는 기본 사선 */
+const BASE_SLANT = Math.atan(24 / 900);
+const FAR_DEPTH_BIAS = 1.6;
+const PACE = [0.62, 1];
+const UNIT = [0, 1];
 
 type RainLayerProps = {
   variant: RainVariant;
@@ -59,6 +65,7 @@ type RainLayerProps = {
   texture: SharedValue<SkImage | null>;
 };
 
+/** 빗줄기는 멀수록 가늘고 짧고 흐리고 느리게, 바람이 셀수록 왼쪽으로 기울여 깊이를 만든다. */
 export function RainLayer({
   variant,
   density,
@@ -74,36 +81,41 @@ export function RainLayer({
   const style = RAIN_VARIANT_STYLES[variant];
   const count = getParticleCount(variant, density, { width, height }, isLowEndDevice);
   const seeds = createParticleSeeds(count, style.seed);
+  const depths = Array.from(
+    { length: count },
+    (_, index) => (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) ** FAR_DEPTH_BIAS,
+  );
   const { sprite } = style;
   const sprites = Array.from({ length: count }, () =>
     rect(sprite.x, sprite.y, sprite.width, sprite.height),
   );
   const rgb = isDaylight ? style.rgb.day : style.rgb.night;
-  const [minAlpha, maxAlpha] = style.alpha;
-  const colors = Array.from({ length: count }, (_, index) => {
-    const depth = seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0;
-    return Skia.Color(`rgba(${rgb},${minAlpha + depth * (maxAlpha - minAlpha)})`);
-  });
+  const colors = depths.map((depth) =>
+    Skia.Color(`rgba(${rgb},${interpolate(depth, UNIT, style.alpha)})`),
+  );
 
-  const [minFall, maxFall] = style.fallSpeed;
-  const fallSpeed = minFall + (maxFall - minFall) * speed;
-  const [minScale, maxScale] = style.scale;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const slope = Math.tan(angle);
+  const fallSpeed = interpolate(speed, UNIT, style.fallSpeed, Extrapolation.CLAMP);
+  const scaleRange = style.scale;
+  const slant = BASE_SLANT + angle;
+  const cos = Math.cos(slant);
+  const sin = Math.sin(slant);
+  const slope = Math.tan(slant);
   const travelHeight = height + EDGE_MARGIN * 2;
-  const travelWidth = width + height * slope + EDGE_MARGIN * 2;
-  const anchor = { x: sprite.width / 2, y: sprite.height / 2 };
+  const travelWidth = width + travelHeight * slope + EDGE_MARGIN * 2;
+  const anchor = { x: sprite.width / 2, y: sprite.height };
 
   const transforms = useRSXformBuffer(count, (transform, index) => {
     'worklet';
     const base = index * PARTICLE_SEED_STRIDE;
-    const depth = seeds[base + 3] ?? 0;
-    const scale = (minScale + depth * (maxScale - minScale)) / PARTICLE_TEXTURE_SCALE;
-    const distance = time.get() * fallSpeed * (0.7 + 0.3 * depth + 0.2 * (seeds[base + 2] ?? 0));
-    const travelled = wrap((seeds[base + 1] ?? 0) * travelHeight + distance, travelHeight);
-    const x = (seeds[base] ?? 0) * travelWidth - EDGE_MARGIN - height * slope + travelled * slope;
-    placeSprite(transform, scale * cos, -scale * sin, anchor, x, travelled - EDGE_MARGIN);
+    const depth = depths[index] ?? 0;
+    const scale = interpolate(depth, UNIT, scaleRange) / PARTICLE_TEXTURE_SCALE;
+    const pace = interpolate(depth, UNIT, PACE) + 0.12 * (seeds[base + 2] ?? 0);
+    const travelled = wrap(
+      (seeds[base + 1] ?? 0) * travelHeight + time.get() * fallSpeed * pace,
+      travelHeight,
+    );
+    const x = (seeds[base] ?? 0) * travelWidth - EDGE_MARGIN - travelled * slope;
+    placeSprite(transform, scale * cos, scale * sin, anchor, x, travelled - EDGE_MARGIN);
   });
 
   return (
@@ -113,6 +125,7 @@ export function RainLayer({
       transforms={transforms}
       colors={colors}
       colorBlendMode="modulate"
+      sampling={PARTICLE_SAMPLING}
     />
   );
 }

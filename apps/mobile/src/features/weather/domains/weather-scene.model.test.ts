@@ -79,10 +79,37 @@ describe('날씨 장면 변환', () => {
       const scene = WeatherScenePolicy.fromInput(input);
       // Then
       expect(scene.sun || scene.stars).toBe(false);
-      expect(WeatherScenePolicy.hasPrecipitation(scene)).toBe(true);
+      expect(scene.precipitation.kind).not.toBe('none');
       expect(scene.precipitation.density).toBeGreaterThan(0);
     },
   );
+
+  test.each([
+    ['DRIZZLE', true, 'rainDay'],
+    ['RAIN', false, 'rainNight'],
+    ['HEAVY_RAIN', true, 'rainDay'],
+    ['THUNDERSTORMS', true, 'stormDay'],
+    ['HAIL', false, 'stormNight'],
+    ['CLOUDY', true, 'overcastDay'],
+    ['HOT', true, 'hotDay'],
+  ] as const)('%s 상태(낮 %s)는 %s 하늘을 쓴다', (condition, isDaylight, sky) => {
+    // Given
+    const input = createInput({ condition, isDaylight });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.sky).toBe(sky);
+  });
+
+  test('폭염 낮에는 해와 함께 아지랑이를 깐다', () => {
+    // Given
+    const input = createInput({ condition: 'HOT' });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.sun).toBe(true);
+    expect(scene.fog).toBeGreaterThan(0);
+  });
 
   test('번개는 뇌우에서만 친다', () => {
     // Given
@@ -120,28 +147,24 @@ describe('날씨 장면 변환', () => {
   });
 });
 
-describe('강수 강도 정규화', () => {
-  test.each([
-    [-3, 0],
-    [Number.NaN, 0],
-    [0, 0],
-    [10, 1],
-    [500, 1],
-    [Number.POSITIVE_INFINITY, 1],
-  ])('강수 강도 %pmm/h는 밀도 %p이다', (intensity, expected) => {
-    // Given
-    const millimetersPerHour = intensity;
-    // When
-    const density = WeatherScenePolicy.precipitationDensity(millimetersPerHour);
-    // Then
-    expect(density).toBe(expected);
-  });
+describe('강수 강도와 밀도', () => {
+  const rainDensity = (precipitationIntensity: number) =>
+    WeatherScenePolicy.fromInput(createInput({ condition: 'RAIN', precipitationIntensity }))
+      .precipitation.density;
+
+  test.each([10, 500, Number.POSITIVE_INFINITY])(
+    '강수 강도 %pmm/h 이상은 밀도가 1에서 멈춘다',
+    (intensity) => {
+      // Given / When / Then
+      expect(rainDensity(intensity)).toBe(1);
+    },
+  );
 
   test('강수 강도가 클수록 밀도가 높다', () => {
     // Given
-    const intensities = [0.5, 2, 5];
+    const intensities = [2, 5, 8];
     // When
-    const densities = intensities.map(WeatherScenePolicy.precipitationDensity);
+    const densities = intensities.map(rainDensity);
     // Then
     expect([...densities].sort((a, b) => a - b)).toEqual(densities);
     expect(new Set(densities).size).toBe(3);
@@ -149,15 +172,20 @@ describe('강수 강도 정규화', () => {
 
   test('비 상태는 강도 값이 없거나 잘못돼도 최소 밀도를 유지하고 1을 넘지 않는다', () => {
     // Given
-    const inputs = [Number.NaN, -1, 0, 1_000_000].map((precipitationIntensity) =>
-      createInput({ condition: 'RAIN', precipitationIntensity }),
-    );
+    const intensities = [Number.NaN, -1, 0, 1_000_000];
     // When
-    const densities = inputs.map(
-      (input) => WeatherScenePolicy.fromInput(input).precipitation.density,
-    );
+    const densities = intensities.map(rainDensity);
     // Then
     expect(densities).toEqual([0.4, 0.4, 0.4, 1]);
+  });
+
+  test('맑은 날은 강수 강도 값이 있어도 내리지 않는다', () => {
+    // Given
+    const input = createInput({ condition: 'CLEAR', precipitationIntensity: 5 });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.precipitation).toMatchObject({ kind: 'none', density: 0, angle: 0 });
   });
 });
 
@@ -169,11 +197,11 @@ describe('바람과 강수 각도', () => {
     [7.5, WEATHER_SCENE_MAX_PRECIPITATION_ANGLE / 2],
     [15, WEATHER_SCENE_MAX_PRECIPITATION_ANGLE],
     [80, WEATHER_SCENE_MAX_PRECIPITATION_ANGLE],
-  ])('풍속 %pm/s의 강수 각도는 %p 라디안이다', (windSpeed, expected) => {
+  ])('비 오는 날 풍속 %pm/s의 강수 각도는 %p 라디안이다', (windSpeed, expected) => {
     // Given
-    const wind = WeatherScenePolicy.wind(windSpeed);
+    const input = createInput({ condition: 'RAIN', windSpeed });
     // When
-    const angle = WeatherScenePolicy.precipitationAngle(wind);
+    const { angle } = WeatherScenePolicy.fromInput(input).precipitation;
     // Then
     expect(angle).toBeCloseTo(expected);
   });

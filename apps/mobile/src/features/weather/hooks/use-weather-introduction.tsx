@@ -1,12 +1,15 @@
 import {
   useInviteService,
+  useLogger,
   useWeatherIntroductionService,
 } from '@src/bootstrap/providers/di-context';
+import { toError } from '@src/shared/errors';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
 import { useEffect, useRef, useState } from 'react';
 
+import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { useWeatherLocation } from './use-weather-location';
 
 /**
@@ -18,6 +21,7 @@ export function useWeatherIntroduction(): { isPending: boolean } {
   const location = useWeatherLocation();
   const introductionService = useWeatherIntroductionService();
   const inviteService = useInviteService();
+  const logger = useLogger();
   const stable = useStableFeedForeground();
   const overlay = useOverlay();
   const { t } = useTranslation(['weather', 'common']);
@@ -78,10 +82,12 @@ export function useWeatherIntroduction(): { isPending: boolean } {
           setHasSeen(true);
           return accepted ? request() : undefined;
         })
-        .catch(() => undefined);
+        .catch((error) => {
+          logger.warn(WEATHER_LOG_EVENT.INTRODUCTION_FAILED, { error: toError(error).message });
+        });
     });
     return () => cancelIdleCallback(task);
-  }, [introductionService, inviteService, overlay, request, shouldIntroduce, stable, t]);
+  }, [introductionService, inviteService, logger, overlay, request, shouldIntroduce, stable, t]);
 
   return { isPending: location.status === 'checking' || shouldIntroduce };
 }

@@ -23,6 +23,7 @@ const locationReadingSchema = z.discriminatedUnion('status', [
     status: z.literal('located'),
     registered: registeredLocationSchema,
     placeName: z.string().nullable(),
+    countryCode: z.string().nullable(),
     revision: revisionSchema,
   }),
 ]);
@@ -45,7 +46,7 @@ export function isRelocationNeeded(next: Coordinates, previous: Coordinates | nu
  * 등록한 위치가 이미 받은 리포트의 위치와 같은 격자면 리비전을 유지해 같은 요청을 두 번 보내지 않는다.
  * 비교할 리포트가 없으면(아직 받는 중이거나 서버에 위치가 없던 경우) 새 리비전으로 다시 받는다.
  */
-export function getNextRevision(
+function getNextRevision(
   revision: number,
   registered: Coordinates,
   reportLocation: Coordinates | null,
@@ -53,7 +54,7 @@ export function getNextRevision(
   return isRelocationNeeded(registered, reportLocation) ? revision + 1 : revision;
 }
 
-export function getReadingRevision(reading: LocationReading | undefined): number {
+function getReadingRevision(reading: LocationReading | undefined): number {
   return reading?.status === 'located' || reading?.status === 'unavailable'
     ? reading.revision
     : SAVED_LOCATION_REVISION;
@@ -64,10 +65,10 @@ export type WeatherLocationStatus =
   | { status: 'needsPermission' }
   | { status: 'denied' }
   | { status: 'unavailable' }
-  | { status: 'ready'; placeName: string | null };
+  | { status: 'ready'; placeName: string | null; countryCode: string | null };
 
 /** 권한은 있지만 위치를 읽지 못했거나 등록 요청이 실패하면 unavailable이다. */
-export function resolveLocationStatus(
+function resolveLocationStatus(
   reading: LocationReading | undefined,
   { hasFailed }: { hasFailed: boolean },
 ): WeatherLocationStatus {
@@ -78,14 +79,23 @@ export function resolveLocationStatus(
     .with({ status: 'needsPermission' }, () => ({ status: 'needsPermission' as const }))
     .with({ status: 'denied' }, () => ({ status: 'denied' as const }))
     .with({ status: 'unavailable' }, () => ({ status: 'unavailable' as const }))
-    .with({ status: 'located' }, ({ placeName }) => ({ status: 'ready' as const, placeName }))
+    .with({ status: 'located' }, ({ placeName, countryCode }) => ({
+      status: 'ready' as const,
+      placeName,
+      countryCode,
+    }))
     .exhaustive();
+}
+
+/** 권한을 묻는 중이거나 거부한 동안에는 받을 리포트가 없다. 그 밖에는 서버에 저장된 위치로 받는다. */
+export function canFetchReport(status: WeatherLocationStatus['status']): boolean {
+  return status !== 'needsPermission' && status !== 'denied';
 }
 
 export type PermissionResult = 'granted' | 'needs_permission' | 'denied';
 
 /** 권한 요청 자체가 실패하면(null) 다시 물을 수 있는 상태로 본다. */
-export function toPermissionResult(
+function toPermissionResult(
   permission: { granted: boolean; canAskAgain: boolean } | null,
 ): PermissionResult {
   if (permission == null) {
@@ -97,10 +107,40 @@ export function toPermissionResult(
   return permission.canAskAgain ? 'needs_permission' : 'denied';
 }
 
+/**
+ * 기기 지역과 다른 나라에 있을 때만 그 나라 이름을 앱 언어로 돌려준다.
+ * 나라를 모르거나 런타임이 Intl.DisplayNames를 지원하지 않으면 null이다.
+ */
+function getForeignCountryName(
+  location: { countryCode: string | null },
+  deviceRegion: string | null,
+  language: string,
+): string | null {
+  const { countryCode } = location;
+  if (countryCode == null || deviceRegion == null) {
+    return null;
+  }
+  if (countryCode.toUpperCase() === deviceRegion.toUpperCase()) {
+    return null;
+  }
+  if (typeof Intl.DisplayNames !== 'function') {
+    return null;
+  }
+  try {
+    return (
+      new Intl.DisplayNames([language], { type: 'region' }).of(countryCode.toUpperCase()) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export const WeatherLocationPolicy = {
   isRelocationNeeded,
   nextRevision: getNextRevision,
   readingRevision: getReadingRevision,
   status: resolveLocationStatus,
+  canFetchReport,
   permissionResult: toPermissionResult,
+  foreignCountryName: getForeignCountryName,
 } as const;

@@ -64,3 +64,24 @@ export function toScheduleChanges(
     return selection == null ? [] : [{ todoId, startsAt: new Date(selection) }];
   });
 }
+
+export interface RescheduleTarget<TTodo> {
+  todo: TTodo;
+  startsAt: Date;
+}
+
+/**
+ * 실제로 옮길 할 일과 시각. 시트를 연 사이 지워졌거나 완료된 할 일(다른 기기·알림 동작·날짜가 바뀐 목록)은 옮기지 않는다.
+ * 비어 있으면 옮길 것이 없으므로 주 버튼을 끈다.
+ */
+export function toRescheduleTargets<TTodo extends { id: number; completed: boolean }>(
+  values: WeatherRescheduleFormValues,
+  todoIds: readonly number[],
+  todos: readonly TTodo[],
+): RescheduleTarget<TTodo>[] {
+  const todosById = new Map(todos.map((todo) => [todo.id, todo]));
+  return toScheduleChanges(values, todoIds).flatMap(({ todoId, startsAt }) => {
+    const todo = todosById.get(todoId);
+    return todo == null || todo.completed ? [] : [{ todo, startsAt }];
+  });
+}

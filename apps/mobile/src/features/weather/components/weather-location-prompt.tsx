@@ -2,7 +2,7 @@ import catAnchorImage from '@assets/images/cat_weather_anchor.png';
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import catSuggestionImage from '@assets/images/ido_cat_suggestion.webp';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Result, Text, TextButton } from '@src/shared/ui';
+import { HStack, Text, TextButton } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -42,34 +42,40 @@ export function WeatherLocationPrompt({ onRecovered }: WeatherLocationPromptProp
         image={catHiImage}
         title={t('weather:locationPrompt.title')}
         description={t('weather:locationPrompt.subtitle')}
-        button={
-          <Result.Button onPress={request}>{t('weather:locationPrompt.allow')}</Result.Button>
-        }
-      />
+        footnote={t('weather:locationPrompt.footnote')}
+      >
+        <WeatherResult.Action tone="primary" onPress={request}>
+          {t('weather:locationPrompt.allow')}
+        </WeatherResult.Action>
+      </WeatherResult>
     ))
     .with({ status: 'denied' }, ({ openSettings }) => (
       <WeatherResult
         image={catSuggestionImage}
         title={t('weather:locationPrompt.permissionDenied')}
         description={t('weather:locationPrompt.permissionDeniedDescription')}
-        button={
-          <Result.Button onPress={openSettings}>
-            {t('weather:locationPrompt.openSettings')}
-          </Result.Button>
-        }
-      />
+        footnote={t('weather:locationPrompt.footnote')}
+      >
+        <WeatherResult.Action tone="primary" onPress={openSettings}>
+          {t('weather:locationPrompt.openSettings')}
+        </WeatherResult.Action>
+      </WeatherResult>
     ))
     .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => (
       <WeatherResult
         image={catAnchorImage}
         title={t('weather:locationPrompt.unavailableTitle')}
         description={t('weather:locationPrompt.unavailableDescription')}
-        button={
-          <Result.Button isLoading={updateLocation.isPending} onPress={handleRetry}>
-            {t('common:actions.retry')}
-          </Result.Button>
-        }
-      />
+        footnote={t('weather:locationPrompt.footnote')}
+      >
+        <WeatherResult.Action
+          tone="light"
+          isLoading={updateLocation.isPending}
+          onPress={handleRetry}
+        >
+          {t('common:actions.retry')}
+        </WeatherResult.Action>
+      </WeatherResult>
     ))
     .exhaustive();
 }
@@ -84,7 +90,7 @@ WeatherLocationPrompt.SavedLocationNotice = function SavedLocationNotice() {
   }
   return (
     <HStack gap={8} align="center" justify="center" px={16} className="flex-wrap">
-      <Text size="b4" align="center" className="shrink text-white/85">
+      <Text size="b4" align="center" className="shrink text-on-sky/85">
         {t('weather:locationPrompt.savedLocationNotice')}
       </Text>
       <TextButton size="small" onPress={location.retry}>

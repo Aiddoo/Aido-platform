@@ -1,8 +1,12 @@
 import {
   createParticleSeeds,
   createSeededRandom,
+  createStarField,
+  getCloudCount,
   getLightningIntensity,
   getParticleCount,
+  MAX_CLOUDS,
+  MAX_STARS,
   PARTICLE_BUDGETS,
   PARTICLE_SEED_STRIDE,
   wrap,
@@ -135,5 +139,56 @@ describe('번개', () => {
     );
     // Then
     expect(maxFlashesPerSecond).toBeLessThan(3);
+  });
+});
+
+describe('별 배치', () => {
+  test('같은 화면과 시드는 언제나 같은 별자리를 만든다', () => {
+    // Given
+    const seed = 7;
+    // When
+    const [first, second] = [0, 1].map(() => createStarField(PHONE.width, PHONE.height, seed));
+    // Then
+    expect(first).toEqual(second);
+    expect(first?.length).toBeGreaterThan(0);
+  });
+
+  test('별은 하늘 위쪽에 몰리고 지평선 가까이는 드물다', () => {
+    // Given
+    const stars = createStarField(PHONE.width, PHONE.height, 7);
+    const fieldHeight = PHONE.height * 0.6;
+    // When
+    const upper = stars.filter((star) => star.y < fieldHeight / 2).length;
+    const lower = stars.filter((star) => star.y >= fieldHeight / 2).length;
+    // Then
+    expect(upper).toBeGreaterThan(lower);
+    expect(stars.every((star) => star.y < fieldHeight && star.x < PHONE.width)).toBe(true);
+  });
+
+  test('큰 화면에서도 별 개수는 상한을 넘지 않고 크기를 모르면 별이 없다', () => {
+    // Given
+    const screens = [TABLET, { width: 0, height: 0 }];
+    // When
+    const counts = screens.map((screen) => createStarField(screen.width, screen.height, 7).length);
+    // Then
+    expect(counts).toEqual([MAX_STARS, 0]);
+  });
+});
+
+describe('구름 개수', () => {
+  test.each([
+    [Number.NaN, 0],
+    [0, 0],
+    [0.01, 0],
+    [0.5, Math.round(2 + 0.5 * (MAX_CLOUDS - 2))],
+    [1, MAX_CLOUDS],
+    [3, MAX_CLOUDS],
+  ])('운량 %p에는 구름 %p개를 띄운다', (amount, expected) => {
+    // Given
+    const cloudAmount = amount;
+    // When
+    const count = getCloudCount(cloudAmount);
+    // Then
+    expect(count).toBe(expected);
   });
 });

@@ -34,7 +34,7 @@ describe('WeatherReportSelect', () => {
     const attribution = WeatherReportSelect.attribution(report);
 
     // Then
-    expect(Object.keys(hourly).sort()).toEqual(['hourly', 'location']);
+    expect(Object.keys(hourly).sort()).toEqual(['current', 'daily', 'hourly', 'location']);
     expect(Object.keys(attribution).sort()).toEqual(['attribution', 'fetchedAt', 'location']);
     expect(hourly.hourly).toBe(report.hourly);
   });

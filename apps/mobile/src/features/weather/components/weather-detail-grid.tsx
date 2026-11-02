@@ -1,237 +1,252 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
-import { Grid, GridItem, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/icon';
-import { formatClockTime } from '@src/shared/utils/date-format';
+import { Box, Grid, GridItem } from '@src/shared/ui';
+import { formatInstantHour } from '@src/shared/utils/date-format';
+import { formatDecimal } from '@src/shared/utils/format';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { compact } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
-import type { ReactNode } from 'react';
-import { useWindowDimensions } from 'react-native';
-import { match } from 'ts-pattern';
 
+import { UV_METER_COLORS } from '../constants/weather-colors';
 import {
-  AIR_GRADE_LABEL_KEYS,
-  AIR_QUALITY_SOURCE_LABEL_KEYS,
+  CLOUD_COVER_LEVEL_LABEL_KEYS,
+  CLOUD_COVER_NOTE_KEYS,
   COMPASS_LABEL_KEYS,
+  COMPASS_SHORT_LABEL_KEYS,
   FEELS_LIKE_LABEL_KEYS,
-  MOON_PHASE_LABEL_KEYS,
+  FEELS_LIKE_NOTE_KEYS,
   PRESSURE_TREND_LABEL_KEYS,
   UV_LEVEL_LABEL_KEYS,
+  VISIBILITY_LEVEL_LABEL_KEYS,
+  WIND_LEVEL_NOTE_KEYS,
 } from '../constants/weather-labels';
-import { type SunEvents, WeatherReportPolicy } from '../domains/weather-report.model';
+import { WeatherDetailPolicy } from '../domains/weather-detail.model';
+import { WeatherReportPolicy } from '../domains/weather-report.model';
+import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
 import { formatDegrees } from '../utils/format-degrees';
-import { WeatherCard } from './weather-card';
+import { toCompassDial, toPressureGauge } from '../utils/view-models/weather-dial.view-model';
+import {
+  TILE_GRID_GAP,
+  useTileLayout,
+  WeatherDialTile,
+  WeatherTextTile,
+  WeatherTileSkeleton,
+} from './weather-detail-tile';
+import { WeatherCompass, WeatherPressureGauge } from './weather-dial';
+import { WeatherMeter } from './weather-meter';
 
-/** 큰 글자에서는 두 칸에 값이 잘리므로 한 칸으로 쌓는다. */
-const SINGLE_COLUMN_FONT_SCALE = 1.35;
-const METERS_PER_KILOMETER = 1000;
-const GRID_GAP = 12;
-const LOADING_TILE_COUNT = 6;
+const LOADING_TILE_COUNT = 8;
 
 export function WeatherDetailGrid() {
   const { t } = useTranslation('weather');
-  const { fontScale } = useWindowDimensions();
   const unit = useTemperatureUnit();
-  const [{ data, dataUpdatedAt }, { data: preference }] = useSuspenseQueries({
+  const { columns, bodyMinHeight, onLayout } = useTileLayout();
+  const [{ data }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.details },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const dateFormat = { ...useDateFormatContext(), timeZone: data.location.timezone };
-  const formatTime = (date: Date) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const { current, airQuality } = data;
-  const today = WeatherReportPolicy.todayForecast(data, new Date(dataUpdatedAt));
+  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const formatHour = (date: Date) => formatInstantHour(date, preference.timeFormat, dateFormat);
+  const formatSpeed = (metersPerSecond: number) =>
+    formatDecimal(metersPerSecond, dateFormat.locale);
+  const { current, hourly } = data;
+  const now = useMinuteNow();
+
+  const feelsLike = WeatherReportPolicy.feelsLike(current);
+  const feelsDifference = Math.abs(
+    WeatherReportPolicy.displayTemperature(current.apparentTemperature, unit) -
+      WeatherReportPolicy.displayTemperature(current.temperature, unit),
+  );
+  const sunscreen = WeatherDetailPolicy.sunscreenWindow(hourly, now, data.location.timezone);
   const direction = WeatherReportPolicy.compassDirection(current.windDirection);
-  const airQualitySummary = WeatherReportPolicy.airQualitySummary(airQuality);
-  const columns = fontScale >= SINGLE_COLUMN_FONT_SCALE ? 1 : 2;
+  const windSpeed = formatSpeed(current.windSpeed);
+  const pressure = String(Math.round(current.pressure));
+  const nextDayPrecipitation = WeatherDetailPolicy.nextDayPrecipitation(hourly, now);
+  const visibilityLevel = WeatherDetailPolicy.visibilityLevel(current.visibility);
+  const cloudCoverNote = WeatherDetailPolicy.cloudCoverNote(current.cloudCover, current.isDaylight);
 
   return (
-    <Grid columns={columns} gap={GRID_GAP}>
-      <GridItem>
-        <WeatherDetailGrid.Tile
-          title={t('details.feelsLike')}
-          value={formatDegrees(
-            WeatherReportPolicy.displayTemperature(current.apparentTemperature, unit),
-          )}
-          note={t(FEELS_LIKE_LABEL_KEYS[WeatherReportPolicy.feelsLike(current)])}
-        />
-      </GridItem>
-      <GridItem>
-        <WeatherDetailGrid.Tile
-          title={t('details.uv')}
-          value={String(current.uvIndex)}
-          note={t(UV_LEVEL_LABEL_KEYS[WeatherReportPolicy.uvLevel(current.uvIndex)])}
-        />
-      </GridItem>
-      <GridItem>
-        <WeatherDetailGrid.Tile
-          title={t('details.wind')}
-          value={t('details.windValue', { speed: Math.round(current.windSpeed) })}
-          note={compact([
-            direction == null
-              ? null
-              : t('details.windDirection', { direction: t(COMPASS_LABEL_KEYS[direction]) }),
-            current.windGust == null
-              ? null
-              : t('details.windGust', { speed: Math.round(current.windGust) }),
-          ]).join('\n')}
-        />
-      </GridItem>
-      <GridItem>
-        <WeatherDetailGrid.Tile
-          title={t('details.humidity')}
-          value={t('details.percentValue', { value: current.humidity })}
-          note={t('details.dewPoint', {
-            value: formatDegrees(WeatherReportPolicy.displayTemperature(current.dewPoint, unit)),
-          })}
-        />
-      </GridItem>
-      <GridItem>
-        <WeatherDetailGrid.Tile
-          title={t('details.visibility')}
-          value={t('details.kilometerValue', {
-            value: Math.round(current.visibility / METERS_PER_KILOMETER),
-          })}
-        />
-      </GridItem>
-      <GridItem>
-        <WeatherDetailGrid.Tile
-          title={t('details.pressure')}
-          value={t('details.pressureValue', { value: Math.round(current.pressure) })}
-          note={t(PRESSURE_TREND_LABEL_KEYS[current.pressureTrend])}
-        />
-      </GridItem>
-      {today != null && (
+    <Box onLayout={onLayout}>
+      <Grid columns={columns} gap={TILE_GRID_GAP}>
         <GridItem>
-          <WeatherDetailGrid.SunTile
-            events={WeatherReportPolicy.sunEvents(today, current.isDaylight)}
-            formatTime={formatTime}
+          <WeatherTextTile
+            minHeight={bodyMinHeight}
+            icon="thermo"
+            title={t('details.feelsLike')}
+            value={formatDegrees(
+              WeatherReportPolicy.displayTemperature(current.apparentTemperature, unit),
+            )}
+            sub={t(FEELS_LIKE_LABEL_KEYS[feelsLike])}
+            note={t(FEELS_LIKE_NOTE_KEYS[feelsLike], {
+              difference: formatDegrees(feelsDifference),
+            })}
           />
         </GridItem>
-      )}
-      {today != null && (
         <GridItem>
-          <WeatherDetailGrid.Tile
-            title={t('details.moon')}
-            value={t(MOON_PHASE_LABEL_KEYS[today.moonPhase])}
-            note={compact([
-              today.moonrise == null
-                ? null
-                : t('details.moonrise', { time: formatTime(today.moonrise) }),
-              today.moonset == null
-                ? null
-                : t('details.moonset', { time: formatTime(today.moonset) }),
-            ]).join('\n')}
-          />
-        </GridItem>
-      )}
-      {airQualitySummary != null && (
-        <GridItem colSpan={columns}>
-          <WeatherDetailGrid.Tile
-            title={t('details.airQuality')}
-            value={
-              airQualitySummary.grade == null
-                ? t('details.noValue')
-                : t(AIR_GRADE_LABEL_KEYS[airQualitySummary.grade])
+          <WeatherTextTile
+            minHeight={bodyMinHeight}
+            icon="uv"
+            title={t('details.uv')}
+            value={String(current.uvIndex)}
+            sub={t(UV_LEVEL_LABEL_KEYS[WeatherReportPolicy.uvLevel(current.uvIndex)])}
+            note={
+              sunscreen == null
+                ? t('details.uvLowToday')
+                : t('details.uvSunscreen', {
+                    start: formatHour(sunscreen.startsAt),
+                    end: formatHour(sunscreen.endsAt),
+                  })
             }
-            note={[
-              t('details.pm', {
-                pm10: airQualitySummary.pm10 ?? t('details.noValue'),
-                pm25: airQualitySummary.pm25 ?? t('details.noValue'),
-              }),
-              t(AIR_QUALITY_SOURCE_LABEL_KEYS[airQualitySummary.source]),
-            ].join('\n')}
+          >
+            <Box className="mt-3">
+              <WeatherMeter
+                colors={UV_METER_COLORS}
+                position={WeatherDetailPolicy.uvMeterPosition(current.uvIndex)}
+              />
+            </Box>
+          </WeatherTextTile>
+        </GridItem>
+        <GridItem>
+          <WeatherDialTile
+            minHeight={bodyMinHeight}
+            icon="wind"
+            title={t('details.wind')}
+            accessibilityValue={
+              direction == null
+                ? t('details.windSpeedValue', { speed: windSpeed })
+                : t('details.windSummary', {
+                    speed: windSpeed,
+                    direction: t(COMPASS_LABEL_KEYS[direction]),
+                  })
+            }
+            note={
+              current.windGust == null
+                ? t(WIND_LEVEL_NOTE_KEYS[WeatherDetailPolicy.windLevel(current.windSpeed)])
+                : t('details.windGust', { speed: formatSpeed(current.windGust) })
+            }
+          >
+            {(size) => (
+              <WeatherCompass
+                size={size}
+                dial={toCompassDial(current.windDirection)}
+                value={windSpeed}
+                unit={
+                  direction == null
+                    ? t('details.windUnit')
+                    : t('details.windUnitWithDirection', {
+                        direction: t(COMPASS_SHORT_LABEL_KEYS[direction]),
+                      })
+                }
+              />
+            )}
+          </WeatherDialTile>
+        </GridItem>
+        {nextDayPrecipitation != null && (
+          <GridItem>
+            <WeatherTextTile
+              minHeight={bodyMinHeight}
+              icon="drop"
+              title={t('details.precipitation')}
+              value={t('details.millimeterValue', { value: nextDayPrecipitation })}
+              sub={t('details.nextDay')}
+              note={
+                current.precipitationIntensity > 0
+                  ? t('details.precipitatingNow', {
+                      value: formatDecimal(current.precipitationIntensity, dateFormat.locale),
+                    })
+                  : t('details.dryNow')
+              }
+            />
+          </GridItem>
+        )}
+        <GridItem>
+          <WeatherTextTile
+            minHeight={bodyMinHeight}
+            icon="humidity"
+            title={t('details.humidity')}
+            value={t('details.percentValue', { value: current.humidity })}
+            sub={t('details.dewPoint', {
+              value: formatDegrees(WeatherReportPolicy.displayTemperature(current.dewPoint, unit)),
+            })}
+            note={
+              WeatherDetailPolicy.isMuggy(current.humidity)
+                ? t('details.muggy')
+                : t('details.comfortable')
+            }
           />
         </GridItem>
-      )}
-    </Grid>
+        <GridItem>
+          <WeatherTextTile
+            minHeight={bodyMinHeight}
+            icon="eye"
+            title={t('details.visibility')}
+            value={t('details.kilometerValue', {
+              value: WeatherDetailPolicy.visibilityKilometers(current.visibility),
+            })}
+            sub={t(VISIBILITY_LEVEL_LABEL_KEYS[visibilityLevel])}
+            note={
+              visibilityLevel === 'poor'
+                ? t('details.visibilityDriveCarefully')
+                : t('details.visibilityFar')
+            }
+          />
+        </GridItem>
+        <GridItem>
+          <WeatherDialTile
+            minHeight={bodyMinHeight}
+            icon="gauge"
+            title={t('details.pressure')}
+            accessibilityValue={t('details.pressureValue', { value: pressure })}
+            note={t(PRESSURE_TREND_LABEL_KEYS[current.pressureTrend])}
+          >
+            {(size) => (
+              <WeatherPressureGauge
+                size={size}
+                gauge={toPressureGauge(current.pressure)}
+                value={pressure}
+                unit={t('details.pressureUnit')}
+                lowLabel={t('details.pressureLow')}
+                highLabel={t('details.pressureHigh')}
+              />
+            )}
+          </WeatherDialTile>
+        </GridItem>
+        <GridItem>
+          <WeatherTextTile
+            minHeight={bodyMinHeight}
+            icon="cloud"
+            title={t('details.cloudCover')}
+            value={t('details.percentValue', { value: current.cloudCover })}
+            sub={t(
+              CLOUD_COVER_LEVEL_LABEL_KEYS[WeatherDetailPolicy.cloudCoverLevel(current.cloudCover)],
+            )}
+            note={t(CLOUD_COVER_NOTE_KEYS[cloudCoverNote])}
+          />
+        </GridItem>
+      </Grid>
+    </Box>
   );
 }
-
-interface WeatherDetailTileProps {
-  title: string;
-  value: string;
-  note?: string;
-  icon?: ReactNode;
-}
-
-/** 빈 보조 문구("")는 줄을 만들지 않는다. 값이 없는 항목은 호출부가 "—"로 채운다. */
-WeatherDetailGrid.Tile = function Tile({ title, value, note, icon }: WeatherDetailTileProps) {
-  const { t } = useTranslation('weather');
-  const hasNote = note != null && note !== '';
-
-  return (
-    <WeatherCard title={title} icon={icon}>
-      <VStack
-        gap={4}
-        className="min-h-16"
-        accessible
-        accessibilityLabel={t('details.tile', { title, value, note: hasNote ? note : '' })}
-      >
-        <Text size="t2" weight="medium" tone="white" maxLines={2}>
-          {value}
-        </Text>
-        {hasNote && (
-          <Text size="b4" className="text-white/80">
-            {note}
-          </Text>
-        )}
-      </VStack>
-    </WeatherCard>
-  );
-};
-
-/** 백야·극야에는 시각 대신 상태 문장을, 하나만 있는 날은 있는 시각만 보여 준다. */
-WeatherDetailGrid.SunTile = function SunTile({
-  events,
-  formatTime,
-}: {
-  events: SunEvents;
-  formatTime: (date: Date) => string;
-}) {
-  const { t } = useTranslation('weather');
-  const lines = match(events)
-    .with({ kind: 'polarDay' }, () => [t('details.polarDay')])
-    .with({ kind: 'polarNight' }, () => [t('details.polarNight')])
-    .with({ kind: 'regular' }, ({ sunrise, sunset }) =>
-      compact([
-        sunrise == null ? null : t('details.sunrise', { time: formatTime(sunrise) }),
-        sunset == null ? null : t('details.sunset', { time: formatTime(sunset) }),
-      ]),
-    )
-    .exhaustive();
-  const [value = t('details.noValue'), ...rest] = lines;
-  const SunIcon = events.kind === 'polarNight' ? WeatherSunsetIcon : WeatherSunriseIcon;
-
-  return (
-    <WeatherDetailGrid.Tile
-      title={t('details.sun')}
-      icon={<SunIcon width={14} height={14} colorClassName="text-white/70" />}
-      value={value}
-      note={rest.join('\n')}
-    />
-  );
-};
 
 WeatherDetailGrid.Loading = function Loading() {
+  const { columns, bodyMinHeight, onLayout } = useTileLayout();
+
   return (
-    <Grid columns={2} gap={GRID_GAP}>
-      {times(LOADING_TILE_COUNT, (index) => (
-        <GridItem key={index}>
-          <WeatherCard>
-            <TextSkeleton size="e1" className="w-16 opacity-40" />
-            <TextSkeleton size="t2" className="w-12 opacity-40" />
-          </WeatherCard>
-        </GridItem>
-      ))}
-    </Grid>
+    <Box onLayout={onLayout}>
+      <Grid columns={columns} gap={TILE_GRID_GAP}>
+        {times(LOADING_TILE_COUNT, (index) => (
+          <GridItem key={index}>
+            <WeatherTileSkeleton minHeight={bodyMinHeight} />
+          </GridItem>
+        ))}
+      </Grid>
+    </Box>
   );
 };

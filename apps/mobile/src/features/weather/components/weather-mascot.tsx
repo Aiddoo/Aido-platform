@@ -16,7 +16,7 @@ interface WeatherMascotProps extends Omit<
   source: ImageSource | number;
   /** 이미지를 불러오지 못했을 때 대신 그릴 날씨 아이콘 */
   fallbackCondition: WeatherCondition;
-  /** 대체 아이콘 색. 하늘 장면 위는 흰색, 테마 표면 위는 회색 */
+  /** 테마 표면 위 단색 대체 아이콘의 색. 없으면 하늘 카드용 채움 아이콘을 그린다 */
   fallbackColorClassName?: string;
 }
 
@@ -32,18 +32,14 @@ export function WeatherMascot({
 
   if (hasFailed) {
     return (
-      <Box
-        className={className}
-        accessible={false}
-        importantForAccessibility="no"
-        testID="weather-mascot-fallback"
-      >
+      <Box className={className} accessible={false} importantForAccessibility="no">
         <Box className="flex-1 items-center justify-center">
           <WeatherIcon
             condition={fallbackCondition}
             isDaylight
             width={FALLBACK_ICON_SIZE}
             height={FALLBACK_ICON_SIZE}
+            variant={fallbackColorClassName == null ? 'color' : 'mono'}
             colorClassName={fallbackColorClassName}
           />
         </Box>
@@ -58,7 +54,6 @@ export function WeatherMascot({
       accessible={false}
       accessibilityIgnoresInvertColors
       onError={() => setHasFailed(true)}
-      testID="weather-mascot"
       {...props}
     />
   );

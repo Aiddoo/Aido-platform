@@ -1,12 +1,6 @@
 import type { WeatherPrecipitationType } from '@aido/api';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  formatClockTime,
-  formatHourLabel,
-  getZonedHour,
-  type TimeFormat,
-} from '@src/shared/utils/date-format';
+import { formatClockTime, formatInstantHour, type TimeFormat } from '@src/shared/utils/date-format';
 import { match } from 'ts-pattern';
 
 import { PRECIPITATION_SUBJECT_LABEL_KEYS } from '../constants/weather-labels';
@@ -15,6 +9,7 @@ import {
   type PrecipitationWindow,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
+import { useLocalTimeLabel, useLocationDateFormat } from './use-location-date-format';
 
 export interface PrecipitationMessage {
   headline: string;
@@ -24,22 +19,28 @@ export interface PrecipitationMessage {
 /**
  * 강수 구간을 "17분 뒤 비가 시작돼요 / 7시쯤 그쳐요"처럼 위치 시간대의 문장으로 바꾼다.
  * 분 단위 예보에서 온 시각은 분까지, 시간별 예보에서 온 시각은 정시로 말한다.
+ * 위치 벽시계가 기기와 다르면 시각에 '현지'를 붙인다.
  */
 export function usePrecipitationMessage({
   timeZone,
   timeFormat,
+  now,
 }: {
   timeZone: string;
   timeFormat: TimeFormat;
+  now: Date;
 }) {
   const { t } = useTranslation('weather');
-  const dateFormat = { ...useDateFormatContext(), timeZone };
+  const dateFormat = useLocationDateFormat(timeZone);
+  const localTime = useLocalTimeLabel(timeZone, now);
 
   const formatMoment = (date: Date, precision: PrecipitationPrecision) =>
-    match(precision)
-      .with('minute', () => formatClockTime(date, timeFormat, dateFormat))
-      .with('hour', () => formatHourLabel(getZonedHour(date, timeZone), timeFormat, dateFormat))
-      .exhaustive();
+    localTime(
+      match(precision)
+        .with('minute', () => formatClockTime(date, timeFormat, dateFormat))
+        .with('hour', () => formatInstantHour(date, timeFormat, dateFormat))
+        .exhaustive(),
+    );
 
   /** 공급자가 형태 없이 강수라고만 알리면(null) 비와 눈을 함께 말한다. */
   const toSubject = (type: WeatherPrecipitationType | null) =>
@@ -55,7 +56,7 @@ export function usePrecipitationMessage({
       : t('nextHour.endsAround', { time });
   };
 
-  return (window: PrecipitationWindow, now: Date): PrecipitationMessage =>
+  return (window: PrecipitationWindow): PrecipitationMessage =>
     match(window)
       .with({ kind: 'dry' }, () => ({ headline: t('nextHour.dry'), detail: null }))
       .with({ kind: 'ongoing' }, (wet) => ({

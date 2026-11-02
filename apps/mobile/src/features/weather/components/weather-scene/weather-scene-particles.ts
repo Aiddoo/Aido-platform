@@ -8,13 +8,23 @@ const REFERENCE_SCREEN_AREA = 390 * 844;
 const LIGHTNING_WINDOW_SECONDS = 7;
 const LIGHTNING_SKIP_RATIO = 0.35;
 const LIGHTNING_EDGE_MARGIN_SECONDS = 1.5;
-const LIGHTNING_LEADER = { offset: 0, duration: 0.18, strength: 1 } as const;
-const LIGHTNING_RETURN = { offset: 0.3, duration: 0.25, strength: 0.6 } as const;
+const LIGHTNING_LEADER = { offset: 0, duration: 0.2, strength: 1 } as const;
+const LIGHTNING_RETURN = { offset: 0.34, duration: 0.24, strength: 0.62 } as const;
+const LIGHTNING_ATTACK_RATIO = 0.12;
+const STAR_SCREEN_AREA_PER_STAR = 5200;
+const STAR_FIELD_HEIGHT_RATIO = 0.6;
+const STAR_HORIZON_FALLOFF = 1.8;
+const BRIGHT_STAR_RATIO = 0.12;
+const MIN_VISIBLE_CLOUDS = 0.02;
+
+export const STAR_TWINKLE_GROUPS = 5;
+export const MAX_STARS = 110;
+export const MAX_CLOUDS = 7;
 
 export const PARTICLE_BUDGETS = {
-  rain: { full: 360, standardCap: 480, lowEndCap: 200 },
-  snow: { full: 220, standardCap: 300, lowEndCap: 140 },
-  hail: { full: 140, standardCap: 200, lowEndCap: 90 },
+  rain: { full: 160, standardCap: 240, lowEndCap: 110 },
+  snow: { full: 110, standardCap: 170, lowEndCap: 80 },
+  hail: { full: 70, standardCap: 110, lowEndCap: 50 },
 } as const;
 
 export type ParticleBudgetKind = keyof typeof PARTICLE_BUDGETS;
@@ -60,6 +70,37 @@ export function getParticleCount(
   return Math.min(cap, Math.round(budget.full * clamp(density, 0, 1) * areaRatio));
 }
 
+export type Star = {
+  x: number;
+  y: number;
+  radius: number;
+  group: number;
+  isBright: boolean;
+};
+
+/** 별은 지평선(아래)으로 갈수록 드물고, 일부만 크게 빛나며 반짝임 위상 그룹을 나눠 가진다. */
+export function createStarField(width: number, height: number, seed: number): Star[] {
+  if (!(width > 0) || !(height > 0)) {
+    return [];
+  }
+  const random = createSeededRandom(seed);
+  const count = Math.min(MAX_STARS, Math.round((width * height) / STAR_SCREEN_AREA_PER_STAR));
+  return Array.from({ length: count }, (_, index) => {
+    const x = random() * width;
+    const y = random() ** STAR_HORIZON_FALLOFF * height * STAR_FIELD_HEIGHT_RATIO;
+    const isBright = random() < BRIGHT_STAR_RATIO;
+    const radius = isBright ? 1.1 + random() * 0.4 : 0.45 + random() ** 2 * 0.55;
+    return { x, y, radius, group: index % STAR_TWINKLE_GROUPS, isBright };
+  });
+}
+
+export function getCloudCount(amount: number): number {
+  if (!(amount >= MIN_VISIBLE_CLOUDS)) {
+    return 0;
+  }
+  return Math.round(2 + clamp(amount, 0, 1) * (MAX_CLOUDS - 2));
+}
+
 export function wrap(value: number, length: number): number {
   'worklet';
   return value - Math.floor(value / length) * length;
@@ -91,7 +132,11 @@ function getPulseIntensity(
   if (progress < 0 || progress >= 1) {
     return 0;
   }
-  return pulse.strength * (1 - progress) * (1 - progress);
+  if (progress < LIGHTNING_ATTACK_RATIO) {
+    return (pulse.strength * progress) / LIGHTNING_ATTACK_RATIO;
+  }
+  const decay = (1 - progress) / (1 - LIGHTNING_ATTACK_RATIO);
+  return pulse.strength * decay * decay;
 }
 
 export function getLightningIntensity(time: number): number {
