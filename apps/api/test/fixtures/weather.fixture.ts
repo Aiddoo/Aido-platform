@@ -8,6 +8,7 @@ import type {
   WeatherForecast,
 } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
 import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
+import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
 
 export const weatherAttributionFixture = {
@@ -27,6 +28,11 @@ export const weatherAttributionFixture = {
     },
   },
 } as const satisfies WeatherReportAttribution;
+
+/** 대상 날짜와 같은 시각의 발표에서 예보를 받는 timing (발표를 당기지 않는 경우) */
+export function kmaTimingFixture(target: Date, issuance: Date = target): KmaForecastTiming {
+  return { target, issuance };
+}
 
 export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {}): WeatherForecast {
   const date = overrides.date ?? new Date("2026-07-23T00:00:00.000Z");

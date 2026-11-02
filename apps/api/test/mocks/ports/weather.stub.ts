@@ -27,6 +27,7 @@ import type {
   WeatherReportRequest,
 } from "#api/modules/weather/application/ports/forecast/weather-report.provider.port";
 import type { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
+import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 import type { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
@@ -83,13 +84,17 @@ export class StubWeatherGridResolver implements WeatherGridResolverPort {
 export class StubWeatherProvider implements WeatherProvider {
   readonly name = "fixture";
   constructor(readonly timeZone = "Asia/Seoul") {}
-  readonly calls: { lat: number; lon: number; date: Date }[] = [];
+  readonly calls: { lat: number; lon: number; date: Date; issuance: Date }[] = [];
   readonly results = new Map<string, WeatherForecast | Error>();
   failure: Error | null = null;
   forecast = weatherForecastFixture();
 
-  async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
-    this.calls.push({ lat, lon, date: new Date(date) });
+  async getForecast(
+    lat: number,
+    lon: number,
+    { target: date, issuance }: KmaForecastTiming,
+  ): Promise<WeatherForecast> {
+    this.calls.push({ lat, lon, date: new Date(date), issuance: new Date(issuance) });
     const result = this.results.get(`${lat}:${lon}`) ?? this.failure ?? this.forecast;
     if (result instanceof Error) {
       throw result;

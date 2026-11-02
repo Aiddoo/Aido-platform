@@ -5,6 +5,7 @@ import { TestBed } from "@suites/unit";
 import type { Mocked, MockInstance } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
 
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { KmaWeatherProvider } from "./kma-weather.provider.js";
@@ -48,7 +49,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       ),
     );
     // When
-    const result = await provider.getForecast(37.5665, 126.978, date);
+    const result = await provider.getForecast(37.5665, 126.978, kmaTimingFixture(date));
     // Then
     const url = new URL(String(fetchSpy.mock.calls[0]?.[0]));
     expect(url.pathname).toBe("/1360000/VilageFcstInfoService_2.0/getVilageFcst");
@@ -89,7 +90,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     fetchSpy.mockResolvedValue(response());
     // When / Then
     await expect(
-      provider.getForecast(37.5665, 126.978, new Date("2026-07-23T00:00:00Z")),
+      provider.getForecast(37.5665, 126.978, kmaTimingFixture(new Date("2026-07-23T00:00:00Z"))),
     ).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
@@ -116,7 +117,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       ),
     );
     // When
-    const result = await provider.getForecast(37.5665, 126.978, date);
+    const result = await provider.getForecast(37.5665, 126.978, kmaTimingFixture(date));
     // Then
     const [current, previous] = fetchSpy.mock.calls.map(
       ([url]) => new URL(String(url)).searchParams,
@@ -147,7 +148,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       .mockResolvedValueOnce(providerResultResponse("99"));
     // When / Then
     await expect(
-      provider.getForecast(37.5665, 126.978, new Date("2026-07-23T00:00:00Z")),
+      provider.getForecast(37.5665, 126.978, kmaTimingFixture(new Date("2026-07-23T00:00:00Z"))),
     ).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1901,
       details: { code: "99", message: "UNKNOWN_ERROR" },
@@ -183,7 +184,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
 
     // When / Then
     await expect(
-      provider.getForecast(37.5665, 126.978, new Date("2026-07-23T00:00:00Z")),
+      provider.getForecast(37.5665, 126.978, kmaTimingFixture(new Date("2026-07-23T00:00:00Z"))),
     ).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1901,
       details: { code: "03", message: secret },

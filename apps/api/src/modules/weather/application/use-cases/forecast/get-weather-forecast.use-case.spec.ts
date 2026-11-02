@@ -20,6 +20,9 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
   const date = new Date("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
+    // 예보 제공 범위가 현재 시각 기준이므로 요청 날짜의 KST 09:00을 지금으로 고정한다.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(date);
     suppressLogger();
     memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
     repository = new StubWeatherLocationRepository([weatherLocationFixture()]);
@@ -32,7 +35,13 @@ describe("GetWeatherForecast — 사용자 위치와 예보", () => {
     });
     useCase = new GetWeatherForecast({ weatherLocationRepository: repository, forecastReader });
   });
-  afterEach(() => memory.onModuleDestroy());
+  afterEach(() => {
+    try {
+      memory.onModuleDestroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("사용자의 저장 좌표와 예보 결과를 함께 반환한다", async () => {
     // Given

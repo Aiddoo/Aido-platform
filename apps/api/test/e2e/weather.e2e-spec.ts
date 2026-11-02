@@ -21,6 +21,8 @@ import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/for
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
 import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import {
   StubAirQualityProvider,
   StubLifestyleIndexProvider,
@@ -29,6 +31,11 @@ import {
 } from "#test/mocks/ports/weather.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+
+/** KMA 제공 범위가 오늘(KST) 기준이므로 고정 날짜 대신 오늘에서 떨어진 날짜를 쓴다. */
+function kstDate(offsetDays: number): string {
+  return dayWindowInTimezone(addDays(offsetDays), "Asia/Seoul").localDate;
+}
 
 describe("날씨 E2E", () => {
   let ctx: E2eTestContext;
@@ -226,7 +233,7 @@ describe("날씨 E2E", () => {
         // When - 특정 날짜 예보 조회
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/forecast")
-          .query({ date: "2026-04-04" })
+          .query({ date: kstDate(1) })
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
@@ -407,7 +414,7 @@ describe("날씨 E2E", () => {
       // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/weather/forecast")
-        .query({ date: "2026-07-23" })
+        .query({ date: kstDate(0) })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(503);
       // Then
@@ -428,14 +435,14 @@ describe("날씨 E2E", () => {
         .expect(200);
       const first = await request(ctx.app.getHttpServer())
         .get("/v1/weather/forecast")
-        .query({ date: "2026-07-23" })
+        .query({ date: kstDate(0) })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
       weatherProvider.failure = new Error("forecast unavailable");
       // When
       const fallback = await request(ctx.app.getHttpServer())
         .get("/v1/weather/forecast")
-        .query({ date: "2026-07-24" })
+        .query({ date: kstDate(1) })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
       // Then
@@ -443,6 +450,34 @@ describe("날씨 E2E", () => {
       expect(weatherForecastSchema.safeParse(fallback.body.data).success).toBe(true);
       expect(weatherProvider.calls).toHaveLength(2);
     });
+
+    it.each([
+      ["3일보다 오래된", -3],
+      ["모레보다 먼", 3],
+    ])(
+      "KMA가 주지 않는 %s 날짜는 공급자를 부르지 않고 400 SYS_0002다 (#1156)",
+      async (_case, offset) => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser(
+          `weather-range-${offset}@example.com`,
+          "Test1234!",
+        );
+        await request(ctx.app.getHttpServer())
+          .put("/v1/weather/location")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({ latitude: 37.5665, longitude: 126.978 })
+          .expect(200);
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .get("/v1/weather/forecast")
+          .query({ date: kstDate(offset) })
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(400);
+        // Then
+        expect(response.body.error.code).toBe("SYS_0002");
+        expect(weatherProvider.calls).toEqual([]);
+      },
+    );
 
     it("격자 이동은 이전 격자의 여러 날짜 cache를 지워 남은 사용자도 다시 조회한다", async () => {
       // Given - 두 사용자가 같은 서울 grid를 공유한다.

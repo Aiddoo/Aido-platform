@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
 import { FakeWeatherProvider } from "#test/mocks/fake-weather.provider";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -70,15 +71,19 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
 
   it("조건 1시간·정규 3시간·latest 24시간 TTL을 유지한다", async () => {
     // Given
-    const forecast = await new FakeWeatherProvider().getForecast(37.5665, 126.978, at);
+    const forecast = await new FakeWeatherProvider().getForecast(
+      37.5665,
+      126.978,
+      kmaTimingFixture(at),
+    );
     await weather.setConditions(60, 127, at, conditions);
-    await weather.saveForecast(60, 127, at, forecast);
+    await weather.saveForecast(60, 127, kmaTimingFixture(at), forecast);
     // When / Then
     vi.setSystemTime(at.getTime() + 60 * 60_000 + 1);
     expect(await weather.getConditions(60, 127, at)).toBeUndefined();
-    expect(await weather.getForecast(60, 127, at)).toEqual(forecast);
+    expect(await weather.getForecast(60, 127, kmaTimingFixture(at))).toEqual(forecast);
     vi.setSystemTime(at.getTime() + 3 * 60 * 60_000 + 1);
-    expect(await weather.getForecast(60, 127, at)).toBeUndefined();
+    expect(await weather.getForecast(60, 127, kmaTimingFixture(at))).toBeUndefined();
     expect(await weather.getLatestForecast(60, 127)).toEqual(forecast);
     vi.setSystemTime(at.getTime() + 24 * 60 * 60_000 + 1);
     expect(await weather.getLatestForecast(60, 127)).toBeUndefined();
@@ -87,14 +92,17 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
   it("배치 캐시는 조회 순서와 miss 자리를 유지하고 latest도 함께 저장한다", async () => {
     // Given
     const fake = new FakeWeatherProvider();
-    const seoul = await fake.getForecast(37.5665, 126.978, at);
-    const busan = { ...(await fake.getForecast(35.1796, 129.0756, at)), temperatureMax: 30 };
+    const seoul = await fake.getForecast(37.5665, 126.978, kmaTimingFixture(at));
+    const busan = {
+      ...(await fake.getForecast(35.1796, 129.0756, kmaTimingFixture(at))),
+      temperatureMax: 30,
+    };
     await weather.saveForecastBatch(
       [
         { gridX: 60, gridY: 127, forecast: seoul },
         { gridX: 98, gridY: 76, forecast: busan },
       ],
-      at,
+      kmaTimingFixture(at),
     );
     const grids = [
       { gridX: 98, gridY: 76 },
@@ -102,20 +110,26 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
       { gridX: 60, gridY: 127 },
     ];
     // When / Then
-    expect(await weather.getForecastBatch(grids, at)).toEqual([busan, undefined, seoul]);
-    expect(await weather.getLatestForecastBatch(grids)).toEqual([busan, undefined, seoul]);
-    expect(await weather.getForecastBatch(grids, new Date("2026-07-23T02:15:00Z"))).toEqual([
+    expect(await weather.getForecastBatch(grids, kmaTimingFixture(at))).toEqual([
+      busan,
       undefined,
-      undefined,
-      undefined,
+      seoul,
     ]);
+    expect(await weather.getLatestForecastBatch(grids)).toEqual([busan, undefined, seoul]);
+    expect(
+      await weather.getForecastBatch(grids, kmaTimingFixture(new Date("2026-07-23T02:15:00Z"))),
+    ).toEqual([undefined, undefined, undefined]);
   });
 
   it("격자 무효화는 모든 발표·조건 날짜와 legacy를 지우고 다른 격자는 보존한다", async () => {
     // Given
-    const forecast = await new FakeWeatherProvider().getForecast(37.5665, 126.978, at);
-    await weather.saveForecast(60, 127, at, forecast);
-    await weather.saveForecast(60, 127, next, forecast);
+    const forecast = await new FakeWeatherProvider().getForecast(
+      37.5665,
+      126.978,
+      kmaTimingFixture(at),
+    );
+    await weather.saveForecast(60, 127, kmaTimingFixture(at), forecast);
+    await weather.saveForecast(60, 127, kmaTimingFixture(next), forecast);
     await weather.setConditions(60, 127, at, conditions);
     await weather.setConditions(60, 127, next, conditions);
     await cache.set(WeatherCacheKey.legacyConditions(60, 127), conditions);
@@ -123,8 +137,8 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     // When
     await weather.invalidateGrid(60, 127);
     // Then
-    expect(await weather.getForecast(60, 127, at)).toBeUndefined();
-    expect(await weather.getForecast(60, 127, next)).toBeUndefined();
+    expect(await weather.getForecast(60, 127, kmaTimingFixture(at))).toBeUndefined();
+    expect(await weather.getForecast(60, 127, kmaTimingFixture(next))).toBeUndefined();
     expect(await weather.getLatestForecast(60, 127)).toBeUndefined();
     expect(await weather.getConditions(60, 127, at)).toBeUndefined();
     expect(await weather.getConditions(60, 127, next)).toBeUndefined();

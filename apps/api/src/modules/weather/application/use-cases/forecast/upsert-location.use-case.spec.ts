@@ -1,6 +1,7 @@
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
 import {
   weatherConditionsFixture,
   weatherForecastFixture,
@@ -76,7 +77,12 @@ describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
     repository.records.set("weather-user", weatherLocationFixture());
     for (const day of [date, next]) {
       await cache.setConditions(60, 127, day, weatherConditionsFixture());
-      await cache.saveForecast(60, 127, day, weatherForecastFixture({ date: day }));
+      await cache.saveForecast(
+        60,
+        127,
+        kmaTimingFixture(day),
+        weatherForecastFixture({ date: day }),
+      );
     }
     await cache.setConditions(98, 76, date, weatherConditionsFixture({ sunrise: "05:30" }));
     // When
@@ -90,7 +96,7 @@ describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
     expect(result.grid?.gridX).toBe(98);
     for (const day of [date, next]) {
       expect(await cache.getConditions(60, 127, day)).toBeUndefined();
-      expect(await cache.getForecast(60, 127, day)).toBeUndefined();
+      expect(await cache.getForecast(60, 127, kmaTimingFixture(day))).toBeUndefined();
     }
     expect(await cache.getLatestForecast(60, 127)).toBeUndefined();
     expect(await cache.getConditions(98, 76, date)).toEqual(

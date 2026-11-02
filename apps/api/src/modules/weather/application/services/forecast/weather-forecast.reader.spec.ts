@@ -1,11 +1,16 @@
 import { ErrorCode } from "@aido/api/errors";
 import { mock } from "vitest-mock-extended";
 
+import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { weatherForecastFixture, weatherLocationFixture } from "#test/fixtures/weather.fixture";
+import {
+  kmaTimingFixture,
+  weatherForecastFixture,
+  weatherLocationFixture,
+} from "#test/fixtures/weather.fixture";
 import { StubWeatherProvider } from "#test/mocks/ports/weather.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -19,6 +24,9 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
   const date = new Date("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
+    // 예보 제공 범위가 현재 시각 기준이므로 요청 날짜의 KST 09:00을 지금으로 고정한다.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(date);
     suppressLogger();
     memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherCacheAdapter(new CacheService(memory));
@@ -29,12 +37,18 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
       logger: mock<ApplicationLogger>(),
     });
   });
-  afterEach(() => memory.onModuleDestroy());
+  afterEach(() => {
+    try {
+      memory.onModuleDestroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("현재 발표 cache가 있으면 공급자에 접근하지 않고 값을 반환한다", async () => {
     // Given
     const cached = weatherForecastFixture({ temperatureMax: 17 });
-    await cache.saveForecast(60, 127, date, cached);
+    await cache.saveForecast(60, 127, kmaTimingFixture(date), cached);
     // When
     const result = await reader.fetchForLocation(weatherLocationFixture(), date);
     // Then
@@ -49,7 +63,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     const second = await reader.fetchForLocation(weatherLocationFixture(), date);
     // Then
     expect(second).toEqual(first);
-    expect(await cache.getForecast(60, 127, date)).toEqual(first);
+    expect(await cache.getForecast(60, 127, kmaTimingFixture(date))).toEqual(first);
     expect(await cache.getLatestForecast(60, 127)).toEqual(first);
     expect(weatherProvider.calls).toHaveLength(1);
   });
@@ -58,7 +72,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     // Given
     const previous = new Date("2026-07-22T00:00:00.000Z");
     const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
-    await cache.saveForecast(60, 127, previous, saved);
+    await cache.saveForecast(60, 127, kmaTimingFixture(previous), saved);
     weatherProvider.failure = new Error("provider down");
     // When
     const result = await reader.fetchForLocation(weatherLocationFixture(), date);
@@ -90,8 +104,8 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
       date: new Date("2026-07-22T00:00:00.000Z"),
       temperatureMax: 33,
     });
-    await cache.saveForecast(60, 127, date, hit);
-    await cache.saveForecast(52, 38, latest.date, latest);
+    await cache.saveForecast(60, 127, kmaTimingFixture(date), hit);
+    await cache.saveForecast(52, 38, kmaTimingFixture(latest.date), latest);
     weatherProvider.results.set("35.1796:129.0756", fresh);
     weatherProvider.results.set("33.4996:126.5312", new Error("jeju down"));
     weatherProvider.results.set("35.8:128.6", new Error("no fallback"));
@@ -106,9 +120,9 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     expect(weatherProvider.calls.map(({ lat, lon }) => ({ lat, lon }))).toEqual(
       grids.slice(1).map(({ lat, lon }) => ({ lat, lon })),
     );
-    expect(await cache.getForecast(98, 76, date)).toEqual(fresh);
-    expect(await cache.getForecast(52, 38, date)).toBeUndefined();
-    expect(await cache.getForecast(89, 90, date)).toBeUndefined();
+    expect(await cache.getForecast(98, 76, kmaTimingFixture(date))).toEqual(fresh);
+    expect(await cache.getForecast(52, 38, kmaTimingFixture(date))).toBeUndefined();
+    expect(await cache.getForecast(89, 90, kmaTimingFixture(date))).toBeUndefined();
   });
 
   it("batch miss는 공급자를 최대 4개씩 동시에 호출하고 모든 격자의 결과를 저장한다", async () => {
@@ -133,7 +147,7 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     expect(tracking.calls.map(({ lat }) => lat)).toEqual(grids.map(({ lat }) => lat));
     expect(result.size).toBe(9);
     expect(result.has("55:100")).toBe(false);
-    expect(await cache.getForecast(59, 100, date)).toEqual(result.get("59:100"));
+    expect(await cache.getForecast(59, 100, kmaTimingFixture(date))).toEqual(result.get("59:100"));
   });
 
   it("빈 batch는 빈 Map을 반환하고 공급자에 접근하지 않는다", async () => {
@@ -150,14 +164,91 @@ class ConcurrencyTrackingWeatherProvider extends StubWeatherProvider {
   active = 0;
   maxActive = 0;
 
-  override async getForecast(lat: number, lon: number, date: Date) {
+  override async getForecast(lat: number, lon: number, timing: KmaForecastTiming) {
     this.active += 1;
     this.maxActive = Math.max(this.maxActive, this.active);
     try {
       await Promise.resolve();
-      return await super.getForecast(lat, lon, date);
+      return await super.getForecast(lat, lon, timing);
     } finally {
       this.active -= 1;
     }
   }
 }
+
+describe("WeatherForecastReader — KMA 제공 범위 (#1156)", () => {
+  let memory: InMemoryCacheAdapter;
+  let cache: WeatherCacheAdapter;
+  let weatherProvider: StubWeatherProvider;
+  let reader: WeatherForecastReader;
+  /** 운영에서 503이 난 시각: KST 2026-11-02 04:18 */
+  const now = new Date("2026-11-01T19:18:00.000Z");
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
+    suppressLogger();
+    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    cache = new WeatherCacheAdapter(new CacheService(memory));
+    weatherProvider = new StubWeatherProvider();
+    reader = new WeatherForecastReader({
+      weatherProvider,
+      weatherCache: cache,
+      logger: mock<ApplicationLogger>(),
+    });
+  });
+  afterEach(() => {
+    try {
+      memory.onModuleDestroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("아침 발표 전 오늘 날짜 요청은 지금의 발표로 조회해 정상 예보를 준다", async () => {
+    // Given
+    const today = new Date("2026-11-02T00:00:00.000Z");
+    // When
+    const forecast = await reader.fetchForLocation(weatherLocationFixture(), today);
+    // Then
+    expect(forecast.date).toEqual(today);
+    expect(weatherProvider.calls).toEqual([
+      { lat: 37.5665, lon: 126.978, date: today, issuance: now },
+    ]);
+  });
+
+  it.each([
+    ["3일보다 오래된 날짜", "2026-10-30"],
+    ["모레보다 먼 날짜", "2026-11-05"],
+  ])("%s는 KMA를 부르지 않고 400 SYS_0002다", async (_case, day) => {
+    // Given
+    const requested = new Date(`${day}T00:00:00.000Z`);
+    // When
+    const result = reader.fetchForLocation(weatherLocationFixture(), requested);
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    expect(weatherProvider.calls).toEqual([]);
+  });
+
+  it("배치 조회의 날짜가 범위 밖이면 KMA를 부르지 않고 빈 결과를 준다", async () => {
+    // Given
+    const grids = [{ gridX: 60, gridY: 127, lat: 37.5665, lon: 126.978 }];
+    // When
+    const result = await reader.getForecastsByGridBatch(grids, new Date("2026-11-06T00:00:00Z"));
+    // Then
+    expect(result.size).toBe(0);
+    expect(weatherProvider.calls).toEqual([]);
+  });
+
+  it("같은 발표를 쓰더라도 대상 날짜가 다르면 캐시를 나눈다", async () => {
+    // Given
+    const today = new Date("2026-11-02T00:00:00.000Z");
+    const tomorrow = new Date("2026-11-03T00:00:00.000Z");
+    // When
+    await reader.fetchForLocation(weatherLocationFixture(), today);
+    await reader.fetchForLocation(weatherLocationFixture(), tomorrow);
+    // Then
+    expect(weatherProvider.calls.map((call) => call.date)).toEqual([today, tomorrow]);
+    expect(weatherProvider.calls.map((call) => call.issuance)).toEqual([now, now]);
+  });
+});

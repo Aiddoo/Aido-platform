@@ -2,6 +2,7 @@ import type {
   WeatherForecast,
   WeatherProvider,
 } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 
 /**
  * 테스트용 FakeWeatherProvider
@@ -13,7 +14,11 @@ export class FakeWeatherProvider implements WeatherProvider {
   readonly timeZone = "Asia/Seoul";
   private _calls: Array<{ lat: number; lon: number; date: Date }> = [];
 
-  async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
+  async getForecast(
+    lat: number,
+    lon: number,
+    { target: date }: KmaForecastTiming,
+  ): Promise<WeatherForecast> {
     this._calls.push({ lat, lon, date });
     return {
       date,

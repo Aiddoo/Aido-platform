@@ -10,8 +10,8 @@ import type {
   SunTime,
   SunTimeProvider,
 } from "../../../application/ports/forecast/sun-time-provider.port.js";
+import { KMA_TIMEZONE } from "../../../domain/policies/forecast/kma-forecast-availability.policy.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
-import { KMA_TIMEZONE } from "./kma.constants.js";
 
 const sunTimeResponseSchema = z.object({
   response: z
