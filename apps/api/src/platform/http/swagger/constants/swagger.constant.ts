@@ -59,6 +59,9 @@ export const SWAGGER_TAGS = {
   /** 날씨 - 위치 등록, 날씨 예보 조회 */
   WEATHER_V1: "Weather v1 · Deprecated",
 
+  /** 날씨 v2 - 위치 등록, 전 세계 날씨 리포트 조회 */
+  WEATHER_V2: "Weather v2",
+
   // ============================================
   // Admin APIs (관리자/백오피스용) - 추후 확장
   // ============================================
@@ -151,6 +154,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
   [SWAGGER_TAGS.WEATHER_V1]:
     "1.13.1 이하 앱 전용. 기상청 단기예보·격자 캐시 기반. 1.14.0부터 앱은 `/v2/weather`를 사용한다.",
+
+  [SWAGGER_TAGS.WEATHER_V2]:
+    "1.14.0 이상 앱용. 전 세계 좌표의 현재·1시간·시간별·일별 날씨와 특보를 Apple WeatherKit에서 받아 약 5km 칸 단위로 캐시합니다. 한국 위치는 에어코리아 대기질을 함께 제공합니다.",
 
   [SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 

@@ -25,6 +25,7 @@ import { WeatherKitReportProvider } from "./infrastructure/adapters/forecast/wea
 import { WeatherKitTokenResolver } from "./infrastructure/adapters/forecast/weatherkit-token.resolver.js";
 import { DrizzleWeatherLocationRepository } from "./infrastructure/persistence/forecast/drizzle-weather-location.repository.js";
 import { WeatherController } from "./presentation/controllers/forecast/v1/weather.controller.js";
+import { WeatherV2Controller } from "./presentation/controllers/forecast/v2/weather.controller.js";
 import { weatherForecastReaderProvider } from "./weather-forecast-application.providers.js";
 import { WEATHER_PROVIDERS } from "./weather-forecast.providers.js";
 
@@ -40,7 +41,7 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
       timeout: WEATHER_VENDOR_TIMEOUT_MS,
     }),
   ],
-  controllers: [WeatherController],
+  controllers: [WeatherController, WeatherV2Controller],
   providers: [
     { provide: WEATHER_FORECAST_READER, useExisting: WeatherForecastReader },
     { provide: WEATHER_GRID_RESOLVER, useClass: KmaWeatherGridResolver },
