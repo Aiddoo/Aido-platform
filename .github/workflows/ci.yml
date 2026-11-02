@@ -281,9 +281,17 @@ jobs:
 
       # 서버·공유 계약을 바꾼 PR은 Changesets 변경 파일을 함께 올린다(docs/conventions/git.md#버전).
       # 모바일은 스토어 버전이라 Changesets에서 제외되어 있어 이 검사에 걸리지 않는다.
+      # 릴리스 PR은 `pnpm version-packages`가 변경 파일을 CHANGELOG로 소비하므로 CHANGELOG 변경으로 대신 확인한다.
       - name: Changeset
         if: github.event_name == 'pull_request' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.shared == 'true')
-        run: pnpm changeset status --since=${{ needs.gate.outputs.base_sha }}
+        env:
+          BASE_SHA: ${{ needs.gate.outputs.base_sha }}
+        run: |
+          if git diff --name-only "$BASE_SHA" HEAD | grep -q 'CHANGELOG\.md$'; then
+            echo "버전을 확정한 릴리스 PR이다. 변경 파일은 CHANGELOG로 반영됐다."
+            exit 0
+          fi
+          pnpm changeset status --since="$BASE_SHA"
 
       # 컨벤션 검사는 apps/api·packages의 규칙도 맡으므로 서버·공유 계약만 바뀐 PR에서도 실행한다.
       # API 범위는 모바일 의존성이 없으므로 pnpm 스크립트(실행 전 설치) 대신 node로 직접 실행한다.
