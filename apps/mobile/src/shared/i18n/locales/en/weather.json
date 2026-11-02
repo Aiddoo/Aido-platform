@@ -1,71 +1,175 @@
 {
   "titles": {
     "index": "Weather",
-    "back": "Back",
     "settings": "Weather notification settings"
   },
-  "sky": {
+  "condition": {
     "clear": "Clear",
-    "partlyCloudy": "Partly Cloudy",
-    "cloudy": "Cloudy"
-  },
-  "precipitation": {
+    "mostlyClear": "Mostly clear",
+    "partlyCloudy": "Partly cloudy",
+    "mostlyCloudy": "Mostly cloudy",
+    "cloudy": "Cloudy",
+    "foggy": "Foggy",
+    "hazy": "Hazy",
+    "windy": "Windy",
+    "drizzle": "Drizzle",
     "rain": "Rain",
-    "rainSnow": "Rain/Snow",
+    "heavyRain": "Heavy rain",
+    "thunderstorms": "Thunderstorms",
+    "sleet": "Sleet",
     "snow": "Snow",
-    "shower": "Showers"
+    "heavySnow": "Heavy snow",
+    "hail": "Hail",
+    "hot": "Hot",
+    "frigid": "Frigid"
+  },
+  "precipitationSubject": {
+    "rain": "Rain",
+    "snow": "Snow",
+    "sleet": "Sleet",
+    "hail": "Hail",
+    "mixed": "Rain or snow"
+  },
+  "hero": {
+    "currentLocation": "Current location",
+    "highLow": "H:{{high}}° · L:{{low}}°",
+    "summary": "{{place}}, {{temperature}} degrees now, {{condition}}",
+    "restOfDay": "Rest of the day: {{condition}} · {{chance}}% chance of precipitation",
+    "stale": "Data from {{relative}}"
+  },
+  "alerts": {
+    "issuedBy": "Issued by {{source}}",
+    "area": "{{source}} · {{area}}",
+    "until": "Until {{time}}",
+    "startsAt": "From {{time}}",
+    "openDetails": "Opens the full alert"
+  },
+  "nextHour": {
+    "title": "Next-hour precipitation",
+    "startsInMinutes": "{{subject}} starts in {{minutes}} min",
+    "startsAround": "{{subject}} starts around {{time}}",
+    "ongoing": "{{subject}} is falling now",
+    "endsAround": "Ends around {{time}}",
+    "endsAroundTomorrow": "Ends around {{time}} tomorrow",
+    "continues": "Continues for a while",
+    "dry": "No precipitation in the next hour",
+    "now": "Now",
+    "minutesLater": "{{minutes}} min",
+    "chartLabel": "Minute-by-minute precipitation for the next hour. {{summary}}"
+  },
+  "hourly": {
+    "title": "Hourly forecast",
+    "now": "Now",
+    "item": "{{time}}, {{temperature}} degrees, {{condition}}, {{chance}}% chance of precipitation"
+  },
+  "daily": {
+    "title_one": "{{count}}-day forecast",
+    "title_other": "{{count}}-day forecast",
+    "today": "Today",
+    "item": "{{day}}, {{condition}}, high {{high}}, low {{low}}, {{chance}}% chance of precipitation"
+  },
+  "details": {
+    "feelsLike": "Feels like",
+    "feelsColder": "Feels colder than it is",
+    "feelsSimilar": "Close to the actual temperature",
+    "feelsWarmer": "Feels warmer than it is",
+    "uv": "UV index",
+    "wind": "Wind",
+    "windValue": "{{speed}} m/s",
+    "windDirection": "From the {{direction}}",
+    "windGust": "Gusts up to {{speed}} m/s",
+    "humidity": "Humidity",
+    "percentValue": "{{value}}%",
+    "dewPoint": "Dew point {{value}}°",
+    "dewPointTitle": "Dew point",
+    "visibility": "Visibility",
+    "kilometerValue": "{{value}} km",
+    "pressure": "Pressure",
+    "pressureValue": "{{value}} hPa",
+    "sun": "Sun",
+    "sunrise": "Sunrise {{time}}",
+    "sunset": "Sunset {{time}}",
+    "polarDay": "The sun stays up all day",
+    "polarNight": "The sun stays down all day",
+    "moon": "Moon",
+    "airQuality": "Air quality",
+    "pm": "PM10 {{pm10}} · PM2.5 {{pm25}}",
+    "noValue": "—",
+    "tile": "{{title}}, {{value}}, {{note}}",
+    "moonrise": "Moonrise {{time}}",
+    "moonset": "Moonset {{time}}"
+  },
+  "uvLevel": {
+    "low": "Low",
+    "moderate": "Moderate",
+    "high": "High",
+    "veryHigh": "Very high",
+    "extreme": "Extreme"
+  },
+  "pressureTrend": {
+    "rising": "Rising",
+    "falling": "Falling",
+    "steady": "Steady"
+  },
+  "compass": {
+    "n": "north",
+    "ne": "northeast",
+    "e": "east",
+    "se": "southeast",
+    "s": "south",
+    "sw": "southwest",
+    "w": "west",
+    "nw": "northwest"
+  },
+  "moonPhase": {
+    "new": "New moon",
+    "waxingCrescent": "Waxing crescent",
+    "firstQuarter": "First quarter",
+    "waxingGibbous": "Waxing gibbous",
+    "full": "Full moon",
+    "waningGibbous": "Waning gibbous",
+    "thirdQuarter": "Last quarter",
+    "waningCrescent": "Waning crescent"
+  },
+  "airGrade": {
+    "good": "Good",
+    "moderate": "Moderate",
+    "bad": "Unhealthy",
+    "veryBad": "Very unhealthy"
+  },
+  "attribution": {
+    "provider": " Weather",
+    "providerText": "Apple Weather",
+    "updatedAt": "Updated {{time}}",
+    "sources": "Data sources",
+    "openSources": "Opens the Apple Weather data sources"
   },
   "badge": {
-    "setup": "Set up weather",
-    "label": "Weather",
-    "domesticOnly": "Korea weather"
+    "temperature": "View weather, {{temperature}} degrees now"
   },
   "locationPrompt": {
     "title": "Register your location to see the weather",
-    "subtitle": "We'll show the weather for your current location",
-    "register": "Register Location",
-    "permissionDenied": "Allow location access in Settings to see the weather"
-  },
-  "toasts": {
-    "locationFailed": "Couldn't get your location",
-    "locationUpdateFailed": "Failed to register your location"
-  },
-  "errors": {
-    "locationNotRegistered": "No location has been registered",
-    "locationUnavailable": "Couldn't find your current location"
+    "subtitle": "Share your location to see the weather where you are and when to avoid the rain",
+    "register": "Register location",
+    "permissionDenied": "Turn on location access in Settings",
+    "allow": "Allow location",
+    "permissionDeniedDescription": "Come back after turning it on and we will show the weather right away",
+    "openSettings": "Open Settings",
+    "unavailableTitle": "Couldn't find your location",
+    "unavailableDescription": "Check that Location Services is on",
+    "savedLocationNotice": "Couldn't find your current location. Showing weather for your saved location"
   },
   "screen": {
-    "kmaPreparing": "Weather data is being prepared",
-    "checkLater": "Please check back shortly",
-    "loadFailed": "Couldn't load weather info",
-    "retryLater": "Please try again shortly",
-    "tempLow": "Low",
-    "tempHigh": "High",
-    "wind": "Wind",
-    "humidity": "Humidity",
-    "precipProb": "Rain Chance",
-    "feelsLike": "Feels like {{temp}}°, meow",
-    "hourly": "Hourly Forecast",
-    "weekly": "Weekly Forecast",
-    "sunrise": "Sunrise",
-    "sunset": "Sunset",
-    "pm10": "PM10",
-    "pm25": "PM2.5",
-    "domesticOnly": "Weather is available in Korea for now",
-    "domesticOnlyDescription": "Forecasts for locations abroad are not available yet. Your tasks and memos are still available.",
-    "refreshLocation": "Check current location",
-    "registeredLocation": "Weather for your saved location",
-    "dailyRange": "Today’s low and high temperatures",
-    "refreshFailed": "Couldn’t update. Showing the last forecast.",
-    "nextDayHourLabel": "Tomorrow {{time}}"
+    "loadFailed": "Couldn't load the weather",
+    "retryLater": "Please try again in a moment",
+    "providerUnavailable": "Weather is temporarily unavailable",
+    "offline": "Check your internet connection",
+    "offlineDescription": "Try again once you are connected"
   },
-  "dust": {
-    "good": "Good",
-    "normal": "Moderate",
-    "bad": "Unhealthy",
-    "veryBad": "Very Unhealthy"
+  "toasts": {
+    "locationUpdateFailed": "Couldn't register your location"
   },
   "introduction": {
-    "description": "Use your location for today’s weather. You can also enable location later on the weather screen."
+    "description": "We use your current location to show today's weather. You can also set location access later on the weather screen."
   }
 }

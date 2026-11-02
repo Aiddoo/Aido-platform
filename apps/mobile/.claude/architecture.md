@@ -432,22 +432,22 @@ export type Preference = z.infer<typeof preferenceSchema>;
 `MemoPolicy.isCreatable(limit)`처럼 Policy만 호출한다.
 
 ```typescript
-const PM10_GRADE_THRESHOLDS = [30, 80, 150] as const;
+// features/weather/domains/weather-report.model.ts
+const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
+const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
 
-export function calculateDustGrade(value: number, thresholds: readonly [number, number, number]) {
+/** 미세먼지·초미세먼지 중 더 나쁜 등급. 두 값이 모두 없으면 null이다. */
+export function getAirQualityGrade(airQuality: AirQuality): AirQualityGrade | null {
   // 순수 계산
 }
 
-export function getPm10Grade(conditions: WeatherConditions) {
-  if (conditions.pm10 == null) {
-    return null;
-  }
-
-  return calculateDustGrade(conditions.pm10, PM10_GRADE_THRESHOLDS);
+export function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Date): boolean {
+  return now.getTime() - report.fetchedAt.getTime() > STALE_AFTER_MS;
 }
 
-export const WeatherPolicy = {
-  pm10Grade: getPm10Grade,
+export const WeatherReportPolicy = {
+  airQualityGrade: getAirQualityGrade,
+  isStale: isReportStale,
 } as const;
 ```
 
@@ -623,13 +623,14 @@ UI 표시 문구는 i18n 카탈로그 키를 참조한다 (하드코딩 금지 �
 
 ```typescript
 // 라벨 맵은 값 대신 i18n 키를 담는다 (satisfies로 enum 누락 방지)
-const DUST_GRADE_LABEL_KEYS = {
-  good: 'weather:dust.good',
-  moderate: 'weather:dust.moderate',
-  bad: 'weather:dust.bad',
-  veryBad: 'weather:dust.veryBad',
-} as const satisfies Record<DustGrade, string>;
-// 사용처: t(DUST_GRADE_LABEL_KEYS[grade])
+// features/weather/constants/weather-labels.ts — 키는 useTranslation('weather') 기준
+export const AIR_GRADE_LABEL_KEYS = {
+  good: 'airGrade.good',
+  moderate: 'airGrade.moderate',
+  bad: 'airGrade.bad',
+  veryBad: 'airGrade.veryBad',
+} as const satisfies Record<AirQualityGrade, string>;
+// 사용처: t(AIR_GRADE_LABEL_KEYS[grade])
 ```
 
 **Query Keys**

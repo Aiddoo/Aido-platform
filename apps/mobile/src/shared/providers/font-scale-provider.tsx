@@ -10,8 +10,10 @@ import { noop } from 'es-toolkit';
 import { createContext, type PropsWithChildren, use, useCallback, useMemo, useState } from 'react';
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
+// display(날씨 큰 온도)는 이미 충분히 커서 앱 글자 크기 설정과 무관하게 유지함
 const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>> = {
   xsmall: {
+    display: 'display',
     h1: 't1',
     t1: 't1',
     t2: 't3',
@@ -24,6 +26,7 @@ const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>
     e2: 'e2',
   },
   small: {
+    display: 'display',
     h1: 't1',
     t1: 't1',
     t2: 't3',
@@ -36,6 +39,7 @@ const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>
     e2: 'e2',
   },
   large: {
+    display: 'display',
     h1: 'h1',
     t1: 'h1',
     t2: 't2',
@@ -48,6 +52,7 @@ const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>
     e2: 'e1',
   },
   xlarge: {
+    display: 'display',
     h1: 'h1',
     t1: 'h1',
     t2: 't2',

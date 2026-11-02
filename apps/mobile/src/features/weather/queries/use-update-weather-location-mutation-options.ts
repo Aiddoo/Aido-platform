@@ -15,7 +15,7 @@ export const useUpdateWeatherLocationMutationOptions = () => {
 
   return mutationOptions({
     mutationFn: async (coordinates: Coordinates) =>
-      unwrap(await weatherService.registerLocation(coordinates)),
+      unwrap(await weatherService.updateLocation(coordinates)),
     onSuccess: (registered) => {
       setRegisteredWeatherLocation(queryClient, registered);
       return invalidateWeatherReports(queryClient);

@@ -46,7 +46,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 
 | 컴포넌트                                                             | 용도                                                                        | 문서                                                             |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `Text`, `H1`~`H4`                                                    | 텍스트, 헤딩                                                                | `src/shared/ui/text/text.md`                                     |
+| `Text`, `H1`~`H4`                                                    | 텍스트, 헤딩 (`size="display"`는 날씨 큰 온도 전용)                         | `src/shared/ui/text/text.md`                                     |
 | `FormField`                                                          | RHF Controller와 field 오류의 단일 바인딩 경계                              | `src/shared/ui/form-field/form-field.md`                         |
 | `Button`                                                             | 기본 버튼                                                                   | `src/shared/ui/button/button.md`                                 |
 | `KeyboardAdaptiveButton`                                             | 키보드 반응 버튼                                                            | `src/shared/ui/button/button.md`                                 |

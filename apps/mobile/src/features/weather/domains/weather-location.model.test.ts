@@ -1,6 +1,7 @@
-import { UNLOCATED_REVISION, WeatherLocationPolicy } from './weather-location.model';
+import { SAVED_LOCATION_REVISION, WeatherLocationPolicy } from './weather-location.model';
 
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
+const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
 
 describe('WeatherLocationPolicy.isRelocationNeeded', () => {
   it('등록한 위치가 없으면 다시 등록한다', () => {
@@ -34,6 +35,42 @@ describe('WeatherLocationPolicy.isRelocationNeeded', () => {
   });
 });
 
+describe('WeatherLocationPolicy.nextRevision', () => {
+  it('등록한 위치가 이미 받은 리포트와 같은 격자면 리비전을 그대로 둬 다시 받지 않는다', () => {
+    // When
+    const revision = WeatherLocationPolicy.nextRevision(0, SEOUL, SEOUL);
+
+    // Then
+    expect(revision).toBe(0);
+  });
+
+  it('등록한 위치가 리포트와 다른 격자면 리비전을 올려 다시 받는다', () => {
+    // When
+    const revision = WeatherLocationPolicy.nextRevision(0, BUSAN, SEOUL);
+
+    // Then
+    expect(revision).toBe(1);
+  });
+
+  it('비교할 리포트가 없으면(서버에 위치가 없던 경우) 리비전을 올려 등록 뒤 다시 받는다', () => {
+    // When
+    const revision = WeatherLocationPolicy.nextRevision(2, SEOUL, null);
+
+    // Then
+    expect(revision).toBe(3);
+  });
+});
+
+describe('WeatherLocationPolicy.readingRevision', () => {
+  it('위치를 읽기 전에는 서버 저장 위치 리비전으로 리포트를 바로 받는다', () => {
+    // When
+    const revision = WeatherLocationPolicy.readingRevision(undefined);
+
+    // Then
+    expect(revision).toBe(SAVED_LOCATION_REVISION);
+  });
+});
+
 describe('WeatherLocationPolicy.status', () => {
   it('위치를 처음 읽는 중이면 확인 중 상태다', () => {
     // When
@@ -43,35 +80,39 @@ describe('WeatherLocationPolicy.status', () => {
     expect(status).toEqual({ status: 'checking' });
   });
 
-  it('위치를 읽지 못하면 서버에 남은 위치로 날씨를 요청하도록 준비 상태가 된다', () => {
+  it('위치 등록 요청이 실패하면 위치를 찾지 못한 상태다', () => {
     // When
     const status = WeatherLocationPolicy.status(undefined, { hasFailed: true });
 
     // Then
-    expect(status).toEqual({
-      status: 'ready',
-      locationRevision: UNLOCATED_REVISION,
-      placeName: null,
-    });
+    expect(status).toEqual({ status: 'unavailable' });
   });
 
-  it('등록한 위치는 소수 둘째 자리 좌표를 리비전으로 쓴다', () => {
+  it('권한은 있지만 좌표를 얻지 못하면 위치를 찾지 못한 상태다', () => {
+    // When
+    const status = WeatherLocationPolicy.status(
+      { status: 'unavailable', revision: 0 },
+      { hasFailed: false },
+    );
+
+    // Then
+    expect(status).toEqual({ status: 'unavailable' });
+  });
+
+  it('등록을 마치면 지명과 함께 준비 상태가 된다', () => {
     // When
     const status = WeatherLocationPolicy.status(
       {
         status: 'located',
         registered: { ...SEOUL, timezone: 'Asia/Seoul' },
         placeName: '서울 중구',
+        revision: 1,
       },
       { hasFailed: false },
     );
 
     // Then
-    expect(status).toEqual({
-      status: 'ready',
-      locationRevision: '37.56,127.00',
-      placeName: '서울 중구',
-    });
+    expect(status).toEqual({ status: 'ready', placeName: '서울 중구' });
   });
 
   it.each(['needsPermission', 'denied'] as const)('권한 상태 %s를 그대로 전달한다', (state) => {
@@ -80,5 +121,20 @@ describe('WeatherLocationPolicy.status', () => {
 
     // Then
     expect(status).toEqual({ status: state });
+  });
+});
+
+describe('WeatherLocationPolicy.permissionResult', () => {
+  it.each([
+    [{ granted: true, canAskAgain: true }, 'granted'],
+    [{ granted: false, canAskAgain: true }, 'needs_permission'],
+    [{ granted: false, canAskAgain: false }, 'denied'],
+    [null, 'needs_permission'],
+  ] as const)('권한 요청 결과 %o는 %s로 기록한다', (permission, expected) => {
+    // When
+    const result = WeatherLocationPolicy.permissionResult(permission);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

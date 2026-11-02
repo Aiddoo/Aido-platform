@@ -8,6 +8,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
 const customClassGroups = {
   'text-input': ['text-input-sm', 'text-input-md', 'text-input-lg'],
   'text-size': [
+    'text-display',
     'text-h1',
     'text-t1',
     'text-t2',

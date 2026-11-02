@@ -302,6 +302,14 @@ export interface MemoEventMap {
   memo_converted_to_todos: { memo_id: number; todo_count: number; source: string };
 }
 
+export interface WeatherEventMap {
+  weather_location_permission_result: { result: 'granted' | 'needs_permission' | 'denied' };
+  weather_alert_opened: { severity: string };
+  weather_reschedule_opened: { todo_count: number };
+  weather_reschedule_applied: { moved_count: number };
+  weather_reschedule_undone: { moved_count: number };
+}
+
 export type AppEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
@@ -316,4 +324,5 @@ export type AppEventMap = AuthEventMap &
   UserEventMap &
   NotificationEventMap &
   BadgeEventMap &
-  MemoEventMap;
+  MemoEventMap &
+  WeatherEventMap;

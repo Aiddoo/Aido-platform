@@ -52,7 +52,7 @@ describe('WeatherService.getReport', () => {
   });
 });
 
-describe('WeatherService.registerLocation', () => {
+describe('WeatherService.updateLocation', () => {
   it('좌표를 v2 위치 등록으로 보내고 서버가 정한 시간대를 돌려준다', async () => {
     // Given
     const httpClient = createMockHttpClient();
@@ -63,7 +63,7 @@ describe('WeatherService.registerLocation', () => {
     const service = new WeatherService(httpClient);
 
     // When
-    const result = await service.registerLocation({ latitude: 35.6812, longitude: 139.7671 });
+    const result = await service.updateLocation({ latitude: 35.6812, longitude: 139.7671 });
 
     // Then
     expect(httpClient.put).toHaveBeenCalledWith(
@@ -84,7 +84,7 @@ describe('WeatherService.registerLocation', () => {
     const service = new WeatherService(httpClient);
 
     // When
-    const request = service.registerLocation({ latitude: 1, longitude: 2 });
+    const request = service.updateLocation({ latitude: 1, longitude: 2 });
 
     // Then
     await expect(request).rejects.toBeInstanceOf(ParseError);

@@ -1,6 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { WeatherSessionProvider } from '@src/features/weather/components/providers/weather-session-provider';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
@@ -37,33 +36,31 @@ function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
-    <WeatherSessionProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="friends" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="nudges" />
-        <Stack.Screen name="achievements" />
-        <Stack.Screen name="reports" />
-        <Stack.Screen name="suggestions" />
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="weather" />
-        <Stack.Screen
-          name="memo"
-          options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
-        />
-        {SHEET_ROUTES.map((name) => (
-          <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
-        ))}
-      </Stack>
-    </WeatherSessionProvider>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationTypeForReplace: 'push',
+        contentStyle: { backgroundColor },
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="friends" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="nudges" />
+      <Stack.Screen name="achievements" />
+      <Stack.Screen name="reports" />
+      <Stack.Screen name="suggestions" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="weather" />
+      <Stack.Screen
+        name="memo"
+        options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
+      />
+      {SHEET_ROUTES.map((name) => (
+        <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
+      ))}
+    </Stack>
   );
 }
 

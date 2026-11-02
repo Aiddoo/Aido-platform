@@ -1,151 +1,142 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack, Box } from '@src/shared/ui';
-import { formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { Box, HStack, Text, TextSkeleton } from '@src/shared/ui';
+import { CalendarIcon } from '@src/shared/ui/icon';
+import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { maxBy, minBy } from 'es-toolkit';
-import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
+import { zip } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
+import { Separator } from 'heroui-native';
+import { Fragment } from 'react';
 
+import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
-  type DailyForecast as DailyForecastItem,
-  type TemperatureTone,
-  WeatherPolicy,
-} from '../domains/weather.model';
-import { useTimePalette } from '../hooks/use-time-palette';
-import { useGetForecastQueryOptions } from '../queries/get-forecast-query-options';
+  type DailyForecast as DailyForecastDay,
+  type TemperatureBar,
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
+import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import {
-  resolveIconByPrecipitation,
-  resolveIconBySky,
-  resolveSkyIconColor,
-} from '../utils/weather-icon';
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/get-weather-report-query-options';
+import { formatDegrees } from '../utils/format-degrees';
 import { WeatherCard } from './weather-card';
+import { WeatherIcon } from './weather-icon';
 
-const TEMPERATURE_TONE_COLORS = {
-  scorching: '#FF3B30',
-  hot: '#FF8A80',
-  warm: '#FF9500',
-  mild: '#F5C842',
-  fresh: '#8BC34A',
-  cool: '#4FC3F7',
-  chilly: '#A0D8FF',
-  cold: '#2196F3',
-} as const satisfies Record<TemperatureTone, string>;
+/** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. */
+const VISIBLE_CHANCE = 20;
+const LOADING_ROW_COUNT = 5;
 
 export function DailyForecast() {
-  const palette = useTimePalette();
   const { t } = useTranslation('weather');
-  const { data: forecast } = useSuspenseQuery(useGetForecastQueryOptions());
-  const items = forecast.dailyForecasts;
+  const { data, dataUpdatedAt } = useSuspenseQuery({
+    ...useGetWeatherReportQueryOptions(),
+    select: WeatherReportSelect.daily,
+  });
+  const todayKey = formatDateKey(new Date(dataUpdatedAt), data.location.timezone);
+  const bars = WeatherReportPolicy.temperatureBars(data.daily);
 
-  if (items.length === 0) {
-    return null;
+  if (data.daily.length === 0) {
+    return <DailyForecast.Empty />;
   }
-
-  const range = {
-    min: minBy(items, (item) => item.temperatureMin)?.temperatureMin ?? 0,
-    max: maxBy(items, (item) => item.temperatureMax)?.temperatureMax ?? 0,
-  };
-
   return (
-    <WeatherCard gap={8}>
-      <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
-        {t('screen.weekly')}
-      </Text>
-      {items.map((item) => (
-        <DailyForecast.Item key={item.date} item={item} range={range} />
+    <WeatherCard
+      title={t('daily.title', { count: data.daily.length })}
+      icon={<CalendarIcon width={14} height={14} colorClassName="text-white/70" />}
+    >
+      {zip(data.daily, bars).map(([day, bar], index) => (
+        <Fragment key={day.date}>
+          {index > 0 && <Separator className="bg-white/15" />}
+          <DailyForecast.Item day={day} bar={bar} isToday={day.date === todayKey} />
+        </Fragment>
       ))}
     </WeatherCard>
   );
 }
 
-DailyForecast.Item = function Item({
-  item,
-  range,
-}: {
-  item: DailyForecastItem;
-  range: { min: number; max: number };
-}) {
-  const palette = useTimePalette();
-  const dateFormatContext = useDateFormatContext();
-  const Icon =
-    resolveIconByPrecipitation(item.precipitationType) ?? resolveIconBySky(item.skyCondition);
-  const iconColor =
-    item.precipitationType === 'NONE'
-      ? resolveSkyIconColor(item.skyCondition, palette.icon)
-      : palette.icon;
-  const span = range.max - range.min || 1;
+interface DailyForecastItemProps {
+  day: DailyForecastDay;
+  bar: TemperatureBar | undefined;
+  isToday: boolean;
+}
+
+DailyForecast.Item = function Item({ day, bar, isToday }: DailyForecastItemProps) {
+  const { t } = useTranslation('weather');
+  const unit = useTemperatureUnit();
+  const dateFormat = useDateFormatContext();
+  const label = isToday ? t('daily.today') : formatDateKeyLabel(day.date, 'weekday', dateFormat);
+  const high = WeatherReportPolicy.displayTemperature(day.temperatureMax, unit);
+  const low = WeatherReportPolicy.displayTemperature(day.temperatureMin, unit);
 
   return (
-    <HStack align="center" className="py-1 gap-3 px-1">
-      <Text size="b3" weight="medium" className="w-8" style={{ color: palette.textSub }}>
-        {formatDateKeyLabel(item.date, 'weekday', dateFormatContext)}
+    <HStack
+      align="center"
+      gap={10}
+      className="min-h-11"
+      accessible
+      accessibilityLabel={t('daily.item', {
+        day: label,
+        condition: t(WEATHER_CONDITION_LABEL_KEYS[day.condition]),
+        high,
+        low,
+        chance: day.precipitationChance,
+      })}
+    >
+      <Text size="b2" weight="semibold" tone="white" className="w-14" maxLines={1}>
+        {label}
       </Text>
-
-      <VStack align="center" className="w-10">
-        <Icon width={20} height={20} color={iconColor} />
-        {item.precipitationProbability > 0 && (
-          <Text size="e2" style={{ color: palette.accent }}>
-            {item.precipitationProbability}%
+      <Box className="w-12 items-center">
+        <WeatherIcon condition={day.condition} isDaylight />
+        {day.precipitationChance >= VISIBLE_CHANCE && (
+          <Text size="e2" weight="semibold" className="text-white/80">
+            {`${day.precipitationChance}%`}
           </Text>
         )}
-      </VStack>
-
-      <Text
-        size="b3"
-        weight="medium"
-        className="w-8 text-right"
-        style={{ color: TEMPERATURE_TONE_COLORS.chilly }}
-      >
-        {Math.round(item.temperatureMin)}°
+      </Box>
+      <Text size="b2" className="w-10 text-right tabular-nums text-white/70">
+        {formatDegrees(low)}
       </Text>
-      <TemperatureBar
-        id={item.date}
-        left={((item.temperatureMin - range.min) / span) * 100}
-        right={((range.max - item.temperatureMax) / span) * 100}
-        fromColor={TEMPERATURE_TONE_COLORS[WeatherPolicy.temperatureTone(item.temperatureMin)]}
-        toColor={TEMPERATURE_TONE_COLORS[WeatherPolicy.temperatureTone(item.temperatureMax)]}
-      />
-      <Text size="b3" weight="medium" className="w-8" style={{ color: palette.text }}>
-        {Math.round(item.temperatureMax)}°
+      <DailyForecast.TemperatureBar bar={bar} />
+      <Text size="b2" weight="semibold" tone="white" className="w-10 text-right tabular-nums">
+        {formatDegrees(high)}
       </Text>
     </HStack>
   );
 };
 
-function TemperatureBar({
-  id,
-  left,
-  right,
-  fromColor,
-  toColor,
+/** 예보 기간 전체의 최저~최고 위에 하루의 범위를 겹쳐 그린다. */
+DailyForecast.TemperatureBar = function TemperatureBarTrack({
+  bar,
 }: {
-  id: string;
-  left: number;
-  right: number;
-  fromColor: string;
-  toColor: string;
+  bar: TemperatureBar | undefined;
 }) {
-  const palette = useTimePalette();
-
   return (
-    <Box
-      className="flex-1 h-1 rounded-full overflow-hidden"
-      style={{ backgroundColor: palette.glass }}
-    >
-      <Box
-        className="absolute h-1 rounded-full overflow-hidden"
-        style={{ left: `${left}%`, right: `${right}%` }}
-      >
-        <Svg width="100%" height={4}>
-          <Defs>
-            <SvgLinearGradient id={`tempBar-${id}`} x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={fromColor} />
-              <Stop offset="1" stopColor={toColor} />
-            </SvgLinearGradient>
-          </Defs>
-          <Rect width="100%" height={4} rx={2} fill={`url(#tempBar-${id})`} />
-        </Svg>
-      </Box>
+    <Box flex={1} className="h-1 rounded-full bg-white/20">
+      {bar != null && (
+        <Box
+          className="absolute h-1 rounded-full bg-white"
+          style={{ left: `${bar.start * 100}%`, right: `${(1 - bar.end) * 100}%` }}
+        />
+      )}
     </Box>
   );
-}
+};
+
+DailyForecast.Loading = function Loading() {
+  return (
+    <WeatherCard>
+      <TextSkeleton size="e1" className="w-24 opacity-40" />
+      {times(LOADING_ROW_COUNT, (index) => (
+        <HStack key={index} align="center" gap={10} className="min-h-11">
+          <TextSkeleton size="b2" className="w-14 opacity-40" />
+          <TextSkeleton size="b2" className="flex-1 opacity-40" />
+        </HStack>
+      ))}
+    </WeatherCard>
+  );
+};
+
+DailyForecast.Empty = function Empty() {
+  return null;
+};

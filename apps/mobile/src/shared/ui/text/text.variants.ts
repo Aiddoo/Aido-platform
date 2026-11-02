@@ -3,6 +3,7 @@ import { tv } from '@src/shared/utils/tv';
 import type { TextSize } from './text.types';
 
 export const TEXT_SIZE_CLASSES = {
+  display: 'text-display',
   h1: 'text-h1',
   t1: 'text-t1',
   t2: 'text-t2',

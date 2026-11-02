@@ -2,95 +2,156 @@ import catImage from '@assets/images/cat_weather_anchor.png';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
-import { Spacing, Text, VStack, Box } from '@src/shared/ui';
-import { formatHourLabel } from '@src/shared/utils/date-format';
-import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { Image, ScrollView } from 'react-native';
-
-import { useTimePalette } from '../hooks/use-time-palette';
-import { useGetForecastQueryOptions } from '../queries/get-forecast-query-options';
+import { Box, Spacing, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import {
-  type HourlyForecastViewModel,
-  toUpcomingHourlyForecasts,
-} from '../utils/view-models/hourly-forecast.view-model';
-import { resolveIconBySky, resolveSkyIconColor } from '../utils/weather-icon';
-import { useWeatherSession } from './providers/weather-session-provider';
+  type DateFormatContext,
+  formatHourLabel,
+  getZonedHour,
+  type TimeFormat,
+} from '@src/shared/utils/date-format';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
+import { Image } from 'expo-image';
+import { FlatList, useWindowDimensions } from 'react-native';
+import { withUniwind } from 'uniwind';
+
+import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
+import {
+  type HourlyForecast as HourlyForecastItem,
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
+import { useTemperatureUnit } from '../hooks/use-temperature-unit';
+import {
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/get-weather-report-query-options';
+import { formatDegrees } from '../utils/format-degrees';
 import { WeatherCard } from './weather-card';
+import { WeatherIcon } from './weather-icon';
+
+const StyledImage = withUniwind(Image);
+
+/** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. */
+const VISIBLE_CHANCE = 20;
+/** 칸 폭은 글자 배율에 비례해 늘려 시각·온도가 잘리지 않게 한다. */
+const CELL_WIDTH = 56;
 
 export function HourlyForecast() {
-  const palette = useTimePalette();
   const { t } = useTranslation('weather');
-  const { clock } = useWeatherSession();
-  const [{ data: forecast }] = useSuspenseQueries({
-    queries: [useGetForecastQueryOptions(), useGetPreferenceQueryOptions()],
+  const [{ data, dataUpdatedAt }, { data: preference }] = useSuspenseQueries({
+    queries: [
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.hourly },
+      useGetPreferenceQueryOptions(),
+    ],
   });
-  const items = toUpcomingHourlyForecasts(forecast.hourlyForecasts, clock.hour);
+  const dateFormat = { ...useDateFormatContext(), timeZone: data.location.timezone };
+  const hours = WeatherReportPolicy.upcomingHours(data.hourly, new Date(dataUpdatedAt));
 
-  if (items.length === 0) {
-    return null;
+  if (hours.length === 0) {
+    return <HourlyForecast.Empty />;
   }
 
   return (
-    <Box className="relative mt-16">
-      <Image
+    <Box>
+      <StyledImage
         source={catImage}
-        className="absolute right-8 w-[140px] h-[102px] z-10"
-        style={{ top: -102 }}
-        resizeMode="contain"
+        className="absolute -top-[72px] right-6 h-[73px] w-[100px]"
+        contentFit="contain"
+        accessible={false}
+        accessibilityIgnoresInvertColors
       />
-      <WeatherCard gap={12}>
-        <Text size="b3" weight="semibold" className="mb-1" style={{ color: palette.text }}>
-          {t('screen.hourly')}
-        </Text>
-        <ScrollView
+      <WeatherCard title={t('hourly.title')}>
+        <FlatList
           horizontal
+          data={hours}
+          keyExtractor={(hour) => String(hour.startsAt.getTime())}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {items.map((item) => (
-            <HourlyForecast.Item key={item.id} item={item} />
-          ))}
-        </ScrollView>
+          initialNumToRender={8}
+          renderItem={({ item, index }) => (
+            <HourlyForecast.Item
+              hour={item}
+              isNow={index === 0}
+              dateFormat={dateFormat}
+              timeFormat={preference.timeFormat}
+            />
+          )}
+        />
       </WeatherCard>
     </Box>
   );
 }
 
-HourlyForecast.Item = function Item({ item }: { item: HourlyForecastViewModel }) {
-  const palette = useTimePalette();
+interface HourlyForecastItemProps {
+  hour: HourlyForecastItem;
+  isNow: boolean;
+  dateFormat: DateFormatContext;
+  timeFormat: TimeFormat;
+}
+
+HourlyForecast.Item = function Item({
+  hour,
+  isNow,
+  dateFormat,
+  timeFormat,
+}: HourlyForecastItemProps) {
   const { t } = useTranslation('weather');
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const SkyIcon = resolveIconBySky(item.skyCondition);
-  const dateFormatContext = useDateFormatContext();
-  const hourLabel = formatHourLabel(item.hour, preference.timeFormat, dateFormatContext);
+  const unit = useTemperatureUnit();
+  const { fontScale } = useWindowDimensions();
+  const time = isNow
+    ? t('hourly.now')
+    : formatHourLabel(getZonedHour(hour.startsAt, dateFormat.timeZone), timeFormat, dateFormat);
+  const temperature = WeatherReportPolicy.displayTemperature(hour.temperature, unit);
 
   return (
-    <VStack py={16} px={20} className="items-center justify-between">
-      <Text size="b3" align="center" style={{ color: palette.textSub }}>
-        {item.dayOffset > 0 ? t('screen.nextDayHourLabel', { time: hourLabel }) : hourLabel}
+    <VStack
+      align="center"
+      gap={6}
+      style={{ width: CELL_WIDTH * fontScale }}
+      accessible
+      accessibilityLabel={t('hourly.item', {
+        time,
+        temperature,
+        condition: t(WEATHER_CONDITION_LABEL_KEYS[hour.condition]),
+        chance: hour.precipitationChance,
+      })}
+    >
+      <Text size="b4" weight="medium" tone="white">
+        {time}
       </Text>
-
-      <Spacing size={8} />
-
-      <SkyIcon
-        width={24}
-        height={24}
-        color={resolveSkyIconColor(item.skyCondition, palette.icon)}
-      />
-
-      {item.precipitationProbability > 0 ? (
-        <Text size="e2" align="center" style={{ color: palette.accent }}>
-          {item.precipitationProbability}%
+      <WeatherIcon condition={hour.condition} isDaylight={hour.isDaylight} />
+      {hour.precipitationChance >= VISIBLE_CHANCE ? (
+        <Text size="e2" weight="semibold" className="text-white/80">
+          {`${hour.precipitationChance}%`}
         </Text>
       ) : (
-        <Spacing size={14} />
+        <Text size="e2" className="opacity-0" accessible={false}>
+          0%
+        </Text>
       )}
-
-      <Spacing size={8} />
-
-      <Text size="b3" weight="medium" align="center" style={{ color: palette.textSub }}>
-        {Math.round(item.temperature)}°
+      <Text size="b2" weight="medium" tone="white">
+        {formatDegrees(temperature)}
       </Text>
     </VStack>
   );
+};
+
+HourlyForecast.Loading = function Loading() {
+  return (
+    <WeatherCard>
+      <TextSkeleton size="e1" className="w-24 opacity-40" />
+      <Box className="flex-row">
+        {times(6, (index) => (
+          <VStack key={index} align="center" gap={6} style={{ width: CELL_WIDTH }}>
+            <TextSkeleton size="b4" className="w-8 opacity-40" />
+            <Spacing size={24} />
+            <TextSkeleton size="b2" className="w-8 opacity-40" />
+          </VStack>
+        ))}
+      </Box>
+    </WeatherCard>
+  );
+};
+
+HourlyForecast.Empty = function Empty() {
+  return null;
 };

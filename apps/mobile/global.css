@@ -110,6 +110,10 @@
   --font-semibold: 'WantedSans-SemiBold';
   --font-bold: 'WantedSans-Bold';
 
+  --text-display: 96px;
+  --text-display--line-height: 104px;
+  --text-display--letter-spacing: -3px;
+
   --text-h1: 30px;
   --text-h1--line-height: 40px;
   --text-h1--letter-spacing: -0.3px;

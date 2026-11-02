@@ -32,7 +32,7 @@ import type { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import type { UserService } from '@src/features/user/apis/user.service';
-import type { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
+import type { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import type { WidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
@@ -87,7 +87,7 @@ export interface DIContainer {
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
   weatherService: WeatherService;
-  weatherLocationStateService: WeatherLocationStateService;
+  weatherIntroductionService: WeatherIntroductionService;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
 }
@@ -152,7 +152,7 @@ export const useStoreReviewService = () => useDI().storeReviewService;
 export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
-export const useWeatherLocationStateService = () => useDI().weatherLocationStateService;
+export const useWeatherIntroductionService = () => useDI().weatherIntroductionService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
 export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;

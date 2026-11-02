@@ -77,7 +77,10 @@ export function createWeatherReportDto(
         windGustMax: 11.4,
         sunrise: '2026-11-01T21:51:00.000Z',
         sunset: '2026-11-02T08:28:00.000Z',
-        moonPhase: 'WANING_CRESCENT',
+        moonPhase: 'THIRD_QUARTER',
+        moonrise: null,
+        moonset: '2026-11-02T04:50:15.000Z',
+        restOfDay: null,
         daytime: null,
         overnight: null,
       },
@@ -95,4 +98,67 @@ export function createWeatherReportDto(
 
 export function createWeatherReport(overrides: Partial<WeatherReportResponse> = {}): WeatherReport {
   return toWeatherReport(createWeatherReportDto(overrides));
+}
+
+/** 국내: WeatherKit이 분 단위 예보·특보를 주지 않는다. 16시(07:00Z)부터 두 시간 비. */
+export function createSeoulReportDto(): WeatherReportResponse {
+  return createWeatherReportDto({
+    nextHour: null,
+    alerts: [],
+    hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10]),
+  });
+}
+
+/** 일본: 분 단위 예보와 특보가 함께 온다. 17분 뒤 비가 시작된다. */
+export function createTokyoReportDto(): WeatherReportResponse {
+  return createWeatherReportDto({
+    location: { latitude: 35.6812, longitude: 139.7671, timezone: 'Asia/Tokyo' },
+    nextHour: {
+      periods: [
+        {
+          condition: 'PRECIPITATION',
+          precipitationType: 'RAIN',
+          startsAt: '2026-11-02T06:43:00.000Z',
+          endsAt: null,
+          precipitationChance: 80,
+          precipitationIntensity: 2.4,
+        },
+      ],
+      minutes: [
+        {
+          startsAt: '2026-11-02T06:26:00.000Z',
+          precipitationChance: 10,
+          precipitationIntensity: 0,
+        },
+        {
+          startsAt: '2026-11-02T07:25:00.000Z',
+          precipitationChance: 80,
+          precipitationIntensity: 2,
+        },
+      ],
+    },
+    alerts: [
+      {
+        id: 'jma-heavy-rain',
+        title: '大雨注意報',
+        severity: 'MODERATE',
+        source: 'JMA',
+        areaName: null,
+        effectiveAt: '2026-11-02T05:00:00.000Z',
+        expiresAt: '2026-11-02T12:00:00.000Z',
+        detailsUrl: 'https://example.com/jma',
+      },
+    ],
+    hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [30, 80, 20, 10]),
+  });
+}
+
+/** 베트남: 분 단위 예보와 대기질이 없다. */
+export function createHanoiReportDto(): WeatherReportResponse {
+  return createWeatherReportDto({
+    location: { latitude: 21.0278, longitude: 105.8342, timezone: 'Asia/Bangkok' },
+    nextHour: null,
+    airQuality: null,
+    alerts: [],
+  });
 }

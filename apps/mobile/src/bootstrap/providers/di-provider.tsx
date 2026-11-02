@@ -36,8 +36,8 @@ import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
-import { createWeatherLocationStateRepository } from '@src/features/weather/apis/weather-location-state.repository';
-import { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
+import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
+import { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createWidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
 import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
@@ -280,8 +280,8 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
-      weatherLocationStateService: new WeatherLocationStateService(
-        createWeatherLocationStateRepository(mmkvSyncStorage),
+      weatherIntroductionService: new WeatherIntroductionService(
+        createWeatherIntroductionRepository(mmkvSyncStorage),
       ),
       locationGateway: expoLocationGateway,
       clipboard: expoClipboardGateway,

@@ -8,7 +8,6 @@ import {
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
@@ -17,8 +16,12 @@ import { useGetFeatureDiscoveryQueryOptions } from '../queries/get-feature-disco
 import { claimAndOpenFeatureDiscovery } from '../utils/state/feature-discovery-auto-open';
 import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';
 
-export function useFeatureDiscoveryFeed() {
-  const weather = useWeatherSession();
+/** 날씨 위치 안내가 뜰 수 있는 동안에는 자동으로 열지 않아 두 안내가 겹치지 않게 한다. */
+export function useFeatureDiscoveryFeed({
+  isWeatherIntroductionPending,
+}: {
+  isWeatherIntroductionPending: boolean;
+}) {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const { data: config } = useQuery({
@@ -50,7 +53,7 @@ export function useFeatureDiscoveryFeed() {
   );
   const hasSeen = identity ? stateService.isSeen(identity) : true;
   const canAutoOpen = FeatureDiscoveryPolicy.canAutoOpen({
-    authStatus: weather.shouldIntroduce ? 'loading' : status,
+    authStatus: isWeatherIntroductionPending ? 'loading' : status,
     config,
     user,
     appVersion,

@@ -143,8 +143,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get weatherService() {
       return dependency('weatherService');
     },
-    get weatherLocationStateService() {
-      return dependency('weatherLocationStateService');
+    get weatherIntroductionService() {
+      return dependency('weatherIntroductionService');
     },
     get widgetSyncService() {
       return dependency('widgetSyncService');
