@@ -59,7 +59,7 @@ Bootstrap (bootstrap/providers/)   ← DI 컨테이너, 전역 Provider
 features/{feature}/   # 단수 kebab-case
 ├── domains/        # 클라이언트 모델 + 순수 함수 + Policy + Error
 ├── apis/           # Service + Mapper (HTTP + Zod + 변환 + Policy 검증)
-├── components/     # 의미 있는 UI 블록 (.Loading·.Error·.Empty·.Item)
+├── components/     # 의미 있는 UI 블록 + 부모에 결합된 static(.Item·.Loading·.Error·.Empty 등)
 ├── hooks/          # 단일 책임 훅 ([value, setValue] 상태 튜플, 라우트 읽기)
 ├── queries/        # Query / Mutation Options, {feature}-cache.ts
 ├── constants/      # Query Keys, 라벨·옵션 상수

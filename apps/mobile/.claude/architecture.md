@@ -194,8 +194,13 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
   같은 직렬화 가능한 객체를 넣는다. 이 저장소는 Expo Router + TanStack Query + Ky를 사용하므로
   TanStack Router의 `loaderDeps`나 oRPC 패턴을 억지로 추가하지 않는다. 전환 전 데이터가 필요하면
   기존 query options로 prefetch한 뒤 URL search state를 바꾼다.
-- 특정 목록에만 결합된 `Loading`, `Error`, `Empty`, `Item`은 `TodoComments.Loading`처럼 compound
-  namespace로 묶는다. 독립적으로 재사용되지 않는 상태 UI를 전역 이름으로 흩뜨리지 않는다.
+- compound namespace(`Parent.X`)의 기준은 응집도다. 부모 없이는 의미가 없는 하위 컴포넌트를 부모 파일에
+  `TodoComments.Loading`, `DailyForecast.TemperatureBar`처럼 묶어 한 곳에서 찾고 이해하게 한다.
+  `Item`·`Loading`·`Error`·`Empty`는 흔한 예일 뿐이고, 부모에 강하게 결합된 구성 요소(`.Cell`, `.Chart`,
+  `.Tile`, `.StaleNotice` 등)도 같은 방식으로 둔다. 패턴을 채우려고 쓰지 않는 static을 만들지 않는다.
+- 파일 안 순서는 본체 → 구성 요소(읽는 순서) → `.Loading` → `.Error` → `.Empty`다. 같은 피처의 여러 블록이
+  함께 쓰는 표시 조각은 `components/`의 독립 파일로, 그 파일에서만 쓰지만 부모의 일부가 아닌 조각은 파일
+  아래 지역 함수로 둔다.
 - 한 화면 block에서만 의미가 있는 작은 조립 조각은 소유 파일의 지역 컴포넌트로 둔다. 둘 이상의
   화면 surface가 공유할 때만 독립 파일로 승격하고, 함께 바뀌는 목록·행·작성기 family는 같은 하위
   폴더에 모은다. 폴더 `index.ts` re-export는 만들지 않고 정의 파일에서 직접 import한다.
@@ -286,7 +291,7 @@ export function FriendCalendar() {
 #### 목록·스켈레톤
 
 - 목록 컴포넌트는 자기 데이터를 `useSuspenseQuery`/`useSuspenseInfiniteQuery`로 구독하고 statics를
-  `.Item` → `.Loading` → `.Error` → `.Empty` 순서로 둔다. Screen은 `QueryErrorBoundary(fallback=X.Error)`
+  `.Item`(과 다른 구성 요소) → `.Loading` → `.Error` → `.Empty` 순서로 둔다. Screen은 `QueryErrorBoundary(fallback=X.Error)`
   → `Suspense(fallback=<X.Loading />)` → `<X />`를 위에서 아래로 쌓는다.
 - 원본을 그대로 넘기는 래퍼(`X.Item = (props) => <UserList.Item {...props} />`)를 만들지 않는다. 공용 행을
   직접 쓰거나, 행 액션 mutation처럼 실제 책임을 가진 행만 `.Item`으로 둔다. 같은 fallback은 `X.Error = UserList.Error`처럼 참조로 연결한다.
@@ -864,7 +869,7 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 - [ ] `constants/{feature}-query-keys.ts`
 - [ ] `queries/get-…-query-options.ts`, `queries/use-…-mutation-options.ts`
 - [ ] (다른 피처가 무효화해야 하면) `queries/{feature}-cache.ts`
-- [ ] `components/` — 의미 있는 UI 블록과 `.Loading`·`.Error`·`.Empty`·`.Item`
+- [ ] `components/` — 의미 있는 UI 블록과 그 블록에 결합된 static(`.Item`·`.Loading`·`.Error`·`.Empty` 등)
 - [ ] (필요 시) `hooks/`, `utils/`
 
 ---
