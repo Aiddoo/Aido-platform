@@ -24,11 +24,14 @@ const customClassGroups = {
 
 type CustomClassGroupIds = keyof typeof customClassGroups;
 
-const customTwMerge = extendTailwindMerge<CustomClassGroupIds>({
+/** `cn`과 `tv`가 같은 충돌 규칙으로 병합하도록 한 곳에서 정의한다. */
+export const TAILWIND_MERGE_CONFIG = {
   extend: {
     classGroups: customClassGroups,
   },
-});
+};
+
+const customTwMerge = extendTailwindMerge<CustomClassGroupIds>(TAILWIND_MERGE_CONFIG);
 
 /**
  * Tailwind 클래스 병합 유틸리티
