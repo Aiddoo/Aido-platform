@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 
 import {
+  type StoreUnavailable,
   type SubscriptionFailureCause,
   SubscriptionFailurePolicy,
 } from '../../domains/subscription-failure.model';
@@ -14,14 +15,21 @@ const FAILURE_TITLE_KEYS = {
   plans: 'subscription:failure.title.plans',
   purchase: 'subscription:failure.title.purchase',
   restore: 'subscription:failure.title.restore',
-} as const satisfies Record<SubscriptionLoadTarget | SubscriptionActionTarget, string>;
+  storeUnavailable: 'subscription:failure.title.storeUnavailable',
+  manage: 'subscription:failure.title.manage',
+} as const satisfies Record<
+  SubscriptionLoadTarget | SubscriptionActionTarget | 'storeUnavailable' | 'manage',
+  string
+>;
 
 type FailureDescriptionKey =
   | 'subscription:failure.description.network'
   | 'subscription:failure.description.server'
   | 'subscription:failure.description.store'
   | 'subscription:failure.description.purchase'
-  | 'subscription:failure.description.restore';
+  | 'subscription:failure.description.restore'
+  | 'subscription:failure.description.storeSetup'
+  | 'subscription:failure.description.storeTemporary';
 
 /** 무엇이 실패했는지(title), 무엇을 하면 되는지(description), 문의에 붙일 코드 */
 export interface SubscriptionSupportFailure {
@@ -84,3 +92,34 @@ export function toSubscriptionActionFailure(
     }))
     .exhaustive();
 }
+
+/** 스토어를 쓸 수 없을 때의 안내. 설정 문제는 다시 해도 같아 문의로만, 잠깐의 스토어 문제는 다시 시도도 준다 */
+export interface SubscriptionStoreUnavailableFailure extends SubscriptionSupportFailure {
+  canRetry: boolean;
+}
+
+export function toSubscriptionStoreUnavailableFailure({
+  kind,
+  diagnosticCode,
+}: StoreUnavailable): SubscriptionStoreUnavailableFailure {
+  return {
+    titleKey: FAILURE_TITLE_KEYS.storeUnavailable,
+    diagnosticCode,
+    ...match(kind)
+      .with('setup', () => ({
+        descriptionKey: 'subscription:failure.description.storeSetup' as const,
+        canRetry: false,
+      }))
+      .with('temporary', () => ({
+        descriptionKey: 'subscription:failure.description.storeTemporary' as const,
+        canRetry: true,
+      }))
+      .exhaustive(),
+  };
+}
+
+/** 스토어 구독 관리를 열지 못했을 때 문의에 붙일 제목과 코드 */
+export const SUBSCRIPTION_MANAGE_OPEN_FAILURE = {
+  titleKey: FAILURE_TITLE_KEYS.manage,
+  diagnosticCode: 'SUBSCRIPTION_MANAGE_OPEN_FAILED',
+} as const satisfies Pick<SubscriptionSupportFailure, 'titleKey' | 'diagnosticCode'>;

@@ -1,13 +1,12 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
-import { useTrack } from '@src/shared/analytics';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   PawIcon,
   Result,
   Text,
-  usePremiumDialog,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -25,12 +24,10 @@ export function PokeBanner() {
   const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
   const isLimitReached = bannerState.type === 'limitReached';
 
-  const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('NUDGE');
   const handlePress = () => {
     if (isLimitReached) {
-      trackEvent('premium_gate_shown', { feature: 'nudge_limit' });
-      premiumDialog.open({
+      premiumGate.open({
         title: t('nudge.limitTitle'),
         description: t('nudge.subscribeUnlimited'),
       });

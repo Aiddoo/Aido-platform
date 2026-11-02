@@ -16,6 +16,7 @@ export function getSuggestionsQueryOptions(aiService: AiService) {
     },
     throwOnError: (error, query) =>
       query.state.data == null && !isSuggestionsPremiumRequiredError(error),
+    meta: { refreshOnPremiumChange: true },
   });
 }
 

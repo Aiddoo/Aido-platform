@@ -7,9 +7,9 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { notifyError } from '@src/shared/utils/haptics';
-import { mutationOptions } from '@tanstack/react-query';
+import { mutationOptions, onlineManager } from '@tanstack/react-query';
 
-import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+import { logOutDevice } from '../utils/log-out-device';
 
 export const useLogoutMutationOptions = () => {
   const authService = useAuthService();
@@ -21,28 +21,18 @@ export const useLogoutMutationOptions = () => {
   const { setStatus } = useAuth();
 
   return mutationOptions({
-    mutationFn: async () => {
-      try {
-        const unregisterResult = await notificationService.unregisterPushToken();
-        if (!unregisterResult.ok) {
-          logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
-            error: unregisterResult.error,
-          });
-        }
-      } catch (error) {
-        // Silently fail - continue with logout
-        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error });
-      }
-
-      const result = await authService.logout();
-      if (!result.ok) {
-        logger.warn(AUTH_LOG_EVENT.LOGOUT_API_FAILED, { error: result.error });
-      }
-    },
+    // 오프라인에서도 멈추지 않고 바로 이 기기의 세션을 끝낸다
+    networkMode: 'always',
+    mutationFn: () =>
+      logOutDevice({
+        isOnline: onlineManager.isOnline(),
+        authService,
+        notificationService,
+        logger,
+      }),
     onError: () => {
       notifyError();
     },
-    // API 성공/실패 관계없이 항상 로그아웃 처리
     // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
     onSettled: () => {
       trackEvent('auth_logout');

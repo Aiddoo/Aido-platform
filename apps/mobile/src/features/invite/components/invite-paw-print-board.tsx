@@ -4,6 +4,7 @@ import {
   type PremiumAccess,
   PremiumAccessPolicy,
 } from '@src/features/subscription/domains/premium-access.model';
+import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -586,7 +587,7 @@ function KeepPremiumButton({ premiumAccess }: { premiumAccess: PremiumAccess }) 
       size="medium"
       display="inline"
       accessibilityHint={t('pawPrintBoard.keepPremiumHint')}
-      onPress={() => navigate('/settings/subscription')}
+      onPress={() => navigate(subscriptionHref())}
     >
       {t('pawPrintBoard.keepPremium')}
     </Button>

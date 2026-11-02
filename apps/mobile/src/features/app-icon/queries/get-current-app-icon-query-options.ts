@@ -8,6 +8,9 @@ export function getCurrentAppIconQueryOptions(service: AppIconService) {
   return queryOptions({
     queryKey: APP_ICON_QUERY_KEYS.current(),
     queryFn: ({ signal }) => service.getCurrentIcon(signal),
+    // 기기 안에서만 처리해 연결 상태와 무관하다
+    networkMode: 'always',
+
     enabled: service.isSupported(),
     retry: false,
     throwOnError: true,

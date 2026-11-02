@@ -10,7 +10,9 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { PremiumAccessPolicy } from '../domains/premium-access.model';
+import { SubscriptionFailurePolicy } from '../domains/subscription-failure.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
+import { toPurchaseFailedReason } from '../utils/analytics/purchase-failed-reason';
 import { toSubscriptionActionFailure } from '../utils/view-models/subscription-failure.view-model';
 import { syncMeUntilStorePremium } from './subscription-cache';
 
@@ -24,6 +26,8 @@ export const usePurchaseMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    // 오프라인 동안 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다(화면은 오프라인이면 버튼을 잠근다)
+    networkMode: 'always',
     // 결제 전 출처를 기억해 둔다. 반영된 뒤에는 STORE라 보상 기간 중 결제였는지 알 수 없다
     onMutate: () => ({ previousAccess: getCachedMe(queryClient)?.premiumAccess }),
     // 서버가 결제를 반영할 때까지 기다리는 동안에도 결제 중으로 두어 버튼을 잠근다
@@ -54,6 +58,10 @@ export const usePurchaseMutationOptions = () => {
         // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
         .with({ type: 'contactSupport' }, async (failure) => {
           notifyError();
+          const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.causeOf(error));
+          if (reason != null) {
+            trackEvent('purchase_failed', { reason });
+          }
           errorReporter.captureMessage('subscription_purchase_failed', {
             feature: 'subscription',
             severity: 'warning',

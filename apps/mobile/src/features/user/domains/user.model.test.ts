@@ -1,3 +1,5 @@
+import { createPremiumAccess } from '@src/features/subscription/__tests__/premium-access.factories';
+
 import type { User } from './user.model';
 import { UserPolicy } from './user.model';
 
@@ -19,29 +21,77 @@ const createUser = (overrides?: Partial<User>): User => ({
     bankedDays: 0,
     grantEndedAt: null,
   },
+  isPremium: null,
+  entitlements: null,
   createdAt: new Date('2026-01-01T09:00:00.000Z'),
   ...overrides,
 });
 
 describe('UserPolicy', () => {
   describe('isPremiumUser', () => {
-    test('ACTIVE 구독이면 true를 반환한다', () => {
+    test.each(['STORE', 'GRANT'] as const)('프리미엄 출처가 %s면 true를 반환한다', (source) => {
+      // Given 서버가 계산한 유효 프리미엄 출처가 있다
+      const user = createUser({ premiumAccess: createPremiumAccess({ source }) });
+
+      // When / Then
+      expect(UserPolicy.isPremiumUser(user)).toBe(true);
+    });
+
+    test('서버의 유효 프리미엄 판단이 있으면 출처보다 그 값을 따른다', () => {
+      // Given 자동 갱신 유예가 끝나 서버는 효력이 없다고 판단했다
+      const user = createUser({
+        isPremium: false,
+        premiumAccess: createPremiumAccess({ source: 'STORE' }),
+      });
+
+      // When / Then
+      expect(UserPolicy.isPremiumUser(user)).toBe(false);
+    });
+
+    test('ADMIN은 서버 isPremium이 false여도 true를 반환한다', () => {
+      // Given 서버 isPremium은 ADMIN을 반영하지 않는다
+      const user = createUser({ role: 'ADMIN', isPremium: false });
+
+      // When / Then
+      expect(UserPolicy.isPremiumUser(user)).toBe(true);
+    });
+
+    test('구독 상태가 ACTIVE여도 출처가 없으면 만료된 것으로 보고 false를 반환한다', () => {
+      // Given 스토어 만료 뒤 상태 값만 ACTIVE로 남았다
+      const user = createUser({
+        subscriptionStatus: 'ACTIVE',
+        premiumAccess: createPremiumAccess({ source: null, endsAt: null, periodEndsAt: null }),
+      });
+
+      // When / Then
+      expect(UserPolicy.isPremiumUser(user)).toBe(false);
+    });
+
+    test('ADMIN role이면 프리미엄 출처와 무관하게 true를 반환한다', () => {
+      // Given
+      const user = createUser({ role: 'ADMIN' });
+
+      // When / Then
+      expect(UserPolicy.isPremiumUser(user)).toBe(true);
+    });
+  });
+
+  describe('tier', () => {
+    test('만료돼 출처가 없는 ACTIVE 사용자는 BASIC이다', () => {
+      // Given
       const user = createUser({ subscriptionStatus: 'ACTIVE' });
-      expect(UserPolicy.isPremiumUser(user)).toBe(true);
+
+      // When / Then
+      expect(UserPolicy.tier(user)).toBe('BASIC');
     });
 
-    test('ADMIN role이면 구독 상태와 무관하게 true를 반환한다', () => {
-      const user = createUser({ role: 'ADMIN', subscriptionStatus: 'FREE' });
-      expect(UserPolicy.isPremiumUser(user)).toBe(true);
-    });
+    test('보상 기간 중인 사용자는 PREMIUM이다', () => {
+      // Given
+      const user = createUser({ premiumAccess: createPremiumAccess({ source: 'GRANT' }) });
 
-    test.each(['FREE', 'EXPIRED', 'CANCELLED'] as const)(
-      '%s 구독이면 false를 반환한다',
-      (status) => {
-        const user = createUser({ subscriptionStatus: status });
-        expect(UserPolicy.isPremiumUser(user)).toBe(false);
-      },
-    );
+      // When / Then
+      expect(UserPolicy.tier(user)).toBe('PREMIUM');
+    });
   });
 
   describe('hasCredential', () => {

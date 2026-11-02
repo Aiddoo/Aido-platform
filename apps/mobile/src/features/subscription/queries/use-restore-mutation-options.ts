@@ -11,6 +11,7 @@ import { match } from 'ts-pattern';
 import { PremiumAccessPolicy } from '../domains/premium-access.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { toSubscriptionActionFailure } from '../utils/view-models/subscription-failure.view-model';
+import { syncMeUntilStorePremium } from './subscription-cache';
 
 export const useRestoreMutationOptions = () => {
   const subscriptionService = useSubscriptionService();
@@ -21,16 +22,23 @@ export const useRestoreMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    // 오프라인 동안 멈췄다가 연결되자마자 결제 창이 뜨지 않게 스토어 SDK에 바로 맡긴다(화면은 오프라인이면 버튼을 잠근다)
+    networkMode: 'always',
+    // 복원한 구독은 서버가 스토어 웹훅(TRANSFER)을 반영할 때까지 기다려 복원 중으로 둔다(결제와 같은 대기)
     mutationFn: async () => {
-      const result = await subscriptionService.restorePurchases();
+      const hasRestoredStorePurchase = unwrap(await subscriptionService.restorePurchases());
+      const isReflected = hasRestoredStorePurchase && (await syncMeUntilStorePremium(queryClient));
 
-      return unwrap(result);
+      return { hasRestoredStorePurchase, isReflected };
     },
-    onSuccess: (hasRestoredStorePurchase) => {
-      // 캐시 동기화는 RevenueCatProvider의 CustomerInfo 리스너가 전담
+    onSuccess: ({ hasRestoredStorePurchase, isReflected }) => {
       if (hasRestoredStorePurchase) {
         trackEvent('subscription_restored');
         notifySuccess();
+        if (!isReflected) {
+          toast.toast(t('subscription:toast.purchaseSyncPending'));
+          return;
+        }
         toast.success(t('subscription:toast.restoreSuccess'));
       } else {
         toast.success(

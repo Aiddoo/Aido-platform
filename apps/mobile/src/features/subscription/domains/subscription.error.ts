@@ -4,6 +4,8 @@ import { t } from '@src/shared/i18n';
 export const SubscriptionErrorCode = {
   /** 스토어 SDK를 쓸 수 없다(키 없음·초기화 실패·스토어 설정 문제) */
   STORE_UNAVAILABLE: 'SUBSCRIPTION_STORE_UNAVAILABLE',
+  /** 스토어가 잠시 응답하지 못했다. 설정 문제와 달리 나중에 다시 하면 풀릴 수 있다 */
+  STORE_PROBLEM: 'SUBSCRIPTION_STORE_PROBLEM',
   /** 스토어에는 닿았지만 팔 수 있는 요금제를 받지 못했다 */
   OFFERINGS_UNAVAILABLE: 'SUBSCRIPTION_OFFERINGS_UNAVAILABLE',
   /** 기기 연결 때문에 스토어에 닿지 못했다 */
@@ -35,6 +37,13 @@ export const SubscriptionErrors = {
     new SubscriptionError(
       SubscriptionErrorCode.STORE_UNAVAILABLE,
       t('subscription:errors.storeUnavailable'),
+      storeErrorCode,
+    ),
+
+  storeProblem: (storeErrorCode?: string | null) =>
+    new SubscriptionError(
+      SubscriptionErrorCode.STORE_PROBLEM,
+      t('subscription:errors.storeProblem'),
       storeErrorCode,
     ),
 

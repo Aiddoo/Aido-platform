@@ -1,20 +1,23 @@
 import { PREMIUM_SOURCE } from '@aido/api';
-import { invalidatePremiumAiQueries } from '@src/features/ai/queries/ai-cache';
-import { invalidateMemoResourceLimit } from '@src/features/memo/queries/memo-cache';
-import { invalidateNudgeLimit } from '@src/features/nudge/queries/nudge-cache';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { UserPolicy } from '@src/features/user/domains/user.model';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
-import { hashKey, type QueryClient } from '@tanstack/react-query';
+import { getCachedMe, invalidateMe } from '@src/features/user/queries/user-cache';
+import { hashKey, type Query, type QueryClient } from '@tanstack/react-query';
 import { delay } from 'es-toolkit';
 
-/** 프리미엄에 따라 한도·사용량이 달라지는 쿼리를 다시 불러온다. */
+/** 조회 옵션이 `meta.refreshOnPremiumChange`로 프리미엄에 따라 달라진다고 밝힌 쿼리 */
+export function isPremiumDependentQuery(query: Pick<Query, 'meta'>) {
+  return query.meta?.refreshOnPremiumChange === true;
+}
+
+/** 프리미엄에 따라 한도·사용량·접근이 달라지는 쿼리를 다시 불러온다. */
 export function invalidatePremiumDependentQueries(queryClient: QueryClient) {
-  return Promise.all([
-    invalidateNudgeLimit(queryClient),
-    invalidatePremiumAiQueries(queryClient),
-    invalidateMemoResourceLimit(queryClient),
-  ]);
+  return queryClient.invalidateQueries({ predicate: isPremiumDependentQuery });
+}
+
+/** 프리미엄 기간이 끝나는 순간에는 서버 이벤트가 없어 내 정보와 의존 쿼리를 한 번 다시 불러온다 */
+export function refreshAfterPremiumEnded(queryClient: QueryClient) {
+  return Promise.all([invalidateMe(queryClient), invalidatePremiumDependentQueries(queryClient)]);
 }
 
 /**

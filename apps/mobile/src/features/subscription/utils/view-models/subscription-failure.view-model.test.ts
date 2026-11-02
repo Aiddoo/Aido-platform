@@ -4,6 +4,7 @@ import { SubscriptionErrors } from '../../domains/subscription.error';
 import {
   toSubscriptionActionFailure,
   toSubscriptionLoadFailure,
+  toSubscriptionStoreUnavailableFailure,
 } from './subscription-failure.view-model';
 
 describe('toSubscriptionLoadFailure', () => {
@@ -99,5 +100,39 @@ describe('toSubscriptionActionFailure', () => {
 
     // Then
     expect(failure).toEqual({ type: 'contactSupport', ...expected });
+  });
+});
+
+describe('toSubscriptionStoreUnavailableFailure', () => {
+  it('설정 문제는 다시 해도 같아 문의로만 안내한다', () => {
+    // When
+    const failure = toSubscriptionStoreUnavailableFailure({
+      kind: 'setup',
+      diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
+    });
+
+    // Then
+    expect(failure).toEqual({
+      titleKey: 'subscription:failure.title.storeUnavailable',
+      descriptionKey: 'subscription:failure.description.storeSetup',
+      diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
+      canRetry: false,
+    });
+  });
+
+  it('스토어가 잠시 응답하지 못했으면 다시 시도도 함께 준다', () => {
+    // When
+    const failure = toSubscriptionStoreUnavailableFailure({
+      kind: 'temporary',
+      diagnosticCode: 'SUBSCRIPTION_STORE_PROBLEM (2)',
+    });
+
+    // Then
+    expect(failure).toEqual({
+      titleKey: 'subscription:failure.title.storeUnavailable',
+      descriptionKey: 'subscription:failure.description.storeTemporary',
+      diagnosticCode: 'SUBSCRIPTION_STORE_PROBLEM (2)',
+      canRetry: true,
+    });
   });
 });

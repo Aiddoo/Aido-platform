@@ -61,6 +61,7 @@ export const useRemoveFriendMutationOptions = () => {
         trackEvent('friend_removed');
       }
       queryClient.invalidateQueries({ queryKey: friendsQueryKey });
+      queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.searches() });
     },
   });
 };

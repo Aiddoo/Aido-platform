@@ -7,12 +7,15 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
 import { createSubscriptionManagementUrl } from '../utils/navigation/subscription-management-url';
+import { SUBSCRIPTION_MANAGE_OPEN_FAILURE } from '../utils/view-models/subscription-failure.view-model';
+import { useOpenSubscriptionInquiry } from './use-open-subscription-inquiry';
 
-/** 스토어 구독 관리를 연다. 열지 못하면 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */
+/** 스토어 구독 관리를 연다. 열지 못하면 문의로 잇는 안내 토스트를 띄우고 Sentry breadcrumb를 남긴다 */
 export function useOpenSubscriptionManagement() {
   const subscriptionService = useSubscriptionService();
   const errorReporter = useErrorReporter();
   const toast = useAppToast();
+  const openInquiry = useOpenSubscriptionInquiry();
 
   return useSingleTap(async () => {
     const productId =
@@ -40,7 +43,12 @@ export function useOpenSubscriptionManagement() {
           error: error instanceof Error ? error.message : String(error),
         },
       });
-      toast.error(undefined, { fallback: t('subscription:subscriber.manageOpenFailed') });
+      toast.error(t('subscription:subscriber.manageOpenFailed'), {
+        action: {
+          label: t('subscription:failure.contactSupport'),
+          onPress: () => openInquiry(SUBSCRIPTION_MANAGE_OPEN_FAILURE),
+        },
+      });
     }
   });
 }

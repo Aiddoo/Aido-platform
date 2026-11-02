@@ -25,10 +25,10 @@ const NETWORK_CODES = [
   PURCHASES_ERROR_CODE.API_ENDPOINT_BLOCKED,
 ] as const;
 
+/** 앱·스토어 설정이 맞지 않아 다시 해도 같은 결과가 나오는 코드 */
 const STORE_SETUP_CODES = [
   PURCHASES_ERROR_CODE.CONFIGURATION_ERROR,
   PURCHASES_ERROR_CODE.INVALID_CREDENTIALS_ERROR,
-  PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR,
   PURCHASES_ERROR_CODE.UNSUPPORTED_ERROR,
 ] as const;
 
@@ -50,6 +50,10 @@ export function toSubscriptionError(operation: StoreOperation, error: unknown): 
     )
     .with({ operation: 'offerings', storeErrorCode: P.union(...STORE_SETUP_CODES) }, () =>
       SubscriptionErrors.storeUnavailable(storeErrorCode),
+    )
+    .with(
+      { operation: 'offerings', storeErrorCode: PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR },
+      () => SubscriptionErrors.storeProblem(storeErrorCode),
     )
     .with({ operation: 'offerings' }, () => SubscriptionErrors.offeringsUnavailable(storeErrorCode))
     .with({ operation: 'purchase' }, () => SubscriptionErrors.purchaseFailed(storeErrorCode))

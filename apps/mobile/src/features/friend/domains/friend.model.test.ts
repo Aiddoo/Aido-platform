@@ -35,17 +35,25 @@ describe('친구 검색 정책', () => {
 describe('resolveFriendLimit', () => {
   it('서버가 늘어난 한도를 알려 주면 그 인원을 반환한다', () => {
     // When
-    const result = resolveFriendLimit({ current: 7, limit: 7 });
+    const result = resolveFriendLimit({ current: 7, limit: 7 }, 5);
 
     // Then
     expect(result).toBe(7);
   });
 
-  it('한도가 없으면 무료 기본 한도를 반환한다', () => {
-    // When
-    const result = resolveFriendLimit(undefined);
+  it('오류에 한도가 없으면 내 정보의 친구 한도를 반환한다', () => {
+    // When 초대로 한 자리 늘어 서버 entitlements가 6명이다
+    const result = resolveFriendLimit(undefined, 6);
 
-    // Then FOLLOW_LIMITS.FREE_MAX_FRIENDS
+    // Then
+    expect(result).toBe(6);
+  });
+
+  it('내 정보에도 한도가 없는 구버전 서버면 카탈로그의 무료 한도를 반환한다', () => {
+    // When
+    const result = resolveFriendLimit(undefined, null);
+
+    // Then PREMIUM_FEATURES.FRIEND.free
     expect(result).toBe(5);
   });
 });
@@ -53,15 +61,15 @@ describe('resolveFriendLimit', () => {
 describe('resolveFriendLimitDialog', () => {
   it('초대를 쓸 수 있으면 서버가 알려 준 한도로 초대 안내를 반환한다', () => {
     // When
-    const result = resolveFriendLimitDialog({ current: 6, limit: 6 }, true);
+    const result = resolveFriendLimitDialog({ current: 6, limit: 6 }, true, 5);
 
     // Then
     expect(result).toEqual({ type: 'invite', limit: 6 });
   });
 
-  it('초대를 쓸 수 있는데 한도가 없으면 무료 기본 한도로 초대 안내를 반환한다', () => {
+  it('초대를 쓸 수 있는데 오류에 한도가 없으면 내 정보의 한도로 초대 안내를 반환한다', () => {
     // When
-    const result = resolveFriendLimitDialog(undefined, true);
+    const result = resolveFriendLimitDialog(undefined, true, 5);
 
     // Then
     expect(result).toEqual({ type: 'invite', limit: 5 });
@@ -69,7 +77,7 @@ describe('resolveFriendLimitDialog', () => {
 
   it('초대를 쓸 수 없으면 구독 안내를 반환한다', () => {
     // When
-    const result = resolveFriendLimitDialog({ current: 6, limit: 6 }, false);
+    const result = resolveFriendLimitDialog({ current: 6, limit: 6 }, false, 5);
 
     // Then
     expect(result).toEqual({ type: 'subscribe' });

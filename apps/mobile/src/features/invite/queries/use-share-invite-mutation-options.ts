@@ -20,6 +20,8 @@ export function useShareInviteMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    // 기기 안에서만 처리해 연결 상태와 무관하다
+    networkMode: 'always',
     mutationFn: ({ channel, content }: ShareInviteVariables) =>
       inviteShareService.share(channel, content),
     onSuccess: ({ channel, outcome }) => {

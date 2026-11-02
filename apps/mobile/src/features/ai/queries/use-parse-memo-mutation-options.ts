@@ -1,12 +1,12 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
 import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
+import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { usePremiumDialog } from '@src/shared/ui';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -23,7 +23,7 @@ export const useParseMemoMutationOptions = () => {
   const aiService = useAiService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
+  const premiumGate = usePremiumGate('AI_PARSE');
   const toast = useAppToast();
 
   return mutationOptions({
@@ -47,9 +47,8 @@ export const useParseMemoMutationOptions = () => {
       notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
-        trackEvent('premium_gate_shown', { feature: 'ai_parse' });
         // 할 일 파싱과 같은 한도 소진 안내로 구독 경로를 보여준다.
-        premiumDialog.open({
+        premiumGate.open({
           description: t('todo:premium.unlimitedParse'),
         });
         return;

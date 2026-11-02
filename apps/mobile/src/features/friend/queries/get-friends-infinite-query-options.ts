@@ -1,5 +1,6 @@
 import { useFriendService } from '@src/bootstrap/providers/di-context';
 import type { FriendService } from '@src/features/friend/apis/friend.service';
+import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import type { Page } from '@src/shared/types/page.types';
@@ -26,6 +27,7 @@ export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
       }
       return lastPage.items[lastPage.items.length - 1]?.followId;
     },
+    ...PERSISTED_QUERY_OPTIONS,
   });
 }
 

@@ -1,6 +1,6 @@
 import {
-  FOLLOW_LIMITS,
   type GetFollowsQuery,
+  PREMIUM_FEATURES,
   USER_SEARCH_QUERY_LENGTH,
   userTagParamSchema,
 } from '@aido/api';
@@ -62,10 +62,19 @@ export function hasValidSearchQuery(input: FriendSearchInput): boolean {
   return isValidSearchQuery(input.query);
 }
 
-/** 친구 한도에 닿았을 때 안내할 인원. 초대로 늘어난 자리는 서버가 FOLLOW_0909 details.limit으로 알려 준다 */
-export function resolveFriendLimit(details: Record<string, unknown> | undefined) {
+/**
+ * 친구 한도에 닿았을 때 안내할 인원. 초대로 늘어난 자리는 서버가 FOLLOW_0909 details.limit으로 알려 준다.
+ * 없으면 내 정보의 친구 한도(entitlements), 그것도 없으면 카탈로그의 무료 한도다
+ */
+export function resolveFriendLimit(
+  details: Record<string, unknown> | undefined,
+  knownLimit: number | null,
+) {
   const parsed = friendLimitErrorDetailsSchema.safeParse(details);
-  return parsed.success ? parsed.data.limit : FOLLOW_LIMITS.FREE_MAX_FRIENDS;
+  if (parsed.success) {
+    return parsed.data.limit;
+  }
+  return knownLimit ?? PREMIUM_FEATURES.FRIEND.free;
 }
 
 export type FriendLimitDialog = { type: 'invite'; limit: number } | { type: 'subscribe' };
@@ -74,9 +83,10 @@ export type FriendLimitDialog = { type: 'invite'; limit: number } | { type: 'sub
 export function resolveFriendLimitDialog(
   details: Record<string, unknown> | undefined,
   isInviteAvailable: boolean,
+  knownLimit: number | null,
 ): FriendLimitDialog {
   return isInviteAvailable
-    ? { type: 'invite', limit: resolveFriendLimit(details) }
+    ? { type: 'invite', limit: resolveFriendLimit(details, knownLimit) }
     : { type: 'subscribe' };
 }
 
