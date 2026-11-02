@@ -31,3 +31,87 @@ export const LONGITUDE_RANGE = {
   MIN: 124.0,
   MAX: 132.0,
 } as const;
+
+export const WEATHER_CONDITIONS = [
+  "CLEAR",
+  "MOSTLY_CLEAR",
+  "PARTLY_CLOUDY",
+  "MOSTLY_CLOUDY",
+  "CLOUDY",
+  "FOGGY",
+  "HAZY",
+  "WINDY",
+  "DRIZZLE",
+  "RAIN",
+  "HEAVY_RAIN",
+  "THUNDERSTORMS",
+  "SLEET",
+  "SNOW",
+  "HEAVY_SNOW",
+  "HAIL",
+  "HOT",
+  "FRIGID",
+] as const;
+
+export type WeatherCondition = (typeof WEATHER_CONDITIONS)[number];
+
+export const WEATHER_PRECIPITATION_TYPES = [
+  "NONE",
+  "RAIN",
+  "SNOW",
+  "SLEET",
+  "HAIL",
+  "MIXED",
+] as const;
+
+export type WeatherPrecipitationType = (typeof WEATHER_PRECIPITATION_TYPES)[number];
+
+export const WEATHER_PRESSURE_TRENDS = ["RISING", "FALLING", "STEADY"] as const;
+
+export type WeatherPressureTrend = (typeof WEATHER_PRESSURE_TRENDS)[number];
+
+export const WEATHER_MOON_PHASES = [
+  "NEW",
+  "WAXING_CRESCENT",
+  "FIRST_QUARTER",
+  "WAXING_GIBBOUS",
+  "FULL",
+  "WANING_GIBBOUS",
+  "THIRD_QUARTER",
+  "WANING_CRESCENT",
+] as const;
+
+export type WeatherMoonPhase = (typeof WEATHER_MOON_PHASES)[number];
+
+export const WEATHER_ALERT_SEVERITIES = [
+  "EXTREME",
+  "SEVERE",
+  "MODERATE",
+  "MINOR",
+  "UNKNOWN",
+] as const;
+
+export type WeatherAlertSeverity = (typeof WEATHER_ALERT_SEVERITIES)[number];
+
+export const WEATHER_NEXT_HOUR_CONDITIONS = ["CLEAR", "PRECIPITATION"] as const;
+
+export type WeatherNextHourCondition = (typeof WEATHER_NEXT_HOUR_CONDITIONS)[number];
+
+export const WEATHER_PROVIDERS = ["APPLE_WEATHER"] as const;
+
+export type WeatherProvider = (typeof WEATHER_PROVIDERS)[number];
+
+export const GLOBAL_LATITUDE_RANGE = {
+  MIN: -90,
+  MAX: 90,
+} as const;
+
+export const GLOBAL_LONGITUDE_RANGE = {
+  MIN: -180,
+  MAX: 180,
+} as const;
+
+export const WEATHER_REPORT_LIMITS = {
+  HOURLY_FORECAST_HOURS: 24,
+  DAILY_FORECAST_DAYS: 10,
+} as const;
