@@ -256,6 +256,9 @@ jobs:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Changeset 검사가 PR base부터의 변경 패키지를 계산한다.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
 
       - uses: ./.github/actions/setup
         with:
@@ -275,6 +278,12 @@ jobs:
       - name: Type Check
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
         run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+
+      # 서버·공유 계약을 바꾼 PR은 Changesets 변경 파일을 함께 올린다(docs/conventions/git.md#버전).
+      # 모바일은 스토어 버전이라 Changesets에서 제외되어 있어 이 검사에 걸리지 않는다.
+      - name: Changeset
+        if: github.event_name == 'pull_request' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.shared == 'true')
+        run: pnpm changeset status --since=${{ needs.gate.outputs.base_sha }}
 
       # 컨벤션 검사는 apps/api·packages의 규칙도 맡으므로 서버·공유 계약만 바뀐 PR에서도 실행한다.
       # API 범위는 모바일 의존성이 없으므로 pnpm 스크립트(실행 전 설치) 대신 node로 직접 실행한다.
