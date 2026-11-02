@@ -304,7 +304,7 @@ export class GenerateReport {
       return buildNoAiConsentContent(input, locale);
     }
 
-    if (!this.#dependencies.aiProvider.isAvailable()) {
+    if (!this.#dependencies.aiProvider.isAvailable("report")) {
       this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
       return buildFallbackContent(input, locale);
     }

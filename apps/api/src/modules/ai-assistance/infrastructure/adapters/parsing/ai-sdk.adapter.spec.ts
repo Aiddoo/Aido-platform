@@ -6,7 +6,7 @@ import type { MockInstance } from "vitest";
 import { z } from "zod";
 
 import { AiProviderError } from "../../../application/ports/parsing/ai-provider.port.js";
-import { GeminiAiAdapter } from "./gemini-ai.adapter.js";
+import { AiSdkAdapter } from "./ai-sdk.adapter.js";
 
 const schema = z.object({
   title: z.string(),
@@ -25,9 +25,9 @@ const base = { task: "parse-todo", promptVersion: "parse-todo@test", system: "",
 function createProvider(
   apiKey: string | undefined,
   env: Record<string, string> = {},
-): GeminiAiAdapter {
+): AiSdkAdapter {
   const config = new ConfigService({ GOOGLE_GENERATIVE_AI_API_KEY: apiKey, ...env });
-  return new GeminiAiAdapter(config);
+  return new AiSdkAdapter(config);
 }
 
 function modelResponse(text: string, withUsage = true): Response {
@@ -39,7 +39,7 @@ function modelResponse(text: string, withUsage = true): Response {
   });
 }
 
-describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트워크 없음", () => {
+describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워크 없음", () => {
   let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
   beforeEach(() => {
@@ -54,7 +54,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
 
   it.each([undefined, ""])("미설정 key %s는 UNAVAILABLE이며 요청하지 않는다", async (key) => {
     const provider = createProvider(key);
-    expect(provider.isAvailable()).toBe(false);
+    expect(provider.isAvailable("parse-todo")).toBe(false);
     await expect(
       provider.generateStructured({ ...base, prompt: "독서", schema }),
     ).rejects.toMatchObject({
@@ -86,7 +86,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       usage: { input: 100, output: result.usage.output, reasoning: 20 },
     });
     expect(result.usage.output).toBeGreaterThanOrEqual(50);
-    expect(provider.isAvailable()).toBe(true);
+    expect(provider.isAvailable("parse-todo")).toBe(true);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(String(fetchSpy.mock.calls[0]?.[0])).toBe(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
@@ -487,5 +487,124 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       createProvider("fixture-key").generateStructured({ ...base, prompt: "독서", schema }),
     ).rejects.toMatchObject({ kind: "UPSTREAM", cause: error });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe("provider registry·대체 모델", () => {
+    const fallbackEnv = { AI_FALLBACK_MODEL: "google:gemini-3.5-flash-lite" };
+    const unavailable = () =>
+      Response.json(
+        { error: { code: 503, message: "overloaded", status: "UNAVAILABLE" } },
+        { status: 503 },
+      );
+    const modelOf = (call: number) =>
+      String(fetchSpy.mock.calls[call]?.[0]).match(/models\/([^:]+):/)?.[1];
+
+    it("provider를 쓴 env 값은 registry로 풀고 provider 없는 기존 값은 google로 읽는다", async () => {
+      // Given
+      fetchSpy.mockImplementation(async () => modelResponse(JSON.stringify(output)));
+      const provider = createProvider("fixture-key", {
+        AI_MODEL_PARSE_TODO: "google:gemini-3.5-flash-lite",
+        AI_MODEL_REPORT: "gemini-2.5-flash-lite",
+      });
+      // When
+      const todo = await provider.generateStructured({ ...base, prompt: "x", schema });
+      const report = await provider.generateStructured({
+        ...base,
+        task: "report",
+        prompt: "x",
+        schema,
+      });
+      // Then
+      expect(todo.model).toBe("google:gemini-3.5-flash-lite");
+      expect(report.model).toBe("google:gemini-2.5-flash-lite");
+      expect([modelOf(0), modelOf(1)]).toEqual(["gemini-3.5-flash-lite", "gemini-2.5-flash-lite"]);
+    });
+
+    it("등록되지 않은 공급자의 모델을 쓰는 작업만 UNAVAILABLE이다", async () => {
+      // Given
+      const provider = createProvider("fixture-key", { AI_MODEL_REPORT: "anthropic:claude-x" });
+      // When / Then
+      expect(provider.isAvailable("report")).toBe(false);
+      expect(provider.isAvailable("parse-todo")).toBe(true);
+      await expect(
+        provider.generateStructured({ ...base, task: "report", prompt: "x", schema }),
+      ).rejects.toMatchObject({ kind: "UNAVAILABLE" });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it("기본 모델이 일시 오류(503)면 대체 모델로 응답하고 응답한 모델 ID와 이벤트만 남긴다", async () => {
+      // Given
+      fetchSpy
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(modelResponse(JSON.stringify(output)));
+      const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+      // When
+      const result = await createProvider("fixture-key", fallbackEnv).generateStructured({
+        ...base,
+        prompt: "SECRET_PROMPT",
+        schema,
+        policy: { ...policy, maxRetries: 0 },
+      });
+      // Then
+      expect(result).toMatchObject({ output, model: "google:gemini-3.5-flash-lite" });
+      expect([modelOf(0), modelOf(1)]).toEqual(["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
+      expect(logWarn).toHaveBeenCalledWith({
+        event: "ai.provider.fallback",
+        task: "parse-todo",
+        model: "google:gemini-3.1-flash-lite",
+        statusCode: 503,
+      });
+      expect(JSON.stringify(logWarn.mock.calls)).not.toContain("SECRET_PROMPT");
+    });
+
+    it("다음 요청은 다시 기본 모델부터 시도한다", async () => {
+      // Given
+      fetchSpy
+        .mockResolvedValueOnce(unavailable())
+        .mockImplementation(async () => modelResponse(JSON.stringify(output)));
+      vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+      const provider = createProvider("fixture-key", fallbackEnv);
+      const request = { ...base, prompt: "x", schema, policy: { ...policy, maxRetries: 0 } };
+      // When
+      await provider.generateStructured(request);
+      const second = await provider.generateStructured(request);
+      // Then
+      expect(second.model).toBe("google:gemini-3.1-flash-lite");
+      expect(modelOf(2)).toBe("gemini-3.1-flash-lite");
+    });
+
+    it("schema를 통과하지 못한 출력은 대체 모델을 부르지 않고 INVALID_OUTPUT이다", async () => {
+      // Given
+      fetchSpy.mockResolvedValue(modelResponse(JSON.stringify({ title: 1 })));
+      // When
+      const execution = createProvider("fixture-key", fallbackEnv).generateStructured({
+        ...base,
+        prompt: "x",
+        schema,
+        policy: { ...policy, maxRetries: 0 },
+      });
+      // Then
+      await expect(execution).rejects.toMatchObject({ kind: "INVALID_OUTPUT" });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("요청 오류(400)는 대체 모델로 넘기지 않는다", async () => {
+      // Given
+      fetchSpy.mockResolvedValue(
+        Response.json(
+          { error: { code: 400, message: "bad", status: "INVALID_ARGUMENT" } },
+          { status: 400 },
+        ),
+      );
+      // When
+      const execution = createProvider("fixture-key", fallbackEnv).generateStructured({
+        ...base,
+        prompt: "x",
+        schema,
+      });
+      // Then
+      await expect(execution).rejects.toMatchObject({ kind: "UPSTREAM", statusCode: 400 });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
   });
 });

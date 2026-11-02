@@ -209,6 +209,9 @@ catalogs:
     ai:
       specifier: 7.0.159
       version: 7.0.159
+    ai-fallback:
+      specifier: 3.0.0
+      version: 3.0.0
     bowser:
       specifier: 2.15.0
       version: 2.15.0
@@ -622,6 +625,9 @@ importers:
       ai:
         specifier: 'catalog:'
         version: 7.0.159(zod@4.6.7)
+      ai-fallback:
+        specifier: 'catalog:'
+        version: 3.0.0(@ai-sdk/provider-utils@5.0.72(zod@4.6.7))(@ai-sdk/provider@4.0.35)
       argon2:
         specifier: 0.45.1
         version: 0.45.1
@@ -5908,6 +5914,13 @@ packages:
     resolution: {integrity: sha512-d8OWDVdZMgjhLUT9ZPgSv/BdFFF9pVuscC0JdUSz3bjwE15gcp6u/o0/JooM2yyAWC49KThFhXlgTXRa9B7yng==}
     engines: {node: '>=18.18'}
     hasBin: true
+
+  ai-fallback@3.0.0:
+    resolution: {integrity: sha512-gWDUeKWT6ySREk7rpBkQUioxYI8pTbaCf//c9vpcBmSqtDsjKceOaccDO7jrSKtXgB9LEE0fd2H1K80zuLBNmQ==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@ai-sdk/provider': '>=4.0.0'
+      '@ai-sdk/provider-utils': '>=5.0.0'
 
   ai@7.0.159:
     resolution: {integrity: sha512-4e/BwDoKJlMNYZaqERcTbGte+4TwroN9qKnCprog/XVfD9InzVPlhCviDhN452JIRrRsYg9BT0WsQ2C3Ds2mVQ==}
@@ -16297,6 +16310,11 @@ snapshots:
   agent-base@7.1.4: {}
 
   agent-cli-detector@0.1.7: {}
+
+  ai-fallback@3.0.0(@ai-sdk/provider-utils@5.0.72(zod@4.6.7))(@ai-sdk/provider@4.0.35):
+    dependencies:
+      '@ai-sdk/provider': 4.0.35
+      '@ai-sdk/provider-utils': 5.0.72(zod@4.6.7)
 
   ai@7.0.159(zod@4.6.7):
     dependencies:

@@ -79,6 +79,7 @@ catalog:
   '@types/pg': '8.23.1'
   '@vitest/coverage-v8': '5.0.5'
   'ai': '7.0.159'
+  ai-fallback: 3.0.0
   'bowser': '2.15.0'
   'bullmq': '6.5.3'
   'countries-and-timezones': '3.11.0'

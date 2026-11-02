@@ -61,6 +61,7 @@
     "@photostructure/tz-lookup": "catalog:",
     "@sentry/nestjs": "catalog:",
     "ai": "catalog:",
+    "ai-fallback": "catalog:",
     "argon2": "0.45.1",
     "bowser": "catalog:",
     "bullmq": "catalog:",

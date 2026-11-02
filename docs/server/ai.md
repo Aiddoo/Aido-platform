@@ -29,11 +29,19 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 | 키                         | 값                             | 기본                                   |
 | -------------------------- | ------------------------------ | -------------------------------------- |
-| `AI_MODEL_<TASK>`          | Gemini 모델 ID                 | `gemini-3.1-flash-lite`                |
+| `AI_MODEL_<TASK>`          | `<provider>:<model>`           | `google:gemini-3.1-flash-lite`         |
+| `AI_FALLBACK_MODEL`        | `<provider>:<model>`           | 없음(대체 모델 미사용)                 |
 | `AI_PROMPT_VERSION_<TASK>` | `v1` \| `v2`                   | `v2`                                   |
 | `AI_THINKING_<TASK>`       | `minimal` \| `low` \| `medium` | `PARSE_TODO`는 `minimal`, 나머지 `low` |
 
-`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`이다. 기본값은 `platform/config/schemas/ai.schema.ts`에 있다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰·시간·재시도 상한은 `application/services/parsing/ai-generation-policy.ts`에 있다.
+`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`이다. provider 없이 쓴 기존 값(`gemini-…`)은 `google:`로 읽는다. 기본값은 `platform/config/schemas/ai.schema.ts`에 있다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰·시간·재시도 상한은 `application/services/parsing/ai-generation-policy.ts`에 있다.
+
+## 공급자와 대체 모델
+
+- 모델은 `infrastructure/adapters/parsing/ai-model-registry.ts`가 AI SDK `createProviderRegistry`로 푼다. API 키가 있는 공급자만 등록하고, 작업의 기본 모델 공급자가 없으면 그 작업만 `isAvailable(task)`가 false다(파싱 AI_1301, 리포트 폴백, 제안 건너뜀). Application은 `AI_PROVIDER` port만 안다.
+- `AiSdkAdapter`는 `AI_FALLBACK_MODEL`이 있으면 요청마다 `ai-fallback`(`createFallback`)으로 기본→대체 순서를 묶는다. 넘기는 오류는 `APICallError.isRetryable`(429·5xx·네트워크)뿐이다. 400·safety 차단·전체 제한 시간 중단은 넘기지 않고, schema 검증은 모델 호출 밖이라 대체 모델까지 가지 않는다. 넘길 때 `ai.provider.fallback`(task·실패한 모델 ID·statusCode)을 남기고, 응답한 모델 ID는 `ai.generation.completed`의 `model`과 응답 `meta.model`이다. 요청마다 기본 모델부터 다시 시도한다.
+- 공급자 추가: 패키지(예: `@ai-sdk/anthropic`)를 설치하고 `createAiModelRegistry`에 키가 있을 때 등록한 뒤 `AI_MODEL_<TASK>=anthropic:<model>`을 설정한다. `thinkingConfig`·`safetySettings`는 `providerOptions.google`이라 다른 공급자에는 적용되지 않으므로 그 공급자의 추론·안전 옵션을 같은 호출에 추가한다.
+- 비용: 네 작업 모두 live eval로 고른 `gemini-3.1-flash-lite`(flash-lite 계열)를 쓴다. 설치된 `@ai-sdk/google` 타입에는 `gemini-3.5-flash-lite`도 있지만 가격·품질을 이 저장소에서 측정하지 않아 기본값을 바꾸지 않았다. 모든 호출은 작업별 `maxOutputTokens`(사고 토큰 포함)와 `thinkingLevel`을 보낸다. parse-todo는 `minimal`, 나머지는 품질 근거(위) 때문에 `low`다. 리포트·제안을 `minimal`로 낮추면 사고 토큰 비용은 줄지만 품질은 측정되지 않았으므로 live eval 뒤 env로 바꾼다.
 
 ## 오류·사용량
 

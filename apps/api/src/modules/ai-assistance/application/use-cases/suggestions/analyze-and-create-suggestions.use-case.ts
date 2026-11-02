@@ -71,7 +71,7 @@ export class AnalyzeAndCreateSuggestions {
       });
       return 0;
     }
-    if (!this.#dependencies.aiProvider.isAvailable()) {
+    if (!this.#dependencies.aiProvider.isAvailable("suggestion")) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,

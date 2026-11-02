@@ -79,6 +79,7 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 | REDIS_*                                                       | Redis backend 또는 drain 연결 설정                                                                                |
 | EXPO_ACCESS_TOKEN / RESEND_API_KEY                            | Expo / 이메일 공급자                                                                                              |
 | GOOGLE_GENERATIVE_AI_API_KEY                                  | 기존 Gemini 모델 공급자; 유료 호출은 별도 범위                                                                    |
+| AI_MODEL_<TASK> / AI_FALLBACK_MODEL                           | 선택. `google:<model>`, 기본 flash-lite·대체 없음                                                                 |
 | WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY     | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
 | RETENTION_ONBOARDING_V2_ENABLED                               | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL      | 운영 가입/결제 채널                                                                                               |
