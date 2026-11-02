@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SUBSCRIPTION_ENVIRONMENTS } from "../../../vocabulary/subscription.constants.js";
+
 /**
  * RevenueCat Webhook Event 스키마
  *
@@ -18,8 +20,10 @@ export const revenueCatEventSchema = z.looseObject({
   period_type: z.string().optional(),
   purchased_at_ms: z.number().optional(),
   expiration_at_ms: z.number().nullable().optional(),
+  /** BILLING_ISSUE에만 오는 스토어 결제 유예(billing grace)의 끝. 유예를 쓰지 않으면 null이다. */
+  grace_period_expiration_at_ms: z.number().nullable().optional(),
   store: z.string().optional(),
-  environment: z.enum(["SANDBOX", "PRODUCTION"]).optional(),
+  environment: z.enum(SUBSCRIPTION_ENVIRONMENTS).optional(),
   transaction_id: z.string().optional(),
   original_transaction_id: z.string().optional(),
   is_family_share: z.boolean().optional(),
@@ -41,3 +45,30 @@ export const revenueCatWebhookPayloadSchema = z.looseObject({
 });
 
 export type RevenueCatWebhookPayload = z.infer<typeof revenueCatWebhookPayloadSchema>;
+
+/**
+ * RevenueCat TRANSFER 이벤트. 구독자·구독 필드(app_user_id·product_id 등) 없이 구매를 넘겨준·넘겨받은
+ * app_user_id 목록만 온다. 다른 이벤트 스키마는 그대로 엄격하게 검증한다.
+ *
+ * @see https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
+ */
+export const revenueCatTransferEventSchema = z.looseObject({
+  id: z.string().optional(),
+  type: z.literal("TRANSFER"),
+  event_timestamp_ms: z.number().optional(),
+  store: z.string().optional(),
+  environment: z.enum(SUBSCRIPTION_ENVIRONMENTS).optional(),
+  transferred_from: z.array(z.string().min(1)),
+  transferred_to: z.array(z.string().min(1)).min(1),
+});
+
+export type RevenueCatTransferEvent = z.infer<typeof revenueCatTransferEventSchema>;
+
+export const revenueCatTransferWebhookPayloadSchema = z.looseObject({
+  api_version: z.string().optional(),
+  event: revenueCatTransferEventSchema,
+});
+
+export type RevenueCatTransferWebhookPayload = z.infer<
+  typeof revenueCatTransferWebhookPayloadSchema
+>;

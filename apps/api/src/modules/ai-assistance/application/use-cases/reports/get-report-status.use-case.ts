@@ -1,11 +1,12 @@
 import type { ReportStatus } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import {
+  assertEntitled,
+  type EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
 import { now } from "#api/shared/domain/date/utils/core";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
@@ -22,7 +23,7 @@ const REPORT_READY_TIME = "08:00";
  */
 interface GetReportStatusDependencies {
   readonly aiReportRepository: Pick<AiReportRepositoryPort, "findLatest">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
 }
 
@@ -35,10 +36,7 @@ export class GetReportStatus {
 
   /** timezone은 X-Timezone 헤더이며, 없으면 디스패치와 같은 저장 시간대를 쓴다. */
   async execute(userId: string, timezone: string | undefined): Promise<ReportStatus> {
-    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
-    if (!hasPremium) {
-      throw new ApplicationException(ErrorCode.AI_1308);
-    }
+    await assertEntitled(this.#dependencies.entitlementReader, userId, "AI_REPORT");
 
     const zone =
       timezone ?? (await this.#dependencies.localePreferenceReader.read(userId)).timezone;

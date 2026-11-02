@@ -1,14 +1,10 @@
-import {
-  SUBSCRIPTION_AI_PARSE_LIMITS,
-  SUBSCRIPTION_FOLLOW_LIMITS,
-  SUBSCRIPTION_TODO_CATEGORY_LIMITS,
-} from "@aido/api/vocabulary";
+import { PREMIUM_FEATURES } from "@aido/api/vocabulary";
 
 import {
   calculateRemainingLimit,
   Feature,
-  hasPremiumEntitlement,
   Resource,
+  resolveAccessTier,
   resolveEffectiveSubscriptionStatus,
   resolveFeatureLimit,
   resolvePremiumAccessDeadline,
@@ -23,8 +19,8 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
       // Given / When
       const limit = resolveFeatureLimit("USER", subscriptionStatus, Feature.AI_PARSE);
       // Then
-      expect(limit).toBe(SUBSCRIPTION_AI_PARSE_LIMITS.FREE);
-      expect(hasPremiumEntitlement("USER", subscriptionStatus)).toBe(false);
+      expect(limit).toBe(PREMIUM_FEATURES.AI_PARSE.free);
+      expect(resolveAccessTier("USER", subscriptionStatus)).toBe("FREE");
     },
   );
 
@@ -33,7 +29,7 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
     const activeLimit = resolveResourceLimit("USER", "ACTIVE", Resource.CATEGORY, 0);
     const adminLimit = resolveResourceLimit("ADMIN", "FREE", Resource.CATEGORY, 0);
     // Then
-    expect(activeLimit).toBe(SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE);
+    expect(activeLimit).toBe(PREMIUM_FEATURES.TODO_CATEGORY.premium);
     expect(adminLimit).toBeNull();
   });
 
@@ -53,7 +49,7 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
       // Given
       const deadline = resolvePremiumAccessDeadline({
         subscriptionExpiresAt: ENDS_AT,
-        renewingStoreExpiresAt: [],
+        storeEntitlements: [],
       });
 
       // When
@@ -67,7 +63,7 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
       // Given
       const deadline = resolvePremiumAccessDeadline({
         subscriptionExpiresAt: ENDS_AT,
-        renewingStoreExpiresAt: [ENDS_AT],
+        storeEntitlements: [{ status: "ACTIVE", expiresAt: ENDS_AT }],
       });
 
       // When
@@ -88,11 +84,31 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
       expect(statuses).toEqual(["ACTIVE", "EXPIRED"]);
     });
 
+    it("결제 유예 중인 스토어 구독은 취소 상태여도 유예가 끝날 때까지 프리미엄이다", () => {
+      // Given
+      const graceEndsAt = new Date("2028-03-14T00:00:00.000Z");
+      const deadline = resolvePremiumAccessDeadline({
+        subscriptionExpiresAt: ENDS_AT,
+        storeEntitlements: [
+          { status: "CANCELLED", expiresAt: ENDS_AT, gracePeriodEndsAt: graceEndsAt },
+        ],
+      });
+
+      // When
+      const statuses = [
+        resolveEffectiveSubscriptionStatus("ACTIVE", deadline, new Date(graceEndsAt.getTime() - 1)),
+        resolveEffectiveSubscriptionStatus("ACTIVE", deadline, graceEndsAt),
+      ];
+
+      // Then
+      expect(statuses).toEqual(["ACTIVE", "EXPIRED"]);
+    });
+
     it("만료 시각이 없는 projection과 ACTIVE가 아닌 상태는 그대로 둔다", () => {
       // Given
       const deadline = resolvePremiumAccessDeadline({
         subscriptionExpiresAt: null,
-        renewingStoreExpiresAt: [ENDS_AT],
+        storeEntitlements: [{ status: "ACTIVE", expiresAt: ENDS_AT }],
       });
 
       // When
@@ -120,7 +136,7 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
     const adminLimit = resolveResourceLimit("ADMIN", "FREE", Resource.FRIEND, bonus);
 
     // Then
-    expect(freeLimit).toBe(SUBSCRIPTION_FOLLOW_LIMITS.FREE + bonus);
+    expect(freeLimit).toBe(PREMIUM_FEATURES.FRIEND.free + bonus);
     expect(adminLimit).toBeNull();
   });
 
@@ -130,12 +146,12 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
     {
       role: "USER" as const,
       status: "CANCELLED" as const,
-      expected: SUBSCRIPTION_FOLLOW_LIMITS.FREE + 2,
+      expected: PREMIUM_FEATURES.FRIEND.free + 2,
     },
     {
       role: "USER" as const,
       status: "EXPIRED" as const,
-      expected: SUBSCRIPTION_FOLLOW_LIMITS.FREE + 2,
+      expected: PREMIUM_FEATURES.FRIEND.free + 2,
     },
   ])(
     "$role·$status 사용자의 친구 자리 보너스 2개를 더한 한도는 $expected다",

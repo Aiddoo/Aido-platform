@@ -27,6 +27,7 @@ import {
   premiumAccessReaderProvider,
   premiumGranterProvider,
   sweepPremiumGrantsProvider,
+  revokePremiumGrantProvider,
 } from "./billing-subscriptions-application.providers.js";
 import { PremiumGrantNotifierAdapter } from "./infrastructure/adapters/subscriptions/premium-grant-notifier.adapter.js";
 import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscriptions/subscription-cache.adapter.js";
@@ -75,6 +76,7 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     premiumAccessReaderProvider,
     premiumGranterProvider,
     sweepPremiumGrantsProvider,
+    revokePremiumGrantProvider,
     notifyEndingPremiumGrantsProvider,
     { provide: PREMIUM_GRANTER, useExisting: PremiumGranter },
     { provide: PREMIUM_ACCESS_READER, useExisting: PremiumAccessReader },

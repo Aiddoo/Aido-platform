@@ -150,9 +150,40 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       storedSubscriptionExpiry: subscription?.expiresAt.toISOString(),
       userStatus: user?.subscriptionStatus,
       userExpiry: user?.subscriptionExpiresAt?.toISOString() ?? null,
-      premiumAccess: await entitlement.hasPremiumAccess(userId),
+      premiumAccess: await entitlement.can(userId, "AI_REPORT"),
     };
   }
+
+  it("SANDBOX 구매도 프리미엄을 주고 구독 행·처리 원장에 결제 환경을 남긴다", async () => {
+    // Given
+    const sandboxTransactionId = "billing-sandbox-transaction";
+    const body = SubscriptionEventBuilder.initialPurchase()
+      .withAppUserId(userId)
+      .withOriginalTransactionId(sandboxTransactionId)
+      .withTransactionId(sandboxTransactionId)
+      .withEventId("sandbox-purchase")
+      .withPurchasedAtMs(at.getTime())
+      .withExpirationAtMs(nextExpiry.getTime())
+      .withEnvironment("SANDBOX")
+      .build();
+
+    // When
+    await useCase.execute({ body });
+
+    // Then
+    const stored = await client.query.subscription.findFirst({
+      columns: { environment: true },
+      where: { revenueCatId: sandboxTransactionId },
+    });
+    const receipt = await client.query.subscriptionEventReceipt.findFirst({
+      columns: { environment: true },
+      where: { eventId: "sandbox-purchase" },
+    });
+    expect(stored?.environment).toBe("SANDBOX");
+    expect(receipt?.environment).toBe("SANDBOX");
+    expect(events.at(-1)?.environment).toBe("SANDBOX");
+    expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
+  });
 
   it("A 만료→B 갱신→동일 A 재전송은 최신 프리미엄 권한을 유지해야 한다", async () => {
     // Given
@@ -271,7 +302,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     });
     expect(await client.select().from(subscriptionEventReceipt)).toHaveLength(1);
     expect(events).toHaveLength(1);
-    expect(await entitlement.hasPremiumAccess(userId)).toBe(true);
+    expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
   });
 
   it("구독 INSERT의 실제 FK 오류는 처리 원장도 rollback하며 같은 이벤트를 다시 처리할 수 있다", async () => {
@@ -424,7 +455,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Given
     await givenActiveUserProjection();
     await givenOtherSubscription();
-    expect(await entitlement.hasPremiumAccess(userId)).toBe(true);
+    expect(await entitlement.can(userId, "AI_REPORT")).toBe(true);
     const body = builder()
       .withAppUserId(userId)
       .withOriginalTransactionId(transactionId)
@@ -546,9 +577,24 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
     // Then
     expect(sortBy(entitlements, [(entitlement) => entitlement.revenueCatId])).toEqual([
-      { revenueCatId: transactionId, status: "ACTIVE", expiresAt: previousExpiry },
-      { revenueCatId: "other-subscription-chain", status: "CANCELLED", expiresAt: nextExpiry },
-      { revenueCatId: "shorter-other", status: "ACTIVE", expiresAt: shorterExpiry },
+      {
+        revenueCatId: transactionId,
+        status: "ACTIVE",
+        expiresAt: previousExpiry,
+        gracePeriodEndsAt: null,
+      },
+      {
+        revenueCatId: "other-subscription-chain",
+        status: "CANCELLED",
+        expiresAt: nextExpiry,
+        gracePeriodEndsAt: null,
+      },
+      {
+        revenueCatId: "shorter-other",
+        status: "ACTIVE",
+        expiresAt: shorterExpiry,
+        gracePeriodEndsAt: null,
+      },
     ]);
   });
 

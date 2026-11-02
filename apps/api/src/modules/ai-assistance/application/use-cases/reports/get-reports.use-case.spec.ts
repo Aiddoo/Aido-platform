@@ -41,11 +41,11 @@ describe("GetReports", () => {
     useCase = unit;
     mockRepository = getReportsDependencies.aiReportRepository;
     mockEntitlement = getReportsDependencies.entitlementReader;
-    mockEntitlement.hasPremiumAccess.mockResolvedValue(true);
+    mockEntitlement.can.mockResolvedValue(true);
   });
 
   it("비프리미엄이면 조회 없이 예외를 전파해야 한다", async () => {
-    mockEntitlement.hasPremiumAccess.mockResolvedValue(false);
+    mockEntitlement.can.mockResolvedValue(false);
 
     await expect(useCase.execute("user-123", { type: "WEEKLY", limit: 10 })).rejects.toBeInstanceOf(
       ApplicationException,

@@ -43,11 +43,11 @@ describe("GetPendingSuggestions", () => {
     repo = getPendingSuggestionsDependencies.repository;
     entitlement = getPendingSuggestionsDependencies.entitlementReader;
 
-    entitlement.hasPremiumAccess.mockResolvedValue(true);
+    entitlement.can.mockResolvedValue(true);
   });
 
   it("비프리미엄 사용자면 AI_1309 예외를 던지고 조회하지 않아야 한다", async () => {
-    entitlement.hasPremiumAccess.mockResolvedValue(false);
+    entitlement.can.mockResolvedValue(false);
 
     await expect(useCase.execute(mockUserId)).rejects.toBeInstanceOf(ApplicationException);
     expect(repo.findPendingByUserId).not.toHaveBeenCalled();

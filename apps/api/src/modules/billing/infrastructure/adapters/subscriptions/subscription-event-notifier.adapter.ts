@@ -1,4 +1,3 @@
-import type { RevenueCatWebhookPayload } from "@aido/api";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 
@@ -8,10 +7,14 @@ import {
   type AdminNotifier,
   PAYMENT_NOTIFIER,
 } from "#api/modules/operations/operations-notifications.public";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { SENTRY_DOMAIN, SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
 import { maskUserId } from "#api/shared/domain/utils/mask.util";
 
-import type { SubscriptionEventNotifierPort } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
+import type {
+  SubscriptionEventNotifierPort,
+  WebhookFailureContext,
+} from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
 
 /**
@@ -31,35 +34,48 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     private readonly notificationQueueService: NotificationQueueService,
     @Inject(PAYMENT_NOTIFIER)
     private readonly paymentNotifier: AdminNotifier,
+    private readonly config: TypedConfigService,
   ) {}
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-    this.adminEventNotifier.notifySubscriptionEvent(payload);
+    const projectId = this.config.get("REVENUECAT_PROJECT_ID");
+    this.adminEventNotifier.notifySubscriptionEvent(
+      projectId == null || payload.appUserId == null
+        ? payload
+        : {
+            ...payload,
+            revenueCatCustomerUrl: `https://app.revenuecat.com/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(payload.appUserId)}`,
+          },
+    );
   }
 
   notifyBillingIssue(userId: string): void {
     this.notificationQueueService.enqueueBillingIssue({ userId });
   }
 
-  reportWebhookFailure(error: unknown, payload: RevenueCatWebhookPayload): void {
+  reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
     // 1. Sentry 태깅 캡처 (결제 도메인 컨텍스트)
     Sentry.withScope((scope) => {
       scope.setTag(SENTRY_TAG.DOMAIN, SENTRY_DOMAIN.PAYMENT);
-      scope.setTag(SENTRY_TAG.WEBHOOK_EVENT_TYPE, payload.event.type);
-      scope.setTag(SENTRY_TAG.WEBHOOK_STORE, payload.event.store ?? "unknown");
-      scope.setExtra(SENTRY_EXTRA.WEBHOOK_APP_USER_ID, maskUserId(payload.event.app_user_id));
-      scope.setExtra(SENTRY_EXTRA.WEBHOOK_PRODUCT_ID, payload.event.product_id);
-      scope.setExtra(SENTRY_EXTRA.WEBHOOK_EVENT_ID, payload.event.id);
+      scope.setTag(SENTRY_TAG.WEBHOOK_EVENT_TYPE, context.eventType);
+      scope.setTag(SENTRY_TAG.WEBHOOK_STORE, context.store ?? "unknown");
+      if (context.appUserId != null) {
+        scope.setExtra(SENTRY_EXTRA.WEBHOOK_APP_USER_ID, maskUserId(context.appUserId));
+      }
+      if (context.productId != null) {
+        scope.setExtra(SENTRY_EXTRA.WEBHOOK_PRODUCT_ID, context.productId);
+      }
+      scope.setExtra(SENTRY_EXTRA.WEBHOOK_EVENT_ID, context.eventId);
       Sentry.captureException(error);
     });
 
     // 2. Discord 관리자 알림 (fire-and-forget)
-    this.#notifyWebhookError(error, payload).catch((e) =>
+    this.#notifyWebhookError(error, context).catch((e) =>
       this.#logger.warn(`Failed to send webhook error notification: ${e}`),
     );
   }
 
-  async #notifyWebhookError(error: unknown, payload: RevenueCatWebhookPayload): Promise<void> {
+  async #notifyWebhookError(error: unknown, context: WebhookFailureContext): Promise<void> {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     await this.paymentNotifier.send({
@@ -74,17 +90,17 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
         },
         {
           name: "이벤트 타입",
-          value: payload.event.type,
+          value: context.eventType,
           inline: true,
         },
         {
           name: "사용자 ID",
-          value: payload.event.app_user_id,
+          value: context.appUserId ?? "-",
           inline: true,
         },
         {
           name: "상품",
-          value: payload.event.product_id,
+          value: context.productId ?? "-",
           inline: true,
         },
       ],

@@ -3,7 +3,10 @@ import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
 import { z } from "zod";
 
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import {
+  type EntitlementReaderPort,
+  premiumFeatureDenied,
+} from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -45,7 +48,7 @@ export interface SuggestionActionResult {
 interface HandleSuggestionActionDependencies {
   readonly repository: Pick<AiSuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
   readonly recurringTodoCreator: Pick<RecurringTodoCreatorPort, "createRecurring">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
@@ -141,9 +144,9 @@ export class HandleSuggestionAction {
   }
 
   async #enforcePremium(userId: string): Promise<void> {
-    if (!(await this.#dependencies.entitlementReader.hasPremiumAccessInTx(userId))) {
+    if (!(await this.#dependencies.entitlementReader.canInTx(userId, "AI_SUGGESTION"))) {
       this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
-      throw new ApplicationException(ErrorCode.AI_1309);
+      throw premiumFeatureDenied("AI_SUGGESTION");
     }
   }
 }

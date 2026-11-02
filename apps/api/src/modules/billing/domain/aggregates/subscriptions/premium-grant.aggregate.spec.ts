@@ -7,6 +7,7 @@ function createGrant(overrides: Partial<PremiumGrantProps> = {}): PremiumGrant {
     source: "INVITE",
     sourceKey: "invite:redemption-1:user-1",
     durationDays: 7,
+    durationMs: null,
     status: "BANKED",
     startsAt: null,
     endsAt: null,
@@ -160,6 +161,7 @@ describe("PremiumGrant", () => {
       source: "INVITE",
       sourceKey: "rebank:grant-1",
       durationDays: 5,
+      durationMs: 5 * 24 * 60 * 60 * 1_000,
       status: "BANKED",
       startsAt: null,
       endsAt: null,
@@ -171,6 +173,34 @@ describe("PremiumGrant", () => {
       endsAt: at,
     });
     expect(grant.splitAt(at)).toBeNull();
+  });
+
+  it("같은 기간을 두 번 끊어도 일수를 올림한 만큼 늘지 않고 남은 ms 그대로 이어진다", () => {
+    // Given
+    const DAY_MS = 24 * 60 * 60 * 1_000;
+    const grant = createGrant({
+      status: "ACTIVE",
+      startsAt: new Date("2028-02-26T00:00:00.000Z"),
+      endsAt: new Date("2028-03-04T00:00:00.000Z"),
+    });
+    const firstCutAt = new Date("2028-02-27T21:00:00.000Z");
+    const first = grant.splitAt(firstCutAt);
+    const remainder = createGrant({
+      id: "grant-2",
+      durationDays: first?.durationDays ?? 0,
+      durationMs: first?.durationMs ?? null,
+    });
+    const resumedAt = new Date("2028-03-10T00:00:00.000Z");
+    remainder.activate(resumedAt);
+    const resumedEndsAt = remainder.endsAt;
+
+    // When
+    const second = remainder.splitAt(new Date("2028-03-11T09:00:00.000Z"));
+
+    // Then 7일 중 1일 21시간을 써서 5일 3시간, 다시 1일 9시간을 써서 3일 18시간 남는다
+    expect(first).toMatchObject({ durationDays: 6, durationMs: 5 * DAY_MS + 3 * 3_600_000 });
+    expect(resumedEndsAt).toEqual(new Date(resumedAt.getTime() + 5 * DAY_MS + 3 * 3_600_000));
+    expect(second).toMatchObject({ durationDays: 4, durationMs: 3 * DAY_MS + 18 * 3_600_000 });
   });
 
   it.each([
@@ -201,5 +231,53 @@ describe("PremiumGrant", () => {
     // Then
     expect(remainder).toBeNull();
     expect(grant.status).toBe(overrides.status ?? "BANKED");
+  });
+
+  describe("revoke", () => {
+    const AT = new Date("2028-02-26T09:00:00.000Z");
+
+    it("쌓아 둔 기간은 시작 시각 없이 REVOKED가 되고 다시 취소하면 false다", () => {
+      // Given
+      const grant = createGrant();
+
+      // When
+      const results = [grant.revoke(AT), grant.revoke(AT)];
+
+      // Then
+      expect(results).toEqual([true, false]);
+      expect(grant.toPersistence()).toEqual({ status: "REVOKED", startsAt: null, endsAt: null });
+    });
+
+    it("진행 중인 기간은 취소 시각에 끝낸다", () => {
+      // Given
+      const startsAt = new Date("2028-02-25T09:00:00.000Z");
+      const grant = createGrant({
+        status: "ACTIVE",
+        startsAt,
+        endsAt: new Date("2028-03-03T09:00:00.000Z"),
+      });
+
+      // When
+      const revoked = grant.revoke(AT);
+
+      // Then
+      expect(revoked).toBe(true);
+      expect(grant.toPersistence()).toEqual({ status: "REVOKED", startsAt, endsAt: AT });
+    });
+
+    it.each([
+      { status: "ENDED" as const, endsAt: new Date("2028-02-20T00:00:00.000Z") },
+      { status: "ACTIVE" as const, endsAt: new Date("2028-02-26T09:00:00.000Z") },
+    ])("이미 끝난 $status 기간은 바꾸지 않는다", ({ status, endsAt }) => {
+      // Given
+      const grant = createGrant({ status, startsAt: new Date("2028-02-19T00:00:00.000Z"), endsAt });
+
+      // When
+      const revoked = grant.revoke(AT);
+
+      // Then
+      expect(revoked).toBe(false);
+      expect(grant.status).toBe(status);
+    });
   });
 });

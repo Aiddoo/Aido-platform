@@ -8,6 +8,8 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 import { CHEER_LIMIT_READER } from "./application/ports/cheers/cheer-limit-reader.port.js";
 import { CHEER_NOTIFIER } from "./application/ports/cheers/cheer-notifier.port.js";
 import { CHEER_REPOSITORY } from "./application/ports/cheers/cheer.repository.port.js";
+import { CHEER_USAGE_READER } from "./application/ports/quotas/daily-send-usage-reader.port.js";
+import { DailySendUsageReader } from "./application/services/quotas/daily-send-usage.reader.js";
 import { GetCheerCooldown } from "./application/use-cases/cheers/get-cheer-cooldown.use-case.js";
 import { GetCheerLimit } from "./application/use-cases/cheers/get-cheer-limit.use-case.js";
 import { GetReceivedCheers } from "./application/use-cases/cheers/get-received-cheers.use-case.js";
@@ -112,4 +114,11 @@ export const getCheerCooldownProvider: FactoryProvider<GetCheerCooldown> = {
   useFactory: (
     cheerRepository: ConstructorParameters<typeof GetCheerCooldown>[0]["cheerRepository"],
   ) => new GetCheerCooldown({ cheerRepository }),
+};
+
+export const cheerUsageReaderProvider: FactoryProvider<DailySendUsageReader> = {
+  provide: CHEER_USAGE_READER,
+  inject: [CHEER_REPOSITORY],
+  useFactory: (sentCounter: ConstructorParameters<typeof DailySendUsageReader>[0]["sentCounter"]) =>
+    new DailySendUsageReader({ sentCounter }),
 };

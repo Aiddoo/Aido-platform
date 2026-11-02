@@ -1,0 +1,173 @@
+import { ConfigService } from "@nestjs/config";
+
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
+import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
+import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { CacheService } from "#api/platform/cache/cache.service";
+import type { EnvConfig } from "#api/platform/config/schemas/index";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { subscription, user, userPreference } from "#api/platform/database/schema/index";
+import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
+import { UserPreferenceBuilder } from "#test/builders/index";
+import { UserFixture } from "#test/fixtures/user.fixture";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
+import { suppressLogger } from "#test/setup/suppress-logger";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+
+const HOUR_MS = 60 * 60_000;
+const DAY_MS = 24 * HOUR_MS;
+const TODAY = new Date("2026-11-03T00:00:00.000Z");
+const TOMORROW = new Date("2026-11-04T00:00:00.000Z");
+
+type Scenario =
+  | "expiredProjection"
+  | "renewingInGrace"
+  | "renewingAfterGrace"
+  | "cancelledStoreExpired"
+  | "cancelledInBillingGrace"
+  | "billingGraceEnded"
+  | "noDeadline"
+  | "futureProjection"
+  | "admin"
+  | "free";
+
+describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreSQL)", () => {
+  const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 2 }) });
+  let client: TestDatabaseClient;
+  let memory: InMemoryCacheAdapter;
+  let reader: DrizzleSchedulerReader;
+  let entitlement: EntitlementService;
+  let userIds: Record<Scenario, string>;
+
+  beforeAll(async () => {
+    client = await database.start();
+    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 10 });
+    const { txHost } = createDatabaseTransactionFixture(client);
+    reader = new DrizzleSchedulerReader(
+      txHost,
+      new CacheService(memory),
+      new TypedConfigService(new ConfigService<EnvConfig, true>({})),
+    );
+    entitlement = new EntitlementService({
+      cacheService: { wrapSubscription: (_userId, factory) => factory() },
+      database: new DrizzleEntitlementReader(txHost),
+    });
+  });
+
+  beforeEach(async () => {
+    suppressLogger();
+    await database.cleanup();
+    const now = Date.now();
+    const at = (offsetMs: number) => new Date(now + offsetMs);
+    userIds = {
+      expiredProjection: createEntityId(),
+      renewingInGrace: createEntityId(),
+      renewingAfterGrace: createEntityId(),
+      cancelledStoreExpired: createEntityId(),
+      cancelledInBillingGrace: createEntityId(),
+      billingGraceEnded: createEntityId(),
+      noDeadline: createEntityId(),
+      futureProjection: createEntityId(),
+      admin: createEntityId(),
+      free: createEntityId(),
+    };
+    const active = (id: string, subscriptionExpiresAt: Date | null) =>
+      UserFixture.create({ id, subscriptionStatus: "ACTIVE", subscriptionExpiresAt });
+    await client
+      .insert(user)
+      .values([
+        active(userIds.expiredProjection, at(-4 * HOUR_MS)),
+        active(userIds.renewingInGrace, at(-HOUR_MS)),
+        active(userIds.renewingAfterGrace, at(-STORE_RENEWAL_GRACE_MS - HOUR_MS)),
+        active(userIds.cancelledStoreExpired, at(-HOUR_MS)),
+        active(userIds.cancelledInBillingGrace, at(-5 * DAY_MS)),
+        active(userIds.billingGraceEnded, at(-20 * DAY_MS)),
+        active(userIds.noDeadline, null),
+        active(userIds.futureProjection, at(24 * HOUR_MS)),
+        UserFixture.create({ id: userIds.admin, role: "ADMIN" }),
+        UserFixture.create({ id: userIds.free }),
+      ]);
+    const store = (
+      userId: string,
+      status: "ACTIVE" | "CANCELLED",
+      expiresAt: Date,
+      gracePeriodEndsAt: Date | null = null,
+    ) => ({
+      userId,
+      revenueCatId: `store-${userId}`,
+      productId: "premium_monthly",
+      status,
+      startedAt: at(-30 * 24 * HOUR_MS),
+      expiresAt,
+      gracePeriodEndsAt,
+    });
+    await client.insert(subscription).values([
+      store(userIds.renewingInGrace, "ACTIVE", at(-HOUR_MS)),
+      store(userIds.renewingAfterGrace, "ACTIVE", at(-STORE_RENEWAL_GRACE_MS - HOUR_MS)),
+      store(userIds.cancelledStoreExpired, "CANCELLED", at(-HOUR_MS)),
+      // 결제 실패(BILLING_ISSUE + CANCELLATION) 뒤 스토어 결제 유예 10일째
+      store(userIds.cancelledInBillingGrace, "CANCELLED", at(-5 * DAY_MS), at(5 * DAY_MS)),
+      store(userIds.billingGraceEnded, "ACTIVE", at(-20 * DAY_MS), at(-HOUR_MS)),
+    ]);
+    await client
+      .insert(userPreference)
+      .values(Object.values(userIds).map((id) => UserPreferenceBuilder.create(id).build()));
+  });
+
+  afterAll(async () => {
+    memory.onModuleDestroy();
+    await database.stop();
+  });
+
+  const premium: Scenario[] = [
+    "renewingInGrace",
+    "cancelledInBillingGrace",
+    "noDeadline",
+    "futureProjection",
+    "admin",
+  ];
+  const free: Scenario[] = [
+    "expiredProjection",
+    "renewingAfterGrace",
+    "cancelledStoreExpired",
+    "billingGraceEnded",
+    "free",
+  ];
+
+  it("만료가 지난 ACTIVE projection은 무료 대상이고 자동 갱신 유예 안의 구독자는 프리미엄 대상이다", async () => {
+    // When
+    const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
+    const premiumMorning = await reader.findPremiumMorningReminderUsers({
+      tz: "UTC",
+      hour: 8,
+      minute: 0,
+      today: TODAY,
+      tomorrow: TOMORROW,
+    });
+
+    // Then
+    expect([...freeIds].sort()).toEqual(free.map((scenario) => userIds[scenario]).sort());
+    expect(premiumMorning.map((row) => row.id).sort()).toEqual(
+      premium.map((scenario) => userIds[scenario]).sort(),
+    );
+  });
+
+  it("SQL 조건은 모든 경우에 EntitlementService의 프리미엄 판단과 같다", async () => {
+    // When
+    const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
+    const decisions = await Promise.all(
+      Object.entries(userIds).map(async ([scenario, id]) => ({
+        scenario,
+        sql: !freeIds.has(id),
+        service: await entitlement.canInTx(id, "AI_REPORT"),
+      })),
+    );
+
+    // Then
+    for (const decision of decisions) {
+      expect(decision.sql, decision.scenario).toBe(decision.service);
+    }
+  });
+});

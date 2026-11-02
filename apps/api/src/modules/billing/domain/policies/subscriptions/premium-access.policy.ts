@@ -5,10 +5,9 @@ import {
   type PremiumSource,
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
-import { match } from "ts-pattern";
 
 import { addDays, addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { storeRenewalGraceEndsAt } from "#api/shared/domain/store-renewal-grace";
+import { storeEntitlementEndsAt, storePeriodEndsAt } from "#api/shared/domain/store-renewal-grace";
 
 import type { SubscriptionStatusValue } from "../../aggregates/subscriptions/subscription.aggregate.js";
 
@@ -27,6 +26,8 @@ const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
 export interface StoreEntitlement {
   readonly status: SubscriptionStatusValue;
   readonly expiresAt: Date;
+  /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
+  readonly gracePeriodEndsAt?: Date | null;
 }
 
 /** 스토어 구독 행과 그 거래 체인 ID */
@@ -39,6 +40,8 @@ export interface PremiumGrantTerm {
   readonly id: string;
   readonly status: PremiumGrantStatusValue;
   readonly durationDays: number;
+  /** 진행 중에 끊고 남은 기간의 정확한 길이. 비우면 durationDays일이다. */
+  readonly durationMs?: number | null;
   readonly startsAt: Date | null;
   readonly endsAt: Date | null;
   readonly createdAt: Date;
@@ -88,16 +91,42 @@ export function premiumGrantEndsAt(startsAt: Date, durationDays: number): Date {
   return addDays(durationDays, startsAt);
 }
 
-/** 웹훅이 방금 판단한 체인 상태. 만료 시각을 비우면 행의 값을 쓰고 null이면 엔타이틀먼트가 없다. */
+/** 기간의 실제 길이(ms). 끊고 남은 기간은 일 단위로 올리지 않은 정확한 길이다. */
+export function premiumGrantDurationMs(
+  grant: Pick<PremiumGrantTerm, "durationDays" | "durationMs">,
+): number {
+  return grant.durationMs ?? grant.durationDays * DAY_MS;
+}
+
+/** 이 시각에 시작하면 끝나는 시각 */
+export function premiumGrantTermEndsAt(
+  startsAt: Date,
+  grant: Pick<PremiumGrantTerm, "durationDays" | "durationMs">,
+): Date {
+  return grant.durationMs == null
+    ? premiumGrantEndsAt(startsAt, grant.durationDays)
+    : addMilliseconds(grant.durationMs, startsAt);
+}
+
+/** 기간 길이(ms)를 표시용 일수로 바꾼다. 남은 1ms도 1일로 보여 사용자가 기간을 잃었다고 보지 않게 한다. */
+export function premiumGrantDaysOf(durationMs: number): number {
+  return Math.ceil(durationMs / DAY_MS);
+}
+
+/**
+ * 웹훅이 방금 판단한 체인 상태. 만료 시각·결제 유예를 비우면 행의 값을 쓰고, 만료 시각이 null이면
+ * 엔타이틀먼트가 없다.
+ */
 export interface StoreEventChainState {
   readonly revenueCatId: string;
   readonly status: SubscriptionStatusValue;
   readonly expiresAt?: Date | null;
+  readonly gracePeriodEndsAt?: Date | null;
 }
 
 /**
  * TRANSFER·다른 사용자의 체인 이벤트로 옮겨 간 행은 소유자가 바뀌어 읽히지 않으므로 남은 행을 그대로 믿는다.
- * 이번 이벤트의 체인은 행 대신 이벤트가 정한 상태로 본다(일반 취소의 grace·환불 즉시 종료).
+ * 이번 이벤트의 체인은 행 대신 이벤트가 정한 상태로 본다(일반 취소는 만료 시각까지·환불은 즉시 종료).
  */
 export function applyStoreEventChain(
   subscriptions: readonly StoreSubscriptionEntitlement[],
@@ -107,14 +136,21 @@ export function applyStoreEventChain(
     if (subscription.revenueCatId !== eventChain?.revenueCatId) {
       return [subscription];
     }
-    if (eventChain.expiresAt == null) {
+    // nullish-strict: null은 엔타이틀먼트 없음, 생략(만료 시각 없는 UNCANCELLATION·PRODUCT_CHANGE·SUBSCRIPTION_EXTENDED)은 행의 만료 시각 유지
+    if (eventChain.expiresAt === null) {
       return [];
     }
+    // nullish-strict: 생략은 행의 결제 유예 유지, null은 유예 없음
+    const gracePeriodEndsAt =
+      eventChain.gracePeriodEndsAt === undefined
+        ? (subscription.gracePeriodEndsAt ?? null)
+        : eventChain.gracePeriodEndsAt;
     return [
       {
         revenueCatId: subscription.revenueCatId,
         status: eventChain.status,
         expiresAt: eventChain.expiresAt ?? subscription.expiresAt,
+        gracePeriodEndsAt,
       },
     ];
   });
@@ -122,14 +158,12 @@ export function applyStoreEventChain(
 
 /**
  * 취소했어도 만료 전이면 스토어 엔타이틀먼트가 남아 있다.
- * 자동 갱신 중인 구독은 갱신·만료 웹훅을 기다리도록 만료 뒤 유예 시간까지 유효하다.
+ * 자동 갱신 중인 구독은 갱신·만료 웹훅을 기다리도록 만료 뒤 유예 시간까지, 결제 유예 중이면 그 끝까지
+ * 유효하다(storeEntitlementEndsAt). SQL 조건도 같은 규칙이다.
  */
 export function isStoreEntitlementValid(subscription: StoreEntitlement, now: Date): boolean {
-  return match(subscription.status)
-    .with("ACTIVE", () => storeRenewalGraceEndsAt(subscription.expiresAt).getTime() > now.getTime())
-    .with("CANCELLED", () => subscription.expiresAt.getTime() > now.getTime())
-    .with("FREE", "EXPIRED", () => false)
-    .exhaustive();
+  const endsAt = storeEntitlementEndsAt(subscription);
+  return endsAt != null && endsAt.getTime() > now.getTime();
 }
 
 /** 다음 결제가 예정된 구독. 취소하면 CANCELLED로 바뀐다. */
@@ -161,24 +195,22 @@ function isInProgress(grant: PremiumGrantTerm, now: Date): boolean {
 }
 
 /**
- * 진행 중인 기간을 지금 끊으면 남는 일수. 일 단위로만 쌓아 둘 수 있어 남은 시간을 올림해
- * 사용자가 기간을 잃지 않게 한다(남은 1ms도 1일).
+ * 진행 중인 기간을 지금 끊으면 남는 정확한 길이(ms). 일수로 올리지 않아 같은 기간을 여러 번 끊어도
+ * 기간이 늘거나 줄지 않는다. 표시 일수는 premiumGrantDaysOf로 한 번만 올린다.
  */
-export function remainingPremiumGrantDays(grant: PremiumGrantTerm, now: Date): number {
+export function remainingPremiumGrantMs(grant: PremiumGrantTerm, now: Date): number {
   if (grant.endsAt == null || grant.endsAt.getTime() <= now.getTime()) {
     return 0;
   }
-  return Math.ceil((grant.endsAt.getTime() - now.getTime()) / DAY_MS);
+  return grant.endsAt.getTime() - now.getTime();
 }
 
 /**
- * 스토어 구독이 보상 기간에 자리를 넘기는 시각. 자동 갱신 중이면 갱신 웹훅을 기다리는 유예까지,
- * 취소·만료했으면 만료 시각까지 스토어가 프리미엄을 맡는다.
+ * 스토어 구독이 보상 기간에 자리를 넘기는 시각. 엔타이틀먼트가 끝나는 시각(웹훅 대기 유예·결제 유예
+ * 포함)이고, 만료한 구독은 만료 시각이다.
  */
 function storeHandoffAt(subscription: StoreEntitlement): Date {
-  return subscription.status === "ACTIVE"
-    ? storeRenewalGraceEndsAt(subscription.expiresAt)
-    : new Date(subscription.expiresAt);
+  return storeEntitlementEndsAt(subscription) ?? new Date(subscription.expiresAt);
 }
 
 /** 이 시각 이전에 끝나는 마지막 보상 기간을 지금 안내한다. */
@@ -210,7 +242,7 @@ function latestEndsAt(grants: readonly PremiumGrantTerm[]): Date | null {
 
 function chainBanked(startsAt: Date, banked: readonly PremiumGrantTerm[]): Date {
   return banked.reduce(
-    (endsAt, grant) => premiumGrantEndsAt(endsAt, grant.durationDays),
+    (endsAt, grant) => premiumGrantTermEndsAt(endsAt, grant),
     new Date(startsAt),
   );
 }
@@ -273,9 +305,9 @@ export const PremiumAccessPolicy = {
       entitlements.premiumGrants.filter((grant) => isPremiumGrantActive(grant, now)),
     );
     const banked = bankedInReceivedOrder(entitlements.premiumGrants);
-    const bankedDays = sumBy(banked, (grant) => grant.durationDays);
+    const bankedDays = premiumGrantDaysOf(sumBy(banked, premiumGrantDurationMs));
 
-    const storeEndsAt = latestOf(validStores.map((subscription) => subscription.expiresAt));
+    const storeEndsAt = latestOf(validStores.map(storePeriodEndsAt));
     if (storeEndsAt != null) {
       // 예전에 스토어와 겹쳐 시작한 기간이 남아 있으면 그 끝까지 프리미엄이다
       const periodEndsAt = latestOf([
@@ -365,7 +397,7 @@ export const PremiumAccessPolicy = {
     let startsAt = chainStartsAt(entitlements, banked, now);
     for (const grant of banked) {
       activations.push({ grantId: grant.id, startsAt });
-      const endsAt = premiumGrantEndsAt(startsAt, grant.durationDays);
+      const endsAt = premiumGrantTermEndsAt(startsAt, grant);
       if (endsAt.getTime() > now.getTime()) {
         break;
       }

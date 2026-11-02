@@ -1,8 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import {
+  type EntitlementReaderPort,
+  premiumFeatureDenied,
+} from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
@@ -15,7 +15,7 @@ import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-sugg
  */
 interface GetPendingSuggestionsDependencies {
   readonly repository: Pick<AiSuggestionRepositoryPort, "findPendingByUserId">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
   readonly logger: Pick<ApplicationLogger, "warn">;
 }
 
@@ -27,10 +27,9 @@ export class GetPendingSuggestions {
   }
 
   async execute(userId: string): Promise<Suggestion[]> {
-    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
-    if (!hasPremium) {
+    if (!(await this.#dependencies.entitlementReader.can(userId, "AI_SUGGESTION"))) {
       this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
-      throw new ApplicationException(ErrorCode.AI_1309);
+      throw premiumFeatureDenied("AI_SUGGESTION");
     }
 
     return this.#dependencies.repository.findPendingByUserId(userId);

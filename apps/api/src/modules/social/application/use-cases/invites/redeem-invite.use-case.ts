@@ -20,6 +20,7 @@ import {
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -415,7 +416,7 @@ export class RedeemInvite {
       this.#dependencies.logger.warn({
         event: SocialInviteLogEvent.JOINED_NOTIFICATION_FAILED,
         redemptionId: result.redemptionId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
   }

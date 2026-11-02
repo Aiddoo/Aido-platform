@@ -9,6 +9,8 @@ import { NUDGE_INTERACTION_CONFIG } from "./application/ports/nudges/nudge-inter
 import { NUDGE_LIMIT_READER } from "./application/ports/nudges/nudge-limit-reader.port.js";
 import { NUDGE_NOTIFIER } from "./application/ports/nudges/nudge-notifier.port.js";
 import { NUDGE_REPOSITORY } from "./application/ports/nudges/nudge.repository.port.js";
+import { NUDGE_USAGE_READER } from "./application/ports/quotas/daily-send-usage-reader.port.js";
+import { DailySendUsageReader } from "./application/services/quotas/daily-send-usage.reader.js";
 import { GetNudgeCooldown } from "./application/use-cases/nudges/get-nudge-cooldown.use-case.js";
 import { GetNudgeInteractionAvailability } from "./application/use-cases/nudges/get-nudge-interaction-availability.use-case.js";
 import { GetNudgeInteraction } from "./application/use-cases/nudges/get-nudge-interaction.use-case.js";
@@ -243,4 +245,11 @@ export const getRemindNudgeCooldownProvider: FactoryProvider<GetRemindNudgeCoold
   useFactory: (
     nudgeRepository: ConstructorParameters<typeof GetRemindNudgeCooldown>[0]["nudgeRepository"],
   ) => new GetRemindNudgeCooldown({ nudgeRepository }),
+};
+
+export const nudgeUsageReaderProvider: FactoryProvider<DailySendUsageReader> = {
+  provide: NUDGE_USAGE_READER,
+  inject: [NUDGE_REPOSITORY],
+  useFactory: (sentCounter: ConstructorParameters<typeof DailySendUsageReader>[0]["sentCounter"]) =>
+    new DailySendUsageReader({ sentCounter }),
 };

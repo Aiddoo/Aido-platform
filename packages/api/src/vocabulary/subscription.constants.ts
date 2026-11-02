@@ -42,6 +42,14 @@ export const REVENUECAT_STORES = [
 /** 알려진 스토어 유니온 (참조용). 실제 webhook은 이 외의 스토어도 수신 가능. */
 export type RevenueCatStore = (typeof REVENUECAT_STORES)[number] | (string & {});
 
+/**
+ * RevenueCat 이벤트의 결제 환경. SANDBOX는 TestFlight·App Review·개발 빌드의 테스트 결제다.
+ * 서버는 SANDBOX 구매에도 프리미엄을 준다(심사 중 결제 확인). 매출 집계에서만 뺀다.
+ */
+export const SUBSCRIPTION_ENVIRONMENTS = ["SANDBOX", "PRODUCTION"] as const;
+
+export type SubscriptionEnvironment = (typeof SUBSCRIPTION_ENVIRONMENTS)[number];
+
 /** 프리미엄의 출처. STORE는 스토어 구독, GRANT는 서버가 지급한 보상 기간이다. */
 export const PREMIUM_SOURCE = {
   STORE: "STORE",

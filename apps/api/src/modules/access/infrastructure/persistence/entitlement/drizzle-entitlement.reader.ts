@@ -21,14 +21,14 @@ export class DrizzleEntitlementReader implements EntitlementDatabasePort {
   constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
   async findUserState(userId: string): Promise<EntitlementUserState | null> {
-    // 자동 갱신 구독의 유예 시간은 행에서만 알 수 있어 같은 조회에 옮겨 가지 않은 ACTIVE 행을 붙인다
+    // 스토어 유예(웹훅 대기·결제 유예)는 행에서만 알 수 있어 같은 조회에 옮겨 가지 않은 행을 붙인다
     const row = await this.txHost.tx.query.user.findFirst({
       columns: { role: true, subscriptionStatus: true, subscriptionExpiresAt: true },
       where: { id: userId, status: "ACTIVE", deletedAt: { isNull: true } },
       with: {
         subscriptions: {
-          columns: { expiresAt: true },
-          where: { status: "ACTIVE", deletedAt: { isNull: true } },
+          columns: { status: true, expiresAt: true, gracePeriodEndsAt: true },
+          where: { status: { in: ["ACTIVE", "CANCELLED"] }, deletedAt: { isNull: true } },
         },
       },
     });
@@ -40,7 +40,7 @@ export class DrizzleEntitlementReader implements EntitlementDatabasePort {
       subscriptionStatus: row.subscriptionStatus,
       accessDeadline: resolvePremiumAccessDeadline({
         subscriptionExpiresAt: row.subscriptionExpiresAt,
-        renewingStoreExpiresAt: row.subscriptions.map((subscription) => subscription.expiresAt),
+        storeEntitlements: row.subscriptions,
       }),
     };
   }

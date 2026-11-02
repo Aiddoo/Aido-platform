@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../../vocabulary/auth.constants.js";
+import type { PremiumFeature } from "../../../vocabulary/premium-features.constants.js";
 import { PREMIUM_SOURCE } from "../../../vocabulary/subscription.constants.js";
 import { deviceTypeSchema, oauthProviderSchema } from "./auth.request.js";
 
@@ -115,6 +116,60 @@ export const premiumSourceSchema = z
   .enum(PREMIUM_SOURCE)
   .describe("프리미엄 출처 (STORE: 스토어 구독, GRANT: 서버가 지급한 보상 기간)");
 
+export const premiumFeatureEntitlementSchema = z
+  .object({
+    allowed: z
+      .boolean()
+      .describe(
+        "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+      ),
+    limit: z
+      .number()
+      .int()
+      .nonnegative()
+      .nullable()
+      .describe(
+        "횟수(quota)·개수(resource) 한도입니다. null은 무제한이고, 켜고 끄는 기능(flag)은 항상 null입니다. 친구 보너스 자리를 포함합니다.",
+      ),
+    used: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "지금 초기화 창에서 쓴 횟수입니다. 횟수 기능(AI_PARSE·CHEER·NUDGE)만 있습니다. 프리미엄이 끝나도 창 안의 사용량은 그대로 세고 한도만 바뀝니다.",
+      ),
+    resetsAt: datetimeSchema
+      .optional()
+      .describe(
+        "used가 0으로 돌아가는 다음 시각입니다 (ISO 8601 UTC). AI_PARSE는 KST 매월 1일 00:00, CHEER·NUDGE는 요청 X-Timezone 기준 다음 자정입니다.",
+      ),
+  })
+  .describe("유료 기능 하나의 현재 권한");
+
+export type PremiumFeatureEntitlement = z.infer<typeof premiumFeatureEntitlementSchema>;
+
+const premiumEntitlementShape = {
+  AI_PARSE: premiumFeatureEntitlementSchema,
+  CHEER: premiumFeatureEntitlementSchema,
+  NUDGE: premiumFeatureEntitlementSchema,
+  FRIEND: premiumFeatureEntitlementSchema,
+  TODO_CATEGORY: premiumFeatureEntitlementSchema,
+  AI_REPORT: premiumFeatureEntitlementSchema,
+  AI_SUGGESTION: premiumFeatureEntitlementSchema,
+  CUSTOM_REMINDER_TIME: premiumFeatureEntitlementSchema,
+  APP_ICON: premiumFeatureEntitlementSchema,
+} satisfies Record<PremiumFeature, typeof premiumFeatureEntitlementSchema>;
+
+/** 새 서버가 기능을 더해도 이전 앱이 응답을 거절하지 않도록 모르는 키를 허용한다. */
+export const premiumEntitlementsSchema = z
+  .looseObject(premiumEntitlementShape)
+  .describe(
+    "PREMIUM_FEATURES 카탈로그의 기능별 현재 권한입니다. ADMIN은 모든 기능이 allowed=true, limit=null입니다. 만료·자동 갱신 유예(3시간)를 반영한 서버 판단과 같습니다.",
+  );
+
+export type PremiumEntitlements = z.infer<typeof premiumEntitlementsSchema>;
+
 export const currentUserSchema = z
   .object({
     userId: z.cuid().describe("사용자 고유 ID"),
@@ -167,6 +222,17 @@ export const currentUserSchema = z
       .describe(
         "마지막 보상 기간이 끝난 시각입니다 (ISO 8601 UTC). 지금 프리미엄이 아니고 최근 7일 안에 끝났을 때만 값이 있고, 그 밖에는 null입니다. 구버전 서버는 생략합니다.",
       ),
+    isPremium: z
+      .boolean()
+      .optional()
+      .describe(
+        "지금 유효한 스토어 구독이나 보상 기간이 있는지입니다. 만료 시각과 자동 갱신 유예(3시간)를 반영하므로 subscriptionStatus가 ACTIVE여도 false일 수 있습니다. ADMIN role은 반영하지 않으며 ADMIN의 무제한은 entitlements가 나타냅니다. 구버전 서버는 생략합니다.",
+      ),
+    entitlements: premiumEntitlementsSchema
+      .optional()
+      .describe(
+        "기능별 현재 권한입니다. 앱은 기능 한도를 하드코딩하지 않고 이 값으로 막습니다. 구버전 서버는 생략합니다.",
+      ),
   })
   .describe("현재 사용자 정보")
   .meta({
@@ -190,6 +256,7 @@ export const currentUserSchema = z
       willRenew: false,
       bankedPremiumDays: 0,
       premiumGrantEndedAt: null,
+      isPremium: false,
     },
   });
 

@@ -16,10 +16,10 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { validStoreEntitlementCondition } from "#api/modules/access/access-entitlement-sql.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { premiumGrant, subscription } from "#api/platform/database/schema/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { storeRenewalCutoff } from "#api/shared/domain/store-renewal-grace";
 
 import type {
   FindPremiumGrantEndingNoticesParams,
@@ -50,20 +50,12 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
     return and(eq(storeOf.userId, grantOf.userId), isNull(storeOf.deletedAt));
   }
 
-  // isStoreEntitlementValid와 같은 조건: 자동 갱신 중이면 만료 뒤 유예 시간까지, 취소했으면 만료 전까지 유효하다
+  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). 규칙은 Access가 소유한다
   private validStoreOfGrantUser(at: Date) {
     return this.db
       .select({ one: sql`1` })
       .from(storeOf)
-      .where(
-        and(
-          this.storeOfGrantUser(),
-          or(
-            and(eq(storeOf.status, "ACTIVE"), gt(storeOf.expiresAt, storeRenewalCutoff(at))),
-            and(eq(storeOf.status, "CANCELLED"), gt(storeOf.expiresAt, at)),
-          ),
-        ),
-      );
+      .where(and(this.storeOfGrantUser(), validStoreEntitlementCondition(storeOf, at)));
   }
 
   async findOpenByUserId(userId: string): Promise<PremiumGrant[]> {
@@ -74,6 +66,7 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
         source: true,
         sourceKey: true,
         durationDays: true,
+        durationMs: true,
         status: true,
         startsAt: true,
         endsAt: true,
@@ -84,6 +77,26 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
       orderBy: { createdAt: "asc" },
     });
     return rows.map((row) => PremiumGrant.reconstitute(row));
+  }
+
+  async findBySourceKey(sourceKey: string): Promise<PremiumGrant | null> {
+    const row = await this.db.query.premiumGrant.findFirst({
+      columns: {
+        id: true,
+        userId: true,
+        source: true,
+        sourceKey: true,
+        durationDays: true,
+        durationMs: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+        endingNotifiedAt: true,
+        createdAt: true,
+      },
+      where: { sourceKey },
+    });
+    return row == null ? null : PremiumGrant.reconstitute(row);
   }
 
   async findLastEndedAt(userId: string): Promise<Date | null> {
@@ -200,7 +213,10 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
                 and(
                   this.storeOfGrantUser(),
                   inArray(storeOf.status, ["ACTIVE", "CANCELLED"]),
-                  gte(storeOf.expiresAt, grantOf.endsAt),
+                  or(
+                    gte(storeOf.expiresAt, grantOf.endsAt),
+                    gte(storeOf.gracePeriodEndsAt, grantOf.endsAt),
+                  ),
                 ),
               ),
           ),

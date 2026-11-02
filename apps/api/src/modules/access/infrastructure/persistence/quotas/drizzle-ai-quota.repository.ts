@@ -28,8 +28,8 @@ export class DrizzleAiQuotaRepository implements AiQuotaRepositoryPort {
       where: { id: userId },
       with: {
         subscriptions: {
-          columns: { expiresAt: true },
-          where: { status: "ACTIVE", deletedAt: { isNull: true } },
+          columns: { status: true, expiresAt: true, gracePeriodEndsAt: true },
+          where: { status: { in: ["ACTIVE", "CANCELLED"] }, deletedAt: { isNull: true } },
         },
       },
     });
@@ -40,7 +40,7 @@ export class DrizzleAiQuotaRepository implements AiQuotaRepositoryPort {
           subscriptionStatus: row.subscriptionStatus,
           accessDeadline: resolvePremiumAccessDeadline({
             subscriptionExpiresAt: row.subscriptionExpiresAt,
-            renewingStoreExpiresAt: row.subscriptions.map((subscription) => subscription.expiresAt),
+            storeEntitlements: row.subscriptions,
           }),
           count: row.aiUsageCount,
           resetAt: row.aiUsageResetAt,

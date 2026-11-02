@@ -1,10 +1,14 @@
+import type { PremiumFeature, PremiumLimitFeatureKey } from "@aido/api/vocabulary";
+
 import { now } from "#api/shared/domain/date/utils/core";
 
 import {
   calculateRemainingLimit,
-  hasPremiumEntitlement,
   NO_RESOURCE_BONUSES,
+  resolveAccessTier,
+  resolveAllFeatureAccess,
   resolveEffectiveSubscriptionStatus,
+  resolveFeatureAccess,
   resolveFeatureLimit,
   resolveResourceLimit,
   type Feature,
@@ -13,6 +17,7 @@ import {
 } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 import type { EntitlementCachePort } from "../../ports/entitlement/entitlement-cache.port.js";
 import type {
+  AccessSnapshot,
   EntitlementReaderPort,
   FeatureEntitlement,
   ResourceEntitlement,
@@ -57,18 +62,42 @@ export class EntitlementService implements EntitlementReaderPort {
     return this.#resourceLimit(await this.#freshUserState(userId), resource);
   }
 
-  async hasPremiumAccess(userId: string): Promise<boolean> {
-    const user = await this.#cachedUserState(userId);
-    return hasPremiumEntitlement(user.role, user.subscriptionStatus);
-  }
-
-  async hasPremiumAccessInTx(userId: string): Promise<boolean> {
-    const user = await this.#freshUserState(userId);
-    return hasPremiumEntitlement(user.role, user.subscriptionStatus);
-  }
-
   calculateRemaining(dailyLimit: number | null, used: number): number | null {
     return calculateRemainingLimit(dailyLimit, used);
+  }
+
+  async can(userId: string, feature: PremiumFeature): Promise<boolean> {
+    return this.#featureAccess(await this.#cachedUserState(userId), feature).allowed;
+  }
+
+  async canInTx(userId: string, feature: PremiumFeature): Promise<boolean> {
+    return this.#featureAccess(await this.#freshUserState(userId), feature).allowed;
+  }
+
+  async limitOf(userId: string, feature: PremiumLimitFeatureKey): Promise<number | null> {
+    return this.#featureAccess(await this.#cachedUserState(userId), feature).limit;
+  }
+
+  async limitOfInTx(userId: string, feature: PremiumLimitFeatureKey): Promise<number | null> {
+    return this.#featureAccess(await this.#freshUserState(userId), feature).limit;
+  }
+
+  async getAccessSnapshot(userId: string): Promise<AccessSnapshot> {
+    const user = await this.#cachedUserState(userId);
+    const tier = resolveAccessTier(user.role, user.subscriptionStatus);
+    return {
+      tier,
+      isPremium: user.subscriptionStatus === "ACTIVE",
+      features: resolveAllFeatureAccess(tier, user.resourceBonuses),
+    };
+  }
+
+  #featureAccess(user: ResolvedUserState, feature: PremiumFeature) {
+    return resolveFeatureAccess(
+      resolveAccessTier(user.role, user.subscriptionStatus),
+      feature,
+      user.resourceBonuses,
+    );
   }
 
   #featureLimit(user: ResolvedUserState, feature: Feature): FeatureEntitlement {

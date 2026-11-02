@@ -2,11 +2,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
+import { premiumAccessCondition } from "#api/modules/access/access-entitlement-sql.public";
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
@@ -91,7 +93,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
           },
           where: {
             id: cursor != null ? { gt: cursor } : undefined,
-            OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
+            RAW: (target) => premiumAccessCondition(target, now()),
             status: "ACTIVE",
             deletedAt: { isNull: true },
             todos: {
