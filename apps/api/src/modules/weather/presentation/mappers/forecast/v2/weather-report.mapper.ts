@@ -14,7 +14,7 @@ function toDayPartResponse(part: WeatherReportDayPart | null): WeatherDayPartFor
 
 /** 시각은 UTC ISO 문자열로, 일별 date는 이미 위치 시간대 달력 날짜다. */
 export function toWeatherReportResponse(result: WeatherReportResult): WeatherReportResponse {
-  const { location, report, airQuality } = result;
+  const { location, report, airQuality, attribution } = result;
   return {
     location: { ...location },
     current: { ...report.current, observedAt: toISOString(report.current.observedAt) },
@@ -53,13 +53,13 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
         ? null
         : { pm10: airQuality.pm10, pm25: airQuality.pm25, source: AIR_QUALITY_SOURCE },
     attribution: {
-      ...report.attribution,
+      ...attribution,
       logo:
-        report.attribution.logo == null
+        attribution.logo == null
           ? null
           : {
-              light: { ...report.attribution.logo.light },
-              dark: { ...report.attribution.logo.dark },
+              light: { ...attribution.logo.light },
+              dark: { ...attribution.logo.dark },
             },
     },
     fetchedAt: toISOString(report.fetchedAt),

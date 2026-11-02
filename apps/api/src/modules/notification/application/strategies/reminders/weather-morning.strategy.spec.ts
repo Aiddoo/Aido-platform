@@ -1,236 +1,286 @@
-import dayjs from "dayjs";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { mock, type MockProxy } from "vitest-mock-extended";
 
-import type { WeatherForecast } from "#api/modules/weather/weather-forecast.public";
+import type { ReminderWeatherReport } from "#api/modules/notification/application/ports/reminders/reminder-weather-report.reader.port";
+import { WeatherReportReader } from "#api/modules/weather/application/services/forecast/weather-report.reader";
+import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
+import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { CacheService } from "#api/platform/cache/cache.service";
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { weatherReportFixture } from "#test/fixtures/weather.fixture";
+import {
+  StubNotificationBatchPublisher,
+  StubNotificationHistoryReader,
+  StubReminderWeatherReportReader,
+  StubWeatherReminderReader,
+} from "#test/mocks/ports/notification-weather.stub";
+import { StubTimezoneResolver, StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { WeatherMorningStrategy } from "./weather-morning.strategy.js";
 
-const TZ = "Asia/Seoul";
+const HOUR_MS = 60 * 60_000;
+/** 서울 2026-11-02 07:00 */
+const NOW = new Date("2026-11-01T22:00:00.000Z");
+const SEOUL = { latitude: 37.5665, longitude: 126.978 };
+const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
-const makeCtx = (overrides?: Partial<TimezoneContext>): TimezoneContext => ({
-  tz: TZ,
+const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
+  tz: "Asia/Seoul",
   localHour: 7,
   localMinute: 0,
-  dayOfWeek: 2,
-  today: dayjs.utc("2024-01-16").startOf("day").toDate(),
-  tomorrow: dayjs.utc("2024-01-17").startOf("day").toDate(),
+  dayOfWeek: 1,
+  today: new Date("2026-11-02T00:00:00.000Z"),
+  tomorrow: new Date("2026-11-03T00:00:00.000Z"),
   ...overrides,
 });
 
-const makeForecast = (): WeatherForecast => ({
-  date: new Date("2024-01-16"),
-  skyCondition: "CLEAR",
-  precipitationType: "NONE",
-  precipitationProbability: 10,
-  temperatureMin: 5,
-  temperatureMax: 12,
-  humidity: 45,
-  windSpeed: 2.5,
-  hourlyForecasts: [],
-  dailyForecasts: [],
+const atKst = (hour: number) => new Date(NOW.getTime() + (hour - 7) * HOUR_MS);
+
+/** 서울 07시 기준 맑은 리포트. 한 시각만 바꿀 수 있다 */
+function seoulReport(
+  change?: {
+    readonly hour: number;
+    readonly precipitationChance?: number;
+    readonly apparentTemperature?: number;
+  },
+  timezone = "Asia/Seoul",
+): ReminderWeatherReport {
+  const report = weatherReportFixture(NOW);
+  return {
+    timezone,
+    report: {
+      daily: report.daily.map((day, index) => ({
+        ...day,
+        date: index === 0 ? "2026-11-02" : day.date,
+      })),
+      hourly: report.hourly.map((hour) =>
+        change != null && hour.startsAt.getTime() === atKst(change.hour).getTime()
+          ? { ...hour, ...change }
+          : hour,
+      ),
+    },
+  };
+}
+
+describe("WeatherMorningStrategy — 아침 날씨 알림", () => {
+  let reader: StubWeatherReminderReader;
+  let publisher: StubNotificationBatchPublisher;
+  let history: StubNotificationHistoryReader;
+  let weatherReports: StubReminderWeatherReportReader;
+  let logger: MockProxy<ApplicationLogger>;
+  let strategy: WeatherMorningStrategy;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    reader = new StubWeatherReminderReader();
+    publisher = new StubNotificationBatchPublisher();
+    history = new StubNotificationHistoryReader();
+    weatherReports = new StubReminderWeatherReportReader();
+    logger = mock<ApplicationLogger>();
+    strategy = new WeatherMorningStrategy({
+      reader,
+      notificationPublisher: publisher,
+      notificationHistoryReader: history,
+      weatherReportReader: weatherReports,
+      logger,
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("대상이 없으면 날씨를 조회하지 않고 보내지 않는다", async () => {
+    // When
+    const result = await strategy.execute(ctx());
+    // Then
+    expect(result).toEqual({ sent: 0 });
+    expect(weatherReports.requests).toEqual([]);
+  });
+
+  it("해외 위치 사용자도 격자 없이 좌표로 날씨 알림을 받는다", async () => {
+    // Given
+    reader.usersWithLocation = [{ id: "abroad", preference: { locale: "en" }, location: TOKYO }];
+    weatherReports.reports.set("abroad", seoulReport(undefined, "Asia/Tokyo"));
+    // When
+    const result = await strategy.execute(ctx());
+    // Then
+    expect(result).toEqual({ sent: 1 });
+    expect(weatherReports.requests[0]).toEqual([{ key: "abroad", ...TOKYO, language: "en" }]);
+    expect(publisher.published[0]).toMatchObject({
+      userId: "abroad",
+      type: "WEATHER_MORNING",
+      title: "Partly cloudy today, 8–16°C",
+      variantId: "weather_morning_v4.weather.morning.summary.default",
+    });
+  });
+
+  it("오늘 할 일이 비와 겹치면 그 할 일과 옮기기 링크를 보낸다", async () => {
+    // Given 15시 '한강 산책'에 강수 확률 70%
+    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    reader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
+    weatherReports.reports.set("u1", seoulReport({ hour: 15, precipitationChance: 70 }));
+    // When
+    await strategy.execute(ctx());
+    // Then
+    expect(publisher.published[0]).toMatchObject({
+      title: "오후 3시 ‘한강 산책’ 때 비 소식이 있어요 ☔",
+      body: "강수 확률 70% · 시간 옮기기",
+      action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12&reason=rain" },
+    });
+    expect(reader.todoQueries[0]).toEqual({
+      userIds: ["u1"],
+      from: NOW,
+      until: new Date("2026-11-02T15:00:00.000Z"),
+    });
+  });
+
+  it("오늘 할 일이 낮 더위와 겹치면 체감 온도와 더위 옮기기 링크를 보낸다", async () => {
+    // Given
+    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    reader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
+    weatherReports.reports.set("u1", seoulReport({ hour: 13, apparentTemperature: 34.6 }));
+    // When
+    await strategy.execute(ctx());
+    // Then
+    expect(publisher.published[0]).toMatchObject({
+      title: "오후 1시 ‘테니스’ 때 체감 35°C예요 ☀️",
+      action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=7&reason=heat" },
+    });
+  });
+
+  it("할 일이 없고 비 소식도 없으면 v2 일별 예보로 요약하고 링크 없이 날씨 화면으로 보낸다", async () => {
+    // Given
+    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    weatherReports.reports.set("u1", seoulReport());
+    // When
+    await strategy.execute(ctx());
+    // Then
+    const [notification] = publisher.published;
+    expect(notification).toMatchObject({
+      title: "오늘은 구름 조금, 8~16°C예요",
+      body: "강수 확률 20%예요. 좋은 하루 보내요",
+    });
+    expect(notification?.action).toBeUndefined();
+  });
+
+  it("예보를 받지 못한 사용자는 틀린 날씨 대신 앱에서 확인하라는 안내를 받는다", async () => {
+    // Given 리포트 없음
+    reader.usersWithLocation = [{ id: "u1", preference: { locale: "ko" }, location: SEOUL }];
+    // When
+    const result = await strategy.execute(ctx());
+    // Then
+    expect(result).toEqual({ sent: 1 });
+    expect(publisher.published[0]).toMatchObject({
+      title: "오늘 날씨를 확인해보세요 ☀️",
+      variantId: "weather_morning_v4.weather.morning.unavailable.default",
+    });
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ weatherCount: 0, unavailableCount: 1, fallbackCount: 0 }),
+    );
+  });
+
+  it("오늘 이미 받은 사용자와 위치가 없는 사용자로는 날씨를 조회하지 않는다", async () => {
+    // Given
+    reader.usersWithLocation = [{ id: "sent", preference: null, location: SEOUL }];
+    reader.fallbackUsers = [{ id: "no-location", preference: null }];
+    history.alreadyNotified = new Set(["sent"]);
+    // When
+    const result = await strategy.execute(ctx());
+    // Then
+    expect(weatherReports.requests).toEqual([]);
+    expect(reader.todoQueries).toEqual([]);
+    expect(result).toEqual({ sent: 1 });
+    expect(publisher.published[0]).toMatchObject({
+      userId: "no-location",
+      title: "오늘 날씨를 함께 챙겨볼까요? ☀️",
+    });
+  });
+
+  it("catch-up이면 그 사용자만 조회한다", async () => {
+    // When
+    await strategy.execute(ctx({ userId: "user-specific" }));
+    // Then
+    expect(reader.userParams[0]).toMatchObject({ userId: "user-specific", hour: 7, minute: 0 });
+  });
 });
 
-describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
+describe("WeatherMorningStrategy + weather v2 리포트 — 공급자 호출 예산", () => {
+  let memory: InMemoryCacheAdapter;
+  let provider: StubWeatherReportProvider;
+  let reader: StubWeatherReminderReader;
+  let publisher: StubNotificationBatchPublisher;
   let strategy: WeatherMorningStrategy;
-  let reader: Mocked<ConstructorParameters<typeof WeatherMorningStrategy>[0]["reader"]>;
-  let notificationPublisher: Mocked<
-    ConstructorParameters<typeof WeatherMorningStrategy>[0]["notificationPublisher"]
-  >;
-  let notificationHistoryReader: Mocked<
-    ConstructorParameters<typeof WeatherMorningStrategy>[0]["notificationHistoryReader"]
-  >;
-  let weatherForecastReader: Mocked<
-    ConstructorParameters<typeof WeatherMorningStrategy>[0]["weatherForecastReader"]
-  >;
 
-  beforeEach(async () => {
-    vi.spyOn(Math, "random").mockReturnValue(0);
-
-    const weatherMorningStrategyDependencies = mockDeep<
-      ConstructorParameters<typeof WeatherMorningStrategy>[0]
-    >({});
-    const unit = new WeatherMorningStrategy(weatherMorningStrategyDependencies);
-
-    strategy = unit;
-    reader = weatherMorningStrategyDependencies.reader;
-    notificationPublisher = weatherMorningStrategyDependencies.notificationPublisher;
-    notificationHistoryReader = weatherMorningStrategyDependencies.notificationHistoryReader;
-    weatherForecastReader = weatherMorningStrategyDependencies.weatherForecastReader;
-
-    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([]);
-    reader.findWeatherMorningFallbackUsers.mockResolvedValue([]);
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set());
-    notificationPublisher.publishBatch.mockResolvedValue({ count: 0 });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("대상 유저가 없으면 sent: 0을 반환해야 한다", async () => {
-    // When
-    const result = await strategy.execute(makeCtx());
-
-    // Then
-    expect(result).toEqual({ sent: 0 });
-    expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
-  });
-
-  it("기상청 격자가 없는 해외 위치 유저는 날씨·폴백 알림 없이 건너뛴다", async () => {
-    // Given
-    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
-      {
-        id: "user-abroad",
-        preference: null,
-        location: { latitude: 35.6762, longitude: 139.6503, gridX: null, gridY: null },
-      },
-    ]);
-
-    // When
-    const result = await strategy.execute(makeCtx());
-
-    // Then
-    expect(result).toEqual({ sent: 0 });
-    expect(notificationHistoryReader.findAlreadyNotifiedUserIds).not.toHaveBeenCalled();
-    expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
-    expect(notificationPublisher.publishBatch).not.toHaveBeenCalled();
-  });
-
-  it("격자 있는 유저와 해외 유저가 섞이면 격자 있는 유저만 예보를 조회한다", async () => {
-    // Given
-    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
-      {
-        id: "user-seoul",
-        preference: null,
-        location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
-      },
-      {
-        id: "user-abroad",
-        preference: null,
-        location: { latitude: 35.6762, longitude: 139.6503, gridX: null, gridY: null },
-      },
-    ]);
-    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(
-      new Map([["60:127", makeForecast()]]),
-    );
-
-    // When
-    const result = await strategy.execute(makeCtx());
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-    expect(notificationHistoryReader.findAlreadyNotifiedUserIds).toHaveBeenCalledWith(
-      expect.objectContaining({ userIds: ["user-seoul"] }),
-    );
-    expect(weatherForecastReader.getForecastsByGridBatch).toHaveBeenCalledWith(
-      [{ gridX: 60, gridY: 127, lat: 37.5, lon: 126.9 }],
-      expect.any(Date),
-    );
-  });
-
-  it("이미 알림 받은 유저는 제외해야 한다", async () => {
-    // Given
-    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
-      {
-        id: "user-1",
-        preference: null,
-        location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
-      },
-    ]);
-    notificationHistoryReader.findAlreadyNotifiedUserIds.mockResolvedValue(new Set(["user-1"]));
-
-    // When
-    const result = await strategy.execute(makeCtx());
-
-    // Then
-    expect(result).toEqual({ sent: 0 });
-    expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
-  });
-
-  it("대상 유저에게 날씨 알림을 발송해야 한다", async () => {
-    // Given — 1단계: 위치 있는 유저, 2단계: 위치 없는 유저 (없음)
-    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
-      {
-        id: "user-1",
-        preference: null,
-        location: { latitude: 37.5, longitude: 126.9, gridX: 60, gridY: 127 },
-      },
-    ]);
-
-    const forecastMap = new Map<string, WeatherForecast>();
-    forecastMap.set("60:127", makeForecast());
-    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(forecastMap);
-
-    // When
-    const result = await strategy.execute(makeCtx());
-
-    // Then
-    expect(result).toEqual({ sent: 1 });
-    expect(notificationPublisher.publishBatch).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          userId: "user-1",
-          type: "WEATHER_MORNING",
-        }),
-      ]),
-    );
-  });
-
-  it("같은 격자의 유저들은 하나의 API 호출로 처리해야 한다", async () => {
-    // Given — 2명이 같은 격자 (1단계), 위치 없는 유저 없음 (2단계)
-    reader.findWeatherMorningUsersWithLocation.mockResolvedValue([
-      {
-        id: "user-1",
-        preference: null,
-        location: {
-          latitude: 37.56,
-          longitude: 126.97,
-          gridX: 60,
-          gridY: 127,
-        },
-      },
-      {
-        id: "user-2",
-        preference: null,
-        location: {
-          latitude: 37.57,
-          longitude: 126.98,
-          gridX: 60,
-          gridY: 127,
-        },
-      },
-    ]);
-
-    const forecastMap = new Map<string, WeatherForecast>();
-    forecastMap.set("60:127", makeForecast());
-    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(forecastMap);
-
-    // When
-    const result = await strategy.execute(makeCtx());
-
-    // Then
-    expect(result).toEqual({ sent: 2 });
-    // getForecastsByGridBatch에 격자 1개만 전달
-    expect(weatherForecastReader.getForecastsByGridBatch).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ gridX: 60, gridY: 127 })]),
-      expect.any(Date),
-    );
-    const gridsArg = weatherForecastReader.getForecastsByGridBatch.mock.calls[0]?.[0];
-    expect(gridsArg).toHaveLength(1);
-  });
-
-  it("catch-up: userId가 있으면 리더 조회에 포함해야 한다", async () => {
-    // When
-    await strategy.execute(makeCtx({ userId: "user-specific" }));
-
-    // Then
-    expect(reader.findWeatherMorningUsersWithLocation).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "user-specific",
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    memory = new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 });
+    provider = new StubWeatherReportProvider();
+    provider.report = weatherReportFixture(NOW);
+    reader = new StubWeatherReminderReader();
+    publisher = new StubNotificationBatchPublisher();
+    strategy = new WeatherMorningStrategy({
+      reader,
+      notificationPublisher: publisher,
+      notificationHistoryReader: new StubNotificationHistoryReader(),
+      weatherReportReader: new WeatherReportReader({
+        weatherReportProvider: provider,
+        weatherReportCache: new WeatherReportCacheAdapter(new CacheService(memory)),
+        timezoneResolver: new StubTimezoneResolver(),
+        logger: mock<ApplicationLogger>(),
       }),
-    );
+      logger: mock<ApplicationLogger>(),
+    });
+  });
+  afterEach(() => {
+    try {
+      memory.onModuleDestroy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("같은 칸의 사용자 30명에게 보내도 WeatherKit은 한 번만 부른다", async () => {
+    // Given
+    reader.usersWithLocation = Array.from({ length: 30 }, (_, index) => ({
+      id: `user-${index}`,
+      preference: { locale: index % 2 === 0 ? "ko" : "en" },
+      location: SEOUL,
+    }));
+    // When
+    const result = await strategy.execute(ctx());
+    // Then
+    expect(result).toEqual({ sent: 30 });
+    expect(provider.calls).toHaveLength(1);
+  });
+
+  it("캐시가 지난 뒤 공급자가 실패하면 마지막 스냅샷으로, 그것도 없으면 안내 알림으로 보낸다", async () => {
+    // Given 서울은 7시에 한 번 받아 두고, 9시에 공급자 장애
+    reader.usersWithLocation = [{ id: "seoul", preference: null, location: SEOUL }];
+    await strategy.execute(ctx());
+    const later = new Date(NOW.getTime() + 2 * HOUR_MS);
+    vi.setSystemTime(later);
+    provider.failure = new Error("weatherkit 503");
+    reader.usersWithLocation = [
+      { id: "seoul", preference: null, location: SEOUL },
+      { id: "tokyo", preference: null, location: TOKYO },
+    ];
+    publisher.batches.length = 0;
+    // When
+    await strategy.execute(ctx({ localHour: 9 }));
+    // Then
+    const titles = new Map(publisher.published.map((n) => [n.userId, n.title]));
+    expect(titles.get("seoul")).toBe("오늘은 구름 조금, 8~16°C예요");
+    expect(titles.get("tokyo")).toBe("오늘 날씨를 확인해보세요 ☀️");
+  });
+
+  it("알림 대상이 아니면 WeatherKit을 부르지 않는다", async () => {
+    // Given 위치 없는 사용자만
+    reader.fallbackUsers = [{ id: "no-location", preference: null }];
+    // When
+    await strategy.execute(ctx());
+    // Then
+    expect(provider.calls).toEqual([]);
   });
 });

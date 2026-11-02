@@ -11,6 +11,8 @@ export const externalSchema = z.object({
   // RevenueCat 구독 관리
   REVENUECAT_SECRET_API_KEY: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
+  /** 운영 알림의 RevenueCat 고객 화면 링크용 공개 프로젝트 ID(비밀 아님) */
+  REVENUECAT_PROJECT_ID: z.string().min(1).optional(),
 
   // Redis 캐시/세션 (선택) - 빈 문자열 허용
   REDIS_URL: z

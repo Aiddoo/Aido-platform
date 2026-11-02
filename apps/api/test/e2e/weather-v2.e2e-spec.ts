@@ -18,6 +18,7 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 const SEOUL_CELL = "wydm9";
+const BORDER = { latitude: 41.9, longitude: -6.56 };
 
 describe("날씨 v2 E2E", () => {
   let ctx: E2eTestContext;
@@ -75,6 +76,24 @@ describe("날씨 v2 E2E", () => {
         .from(userLocation)
         .where(eq(userLocation.userId, user.userId));
       expect(row).toEqual({ gridX: null, gridY: null, tz: "Asia/Tokyo" });
+    });
+
+    it("시간대 경계 칸은 칸 중심 시간대를 저장·응답해 GET 리포트의 시간대와 같다", async () => {
+      // Given - 좌표 자체는 Europe/Madrid, 칸 중심은 Europe/Lisbon
+      const user = await ctx.helpers.createVerifiedUser("v2-border@example.com", "Test1234!");
+      reportProvider.report = weatherReportFixture(new Date());
+      // When
+      const saved = await registerLocation(user.accessToken, BORDER).expect(200);
+      const report = await getReport(user.accessToken).expect(200);
+      // Then
+      expect(saved.body.data.timezone).toBe("Europe/Lisbon");
+      expect(report.body.data.location.timezone).toBe("Europe/Lisbon");
+      const [row] = await ctx.testDatabase
+        .getClient()
+        .select({ tz: userLocation.timezone })
+        .from(userLocation)
+        .where(eq(userLocation.userId, user.userId));
+      expect(row).toEqual({ tz: "Europe/Lisbon" });
     });
 
     it("한국 좌표는 기상청 격자도 저장해 v1 예보가 계속 동작한다", async () => {

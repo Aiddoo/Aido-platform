@@ -538,6 +538,21 @@ describe("LazyPgBossClient — backend 비선택 시 무초기화", () => {
     expect(load).not.toHaveBeenCalled();
   });
 
+  it("종료 뒤 늦게 도착한 요청은 새 인스턴스를 띄우지 않고 실패한다", async () => {
+    // Given
+    const load = vi.fn(() => new FakePgBossClient());
+    const client = new LazyPgBossClient(load);
+    await client.start();
+    await client.stop();
+
+    // When
+    const lateSend = client.send(QUEUE, {}, {});
+
+    // Then
+    await expect(lateSend).rejects.toThrow("pg-boss client is stopped");
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   it("시작 실패 시 열린 자원을 닫고 다음 요청에서 새 인스턴스로 재시도한다", async () => {
     // Given
     const first = new FakePgBossClient();

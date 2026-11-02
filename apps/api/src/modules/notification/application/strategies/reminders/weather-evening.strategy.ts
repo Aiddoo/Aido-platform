@@ -1,32 +1,29 @@
-import { uniqBy } from "es-toolkit";
-
-import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { toSupportedLocale } from "#api/shared/domain/locale";
+import { now } from "#api/shared/domain/date/utils/core";
 
-import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { decideEveningWeatherBriefing } from "../../../domain/services/reminders/weather-briefing.policy.js";
 import {
   createWeatherEveningFallbackNotificationMessage,
   createWeatherEveningNotificationMessage,
+  createWeatherEveningUnavailableNotificationMessage,
 } from "../../messages/delivery/notification-messages.js";
 import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
+import type { ReminderWeatherReportReaderPort } from "../../ports/reminders/reminder-weather-report.reader.port.js";
 import { type WeatherReminderReaderPort } from "../../ports/reminders/weather-reminder-reader.port.js";
 import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
 import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
 import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
+import {
+  buildWeatherNotification,
+  filterUnnotifiedWeatherUsers,
+  sendWeatherFallbackNotifications,
+  weatherRecipientLocale,
+  weatherVariantContext,
+  withWeatherLocation,
+} from "./weather-reminder-delivery.js";
 
-interface VerifiedUserWithLocation {
-  readonly id: string;
-  readonly preference: { readonly locale: string } | null;
-  readonly location: {
-    readonly latitude: number;
-    readonly longitude: number;
-    readonly gridX: number;
-    readonly gridY: number;
-  };
-}
+const NOTIFICATION_TYPE = "WEATHER_EVENING";
 
 interface WeatherEveningStrategyDependencies {
   readonly reader: Pick<
@@ -35,10 +32,14 @@ interface WeatherEveningStrategyDependencies {
   >;
   readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "getForecastsByGridBatch">;
+  readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly logger: Pick<ApplicationLogger, "log">;
 }
 
+/**
+ * 저녁 날씨 알림. 앱 화면과 같은 v2 리포트(칸 캐시 공유)로 내일 비·눈이 시작하는 때와 쌀쌀함을 알린다.
+ * 리포트는 알림 대상(설정 시각·위치 있음·오늘 미발송)만 조회한다.
+ */
 export class WeatherEveningStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: WeatherEveningStrategyDependencies;
 
@@ -49,108 +50,88 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
     const { tz, localHour, localMinute, today } = ctx;
 
-    // 1단계: 위치 있는 유저 → 날씨 알림
-    const weatherSent = await this.#sendWeatherNotifications(ctx, today);
+    // 1단계: 위치 있는 유저 → 날씨 알림 (예보를 받지 못하면 안내 알림)
+    const weather = await this.#sendWeatherNotifications(ctx, today);
 
     // 2단계: 위치 없는 유저 → 폴백 알림
     const fallbackSent = await this.#sendFallbackNotifications(ctx, today);
 
-    const total = weatherSent + fallbackSent;
+    const total = weather.sent + fallbackSent;
     if (total > 0) {
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.WEATHER_EVENING_SENT,
         timezone: tz,
         localHour,
         localMinute,
-        weatherCount: weatherSent,
+        weatherCount: weather.sent - weather.unavailable,
+        unavailableCount: weather.unavailable,
         fallbackCount: fallbackSent,
       });
     }
     return { sent: total };
   }
 
-  async #sendWeatherNotifications(ctx: TimezoneContext, today: Date): Promise<number> {
-    const users = await this.#dependencies.reader.findWeatherEveningUsersWithLocation({
+  async #sendWeatherNotifications(
+    ctx: TimezoneContext,
+    today: Date,
+  ): Promise<{ sent: number; unavailable: number }> {
+    const rows = await this.#dependencies.reader.findWeatherEveningUsersWithLocation({
       tz: ctx.tz,
       hour: ctx.localHour,
       minute: ctx.localMinute,
       userId: ctx.userId,
     });
-
-    // 날씨 예보는 KMA 격자로만 조회하므로 격자 없는 해외 위치는 날씨·폴백 알림 모두 보내지 않는다.
-    const usersWithLocation = users.flatMap((u): VerifiedUserWithLocation[] => {
-      const location = u.location;
-      if (location == null || location.gridX == null || location.gridY == null) {
-        return [];
-      }
-      return [{ ...u, location: { ...location, gridX: location.gridX, gridY: location.gridY } }];
-    });
-    if (usersWithLocation.length === 0) {
-      return 0;
+    const targets = await filterUnnotifiedWeatherUsers(
+      this.#dependencies.notificationHistoryReader,
+      withWeatherLocation(rows),
+      NOTIFICATION_TYPE,
+      today,
+    );
+    if (targets.length === 0) {
+      return { sent: 0, unavailable: 0 };
     }
 
-    const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: usersWithLocation.map((u) => u.id),
-        type: "WEATHER_EVENING",
-        notificationDate: today,
-      });
-    const filtered = usersWithLocation.filter((u) => !alreadyNotified.has(u.id));
-    if (filtered.length === 0) {
-      return 0;
-    }
-
-    const gridInputs = uniqBy(
-      filtered,
-      (user) => `${user.location.gridX}:${user.location.gridY}`,
-    ).map(({ location }) => ({
-      gridX: location.gridX,
-      gridY: location.gridY,
-      lat: location.latitude,
-      lon: location.longitude,
-    }));
-    const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
-      gridInputs,
-      ctx.tomorrow,
+    const at = now();
+    const reports = await this.#dependencies.weatherReportReader.readReports(
+      targets.map((user) => ({
+        key: user.id,
+        latitude: user.location.latitude,
+        longitude: user.location.longitude,
+        language: weatherRecipientLocale(user),
+      })),
+      at,
     );
 
-    const notifications = filtered
-      .map((user) => {
-        const loc = user.location;
-        const key = `${loc.gridX}:${loc.gridY}`;
-        const forecast = forecasts.get(key);
-        if (forecast == null) {
-          return null;
-        }
-
-        const message = createWeatherEveningNotificationMessage({
-          tomorrowForecast: forecast,
-          locale: toSupportedLocale(user.preference?.locale),
-          variantContext: {
-            campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
-            recipientId: user.id,
-            occurrenceKey: toDateString(today),
-          },
-        });
-        return {
-          userId: user.id,
-          type: "WEATHER_EVENING" as const,
-          purpose: "SCHEDULED_SERVICE" as const,
-          campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
-          variantId: message.variantId,
-          title: message.title,
-          body: message.body,
-          notificationDate: today,
-        };
-      })
-      .filter((n): n is NonNullable<typeof n> => n != null);
-
-    if (notifications.length === 0) {
-      return 0;
-    }
+    let unavailable = 0;
+    const notifications = targets.map((user) => {
+      const locale = weatherRecipientLocale(user);
+      const variantContext = weatherVariantContext(NOTIFICATION_TYPE, user.id, today);
+      const located = reports.get(user.id);
+      const briefing =
+        located == null
+          ? null
+          : decideEveningWeatherBriefing(located.report, {
+              now: at,
+              timezone: ctx.tz,
+              locationTimezone: located.timezone,
+            });
+      if (briefing == null) {
+        unavailable += 1;
+      }
+      return buildWeatherNotification({
+        userId: user.id,
+        type: NOTIFICATION_TYPE,
+        message:
+          briefing == null
+            ? createWeatherEveningUnavailableNotificationMessage({ locale, variantContext })
+            : createWeatherEveningNotificationMessage({ briefing, locale, variantContext }),
+        action: null,
+        today,
+      });
+    });
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
-    return notifications.length;
+    return { sent: notifications.length, unavailable };
   }
 
   async #sendFallbackNotifications(ctx: TimezoneContext, today: Date): Promise<number> {
@@ -160,44 +141,11 @@ export class WeatherEveningStrategy implements TimezoneReminderStrategy {
       minute: ctx.localMinute,
       userId: ctx.userId,
     });
-
-    if (users.length === 0) {
-      return 0;
-    }
-
-    const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: users.map((u) => u.id),
-        type: "WEATHER_EVENING",
-        notificationDate: today,
-      });
-    const filtered = users.filter((u) => !alreadyNotified.has(u.id));
-    if (filtered.length === 0) {
-      return 0;
-    }
-
-    const notifications = filtered.map((user) => {
-      const message = createWeatherEveningFallbackNotificationMessage({
-        locale: toSupportedLocale(user.preference?.locale),
-        variantContext: {
-          campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
-          recipientId: user.id,
-          occurrenceKey: toDateString(today),
-        },
-      });
-      return {
-        userId: user.id,
-        type: "WEATHER_EVENING" as const,
-        purpose: "SCHEDULED_SERVICE" as const,
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.WEATHER_EVENING,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        notificationDate: today,
-      };
+    return sendWeatherFallbackNotifications(this.#dependencies, {
+      users,
+      type: NOTIFICATION_TYPE,
+      today,
+      createMessage: createWeatherEveningFallbackNotificationMessage,
     });
-
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
-    return notifications.length;
   }
 }

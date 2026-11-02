@@ -32,6 +32,8 @@ export function createCorsOptions(
       "X-App-Version",
       "X-Device-Type",
       "X-Device-Name",
+      "X-OS-Version",
+      "X-App-Build",
     ],
   };
 }

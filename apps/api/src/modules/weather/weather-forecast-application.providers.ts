@@ -10,7 +10,9 @@ import { WEATHER_LOCATION_REPOSITORY } from "./application/ports/forecast/weathe
 import { WEATHER_PROVIDER } from "./application/ports/forecast/weather-provider.port.js";
 import { WEATHER_REPORT_CACHE } from "./application/ports/forecast/weather-report.cache.port.js";
 import { WEATHER_REPORT_PROVIDER } from "./application/ports/forecast/weather-report.provider.port.js";
+import { WEATHER_REPORT_READER } from "./application/ports/forecast/weather-report.reader.port.js";
 import { WeatherForecastReader } from "./application/services/forecast/weather-forecast.reader.js";
+import { WeatherReportReader } from "./application/services/forecast/weather-report.reader.js";
 import { GetWeatherConditions } from "./application/use-cases/forecast/get-weather-conditions.use-case.js";
 import { GetWeatherForecast } from "./application/use-cases/forecast/get-weather-forecast.use-case.js";
 import { GetWeatherReport } from "./application/use-cases/forecast/get-weather-report.use-case.js";
@@ -100,6 +102,7 @@ export const getWeatherReportProvider: FactoryProvider<GetWeatherReport> = {
   provide: GetWeatherReport,
   inject: [
     WEATHER_LOCATION_REPOSITORY,
+    WEATHER_REPORT_READER,
     WEATHER_REPORT_PROVIDER,
     WEATHER_REPORT_CACHE,
     TIMEZONE_RESOLVER,
@@ -109,6 +112,7 @@ export const getWeatherReportProvider: FactoryProvider<GetWeatherReport> = {
     weatherLocationRepository: ConstructorParameters<
       typeof GetWeatherReport
     >[0]["weatherLocationRepository"],
+    weatherReportReader: ConstructorParameters<typeof GetWeatherReport>[0]["weatherReportReader"],
     weatherReportProvider: ConstructorParameters<
       typeof GetWeatherReport
     >[0]["weatherReportProvider"],
@@ -118,10 +122,29 @@ export const getWeatherReportProvider: FactoryProvider<GetWeatherReport> = {
   ) =>
     new GetWeatherReport({
       weatherLocationRepository,
+      weatherReportReader,
       weatherReportProvider,
       weatherReportCache,
       timezoneResolver,
       airQualityProvider,
       logger: new Logger(GetWeatherReport.name),
+    }),
+};
+
+export const weatherReportReaderProvider: FactoryProvider<WeatherReportReader> = {
+  provide: WeatherReportReader,
+  inject: [WEATHER_REPORT_PROVIDER, WEATHER_REPORT_CACHE, TIMEZONE_RESOLVER],
+  useFactory: (
+    weatherReportProvider: ConstructorParameters<
+      typeof WeatherReportReader
+    >[0]["weatherReportProvider"],
+    weatherReportCache: ConstructorParameters<typeof WeatherReportReader>[0]["weatherReportCache"],
+    timezoneResolver: ConstructorParameters<typeof WeatherReportReader>[0]["timezoneResolver"],
+  ) =>
+    new WeatherReportReader({
+      weatherReportProvider,
+      weatherReportCache,
+      timezoneResolver,
+      logger: new Logger(WeatherReportReader.name),
     }),
 };

@@ -1,3 +1,6 @@
+import type { WeatherCondition } from "@aido/api/vocabulary";
+
+import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
   NotificationCopy,
   NotificationCopyFactory,
@@ -52,7 +55,7 @@ export const SCHEDULER_TEMPLATES = {
     variants: [
       ({ todoTitle }) => copy("It’s go time 🐾", `Ready to start “${todoTitle}”?`),
       ({ todoTitle }) => copy("Your reminder is here", `Time to check off “${todoTitle}”`),
-      ({ todoTitle }) => copy("Starting is the hard part", `Take step one on “${todoTitle}”`),
+      ({ todoTitle }) => copy("Starting is half the work", `Take step one on “${todoTitle}”`),
     ],
   },
   MORNING_REMINDER: {
@@ -166,74 +169,69 @@ export const SCHEDULER_TEMPLATES = {
 } satisfies SchedulerNotificationCopyCatalog;
 
 export const WEATHER_TEMPLATES = {
-  MORNING_CLEAR: {
-    variants: [
-      ({ skyLabel, tempMin, tempMax }) =>
-        copy(`Today: ${skyLabel}, ${tempMin}–${tempMax}°C`, "Good day to get outdoor to-dos done"),
-      ({ tempMin, tempMax, skyLabel }) =>
-        copy(`${tempMin}–${tempMax}°C today`, `${skyLabel} skies. Dress for the day 🐾`),
-    ],
+  MORNING_TODO_RAIN: {
+    copy: ({ time, todoTitle, precipChance, otherCount }) =>
+      copy(
+        `Rain likely at ${time} for “${todoTitle}” ☔`,
+        otherCount > 0
+          ? `${otherCount} more ${otherCount === 1 ? "to-do overlaps" : "to-dos overlap"} · Move to a dry time`
+          : `${precipChance}% chance · Move to a dry time`,
+      ),
   },
-  MORNING_RAIN: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(`${precipProb}% chance of rain today ☔`, `${tempMin}–${tempMax}°C. Grab an umbrella`),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `Rain in the forecast, ${tempMin}–${tempMax}°C`,
-          `${precipProb}% chance. Maybe move outdoor plans`,
-        ),
-    ],
+  MORNING_TODO_STORM: {
+    copy: ({ time, todoTitle }) =>
+      copy(`Lightning risk at ${time} for “${todoTitle}” ⚡`, "Do it indoors or move the time"),
   },
-  MORNING_SNOW: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `${precipProb}% chance of snow today ❄️`,
-          `${tempMin}–${tempMax}°C. Bundle up and go slow`,
-        ),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `Snow in the forecast, ${tempMin}–${tempMax}°C`,
-          `${precipProb}% chance. Leave a little early`,
-        ),
-    ],
+  MORNING_TODO_SNOW: {
+    copy: ({ time, todoTitle }) =>
+      copy(`Snow at ${time} for “${todoTitle}” ❄️`, "Leave 20 min early for the snow"),
   },
-  EVENING_CLEAR: {
-    variants: [
-      ({ skyLabel, tempMin, tempMax }) =>
-        copy(`Tomorrow: ${skyLabel}, ${tempMin}–${tempMax}°C 🌙`, "Good day for outdoor to-dos"),
-      ({ tempMin, tempMax, skyLabel }) =>
-        copy(`${tempMin}–${tempMax}°C tomorrow`, `${skyLabel} skies. Pick your outfit tonight`),
-    ],
+  MORNING_TODO_HEAT: {
+    copy: ({ time, todoTitle, apparentTemp }) =>
+      copy(
+        `Feels like ${apparentTemp}°C at ${time} for “${todoTitle}” ☀️`,
+        "Move it to cooler hours",
+      ),
+  },
+  MORNING_RAIN_LATER: {
+    copy: ({ time }) => copy(`Rain from ${time} today ☔`, "Take an umbrella when you head out"),
+  },
+  MORNING_SNOW_LATER: {
+    copy: ({ time }) => copy(`Snow from ${time} today ❄️`, "Roads may be slippery. Dress warm"),
+  },
+  MORNING_SUMMARY: {
+    copy: ({ conditionLabel, tempMin, tempMax, precipChance }) =>
+      copy(
+        `${conditionLabel} today, ${tempMin}–${tempMax}°C`,
+        `${precipChance}% chance of precipitation. Have a good day`,
+      ),
   },
   EVENING_RAIN: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `${precipProb}% chance of rain tomorrow ☔`,
-          `${tempMin}–${tempMax}°C. Leave an umbrella by the door`,
-        ),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `Rain tomorrow, ${tempMin}–${tempMax}°C`,
-          `${precipProb}% chance. Move outdoor plans if you can`,
-        ),
-    ],
+    copy: ({ dayPartLabel, chillyTemp }) =>
+      copy(
+        dayPartLabel == null ? "Rain expected tomorrow ☔" : `Rain starting ${dayPartLabel} ☔`,
+        chillyTemp == null
+          ? "Keep an umbrella handy"
+          : `A chilly ${chillyTemp}°C morning. Bring an umbrella and a jacket`,
+      ),
   },
   EVENING_SNOW: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `${precipProb}% chance of snow tomorrow ❄️`,
-          `${tempMin}–${tempMax}°C. Plan to head out early`,
-        ),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `Snow tomorrow, ${tempMin}–${tempMax}°C`,
-          `${precipProb}% chance. Give yourself extra travel time`,
-        ),
-    ],
+    copy: ({ dayPartLabel, chillyTemp }) =>
+      copy(
+        dayPartLabel == null ? "Snow expected tomorrow ❄️" : `Snow starting ${dayPartLabel} ❄️`,
+        chillyTemp == null
+          ? "Allow extra travel time"
+          : `${chillyTemp}°C in the morning. Dress warm and leave early`,
+      ),
+  },
+  EVENING_SUMMARY: {
+    copy: ({ conditionLabel, tempMin, tempMax, isChilly }) =>
+      isChilly
+        ? copy(
+            `Chilly ${tempMin}°C tomorrow morning 🌙`,
+            `Bring a jacket. It warms to ${tempMax}°C later`,
+          )
+        : copy(`${conditionLabel} tomorrow, ${tempMin}–${tempMax}°C 🌙`, "Plan your day with it"),
   },
 } satisfies WeatherNotificationCopyCatalog;
 
@@ -528,7 +526,7 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("New to-do ideas for you ✨", "Based on your recent to-dos. Take a look"),
   },
   BILLING_ISSUE: {
-    copy: staticCopy("Check your payment details", "Update your payment info to keep Premium"),
+    copy: staticCopy("Check your payment details", "Update payment to keep your plan active."),
   },
   PREMIUM_GRANT_ENDING: {
     copy: staticCopy("Your Premium ends tomorrow", "Subscribe to keep Premium going"),
@@ -583,14 +581,47 @@ export const SYSTEM_TEMPLATES = {
   },
 } satisfies SystemNotificationCopyCatalog;
 
-export const SKY_LABEL_MAP = { CLEAR: "Clear", PARTLY_CLOUDY: "Partly cloudy", CLOUDY: "Cloudy" };
+export const WEATHER_CONDITION_LABEL = {
+  CLEAR: "Clear",
+  MOSTLY_CLEAR: "Mostly clear",
+  PARTLY_CLOUDY: "Partly cloudy",
+  MOSTLY_CLOUDY: "Mostly cloudy",
+  CLOUDY: "Cloudy",
+  FOGGY: "Foggy",
+  HAZY: "Hazy",
+  WINDY: "Windy",
+  DRIZZLE: "Drizzle",
+  RAIN: "Rain",
+  HEAVY_RAIN: "Heavy rain",
+  THUNDERSTORMS: "Thunderstorms",
+  SLEET: "Sleet",
+  SNOW: "Snow",
+  HEAVY_SNOW: "Heavy snow",
+  HAIL: "Hail",
+  HOT: "Hot",
+  FRIGID: "Frigid",
+} satisfies Record<WeatherCondition, string>;
+
+/** 영어는 "tomorrow"의 위치가 시간대마다 달라 내일을 포함한 완결된 구로 둔다. */
+export const WEATHER_DAY_PART_LABEL = {
+  dawn: "before dawn tomorrow",
+  morning: "tomorrow morning",
+  afternoon: "tomorrow afternoon",
+  evening: "tomorrow evening",
+} satisfies Record<WeatherDayPart, string>;
 
 export const WEATHER_FALLBACK = {
   MORNING: {
-    copy: staticCopy("Add weather to your day? ☀️", "Set a location in Korea for forecasts"),
+    copy: staticCopy("Add weather to your plans? ☀️", "Set a weather location for daily updates"),
   },
   EVENING: {
-    copy: staticCopy("Peek at tomorrow’s weather? 🌙", "Set a location in Korea for forecasts"),
+    copy: staticCopy("Plan with tomorrow’s weather 🌙", "Set a weather location for forecasts"),
+  },
+  MORNING_UNAVAILABLE: {
+    copy: staticCopy("Check today’s weather ☀️", "See the hourly forecast in the app"),
+  },
+  EVENING_UNAVAILABLE: {
+    copy: staticCopy("Check tomorrow’s weather 🌙", "See tomorrow’s forecast in the app"),
   },
 } satisfies WeatherFallbackCopyCatalog;
 

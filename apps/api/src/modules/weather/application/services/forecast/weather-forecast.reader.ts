@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { chunk } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -83,7 +84,7 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       this.#dependencies.logger.warn({
         event: WeatherLogEvent.FORECAST_PROVIDER_FAILED,
         provider: this.#dependencies.weatherProvider.name,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorType: toErrorType(error),
       });
     }
 

@@ -11,23 +11,20 @@ import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user
 import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/forecast/kma-forecast-availability.policy";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
 
-export const weatherAttributionFixture = {
-  provider: "APPLE_WEATHER",
-  serviceName: "Apple Weather",
-  legalPageUrl: "https://developer.apple.com/weatherkit/data-source-attribution/",
-  logo: {
-    light: {
-      "1x": "https://weatherkit.apple.com/assets/branding/ko/logo-light-1x.png",
-      "2x": "https://weatherkit.apple.com/assets/branding/ko/logo-light-2x.png",
-      "3x": "https://weatherkit.apple.com/assets/branding/ko/logo-light-3x.png",
+/** WeatherKit attribution API처럼 언어별로 다른 상표 로고 경로를 돌려준다. */
+export function weatherAttributionFixture(language = "ko"): WeatherReportAttribution {
+  const logoUrl = (variant: string) =>
+    `https://weatherkit.apple.com/assets/branding/${language}/logo-${variant}.png`;
+  return {
+    provider: "APPLE_WEATHER",
+    serviceName: "Apple Weather",
+    legalPageUrl: "https://developer.apple.com/weatherkit/data-source-attribution/",
+    logo: {
+      light: { "1x": logoUrl("light-1x"), "2x": logoUrl("light-2x"), "3x": logoUrl("light-3x") },
+      dark: { "1x": logoUrl("dark-1x"), "2x": logoUrl("dark-2x"), "3x": logoUrl("dark-3x") },
     },
-    dark: {
-      "1x": "https://weatherkit.apple.com/assets/branding/ko/logo-dark-1x.png",
-      "2x": "https://weatherkit.apple.com/assets/branding/ko/logo-dark-2x.png",
-      "3x": "https://weatherkit.apple.com/assets/branding/ko/logo-dark-3x.png",
-    },
-  },
-} as const satisfies WeatherReportAttribution;
+  };
+}
 
 /** 대상 날짜와 같은 시각의 발표에서 예보를 받는 timing (발표를 당기지 않는 경우) */
 export function kmaTimingFixture(target: Date, issuance: Date = target): KmaForecastTiming {
@@ -165,7 +162,6 @@ export function weatherReportFixture(
     hourly,
     daily,
     alerts: [],
-    attribution: weatherAttributionFixture,
     fetchedAt,
     ...overrides,
   };

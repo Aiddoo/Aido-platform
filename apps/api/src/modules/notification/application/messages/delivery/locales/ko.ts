@@ -1,5 +1,7 @@
+import type { WeatherCondition } from "@aido/api/vocabulary";
 import { josa } from "es-hangul";
 
+import type { WeatherDayPart } from "../../../../domain/services/reminders/weather-briefing.policy.js";
 import type {
   NotificationCopy,
   NotificationCopyFactory,
@@ -62,7 +64,7 @@ export const SCHEDULER_TEMPLATES = {
   TODO_REMINDER_IMMEDIATE: {
     variants: [
       ({ todoTitle }) => copy("지금 할 시간이에요 🐾", `‘${todoTitle}’ 시작해볼까요?`),
-      ({ todoTitle }) => copy("알림 맞춰둔 시간이에요", `‘${todoTitle}’ 끝내고 체크해봐요`),
+      ({ todoTitle }) => copy("알림을 맞춰둔 시간이에요", `‘${todoTitle}’ 끝내고 체크해봐요`),
       ({ todoTitle }) => copy("시작이 반이에요", `‘${todoTitle}’ 첫걸음만 떼볼까요?`),
     ],
   },
@@ -166,74 +168,77 @@ export const SCHEDULER_TEMPLATES = {
 } satisfies SchedulerNotificationCopyCatalog;
 
 export const WEATHER_TEMPLATES = {
-  MORNING_CLEAR: {
-    variants: [
-      ({ skyLabel, tempMin, tempMax }) =>
-        copy(`오늘 ${skyLabel}, ${tempMin}~${tempMax}°C`, "바깥에서 할 일이 있다면 오늘이 좋아요"),
-      ({ tempMin, tempMax, skyLabel }) =>
-        copy(`오늘 기온 ${tempMin}~${tempMax}°C`, `하늘은 ${skyLabel}. 옷차림 챙겨서 나가요 🐾`),
-    ],
+  MORNING_TODO_RAIN: {
+    copy: ({ time, todoTitle, precipChance, otherCount }) =>
+      copy(
+        `${time} ‘${todoTitle}’ 때 비 소식이 있어요 ☔`,
+        otherCount > 0
+          ? `할 일 ${otherCount}개도 비와 겹쳐요 · 시간 옮기기`
+          : `강수 확률 ${precipChance}% · 시간 옮기기`,
+      ),
   },
-  MORNING_RAIN: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(`오늘 비 올 확률 ${precipProb}% ☔`, `${tempMin}~${tempMax}°C, 우산 챙겨서 나가요`),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `오늘 비 예보, ${tempMin}~${tempMax}°C`,
-          `비 올 확률 ${precipProb}%. 바깥 할 일은 시간을 옮겨봐요`,
-        ),
-    ],
+  MORNING_TODO_STORM: {
+    copy: ({ time, todoTitle }) =>
+      copy(`${time} ‘${todoTitle}’ 때 낙뢰가 칠 수 있어요 ⚡`, "실내에서 하거나 시간을 옮겨보세요"),
   },
-  MORNING_SNOW: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `오늘 눈 올 확률 ${precipProb}% ❄️`,
-          `${tempMin}~${tempMax}°C, 따뜻하게 입고 길 조심해요`,
-        ),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `오늘 눈 예보, ${tempMin}~${tempMax}°C`,
-          `눈 올 확률 ${precipProb}%. 이동 시간을 넉넉히 잡아요`,
-        ),
-    ],
+  MORNING_TODO_SNOW: {
+    copy: ({ time, todoTitle }) =>
+      copy(`${time} ‘${todoTitle}’ 때 눈 소식이 있어요 ❄️`, "눈길이라 20분 일찍 나가는 게 좋아요"),
   },
-  EVENING_CLEAR: {
-    variants: [
-      ({ skyLabel, tempMin, tempMax }) =>
-        copy(`내일 ${skyLabel}, ${tempMin}~${tempMax}°C 🌙`, "바깥 할 일은 내일 하기 좋아요"),
-      ({ tempMin, tempMax, skyLabel }) =>
-        copy(`내일 기온 ${tempMin}~${tempMax}°C`, `하늘은 ${skyLabel}. 입을 옷 미리 골라둬요`),
-    ],
+  MORNING_TODO_HEAT: {
+    copy: ({ time, todoTitle, apparentTemp }) =>
+      copy(
+        `${time} ‘${todoTitle}’ 때 체감 ${apparentTemp}°C예요 ☀️`,
+        "더 선선한 시간으로 옮겨보세요",
+      ),
+  },
+  MORNING_RAIN_LATER: {
+    copy: ({ time }) => copy(`오늘 ${time}부터 비 소식이 있어요 ☔`, "나갈 땐 우산을 챙겨주세요"),
+  },
+  MORNING_SNOW_LATER: {
+    copy: ({ time }) =>
+      copy(`오늘 ${time}부터 눈 소식이 있어요 ❄️`, "길이 미끄러울 수 있어요. 따뜻하게 입어요"),
+  },
+  MORNING_SUMMARY: {
+    copy: ({ conditionLabel, tempMin, tempMax, precipChance }) =>
+      copy(
+        `오늘은 ${conditionLabel}, ${tempMin}~${tempMax}°C예요`,
+        `강수 확률 ${precipChance}%예요. 좋은 하루 보내요`,
+      ),
   },
   EVENING_RAIN: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `내일 비 올 확률 ${precipProb}% ☔`,
-          `${tempMin}~${tempMax}°C. 우산은 현관에 미리 둬요`,
-        ),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `내일 비 예보, ${tempMin}~${tempMax}°C`,
-          `비 올 확률 ${precipProb}%. 바깥 할 일은 다른 날로 옮겨봐요`,
-        ),
-    ],
+    copy: ({ dayPartLabel, chillyTemp }) =>
+      copy(
+        dayPartLabel == null
+          ? "내일 비 소식이 있어요 ☔"
+          : `내일 ${dayPartLabel}부터 비 소식이 있어요 ☔`,
+        chillyTemp == null
+          ? "우산을 미리 챙겨두세요"
+          : `아침엔 ${chillyTemp}°C로 쌀쌀해요. 우산과 겉옷을 챙겨주세요`,
+      ),
   },
   EVENING_SNOW: {
-    variants: [
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `내일 눈 올 확률 ${precipProb}% ❄️`,
-          `${tempMin}~${tempMax}°C. 내일은 조금 일찍 나서요`,
-        ),
-      ({ precipProb, tempMin, tempMax }) =>
-        copy(
-          `내일 눈 예보, ${tempMin}~${tempMax}°C`,
-          `눈 올 확률 ${precipProb}%. 이동 시간을 넉넉히 잡아요`,
-        ),
-    ],
+    copy: ({ dayPartLabel, chillyTemp }) =>
+      copy(
+        dayPartLabel == null
+          ? "내일 눈 소식이 있어요 ❄️"
+          : `내일 ${dayPartLabel}부터 눈 소식이 있어요 ❄️`,
+        chillyTemp == null
+          ? "이동 시간을 여유 있게 잡아두세요"
+          : `아침엔 ${chillyTemp}°C예요. 따뜻하게 입고 여유 있게 나가세요`,
+      ),
+  },
+  EVENING_SUMMARY: {
+    copy: ({ conditionLabel, tempMin, tempMax, isChilly }) =>
+      isChilly
+        ? copy(
+            `내일 아침은 ${tempMin}°C로 쌀쌀해요 🌙`,
+            `겉옷을 챙겨주세요. 낮에는 ${tempMax}°C까지 올라요`,
+          )
+        : copy(
+            `내일은 ${conditionLabel}, ${tempMin}~${tempMax}°C예요 🌙`,
+            "내일 계획에 참고해보세요",
+          ),
   },
 } satisfies WeatherNotificationCopyCatalog;
 
@@ -423,7 +428,7 @@ export const SOCIAL_TEMPLATES = {
       ({ friendName }) =>
         copy("친구에게 응원을 보내볼까요?", `${honorific(friendName)}에게 콕으로 인사해봐요`),
       ({ friendName }) =>
-        copy(`${honorific(friendName)}, 요즘 어떻게 지낼까요?`, "콕 하나로 안부를 전해봐요"),
+        copy(`${named(friendName, "은/는")} 요즘 어떻게 지낼까요?`, "콕 하나로 안부를 전해봐요"),
     ],
   },
   TODO_COMMENT: {
@@ -560,7 +565,7 @@ export const SYSTEM_TEMPLATES = {
     copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해주세요"),
   },
   PREMIUM_GRANT_ENDING: {
-    copy: staticCopy("내일 프리미엄이 끝나요", "구독하면 끊김 없이 이어져요"),
+    copy: staticCopy("내일 프리미엄이 끝나요", "구독하면 끊김 없이 이어져요."),
   },
   ONBOARDING_DAY0: {
     copy: staticCopy("첫 할 일을 적어볼까요? 🌱", "지금 떠오르는 작은 일 하나면 충분해요"),
@@ -609,14 +614,46 @@ export const SYSTEM_TEMPLATES = {
   },
 } satisfies SystemNotificationCopyCatalog;
 
-export const SKY_LABEL_MAP = { CLEAR: "맑음", PARTLY_CLOUDY: "구름 많음", CLOUDY: "흐림" };
+export const WEATHER_CONDITION_LABEL = {
+  CLEAR: "맑음",
+  MOSTLY_CLEAR: "대체로 맑음",
+  PARTLY_CLOUDY: "구름 조금",
+  MOSTLY_CLOUDY: "구름 많음",
+  CLOUDY: "흐림",
+  FOGGY: "안개",
+  HAZY: "연무",
+  WINDY: "강한 바람",
+  DRIZZLE: "이슬비",
+  RAIN: "비",
+  HEAVY_RAIN: "폭우",
+  THUNDERSTORMS: "뇌우",
+  SLEET: "진눈깨비",
+  SNOW: "눈",
+  HEAVY_SNOW: "폭설",
+  HAIL: "우박",
+  HOT: "무더위",
+  FRIGID: "강추위",
+} satisfies Record<WeatherCondition, string>;
+
+export const WEATHER_DAY_PART_LABEL = {
+  dawn: "새벽",
+  morning: "오전",
+  afternoon: "오후",
+  evening: "저녁",
+} satisfies Record<WeatherDayPart, string>;
 
 export const WEATHER_FALLBACK = {
   MORNING: {
-    copy: staticCopy("날씨도 같이 챙겨드릴까요? ☀️", "한국 내 지역을 설정하면 날씨를 알려드려요"),
+    copy: staticCopy("오늘 날씨를 함께 챙겨볼까요? ☀️", "날씨 위치를 정하면 매일 알려드릴게요"),
   },
   EVENING: {
-    copy: staticCopy("내일 날씨, 미리 알아볼까요? 🌙", "한국 내 지역을 설정하면 예보를 알려드려요"),
+    copy: staticCopy("내일 날씨도 미리 챙겨보세요 🌙", "날씨 위치를 정하면 내일 예보를 알려드려요"),
+  },
+  MORNING_UNAVAILABLE: {
+    copy: staticCopy("오늘 날씨를 확인해보세요 ☀️", "앱에서 시간대별 예보를 볼 수 있어요"),
+  },
+  EVENING_UNAVAILABLE: {
+    copy: staticCopy("내일 날씨를 미리 확인해보세요 🌙", "앱에서 내일 예보를 볼 수 있어요"),
   },
 } satisfies WeatherFallbackCopyCatalog;
 

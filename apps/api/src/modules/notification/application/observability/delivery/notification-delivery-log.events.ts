@@ -35,6 +35,10 @@ export const NotificationDeliveryLogEvent = {
     "notification.delivery.publish-push-delivery-outbox.publish-mark-failed",
   RECONCILE_PUSH_RECEIPTS_RECONCILED: "notification.delivery.reconcile-push-receipts.reconciled",
   REGISTER_PUSH_TOKEN_REGISTERED: "notification.delivery.register-push-token.registered",
+  REGISTER_PUSH_TOKEN_OWNER_TRANSFERRED:
+    "notification.delivery.register-push-token.owner-transferred",
+  REGISTER_PUSH_TOKEN_CONFLICT_RETRIED:
+    "notification.delivery.register-push-token.conflict-retried",
   SEND_BILLING_ISSUE_NOTIFICATION_SENT:
     "notification.delivery.send-billing-issue-notification.sent",
   SEND_CHEER_NOTIFICATION_SENT: "notification.delivery.send-cheer-notification.sent",

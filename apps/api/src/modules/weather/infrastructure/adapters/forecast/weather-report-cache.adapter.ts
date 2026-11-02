@@ -5,7 +5,6 @@ import {
   WEATHER_NEXT_HOUR_CONDITIONS,
   WEATHER_PRECIPITATION_TYPES,
   WEATHER_PRESSURE_TRENDS,
-  WEATHER_PROVIDERS,
 } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
@@ -128,17 +127,6 @@ const WEATHER_REPORT_SCHEMA = z.object({
       detailsUrl: z.string(),
     }),
   ),
-  attribution: z.object({
-    provider: z.enum(WEATHER_PROVIDERS),
-    serviceName: z.string(),
-    legalPageUrl: z.string(),
-    logo: z
-      .object({
-        light: z.object({ "1x": z.string(), "2x": z.string(), "3x": z.string() }),
-        dark: z.object({ "1x": z.string(), "2x": z.string(), "3x": z.string() }),
-      })
-      .nullable(),
-  }),
   fetchedAt: z.coerce.date(),
 }) satisfies z.ZodType<WeatherReport>;
 

@@ -21,6 +21,7 @@
 - **서버**: 요청의 `X-Timezone`(`@Timezone()` 데코레이터, `apps/api/src/platform/http/decorators/timezone.decorator.ts`)으로 사용자의 오늘·주·기간을 계산한다. 헤더가 없으면 저장된 사용자 시간대를 쓰는 경로가 있다(AI 파싱). 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다.
 - **모바일**: 시간대는 기기 달력(`expo-localization` `getCalendars()[0].timeZone`)에서만 온다. 앱 전체의 오늘 key·자정 전환은 `LocalDateProvider`(`apps/mobile/src/shared/providers/local-date-provider.tsx`)가 소유하고, Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 컴포넌트는 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다(dayjs 전역 locale로 주 시작을 바꾸는 경로 포함).
+- 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 파싱 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. `/v1/auth/me`의 `entitlements.*.resetsAt`이 같은 규칙의 다음 초기화 instant다.
 - 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 일요일 시작 규칙 하나(`apps/mobile/src/shared/utils/calendar-week.ts`)이고, 서버 리포트 기간은 각 기능의 명시한 규칙(ISO 주 등)을 쓴다. 같은 화면에서 두 주 규칙을 섞지 않는다.
 
 ## 3. 표시

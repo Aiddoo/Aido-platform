@@ -88,9 +88,15 @@ export interface WeatherReminderUser {
   readonly location: {
     readonly latitude: number;
     readonly longitude: number;
-    readonly gridX: number | null;
-    readonly gridY: number | null;
   } | null;
+}
+
+/** 날씨 알림과 겹치는지 볼 시각 지정·미완료 할 일 */
+export interface WeatherReminderTodo {
+  readonly id: number;
+  readonly userId: string;
+  readonly title: string;
+  readonly scheduledTime: Date;
 }
 
 /** 날씨 폴백 수신자 (위치 없음) */

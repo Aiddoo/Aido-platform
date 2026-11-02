@@ -1,6 +1,9 @@
 import type { GeoCell } from "../../../domain/value-objects/forecast/geo-cell.vo.js";
 import type { WeatherReportLanguage } from "../../models/forecast/weather-report-language.js";
-import type { WeatherReport } from "../../models/forecast/weather-report.model.js";
+import type {
+  WeatherReport,
+  WeatherReportAttribution,
+} from "../../models/forecast/weather-report.model.js";
 
 export const WEATHER_REPORT_PROVIDER = Symbol("WEATHER_REPORT_PROVIDER");
 
@@ -18,4 +21,10 @@ export interface WeatherReportProviderPort {
 
   /** 이 칸의 응답에 요청 언어로 번역되는 문구(특보 제목)가 있는지. 없으면 언어별로 캐시를 나누지 않는다. */
   localizesContent(cell: GeoCell, request: WeatherReportRequest): Promise<boolean>;
+
+  /**
+   * 공급자 표기(상표 로고·출처 고지)는 요청 언어를 따르므로 언어 공유 캐시 리포트와 따로 받는다.
+   * 로고를 받지 못해도 실패하지 않고 logo만 null로 돌려준다.
+   */
+  getAttribution(language: WeatherReportLanguage): Promise<WeatherReportAttribution>;
 }

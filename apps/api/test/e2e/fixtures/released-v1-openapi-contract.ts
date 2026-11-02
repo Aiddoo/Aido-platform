@@ -287,8 +287,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: 약관 동의 응답(ConsentResponseDto)에 optional aiDataSharingDecision·aiDataSharingAgreedAt·aiDataSharingConsentVersion만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preAiDataSharingConsentSchemasFingerprint:
 		"8e924ba837a2727c5c6198c3f34d09f8ac3158a88b2de4ec58fc299c8db2c7b4",
-	schemasFingerprint:
+	/** 1.14.0: /me(CurrentUserDto)에 optional isPremium·entitlements만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	prePremiumEntitlementsSchemasFingerprint:
 		"3e9c8aa0825e84970bd63164bc03cd7be96db5e5b65c9ab4b8d71356a11b347b",
+	schemasFingerprint:
+		"f1dc466cac426fe4252f6d06896a74db883035680a27fb6845b33f437f72ba09",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",

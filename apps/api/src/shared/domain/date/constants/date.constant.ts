@@ -22,4 +22,6 @@ export const TIME_UNIT = {
   MS_PER_MINUTE: 60_000,
   /** 1시간 = 3,600,000ms */
   MS_PER_HOUR: 3_600_000,
+  /** 1일 = 86,400,000ms (DST와 무관한 고정 길이) */
+  MS_PER_DAY: 86_400_000,
 } as const;

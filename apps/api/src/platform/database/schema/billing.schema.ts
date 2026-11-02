@@ -1,4 +1,5 @@
 import {
+  bigint,
   pgTable,
   integer,
   text,
@@ -12,7 +13,12 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { createEntityId } from "../entity-id.js";
-import { subscriptionStatus, premiumGrantSource, premiumGrantStatus } from "./enums.schema.js";
+import {
+  subscriptionEnvironment,
+  subscriptionStatus,
+  premiumGrantSource,
+  premiumGrantStatus,
+} from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
 export const subscription = pgTable(
@@ -22,7 +28,11 @@ export const subscription = pgTable(
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     dataRetentionUntil: timestamp({ precision: 3 }),
     deletedAt: timestamp({ precision: 3 }),
+    /** 구매 웹훅의 결제 환경. 이 열을 추가하기 전에 만든 행은 null(알 수 없음)이다. */
+    environment: subscriptionEnvironment(),
     expiresAt: timestamp({ precision: 3 }).notNull(),
+    /** BILLING_ISSUE가 알려 준 스토어 결제 유예의 끝. 그때까지 엔타이틀먼트가 남고 RENEWAL·EXPIRATION이 지운다. */
+    gracePeriodEndsAt: timestamp({ precision: 3 }),
     id: serial().primaryKey(),
     lastProcessedEventId: varchar({ length: 255 }),
     productId: varchar({ length: 100 }).notNull(),
@@ -57,6 +67,8 @@ export const subscription = pgTable(
 export const subscriptionEventReceipt = pgTable(
   "SubscriptionEventReceipt",
   {
+    /** 이 열을 추가하기 전에 처리한 이벤트는 null(알 수 없음)이다. */
+    environment: subscriptionEnvironment(),
     eventId: varchar({ length: 255 }).notNull(),
     eventType: varchar({ length: 50 }).notNull(),
     processedAt: timestamp({ precision: 3 }).notNull(),
@@ -72,6 +84,8 @@ export const premiumGrant = pgTable(
   {
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     durationDays: integer().notNull(),
+    /** 진행 중에 끊고 남은 기간의 정확한 길이(ms). null이면 durationDays일이다. */
+    durationMs: bigint({ mode: "number" }),
     endingNotifiedAt: timestamp({ precision: 3 }),
     endsAt: timestamp({ precision: 3 }),
     id: text().primaryKey().$defaultFn(createEntityId),

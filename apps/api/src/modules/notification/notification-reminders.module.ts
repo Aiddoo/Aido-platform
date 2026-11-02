@@ -3,9 +3,17 @@ import { Module } from "@nestjs/common";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
-import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
+import {
+  WEATHER_REPORT_READER,
+  WeatherForecastModule,
+  type WeatherReportReaderPort,
+} from "../weather/weather-forecast.public.js";
 import { RE_ENGAGEMENT_READER } from "./application/ports/reminders/re-engagement-reader.port.js";
 import { REMINDER_SCHEDULER } from "./application/ports/reminders/reminder-scheduler.port.js";
+import {
+  REMINDER_WEATHER_REPORT_READER,
+  type ReminderWeatherReportReaderPort,
+} from "./application/ports/reminders/reminder-weather-report.reader.port.js";
 import { SCHEDULED_REMINDER_READER } from "./application/ports/reminders/scheduled-reminder-reader.port.js";
 import { SCHEDULER_DEDUP } from "./application/ports/reminders/scheduler-dedup.port.js";
 import { SCHEDULER_PREFERENCE_READER } from "./application/ports/reminders/scheduler-preference-reader.port.js";
@@ -87,6 +95,15 @@ import {
       useExisting: DrizzleSchedulerReader,
     },
     { provide: TODO_REMINDER_READER, useExisting: DrizzleSchedulerReader },
+    // 날씨 알림은 화면과 같은 v2 리포트·칸 캐시를 weather Context의 공개 capability로 읽는다.
+    // useExisting은 두 Port의 구조 호환을 검사하지 않으므로 반환 타입으로 컴파일러가 확인하게 한다.
+    {
+      provide: REMINDER_WEATHER_REPORT_READER,
+      inject: [WEATHER_REPORT_READER],
+      useFactory: (
+        reader: Pick<WeatherReportReaderPort, "readReports">,
+      ): ReminderWeatherReportReaderPort => reader,
+    },
     {
       provide: SCHEDULER_PREFERENCE_READER,
       useExisting: DrizzleSchedulerReader,

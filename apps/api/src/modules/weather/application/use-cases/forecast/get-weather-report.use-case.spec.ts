@@ -1,13 +1,19 @@
 import { ErrorCode } from "@aido/api/errors";
 import { mock, type MockProxy } from "vitest-mock-extended";
 
+import { WeatherReportReader } from "#api/modules/weather/application/services/forecast/weather-report.reader";
 import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
 import { WeatherReportCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-report-cache.adapter";
+import { WeatherKitNotConfiguredError } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-token.resolver";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
-import { weatherLocationFixture, weatherReportFixture } from "#test/fixtures/weather.fixture";
+import {
+  weatherAttributionFixture,
+  weatherLocationFixture,
+  weatherReportFixture,
+} from "#test/fixtures/weather.fixture";
 import {
   StubAirQualityProvider,
   StubTimezoneResolver,
@@ -47,6 +53,12 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     logger = mock<ApplicationLogger>();
     useCase = new GetWeatherReport({
       weatherLocationRepository: repository,
+      weatherReportReader: new WeatherReportReader({
+        weatherReportProvider: provider,
+        weatherReportCache: cache,
+        timezoneResolver,
+        logger,
+      }),
       weatherReportProvider: provider,
       weatherReportCache: cache,
       timezoneResolver,
@@ -143,6 +155,18 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     expect(provider.calls).toHaveLength(1);
   });
 
+  it("언어 공유 캐시를 쓰는 칸도 공급자 표기는 요청 언어를 따른다", async () => {
+    // Given 특보를 제공하지 않는 칸에 한국어 요청이 먼저 캐시를 채운다
+    provider.hasLocalizedContent = false;
+    const korean = await useCase.execute({ userId: "weather-user", language: "ko", now });
+    // When
+    const english = await useCase.execute({ userId: "weather-user", language: "en", now });
+    // Then
+    expect(provider.calls).toHaveLength(1);
+    expect(korean.attribution).toEqual(weatherAttributionFixture("ko"));
+    expect(english.attribution).toEqual(weatherAttributionFixture("en"));
+  });
+
   it("특보처럼 번역 문구가 있는 칸은 언어별로 캐시를 나눈다", async () => {
     // Given 특보를 제공하는 칸
     provider.hasLocalizedContent = true;
@@ -201,6 +225,22 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
     });
   });
 
+  it("WeatherKit 자격 증명이 없어 칸 언어 판단부터 실패해도 500이 아닌 WEATHER_1901이다", async () => {
+    // Given 자격 없음: 가용성 판단과 본 호출이 모두 같은 오류로 실패한다
+    provider.localizationFailure = new WeatherKitNotConfiguredError();
+    provider.failure = new WeatherKitNotConfiguredError();
+    // When
+    const result = useCase.execute({ userId: "weather-user", language: "ko", now });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "weather.report.unavailable",
+        errorType: "WeatherKitNotConfiguredError",
+      }),
+    );
+  });
+
   it("한국 밖 위치는 대기질 공급자를 부르지 않고 airQuality가 null이다", async () => {
     // Given
     repository.records.set("weather-user", weatherLocationFixture("weather-user", "도쿄"));
@@ -245,6 +285,20 @@ describe("GetWeatherReport — 칸 단위 캐시·폴백과 한국 대기질", (
       "weather-user",
       UserLocation.reconstitute(
         UserLocationBuilder.create("weather-user").withTimezone(null).build(),
+      ),
+    );
+    // When
+    const result = await useCase.execute({ userId: "weather-user", language: "ko", now });
+    // Then
+    expect(result.location.timezone).toBe("Asia/Seoul");
+  });
+
+  it("응답 시간대는 저장된 위치 시간대가 아니라 일별 date를 정한 칸 중심 시간대다", async () => {
+    // Given 저장 시간대와 칸 중심 시간대가 다르다(시간대 경계 근처)
+    repository.records.set(
+      "weather-user",
+      UserLocation.reconstitute(
+        UserLocationBuilder.create("weather-user").withTimezone("Asia/Tokyo").build(),
       ),
     );
     // When

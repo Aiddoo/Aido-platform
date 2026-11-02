@@ -1,3 +1,5 @@
+import { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
+import { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -143,6 +145,22 @@ describe("UpsertLocation — 위치 저장과 이전 격자 무효화", () => {
     expect(timezone).toBe("Asia/Tokyo");
     expect(resolver.coordinates).toEqual([]);
     expect(repository.writes).toHaveLength(1);
+  });
+
+  it("시간대는 사용자 좌표가 아니라 칸 중심 좌표로 정해 저장하고 돌려준다", async () => {
+    // Given
+    const coordinate = Coordinate.of(41.9, -6.56);
+    timezoneResolver.region = { timezone: "Europe/Lisbon", countryCode: "PT" };
+    // When
+    const { location, timezone } = await useCase.execute({
+      userId: "weather-user",
+      latitude: coordinate.latitude,
+      longitude: coordinate.longitude,
+    });
+    // Then
+    expect(timezoneResolver.coordinates).toEqual([GeoCell.fromCoordinate(coordinate).center]);
+    expect(location.timezone).toBe("Europe/Lisbon");
+    expect(timezone).toBe("Europe/Lisbon");
   });
 
   it("한국에서 해외로 이동하면 이전 KMA 격자 캐시를 지운다", async () => {

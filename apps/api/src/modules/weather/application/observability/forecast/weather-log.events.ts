@@ -6,5 +6,6 @@ export const WeatherLogEvent = {
   CONDITIONS_FORECAST_UNAVAILABLE: "weather.conditions.forecast_unavailable",
   REPORT_FALLBACK_USED: "weather.report.fallback_used",
   REPORT_UNAVAILABLE: "weather.report.unavailable",
+  REPORT_READ_FAILED: "weather.report.read_failed",
   REPORT_AIR_QUALITY_UNAVAILABLE: "weather.report.air_quality_unavailable",
 } as const;

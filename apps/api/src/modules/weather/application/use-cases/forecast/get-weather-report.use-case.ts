@@ -1,16 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { KoreanWeatherCoveragePolicy } from "../../../domain/policies/forecast/korean-weather-coverage.policy.js";
 import { GeoCell } from "../../../domain/value-objects/forecast/geo-cell.vo.js";
-import {
-  SHARED_WEATHER_REPORT_SCOPE,
-  type WeatherReportLanguage,
-} from "../../models/forecast/weather-report-language.js";
+import type { WeatherReportLanguage } from "../../models/forecast/weather-report-language.js";
 import {
   type WeatherReport,
+  type WeatherReportAttribution,
   windowWeatherReport,
 } from "../../models/forecast/weather-report.model.js";
 import { WeatherLogEvent } from "../../observability/forecast/weather-log.events.js";
@@ -18,13 +17,11 @@ import type {
   AirQuality,
   AirQualityProvider,
 } from "../../ports/forecast/air-quality-provider.port.js";
-import type {
-  ResolvedRegion,
-  TimezoneResolverPort,
-} from "../../ports/forecast/timezone.resolver.port.js";
+import type { TimezoneResolverPort } from "../../ports/forecast/timezone.resolver.port.js";
 import type { WeatherLocationRepositoryPort } from "../../ports/forecast/weather-location.repository.port.js";
 import type { WeatherReportCachePort } from "../../ports/forecast/weather-report.cache.port.js";
 import type { WeatherReportProviderPort } from "../../ports/forecast/weather-report.provider.port.js";
+import type { WeatherReportReaderPort } from "../../ports/forecast/weather-report.reader.port.js";
 
 const KOREA_COUNTRY_CODE = "KR";
 
@@ -42,15 +39,14 @@ export interface WeatherReportResult {
   };
   readonly report: WeatherReport;
   readonly airQuality: AirQuality | null;
+  readonly attribution: WeatherReportAttribution;
 }
 
 interface GetWeatherReportDependencies {
   readonly weatherLocationRepository: Pick<WeatherLocationRepositoryPort, "findByUserId">;
-  readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getReport" | "localizesContent">;
-  readonly weatherReportCache: Pick<
-    WeatherReportCachePort,
-    "getOrLoadReport" | "getLatestReport" | "getOrLoadAirQuality"
-  >;
+  readonly weatherReportReader: Pick<WeatherReportReaderPort, "readReport">;
+  readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
+  readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
   readonly airQualityProvider: Pick<AirQualityProvider, "getAirQuality">;
   readonly logger: Pick<ApplicationLogger, "warn" | "error">;
@@ -70,24 +66,28 @@ export class GetWeatherReport {
     }
 
     const cell = GeoCell.fromCoordinate(location.coordinate);
-    // 같은 칸의 캐시를 모두가 공유하므로 공급자 요청 조건도 사용자 좌표가 아닌 칸 중심에서 정한다.
+    // 리포트·대기질 캐시를 칸 단위로 공유하므로 시간대·국가·대기질 여부도 사용자 좌표가 아닌 칸 중심에서 정한다.
     const region = this.#dependencies.timezoneResolver.resolve(cell.center);
     const isKorea =
-      region.countryCode === KOREA_COUNTRY_CODE &&
-      KoreanWeatherCoveragePolicy.covers(location.coordinate);
+      region.countryCode === KOREA_COUNTRY_CODE && KoreanWeatherCoveragePolicy.covers(cell.center);
 
-    const [reportResult, airQualityResult] = await Promise.allSettled([
-      this.#loadReport(cell, region, input.language),
+    // 리포트는 언어 공유 캐시일 수 있으므로 공급자 표기는 요청 언어로 따로 받는다.
+    const [reportResult, airQualityResult, attributionResult] = await Promise.allSettled([
+      this.#dependencies.weatherReportReader.readReport(cell, region, input.language),
       isKorea ? this.#loadAirQuality(cell) : Promise.resolve(null),
+      this.#dependencies.weatherReportProvider.getAttribution(input.language),
     ]);
     if (reportResult.status === "rejected") {
       throw reportResult.reason;
+    }
+    if (attributionResult.status === "rejected") {
+      throw attributionResult.reason;
     }
     if (airQualityResult.status === "rejected") {
       this.#dependencies.logger.warn({
         event: WeatherLogEvent.REPORT_AIR_QUALITY_UNAVAILABLE,
         cellKey: cell.key,
-        errorType: errorTypeOf(airQualityResult.reason),
+        errorType: toErrorType(airQualityResult.reason),
       });
     }
 
@@ -95,47 +95,12 @@ export class GetWeatherReport {
       location: {
         latitude: location.latitude,
         longitude: location.longitude,
-        timezone: location.timezone ?? region.timezone,
+        timezone: region.timezone,
       },
       report: windowWeatherReport(reportResult.value, input.now, region.timezone),
       airQuality: airQualityResult.status === "fulfilled" ? airQualityResult.value : null,
+      attribution: attributionResult.value,
     };
-  }
-
-  async #loadReport(
-    cell: GeoCell,
-    region: ResolvedRegion,
-    language: WeatherReportLanguage,
-  ): Promise<WeatherReport> {
-    const request = { timezone: region.timezone, countryCode: region.countryCode, language };
-    const scope = (await this.#dependencies.weatherReportProvider.localizesContent(cell, request))
-      ? language
-      : SHARED_WEATHER_REPORT_SCOPE;
-    try {
-      return await this.#dependencies.weatherReportCache.getOrLoadReport(cell, scope, () =>
-        this.#dependencies.weatherReportProvider.getReport(cell, request),
-      );
-    } catch (error) {
-      // 공급자 실패의 상세(status·latency)는 adapter가 이미 기록했다. 여기서는 폴백 결과만 남긴다.
-      const latest = await this.#dependencies.weatherReportCache.getLatestReport(cell, scope);
-      if (latest == null) {
-        this.#dependencies.logger.error({
-          event: WeatherLogEvent.REPORT_UNAVAILABLE,
-          cellKey: cell.key,
-          fallback: false,
-          errorType: errorTypeOf(error),
-          errorCode: ErrorCode.WEATHER_1901,
-        });
-        throw new ApplicationException(ErrorCode.WEATHER_1901);
-      }
-      this.#dependencies.logger.warn({
-        event: WeatherLogEvent.REPORT_FALLBACK_USED,
-        cellKey: cell.key,
-        fallback: true,
-        fetchedAt: latest.fetchedAt.toISOString(),
-      });
-      return latest;
-    }
   }
 
   #loadAirQuality(cell: GeoCell): Promise<AirQuality | null> {
@@ -144,8 +109,4 @@ export class GetWeatherReport {
       this.#dependencies.airQualityProvider.getAirQuality(latitude, longitude),
     );
   }
-}
-
-function errorTypeOf(error: unknown): string {
-  return error instanceof Error ? error.name : "UnknownError";
 }

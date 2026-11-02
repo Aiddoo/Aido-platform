@@ -14,12 +14,7 @@ function mapFixture(body: unknown, timezone: string) {
   if (currentWeather == null) {
     throw new Error("fixture에 currentWeather가 없습니다.");
   }
-  return toWeatherReport(
-    { ...weather, currentWeather },
-    timezone,
-    FETCHED_AT,
-    weatherAttributionFixture,
-  );
+  return toWeatherReport({ ...weather, currentWeather }, timezone, FETCHED_AT);
 }
 
 describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
@@ -48,7 +43,6 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
       precipitationIntensity: 1.2,
     });
     expect(report.fetchedAt).toEqual(FETCHED_AT);
-    expect(report.attribution).toBe(weatherAttributionFixture);
   });
 
   it("한국처럼 분 단위 예보·특보 dataset이 없으면 nextHour는 null, alerts는 빈 배열이다", () => {
@@ -217,6 +211,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
         daily: report.daily.slice(0, 10),
         location: { latitude: 69.65, longitude: 18.96, timezone: "Europe/Oslo" },
         airQuality: null,
+        attribution: weatherAttributionFixture(),
       }),
     );
     // Then

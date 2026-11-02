@@ -102,8 +102,26 @@ describe("WeatherKitAttributionResolver — Apple 날씨 출처 표기", () => {
     expect(attribution.logo).toBeNull();
     expect(attribution.serviceName).toBe("Apple Weather");
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ event: WeatherKitLogEvent.ATTRIBUTION_FAILED, language: "en" }),
+      expect.objectContaining({
+        event: WeatherKitLogEvent.ATTRIBUTION_FAILED,
+        language: "en",
+        status: 503,
+        errorType: "WeatherKitAttributionRequestError",
+      }),
     );
+  });
+
+  it("실패한 언어는 1분 동안 다시 요청하지 않고 로고 없이 응답한다", async () => {
+    // Given 첫 조회가 5xx로 실패했다
+    const { resolver, requests } = createResolver([json({}, 503), json(OBSERVED_KO_ATTRIBUTION)]);
+    await resolver.resolve("en");
+
+    // When
+    const attribution = await resolver.resolve("en");
+
+    // Then
+    expect(requests).toHaveLength(1);
+    expect(attribution.logo).toBeNull();
   });
 
   it("로고 경로 형식이 깨지면 로고를 버린다", async () => {

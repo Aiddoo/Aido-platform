@@ -444,6 +444,83 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       ).toMatchObject({ platform: "IOS", isActive: true });
     });
 
+    it("같은 사용자·기기가 다시 등록하면 한 행을 갱신한다", async () => {
+      // Given
+      mockPushProvider.validateToken.mockReturnValue(true);
+      await facade.registerPushToken({
+        userId: mockUserId,
+        token: mockPushToken,
+        platform: "IOS",
+        deviceId: "device-1",
+        appVersion: "1.13.0",
+      });
+
+      // When
+      await facade.registerPushToken({
+        userId: mockUserId,
+        token: mockPushToken,
+        platform: "IOS",
+        deviceId: "device-1",
+        appVersion: "1.14.0",
+      });
+
+      // Then
+      const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
+      expect(rows).toEqual([
+        expect.objectContaining({ userId: mockUserId, deviceId: "device-1", appVersion: "1.14.0" }),
+      ]);
+    });
+
+    it("이전 사용자의 해제가 실패한 기기에 다른 사용자가 등록하면 토큰 소유가 새 사용자로 옮겨진다", async () => {
+      // Given 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
+      mockPushProvider.validateToken.mockReturnValue(true);
+      await facade.registerPushToken({
+        userId: mockUserId,
+        token: mockPushToken,
+        platform: "IOS",
+        deviceId: "device-1",
+      });
+
+      // When 같은 기기에서 사용자 B가 로그인해 같은 토큰을 등록한다
+      const registration = facade.registerPushToken({
+        userId: "other-user",
+        token: mockPushToken,
+        platform: "IOS",
+        deviceId: "device-1",
+      });
+
+      // Then
+      await expect(registration).resolves.toBeUndefined();
+      const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
+      expect(rows).toEqual([
+        expect.objectContaining({ userId: "other-user", deviceId: "device-1", isActive: true }),
+      ]);
+      expect(await client.query.pushToken.findMany({ where: { userId: mockUserId } })).toEqual([]);
+    });
+
+    it("같은 사용자의 deviceId가 바뀌어도 같은 토큰은 새 기기 행 하나만 남는다", async () => {
+      // Given
+      mockPushProvider.validateToken.mockReturnValue(true);
+      await facade.registerPushToken({
+        userId: mockUserId,
+        token: mockPushToken,
+        platform: "IOS",
+        deviceId: "device-old",
+      });
+
+      // When
+      await facade.registerPushToken({
+        userId: mockUserId,
+        token: mockPushToken,
+        platform: "IOS",
+        deviceId: "device-new",
+      });
+
+      // Then
+      const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
+      expect(rows).toEqual([expect.objectContaining({ deviceId: "device-new" })]);
+    });
+
     it("유효하지 않은 토큰이면 예외를 발생시켜야 함", async () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(false);

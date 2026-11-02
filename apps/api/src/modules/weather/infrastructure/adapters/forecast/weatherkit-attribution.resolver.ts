@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import type {
   WeatherReportAttribution,
@@ -40,10 +41,19 @@ const attributionLogoSchema = z.object({
   dark: z.object({ "1x": z.url(), "2x": z.url(), "3x": z.url() }),
 });
 
+/** attribution 응답이 2xx가 아닐 때. 응답 본문은 담지 않는다. */
+export class WeatherKitAttributionRequestError extends Error {
+  constructor(readonly status: number) {
+    super(`WeatherKit attribution request failed: ${status}`);
+    this.name = "WeatherKitAttributionRequestError";
+  }
+}
+
 /**
  * Apple 날씨 데이터를 보여 주는 화면은 공급자 로고와 출처 고지 링크를 함께 표시해야 한다.
  * 로고 경로는 Apple이 언어별로 바꿀 수 있어 공식 attribution API에서 받고 7일 캐시한다.
  * 조회에 실패해도 날씨 응답은 그대로 내보내고 로고만 null로 둔다(앱은 서비스 이름 텍스트로 표기).
+ * 실패한 언어는 1분 동안 다시 부르지 않아 Apple 장애 중 요청마다 3초를 기다리지 않는다.
  */
 @Injectable()
 export class WeatherKitAttributionResolver {
@@ -51,7 +61,8 @@ export class WeatherKitAttributionResolver {
 
   constructor(
     @InjectHttpClient("weather") private readonly http: HttpClient,
-    @Inject(CacheService) private readonly cacheService: Pick<CacheService, "wrap">,
+    @Inject(CacheService)
+    private readonly cacheService: Pick<CacheService, "wrap" | "has" | "set">,
   ) {}
 
   async resolve(language: string): Promise<WeatherReportAttribution> {
@@ -64,6 +75,10 @@ export class WeatherKitAttributionResolver {
   }
 
   async #logo(language: string): Promise<WeatherReportAttributionLogo | null> {
+    const failureKey = WeatherReportCacheKey.attributionFailure(language);
+    if (await this.cacheService.has(failureKey)) {
+      return null;
+    }
     try {
       return await this.cacheService.wrap(
         WeatherReportCacheKey.attribution(language),
@@ -76,7 +91,7 @@ export class WeatherKitAttributionResolver {
             { timeoutMs: ATTRIBUTION_TIMEOUT_MS },
           );
           if (outcome.kind === "http_failure") {
-            throw new Error(`attribution http ${outcome.statusCode}`);
+            throw new WeatherKitAttributionRequestError(outcome.statusCode);
           }
           const attribution = weatherKitAttributionSchema.parse(outcome.body);
           return {
@@ -98,8 +113,14 @@ export class WeatherKitAttributionResolver {
       this.#logger.warn({
         event: WeatherKitLogEvent.ATTRIBUTION_FAILED,
         language,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        status: error instanceof WeatherKitAttributionRequestError ? error.status : null,
+        errorType: toErrorType(error),
       });
+      await this.cacheService.set(
+        failureKey,
+        true,
+        WEATHER_REPORT_CACHE_TTL_MS.ATTRIBUTION_FAILURE,
+      );
       return null;
     }
   }

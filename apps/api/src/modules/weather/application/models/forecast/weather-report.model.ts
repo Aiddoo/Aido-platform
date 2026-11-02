@@ -18,7 +18,6 @@ export interface WeatherReport {
   readonly hourly: readonly WeatherReportHour[];
   readonly daily: readonly WeatherReportDay[];
   readonly alerts: readonly WeatherReportAlert[];
-  readonly attribution: WeatherReportAttribution;
   readonly fetchedAt: Date;
 }
 

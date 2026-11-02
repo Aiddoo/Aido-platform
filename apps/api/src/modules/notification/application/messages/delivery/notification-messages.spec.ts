@@ -11,7 +11,6 @@ import {
   createOnboardingNotificationMessage,
   createTodoCommentNotificationMessage,
   createTodoReminderNotificationMessage,
-  createWeatherMorningNotificationMessage,
   createWeeklyAchievementNotificationMessage,
   createWinbackNotificationMessage,
 } from "./notification-messages.js";
@@ -396,19 +395,5 @@ describe("알림 문구 생성", () => {
     expect(
       createWeeklyAchievementNotificationMessage({ completedCount: 9, totalCount: 10 }).title,
     ).toContain("90%");
-  });
-
-  it("강수 형태를 강수 확률보다 우선한다", () => {
-    const message = createWeatherMorningNotificationMessage({
-      forecast: {
-        temperatureMin: 20,
-        temperatureMax: 27,
-        precipitationProbability: 10,
-        precipitationType: "RAIN",
-        skyCondition: "CLEAR",
-      },
-    });
-
-    expect(message.title).toContain("비");
   });
 });

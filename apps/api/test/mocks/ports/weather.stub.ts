@@ -1,3 +1,4 @@
+import type { WeatherReportLanguage } from "#api/modules/weather/application/models/forecast/weather-report-language";
 import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type { WeatherReport } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
@@ -205,11 +206,16 @@ export class StubTimezoneResolver implements TimezoneResolverPort {
 
 export class StubWeatherReportProvider implements WeatherReportProviderPort {
   readonly calls: { cellKey: string; request: WeatherReportRequest }[] = [];
+  readonly attributionLanguages: WeatherReportLanguage[] = [];
   report: WeatherReport = weatherReportFixture();
   failure: Error | null = null;
+  localizationFailure: Error | null = null;
   hasLocalizedContent = false;
 
   async localizesContent(): Promise<boolean> {
+    if (this.localizationFailure !== null) {
+      throw this.localizationFailure;
+    }
     return this.hasLocalizedContent;
   }
 
@@ -221,10 +227,17 @@ export class StubWeatherReportProvider implements WeatherReportProviderPort {
     return this.report;
   }
 
+  async getAttribution(language: WeatherReportLanguage): Promise<WeatherReportAttribution> {
+    this.attributionLanguages.push(language);
+    return weatherAttributionFixture(language);
+  }
+
   clear(): void {
     this.calls.length = 0;
+    this.attributionLanguages.length = 0;
     this.report = weatherReportFixture();
     this.failure = null;
+    this.localizationFailure = null;
   }
 }
 
@@ -253,6 +266,6 @@ export class StubWeatherKitAttributionResolver {
 
   async resolve(language: string): Promise<WeatherReportAttribution> {
     this.languages.push(language);
-    return weatherAttributionFixture;
+    return weatherAttributionFixture(language);
   }
 }

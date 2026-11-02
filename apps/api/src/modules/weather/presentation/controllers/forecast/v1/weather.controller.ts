@@ -136,7 +136,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 |------|------|----------------|
 | SYS_0002 | 기상청이 제공하지 않는 \`date\` (오늘 기준 이틀 전보다 이르거나 모레보다 늦음) | 오늘 날짜로 다시 조회 |
 | WEATHER_1901 | 기상청 API 장애 + fallback 캐시 없음 | "날씨 정보를 불러올 수 없습니다" 표시 후 재시도 |
-| WEATHER_1902 | 위치 미등록 | PUT /weather/location 호출 유도 |
+| WEATHER_1902 | 위치 미등록, 또는 기상청 격자가 없는 한국 밖 위치(\`PUT /v2/weather/location\`으로 저장) | 위치 미등록이면 PUT /weather/location 호출 유도, 해외 위치면 날씨 화면 대신 안내 표시 |
 		`,
   })
   @ApiSuccessResponse({ type: WeatherForecastResponseDto })
@@ -203,7 +203,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 ### 에러 코드
 | 코드 | 상황 | 클라이언트 처리 |
 |------|------|----------------|
-| WEATHER_1902 | 위치 미등록 | PUT /weather/location 호출 유도 |
+| WEATHER_1902 | 위치 미등록, 또는 기상청 격자가 없는 한국 밖 위치(\`PUT /v2/weather/location\`으로 저장) | 위치 미등록이면 PUT /weather/location 호출 유도, 해외 위치면 날씨 화면 대신 안내 표시 |
 		`,
   })
   @ApiSuccessResponse({ type: WeatherConditionsResponseDto })

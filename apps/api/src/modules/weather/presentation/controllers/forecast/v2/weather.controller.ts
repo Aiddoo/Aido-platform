@@ -11,6 +11,7 @@ import {
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Locale, type SupportedLocale } from "#api/platform/http/decorators/index";
 import {
+  ApiBadRequestError,
   ApiDoc,
   ApiNotFoundError,
   ApiServiceUnavailableError,
@@ -63,15 +64,15 @@ export class WeatherV2Controller {
 
 ### 동작
 - 전 세계 좌표를 받고, 좌표의 IANA 시간대를 계산해 함께 저장합니다.
-- 한국 범위(위도 33.0~39.0, 경도 124.0~132.0) 안이면 기상청 격자도 저장합니다. 그래서 v1 예보와 오전·오후 날씨 알림이 그대로 동작합니다.
-- 한국 밖 위치는 기상청 격자가 없으므로 오전·오후 날씨 알림을 보내지 않습니다.
+- 한국 범위(위도 33.0~39.0, 경도 124.0~132.0) 안이면 기상청 격자도 저장합니다. 격자는 v1 예보(1.13.x 이하 앱)와 AI 제안이 씁니다.
+- 오전·오후 날씨 알림은 이 API와 같은 v2 리포트로 만들므로 한국 밖 위치도 받습니다. 한국 밖 위치는 격자가 없어 v1 예보·부가 정보 조회가 \`WEATHER_1902\`입니다.
 - 사용자당 위치는 하나이며, 같은 요청을 반복해도 결과가 같습니다.
 
 ### 요청 조건
 - 사용자마다 분당 10회까지입니다.
 
 ### 응답 규칙
-- \`timezone\`은 저장한 위치의 IANA 시간대입니다.
+- \`timezone\`은 저장한 위치가 속한 칸 중심의 IANA 시간대로, \`GET /v2/weather\`의 \`location.timezone\`과 같습니다.
 
 ### 오류
 | 코드 | 상태 | 언제 | 클라이언트 대응 |
@@ -81,6 +82,7 @@ export class WeatherV2Controller {
 `,
   })
   @ApiSuccessResponse({ type: WeatherLocationResponseDto })
+  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async updateLocation(
     @CurrentUser() user: CurrentUserPayload,
@@ -117,7 +119,7 @@ export class WeatherV2Controller {
 
 ### 응답 규칙
 - 단위는 기온 °C, 풍속 m/s, 강수량 mm, 강수 강도 mm/h, 기압 hPa, 가시거리 m입니다. 확률·습도·운량은 0~100 정수입니다.
-- 시각은 UTC ISO 8601이고, 일별 \`date\`는 위치 시간대의 달력 날짜(YYYY-MM-DD)입니다.
+- 시각은 UTC ISO 8601이고, 일별 \`date\`는 위치 시간대의 달력 날짜(YYYY-MM-DD)입니다. \`location.timezone\`은 그 날짜를 정한 시간대(칸 중심 좌표의 시간대)입니다.
 - 값이 없으면 키를 빼지 않고 null로 보냅니다. \`nextHour\`·\`airQuality\`가 null이면 그 지역에서 제공하지 않거나 이번 조회에서 받지 못한 것입니다.
 
 ### 책임 분담

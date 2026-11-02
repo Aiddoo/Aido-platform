@@ -53,25 +53,45 @@ export interface SchedulerCopyVariablesByKey {
 
 export type SchedulerNotificationCopyCatalog = ExactCatalog<SchedulerCopyVariablesByKey>;
 
-export interface ClearWeatherCopyVariables {
-  readonly skyLabel: string;
-  readonly tempMin: number;
-  readonly tempMax: number;
-}
-
-export interface PrecipitationWeatherCopyVariables {
-  readonly tempMin: number;
-  readonly tempMax: number;
-  readonly precipProb: number;
+interface TodoWeatherCopyVariables {
+  /** 알림 시간대·언어로 만든 할 일 시각 ("오후 3시", "3 PM") */
+  readonly time: string;
+  readonly todoTitle: string;
 }
 
 export interface WeatherCopyVariablesByKey {
-  readonly MORNING_CLEAR: ClearWeatherCopyVariables;
-  readonly MORNING_RAIN: PrecipitationWeatherCopyVariables;
-  readonly MORNING_SNOW: PrecipitationWeatherCopyVariables;
-  readonly EVENING_CLEAR: ClearWeatherCopyVariables;
-  readonly EVENING_RAIN: PrecipitationWeatherCopyVariables;
-  readonly EVENING_SNOW: PrecipitationWeatherCopyVariables;
+  readonly MORNING_TODO_RAIN: TodoWeatherCopyVariables & {
+    readonly precipChance: number;
+    /** 같은 비와 겹친 다른 할 일 수 */
+    readonly otherCount: number;
+  };
+  readonly MORNING_TODO_STORM: TodoWeatherCopyVariables;
+  readonly MORNING_TODO_SNOW: TodoWeatherCopyVariables;
+  readonly MORNING_TODO_HEAT: TodoWeatherCopyVariables & { readonly apparentTemp: number };
+  readonly MORNING_RAIN_LATER: { readonly time: string };
+  readonly MORNING_SNOW_LATER: { readonly time: string };
+  readonly MORNING_SUMMARY: {
+    readonly conditionLabel: string;
+    readonly tempMin: number;
+    readonly tempMax: number;
+    readonly precipChance: number;
+  };
+  readonly EVENING_RAIN: {
+    /** 비가 시작하는 내일의 때. 모르면 null */
+    readonly dayPartLabel: string | null;
+    /** 쌀쌀하면 내일 최저 기온, 아니면 null */
+    readonly chillyTemp: number | null;
+  };
+  readonly EVENING_SNOW: {
+    readonly dayPartLabel: string | null;
+    readonly chillyTemp: number | null;
+  };
+  readonly EVENING_SUMMARY: {
+    readonly conditionLabel: string;
+    readonly tempMin: number;
+    readonly tempMax: number;
+    readonly isChilly: boolean;
+  };
 }
 
 export type WeatherNotificationCopyCatalog = ExactCatalog<WeatherCopyVariablesByKey>;
@@ -170,8 +190,12 @@ export type RetentionNotificationCopySelection =
   | { readonly stage: "D7"; readonly copyKey: "d7_has_progress" | "d7_restart" };
 
 export interface WeatherFallbackCopyCatalog {
+  /** 날씨 위치가 없을 때 */
   readonly MORNING: LocalizedNotificationTemplate<undefined>;
   readonly EVENING: LocalizedNotificationTemplate<undefined>;
+  /** 위치는 있지만 예보를 받지 못했을 때 */
+  readonly MORNING_UNAVAILABLE: LocalizedNotificationTemplate<undefined>;
+  readonly EVENING_UNAVAILABLE: LocalizedNotificationTemplate<undefined>;
 }
 
 /** 재시도에도 같은 카피를 선택하기 위한 결정적 variant seed. */

@@ -12,7 +12,6 @@ import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   WeatherReport,
-  WeatherReportAttribution,
   WeatherReportAlert,
   WeatherReportCurrent,
   WeatherReportDay,
@@ -322,7 +321,6 @@ export function toWeatherReport(
   weather: WeatherKitWeather & { readonly currentWeather: WeatherKitCurrentWeather },
   timezone: string,
   requestedAt: Date,
-  attribution: WeatherReportAttribution,
 ): WeatherReport {
   return {
     current: toCurrent(weather.currentWeather),
@@ -332,7 +330,6 @@ export function toWeatherReport(
     alerts: sortBy((weather.weatherAlerts?.alerts ?? []).map(toAlert), [
       (alert) => SEVERITY_ORDER[alert.severity],
     ]),
-    attribution,
     // 공급자가 데이터를 읽은 시각이 있으면 그것을, 없으면 요청 시각을 쓴다.
     fetchedAt: weather.currentWeather.metadata?.readTime ?? requestedAt,
   };

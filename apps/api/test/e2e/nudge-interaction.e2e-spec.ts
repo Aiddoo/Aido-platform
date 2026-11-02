@@ -13,6 +13,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, count, eq, isNotNull, type SQL } from "drizzle-orm";
 import request from "supertest";
 
+import { NOTIFICATION_COPY_REVISION } from "#api/modules/notification/application/messages/delivery/notification-copy-revision";
 import { NUDGE_INTERACTION_CONFIG } from "#api/modules/social/application/ports/nudges/nudge-interaction.config.port";
 import {
   NUDGE_NOTIFIER,
@@ -197,7 +198,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
       with: { pushDispatch: { with: { outbox: true } } },
     });
     expect(notifications).toHaveLength(1);
-    expect(notifications[0]?.metadata).toMatchObject({ copyRevision: "1.14.0" });
+    expect(notifications[0]?.metadata).toMatchObject({ copyRevision: NOTIFICATION_COPY_REVISION });
     expect(notifications[0]?.pushDispatch?.outbox).toMatchObject({
       dispatchId: expect.any(Number),
     });
