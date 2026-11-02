@@ -16,7 +16,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatClockTime, type TimeFormat } from '@src/shared/utils/date-format';
-import { useSuspenseQueries } from '@tanstack/react-query';
+import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Fragment } from 'react';
@@ -34,20 +34,27 @@ import { WeatherMascot } from './weather-mascot';
 
 /**
  * 오늘 할 일과 시간별 강수를 겹쳐 비와 만나는 할 일을 알려 준다.
- * 리포트와 오늘 할 일을 동시에 받아 한쪽을 기다리느라 늦어지지 않게 한다.
+ * 리포트는 히어로가 이미 요청한 같은 캐시를 던지지 않는 useQuery로 구독한다. 리포트 실패는 화면의
+ * 리포트 경계 한 곳에서만 보이고 보고되며, 이 블록의 경계는 오늘 할 일 실패만 맡는다.
+ * 오늘 할 일·설정은 함께 suspend해 리포트 요청과 동시에 받는다.
  */
 export function WeatherBriefing() {
   const { t } = useTranslation('weather');
-  const [{ data: report, dataUpdatedAt }, { data: todoList }, { data: preference }] =
-    useSuspenseQueries({
-      queries: [
-        { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
-        useGetTodosByDateQueryOptions({ date: useTodayKey() }),
-        useGetPreferenceQueryOptions(),
-      ],
-    });
+  const { data: report, dataUpdatedAt } = useQuery({
+    ...useGetWeatherReportQueryOptions(),
+    select: WeatherReportSelect.briefing,
+  });
+  const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
+    queries: [
+      useGetTodosByDateQueryOptions({ date: useTodayKey() }),
+      useGetPreferenceQueryOptions(),
+    ],
+  });
   const now = new Date(dataUpdatedAt);
 
+  if (report == null) {
+    return <WeatherBriefing.Loading />;
+  }
   if (WeatherReportPolicy.isNowcastExpired(report, now)) {
     return <WeatherBriefing.Empty />;
   }

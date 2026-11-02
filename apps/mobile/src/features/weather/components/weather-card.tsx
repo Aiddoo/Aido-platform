@@ -1,9 +1,9 @@
-import { useTheme } from '@src/shared/providers/theme-provider';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { times } from 'es-toolkit/compat';
 import { GlassView } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 const GLASS_INTENSITY = 30;
 
@@ -18,7 +18,7 @@ interface WeatherCardProps extends Omit<ComponentProps<typeof GlassView>, 'child
  * 블러가 없는 Android와 투명도 줄이기 설정에서는 같은 톤의 불투명 면으로 그린다.
  */
 export function WeatherCard({ title, icon, children, ...props }: WeatherCardProps) {
-  const { resolvedTheme } = useTheme();
+  const { theme } = useUniwind();
   const shouldUseOpaqueGlass = useReduceTransparency();
 
   return (
@@ -26,7 +26,7 @@ export function WeatherCard({ title, icon, children, ...props }: WeatherCardProp
       <GlassView
         intensity={GLASS_INTENSITY}
         tint="dark"
-        fallbackColor={resolvedTheme === 'dark' ? 'overlay' : 'background-inverse'}
+        fallbackColor={theme === 'dark' ? 'overlay' : 'background-inverse'}
         forceFallbackColor={shouldUseOpaqueGlass}
         {...props}
       />
