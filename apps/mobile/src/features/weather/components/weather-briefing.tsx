@@ -17,12 +17,10 @@ import {
 } from '@src/shared/ui';
 import { formatClockTime, type TimeFormat } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Fragment } from 'react';
 import { match } from 'ts-pattern';
-import { withUniwind } from 'uniwind';
 
 import { type RainyTodo, WeatherBriefingPolicy } from '../domains/weather-briefing.model';
 import { WeatherReportPolicy } from '../domains/weather-report.model';
@@ -32,8 +30,7 @@ import {
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
 import { WeatherCard } from './weather-card';
-
-const StyledImage = withUniwind(Image);
+import { WeatherMascot } from './weather-mascot';
 
 /**
  * 오늘 할 일과 시간별 강수를 겹쳐 비와 만나는 할 일을 알려 준다.
@@ -73,13 +70,7 @@ export function WeatherBriefing() {
   return (
     <WeatherCard title={t('briefing.title')}>
       <HStack gap={12} align="center">
-        <StyledImage
-          source={catSuggestionImage}
-          className="size-12"
-          contentFit="contain"
-          accessible={false}
-          accessibilityIgnoresInvertColors
-        />
+        <WeatherMascot source={catSuggestionImage} className="size-12" fallbackCondition="RAIN" />
         <Text size="b1" weight="semibold" tone="white" className="shrink">
           {headline}
         </Text>

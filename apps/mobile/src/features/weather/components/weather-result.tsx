@@ -1,9 +1,8 @@
 import { Box, Result } from '@src/shared/ui';
-import { Image, type ImageSource } from 'expo-image';
+import type { ImageSource } from 'expo-image';
 import type { ComponentProps } from 'react';
-import { withUniwind } from 'uniwind';
 
-const StyledImage = withUniwind(Image);
+import { WeatherMascot } from './weather-mascot';
 
 interface WeatherResultProps extends Omit<ComponentProps<typeof Result>, 'icon'> {
   image: ImageSource | number;
@@ -18,12 +17,11 @@ export function WeatherResult({ image, ...props }: WeatherResultProps) {
     <Box className="rounded-[22px] bg-white px-6 py-8">
       <Result
         icon={
-          <StyledImage
+          <WeatherMascot
             source={image}
             className="size-28"
-            contentFit="contain"
-            accessible={false}
-            accessibilityIgnoresInvertColors
+            fallbackCondition="CLEAR"
+            fallbackColorClassName="text-gray-6"
           />
         }
         {...props}

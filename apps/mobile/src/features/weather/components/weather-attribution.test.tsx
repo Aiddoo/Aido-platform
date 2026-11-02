@@ -69,7 +69,7 @@ describe('WeatherAttribution', () => {
     const { queryClient } = await renderAttribution(createWeatherReport());
 
     // When
-    fireEvent.press(screen.getByRole('link'));
+    await fireEvent.press(screen.getByRole('link'));
 
     // Then
     expect(screen.getByTestId('weather-attribution-logo')).toBeTruthy();

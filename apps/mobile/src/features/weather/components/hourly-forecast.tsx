@@ -11,9 +11,7 @@ import {
 } from '@src/shared/utils/date-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Image } from 'expo-image';
 import { FlatList, useWindowDimensions } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
 import {
@@ -28,8 +26,7 @@ import {
 import { formatDegrees } from '../utils/format-degrees';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
-
-const StyledImage = withUniwind(Image);
+import { WeatherMascot } from './weather-mascot';
 
 /** 이 확률 미만이면 강수 확률을 숨겨 아이콘 줄을 가볍게 둔다. */
 const VISIBLE_CHANCE = 20;
@@ -53,12 +50,10 @@ export function HourlyForecast() {
 
   return (
     <Box>
-      <StyledImage
+      <WeatherMascot
         source={catImage}
         className="absolute -top-[72px] right-6 h-[73px] w-[100px]"
-        contentFit="contain"
-        accessible={false}
-        accessibilityIgnoresInvertColors
+        fallbackCondition="PARTLY_CLOUDY"
       />
       <WeatherCard title={t('hourly.title')}>
         <FlatList
