@@ -54,7 +54,10 @@ export type WeatherMinuteForecast = z.infer<typeof weatherMinuteForecastSchema>;
 
 export const weatherNextHourPeriodSchema = z.object({
   condition: z.enum(WEATHER_NEXT_HOUR_CONDITIONS).describe("구간 상태"),
-  precipitationType: z.enum(WEATHER_PRECIPITATION_TYPES).describe("강수 형태"),
+  precipitationType: z
+    .enum(WEATHER_PRECIPITATION_TYPES)
+    .nullable()
+    .describe("강수 형태. 맑음 구간은 NONE, 공급자가 형태 없이 '강수'로만 알리면 null"),
   startsAt: datetimeSchema.describe("구간 시작 시각"),
   endsAt: nullableDatetimeSchema.describe("구간 끝 시각. 예보 범위 끝까지 이어지면 null"),
   precipitationChance: percentSchema.describe("구간 최대 강수 확률 (%)"),
@@ -65,7 +68,9 @@ export type WeatherNextHourPeriod = z.infer<typeof weatherNextHourPeriodSchema>;
 
 export const weatherNextHourSchema = z.object({
   periods: z.array(weatherNextHourPeriodSchema).describe("맑음·강수가 바뀌는 구간 요약"),
-  minutes: z.array(weatherMinuteForecastSchema).describe("지금부터 약 60분, 1분 간격"),
+  minutes: z
+    .array(weatherMinuteForecastSchema)
+    .describe("지금부터 공급자 예보 끝(최대 약 90분)까지 1분 간격"),
 });
 
 export type WeatherNextHour = z.infer<typeof weatherNextHourSchema>;
@@ -113,6 +118,11 @@ export const weatherDailyForecastSchema = z.object({
   sunrise: nullableDatetimeSchema.describe("일출 시각 (극야면 null)"),
   sunset: nullableDatetimeSchema.describe("일몰 시각 (백야면 null)"),
   moonPhase: z.enum(WEATHER_MOON_PHASES).describe("달 위상"),
+  moonrise: nullableDatetimeSchema.describe("월출 시각 (그날 뜨지 않으면 null)"),
+  moonset: nullableDatetimeSchema.describe("월몰 시각 (그날 지지 않으면 null)"),
+  restOfDay: weatherDayPartForecastSchema
+    .nullable()
+    .describe("지금부터 그날 끝까지 예보. 오늘 항목에만 있고 나머지는 null"),
   daytime: weatherDayPartForecastSchema.nullable().describe("낮(07~19시) 예보"),
   overnight: weatherDayPartForecastSchema.nullable().describe("밤(19~다음 날 07시) 예보"),
 });
@@ -239,7 +249,10 @@ export const weatherReportSchema = z
           windGustMax: 11.4,
           sunrise: "2026-11-01T21:51:00.000Z",
           sunset: "2026-11-02T08:28:00.000Z",
-          moonPhase: "WANING_CRESCENT",
+          moonPhase: "THIRD_QUARTER",
+          moonrise: null,
+          moonset: "2026-11-02T04:50:15.000Z",
+          restOfDay: null,
           daytime: {
             condition: "RAIN",
             temperatureMin: 10,
