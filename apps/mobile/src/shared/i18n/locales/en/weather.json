@@ -31,7 +31,8 @@
     "locationUpdateFailed": "Failed to register your location"
   },
   "errors": {
-    "locationNotRegistered": "No location has been registered"
+    "locationNotRegistered": "No location has been registered",
+    "locationUnavailable": "Couldn't find your current location"
   },
   "screen": {
     "kmaPreparing": "Weather data is being prepared",
