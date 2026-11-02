@@ -121,9 +121,22 @@ export interface WeatherReportAlert {
   readonly detailsUrl: string;
 }
 
-interface WeatherReportAttribution {
+export interface WeatherReportAttributionLogo {
+  readonly light: WeatherReportAttributionLogoSet;
+  readonly dark: WeatherReportAttributionLogoSet;
+}
+
+interface WeatherReportAttributionLogoSet {
+  readonly "1x": string;
+  readonly "2x": string;
+  readonly "3x": string;
+}
+
+export interface WeatherReportAttribution {
   readonly provider: WeatherProvider;
+  readonly serviceName: string;
   readonly legalPageUrl: string;
+  readonly logo: WeatherReportAttributionLogo | null;
 }
 
 const HOUR_MS = 60 * 60_000;

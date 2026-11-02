@@ -21,6 +21,7 @@ import { KmaWeatherProvider } from "./infrastructure/adapters/forecast/kma-weath
 import { TzLookupTimezoneResolver } from "./infrastructure/adapters/forecast/tz-lookup-timezone.resolver.js";
 import { WeatherCacheAdapter } from "./infrastructure/adapters/forecast/weather-cache.adapter.js";
 import { WeatherReportCacheAdapter } from "./infrastructure/adapters/forecast/weather-report-cache.adapter.js";
+import { WeatherKitAttributionResolver } from "./infrastructure/adapters/forecast/weatherkit-attribution.resolver.js";
 import { WeatherKitReportProvider } from "./infrastructure/adapters/forecast/weatherkit-report.provider.js";
 import { WeatherKitTokenResolver } from "./infrastructure/adapters/forecast/weatherkit-token.resolver.js";
 import { DrizzleWeatherLocationRepository } from "./infrastructure/persistence/forecast/drizzle-weather-location.repository.js";
@@ -56,6 +57,7 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
     { provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
     { provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
     WeatherKitTokenResolver,
+    WeatherKitAttributionResolver,
     { provide: WEATHER_REPORT_PROVIDER, useClass: WeatherKitReportProvider },
     { provide: WEATHER_REPORT_CACHE, useClass: WeatherReportCacheAdapter },
     { provide: TIMEZONE_RESOLVER, useClass: TzLookupTimezoneResolver },

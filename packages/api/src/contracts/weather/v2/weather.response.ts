@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { dateSchema, datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import {
+  WEATHER_AIR_QUALITY_SOURCES,
   WEATHER_ALERT_SEVERITIES,
   WEATHER_CONDITIONS,
   WEATHER_MOON_PHASES,
@@ -132,6 +133,7 @@ export type WeatherDailyForecast = z.infer<typeof weatherDailyForecastSchema>;
 export const weatherAirQualitySchema = z.object({
   pm10: z.number().min(0).nullable().describe("미세먼지 (μg/m³)"),
   pm25: z.number().min(0).nullable().describe("초미세먼지 (μg/m³)"),
+  source: z.enum(WEATHER_AIR_QUALITY_SOURCES).describe("대기질 출처. 화면에 출처를 함께 표기한다"),
 });
 
 export type WeatherAirQuality = z.infer<typeof weatherAirQualitySchema>;
@@ -149,9 +151,27 @@ export const weatherAlertSchema = z.object({
 
 export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
 
+const weatherAttributionLogoSchema = z.object({
+  "1x": z.url(),
+  "2x": z.url(),
+  "3x": z.url(),
+});
+
 export const weatherAttributionSchema = z.object({
   provider: z.enum(WEATHER_PROVIDERS).describe("데이터 공급자"),
-  legalPageUrl: z.url().describe("공급자 데이터 출처 고지 페이지"),
+  serviceName: z.string().describe("공급자 서비스 표기 (예: Apple Weather)"),
+  legalPageUrl: z
+    .url()
+    .describe("공급자 데이터 출처 고지 페이지. 로고와 함께 링크로 노출해야 한다"),
+  logo: z
+    .object({
+      light: weatherAttributionLogoSchema.describe("밝은 배경용 로고 (검은 글자)"),
+      dark: weatherAttributionLogoSchema.describe("어두운 배경용 로고 (흰 글자)"),
+    })
+    .nullable()
+    .describe(
+      "공급자 로고. 크기를 줄이거나 변형하지 않고 1x 크기 이상으로 표시한다. 받지 못하면 null",
+    ),
 });
 
 export type WeatherAttribution = z.infer<typeof weatherAttributionSchema>;
@@ -272,10 +292,23 @@ export const weatherReportSchema = z
         },
       ],
       alerts: [],
-      airQuality: { pm10: 32, pm25: 18 },
+      airQuality: { pm10: 32, pm25: 18, source: "AIRKOREA" },
       attribution: {
         provider: "APPLE_WEATHER",
+        serviceName: "Apple Weather",
         legalPageUrl: "https://developer.apple.com/weatherkit/data-source-attribution/",
+        logo: {
+          light: {
+            "1x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_1X_090122.png",
+            "2x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_2X_090122.png",
+            "3x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_3X_090122.png",
+          },
+          dark: {
+            "1x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_1X_090122.png",
+            "2x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_2X_090122.png",
+            "3x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_3X_090122.png",
+          },
+        },
       },
       fetchedAt: "2026-11-02T06:20:00.000Z",
     },

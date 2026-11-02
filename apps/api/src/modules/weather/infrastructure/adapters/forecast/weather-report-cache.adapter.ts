@@ -128,7 +128,14 @@ const WEATHER_REPORT_SCHEMA = z.object({
   ),
   attribution: z.object({
     provider: z.enum(WEATHER_PROVIDERS),
+    serviceName: z.string(),
     legalPageUrl: z.string(),
+    logo: z
+      .object({
+        light: z.object({ "1x": z.string(), "2x": z.string(), "3x": z.string() }),
+        dark: z.object({ "1x": z.string(), "2x": z.string(), "3x": z.string() }),
+      })
+      .nullable(),
   }),
   fetchedAt: z.coerce.date(),
 }) satisfies z.ZodType<WeatherReport>;

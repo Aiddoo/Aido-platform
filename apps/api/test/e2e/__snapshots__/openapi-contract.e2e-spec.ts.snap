@@ -14239,11 +14239,25 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "airQuality": {
           "pm10": 32,
           "pm25": 18,
+          "source": "AIRKOREA",
         },
         "alerts": [],
         "attribution": {
           "legalPageUrl": "https://developer.apple.com/weatherkit/data-source-attribution/",
+          "logo": {
+            "dark": {
+              "1x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_1X_090122.png",
+              "2x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_2X_090122.png",
+              "3x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_wht_ko_3X_090122.png",
+            },
+            "light": {
+              "1x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_1X_090122.png",
+              "2x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_2X_090122.png",
+              "3x": "https://weatherkit.apple.com/assets/branding/ko/Apple_Weather_blk_ko_3X_090122.png",
+            },
+          },
           "provider": "APPLE_WEATHER",
+          "serviceName": "Apple Weather",
         },
         "current": {
           "apparentTemperature": 9.1,
@@ -14359,10 +14373,18 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "nullable": true,
               "type": "number",
             },
+            "source": {
+              "description": "대기질 출처. 화면에 출처를 함께 표기한다",
+              "enum": [
+                "AIRKOREA",
+              ],
+              "type": "string",
+            },
           },
           "required": [
             "pm10",
             "pm25",
+            "source",
           ],
           "type": "object",
         },
@@ -14435,9 +14457,66 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "attribution": {
           "properties": {
             "legalPageUrl": {
-              "description": "공급자 데이터 출처 고지 페이지",
+              "description": "공급자 데이터 출처 고지 페이지. 로고와 함께 링크로 노출해야 한다",
               "format": "uri",
               "type": "string",
+            },
+            "logo": {
+              "description": "공급자 로고. 크기를 줄이거나 변형하지 않고 1x 크기 이상으로 표시한다. 받지 못하면 null",
+              "nullable": true,
+              "properties": {
+                "dark": {
+                  "description": "어두운 배경용 로고 (흰 글자)",
+                  "properties": {
+                    "1x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "2x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "3x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "1x",
+                    "2x",
+                    "3x",
+                  ],
+                  "type": "object",
+                },
+                "light": {
+                  "description": "밝은 배경용 로고 (검은 글자)",
+                  "properties": {
+                    "1x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "2x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                    "3x": {
+                      "format": "uri",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "1x",
+                    "2x",
+                    "3x",
+                  ],
+                  "type": "object",
+                },
+              },
+              "required": [
+                "light",
+                "dark",
+              ],
+              "type": "object",
             },
             "provider": {
               "description": "데이터 공급자",
@@ -14446,10 +14525,16 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               ],
               "type": "string",
             },
+            "serviceName": {
+              "description": "공급자 서비스 표기 (예: Apple Weather)",
+              "type": "string",
+            },
           },
           "required": [
             "provider",
+            "serviceName",
             "legalPageUrl",
+            "logo",
           ],
           "type": "object",
         },

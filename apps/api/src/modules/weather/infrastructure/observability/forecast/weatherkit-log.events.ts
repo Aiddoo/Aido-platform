@@ -4,5 +4,6 @@ export const WeatherKitLogEvent = {
   REQUEST_SKIPPED: "weather.weatherkit.request_skipped",
   DATASET_DROPPED: "weather.weatherkit.dataset_dropped",
   AVAILABILITY_FAILED: "weather.weatherkit.availability_failed",
+  ATTRIBUTION_FAILED: "weather.weatherkit.attribution_failed",
   TOKEN_SIGNED: "weather.weatherkit.token_signed",
 } as const;

@@ -1,5 +1,6 @@
 import { weatherReportSchema } from "@aido/api";
 
+import { weatherAttributionFixture } from "#test/fixtures/weather.fixture";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
 
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
@@ -13,7 +14,12 @@ function mapFixture(body: unknown, timezone: string) {
   if (currentWeather == null) {
     throw new Error("fixture에 currentWeather가 없습니다.");
   }
-  return toWeatherReport({ ...weather, currentWeather }, timezone, FETCHED_AT);
+  return toWeatherReport(
+    { ...weather, currentWeather },
+    timezone,
+    FETCHED_AT,
+    weatherAttributionFixture,
+  );
 }
 
 describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
@@ -42,10 +48,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
       precipitationIntensity: 1.2,
     });
     expect(report.fetchedAt).toEqual(FETCHED_AT);
-    expect(report.attribution).toEqual({
-      provider: "APPLE_WEATHER",
-      legalPageUrl: "https://developer.apple.com/weatherkit/data-source-attribution/",
-    });
+    expect(report.attribution).toBe(weatherAttributionFixture);
   });
 
   it("한국처럼 분 단위 예보·특보 dataset이 없으면 nextHour는 null, alerts는 빈 배열이다", () => {

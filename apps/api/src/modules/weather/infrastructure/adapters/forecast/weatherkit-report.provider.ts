@@ -17,6 +17,7 @@ import {
   WeatherReportCacheKey,
 } from "../../cache/forecast/weather-report.keyspace.js";
 import { WeatherKitLogEvent } from "../../observability/forecast/weatherkit-log.events.js";
+import { WeatherKitAttributionResolver } from "./weatherkit-attribution.resolver.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
 import {
   WeatherKitNotConfiguredError,
@@ -105,6 +106,8 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
     private readonly tokenResolver: Pick<WeatherKitTokenResolver, "resolve" | "invalidate">,
     @Inject(CacheService)
     private readonly cacheService: Pick<CacheService, "wrap" | "has" | "set">,
+    @Inject(WeatherKitAttributionResolver)
+    private readonly attributionResolver: Pick<WeatherKitAttributionResolver, "resolve">,
   ) {}
 
   async getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport> {
@@ -118,8 +121,16 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
     const startedAtMs = performance.now();
     try {
       const requestedAt = now();
-      const dataSets = await this.#availableDataSets(cell, request);
-      const weather = await this.#fetchWeather(cell, request, dataSets, requestedAt);
+      const [weather, attribution] = await Promise.all([
+        this.#availableDataSets(cell, request).then((dataSets) =>
+          this.#fetchWeather(cell, request, dataSets, requestedAt).then((fetched) => ({
+            ...fetched,
+            dataSets,
+          })),
+        ),
+        this.attributionResolver.resolve(request.language),
+      ]);
+      const { dataSets } = weather;
       const received = receivedDataSets(weather);
       const dropped = dataSets.filter((dataSet) => !received.includes(dataSet));
       if (dropped.length > 0) {
@@ -141,7 +152,12 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
         latencyMs: Math.round(performance.now() - startedAtMs),
         dataSets: received,
       });
-      return toWeatherReport({ ...weather, currentWeather }, request.timezone, requestedAt);
+      return toWeatherReport(
+        { ...weather, currentWeather },
+        request.timezone,
+        requestedAt,
+        attribution,
+      );
     } catch (error) {
       this.#logger.warn({
         event: WeatherKitLogEvent.REQUEST_FAILED,

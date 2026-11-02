@@ -1,3 +1,4 @@
+import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type { WeatherReport } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   AirQuality,
@@ -29,7 +30,11 @@ import type { UserLocation } from "#api/modules/weather/domain/entities/forecast
 import type { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
-import { weatherForecastFixture, weatherReportFixture } from "#test/fixtures/weather.fixture";
+import {
+  weatherAttributionFixture,
+  weatherForecastFixture,
+  weatherReportFixture,
+} from "#test/fixtures/weather.fixture";
 
 export class StubWeatherLocationRepository implements WeatherLocationRepositoryPort {
   readonly records = new Map<string, UserLocation>();
@@ -230,5 +235,14 @@ export class StubWeatherKitTokenResolver {
 
   invalidate(): void {
     this.invalidations += 1;
+  }
+}
+
+export class StubWeatherKitAttributionResolver {
+  readonly languages: string[] = [];
+
+  async resolve(language: string): Promise<WeatherReportAttribution> {
+    this.languages.push(language);
+    return weatherAttributionFixture;
   }
 }

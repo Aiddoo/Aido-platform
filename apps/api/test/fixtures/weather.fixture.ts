@@ -1,3 +1,4 @@
+import type { WeatherReportAttribution } from "#api/modules/weather/application/models/forecast/weather-report.model";
 import type {
   WeatherReport,
   WeatherReportHour,
@@ -8,6 +9,24 @@ import type {
 } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
 import { UserLocation } from "#api/modules/weather/domain/entities/forecast/user-location.entity";
 import { UserLocationBuilder } from "#test/builders/user-location.builder";
+
+export const weatherAttributionFixture = {
+  provider: "APPLE_WEATHER",
+  serviceName: "Apple Weather",
+  legalPageUrl: "https://developer.apple.com/weatherkit/data-source-attribution/",
+  logo: {
+    light: {
+      "1x": "https://weatherkit.apple.com/assets/branding/ko/logo-light-1x.png",
+      "2x": "https://weatherkit.apple.com/assets/branding/ko/logo-light-2x.png",
+      "3x": "https://weatherkit.apple.com/assets/branding/ko/logo-light-3x.png",
+    },
+    dark: {
+      "1x": "https://weatherkit.apple.com/assets/branding/ko/logo-dark-1x.png",
+      "2x": "https://weatherkit.apple.com/assets/branding/ko/logo-dark-2x.png",
+      "3x": "https://weatherkit.apple.com/assets/branding/ko/logo-dark-3x.png",
+    },
+  },
+} as const satisfies WeatherReportAttribution;
 
 export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {}): WeatherForecast {
   const date = overrides.date ?? new Date("2026-07-23T00:00:00.000Z");
@@ -140,10 +159,7 @@ export function weatherReportFixture(
     hourly,
     daily,
     alerts: [],
-    attribution: {
-      provider: "APPLE_WEATHER",
-      legalPageUrl: "https://developer.apple.com/weatherkit/data-source-attribution/",
-    },
+    attribution: weatherAttributionFixture,
     fetchedAt,
     ...overrides,
   };

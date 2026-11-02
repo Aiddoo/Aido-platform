@@ -7,7 +7,10 @@ import { WeatherReportCacheKey } from "#api/modules/weather/infrastructure/cache
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
-import { StubWeatherKitTokenResolver } from "#test/mocks/ports/weather.stub";
+import {
+  StubWeatherKitAttributionResolver,
+  StubWeatherKitTokenResolver,
+} from "#test/mocks/ports/weather.stub";
 
 import { WeatherKitReportProvider, WeatherKitRequestError } from "./weatherkit-report.provider.js";
 import { WeatherKitNotConfiguredError } from "./weatherkit-token.resolver.js";
@@ -89,7 +92,12 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
   function createProvider(responses: readonly StubResponse[]) {
     const stub = createStubFetch(responses);
     const http = new HttpClient({ retry: false, throwOnHttpError: false, fetch: stub.fetch });
-    const provider = new WeatherKitReportProvider(http, tokenResolver, cacheService);
+    const provider = new WeatherKitReportProvider(
+      http,
+      tokenResolver,
+      cacheService,
+      new StubWeatherKitAttributionResolver(),
+    );
     return { provider, requests: stub.requests };
   }
 

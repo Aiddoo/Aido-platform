@@ -6,6 +6,7 @@ export const WEATHER_REPORT_CACHE_TTL_MS = {
   AIR_QUALITY: 60 * 60_000,
   AVAILABILITY: 7 * 24 * 60 * 60_000,
   PROVIDER_FAILURE: 60_000,
+  ATTRIBUTION: 7 * 24 * 60 * 60_000,
 } as const;
 
 export const WeatherReportCacheKey = {
@@ -15,4 +16,5 @@ export const WeatherReportCacheKey = {
   airQuality: (cell: string) => cacheKey("weather", "v2", "air-quality", cell),
   availability: (cell: string) => cacheKey("weather", "v2", "availability", cell),
   providerFailure: (cell: string) => cacheKey("weather", "v2", "provider-failure", cell),
+  attribution: (language: string) => cacheKey("weather", "v2", "attribution", language),
 } as const;

@@ -139,7 +139,11 @@ describe("날씨 v2 E2E", () => {
       // Then
       const report = weatherReportSchema.parse(response.body.data);
       expect(report.location).toEqual({ ...SEOUL, timezone: "Asia/Seoul" });
-      expect(report.airQuality).toEqual({ pm10: 32, pm25: 18 });
+      expect(report.airQuality).toEqual({ pm10: 32, pm25: 18, source: "AIRKOREA" });
+      expect(report.attribution.serviceName).toBe("Apple Weather");
+      expect(report.attribution.legalPageUrl).toMatch(
+        /^https:\/\/developer.apple.com\/weatherkit\//,
+      );
       expect(report.hourly.length).toBeLessThanOrEqual(24);
       expect(report.daily.length).toBeLessThanOrEqual(10);
       expect(reportProvider.calls).toEqual([

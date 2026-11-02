@@ -99,6 +99,10 @@ export type WeatherNextHourCondition = (typeof WEATHER_NEXT_HOUR_CONDITIONS)[num
 
 export const WEATHER_PROVIDERS = ["APPLE_WEATHER"] as const;
 
+export const WEATHER_AIR_QUALITY_SOURCES = ["AIRKOREA"] as const;
+
+export type WeatherAirQualitySource = (typeof WEATHER_AIR_QUALITY_SOURCES)[number];
+
 export type WeatherProvider = (typeof WEATHER_PROVIDERS)[number];
 
 export const GLOBAL_LATITUDE_RANGE = {

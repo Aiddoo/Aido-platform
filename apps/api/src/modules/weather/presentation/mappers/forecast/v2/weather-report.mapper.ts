@@ -5,6 +5,9 @@ import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/fo
 import type { WeatherReportDayPart } from "../../../../application/models/forecast/weather-report.model.js";
 import type { WeatherReportResult } from "../../../../application/use-cases/forecast/get-weather-report.use-case.js";
 
+/** v2 대기질은 한국 위치에서 에어코리아로만 채운다. */
+const AIR_QUALITY_SOURCE = "AIRKOREA";
+
 function toDayPartResponse(part: WeatherReportDayPart | null): WeatherDayPartForecast | null {
   return part == null ? null : { ...part };
 }
@@ -45,8 +48,20 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
       effectiveAt: toISOString(alert.effectiveAt),
       expiresAt: toISOString(alert.expiresAt),
     })),
-    airQuality: airQuality == null ? null : { pm10: airQuality.pm10, pm25: airQuality.pm25 },
-    attribution: { ...report.attribution },
+    airQuality:
+      airQuality == null
+        ? null
+        : { pm10: airQuality.pm10, pm25: airQuality.pm25, source: AIR_QUALITY_SOURCE },
+    attribution: {
+      ...report.attribution,
+      logo:
+        report.attribution.logo == null
+          ? null
+          : {
+              light: { ...report.attribution.logo.light },
+              dark: { ...report.attribution.logo.dark },
+            },
+    },
     fetchedAt: toISOString(report.fetchedAt),
   };
 }
