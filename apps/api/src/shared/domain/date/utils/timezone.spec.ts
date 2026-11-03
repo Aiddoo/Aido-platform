@@ -153,7 +153,7 @@ describe("timezone", () => {
     });
   });
 
-  describe("localDateInTimezone", () => {
+  describe("localDateInTimezone — 시점이 속한 사용자 달력 날짜", () => {
     it("같은 시점이라도 서울과 LA의 달력 날짜를 각각 반환한다", () => {
       // Given
       const instant = new Date("2026-02-06T20:00:00Z");
