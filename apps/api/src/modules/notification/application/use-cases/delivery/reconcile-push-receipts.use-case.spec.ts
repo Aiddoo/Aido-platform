@@ -1,152 +1,164 @@
-import { mockDeep } from "vitest-mock-extended";
-
 import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
 
+import { PUSH_RECEIPT_POLICY } from "../../policies/delivery/push-receipt.policy.js";
+import type { PushReceiptResult } from "../../ports/delivery/push-provider.port.js";
+import type { InvalidPushToken } from "../../ports/delivery/push-receipt.repository.port.js";
 import { ReconcilePushReceipts } from "./reconcile-push-receipts.use-case.js";
 
-function setup(beforeCommit?: () => Promise<void>) {
-  const ports = mockDeep<ConstructorParameters<typeof ReconcilePushReceipts>[0]>();
-  const cache = new StubPushTokenCache();
-  const transactionEvents: string[] = [];
-  const unitOfWork: ConstructorParameters<typeof ReconcilePushReceipts>[0]["unitOfWork"] = {
-    async run(work) {
-      transactionEvents.push("begin");
-      try {
-        const result = await work();
-        await beforeCommit?.();
-        transactionEvents.push("commit");
-        return result;
-      } catch (error) {
-        transactionEvents.push("reject");
-        throw error;
-      }
-    },
-  };
-  cache.entries.set("invalid-user", ["invalid-token-1", "invalid-token-2"]);
-  cache.entries.set("other-user", ["valid-token"]);
-  const useCase = new ReconcilePushReceipts({
-    pushReceiptRepository: ports.pushReceiptRepository,
-    pushTokenRepository: ports.pushTokenRepository,
-    pushProvider: ports.pushProvider,
-    logger: ports.logger,
-    cache,
-    unitOfWork,
-  });
-  return { useCase, ports, cache, transactionEvents };
+type ReceiptRepository = ConstructorParameters<
+  typeof ReconcilePushReceipts
+>[0]["pushReceiptRepository"];
+
+class StubReceiptRepository implements ReceiptRepository {
+  pendingTicketIds: string[] = [];
+  invalidByTicketId = new Map<string, InvalidPushToken>();
+  readonly recorded: string[][] = [];
+  expiredCount = 0;
+
+  async findPendingTicketIds(_window: unknown, limit: number): Promise<string[]> {
+    return this.pendingTicketIds.slice(0, limit);
+  }
+
+  async recordPushReceipts(input: {
+    readonly requestedTicketIds: readonly string[];
+    readonly results: readonly PushReceiptResult[];
+  }): Promise<InvalidPushToken[]> {
+    this.recorded.push([...input.requestedTicketIds]);
+    const requested = new Set(input.requestedTicketIds);
+    this.pendingTicketIds = this.pendingTicketIds.filter((ticketId) => !requested.has(ticketId));
+    return input.requestedTicketIds.flatMap((ticketId) => {
+      const invalid = this.invalidByTicketId.get(ticketId);
+      return invalid == null ? [] : [invalid];
+    });
+  }
+
+  async expireUnreceipted(): Promise<number> {
+    return this.expiredCount;
+  }
 }
 
-describe("ReconcilePushReceipts — receipt 정리와 수신자 캐시", () => {
-  it("무효 토큰을 기록·비활성화하고 같은 수신자의 캐시를 한 번 지운다", async () => {
-    // Given
-    const { useCase, ports, cache } = setup();
-    const receipts = ports.pushReceiptRepository;
-    receipts.findPendingPushReceipts.mockResolvedValue([
-      { ticketId: "ticket-1" },
-      { ticketId: "ticket-2" },
-    ]);
-    ports.pushProvider.getReceipts.mockResolvedValue([
-      { ticketId: "ticket-1", delivered: false },
-      { ticketId: "ticket-2", delivered: false },
-    ]);
-    receipts.recordPushReceipts.mockResolvedValue([
-      { token: "invalid-token-1", userId: "invalid-user" },
-      { token: "invalid-token-2", userId: "invalid-user" },
-    ]);
-    // When
-    await useCase.execute();
-    // Then - Port 대역의 캐시 상태이며 실제 Redis/토큰 rotation은 PG/Infra가 검증한다
-    expect(receipts.findPendingPushReceipts).toHaveBeenCalledWith(900);
-    expect(ports.pushProvider.getReceipts).toHaveBeenCalledWith(["ticket-1", "ticket-2"]);
-    expect(ports.pushTokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith([
-      "invalid-token-1",
-      "invalid-token-2",
-    ]);
-    expect(cache.entries.has("invalid-user")).toBe(false);
-    expect(cache.entries.get("other-user")).toEqual(["valid-token"]);
-    expect(cache.invalidationAttempts).toEqual(["invalid-user"]);
+function setup(options: { readonly deactivate?: () => Promise<{ count: number }> } = {}) {
+  const repository = new StubReceiptRepository();
+  const cache = new StubPushTokenCache();
+  const deactivated: string[][] = [];
+  const transactionEvents: string[] = [];
+  const logs: unknown[] = [];
+  const useCase = new ReconcilePushReceipts({
+    pushReceiptRepository: repository,
+    pushTokenRepository: {
+      deactivateInvalidTokens: async (tokens) => {
+        deactivated.push(tokens);
+        return options.deactivate?.() ?? { count: tokens.length };
+      },
+    },
+    pushProvider: {
+      getReceipts: async (ticketIds) =>
+        ticketIds.map((ticketId) => ({ ticketId, status: "delivered" as const })),
+    },
+    cache,
+    unitOfWork: {
+      async run(work) {
+        transactionEvents.push("begin");
+        try {
+          const result = await work();
+          transactionEvents.push("commit");
+          return result;
+        } catch (error) {
+          transactionEvents.push("rollback");
+          throw error;
+        }
+      },
+    },
+    logger: { log: (entry) => logs.push(entry), warn: (entry) => logs.push(entry) },
+  });
+  return { useCase, repository, cache, deactivated, transactionEvents, logs };
+}
+
+function ticketIds(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `ticket-${index}`);
+}
+
+describe("ReconcilePushReceipts — receipt 반영", () => {
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("캐시 정리 실패가 이미 기록한 receipt를 다시 전송하게 만들지 않는다", async () => {
-    // Given
-    const { useCase, ports, cache } = setup();
-    ports.pushReceiptRepository.findPendingPushReceipts.mockResolvedValue([
-      { ticketId: "ticket-1" },
+  it("한 실행 안에서 남은 ticket을 배치 단위로 모두 반영한다", async () => {
+    // Given: 한 배치보다 많은 ticket이 밀려 있다
+    const { useCase, repository, logs } = setup();
+    repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 2 + 10);
+    repository.expiredCount = 3;
+
+    // When
+    await useCase.execute();
+
+    // Then
+    expect(repository.recorded.map((batch) => batch.length)).toEqual([
+      PUSH_RECEIPT_POLICY.batchSize,
+      PUSH_RECEIPT_POLICY.batchSize,
+      10,
     ]);
-    ports.pushProvider.getReceipts.mockResolvedValue([{ ticketId: "ticket-1", delivered: false }]);
-    ports.pushReceiptRepository.recordPushReceipts.mockResolvedValue([
-      { token: "invalid-token-1", userId: "invalid-user" },
-    ]);
-    cache.failForUsers.add("invalid-user");
-    // When / Then
-    await expect(useCase.execute()).resolves.toBeUndefined();
-    expect(ports.pushReceiptRepository.recordPushReceipts).toHaveBeenCalledTimes(1);
-    expect(ports.pushTokenRepository.deactivateInvalidTokens).toHaveBeenCalledTimes(1);
-    expect(cache.invalidationAttempts).toEqual(["invalid-user"]);
-    expect(ports.logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({ count: 1, errorType: "cache-invalidation" }),
+    expect(repository.pendingTicketIds).toHaveLength(0);
+    expect(logs).toContainEqual(
+      expect.objectContaining({ expired: 3, requested: PUSH_RECEIPT_POLICY.batchSize * 2 + 10 }),
     );
   });
 
-  it("보류 receipt가 없으면 provider·토큰·캐시를 건드리지 않는다", async () => {
+  it("실행 예산을 넘기면 남은 ticket은 다음 실행에 맡긴다", async () => {
     // Given
-    const { useCase, ports, cache } = setup();
-    ports.pushReceiptRepository.findPendingPushReceipts.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const repository = new StubReceiptRepository();
+    repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 3);
+    const getReceipts = vi.fn(async (ids: readonly string[]) => {
+      vi.setSystemTime(Date.now() + PUSH_RECEIPT_POLICY.runBudgetMs);
+      return ids.map((ticketId) => ({ ticketId, status: "delivered" as const }));
+    });
+    const budgeted = new ReconcilePushReceipts({
+      pushReceiptRepository: repository,
+      pushTokenRepository: { deactivateInvalidTokens: async () => ({ count: 0 }) },
+      pushProvider: { getReceipts },
+      cache: new StubPushTokenCache(),
+      unitOfWork: { run: (work) => work() },
+      logger: { log: () => undefined, warn: () => undefined },
+    });
+
     // When
-    await useCase.execute();
+    await budgeted.execute();
+
     // Then
-    expect(ports.pushProvider.getReceipts).not.toHaveBeenCalled();
-    expect(ports.pushReceiptRepository.recordPushReceipts).not.toHaveBeenCalled();
-    expect(ports.pushTokenRepository.deactivateInvalidTokens).not.toHaveBeenCalled();
-    expect(cache.invalidationAttempts).toEqual([]);
-    expect(cache.entries.get("other-user")).toEqual(["valid-token"]);
+    expect(getReceipts).toHaveBeenCalledTimes(1);
+    expect(repository.pendingTicketIds).toHaveLength(PUSH_RECEIPT_POLICY.batchSize * 2);
   });
 
-  it("토큰 비활성화 실패를 상위로 전달하고 다음 receipt 재시도 전에는 캐시를 지우지 않는다", async () => {
-    // Given - callback 대역은 제어 흐름만 검증한다. 실제 receipt rollback은 PG 통합에서 검증한다.
-    let releaseCommit!: () => void;
-    let reachCommit!: () => void;
-    const commitGate = new Promise<void>((resolve) => {
-      releaseCommit = resolve;
-    });
-    const commitReached = new Promise<void>((resolve) => {
-      reachCommit = resolve;
-    });
-    const { useCase, ports, cache, transactionEvents } = setup(async () => {
-      reachCommit();
-      await commitGate;
-    });
-    ports.pushReceiptRepository.findPendingPushReceipts.mockResolvedValue([
-      { ticketId: "ticket-1" },
-    ]);
-    ports.pushProvider.getReceipts.mockResolvedValue([{ ticketId: "ticket-1", delivered: false }]);
-    ports.pushReceiptRepository.recordPushReceipts.mockResolvedValue([
-      { token: "invalid-token-1", userId: "invalid-user" },
-    ]);
-    const failure = new Error("synthetic-token-write-failure");
-    ports.pushTokenRepository.deactivateInvalidTokens.mockRejectedValueOnce(failure);
+  it("무효 토큰을 같은 transaction에서 끄고 commit 뒤 수신자 캐시를 한 번 지운다", async () => {
+    // Given
+    const { useCase, repository, cache, deactivated, transactionEvents } = setup();
+    repository.pendingTicketIds = ["ticket-1", "ticket-2"];
+    repository.invalidByTicketId.set("ticket-1", { token: "token-1", userId: "user-1" });
+    repository.invalidByTicketId.set("ticket-2", { token: "token-2", userId: "user-1" });
+    cache.entries.set("user-1", ["token-1", "token-2"]);
 
-    // When / Then - 첫 실패가 숨겨지지 않아 작업 처리기가 재시도할 수 있다.
-    await expect(useCase.execute()).rejects.toBe(failure);
-    expect(transactionEvents).toEqual(["begin", "reject"]);
-    expect(cache.invalidationAttempts).toEqual([]);
-    expect(cache.entries.has("invalid-user")).toBe(true);
+    // When
+    await useCase.execute();
 
-    // When - PG rollback 이후에도 보류인 같은 ticket을 Port fixture로 다시 제공한다.
-    const retry = useCase.execute();
-    try {
-      await commitReached;
-      expect(transactionEvents).toEqual(["begin", "reject", "begin"]);
-      expect(cache.invalidationAttempts).toEqual([]);
-    } finally {
-      releaseCommit();
-      await retry;
-    }
+    // Then
+    expect(deactivated).toEqual([["token-1", "token-2"]]);
+    expect(transactionEvents).toEqual(["begin", "commit", "begin", "commit"]);
+    expect(cache.entries.has("user-1")).toBe(false);
+  });
 
-    // Then - 성공한 callback 이후에만 캐시를 무효화한다.
-    expect(transactionEvents).toEqual(["begin", "reject", "begin", "commit"]);
-    expect(ports.pushProvider.getReceipts).toHaveBeenCalledTimes(2);
-    expect(ports.pushReceiptRepository.recordPushReceipts).toHaveBeenCalledTimes(2);
-    expect(ports.pushTokenRepository.deactivateInvalidTokens).toHaveBeenCalledTimes(2);
-    expect(cache.invalidationAttempts).toEqual(["invalid-user"]);
+  it("토큰 비활성화가 실패하면 receipt 기록도 rollback되도록 오류를 전파한다", async () => {
+    // Given
+    const { useCase, repository, transactionEvents } = setup({
+      deactivate: async () => {
+        throw new Error("deactivate failed");
+      },
+    });
+    repository.pendingTicketIds = ["ticket-1"];
+    repository.invalidByTicketId.set("ticket-1", { token: "token-1", userId: "user-1" });
+
+    // When / Then
+    await expect(useCase.execute()).rejects.toThrow("deactivate failed");
+    expect(transactionEvents.at(-1)).toBe("rollback");
   });
 });

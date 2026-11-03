@@ -5,7 +5,6 @@ import type { MarketingPushOptOutTokenPort } from "#api/modules/notification/app
 import type { NotificationHistoryReaderPort } from "#api/modules/notification/application/ports/delivery/notification-history.reader.port";
 import type { NotificationInboxReaderPort } from "#api/modules/notification/application/ports/delivery/notification-inbox.reader.port";
 import type { NotificationRepositoryPort } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
-import type { PushReceiptRepositoryPort } from "#api/modules/notification/application/ports/delivery/push-receipt.repository.port";
 import type { PushTokenRepositoryPort } from "#api/modules/notification/application/ports/delivery/push-token.repository.port";
 import type { UserNotificationSettingsPort } from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
 
@@ -70,13 +69,6 @@ export function createNotificationRecipientPreferenceReaderMock(): NotificationR
 
 export function createNotificationRecipientLocaleReaderMock(): NotificationRecipientLocaleReaderPort {
   return { getLocale: vi.fn(), getLocales: vi.fn() };
-}
-
-export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {
-  return {
-    findPendingPushReceipts: vi.fn(),
-    recordPushReceipts: vi.fn(),
-  };
 }
 
 /** MarketingPushOptOutTokenPort mock 팩토리. */
