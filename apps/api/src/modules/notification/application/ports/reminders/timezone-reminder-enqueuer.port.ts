@@ -3,7 +3,6 @@
  *
  * 오케스트레이터(social digest 지연 잡·스윕 스케줄러 등록)와
  * 외부 모듈(리마인더 시간 변경 catch-up)의 큐 발송 진입점을 추상화한다.
- * 구현은 인프라의 BullMQ 큐 서비스가 담당한다.
  */
 
 export const TIMEZONE_REMINDER_ENQUEUER = Symbol("TIMEZONE_REMINDER_ENQUEUER");

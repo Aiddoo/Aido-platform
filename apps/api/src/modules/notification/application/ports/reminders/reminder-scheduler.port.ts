@@ -1,9 +1,3 @@
-/**
- * 리마인더 스케줄러 인터페이스
- *
- * Strategy Pattern + Dependency Injection으로 인메모리 ↔ BullMQ 무중단 전환 가능
- */
-
 export const REMINDER_SCHEDULER = Symbol("REMINDER_SCHEDULER");
 
 export type ReminderCancellationResult =

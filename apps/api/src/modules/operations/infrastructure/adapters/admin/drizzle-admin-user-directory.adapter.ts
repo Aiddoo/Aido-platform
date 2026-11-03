@@ -1,24 +1,17 @@
 import { BROADCAST_TARGET_FILTER, type BroadcastTargetFilter } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { and, asc, eq, exists, gt, gte, inArray, isNull, type SQL } from "drizzle-orm";
 import { match } from "ts-pattern";
 
 import { activeSubscriptionCondition } from "#api/modules/access/access-entitlement-sql.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import type { user } from "#api/platform/database/schema/index";
+import { pushToken, user } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import type { AdminUserDirectoryPort } from "../../../application/ports/admin/admin-user-directory.port.js";
 
-const BROADCAST_BATCH_SIZE = 500;
-
-/**
- * AdminUserDirectoryPort의 Drizzle 어댑터.
- *
- * 대상 필터를 where 절로 변환하고, 커서 기반 배치 스트리밍으로
- * 대상 사용자 ID를 흘려보낸다. (필터 유효성은 도메인/Zod가 이미 보장)
- */
 @Injectable()
 export class DrizzleAdminUserDirectoryAdapter implements AdminUserDirectoryPort {
   constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
@@ -27,56 +20,60 @@ export class DrizzleAdminUserDirectoryAdapter implements AdminUserDirectoryPort 
     return this.txHost.tx;
   }
 
-  async *streamTargetUserIds(filter: BroadcastTargetFilter): AsyncIterable<string[]> {
-    let cursor: string | undefined;
-    for (;;) {
-      const rows = await this.db.query.user.findMany({
-        columns: { id: true },
-        where: {
-          deletedAt: { isNull: true },
-          status: "ACTIVE",
-          ...this.#buildTargetWhere(filter),
-          ...(cursor == null ? {} : { id: { gt: cursor } }),
-        },
-        orderBy: { id: "asc" },
-        limit: BROADCAST_BATCH_SIZE,
-      });
-      if (rows.length === 0) {
-        break;
-      }
-      yield rows.map((row) => row.id);
-      const last = rows.at(-1);
-      if (rows.length < BROADCAST_BATCH_SIZE || last == null) {
-        break;
-      }
-      cursor = last.id;
-    }
-  }
-
-  async findExistingUserIds(userIds: string[]): Promise<string[]> {
-    const rows = await this.db.query.user.findMany({
-      columns: { id: true },
-      where: { id: { in: userIds }, deletedAt: { isNull: true } },
-    });
+  async findTargetUserIdsAfter(
+    filter: BroadcastTargetFilter,
+    cursorUserId: string | null,
+    limit: number,
+  ): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: user.id })
+      .from(user)
+      .where(
+        and(
+          this.#targetCondition(filter),
+          cursorUserId == null ? undefined : gt(user.id, cursorUserId),
+        ),
+      )
+      .orderBy(asc(user.id))
+      .limit(limit);
     return rows.map((row) => row.id);
   }
 
-  #buildTargetWhere(filter: BroadcastTargetFilter) {
-    return (
+  countTargets(filter: BroadcastTargetFilter): Promise<number> {
+    return this.db.$count(user, this.#targetCondition(filter));
+  }
+
+  async findExistingUserIds(userIds: string[]): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: user.id })
+      .from(user)
+      .where(and(inArray(user.id, userIds), isNull(user.deletedAt)));
+    return rows.map((row) => row.id);
+  }
+
+  #targetCondition(filter: BroadcastTargetFilter): SQL | undefined {
+    return and(
+      isNull(user.deletedAt),
+      eq(user.status, "ACTIVE"),
       match(filter)
-        .with(BROADCAST_TARGET_FILTER.ALL, () => ({}))
-        .with(BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN, () => ({ pushTokens: true }))
-        .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () => ({
-          lastLoginAt: { gte: subtractDays(7) },
-        }))
-        .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () => ({
-          lastLoginAt: { gte: subtractDays(30) },
-        }))
+        .with(BROADCAST_TARGET_FILTER.ALL, () => undefined)
+        .with(BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN, () =>
+          exists(
+            this.db
+              .select({ id: pushToken.id })
+              .from(pushToken)
+              .where(eq(pushToken.userId, user.id)),
+          ),
+        )
+        .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () =>
+          gte(user.lastLoginAt, subtractDays(7)),
+        )
+        .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () =>
+          gte(user.lastLoginAt, subtractDays(30)),
+        )
         // User projection이 보상 기간도 ACTIVE로 쓰므로 "구독자"에는 초대 보상으로 프리미엄인 사용자도 들어간다
-        .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => ({
-          RAW: (target: typeof user) => activeSubscriptionCondition(target, now()),
-        }))
-        .exhaustive()
+        .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => activeSubscriptionCondition(user, now()))
+        .exhaustive(),
     );
   }
 }

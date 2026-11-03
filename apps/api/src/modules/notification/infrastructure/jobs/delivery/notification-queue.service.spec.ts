@@ -1,301 +1,114 @@
 import { Logger } from "@nestjs/common";
-import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
-/**
- * NotificationQueueService 모듈 단위 테스트
- *
- * @description
- * NotificationQueueService 모듈의 DI 구성을 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test notification-queue.service
- * ```
- */
-import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { flushPromises } from "#test/mocks/index";
+import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
+import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
-import { NOTIFICATION_QUEUE, NotificationJobName } from "./notification-queue.constants.js";
+import {
+  NOTIFICATION_DEAD_LETTER_QUEUE,
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+} from "./notification-queue.constants.js";
 import { NotificationQueueService } from "./notification-queue.service.js";
 
-describe("NotificationQueueService — 알림 큐 서비스", () => {
-  let service: NotificationQueueService;
-  let runtime: Mocked<JobRuntimePort>;
+class FlakyJobRuntime extends FakeJobRuntime {
+  failuresLeft: number;
+  readonly failure: Error;
 
-  it("isolates enqueue failure without logging the provider payload or stack", async () => {
-    const privateMessage = "notification14-job-private-token-and-body";
-    const log = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
-    runtime.enqueue.mockRejectedValue(new Error(privateMessage));
-    service.enqueueFollowNew({
-      followerId: "follower",
-      followingId: "following",
-      followerName: "private fixture name",
-    });
-    await flushPromises();
-    expect(log).toHaveBeenCalledWith({ event: "notification.enqueue_failed" });
-    expect(JSON.stringify(log.mock.calls)).not.toContain(privateMessage);
+  constructor(failures: number, failure = new Error("connection reset")) {
+    super();
+    this.failuresLeft = failures;
+    this.failure = failure;
+  }
+
+  override async enqueue<T extends JobData>(
+    queue: string,
+    data: T,
+    options: EnqueueJobOptions,
+  ): Promise<string> {
+    if (this.failuresLeft > 0) {
+      this.failuresLeft -= 1;
+      throw this.failure;
+    }
+    return super.enqueue(queue, data, options);
+  }
+}
+
+const nudge = {
+  nudgeId: 7,
+  senderId: "sender",
+  receiverId: "receiver",
+  senderName: "보낸 사람",
+};
+
+describe("NotificationQueueService — 알림 이벤트 등록", () => {
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  beforeEach(async () => {
-    const mockRuntime = {
-      start: vi.fn(),
-      stop: vi.fn(),
-      enqueue: vi.fn().mockResolvedValue("job-1"),
-      schedule: vi.fn(),
-      cancel: vi.fn(),
-      work: vi.fn(),
-      health: vi.fn(),
-    };
+  it("원인 이벤트별 key와 DLQ 정책으로 등록해 같은 이벤트의 재발행만 하나로 합친다", async () => {
+    // Given
+    const runtime = new FakeJobRuntime();
+    const service = new NotificationQueueService(runtime);
 
-    const { unit, unitRef } = await TestBed.solitary(NotificationQueueService)
-      .mock<JobRuntimePort>(JOB_RUNTIME)
-      .impl(() => mockRuntime)
-      .compile();
+    // When
+    service.enqueueNudgeSent(nudge);
+    service.enqueueNudgeSent(nudge);
+    service.enqueueNudgeSent({ ...nudge, nudgeId: 8 });
+    await service.onModuleDestroy();
 
-    service = unit;
-    runtime = unitRef.get(JOB_RUNTIME);
-  });
-
-  describe("enqueueFollowNew", () => {
-    it("follow-new 잡을 큐에 등록한다", async () => {
-      // Given
-      const payload = {
-        followerId: "user-1",
-        followingId: "user-2",
-        followerName: "테스트 유저",
-      };
-
-      // When
-      service.enqueueFollowNew(payload);
-      await flushPromises();
-
-      // Then
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.FOLLOW_NEW, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
-    });
-
-    it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
-      // Given
-      runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
-      const payload = {
-        followerId: "user-1",
-        followingId: "user-2",
-        followerName: "테스트 유저",
-      };
-
-      // When & Then — 에러 전파 없음
-      service.enqueueFollowNew(payload);
-      await expect(flushPromises()).resolves.not.toThrow();
+    // Then
+    expect(runtime.enqueueCalls.map(({ options }) => options.idempotencyKey)).toEqual([
+      "nudge-7",
+      "nudge-7",
+      "nudge-8",
+    ]);
+    expect(runtime.enqueueCalls[0]).toMatchObject({
+      queue: NOTIFICATION_QUEUE,
+      data: { name: NotificationJobName.NUDGE_SENT, data: nudge },
+      options: { deadLetter: { queue: NOTIFICATION_DEAD_LETTER_QUEUE } },
     });
   });
 
-  describe("enqueueFollowMutual", () => {
-    it("follow-mutual 잡을 큐에 등록한다", async () => {
-      // Given
-      const payload = {
-        userId: "user-1",
-        friendId: "user-2",
-        friendName: "친구 유저",
-      };
+  it("일시적인 저장 실패는 다시 시도해 등록한다", async () => {
+    // Given
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const runtime = new FlakyJobRuntime(2);
+    const service = new NotificationQueueService(runtime);
 
-      // When
-      service.enqueueFollowMutual(payload);
-      await flushPromises();
-
-      // Then
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.FOLLOW_MUTUAL, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
+    // When
+    service.enqueueCheerSent({
+      cheerId: 3,
+      senderId: "s",
+      receiverId: "r",
+      senderName: "응원한 사람",
     });
+    await vi.runAllTimersAsync();
+    await service.onModuleDestroy();
 
-    it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
-      // Given
-      runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
-      const payload = {
-        userId: "user-1",
-        friendId: "user-2",
-        friendName: "친구 유저",
-      };
-
-      // When & Then
-      service.enqueueFollowMutual(payload);
-      await expect(flushPromises()).resolves.not.toThrow();
-    });
+    // Then
+    expect(runtime.enqueueCalls.map(({ options }) => options.idempotencyKey)).toEqual(["cheer-3"]);
   });
 
-  describe("enqueueNudgeSent", () => {
-    it("nudge-sent 잡을 큐에 등록한다", async () => {
-      // Given
-      const payload = {
-        nudgeId: 1,
-        senderId: "user-1",
-        receiverId: "user-2",
-        senderName: "보낸 유저",
-        todoId: 10,
-        todoTitle: "운동하기",
-        message: "빨리 해!",
-      };
+  it("재시도까지 실패하면 호출자에게 던지지 않고 작업 이름과 오류 종류만 기록한다", async () => {
+    // Given
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const privateMessage = "private-token-and-body";
+    const error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    const runtime = new FlakyJobRuntime(Number.POSITIVE_INFINITY, new Error(privateMessage));
+    const service = new NotificationQueueService(runtime);
 
-      // When
-      service.enqueueNudgeSent(payload);
-      await flushPromises();
+    // When
+    service.enqueueBillingIssue({ userId: "user-1" });
+    await vi.runAllTimersAsync();
+    await service.onModuleDestroy();
 
-      // Then
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.NUDGE_SENT, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
+    // Then
+    expect(runtime.enqueueCalls).toHaveLength(0);
+    expect(error).toHaveBeenCalledWith({
+      event: "notification.enqueue_failed",
+      jobName: NotificationJobName.BILLING_ISSUE,
+      errorType: "Error",
     });
-
-    it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
-      // Given
-      runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
-      const payload = {
-        nudgeId: 1,
-        senderId: "user-1",
-        receiverId: "user-2",
-        senderName: "보낸 유저",
-      };
-
-      // When & Then
-      service.enqueueNudgeSent(payload);
-      await expect(flushPromises()).resolves.not.toThrow();
-    });
-  });
-
-  describe("enqueueCheerSent", () => {
-    it("cheer-sent 잡을 큐에 등록한다", async () => {
-      // Given
-      const payload = {
-        cheerId: 1,
-        senderId: "user-1",
-        receiverId: "user-2",
-        senderName: "응원 유저",
-        message: "화이팅!",
-      };
-
-      // When
-      service.enqueueCheerSent(payload);
-      await flushPromises();
-
-      // Then
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.CHEER_SENT, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
-    });
-
-    it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
-      // Given
-      runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
-      const payload = {
-        cheerId: 1,
-        senderId: "user-1",
-        receiverId: "user-2",
-        senderName: "응원 유저",
-      };
-
-      // When & Then
-      service.enqueueCheerSent(payload);
-      await expect(flushPromises()).resolves.not.toThrow();
-    });
-  });
-
-  describe("enqueueBillingIssue", () => {
-    it("billing-issue 잡을 큐에 등록한다", async () => {
-      // Given
-      const payload = { userId: "user-1" };
-
-      // When
-      service.enqueueBillingIssue(payload);
-      await flushPromises();
-
-      // Then
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.BILLING_ISSUE, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
-    });
-
-    it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
-      // Given
-      runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
-      const payload = { userId: "user-1" };
-
-      // When & Then
-      service.enqueueBillingIssue(payload);
-      await expect(flushPromises()).resolves.not.toThrow();
-    });
-  });
-
-  describe("enqueueFriendCompleted", () => {
-    it("friend-completed 잡을 큐에 등록한다", async () => {
-      // Given
-      const payload = {
-        friendId: "friend-1",
-        friendName: "완료 친구",
-        notifyUserIds: ["user-1", "user-2"],
-        timezone: "Asia/Seoul",
-      };
-
-      // When
-      service.enqueueFriendCompleted(payload);
-      await flushPromises();
-
-      // Then
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.FRIEND_COMPLETED, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
-    });
-
-    it("큐 등록 실패 시 에러를 throw하지 않는다 (fire-and-forget)", async () => {
-      // Given
-      runtime.enqueue.mockRejectedValue(new Error("Redis connection error"));
-      const payload = {
-        friendId: "friend-1",
-        friendName: "완료 친구",
-        notifyUserIds: ["user-1"],
-        timezone: "Asia/Seoul",
-      };
-
-      // When & Then
-      service.enqueueFriendCompleted(payload);
-      await expect(flushPromises()).resolves.not.toThrow();
-    });
-  });
-
-  describe("enqueueMilestoneReached", () => {
-    it("milestone-reached 잡을 기존 payload와 정책으로 등록한다", async () => {
-      const payload = { userId: "user-1", milestone: "COUNT_10" as const };
-
-      service.enqueueMilestoneReached(payload);
-      await flushPromises();
-
-      expect(runtime.enqueue).toHaveBeenCalledWith(
-        NOTIFICATION_QUEUE,
-        { name: NotificationJobName.MILESTONE_REACHED, data: payload },
-        expect.objectContaining({ retryLimit: 2 }),
-      );
-    });
-
-    it("큐 등록 실패를 외부 void 호환 경계에서 관찰한다", async () => {
-      runtime.enqueue.mockRejectedValue(new Error("runtime unavailable"));
-
-      service.enqueueMilestoneReached({ userId: "user-1", milestone: "COUNT_10" });
-
-      await expect(flushPromises()).resolves.toBeUndefined();
-    });
+    expect(JSON.stringify(error.mock.calls)).not.toContain(privateMessage);
   });
 });

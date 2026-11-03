@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";
@@ -13,8 +14,7 @@ import { SendFriendCompletionNotifications } from "../../../application/use-case
 import { SendMilestoneNotification } from "../../../application/use-cases/delivery/send-milestone-notification.use-case.js";
 import { SendNudgeNotification } from "../../../application/use-cases/delivery/send-nudge-notification.use-case.js";
 import {
-  NOTIFICATION_LEGACY_QUEUE,
-  NOTIFICATION_QUEUE,
+  NOTIFICATION_DEAD_LETTER_QUEUE,
   NotificationJobName,
 } from "./notification-queue.constants.js";
 import { NotificationQueueProcessor } from "./notification-queue.processor.js";
@@ -112,42 +112,29 @@ describe("NotificationQueueProcessor", () => {
     ).rejects.toThrow("temporary failure");
   });
 
-  it("버전별 worker가 기존 producer의 envelope도 처리하도록 등록한다", async () => {
+  it("재시도를 다 쓴 이벤트는 다시 보내지 않고 작업 이름만 기록한다", async () => {
+    // Given
+    const error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
     await processor.onModuleInit();
+    const deadLetterWorker = runtime.work.mock.calls.find(
+      ([queue]) => queue === NOTIFICATION_DEAD_LETTER_QUEUE,
+    )?.[1];
 
-    expect(runtime.work).toHaveBeenNthCalledWith(
-      1,
-      NOTIFICATION_QUEUE,
-      expect.any(Function),
-      expect.any(Object),
-    );
-    expect(runtime.work).toHaveBeenNthCalledWith(
-      2,
-      NOTIFICATION_LEGACY_QUEUE,
-      expect.any(Function),
-      expect.any(Object),
-    );
-
-    const currentWorker = runtime.work.mock.calls[0]?.[1];
-    const legacyWorker = runtime.work.mock.calls[1]?.[1];
-    await currentWorker?.([
+    // When
+    await deadLetterWorker?.([
       {
-        id: "current-1",
-        name: NOTIFICATION_QUEUE,
+        id: "dead-1",
+        name: NOTIFICATION_DEAD_LETTER_QUEUE,
         data: { name: NotificationJobName.BILLING_ISSUE, data: { userId: "u1" } },
-        attempt: 0,
-      },
-    ]);
-    await legacyWorker?.([
-      {
-        id: "legacy-1",
-        name: NotificationJobName.BILLING_ISSUE,
-        data: { userId: "u2" },
-        attempt: 0,
+        attempt: 1,
       },
     ]);
 
-    expect(sendBillingIssue.execute).toHaveBeenNthCalledWith(1, { userId: "u1" });
-    expect(sendBillingIssue.execute).toHaveBeenNthCalledWith(2, { userId: "u2" });
+    // Then
+    expect(sendBillingIssue.execute).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith({
+      event: "notification.job_dead_lettered",
+      jobName: NotificationJobName.BILLING_ISSUE,
+    });
   });
 });

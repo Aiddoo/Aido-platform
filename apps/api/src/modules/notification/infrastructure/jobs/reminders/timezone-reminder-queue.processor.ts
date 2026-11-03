@@ -17,7 +17,6 @@ import { NotificationProviderLogEvent } from "../../observability/delivery/notif
  * 판별 유니온으로 job.data를 캐스트 없이 좁힌다.
  */
 import {
-  TIMEZONE_REMINDER_LEGACY_QUEUE,
   TIMEZONE_REMINDER_QUEUE,
   TIMEZONE_REMINDER_WORKER_POLICY,
   TimezoneReminderJobName,
@@ -46,27 +45,6 @@ export class TimezoneReminderProcessor implements OnModuleInit {
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );
-    await this.runtime.work(
-      TIMEZONE_REMINDER_LEGACY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process({ name: job.name, data: job.data });
-        }
-      },
-      TIMEZONE_REMINDER_WORKER_POLICY,
-    );
-  }
-
-  onStalled(jobId: string): void {
-    this.#logger.warn({ event: NotificationProviderLogEvent.JOB_STALLED, jobId });
-  }
-
-  onError(_error: Error): void {
-    this.#logger.error({ event: NotificationProviderLogEvent.WORKER_FAILED });
-  }
-
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
-    this.#logger.error({ event: NotificationProviderLogEvent.JOB_FAILED, jobId: job?.id });
   }
 
   async process(untrustedJob: unknown): Promise<void> {

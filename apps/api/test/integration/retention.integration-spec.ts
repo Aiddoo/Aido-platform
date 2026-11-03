@@ -1,6 +1,11 @@
-import { eq, inArray } from "drizzle-orm";
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { eq, sql } from "drizzle-orm";
 
 import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
+import { requireRecord } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
   notification,
@@ -184,94 +189,116 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     ).toBe(true);
   });
 
-  it("Notification·Dispatch·Outbox 생성 실패 시 단계 상태까지 전부 rollback한다", async () => {
-    const userId = await createUser("rollback@example.com");
-    await repository.enroll({
-      userId,
-      variant: "TREATMENT",
-      startedAt: new Date(),
-    });
+  async function stageOf(userId: string, stageName: "D0" | "D1") {
     const stage = await db.query.retentionExperimentStage.findFirst({
-      where: { stage: "D0", assignment: { userId } },
+      where: { stage: stageName, assignment: { userId } },
     });
-    if (stage === undefined) {
+    if (stage == null) {
       throw new Error("stage fixture 누락");
     }
+    return stage;
+  }
 
-    await expect(
-      unitOfWork.run(async () => {
-        await repository.createDelivery({
-          stageId: stage.id,
-          userId,
-          timezone: "Asia/Seoul",
-          title: "title",
-          body: "body",
-          route: "/feed",
-          variantId: "d0_no_todo",
-        });
-        throw new Error("force rollback");
-      }),
-    ).rejects.toThrow("force rollback");
-
-    const [storedStage, notifications, dispatches, outboxes] = await Promise.all([
-      db.query.retentionExperimentStage.findFirst({ where: { id: stage.id } }),
-      db.$count(notification, eq(notification.userId, userId)),
-      db.$count(pushDispatch, eq(pushDispatch.userId, userId)),
-      db.$count(retentionPushOutbox),
-    ]);
-    expect(storedStage?.status).toBe("SCHEDULED");
-    expect([notifications, dispatches, outboxes]).toEqual([0, 0, 0]);
-  });
-
-  it("동시 relay가 SKIP LOCKED로 서로 다른 outbox를 한 번씩 claim한다", async () => {
+  it("같은 단계는 동시에 처리해도 한 실행만 발송 대상으로 가져간다", async () => {
     // Given
-    const claimAt = new Date("2026-07-02T00:00:00.000Z");
-    const userId = await createUser("claimbox@example.com");
-    await repository.enroll({
-      userId,
-      variant: "TREATMENT",
-      startedAt: claimAt,
-    });
-    const stages = await db.query.retentionExperimentStage.findMany({
-      where: { stage: { in: ["D0", "D1"] }, assignment: { userId } },
-      orderBy: { stage: "asc" },
-    });
-    for (const stage of stages) {
-      await repository.createDelivery({
-        stageId: stage.id,
-        userId,
-        timezone: "Asia/Seoul",
-        title: `title-${stage.stage}`,
-        body: "body",
-        route: "/feed",
-        variantId: `variant-${stage.stage}`,
-      });
-    }
-
-    await db
-      .update(retentionPushOutbox)
-      .set({ availableAt: claimAt })
-      .where(
-        inArray(
-          retentionPushOutbox.stageId,
-          stages.map((stage) => stage.id),
-        ),
-      );
+    const userId = await createUser("claimone@example.com");
+    await repository.enroll({ userId, variant: "TREATMENT", startedAt: new Date() });
+    const stage = await stageOf(userId, "D0");
 
     // When
-    const batches = await Promise.all([
-      repository.claimOutboxes(1, claimAt),
-      repository.claimOutboxes(1, claimAt),
+    const claimed = await Promise.all([
+      unitOfWork.run(() => repository.markStageOutboxed(stage.id)),
+      unitOfWork.run(() => repository.markStageOutboxed(stage.id)),
     ]);
-    const claimed = batches.flat();
-    const stored = await db.query.retentionPushOutbox.findMany({
-      where: { id: { in: claimed.map((outbox) => outbox.id) } },
-    });
 
     // Then
-    expect(claimed).toHaveLength(2);
-    expect(new Set(claimed.map((outbox) => outbox.id)).size).toBe(2);
-    expect(claimed.every((outbox) => outbox.attempts === 1)).toBe(true);
-    expect(stored.every((outbox) => outbox.status === "PROCESSING")).toBe(true);
+    expect(claimed.toSorted()).toEqual([false, true]);
+  });
+
+  it("발행이 실패하면 단계 claim도 rollback돼 다음 sweep이 다시 처리한다", async () => {
+    // Given
+    const userId = await createUser("rollback@example.com");
+    await repository.enroll({ userId, variant: "TREATMENT", startedAt: new Date() });
+    const stage = await stageOf(userId, "D0");
+
+    // When
+    await expect(
+      unitOfWork.run(async () => {
+        await repository.markStageOutboxed(stage.id);
+        throw new Error("publish failed");
+      }),
+    ).rejects.toThrow("publish failed");
+
+    // Then
+    const stored = await db.query.retentionExperimentStage.findFirst({ where: { id: stage.id } });
+    expect(stored?.status).toBe("SCHEDULED");
+  });
+
+  it("배포 migration은 아직 보내지 않은 리텐션 발송만 공용 outbox로 옮긴다", async () => {
+    // Given: 대기 중인 발송 하나와 이미 끝난 발송 하나가 이전 리텐션 outbox에 있다
+    const userId = await createUser("migrate1@example.com");
+    await repository.enroll({ userId, variant: "TREATMENT", startedAt: new Date() });
+    const [pendingStage, sentStage] = [await stageOf(userId, "D0"), await stageOf(userId, "D1")];
+    const seed = async (stageId: string, dispatchStatus: "PROCESSING" | "SENT") => {
+      const [created] = await db
+        .insert(notification)
+        .values({ userId, type: "SYSTEM_NOTICE", title: "t", body: "b", purpose: "ENGAGEMENT" })
+        .returning({ id: notification.id });
+      const notificationId = requireRecord(created).id;
+      const [dispatch] = await db
+        .insert(pushDispatch)
+        .values({
+          notificationId,
+          userId,
+          purpose: "ENGAGEMENT",
+          status: dispatchStatus,
+          processingJobId: dispatchStatus === "PROCESSING" ? "old-retention-job" : null,
+        })
+        .returning({ id: pushDispatch.id });
+      const dispatchId = requireRecord(dispatch).id;
+      await db.insert(retentionPushOutbox).values({
+        stageId,
+        notificationId,
+        dispatchId,
+        status: dispatchStatus === "SENT" ? "PUBLISHED" : "PROCESSING",
+      });
+      return dispatchId;
+    };
+    const pendingDispatchId = await seed(pendingStage.id, "PROCESSING");
+    const sentDispatchId = await seed(sentStage.id, "SENT");
+
+    // When
+    for (const statement of await readMigrationStatements(
+      "retention_push_outbox_to_shared_outbox",
+    )) {
+      await db.execute(sql.raw(statement));
+    }
+
+    // Then
+    const [sharedOutboxes, pendingDispatch, retentionOutboxes] = await Promise.all([
+      db.query.pushDispatchOutbox.findMany(),
+      db.query.pushDispatch.findFirst({ where: { id: pendingDispatchId } }),
+      db.query.retentionPushOutbox.findMany({ orderBy: { dispatchId: "asc" } }),
+    ]);
+    expect(sharedOutboxes.map((outbox) => outbox.dispatchId)).toEqual([pendingDispatchId]);
+    expect(sharedOutboxes[0]).toMatchObject({ deliveryMode: "SINGLE", status: "PENDING" });
+    expect(pendingDispatch).toMatchObject({ status: "PENDING", processingJobId: null });
+    expect(retentionOutboxes.map(({ dispatchId, status }) => ({ dispatchId, status }))).toEqual([
+      { dispatchId: pendingDispatchId, status: "FAILED" },
+      { dispatchId: sentDispatchId, status: "PUBLISHED" },
+    ]);
   });
 });
+
+async function readMigrationStatements(name: string): Promise<string[]> {
+  const drizzleDirectory = fileURLToPath(new URL("../../drizzle/", import.meta.url));
+  const directory = (await readdir(drizzleDirectory)).find((entry) => entry.endsWith(`_${name}`));
+  if (directory == null) {
+    throw new Error(`migration not found: ${name}`);
+  }
+  const text = await readFile(join(drizzleDirectory, directory, "migration.sql"), "utf8");
+  return text
+    .split("--> statement-breakpoint")
+    .map((statement) => statement.trim())
+    .filter((statement) => statement.length > 0);
+}

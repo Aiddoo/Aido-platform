@@ -1,8 +1,10 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+import { retry } from "es-toolkit";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import { notificationEventJobKey } from "../notification-job-keys.js";
 import {
   type BillingIssueJobData,
   type CheerSentJobData,
@@ -10,90 +12,87 @@ import {
   type FollowNewJobData,
   type FriendCompletedJobData,
   type MilestoneReachedJobData,
-  NOTIFICATION_JOB_POLICY,
+  NOTIFICATION_ENQUEUE_RETRY,
+  NOTIFICATION_EVENT_JOB_POLICY,
   NOTIFICATION_QUEUE,
   NotificationJobName,
   type NotificationRuntimeJob,
   type NudgeSentJobData,
 } from "./notification-queue.constants.js";
 
+type NotificationEventJob = Exclude<
+  NotificationRuntimeJob,
+  { name: typeof NotificationJobName.PUSH_RECEIPTS }
+>;
+
+/**
+ * 다른 Context가 커밋 뒤 알림 이벤트를 넘기는 입구다. 호출자를 막지 않도록 결과를 기다리지 않는 대신
+ * 같은 이벤트는 key로 한 번만 저장하고, 일시적인 저장 실패는 다시 시도한 뒤 오류로 남긴다.
+ */
 @Injectable()
-export class NotificationQueueService {
+export class NotificationQueueService implements OnModuleDestroy {
   readonly #logger = new Logger(NotificationQueueService.name);
+  readonly #inFlight = new Set<Promise<void>>();
 
   constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-  /**
-   * 새 팔로우 요청 알림 잡 등록
-   */
-  enqueueFollowNew(payload: FollowNewJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.FOLLOW_NEW, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueFollowNew(data: FollowNewJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.FOLLOW_NEW, data });
   }
 
-  /**
-   * 맞팔로우 성립 알림 잡 등록
-   */
-  enqueueFollowMutual(payload: FollowMutualJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.FOLLOW_MUTUAL, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueFollowMutual(data: FollowMutualJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.FOLLOW_MUTUAL, data });
   }
 
-  /**
-   * Nudge 발송 알림 잡 등록
-   */
-  enqueueNudgeSent(payload: NudgeSentJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.NUDGE_SENT, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueNudgeSent(data: NudgeSentJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.NUDGE_SENT, data });
   }
 
-  /**
-   * Cheer 발송 알림 잡 등록
-   */
-  enqueueCheerSent(payload: CheerSentJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.CHEER_SENT, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueCheerSent(data: CheerSentJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.CHEER_SENT, data });
   }
 
-  /**
-   * 결제 문제 알림 잡 등록
-   */
-  enqueueBillingIssue(payload: BillingIssueJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.BILLING_ISSUE, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueBillingIssue(data: BillingIssueJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.BILLING_ISSUE, data });
   }
 
-  /**
-   * 친구 할일 전체 완료 알림 잡 등록
-   */
-  enqueueFriendCompleted(payload: FriendCompletedJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.FRIEND_COMPLETED, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueFriendCompleted(data: FriendCompletedJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.FRIEND_COMPLETED, data });
   }
 
-  /**
-   * 마일스톤 달성 알림 잡 등록
-   */
-  enqueueMilestoneReached(payload: MilestoneReachedJobData): void {
-    this.#enqueueAsync({ name: NotificationJobName.MILESTONE_REACHED, data: payload }).catch(() => {
-      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
-    });
+  enqueueMilestoneReached(data: MilestoneReachedJobData): void {
+    this.#enqueueDetached({ name: NotificationJobName.MILESTONE_REACHED, data });
   }
 
-  async #enqueueAsync(
-    job: Exclude<NotificationRuntimeJob, { name: typeof NotificationJobName.PUSH_RECEIPTS }>,
-  ): Promise<void> {
-    await this.runtime.enqueue(NOTIFICATION_QUEUE, job, this.#jobOptions());
+  /** job runtime이 멈추기 전에 아직 저장 중인 이벤트를 끝낸다. */
+  async onModuleDestroy(): Promise<void> {
+    await Promise.allSettled([...this.#inFlight]);
+  }
+
+  async #enqueue(job: NotificationEventJob, occurredAt: Date): Promise<void> {
+    await this.runtime.enqueue(NOTIFICATION_QUEUE, job, {
+      ...NOTIFICATION_EVENT_JOB_POLICY,
+      idempotencyKey: notificationEventJobKey(job, occurredAt),
+    });
     this.#logger.debug({ event: NotificationProviderLogEvent.JOB_ENQUEUED, jobName: job.name });
   }
 
-  #jobOptions() {
-    return NOTIFICATION_JOB_POLICY;
+  #enqueueDetached(job: NotificationEventJob): void {
+    const occurredAt = new Date();
+    const pending = retry(() => this.#enqueue(job, occurredAt), {
+      retries: NOTIFICATION_ENQUEUE_RETRY.retries,
+      delay: NOTIFICATION_ENQUEUE_RETRY.delayMs,
+    })
+      .catch((error: unknown) => {
+        this.#logger.error({
+          event: NotificationProviderLogEvent.ENQUEUE_FAILED,
+          jobName: job.name,
+          errorType: error instanceof Error ? error.name : "UnknownError",
+        });
+      })
+      .finally(() => {
+        this.#inFlight.delete(pending);
+      });
+    this.#inFlight.add(pending);
   }
 }

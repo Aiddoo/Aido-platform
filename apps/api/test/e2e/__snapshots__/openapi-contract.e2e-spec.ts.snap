@@ -829,6 +829,242 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "BroadcastCampaignAcceptedDto": {
+      "description": "브로드캐스트 캠페인 접수 결과. 발송은 비동기로 진행되며 결과는 캠페인 조회로 확인한다",
+      "example": {
+        "acceptedAt": "2026-11-03T10:00:00.000Z",
+        "campaignId": "c0123456789abcdef01234567",
+        "requestId": "0f8b8a52-5b0e-4f39-9f8b-6f3b3c1f2a10",
+        "status": "QUEUED",
+      },
+      "properties": {
+        "acceptedAt": {
+          "description": "처음 접수한 시각 (ISO 8601 UTC)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "campaignId": {
+          "description": "브로드캐스트 캠페인 ID",
+          "format": "cuid",
+          "pattern": "^[cC][0-9a-z]{6,}$",
+          "type": "string",
+        },
+        "requestId": {
+          "description": "요청에 실린 요청 ID",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type": "string",
+        },
+        "status": {
+          "description": "접수 시점의 캠페인 상태",
+          "enum": [
+            "QUEUED",
+            "FANNING_OUT",
+            "COMPLETED",
+            "FAILED",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "campaignId",
+        "requestId",
+        "status",
+        "acceptedAt",
+      ],
+      "type": "object",
+    },
+    "BroadcastCampaignDto": {
+      "description": "브로드캐스트 캠페인 진행과 전달 결과",
+      "properties": {
+        "campaignId": {
+          "description": "브로드캐스트 캠페인 ID",
+          "format": "cuid",
+          "pattern": "^[cC][0-9a-z]{6,}$",
+          "type": "string",
+        },
+        "completedAt": {
+          "description": "분배 완료 시각",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "createdAt": {
+          "description": "접수 시각 (ISO 8601 UTC)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "deliveries": {
+          "description": "기기별 전달 결과 집계",
+          "properties": {
+            "accepted": {
+              "description": "공급자가 수락했고 기기 결과를 기다림",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "delivered": {
+              "description": "기기 전달 확인",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "failed": {
+              "description": "공급자 또는 기기 전달 실패",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "unknown": {
+              "description": "보관 기간 안에 결과를 받지 못함",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "accepted",
+            "delivered",
+            "failed",
+            "unknown",
+          ],
+          "type": "object",
+        },
+        "dispatches": {
+          "description": "사용자별 발송 상태 집계",
+          "properties": {
+            "failed": {
+              "description": "모든 기기에서 공급자가 거절함",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "pending": {
+              "description": "발송 대기",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "processing": {
+              "description": "발송 중",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "sent": {
+              "description": "공급자에 한 번 이상 수락됨",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "skipped": {
+              "description": "수신 설정·빈도 제한·토큰 없음으로 건너뜀",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "pending",
+            "processing",
+            "sent",
+            "skipped",
+            "failed",
+          ],
+          "type": "object",
+        },
+        "failureReason": {
+          "description": "분배가 멈춘 이유 (FAILED일 때)",
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "force": {
+          "description": "수신 설정을 무시한 강제 발송 여부",
+          "type": "boolean",
+        },
+        "recipients": {
+          "description": "대상 분배 진행",
+          "properties": {
+            "processed": {
+              "description": "분배를 마친 대상 사용자 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "queued": {
+              "description": "알림을 만들어 발송 대기열에 올린 수 (전달 성공 수가 아님)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "processed",
+            "queued",
+          ],
+          "type": "object",
+        },
+        "requestId": {
+          "description": "요청 ID",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type": "string",
+        },
+        "startedAt": {
+          "description": "분배 시작 시각",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "status": {
+          "description": "캠페인 상태",
+          "enum": [
+            "QUEUED",
+            "FANNING_OUT",
+            "COMPLETED",
+            "FAILED",
+          ],
+          "type": "string",
+        },
+        "targetFilter": {
+          "description": "대상 필터",
+          "enum": [
+            "ALL",
+            "WITH_PUSH_TOKEN",
+            "ACTIVE_LAST_7_DAYS",
+            "ACTIVE_LAST_30_DAYS",
+            "SUBSCRIBERS",
+          ],
+          "type": "string",
+        },
+        "title": {
+          "description": "알림 제목",
+          "type": "string",
+        },
+      },
+      "required": [
+        "campaignId",
+        "requestId",
+        "status",
+        "title",
+        "targetFilter",
+        "force",
+        "recipients",
+        "dispatches",
+        "deliveries",
+        "failureReason",
+        "createdAt",
+        "startedAt",
+        "completedAt",
+      ],
+      "type": "object",
+    },
     "BroadcastNotificationDto": {
       "description": "전체/조건부 알림 브로드캐스트 요청",
       "example": {
@@ -904,19 +1140,19 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "properties": {
         "failCount": {
-          "description": "발송 실패한 알림 수",
+          "description": "대상 중 대기열에 올리지 못한 수",
           "maximum": 9007199254740991,
           "minimum": 0,
           "type": "integer",
         },
         "successCount": {
-          "description": "성공적으로 발송된 알림 수",
+          "description": "알림을 만들어 발송 대기열에 올린 수. 전달 성공 수가 아니며 전달 결과는 v2 캠페인 조회로 확인한다",
           "maximum": 9007199254740991,
           "minimum": 0,
           "type": "integer",
         },
         "totalTargets": {
-          "description": "전체 대상 사용자 수",
+          "description": "접수 시점의 대상 사용자 수",
           "maximum": 9007199254740991,
           "minimum": 0,
           "type": "integer",
@@ -1888,6 +2124,80 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       "required": [
         "message",
         "todos",
+      ],
+      "type": "object",
+    },
+    "CreateBroadcastCampaignDto": {
+      "description": "브로드캐스트 캠페인 생성 요청",
+      "example": {
+        "body": "지금 바로 확인해보세요.",
+        "requestId": "0f8b8a52-5b0e-4f39-9f8b-6f3b3c1f2a10",
+        "targetFilter": "ALL",
+        "title": "새로운 기능이 출시되었습니다!",
+      },
+      "properties": {
+        "action": {
+          "description": "알림 클릭 시 액션 (BROWSER: 외부 브라우저, WEBVIEW: 인앱, DEEP_LINK: 내부 라우팅, NONE: 액션 없음)",
+          "properties": {
+            "type": {
+              "enum": [
+                "DEEP_LINK",
+                "BROWSER",
+                "WEBVIEW",
+                "NONE",
+              ],
+              "type": "string",
+            },
+            "url": {
+              "description": "BROWSER·WEBVIEW는 열 http(s) 주소. DEEP_LINK는 선택이며, 공지(SYSTEM_NOTICE·ADMIN_*)는 앱 경로(/feed, /achievements, /weather, /friends, /friends/invite, /settings/subscription, /settings/notifications) 중 하나를 싣는다. 그 밖의 타입은 type·context로 이동한다.",
+              "type": "string",
+            },
+          },
+          "required": [
+            "type",
+          ],
+          "type": "object",
+        },
+        "body": {
+          "description": "알림 내용",
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string",
+        },
+        "force": {
+          "default": false,
+          "description": "사용자 푸시 수신 설정(푸시 OFF·야간 미동의·설정 없음)을 무시하고 강제 발송 (중요 공지용)",
+          "type": "boolean",
+        },
+        "requestId": {
+          "description": "클라이언트가 만든 요청 ID(UUID). 같은 ID로 다시 보내면 새로 발송하지 않고 처음 접수한 캠페인을 돌려준다",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type": "string",
+        },
+        "targetFilter": {
+          "default": "ALL",
+          "description": "알림 대상 필터 (ALL: 전체, WITH_PUSH_TOKEN: 푸시 토큰 보유, ACTIVE_LAST_7_DAYS: 7일 내 활동, ACTIVE_LAST_30_DAYS: 30일 내 활동, SUBSCRIBERS: 유료 구독)",
+          "enum": [
+            "ALL",
+            "WITH_PUSH_TOKEN",
+            "ACTIVE_LAST_7_DAYS",
+            "ACTIVE_LAST_30_DAYS",
+            "SUBSCRIBERS",
+          ],
+          "type": "string",
+        },
+        "title": {
+          "description": "알림 제목",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "title",
+        "body",
+        "requestId",
       ],
       "type": "object",
     },
@@ -17185,7 +17495,10 @@ curl https://api.aido.com/health
   },
   "/v1/admin/notifications/broadcast": {
     "post": {
-      "description": "지정된 대상 필터에 따라 여러 사용자에게 알림을 발송합니다.
+      "deprecated": true,
+      "description": "관리자 도구가 v2 캠페인 API(\`POST /v2/admin/notifications/broadcasts\`)로 옮길 때까지 유지합니다.
+
+v2와 같은 캠페인으로 접수하고 바로 응답합니다. 응답 수는 접수 시점에 발송 대기열에 올릴 대상 수이며 전달 결과가 아닙니다. 요청 ID가 없어 재요청은 새 캠페인이 됩니다.
 
 **대상 필터 옵션**
 - \`ALL\`: 모든 활성 사용자
@@ -51808,6 +52121,521 @@ GET /weekly-achievements/2026/10
       "summary": "주간 달성 현황 상세 조회",
       "tags": [
         "Weekly Achievements",
+      ],
+    },
+  },
+  "/v2/admin/notifications/broadcasts": {
+    "post": {
+      "description": "대상 필터의 사용자에게 보낼 알림 캠페인을 접수하고 바로 202를 돌려줍니다. 알림 생성과 발송은 백그라운드 작업이 500명씩 나눠 진행합니다.
+
+- \`requestId\`가 같은 재요청은 새로 발송하지 않고 처음 접수한 캠페인을 돌려줍니다. 내용이 다르면 409(ADMIN_1405)입니다.
+- 진행과 전달 결과는 \`GET /v2/admin/notifications/broadcasts/{campaignId}\`로 확인합니다.
+- 관리자마다 분당 5회까지 접수합니다.",
+      "operationId": "createBroadcastCampaign",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateBroadcastCampaignDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "202": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/BroadcastCampaignAcceptedDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "접수됨",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1401",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "관리자 권한이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "관리자 권한이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1402",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "알림 대상 사용자가 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "알림 대상 사용자가 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1405",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "같은 요청 ID로 다른 브로드캐스트가 이미 접수되었습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "같은 요청 ID로 다른 브로드캐스트가 이미 접수되었습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "브로드캐스트 접수가 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "브로드캐스트 접수가 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "브로드캐스트 캠페인 접수",
+      "tags": [
+        "Admin - 알림 발송",
+      ],
+    },
+  },
+  "/v2/admin/notifications/broadcasts/{campaignId}": {
+    "get": {
+      "description": "캠페인 분배 진행(처리한 대상·대기열에 올린 수)과 사용자별 발송 상태, 기기별 전달 결과를 집계해 돌려줍니다. 전달 결과는 공급자 receipt를 반영하는 1분 주기 작업 뒤에 갱신됩니다.",
+      "operationId": "getBroadcastCampaign",
+      "parameters": [
+        {
+          "description": "브로드캐스트 캠페인 ID",
+          "in": "path",
+          "name": "campaignId",
+          "required": true,
+          "schema": {
+            "description": "브로드캐스트 캠페인 ID",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/BroadcastCampaignDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1401",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "관리자 권한이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "관리자 권한이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1404",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "브로드캐스트 캠페인을 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "브로드캐스트 캠페인을 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "브로드캐스트 캠페인 조회",
+      "tags": [
+        "Admin - 알림 발송",
       ],
     },
   },

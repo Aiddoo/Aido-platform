@@ -252,6 +252,10 @@ export const ErrorCode = {
   ADMIN_1402: "ADMIN_1402",
   /** 유효하지 않은 필터 조건입니다 */
   ADMIN_1403: "ADMIN_1403",
+  /** 브로드캐스트 캠페인을 찾을 수 없습니다 */
+  ADMIN_1404: "ADMIN_1404",
+  /** 같은 요청 ID로 다른 내용의 브로드캐스트가 이미 접수되었습니다 */
+  ADMIN_1405: "ADMIN_1405",
   // =========================================================================
   // 문의 (INQUIRY_1500-1599)
   // =========================================================================
@@ -1255,6 +1259,19 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "유효하지 않은 필터 조건입니다.",
     description: "알림 대상 필터 조건이 올바르지 않습니다.",
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.ADMIN_1404]: {
+    code: "ADMIN_1404",
+    message: "브로드캐스트 캠페인을 찾을 수 없습니다.",
+    description: "요청한 ID의 브로드캐스트 캠페인이 없습니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.ADMIN_1405]: {
+    code: "ADMIN_1405",
+    message: "같은 요청 ID로 다른 브로드캐스트가 이미 접수되었습니다.",
+    description:
+      "요청 ID는 브로드캐스트 하나에만 쓸 수 있습니다. 내용을 바꿔 다시 보내려면 새 요청 ID를 쓰세요.",
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // =========================================================================

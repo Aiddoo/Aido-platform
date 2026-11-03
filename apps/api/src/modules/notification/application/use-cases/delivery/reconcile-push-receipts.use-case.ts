@@ -4,17 +4,22 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
+import {
+  PUSH_RECEIPT_POLICY,
+  pushReceiptCheckWindow,
+} from "../../policies/delivery/push-receipt.policy.js";
 import type { NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import { type PushProvider } from "../../ports/delivery/push-provider.port.js";
-import { type PushReceiptRepositoryPort } from "../../ports/delivery/push-receipt.repository.port.js";
-import { type PushTokenRepositoryPort } from "../../ports/delivery/push-token.repository.port.js";
-
-const PUSH_RECEIPT_BATCH_SIZE = 900;
+import type { PushProvider } from "../../ports/delivery/push-provider.port.js";
+import type {
+  InvalidPushToken,
+  PushReceiptRepositoryPort,
+} from "../../ports/delivery/push-receipt.repository.port.js";
+import type { PushTokenRepositoryPort } from "../../ports/delivery/push-token.repository.port.js";
 
 interface ReconcilePushReceiptsDependencies {
   readonly pushReceiptRepository: Pick<
     PushReceiptRepositoryPort,
-    "findPendingPushReceipts" | "recordPushReceipts"
+    "expireUnreceipted" | "findPendingTicketIds" | "recordPushReceipts"
   >;
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
   readonly pushProvider: Pick<PushProvider, "getReceipts">;
@@ -23,6 +28,7 @@ interface ReconcilePushReceiptsDependencies {
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
 }
 
+/** 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다. */
 export class ReconcilePushReceipts {
   readonly #dependencies: ReconcilePushReceiptsDependencies;
 
@@ -31,20 +37,50 @@ export class ReconcilePushReceipts {
   }
 
   async execute(): Promise<void> {
-    const pendingReceipts =
-      await this.#dependencies.pushReceiptRepository.findPendingPushReceipts(
-        PUSH_RECEIPT_BATCH_SIZE,
-      );
-    if (pendingReceipts.length === 0) {
-      return;
-    }
-
-    const receipts = await this.#dependencies.pushProvider.getReceipts(
-      pendingReceipts.map((attempt) => attempt.ticketId),
+    const startedAt = Date.now();
+    const expired = await this.#dependencies.unitOfWork.run(() =>
+      this.#dependencies.pushReceiptRepository.expireUnreceipted(
+        pushReceiptCheckWindow(new Date(startedAt)).acceptedAfter,
+        PUSH_RECEIPT_POLICY.expireBatchSize,
+      ),
     );
+    const totals = { requested: 0, received: 0, invalidCount: 0, batches: 0 };
+    for (;;) {
+      const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds(
+        pushReceiptCheckWindow(new Date()),
+        PUSH_RECEIPT_POLICY.batchSize,
+      );
+      if (ticketIds.length === 0) {
+        break;
+      }
+      const received = await this.#reconcileBatch(ticketIds);
+      totals.batches += 1;
+      totals.requested += ticketIds.length;
+      totals.received += received.received;
+      totals.invalidCount += received.invalidCount;
+      const hasMore = ticketIds.length === PUSH_RECEIPT_POLICY.batchSize;
+      if (!hasMore || Date.now() - startedAt >= PUSH_RECEIPT_POLICY.runBudgetMs) {
+        break;
+      }
+    }
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.RECONCILE_PUSH_RECEIPTS_RECONCILED,
+      expired,
+      ...totals,
+    });
+  }
+
+  async #reconcileBatch(
+    ticketIds: readonly string[],
+  ): Promise<{ readonly received: number; readonly invalidCount: number }> {
+    const receipts = await this.#dependencies.pushProvider.getReceipts(ticketIds);
     // 비활성화 실패 시 terminal receipt도 롤백되어 다음 실행에서 다시 처리할 수 있다.
     const invalidTokens = await this.#dependencies.unitOfWork.run(async () => {
-      const invalid = await this.#dependencies.pushReceiptRepository.recordPushReceipts(receipts);
+      const invalid = await this.#dependencies.pushReceiptRepository.recordPushReceipts({
+        requestedTicketIds: ticketIds,
+        results: receipts,
+        checkedAt: new Date(),
+      });
       if (invalid.length > 0) {
         await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(
           invalid.map(({ token }) => token),
@@ -52,25 +88,25 @@ export class ReconcilePushReceipts {
       }
       return invalid;
     });
-    if (invalidTokens.length > 0) {
-      const userIds = uniq(invalidTokens.map(({ userId }) => userId));
-      const settled = await Promise.allSettled(
-        userIds.map((userId) => this.#dependencies.cache.invalidatePushTokens(userId)),
-      );
-      const failedCount = settled.filter((result) => result.status === "rejected").length;
-      if (failedCount > 0) {
-        this.#dependencies.logger.warn({
-          event: NotificationDeliveryLogEvent.RECONCILE_PUSH_RECEIPTS_CACHE_SETTLE_FAILED,
-          count: failedCount,
-          errorType: "cache-invalidation",
-        });
-      }
+    await this.#settleTokenCache(invalidTokens);
+    return { received: receipts.length, invalidCount: invalidTokens.length };
+  }
+
+  async #settleTokenCache(invalidTokens: readonly InvalidPushToken[]): Promise<void> {
+    if (invalidTokens.length === 0) {
+      return;
     }
-    this.#dependencies.logger.log({
-      event: NotificationDeliveryLogEvent.RECONCILE_PUSH_RECEIPTS_RECONCILED,
-      requested: pendingReceipts.length,
-      received: receipts.length,
-      invalidCount: invalidTokens.length,
-    });
+    const userIds = uniq(invalidTokens.map(({ userId }) => userId));
+    const settled = await Promise.allSettled(
+      userIds.map((userId) => this.#dependencies.cache.invalidatePushTokens(userId)),
+    );
+    const failedCount = settled.filter((result) => result.status === "rejected").length;
+    if (failedCount > 0) {
+      this.#dependencies.logger.warn({
+        event: NotificationDeliveryLogEvent.RECONCILE_PUSH_RECEIPTS_CACHE_SETTLE_FAILED,
+        count: failedCount,
+        errorType: "cache-invalidation",
+      });
+    }
   }
 }

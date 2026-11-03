@@ -3,20 +3,12 @@ import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { DispatchRetentionPush } from "../../../application/use-cases/retention/dispatch-retention-push.use-case.js";
 import { ProcessRetentionStages } from "../../../application/use-cases/retention/process-retention-stages.use-case.js";
-import { RecoverFailedRetentionDelivery } from "../../../application/use-cases/retention/recover-failed-retention-delivery.use-case.js";
-import { RelayRetentionOutbox } from "../../../application/use-cases/retention/relay-retention-outbox.use-case.js";
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 import {
-  RETENTION_LEGACY_QUEUE,
-  RETENTION_DEAD_LETTER_QUEUE,
-  RETENTION_DEAD_LETTER_WORKER_POLICY,
-  RETENTION_JOB_POLICY,
   RETENTION_QUEUE,
   RETENTION_WORKER_POLICY,
   RetentionJobName,
-  RetentionDeadLetterJobSchema,
   RetentionRuntimeJobSchema,
 } from "./retention-queue.constants.js";
 
@@ -26,9 +18,6 @@ export class RetentionQueueProcessor implements OnModuleInit {
 
   constructor(
     private readonly processStages: ProcessRetentionStages,
-    private readonly relayOutbox: RelayRetentionOutbox,
-    private readonly dispatchPush: DispatchRetentionPush,
-    private readonly recoverFailedDelivery: RecoverFailedRetentionDelivery,
     @Optional()
     @Inject(JOB_RUNTIME)
     private readonly runtime?: JobRuntimePort,
@@ -42,59 +31,22 @@ export class RetentionQueueProcessor implements OnModuleInit {
       RETENTION_QUEUE,
       async (jobs) => {
         for (const job of jobs) {
-          await this.process(job.id, job.attempt, job.data);
+          await this.process(job.data);
         }
       },
       RETENTION_WORKER_POLICY,
-    );
-    await this.runtime.work(
-      RETENTION_LEGACY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          const legacy = { name: job.name, data: job.data };
-          await this.process(job.id, job.attempt, legacy);
-        }
-      },
-      RETENTION_WORKER_POLICY,
-    );
-    await this.runtime.work(
-      RETENTION_DEAD_LETTER_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          const failed = RetentionDeadLetterJobSchema.parse(job.data);
-          await this.recoverFailedDelivery.execute(failed.data);
-        }
-      },
-      RETENTION_DEAD_LETTER_WORKER_POLICY,
     );
   }
 
-  async process(
-    processingJobId: string,
-    processingJobAttempt: number,
-    untrustedJob: unknown,
-  ): Promise<void> {
+  /** 이전 배포가 남긴 발송·relay 작업은 공용 outbox로 옮겨졌으므로 기록만 하고 완료한다. */
+  async process(untrustedJob: unknown): Promise<void> {
     const parsedJob = RetentionRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
       return;
     }
-    const job = parsedJob.data;
-    await match(job)
+    await match(parsedJob.data)
       .with({ name: RetentionJobName.STAGE_SWEEP }, () => this.processStages.execute())
-      .with({ name: RetentionJobName.OUTBOX_RELAY }, () => this.relayOutbox.execute())
-      .with({ name: RetentionJobName.DISPATCH }, ({ data }) =>
-        this.dispatchPush.execute({
-          ...data,
-          processingJobId,
-          processingJobAttempt,
-          isFinalAttempt: processingJobAttempt > RETENTION_JOB_POLICY.retryLimit,
-        }),
-      )
       .exhaustive();
-  }
-
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error): void {
-    this.#logger.error({ event: NotificationProviderLogEvent.JOB_FAILED, jobId: job?.id });
   }
 }

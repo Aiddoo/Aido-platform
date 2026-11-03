@@ -1,5 +1,5 @@
 import { isSemanticVersionAtLeast } from "@aido/api";
-import { uniq } from "es-toolkit";
+import { groupBy, uniq } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
@@ -11,6 +11,7 @@ import {
   notificationMinAppVersion,
   supportsNotificationType,
 } from "../../../domain/services/delivery/notification-client-capability.js";
+import { revokesPushToken } from "../../../domain/types/delivery/push-failure-kind.js";
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type ActivePushTokenReaderPort } from "../../ports/delivery/active-push-token.reader.port.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
@@ -21,9 +22,22 @@ import {
   type PushResult,
 } from "../../ports/delivery/push-provider.port.js";
 import { type PushTokenRepositoryPort } from "../../ports/delivery/push-token.repository.port.js";
-import type { PushTokenRecord } from "../../read-models/delivery/push-token.read-model.js";
 import type { PushDispatchSkipReason } from "../../types/delivery/push-delivery.types.js";
 import type { BatchPushNotificationPayload } from "./push-notification-payload.factory.js";
+
+function tokensToRevoke(results: readonly PushResult[]): string[] {
+  return results.flatMap((result) =>
+    result.status === "rejected" && revokesPushToken(result.failure.kind) ? [result.token] : [],
+  );
+}
+
+function countOutcomes(results: readonly PushResult[]): {
+  readonly successCount: number;
+  readonly failureCount: number;
+} {
+  const successCount = results.filter((result) => result.status === "accepted").length;
+  return { successCount, failureCount: results.length - successCount };
+}
 
 export type SinglePushNotificationDeliveryResult =
   | {
@@ -85,24 +99,24 @@ export class PushNotificationDeliveryService {
       return tokenResolution;
     }
 
-    const result = await this.#dependencies.pushProvider.sendBatch(
+    const results = await this.#dependencies.pushProvider.sendBatch(
       tokenResolution.tokens.map((token) => ({ ...input.payload, token })),
     );
-    if (result.invalidTokens.length > 0) {
-      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(result.invalidTokens);
+    const revokedTokens = tokensToRevoke(results);
+    if (revokedTokens.length > 0) {
+      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(revokedTokens);
       await this.#dependencies.notificationCache.invalidatePushTokens(input.data.userId);
       this.#dependencies.logger.warn({
         event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_INVALID_TOKENS_DEACTIVATED,
-        count: result.invalidTokens.length,
+        count: revokedTokens.length,
       });
     }
     this.#dependencies.logger.debug({
       event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_SINGLE_SENT,
       userId: input.data.userId,
-      successCount: result.successCount,
-      failureCount: result.failureCount,
+      ...countOutcomes(results),
     });
-    return { status: "sent", results: result.results };
+    return { status: "sent", results };
   }
 
   async prepareBatchDelivery(
@@ -121,7 +135,7 @@ export class PushNotificationDeliveryService {
         : await this.#dependencies.pushTokenRepository.findActivePushTokensByUsers(
             capabilityUserIds,
           );
-    const capabilityTokensByUser = this.#groupTokenRecords(capabilityTokenRecords);
+    const capabilityTokensByUser = groupBy(capabilityTokenRecords, (record) => record.userId);
 
     const providerPayloads: PushPayload[] = [];
     const dispatchIds: number[] = [];
@@ -133,7 +147,7 @@ export class PushNotificationDeliveryService {
 
     for (const payload of payloads) {
       const activeTokens = tokensByUser.get(payload.userId) ?? [];
-      const capabilityRecords = capabilityTokensByUser.get(payload.userId) ?? [];
+      const capabilityRecords = capabilityTokensByUser[payload.userId] ?? [];
       const { minAppVersion } = payload;
       const requiresCapability = payload.requiresFeatureCapability || minAppVersion != null;
       const activeTokenCount = requiresCapability ? capabilityRecords.length : activeTokens.length;
@@ -170,6 +184,7 @@ export class PushNotificationDeliveryService {
           title: payload.title,
           body: payload.body,
           data: payload.data,
+          categoryId: payload.categoryId,
         });
         dispatchIds.push(payload.dispatchId);
       }
@@ -196,9 +211,10 @@ export class PushNotificationDeliveryService {
   async sendPreparedBatch(
     prepared: Extract<PreparedBatchPushDelivery, { readonly status: "ready" }>,
   ): Promise<BatchPushNotificationDeliveryResult> {
-    const result = await this.#dependencies.pushProvider.sendBatch([...prepared.providerPayloads]);
-    if (result.invalidTokens.length > 0) {
-      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(result.invalidTokens);
+    const results = await this.#dependencies.pushProvider.sendBatch(prepared.providerPayloads);
+    const revokedTokens = tokensToRevoke(results);
+    if (revokedTokens.length > 0) {
+      await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(revokedTokens);
       await Promise.all(
         prepared.recipientUserIds.map((userId) =>
           this.#dependencies.notificationCache.invalidatePushTokens(userId),
@@ -207,26 +223,24 @@ export class PushNotificationDeliveryService {
       this.#dependencies.logger.warn({
         event:
           NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_BATCH_INVALID_TOKENS_DEACTIVATED,
-        count: result.invalidTokens.length,
+        count: revokedTokens.length,
       });
     }
     this.#dependencies.logger.debug({
       event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_BATCH_SENT,
-      total: result.total,
-      successCount: result.successCount,
-      failureCount: result.failureCount,
+      total: results.length,
+      ...countOutcomes(results),
     });
 
-    const resultsByDispatch = new Map<number, PushResult[]>();
-    for (const [index, pushResult] of result.results.entries()) {
+    const dispatchResults = results.flatMap((result, index) => {
       const dispatchId = prepared.dispatchIds[index];
-      if (dispatchId == null) {
-        continue;
-      }
-      const current = resultsByDispatch.get(dispatchId) ?? [];
-      current.push(pushResult);
-      resultsByDispatch.set(dispatchId, current);
-    }
+      return dispatchId == null ? [] : [{ dispatchId, result }];
+    });
+    const resultsByDispatch = new Map(
+      Object.entries(groupBy(dispatchResults, ({ dispatchId }) => dispatchId)).map(
+        ([dispatchId, rows]) => [Number(dispatchId), rows.map(({ result }) => result)],
+      ),
+    );
     return { attemptedDispatchIds: prepared.attemptedDispatchIds, resultsByDispatch };
   }
 
@@ -263,15 +277,5 @@ export class PushNotificationDeliveryService {
     return tokens.length > 0
       ? { status: "resolved", tokens }
       : { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
-  }
-
-  #groupTokenRecords(records: PushTokenRecord[]): Map<string, PushTokenRecord[]> {
-    const byUserId = new Map<string, PushTokenRecord[]>();
-    for (const record of records) {
-      const userRecords = byUserId.get(record.userId) ?? [];
-      userRecords.push(record);
-      byUserId.set(record.userId, userRecords);
-    }
-    return byUserId;
   }
 }

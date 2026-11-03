@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
@@ -7,24 +5,14 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 
 import type { PushDeliveryJobEnqueuerPort } from "../../../application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
+import { pushDeliveryJobKey } from "../notification-job-keys.js";
 import {
   PUSH_DELIVERY_DISPATCH_JOB_POLICY,
   PUSH_DELIVERY_JOB_POLICY,
   PUSH_DELIVERY_QUEUE,
+  PUSH_DELIVERY_RELAY_SCHEDULE,
   PushDeliveryJobName,
 } from "./push-delivery-queue.constants.js";
-
-function deliveryIdempotencyKey(publications: readonly PushDeliveryPublication[]): string {
-  const generationFingerprint = [...publications]
-    .sort(
-      (left, right) =>
-        left.dispatchId - right.dispatchId || left.publishAttempt - right.publishAttempt,
-    )
-    .map((item) => `${item.dispatchId}-${item.publishAttempt}`)
-    .join(".");
-  const digest = createHash("sha256").update(generationFingerprint).digest("hex");
-  return `push-delivery-${digest}`;
-}
 
 @Injectable()
 export class PushDeliveryQueueService implements PushDeliveryJobEnqueuerPort, OnModuleInit {
@@ -39,8 +27,8 @@ export class PushDeliveryQueueService implements PushDeliveryJobEnqueuerPort, On
       "Push delivery outbox relay scheduler registration",
       () =>
         this.runtime.schedule(
-          "push-delivery-outbox-relay-scheduler",
-          "* * * * *",
+          PUSH_DELIVERY_RELAY_SCHEDULE.key,
+          PUSH_DELIVERY_RELAY_SCHEDULE.cron,
           PUSH_DELIVERY_QUEUE,
           { name: PushDeliveryJobName.RELAY_OUTBOX, data: {} },
           PUSH_DELIVERY_JOB_POLICY,
@@ -54,7 +42,7 @@ export class PushDeliveryQueueService implements PushDeliveryJobEnqueuerPort, On
       { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
       {
         ...PUSH_DELIVERY_DISPATCH_JOB_POLICY,
-        idempotencyKey: deliveryIdempotencyKey(publications),
+        idempotencyKey: pushDeliveryJobKey(publications),
       },
     );
   }

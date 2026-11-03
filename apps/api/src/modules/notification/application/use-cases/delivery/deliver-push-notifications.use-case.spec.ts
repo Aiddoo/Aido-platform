@@ -250,7 +250,9 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
       callOrder.push("deliverSingle");
       return {
         status: "sent",
-        results: [{ token: `token-${data.userId}`, success: true }],
+        results: [
+          { token: `token-${data.userId}`, status: "accepted", ticketId: `ticket-${data.userId}` },
+        ],
       };
     });
     delivery.prepareBatchDelivery.mockImplementation(async (payloads) => {
@@ -276,7 +278,13 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
         resultsByDispatch: new Map(
           [...prepared.attemptedDispatchIds].map((dispatchId) => [
             dispatchId,
-            [{ token: `token-${dispatchId}`, success: true } satisfies PushResult],
+            [
+              {
+                token: `token-${dispatchId}`,
+                status: "accepted",
+                ticketId: `ticket-${dispatchId}`,
+              } satisfies PushResult,
+            ],
           ]),
         ),
       };
@@ -349,7 +357,9 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
           timezone: "Asia/Seoul",
           localDate: new Date("2026-08-29T00:00:00.000Z"),
         },
-        results: [{ token: "token-single-user", success: true }],
+        results: [
+          { token: "token-single-user", status: "accepted", ticketId: "ticket-single-user" },
+        ],
       },
     ]);
     expect(uow.run).toHaveBeenCalledTimes(3);
@@ -521,7 +531,7 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
           timezone: "Asia/Seoul",
           localDate: new Date("2026-08-29T00:00:00.000Z"),
         },
-        results: [{ token: "token-204", success: true }],
+        results: [{ token: "token-204", status: "accepted", ticketId: "ticket-204" }],
       },
     ]);
     expect(callOrder.indexOf("deliverSingle")).toBeLessThan(

@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { chunk } from "es-toolkit";
 import { assert } from "vitest";
 
 import {
@@ -9,7 +10,9 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
-import { retentionPushOutbox } from "#api/platform/database/schema/index";
+import { CreateBroadcastCampaign } from "#api/modules/operations/application/use-cases/admin/create-broadcast-campaign.use-case";
+import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/operations-admin-jobs.public";
+import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -27,6 +30,10 @@ const JOB_OPTIONS: EnqueueJobOptions = {
   retentionSeconds: 60 * 60,
   deleteAfterSeconds: 60 * 60,
 };
+
+const BROADCAST_TIMEOUT_MS = 180_000;
+/** retention worker는 정해진 시각 작업이라 15초마다 polling한다. */
+const SCHEDULED_WORKER_TIMEOUT_MS = 40_000;
 
 describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg-boss)", () => {
   let harness: CriticalQueueProcessorHarness;
@@ -119,278 +126,141 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     ).toEqual(["fake-queue-en-token", "fake-queue-ko-token"]);
   });
 
-  it("retention-dispatch 잡은 실제 worker를 거쳐 전송 상태와 시도를 영속화한다", async () => {
-    // Given
-    const recipient = await createPushReadyUser(harness.client, {
-      email: "queue-retention@example.com",
-      userTag: "RETENT01",
-      name: "리텐션 수신자",
-      locale: "ko",
-      token: "fake-retention-token",
-      timezone: harness.daytimeTimezone,
-    });
-    await harness.retentionRepository.enroll({
-      userId: recipient.id,
-      variant: "TREATMENT",
-      startedAt: new Date("2026-07-01T00:00:00.000Z"),
-    });
-    const stage = await findD1Stage(harness, recipient.id);
-    await harness.retentionRepository.createDelivery({
-      stageId: stage.id,
-      userId: recipient.id,
-      timezone: harness.daytimeTimezone,
-      title: "오늘 할 일을 이어가세요",
-      body: "작은 할 일 하나로 다시 시작해 보세요.",
-      route: "/feed",
-      variantId: "d1_return",
-    });
-    const outbox = await findOutbox(harness, stage.id);
-    const publication = await claimReadyRetentionOutbox(harness, outbox.id);
-    expect(publication).toEqual({ id: outbox.id, attempts: 1 });
+  it(
+    "retention sweep 잡은 공용 outbox와 push-delivery worker로 ENGAGEMENT 푸시를 보낸다",
+    async () => {
+      // Given: 가입 3시간 뒤 할 일이 없는 D0 대상
+      const recipient = await createPushReadyUser(harness.client, {
+        email: "queue-retention@example.com",
+        userTag: "RETENT01",
+        name: "리텐션 수신자",
+        locale: "ko",
+        token: "fake-retention-token",
+        timezone: harness.daytimeTimezone,
+      });
+      await harness.retentionRepository.enroll({
+        userId: recipient.id,
+        variant: "TREATMENT",
+        startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      });
 
-    // When
-    const jobId = await harness.runtime.enqueue(
-      RETENTION_QUEUE,
-      {
-        name: RetentionJobName.DISPATCH,
-        data: { outboxId: outbox.id, publishAttempt: publication?.attempts },
-      },
-      { ...JOB_OPTIONS, idempotencyKey: `retention-dispatch:${outbox.id}` },
-    );
-    if (publication) {
-      await harness.retentionRepository.markOutboxPublished(publication);
-    }
+      // When
+      await harness.runtime.enqueue(
+        RETENTION_QUEUE,
+        { name: RetentionJobName.STAGE_SWEEP, data: {} },
+        { ...JOB_OPTIONS, idempotencyKey: `retention-sweep:${recipient.id}` },
+      );
 
-    // Then
-    expect(jobId).not.toBeNull();
-    await harness.eventually(async () => {
-      const [dispatch, attempts, jobs] = await Promise.all([
-        harness.client.query.pushDispatch.findFirst({ where: { id: outbox.dispatchId } }),
-        harness.client.query.pushDeliveryAttempt.findMany({
-          where: { dispatchId: outbox.dispatchId },
-        }),
-        harness.boss.findJobs(RETENTION_QUEUE, {
-          id: jobId ?? undefined,
+      // Then
+      await harness.eventually(async () => {
+        const dispatch = await harness.client.query.pushDispatch.findFirst({
+          where: { userId: recipient.id },
+          with: { notification: true },
+        });
+        assert.exists(dispatch);
+        expect(dispatch).toMatchObject({ status: "SENT", purpose: "ENGAGEMENT" });
+        const stage = await harness.client.query.retentionExperimentStage.findFirst({
+          where: { stage: "D0", assignment: { userId: recipient.id } },
+        });
+        expect(stage).toMatchObject({
+          status: "OUTBOXED",
+          notificationId: dispatch.notificationId,
+        });
+      }, SCHEDULED_WORKER_TIMEOUT_MS);
+      expect(harness.pushProvider.getSentPayloads()).toEqual([
+        expect.objectContaining({
+          token: "fake-retention-token",
+          categoryId: "MARKETING",
+          data: expect.objectContaining({ purpose: "ENGAGEMENT", type: "SYSTEM_NOTICE" }),
         }),
       ]);
+    },
+    SCHEDULED_WORKER_TIMEOUT_MS + 10_000,
+  );
 
-      assert.exists(dispatch);
-      expect(dispatch.status).toBe("SENT");
-      expect(dispatch.sentAt).not.toBeNull();
-      expect(attempts).toHaveLength(1);
-      expect(attempts[0]?.status).toBe("TICKET_ACCEPTED");
-      expect(jobs[0]?.state).toBe("completed");
-    });
-    expect(harness.pushProvider.getSentPayloads().map(({ token }) => token)).toEqual([
-      "fake-retention-token",
-    ]);
-  });
+  it(
+    "브로드캐스트는 같은 요청을 한 번만 분배하고 대상 전원에게 발송한다",
+    async () => {
+      // Given
+      const recipientCount = Number(process.env.BROADCAST_RECIPIENT_COUNT ?? 1_200);
+      await seedPushReadyUsers(harness.client, recipientCount);
+      const createCampaign = harness.module.get(CreateBroadcastCampaign);
+      const request = {
+        requestId: "7d3a3f6e-3a0c-4b8e-9d0f-0d6a3c2b1a90",
+        title: "새 기능 안내",
+        body: "지금 확인해 보세요.",
+        targetFilter: "WITH_PUSH_TOKEN",
+        action: undefined,
+        force: true,
+      } as const;
+      const startedAt = performance.now();
 
-  it("retention 잠금은 같은 잡의 더 높은 시도 횟수만 다시 가져가고 오래된 작업자의 마무리는 거부한다", async () => {
-    // Given
-    const { outbox, publication } = await createRetentionPublication(harness, "LEASE001");
-    const first = await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      processingJobId: "retention-lease-job",
-      processingJobAttempt: 1,
-      startedAt: new Date(),
-    });
+      // When
+      const [first, replay] = await Promise.all([
+        createCampaign.execute(request),
+        createCampaign.execute(request),
+      ]);
 
-    // When
-    const other = await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      processingJobId: "different-job",
-      processingJobAttempt: 2,
-      startedAt: new Date(),
-    });
-    const retry = await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      processingJobId: "retention-lease-job",
-      processingJobAttempt: 2,
-      startedAt: new Date(),
-    });
-
-    // Then
-    expect(first).not.toBeNull();
-    expect(other).toBeNull();
-    assert.exists(retry);
-    expect(retry.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
-    await expect(
-      harness.retentionRepository.markDispatchSkipped(first?.fence ?? retry.fence, "STALE"),
-    ).resolves.toBe(false);
-    await expect(
-      harness.retentionRepository.markDispatchSkipped(retry.fence, "CURRENT"),
-    ).resolves.toBe(true);
-  });
-
-  it("오래 멈춘 retention 처리 중 상태는 일반 outbox와 섞지 않고 발송 건과 retention outbox를 함께 다시 연다", async () => {
-    // Given
-    const { outbox, publication } = await createRetentionPublication(harness, "STALE001");
-    await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      processingJobId: "stale-retention-job",
-      processingJobAttempt: 1,
-      startedAt: new Date("2026-08-01T00:00:00.000Z"),
-    });
-
-    // When
-    const recovered = await harness.retentionRepository.recoverStaleDispatches(
-      new Date("2026-08-01T00:15:01.000Z"),
-    );
-
-    // Then
-    expect(recovered).toBe(1);
-    await expect(
-      harness.client.query.pushDispatch.findFirst({ where: { id: outbox.dispatchId } }),
-    ).resolves.toMatchObject({ status: "PENDING", processingJobId: null });
-    await expect(
-      harness.client.query.retentionPushOutbox.findFirst({ where: { id: outbox.id } }),
-    ).resolves.toMatchObject({ status: "PENDING", publishedAt: null });
-    await expect(
-      harness.client.query.pushDispatchOutbox.findMany({
-        where: { dispatchId: outbox.dispatchId },
-      }),
-    ).resolves.toHaveLength(0);
-  });
-
-  it("발행 표시가 늦어져도 실행 중인 retention 작업자의 잠금은 다시 열지 않는다", async () => {
-    // Given
-    const { outbox, publication } = await createRetentionPublication(harness, "ACTIVE01");
-    const startedAt = new Date();
-    await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      processingJobId: "active-retention-job",
-      processingJobAttempt: 1,
-      startedAt,
-    });
-    await harness.client
-      .update(retentionPushOutbox)
-      .set({
-        status: "PROCESSING",
-        publishedAt: null,
-        lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
-      })
-      .where(eq(retentionPushOutbox.id, outbox.id));
-
-    // When
-    const recovered = await harness.retentionRepository.recoverStaleOutboxes(
-      new Date(startedAt.getTime() - 15 * 60_000),
-    );
-
-    // Then
-    expect(recovered).toBe(0);
-    await expect(
-      harness.client.query.retentionPushOutbox.findFirst({ where: { id: outbox.id } }),
-    ).resolves.toMatchObject({ status: "PROCESSING" });
-  });
-
-  it("retention 발송 한도 표시는 새 발행 회차에 남고 이전 회차의 실패 처리는 다시 열지 못한다", async () => {
-    // Given
-    const { outbox, publication } = await createRetentionPublication(harness, "RATE0001");
-    const claimed = await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      processingJobId: "rate-reservation-job",
-      processingJobAttempt: 1,
-      startedAt: new Date(),
-    });
-    assert.exists(claimed);
-    const reserved = await harness.retentionRepository.markRateLimitReserved(
-      claimed.fence,
-      new Date(),
-    );
-    const released = await harness.retentionRepository.releaseDispatchForRetry({
-      fence: claimed.fence,
-      reason: "provider unavailable",
-      availableAt: new Date(),
-      hasExhaustedRetries: false,
-    });
-    const [nextPublication] = await harness.retentionRepository.claimOutboxes(1, new Date());
-
-    // When
-    const reopened = await harness.retentionRepository.reopenUnclaimedDispatch({
-      outboxId: outbox.id,
-      publishAttempt: publication.attempts,
-      availableAt: new Date(),
-      reason: "stale DLQ",
-    });
-    const retry = await harness.retentionRepository.claimDispatch({
-      outboxId: outbox.id,
-      publishAttempt: nextPublication?.attempts,
-      processingJobId: "rate-reservation-job-2",
-      processingJobAttempt: 1,
-      startedAt: new Date(),
-    });
-
-    // Then
-    expect(reserved).toBe(true);
-    expect(released).toBe(true);
-    expect(nextPublication?.attempts).toBe(2);
-    expect(reopened).toBe(false);
-    expect(retry?.rateLimitReserved).toBe(true);
-  });
+      // Then
+      expect(replay.campaign.id).toBe(first.campaign.id);
+      await harness.eventually(async () => {
+        const [campaign, sentDispatches] = await Promise.all([
+          harness.client.query.broadcastCampaign.findFirst({ where: { id: first.campaign.id } }),
+          harness.client.$count(pushDispatch, eq(pushDispatch.status, "SENT")),
+        ]);
+        expect(campaign).toMatchObject({
+          status: "COMPLETED",
+          processedCount: recipientCount,
+          queuedCount: recipientCount,
+        });
+        expect(sentDispatches).toBe(recipientCount);
+      }, BROADCAST_TIMEOUT_MS);
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      const fanOutJobs = await harness.boss.findJobs(BROADCAST_FAN_OUT_QUEUE);
+      expect(new Set(harness.pushProvider.getSentPayloads().map(({ token }) => token)).size).toBe(
+        recipientCount,
+      );
+      expect(fanOutJobs.every(({ state }) => state === "completed")).toBe(true);
+      process.stderr.write(
+        `${JSON.stringify({
+          event: "broadcast.measured",
+          recipientCount,
+          elapsedMs,
+          fanOutJobs: fanOutJobs.length,
+        })}\n`,
+      );
+    },
+    BROADCAST_TIMEOUT_MS + 30_000,
+  );
 });
 
-async function createRetentionPublication(harness: CriticalQueueProcessorHarness, userTag: string) {
-  const user = await createPushReadyUser(harness.client, {
-    email: `${userTag.toLowerCase()}@example.com`,
-    userTag,
-    name: "Retention fixture",
-    locale: "ko",
-    token: `fake-${userTag.toLowerCase()}-token`,
-    timezone: harness.daytimeTimezone,
-  });
-  await harness.retentionRepository.enroll({
-    userId: user.id,
-    variant: "TREATMENT",
-    startedAt: new Date("2026-07-01T00:00:00.000Z"),
-  });
-  const stage = await findD1Stage(harness, user.id);
-  await harness.retentionRepository.createDelivery({
-    stageId: stage.id,
-    userId: user.id,
-    timezone: harness.daytimeTimezone,
-    title: "title",
-    body: "body",
-    route: "/feed",
-    variantId: "d1_return",
-  });
-  const outbox = await findOutbox(harness, stage.id);
-  const publication = await claimReadyRetentionOutbox(harness, outbox.id);
-  await harness.retentionRepository.markOutboxPublished(publication);
-  return { outbox, publication };
-}
-
-async function findD1Stage(harness: CriticalQueueProcessorHarness, userId: string) {
-  const stage = await harness.client.query.retentionExperimentStage.findFirst({
-    where: { stage: "D1", assignment: { userId } },
-  });
-  assert.exists(stage);
-  return stage;
-}
-
-async function findOutbox(harness: CriticalQueueProcessorHarness, stageId: string) {
-  const outbox = await harness.client.query.retentionPushOutbox.findFirst({ where: { stageId } });
-  assert.exists(outbox);
-  return outbox;
-}
-
-async function claimReadyRetentionOutbox(harness: CriticalQueueProcessorHarness, outboxId: string) {
-  const claimAt = new Date("2026-07-02T00:00:00.000Z");
-  await harness.client
-    .update(retentionPushOutbox)
-    .set({ availableAt: claimAt })
-    .where(eq(retentionPushOutbox.id, outboxId));
-  const [publication] = await harness.retentionRepository.claimOutboxes(1, claimAt);
-  if (publication === undefined) {
-    throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+async function seedPushReadyUsers(client: TestDatabaseClient, count: number): Promise<void> {
+  for (const page of chunk(
+    Array.from({ length: count }, (_, index) => index),
+    1_000,
+  )) {
+    const users = await client
+      .insert(user)
+      .values(
+        page.map((index) => ({
+          email: `broadcast-${index}@example.com`,
+          userTag: `B${String(index).padStart(7, "0")}`,
+          status: "ACTIVE" as const,
+        })),
+      )
+      .returning({ id: user.id });
+    await client
+      .insert(userPreference)
+      .values(users.map(({ id }) => ({ userId: id, pushEnabled: true, nightPushEnabled: true })));
+    await client.insert(pushToken).values(
+      users.map(({ id }) => ({
+        userId: id,
+        token: `fake-broadcast-${id}`,
+        deviceId: `broadcast-device-${id}`,
+        platform: "IOS" as const,
+      })),
+    );
   }
-  return publication;
 }
 
 async function createPushReadyUser(

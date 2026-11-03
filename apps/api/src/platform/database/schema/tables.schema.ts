@@ -7,5 +7,6 @@ export * from "./identity.schema.js";
 export * from "./insights.schema.js";
 export * from "./notes.schema.js";
 export * from "./notification.schema.js";
+export * from "./operations.schema.js";
 export * from "./planning.schema.js";
 export * from "./social.schema.js";

@@ -1,3 +1,4 @@
+import type { BroadcastResult, NotificationAction } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -8,17 +9,12 @@ import { buildBroadcastMessages } from "../../messages/admin/broadcast-message.f
 import { OperationsAdminLogEvent } from "../../observability/admin/operations-admin-log.events.js";
 import type { AdminBroadcastNotifierPort } from "../../ports/admin/admin-broadcast-notifier.port.js";
 import type { AdminUserDirectoryPort } from "../../ports/admin/admin-user-directory.port.js";
-import type { BroadcastAction } from "../../read-models/admin/broadcast-message.read-model.js";
-import {
-  buildBroadcastResult,
-  type BroadcastResult,
-} from "../../read-models/admin/broadcast-result.read-model.js";
 
 export interface SendTargetedNotificationInput {
   readonly title: string;
   readonly body: string;
   readonly userIds: readonly string[];
-  readonly action: BroadcastAction | undefined;
+  readonly action: NotificationAction | undefined;
   readonly force: boolean;
 }
 
@@ -37,21 +33,32 @@ export class SendTargetedNotification {
 
   async execute(input: SendTargetedNotificationInput): Promise<BroadcastResult> {
     const content = BroadcastContent.create(input);
-    const action = input.action == null ? undefined : { ...input.action };
     const userIds = [...input.userIds];
-    const force = input.force ?? false;
     const existingUserIds = await this.#dependencies.userDirectory.findExistingUserIds(userIds);
     if (existingUserIds.length === 0) {
       throw new ApplicationException(ErrorCode.ADMIN_1402, { requested: userIds.length });
     }
     const { count } = await this.#dependencies.notifier.sendBatch(
-      buildBroadcastMessages(content, existingUserIds, "ADMIN_TARGETED", action, force),
+      buildBroadcastMessages(
+        {
+          title: content.title,
+          body: content.body,
+          type: "ADMIN_TARGETED",
+          action: input.action,
+          force: input.force,
+        },
+        existingUserIds,
+      ),
     );
     this.#dependencies.logger.log({
       event: OperationsAdminLogEvent.TARGETED_COMPLETED,
       count,
       totalTargets: existingUserIds.length,
     });
-    return buildBroadcastResult(existingUserIds.length, count);
+    return {
+      successCount: count,
+      failCount: existingUserIds.length - count,
+      totalTargets: existingUserIds.length,
+    };
   }
 }

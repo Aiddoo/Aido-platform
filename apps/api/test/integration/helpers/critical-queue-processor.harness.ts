@@ -1,7 +1,7 @@
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
 import { type DynamicModule, Module, type Provider } from "@nestjs/common";
-import { Test } from "@nestjs/testing";
+import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
 
@@ -44,7 +44,6 @@ import {
   RETENTION_CONFIG,
   type RetentionConfigPort,
 } from "#api/modules/notification/application/ports/retention/retention-config.port";
-import { RETENTION_PUSH_SENDER } from "#api/modules/notification/application/ports/retention/retention-push-sender.port";
 import { RETENTION_REPOSITORY } from "#api/modules/notification/application/ports/retention/retention.repository.port";
 import { GetNotifications } from "#api/modules/notification/application/use-cases/delivery/get-notifications.use-case";
 import { GetUnreadCount } from "#api/modules/notification/application/use-cases/delivery/get-unread-count.use-case";
@@ -54,23 +53,18 @@ import { MarkNotificationOpened } from "#api/modules/notification/application/us
 import { OptOutMarketingPush } from "#api/modules/notification/application/use-cases/delivery/opt-out-marketing-push.use-case";
 import { ReconcilePushReceipts } from "#api/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case";
 import { RegisterPushToken } from "#api/modules/notification/application/use-cases/delivery/register-push-token.use-case";
-import { SendBatchNotification } from "#api/modules/notification/application/use-cases/delivery/send-batch-notification.use-case";
 import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
 import { SendCheerNotification } from "#api/modules/notification/application/use-cases/delivery/send-cheer-notification.use-case";
 import { SendFollowAcceptedNotification } from "#api/modules/notification/application/use-cases/delivery/send-follow-accepted-notification.use-case";
 import { SendFollowRequestNotification } from "#api/modules/notification/application/use-cases/delivery/send-follow-request-notification.use-case";
 import { SendMilestoneNotification } from "#api/modules/notification/application/use-cases/delivery/send-milestone-notification.use-case";
 import { SendNotificationWithDedup } from "#api/modules/notification/application/use-cases/delivery/send-notification-with-dedup.use-case";
-import { SendNotification } from "#api/modules/notification/application/use-cases/delivery/send-notification.use-case";
 import { SendNudgeNotification } from "#api/modules/notification/application/use-cases/delivery/send-nudge-notification.use-case";
 import { UnregisterPushToken } from "#api/modules/notification/application/use-cases/delivery/unregister-push-token.use-case";
-import { ProcessRetentionStages } from "#api/modules/notification/application/use-cases/retention/process-retention-stages.use-case";
-import { RelayRetentionOutbox } from "#api/modules/notification/application/use-cases/retention/relay-retention-outbox.use-case";
 import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-active-push-token-reader.adapter";
 import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter";
 import { NotificationCacheAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-cache.adapter";
 import { NotificationDedupAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-dedup.adapter";
-import { ExpoRetentionPushSenderAdapter } from "#api/modules/notification/infrastructure/adapters/retention/expo-retention-push-sender.adapter";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
 import { PushDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.processor";
 import { PushDeliveryQueueService } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.service";
@@ -98,12 +92,25 @@ import {
   pushNotificationPayloadFactoryProvider,
   recoverFailedPushDeliveriesProvider,
   relayPushDeliveryOutboxProvider,
+  sendBatchNotificationProvider,
   sendFriendCompletionNotificationsProvider,
+  sendNotificationProvider,
 } from "#api/modules/notification/notification-delivery-application.providers";
+import { processRetentionStagesProvider } from "#api/modules/notification/notification-retention-application.providers";
+import { ADMIN_BROADCAST_NOTIFIER } from "#api/modules/operations/application/ports/admin/admin-broadcast-notifier.port";
+import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/application/ports/admin/admin-user-directory.port";
+import { BROADCAST_CAMPAIGN_REPOSITORY } from "#api/modules/operations/application/ports/admin/broadcast-campaign.repository.port";
+import { BROADCAST_FAN_OUT_ENQUEUER } from "#api/modules/operations/application/ports/admin/broadcast-fan-out.enqueuer.port";
+import { DrizzleAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/drizzle-admin-user-directory.adapter";
+import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/infrastructure/adapters/admin/notification-admin-broadcast-notifier.adapter";
+import { BroadcastFanOutQueueProcessor } from "#api/modules/operations/infrastructure/jobs/admin/broadcast-fan-out-queue.processor";
+import { BroadcastFanOutQueueService } from "#api/modules/operations/infrastructure/jobs/admin/broadcast-fan-out-queue.service";
+import { DrizzleBroadcastCampaignRepository } from "#api/modules/operations/infrastructure/persistence/admin/drizzle-broadcast-campaign.repository";
 import {
-  dispatchRetentionPushProvider,
-  recoverFailedRetentionDeliveryProvider,
-} from "#api/modules/notification/notification-retention-application.providers";
+  createBroadcastCampaignProvider,
+  failBroadcastCampaignProvider,
+  fanOutBroadcastCampaignProvider,
+} from "#api/modules/operations/operations-admin-application.providers";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
@@ -154,10 +161,11 @@ export interface CriticalQueueProcessorHarness {
   readonly boss: PgBoss;
   readonly runtime: JobRuntimePort;
   readonly pushProvider: FakePushProvider;
+  readonly module: TestingModule;
   readonly retentionRepository: DrizzleRetentionRepository;
   readonly daytimeTimezone: string;
   cleanup(): Promise<void>;
-  eventually(assertion: () => Promise<void>): Promise<void>;
+  eventually(assertion: () => Promise<void>, timeoutMs?: number): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -215,6 +223,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       },
       ...notificationProviders(pushProvider),
       ...retentionProviders(),
+      ...broadcastProviders(),
     ],
   }).compile();
 
@@ -227,6 +236,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     boss,
     runtime,
     pushProvider,
+    module,
     retentionRepository: module.get(DrizzleRetentionRepository),
     daytimeTimezone,
     cleanup: async () => {
@@ -234,8 +244,8 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
       pushProvider.clear();
       await module.get(CacheService).reset();
     },
-    eventually: async (assertion) => {
-      await eventually(assertion);
+    eventually: async (assertion, timeoutMs) => {
+      await eventually(assertion, timeoutMs);
     },
     close: async () => {
       await runtime.stop();
@@ -271,9 +281,9 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: RegisterPushToken, useValue: unexpectedUseCase },
     { provide: UnregisterPushToken, useValue: unexpectedUseCase },
     { provide: OptOutMarketingPush, useValue: unexpectedUseCase },
-    { provide: SendNotification, useValue: unexpectedUseCase },
+    sendNotificationProvider,
     { provide: SendNotificationWithDedup, useValue: unexpectedUseCase },
-    { provide: SendBatchNotification, useValue: unexpectedUseCase },
+    sendBatchNotificationProvider,
     DrizzleNotificationRepository,
     { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
     DrizzleNotificationReader,
@@ -372,20 +382,23 @@ function retentionProviders(): Provider[] {
   };
   return [
     RetentionQueueProcessor,
-    dispatchRetentionPushProvider,
-    recoverFailedRetentionDeliveryProvider,
-    {
-      provide: ProcessRetentionStages,
-      useValue: unexpectedUseCase,
-    },
-    { provide: RelayRetentionOutbox, useValue: unexpectedUseCase },
+    processRetentionStagesProvider,
     DrizzleRetentionRepository,
     { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
-    {
-      provide: RETENTION_PUSH_SENDER,
-      useClass: ExpoRetentionPushSenderAdapter,
-    },
     { provide: RETENTION_CONFIG, useValue: config },
+  ];
+}
+
+function broadcastProviders(): Provider[] {
+  return [
+    createBroadcastCampaignProvider,
+    fanOutBroadcastCampaignProvider,
+    failBroadcastCampaignProvider,
+    BroadcastFanOutQueueProcessor,
+    { provide: BROADCAST_CAMPAIGN_REPOSITORY, useClass: DrizzleBroadcastCampaignRepository },
+    { provide: BROADCAST_FAN_OUT_ENQUEUER, useClass: BroadcastFanOutQueueService },
+    { provide: ADMIN_USER_DIRECTORY, useClass: DrizzleAdminUserDirectoryAdapter },
+    { provide: ADMIN_BROADCAST_NOTIFIER, useClass: NotificationAdminBroadcastNotifierAdapter },
   ];
 }
 

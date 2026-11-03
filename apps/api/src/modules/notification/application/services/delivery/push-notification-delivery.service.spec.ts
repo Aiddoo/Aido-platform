@@ -146,13 +146,9 @@ describe("PushNotificationDeliveryService", () => {
           appVersion: "1.11.0",
         }),
       ]);
-      pushProvider.sendBatch.mockResolvedValue({
-        total: 1,
-        successCount: 1,
-        failureCount: 0,
-        results: [{ token: "new-token", success: true }],
-        invalidTokens: [],
-      });
+      pushProvider.sendBatch.mockResolvedValue([
+        { token: "new-token", status: "accepted", ticketId: "ticket-new" },
+      ]);
 
       // When
       const result = await service.deliverSingle({
@@ -191,13 +187,9 @@ describe("PushNotificationDeliveryService", () => {
         appVersion: "1.13.0",
       }),
     ]);
-    pushProvider.sendBatch.mockResolvedValue({
-      total: 1,
-      successCount: 1,
-      failureCount: 0,
-      results: [{ token: "updated-token", success: true }],
-      invalidTokens: [],
-    });
+    pushProvider.sendBatch.mockResolvedValue([
+      { token: "updated-token", status: "accepted", ticketId: "ticket-updated" },
+    ]);
 
     // When
     const result = await service.deliverSingle({
@@ -256,13 +248,9 @@ describe("PushNotificationDeliveryService", () => {
 
   it("단건 provider가 invalid token을 반환하면 저장소 비활성화와 해당 사용자 캐시 무효화를 완료한다", async () => {
     activeTokenReader.findByUserId.mockResolvedValue(["invalid-token"]);
-    pushProvider.sendBatch.mockResolvedValue({
-      total: 1,
-      successCount: 0,
-      failureCount: 1,
-      results: [{ token: "invalid-token", success: false, errorCode: "DeviceNotRegistered" }],
-      invalidTokens: ["invalid-token"],
-    });
+    pushProvider.sendBatch.mockResolvedValue([
+      { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
+    ]);
 
     await expect(
       service.deliverSingle({
@@ -271,7 +259,7 @@ describe("PushNotificationDeliveryService", () => {
       }),
     ).resolves.toMatchObject({
       status: "sent",
-      results: [{ token: "invalid-token", success: false }],
+      results: [{ token: "invalid-token", status: "rejected" }],
     });
     expect(tokenRepository.deactivateInvalidTokens).toHaveBeenCalledWith(["invalid-token"]);
     expect(notificationCache.invalidatePushTokens).toHaveBeenCalledWith("user-1");
@@ -306,16 +294,10 @@ describe("PushNotificationDeliveryService", () => {
         appVersion: "1.9.0",
       }),
     ]);
-    pushProvider.sendBatch.mockResolvedValue({
-      total: 2,
-      successCount: 2,
-      failureCount: 0,
-      results: [
-        { token: "generic-token", success: true, ticketId: "ticket-1" },
-        { token: "feature-token", success: true, ticketId: "ticket-2" },
-      ],
-      invalidTokens: [],
-    });
+    pushProvider.sendBatch.mockResolvedValue([
+      { token: "generic-token", status: "accepted", ticketId: "ticket-1" },
+      { token: "feature-token", status: "accepted", ticketId: "ticket-2" },
+    ]);
 
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "generic", dispatchId: 1 }),
@@ -344,10 +326,10 @@ describe("PushNotificationDeliveryService", () => {
     ]);
     expect([...prepared.attemptedDispatchIds]).toEqual([1, 2]);
     expect(result.resultsByDispatch.get(1)).toEqual([
-      { token: "generic-token", success: true, ticketId: "ticket-1" },
+      { token: "generic-token", status: "accepted", ticketId: "ticket-1" },
     ]);
     expect(result.resultsByDispatch.get(2)).toEqual([
-      { token: "feature-token", success: true, ticketId: "ticket-2" },
+      { token: "feature-token", status: "accepted", ticketId: "ticket-2" },
     ]);
     expect(prepared.skippedDispatches).toEqual([
       { dispatchId: 3, reason: "NO_ACTIVE_TOKEN" },
@@ -362,16 +344,10 @@ describe("PushNotificationDeliveryService", () => {
         ["user-2", ["valid-token"]],
       ]),
     );
-    pushProvider.sendBatch.mockResolvedValue({
-      total: 2,
-      successCount: 1,
-      failureCount: 1,
-      results: [
-        { token: "invalid-token", success: false },
-        { token: "valid-token", success: true },
-      ],
-      invalidTokens: ["invalid-token"],
-    });
+    pushProvider.sendBatch.mockResolvedValue([
+      { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
+      { token: "valid-token", status: "accepted", ticketId: "ticket-valid" },
+    ]);
 
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
