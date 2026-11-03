@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 import { resolveDeliveryTimezone } from "#api/shared/domain/date/utils/timezone";
 
 export interface RetentionPushEligibilityInput {
@@ -27,11 +29,5 @@ export function retentionPushSkipReason(input: RetentionPushEligibilityInput): s
 
 function localHour(date: Date, timezone: string): number {
   // 마케팅 quiet-hours는 지역 기준 — 미상(UTC) 유저는 KST로 폴백해 판정
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: resolveDeliveryTimezone(timezone),
-    hour: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const hour = parts.find((part) => part.type === "hour")?.value;
-  return Number(hour ?? 0);
+  return dayjs(date).tz(resolveDeliveryTimezone(timezone)).hour();
 }

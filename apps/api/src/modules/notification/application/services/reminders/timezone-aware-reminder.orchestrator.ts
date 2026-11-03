@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import {
@@ -102,13 +103,13 @@ export class TimezoneAwareReminderOrchestrator {
     });
 
     try {
-      const now = new Date();
+      const sweptAt = now();
 
       const tzList = await this.#dependencies.preferenceReader.findActiveTimezones();
 
       // 각 타임존별 Strategy를 병렬 처리
       const tasks = tzList.map((tz) => {
-        const local = dayjs(now).tz(tz);
+        const local = dayjs(sweptAt).tz(tz);
         const localHour = local.hour();
         const localMinute = local.minute();
         return this.#processTimezone(tz, localHour, localMinute);
@@ -143,9 +144,9 @@ export class TimezoneAwareReminderOrchestrator {
    */
   async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
     try {
-      const now = dayjs().tz(payload.timezone);
-      const localHour = now.hour();
-      const localMinute = now.minute();
+      const local = dayjs(now()).tz(payload.timezone);
+      const localHour = local.hour();
+      const localMinute = local.minute();
 
       const ctx = this.#buildContext(payload.timezone, localHour, localMinute, payload.userId);
 

@@ -9,6 +9,7 @@ import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/date/utils/timezone";
 
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
@@ -24,6 +25,9 @@ import {
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
+
+/** 일일 제안 배치는 사용자별 시간대가 아니라 한국 아침 07:30 운영 일정으로 돈다 */
+const DISPATCH_CRON_TZ = "Asia/Seoul";
 
 @Injectable()
 export class SuggestionAnalysisJob implements OnModuleInit {
@@ -112,7 +116,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
               name: AiSuggestionJobName.ANALYZE,
               data: {
                 userId: user.id,
-                timezone: user.preference?.timezone ?? "Asia/Seoul",
+                timezone: user.preference?.timezone ?? DEFAULT_DELIVERY_TIMEZONE,
                 weatherGrid: toWeatherGrid(user.location),
               } satisfies AiSuggestionAnalyzeData,
             },
@@ -138,7 +142,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
    * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
    */
   async #catchUpIfNeeded(): Promise<void> {
-    const kstNow = dayjs().tz("Asia/Seoul");
+    const kstNow = dayjs().tz(DISPATCH_CRON_TZ);
     const hour = kstNow.hour();
 
     // 매일 07:30 이후
@@ -159,7 +163,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
    * jobId 중복 방지용 날짜 식별자 생성
    */
   #getJobDeduplicationId(): string {
-    return dayjs().tz("Asia/Seoul").format("YYYY-MM-DD");
+    return dayjs().tz(DISPATCH_CRON_TZ).format("YYYY-MM-DD");
   }
 
   #jobOptions() {
@@ -170,7 +174,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       expireInSeconds: 10 * 60,
       retentionSeconds: 24 * 60 * 60,
       deleteAfterSeconds: 7 * 24 * 60 * 60,
-      timezone: "Asia/Seoul",
+      timezone: DISPATCH_CRON_TZ,
     };
   }
 }

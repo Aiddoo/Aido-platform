@@ -8,6 +8,7 @@ export type AccountPurgeJobData = Record<string, never>;
 export const ACCOUNT_PURGE_SCHEDULE = {
   id: "daily-account-purge-scheduler",
   cron: "0 3 * * *",
+  /** 사용자 시간대와 무관한 운영 배치로, 한국 새벽 저트래픽 시간에 돈다 */
   timezone: "Asia/Seoul",
   catchUpHour: 3,
 };

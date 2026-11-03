@@ -1,5 +1,7 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { addMilliseconds, subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
 import { decideRetentionOutboxRetry } from "../../policies/retention/retention-outbox-retry.policy.js";
@@ -36,12 +38,12 @@ export class RelayRetentionOutbox {
     if (!this.#dependencies.config.enabled) {
       return;
     }
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - OUTBOX_PROCESSING_LEASE_MS);
+    const at = now();
+    const cutoff = subtractMilliseconds(OUTBOX_PROCESSING_LEASE_MS, at);
     const claimed = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.repository.recoverStaleDispatches(cutoff);
       await this.#dependencies.repository.recoverStaleOutboxes(cutoff);
-      return this.#dependencies.repository.claimOutboxes(OUTBOX_RELAY_BATCH_SIZE, now);
+      return this.#dependencies.repository.claimOutboxes(OUTBOX_RELAY_BATCH_SIZE, at);
     });
 
     await Promise.all(
@@ -56,7 +58,7 @@ export class RelayRetentionOutbox {
             publishAttempt: outbox.attempts,
             hasExhaustedRetries: retryDecision.hasExhaustedRetries,
             error: normalizedError.message,
-            nextAttemptAt: new Date(Date.now() + retryDecision.delayMs),
+            nextAttemptAt: addMilliseconds(retryDecision.delayMs),
           });
           this.#dependencies.logger.error({
             event: NotificationRetentionLogEvent.RELAY_RETENTION_OUTBOX_PUBLICATION_FAILED,

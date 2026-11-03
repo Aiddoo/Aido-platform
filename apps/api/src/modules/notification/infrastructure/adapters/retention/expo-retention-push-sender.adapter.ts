@@ -1,5 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
+import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
+
 import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
@@ -45,7 +47,7 @@ export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {
     }
     return !(await this.rateLimiter.reserveEngagement({
       ...reservation,
-      localDate: this.#localDate(now, candidate.timezone),
+      localDate: localDateInTimezone(now, candidate.timezone),
     }));
   }
 
@@ -70,14 +72,5 @@ export class ExpoRetentionPushSenderAdapter implements RetentionPushSenderPort {
       })),
     );
     return result.results;
-  }
-
-  #localDate(date: Date, timezone: string): string {
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(date);
   }
 }

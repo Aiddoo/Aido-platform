@@ -1,4 +1,5 @@
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
 import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
@@ -21,7 +22,7 @@ export class ActivateRetentionExperiment {
       return;
     }
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.repository.activate(userId, new Date()),
+      this.#dependencies.repository.activate(userId, now()),
     );
   }
 }
