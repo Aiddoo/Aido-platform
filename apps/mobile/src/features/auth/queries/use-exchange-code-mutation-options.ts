@@ -28,7 +28,7 @@ export const useExchangeCodeMutationOptions = () => {
         toast.success(t('auth:toasts.accountRestored'));
       }
 
-      trackEvent('auth_login', { method: variables.provider });
+      trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: variables.provider });
     },
     onError: () => {
       notifyError();

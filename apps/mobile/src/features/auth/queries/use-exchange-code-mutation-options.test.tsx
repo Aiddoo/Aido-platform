@@ -1,6 +1,7 @@
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderHook } from '@testing-library/react-native';
 
+import { createAuthTokens } from '../__tests__/auth.factories';
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
 
 const mockSetStatus = jest.fn();
@@ -45,14 +46,7 @@ describe('useExchangeCodeMutationOptions', () => {
 
     // When
     await result.current.onSuccess?.(
-      {
-        userId: 'user-1',
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        userName: null,
-        userProfileImage: null,
-        accountRestored: false,
-      },
+      createAuthTokens(),
       { code: 'exchange-code', provider: 'google' },
       undefined,
       MUTATION_CONTEXT,
@@ -61,6 +55,39 @@ describe('useExchangeCodeMutationOptions', () => {
     // Then
     expect(mockSetStatus).toHaveBeenCalledWith('authenticated');
     expect(mockSetupPushNotifications).not.toHaveBeenCalled();
+  });
+
+  it('기존 계정 로그인은 auth_login만 보낸다', async () => {
+    // Given
+    const { result } = await renderHook(() => useExchangeCodeMutationOptions());
+
+    // When
+    await result.current.onSuccess?.(
+      createAuthTokens({ isNewUser: false }),
+      { code: 'exchange-code', provider: 'google' },
+      undefined,
+      MUTATION_CONTEXT,
+    );
+
+    // Then
+    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
     expect(mockTrackEvent).toHaveBeenCalledWith('auth_login', { method: 'google' });
+  });
+
+  it('신규 가입은 auth_signup만 보낸다', async () => {
+    // Given
+    const { result } = await renderHook(() => useExchangeCodeMutationOptions());
+
+    // When
+    await result.current.onSuccess?.(
+      createAuthTokens({ isNewUser: true }),
+      { code: 'exchange-code', provider: 'kakao' },
+      undefined,
+      MUTATION_CONTEXT,
+    );
+
+    // Then
+    expect(mockTrackEvent).toHaveBeenCalledTimes(1);
+    expect(mockTrackEvent).toHaveBeenCalledWith('auth_signup', { method: 'kakao' });
   });
 });

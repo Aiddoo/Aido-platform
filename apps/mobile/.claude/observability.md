@@ -43,9 +43,12 @@ track(analytics, 'session_expired', { reason });
 - **매출 원본**: RevenueCat이 Firebase로 보내는 `purchase`(·`rc_*`)만 매출·전환에 쓴다. 앱 `subscription_started`는 결제 UI 퍼널 단계일 뿐이고, Firebase 자동 수집 `in_app_purchase`는 iOS에서 끌 수 없으므로 GA 키 이벤트에서 해제만 한다. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
 - **사용자 속성**(`UserPropertyMap`): `is_premium`·`subscription_status`(연속성 유지) + `premium_source`(`store`·`grant`·`admin`·`none`). 유료 전환은 `premium_source = store`로 센다. 로그아웃(비인증)이면 `Analytics.clearUser()`가 사용자 id와 모든 속성을 `null`로 지운다.
 - **한 번만**: 노출 이벤트는 화면·구간마다 한 번이다. 재렌더·분 단위 갱신으로 다시 보내지 않는다.
+- **가입·로그인**: 인증 성공 한 번에 `auth_signup`·`auth_login` 중 **하나만** 보낸다. 소셜(OAuth 교환·Apple)은 서버 응답 `isNewUser`가 true면 `auth_signup`, 아니면 `auth_login`이다. 필드가 없는 구버전 서버 응답은 `auth_login`으로 본다. 탈퇴 유예 복구·이메일 자동 연결은 가입이 아니다.
 
 | 이벤트                        | 파라미터                                                                                                  | 시점                                              |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `auth_signup`                 | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 가입 / 소셜 신규 가입(`isNewUser`)         |
+| `auth_login`                  | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 로그인 / 소셜 기존 계정 로그인             |
 | `premium_gate_cta_tapped`     | `feature`(`PremiumFeature`)                                                                               | `usePremiumGate().subscribe`                      |
 | `paywall_viewed`              | `view`: `status`·`plans`                                                                                  | 요금제를 받아 페이월이 보였을 때                  |
 | `purchase_failed`             | `reason`: `network`·`server`·`store_unavailable`·`store_error`                                            | 결제 실패를 문의로 안내할 때(취소·승인 대기 제외) |

@@ -8,6 +8,7 @@ export const authTokensSchema = z.object({
   userName: z.string().nullable(),
   userProfileImage: z.string().nullable(),
   accountRestored: z.boolean().optional().default(false),
+  isNewUser: z.boolean().optional().default(false),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 

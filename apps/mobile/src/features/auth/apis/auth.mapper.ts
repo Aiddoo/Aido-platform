@@ -36,6 +36,7 @@ export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   userName: dto.name,
   userProfileImage: dto.profileImage,
   accountRestored: dto.accountRestored ?? false,
+  isNewUser: dto.isNewUser ?? false,
 });
 
 export const toConsent = (dto: ConsentResponse): Consent => ({
