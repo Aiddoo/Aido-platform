@@ -6,6 +6,8 @@ import { AiService } from '@src/features/ai/apis/ai.service';
 import { AppIconService } from '@src/features/app-icon/apis/app-icon.service';
 import { AppVersionService } from '@src/features/app-version/apis/app-version.service';
 import { AuthService } from '@src/features/auth/apis/auth.service';
+import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
+import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
 import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/apis/feature-discovery-state.repository';
 import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/apis/feature-discovery-state.service';
 import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
@@ -32,8 +34,6 @@ import { SubscriptionService } from '@src/features/subscription/apis/subscriptio
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
 import { createFriendStripHintRepository } from '@src/features/todo/apis/friend-strip-hint.repository';
 import { FriendStripHintService } from '@src/features/todo/apis/friend-strip-hint.service';
-import { createReorderCoachmarkRepository } from '@src/features/todo/apis/reorder-coachmark.repository';
-import { ReorderCoachmarkService } from '@src/features/todo/apis/reorder-coachmark.service';
 import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
@@ -241,9 +241,7 @@ export function DIProvider({
 
     // Todo Nudge
     const todoNudgeService = new TodoNudgeService(authHttpClient);
-    const reorderCoachmarkService = new ReorderCoachmarkService(
-      createReorderCoachmarkRepository(mmkvSyncStorage),
-    );
+    const coachmarkService = new CoachmarkService(createCoachmarkRepository(mmkvSyncStorage));
     const friendStripHintService = new FriendStripHintService(
       createFriendStripHintRepository(mmkvSyncStorage),
     );
@@ -301,7 +299,7 @@ export function DIProvider({
       todoCategoryService,
       notificationService,
       todoNudgeService,
-      reorderCoachmarkService,
+      coachmarkService,
       friendStripHintService,
       storeReviewService,
       userService,
