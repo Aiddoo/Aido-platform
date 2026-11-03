@@ -260,7 +260,7 @@ describe('해·달 자리', () => {
     // Given
     const contentTop = 56;
     // When
-    const center = getCelestialCenter(PHONE, { contentTop, heroWidth: PHONE.width });
+    const center = getCelestialCenter(PHONE, { contentTop, heroLeft: 0, heroWidth: PHONE.width });
     // Then
     expect(center.x).toBeCloseTo(PHONE.width * 0.9);
     expect(center.y).toBeCloseTo(PHONE.height * 0.118);
@@ -270,7 +270,7 @@ describe('해·달 자리', () => {
     // Given
     const contentTop = 120;
     // When
-    const center = getCelestialCenter(PHONE, { contentTop, heroWidth: PHONE.width });
+    const center = getCelestialCenter(PHONE, { contentTop, heroLeft: 0, heroWidth: PHONE.width });
     // Then
     expect(center.y).toBeGreaterThan(contentTop + PHONE.width * 0.058);
   });
@@ -279,8 +279,21 @@ describe('해·달 자리', () => {
     // Given
     const heroWidth = 400;
     // When
-    const center = getCelestialCenter(TABLET, { contentTop: 56, heroWidth });
+    const center = getCelestialCenter(TABLET, { contentTop: 56, heroLeft: 0, heroWidth });
     // Then
     expect(center.x).toBeLessThan(heroWidth);
+  });
+
+  test('옆 레일이 있는 화면에서는 레일을 뺀 내용 영역 안에 둔다', () => {
+    // Given
+    const rail = { left: 0, width: PHONE.width - 64 };
+    // When
+    const center = getCelestialCenter(PHONE, {
+      contentTop: 0,
+      heroLeft: rail.left,
+      heroWidth: rail.width,
+    });
+    // Then
+    expect(center.x).toBeLessThan(rail.width);
   });
 });

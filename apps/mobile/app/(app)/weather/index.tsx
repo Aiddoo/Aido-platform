@@ -239,17 +239,20 @@ function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollViewProps
   );
 }
 
+/** 해·달은 지명·기온이 놓인 단에 맞춘다. 넓은 화면은 왼쪽 단, iPhone Duo처럼 옆 레일이 있으면 레일을 뺀 영역이다. */
 function WeatherBackground() {
   const windowSizeClass = useWindowSizeClass();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const heroWidth =
     windowSizeClass === 'compact'
-      ? width
+      ? width - insets.left - insets.right
       : getPrimaryPaneWidth({ windowSizeClass, foldFrame: undefined });
   return (
     <WeatherSceneCanvas
       scene={useWeatherScene()}
       contentTop={useHeaderHeight()}
+      heroLeft={insets.left}
       heroWidth={heroWidth}
     />
   );

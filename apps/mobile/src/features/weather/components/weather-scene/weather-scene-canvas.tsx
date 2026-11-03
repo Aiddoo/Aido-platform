@@ -69,11 +69,17 @@ type WeatherSceneCanvasProps = {
   scene: WeatherScene;
   /** 투명 헤더 아래 내용이 시작하는 높이. 해·달을 헤더 버튼 아래에 둔다. */
   contentTop: number;
-  /** 지명·기온이 놓인 단의 폭. 넓은 화면에서는 왼쪽 단만큼이다. */
+  /** 지명·기온이 놓인 단의 시작과 폭. 넓은 화면에서는 왼쪽 단, 옆 레일이 있으면 레일을 뺀 영역이다. */
+  heroLeft: number;
   heroWidth: number;
 };
 
-export function WeatherSceneCanvas({ scene, contentTop, heroWidth }: WeatherSceneCanvasProps) {
+export function WeatherSceneCanvas({
+  scene,
+  contentTop,
+  heroLeft,
+  heroWidth,
+}: WeatherSceneCanvasProps) {
   const window = useWindowDimensions();
   const [layoutSize, setLayoutSize] = useState<SceneSize | null>(null);
   const { width, height } = layoutSize ?? window;
@@ -130,6 +136,7 @@ export function WeatherSceneCanvas({ scene, contentTop, heroWidth }: WeatherScen
             isAnimating={isAnimating}
             isDark={theme === 'dark'}
             contentTop={contentTop}
+            heroLeft={heroLeft}
             heroWidth={heroWidth}
             size={{ width, height }}
             time={time}
@@ -161,6 +168,7 @@ type SceneLayersProps = {
   entry: SceneEntry;
   isDark: boolean;
   contentTop: number;
+  heroLeft: number;
   heroWidth: number;
   isLeaving: boolean;
   isFirst: boolean;
@@ -174,6 +182,7 @@ function SceneLayers({
   entry,
   isDark,
   contentTop,
+  heroLeft,
   heroWidth,
   isLeaving,
   isFirst,
@@ -185,7 +194,7 @@ function SceneLayers({
   const { id, scene } = entry;
   const opacity = useSharedValue(isFirst ? 1 : 0);
   const occlusion = useSharedValue(0);
-  const celestialCenter = getCelestialCenter(size, { contentTop, heroWidth });
+  const celestialCenter = getCelestialCenter(size, { contentTop, heroLeft, heroWidth });
 
   useEffect(() => {
     opacity.set(

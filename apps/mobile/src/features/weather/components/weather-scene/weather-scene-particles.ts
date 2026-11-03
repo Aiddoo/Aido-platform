@@ -162,15 +162,15 @@ export function createStarField(width: number, height: number, seed: number): St
 }
 
 /**
- * 해·달의 가운데. 지명·기온이 놓인 단(넓은 화면에서는 왼쪽 단, heroWidth)의 오른쪽에 두고,
+ * 해·달의 가운데. 지명·기온이 놓인 단(heroLeft부터 heroWidth만큼, 넓은 화면에서는 왼쪽 단)의 오른쪽에 두고,
  * 헤더 아래 내용이 시작하는 높이(contentTop)보다 원반 하나만큼 더 내려 둔다.
  */
 export function getCelestialCenter(
   screen: { width: number; height: number },
-  { contentTop, heroWidth }: { contentTop: number; heroWidth: number },
+  { contentTop, heroLeft, heroWidth }: { contentTop: number; heroLeft: number; heroWidth: number },
 ): { x: number; y: number } {
   return {
-    x: Math.min(screen.width, heroWidth) * CELESTIAL_POSITION.x,
+    x: heroLeft + Math.min(screen.width - heroLeft, heroWidth) * CELESTIAL_POSITION.x,
     y: Math.max(
       screen.height * CELESTIAL_POSITION.y,
       contentTop + getSceneReferenceWidth(screen.width) * CELESTIAL_HEADER_CLEARANCE,
