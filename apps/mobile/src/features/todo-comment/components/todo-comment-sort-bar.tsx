@@ -1,44 +1,53 @@
-import { TODO_COMMENT_SORT } from '@aido/api';
+import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, Text } from '@src/shared/ui';
 import { Menu, type MenuKey, PressableFeedback, Spinner } from 'heroui-native';
-import { useState } from 'react';
+import { type ComponentProps, useState } from 'react';
+import { match } from 'ts-pattern';
 
-import { useTodoCommentSort } from '../hooks/use-todo-comment-sort';
+interface TodoCommentSortBarProps extends Omit<
+  ComponentProps<typeof Menu>,
+  'children' | 'isOpen' | 'onOpenChange'
+> {
+  value: TodoCommentSort;
+  onChange: (value: TodoCommentSort) => void;
+  isPending?: boolean;
+}
 
-export function TodoCommentSortBar() {
+function toSort(key: MenuKey | undefined): TodoCommentSort | null {
+  return match(key)
+    .with(TODO_COMMENT_SORT.POPULAR, () => TODO_COMMENT_SORT.POPULAR)
+    .with(TODO_COMMENT_SORT.LATEST, () => TODO_COMMENT_SORT.LATEST)
+    .otherwise(() => null);
+}
+
+export function TodoCommentSortBar({
+  value,
+  onChange,
+  isPending = false,
+  ...menuProps
+}: TodoCommentSortBarProps) {
   const { t } = useTranslation('todoComment');
-  const { sort, isChangingSort, changeSort } = useTodoCommentSort();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const currentSortLabel =
-    sort === TODO_COMMENT_SORT.POPULAR ? t('sort.popular') : t('sort.latest');
-
-  const selectSort = (selectedKeys: Set<MenuKey>) => {
-    const [selected] = selectedKeys;
-
-    if (selected === TODO_COMMENT_SORT.POPULAR || selected === TODO_COMMENT_SORT.LATEST) {
-      changeSort(selected);
-    }
-  };
+  const currentLabel = match(value)
+    .with(TODO_COMMENT_SORT.POPULAR, () => t('sort.popular'))
+    .with(TODO_COMMENT_SORT.LATEST, () => t('sort.latest'))
+    .exhaustive();
 
   return (
-    <Menu isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
+    <Menu {...menuProps} isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
       <Menu.Trigger asChild>
         <PressableFeedback
-          className="min-h-11 flex-row items-center gap-1 py-1 pr-3"
-          isDisabled={isChangingSort}
+          className="min-h-11 flex-row items-center gap-1 self-start py-1 pr-3"
+          isDisabled={isPending}
           accessibilityRole="button"
-          accessibilityLabel={t('sort.label', { value: currentSortLabel })}
-          accessibilityState={{
-            expanded: isMenuOpen,
-            busy: isChangingSort,
-            disabled: isChangingSort,
-          }}
+          accessibilityLabel={t('sort.label', { value: currentLabel })}
+          accessibilityState={{ expanded: isMenuOpen, busy: isPending, disabled: isPending }}
         >
           <Text size="b2" weight="bold">
-            {currentSortLabel}
+            {currentLabel}
           </Text>
-          {isChangingSort ? (
+          {isPending ? (
             <Spinner size="sm" />
           ) : (
             <HStack className="rotate-90">
@@ -58,8 +67,14 @@ export function TodoCommentSortBar() {
         >
           <Menu.Group
             selectionMode="single"
-            selectedKeys={new Set([sort])}
-            onSelectionChange={selectSort}
+            selectedKeys={new Set([value])}
+            onSelectionChange={(selectedKeys) => {
+              const [selected] = selectedKeys;
+              const next = toSort(selected);
+              if (next != null && next !== value) {
+                onChange(next);
+              }
+            }}
             shouldCloseOnSelect
           >
             <Menu.Item id={TODO_COMMENT_SORT.LATEST}>

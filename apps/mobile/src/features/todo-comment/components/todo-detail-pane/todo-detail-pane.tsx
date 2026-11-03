@@ -1,8 +1,11 @@
-import { useLogger } from '@src/bootstrap/providers/di-context';
+import type { TodoCommentSort } from '@aido/api';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useLogger, useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
@@ -10,56 +13,71 @@ import {
   Box,
   DocsIcon,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   Result,
   StyledSafeAreaView,
-  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { Separator } from 'heroui-native';
-import { Suspense, useCallback, type ReactNode } from 'react';
+import { type ReactNode, Suspense, useCallback, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import { StyleSheet } from 'react-native';
 import { KeyboardController, KeyboardGestureArea } from 'react-native-keyboard-controller';
-import type { SharedValue } from 'react-native-reanimated';
-import { useSharedValue } from 'react-native-reanimated';
-import { match } from 'ts-pattern';
+import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 
-import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment-input';
 import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events';
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
+import {
+  type TodoCommentComposerForm,
+  todoCommentComposerFormSchema,
+  TodoCommentComposer,
+} from '../../domains/todo-comment-composer.model';
 import { useAndroidTodoCommentBackHandler } from '../../hooks/use-android-todo-comment-back-handler';
 import { useTodoCommentBack } from '../../hooks/use-todo-comment-back';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
-import type { TodoCommentPresentation } from '../../utils/navigation/todo-comment-route';
-import { TodoCommentPresentationProvider } from '../providers/todo-comment-presentation-provider';
-import { TodoCommentScreenTransitionProvider } from '../providers/todo-comment-screen-transition-provider';
-import { TodoCommentConversationList } from '../todo-comment-conversation-list/todo-comment-conversation-list';
-import { TodoCommentInputBar } from '../todo-comment-input-bar/todo-comment-input-bar';
+import { getTodoCommentThreadsInfiniteQueryOptions } from '../../queries/get-todo-comment-threads-infinite-query-options';
+import { TodoCommentComposerBar } from '../todo-comment-composer/todo-comment-composer-bar';
+import { TodoCommentExpansionProvider } from '../todo-comment-expansion';
 import { TodoCommentKeyboardScrollView } from '../todo-comment-keyboard-scroll-view';
-import { TodoCommentOverviewList } from '../todo-comment-overview-list/todo-comment-overview-list';
+import { TodoCommentRevealProvider } from '../todo-comment-reveal';
 import { TodoCommentSortBar } from '../todo-comment-sort-bar';
+import { TodoCommentThreadList } from '../todo-comment-thread-list';
 import { TodoCommentTitleBar } from '../todo-comment-title-bar';
+
+const NOT_FOUND_STATUS = 404;
 
 const styles = StyleSheet.create({
   keyboardGestureArea: { flex: 1 },
   keyboardScrollView: { flex: 1 },
 });
 
+type TodoDetailPresentation = 'screen' | 'pane';
+
 interface TodoDetailPaneProps {
-  /**
-   * `screen`은 Stack 화면(`/todo/[todoId]` 댓글 개요, `/todo/[todoId]/comments/[commentId]` 대화),
-   * `pane`은 펼친 피드의 오른쪽 상세 영역이다.
-   */
-  presentation: TodoCommentPresentation;
+  /** `screen`은 `/todo/[todoId]` Stack 화면, `pane`은 펼친 피드의 오른쪽 상세 영역이다 */
+  presentation: TodoDetailPresentation;
 }
 
-/** 할 일 식별자는 route의 `todoId`를 읽는다. 상세 라우트는 pathname, 피드 pane은 같은 이름의 search param이다. */
+/**
+ * 할 일 상세 한 화면: 제목 → 할 일 본문 → 정렬 → 댓글 묶음 → 작성 바.
+ * 작성기(새 댓글·답글·수정)는 이 화면이 가진 폼 하나가 소유하고, 하위는 필요한 필드만 구독한다.
+ */
 export function TodoDetailPane({ presentation }: TodoDetailPaneProps) {
+  const composer = useForm<TodoCommentComposerForm>({
+    resolver: zodResolver(todoCommentComposerFormSchema),
+    defaultValues: TodoCommentComposer.new(),
+    mode: 'onChange',
+  });
+
   return (
-    <TodoCommentPresentationProvider presentation={presentation}>
-      <TodoCommentScreenTransitionProvider>
-        <TodoDetailContent presentation={presentation} />
-      </TodoCommentScreenTransitionProvider>
-    </TodoCommentPresentationProvider>
+    <FormProvider {...composer}>
+      <TodoCommentRevealProvider>
+        <TodoCommentExpansionProvider>
+          <TodoDetailContent presentation={presentation} />
+        </TodoCommentExpansionProvider>
+      </TodoCommentRevealProvider>
+    </FormProvider>
   );
 }
 
@@ -77,7 +95,7 @@ TodoDetailPane.Empty = function Empty() {
   );
 };
 
-/** 지워졌거나 더는 볼 수 없는 할 일(친구 끊김·차단 등). 알림·위젯이 예전 할 일을 열 때 보인다. */
+/** 지워졌거나 더는 볼 수 없는 할 일(친구 끊김·차단 등). 알림·위젯이 예전 할 일을 열 때 보인다 */
 TodoDetailPane.Unavailable = function Unavailable({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
 
@@ -101,54 +119,21 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const { todoId } = useTodoScreenParams();
   // 서버는 지운 할 일과 볼 권한이 없는 할 일을 모두 404로 답한다. 본문·댓글 대신 안내 하나만 보인다
   const { error: todoDetailsError } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const isTodoUnavailable = isApiError(todoDetailsError) && todoDetailsError.status === 404;
+  const isTodoUnavailable =
+    isApiError(todoDetailsError) && todoDetailsError.status === NOT_FOUND_STATUS;
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
-  const [commentRoute] = useTodoCommentRoute();
+  const [{ sort, comment }] = useTodoCommentRoute();
+  const { result: backResult } = useTodoCommentBack();
   const isPane = presentation === 'pane';
   const closePane = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+  const extraContentPadding = useSharedValue(0);
   useAndroidTodoCommentBackHandler({ onExit: isPane ? closePane : undefined });
   useDismissKeyboardOnBlur();
-  const commentListExtraPadding = useSharedValue(0);
-  const { result: backResult } = useTodoCommentBack();
-  const selectedCommentId =
-    commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
-  const activeFormType = commentRoute.form?.type;
-  // 뒤로가기가 Stack pop일 때만 swipe를 연다. 작성기 닫기 같은 화면 안 단계를 swipe가 건너뛰지 않는다.
-  const isNativeBackGestureEnabled = backResult.status === 'native';
-
-  const listHeader = (
-    <>
-      <QueryErrorBoundary resetKeys={[todoId]}>
-        <Suspense
-          fallback={
-            <Box px={16} py={18}>
-              <TodoDetailCard.Loading />
-            </Box>
-          }
-        >
-          <Box px={16} py={18}>
-            <TodoDetailCard />
-          </Box>
-        </Suspense>
-      </QueryErrorBoundary>
-      <Separator />
-      {commentRoute.view === 'overview' && (
-        <>
-          <Box px={16} py={6}>
-            <TodoCommentSortBar />
-          </Box>
-          <Separator />
-        </>
-      )}
-    </>
-  );
 
   const content = (
     <>
       {isPane ? <TodoCommentTitleBar /> : <TodoCommentTitleBar.StackHeader />}
-
       <Separator />
-
       {isTodoUnavailable ? (
         <TodoDetailPane.Unavailable onClose={isPane ? closePane : router.back} />
       ) : (
@@ -156,47 +141,22 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
           style={styles.keyboardGestureArea}
           textInputNativeID={TODO_COMMENT_INPUT_NATIVE_ID}
         >
-          <Box
-            flex={1}
-            testID={match(commentRoute.view)
-              .with('overview', () => 'todo-comment-overview')
-              .with('conversation', () => 'todo-comment-thread')
-              .exhaustive()}
-          >
+          <Box flex={1} testID="todo-comment-threads">
             <QueryErrorBoundary
-              resetKeys={[todoId, commentRoute.view, commentRoute.sort, selectedCommentId]}
+              resetKeys={[todoId, sort, comment]}
               fallback={(props) => (
-                <TodoCommentListError {...props} extraContentPadding={commentListExtraPadding}>
-                  {listHeader}
+                <TodoCommentListError {...props} extraContentPadding={extraContentPadding}>
+                  <TodoDetailHeader />
                 </TodoCommentListError>
               )}
             >
-              {match(commentRoute.view)
-                .with('overview', () => (
-                  <TodoCommentOverviewList
-                    extraContentPadding={commentListExtraPadding}
-                    ListHeaderComponent={listHeader}
-                  />
-                ))
-                .with('conversation', () => (
-                  <Suspense
-                    fallback={
-                      <Box flex={1}>
-                        <TodoCommentConversationList.Loading />
-                      </Box>
-                    }
-                  >
-                    <TodoCommentConversationList
-                      extraContentPadding={commentListExtraPadding}
-                      ListHeaderComponent={listHeader}
-                    />
-                  </Suspense>
-                ))
-                .exhaustive()}
+              <TodoCommentThreadList
+                header={<TodoDetailHeader />}
+                extraContentPadding={extraContentPadding}
+              />
             </QueryErrorBoundary>
-
-            <QueryErrorBoundary resetKeys={[todoId, activeFormType, selectedCommentId]}>
-              <TodoCommentInputBar extraContentPadding={commentListExtraPadding} />
+            <QueryErrorBoundary resetKeys={[todoId]}>
+              <TodoCommentComposerBar extraContentPadding={extraContentPadding} />
             </QueryErrorBoundary>
           </Box>
         </KeyboardGestureArea>
@@ -220,8 +180,8 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
   return (
     <>
-      <Stack.Screen options={{ gestureEnabled: isNativeBackGestureEnabled }} />
-
+      {/* 작성기가 열려 있으면 swipe가 화면을 닫지 않고 뒤로가기가 작성기부터 닫는다 */}
+      <Stack.Screen options={{ gestureEnabled: backResult === 'native' }} />
       <StyledSafeAreaView
         className="flex-1 bg-background"
         edges={['left', 'right']}
@@ -231,6 +191,67 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
       </StyledSafeAreaView>
     </>
   );
+}
+
+/** 할 일 본문과 정렬. 댓글과 함께 스크롤된다 */
+function TodoDetailHeader() {
+  const { todoId } = useTodoScreenParams();
+  const [{ sort }, setCommentRoute] = useTodoCommentRoute();
+  const changeSort = useChangeSort();
+
+  return (
+    <>
+      <QueryErrorBoundary resetKeys={[todoId]}>
+        <Suspense
+          fallback={
+            <Box px={16} py={18}>
+              <TodoDetailCard.Loading />
+            </Box>
+          }
+        >
+          <Box px={16} py={18}>
+            <TodoDetailCard />
+          </Box>
+        </Suspense>
+      </QueryErrorBoundary>
+      <Separator />
+      <Box px={16} py={6}>
+        <TodoCommentSortBar
+          value={sort}
+          isPending={changeSort.isPending}
+          onChange={(next) =>
+            changeSort.run(next, () => setCommentRoute({ sort: next, comment: null }))
+          }
+        />
+      </Box>
+      <Separator />
+    </>
+  );
+}
+
+/** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
+function useChangeSort() {
+  const { todoId } = useTodoScreenParams();
+  const queryClient = useQueryClient();
+  const service = useTodoCommentService();
+  const { trackEvent } = useTrack();
+  const [isPending, setIsPending] = useState(false);
+
+  const run = (sort: TodoCommentSort, commit: () => void) => {
+    setIsPending(true);
+    queryClient
+      .prefetchInfiniteQuery(
+        getTodoCommentThreadsInfiniteQueryOptions(service, { todoId, sort, anchorCommentId: null }),
+      )
+      .finally(() => {
+        setIsPending(false);
+        commit();
+        trackEvent('todo_comment_sorted', { todo_id: todoId, sort });
+      })
+      .catch(() => undefined);
+  };
+
+  return { isPending, run };
 }
 
 /**
@@ -262,8 +283,6 @@ function TodoCommentListError({
   extraContentPadding,
   ...props
 }: TodoCommentListErrorProps) {
-  const [commentRoute] = useTodoCommentRoute();
-
   return (
     <TodoCommentKeyboardScrollView
       extraContentPadding={extraContentPadding}
@@ -271,10 +290,7 @@ function TodoCommentListError({
       showsVerticalScrollIndicator={false}
     >
       {children}
-      {match(commentRoute.view)
-        .with('overview', () => <TodoCommentOverviewList.Error {...props} />)
-        .with('conversation', () => <TodoCommentConversationList.Error {...props} />)
-        .exhaustive()}
+      <TodoCommentThreadList.Error {...props} />
     </TodoCommentKeyboardScrollView>
   );
 }

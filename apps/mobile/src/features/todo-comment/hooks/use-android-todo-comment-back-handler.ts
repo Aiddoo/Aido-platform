@@ -5,19 +5,13 @@ import { BackHandler } from 'react-native';
 import { resolveHardwareBackAction } from '../utils/navigation/todo-comment-back';
 import { useTodoCommentBack } from './use-todo-comment-back';
 
-interface AndroidTodoCommentBackHandlerOptions {
-  /** 댓글 화면이 더 되돌릴 단계가 없을 때 호출한다. 라우트를 pop하지 않는 pane이 선택을 해제하는 데 쓴다. */
-  onExit?: () => void;
-}
-
-export function useAndroidTodoCommentBackHandler({
-  onExit,
-}: AndroidTodoCommentBackHandlerOptions = {}) {
+/** 화면에 focus가 있을 때만 Android 뒤로가기를 듣고, focus를 잃거나 사라지면 구독을 푼다 */
+export function useAndroidTodoCommentBackHandler({ onExit }: { onExit?: () => void } = {}) {
   const { handleBack } = useTodoCommentBack();
 
   useFocusEffect(
     useCallback(() => {
-      const handleHardwareBack = () => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
         const action = resolveHardwareBackAction({
           isHandledByComment: handleBack(),
           canExit: onExit != null,
@@ -27,9 +21,7 @@ export function useAndroidTodoCommentBackHandler({
           onExit?.();
         }
         return action !== 'native';
-      };
-
-      const subscription = BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);
+      });
       return () => subscription.remove();
     }, [handleBack, onExit]),
   );

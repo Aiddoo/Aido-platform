@@ -23,7 +23,7 @@ interface TodoCommentAuthorAvatarProps extends Omit<
   ComponentProps<typeof UserAvatar>,
   'alt' | 'profileImage' | 'size'
 > {
-  author: TodoCommentAuthor | null;
+  author: Pick<TodoCommentAuthor, 'name' | 'profileImage'> | null;
   size: TodoCommentAuthorAvatarSize;
 }
 
