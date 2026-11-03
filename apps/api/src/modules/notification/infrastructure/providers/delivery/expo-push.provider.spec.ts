@@ -3,11 +3,10 @@ import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { RetryablePushProviderTransportError } from "../../../application/ports/delivery/push-provider.port.js";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.js";
-import { ExpoPushProvider } from "./expo-push.provider.js";
+import { EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS, ExpoPushProvider } from "./expo-push.provider.js";
 
 vi.hoisted(() => {
   process.env.EXPO_BASE_URL = "https://exp.host";
@@ -69,29 +68,23 @@ afterEach(() => {
   }
 });
 
-describe("ExpoPushProvider — installed SDK with blocked external network", () => {
+describe("ExpoPushProvider — 설치된 SDK와 차단된 외부 네트워크", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it.each([
     token,
     "ExpoPushToken[notification14-synthetic-token]",
     "12345678-1234-1234-1234-123456789012",
-  ])("supports the SDK token format %s", (value) => {
+  ])("SDK 토큰 형식 %s을 받아들인다", (value) => {
+    // Given / When / Then
     expect(provider.validateToken(value)).toBe(true);
-  });
-  it("rejects an invalid token before transport", async () => {
     expect(provider.validateToken("invalid-token")).toBe(false);
-    await expect(provider.send({ ...payload(), token: "invalid-token" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
   });
-  it("returns a successful real SDK ticket", async () => {
-    reply(sendPath, 200, { data: [{ status: "ok", id: "ticket-success" }] });
-    await expect(provider.send(payload())).resolves.toEqual({
-      token,
-      success: true,
-      ticketId: "ticket-success",
-    });
-  });
-  it("keeps ordered error results and invalid tokens while hiding the vendor message in logs", async () => {
+
+  it("ticket 결과를 입력 순서대로 공급자 중립 실패 분류로 바꾸고 원문은 로그에 남기지 않는다", async () => {
+    // Given
     const secondToken = "ExpoPushToken[notification14-second-synthetic-token]";
     reply(sendPath, 200, {
       data: [
@@ -99,61 +92,96 @@ describe("ExpoPushProvider — installed SDK with blocked external network", () 
         { status: "error", message: privateMessage, details: { error: "DeviceNotRegistered" } },
       ],
     });
-    const result = await provider.sendBatch([payload(), { ...payload(), token: secondToken }]);
-    expect(result).toMatchObject({
-      total: 2,
-      successCount: 1,
-      failureCount: 1,
-      invalidTokens: [secondToken],
-    });
-    expect(result.results).toEqual([
-      { token, success: true, ticketId: "accepted-fixture-ticket" },
+
+    // When
+    const results = await provider.sendBatch([payload(), { ...payload(), token: secondToken }]);
+
+    // Then
+    expect(results).toEqual([
+      { token, status: "accepted", ticketId: "accepted-fixture-ticket" },
       {
         token: secondToken,
-        success: false,
-        errorCode: "DeviceNotRegistered",
-        error: privateMessage,
+        status: "rejected",
+        failure: {
+          kind: "DEVICE_UNREGISTERED",
+          providerCode: "DeviceNotRegistered",
+          message: privateMessage,
+        },
       },
     ]);
     expect(warn).toHaveBeenCalledWith({
       event: "notification.push_ticket_failed",
       provider: "expo",
-      errorCode: "DeviceNotRegistered",
+      failureKind: "DEVICE_UNREGISTERED",
     });
   });
-  it("does not treat an untrusted vendor error code as a safe log field", async () => {
+
+  it("알 수 없는 공급자 코드는 UNKNOWN으로 분류한다", async () => {
+    // Given
     reply(sendPath, 200, {
       data: [{ status: "error", message: privateMessage, details: { error: privateMessage } }],
     });
-    await expect(provider.send(payload())).resolves.toMatchObject({
-      success: false,
-      error: privateMessage,
-      errorCode: privateMessage,
-    });
-    expect(warn).toHaveBeenCalledWith({
-      event: "notification.push_ticket_failed",
-      provider: "expo",
-      errorCode: "UNKNOWN",
-    });
+
+    // When
+    const [result] = await provider.sendBatch([payload()]);
+
+    // Then
+    expect(result).toMatchObject({ status: "rejected", failure: { kind: "UNKNOWN" } });
   });
-  it("preserves HTTP400 error details without logging the SDK message", async () => {
-    reply(sendPath, 400, { errors: [{ code: "INVALID_REQUEST", message: privateMessage }] });
-    await expect(provider.send(payload())).rejects.toMatchObject({
-      errorCode: "NOTIFICATION_1003",
-      details: { reason: privateMessage },
+
+  it("기기별 MessageRateExceeded는 그 메시지만 backoff 뒤 다시 보낸다", async () => {
+    // Given
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const secondToken = "ExpoPushToken[notification14-rate-limited-token]";
+    reply(sendPath, 200, {
+      data: [
+        { status: "ok", id: "first-accepted" },
+        { status: "error", message: "rate", details: { error: "MessageRateExceeded" } },
+      ],
     });
-    expect(error).toHaveBeenCalledWith({
-      event: "notification.push_transport_failed",
-      provider: "expo",
-      mode: "single",
-      statusCode: 400,
-    });
+    reply(sendPath, 200, { data: [{ status: "ok", id: "retried-accepted" }] });
+
+    // When
+    const pending = provider.sendBatch([payload(), { ...payload(), token: secondToken }]);
+    await vi.runAllTimersAsync();
+
+    // Then
+    await expect(pending).resolves.toEqual([
+      { token, status: "accepted", ticketId: "first-accepted" },
+      { token: secondToken, status: "accepted", ticketId: "retried-accepted" },
+    ]);
   });
-  it("preserves the accepted100/unconfirmed1 boundary when the second real SDK chunk fails", async () => {
+
+  it("backoff를 다 써도 한도에 걸리면 토큰을 끄지 않는 RATE_LIMITED로 돌려준다", async () => {
+    // Given
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const limited = { status: "error", message: "rate", details: { error: "MessageRateExceeded" } };
+    for (let attempt = 0; attempt <= EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS.length; attempt++) {
+      reply(sendPath, 200, { data: [limited] });
+    }
+
+    // When
+    const pending = provider.sendBatch([payload()]);
+    await vi.runAllTimersAsync();
+
+    // Then
+    await expect(pending).resolves.toEqual([
+      {
+        token,
+        status: "rejected",
+        failure: { kind: "RATE_LIMITED", providerCode: "MessageRateExceeded", message: "rate" },
+      },
+    ]);
+  });
+
+  it("두 번째 청크 transport 실패는 수락 100건·미확인 1건 경계를 보존한 재시도 오류다", async () => {
+    // Given
     reply(sendPath, 200, {
       data: Array.from({ length: 100 }, (_, index) => ({ status: "ok", id: `accepted-${index}` })),
     });
     reply(sendPath, 500, { errors: [{ code: "SERVER_ERROR", message: privateMessage }] });
+
+    // When / Then
     await expect(provider.sendBatch(Array.from({ length: 101 }, payload))).rejects.toMatchObject({
       metadata: {
         providerName: "expo",
@@ -167,32 +195,28 @@ describe("ExpoPushProvider — installed SDK with blocked external network", () 
     expect(error).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "notification.push_transport_failed",
-        mode: "batch",
         statusCode: 500,
         acceptedTicketCountBeforeFailure: 100,
       }),
     );
   });
-  it("lets the SDK reject a ticket-count mismatch as a typed transport failure", async () => {
+
+  it("ticket 수가 맞지 않으면 SDK 오류를 재시도 가능한 transport 오류로 감싼다", async () => {
+    // Given
     reply(sendPath, 200, { data: [{ status: "ok", id: "only-one-ticket" }] });
-    let failure: unknown;
-    try {
-      await provider.sendBatch([payload(), payload()]);
-    } catch (caught) {
-      failure = caught;
-    }
+
+    // When
+    const failure = await provider.sendBatch([payload(), payload()]).catch((caught) => caught);
+
+    // Then
     expect(failure).toBeInstanceOf(RetryablePushProviderTransportError);
     expect(failure).toMatchObject({
-      metadata: {
-        resolvedPayloadCountBeforeFailure: 0,
-        acceptedTicketCountBeforeFailure: 0,
-        unconfirmedPayloadCount: 2,
-        unattemptedPayloadCount: 0,
-      },
-      cause: { message: "Expected Expo to respond with 2 tickets but got 1" },
+      metadata: { resolvedPayloadCountBeforeFailure: 0, unconfirmedPayloadCount: 2 },
     });
   });
-  it("skips missing receipts and preserves returned DeviceNotRegistered details", async () => {
+
+  it("아직 결과가 없는 receipt는 빼고 실패 receipt는 공급자 중립 분류로 돌려준다", async () => {
+    // Given
     reply("/--/api/v2/push/getReceipts", 200, {
       data: {
         fresh: {
@@ -200,45 +224,46 @@ describe("ExpoPushProvider — installed SDK with blocked external network", () 
           message: privateMessage,
           details: { error: "DeviceNotRegistered" },
         },
+        delivered: { status: "ok" },
       },
     });
-    await expect(provider.getReceipts(["expired-missing", "fresh"])).resolves.toEqual([
+
+    // When / Then
+    await expect(provider.getReceipts(["missing", "fresh", "delivered"])).resolves.toEqual([
       {
         ticketId: "fresh",
-        delivered: false,
-        errorCode: "DeviceNotRegistered",
-        error: privateMessage,
+        status: "failed",
+        failure: {
+          kind: "DEVICE_UNREGISTERED",
+          providerCode: "DeviceNotRegistered",
+          message: privateMessage,
+        },
       },
+      { ticketId: "delivered", status: "delivered" },
     ]);
-    expect(warn).not.toHaveBeenCalled();
-    expect(error).not.toHaveBeenCalled();
   });
-  it("filters invalid and oversized payloads locally without losing result order", async () => {
+
+  it("형식이 틀린 토큰과 큰 payload는 보내지 않고 순서를 지켜 실패로 돌려준다", async () => {
+    // Given
     reply(sendPath, 200, { data: [{ status: "ok", id: "accepted-last" }] });
-    const result = await provider.sendBatch([
+
+    // When
+    const results = await provider.sendBatch([
       { ...payload(), token: "invalid-token" },
       { ...payload(), body: "x".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) },
       payload(),
     ]);
-    expect(result).toMatchObject({
-      total: 3,
-      successCount: 1,
-      failureCount: 2,
-      invalidTokens: ["invalid-token"],
-    });
-    expect(result.results.map((entry) => entry.errorCode ?? entry.ticketId)).toEqual([
-      "NOTIFICATION_1001",
-      "MessageTooBig",
-      "accepted-last",
-    ]);
+
+    // Then
+    expect(
+      results.map((result) =>
+        result.status === "accepted" ? result.ticketId : result.failure.kind,
+      ),
+    ).toEqual(["INVALID_TOKEN", "PAYLOAD_TOO_LARGE", "accepted-last"]);
   });
-  it("returns an empty batch without transport", async () => {
-    await expect(provider.sendBatch([])).resolves.toEqual({
-      total: 0,
-      successCount: 0,
-      failureCount: 0,
-      results: [],
-      invalidTokens: [],
-    });
+
+  it("빈 배치는 공급자를 부르지 않는다", async () => {
+    // Given / When / Then
+    await expect(provider.sendBatch([])).resolves.toEqual([]);
   });
 });

@@ -1,12 +1,12 @@
-import { ErrorCode } from "@aido/api/errors";
 import { Injectable, Logger } from "@nestjs/common";
+import { chunk, delay } from "es-toolkit";
 import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
+import { match, P } from "ts-pattern";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type {
-  BatchPushResult,
+  PushFailure,
   PushPayload,
   PushProvider,
   PushReceiptResult,
@@ -14,282 +14,193 @@ import type {
 } from "../../../application/ports/delivery/push-provider.port.js";
 import { RetryablePushProviderTransportError } from "../../../application/ports/delivery/push-provider.port.js";
 import {
+  PUSH_FAILURE_KIND,
+  type PushFailureKind,
+} from "../../../domain/types/delivery/push-failure-kind.js";
+import {
   NotificationProviderLogEvent,
-  pushTicketErrorCode,
   pushTransportStatusCode,
 } from "../../observability/delivery/notification-provider-log.events.js";
-import { buildExpoPushMessage, type ExpoPushMessageBuildResult } from "./expo-push-message.js";
+import { buildExpoPushMessage } from "./expo-push-message.js";
+import { PushThroughputLimiter } from "./push-throughput.limiter.js";
 
-const EXPO_MESSAGE_TOO_BIG_ERROR_CODE = "MessageTooBig";
+/** Expo 프로젝트 한도(초당 600건)보다 여유를 둔다. 운영 API는 단일 프로세스다. */
+export const EXPO_PUSH_MESSAGES_PER_SECOND = 500;
+/** 기기별 MessageRateExceeded는 Expo 안내대로 지수 backoff 뒤 해당 메시지만 다시 보낸다. */
+export const EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
 
-/**
- * Expo Push Provider
- *
- * Expo Push Notifications를 통한 푸시 알림 발송
- *
- * @see https://docs.expo.dev/push-notifications/overview/
- */
+export function toPushFailureKind(providerCode: string | undefined): PushFailureKind {
+  return match(providerCode)
+    .with("DeviceNotRegistered", () => PUSH_FAILURE_KIND.DEVICE_UNREGISTERED)
+    .with("MessageTooBig", () => PUSH_FAILURE_KIND.PAYLOAD_TOO_LARGE)
+    .with("MessageRateExceeded", () => PUSH_FAILURE_KIND.RATE_LIMITED)
+    .with(
+      P.union("InvalidCredentials", "DeveloperError", "MismatchSenderId"),
+      () => PUSH_FAILURE_KIND.PROVIDER_REJECTED,
+    )
+    .with(P.union("ExpoError", "ProviderError"), () => PUSH_FAILURE_KIND.PROVIDER_UNAVAILABLE)
+    .otherwise(() => PUSH_FAILURE_KIND.UNKNOWN);
+}
+
+interface SendableMessage {
+  readonly index: number;
+  readonly token: string;
+  readonly message: ExpoPushMessage;
+}
+
+/** @see https://docs.expo.dev/push-notifications/sending-notifications/ */
 @Injectable()
 export class ExpoPushProvider implements PushProvider {
   readonly name = "expo";
   readonly #logger = new Logger(ExpoPushProvider.name);
   readonly #expo: Expo;
+  readonly #throughput = new PushThroughputLimiter({
+    messagesPerSecond: EXPO_PUSH_MESSAGES_PER_SECOND,
+  });
 
   constructor(config: TypedConfigService) {
     const accessToken = config.expoAccessToken;
     this.#expo = new Expo(accessToken ? { accessToken } : undefined);
   }
 
-  /**
-   * Expo 푸시 토큰 유효성 검증
-   *
-   * Expo SDK가 지원하는 bracket token과 UUID 형식을 판별한다.
-   */
   validateToken(token: string): boolean {
     return Expo.isExpoPushToken(token);
   }
 
-  async getReceipts(ticketIds: string[]): Promise<PushReceiptResult[]> {
+  async getReceipts(ticketIds: readonly string[]): Promise<PushReceiptResult[]> {
     const results: PushReceiptResult[] = [];
-    for (const chunk of this.#expo.chunkPushNotificationReceiptIds(ticketIds)) {
-      const receipts = await this.#expo.getPushNotificationReceiptsAsync(chunk);
-      for (const ticketId of chunk) {
+    for (const receiptBatch of this.#expo.chunkPushNotificationReceiptIds([...ticketIds])) {
+      const receipts = await this.#expo.getPushNotificationReceiptsAsync(receiptBatch);
+      for (const ticketId of receiptBatch) {
         const receipt = receipts[ticketId];
-        if (!receipt) {
+        if (receipt == null) {
           continue;
         }
-        if (receipt.status === "ok") {
-          results.push({ ticketId, delivered: true });
-        } else {
-          results.push({
-            ticketId,
-            delivered: false,
-            errorCode: receipt.details?.error,
-            error: receipt.message,
-          });
-        }
+        results.push(
+          receipt.status === "ok"
+            ? { ticketId, status: "delivered" }
+            : {
+                ticketId,
+                status: "failed",
+                failure: this.#failure(receipt.details?.error, receipt.message),
+              },
+        );
       }
     }
     return results;
   }
 
   /**
-   * 단일 푸시 알림 발송
-   *
-   * @throws {ApplicationException} NOTIFICATION_1001 - 유효하지 않은 토큰
-   * @throws {ApplicationException} NOTIFICATION_1003 - 발송 실패
+   * 토큰 형식·payload 크기처럼 확정된 실패는 결과로 돌려준다. 청크 transport 실패는 수락 여부를
+   * 알 수 없어 RetryablePushProviderTransportError를 던진다.
    */
-  async send(payload: PushPayload): Promise<PushResult> {
-    if (!this.validateToken(payload.token)) {
-      throw new ApplicationException(ErrorCode.NOTIFICATION_1001);
-    }
-
-    const messageResult = buildExpoPushMessage(payload);
-    if (messageResult.status === "rejected") {
-      return this.#toPayloadTooLargeResult(payload.token, messageResult);
-    }
-
-    try {
-      const tickets = await this.#expo.sendPushNotificationsAsync([messageResult.message]);
-      const ticket = tickets[0];
-
-      if (!ticket) {
-        throw new ApplicationException(ErrorCode.NOTIFICATION_1003, {
-          reason: "No ticket received from Expo",
+  async sendBatch(payloads: readonly PushPayload[]): Promise<PushResult[]> {
+    const results: Array<PushResult | undefined> = Array.from({ length: payloads.length });
+    let pending: SendableMessage[] = [];
+    for (const [index, payload] of payloads.entries()) {
+      if (!this.validateToken(payload.token)) {
+        results[index] = this.#rejected(payload.token, { kind: PUSH_FAILURE_KIND.INVALID_TOKEN });
+        continue;
+      }
+      const built = buildExpoPushMessage(payload);
+      if (built.status === "rejected") {
+        results[index] = this.#rejected(payload.token, {
+          kind: PUSH_FAILURE_KIND.PAYLOAD_TOO_LARGE,
         });
+        continue;
       }
+      pending.push({ index, token: payload.token, message: built.message });
+    }
 
-      return this.#parseTicket(ticket, payload.token);
+    const progress = { resolved: 0, accepted: 0, total: pending.length };
+    const retryDelaysMs = [0, ...EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS];
+    for (const [round, retryDelayMs] of retryDelaysMs.entries()) {
+      if (pending.length === 0) {
+        break;
+      }
+      if (retryDelayMs > 0) {
+        await delay(retryDelayMs);
+      }
+      const canRetry = round < retryDelaysMs.length - 1;
+      const rateLimited: SendableMessage[] = [];
+      for (const batch of chunk(pending, Expo.pushNotificationChunkSizeLimit)) {
+        const tickets = await this.#sendMessages(batch, progress);
+        for (const [position, entry] of batch.entries()) {
+          const result = this.#toResult(entry.token, tickets[position]);
+          results[entry.index] = result;
+          if (
+            canRetry &&
+            result.status === "rejected" &&
+            result.failure.kind === PUSH_FAILURE_KIND.RATE_LIMITED
+          ) {
+            rateLimited.push(entry);
+            continue;
+          }
+          progress.resolved += 1;
+          if (result.status === "accepted") {
+            progress.accepted += 1;
+          }
+        }
+      }
+      pending = rateLimited;
+    }
+
+    return results.filter((result) => result != null);
+  }
+
+  async #sendMessages(
+    batch: readonly SendableMessage[],
+    progress: { readonly resolved: number; readonly accepted: number; readonly total: number },
+  ): Promise<ExpoPushTicket[]> {
+    await this.#throughput.acquire(batch.length);
+    try {
+      return await this.#expo.sendPushNotificationsAsync(batch.map(({ message }) => message));
     } catch (error) {
-      // 이미 번역된 애플리케이션 예외는 그대로 재전파
-      if (error instanceof ApplicationException) {
-        throw error;
-      }
-
+      const transportError = new RetryablePushProviderTransportError(
+        {
+          providerName: this.name,
+          resolvedPayloadCountBeforeFailure: progress.resolved,
+          acceptedTicketCountBeforeFailure: progress.accepted,
+          unconfirmedPayloadCount: batch.length,
+          unattemptedPayloadCount: Math.max(progress.total - progress.resolved - batch.length, 0),
+        },
+        { cause: error },
+      );
       this.#logger.error({
         event: NotificationProviderLogEvent.TRANSPORT_FAILED,
         provider: this.name,
-        mode: "single",
         statusCode: pushTransportStatusCode(error),
+        ...transportError.metadata,
       });
-      throw new ApplicationException(ErrorCode.NOTIFICATION_1003, {
-        reason: error instanceof Error ? error.message : "Unknown error",
-      });
+      throw transportError;
     }
   }
 
-  /**
-   * 배치 푸시 알림 발송
-   *
-   * Expo는 한 번에 최대 100개의 알림을 발송할 수 있습니다.
-   * 이 메서드는 내부적으로 청크를 나누어 처리합니다.
-   *
-   * Expo error ticket처럼 payload 단위로 확정된 실패는 result로 반환한다. SDK/HTTP
-   * transport가 청크 단위로 실패하면 수락 여부를 확인할 수 없으므로 typed retryable
-   * error를 던진다. 이전 청크의 성공 ticket은 이미 수락되었을 수 있어 호출자가 전체
-   * 논리 배치를 재시도할 때 at-least-once 중복 전달이 가능하다.
-   */
-  async sendBatch(payloads: PushPayload[]): Promise<BatchPushResult> {
-    const orderedResults: Array<PushResult | undefined> = Array(payloads.length);
-    const invalidTokens: string[] = [];
-
-    // 유효한 토큰과 Expo payload 크기 제한을 모두 통과한 메시지만 전송한다.
-    const sendableEntries: Array<{
-      payload: PushPayload;
-      originalIndex: number;
-      message: ExpoPushMessage;
-    }> = [];
-    for (const [originalIndex, payload] of payloads.entries()) {
-      if (!this.validateToken(payload.token)) {
-        invalidTokens.push(payload.token);
-        orderedResults[originalIndex] = {
-          token: payload.token,
-          success: false,
-          error: "Invalid Expo push token",
-          errorCode: "NOTIFICATION_1001",
-        };
-        continue;
-      }
-
-      const messageResult = buildExpoPushMessage(payload);
-      if (messageResult.status === "rejected") {
-        orderedResults[originalIndex] = this.#toPayloadTooLargeResult(payload.token, messageResult);
-        continue;
-      }
-
-      sendableEntries.push({
-        payload,
-        originalIndex,
-        message: messageResult.message,
-      });
+  #toResult(token: string, ticket: ExpoPushTicket | undefined): PushResult {
+    if (ticket == null) {
+      return this.#rejected(token, { kind: PUSH_FAILURE_KIND.UNKNOWN });
     }
-
-    if (sendableEntries.length === 0) {
-      return {
-        total: payloads.length,
-        successCount: 0,
-        failureCount: payloads.length,
-        results: orderedResults.filter((result) => result != null),
-        invalidTokens,
-      };
-    }
-
-    const messages = sendableEntries.map(({ message }) => message);
-
-    // Expo는 내부적으로 청크를 나눠서 처리
-    const chunks = this.#expo.chunkPushNotifications(messages);
-
-    let nextSendableEntryIndex = 0;
-    let acceptedTicketCount = 0;
-    for (const chunk of chunks) {
-      let tickets: ExpoPushTicket[];
-      try {
-        tickets = await this.#expo.sendPushNotificationsAsync(chunk);
-      } catch (error) {
-        const transportError = new RetryablePushProviderTransportError(
-          {
-            providerName: this.name,
-            resolvedPayloadCountBeforeFailure: nextSendableEntryIndex,
-            acceptedTicketCountBeforeFailure: acceptedTicketCount,
-            unconfirmedPayloadCount: chunk.length,
-            unattemptedPayloadCount: Math.max(
-              sendableEntries.length - nextSendableEntryIndex - chunk.length,
-              0,
-            ),
-          },
-          { cause: error },
-        );
-        this.#logger.error({
-          event: NotificationProviderLogEvent.TRANSPORT_FAILED,
-          provider: this.name,
-          mode: "batch",
-          statusCode: pushTransportStatusCode(error),
-          ...transportError.metadata,
-        });
-        throw transportError;
-      }
-
-      for (let i = 0; i < chunk.length; i++) {
-        const ticket = tickets[i];
-        const entry = sendableEntries[nextSendableEntryIndex];
-        nextSendableEntryIndex++;
-
-        if (!ticket || !entry) {
-          if (entry) {
-            orderedResults[entry.originalIndex] = {
-              token: entry.payload.token,
-              success: false,
-              error: "No ticket or payload",
-              errorCode: "NOTIFICATION_1003",
-            };
-          }
-          continue;
-        }
-
-        const result = this.#parseTicket(ticket, entry.payload.token);
-        if (result.success) {
-          acceptedTicketCount++;
-        }
-
-        if (!result.success && result.errorCode === "DeviceNotRegistered") {
-          invalidTokens.push(entry.payload.token);
-        }
-
-        orderedResults[entry.originalIndex] = result;
-      }
-    }
-
-    const results = orderedResults.filter((result) => result != null);
-    const successCount = results.filter((r) => r.success).length;
-
-    return {
-      total: payloads.length,
-      successCount,
-      failureCount: payloads.length - successCount,
-      results,
-      invalidTokens,
-    };
-  }
-
-  #toPayloadTooLargeResult(
-    token: string,
-    result: Extract<ExpoPushMessageBuildResult, { status: "rejected" }>,
-  ): PushResult {
-    return {
-      token,
-      success: false,
-      error: `Push payload is ${result.byteLength} bytes; Expo limit is ${result.maxByteLength} bytes`,
-      errorCode: EXPO_MESSAGE_TOO_BIG_ERROR_CODE,
-    };
-  }
-
-  /**
-   * Expo 티켓을 PushResult로 변환
-   */
-  #parseTicket(ticket: ExpoPushTicket, token: string): PushResult {
     if (ticket.status === "ok") {
-      return {
-        token,
-        success: true,
-        ticketId: ticket.id,
-      };
+      return { token, status: "accepted", ticketId: ticket.id };
     }
-
-    // 에러 케이스
-    const errorMessage = ticket.message ?? "Unknown error";
-    const errorCode = ticket.details?.error ?? "NOTIFICATION_1003";
-
+    const failure = this.#failure(ticket.details?.error, ticket.message);
     this.#logger.warn({
       event: NotificationProviderLogEvent.TICKET_FAILED,
       provider: this.name,
-      errorCode: pushTicketErrorCode(errorCode),
+      failureKind: failure.kind,
     });
+    return this.#rejected(token, failure);
+  }
 
+  #failure(providerCode: string | undefined, message: string | undefined): PushFailure {
     return {
-      token,
-      success: false,
-      error: errorMessage,
-      errorCode,
+      kind: toPushFailureKind(providerCode),
+      ...(providerCode != null && { providerCode }),
+      ...(message != null && { message }),
     };
+  }
+
+  #rejected(token: string, failure: PushFailure): PushResult {
+    return { token, status: "rejected", failure };
   }
 }

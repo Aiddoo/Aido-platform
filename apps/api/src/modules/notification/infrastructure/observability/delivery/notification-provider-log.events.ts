@@ -4,6 +4,7 @@ export const NotificationProviderLogEvent = {
   JOB_FAILED: "notification.job_failed",
   WORKER_FAILED: "notification.worker_failed",
   JOB_INVALID: "notification.job_invalid",
+  JOB_DEAD_LETTERED: "notification.job_dead_lettered",
   JOB_STALLED: "notification.job_stalled",
   JOB_STARTED: "notification.job_started",
   JOB_SKIPPED: "notification.job_skipped",
@@ -21,17 +22,4 @@ export function pushTransportStatusCode(error: unknown): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value >= 100 && value <= 599
     ? value
     : undefined;
-}
-
-export function pushTicketErrorCode(code: string): string {
-  switch (code) {
-    case "DeviceNotRegistered":
-    case "MessageTooBig":
-    case "MessageRateExceeded":
-    case "MismatchSenderId":
-    case "InvalidCredentials":
-      return code;
-    default:
-      return "UNKNOWN";
-  }
 }

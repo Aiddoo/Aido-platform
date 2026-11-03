@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "6a7d7e7f-667d-4606-8830-5b04242f646b",
+  "prevIds": [
+    "df3e26d8-19ce-48ba-82ac-3dc40a4d4be3"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "PushDeliveryAttempt",
+        "failureKind"
+      ],
+      "writes": [
+        "s|col|public.PushDeliveryAttempt.failureKind",
+        "n|col|public.PushDeliveryAttempt.failureKind",
+        "e|col|public.PushDeliveryAttempt.failureKind"
+      ],
+      "reads": [
+        "n|tbl|public.PushDeliveryAttempt",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDeliveryAttempt",
+        "name": "failureKind",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}
