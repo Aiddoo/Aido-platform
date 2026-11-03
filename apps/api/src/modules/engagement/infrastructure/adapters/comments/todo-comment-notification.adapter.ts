@@ -1,4 +1,5 @@
 import { todoCommentNotificationRoutingSchema, NOTIFICATION_ACTION_TYPE } from "@aido/api";
+import type { TodoCommentKind } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
@@ -16,7 +17,12 @@ import type {
 } from "../../../application/ports/comments/todo-comment-notification.port.js";
 
 type TodoCommentNotificationActivity =
-  | { readonly activityKind: "COMMENT" | "REPLY"; readonly commentCount: number }
+  | { readonly activityKind: "COMMENT"; readonly commentCount: number }
+  | {
+      readonly activityKind: "REPLY";
+      readonly commentCount: number;
+      readonly replyTarget: TodoCommentKind;
+    }
   | { readonly activityKind: "LIKE" };
 
 @Injectable()
@@ -28,10 +34,16 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
   ) {}
 
   notifyCommentsWritten(input: TodoCommentWrittenInput): Promise<void> {
-    return this.#sendActivityNotification(input, {
-      activityKind: input.isReply ? "REPLY" : "COMMENT",
-      commentCount: input.commentCount,
-    });
+    const activity: TodoCommentNotificationActivity =
+      input.replyTarget == null
+        ? { activityKind: "COMMENT", commentCount: input.commentCount }
+        : {
+            activityKind: "REPLY",
+            commentCount: input.commentCount,
+            replyTarget: input.replyTarget,
+          };
+
+    return this.#sendActivityNotification(input, activity);
   }
 
   notifyCommentLiked(input: TodoCommentActivityNotificationInput): Promise<void> {

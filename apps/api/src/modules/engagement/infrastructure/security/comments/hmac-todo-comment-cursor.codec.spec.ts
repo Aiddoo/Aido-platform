@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 import { TODO_COMMENT_SORT, z } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
@@ -5,7 +7,7 @@ import type { Mocked } from "vitest";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import type {
-  TodoCommentOverviewRootRecord,
+  TodoCommentThreadRecord,
   TodoConversationRecord,
 } from "../../../application/models/comments/todo-comment.types.js";
 import { HmacTodoCommentCursorCodec } from "./hmac-todo-comment-cursor.codec.js";
@@ -13,12 +15,10 @@ import { HmacTodoCommentCursorCodec } from "./hmac-todo-comment-cursor.codec.js"
 const record: TodoConversationRecord = {
   id: "cm1todoacomment00000000001",
   todoId: 1,
-  parentId: null,
-  rootId: null,
-  path: [],
-  depth: 0,
-  parentAuthorId: null,
-  parentAuthorName: null,
+  threadCommentId: null,
+  replyToCommentId: null,
+  replyToAuthorId: null,
+  replyToAuthorName: null,
   authorId: "cm1author0000000000000001",
   authorName: "작성자",
   authorUserTag: null,
@@ -31,11 +31,10 @@ const record: TodoConversationRecord = {
   editedAt: null,
   createdAt: "2026-08-14T00:00:00.000Z",
   conversationPosition: { rootLikeCount: 3, rootReplyCount: 2 },
-  continuingAncestorDepths: [],
 };
-const overviewRoot: TodoCommentOverviewRootRecord = {
+const threadComment: TodoCommentThreadRecord = {
   ...record,
-  overviewPosition: record.conversationPosition,
+  threadPosition: record.conversationPosition,
 };
 
 function replacePayload(
@@ -91,7 +90,7 @@ describe("HmacTodoCommentCursorCodec", () => {
   );
 
   it("답글과 focus cursor의 thread 경계를 보존한다", () => {
-    const reply = { ...record, id: "cm1todoacomment00000000002", rootId: record.id };
+    const reply = { ...record, id: "cm1todoacomment00000000002", threadCommentId: record.id };
     const cursor = codec.encodeConversation(reply, TODO_COMMENT_SORT.LATEST, "THREAD");
 
     expect(codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toMatchObject({
@@ -137,36 +136,92 @@ describe("HmacTodoCommentCursorCodec", () => {
     expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.POPULAR)).toThrow();
   });
 
-  it("overview cursor를 conversation 경계로 재사용하지 못한다", () => {
-    const cursor = codec.encodeOverview(overviewRoot, TODO_COMMENT_SORT.LATEST);
+  it("묶음 cursor를 conversation 경계로 재사용하지 못한다", () => {
+    // Given
+    const cursor = codec.encodeThreads(threadComment, TODO_COMMENT_SORT.LATEST, "AFTER");
 
+    // When / Then
     expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
   });
 
   it.each([TODO_COMMENT_SORT.LATEST, TODO_COMMENT_SORT.POPULAR])(
-    "%s overview cursor를 서명하고 root 경계를 복원한다",
+    "%s 묶음 cursor를 서명하고 방향과 묶음 경계를 복원한다",
     (sort) => {
-      const cursor = codec.encodeOverview(overviewRoot, sort);
+      // Given
+      const cursor = codec.encodeThreads(threadComment, sort, "BEFORE");
 
-      expect(codec.decodeOverview(cursor, sort)).toEqual({
+      // When
+      const decoded = codec.decodeThreads(cursor, sort);
+
+      // Then
+      expect(decoded).toEqual({
         v: 1,
         kind: "overview",
         sort,
-        todoId: overviewRoot.todoId,
-        rootId: overviewRoot.id,
-        position: overviewRoot.overviewPosition,
+        todoId: threadComment.todoId,
+        rootId: threadComment.id,
+        position: threadComment.threadPosition,
+        direction: "BEFORE",
       });
     },
   );
 
-  it("답글을 overview root cursor로 만들지 않는다", () => {
-    const reply: TodoCommentOverviewRootRecord = {
-      ...overviewRoot,
+  it("방향이 없는 1.14.0 이하 앱의 overview cursor도 읽는다", () => {
+    // Given
+    const payload = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        kind: "overview",
+        sort: TODO_COMMENT_SORT.LATEST,
+        todoId: threadComment.todoId,
+        rootId: threadComment.id,
+        position: threadComment.threadPosition,
+      }),
+      "utf8",
+    ).toString("base64url");
+    const signature = createHmac("sha256", secret)
+      .update(`todo-comment-cursor:v1:${payload}`)
+      .digest("base64url");
+
+    // When
+    const decoded = codec.decodeThreads(`${payload}.${signature}`, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(decoded).toMatchObject({ rootId: threadComment.id });
+    expect(decoded.direction).toBeUndefined();
+  });
+
+  it("답글을 묶음 cursor로 만들지 않고, 댓글을 답글 cursor로 만들지 않는다", () => {
+    // Given
+    const reply: TodoCommentThreadRecord = {
+      ...threadComment,
       id: "cm1todoacomment00000000002",
-      parentId: overviewRoot.id,
-      rootId: overviewRoot.id,
+      threadCommentId: threadComment.id,
+      replyToCommentId: threadComment.id,
     };
 
-    expect(() => codec.encodeOverview(reply, TODO_COMMENT_SORT.LATEST)).toThrow();
+    // When / Then
+    expect(() => codec.encodeThreads(reply, TODO_COMMENT_SORT.LATEST, "AFTER")).toThrow();
+    expect(() => codec.encodeReplies(threadComment, "AFTER")).toThrow();
+  });
+
+  it("답글 cursor를 서명하고 묶음·방향을 복원하며 묶음 cursor와 섞이지 않는다", () => {
+    // Given
+    const reply = { ...record, id: "cm1todoacomment00000000002", threadCommentId: record.id };
+    const cursor = codec.encodeReplies(reply, "AFTER");
+
+    // When
+    const decoded = codec.decodeReplies(cursor);
+
+    // Then
+    expect(decoded).toEqual({
+      v: 1,
+      kind: "replies",
+      todoId: reply.todoId,
+      threadCommentId: record.id,
+      replyId: reply.id,
+      direction: "AFTER",
+    });
+    expect(() => codec.decodeThreads(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
   });
 });

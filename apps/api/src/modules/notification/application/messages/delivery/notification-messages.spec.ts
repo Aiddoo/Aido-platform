@@ -21,16 +21,13 @@ const VARIANT_CONTEXT = {
   occurrenceKey: "2026-08-28",
 };
 
-const COMMENT_ACTIVITY_CASES: readonly [
-  activityKind: "COMMENT" | "REPLY",
-  commentCount: number,
-  expectedText: string,
-][] = [
-  ["COMMENT", 1, "댓글"],
-  ["COMMENT", 3, "3"],
-  ["REPLY", 1, "답글"],
-  ["REPLY", 3, "3"],
-];
+const COMMENT_ACTIVITY_CASES = [
+  ["COMMENT", { activityKind: "COMMENT", commentCount: 1 }, "댓글"],
+  ["COMMENT", { activityKind: "COMMENT", commentCount: 3 }, "3"],
+  ["REPLY", { activityKind: "REPLY", commentCount: 1, replyTarget: "COMMENT" }, "답글"],
+  ["REPLY", { activityKind: "REPLY", commentCount: 3, replyTarget: "COMMENT" }, "3"],
+  ["REPLY_TO_REPLY", { activityKind: "REPLY", commentCount: 1, replyTarget: "REPLY" }, "답글"],
+] as const;
 
 const EVENING_REMINDER_CASES: readonly [
   templateKey: string,
@@ -202,15 +199,40 @@ describe("알림 문구 생성", () => {
   });
 
   it.each(COMMENT_ACTIVITY_CASES)(
-    "%s chain count=%d를 의미에 맞게 렌더링한다",
-    (activityKind, commentCount, text) => {
-      const message = createTodoCommentNotificationMessage({
-        activityKind,
-        senderName: "민재",
-        commentCount,
-      });
+    "%s activity를 의미에 맞게 렌더링한다 (%o)",
+    (_label, activity, text) => {
+      const message = createTodoCommentNotificationMessage({ ...activity, senderName: "민재" });
 
       expect(`${message.title} ${message.body}`).toContain(text);
+    },
+  );
+
+  it.each(["ko", "en"] as const)(
+    "답글에 단 답글은 내 댓글이 아니라 내 답글로 알린다 (%s)",
+    (locale) => {
+      // Given
+      const occurrenceKeys = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+      // When
+      const messages = occurrenceKeys.map((occurrenceKey) =>
+        createTodoCommentNotificationMessage({
+          activityKind: "REPLY",
+          commentCount: 1,
+          replyTarget: "REPLY",
+          senderName: "민재",
+          locale,
+          variantContext: { ...VARIANT_CONTEXT, occurrenceKey },
+        }),
+      );
+
+      // Then
+      const texts = messages.map((message) => `${message.title} ${message.body}`);
+      expect(texts.some((text) => text.includes(locale === "ko" ? "내 답글" : "your reply"))).toBe(
+        true,
+      );
+      expect(
+        texts.some((text) => text.includes(locale === "ko" ? "내 댓글" : "your comment")),
+      ).toBe(false);
     },
   );
 

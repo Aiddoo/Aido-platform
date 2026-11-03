@@ -1,5 +1,6 @@
 import type { DeleteTodoCommentResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { uniq } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
@@ -27,7 +28,7 @@ interface DeleteTodoCommentDependencies {
   readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId">;
   readonly repository: Pick<
     TodoCommentRepositoryPort,
-    "findComment" | "decrementTodoCommentCount" | "deleteComment" | "dropDeletedFromAncestors"
+    "findComment" | "decrementTodoCommentCount" | "deleteComment" | "decreaseReplyCount"
   >;
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
@@ -58,9 +59,9 @@ export class DeleteTodoComment {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
-      // 삭제 정산이 replyCount를 건드리는 모든 조상까지 한 번에 잠근다.
+      // 답글 수가 바뀌는 묶음 머리까지 작성과 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다.
       await this.#dependencies.mutationLock.acquire(
-        [input.commentId, ...snapshot.placement.path].map(MutationLockKeys.todoComment),
+        uniq([input.commentId, snapshot.threadCommentId]).map(MutationLockKeys.todoComment),
       );
       const comment = await this.#dependencies.repository.findComment(
         input.todoId,
@@ -71,25 +72,20 @@ export class DeleteTodoComment {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
-      const deletion = { actorId: input.userId, todoOwnerId, deletedAt: now() };
-      if (comment.isDeleted) {
-        comment.delete(deletion);
+      if (!comment.markDeleted({ actorId: input.userId, todoOwnerId, deletedAt: now() })) {
         return false;
       }
 
-      comment.delete(deletion);
       const countDecremented = await this.#dependencies.repository.decrementTodoCommentCount(
         input.todoId,
       );
-
       if (!countDecremented || !(await this.#dependencies.repository.deleteComment(comment))) {
         throw new ApplicationException(ErrorCode.SYS_0003, { commentId: input.commentId });
       }
 
-      await this.#dependencies.repository.dropDeletedFromAncestors(
-        input.commentId,
-        comment.placement.path,
-      );
+      if (comment.isReply) {
+        await this.removeReplyFromThread(input.todoId, comment.threadCommentId);
+      }
 
       return true;
     });
@@ -105,5 +101,17 @@ export class DeleteTodoComment {
     }
 
     return { commentId: input.commentId, isDeleted: true };
+  }
+
+  private async removeReplyFromThread(todoId: number, threadCommentId: string): Promise<void> {
+    const thread = await this.#dependencies.repository.findComment(todoId, threadCommentId);
+    if (thread == null) {
+      throw new ApplicationException(ErrorCode.SYS_0003, { commentId: threadCommentId });
+    }
+
+    thread.applyReplyRemoved();
+    if (!(await this.#dependencies.repository.decreaseReplyCount(threadCommentId))) {
+      throw new ApplicationException(ErrorCode.SYS_0003, { commentId: threadCommentId });
+    }
   }
 }

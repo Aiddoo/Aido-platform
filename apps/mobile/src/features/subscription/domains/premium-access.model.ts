@@ -1,8 +1,6 @@
 import { PREMIUM_GRANT_ENDING_NOTICE_DAYS, PREMIUM_SOURCE, premiumSourceSchema } from '@aido/api';
-import { formatDateKey } from '@src/shared/utils/date-format';
+import { DAY_MS, formatDateKey } from '@src/shared/utils/date-format';
 import { z } from 'zod';
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export const PremiumAccessSchema = z.object({
   source: premiumSourceSchema.nullable(),
@@ -21,7 +19,7 @@ export type PremiumAccess = z.infer<typeof PremiumAccessSchema>;
 
 // 같은 시간대의 달력 날짜끼리 비교해야 DST로 하루가 23·25시간인 날에도 하루씩 줄어든다
 function toCalendarDayNumber(date: Date, timeZone: string) {
-  return Date.parse(`${formatDateKey(date, timeZone)}T00:00:00Z`) / DAY_IN_MS;
+  return Date.parse(`${formatDateKey(date, timeZone)}T00:00:00Z`) / DAY_MS;
 }
 
 /** 끝나는 날까지 남은 달력 일수. 이미 지난 날은 0일이다 */

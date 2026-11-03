@@ -1,6 +1,6 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
-import { sumBy } from "es-toolkit";
+import { groupBy, keyBy, mapValues, orderBy, sumBy } from "es-toolkit";
 
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -19,6 +19,16 @@ import type {
   DailyGroupRow,
 } from "../../types/reports/ai-report.types.js";
 
+function sumCountsBy<K extends PropertyKey>(
+  groups: readonly DailyGroupRow[],
+  toKey: (group: DailyGroupRow) => K,
+): Partial<Record<K, number>> {
+  return mapValues(groupBy(groups, toKey), (rows) => sumBy(rows, (row) => row._count.id));
+}
+
+const toDayOfWeek = (group: DailyGroupRow): DayOfWeek =>
+  dayIndexToDayOfWeek(dayjs.utc(group.startDate).day());
+
 /**
  * 카테고리별 집계 계산
  */
@@ -27,23 +37,23 @@ export function computeCategoryBreakdown(
   completedGroups: CategoryGroupRow[],
   categories: CategoryMetaRow[],
 ): CategoryBreakdownItem[] {
-  const completedMap = new Map(completedGroups.map((g) => [g.categoryId, g._count.id]));
-  const categoryMap = new Map(categories.map((c) => [c.id, c]));
+  const completedByCategoryId = keyBy(completedGroups, (g) => g.categoryId);
+  const categoryById = keyBy(categories, (c) => c.id);
 
-  return totalGroups
-    .map((g) => {
-      const category = categoryMap.get(g.categoryId);
-      const total = g._count.id;
-      const completed = completedMap.get(g.categoryId) ?? 0;
-      return {
-        name: category?.name ?? "기타",
-        color: category?.color ?? "#808080",
-        total,
-        completed,
-        rate: total > 0 ? Math.round((completed / total) * 100) : 0,
-      };
-    })
-    .sort((a, b) => b.total - a.total);
+  const breakdown = totalGroups.map((g) => {
+    const category = categoryById[g.categoryId];
+    const total = g._count.id;
+    const completed = completedByCategoryId[g.categoryId]?._count.id ?? 0;
+    return {
+      name: category?.name ?? "기타",
+      color: category?.color ?? "#808080",
+      total,
+      completed,
+      rate: total > 0 ? Math.round((completed / total) * 100) : 0,
+    };
+  });
+
+  return orderBy(breakdown, ["total"], ["desc"]);
 }
 
 /**
@@ -53,22 +63,12 @@ export function computeDayPatterns(
   totalGroups: DailyGroupRow[],
   completedGroups: DailyGroupRow[],
 ): DayPatternItem[] {
-  const dayTotals = new Map<DayOfWeek, number>();
-  const dayCompleted = new Map<DayOfWeek, number>();
-
-  for (const g of totalGroups) {
-    const day = dayIndexToDayOfWeek(dayjs.utc(g.startDate).day());
-    dayTotals.set(day, (dayTotals.get(day) ?? 0) + g._count.id);
-  }
-
-  for (const g of completedGroups) {
-    const day = dayIndexToDayOfWeek(dayjs.utc(g.startDate).day());
-    dayCompleted.set(day, (dayCompleted.get(day) ?? 0) + g._count.id);
-  }
+  const totalByDay = sumCountsBy(totalGroups, toDayOfWeek);
+  const completedByDay = sumCountsBy(completedGroups, toDayOfWeek);
 
   return DAY_OF_WEEK_ORDER.map((day) => {
-    const total = dayTotals.get(day) ?? 0;
-    const completed = dayCompleted.get(day) ?? 0;
+    const total = totalByDay[day] ?? 0;
+    const completed = completedByDay[day] ?? 0;
     return {
       day,
       total,
@@ -114,18 +114,8 @@ export function computeStreakDays(
   endDate: Date,
   timezone: string,
 ): number {
-  // 날짜별 전체/완료 맵 생성
-  const totalByDate = new Map<string, number>();
-  const completedByDate = new Map<string, number>();
-
-  for (const g of totalGroups) {
-    const dateStr = toDateString(g.startDate);
-    totalByDate.set(dateStr, (totalByDate.get(dateStr) ?? 0) + g._count.id);
-  }
-  for (const g of completedGroups) {
-    const dateStr = toDateString(g.startDate);
-    completedByDate.set(dateStr, (completedByDate.get(dateStr) ?? 0) + g._count.id);
-  }
+  const totalByDate = sumCountsBy(totalGroups, (g) => toDateString(g.startDate));
+  const completedByDate = sumCountsBy(completedGroups, (g) => toDateString(g.startDate));
 
   // endDate 전날부터 역순으로 연속 달성일 계산
   // DATE 그룹은 UTC 달력 label이고, 조회 경계만 사용자의 실제 instant다.
@@ -136,8 +126,8 @@ export function computeStreakDays(
   let cursor = current;
   while (cursor.isAfter(rangeStart, "day") || cursor.isSame(rangeStart, "day")) {
     const dateStr = cursor.format("YYYY-MM-DD");
-    const total = totalByDate.get(dateStr) ?? 0;
-    const completed = completedByDate.get(dateStr) ?? 0;
+    const total = totalByDate[dateStr] ?? 0;
+    const completed = completedByDate[dateStr] ?? 0;
 
     if (total === 0) {
       // 할 일이 없는 날은 건너뛰기

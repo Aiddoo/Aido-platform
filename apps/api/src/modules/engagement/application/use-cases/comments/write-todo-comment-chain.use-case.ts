@@ -1,5 +1,6 @@
 import type { TodoCommentChainResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { uniq } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
@@ -9,7 +10,8 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import { ThreadPlacement } from "../../../domain/value-objects/comments/thread-placement.vo.js";
+import type { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
+import { CommentPlacement } from "../../../domain/value-objects/comments/comment-placement.vo.js";
 import { TodoCommentContent } from "../../../domain/value-objects/comments/todo-comment-content.vo.js";
 import type {
   TodoCommentChainCommand,
@@ -17,7 +19,10 @@ import type {
 } from "../../models/comments/todo-comment.types.js";
 import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
 import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
-import { type TodoCommentNotificationPort } from "../../ports/comments/todo-comment-notification.port.js";
+import {
+  type TodoCommentNotificationPort,
+  type TodoCommentWrittenInput,
+} from "../../ports/comments/todo-comment-notification.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
   TodoCommentIdempotencyConflict,
@@ -25,7 +30,7 @@ import {
   type TodoCommentRepositoryPort,
 } from "../../ports/comments/todo-comment.repository.port.js";
 import { type TodoViewCachePort } from "../../ports/comments/todo-view-cache.port.js";
-import { toTodoCommentResponse } from "../../presenters/comments/index.js";
+import { toTodoCommentResponse } from "../../presenters/comments/v1/index.js";
 import { assertNotBlocked } from "../../services/comments/assert-not-blocked.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
@@ -43,6 +48,7 @@ interface WriteOutcome {
   readonly addedCount: number;
   readonly recipientId: string;
   readonly threadRootId: string;
+  readonly replyTarget: TodoCommentWrittenInput["replyTarget"];
 }
 
 function normalizeCommand(input: WriteTodoCommentChainInput): TodoCommentChainCommand {
@@ -59,6 +65,14 @@ function normalizeCommand(input: WriteTodoCommentChainInput): TodoCommentChainCo
       content: TodoCommentContent.create(item.content).getValue(),
     })),
   };
+}
+
+function toReplyTargetKind(replyTarget: TodoComment | null): WriteOutcome["replyTarget"] {
+  if (replyTarget == null) {
+    return null;
+  }
+
+  return replyTarget.placement.kind;
 }
 
 function requireFirst(records: readonly TodoCommentRecord[]): TodoCommentRecord {
@@ -89,7 +103,7 @@ interface WriteTodoCommentChainDependencies {
     | "findComment"
     | "createCommentChain"
     | "increaseTodoCommentCount"
-    | "incrementReplyCount"
+    | "increaseReplyCount"
   >;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
@@ -129,7 +143,7 @@ export class WriteTodoCommentChain {
               todoId: input.todoId,
               commentId: first.id,
               threadRootId: outcome.threadRootId,
-              isReply: input.parentId != null,
+              replyTarget: outcome.replyTarget,
               commentCount: outcome.addedCount,
             }),
         },
@@ -138,7 +152,11 @@ export class WriteTodoCommentChain {
 
     return {
       comments: outcome.written.map((record) =>
-        toTodoCommentResponse(record, input.authorId, outcome.likedCommentIds),
+        toTodoCommentResponse(record, {
+          viewerId: input.authorId,
+          likedCommentIds: outcome.likedCommentIds,
+          blockedAuthorIds: new Set(),
+        }),
       ),
     };
   }
@@ -164,8 +182,18 @@ export class WriteTodoCommentChain {
       const lockKeys = command.items.map((item) =>
         MutationLockKeys.todoCommentRequest(command.authorId, item.clientRequestId),
       );
-      if (command.parentId != null) {
-        lockKeys.push(MutationLockKeys.todoComment(command.parentId));
+      // 답글 수를 바꾸는 묶음 머리까지 삭제와 같은 순서로 한 번에 잠근다. 묶음 머리는 바뀌지 않는다.
+      const target =
+        command.parentId == null
+          ? null
+          : await this.#dependencies.repository.findComment(command.todoId, command.parentId);
+      if (command.parentId != null && target == null) {
+        throw new ApplicationException(ErrorCode.TODO_0831, { commentId: command.parentId });
+      }
+      if (target != null) {
+        lockKeys.push(
+          ...uniq([target.id.getValue(), target.threadCommentId]).map(MutationLockKeys.todoComment),
+        );
       }
 
       await this.#dependencies.mutationLock.acquire(lockKeys);
@@ -175,21 +203,27 @@ export class WriteTodoCommentChain {
         return this.loadReplay(command, replayIds);
       }
 
-      const parent =
+      const replyTarget =
         command.parentId == null
           ? null
           : await this.#dependencies.repository.findComment(command.todoId, command.parentId);
-      if (command.parentId != null && parent == null) {
+      if (command.parentId != null && replyTarget == null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: command.parentId });
       }
-      if (parent != null) {
-        await assertNotBlocked(this.#dependencies.blockReader, command.authorId, parent.authorId);
+      if (replyTarget != null) {
+        await assertNotBlocked(
+          this.#dependencies.blockReader,
+          command.authorId,
+          replyTarget.authorId,
+        );
       }
 
+      const thread = replyTarget == null ? null : await this.findThreadComment(replyTarget);
+      const placement = replyTarget == null ? CommentPlacement.comment() : replyTarget.placeReply();
       const chain = await this.#dependencies.repository.createCommentChain({
         todoId: command.todoId,
         authorId: command.authorId,
-        placement: parent == null ? ThreadPlacement.topLevel() : parent.placeReply(),
+        placement,
         items: command.items,
       });
       await this.#dependencies.repository.increaseTodoCommentCount(
@@ -197,13 +231,16 @@ export class WriteTodoCommentChain {
         chain.createdCount,
       );
 
-      if (
-        parent != null &&
-        !(await this.#dependencies.repository.incrementReplyCount(parent.id.getValue()))
-      ) {
-        throw new ApplicationException(ErrorCode.SYS_0003, {
-          commentId: parent.id.getValue(),
-        });
+      if (thread != null) {
+        thread.applyReplyAdded(chain.createdCount);
+        if (
+          !(await this.#dependencies.repository.increaseReplyCount(
+            thread.id.getValue(),
+            chain.createdCount,
+          ))
+        ) {
+          throw new ApplicationException(ErrorCode.SYS_0003, { commentId: thread.id.getValue() });
+        }
       }
 
       const written = await this.#dependencies.reader.findCommentRecords(
@@ -219,10 +256,29 @@ export class WriteTodoCommentChain {
         written,
         likedCommentIds: new Set<string>(),
         addedCount: chain.createdCount,
-        recipientId: parent == null ? first.todoOwnerId : parent.authorId,
-        threadRootId: parent == null ? first.id : parent.threadRootId.getValue(),
+        recipientId: replyTarget == null ? first.todoOwnerId : replyTarget.authorId,
+        threadRootId: replyTarget == null ? first.id : replyTarget.threadCommentId,
+        replyTarget: toReplyTargetKind(replyTarget),
       };
     });
+  }
+
+  private async findThreadComment(replyTarget: TodoComment): Promise<TodoComment> {
+    if (!replyTarget.isReply) {
+      return replyTarget;
+    }
+
+    const thread = await this.#dependencies.repository.findComment(
+      replyTarget.todoId,
+      replyTarget.threadCommentId,
+    );
+    if (thread == null) {
+      throw new ApplicationException(ErrorCode.SYS_0003, {
+        commentId: replyTarget.threadCommentId,
+      });
+    }
+
+    return thread;
   }
 
   /** unique 제약 위반으로 실패한 트랜잭션은 폐기하고 새 UoW에서 승자의 행을 읽는다. */
@@ -256,8 +312,9 @@ export class WriteTodoCommentChain {
       written,
       likedCommentIds,
       addedCount: 0,
-      recipientId: first.todoOwnerId,
-      threadRootId: first.rootId ?? first.id,
+      recipientId: first.replyToAuthorId ?? first.todoOwnerId,
+      threadRootId: first.threadCommentId ?? first.id,
+      replyTarget: null,
     };
   }
 }

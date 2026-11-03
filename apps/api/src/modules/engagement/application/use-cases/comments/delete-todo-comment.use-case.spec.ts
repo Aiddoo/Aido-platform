@@ -19,42 +19,60 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("댓글과 조상을 잠근 뒤 원문을 지우고 반복 삭제는 counter·캐시를 다시 변경하지 않는다", async () => {
+  it("답글과 묶음 머리만 잠근 뒤 원문을 지우고 머리의 답글 수를 1 내리며 반복 삭제는 다시 바꾸지 않는다", async () => {
     // Given
-    const root = fixture.addComment();
-    const parent = fixture.addComment({ parentId: root.id, rootId: root.id, path: [root.id] });
-    const comment = fixture.addComment({
-      parentId: parent.id,
-      rootId: root.id,
-      path: [root.id, parent.id],
-    });
+    const comment = fixture.addComment({ replyCount: 2 });
+    fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
+    const reply = fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
     const lock = vi.spyOn(fixture.mutationLock, "acquire");
     const useCase = new DeleteTodoComment(fixture);
+
     // When
     const result = await useCase.execute({
+      todoId: 1,
+      commentId: reply.id,
+      userId: ENGAGEMENT_OWNER_ID,
+    });
+    vi.setSystemTime(new Date(ENGAGEMENT_TIME.getTime() + 1000));
+    await useCase.execute({ todoId: 1, commentId: reply.id, userId: ENGAGEMENT_OWNER_ID });
+
+    // Then
+    expect(result).toEqual({ commentId: reply.id, isDeleted: true });
+    expect(fixture.repository.comments.get(reply.id)).toMatchObject({
+      content: null,
+      deletedAt: ENGAGEMENT_TIME,
+    });
+    expect(fixture.repository.comments.get(comment.id)?.replyCount).toBe(1);
+    expect(fixture.repository.commentCounts.get(1)).toBe(2);
+    expect(fixture.invalidatedTodoIds).toEqual([1]);
+    expect(lock).toHaveBeenCalledWith([
+      MutationLockKeys.todoComment(reply.id),
+      MutationLockKeys.todoComment(comment.id),
+    ]);
+  });
+
+  it("답글이 남은 댓글을 지우면 답글 수를 그대로 두어 묘비로 남긴다", async () => {
+    // Given
+    const comment = fixture.addComment({ replyCount: 1 });
+    fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
+    const lock = vi.spyOn(fixture.mutationLock, "acquire");
+
+    // When
+    await new DeleteTodoComment(fixture).execute({
       todoId: 1,
       commentId: comment.id,
       userId: ENGAGEMENT_OWNER_ID,
     });
-    vi.setSystemTime(new Date(ENGAGEMENT_TIME.getTime() + 1000));
-    await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_OWNER_ID });
+
     // Then
-    expect(result).toEqual({ commentId: comment.id, isDeleted: true });
     expect(fixture.repository.comments.get(comment.id)).toMatchObject({
       content: null,
       deletedAt: ENGAGEMENT_TIME,
+      replyCount: 1,
     });
-    expect(fixture.repository.commentCounts.get(1)).toBe(2);
-    expect(fixture.repository.ancestorSettlements).toEqual([
-      { commentId: comment.id, path: [root.id, parent.id] },
-    ]);
-    expect(fixture.invalidatedTodoIds).toEqual([1]);
-    expect(lock).toHaveBeenCalledWith([
-      MutationLockKeys.todoComment(comment.id),
-      MutationLockKeys.todoComment(root.id),
-      MutationLockKeys.todoComment(parent.id),
-    ]);
+    expect(lock).toHaveBeenCalledWith([MutationLockKeys.todoComment(comment.id)]);
   });
+
   it("할 일 주인은 자기 할 일에 친구가 단 댓글을 모두에게서 지운다", async () => {
     // Given
     const comment = fixture.addComment({ authorId: ENGAGEMENT_VIEWER_ID });

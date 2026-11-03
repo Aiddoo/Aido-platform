@@ -1,4 +1,5 @@
 import type { CorsOptions } from "@nestjs/common/interfaces/external/cors-options.interface";
+import { uniq } from "es-toolkit";
 
 import type { EnvConfig } from "../schemas/index.js";
 
@@ -21,7 +22,7 @@ export function createCorsOptions(
     origin:
       nodeEnv === "development"
         ? DEVELOPMENT_ORIGINS
-        : [...new Set([...corsOrigins, ...PUBLIC_WEB_ORIGINS])],
+        : uniq([...corsOrigins, ...PUBLIC_WEB_ORIGINS]),
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [

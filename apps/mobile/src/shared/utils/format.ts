@@ -1,4 +1,5 @@
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
+import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import type { DateFormatContext } from './date-format';
@@ -86,7 +87,7 @@ export function formatCompactCount(count: number, language: ResolvedLanguage): s
 
 /** 퍼센트 값을 소수점 첫째 자리까지 반올림하여 포맷한다. 정수면 소수점 생략. */
 export function formatPercent(value: number): string {
-  const rounded = Math.round(value * 10) / 10;
+  const rounded = round(value, 1);
   return Number.isInteger(rounded) ? `${rounded}` : `${rounded.toFixed(1)}`;
 }
 

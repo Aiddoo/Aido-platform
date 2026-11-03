@@ -1,6 +1,7 @@
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 
 import {
+  computeCategoryBreakdown,
   computeDayPatterns,
   computeStreakDays,
   computeTimePatterns,
@@ -57,5 +58,31 @@ describe("보고서 DATE label과 실제 시각", () => {
       { startDate: new Date("2026-03-16T00:00:00.000Z"), completedAt: null },
     ];
     expect(computeTimePatterns(todos, "America/Los_Angeles")).toEqual([{ hour: 10, count: 1 }]);
+  });
+});
+
+describe("카테고리별 집계", () => {
+  it("완료 수를 카테고리에 붙이고 전체 수 내림차순, 동률은 입력 순서로 정렬한다", () => {
+    // Given
+    const totalGroups = [
+      { categoryId: 1, _count: { id: 2 } },
+      { categoryId: 2, _count: { id: 4 } },
+      { categoryId: 3, _count: { id: 2 } },
+    ];
+    const completedGroups = [{ categoryId: 2, _count: { id: 1 } }];
+    const categories = [
+      { id: 1, name: "업무", color: "#111111" },
+      { id: 2, name: "운동", color: "#222222" },
+    ];
+
+    // When
+    const breakdown = computeCategoryBreakdown(totalGroups, completedGroups, categories);
+
+    // Then
+    expect(breakdown).toEqual([
+      { name: "운동", color: "#222222", total: 4, completed: 1, rate: 25 },
+      { name: "업무", color: "#111111", total: 2, completed: 0, rate: 0 },
+      { name: "기타", color: "#808080", total: 2, completed: 0, rate: 0 },
+    ]);
   });
 });

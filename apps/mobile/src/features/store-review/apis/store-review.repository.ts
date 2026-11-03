@@ -1,5 +1,6 @@
 import { dateSchema, datetimeSchema } from '@aido/api';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 import {
@@ -44,7 +45,7 @@ const fromPersisted = (persisted: PersistedState): StoreReviewState =>
 /** 이미 리뷰를 요청받은 사용자는 그 시각을 지난 요청 한 번으로 이어받아 곧바로 다시 묻지 않는다 */
 const fromLegacy = (legacy: LegacyPersistedState): StoreReviewState =>
   storeReviewStateSchema.parse({
-    activeDays: [...new Set(legacy.completions.map(({ localDate }) => localDate))].slice(
+    activeDays: uniq(legacy.completions.map(({ localDate }) => localDate)).slice(
       -STORE_REVIEW_MAX_ACTIVE_DAY_RECORDS,
     ),
     requestedAt: legacy.reviewRequestedAt == null ? [] : [new Date(legacy.reviewRequestedAt)],

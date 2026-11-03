@@ -7,7 +7,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { now } from "#api/shared/domain/date/utils/core";
-import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import { DEFAULT_DELIVERY_TIMEZONE, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import {
   isInReportDispatchWindow,
@@ -27,9 +27,6 @@ import {
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
-
-/** preference가 없는 사용자의 기존 기본 타임존 */
-const DEFAULT_REPORT_TIMEZONE = "Asia/Seoul";
 
 /**
  * 매시 5분에 디스패치하고 사용자 로컬 기준 새 주기 시작 직후인 사용자만 등록한다.
@@ -121,7 +118,7 @@ export class ReportGenerationJob implements OnModuleInit {
         }),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timezone = resolveTimezone(user.preference?.timezone ?? DEFAULT_REPORT_TIMEZONE);
+          const timezone = resolveTimezone(user.preference?.timezone ?? DEFAULT_DELIVERY_TIMEZONE);
           return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
         });
         if (due.length === 0) {

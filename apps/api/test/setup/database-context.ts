@@ -22,10 +22,12 @@ export type TestDatabaseClient = Database & { close(): Promise<void> };
 export function createTestClient(
   connectionString: string,
   options: Omit<PoolConfig, "connectionString"> = {},
-  onStatement?: (sql: string) => void,
+  onStatement?: (sql: string, params: unknown[]) => void,
 ): TestDatabaseClient {
   const pool = new Pool({ ...createPostgresPoolConfig(connectionString), ...options });
-  const logger = onStatement && { logQuery: (query: string) => onStatement(query) };
+  const logger = onStatement && {
+    logQuery: (query: string, params: unknown[]) => onStatement(query, params),
+  };
   let closed = false;
   return Object.assign(createDatabase(pool, logger), {
     async close() {

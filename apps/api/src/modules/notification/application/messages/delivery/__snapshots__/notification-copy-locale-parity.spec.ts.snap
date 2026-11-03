@@ -180,6 +180,10 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       3,
     ],
     [
+      "TODO_COMMENT_REPLY_TO_REPLY",
+      3,
+    ],
+    [
       "TODO_COMMENT_REPLY_CHAIN",
       3,
     ],

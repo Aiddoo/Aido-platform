@@ -59,7 +59,7 @@ export class LikeTodoComment {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
-      comment.assertCanReceiveInteraction();
+      comment.assertActive();
       await assertNotBlocked(this.#dependencies.blockReader, input.userId, comment.authorId);
       const senderName = await this.#dependencies.reader.findUserDisplayName(input.userId);
       const transition = await this.#dependencies.repository.setLike(

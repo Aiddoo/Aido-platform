@@ -6,6 +6,7 @@
  *
  * @see https://www.data.go.kr/data/15073877/openapi.do (에어코리아 측정소 API)
  */
+import { round } from "es-toolkit";
 
 /** GRS80 타원체 상수 */
 const GRS80 = {
@@ -86,7 +87,7 @@ export function convertToTm(lat: number, lon: number): TmCoordinate {
             ((61 - 58 * T + T * T + 600 * C - 330 * ep2) * A6) / 720));
 
   return {
-    tmX: Math.round(tmX * 10) / 10,
-    tmY: Math.round(tmY * 10) / 10,
+    tmX: round(tmX, 1),
+    tmY: round(tmY, 1),
   };
 }

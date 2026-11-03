@@ -156,7 +156,7 @@ export function calculateWaitingOverflow(
   boardEndIndex: number,
 ) {
   const waitingStart = Math.max(pawPrintedCount, boardEndIndex);
-  return Math.min(Math.max(pawPrintedCount + waitingCount - waitingStart, 0), waitingCount);
+  return clamp(pawPrintedCount + waitingCount - waitingStart, 0, waitingCount);
 }
 
 interface PawPrintBoardOptions {

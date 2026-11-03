@@ -1,4 +1,5 @@
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../../ports/delivery/push-delivery-lifecycle.repository.port.js";
 import type { PushDeliveryPublication } from "../../types/delivery/push-delivery.types.js";
@@ -28,7 +29,7 @@ export class RecoverFailedPushDeliveries {
     return this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.lifecycle.reopenFailedPublications({
         publications: input.publications,
-        availableAt: new Date(),
+        availableAt: now(),
         error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
       }),
     );

@@ -1,14 +1,14 @@
 import type { TodoCommentSort, TodoConversationFocus, TodoConversationResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_COMMENT_LIMITS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
   ConversationPageMode,
   TodoCommentRecord,
+  TodoCommentRootPosition,
+  TodoCommentViewerContext,
   TodoConversationCursor,
-  TodoConversationPosition,
   TodoConversationScope,
 } from "../../models/comments/todo-comment.types.js";
 import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
@@ -18,9 +18,11 @@ import {
   collectCommentAuthorIds,
   collectCommentIds,
   toTodoCommentCursorPagination,
+} from "../../presenters/comments/index.js";
+import {
   toTodoConversationAncestorItems,
   toTodoConversationItems,
-} from "../../presenters/comments/index.js";
+} from "../../presenters/comments/v1/index.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface GetTodoConversationInput {
@@ -38,7 +40,7 @@ interface ConversationAnchor {
   readonly scope: TodoConversationScope;
   readonly commentId?: string;
   readonly threadId?: string;
-  readonly position?: TodoConversationPosition;
+  readonly position?: TodoCommentRootPosition;
 }
 
 function decodeCursor(
@@ -89,15 +91,10 @@ function getAnchor(
   return { mode: "INITIAL", scope: "TODO" };
 }
 
-interface FocusAncestorContext {
-  readonly records: readonly TodoCommentRecord[];
-  readonly omittedCount: number;
-}
-
 interface GetTodoConversationDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "findAccessibleTodoOwnerId" | "listConversation" | "findAncestors" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "listConversation" | "findCommentRecords" | "findLikedCommentIds"
   >;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
@@ -141,8 +138,12 @@ export class GetTodoConversation {
     }
 
     const focusRecord = this.getFocusRecord(window.items, window.anchorIndex, anchor);
-    const ancestorContext = await this.getFocusAncestors(input.todoId, focusRecord, window.items);
-    const visibleRecords = [...window.items, ...ancestorContext.records];
+    const precedingThreadComments = await this.findPrecedingThreadComment(
+      input.todoId,
+      focusRecord,
+      window.items,
+    );
+    const visibleRecords = [...window.items, ...precedingThreadComments];
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
       this.#dependencies.reader.findLikedCommentIds(
         collectCommentIds(visibleRecords),
@@ -153,27 +154,19 @@ export class GetTodoConversation {
         collectCommentAuthorIds(visibleRecords),
       ),
     ]);
+    const viewer = { viewerId: input.viewerId, likedCommentIds, blockedAuthorIds };
     const items = toTodoConversationItems({
       records: window.items,
       nextRecord: window.nextRecord,
       focusCommentId: focusRecord?.id ?? null,
-      viewerId: input.viewerId,
-      likedCommentIds,
-      blockedAuthorIds,
+      viewer,
     });
     const firstRecord = window.items.at(0);
     const lastRecord = window.items.at(-1);
 
     return {
       items,
-      focus: this.toFocusResponse(
-        focusRecord,
-        window.anchorIndex,
-        ancestorContext,
-        input.viewerId,
-        likedCommentIds,
-        blockedAuthorIds,
-      ),
+      focus: this.toFocusResponse(focusRecord, window.anchorIndex, precedingThreadComments, viewer),
       pagination: toTodoCommentCursorPagination({
         size: input.size,
         hasPrevious: window.hasPrevious,
@@ -213,7 +206,7 @@ export class GetTodoConversation {
       throw new ApplicationException(ErrorCode.TODO_0831, { commentId: anchor.commentId });
     }
 
-    return record.deletedAt == null ? record : null;
+    return record;
   }
 
   private toEmptyResponse(size: number): TodoConversationResponse {
@@ -230,35 +223,25 @@ export class GetTodoConversation {
     };
   }
 
-  private async getFocusAncestors(
+  /** 1.14.0 이하 앱은 focus 답글 앞에 묶음 머리가 보여야 대화를 이어 그린다. */
+  private async findPrecedingThreadComment(
     todoId: number,
     focusRecord: TodoCommentRecord | null,
     pageRecords: readonly TodoCommentRecord[],
-  ): Promise<FocusAncestorContext> {
-    if (focusRecord == null) {
-      return { records: [], omittedCount: 0 };
+  ): Promise<TodoCommentRecord[]> {
+    const threadCommentId = focusRecord?.threadCommentId;
+    if (threadCommentId == null || pageRecords.some((record) => record.id === threadCommentId)) {
+      return [];
     }
 
-    const pageCommentIds = new Set(pageRecords.map((record) => record.id));
-    const missingAncestorIds = focusRecord.path.filter(
-      (commentId) => !pageCommentIds.has(commentId),
-    );
-    const requestedIds = missingAncestorIds.slice(-TODO_COMMENT_LIMITS.FOCUS_ANCESTOR_MAX_SIZE);
-    const records = await this.#dependencies.reader.findAncestors(todoId, requestedIds);
-
-    return {
-      records,
-      omittedCount: Math.max(0, missingAncestorIds.length - records.length),
-    };
+    return this.#dependencies.reader.findCommentRecords(todoId, [threadCommentId]);
   }
 
   private toFocusResponse(
     focusRecord: TodoCommentRecord | null,
     itemIndex: number | null,
-    ancestorContext: FocusAncestorContext,
-    viewerId: string,
-    likedCommentIds: ReadonlySet<string>,
-    blockedAuthorIds: ReadonlySet<string>,
+    precedingThreadComments: readonly TodoCommentRecord[],
+    viewer: TodoCommentViewerContext,
   ): TodoConversationFocus | null {
     if (focusRecord == null || itemIndex == null) {
       return null;
@@ -268,12 +251,10 @@ export class GetTodoConversation {
       commentId: focusRecord.id,
       itemIndex,
       precedingAncestors: toTodoConversationAncestorItems({
-        records: ancestorContext.records,
-        viewerId,
-        likedCommentIds,
-        blockedAuthorIds,
+        records: precedingThreadComments,
+        viewer,
       }),
-      omittedAncestorCount: ancestorContext.omittedCount,
+      omittedAncestorCount: 0,
     };
   }
 }

@@ -3,6 +3,7 @@ import type { UserRole } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { getSessionValidity } from "../../../domain/policies/auth/session-validity.policy.js";
@@ -96,7 +97,7 @@ export class SessionService {
         expiresAt: new Date(session.expiresAt),
         revokedAt: session.revokedAt == null ? null : new Date(session.revokedAt),
       },
-      new Date(),
+      now(),
     );
 
     match(validity)

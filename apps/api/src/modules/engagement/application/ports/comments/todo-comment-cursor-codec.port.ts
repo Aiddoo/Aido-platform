@@ -1,8 +1,11 @@
 import type { TodoCommentSort } from "@aido/api/vocabulary";
 
 import type {
-  TodoCommentOverviewCursor,
-  TodoCommentOverviewRootRecord,
+  TodoCommentPageDirection,
+  TodoCommentRecord,
+  TodoCommentRepliesCursor,
+  TodoCommentThreadCursor,
+  TodoCommentThreadRecord,
   TodoConversationCursor,
   TodoConversationRecord,
   TodoConversationScope,
@@ -21,6 +24,12 @@ export interface TodoCommentCursorCodecPort {
     sort: TodoCommentSort,
     scope?: TodoConversationScope,
   ): string;
-  decodeOverview(cursor: string, sort: TodoCommentSort): TodoCommentOverviewCursor;
-  encodeOverview(record: TodoCommentOverviewRootRecord, sort: TodoCommentSort): string;
+  decodeThreads(cursor: string, sort: TodoCommentSort): TodoCommentThreadCursor;
+  encodeThreads(
+    record: TodoCommentThreadRecord,
+    sort: TodoCommentSort,
+    direction: TodoCommentPageDirection,
+  ): string;
+  decodeReplies(cursor: string): TodoCommentRepliesCursor;
+  encodeReplies(record: TodoCommentRecord, direction: TodoCommentPageDirection): string;
 }

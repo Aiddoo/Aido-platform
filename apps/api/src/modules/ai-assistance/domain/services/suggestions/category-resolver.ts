@@ -9,6 +9,8 @@
  * Live QA 에서 발견된 "운동 30분" 제안이 자기계발 카테고리로 잘못 할당되던
  * 문제를 1단계 매칭으로 예방한다.
  */
+import { countBy, maxBy } from "es-toolkit";
+
 import type { TodoSummaryForAnalysis } from "../../types/suggestions/ai-suggestion.types.js";
 
 /**
@@ -62,22 +64,6 @@ function pickMostFrequentCategoryId(
   // O(N*M) → O(N) — Set 으로 제목 조회 O(1) 화
   const matchedTitleSet = new Set(matchedTitles);
   const matched = todos.filter((t) => matchedTitleSet.has(t.title));
-  if (matched.length === 0) {
-    return null;
-  }
-
-  const freq = new Map<number, number>();
-  for (const t of matched) {
-    freq.set(t.categoryId, (freq.get(t.categoryId) ?? 0) + 1);
-  }
-
-  let maxId: number | null = null;
-  let maxCount = 0;
-  for (const [categoryId, count] of freq) {
-    if (count > maxCount) {
-      maxId = categoryId;
-      maxCount = count;
-    }
-  }
-  return maxId;
+  const countByCategoryId = countBy(matched, (t) => t.categoryId);
+  return maxBy(matched, (t) => countByCategoryId[t.categoryId] ?? 0)?.categoryId ?? null;
 }

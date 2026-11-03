@@ -25,7 +25,7 @@ import {
   z,
 } from "@aido/api";
 import { ErrorCode, type ErrorCodeType, HttpStatus } from "@aido/api/errors";
-import { and, count, eq, gt, inArray, isNull, or } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
@@ -480,19 +480,6 @@ function assertEqual<T>(actual: T, expected: T, label: string): void {
   }
 }
 
-function assertStringArray(
-  actual: readonly (string | null)[],
-  expected: readonly string[],
-  label: string,
-): void {
-  if (
-    actual.length !== expected.length ||
-    actual.some((value, index) => value !== expected[index])
-  ) {
-    throw new Error(`[todo-comment-fixture] ${label} 경로 검증이 어긋났습니다.`);
-  }
-}
-
 async function verifyStoredCalculations(input: {
   db: TestDatabaseClient;
   todoId: number;
@@ -529,93 +516,50 @@ async function verifyStoredCalculations(input: {
   };
 
   const rootPlanning = getRow("rootPlanning");
-  const planningReply = getRow("planningReply");
-  const planningFollowUp = getRow("planningFollowUp");
   const planningDeepReply = getRow("planningDeepReply");
   const planningDeepFollowUp = getRow("planningDeepFollowUp");
   const rootMorning = getRow("rootMorning");
-  const morningSecondReply = getRow("morningSecondReply");
   const rootRecord = getRow("rootRecord");
   const planningOwnerReply = getRow("planningOwnerReply");
-  const planningOwnerFollowUp = getRow("planningOwnerFollowUp");
   const planningDeletedReply = getRow("planningDeletedReply");
   const planningDeletedFollowUp = getRow("planningDeletedFollowUp");
 
-  assertEqual(rootPlanning.rootId, null, "계획 rootId");
-  assertStringArray(rootPlanning.path, [], "계획 root");
-  assertEqual(rootPlanning.depth, 0, "계획 root depth");
-  assertEqual(rootPlanning.replyCount, 4, "계획 root replyCount");
-  assertEqual(rootPlanning.likeCount, 3, "계획 root likeCount");
-  assertEqual(rootPlanning.likes.length, rootPlanning.likeCount, "계획 root active likes");
-
-  assertEqual(planningReply.rootId, rootPlanning.id, "계획 첫 답글 rootId");
-  assertStringArray(planningReply.path, [rootPlanning.id], "계획 첫 답글");
-  assertEqual(planningReply.depth, 1, "계획 첫 답글 depth");
-  assertEqual(planningReply.replyCount, 1, "계획 첫 답글 replyCount");
-
-  assertStringArray(planningFollowUp.path, [rootPlanning.id, planningReply.id], "계획 후속 답글");
-  assertEqual(planningFollowUp.depth, 2, "계획 후속 답글 depth");
-  assertStringArray(
-    planningDeepReply.path,
-    [rootPlanning.id, planningReply.id, planningFollowUp.id],
-    "계획 깊은 답글",
-  );
-  assertEqual(planningDeepReply.depth, 3, "계획 깊은 답글 depth");
+  assertEqual(rootPlanning.parentId, null, "계획 댓글 parentId");
+  assertEqual(rootPlanning.replyCount, 8, "계획 댓글 replyCount");
+  assertEqual(rootPlanning.likeCount, 3, "계획 댓글 likeCount");
+  assertEqual(rootPlanning.likes.length, rootPlanning.likeCount, "계획 댓글 active likes");
+  assertEqual(planningDeepFollowUp.parentId, rootPlanning.id, "답글의 답글 묶음 머리");
+  assertEqual(planningDeepFollowUp.replyToCommentId, planningDeepReply.id, "답글의 답글 대상");
   assertEqual(planningDeepReply.likeCount, 2, "계획 깊은 답글 likeCount");
-  assertStringArray(
-    planningDeepFollowUp.path,
-    [rootPlanning.id, planningReply.id, planningFollowUp.id, planningDeepReply.id],
-    "계획 가장 깊은 답글",
-  );
-  assertEqual(planningDeepFollowUp.depth, 4, "계획 가장 깊은 답글 depth");
-
-  assertEqual(rootMorning.rootId, null, "아침 rootId");
-  assertEqual(rootMorning.replyCount, 2, "아침 root replyCount");
-  assertEqual(rootMorning.likeCount, 2, "아침 root likeCount");
-  assertStringArray(morningSecondReply.path, [rootMorning.id], "아침 둘째 답글");
-  assertEqual(rootRecord.replyCount, 1, "기록 root replyCount");
-
+  assertEqual(rootMorning.replyCount, 3, "아침 댓글 replyCount");
+  assertEqual(rootMorning.likeCount, 2, "아침 댓글 likeCount");
+  assertEqual(rootRecord.replyCount, 1, "기록 댓글 replyCount");
   assertEqual(planningOwnerReply.authorId, input.ownerId, "작성자 답글 authorId");
-  assertEqual(planningOwnerReply.rootId, rootPlanning.id, "작성자 답글 rootId");
-  assertStringArray(planningOwnerReply.path, [rootPlanning.id], "작성자 답글");
-  assertEqual(planningOwnerReply.depth, 1, "작성자 답글 depth");
-  assertEqual(planningOwnerReply.replyCount, 1, "작성자 답글 replyCount");
-  assertStringArray(
-    planningOwnerFollowUp.path,
-    [rootPlanning.id, planningOwnerReply.id],
-    "작성자 후속 답글",
+  assertEqual(planningDeletedReply.deletedAt !== null, true, "삭제 답글 deletedAt");
+  assertEqual(planningDeletedReply.content, null, "삭제 답글 content");
+  assertEqual(planningDeletedReply.likeCount, 0, "삭제 답글 likeCount");
+  assertEqual(planningDeletedReply.likes.length, 0, "삭제 답글 active likes");
+  assertEqual(planningDeletedFollowUp.deletedAt, null, "삭제 답글에 단 답글 deletedAt");
+  assertEqual(
+    planningDeletedFollowUp.replyToCommentId,
+    planningDeletedReply.id,
+    "삭제 답글에 단 답글 대상",
   );
-  assertEqual(planningOwnerFollowUp.depth, 2, "작성자 후속 답글 depth");
-
-  assertStringArray(planningDeletedReply.path, [rootPlanning.id], "삭제 묘비 답글");
-  assertEqual(planningDeletedReply.depth, 1, "삭제 묘비 depth");
-  assertEqual(planningDeletedReply.deletedAt !== null, true, "삭제 묘비 deletedAt");
-  assertEqual(planningDeletedReply.content, null, "삭제 묘비 content");
-  assertEqual(planningDeletedReply.replyCount, 1, "삭제 묘비 replyCount");
-  assertEqual(planningDeletedReply.likeCount, 0, "삭제 묘비 likeCount");
-  assertEqual(planningDeletedReply.likes.length, 0, "삭제 묘비 active likes");
-  assertStringArray(
-    planningDeletedFollowUp.path,
-    [rootPlanning.id, planningDeletedReply.id],
-    "삭제 묘비 후속 답글",
-  );
-  assertEqual(planningDeletedFollowUp.depth, 2, "삭제 묘비 후속 depth");
-  assertEqual(planningDeletedFollowUp.deletedAt, null, "삭제 묘비 후속 deletedAt");
 
   for (const row of fixtureRows) {
     assertEqual(row.likeCount, row.likes.length, `${row.id} active likes`);
-    const [visibleDirectReplies] = await input.db
+    assertEqual(row.depth, row.parentId === null ? 0 : 1, `${row.id} 2단계 depth`);
+    const [visibleReplies] = await input.db
       .select({ count: count() })
       .from(todoComment)
       .where(
         and(
           eq(todoComment.todoId, input.todoId),
           eq(todoComment.parentId, row.id),
-          or(isNull(todoComment.deletedAt), gt(todoComment.replyCount, 0)),
+          isNull(todoComment.deletedAt),
         ),
       );
-    const visibleDirectReplyCount = requireRecord(visibleDirectReplies).count;
-    assertEqual(row.replyCount, visibleDirectReplyCount, `${row.id} visible direct replies`);
+    assertEqual(row.replyCount, requireRecord(visibleReplies).count, `${row.id} visible replies`);
   }
 
   const todo = requireRecord(await input.db.query.todo.findFirst({ where: { id: input.todoId } }));
@@ -681,9 +625,9 @@ async function verifyApiReadModels(input: {
     throw new Error("[todo-comment-fixture] overview에서 계획 root를 찾지 못했습니다.");
   }
   assertEqual(planningOverview.comment.viewer.isLiked, true, "overview viewer like");
-  assertEqual(planningOverview.comment.replyCount, 4, "overview direct replyCount");
-  assertEqual(planningOverview.replySummary.totalCount, 9, "overview descendant totalCount");
-  assertEqual(planningOverview.replySummary.hiddenCount, 8, "overview hiddenCount");
+  assertEqual(planningOverview.comment.replyCount, 8, "overview replyCount");
+  assertEqual(planningOverview.replySummary.totalCount, 8, "overview totalCount");
+  assertEqual(planningOverview.replySummary.hiddenCount, 7, "overview hiddenCount");
   assertEqual(planningOverview.replySummary.hasMore, true, "overview hasMore");
   assertEqual(planningOverview.replySummary.participantAuthors.length, 3, "overview participants");
   assertEqual(
@@ -723,21 +667,11 @@ async function verifyApiReadModels(input: {
   assertEqual(conversation.focus.commentId, focusedId, "conversation focus commentId");
   const focusedItem = conversation.items[conversation.focus.itemIndex];
   assertEqual(focusedItem?.comment.id, focusedId, "conversation focus itemIndex");
-  assertEqual(focusedItem?.comment.depth, 4, "conversation focus depth");
+  assertEqual(focusedItem?.comment.depth, 1, "conversation focus depth");
   assertEqual(focusedItem?.isFocused, true, "conversation isFocused");
   const contextItems = [...conversation.focus.precedingAncestors, ...conversation.items];
-  for (const ancestorKey of [
-    "rootPlanning",
-    "planningReply",
-    "planningFollowUp",
-    "planningDeepReply",
-  ]) {
-    const ancestorId = input.comments[ancestorKey]?.id;
-    if (!contextItems.some((item) => item.comment.id === ancestorId)) {
-      throw new Error(
-        `[todo-comment-fixture] focus 문맥에서 ${ancestorKey} 조상을 찾지 못했습니다.`,
-      );
-    }
+  if (!contextItems.some((item) => item.comment.id === rootPlanningId)) {
+    throw new Error("[todo-comment-fixture] focus 문맥에서 묶음 머리 댓글을 찾지 못했습니다.");
   }
 
   const deletedParentId = input.comments.planningDeletedReply?.id;
@@ -747,27 +681,26 @@ async function verifyApiReadModels(input: {
   }
   const tombstoneConversation = await requestApi({
     apiBaseUrl: input.apiBaseUrl,
-    path: `/v1/todos/${input.todoId}/conversation?sort=LATEST&size=10&focusCommentId=${deletedFollowUpId}`,
+    path: `/v1/todos/${input.todoId}/conversation?sort=LATEST&size=10&focusCommentId=${deletedParentId}`,
     accessToken: input.viewer.accessToken,
     schema: todoConversationResponseSchema,
   });
   if (tombstoneConversation.focus === null) {
-    throw new Error("[todo-comment-fixture] 삭제 묘비 focus 계산 결과가 비어 있습니다.");
+    throw new Error("[todo-comment-fixture] 삭제 답글 focus 계산 결과가 비어 있습니다.");
   }
-  const tombstoneContext = [
-    ...tombstoneConversation.focus.precedingAncestors,
-    ...tombstoneConversation.items,
-  ];
-  const deletedParent = tombstoneContext.find((item) => item.comment.id === deletedParentId);
-  const liveFollowUp = tombstoneContext.find((item) => item.comment.id === deletedFollowUpId);
-  assertEqual(deletedParent?.comment.isDeleted, true, "conversation tombstone isDeleted");
-  assertEqual(deletedParent?.comment.content, null, "conversation tombstone content");
-  assertEqual(deletedParent?.comment.replyCount, 1, "conversation tombstone replyCount");
-  assertEqual(liveFollowUp?.comment.isDeleted, false, "conversation tombstone child isDeleted");
+  const deletedReply = tombstoneConversation.items[tombstoneConversation.focus.itemIndex];
+  const liveFollowUp = tombstoneConversation.items.find(
+    (item) => item.comment.id === deletedFollowUpId,
+  );
+  assertEqual(deletedReply?.comment.id, deletedParentId, "conversation tombstone focus");
+  assertEqual(deletedReply?.comment.isDeleted, true, "conversation tombstone isDeleted");
+  assertEqual(deletedReply?.comment.content, null, "conversation tombstone content");
+  assertEqual(liveFollowUp?.comment.isDeleted, false, "conversation tombstone 답글 isDeleted");
+  assertEqual(liveFollowUp?.comment.parentId, rootPlanningId, "conversation 답글 묶음 머리");
   assertEqual(
-    liveFollowUp?.comment.parentId,
+    liveFollowUp?.comment.replyTo?.commentId,
     deletedParentId,
-    "conversation tombstone child parentId",
+    "conversation 삭제 답글에 단 답글 대상",
   );
 
   const details = await requestApi({

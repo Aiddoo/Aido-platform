@@ -2,7 +2,9 @@ import type {
   TodoCommentRecord,
   TodoConversationRecord,
   TodoConversationCursor,
-  TodoCommentOverviewCursor,
+  TodoCommentRepliesCursor,
+  TodoCommentThreadCursor,
+  TodoCommentViewerContext,
 } from "#api/modules/engagement/application/models/comments/todo-comment.types";
 import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/application/ports/comments/todo-comment-cursor-codec.port";
 import type { TodoViewCachePort } from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
@@ -27,12 +29,10 @@ export function createCommentRecordFixture(
   return {
     id: "cm1rootcomment000000000001",
     todoId: 1,
-    parentId: null,
-    rootId: null,
-    path: [],
-    depth: 0,
-    parentAuthorId: null,
-    parentAuthorName: null,
+    threadCommentId: null,
+    replyToCommentId: null,
+    replyToAuthorId: null,
+    replyToAuthorName: null,
     authorId: ENGAGEMENT_OWNER_ID,
     authorName: "작성자",
     authorUserTag: null,
@@ -53,7 +53,17 @@ export function createConversationRecordFixture(
   return {
     ...createCommentRecordFixture(overrides),
     conversationPosition: { rootLikeCount: 0, rootReplyCount: 0 },
-    continuingAncestorDepths: [],
+    ...overrides,
+  };
+}
+
+export function createViewerContextFixture(
+  overrides: Partial<TodoCommentViewerContext> = {},
+): TodoCommentViewerContext {
+  return {
+    viewerId: ENGAGEMENT_VIEWER_ID,
+    likedCommentIds: new Set(),
+    blockedAuthorIds: new Set(),
     ...overrides,
   };
 }
@@ -85,9 +95,9 @@ export function createEngagementCommentFixture() {
       todoId: 1,
       authorId: ENGAGEMENT_OWNER_ID,
       parentId: null,
-      rootId: null,
-      path: [],
+      replyToCommentId: null,
       content: "댓글 원문",
+      replyCount: 0,
       deletedAt: null,
       editedAt: null,
       createdAt: at,
@@ -117,20 +127,28 @@ export function createEngagementCommentFixture() {
 
 export class StubEngagementCursorCodec implements TodoCommentCursorCodecPort {
   decodedConversation: TodoConversationCursor | undefined;
-  decodedOverview: TodoCommentOverviewCursor | undefined;
+  decodedThreads: TodoCommentThreadCursor | undefined;
+  decodedReplies: TodoCommentRepliesCursor | undefined;
   encodedConversations = ["previous", "next"];
-  encodedOverviews = ["previous", "next"];
+  encodedThreads = ["previous", "next"];
+  encodedReplies = ["previous", "next"];
   decodeConversation() {
     if (this.decodedConversation === undefined) {
       throw new Error("대화 cursor fixture가 준비되지 않았습니다.");
     }
     return structuredClone(this.decodedConversation);
   }
-  decodeOverview() {
-    if (this.decodedOverview === undefined) {
-      throw new Error("개요 cursor fixture가 준비되지 않았습니다.");
+  decodeThreads() {
+    if (this.decodedThreads === undefined) {
+      throw new Error("묶음 cursor fixture가 준비되지 않았습니다.");
     }
-    return structuredClone(this.decodedOverview);
+    return structuredClone(this.decodedThreads);
+  }
+  decodeReplies() {
+    if (this.decodedReplies === undefined) {
+      throw new Error("답글 cursor fixture가 준비되지 않았습니다.");
+    }
+    return structuredClone(this.decodedReplies);
   }
   encodeConversation() {
     const cursor = this.encodedConversations.shift();
@@ -139,10 +157,17 @@ export class StubEngagementCursorCodec implements TodoCommentCursorCodecPort {
     }
     return cursor;
   }
-  encodeOverview() {
-    const cursor = this.encodedOverviews.shift();
+  encodeThreads(..._args: Parameters<TodoCommentCursorCodecPort["encodeThreads"]>) {
+    const cursor = this.encodedThreads.shift();
     if (cursor === undefined) {
-      throw new Error("개요 cursor 응답 fixture가 준비되지 않았습니다.");
+      throw new Error("묶음 cursor 응답 fixture가 준비되지 않았습니다.");
+    }
+    return cursor;
+  }
+  encodeReplies(..._args: Parameters<TodoCommentCursorCodecPort["encodeReplies"]>) {
+    const cursor = this.encodedReplies.shift();
+    if (cursor === undefined) {
+      throw new Error("답글 cursor 응답 fixture가 준비되지 않았습니다.");
     }
     return cursor;
   }
