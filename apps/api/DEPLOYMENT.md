@@ -104,4 +104,4 @@ Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. 
 
 1.14.0 운영 env는 서버의 `~/apps/env-staging/1.14.0/apply.sh pre-deploy|store-release`로 단계별 반영한다(pre-deploy 적용됨). env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
-릴리스 `develop`→`main`은 merge commit으로 공통 조상을 유지한다. main 반영 뒤 develop 이력을 동기화하고 다음 release diff를 확인한다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.
+작업 PR과 릴리스 stack은 `main`으로 바로 머지한다(`develop`은 더 이상 쓰지 않는다). 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.
