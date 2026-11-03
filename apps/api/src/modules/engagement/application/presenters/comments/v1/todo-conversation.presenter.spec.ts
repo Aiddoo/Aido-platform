@@ -1,6 +1,8 @@
 import { todoConversationItemSchema } from "@aido/api";
 
-import type { TodoCommentRecord } from "../../models/comments/todo-comment.types.js";
+import { createViewerContextFixture } from "#test/fixtures/engagement-comment.fixture";
+
+import type { TodoCommentRecord } from "../../../models/comments/todo-comment.types.js";
 import {
   toTodoConversationAncestorItems,
   toTodoConversationItems,
@@ -40,9 +42,7 @@ function toItems(records: TodoCommentRecord[], nextRecord: TodoCommentRecord | n
     records,
     nextRecord,
     focusCommentId: null,
-    viewerId: VIEWER_ID,
-    blockedAuthorIds: new Set(),
-    likedCommentIds: new Set(),
+    viewer: createViewerContextFixture({ viewerId: VIEWER_ID }),
   });
 }
 
@@ -111,9 +111,7 @@ describe("할 일 대화 응답 변환 (1.14.0 이하 앱)", () => {
     // When
     const items = toTodoConversationAncestorItems({
       records: [comment],
-      viewerId: VIEWER_ID,
-      blockedAuthorIds: new Set(),
-      likedCommentIds: new Set(),
+      viewer: createViewerContextFixture({ viewerId: VIEWER_ID }),
     });
 
     // Then

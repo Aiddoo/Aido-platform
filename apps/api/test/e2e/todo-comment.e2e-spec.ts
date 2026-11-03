@@ -4,6 +4,8 @@ import {
   createTodoResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentOverviewResponseSchema,
+  todoCommentRepliesResponseSchema,
+  todoCommentThreadsResponseSchema,
   todoConversationResponseSchema,
   z,
   type TodoComment,
@@ -962,5 +964,85 @@ describe("할 일 댓글 E2E", () => {
       .expect(400);
 
     expect(response.body.error.code).toBe("SYS_0002");
+  });
+
+  it("v2는 댓글 묶음과 대표 답글, 묶음 답글 페이지와 anchor 위치를 2단계로 돌려준다", async () => {
+    // Given
+    const owner = await ctx.helpers.createVerifiedUser("v2-owner@example.com", "Test1234!", {
+      name: "할 일 주인",
+    });
+    const friend = await ctx.helpers.createVerifiedUser("v2-friend@example.com", "Test1234!", {
+      name: "친구",
+    });
+    await ctx.helpers.createFriendship(owner, friend);
+    const todoId = await createTodo(owner.accessToken, "PUBLIC");
+    const commentId = await writeComment(friend.accessToken, todoId, "댓글");
+    const replyId = await writeComment(owner.accessToken, todoId, "주인 답글", commentId);
+    const [first, second] = await writeChain(friend.accessToken, todoId, ["이어서", "또"], replyId);
+    const otherCommentId = await writeComment(friend.accessToken, todoId, "다른 댓글");
+    const get = (path: string, query: Record<string, string | number> = {}) =>
+      request(ctx.app.getHttpServer())
+        .get(path)
+        .query(query)
+        .set("Authorization", `Bearer ${friend.accessToken}`)
+        .set("X-App-Version", "1.14.1");
+
+    // When
+    const threadsResponse = await get(`/v2/todos/${todoId}/comments`, { size: 1 }).expect(200);
+    const anchoredResponse = await get(`/v2/todos/${todoId}/comments`, {
+      size: 1,
+      anchorCommentId: second?.id ?? "",
+    }).expect(200);
+    const repliesResponse = await get(`/v2/todos/${todoId}/comments/${commentId}/replies`, {
+      size: 2,
+    }).expect(200);
+    const nextReplies = await get(`/v2/todos/${todoId}/comments/${commentId}/replies`, {
+      size: 2,
+      cursor:
+        todoCommentRepliesResponseSchema.parse(repliesResponse.body.data).pagination.nextCursor ??
+        "",
+    }).expect(200);
+    const replyAsThread = await get(`/v2/todos/${todoId}/comments/${replyId}/replies`).expect(404);
+
+    // Then
+    const threadsPage = todoCommentThreadsResponseSchema.parse(threadsResponse.body.data);
+    expect(threadsPage.items.map((item) => item.comment.id)).toEqual([otherCommentId]);
+    expect(threadsPage.anchor).toBeNull();
+    expect(threadsPage.pagination.hasNext).toBe(true);
+    const anchored = todoCommentThreadsResponseSchema.parse(anchoredResponse.body.data);
+    expect(anchored.anchor).toEqual({ threadCommentId: commentId, replyId: second?.id });
+    expect(anchored.items[0]).toMatchObject({
+      comment: { id: commentId, threadCommentId: null, replyCount: 3 },
+      previewReply: { id: replyId, author: { isTodoOwner: true } },
+      replySummary: { totalCount: 3, hiddenCount: 2 },
+    });
+    const replyPage = todoCommentRepliesResponseSchema.parse(repliesResponse.body.data);
+    expect(replyPage.items.map((item) => [item.id, item.threadCommentId, item.replyTo])).toEqual([
+      [replyId, commentId, { commentId, authorName: "친구" }],
+      [first?.id, commentId, { commentId: replyId, authorName: "할 일 주인" }],
+    ]);
+    expect(
+      todoCommentRepliesResponseSchema.parse(nextReplies.body.data).items.map((item) => item.id),
+    ).toEqual([second?.id]);
+    expect(replyAsThread.body.error.code).toBe("TODO_0831");
+  });
+
+  it("v1 개요는 v2와 같은 묶음을 1.14.0 이하 앱 계약 모양으로 돌려준다", async () => {
+    // Given
+    const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
+    const todoId = await createTodo(user.accessToken);
+    const commentId = await writeComment(user.accessToken, todoId, "댓글");
+    const replyId = await writeComment(user.accessToken, todoId, "답글", commentId);
+    await writeComment(user.accessToken, todoId, "답글의 답글", replyId);
+
+    // When
+    const overview = await getOverview(user.accessToken, todoId);
+
+    // Then
+    expect(overview.items[0]).toMatchObject({
+      comment: { id: commentId, depth: 0, replyCount: 2 },
+      previewReply: { id: replyId, parentId: commentId, depth: 1 },
+      replySummary: { totalCount: 2, hiddenCount: 1, hasMore: true },
+    });
   });
 });

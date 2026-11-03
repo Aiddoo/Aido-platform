@@ -11,7 +11,7 @@ import { ApplicationException } from "#api/shared/domain/index";
 
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-comment.repository.port.js";
-import { toTodoCommentResponse } from "../../presenters/comments/index.js";
+import { toTodoCommentResponse } from "../../presenters/comments/v1/index.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface UpdateTodoCommentInput {
@@ -70,7 +70,13 @@ export class UpdateTodoComment {
         [input.commentId],
         input.userId,
       );
-      return { comment: toTodoCommentResponse(updatedComment, input.userId, likedIds) };
+      return {
+        comment: toTodoCommentResponse(updatedComment, {
+          viewerId: input.userId,
+          likedCommentIds: likedIds,
+          blockedAuthorIds: new Set(),
+        }),
+      };
     });
   }
 }

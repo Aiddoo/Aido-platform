@@ -7,6 +7,7 @@ import type {
   ConversationPageMode,
   TodoCommentRecord,
   TodoCommentRootPosition,
+  TodoCommentViewerContext,
   TodoConversationCursor,
   TodoConversationScope,
 } from "../../models/comments/todo-comment.types.js";
@@ -17,9 +18,11 @@ import {
   collectCommentAuthorIds,
   collectCommentIds,
   toTodoCommentCursorPagination,
+} from "../../presenters/comments/index.js";
+import {
   toTodoConversationAncestorItems,
   toTodoConversationItems,
-} from "../../presenters/comments/index.js";
+} from "../../presenters/comments/v1/index.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface GetTodoConversationInput {
@@ -151,27 +154,19 @@ export class GetTodoConversation {
         collectCommentAuthorIds(visibleRecords),
       ),
     ]);
+    const viewer = { viewerId: input.viewerId, likedCommentIds, blockedAuthorIds };
     const items = toTodoConversationItems({
       records: window.items,
       nextRecord: window.nextRecord,
       focusCommentId: focusRecord?.id ?? null,
-      viewerId: input.viewerId,
-      likedCommentIds,
-      blockedAuthorIds,
+      viewer,
     });
     const firstRecord = window.items.at(0);
     const lastRecord = window.items.at(-1);
 
     return {
       items,
-      focus: this.toFocusResponse(
-        focusRecord,
-        window.anchorIndex,
-        precedingThreadComments,
-        input.viewerId,
-        likedCommentIds,
-        blockedAuthorIds,
-      ),
+      focus: this.toFocusResponse(focusRecord, window.anchorIndex, precedingThreadComments, viewer),
       pagination: toTodoCommentCursorPagination({
         size: input.size,
         hasPrevious: window.hasPrevious,
@@ -246,9 +241,7 @@ export class GetTodoConversation {
     focusRecord: TodoCommentRecord | null,
     itemIndex: number | null,
     precedingThreadComments: readonly TodoCommentRecord[],
-    viewerId: string,
-    likedCommentIds: ReadonlySet<string>,
-    blockedAuthorIds: ReadonlySet<string>,
+    viewer: TodoCommentViewerContext,
   ): TodoConversationFocus | null {
     if (focusRecord == null || itemIndex == null) {
       return null;
@@ -259,9 +252,7 @@ export class GetTodoConversation {
       itemIndex,
       precedingAncestors: toTodoConversationAncestorItems({
         records: precedingThreadComments,
-        viewerId,
-        likedCommentIds,
-        blockedAuthorIds,
+        viewer,
       }),
       omittedAncestorCount: 0,
     };

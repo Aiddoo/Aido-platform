@@ -30,7 +30,7 @@ import {
   type TodoCommentRepositoryPort,
 } from "../../ports/comments/todo-comment.repository.port.js";
 import { type TodoViewCachePort } from "../../ports/comments/todo-view-cache.port.js";
-import { toTodoCommentResponse } from "../../presenters/comments/index.js";
+import { toTodoCommentResponse } from "../../presenters/comments/v1/index.js";
 import { assertNotBlocked } from "../../services/comments/assert-not-blocked.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
@@ -152,7 +152,11 @@ export class WriteTodoCommentChain {
 
     return {
       comments: outcome.written.map((record) =>
-        toTodoCommentResponse(record, input.authorId, outcome.likedCommentIds),
+        toTodoCommentResponse(record, {
+          viewerId: input.authorId,
+          likedCommentIds: outcome.likedCommentIds,
+          blockedAuthorIds: new Set(),
+        }),
       ),
     };
   }

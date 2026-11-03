@@ -12,7 +12,7 @@ import {
   TODO_COMMENT_REPOSITORY,
   type TodoCommentRepositoryPort,
 } from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
-import { GetTodoCommentOverview } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-overview.use-case";
+import { GetTodoCommentThreads } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-threads.use-case";
 import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
 import { GetTodoDetails } from "#api/modules/engagement/application/use-cases/comments/get-todo-details.use-case";
 import { LikeTodoComment } from "#api/modules/engagement/application/use-cases/comments/like-todo-comment.use-case";
@@ -184,16 +184,28 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     statements = null;
     return { result, count: executed.length };
   }
-  it("루트 댓글이 1개든 3개든 개요는 같은 수의 쿼리로 읽는다", async () => {
+  it("묶음이 1개든 3개든 목록은 같은 수의 쿼리로 읽는다", async () => {
     // Given
-    const overview = context.module.get(GetTodoCommentOverview);
+    const threads = context.module.get(GetTodoCommentThreads);
 
     // When
     const one = await measure(() =>
-      overview.execute({ todoId, viewerId: userId, sort: "POPULAR", size: 1 }),
+      threads.execute({
+        todoId,
+        viewerId: userId,
+        sort: "POPULAR",
+        size: 1,
+        page: { kind: "FIRST" },
+      }),
     );
     const three = await measure(() =>
-      overview.execute({ todoId, viewerId: userId, sort: "POPULAR", size: 3 }),
+      threads.execute({
+        todoId,
+        viewerId: userId,
+        sort: "POPULAR",
+        size: 3,
+        page: { kind: "FIRST" },
+      }),
     );
 
     // Then

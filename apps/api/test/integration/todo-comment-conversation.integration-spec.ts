@@ -9,7 +9,7 @@ import {
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
 } from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
-import { GetTodoCommentOverview } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-overview.use-case";
+import { GetTodoCommentThreads } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-threads.use-case";
 import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
 import { CommentPlacement } from "#api/modules/engagement/domain/value-objects/comments/comment-placement.vo";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
@@ -290,7 +290,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
     // When
     const { result: window, count } = await recordStatements(() =>
-      reader.listOverview({ todoId, sort: "POPULAR", size: 1, mode: "INITIAL" }),
+      reader.listThreads({ todoId, sort: "POPULAR", size: 1, mode: "INITIAL" }),
     );
 
     // Then
@@ -343,7 +343,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     await updateComment(ROOT_B, { replyCount: 2 });
 
     // When
-    const window = await reader.listOverview({
+    const window = await reader.listThreads({
       todoId,
       sort: "LATEST",
       size: 1,
@@ -364,7 +364,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       // Given
       await updateComment(ROOT_A, { likeCount: 3 });
       await updateComment(ROOT_B, { likeCount: 2 });
-      const useCase = new GetTodoCommentOverview({
+      const useCase = new GetTodoCommentThreads({
         reader: reader,
         cursorCodec: cursorCodec,
         blockReader: blockRepository,
@@ -374,6 +374,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         viewerId: "conversation-owner",
         sort: "POPULAR",
         size: 1,
+        page: { kind: "FIRST" },
       });
       const cursor = firstPage.pagination.nextCursor;
       if (cursor === null) {
@@ -386,8 +387,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         viewerId: "conversation-owner",
         sort: "POPULAR",
-        after: cursor,
         size: 1,
+        page: { kind: "CURSOR", cursor },
       });
 
       // Then
@@ -398,7 +399,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
   it("개요 cursor의 루트가 삭제 처리되어도 바뀌지 않는 루트 위치로 계속 읽는다", async () => {
     // Given
-    const useCase = new GetTodoCommentOverview({
+    const useCase = new GetTodoCommentThreads({
       reader: reader,
       cursorCodec: cursorCodec,
       blockReader: blockRepository,
@@ -408,6 +409,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       viewerId: "conversation-owner",
       sort: "LATEST",
       size: 1,
+      page: { kind: "FIRST" },
     });
     const cursor = firstPage.pagination.nextCursor;
     if (cursor === null) {
@@ -420,8 +422,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       todoId,
       viewerId: "conversation-owner",
       sort: "LATEST",
-      after: cursor,
       size: 1,
+      page: { kind: "CURSOR", cursor, direction: "AFTER" },
     });
 
     // Then

@@ -6,10 +6,12 @@ import type {
   TodoCommentRecord,
   TodoCommentLikeTransition,
   TodoConversationWindow,
-  TodoCommentOverviewWindow,
+  TodoCommentThreadItemRecord,
+  TodoCommentWindow,
   TodoDetailsRecord,
   ListTodoConversationParams,
-  ListTodoCommentOverviewParams,
+  ListTodoCommentRepliesParams,
+  ListTodoCommentThreadsParams,
 } from "#api/modules/engagement/application/models/comments/todo-comment.types";
 import type { TodoCommentBlockReaderPort } from "#api/modules/engagement/application/ports/comments/todo-comment-block-reader.port";
 import type {
@@ -220,7 +222,8 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   readonly todoOwners = new Map<number, string>();
   readonly details = new Map<number, TodoDetailsRecord>();
   conversationWindow: TodoConversationWindow | null = null;
-  overviewWindow: TodoCommentOverviewWindow | null = null;
+  threadsWindow: TodoCommentWindow<TodoCommentThreadItemRecord> | null = null;
+  repliesWindow: TodoCommentWindow<TodoCommentRecord> | null = null;
   likedCommentIds: Set<string> | undefined;
   constructor(readonly repository: StubEngagementCommentRepository) {}
   async findAccessibleTodoOwnerId(todoId: number, viewerId: string) {
@@ -272,8 +275,11 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   async listConversation(_params: ListTodoConversationParams) {
     return structuredClone(this.conversationWindow);
   }
-  async listOverview(_params: ListTodoCommentOverviewParams) {
-    return structuredClone(this.overviewWindow);
+  async listThreads(_params: ListTodoCommentThreadsParams) {
+    return structuredClone(this.threadsWindow);
+  }
+  async listReplies(_params: ListTodoCommentRepliesParams) {
+    return structuredClone(this.repliesWindow);
   }
   async findLikedCommentIds(ids: readonly string[], viewerId: string) {
     return this.likedCommentIds === undefined

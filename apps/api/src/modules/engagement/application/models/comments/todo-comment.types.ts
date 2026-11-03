@@ -1,4 +1,9 @@
-import type { Todo, TodoCommentSort, TodoDetailsResponse } from "@aido/api";
+import type {
+  Todo,
+  TodoCommentCursorPagination,
+  TodoCommentSort,
+  TodoDetailsResponse,
+} from "@aido/api";
 
 import type { CommentPlacement } from "../../../domain/value-objects/comments/comment-placement.vo.js";
 
@@ -65,13 +70,32 @@ export type TodoConversationCursor = {
   position: TodoCommentRootPosition;
 };
 
-export type TodoCommentOverviewCursor = {
+export const TODO_COMMENT_PAGE_DIRECTION = {
+  BEFORE: "BEFORE",
+  AFTER: "AFTER",
+} as const;
+
+export type TodoCommentPageDirection =
+  (typeof TODO_COMMENT_PAGE_DIRECTION)[keyof typeof TODO_COMMENT_PAGE_DIRECTION];
+
+/** 1.14.0 이하 앱이 가진 cursor도 그대로 읽도록 wire kind는 overview로 둔다. */
+export type TodoCommentThreadCursor = {
   v: 1;
   kind: "overview";
   sort: TodoCommentSort;
   todoId: number;
   rootId: string;
   position: TodoCommentRootPosition;
+  direction?: TodoCommentPageDirection;
+};
+
+export type TodoCommentRepliesCursor = {
+  v: 1;
+  kind: "replies";
+  todoId: number;
+  threadCommentId: string;
+  replyId: string;
+  direction: TodoCommentPageDirection;
 };
 
 export type ConversationPageMode = "INITIAL" | "BEFORE" | "AFTER" | "FOCUS";
@@ -97,42 +121,74 @@ export interface TodoConversationWindow {
   hasNext: boolean;
 }
 
-export type OverviewPageMode = "INITIAL" | "BEFORE" | "AFTER";
+export type TodoCommentPageMode = "INITIAL" | TodoCommentPageDirection;
 
-export interface ListTodoCommentOverviewParams {
+export interface ListTodoCommentThreadsParams {
   todoId: number;
   sort: TodoCommentSort;
   size: number;
-  mode: OverviewPageMode;
-  anchorRootId?: string;
+  mode: TodoCommentPageMode | "ANCHOR";
+  anchorCommentId?: string;
   anchorPosition?: TodoCommentRootPosition;
 }
 
-/** Overview root만 가지는 keyset 위치. 일반 댓글 projection에는 노출하지 않는다. */
-export interface TodoCommentOverviewRootRecord extends TodoCommentRecord {
-  overviewPosition: TodoCommentRootPosition;
+/** 묶음 머리 댓글만 가지는 keyset 위치. 일반 댓글 projection에는 노출하지 않는다. */
+export interface TodoCommentThreadRecord extends TodoCommentRecord {
+  threadPosition: TodoCommentRootPosition;
 }
 
 export interface TodoCommentParticipantAuthorRecord {
   id: string;
   name: string | null;
+  userTag: string | null;
   profileImage: string | null;
   isTodoOwner: boolean;
 }
 
-export interface TodoCommentOverviewItemRecord {
-  comment: TodoCommentOverviewRootRecord;
+export interface TodoCommentThreadItemRecord {
+  comment: TodoCommentThreadRecord;
   previewReply: TodoCommentRecord | null;
   totalCount: number;
   participantAuthors: TodoCommentParticipantAuthorRecord[];
 }
 
-export interface TodoCommentOverviewWindow {
-  items: TodoCommentOverviewItemRecord[];
-  previousRecord: TodoCommentOverviewRootRecord | null;
-  nextRecord: TodoCommentOverviewRootRecord | null;
+export interface TodoCommentWindow<T> {
+  items: T[];
   hasPrevious: boolean;
   hasNext: boolean;
+}
+
+export interface ListTodoCommentRepliesParams {
+  todoId: number;
+  threadCommentId: string;
+  size: number;
+  mode: TodoCommentPageMode | "AROUND";
+  anchorReplyId?: string;
+}
+
+/** 버전과 무관한 읽기 결과. v1·v2 presenter가 각자 응답 모양으로 바꾼다. */
+export interface TodoCommentViewerContext {
+  viewerId: string;
+  likedCommentIds: ReadonlySet<string>;
+  blockedAuthorIds: ReadonlySet<string>;
+}
+
+export interface TodoCommentThreadAnchorRecord {
+  threadCommentId: string;
+  replyId: string | null;
+}
+
+export interface TodoCommentThreadsResult {
+  items: TodoCommentThreadItemRecord[];
+  viewer: TodoCommentViewerContext;
+  pagination: TodoCommentCursorPagination;
+  anchor: TodoCommentThreadAnchorRecord | null;
+}
+
+export interface TodoCommentRepliesResult {
+  items: TodoCommentRecord[];
+  viewer: TodoCommentViewerContext;
+  pagination: TodoCommentCursorPagination;
 }
 
 export interface CreateTodoCommentChainInput {

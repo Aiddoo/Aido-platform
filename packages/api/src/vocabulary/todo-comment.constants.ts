@@ -3,11 +3,13 @@ export const TODO_COMMENT_LIMITS = {
   CONTENT_MAX_LENGTH: 500,
   DEFAULT_PAGE_SIZE: 30,
   MAX_PAGE_SIZE: 50,
-  /** 한 번에 이어 쓸 수 있는 글 수 — 각 글이 앞 글의 답글이 되는 사슬의 최대 길이 */
+  /** 답글 묶음 하나를 펼칠 때 한 번에 읽는 답글 수 */
+  REPLY_PAGE_DEFAULT_SIZE: 10,
+  /** 한 번에 이어 쓸 수 있는 글 수. 이어 쓴 글은 같은 묶음에 차례로 붙고 각자 앞 글에 답한다 */
   CHAIN_MAX_SIZE: 5,
-  /** focus 응답에 별도로 실을 수 있는 조상 수 */
+  /** v1 대화 focus 응답에 따로 싣는 앞 문맥 수. 2단계라 실제로는 묶음 머리 하나뿐이다 */
   FOCUS_ANCESTOR_MAX_SIZE: 20,
-  /** 개요에서 중복 없이 미리 보여 줄 참여 작성자 수 */
+  /** 묶음마다 미리 보여 줄 중복 없는 답글 작성자 수 */
   OVERVIEW_PARTICIPANT_MAX_SIZE: 3,
 } as const;
 
