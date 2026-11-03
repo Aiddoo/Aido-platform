@@ -6,6 +6,7 @@ import { type LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'r
 import {
   cancelAnimation,
   Easing,
+  type FrameInfo,
   type SharedValue,
   useFrameCallback,
   useSharedValue,
@@ -30,7 +31,7 @@ import { IcePelletLayer } from './ice-pellet-layer';
 import { LightningLayer } from './lightning-layer';
 import { NightSkyLayer } from './night-sky-layer';
 import { RainLayer } from './rain-layer';
-import { HeroScrimLayer, ScrimLayer } from './scrim-layer';
+import { BelowHeader, HeroScrimLayer, ScrimLayer } from './scrim-layer';
 import { SkyGradientLayer } from './sky-gradient-layer';
 import { SnowLayer } from './snow-layer';
 import { SunLayer } from './sun-layer';
@@ -79,14 +80,20 @@ export function WeatherSceneCanvas({ scene, contentTop, heroWidth }: WeatherScen
   const { theme } = useUniwind();
   const isAnimating = useWeatherSceneClock();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
-  const frameClock = useFrameCallback((frame) => {
-    const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_FRAME_STEP_MS);
-    time.set(time.get() + step / 1000);
-  }, false);
+  const advanceTime = useCallback(
+    (frame: FrameInfo) => {
+      'worklet';
+      const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_FRAME_STEP_MS);
+      time.set(time.get() + step / 1000);
+    },
+    [time],
+  );
+  const frameClock = useFrameCallback(advanceTime, false);
   const { entries, current, finishFade } = useSceneCrossFade(scene);
 
   useEffect(() => {
     frameClock.setActive(isAnimating);
+    return () => frameClock.setActive(false);
   }, [frameClock, isAnimating]);
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -205,29 +212,31 @@ function SceneLayers({
 
   return (
     <Group opacity={opacity}>
-      {scene.sun !== 'hidden' && (
-        <SunLayer
+      <BelowHeader contentTop={contentTop} width={size.width} height={size.height}>
+        {scene.sun !== 'hidden' && (
+          <SunLayer
+            {...area}
+            sun={scene.sun}
+            center={celestialCenter}
+            lensFlare={scene.lensFlare}
+            clouds={scene.clouds}
+            isDark={isDark}
+            occlusion={occlusion}
+          />
+        )}
+        <NightSkyLayer
           {...area}
-          sun={scene.sun}
-          center={celestialCenter}
-          lensFlare={scene.lensFlare}
-          clouds={scene.clouds}
+          moon={scene.moon}
+          celestialCenter={celestialCenter}
+          moonPhase={scene.moonPhase}
           isDark={isDark}
           occlusion={occlusion}
+          isSouthernHemisphere={scene.isSouthernHemisphere}
+          stars={scene.stars}
+          shootingStars={scene.shootingStars && isAnimating}
+          clouds={scene.clouds}
         />
-      )}
-      <NightSkyLayer
-        {...area}
-        moon={scene.moon}
-        celestialCenter={celestialCenter}
-        moonPhase={scene.moonPhase}
-        isDark={isDark}
-        occlusion={occlusion}
-        isSouthernHemisphere={scene.isSouthernHemisphere}
-        stars={scene.stars}
-        shootingStars={scene.shootingStars && isAnimating}
-        clouds={scene.clouds}
-      />
+      </BelowHeader>
       <CloudLayer
         {...area}
         amount={scene.clouds}

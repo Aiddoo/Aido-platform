@@ -127,6 +127,25 @@ describe('날씨 장면 변환', () => {
     expect(scene.sun).toBe(sun);
   });
 
+  test.each(
+    WEATHER_CONDITIONS.flatMap((condition) => [
+      [condition, true] as const,
+      [condition, false] as const,
+    ]),
+  )('%s(낮 %s)는 하늘색과 해·달·별이 같은 낮밤을 따른다', (condition, isDaylight) => {
+    // Given
+    const input = createInput({ condition, isDaylight, cloudCover: 0 });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.sky.endsWith(isDaylight ? 'Day' : 'Night')).toBe(true);
+    if (isDaylight) {
+      expect(scene).toMatchObject({ moon: false, stars: false, shootingStars: false });
+    } else {
+      expect(scene.sun).toBe('hidden');
+    }
+  });
+
   test('흐린 밤은 해·달·별·서리 없이 흐린 밤하늘만 그린다', () => {
     // Given
     const input = createInput({ condition: 'CLOUDY', isDaylight: false, cloudCover: 90 });

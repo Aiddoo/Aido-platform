@@ -1,4 +1,5 @@
-import { LinearGradient, RadialGradient, Rect, vec } from '@shopify/react-native-skia';
+import { Group, LinearGradient, RadialGradient, Rect, vec } from '@shopify/react-native-skia';
+import type { PropsWithChildren } from 'react';
 
 /** 시안 배경은 그대로 두되, 상태 표시줄과 맨 아래 글자가 밝은 하늘에서도 읽히도록 가장자리만 살짝 어둡게 한다. */
 const SCRIM_COLORS = {
@@ -58,5 +59,25 @@ export function HeroScrimLayer({
         colors={[`rgba(${rgb},${HERO_SCRIM.alpha[time]})`, `rgba(${rgb},0)`]}
       />
     </Rect>
+  );
+}
+
+/** 헤더 버튼 줄 아래에서부터 서서히 보이게 해, 해·달 빛살이 버튼 뒤로 비쳐 모양처럼 보이지 않게 한다. */
+const HEADER_FADE = { above: 4, below: 20 } as const;
+
+type BelowHeaderProps = PropsWithChildren<{ contentTop: number; width: number; height: number }>;
+
+export function BelowHeader({ contentTop, width, height, children }: BelowHeaderProps) {
+  return (
+    <Group layer>
+      {children}
+      <Rect x={0} y={0} width={width} height={height} blendMode="dstIn">
+        <LinearGradient
+          start={vec(0, contentTop - HEADER_FADE.above)}
+          end={vec(0, contentTop + HEADER_FADE.below)}
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,1)']}
+        />
+      </Rect>
+    </Group>
   );
 }
