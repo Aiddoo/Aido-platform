@@ -4,6 +4,7 @@ import { getTodoCommentViewerPermissions } from "../../../domain/policies/commen
 import type {
   TodoCommentParticipantAuthorRecord,
   TodoCommentRecord,
+  TodoCommentThreadItemRecord,
   TodoCommentViewerContext,
 } from "../../models/comments/todo-comment.types.js";
 
@@ -56,6 +57,15 @@ export function toTodoCommentView(
     createdAt: record.createdAt,
     editedAt: record.editedAt,
   };
+}
+
+/** 차단 관계인 작성자의 답글은 가린 묘비로 보이므로 대표 답글로 내보내지 않는다. */
+export function toVisiblePreviewReply(
+  item: TodoCommentThreadItemRecord,
+  viewer: TodoCommentViewerContext,
+): TodoCommentRecord | null {
+  const preview = item.previewReply;
+  return preview == null || viewer.blockedAuthorIds.has(preview.authorId) ? null : preview;
 }
 
 export function toTodoCommentParticipantAuthor(

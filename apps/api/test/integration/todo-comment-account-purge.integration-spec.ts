@@ -14,6 +14,7 @@ import {
 import { TodoCommentAccountCleanup } from "#api/modules/engagement/application/services/comments/todo-comment-account-cleanup.service";
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/engagement-comments.public";
 import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment-account-cleanup.store";
+import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
 import {
   AUTH_USER_REPOSITORY,
   AUTH_SECURITY_LOG_REPOSITORY,
@@ -41,6 +42,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { todoCommentAccountCleanupProvider } from "../../src/modules/engagement/engagement-comments-application.providers.js";
@@ -459,8 +461,18 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 
     // When
     await purgeDeletedAccounts.execute();
+    const reader = new DrizzleTodoCommentReader(createDatabaseTransactionFixture(client).txHost);
+    const replyToPurged = await reader.findCommentRecord(
+      fixture.todoId,
+      fixture.activeGrandchildId,
+    );
 
     // Then
+    expect(replyToPurged).toMatchObject({
+      replyToCommentId: fixture.purgedChildId,
+      replyToAuthorId: DELETED_COMMENT_AUTHOR_ID,
+      replyToAuthorName: null,
+    });
     expect(
       await client.query.user.findFirst({ where: { id: fixture.purgedUserId } }),
     ).toBeUndefined();

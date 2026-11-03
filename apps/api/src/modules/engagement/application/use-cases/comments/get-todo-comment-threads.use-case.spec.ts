@@ -135,6 +135,29 @@ describe("GetTodoCommentThreads", () => {
     expect(result.items).toHaveLength(1);
   });
 
+  it("지운 글로 anchor를 주면 오류 없이 첫 페이지와 빈 anchor를 돌려준다", async () => {
+    // Given
+    const { reader, useCase } = setup();
+    vi.spyOn(reader, "findCommentRecord").mockResolvedValue(
+      createCommentRecordFixture({
+        id: REPLY_ID,
+        threadCommentId: COMMENT_ID,
+        deletedAt: "2026-08-26T01:00:00.000Z",
+      }),
+    );
+    const list = vi.spyOn(reader, "listThreads");
+
+    // When
+    const result = await useCase.execute({
+      ...baseInput,
+      page: { kind: "ANCHOR", commentId: REPLY_ID },
+    });
+
+    // Then
+    expect(list.mock.calls.map((call) => call[0].mode)).toEqual(["INITIAL"]);
+    expect(result.anchor).toBeNull();
+  });
+
   it("v2 cursor는 담긴 방향과 인기순 위치를 reader 경계에 그대로 전달한다", async () => {
     // Given
     const { reader, cursorCodec, useCase } = setup();

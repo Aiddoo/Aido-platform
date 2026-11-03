@@ -1,7 +1,10 @@
 import type { TodoCommentOverviewResponse } from "@aido/api";
 
 import type { TodoCommentThreadsResult } from "../../../models/comments/todo-comment.types.js";
-import { toTodoCommentParticipantAuthor } from "../todo-comment.presenter.js";
+import {
+  toTodoCommentParticipantAuthor,
+  toVisiblePreviewReply,
+} from "../todo-comment.presenter.js";
 import { toTodoCommentAuthorResponse, toTodoCommentResponse } from "./todo-comment.presenter.js";
 
 export function toTodoCommentOverviewResponse(
@@ -9,7 +12,8 @@ export function toTodoCommentOverviewResponse(
 ): TodoCommentOverviewResponse {
   return {
     items: result.items.map((item) => {
-      const hiddenCount = Math.max(0, item.totalCount - (item.previewReply == null ? 0 : 1));
+      const previewReply = toVisiblePreviewReply(item, result.viewer);
+      const hiddenCount = Math.max(0, item.totalCount - (previewReply == null ? 0 : 1));
 
       return {
         comment: toTodoCommentResponse(item.comment, result.viewer),

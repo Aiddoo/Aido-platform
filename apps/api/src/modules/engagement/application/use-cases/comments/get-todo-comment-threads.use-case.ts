@@ -140,7 +140,7 @@ export class GetTodoCommentThreads {
           input.todoId,
           input.page.commentId,
         );
-        if (record == null) {
+        if (record == null || record.deletedAt != null) {
           return { params: { ...base, mode: "INITIAL" }, anchor: null };
         }
 

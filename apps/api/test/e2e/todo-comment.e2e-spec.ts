@@ -1045,4 +1045,67 @@ describe("할 일 댓글 E2E", () => {
       replySummary: { totalCount: 2, hiddenCount: 1, hasMore: true },
     });
   });
+
+  it("v2 목록은 답글이 남은 지운 댓글만 묘비로 남기고 지운 답글·빈 묘비·지운 anchor를 내보내지 않는다", async () => {
+    // Given
+    const user = await ctx.helpers.createVerifiedUser("v2-delete@example.com", "Test1234!");
+    const todoId = await createTodo(user.accessToken);
+    const commentId = await writeComment(user.accessToken, todoId, "댓글");
+    const firstReplyId = await writeComment(user.accessToken, todoId, "첫 답글", commentId);
+    const secondReplyId = await writeComment(user.accessToken, todoId, "둘째 답글", firstReplyId);
+    const remove = (id: string) =>
+      request(ctx.app.getHttpServer())
+        .delete(`/v1/todos/${todoId}/comments/${id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`);
+    const get = async (path: string, query: Record<string, string> = {}) =>
+      (
+        await request(ctx.app.getHttpServer())
+          .get(path)
+          .query(query)
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(200)
+      ).body.data;
+
+    // When
+    await remove(commentId).expect(200);
+    await remove(commentId).expect(200);
+    await remove(firstReplyId).expect(200);
+    const tombstoned = todoCommentThreadsResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments`),
+    );
+    const remainingReplies = todoCommentRepliesResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments/${commentId}/replies`),
+    );
+    const deletedAnchor = todoCommentThreadsResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments`, { anchorCommentId: firstReplyId }),
+    );
+    const replyToDeleted = await request(ctx.app.getHttpServer())
+      .post(`/v1/todos/${todoId}/comments`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ parentId: firstReplyId, items: [{ clientRequestId: randomUUID(), content: "답" }] })
+      .expect(409);
+    const editDeleted = await request(ctx.app.getHttpServer())
+      .patch(`/v1/todos/${todoId}/comments/${firstReplyId}`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ content: "수정" })
+      .expect(409);
+    await remove(secondReplyId).expect(200);
+    const emptied = todoCommentThreadsResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments`),
+    );
+
+    // Then
+    expect(tombstoned.items).toMatchObject([
+      {
+        comment: { id: commentId, isDeleted: true, content: null, likeCount: 0, replyCount: 1 },
+        previewReply: { id: secondReplyId, replyTo: { commentId: firstReplyId } },
+        replySummary: { totalCount: 1, hiddenCount: 0 },
+      },
+    ]);
+    expect(remainingReplies.items.map((item) => item.id)).toEqual([secondReplyId]);
+    expect(deletedAnchor.anchor).toBeNull();
+    expect(replyToDeleted.body.error.code).toBe("TODO_0833");
+    expect(editDeleted.body.error.code).toBe("TODO_0833");
+    expect(emptied.items).toEqual([]);
+  });
 });

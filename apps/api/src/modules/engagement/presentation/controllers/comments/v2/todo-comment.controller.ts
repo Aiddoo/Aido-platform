@@ -72,7 +72,7 @@ export class TodoCommentV2Controller {
 - 정렬은 \`sort\`(LATEST·POPULAR)이고, 인기순은 첫 페이지에서 정한 순위를 cursor가 이어받습니다.
 - 대표 답글은 할 일 주인의 답글을 먼저, 없으면 가장 먼저 쓴 답글입니다.
 - 답글이 남은 삭제 댓글은 묘비(\`isDeleted: true\`)로 남고, 답글도 없으면 목록에서 빠집니다.
-- \`anchorCommentId\`를 주면 그 글이 속한 묶음이 든 페이지를 주고 \`anchor\`에 위치를 싣습니다. 찾지 못하면 첫 페이지와 \`anchor: null\`입니다.
+- \`anchorCommentId\`를 주면 그 글이 속한 묶음이 든 페이지를 주고 \`anchor\`에 위치를 싣습니다. 찾지 못하거나 지운 글이면 오류 없이 첫 페이지와 \`anchor: null\`입니다.
 - \`cursor\`는 \`pagination.previousCursor\`·\`nextCursor\`를 그대로 보냅니다(방향이 cursor에 담겨 있습니다).
 `,
   })

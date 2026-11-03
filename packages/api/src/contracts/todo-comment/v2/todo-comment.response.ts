@@ -105,7 +105,7 @@ export const todoCommentThreadsResponseSchema = z
     pagination: todoCommentCursorPaginationSchema,
     anchor: todoCommentThreadAnchorSchema
       .nullable()
-      .describe("anchorCommentId로 찾은 위치 (요청하지 않았거나 찾지 못했으면 null)"),
+      .describe("anchorCommentId로 찾은 위치 (요청하지 않았거나 찾지 못했거나 지운 글이면 null)"),
   })
   .describe("할 일 댓글 묶음 목록 응답");
 
