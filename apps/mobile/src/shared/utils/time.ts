@@ -1,23 +1,24 @@
+import { timeOfDaySchema } from '@aido/api';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
 
-import { type DateFormatContext, formatTimeOfDay, type TimeFormat } from './date-format';
-
-dayjs.extend(customParseFormat);
+import {
+  type DateFormatContext,
+  formatTimeOfDay,
+  formatZonedHHmm,
+  type TimeFormat,
+} from './date-format';
+import { getDeviceTimezone } from './timezone';
 
 export type { TimeFormat };
 
-/** "HH:mm" 형식(두 자리, 엄격)인지 검증 */
 export function isValidHHmm(time: string): boolean {
-  return dayjs(time, 'HH:mm', true).isValid();
+  return timeOfDaySchema.safeParse(time).success;
 }
 
-/** "HH:mm" → 시 */
 export function parseHour(time: string): number {
   return Number(time.split(':')[0]);
 }
 
-/** "HH:mm" → 분 */
 export function parseMinute(time: string): number {
   return Number(time.split(':')[1]);
 }
@@ -27,17 +28,16 @@ export function resolveTimeOrFallback(time: string | undefined, fallbackTime: st
   return time != null && isValidHHmm(time) ? time : fallbackTime;
 }
 
-/** 날짜에 시·분을 적용하고 초/밀리초를 0으로 초기화 */
 export function withTime(date: Date, hour: number, minute: number): Date {
   return dayjs(date).hour(hour).minute(minute).second(0).millisecond(0).toDate();
 }
 
-/** 12시간제 여부 */
 export function isTwelveHour(timeFormat: TimeFormat): boolean {
   return timeFormat === 'TWELVE_HOUR';
 }
 
-export const toHHmm = (date: Date): string => dayjs(date).format('HH:mm');
+/** 순간을 기기 시간대(LocalDateProvider와 같은 출처)의 HH:mm으로 읽는다 */
+export const toHHmm = (date: Date): string => formatZonedHHmm(date, getDeviceTimezone());
 
 export const getDateWithTime = (
   date: Date,

@@ -9,6 +9,7 @@ import {
   formatInstantHour,
   formatRelativeTime,
   formatTimeOfDay,
+  formatZonedHHmm,
   getZonedHour,
   hasSameWallClock,
 } from './date-format';
@@ -248,6 +249,32 @@ describe('getZonedHour', () => {
   it('지정 시간대의 0-23시를 반환한다', () => {
     expect(getZonedHour(new Date('2026-10-01T15:30:00Z'), 'Asia/Seoul')).toBe(0);
     expect(getZonedHour(new Date('2026-10-01T14:30:00Z'), 'Asia/Seoul')).toBe(23);
+  });
+});
+
+describe('formatZonedHHmm', () => {
+  it('같은 순간을 서울과 LA의 24시간제 HH:mm으로 읽는다', () => {
+    // Given
+    const instant = new Date('2028-02-29T15:05:00Z');
+
+    // When
+    const seoul = formatZonedHHmm(instant, 'Asia/Seoul');
+    const losAngeles = formatZonedHHmm(instant, 'America/Los_Angeles');
+
+    // Then
+    expect(seoul).toBe('00:05');
+    expect(losAngeles).toBe('07:05');
+  });
+
+  it('잘못된 Date는 빈 문자열이다', () => {
+    // Given
+    const invalid = new Date(Number.NaN);
+
+    // When
+    const result = formatZonedHHmm(invalid, 'Asia/Seoul');
+
+    // Then
+    expect(result).toBe('');
   });
 });
 

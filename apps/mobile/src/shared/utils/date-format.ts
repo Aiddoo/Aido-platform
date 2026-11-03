@@ -48,6 +48,7 @@ const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   day: '2-digit',
 };
 const ZONED_HOUR_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', hourCycle: 'h23' };
+const ZONED_TIME_OPTIONS: Intl.DateTimeFormatOptions = { ...ZONED_HOUR_OPTIONS, minute: '2-digit' };
 const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
   ...DATE_KEY_OPTIONS,
   hour: '2-digit',
@@ -201,7 +202,7 @@ export function formatInstantHour(
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
+export const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAY_LIMIT = 7;
 
 export interface RelativeTimeLabels {
@@ -256,7 +257,6 @@ export function formatDateKey(date: Date, timeZone: string): string {
   return year && month && day ? `${year}-${month}-${day}` : '';
 }
 
-/** 지정 시간대 기준 시(0-23) */
 export function getZonedHour(date: Date, timeZone: string): number {
   if (!isValidDate(date)) {
     return Number.NaN;
@@ -267,6 +267,16 @@ export function getZonedHour(date: Date, timeZone: string): number {
       'hour',
     ),
   );
+}
+
+export function formatZonedHHmm(date: Date, timeZone: string): string {
+  if (!isValidDate(date)) {
+    return '';
+  }
+  const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, ZONED_TIME_OPTIONS).formatToParts(
+    date,
+  );
+  return `${findPart(parts, 'hour')}:${findPart(parts, 'minute')}`;
 }
 
 /** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */

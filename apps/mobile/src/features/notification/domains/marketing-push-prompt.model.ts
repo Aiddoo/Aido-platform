@@ -1,18 +1,15 @@
 import type { Consent } from '@src/features/auth/domains/auth.model';
 import type { MarketingPushPromptState } from '@src/shared/preferences/marketing-push-prompt.preference';
+import { DAY_MS } from '@src/shared/utils/date-format';
 
-/** 마지막 노출 이후 재노출까지의 쿨다운(일) */
 const COOLDOWN_DAYS = 14;
 /** 명시적 닫기 누적 상한 — 초과 시 영구 침묵 */
 const MAX_PROMPT_COUNT = 3;
-const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** 아직 광고성 푸시 수신에 동의하지 않았는가 */
 export function isNotAgreedToMarketingPush(consent: Consent): boolean {
   return consent.marketingPushAgreedAt == null;
 }
 
-/** 닫기 횟수가 상한 미만인가 */
 export function isUnderPromptLimit(promptState: MarketingPushPromptState): boolean {
   return promptState.count < MAX_PROMPT_COUNT;
 }
@@ -24,7 +21,7 @@ export function hasCooldownElapsed(promptState: MarketingPushPromptState, now: D
   }
 
   const elapsedMs = now.getTime() - new Date(promptState.lastPromptedAt).getTime();
-  return elapsedMs >= COOLDOWN_DAYS * MILLISECONDS_PER_DAY;
+  return elapsedMs >= COOLDOWN_DAYS * DAY_MS;
 }
 
 /** 동의 정보 로딩 전에는 노출하지 않는다. 규칙을 추가하려면 조건 함수를 하나 더 조합한다. */
