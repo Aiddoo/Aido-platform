@@ -15,7 +15,6 @@ import {
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/get-weather-report-query-options';
-import { formatDegrees } from '../utils/format-degrees';
 import { weatherHref } from '../utils/navigation/weather-href';
 import { WeatherIcon } from './weather-icon';
 
@@ -82,7 +81,7 @@ WeatherForecastBadge.Item = function Item({
           colorClassName="text-gray-6"
         />
         <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
-          {formatDegrees(temperature)}
+          {WeatherReportPolicy.degrees(temperature)}
         </Text>
       </HStack>
     </PressableFeedback>

@@ -104,7 +104,7 @@ export async function resolveLocation(
   ) {
     return {
       ...previousLocated,
-      placeName: place.name ?? previousLocated.placeName,
+      place: place.name ?? previousLocated.place,
       countryCode: place.countryCode ?? previousLocated.countryCode,
     };
   }
@@ -114,7 +114,7 @@ export async function resolveLocation(
   return {
     status: 'located',
     registered,
-    placeName: place.name,
+    place: place.name,
     countryCode: place.countryCode,
     revision: WeatherLocationPolicy.nextRevision(revision, registered, reportLocation),
   };

@@ -1,4 +1,5 @@
-import { Atlas, rect, Skia, type SkImage, useRSXformBuffer } from '@shopify/react-native-skia';
+import { Atlas, rect, Skia, useRSXformBuffer } from '@shopify/react-native-skia';
+import { range } from 'es-toolkit';
 import { Extrapolation, interpolate, type SharedValue } from 'react-native-reanimated';
 
 import {
@@ -13,9 +14,10 @@ import {
   PARTICLE_SPRITES,
   PARTICLE_TEXTURE_SCALE,
   type ParticleSprite,
+  useParticleTexture,
 } from './weather-scene-textures';
 
-type RainVariant = 'rain' | 'hail';
+type RainVariant = 'rain' | 'drizzle';
 
 type RainVariantStyle = {
   sprite: ParticleSprite;
@@ -35,13 +37,13 @@ const RAIN_VARIANT_STYLES = {
     alpha: [0.16, 0.6],
     rgb: { day: '220,236,255', night: '190,206,240' },
   },
-  hail: {
-    sprite: PARTICLE_SPRITES.pellet,
-    seed: 0x4a11,
-    fallSpeed: [820, 1250],
-    scale: [0.45, 0.9],
-    alpha: [0.55, 0.95],
-    rgb: { day: '246,250,255', night: '214,226,245' },
+  drizzle: {
+    sprite: PARTICLE_SPRITES.streak,
+    seed: 0xd122,
+    fallSpeed: [260, 520],
+    scale: [0.17, 0.42],
+    alpha: [0.22, 0.52],
+    rgb: { day: '226,236,250', night: '196,208,236' },
   },
 } as const satisfies Record<RainVariant, RainVariantStyle>;
 
@@ -62,10 +64,9 @@ type RainLayerProps = {
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-  texture: SharedValue<SkImage | null>;
 };
 
-/** 빗줄기는 멀수록 가늘고 짧고 흐리고 느리게, 바람이 셀수록 왼쪽으로 기울여 깊이를 만든다. */
+/** 빗줄기(이슬비는 짧고 가는 빗방울)는 멀수록 가늘고 짧고 흐리고 느리게, 바람이 셀수록 왼쪽으로 기울여 깊이를 만든다. */
 export function RainLayer({
   variant,
   density,
@@ -76,19 +77,16 @@ export function RainLayer({
   height,
   isLowEndDevice,
   time,
-  texture,
 }: RainLayerProps) {
+  const texture = useParticleTexture();
   const style = RAIN_VARIANT_STYLES[variant];
   const count = getParticleCount(variant, density, { width, height }, isLowEndDevice);
   const seeds = createParticleSeeds(count, style.seed);
-  const depths = Array.from(
-    { length: count },
-    (_, index) => (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) ** FAR_DEPTH_BIAS,
+  const depths = range(count).map(
+    (index) => (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) ** FAR_DEPTH_BIAS,
   );
   const { sprite } = style;
-  const sprites = Array.from({ length: count }, () =>
-    rect(sprite.x, sprite.y, sprite.width, sprite.height),
-  );
+  const sprites = range(count).map(() => rect(sprite.x, sprite.y, sprite.width, sprite.height));
   const rgb = isDaylight ? style.rgb.day : style.rgb.night;
   const colors = depths.map((depth) =>
     Skia.Color(`rgba(${rgb},${interpolate(depth, UNIT, style.alpha)})`),

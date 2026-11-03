@@ -9,7 +9,6 @@ import type { ComponentProps } from 'react';
 import type { RescheduleOption } from '../../domains/weather-briefing.model';
 import { WeatherReportPolicy } from '../../domains/weather-report.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
-import { formatDegrees } from '../../utils/format-degrees';
 
 interface WeatherRescheduleTimeInputProps extends Omit<
   ComponentProps<typeof RadioGroup>,
@@ -62,7 +61,7 @@ function RescheduleTimeOption({ option, reason, timeFormat, ...props }: Reschedu
   const description =
     reason === 'heat'
       ? t('reschedule.heat.option', {
-          temperature: formatDegrees(
+          temperature: WeatherReportPolicy.degrees(
             WeatherReportPolicy.displayTemperature(option.apparentTemperature, unit),
           ),
         })

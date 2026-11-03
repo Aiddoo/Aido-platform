@@ -17,7 +17,10 @@ import {
   toRescheduleTargets,
   type WeatherRescheduleFormValues,
 } from '../../domains/weather-reschedule-form.schema';
-import { useRescheduleTodoIdsParam } from '../../hooks/use-weather-reschedule-params';
+import {
+  useRescheduleReasonParam,
+  useRescheduleTodoIdsParam,
+} from '../../hooks/use-weather-reschedule-params';
 import { useRescheduleTodoMutationOptions } from '../../queries/use-reschedule-todo-mutation-options';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패는 원래 오류 토스트가 알린다. */
@@ -27,6 +30,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
   const logger = useLogger();
   const { trackEvent } = useTrack();
   const [todoIds] = useRescheduleTodoIdsParam();
+  const [reason] = useRescheduleReasonParam();
   const { handleSubmit, control } = useFormContext<WeatherRescheduleFormValues>();
   const { isSubmitting } = useFormState({ control });
   const { data: todoList } = useQuery(useGetTodosByDateQueryOptions({ date: useTodayKey() }));
@@ -44,7 +48,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
     );
     const restoredCount = results.filter((result) => result.status === 'fulfilled').length;
     if (restoredCount > 0) {
-      trackEvent('weather_reschedule_undone', { moved_count: restoredCount });
+      trackEvent('weather_reschedule_undone', { moved_count: restoredCount, reason });
       toast.success(t('reschedule.undone'));
     }
   };
@@ -65,7 +69,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
     if (moved.length === 0) {
       return;
     }
-    trackEvent('weather_reschedule_applied', { moved_count: moved.length });
+    trackEvent('weather_reschedule_applied', { moved_count: moved.length, reason });
     toast.success(t('reschedule.moved', { count: moved.length }), {
       action: {
         label: t('reschedule.undo'),

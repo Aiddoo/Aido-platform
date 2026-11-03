@@ -13,6 +13,8 @@ const createInput = (overrides: Partial<WeatherSceneInput> = {}): WeatherSceneIn
   precipitationIntensity: 0,
   cloudCover: 0,
   windSpeed: 0,
+  observedAt: new Date('2026-11-03T12:00:00.000Z'),
+  latitude: 37.5,
   ...overrides,
 });
 
@@ -44,6 +46,7 @@ describe('날씨 장면 변환', () => {
   });
 
   test.each([
+    ['DRIZZLE', 'drizzle'],
     ['RAIN', 'rain'],
     ['SLEET', 'sleet'],
     ['SNOW', 'snow'],
@@ -59,15 +62,135 @@ describe('날씨 장면 변환', () => {
     expect(scene.precipitation.kind).toBe(kind);
   });
 
-  test('맑은 낮에는 해를, 맑은 밤에는 별을 보여 준다', () => {
+  test('맑은 낮에는 렌즈 반사가 있는 해를, 맑은 밤에는 달·별·별똥별을 보여 준다', () => {
     // Given
     const day = createInput({ isDaylight: true });
     const night = createInput({ isDaylight: false });
     // When
     const [dayScene, nightScene] = [day, night].map(WeatherScenePolicy.fromInput);
     // Then
-    expect(dayScene).toMatchObject({ sky: 'clearDay', sun: true, stars: false });
-    expect(nightScene).toMatchObject({ sky: 'clearNight', sun: false, stars: true });
+    expect(dayScene).toMatchObject({
+      sky: 'clearDay',
+      sun: 'bright',
+      lensFlare: true,
+      moon: false,
+      stars: false,
+    });
+    expect(nightScene).toMatchObject({
+      sky: 'clearNight',
+      sun: 'hidden',
+      lensFlare: false,
+      moon: true,
+      stars: true,
+      shootingStars: true,
+    });
+  });
+
+  test.each([
+    ['CLEAR', 'calm'],
+    ['MOSTLY_CLEAR', 'calm'],
+    ['PARTLY_CLOUDY', 'calm'],
+    ['MOSTLY_CLOUDY', 'calm'],
+    ['CLOUDY', 'calm'],
+    ['FOGGY', 'fogBands'],
+    ['HAZY', 'haze'],
+    ['WINDY', 'gusts'],
+    ['DRIZZLE', 'mistyGlass'],
+    ['RAIN', 'calm'],
+    ['HEAVY_RAIN', 'calm'],
+    ['THUNDERSTORMS', 'calm'],
+    ['SLEET', 'calm'],
+    ['HAIL', 'calm'],
+    ['SNOW', 'calm'],
+    ['HEAVY_SNOW', 'calm'],
+    ['HOT', 'heat'],
+    ['FRIGID', 'frost'],
+  ] as const satisfies readonly (readonly [WeatherCondition, string])[])(
+    '%s 상태는 %s 대기 효과를 그린다',
+    (condition, atmosphere) => {
+      // When
+      const scene = WeatherScenePolicy.fromInput(createInput({ condition }));
+      // Then
+      expect(scene.atmosphere).toBe(atmosphere);
+    },
+  );
+
+  test.each([
+    ['CLEAR', 'bright'],
+    ['HAZY', 'diffuse'],
+    ['HOT', 'blazing'],
+    ['FRIGID', 'bright'],
+  ] as const)('%s 낮의 해는 %s 모양이다', (condition, sun) => {
+    // When
+    const scene = WeatherScenePolicy.fromInput(createInput({ condition }));
+    // Then
+    expect(scene.sun).toBe(sun);
+  });
+
+  test.each(
+    WEATHER_CONDITIONS.flatMap((condition) => [
+      [condition, true] as const,
+      [condition, false] as const,
+    ]),
+  )('%s(낮 %s)는 하늘색과 해·달·별이 같은 낮밤을 따른다', (condition, isDaylight) => {
+    // Given
+    const input = createInput({ condition, isDaylight, cloudCover: 0 });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.sky.endsWith(isDaylight ? 'Day' : 'Night')).toBe(true);
+    if (isDaylight) {
+      expect(scene).toMatchObject({ moon: false, stars: false, shootingStars: false });
+    } else {
+      expect(scene.sun).toBe('hidden');
+    }
+  });
+
+  test('흐린 밤은 해·달·별·서리 없이 흐린 밤하늘만 그린다', () => {
+    // Given
+    const input = createInput({ condition: 'CLOUDY', isDaylight: false, cloudCover: 90 });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene).toMatchObject({
+      sky: 'overcastNight',
+      atmosphere: 'calm',
+      sun: 'hidden',
+      lensFlare: false,
+      moon: false,
+      stars: false,
+    });
+  });
+
+  test('렌즈 반사는 맑은 날에만 비친다', () => {
+    // Given
+    const inputs = WEATHER_CONDITIONS.map((condition) => createInput({ condition }));
+    // When
+    const flared = inputs
+      .filter((input) => WeatherScenePolicy.fromInput(input).lensFlare)
+      .map((input) => input.condition);
+    // Then
+    expect(flared).toEqual(['CLEAR', 'MOSTLY_CLEAR']);
+  });
+
+  test('뿌연 하늘은 구름이 많아도 흐릿한 해가 비친다', () => {
+    // Given
+    const input = createInput({ condition: 'HAZY', cloudCover: 100 });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.sun).toBe('diffuse');
+  });
+
+  test('별똥별은 구름이 거의 없는 밤에만 지나간다', () => {
+    // Given
+    const clear = createInput({ condition: 'MOSTLY_CLEAR', isDaylight: false, cloudCover: 10 });
+    const cloudy = createInput({ condition: 'PARTLY_CLOUDY', isDaylight: false, cloudCover: 50 });
+    // When
+    const [clearScene, cloudyScene] = [clear, cloudy].map(WeatherScenePolicy.fromInput);
+    // Then
+    expect(clearScene?.shootingStars).toBe(true);
+    expect(cloudyScene).toMatchObject({ moon: true, stars: true, shootingStars: false });
   });
 
   test.each(PRECIPITATING_CONDITIONS)(
@@ -78,7 +201,7 @@ describe('날씨 장면 변환', () => {
       // When
       const scene = WeatherScenePolicy.fromInput(input);
       // Then
-      expect(scene.sun || scene.stars).toBe(false);
+      expect(scene).toMatchObject({ sun: 'hidden', moon: false, stars: false });
       expect(scene.precipitation.kind).not.toBe('none');
       expect(scene.precipitation.density).toBeGreaterThan(0);
     },
@@ -92,6 +215,9 @@ describe('날씨 장면 변환', () => {
     ['HAIL', false, 'stormNight'],
     ['CLOUDY', true, 'overcastDay'],
     ['HOT', true, 'hotDay'],
+    ['HOT', false, 'hotNight'],
+    ['FRIGID', true, 'frigidDay'],
+    ['FRIGID', false, 'frigidNight'],
   ] as const)('%s 상태(낮 %s)는 %s 하늘을 쓴다', (condition, isDaylight, sky) => {
     // Given
     const input = createInput({ condition, isDaylight });
@@ -101,17 +227,7 @@ describe('날씨 장면 변환', () => {
     expect(scene.sky).toBe(sky);
   });
 
-  test('폭염 낮에는 해와 함께 아지랑이를 깐다', () => {
-    // Given
-    const input = createInput({ condition: 'HOT' });
-    // When
-    const scene = WeatherScenePolicy.fromInput(input);
-    // Then
-    expect(scene.sun).toBe(true);
-    expect(scene.fog).toBeGreaterThan(0);
-  });
-
-  test('번개는 뇌우에서만 친다', () => {
+  test('번개는 천둥번개에서만 친다', () => {
     // Given
     const conditions = WEATHER_CONDITIONS.map((condition) => createInput({ condition }));
     // When
@@ -122,15 +238,13 @@ describe('날씨 장면 변환', () => {
     expect(withLightning).toEqual(['THUNDERSTORMS']);
   });
 
-  test('안개 상태는 짙은 안개, 연무 상태는 옅은 안개를 깐다', () => {
+  test('안개 밤에는 달과 별이 가려진다', () => {
     // Given
-    const foggy = createInput({ condition: 'FOGGY' });
-    const hazy = createInput({ condition: 'HAZY' });
+    const input = createInput({ condition: 'FOGGY', isDaylight: false, cloudCover: 0 });
     // When
-    const [fogScene, hazeScene] = [foggy, hazy].map(WeatherScenePolicy.fromInput);
+    const scene = WeatherScenePolicy.fromInput(input);
     // Then
-    expect(fogScene?.fog).toBeGreaterThan(hazeScene?.fog ?? 1);
-    expect(hazeScene?.fog).toBeGreaterThan(0);
+    expect(scene).toMatchObject({ moon: false, stars: false });
   });
 
   test('운량은 상태가 허용하는 범위 안으로 맞춘다', () => {
@@ -214,5 +328,35 @@ describe('바람과 강수 각도', () => {
     // Then
     expect(scene.precipitation.angle).toBeGreaterThan(0);
     expect(scene.precipitation.angle).toBeLessThanOrEqual(WEATHER_SCENE_MAX_PRECIPITATION_ANGLE);
+  });
+});
+
+describe('달의 위상', () => {
+  test.each([
+    ['2000-01-06T18:14:00.000Z', 0],
+    ['2000-01-21T12:32:00.000Z', 0.5],
+    ['2000-02-05T06:51:00.000Z', 0],
+  ])('%s의 위상은 %p에 가깝다', (iso, expected) => {
+    // When
+    const phase = WeatherScenePolicy.moonPhase(new Date(iso));
+    // Then
+    expect(Math.min(Math.abs(phase - expected), 1 - Math.abs(phase - expected))).toBeLessThan(0.01);
+  });
+
+  test('보름달은 다 밝고 삭은 보이지 않는다', () => {
+    // When
+    const [full, fresh] = [0.5, 0].map(WeatherScenePolicy.moonIllumination);
+    // Then
+    expect(full).toBeCloseTo(1);
+    expect(fresh).toBeCloseTo(0);
+  });
+
+  test('남반구 위치에서는 달을 뒤집어 그리도록 알린다', () => {
+    // Given
+    const input = createInput({ isDaylight: false, latitude: -33.9 });
+    // When
+    const scene = WeatherScenePolicy.fromInput(input);
+    // Then
+    expect(scene.isSouthernHemisphere).toBe(true);
   });
 });

@@ -1,11 +1,16 @@
+import { range } from 'es-toolkit';
+
 import {
   createParticleSeeds,
   createSeededRandom,
   createStarField,
-  getCloudCount,
+  getAmbientCount,
+  getBouncePhase,
+  getCelestialCenter,
+  getCloudCountPerLayer,
+  getGustTravel,
   getLightningIntensity,
   getParticleCount,
-  MAX_CLOUDS,
   MAX_STARS,
   PARTICLE_BUDGETS,
   PARTICLE_SEED_STRIDE,
@@ -21,7 +26,7 @@ describe('날씨 장면 난수', () => {
     const first = createSeededRandom(42);
     const second = createSeededRandom(42);
     // When
-    const sequences = [first, second].map((random) => Array.from({ length: 8 }, random));
+    const sequences = [first, second].map((random) => range(8).map(() => random()));
     // Then
     expect(sequences[0]).toEqual(sequences[1]);
   });
@@ -96,9 +101,8 @@ describe('입자 개수', () => {
 describe('번개', () => {
   const FRAME_SECONDS = 1 / 120;
   const DURATION_SECONDS = 600;
-  const samples = Array.from(
-    { length: Math.round(DURATION_SECONDS / FRAME_SECONDS) },
-    (_, index) => index * FRAME_SECONDS,
+  const samples = range(Math.round(DURATION_SECONDS / FRAME_SECONDS)).map(
+    (index) => index * FRAME_SECONDS,
   );
 
   const flashStarts = (times: number[]) =>
@@ -179,16 +183,117 @@ describe('구름 개수', () => {
   test.each([
     [Number.NaN, 0],
     [0, 0],
-    [0.01, 0],
-    [0.5, Math.round(2 + 0.5 * (MAX_CLOUDS - 2))],
-    [1, MAX_CLOUDS],
-    [3, MAX_CLOUDS],
-  ])('운량 %p에는 구름 %p개를 띄운다', (amount, expected) => {
-    // Given
-    const cloudAmount = amount;
+    [0.04, 0],
+    [0.05, 1],
+    [0.5, 2],
+    [1, 4],
+    [3, 4],
+  ])('운량 %p에는 깊이 층마다 구름 덩이 %p개를 띄운다', (amount, expected) => {
     // When
-    const count = getCloudCount(cloudAmount);
+    const count = getCloudCountPerLayer(amount);
     // Then
     expect(count).toBe(expected);
+  });
+});
+
+describe('대기 효과 입자 개수', () => {
+  test('넓은 화면은 넓이만큼 늘려 밀도를 유지하되 저사양 기기 상한을 넘지 않는다', () => {
+    // Given
+    const kind = 'spindrift';
+    // When
+    const phone = getAmbientCount(kind, PHONE, false);
+    const tablet = getAmbientCount(kind, TABLET, false);
+    const lowEndTablet = getAmbientCount(kind, TABLET, true);
+    // Then
+    expect(phone).toBe(PARTICLE_BUDGETS.spindrift.full);
+    expect(tablet).toBeGreaterThan(phone);
+    expect(tablet).toBeLessThanOrEqual(PARTICLE_BUDGETS.spindrift.standardCap);
+    expect(lowEndTablet).toBe(PARTICLE_BUDGETS.spindrift.lowEndCap);
+  });
+});
+
+describe('돌풍', () => {
+  test('돌풍이 약해져도 바람에 실린 거리는 뒤로 가지 않는다', () => {
+    // Given
+    const times = range(600).map((index) => index * 0.05);
+    // When
+    const travels = times.map(getGustTravel);
+    // Then
+    expect(
+      travels.every((travel, index) => index === 0 || travel > (travels[index - 1] ?? 0)),
+    ).toBe(true);
+  });
+});
+
+describe('튀는 얼음 알', () => {
+  const BOUNCES = [
+    { velocity: 280, gravity: 1400 },
+    { velocity: 70, gravity: 1400 },
+  ];
+
+  test.each([
+    [0.5, 'falling'],
+    [1.1, 'bouncing'],
+    [1.45, 'bouncing'],
+    [2, 'resting'],
+  ] as const)('바닥까지 1초 걸리는 알은 %p초에 %s 단계다', (elapsed, phase) => {
+    // When
+    const result = getBouncePhase(elapsed, 1, BOUNCES);
+    // Then
+    expect(result.phase).toBe(phase);
+  });
+
+  test('두 번 튀고 나면 더 튀지 않는다', () => {
+    // Given
+    const firstLanding = 1 + (2 * 280) / 1400;
+    // When
+    const first = getBouncePhase(1.1, 1, BOUNCES);
+    const second = getBouncePhase(firstLanding + 0.01, 1, BOUNCES);
+    // Then
+    expect(first).toMatchObject({ phase: 'bouncing', bounce: 0 });
+    expect(second).toMatchObject({ phase: 'bouncing', bounce: 1 });
+  });
+});
+
+describe('해·달 자리', () => {
+  test('헤더가 낮은 화면에서는 화면 오른쪽 위 고정 비율 자리에 둔다', () => {
+    // Given
+    const contentTop = 56;
+    // When
+    const center = getCelestialCenter(PHONE, { contentTop, heroLeft: 0, heroWidth: PHONE.width });
+    // Then
+    expect(center.x).toBeCloseTo(PHONE.width * 0.9);
+    expect(center.y).toBeCloseTo(PHONE.height * 0.118);
+  });
+
+  test('헤더가 높으면 헤더 버튼에 가리지 않게 그 아래로 내린다', () => {
+    // Given
+    const contentTop = 120;
+    // When
+    const center = getCelestialCenter(PHONE, { contentTop, heroLeft: 0, heroWidth: PHONE.width });
+    // Then
+    expect(center.y).toBeGreaterThan(contentTop + PHONE.width * 0.058);
+  });
+
+  test('넓은 화면에서는 지명·기온이 있는 왼쪽 단 안에 둔다', () => {
+    // Given
+    const heroWidth = 400;
+    // When
+    const center = getCelestialCenter(TABLET, { contentTop: 56, heroLeft: 0, heroWidth });
+    // Then
+    expect(center.x).toBeLessThan(heroWidth);
+  });
+
+  test('옆 레일이 있는 화면에서는 레일을 뺀 내용 영역 안에 둔다', () => {
+    // Given
+    const rail = { left: 0, width: PHONE.width - 64 };
+    // When
+    const center = getCelestialCenter(PHONE, {
+      contentTop: 0,
+      heroLeft: rail.left,
+      heroWidth: rail.width,
+    });
+    // Then
+    expect(center.x).toBeLessThan(rail.width);
   });
 });

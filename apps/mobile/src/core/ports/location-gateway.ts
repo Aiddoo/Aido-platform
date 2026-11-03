@@ -10,6 +10,12 @@ export interface LocationCoordinates {
   longitude: number;
 }
 
+/** 큰 제목은 도시, 작은 위치 줄은 동네를 쓴다. */
+export interface PlaceName {
+  city: string;
+  district: string | null;
+}
+
 export interface LocationGateway {
   getPermission(): Promise<{ granted: boolean; canAskAgain: boolean }>;
   requestPermission(): Promise<{ granted: boolean; canAskAgain: boolean }>;
@@ -17,5 +23,5 @@ export interface LocationGateway {
   getPlace(
     coordinates: LocationCoordinates,
     signal: AbortSignal,
-  ): Promise<{ countryCode: string | null; name: string | null }>;
+  ): Promise<{ countryCode: string | null; name: PlaceName | null }>;
 }

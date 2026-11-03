@@ -19,6 +19,8 @@ const DEFAULT_SCENE_INPUT: WeatherSceneInput = {
   precipitationIntensity: 0,
   cloudCover: 0,
   windSpeed: 0,
+  observedAt: new Date(),
+  latitude: 0,
 };
 
 /**
