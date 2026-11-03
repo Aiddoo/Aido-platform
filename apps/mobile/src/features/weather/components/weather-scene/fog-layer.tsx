@@ -1,27 +1,10 @@
-import {
-  Atlas,
-  Group,
-  LinearGradient,
-  Rect,
-  rect,
-  Skia,
-  type SkImage,
-  useRSXformBuffer,
-  vec,
-} from '@shopify/react-native-skia';
+import { Group, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
 import { clamp } from 'es-toolkit';
 import { interpolate, type SharedValue, useDerivedValue } from 'react-native-reanimated';
 
 import { WEATHER_SCENE_PALETTES } from '../../constants/weather-scene-palette';
 import type { WeatherSceneSky } from '../../domains/weather-scene.model';
-import { placeSprite, wrap } from './weather-scene-particles';
-import { CLOUD_SPRITE } from './weather-scene-textures';
 
-const WISP_COUNT = 4;
-const WISP_MIN_AMOUNT = 0.4;
-const WISP_SCALE = 1.6;
-const WISP_DRIFT = 9;
-const SPRITE_ORIGIN = { x: 0, y: 0 };
 /** 시안 wxHaze: 6초 주기로 12px 떠오르며 0.3→0.55로 짙어지는 띠 */
 const HAZE_PERIOD_SECONDS = 6;
 const HAZE_RISE = 12;
@@ -36,32 +19,11 @@ type FogLayerProps = {
   width: number;
   height: number;
   time: SharedValue<number>;
-  texture: SharedValue<SkImage | null>;
 };
 
-export function FogLayer({ amount, sky, width, height, time, texture }: FogLayerProps) {
+/** 화면 아래쪽에 낮게 깔린 물안개와 천천히 떠오르는 옅은 띠 */
+export function FogLayer({ amount, sky, width, height, time }: FogLayerProps) {
   const rgb = WEATHER_SCENE_PALETTES[sky].fog;
-  const wispCount = amount < WISP_MIN_AMOUNT ? 0 : WISP_COUNT;
-  const sprites = Array.from({ length: wispCount }, () =>
-    rect(CLOUD_SPRITE.x, CLOUD_SPRITE.y, CLOUD_SPRITE.width, CLOUD_SPRITE.height),
-  );
-  const colors = Array.from({ length: wispCount }, () =>
-    Skia.Color(`rgba(${rgb},${0.2 * amount})`),
-  );
-  const scale = (width / CLOUD_SPRITE.width) * WISP_SCALE;
-  const spriteWidth = CLOUD_SPRITE.width * scale;
-  const spriteHeight = CLOUD_SPRITE.height * scale;
-  const travelWidth = width + spriteWidth;
-
-  const transforms = useRSXformBuffer(wispCount, (transform, index) => {
-    'worklet';
-    const lane = index / (WISP_COUNT - 1);
-    const direction = index % 2 === 0 ? 1 : -1;
-    const x = wrap(lane * travelWidth + direction * time.get() * WISP_DRIFT, travelWidth);
-    const y = height * (0.32 + lane * 0.5) - spriteHeight / 2;
-    placeSprite(transform, scale, 0, SPRITE_ORIGIN, x - spriteWidth, y);
-  });
-
   const bandStrength = clamp(amount / HAZE_FULL_AMOUNT, 0, 1);
   const bandHeight = height * HAZE_BAND.height;
   const bandTop = height * HAZE_BAND.center - bandHeight / 2;
@@ -96,13 +58,6 @@ export function FogLayer({ amount, sky, width, height, time, texture }: FogLayer
           />
         </Rect>
       </Group>
-      <Atlas
-        image={texture}
-        sprites={sprites}
-        transforms={transforms}
-        colors={colors}
-        colorBlendMode="modulate"
-      />
     </Group>
   );
 }

@@ -322,9 +322,19 @@ function formatDegrees(displayValue: number): string {
   return `${isBelowZero ? MINUS_SIGN : ''}${magnitude}°`;
 }
 
-function toSceneInput(current: CurrentWeather): WeatherSceneInput {
-  const { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed } = current;
-  return { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed };
+function toSceneInput(
+  report: Pick<WeatherReport, 'current' | 'location' | 'fetchedAt'>,
+): WeatherSceneInput {
+  const { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed } = report.current;
+  return {
+    condition,
+    isDaylight,
+    precipitationIntensity,
+    cloudCover,
+    windSpeed,
+    observedAt: report.fetchedAt,
+    latitude: report.location.latitude,
+  };
 }
 
 export interface TemperatureBar {

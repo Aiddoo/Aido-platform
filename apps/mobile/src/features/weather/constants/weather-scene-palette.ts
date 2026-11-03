@@ -167,4 +167,31 @@ export const WEATHER_SCENE_PALETTES = {
     fog: '255,220,170',
     tint: '110,36,10',
   },
+  hotNight: {
+    sky: {
+      light: ['#1C1013', '#2C1A1A', '#3E2721', '#4C3226'],
+      dark: ['#130B0D', '#1F1313', '#2B1B17', '#37231B'],
+    },
+    cloud: '128,104,96',
+    fog: '120,86,64',
+    tint: '40,18,12',
+  },
+  frigidDay: {
+    sky: {
+      light: ['#3A80D2', '#62A2E4', '#9CC6F0', '#CFE6F8'],
+      dark: ['#0B1832', '#11264A', '#18355F', '#20436F'],
+    },
+    cloud: '244,250,255',
+    fog: '225,240,255',
+    tint: '22,72,138',
+  },
+  frigidNight: {
+    sky: {
+      light: ['#050B1C', '#0B1730', '#122442', '#1A2F52'],
+      dark: ['#03070F', '#071021', '#0C1932', '#11223F'],
+    },
+    cloud: '126,146,184',
+    fog: '96,124,168',
+    tint: '6,14,36',
+  },
 } as const satisfies Record<WeatherSceneSky, ScenePalette>;

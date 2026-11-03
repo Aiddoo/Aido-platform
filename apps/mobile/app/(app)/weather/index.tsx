@@ -22,6 +22,7 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import {
   AdaptivePane,
   Box,
+  getPrimaryPaneWidth,
   QueryErrorBoundary,
   Spacing,
   StyledSafeAreaView,
@@ -30,7 +31,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { type ComponentProps, type PropsWithChildren, Suspense } from 'react';
-import { Platform, RefreshControl, ScrollView } from 'react-native';
+import { Platform, RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
@@ -233,5 +234,17 @@ function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollViewProps
 }
 
 function WeatherBackground() {
-  return <WeatherSceneCanvas scene={useWeatherScene()} />;
+  const windowSizeClass = useWindowSizeClass();
+  const { width } = useWindowDimensions();
+  const heroWidth =
+    windowSizeClass === 'compact'
+      ? width
+      : getPrimaryPaneWidth({ windowSizeClass, foldFrame: undefined });
+  return (
+    <WeatherSceneCanvas
+      scene={useWeatherScene()}
+      contentTop={useHeaderHeight()}
+      heroWidth={heroWidth}
+    />
+  );
 }
