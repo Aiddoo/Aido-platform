@@ -45,7 +45,6 @@ import {
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
 import { toWeatherBriefingKind } from '../utils/analytics/weather-analytics';
-import { formatDegrees } from '../utils/format-degrees';
 import { createWeatherRescheduleHref } from '../utils/navigation/weather-reschedule-href';
 import {
   type BriefingAction,
@@ -151,7 +150,7 @@ WeatherBriefing.Content = function Content({
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatHour: (date) => formatInstantHour(date, timeFormat, dateFormat),
     formatDegrees: (celsius) =>
-      formatDegrees(WeatherReportPolicy.displayTemperature(celsius, unit)),
+      WeatherReportPolicy.degrees(WeatherReportPolicy.displayTemperature(celsius, unit)),
     formatChance: (percent) => t('details.percentValue', { value: percent }),
   });
   const visibleRows = view.rows.slice(0, VISIBLE_TODO_LIMIT);

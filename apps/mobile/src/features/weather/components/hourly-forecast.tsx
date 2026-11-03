@@ -36,7 +36,6 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
-import { formatDegrees } from '../utils/format-degrees';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -175,7 +174,9 @@ HourlyForecast.Summary = function Summary({
       const params = {
         sky: t(SKY_BEFORE_KEYS[sky]),
         time: hourLabel(peak.at),
-        temperature: formatDegrees(WeatherReportPolicy.displayTemperature(peak.temperature, unit)),
+        temperature: WeatherReportPolicy.degrees(
+          WeatherReportPolicy.displayTemperature(peak.temperature, unit),
+        ),
       };
       return peak.extreme === 'highest'
         ? t('hourly.summary.highest', params)
@@ -268,7 +269,7 @@ function HourCell({
         className="tabular-nums"
         style={value.style}
       >
-        {formatDegrees(temperature)}
+        {WeatherReportPolicy.degrees(temperature)}
       </Text>
     </VStack>
   );

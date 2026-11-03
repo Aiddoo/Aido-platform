@@ -2,13 +2,18 @@ import { useWeatherService } from '@src/bootstrap/providers/di-context';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { isBusinessError, unwrap } from '@src/shared/errors';
-import { type QueryClient, queryOptions } from '@tanstack/react-query';
+import { type QueryClient, queryOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import type { LocationReading } from '../domains/weather-location.model';
 import { type WeatherReport, WeatherReportPolicy } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
+import {
+  applyDevWeatherOverride,
+  type DevWeatherOverride,
+  useDevWeatherOverride,
+} from '../hooks/use-dev-weather-override';
 import { useWeatherLocationRevision } from './get-weather-location-query-options';
 import { removeOutdatedWeatherReports } from './weather-cache';
 
@@ -65,10 +70,35 @@ export function getWeatherReportQueryOptions(
   });
 }
 
-export function useGetWeatherReportQueryOptions() {
-  return getWeatherReportQueryOptions(useWeatherService(), {
-    locationRevision: useWeatherLocationRevision(),
+/**
+ * 개발 QA용으로 날씨만 바꾼 리포트. 실제 리포트 캐시에서 만들어 새로 요청하지 않고, 실제 리포트와 키를 나누며
+ * 기기에 저장하지 않는다. 실제 리포트가 이미 있으면 처음부터 그 값으로 그려 화면이 로딩으로 돌아가지 않는다.
+ */
+function getDevWeatherReportQueryOptions(
+  weatherService: WeatherService,
+  client: QueryClient,
+  { locationRevision, devOverride }: { locationRevision: number; devOverride: DevWeatherOverride },
+) {
+  const reportOptions = getWeatherReportQueryOptions(weatherService, { locationRevision });
+  const cached = client.getQueryData(reportOptions.queryKey);
+  return queryOptions({
+    queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
+    queryFn: async ({ client: queryClient }) =>
+      applyDevWeatherOverride(await queryClient.ensureQueryData(reportOptions), devOverride),
+    initialData: cached == null ? undefined : applyDevWeatherOverride(cached, devOverride),
+    staleTime: REPORT_STALE_TIME_MS,
+    retry: shouldRetryReport,
   });
+}
+
+export function useGetWeatherReportQueryOptions() {
+  const weatherService = useWeatherService();
+  const locationRevision = useWeatherLocationRevision();
+  const client = useQueryClient();
+  const devOverride = useDevWeatherOverride();
+  return devOverride == null
+    ? getWeatherReportQueryOptions(weatherService, { locationRevision })
+    : getDevWeatherReportQueryOptions(weatherService, client, { locationRevision, devOverride });
 }
 
 /**
@@ -87,5 +117,5 @@ export const WeatherReportSelect = {
   sunMoon: (report: WeatherReport) => pick(report, ['location', 'current', 'daily']),
   airQuality: (report: WeatherReport) => report.airQuality,
   attribution: (report: WeatherReport) => pick(report, ['location', 'attribution', 'fetchedAt']),
-  scene: (report: WeatherReport) => WeatherReportPolicy.sceneInput(report.current),
+  scene: (report: WeatherReport) => WeatherReportPolicy.sceneInput(report),
 } as const;

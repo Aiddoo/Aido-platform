@@ -21,21 +21,56 @@ const WEATHER_SCENE_SKIES = [
   'hazeDay',
   'hazeNight',
   'hotDay',
+  'hotNight',
+  'frigidDay',
+  'frigidNight',
 ] as const;
 
 export type WeatherSceneSky = (typeof WEATHER_SCENE_SKIES)[number];
 
-const WEATHER_SCENE_PRECIPITATION_KINDS = ['none', 'rain', 'snow', 'sleet', 'hail'] as const;
+const WEATHER_SCENE_PRECIPITATION_KINDS = [
+  'none',
+  'drizzle',
+  'rain',
+  'sleet',
+  'snow',
+  'hail',
+] as const;
 
 export type WeatherScenePrecipitationKind = (typeof WEATHER_SCENE_PRECIPITATION_KINDS)[number];
+
+/** 날씨마다 하나씩 두는 대표 대기 효과 */
+const WEATHER_SCENE_ATMOSPHERES = [
+  'calm',
+  'fogBands',
+  'haze',
+  'gusts',
+  'mistyGlass',
+  'heat',
+  'frost',
+] as const;
+
+export type WeatherSceneAtmosphere = (typeof WEATHER_SCENE_ATMOSPHERES)[number];
+
+const WEATHER_SCENE_SUNS = ['hidden', 'bright', 'diffuse', 'blazing'] as const;
+
+export type WeatherSceneSun = (typeof WEATHER_SCENE_SUNS)[number];
+
+type VisibleSun = Exclude<WeatherSceneSun, 'hidden'>;
 
 export const WEATHER_SCENE_MAX_PRECIPITATION_ANGLE = Math.PI / 9;
 
 const HEAVY_PRECIPITATION_MM_PER_HOUR = 10;
 const STRONG_WIND_METERS_PER_SECOND = 15;
 const SUN_MAX_CLOUDS = 0.7;
+const MOON_MAX_CLOUDS = 0.75;
 const STARS_MAX_CLOUDS = 0.6;
+const SHOOTING_STARS_MAX_CLOUDS = 0.3;
 const CELESTIAL_MAX_FOG = 0.5;
+/** 삭망월(일)과 기준 삭 시각(2000-01-06 18:14 UTC) */
+const SYNODIC_MONTH_DAYS = 29.530588853;
+const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14);
+const DAY_MS = 86_400_000;
 
 const unitSchema = z.number().min(0).max(1);
 
@@ -49,11 +84,20 @@ export const weatherSceneSchema = z.object({
     angle: z.number().min(0).max(WEATHER_SCENE_MAX_PRECIPITATION_ANGLE),
   }),
   clouds: unitSchema,
+  /** 화면 아래에 낮게 깔리는 물안개 양 */
   fog: unitSchema,
   wind: unitSchema,
+  atmosphere: z.enum(WEATHER_SCENE_ATMOSPHERES),
   lightning: z.boolean(),
-  sun: z.boolean(),
+  sun: z.enum(WEATHER_SCENE_SUNS),
+  lensFlare: z.boolean(),
+  moon: z.boolean(),
+  /** 달의 위상. 0은 삭, 0.5는 보름, 1에 가까울수록 그믐이다. */
+  moonPhase: z.number().min(0).max(1),
+  /** 남반구에서는 달의 밝은 면이 반대로 보인다. */
+  isSouthernHemisphere: z.boolean(),
   stars: z.boolean(),
+  shootingStars: z.boolean(),
 });
 
 export type WeatherScene = z.infer<typeof weatherSceneSchema>;
@@ -64,6 +108,8 @@ export type WeatherSceneInput = {
   precipitationIntensity: number;
   cloudCover: number;
   windSpeed: number;
+  observedAt: Date;
+  latitude: number;
 };
 
 type SkyPair = { day: WeatherSceneSky; night: WeatherSceneSky };
@@ -77,6 +123,9 @@ type ConditionProfile = {
   fog: number;
   minWind: number;
   lightning: boolean;
+  atmosphere: WeatherSceneAtmosphere;
+  sun: VisibleSun;
+  lensFlare: boolean;
 };
 
 const CLEAR_SKY: SkyPair = { day: 'clearDay', night: 'clearNight' };
@@ -86,100 +135,78 @@ const RAIN_SKY: SkyPair = { day: 'rainDay', night: 'rainNight' };
 const STORM_SKY: SkyPair = { day: 'stormDay', night: 'stormNight' };
 const SNOW_SKY: SkyPair = { day: 'snowDay', night: 'snowNight' };
 
-const DRY: Pick<ConditionProfile, 'precipitation' | 'minDensity' | 'speed' | 'lightning'> = {
+const BASE_PROFILE = {
   precipitation: 'none',
   minDensity: 0,
   speed: 0,
+  fog: 0,
+  minWind: 0,
   lightning: false,
-};
+  atmosphere: 'calm',
+  sun: 'bright',
+  lensFlare: false,
+} as const satisfies Omit<ConditionProfile, 'sky' | 'clouds'>;
 
 function getConditionProfile(condition: WeatherCondition): ConditionProfile {
   return match(condition)
     .returnType<ConditionProfile>()
-    .with('CLEAR', 'FRIGID', () => ({
-      ...DRY,
+    .with('CLEAR', () => ({
+      ...BASE_PROFILE,
       sky: CLEAR_SKY,
       clouds: [0, 0.15],
-      fog: 0,
-      minWind: 0,
-    }))
-    .with('HOT', () => ({
-      ...DRY,
-      sky: { day: 'hotDay', night: 'clearNight' },
-      clouds: [0, 0.15],
-      fog: 0.3,
-      minWind: 0,
+      lensFlare: true,
     }))
     .with('MOSTLY_CLEAR', () => ({
-      ...DRY,
+      ...BASE_PROFILE,
       sky: CLEAR_SKY,
       clouds: [0.1, 0.3],
-      fog: 0,
-      minWind: 0,
+      lensFlare: true,
     }))
-    .with('PARTLY_CLOUDY', () => ({
-      ...DRY,
-      sky: CLOUDY_SKY,
-      clouds: [0.3, 0.6],
-      fog: 0,
-      minWind: 0,
-    }))
-    .with('MOSTLY_CLOUDY', () => ({
-      ...DRY,
-      sky: CLOUDY_SKY,
-      clouds: [0.55, 0.85],
-      fog: 0,
-      minWind: 0,
-    }))
-    .with('CLOUDY', () => ({
-      ...DRY,
-      sky: OVERCAST_SKY,
-      clouds: [0.85, 1],
-      fog: 0.1,
-      minWind: 0,
-    }))
-    .with('WINDY', () => ({
-      ...DRY,
-      sky: CLOUDY_SKY,
-      clouds: [0.3, 0.7],
-      fog: 0,
-      minWind: 0.6,
-    }))
+    .with('PARTLY_CLOUDY', () => ({ ...BASE_PROFILE, sky: CLOUDY_SKY, clouds: [0.3, 0.6] }))
+    .with('MOSTLY_CLOUDY', () => ({ ...BASE_PROFILE, sky: CLOUDY_SKY, clouds: [0.55, 0.85] }))
+    .with('CLOUDY', () => ({ ...BASE_PROFILE, sky: OVERCAST_SKY, clouds: [0.85, 1], fog: 0.1 }))
     .with('FOGGY', () => ({
-      ...DRY,
+      ...BASE_PROFILE,
       sky: { day: 'fogDay', night: 'fogNight' },
       clouds: [0.3, 0.7],
       fog: 0.85,
-      minWind: 0,
+      atmosphere: 'fogBands',
     }))
     .with('HAZY', () => ({
-      ...DRY,
+      ...BASE_PROFILE,
       sky: { day: 'hazeDay', night: 'hazeNight' },
       clouds: [0.1, 0.5],
-      fog: 0.45,
-      minWind: 0,
+      atmosphere: 'haze',
+      sun: 'diffuse',
+    }))
+    .with('WINDY', () => ({
+      ...BASE_PROFILE,
+      sky: CLOUDY_SKY,
+      clouds: [0.3, 0.7],
+      minWind: 0.6,
+      atmosphere: 'gusts',
     }))
     .with('DRIZZLE', () => ({
+      ...BASE_PROFILE,
       sky: RAIN_SKY,
-      precipitation: 'rain',
-      minDensity: 0.15,
+      precipitation: 'drizzle',
+      minDensity: 0.7,
       speed: 0.45,
       clouds: [0.7, 1],
       fog: 0.15,
-      minWind: 0,
-      lightning: false,
+      atmosphere: 'mistyGlass',
     }))
     .with('RAIN', () => ({
+      ...BASE_PROFILE,
       sky: RAIN_SKY,
       precipitation: 'rain',
       minDensity: 0.4,
       speed: 0.7,
       clouds: [0.8, 1],
       fog: 0.1,
-      minWind: 0,
-      lightning: false,
     }))
     .with('HEAVY_RAIN', () => ({
+      ...BASE_PROFILE,
       sky: RAIN_SKY,
       precipitation: 'rain',
       minDensity: 0.8,
@@ -187,9 +214,9 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       clouds: [0.9, 1],
       fog: 0.25,
       minWind: 0.2,
-      lightning: false,
     }))
     .with('THUNDERSTORMS', () => ({
+      ...BASE_PROFILE,
       sky: STORM_SKY,
       precipitation: 'rain',
       minDensity: 0.7,
@@ -200,36 +227,35 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       lightning: true,
     }))
     .with('SLEET', () => ({
+      ...BASE_PROFILE,
       sky: RAIN_SKY,
       precipitation: 'sleet',
       minDensity: 0.4,
       speed: 0.55,
       clouds: [0.8, 1],
       fog: 0.15,
-      minWind: 0,
-      lightning: false,
     }))
     .with('SNOW', () => ({
+      ...BASE_PROFILE,
       sky: SNOW_SKY,
       precipitation: 'snow',
       minDensity: 0.35,
       speed: 0.25,
       clouds: [0.7, 1],
       fog: 0.1,
-      minWind: 0,
-      lightning: false,
     }))
     .with('HEAVY_SNOW', () => ({
+      ...BASE_PROFILE,
       sky: SNOW_SKY,
       precipitation: 'snow',
       minDensity: 0.8,
       speed: 0.35,
       clouds: [0.9, 1],
       fog: 0.3,
-      minWind: 0.2,
-      lightning: false,
+      minWind: 0.35,
     }))
     .with('HAIL', () => ({
+      ...BASE_PROFILE,
       sky: STORM_SKY,
       precipitation: 'hail',
       minDensity: 0.5,
@@ -237,9 +263,33 @@ function getConditionProfile(condition: WeatherCondition): ConditionProfile {
       clouds: [0.85, 1],
       fog: 0.1,
       minWind: 0.2,
-      lightning: false,
+    }))
+    .with('HOT', () => ({
+      ...BASE_PROFILE,
+      sky: { day: 'hotDay', night: 'hotNight' },
+      clouds: [0, 0.15],
+      atmosphere: 'heat',
+      sun: 'blazing',
+    }))
+    .with('FRIGID', () => ({
+      ...BASE_PROFILE,
+      sky: { day: 'frigidDay', night: 'frigidNight' },
+      clouds: [0, 0.15],
+      atmosphere: 'frost',
     }))
     .exhaustive();
+}
+
+/** 기준 삭에서 지난 날수를 삭망월로 나눈 나머지로 그 시각의 위상(0~1)을 구한다. */
+function getMoonPhase(date: Date): number {
+  const days = (date.getTime() - KNOWN_NEW_MOON_MS) / DAY_MS;
+  const cycles = days / SYNODIC_MONTH_DAYS;
+  return cycles - Math.floor(cycles);
+}
+
+/** 위상에서 밝게 보이는 면적 비율(0~1) */
+function getMoonIllumination(phase: number): number {
+  return (1 - Math.cos(phase * Math.PI * 2)) / 2;
 }
 
 function clampUnit(value: number): number {
@@ -272,12 +322,21 @@ function precipitationAngle(wind: number): number {
   return clampUnit(wind) * WEATHER_SCENE_MAX_PRECIPITATION_ANGLE;
 }
 
-function showsSun(scene: Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'>): boolean {
-  return scene.isDaylight && scene.clouds < SUN_MAX_CLOUDS && scene.fog < CELESTIAL_MAX_FOG;
+type OpenSky = Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'> & { isDry: boolean };
+
+function isSkyVisible(sky: OpenSky, maxClouds: number): boolean {
+  return sky.isDry && sky.clouds < maxClouds && sky.fog < CELESTIAL_MAX_FOG;
 }
 
-function showsStars(scene: Pick<WeatherScene, 'isDaylight' | 'clouds' | 'fog'>): boolean {
-  return !scene.isDaylight && scene.clouds < STARS_MAX_CLOUDS && scene.fog < CELESTIAL_MAX_FOG;
+/** 뿌연 하늘은 구름과 상관없이 흐릿한 해가 비친다. */
+function resolveSun(sky: OpenSky, sun: VisibleSun): WeatherSceneSun {
+  if (!sky.isDaylight) {
+    return 'hidden';
+  }
+  if (sun === 'diffuse' || isSkyVisible(sky, SUN_MAX_CLOUDS)) {
+    return sun;
+  }
+  return 'hidden';
 }
 
 function toWeatherScene(input: WeatherSceneInput): WeatherScene {
@@ -292,7 +351,10 @@ function toWeatherScene(input: WeatherSceneInput): WeatherScene {
     clouds: normalizeCloudCover(input.cloudCover, profile.clouds),
     fog: profile.fog,
   };
-  const canSeeSky = isDry && !profile.lightning;
+  const sky: OpenSky = { ...atmosphere, isDry: isDry && !profile.lightning };
+  const isNight = !input.isDaylight;
+  const sun = resolveSun(sky, profile.sun);
+  const moon = isNight && isSkyVisible(sky, MOON_MAX_CLOUDS);
 
   return {
     sky: input.isDaylight ? profile.sky.day : profile.sky.night,
@@ -304,12 +366,20 @@ function toWeatherScene(input: WeatherSceneInput): WeatherScene {
       angle: isDry ? 0 : precipitationAngle(wind),
     },
     wind,
+    atmosphere: profile.atmosphere,
     lightning: profile.lightning,
-    sun: canSeeSky && showsSun(atmosphere),
-    stars: canSeeSky && showsStars(atmosphere),
+    sun,
+    lensFlare: profile.lensFlare && sun !== 'hidden',
+    moon,
+    moonPhase: getMoonPhase(input.observedAt),
+    isSouthernHemisphere: input.latitude < 0,
+    stars: isNight && isSkyVisible(sky, STARS_MAX_CLOUDS),
+    shootingStars: moon && isSkyVisible(sky, SHOOTING_STARS_MAX_CLOUDS),
   };
 }
 
 export const WeatherScenePolicy = {
   fromInput: toWeatherScene,
+  moonPhase: getMoonPhase,
+  moonIllumination: getMoonIllumination,
 } as const;

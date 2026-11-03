@@ -307,9 +307,34 @@ function toDisplayTemperature(celsius: number, unit: TemperatureUnit): number {
   return Math.round(value) + 0;
 }
 
-function toSceneInput(current: CurrentWeather): WeatherSceneInput {
-  const { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed } = current;
-  return { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed };
+const MINUS_SIGN = '−';
+
+/** 큰 기온은 영하 기호와 숫자를 따로 그린다. */
+export type TemperatureReading = { isBelowZero: boolean; magnitude: number };
+
+function toTemperatureReading(displayValue: number): TemperatureReading {
+  return { isBelowZero: displayValue < 0, magnitude: Math.abs(displayValue) };
+}
+
+/** 영하는 하이픈 대신 마이너스 기호(−)로 써서 숫자 폭과 읽기를 맞춘다. */
+function formatDegrees(displayValue: number): string {
+  const { isBelowZero, magnitude } = toTemperatureReading(displayValue);
+  return `${isBelowZero ? MINUS_SIGN : ''}${magnitude}°`;
+}
+
+function toSceneInput(
+  report: Pick<WeatherReport, 'current' | 'location' | 'fetchedAt'>,
+): WeatherSceneInput {
+  const { condition, isDaylight, precipitationIntensity, cloudCover, windSpeed } = report.current;
+  return {
+    condition,
+    isDaylight,
+    precipitationIntensity,
+    cloudCover,
+    windSpeed,
+    observedAt: report.fetchedAt,
+    latitude: report.location.latitude,
+  };
 }
 
 export interface TemperatureBar {
@@ -435,5 +460,7 @@ export const WeatherReportPolicy = {
   airQualityGrade: getAirQualityGrade,
   uvLevel: getUvLevel,
   displayTemperature: toDisplayTemperature,
+  temperatureReading: toTemperatureReading,
+  degrees: formatDegrees,
   sceneInput: toSceneInput,
 } as const;

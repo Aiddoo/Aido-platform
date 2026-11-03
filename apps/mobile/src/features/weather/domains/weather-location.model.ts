@@ -15,6 +15,10 @@ export type Coordinates = z.infer<typeof coordinatesSchema>;
 const revisionSchema = z.int().nonnegative();
 export const SAVED_LOCATION_REVISION = 0;
 
+/** 기기 위치에서 읽은 지명. 큰 제목은 도시, 작은 위치 줄은 동네다. */
+const placeNameSchema = z.object({ city: z.string(), district: z.string().nullable() });
+export type PlaceName = z.infer<typeof placeNameSchema>;
+
 const locationReadingSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('needsPermission') }),
   z.object({ status: z.literal('denied') }),
@@ -22,7 +26,7 @@ const locationReadingSchema = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('located'),
     registered: registeredLocationSchema,
-    placeName: z.string().nullable(),
+    place: placeNameSchema.nullable(),
     countryCode: z.string().nullable(),
     revision: revisionSchema,
   }),
@@ -65,7 +69,7 @@ export type WeatherLocationStatus =
   | { status: 'needsPermission' }
   | { status: 'denied' }
   | { status: 'unavailable' }
-  | { status: 'ready'; placeName: string | null; countryCode: string | null };
+  | { status: 'ready'; place: PlaceName | null; countryCode: string | null };
 
 /** 권한은 있지만 위치를 읽지 못했거나 등록 요청이 실패하면 unavailable이다. */
 function resolveLocationStatus(
@@ -79,9 +83,9 @@ function resolveLocationStatus(
     .with({ status: 'needsPermission' }, () => ({ status: 'needsPermission' as const }))
     .with({ status: 'denied' }, () => ({ status: 'denied' as const }))
     .with({ status: 'unavailable' }, () => ({ status: 'unavailable' as const }))
-    .with({ status: 'located' }, ({ placeName, countryCode }) => ({
+    .with({ status: 'located' }, ({ place, countryCode }) => ({
       status: 'ready' as const,
-      placeName,
+      place,
       countryCode,
     }))
     .exhaustive();

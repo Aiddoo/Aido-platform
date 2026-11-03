@@ -21,7 +21,7 @@
     "heavySnow": "Heavy snow",
     "hail": "Hail",
     "hot": "Hot",
-    "frigid": "Frigid"
+    "frigid": "Freezing"
   },
   "precipitationSubject": {
     "rain": "Rain",
@@ -33,9 +33,13 @@
   "localTime": "{{time}} local time",
   "hero": {
     "currentLocation": "Current location",
-    "currentLocationInCountry": "Current location · {{country}}",
+    "currentLocationIn": "Current location · {{area}}",
     "highLow": "H:{{high}} L:{{low}}",
-    "summary": "{{place}}, {{temperature}} degrees now, {{condition}}",
+    "summary": "{{place}}, {{temperature}} now, {{condition}}",
+    "temperature_one": "{{count}} degree",
+    "temperature_other": "{{count}} degrees",
+    "temperatureBelowZero_one": "minus {{count}} degree",
+    "temperatureBelowZero_other": "minus {{count}} degrees",
     "restOfDay": "Rest of the day: {{condition}} · {{chance}}% chance of precipitation",
     "stale": "Data from {{relative}}"
   },

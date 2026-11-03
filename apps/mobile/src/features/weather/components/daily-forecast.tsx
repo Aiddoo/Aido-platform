@@ -39,7 +39,6 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
-import { formatDegrees } from '../utils/format-degrees';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
 
@@ -234,7 +233,7 @@ DailyForecast.Item = memo(function Item({
           className="text-right text-on-sky/50 tabular-nums"
           style={{ width: width('low') }}
         >
-          {formatDegrees(low)}
+          {WeatherReportPolicy.degrees(low)}
         </Text>
         <DailyForecast.TemperatureBar day={day} bar={bar} nowPosition={nowPosition} />
         <Text
@@ -245,7 +244,7 @@ DailyForecast.Item = memo(function Item({
           className="text-right tabular-nums"
           style={{ width: width('high') }}
         >
-          {formatDegrees(high)}
+          {WeatherReportPolicy.degrees(high)}
         </Text>
       </PressableFeedback>
       {isExpanded && <DailyForecast.Details day={day} format={format} />}
@@ -307,7 +306,7 @@ DailyForecast.Details = function Details({
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
   const degrees = (celsius: number) =>
-    formatDegrees(WeatherReportPolicy.displayTemperature(celsius, unit));
+    WeatherReportPolicy.degrees(WeatherReportPolicy.displayTemperature(celsius, unit));
   const clock = (date: Date) => formatClockTime(date, format.timeFormat, format.dateFormat);
   const hour = (value: number) => formatHourLabel(value, format.timeFormat, format.dateFormat);
   const wind = day.windSpeedMax ?? day.windGustMax;

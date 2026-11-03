@@ -1,5 +1,6 @@
-import { Atlas, rect, Skia, type SkImage, useRSXformBuffer } from '@shopify/react-native-skia';
-import { Extrapolation, interpolate, type SharedValue } from 'react-native-reanimated';
+import { Atlas, Group, Skia, useRSXformBuffer } from '@shopify/react-native-skia';
+import { range } from 'es-toolkit';
+import type { SharedValue } from 'react-native-reanimated';
 
 import {
   createParticleSeeds,
@@ -8,101 +9,163 @@ import {
   placeSprite,
   wrap,
 } from './weather-scene-particles';
-import {
-  PARTICLE_SAMPLING,
-  PARTICLE_SPRITES,
-  PARTICLE_TEXTURE_SCALE,
-} from './weather-scene-textures';
+import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
 
 const SNOW_SEED = 0x5a0f;
-const EDGE_MARGIN = 24;
-const FALL_SPEED = [60, 160];
-const MAX_WIND_DRIFT = 60;
-const SWAY_AMPLITUDE = [8, 18];
-const SWAY_FREQUENCY = [0.7, 1.3];
-/** 이 깊이보다 가까운 눈송이는 초점이 나간 큰 송이로 그린다. */
-const BOKEH_DEPTH = 0.62;
-const FAR = { depth: [0, BOKEH_DEPTH], scale: [0.3, 0.6], alpha: [0.5, 0.85] };
-const NEAR = { depth: [BOKEH_DEPTH, 1], scale: [0.6, 1.1], alpha: [0.32, 0.55] };
-const UNIT = [0, 1];
+const EDGE_MARGIN = 30;
+/** 깊이는 0(먼 층)~1(가까운 층). 먼 송이가 더 많도록 치우친다. */
+const DEPTH_BIAS = 1.6;
+const RADIUS = { base: 0.8, depth: 3.6 } as const;
+const FALL = { base: 24, speed: 60, near: 0.35 } as const;
+const SWAY_AMPLITUDE = [6, 22] as const;
+const SWAY_DEPTH_BASE = 0.4;
+const SWAY_FREQUENCY = [0.4, 1.1] as const;
+const ALPHA = { base: 0.35, depth: 0.6 } as const;
+const WIND_DRIFT = 60;
+const DOT_SIZE_RATIO = 3.6;
+/** 이 깊이보다 가까운 송이는 결정 모양이 보이고 천천히 돈다. */
+const CRYSTAL_DEPTH = 0.75;
+const CRYSTAL_SIZE_RATIO = 3.2;
+const CRYSTAL_ALPHA = 0.4;
+const CRYSTAL_SPIN = 0.6;
 
 type SnowLayerProps = {
   density: number;
   speed: number;
+  angle: number;
   wind: number;
   isDaylight: boolean;
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-  texture: SharedValue<SkImage | null>;
 };
 
-/** 멀리 있는 눈송이는 작고 또렷하고 느리게, 가까운 송이는 크고 흐리게 그려 시차를 만든다. */
+type Flake = {
+  x: number;
+  y: number;
+  depth: number;
+  radius: number;
+  phase: number;
+  swayAmplitude: number;
+  swayFrequency: number;
+};
+
+function createFlakes(count: number): Flake[] {
+  const seeds = createParticleSeeds(count, SNOW_SEED);
+  const [minAmplitude, maxAmplitude] = SWAY_AMPLITUDE;
+  const [minFrequency, maxFrequency] = SWAY_FREQUENCY;
+  return range(count).map((index) => {
+    const base = index * PARTICLE_SEED_STRIDE;
+    const depth = (seeds[base + 3] ?? 0) ** DEPTH_BIAS;
+    const sway = seeds[base + 2] ?? 0;
+    return {
+      x: seeds[base] ?? 0,
+      y: seeds[base + 1] ?? 0,
+      depth,
+      radius: RADIUS.base + depth * RADIUS.depth,
+      phase: sway * Math.PI * 2,
+      swayAmplitude:
+        (minAmplitude + sway * (maxAmplitude - minAmplitude)) * (SWAY_DEPTH_BASE + depth),
+      swayFrequency: minFrequency + (1 - sway) * (maxFrequency - minFrequency),
+    };
+  });
+}
+
+/** 멀고 가까운 깊이마다 크기·속도·투명도가 다르고, 가까운 송이는 결정 모양으로 돌며 흔들린다. 바람이 세면 비스듬히 몰아친다. */
 export function SnowLayer({
   density,
   speed,
+  angle,
   wind,
   isDaylight,
   width,
   height,
   isLowEndDevice,
   time,
-  texture,
 }: SnowLayerProps) {
+  const texture = useParticleTexture();
   const count = getParticleCount('snow', density, { width, height }, isLowEndDevice);
-  const seeds = createParticleSeeds(count, SNOW_SEED);
-  const depthOf = (index: number) => seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0;
-  const sprites = Array.from({ length: count }, (_, index) => {
-    const sprite =
-      depthOf(index) < BOKEH_DEPTH ? PARTICLE_SPRITES.flake : PARTICLE_SPRITES.flakeSoft;
-    return rect(sprite.x, sprite.y, sprite.width, sprite.height);
-  });
+  const flakes = createFlakes(count);
+  const crystals = flakes.flatMap((flake, index) => (flake.depth > CRYSTAL_DEPTH ? [index] : []));
   const rgb = isDaylight ? '255,255,255' : '226,234,255';
-  const colors = Array.from({ length: count }, (_, index) => {
-    const depth = depthOf(index);
-    const tier = depth < BOKEH_DEPTH ? FAR : NEAR;
-    const alpha = interpolate(depth, tier.depth, tier.alpha, Extrapolation.CLAMP);
-    return Skia.Color(`rgba(${rgb},${alpha})`);
-  });
-
-  const fallSpeed = interpolate(speed, UNIT, FALL_SPEED, Extrapolation.CLAMP);
-  const drift = wind * MAX_WIND_DRIFT;
+  const { dot, crystal } = PARTICLE_SPRITES;
+  const dotSprites = flakes.map(() => Skia.XYWHRect(dot.x, dot.y, dot.width, dot.height));
+  const dotColors = flakes.map((flake) =>
+    Skia.Color(`rgba(${rgb},${ALPHA.base + ALPHA.depth * flake.depth})`),
+  );
+  const crystalSprites = crystals.map(() =>
+    Skia.XYWHRect(crystal.x, crystal.y, crystal.width, crystal.height),
+  );
+  const crystalColors = crystals.map((index) =>
+    Skia.Color(`rgba(${rgb},${CRYSTAL_ALPHA * (flakes[index]?.depth ?? 0)})`),
+  );
   const travelHeight = height + EDGE_MARGIN * 2;
   const travelWidth = width + EDGE_MARGIN * 2;
-  const farAnchor = PARTICLE_SPRITES.flake.width / 2;
-  const nearAnchor = PARTICLE_SPRITES.flakeSoft.width / 2;
+  const slope = Math.tan(angle);
+  const dotAnchor = { x: dot.width / 2, y: dot.height / 2 };
+  const crystalAnchor = { x: crystal.width / 2, y: crystal.height / 2 };
 
-  const transforms = useRSXformBuffer(count, (transform, index) => {
+  const positionOf = (flake: Flake, t: number) => {
     'worklet';
-    const base = index * PARTICLE_SEED_STRIDE;
-    const seedX = seeds[base] ?? 0;
-    const seedY = seeds[base + 1] ?? 0;
-    const sway = seeds[base + 2] ?? 0;
-    const depth = seeds[base + 3] ?? 0;
-    const isNear = depth >= BOKEH_DEPTH;
-    const tier = isNear ? NEAR : FAR;
-    const scale =
-      interpolate(depth, tier.depth, tier.scale, Extrapolation.CLAMP) / PARTICLE_TEXTURE_SCALE;
-    const anchor = isNear ? nearAnchor : farAnchor;
-    const parallax = 0.45 + 0.55 * depth;
+    const fall = (FALL.base + FALL.speed * speed) * (FALL.near + flake.depth);
+    const drift = fall * slope + wind * WIND_DRIFT * flake.depth;
+    const sway =
+      (Math.sin(t * flake.swayFrequency + flake.phase) * flake.swayAmplitude) / flake.swayFrequency;
+    return {
+      x: wrap(flake.x * travelWidth + t * drift + sway, travelWidth) - EDGE_MARGIN,
+      y: wrap(flake.y * travelHeight + t * fall, travelHeight) - EDGE_MARGIN,
+    };
+  };
+
+  const dotTransforms = useRSXformBuffer(count, (transform, index) => {
+    'worklet';
+    const flake = flakes[index];
+    if (flake == null) {
+      return;
+    }
+    const { x, y } = positionOf(flake, time.get());
+    placeSprite(transform, (flake.radius * DOT_SIZE_RATIO) / dot.width, 0, dotAnchor, x, y);
+  });
+
+  const crystalTransforms = useRSXformBuffer(crystals.length, (transform, slot) => {
+    'worklet';
+    const flake = flakes[crystals[slot] ?? 0];
+    if (flake == null) {
+      return;
+    }
     const t = time.get();
-    const swayOffset =
-      Math.sin(t * interpolate(sway, UNIT, SWAY_FREQUENCY) + seedX * 40) *
-      interpolate(depth, UNIT, SWAY_AMPLITUDE);
-    const x = wrap(seedX * travelWidth + t * drift * parallax + swayOffset, travelWidth);
-    const y = wrap(seedY * travelHeight + t * fallSpeed * parallax, travelHeight);
-    placeSprite(transform, scale, 0, { x: anchor, y: anchor }, x - EDGE_MARGIN, y - EDGE_MARGIN);
+    const { x, y } = positionOf(flake, t);
+    const rotation = flake.phase + (flake.swayFrequency - 0.75) * CRYSTAL_SPIN * 2 * t;
+    const scale = (flake.radius * CRYSTAL_SIZE_RATIO) / crystal.width;
+    placeSprite(
+      transform,
+      scale * Math.cos(rotation),
+      scale * Math.sin(rotation),
+      crystalAnchor,
+      x,
+      y,
+    );
   });
 
   return (
-    <Atlas
-      image={texture}
-      sprites={sprites}
-      transforms={transforms}
-      colors={colors}
-      colorBlendMode="modulate"
-      sampling={PARTICLE_SAMPLING}
-    />
+    <Group>
+      <Atlas
+        image={texture}
+        sprites={dotSprites}
+        transforms={dotTransforms}
+        colors={dotColors}
+        colorBlendMode="modulate"
+        sampling={PARTICLE_SAMPLING}
+      />
+      <Atlas
+        image={texture}
+        sprites={crystalSprites}
+        transforms={crystalTransforms}
+        colors={crystalColors}
+        colorBlendMode="modulate"
+        sampling={PARTICLE_SAMPLING}
+      />
+    </Group>
   );
 }
