@@ -29,6 +29,7 @@ const ts = loadTypeScript();
 const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
 const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/components`;
 const TODO_COMMENT_TEST_ROOTS = [
+  `${TODO_COMMENT_ROOT}/constants/`,
   `${TODO_COMMENT_ROOT}/domains/`,
   `${TODO_COMMENT_ROOT}/apis/`,
   `${TODO_COMMENT_ROOT}/utils/navigation/`,
@@ -44,15 +45,15 @@ const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   'react-native',
 ];
 const TODO_ROUTE_ROOT = 'apps/mobile/app/(app)/todo/[todoId]';
-// 댓글은 개요(`/todo/[todoId]`)와 대화(`comments/[commentId].tsx`) 두 단계만 Stack에 쌓는다.
-// 대화 안의 focus·작성기는 같은 화면의 search로 바꾸므로 그 아래 route나 전용 layout을 두지 않는다.
+// 댓글은 할 일 상세(`/todo/[todoId]`) 한 화면이다. `comments/[commentId].tsx`는 1.14.0 이하 링크를 옮기는 Redirect뿐이다.
+// 답글 펼침·작성기는 같은 화면 안에서 바꾸므로 그 아래 route나 전용 layout을 두지 않는다.
 const FORBIDDEN_ROUTE_PATHS = [
   'apps/mobile/app/(app)/todo/[todoId]/_layout.tsx',
   'apps/mobile/app/(app)/todo/[todoId]/comment',
   'apps/mobile/app/(app)/todo/[todoId]/comments/_layout.tsx',
   'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]',
 ];
-// 대화 위에 뜨는 신고 시트는 댓글 단계가 아니라 moderation sheet route라 대화 아래에 둔다.
+// 댓글 위에 뜨는 신고 시트는 댓글 단계가 아니라 moderation sheet route라 예전 경로 아래에 둔다.
 const ALLOWED_TODO_COMMENT_ROUTE_FILES = new Set([
   'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]/report.tsx',
 ]);
@@ -442,7 +443,7 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
       relative(repositoryRoot, sourceFile.fileName) !== TODO_COMMENT_NAVIGATION_OWNER
     ) {
       errors.push(
-        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 화면은 직접 push하지 않습니다. 개요에서 대화로 가는 한 단계 push는 use-todo-comment-route의 전이 resolver만 소유합니다.`,
+        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 화면은 직접 push하지 않습니다. 댓글 위치는 use-todo-comment-route가 search로만 바꿉니다.`,
       );
     }
 
@@ -568,7 +569,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
         );
     if (hasForbiddenRoute) {
       errors.push(
-        `${forbiddenPath} 댓글은 개요와 대화 두 화면에서 이어집니다. 댓글마다 Stack route를 만들지 마세요.`,
+        `${forbiddenPath} 댓글은 할 일 상세 한 화면에서 이어집니다. 댓글마다 Stack route를 만들지 마세요.`,
       );
     }
   }

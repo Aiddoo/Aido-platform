@@ -1,19 +1,21 @@
 import type { InfiniteData } from '@tanstack/react-query';
+import { compact } from 'es-toolkit';
 
-import type {
-  TodoComment,
-  TodoCommentOverviewItem,
-  TodoCommentOverviewPage,
-  TodoConversationItem,
-  TodoConversationPage,
+import {
+  type TodoComment,
+  TodoCommentPolicy,
+  type TodoCommentReplyPage,
+  type TodoCommentThread,
+  type TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
-import type { TodoCommentCursorPageParam } from './todo-comment-cursor-page';
 
-export type OverviewPages = InfiniteData<TodoCommentOverviewPage, TodoCommentCursorPageParam>;
-export type ConversationPages = InfiniteData<TodoConversationPage, TodoCommentCursorPageParam>;
+/** null은 첫 페이지(또는 anchor 페이지), 문자열은 서버가 방향을 담아 준 cursor다 */
+export type TodoCommentPageParam = string | null;
+export type TodoCommentThreadPages = InfiniteData<TodoCommentThreadPage, TodoCommentPageParam>;
+export type TodoCommentReplyPages = InfiniteData<TodoCommentReplyPage, TodoCommentPageParam>;
 export type TodoCommentTransform = (comment: TodoComment) => TodoComment;
 
-function mapPreservingIdentity<T>(items: T[], transform: (item: T) => T): T[] {
+function mapPreservingIdentity<T>(items: readonly T[], transform: (item: T) => T): readonly T[] {
   let changed = false;
   const nextItems = items.map((item) => {
     const nextItem = transform(item);
@@ -24,123 +26,150 @@ function mapPreservingIdentity<T>(items: T[], transform: (item: T) => T): T[] {
   return changed ? nextItems : items;
 }
 
-function patchConversationItem(
-  item: TodoConversationItem,
-  commentId: string,
-  transform: TodoCommentTransform,
-): TodoConversationItem {
-  if (item.comment.id !== commentId) {
-    return item;
-  }
-
-  const comment = transform(item.comment);
-  return comment === item.comment ? item : { ...item, comment };
+function mapPages<TPage extends { items: readonly unknown[] }>(
+  data: InfiniteData<TPage, TodoCommentPageParam>,
+  transformPage: (page: TPage) => TPage,
+): InfiniteData<TPage, TodoCommentPageParam> {
+  const pages = mapPreservingIdentity(data.pages, transformPage);
+  return pages === data.pages ? data : { ...data, pages: [...pages] };
 }
 
-function patchOverviewItem(
-  item: TodoCommentOverviewItem,
+function patchComment(comment: TodoComment, commentId: string, transform: TodoCommentTransform) {
+  return comment.id === commentId ? transform(comment) : comment;
+}
+
+function patchThread(
+  thread: TodoCommentThread,
   commentId: string,
   transform: TodoCommentTransform,
-): TodoCommentOverviewItem {
-  const comment = item.comment.id === commentId ? transform(item.comment) : item.comment;
+): TodoCommentThread {
+  const comment = patchComment(thread.comment, commentId, transform);
   const previewReply =
-    item.previewReply?.id === commentId ? transform(item.previewReply) : item.previewReply;
+    thread.previewReply == null ? null : patchComment(thread.previewReply, commentId, transform);
 
-  return comment === item.comment && previewReply === item.previewReply
-    ? item
-    : { ...item, comment, previewReply };
+  return comment === thread.comment && previewReply === thread.previewReply
+    ? thread
+    : { ...thread, comment, previewReply };
 }
 
-export function findTodoCommentInConversationPages(
-  cachedPages: ConversationPages | undefined,
+export function patchCommentInThreadPages(
+  data: TodoCommentThreadPages | undefined,
+  commentId: string,
+  transform: TodoCommentTransform,
+): TodoCommentThreadPages | undefined {
+  if (data == null) {
+    return data;
+  }
+
+  return mapPages(data, (page) => {
+    const items = mapPreservingIdentity(page.items, (thread) =>
+      patchThread(thread, commentId, transform),
+    );
+    return items === page.items ? page : { ...page, items: [...items] };
+  });
+}
+
+export function patchCommentInReplyPages(
+  data: TodoCommentReplyPages | undefined,
+  commentId: string,
+  transform: TodoCommentTransform,
+): TodoCommentReplyPages | undefined {
+  if (data == null) {
+    return data;
+  }
+
+  return mapPages(data, (page) => {
+    const items = mapPreservingIdentity(page.items, (reply) =>
+      patchComment(reply, commentId, transform),
+    );
+    return items === page.items ? page : { ...page, items: [...items] };
+  });
+}
+
+export function findCommentInThreadPages(
+  data: TodoCommentThreadPages | undefined,
   commentId: string,
 ): TodoComment | undefined {
-  if (cachedPages == null) {
-    return undefined;
-  }
-
-  for (const page of cachedPages.pages) {
-    const conversationItem = page.items.find(({ comment }) => comment.id === commentId);
-    if (conversationItem != null) {
-      return conversationItem.comment;
-    }
-
-    const ancestor = page.focus?.precedingAncestors.find(({ comment }) => comment.id === commentId);
-    if (ancestor != null) {
-      return ancestor.comment;
+  for (const thread of data?.pages.flatMap((page) => page.items) ?? []) {
+    const comment = TodoCommentPolicy.findCommentInThread(thread, commentId);
+    if (comment != null) {
+      return comment;
     }
   }
-
   return undefined;
 }
 
-export function findTodoCommentInOverviewPages(
-  cachedPages: OverviewPages | undefined,
+export function findCommentInReplyPages(
+  data: TodoCommentReplyPages | undefined,
   commentId: string,
 ): TodoComment | undefined {
-  if (cachedPages == null) {
-    return undefined;
-  }
-
-  for (const page of cachedPages.pages) {
-    for (const item of page.items) {
-      if (item.comment.id === commentId) {
-        return item.comment;
-      }
-      if (item.previewReply?.id === commentId) {
-        return item.previewReply;
-      }
-    }
-  }
-
-  return undefined;
+  return data?.pages.flatMap((page) => page.items).find((reply) => reply.id === commentId);
 }
 
-export function patchTodoCommentConversationPages(
-  cachedPages: ConversationPages | undefined,
-  commentId: string,
-  transform: TodoCommentTransform,
-): ConversationPages | undefined {
-  if (cachedPages == null) {
-    return undefined;
+export function removeCommentFromThreadPages(
+  data: TodoCommentThreadPages | undefined,
+  removed: TodoComment,
+): TodoCommentThreadPages | undefined {
+  if (data == null) {
+    return data;
   }
 
-  const pages = mapPreservingIdentity(cachedPages.pages, (page) => {
-    const items = mapPreservingIdentity(page.items, (item) =>
-      patchConversationItem(item, commentId, transform),
+  return mapPages(data, (page) => {
+    const items = compact(
+      page.items.map((thread) => TodoCommentPolicy.withCommentRemoved(thread, removed)),
     );
-    let focus = page.focus;
-
-    if (page.focus != null) {
-      const precedingAncestors = mapPreservingIdentity(page.focus.precedingAncestors, (item) =>
-        patchConversationItem(item, commentId, transform),
-      );
-      if (precedingAncestors !== page.focus.precedingAncestors) {
-        focus = { ...page.focus, precedingAncestors };
-      }
-    }
-
-    return items === page.items && focus === page.focus ? page : { ...page, items, focus };
+    const isUnchanged =
+      items.length === page.items.length &&
+      items.every((thread, index) => thread === page.items[index]);
+    return isUnchanged ? page : { ...page, items };
   });
-
-  return pages === cachedPages.pages ? cachedPages : { ...cachedPages, pages };
 }
 
-export function patchTodoCommentOverviewPages(
-  cachedPages: OverviewPages | undefined,
+export function removeCommentFromReplyPages(
+  data: TodoCommentReplyPages | undefined,
   commentId: string,
-  transform: TodoCommentTransform,
-): OverviewPages | undefined {
-  if (cachedPages == null) {
-    return undefined;
+): TodoCommentReplyPages | undefined {
+  if (data == null) {
+    return data;
   }
 
-  const pages = mapPreservingIdentity(cachedPages.pages, (page) => {
-    const items = mapPreservingIdentity(page.items, (item) =>
-      patchOverviewItem(item, commentId, transform),
-    );
-    return items === page.items ? page : { ...page, items };
+  return mapPages(data, (page) => {
+    const items = TodoCommentPolicy.withRepliesRemoved(page.items, commentId);
+    return items.length === page.items.length ? page : { ...page, items };
   });
+}
 
-  return pages === cachedPages.pages ? cachedPages : { ...cachedPages, pages };
+export function addRepliesToThreadPages(
+  data: TodoCommentThreadPages | undefined,
+  threadCommentId: string,
+  replies: readonly TodoComment[],
+): TodoCommentThreadPages | undefined {
+  if (data == null) {
+    return data;
+  }
+
+  return mapPages(data, (page) => {
+    const items = mapPreservingIdentity(page.items, (thread) =>
+      thread.comment.id === threadCommentId
+        ? TodoCommentPolicy.withReplyAdded(thread, replies)
+        : thread,
+    );
+    return items === page.items ? page : { ...page, items: [...items] };
+  });
+}
+
+/** 다음 페이지가 남았으면 그 페이지가 순서대로 가져온다. 끝까지 읽은 목록만 새 답글을 끝에 붙인다 */
+export function appendRepliesToReplyPages(
+  data: TodoCommentReplyPages | undefined,
+  replies: readonly TodoComment[],
+): TodoCommentReplyPages | undefined {
+  const lastPage = data?.pages.at(-1);
+  if (data == null || lastPage == null || lastPage.pagination.hasNext) {
+    return data;
+  }
+
+  return {
+    ...data,
+    pages: [...data.pages.slice(0, -1), { ...lastPage, items: [...lastPage.items, ...replies] }],
+  };
 }

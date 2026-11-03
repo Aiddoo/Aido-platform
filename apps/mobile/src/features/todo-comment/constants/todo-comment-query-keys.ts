@@ -1,31 +1,28 @@
 import type { TodoCommentSort } from '@aido/api';
 
-export const TODO_COMMENT_QUERY_TIMING = {
-  latestStaleTime: 30_000,
-  popularStaleTime: 10_000,
-  gcTime: 30 * 60_000,
-} as const;
-
 export const TODO_COMMENT_QUERY_KEYS = {
-  root: ['todo-comment'] as const,
-  all: ({ todoId }: { todoId: number }) => [...TODO_COMMENT_QUERY_KEYS.root, { todoId }] as const,
-  overviews: ({ todoId }: { todoId: number }) =>
-    [...TODO_COMMENT_QUERY_KEYS.all({ todoId }), 'overview'] as const,
-  overview: ({ todoId, sort }: { todoId: number; sort: TodoCommentSort }) =>
-    [...TODO_COMMENT_QUERY_KEYS.overviews({ todoId }), { sort }] as const,
-  conversations: ({ todoId }: { todoId: number }) =>
-    [...TODO_COMMENT_QUERY_KEYS.all({ todoId }), 'conversation'] as const,
-  conversation: ({
+  all: ['todo-comment'] as const,
+  todo: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.all, todoId] as const,
+  threadLists: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.todo(todoId), 'threads'] as const,
+  threads: ({
     todoId,
     sort,
-    focusCommentId,
+    anchorCommentId,
   }: {
     todoId: number;
     sort: TodoCommentSort;
-    focusCommentId?: string;
-  }) =>
-    [
-      ...TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
-      { sort, focusCommentId: focusCommentId ?? null },
-    ] as const,
+    anchorCommentId: string | null;
+  }) => [...TODO_COMMENT_QUERY_KEYS.threadLists(todoId), sort, anchorCommentId] as const,
+  replyLists: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.todo(todoId), 'replies'] as const,
+  thread: ({ todoId, commentId }: { todoId: number; commentId: string }) =>
+    [...TODO_COMMENT_QUERY_KEYS.replyLists(todoId), commentId] as const,
+  replies: ({
+    todoId,
+    commentId,
+    aroundReplyId,
+  }: {
+    todoId: number;
+    commentId: string;
+    aroundReplyId: string | null;
+  }) => [...TODO_COMMENT_QUERY_KEYS.thread({ todoId, commentId }), aroundReplyId] as const,
 } as const;

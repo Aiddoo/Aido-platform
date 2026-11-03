@@ -1,14 +1,14 @@
 import {
   type CreateTodoCommentChainInput,
-  type GetTodoCommentOverviewQuery,
-  type GetTodoConversationQuery,
+  type GetTodoCommentRepliesQuery,
+  type GetTodoCommentThreadsQuery,
   type UpdateTodoCommentInput,
   deleteTodoCommentResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentLikeResponseSchema,
   todoCommentMutationResponseSchema,
-  todoCommentOverviewResponseSchema,
-  todoConversationResponseSchema,
+  todoCommentRepliesResponseSchema,
+  todoCommentThreadsResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -19,18 +19,19 @@ import type {
   TodoComment,
   TodoCommentChain,
   TodoCommentLikeResult,
-  TodoCommentOverviewPage,
-  TodoConversationPage,
+  TodoCommentReplyPage,
+  TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
 import {
   toDeletedCommentId,
   toMutatedComment,
   toTodoCommentChain,
   toTodoCommentLikeResult,
-  toTodoCommentOverviewPage,
-  toTodoConversationPage,
+  toTodoCommentReplyPage,
+  toTodoCommentThreadPage,
 } from './todo-comment.mapper';
 
+/** 읽기는 v2 묶음 API, 쓰기·좋아요는 이전 앱과 같은 v1 API를 쓴다 */
 export class TodoCommentService {
   readonly #httpClient: HttpClient;
 
@@ -38,12 +39,12 @@ export class TodoCommentService {
     this.#httpClient = httpClient;
   }
 
-  getOverview = async (
+  getThreads = async (
     todoId: number,
-    query: GetTodoCommentOverviewQuery,
+    query: GetTodoCommentThreadsQuery,
     signal?: AbortSignal,
-  ): Promise<Result<TodoCommentOverviewPage, ApiError>> => {
-    const response = await this.#httpClient.get(`v1/todos/${todoId}/comments/overview`, {
+  ): Promise<Result<TodoCommentThreadPage, ApiError>> => {
+    const response = await this.#httpClient.get(`v2/todos/${todoId}/comments`, {
       params: query,
       signal,
     });
@@ -52,34 +53,35 @@ export class TodoCommentService {
       return response;
     }
 
-    const parsed = todoCommentOverviewResponseSchema.safeParse(response.value);
+    const parsed = todoCommentThreadsResponseSchema.safeParse(response.value);
     if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid overview: ${parsed.error.message}`);
+      throw new ParseError(`[TodoCommentService] Invalid threads: ${parsed.error.message}`);
     }
 
-    return ok(toTodoCommentOverviewPage(parsed.data));
+    return ok(toTodoCommentThreadPage(parsed.data));
   };
 
-  getConversation = async (
+  getReplies = async (
     todoId: number,
-    query: GetTodoConversationQuery,
+    commentId: string,
+    query: GetTodoCommentRepliesQuery,
     signal?: AbortSignal,
-  ): Promise<Result<TodoConversationPage, ApiError>> => {
-    const response = await this.#httpClient.get(`v1/todos/${todoId}/conversation`, {
-      params: query,
-      signal,
-    });
+  ): Promise<Result<TodoCommentReplyPage, ApiError>> => {
+    const response = await this.#httpClient.get(
+      `v2/todos/${todoId}/comments/${commentId}/replies`,
+      { params: query, signal },
+    );
 
     if (!response.ok) {
       return response;
     }
 
-    const parsed = todoConversationResponseSchema.safeParse(response.value);
+    const parsed = todoCommentRepliesResponseSchema.safeParse(response.value);
     if (!parsed.success) {
-      throw new ParseError(`[TodoCommentService] Invalid conversation: ${parsed.error.message}`);
+      throw new ParseError(`[TodoCommentService] Invalid replies: ${parsed.error.message}`);
     }
 
-    return ok(toTodoConversationPage(parsed.data));
+    return ok(toTodoCommentReplyPage(parsed.data));
   };
 
   createCommentChain = async (
@@ -97,7 +99,7 @@ export class TodoCommentService {
       throw new ParseError(`[TodoCommentService] Invalid comment chain: ${parsed.error.message}`);
     }
 
-    return ok(toTodoCommentChain(parsed.data));
+    return ok(toTodoCommentChain(todoId, parsed.data));
   };
 
   updateComment = async (
@@ -110,7 +112,16 @@ export class TodoCommentService {
       input,
     );
 
-    return this.#toMutatedComment(response, 'updateComment');
+    if (!response.ok) {
+      return response;
+    }
+
+    const parsed = todoCommentMutationResponseSchema.safeParse(response.value);
+    if (!parsed.success) {
+      throw new ParseError(`[TodoCommentService] Invalid updated comment: ${parsed.error.message}`);
+    }
+
+    return ok(toMutatedComment(todoId, parsed.data));
   };
 
   deleteComment = async (todoId: number, commentId: string): Promise<Result<string, ApiError>> => {
@@ -148,23 +159,5 @@ export class TodoCommentService {
     }
 
     return ok(toTodoCommentLikeResult(parsed.data));
-  };
-
-  #toMutatedComment = (
-    response: Result<unknown, ApiError>,
-    operation: string,
-  ): Result<TodoComment, ApiError> => {
-    if (!response.ok) {
-      return response;
-    }
-
-    const parsed = todoCommentMutationResponseSchema.safeParse(response.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoCommentService] Invalid ${operation} response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toMutatedComment(parsed.data));
   };
 }

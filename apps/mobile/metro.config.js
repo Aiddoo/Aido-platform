@@ -22,6 +22,7 @@ config.resolver.blockList = [
   ...(config.resolver.blockList ?? []),
   /.*\.test\.[jt]sx?$/,
   /.*\.spec\.[jt]sx?$/,
+  /\/__tests__\//,
 ];
 
 const uniwindConfig = withUniwindConfig(config, {

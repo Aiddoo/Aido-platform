@@ -5,9 +5,5 @@ import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-k
 
 export function useIsTodoCommentSubmitting(): boolean {
   const { todoId } = useTodoScreenParams();
-  const activeSubmissionCount = useIsMutating({
-    mutationKey: TODO_COMMENT_MUTATION_KEYS.submissions({ todoId }),
-  });
-
-  return activeSubmissionCount > 0;
+  return useIsMutating({ mutationKey: TODO_COMMENT_MUTATION_KEYS.submissions(todoId) }) > 0;
 }

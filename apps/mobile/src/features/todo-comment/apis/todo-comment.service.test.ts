@@ -1,51 +1,56 @@
-import { TODO_COMMENT_SORT } from '@aido/api';
 import { createMockHttpClient } from '@src/shared/__tests__/create-mock-http-client';
+import { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
+import { err } from '@src/shared/errors/result';
 
 import { TodoCommentService } from './todo-comment.service';
 
 const COMMENT_ID = 'cm12345678901234567890123';
-const THREAD_ID = 'cm22345678901234567890123';
+const REPLY_ID = 'cm22345678901234567890123';
 
-function createCommentDto() {
+function createV2Dto(overrides: Record<string, unknown> = {}) {
   return {
     id: COMMENT_ID,
-    threadId: THREAD_ID,
-    parentId: null,
-    depth: 0,
+    todoId: 42,
+    threadCommentId: null,
+    replyTo: null,
     author: {
       id: 'cm32345678901234567890123',
       name: '김철수',
+      userTag: null,
       profileImage: null,
       isTodoOwner: true,
     },
     content: '함께 해요',
-    isDeleted: false,
-    isEdited: false,
     likeCount: 0,
     replyCount: 0,
-    replyTo: null,
-    viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
+    isDeleted: false,
+    isAuthorBlocked: false,
+    isEdited: false,
+    viewer: {
+      isLiked: false,
+      canEdit: true,
+      canDelete: true,
+      canReply: true,
+      canReport: false,
+      canBlock: false,
+    },
     createdAt: '2026-08-26T00:00:00.000Z',
     editedAt: null,
+    ...overrides,
   };
 }
 
-function createConversationItemDto() {
-  return {
-    comment: createCommentDto(),
-    connection: {
-      visualDepth: 0,
-      upperLaneDepths: [],
-      lowerLaneDepths: [0],
-      incomingBranch: null,
-    },
-    isFocused: true,
-  };
-}
+const PAGINATION = {
+  previousCursor: null,
+  nextCursor: null,
+  hasPrevious: false,
+  hasNext: false,
+  size: 30,
+};
 
 describe('TodoCommentService', () => {
-  test('최상위 댓글 개요는 실제 overview endpoint에서 조회한다', async () => {
+  test('묶음 목록은 v2 endpoint에서 anchor와 함께 읽고 signal을 넘긴다', async () => {
     // Given
     const httpClient = createMockHttpClient();
     const service = new TodoCommentService(httpClient);
@@ -55,163 +60,118 @@ describe('TodoCommentService', () => {
       value: {
         items: [
           {
-            comment: createCommentDto(),
+            comment: createV2Dto(),
             previewReply: null,
-            replySummary: {
-              totalCount: 2,
-              hiddenCount: 2,
-              hasMore: true,
-              participantAuthors: [createCommentDto().author],
-            },
+            replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
           },
         ],
-        pagination: {
-          previousCursor: null,
-          nextCursor: 'after',
-          hasPrevious: false,
-          hasNext: true,
-          size: 20,
-        },
+        pagination: PAGINATION,
+        anchor: null,
       },
     });
+    const query = { sort: 'LATEST' as const, size: 30, anchorCommentId: COMMENT_ID };
 
     // When
-    const result = await service.getOverview(
-      42,
-      { sort: TODO_COMMENT_SORT.LATEST, size: 20 },
-      signal,
-    );
+    const result = await service.getThreads(42, query, signal);
 
     // Then
-    expect(httpClient.get).toHaveBeenCalledWith('v1/todos/42/comments/overview', {
-      params: { sort: TODO_COMMENT_SORT.LATEST, size: 20 },
-      signal,
-    });
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.items[0]?.comment.createdAt).toEqual(
-        new Date('2026-08-26T00:00:00.000Z'),
-      );
-      expect(result.value.items[0]?.replySummary.hiddenCount).toBe(2);
-    }
-  });
-
-  test('개요 응답이 계약과 다르면 ParseError를 던진다', async () => {
-    // Given
-    const httpClient = createMockHttpClient();
-    const service = new TodoCommentService(httpClient);
-    httpClient.get.mockResolvedValue({ ok: true, value: { items: [] } });
-
-    // When & Then
-    await expect(
-      service.getOverview(42, { sort: TODO_COMMENT_SORT.LATEST, size: 20 }),
-    ).rejects.toBeInstanceOf(ParseError);
-  });
-
-  test('focus와 양방향 cursor는 하나의 conversation endpoint로 보낸다', async () => {
-    // Given
-    const httpClient = createMockHttpClient();
-    const service = new TodoCommentService(httpClient);
-    const signal = new AbortController().signal;
-    httpClient.get.mockResolvedValue({
-      ok: true,
-      value: {
-        items: [createConversationItemDto()],
-        focus: {
-          commentId: COMMENT_ID,
-          itemIndex: 0,
-          precedingAncestors: [],
-          omittedAncestorCount: 0,
-        },
-        pagination: {
-          previousCursor: 'before',
-          nextCursor: 'after',
-          hasPrevious: true,
-          hasNext: true,
-          size: 20,
-        },
-      },
-    });
-
-    // When
-    const result = await service.getConversation(
-      42,
-      { sort: TODO_COMMENT_SORT.LATEST, focusCommentId: COMMENT_ID, size: 20 },
-      signal,
+    expect(httpClient.get).toHaveBeenCalledWith('v2/todos/42/comments', { params: query, signal });
+    expect(result.ok && result.value.items[0]?.comment.createdAt).toEqual(
+      new Date('2026-08-26T00:00:00.000Z'),
     );
-
-    // Then
-    expect(httpClient.get).toHaveBeenCalledWith('v1/todos/42/conversation', {
-      params: { sort: TODO_COMMENT_SORT.LATEST, focusCommentId: COMMENT_ID, size: 20 },
-      signal,
-    });
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.items[0]?.comment.createdAt).toEqual(
-        new Date('2026-08-26T00:00:00.000Z'),
-      );
-      expect(result.value.items[0]?.connection).toEqual({
-        visualDepth: 0,
-        upperLaneDepths: [],
-        lowerLaneDepths: [0],
-        incomingBranch: null,
-      });
-      expect(result.value.focus?.commentId).toBe(COMMENT_ID);
-    }
   });
 
-  test('정렬·중복 계약을 어긴 conversation lane은 ParseError로 거부한다', async () => {
+  test('답글은 묶음 머리의 replies endpoint에서 cursor를 그대로 보낸다', async () => {
     // Given
     const httpClient = createMockHttpClient();
     const service = new TodoCommentService(httpClient);
     httpClient.get.mockResolvedValue({
       ok: true,
       value: {
-        items: [
-          {
-            ...createConversationItemDto(),
-            connection: {
-              visualDepth: 2,
-              upperLaneDepths: [1, 0],
-              lowerLaneDepths: [],
-              incomingBranch: { fromDepth: 1, toDepth: 2 },
-            },
-          },
-        ],
-        focus: null,
-        pagination: {
-          previousCursor: null,
-          nextCursor: null,
-          hasPrevious: false,
-          hasNext: false,
-          size: 20,
-        },
+        items: [createV2Dto({ id: REPLY_ID, threadCommentId: COMMENT_ID })],
+        pagination: PAGINATION,
       },
     });
 
-    // When & Then
-    await expect(
-      service.getConversation(42, { sort: TODO_COMMENT_SORT.LATEST, size: 20 }),
-    ).rejects.toBeInstanceOf(ParseError);
+    // When
+    const result = await service.getReplies(42, COMMENT_ID, { size: 10, cursor: 'opaque' });
+
+    // Then
+    expect(httpClient.get).toHaveBeenCalledWith(`v2/todos/42/comments/${COMMENT_ID}/replies`, {
+      params: { size: 10, cursor: 'opaque' },
+      signal: undefined,
+    });
+    expect(result.ok && result.value.items[0]?.threadCommentId).toBe(COMMENT_ID);
   });
 
-  test('최상위와 답글을 같은 POST body의 nullable parentId로 보낸다', async () => {
+  test('계약과 다른 응답은 ParseError로 던져 QueryErrorBoundary가 받게 한다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    const service = new TodoCommentService(httpClient);
+    httpClient.get.mockResolvedValue({
+      ok: true,
+      value: { items: [{}], pagination: PAGINATION, anchor: null },
+    });
+
+    // When
+    const request = service.getThreads(42, { sort: 'LATEST', size: 30 });
+
+    // Then
+    await expect(request).rejects.toBeInstanceOf(ParseError);
+  });
+
+  test('이미 지운 글처럼 예측한 4xx는 Result 오류로 그대로 넘긴다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    const service = new TodoCommentService(httpClient);
+    const apiError = new ApiError('TODO_0833', '삭제된 댓글', 409);
+    httpClient.put.mockResolvedValue(err(apiError));
+
+    // When
+    const result = await service.setCommentLike(42, COMMENT_ID, true);
+
+    // Then
+    expect(httpClient.put).toHaveBeenCalledWith(`v1/todos/42/comments/${COMMENT_ID}/likes`);
+    expect(result).toEqual(err(apiError));
+  });
+
+  test('답글 쓰기는 v1 POST에 답할 글 id를 parentId로 보낸다', async () => {
     // Given
     const httpClient = createMockHttpClient();
     const service = new TodoCommentService(httpClient);
     const input = {
-      parentId: COMMENT_ID,
+      parentId: REPLY_ID,
       items: [{ clientRequestId: 'f43a3111-dc5e-4c62-b584-03b7c49124da', content: '답글' }],
     };
     httpClient.post.mockResolvedValue({
       ok: true,
-      value: { comments: [createCommentDto()] },
+      value: {
+        comments: [
+          {
+            id: 'cm42345678901234567890123',
+            threadId: COMMENT_ID,
+            parentId: COMMENT_ID,
+            depth: 1,
+            author: null,
+            content: '답글',
+            isDeleted: false,
+            isEdited: false,
+            likeCount: 0,
+            replyCount: 0,
+            replyTo: { commentId: REPLY_ID, authorName: null },
+            viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
+            createdAt: '2026-08-26T00:00:00.000Z',
+            editedAt: null,
+          },
+        ],
+      },
     });
 
     // When
-    await service.createCommentChain(42, input);
+    const result = await service.createCommentChain(42, input);
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith('v1/todos/42/comments', input);
+    expect(result.ok && result.value.comments[0]?.threadCommentId).toBe(COMMENT_ID);
   });
 });

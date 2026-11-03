@@ -1,25 +1,26 @@
-import type { TodoComment } from '../domains/todo-comment.model';
+import type { TodoComment, TodoCommentThread } from '../domains/todo-comment.model';
 
 const CREATED_AT = new Date('2026-08-15T09:00:00.000Z');
+export const TODO_ID = 42;
 
 export const createTodoComment = (overrides?: Partial<TodoComment>): TodoComment => ({
   id: 'comment-1',
-  threadId: 'comment-1',
-  parentId: null,
-  depth: 0,
+  todoId: TODO_ID,
+  threadCommentId: null,
+  replyTo: null,
   author: {
     id: 'user-1',
     name: '김철수',
+    userTag: 'WNTQJEEE',
     profileImage: null,
     isTodoOwner: true,
   },
   content: '오늘 운동 완료!',
+  likeCount: 0,
+  replyCount: 0,
   isDeleted: false,
   isAuthorBlocked: false,
   isEdited: false,
-  likeCount: 0,
-  replyCount: 0,
-  replyTo: null,
   viewer: {
     isLiked: false,
     canEdit: true,
@@ -34,22 +35,21 @@ export const createTodoComment = (overrides?: Partial<TodoComment>): TodoComment
 });
 
 export const createTodoCommentReply = (
-  parent: TodoComment,
+  head: TodoComment,
   overrides?: Partial<TodoComment>,
 ): TodoComment =>
   createTodoComment({
-    id: `${parent.id}-reply`,
-    threadId: parent.threadId,
-    parentId: parent.id,
-    depth: parent.depth + 1,
+    id: `${head.id}-reply`,
+    threadCommentId: head.id,
     author: {
       id: 'user-2',
       name: '이영희',
+      userTag: '2DX97AMT',
       profileImage: null,
       isTodoOwner: false,
     },
     content: '저도 같이 해요',
-    replyTo: { commentId: parent.id, authorName: parent.author?.name ?? null },
+    replyTo: { commentId: head.id, authorName: head.author?.name ?? null },
     viewer: {
       isLiked: false,
       canEdit: false,
@@ -60,3 +60,25 @@ export const createTodoCommentReply = (
     },
     ...overrides,
   });
+
+export const createTodoCommentThread = (
+  overrides?: Partial<TodoCommentThread>,
+): TodoCommentThread => {
+  const comment = overrides?.comment ?? createTodoComment({ replyCount: 1 });
+  // nullish-strict: null은 대표 답글이 없는 묶음, undefined는 기본 대표 답글이다
+  const previewReply =
+    overrides?.previewReply === undefined
+      ? createTodoCommentReply(comment)
+      : overrides.previewReply;
+
+  return {
+    comment,
+    previewReply,
+    replySummary: {
+      totalCount: comment.replyCount,
+      hiddenCount: Math.max(0, comment.replyCount - (previewReply == null ? 0 : 1)),
+      participantAuthors: [],
+    },
+    ...overrides,
+  };
+};
