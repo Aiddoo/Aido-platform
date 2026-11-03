@@ -20,6 +20,7 @@ import type {
   LoginResult,
   RefreshTokensResult,
   RegisterResult,
+  SocialLoginResult,
   UpdateProfileResult,
   VerifyEmailResult,
 } from "#api/modules/identity/application/types/auth/auth.types";
@@ -133,6 +134,40 @@ describe("AuthMapper — 인증 매퍼", () => {
     });
   });
 
+  describe("toSocialAuthTokensResponse", () => {
+    it("소셜 로그인 결과의 신규 가입 여부를 응답에 싣는다", () => {
+      // Given
+      const result: SocialLoginResult = {
+        userId: "user-social",
+        userTag: "soci#1234",
+        tokens: {
+          accessToken: "social-access",
+          refreshToken: "social-refresh",
+          expiresIn: 3600,
+        },
+        sessionId: "session-social",
+        name: "소셜유저",
+        profileImage: null,
+        isNewUser: true,
+      };
+
+      // When
+      const response = AuthMapper.toSocialAuthTokensResponse(result);
+
+      // Then
+      expect(response).toEqual({
+        userId: "user-social",
+        userTag: "soci#1234",
+        accessToken: "social-access",
+        refreshToken: "social-refresh",
+        name: "소셜유저",
+        profileImage: null,
+        accountRestored: false,
+        isNewUser: true,
+      });
+    });
+  });
+
   describe("toRefreshTokensResponse", () => {
     it("토큰 갱신 결과를 응답으로 변환한다", () => {
       // Given
@@ -235,6 +270,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         refreshToken: "oauth-refresh",
         userName: "OAuth유저",
         profileImage: "https://example.com/oauth.jpg",
+        isNewUser: true,
       };
 
       // When
@@ -248,6 +284,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         name: "OAuth유저",
         profileImage: "https://example.com/oauth.jpg",
         accountRestored: false,
+        isNewUser: true,
       });
     });
 
@@ -257,6 +294,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         userId: "user-789",
         accessToken: "oauth-access",
         refreshToken: "oauth-refresh",
+        isNewUser: false,
       };
 
       // When
@@ -276,6 +314,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         refreshToken: "restored-refresh",
         userName: "복구유저",
         accountRestored: true,
+        isNewUser: false,
       };
 
       // When

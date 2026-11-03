@@ -218,6 +218,7 @@ export interface AuthOAuthStateRecord {
   userName: string | null;
   profileImage: string | null;
   accountRestored: boolean | null;
+  isNewUser: boolean | null;
   expiresAt: Date;
   exchangedAt: Date | null;
 }
@@ -254,6 +255,7 @@ export interface AuthOAuthStateRepositoryPort {
       userName?: string;
       profileImage?: string;
       accountRestored?: boolean;
+      isNewUser: boolean;
     },
   ): Promise<unknown>;
   saveLinkingData(

@@ -731,6 +731,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
         ...loginResult.tokens,
         userId: loginResult.userId,
         userName: loginResult.name ?? undefined,
+        isNewUser: loginResult.isNewUser,
       });
 
       expect(exchangeCode).toBeDefined();
@@ -742,6 +743,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       expect(exchangeResult.accessToken).toBe(loginResult.tokens.accessToken);
       expect(exchangeResult.refreshToken).toBe(loginResult.tokens.refreshToken);
       expect(exchangeResult.userId).toBe(loginResult.userId);
+      expect(exchangeResult.isNewUser).toBe(true);
     });
 
     it("유효하지 않은 교환 코드는 거부해야 한다", async () => {
@@ -778,6 +780,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
         exchangeCode,
         ...loginResult.tokens,
         userId: loginResult.userId,
+        isNewUser: loginResult.isNewUser,
       });
 
       await exchangeOAuthCode.execute({ code: exchangeCode });

@@ -67,6 +67,7 @@ export class ExchangeOAuthCode {
       userName: state.userName ?? undefined,
       profileImage: state.profileImage ?? undefined,
       accountRestored: state.accountRestored ?? undefined,
+      isNewUser: state.isNewUser ?? false,
     };
   }
 

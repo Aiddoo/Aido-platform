@@ -36,7 +36,7 @@ import type {
   SocialLoginOptions,
   VerifiedProfile,
 } from "../../ports/auth/oauth-identity-provider.port.js";
-import type { LoginResult, RequestMetadata } from "../../types/auth/index.js";
+import type { LoginResult, RequestMetadata, SocialLoginResult } from "../../types/auth/index.js";
 import type { IssueLogin } from "./issue-login.use-case.js";
 import type { ProvisionUser } from "./provision-user.use-case.js";
 import type { RestoreAccount } from "./restore-account.use-case.js";
@@ -86,7 +86,7 @@ export class LoginWithOAuthToken {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithOAuthTokenInput): Promise<LoginResult> {
+  async execute(input: LoginWithOAuthTokenInput): Promise<SocialLoginResult> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
       throw new ApplicationException(ErrorCode.SOCIAL_0204, {
@@ -129,7 +129,7 @@ export class LoginWithOAuthToken {
       profileImage?: string;
       metadata?: RequestMetadata;
     },
-  ): Promise<LoginResult> {
+  ): Promise<SocialLoginResult> {
     const ip = options.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = options.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
@@ -140,6 +140,7 @@ export class LoginWithOAuthToken {
 
     let userId: string;
     let userEmail: string;
+    let isNewUser = false;
 
     if (existingAccount != null) {
       userId = existingAccount.userId;
@@ -157,7 +158,7 @@ export class LoginWithOAuthToken {
           provider,
           restorationAt,
         });
-        return { ...loginResult, accountRestored: true };
+        return { ...loginResult, accountRestored: true, isNewUser: false };
       }
 
       this.#validateUserStatus(user.status);
@@ -175,11 +176,13 @@ export class LoginWithOAuthToken {
       if (email) {
         const existingUser = await this.#dependencies.userRepository.findByEmail(email);
         if (existingUser != null) {
-          return this.#handleEmailConflict(existingUser, provider, providerAccountId, {
-            emailVerified: options.emailVerified,
-            ip,
-            userAgent,
-          });
+          const loginResult = await this.#handleEmailConflict(
+            existingUser,
+            provider,
+            providerAccountId,
+            { emailVerified: options.emailVerified, ip, userAgent },
+          );
+          return { ...loginResult, isNewUser: false };
         }
       }
 
@@ -193,6 +196,7 @@ export class LoginWithOAuthToken {
 
       userId = newUser.id;
       userEmail = effectiveEmail;
+      isNewUser = true;
 
       this.#dependencies.logger.log({ event: IdentityLogEvent.USER_REGISTERED, userId, provider });
 
@@ -206,11 +210,12 @@ export class LoginWithOAuthToken {
       } satisfies AuthUserRegisteredNotification);
     }
 
-    return this.#createSessionAndTokens(userId, userEmail, {
+    const loginResult = await this.#createSessionAndTokens(userId, userEmail, {
       ip,
       userAgent,
       provider,
     });
+    return { ...loginResult, isNewUser };
   }
 
   async #createSocialUser(data: {

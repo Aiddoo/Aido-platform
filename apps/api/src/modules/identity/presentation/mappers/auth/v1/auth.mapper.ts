@@ -4,6 +4,7 @@ import type {
   LoginResult,
   RefreshTokensResult,
   RegisterResult,
+  SocialLoginResult,
   UpdateProfileResult,
   VerifyEmailResult,
 } from "#api/modules/identity/application/types/auth/auth.types";
@@ -65,6 +66,14 @@ export abstract class AuthMapper {
       name: result.name,
       profileImage: resolveProfileImage(result.profileImage, appVersion),
       accountRestored: result.accountRestored ?? false,
+    };
+  }
+
+  /** 소셜 로그인 결과를 응답으로 바꾼다. 신규 가입이면 `isNewUser: true`를 싣는다. */
+  static toSocialAuthTokensResponse(result: SocialLoginResult, appVersion?: string) {
+    return {
+      ...AuthMapper.toAuthTokensResponse(result, appVersion),
+      isNewUser: result.isNewUser,
     };
   }
 
@@ -168,6 +177,7 @@ export abstract class AuthMapper {
       name: result.userName ?? null,
       profileImage: resolveProfileImage(result.profileImage ?? null, appVersion),
       accountRestored: result.accountRestored ?? false,
+      isNewUser: result.isNewUser,
     };
   }
 }

@@ -220,6 +220,7 @@ export const oAuthState = pgTable(
     id: serial().primaryKey(),
     initiatingUserId: varchar({ length: 36 }),
     ipAddress: varchar({ length: 45 }),
+    isNewUser: boolean(),
     mode: varchar({ length: 10 }),
     profileImage: varchar({ length: 500 }),
     provider: accountProvider().notNull(),

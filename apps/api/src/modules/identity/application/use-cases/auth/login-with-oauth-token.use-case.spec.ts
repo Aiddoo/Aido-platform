@@ -59,6 +59,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       // Then
       expect(result.userId).toBe(fixture.user.id);
       expect(result.name).toBe("사용자");
+      expect(result.isNewUser).toBe(false);
       expect(result.sessionId).toBeTruthy();
       expect(fixture.tokenService.issued).toMatchObject([
         {
@@ -130,6 +131,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         metadata,
       });
       // Then
+      expect(result.isNewUser).toBe(true);
       expect(fixture.userRepository.users.get(result.userId)).toMatchObject({
         email: fixture.identityProvider.profile.email,
         status: "ACTIVE",
@@ -195,6 +197,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       "kakao_provider-account@social.aido.kr",
     );
     expect(result.name).toBe("소셜 사용자");
+    expect(result.isNewUser).toBe(true);
   });
 
   it.each([
@@ -265,6 +268,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     });
     // Then
     expect(result.userId).toBe(fixture.user.id);
+    expect(result.isNewUser).toBe(false);
     expect(fixture.cacheService.profiles.has(fixture.user.id)).toBe(false);
     expect(
       await currentUser.execute({
@@ -382,6 +386,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       });
       // Then
       expect(result.accountRestored).toBe(true);
+      expect(result.isNewUser).toBe(false);
       expect(fixture.userRepository.users.get(fixture.user.id)).toMatchObject({
         status: "ACTIVE",
         deletedAt: null,

@@ -22,6 +22,12 @@ export const authTokensSchema = z
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
     accountRestored: z.boolean().optional().describe("탈퇴 유예 기간 내 계정 복구 여부"),
+    isNewUser: z
+      .boolean()
+      .optional()
+      .describe(
+        "이번 요청에서 계정을 새로 만들었는지 여부. 소셜 로그인·OAuth 코드 교환 응답에만 있고, 기존 계정·이메일 자동 연결·탈퇴 유예 복구는 false",
+      ),
   })
   .describe("인증 토큰 정보")
   .meta({

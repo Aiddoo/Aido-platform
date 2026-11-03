@@ -16,6 +16,7 @@ export const OAuthStateFixture = {
       userName: null,
       profileImage: null,
       accountRestored: null,
+      isNewUser: null,
       expiresAt: new Date(Date.now() + 600_000),
       exchangedAt: null,
       ...overrides,

@@ -44,6 +44,13 @@ export interface LoginResult {
 }
 
 /**
+ * 소셜 로그인 결과. `isNewUser`는 이번 요청에서 사용자를 새로 만들었을 때만 true다.
+ */
+export interface SocialLoginResult extends LoginResult {
+  isNewUser: boolean;
+}
+
+/**
  * 토큰 갱신 결과
  */
 export interface RefreshTokensResult {
@@ -125,6 +132,7 @@ export interface ExchangeCodeResult {
   userName?: string;
   profileImage?: string;
   accountRestored?: boolean;
+  isNewUser: boolean;
 }
 
 export interface DeleteAccountResult {
