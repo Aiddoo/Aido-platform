@@ -4,10 +4,15 @@
 
 - Conventional Commits(`pnpm commit` 권장), 설명은 한국어다. type은 [commitlint](../../commitlint.config.ts)의 `feat`·`fix`·`docs`·`refactor`·`perf`·`test`·`ci`·`chore`다. scope는 `server`·`mobile`·`api`(공유 계약)를 쓰고, 저장소 전체면 생략한다.
 - 제목은 사용자나 코드가 무엇이 달라지는지를 문장으로 쓴다(`fix(mobile): 자정이 지나도 위젯이 앱을 열기 전에 새 날짜를 표시한다`). 본문에는 문제·원인·변경과 실제 실행한 검증을 쓴다.
-- 커밋 훅(pre-commit: lint-staged·typecheck·단위 테스트·build, pre-push: 서버 통합·배포 앱 계약 테스트)을 건너뛰지 않는다(`--no-verify` 금지). 테스트는 CI 대신 이 훅에서 돌린다. pre-push는 로컬 Docker PostgreSQL이 필요하다.
+- Git 훅은 [lefthook](../../lefthook.yml)이 관리하고 `pnpm install`의 `prepare`가 설치한다. 테스트는 GitHub Actions에서 돌리지 않고 이 훅에서만 실행한다.
+  - pre-commit: staged 파일에 `oxlint --fix`·`oxfmt --write`를 적용해 다시 stage한 뒤, `turbo run typecheck test build`(캐시 사용)와 CI 정책 테스트(`scripts/ci/*.mjs` 변경 시)를 병렬로 실행한다.
+  - pre-push: 서버 통합 테스트(`pnpm test:integration`)와 배포 앱 계약 테스트(`pnpm --filter @aido/server test:contract`). 로컬 Docker PostgreSQL이 필요하다. 전체 E2E는 `pnpm test:e2e`로 직접 실행한다.
+  - commit-msg: commitlint.
+- 훅을 건너뛰지 않는다(`--no-verify` 금지). 훅 자체가 고장 난 긴급 상황에서만 `LEFTHOOK=0 git …`을 쓰고, 건너뛴 검사는 바로 수동으로 실행해 PR 검증에 적는다. 특정 job만 빼려면 `LEFTHOOK_EXCLUDE=<job 이름>`을 쓴다.
 
 ## PR
 
+- PR은 `main`을 향한다. `develop`은 더 이상 통합 브랜치가 아니다.
 - 본문은 [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md)의 요약·주요 변경·검증을 기본으로 한다. 재현·성능·위험·배포·화면 자료는 필요한 경우만 제목을 더한다.
 - 처음 보는 리뷰어(면접관)가 읽고 판단할 수 있게 쓴다. 바꾼 이유와 버린 대안을 적고, 코드 품질 개선은 실제 base/head에서 발췌한 짧은 Before/After 코드와 경로를 붙인다.
 - 숫자는 측정한 값만 쓴다(조건·환경 포함). 측정하지 않은 개선율·예상치를 쓰지 않는다. 로컬 통과·merge·운영 배포를 구분해 적는다.
