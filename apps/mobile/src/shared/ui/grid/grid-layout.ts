@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit';
+
 /**
  * Grid 칸 배치 계산.
  *
@@ -15,7 +17,7 @@ export interface GridItemLayout {
 
 /** 열 수를 넘는 colSpan은 한 줄 전체로 본다 */
 function clampSpan(colSpan: number, columns: number) {
-  return Math.min(Math.max(colSpan, 1), columns);
+  return clamp(colSpan, 1, columns);
 }
 
 /** 순서대로 놓인 칸들의 시작 열. 남은 열에 들어가지 않으면 다음 줄 첫 열에서 시작한다 */

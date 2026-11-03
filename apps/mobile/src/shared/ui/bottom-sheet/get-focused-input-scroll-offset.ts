@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit';
+
 /** 창 좌표 기준 세로 범위 */
 export interface VerticalRect {
   top: number;
@@ -80,6 +82,6 @@ export function getFocusedInputScrollOffset({
 
   const currentOffset = viewport.top - content.top;
   const maxOffset = Math.max(0, content.height - viewport.height);
-  const nextOffset = Math.min(Math.max(currentOffset + delta, 0), maxOffset);
+  const nextOffset = clamp(currentOffset + delta, 0, maxOffset);
   return Math.abs(nextOffset - currentOffset) < 1 ? null : nextOffset;
 }
