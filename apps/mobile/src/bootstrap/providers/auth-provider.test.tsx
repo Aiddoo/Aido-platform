@@ -11,13 +11,15 @@ import {
   createMockTokenStore,
   createMemorySyncStorage,
 } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { KeychainLockedError } from '@src/shared/errors';
 import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AppState, Text } from 'react-native';
 import { z } from 'zod';
@@ -63,7 +65,7 @@ describe('AuthProvider', () => {
     tokenStore = createMockTokenStore();
     errorReporter = createMockErrorReporter();
     analytics = createMockAnalytics();
-    queryClient = new QueryClient();
+    queryClient = createTestQueryClient();
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
     queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
     unsubscribes = [];
@@ -78,7 +80,6 @@ describe('AuthProvider', () => {
       unsubscribe();
     }
     await queryClient.cancelQueries();
-    queryClient.clear();
     jest.clearAllTimers();
     jest.useRealTimers();
     jest.restoreAllMocks();

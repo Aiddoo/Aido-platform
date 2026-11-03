@@ -1,5 +1,7 @@
 import { createMockHttpClient } from '@src/shared/__tests__';
-import { QueryClient, QueryObserver } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { QueryObserver } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { TodoService } from '../apis/todo.service';
 import { getTodoSummaryQueryOptions } from './get-todo-summary-query-options';
@@ -20,11 +22,7 @@ describe('getTodoSummaryQueryOptions refetchInterval', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
-    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  });
-
-  afterEach(() => {
-    queryClient.clear();
+    queryClient = createTestQueryClient();
   });
 
   async function fetchSummary(params: { date: string; todayDate: string }, responseDate: string) {

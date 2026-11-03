@@ -8,7 +8,9 @@ import {
   type WidgetNavigationCommand,
   WIDGET_NAVIGATION_COMMAND_TTL_MS,
 } from '@src/features/widget/domains/widget-navigation.model';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { PropsWithChildren } from 'react';
@@ -109,9 +111,7 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     mockParameters = {};
     mockUrl = 'aido://feed?date=today';
     mockRepository = createWidgetNavigationRepository(createStorage());
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
-    });
+    queryClient = createTestQueryClient();
     queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'original-account' });
     command = {
       id: 'first-tap',
@@ -122,7 +122,6 @@ describe('종료된 앱의 위젯 명령 복원', () => {
   });
 
   afterEach(() => {
-    queryClient.clear();
     jest.restoreAllMocks();
     jest.useRealTimers();
   });

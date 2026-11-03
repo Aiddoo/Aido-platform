@@ -1,7 +1,9 @@
 import type { Memo } from '@aido/api';
 import { createMockHttpClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ok } from '@src/shared/errors/result';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -39,10 +41,7 @@ describe('메모 수정 후 상세 cache', () => {
   let unmount: (() => Promise<void>) | undefined;
 
   beforeEach(() => {
-    client = new QueryClient({
-      // Observer 없이 만든 mutation의 GC timer가 테스트 종료를 붙잡지 않게 한다.
-      defaultOptions: { queries: { retry: false }, mutations: { gcTime: Infinity } },
-    });
+    client = createTestQueryClient();
     unmount = undefined;
     const http = createMockHttpClient();
     http.patch.mockResolvedValue(ok({ message: 'updated', memo: updatedMemo }));
@@ -53,7 +52,6 @@ describe('메모 수정 후 상세 cache', () => {
   afterEach(async () => {
     await unmount?.();
     await client.cancelQueries();
-    client.clear();
   });
 
   const updateMemo = async () => {

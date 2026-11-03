@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderHook } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.factories';
@@ -52,7 +52,7 @@ jest.mock('@src/features/store-review/hooks/use-store-review-moment', () => ({
   }),
 }));
 
-const MUTATION_CONTEXT = { client: new QueryClient(), meta: undefined };
+const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
 
 const givenTodayTodos = (todos: Todo[]) => {
   mockQueryClient.getQueryData.mockReturnValue({ todos, hasNext: false, nextCursor: null });

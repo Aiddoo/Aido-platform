@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 
 import { createTodoDto } from '../__tests__/todo.factories';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -8,7 +8,7 @@ import { toTodo } from './todo.mapper';
 describe('Todo 클라이언트 모델과 캐시', () => {
   test('동일한 응답을 다시 받으면 기존 엔티티 참조를 유지한다', () => {
     // Given
-    const queryClient = new QueryClient();
+    const queryClient = createTestQueryClient();
     const key = ['todo-cache-test'];
     const dto = createTodoDto();
     const todo = toTodo(dto);
@@ -20,7 +20,6 @@ describe('Todo 클라이언트 모델과 캐시', () => {
     // Then
     expect(queryClient.getQueryData<ReturnType<typeof toTodo>[]>(key)?.[0]).toBe(todo);
     expect(todoSchema.parse(todo)).toEqual(todo);
-    queryClient.clear();
   });
 
   test('서버의 items와 itemStats를 클라이언트 하위 할 일 정책으로 소비한다', () => {

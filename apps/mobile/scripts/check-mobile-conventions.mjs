@@ -312,6 +312,35 @@ function isTodoCommentUiTestModule(moduleName) {
   );
 }
 
+const TEST_QUERY_CLIENT_FACTORY = 'apps/mobile/src/shared/__tests__/query-client.ts';
+
+function isTestSource(relativePath) {
+  return (
+    /\.(?:spec|test)\.[cm]?[jt]sx?$/u.test(relativePath) || relativePath.includes('/__tests__/')
+  );
+}
+
+// 테스트 QueryClient는 공통 팩토리에서만 만든다. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡는다.
+function checkTestQueryClientFactory(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
+  if (!isTestSource(relativePath) || relativePath === TEST_QUERY_CLIENT_FACTORY) {
+    return;
+  }
+  const visit = (node) => {
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'QueryClient'
+    ) {
+      errors.push(
+        `${getLocation(sourceFile, node, repositoryRoot)} 테스트에서 new QueryClient를 직접 만들지 말고 @src/shared/__tests__/query-client의 createTestQueryClient를 쓰세요.`,
+      );
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+}
+
 function checkTodoCommentTestPurity(sourceFile, repositoryRoot, errors) {
   const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (!/\.(?:spec|test)\.[cm]?[jt]sx?$/u.test(relativePath)) {
@@ -578,6 +607,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     );
     checkTodoCheckboxProps(sourceFile, repositoryRoot, errors);
     checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
+    checkTestQueryClientFactory(sourceFile, repositoryRoot, errors);
   }
 
   const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];

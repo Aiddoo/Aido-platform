@@ -8,7 +8,10 @@ import { useFormContext } from 'react-hook-form';
 
 import { RESCHEDULE_COPY_KEYS } from '../../constants/weather-labels';
 import type { ForecastTodo, RescheduleOption } from '../../domains/weather-briefing.model';
-import type { WeatherRescheduleFormValues } from '../../domains/weather-reschedule-form.schema';
+import {
+  toSelectionKey,
+  type WeatherRescheduleFormValues,
+} from '../../domains/weather-reschedule-form.schema';
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
 
 interface WeatherRescheduleTodoProps {
@@ -49,7 +52,7 @@ export function WeatherRescheduleTodo({
       ) : (
         <FormField
           control={control}
-          name={`selections.${todo.todoId}`}
+          name={`selections.${toSelectionKey(todo.todoId)}`}
           defaultValue={recommended.startsAt.toISOString()}
         >
           {({ value, onChange }) => (

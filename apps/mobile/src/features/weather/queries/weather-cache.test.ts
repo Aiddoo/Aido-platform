@@ -1,4 +1,5 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import { removeOutdatedWeatherReports } from './weather-cache';
@@ -7,11 +8,7 @@ describe('removeOutdatedWeatherReports', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
-    queryClient = new QueryClient();
-  });
-
-  afterEach(() => {
-    queryClient.clear();
+    queryClient = createTestQueryClient();
   });
 
   it('지금 위치보다 이전 리비전의 리포트만 지우고 지금 리포트와 위치는 남긴다', () => {

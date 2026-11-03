@@ -1,7 +1,8 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import type * as InviteServiceStubModule from '@src/features/invite/__tests__/create-stub-invite-service';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
@@ -104,7 +105,7 @@ function LoadingScreen() {
 }
 
 async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl = '/') {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: 0, retry: false } } });
+  const queryClient = createTestQueryClient();
   function AuthFixture({ children }: PropsWithChildren) {
     const [status, setStatus] = useState(initialStatus);
     return (

@@ -1,4 +1,5 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { QueryClient } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react-native';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.factories';
@@ -31,11 +32,7 @@ jest.mock('@tanstack/react-query', () => ({
 describe('콕 답장·감사 Analytics', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockQueryClient = new QueryClient();
-  });
-
-  afterEach(() => {
-    mockQueryClient.clear();
+    mockQueryClient = createTestQueryClient();
   });
 
   it('답장 성공 시 공용 카탈로그의 답장 종류만 기록한다', async () => {

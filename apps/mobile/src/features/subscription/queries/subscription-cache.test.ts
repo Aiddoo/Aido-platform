@@ -68,7 +68,6 @@ describe('isPremiumDependentQuery', () => {
 
     // Then
     expect(dependentKeys).toEqual(DEPENDENT_KEYS);
-    queryClient.clear();
   });
 
   it('오프라인 복원 같은 다른 meta만 있으면 고르지 않는다', () => {
@@ -88,7 +87,6 @@ describe('watchPremiumEntitlementChanges', () => {
 
   afterEach(() => {
     unwatch();
-    queryClient.clear();
   });
 
   it('보상 기간이 시작돼 내 정보의 프리미엄이 바뀌면 의존 쿼리만 모두 무효화한다', () => {
@@ -160,10 +158,6 @@ describe('syncMeUntilStorePremium', () => {
 
   beforeEach(() => {
     queryClient = createTestQueryClient();
-  });
-
-  afterEach(() => {
-    queryClient.clear();
   });
 
   /** 서버가 /me를 차례로 이렇게 답한다 */

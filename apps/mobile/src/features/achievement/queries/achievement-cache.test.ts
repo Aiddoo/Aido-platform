@@ -1,4 +1,5 @@
-import { QueryClient } from '@tanstack/react-query';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import type { QueryClient } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 import { invalidateWeeklyAchievements } from './achievement-cache';
@@ -7,11 +8,7 @@ describe('invalidateWeeklyAchievements', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
-    queryClient = new QueryClient();
-  });
-
-  afterEach(() => {
-    queryClient.clear();
+    queryClient = createTestQueryClient();
   });
 
   it('해당 연도 주간 목록만 무효화하고 주간 상세와 다른 연도 목록은 그대로 둔다', async () => {

@@ -5,10 +5,10 @@ import {
   createMockHttpClient,
   createPendingResponse,
 } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
@@ -33,10 +33,9 @@ describe('SubTodoActionsBottomSheet', () => {
     const pendingDelete = createPendingResponse(ok(undefined));
     httpClient.delete.mockReturnValue(pendingDelete.response);
     const todo = createParentTodo({ subTodos: [createSubTodo()] });
-    const queryClient = new QueryClient({
+    const queryClient = createTestQueryClient({
       defaultOptions: {
-        queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
-        mutations: { retry: false, gcTime: 0 },
+        queries: { staleTime: Infinity },
       },
     });
     queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todo.startDate }), {

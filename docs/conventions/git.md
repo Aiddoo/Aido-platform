@@ -4,7 +4,7 @@
 
 - Conventional Commits(`pnpm commit` 권장), 설명은 한국어다. type은 [commitlint](../../commitlint.config.ts)의 `feat`·`fix`·`docs`·`refactor`·`perf`·`test`·`ci`·`chore`다. scope는 `server`·`mobile`·`api`(공유 계약)를 쓰고, 저장소 전체면 생략한다.
 - 제목은 사용자나 코드가 무엇이 달라지는지를 문장으로 쓴다(`fix(mobile): 자정이 지나도 위젯이 앱을 열기 전에 새 날짜를 표시한다`). 본문에는 문제·원인·변경과 실제 실행한 검증을 쓴다.
-- 커밋 훅(lint-staged, typecheck, build)을 건너뛰지 않는다(`--no-verify` 금지).
+- 커밋 훅(pre-commit: lint-staged·typecheck·단위 테스트·build, pre-push: 서버 통합·배포 앱 계약 테스트)을 건너뛰지 않는다(`--no-verify` 금지). 테스트는 CI 대신 이 훅에서 돌린다. pre-push는 로컬 Docker PostgreSQL이 필요하다.
 
 ## PR
 

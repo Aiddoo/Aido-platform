@@ -374,3 +374,27 @@ test('허용 표시는 바로 위 문장에만 적용된다', () => {
     },
   );
 });
+
+test('테스트에서 new QueryClient를 직접 만들면 거부하고 공통 팩토리는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo/queries/todo-cache.test.ts': `
+        import { QueryClient } from '@tanstack/react-query';
+        const client = new QueryClient();
+      `,
+      'apps/mobile/src/shared/__tests__/query-client.ts': `
+        import { QueryClient } from '@tanstack/react-query';
+        export const createTestQueryClient = () => new QueryClient();
+      `,
+      'apps/mobile/src/bootstrap/providers/query-provider.tsx': `
+        import { QueryClient } from '@tanstack/react-query';
+        const queryClient = new QueryClient();
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /todo-cache\.test\.ts/u);
+      assert.match(errors[0], /createTestQueryClient/u);
+    },
+  );
+});

@@ -12,8 +12,9 @@ import {
   createMockDIContainer,
   createMockHttpClient,
 } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { ApiError } from '@src/shared/errors/api-error';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
@@ -58,9 +59,7 @@ function setup(gateway: jest.Mocked<LocationGateway>) {
     setUserId: jest.fn(),
   };
   const analytics = createMockAnalytics();
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
-  });
+  const queryClient = createTestQueryClient();
   const container = createMockDIContainer({
     locationGateway: gateway,
     weatherService: new WeatherService(httpClient),
@@ -89,7 +88,7 @@ describe('useWeatherLocation', () => {
         .mockResolvedValueOnce({ granted: false, canAskAgain: true })
         .mockResolvedValue({ granted: true, canAskAgain: true }),
     });
-    const { httpClient, wrapper, queryClient, analytics, errorReporter } = setup(gateway);
+    const { httpClient, wrapper, analytics, errorReporter } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('needsPermission'));
 
@@ -115,7 +114,6 @@ describe('useWeatherLocation', () => {
       result: 'granted',
     });
     expect(errorReporter.captureException).not.toHaveBeenCalled();
-    queryClient.clear();
   });
 
   it('다시 물을 수 없게 거부했으면 설정 열기 상태가 되고 오류로 보고하지 않는다', async () => {
@@ -123,7 +121,7 @@ describe('useWeatherLocation', () => {
     const gateway = createGateway({
       getPermission: jest.fn().mockResolvedValue({ granted: false, canAskAgain: false }),
     });
-    const { httpClient, wrapper, queryClient, errorReporter } = setup(gateway);
+    const { httpClient, wrapper, errorReporter } = setup(gateway);
 
     // When
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
@@ -132,7 +130,6 @@ describe('useWeatherLocation', () => {
     await waitFor(() => expect(result.current.status).toBe('denied'));
     expect(httpClient.put).not.toHaveBeenCalled();
     expect(errorReporter.captureException).not.toHaveBeenCalled();
-    queryClient.clear();
   });
 
   it('위치 서비스가 꺼져 있으면 기록만 남기고 위치를 찾지 못한 상태가 된다', async () => {
@@ -140,7 +137,7 @@ describe('useWeatherLocation', () => {
     const gateway = createGateway({
       getCoordinates: jest.fn().mockRejectedValue(new LocationUnavailableError('off')),
     });
-    const { httpClient, wrapper, queryClient, logger, errorReporter } = setup(gateway);
+    const { httpClient, wrapper, logger, errorReporter } = setup(gateway);
 
     // When
     const { result } = await renderHook(() => useLocationAndRevision(), { wrapper });
@@ -153,7 +150,6 @@ describe('useWeatherLocation', () => {
       reason: 'unavailable',
     });
     expect(errorReporter.captureException).not.toHaveBeenCalled();
-    queryClient.clear();
   });
 
   it('위치 읽기가 시간 초과로 실패하면 한 번 보고하고 좌표는 기록하지 않는다', async () => {
@@ -161,7 +157,7 @@ describe('useWeatherLocation', () => {
     const gateway = createGateway({
       getCoordinates: jest.fn().mockRejectedValue(new Error('Location timeout')),
     });
-    const { wrapper, queryClient, errorReporter, logger } = setup(gateway);
+    const { wrapper, errorReporter, logger } = setup(gateway);
 
     // When
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
@@ -174,7 +170,6 @@ describe('useWeatherLocation', () => {
       errorCode: 'WEATHER_LOCATION_UNAVAILABLE',
     });
     expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('37.5');
-    queryClient.clear();
   });
 
   it('위치를 찾지 못한 상태에서 다시 시도하면 위치를 다시 읽어 준비 상태가 된다', async () => {
@@ -185,7 +180,7 @@ describe('useWeatherLocation', () => {
         .mockRejectedValueOnce(new LocationUnavailableError('off'))
         .mockResolvedValue(SEOUL),
     });
-    const { wrapper, queryClient } = setup(gateway);
+    const { wrapper } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('unavailable'));
 
@@ -198,7 +193,6 @@ describe('useWeatherLocation', () => {
 
     // Then
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    queryClient.clear();
   });
 
   it('리포트는 위치를 읽기 전에 서버 저장 위치로 먼저 요청하고, 같은 격자면 다시 받지 않는다', async () => {
@@ -211,7 +205,7 @@ describe('useWeatherLocation', () => {
           resolveCoordinates = resolve;
         }),
     );
-    const { httpClient, wrapper, queryClient } = setup(gateway);
+    const { httpClient, wrapper } = setup(gateway);
 
     // When
     const { result } = await renderHook(
@@ -227,7 +221,6 @@ describe('useWeatherLocation', () => {
     await waitFor(() => expect(result.current.location.status).toBe('ready'));
     expect(result.current.revision).toBe(0);
     expect(httpClient.get).toHaveBeenCalledTimes(1);
-    queryClient.clear();
   });
 
   it('0.01도 미만으로 움직이면 다시 등록하지 않고, 다른 격자로 옮기면 새 리비전으로 리포트를 다시 받는다', async () => {
@@ -253,7 +246,6 @@ describe('useWeatherLocation', () => {
     expect(putCountAfterSmallMove).toBe(1);
     expect(httpClient.put).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(result.current.revision).toBe(revisionBefore + 1));
-    queryClient.clear();
   });
 });
 
@@ -261,7 +253,7 @@ describe('리포트와 위치 등록의 경쟁', () => {
   it('리포트를 아직 받는 중에 등록이 끝나면 그 리포트를 기다려 비교하고, 같은 격자면 다시 받지 않는다', async () => {
     // Given
     const gateway = createGateway();
-    const { httpClient, wrapper, queryClient } = setup(gateway);
+    const { httpClient, wrapper } = setup(gateway);
     let resolveReport: (value: { ok: true; value: unknown }) => void = () => undefined;
     httpClient.get.mockImplementationOnce(
       () =>
@@ -282,7 +274,6 @@ describe('리포트와 위치 등록의 경쟁', () => {
     await waitFor(() => expect(result.current.location.status).toBe('ready'));
     expect(result.current.revision).toBe(0);
     expect(httpClient.get).toHaveBeenCalledTimes(1);
-    queryClient.clear();
   });
 });
 
@@ -290,7 +281,7 @@ describe('리포트 요청의 위치 재등록', () => {
   it('서버가 위치를 잃었다고(WEATHER_1902) 하면 마지막 위치를 한 번 다시 등록하고 다시 받는다', async () => {
     // Given
     const gateway = createGateway();
-    const { httpClient, wrapper, queryClient } = setup(gateway);
+    const { httpClient, wrapper } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('ready'));
     httpClient.put.mockClear();
@@ -309,13 +300,12 @@ describe('리포트 요청의 위치 재등록', () => {
     // Then
     await waitFor(() => expect(report.result.current.isSuccess).toBe(true));
     expect(httpClient.put).toHaveBeenCalledTimes(1);
-    queryClient.clear();
   });
 
   it('다시 등록도 실패하면 처음의 WEATHER_1902를 그대로 돌려 위치 안내를 보여 준다', async () => {
     // Given
     const gateway = createGateway();
-    const { httpClient, wrapper, queryClient } = setup(gateway);
+    const { httpClient, wrapper } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('ready'));
     const notRegistered = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
@@ -333,6 +323,5 @@ describe('리포트 요청의 위치 재등록', () => {
     // Then
     await waitFor(() => expect(report.result.current.isError).toBe(true));
     expect(report.result.current.error).toBe(notRegistered);
-    queryClient.clear();
   });
 });
