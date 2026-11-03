@@ -24,13 +24,13 @@ const SUBJECTS = {
   ADMIN: { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null },
 } as const;
 
-describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
-  });
-  afterEach(() => vi.useRealTimers());
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => vi.useRealTimers());
 
+describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스", () => {
   it.each([
     { subject: "FREE", aiParse: 5, friend: 5, aiReport: false, isPremium: false },
     { subject: "PREMIUM", aiParse: null, friend: null, aiReport: true, isPremium: true },
