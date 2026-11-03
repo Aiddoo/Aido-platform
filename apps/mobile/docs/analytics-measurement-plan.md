@@ -124,14 +124,14 @@
 
 **날씨 v2 (1.14.0)**
 
-| 이벤트                               | 파라미터                                                | 발생 위치                            |
-| ------------------------------------ | ------------------------------------------------------- | ------------------------------------ |
-| `weather_location_permission_result` | `result`: `granted`·`needs_permission`·`denied`         | 위치 권한 요청 결과                  |
-| `weather_alert_opened`               | `severity`(`WeatherAlertSeverity`)                      | 기상 특보 열람                       |
-| `weather_reschedule_opened`          | `todo_count`(int) · `reason`(`WeatherRescheduleReason`) | 브리핑 → “맑은 시간으로 옮기기” 시트 |
-| `weather_reschedule_applied`         | `moved_count`(int)                                      | 옮기기 적용                          |
-| `weather_reschedule_undone`          | `moved_count`(int)                                      | 실행 취소                            |
-| `weather_todo_suggestion_opened`     | `reason`: `rain_later`·`clear`                          | 날씨 기반 할 일 제안 열기            |
+| 이벤트                               | 파라미터                                                 | 발생 위치                            |
+| ------------------------------------ | -------------------------------------------------------- | ------------------------------------ |
+| `weather_location_permission_result` | `result`: `granted`·`needs_permission`·`denied`          | 위치 권한 요청 결과                  |
+| `weather_alert_opened`               | `severity`(`WeatherAlertSeverity`)                       | 기상 특보 열람                       |
+| `weather_reschedule_opened`          | `todo_count`(int) · `reason`(`WeatherRescheduleReason`)  | 브리핑 → “맑은 시간으로 옮기기” 시트 |
+| `weather_reschedule_applied`         | `moved_count`(int) · `reason`(`WeatherRescheduleReason`) | 옮기기 적용                          |
+| `weather_reschedule_undone`          | `moved_count`(int) · `reason`(`WeatherRescheduleReason`) | 실행 취소                            |
+| `weather_todo_suggestion_opened`     | `reason`: `rain_later`·`clear`                           | 날씨 기반 할 일 제안 열기            |
 
 **구독**
 

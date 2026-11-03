@@ -352,8 +352,8 @@ export interface WeatherEventMap {
   weather_location_permission_result: { result: 'granted' | 'needs_permission' | 'denied' };
   weather_alert_opened: { severity: WeatherAlertSeverity };
   weather_reschedule_opened: { todo_count: number; reason: WeatherRescheduleReason };
-  weather_reschedule_applied: { moved_count: number };
-  weather_reschedule_undone: { moved_count: number };
+  weather_reschedule_applied: { moved_count: number; reason: WeatherRescheduleReason };
+  weather_reschedule_undone: { moved_count: number; reason: WeatherRescheduleReason };
   weather_todo_suggestion_opened: { reason: TodoSuggestionReason };
   /** 날씨 화면 진입. 화면이 열릴 때 한 번 */
   weather_opened: { entry: WeatherOpenedEntry };
