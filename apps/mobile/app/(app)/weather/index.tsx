@@ -11,6 +11,8 @@ import { WeatherLocationPrompt } from '@src/features/weather/components/weather-
 import { WeatherSceneCanvas } from '@src/features/weather/components/weather-scene/weather-scene-canvas';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon';
 import { WeatherTopFade } from '@src/features/weather/components/weather-top-fade';
+import { WEATHER_CONDITION_LABEL_KEYS } from '@src/features/weather/constants/weather-labels';
+import { useDevWeatherOverride } from '@src/features/weather/hooks/use-dev-weather-override';
 import { useOnSkyColor } from '@src/features/weather/hooks/use-on-sky-color';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import { useWeatherScene } from '@src/features/weather/hooks/use-weather-scene';
@@ -19,6 +21,7 @@ import { useWeatherLocationRevision } from '@src/features/weather/queries/get-we
 import { refetchWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
   Box,
@@ -26,6 +29,7 @@ import {
   QueryErrorBoundary,
   Spacing,
   StyledSafeAreaView,
+  Text,
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,6 +48,7 @@ const BLOCK_GAP = 12;
 const COLUMN_MAX_WIDTH = 560;
 /** 헤더 아래로 페이드가 이어지는 길이 */
 const TOP_FADE_EXTENT = 40;
+const DEV_BADGE_BOTTOM = 8;
 const IS_IOS = process.env.EXPO_OS === 'ios';
 /** iOS 26부터는 투명 헤더 아래 내용을 시스템 스크롤 엣지 효과가 흐리므로 직접 그린 페이드를 쓰지 않는다. */
 const HAS_NATIVE_EDGE_EFFECT = IS_IOS && Number.parseInt(String(Platform.Version), 10) >= 26;
@@ -65,6 +70,7 @@ export default function WeatherScreen() {
           <WeatherReportSections />
         ))
         .exhaustive()}
+      <DevOverrideBadge />
     </>
   );
 }
@@ -246,5 +252,26 @@ function WeatherBackground() {
       contentTop={useHeaderHeight()}
       heroWidth={heroWidth}
     />
+  );
+}
+
+/** 개발 QA로 지금 날씨를 바꿔 보는 중임을 알려 실제 데이터로 착각하지 않게 한다. */
+function DevOverrideBadge() {
+  const override = useDevWeatherOverride();
+  const { t } = useTranslation('weather');
+  const insets = useSafeAreaInsets();
+  if (override == null) {
+    return null;
+  }
+  return (
+    <Box
+      pointerEvents="none"
+      className="absolute self-center rounded-full bg-black/60 px-3 py-1"
+      style={{ bottom: insets.bottom + DEV_BADGE_BOTTOM }}
+    >
+      <Text size="b4" weight="medium" tone="onSky">
+        {`DEV · ${t(WEATHER_CONDITION_LABEL_KEYS[override.condition])} · ${override.isDaylight ? 'day' : 'night'}`}
+      </Text>
+    </Box>
   );
 }
