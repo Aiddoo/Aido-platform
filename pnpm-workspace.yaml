@@ -191,6 +191,7 @@ patchedDependencies:
   '@gorhom/bottom-sheet@5.2.14': patches/@gorhom__bottom-sheet@5.2.14.patch
   react-native-screens@4.30.1: patches/react-native-screens@4.30.1.patch
   expo-widgets@58.0.26: patches/expo-widgets@58.0.26.patch
+  react-native-nitro-modules@0.37.1: patches/react-native-nitro-modules@0.37.1.patch
 auditConfig:
   # @expo/cli(Expo 빌드 도구) 내부 node-forge(GHSA-86w9-cpqp-85rv)·zod 3.x(GHSA-mrhx-c7xc-m3w5)는 패치 버전이 없어 위험을 수용한다. @expo/cli가 패치된 버전을 받으면 제거한다.
   ignoreGhsas:
