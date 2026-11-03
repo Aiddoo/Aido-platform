@@ -4,14 +4,8 @@ import dayjs from 'dayjs';
 import { range } from 'es-toolkit';
 
 import { getCalendarWeek, getCalendarWeekOfDateKey } from './calendar-week';
-import {
-  type DateFormatContext,
-  formatDateKey,
-  formatDateKeyLabel,
-  formatRelativeTime,
-} from './date-format';
-import { addDaysToDateKey } from './date-key';
-import { getDeviceTimezone } from './timezone';
+import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';
+import { addDaysToDateKey, getDayOfWeekOfDateKey, toDeviceDateKey } from './date-key';
 
 function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
   return context.locale === 'ko-KR' ? 'ko' : 'en';
@@ -31,36 +25,34 @@ export const toNullableDate = (date?: Date | string | number | null): Date | nul
   return d.isValid() ? d.toDate() : null;
 };
 
-// Predicates
-export const isDateToday = (date: Date, now: Date): boolean => {
-  return dayjs(date).isSame(now, 'day');
+export const isSameDay = (date1: Date, date2: Date): boolean => {
+  return toDeviceDateKey(date1) === toDeviceDateKey(date2);
 };
 
-export const isSameDay = (date1: Date, date2: Date): boolean => {
-  return dayjs(date1).isSame(date2, 'day');
+export const isDateToday = (date: Date, now: Date): boolean => {
+  return isSameDay(date, now);
 };
 
 export const isSameMonth = (date1: Date, date2: Date): boolean => {
-  return dayjs(date1).isSame(date2, 'month');
+  return toDeviceDateKey(date1).slice(0, 7) === toDeviceDateKey(date2).slice(0, 7);
 };
 
 export const isAfterDay = (date1: Date, date2: Date): boolean => {
-  return dayjs(date1).isAfter(date2, 'day');
+  return toDeviceDateKey(date1) > toDeviceDateKey(date2);
 };
 
 export const isBeforeDay = (date1: Date, date2: Date): boolean => {
-  return dayjs(date1).isBefore(date2, 'day');
+  return toDeviceDateKey(date1) < toDeviceDateKey(date2);
 };
 
 export const isSunday = (date: Date): boolean => {
-  return date.getDay() === 0;
+  return getDayOfWeekOfDateKey(toDeviceDateKey(date)) === 0;
 };
 
 export const isSaturday = (date: Date): boolean => {
-  return date.getDay() === 6;
+  return getDayOfWeekOfDateKey(toDeviceDateKey(date)) === 6;
 };
 
-// DayOfWeek
 /** DayOfWeek 배열을 요일 순서로 정렬 후 로케일 라벨로 변환 (예: "월, 수, 금") */
 export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>
   [...daysOfWeek]
@@ -68,10 +60,7 @@ export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>
     .map((day) => t(`common:daysOfWeek.${day}`))
     .join(', ');
 
-/** DayOfWeek → 로케일 요일 라벨 */
 export const getDayOfWeekLabel = (day: DayOfWeek): string => t(`common:daysOfWeek.${day}`);
-
-// Calendar
 
 /** 캘린더 헤더용 요일 라벨 (일요일 시작, Date#getDay() 인덱스와 일치) */
 export const getWeekdayLabels = (): string[] =>
@@ -184,8 +173,6 @@ export const getMonthWeeks = (displayDate: Date): Date[][] => {
   return weeks;
 };
 
-// Todo 날짜 유틸
-
 /** 투두가 특정 날짜에 해당하는지 (YYYY-MM-DD 문자열 사전순 비교) */
 export const todoOverlapsDate = (
   todoStartDate: string,
@@ -199,18 +186,15 @@ export const todoOverlapsDate = (
 /** 캘린더 그리드 범위 (월간 뷰 - 앞뒤 패딩 주 포함) */
 export const getCalendarRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
   const display = dayjs(displayDate);
-  const timeZone = getDeviceTimezone();
   return {
-    rangeStart: getCalendarWeekOfDateKey(formatDateKey(display.startOf('month').toDate(), timeZone))
+    rangeStart: getCalendarWeekOfDateKey(toDeviceDateKey(display.startOf('month').toDate()))
       .startDateKey,
-    rangeEnd: getCalendarWeekOfDateKey(formatDateKey(display.endOf('month').toDate(), timeZone))
-      .endDateKey,
+    rangeEnd: getCalendarWeekOfDateKey(toDeviceDateKey(display.endOf('month').toDate())).endDateKey,
   };
 };
 
-/** 주간 뷰 범위 */
 export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
-  const week = getCalendarWeekOfDateKey(formatDateKey(displayDate, getDeviceTimezone()));
+  const week = getCalendarWeekOfDateKey(toDeviceDateKey(displayDate));
   return { rangeStart: week.startDateKey, rangeEnd: week.endDateKey };
 };
 

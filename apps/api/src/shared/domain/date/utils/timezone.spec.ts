@@ -14,6 +14,7 @@ import { vi } from "vitest";
 import {
   DEFAULT_DELIVERY_TIMEZONE,
   firstOfMonthInTimezone,
+  localDateInTimezone,
   normalizeIanaTimezone,
   parseLocalDateTime,
   resolveDeliveryTimezone,
@@ -149,6 +150,57 @@ describe("timezone", () => {
       const date = new Date("2026-02-06T15:30:00Z");
       const result = startOfDayInTimezone(date, "UTC");
       expect(result).toEqual(new Date("2026-02-06T00:00:00.000Z"));
+    });
+  });
+
+  describe("localDateInTimezone — 시점이 속한 사용자 달력 날짜", () => {
+    it("같은 시점이라도 서울과 LA의 달력 날짜를 각각 반환한다", () => {
+      // Given
+      const instant = new Date("2026-02-06T20:00:00Z");
+
+      // When
+      const seoul = localDateInTimezone(instant, "Asia/Seoul");
+      const losAngeles = localDateInTimezone(instant, "America/Los_Angeles");
+
+      // Then
+      expect(seoul).toBe("2026-02-07");
+      expect(losAngeles).toBe("2026-02-06");
+    });
+
+    it("서울 자정 직전과 정각을 서로 다른 날짜로 나눈다", () => {
+      // Given
+      const beforeMidnight = new Date("2026-03-03T14:59:59.999Z");
+      const atMidnight = new Date("2026-03-03T15:00:00.000Z");
+
+      // When
+      const before = localDateInTimezone(beforeMidnight, "Asia/Seoul");
+      const at = localDateInTimezone(atMidnight, "Asia/Seoul");
+
+      // Then
+      expect(before).toBe("2026-03-03");
+      expect(at).toBe("2026-03-04");
+    });
+
+    it("윤일을 그대로 유지한다", () => {
+      // Given
+      const leapDay = new Date("2028-02-29T03:00:00Z");
+
+      // When
+      const result = localDateInTimezone(leapDay, "Asia/Seoul");
+
+      // Then
+      expect(result).toBe("2028-02-29");
+    });
+
+    it("잘못된 타임존은 UTC 날짜로 폴백한다", () => {
+      // Given
+      const instant = new Date("2026-02-06T20:00:00Z");
+
+      // When
+      const result = localDateInTimezone(instant, "Mars/Olympus");
+
+      // Then
+      expect(result).toBe("2026-02-06");
     });
   });
 

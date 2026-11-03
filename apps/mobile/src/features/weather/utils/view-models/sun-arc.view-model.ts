@@ -1,9 +1,8 @@
+import { DAY_MS } from '@src/shared/utils/date-format';
 import { round } from 'es-toolkit';
 
 import { type DailyForecastEntry, toUnitPosition } from '../../domains/weather-report.model';
 import type { DialPoint } from './weather-dial.view-model';
-
-const DAY_MS = 24 * 60 * 60_000;
 
 export const SUN_ARC_VIEWBOX = { width: 326, height: 96 } as const;
 

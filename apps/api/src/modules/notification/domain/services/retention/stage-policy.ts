@@ -1,6 +1,12 @@
-import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import dayjs from "dayjs";
+
+import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
+import { diffInDays } from "#api/shared/domain/date/utils/compare";
+import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type { RetentionStageName } from "../../policies/retention/retention.constants.js";
+
+const D0_MIN_WAIT_MS = 2 * TIME_UNIT.MS_PER_HOUR;
 
 export interface RetentionStageState {
   readonly startedAt: Date;
@@ -34,7 +40,7 @@ export function decideRetentionStage(
     if (day > 0) {
       return { kind: "SKIP", reason: "D0_COLLIDES_WITH_D1" };
     }
-    if (state.now.getTime() - state.startedAt.getTime() < 2 * 60 * 60 * 1000) {
+    if (state.now.getTime() - state.startedAt.getTime() < D0_MIN_WAIT_MS) {
       return { kind: "WAIT" };
     }
     return state.todoCount === 0
@@ -88,34 +94,10 @@ export function decideRetentionStage(
 }
 
 function localDayDifference(from: Date, to: Date, timezone: string): number {
-  const fromDate = localDateString(from, timezone);
-  const toDate = localDateString(to, timezone);
-  return Math.floor(
-    (Date.parse(`${toDate}T00:00:00.000Z`) - Date.parse(`${fromDate}T00:00:00.000Z`)) / 86_400_000,
-  );
-}
-
-export function localDateString(date: Date, timezone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: resolveTimezone(timezone),
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
-  const month = parts.find((part) => part.type === "month")?.value ?? "01";
-  const day = parts.find((part) => part.type === "day")?.value ?? "01";
-  return `${year}-${month}-${day}`;
+  return diffInDays(startOfDayInTimezone(to, timezone), startOfDayInTimezone(from, timezone));
 }
 
 function isAtOrAfterLocalTime(date: Date, timezone: string, hour: number, minute: number): boolean {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: resolveTimezone(timezone),
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const localHour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
-  const localMinute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
-  return localHour > hour || (localHour === hour && localMinute >= minute);
+  const local = dayjs(date).tz(resolveTimezone(timezone));
+  return local.hour() > hour || (local.hour() === hour && local.minute() >= minute);
 }

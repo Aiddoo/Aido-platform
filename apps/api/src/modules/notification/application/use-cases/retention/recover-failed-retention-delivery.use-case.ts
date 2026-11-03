@@ -1,4 +1,5 @@
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 
@@ -21,7 +22,7 @@ export class RecoverFailedRetentionDelivery {
     return this.#dependencies.unitOfWork.run(() =>
       this.#dependencies.repository.reopenUnclaimedDispatch({
         ...input,
-        availableAt: new Date(),
+        availableAt: now(),
         reason: "RETENTION_RUNTIME_RETRIES_EXHAUSTED",
       }),
     );

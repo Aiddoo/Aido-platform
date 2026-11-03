@@ -1,12 +1,11 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { RETENTION_CAMPAIGN_KEY } from "../../../domain/policies/retention/retention.constants.js";
 import { retentionPushSkipReason } from "../../../domain/services/retention/push-eligibility.js";
-import {
-  decideRetentionStage,
-  localDateString,
-} from "../../../domain/services/retention/stage-policy.js";
+import { decideRetentionStage } from "../../../domain/services/retention/stage-policy.js";
 import { type RetentionNotificationCopySelection } from "../../messages/delivery/notification-copy.types.js";
 import { createRetentionNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
@@ -40,7 +39,7 @@ export class ProcessRetentionStages {
     const candidates = await this.#dependencies.repository.findScheduledStages(200);
     for (const candidate of candidates) {
       try {
-        await this.#processCandidate(candidate, new Date());
+        await this.#processCandidate(candidate, now());
       } catch {
         this.#dependencies.logger.error({
           event: NotificationRetentionLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
@@ -54,13 +53,13 @@ export class ProcessRetentionStages {
   async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
     const returnedWithinWindow = Boolean(
       candidate.lastActiveAt &&
-      localDateString(candidate.lastActiveAt, candidate.timezone) >
-        localDateString(candidate.startedAt, candidate.timezone),
+      localDateInTimezone(candidate.lastActiveAt, candidate.timezone) >
+        localDateInTimezone(candidate.startedAt, candidate.timezone),
     );
     const activeToday = Boolean(
       candidate.lastActiveAt &&
-      localDateString(candidate.lastActiveAt, candidate.timezone) ===
-        localDateString(now, candidate.timezone),
+      localDateInTimezone(candidate.lastActiveAt, candidate.timezone) ===
+        localDateInTimezone(now, candidate.timezone),
     );
 
     if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
@@ -121,7 +120,7 @@ export class ProcessRetentionStages {
         locale: candidate.locale,
         selectionContext: {
           recipientId: candidate.userId,
-          occurrenceKey: localDateString(now, candidate.timezone),
+          occurrenceKey: localDateInTimezone(now, candidate.timezone),
         },
       });
       await this.#dependencies.repository.createDelivery({

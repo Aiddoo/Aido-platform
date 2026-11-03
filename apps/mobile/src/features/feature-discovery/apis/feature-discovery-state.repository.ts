@@ -1,9 +1,10 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { DAY_MS } from '@src/shared/utils/date-format';
 import { z } from 'zod';
 
 const SEEN_KEY_PREFIX = 'aido_feature_discovery_seen_v1';
 const REENTRY_KEY_PREFIX = 'aido_feature_discovery_reentry_v1';
-const REENTRY_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+const REENTRY_WINDOW_MS = 14 * DAY_MS;
 // 재진입 키에는 처음 본 시각(ISO)만 둔다. 손상된 값은 표시하지 않는 쪽으로 읽는다
 const reentryOpenedAtSchema = z.iso.datetime();
 

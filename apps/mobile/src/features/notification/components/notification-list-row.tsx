@@ -1,4 +1,5 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { type DateSectionKey, formatRelativeTimeLabel } from '@src/shared/utils/date';
@@ -27,6 +28,7 @@ export function NotificationListRow({
   ...props
 }: NotificationListRowProps) {
   const dateFormatContext = useDateFormatContext();
+  const now = useMinuteNow();
   return (
     <PressableFeedback {...props}>
       <HStack className={isUnread ? 'bg-highlight' : 'bg-background'}>
@@ -47,7 +49,7 @@ export function NotificationListRow({
                   {label}
                 </Text>
                 <Text size="b4" shade={5}>
-                  {formatRelativeTimeLabel(createdAt, new Date(), dateFormatContext)}
+                  {formatRelativeTimeLabel(createdAt, now, dateFormatContext)}
                 </Text>
               </HStack>
 

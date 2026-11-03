@@ -1,5 +1,7 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { addMilliseconds, addMinutes } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
 import { decideRetentionOutboxRetry } from "../../policies/retention/retention-outbox-retry.policy.js";
@@ -45,7 +47,7 @@ export class DispatchRetentionPush {
         this.#dependencies.repository.deferOutbox({
           outboxId: input.outboxId,
           publishAttempt: input.publishAttempt,
-          availableAt: new Date(Date.now() + 60_000),
+          availableAt: addMinutes(1),
         }),
       );
       return;
@@ -53,7 +55,7 @@ export class DispatchRetentionPush {
     let candidate: Awaited<ReturnType<RetentionRepositoryPort["claimDispatch"]>>;
     try {
       candidate = await this.#dependencies.unitOfWork.run(() =>
-        this.#dependencies.repository.claimDispatch({ ...input, startedAt: new Date() }),
+        this.#dependencies.repository.claimDispatch({ ...input, startedAt: now() }),
       );
     } catch (claimError) {
       if (input.isFinalAttempt) {
@@ -65,8 +67,8 @@ export class DispatchRetentionPush {
       return;
     }
     try {
-      const now = new Date();
-      if (!this.#dependencies.sender.isEligible(candidate, now)) {
+      const at = now();
+      if (!this.#dependencies.sender.isEligible(candidate, at)) {
         await this.#dependencies.unitOfWork.run(() =>
           this.#dependencies.repository.markDispatchSkipped(
             candidate.fence,
@@ -76,7 +78,7 @@ export class DispatchRetentionPush {
         return;
       }
       if (!candidate.rateLimitReserved) {
-        if (!(await this.#dependencies.sender.reserveRateLimit(candidate, now))) {
+        if (!(await this.#dependencies.sender.reserveRateLimit(candidate, at))) {
           await this.#dependencies.unitOfWork.run(() =>
             this.#dependencies.repository.markDispatchSkipped(
               candidate.fence,
@@ -88,7 +90,7 @@ export class DispatchRetentionPush {
         await this.#dependencies.unitOfWork.run(async () => {
           const reserved = await this.#dependencies.repository.markRateLimitReserved(
             candidate.fence,
-            new Date(),
+            now(),
           );
           if (!reserved) {
             throw new Error("Retention rate-limit reservation fence mismatch");
@@ -117,7 +119,7 @@ export class DispatchRetentionPush {
         this.#dependencies.repository.releaseDispatchForRetry({
           fence: candidate.fence,
           reason: error instanceof Error ? error.message : String(error),
-          availableAt: new Date(Date.now() + retry.delayMs),
+          availableAt: addMilliseconds(retry.delayMs),
           hasExhaustedRetries: retry.hasExhaustedRetries,
         }),
       );
@@ -135,7 +137,7 @@ export class DispatchRetentionPush {
         const recovered = await this.#dependencies.repository.reopenUnclaimedDispatch({
           outboxId: input.outboxId,
           publishAttempt: input.publishAttempt,
-          availableAt: new Date(),
+          availableAt: now(),
           reason,
         });
         if (!recovered) {

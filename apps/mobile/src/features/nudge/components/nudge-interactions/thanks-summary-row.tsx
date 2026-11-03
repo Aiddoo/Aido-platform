@@ -1,5 +1,6 @@
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
@@ -321,6 +322,7 @@ function SentHeart({ style }: { style: ReturnType<typeof useAnimatedStyle> }) {
 
 function LastThankedAt({ lastThankedAt }: { lastThankedAt: Date | null }) {
   const dateFormatContext = useDateFormatContext();
+  const now = useMinuteNow();
 
   if (lastThankedAt == null) {
     return null;
@@ -328,7 +330,7 @@ function LastThankedAt({ lastThankedAt }: { lastThankedAt: Date | null }) {
 
   return (
     <CardDescription>
-      {formatRelativeTimeLabel(lastThankedAt, new Date(), dateFormatContext)}
+      {formatRelativeTimeLabel(lastThankedAt, now, dateFormatContext)}
     </CardDescription>
   );
 }

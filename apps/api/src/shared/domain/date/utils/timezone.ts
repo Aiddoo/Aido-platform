@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 
+import { DATE_FORMAT } from "../constants/date.constant.js";
 import { now } from "./core.js";
 
 const DEFAULT_TIMEZONE = "UTC";
@@ -94,6 +95,15 @@ export function parseLocalDateTime(
 export function startOfDayInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
   const localDateStr = dayjs(date).tz(resolveTimezone(tz)).format("YYYY-MM-DD");
   return dayjs.utc(localDateStr).startOf("day").toDate();
+}
+
+/**
+ * 특정 시점이 지정 타임존에서 속한 달력 날짜 (YYYY-MM-DD)
+ *
+ * @example localDateInTimezone(new Date('2026-02-06T20:00:00Z'), 'Asia/Seoul') // "2026-02-07"
+ */
+export function localDateInTimezone(date: Date, tz: string = DEFAULT_TIMEZONE): string {
+  return dayjs(date).tz(resolveTimezone(tz)).format(DATE_FORMAT.DATE_ONLY);
 }
 
 /**

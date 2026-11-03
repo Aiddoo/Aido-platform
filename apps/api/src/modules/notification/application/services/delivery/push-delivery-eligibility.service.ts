@@ -1,6 +1,10 @@
 import { uniq } from "es-toolkit";
 
-import { resolveDeliveryTimezone, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
+import { now } from "#api/shared/domain/date/utils/core";
+import {
+  localDateInTimezone,
+  resolveDeliveryTimezone,
+} from "#api/shared/domain/date/utils/timezone";
 
 import { isNightTime } from "../../../domain/services/delivery/night-time.js";
 import {
@@ -82,7 +86,7 @@ export class PushDeliveryEligibilityService {
       userId,
       preference,
       timezone,
-      localDate: this.#formatLocalDate(timezone),
+      localDate: localDateInTimezone(now(), timezone),
     };
   }
 
@@ -110,7 +114,7 @@ export class PushDeliveryEligibilityService {
             preference,
             consent: consentByUserId.get(userId),
             timezone,
-            localDate: this.#formatLocalDate(timezone),
+            localDate: localDateInTimezone(now(), timezone),
           },
         ];
       }),
@@ -255,18 +259,9 @@ export class PushDeliveryEligibilityService {
       ...(isEngagement && {
         engagementLocalDate:
           recipient?.localDate ??
-          this.#formatLocalDate(resolveDeliveryTimezone(recipient?.preference?.timezone)),
+          localDateInTimezone(now(), resolveDeliveryTimezone(recipient?.preference?.timezone)),
       }),
     };
-  }
-
-  #formatLocalDate(timezone: string): string {
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: resolveTimezone(timezone),
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
   }
 
   #skipped<TCandidate>(

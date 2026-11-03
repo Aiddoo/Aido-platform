@@ -1,5 +1,8 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import { PushDeliveryClaimRecoveryConflictError } from "../../errors/delivery/push-delivery-claim-recovery-conflict.error.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../../errors/delivery/push-delivery-rate-limit-reservation-conflict.error.js";
@@ -258,7 +261,7 @@ export class DeliverPushNotifications {
     if (claimedDeliveries.length === 0) {
       return new Set();
     }
-    const reservedAt = new Date();
+    const reservedAt = now();
     const reserved = await this.#dependencies.unitOfWork.run(async () => {
       const reservedDispatchIds = await this.#dependencies.lifecycle.markRateLimitReserved(
         claimedDeliveries.map((claimed) => ({
@@ -286,7 +289,7 @@ export class DeliverPushNotifications {
           publications: input.publications,
           processingJobId: input.processingJobId,
           processingJobAttempt: input.processingJobAttempt,
-          startedAt: new Date(),
+          startedAt: now(),
         }),
       );
     } catch (claimError) {
@@ -306,7 +309,7 @@ export class DeliverPushNotifications {
       await this.#dependencies.unitOfWork.run(async () => {
         const recovered = await this.#dependencies.lifecycle.reopenAfterFinalClaimFailure({
           publications: input.publications,
-          availableAt: new Date(),
+          availableAt: now(),
           error: message,
         });
         if (recovered !== input.publications.length) {
@@ -354,7 +357,7 @@ export class DeliverPushNotifications {
   }
 
   #context(timezone: string, localDate: string): PushDeliveryContext {
-    return { timezone, localDate: new Date(`${localDate}T00:00:00.000Z`) };
+    return { timezone, localDate: parseDateOnly(localDate) };
   }
 
   #logSkipped(data: CreateNotificationData, reason: PushDispatchSkipReason): void {
@@ -372,7 +375,7 @@ export class DeliverPushNotifications {
     isFinalAttempt: boolean,
   ): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
-    const now = Date.now();
+    const at = now();
     try {
       await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.lifecycle.release(
@@ -380,9 +383,9 @@ export class DeliverPushNotifications {
             fence: item.fence,
             error: message,
             reopenOutbox: isFinalAttempt,
-            availableAt: new Date(
-              now +
-                (isFinalAttempt ? pushDeliveryOutboxRetryDelayMs(item.fence.publishAttempt) : 0),
+            availableAt: addMilliseconds(
+              isFinalAttempt ? pushDeliveryOutboxRetryDelayMs(item.fence.publishAttempt) : 0,
+              at,
             ),
           })),
         ),

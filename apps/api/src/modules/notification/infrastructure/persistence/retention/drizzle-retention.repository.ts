@@ -27,6 +27,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   ClaimedOutbox,
@@ -42,7 +43,6 @@ import {
   RETENTION_EXPERIMENT_KEY,
   RETENTION_STAGE_NAMES,
 } from "../../../domain/policies/retention/retention.constants.js";
-import { localDateString } from "../../../domain/services/retention/stage-policy.js";
 import { pushTokenFingerprint } from "../delivery/push-token-fingerprint.js";
 
 const stageRowSchema = z.object({
@@ -281,7 +281,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       })
       .returning({ id: notification.id });
     const notificationId = requireRecord(createdNotification).id;
-    const localDate = new Date(`${localDateString(now(), input.timezone)}T00:00:00.000Z`);
+    const localDate = startOfDayInTimezone(now(), input.timezone);
     const [createdDispatch] = await this.db
       .insert(pushDispatch)
       .values({
