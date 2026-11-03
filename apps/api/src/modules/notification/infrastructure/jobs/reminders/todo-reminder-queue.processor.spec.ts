@@ -1,15 +1,4 @@
 import { TestBed } from "@suites/unit";
-/**
- * TodoReminderProcessor 잡/프로세서 단위 테스트
- *
- * @description
- * TodoReminderProcessor의 비동기 작업 로직을 격리 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test todo-reminder.processor
- * ```
- */
 import type { Mocked } from "vitest";
 
 import {
@@ -17,34 +6,35 @@ import {
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
-import { createMockJob } from "#test/mocks/index";
 
 import {
   TODO_REMINDER_READER,
   type TodoReminderReaderPort,
 } from "../../../application/ports/reminders/todo-reminder-reader.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type { ReminderJobData } from "../../jobs/reminders/bullmq-reminder-scheduler.adapter.js";
-import { TodoReminderProcessor } from "./todo-reminder.processor.js";
+import { type ReminderJobData, TODO_REMINDER_JOB_NAME } from "./todo-reminder-queue.constants.js";
+import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 
 const USER_ID = "user-1";
 const TODO_TITLE = "Test Todo";
 
-const makeJob = (data: Partial<ReminderJobData> = {}) =>
-  createMockJob("send-reminder", {
+const makeJob = (data: Partial<ReminderJobData> = {}) => ({
+  name: TODO_REMINDER_JOB_NAME,
+  data: {
     todoId: data.todoId ?? 1,
     userId: data.userId ?? USER_ID,
     stageLabel: data.stageLabel ?? "60min",
-  });
+  },
+});
 
-describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
-  let processor: TodoReminderProcessor;
+describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () => {
+  let processor: TodoReminderQueueProcessor;
   let reader: Mocked<TodoReminderReaderPort>;
   let notificationPublisher: Mocked<NotificationPublisher>;
   let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(TodoReminderProcessor).compile();
+    const { unit, unitRef } = await TestBed.solitary(TodoReminderQueueProcessor).compile();
 
     processor = unit;
     reader = unitRef.get(TODO_REMINDER_READER);
@@ -66,12 +56,6 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
     reader.findActiveTodo.mockResolvedValue(todoExists ? { id: 1, title: todoTitle } : null);
     reader.existsRecentReminderNotification.mockResolvedValue(notificationExists);
   };
-
-  describe("onStalled", () => {
-    it("stalled 발생 시 에러 없이 처리해야 한다", () => {
-      expect(() => processor.onStalled("test-job-id")).not.toThrow();
-    });
-  });
 
   describe("정상 처리", () => {
     it("유효한 투두에 대해 알림을 발송한다", async () => {
@@ -193,16 +177,16 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
   });
 
   describe("에러 처리", () => {
-    it("알림 발송 실패 시 에러가 전파된다 (BullMQ 재시도)", async () => {
+    it("알림 발송 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
       setupMocks({ todoExists: true, notificationExists: false });
       notificationPublisher.publish.mockRejectedValue(new Error("Push failed"));
 
-      // When & Then — BullMQ가 재시도하도록 에러 전파
+      // When & Then
       await expect(processor.process(makeJob())).rejects.toThrow("Push failed");
     });
 
-    it("DB 조회 실패 시 에러가 전파된다 (BullMQ 재시도)", async () => {
+    it("DB 조회 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
       reader.findActiveTodo.mockRejectedValue(new Error("DB connection failed"));
 

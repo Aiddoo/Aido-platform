@@ -1,12 +1,10 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
-import { z } from "zod";
 
 import {
   NotificationPublisher,
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
@@ -16,23 +14,16 @@ import {
   type TodoReminderReaderPort,
 } from "../../../application/ports/reminders/todo-reminder-reader.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import {
-  reminderJobDataSchema,
-  TODO_REMINDER_LEGACY_QUEUE,
-  TODO_REMINDER_QUEUE,
-} from "../../jobs/reminders/bullmq-reminder-scheduler.adapter.js";
-/**
- * BullMQ 리마인더 잡 프로세서 (진입 어댑터).
- *
- * - 잡 실행 시 투두 유효성 확인 (완료/삭제 여부)
- * - 24시간 내 동일 알림 dedup
- * - 알림 발행 (NotificationPublisher)
- */
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import {
+  todoReminderJobSchema,
+  TODO_REMINDER_QUEUE,
+  TODO_REMINDER_WORKER_POLICY,
+} from "./todo-reminder-queue.constants.js";
 
 @Injectable()
-export class TodoReminderProcessor implements OnModuleInit {
-  readonly #logger = new Logger(TodoReminderProcessor.name);
+export class TodoReminderQueueProcessor implements OnModuleInit {
+  readonly #logger = new Logger(TodoReminderQueueProcessor.name);
 
   constructor(
     @Inject(TODO_REMINDER_READER)
@@ -54,40 +45,17 @@ export class TodoReminderProcessor implements OnModuleInit {
           await this.process(job.data);
         }
       },
-      { teamSize: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
-    );
-    await this.runtime.work(
-      TODO_REMINDER_LEGACY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process(job.data);
-        }
-      },
-      { teamSize: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED },
+      TODO_REMINDER_WORKER_POLICY,
     );
   }
 
-  onStalled(jobId: string): void {
-    this.#logger.warn({ event: NotificationProviderLogEvent.JOB_STALLED, jobId });
-  }
-
-  onError(_error: Error): void {
-    this.#logger.error({ event: NotificationProviderLogEvent.WORKER_FAILED });
-  }
-
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
-    this.#logger.error({ event: NotificationProviderLogEvent.JOB_FAILED, jobId: job?.id });
-  }
-
-  /** 현재 queue는 `{ name, data }`, 레거시 queue는 data만 담는다. */
   async process(untrustedJob: unknown): Promise<void> {
-    const parsedJob = TODO_REMINDER_JOB_SCHEMA.safeParse(untrustedJob);
+    const parsedJob = todoReminderJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
       return;
     }
-    const { todoId, userId, stageLabel } =
-      "data" in parsedJob.data ? parsedJob.data.data : parsedJob.data;
+    const { todoId, userId, stageLabel } = parsedJob.data.data;
 
     this.#logger.debug({
       event: NotificationProviderLogEvent.JOB_STARTED,
@@ -96,7 +64,6 @@ export class TodoReminderProcessor implements OnModuleInit {
       stage: resolveReminderStage(stageLabel),
     });
 
-    // 1. 투두가 아직 유효한지 확인 (완료/삭제 여부)
     const todo = await this.reader.findActiveTodo(todoId);
 
     if (!todo) {
@@ -109,7 +76,6 @@ export class TodoReminderProcessor implements OnModuleInit {
       return;
     }
 
-    // 2. 24시간 내 동일 알림 DB dedup
     const twentyFourHoursAgo = subtractDays(1);
     const exists = await this.reader.existsRecentReminderNotification({
       todoId,
@@ -127,8 +93,6 @@ export class TodoReminderProcessor implements OnModuleInit {
       return;
     }
 
-    // 3. 알림 발송 (DB에서 최신 제목 사용 — 스케줄링 이후 제목 변경 반영)
-    // 언어는 UserPreference 캐시 경유 (발송 여부 판정과 같은 캐시 엔트리 공유)
     const locale = await this.recipientLocaleReader.getLocale(userId);
     const stage = resolveReminderStage(stageLabel);
     const message = createTodoReminderNotificationMessage({
@@ -158,12 +122,7 @@ export class TodoReminderProcessor implements OnModuleInit {
   }
 }
 
-const TODO_REMINDER_JOB_SCHEMA = z.union([
-  reminderJobDataSchema,
-  z.object({ data: reminderJobDataSchema }),
-]);
-
-/** 레거시 queue 문자열을 현재 reminder 단계로 안전하게 좁힌다. */
+/** 알 수 없는 단계 문자열은 가장 이른 단계 문구로 보낸다. */
 function resolveReminderStage(stage: string): "60min" | "10min" | "immediate" {
   if (stage === "10min" || stage === "immediate") {
     return stage;

@@ -72,24 +72,4 @@ describe("PushDeliveryQueueService — durable push queue 발행", () => {
       }),
     );
   });
-
-  it("publication 순서와 무관한 colon 없는 idempotency key를 만든다", async () => {
-    // Given - 동일한 generation 집합의 서로 다른 입력 순서
-    const firstOrder = [
-      { dispatchId: 23, publishAttempt: 4 },
-      { dispatchId: 7, publishAttempt: 2 },
-    ];
-    const secondOrder = [...firstOrder].reverse();
-
-    // When - 두 순서를 각각 enqueue
-    await service.enqueueDeliveries(firstOrder);
-    await service.enqueueDeliveries(secondOrder);
-    const firstKey = runtime.enqueue.mock.calls[0]?.[2].idempotencyKey;
-    const secondKey = runtime.enqueue.mock.calls[1]?.[2].idempotencyKey;
-
-    // Then - 동일 집합은 backend-safe한 하나의 key로 수렴
-    expect(firstKey).toBe(secondKey);
-    expect(firstKey).toMatch(/^push-delivery-[0-9a-f]{64}$/);
-    expect(firstKey).not.toContain(":");
-  });
 });

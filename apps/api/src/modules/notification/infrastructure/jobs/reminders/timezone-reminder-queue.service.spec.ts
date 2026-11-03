@@ -2,8 +2,8 @@ import { TEST_CUID } from "#test/fixtures/index";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import { flushPromises } from "#test/mocks/index";
 
+import type { ReminderHourChangedJobData } from "../../../application/ports/reminders/timezone-reminder-enqueuer.port.js";
 import {
-  type ReminderHourChangedJobData,
   TIMEZONE_REMINDER_QUEUE,
   TimezoneReminderJobName,
 } from "./timezone-reminder-queue.constants.js";

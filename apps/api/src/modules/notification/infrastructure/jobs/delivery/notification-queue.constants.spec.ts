@@ -1,4 +1,5 @@
 import {
+  NOTIFICATION_DEAD_LETTER_QUEUE,
   NOTIFICATION_JOB_POLICY,
   NOTIFICATION_QUEUE,
   NOTIFICATION_WORKER_POLICY,
@@ -10,6 +11,7 @@ import {
 describe("알림 큐 계약", () => {
   it("queue 이름과 운영 정책을 기존 계약으로 유지한다", () => {
     expect(NOTIFICATION_QUEUE).toBe("notification.v1");
+    expect(NOTIFICATION_DEAD_LETTER_QUEUE).toBe("notification-dead-letter.v1");
     expect(NOTIFICATION_JOB_POLICY).toEqual({
       retryLimit: 2,
       retryDelaySeconds: 1,
@@ -24,7 +26,7 @@ describe("알림 큐 계약", () => {
     });
     expect(PUSH_RECEIPT_SCHEDULE).toEqual({
       key: "push-receipts-scheduler",
-      cron: "*/5 * * * *",
+      cron: "* * * * *",
     });
   });
 

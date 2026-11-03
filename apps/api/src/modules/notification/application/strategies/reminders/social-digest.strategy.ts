@@ -1,3 +1,5 @@
+import { groupBy } from "es-toolkit";
+
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -84,51 +86,43 @@ export class SocialDigestStrategy implements TimezoneReminderStrategy {
 
     const candidateIds = candidates.map((u) => u.id);
 
-    // 배치 1: 모든 candidate의 맞팔 관계를 한 번에 조회
     const allFollows = await this.#dependencies.reader.findAcceptedFollows(candidateIds);
 
-    // per-user 친구 ID 맵
-    const friendIdMap = new Map<string, Set<string>>();
-    const allFriendIds = new Set<string>();
-    for (const f of allFollows) {
-      for (const uid of candidateIds) {
-        if (f.followerId === uid || f.followingId === uid) {
-          const friendId = f.followerId === uid ? f.followingId : f.followerId;
-          if (!friendIdMap.has(uid)) {
-            friendIdMap.set(uid, new Set());
-          }
-          friendIdMap.get(uid)?.add(friendId);
-          allFriendIds.add(friendId);
-        }
-      }
-    }
+    const candidateIdSet = new Set(candidateIds);
+    const friendships = allFollows
+      .flatMap((follow) => [
+        { userId: follow.followerId, friendId: follow.followingId },
+        { userId: follow.followingId, friendId: follow.followerId },
+      ])
+      .filter(({ userId }) => candidateIdSet.has(userId));
+    const friendIdMap = new Map(
+      Object.entries(groupBy(friendships, ({ userId }) => userId)).map(([userId, rows]) => [
+        userId,
+        new Set(rows.map(({ friendId }) => friendId)),
+      ]),
+    );
+    const allFriendIds = new Set(friendships.map(({ friendId }) => friendId));
 
     if (allFriendIds.size === 0) {
       return { sent: 0 };
     }
 
-    // 배치 2: 모든 친구의 오늘 투두 완료 현황을 한 번에 조회
     const friendsWithTodos = await this.#dependencies.reader.findFriendsWithTodayTodos({
       friendIds: [...allFriendIds],
       today,
       tomorrow,
     });
 
-    // 전체 완료한 친구만 필터링 (이름 미설정은 수신자 로케일별 폴백으로 치환)
-    const completedFriendMap = new Map<string, { name: string | null }>();
-    for (const f of friendsWithTodos) {
-      if (f.todos.length > 0 && f.todos.every((t) => t.completed)) {
-        completedFriendMap.set(f.id, {
-          name: f.profile?.name ?? null,
-        });
-      }
-    }
+    const completedFriendMap = new Map(
+      friendsWithTodos
+        .filter((friend) => friend.todos.length > 0 && friend.todos.every((t) => t.completed))
+        .map((friend) => [friend.id, { name: friend.profile?.name ?? null }]),
+    );
 
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       candidates.map((u) => u.id),
     );
 
-    // 인메모리 매칭
     const notifications: CreateNotificationData[] = [];
 
     for (const user of candidates) {

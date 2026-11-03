@@ -6,21 +6,19 @@ import {
   REMINDER_IMMEDIATE_LABEL,
   REMINDER_STAGES,
 } from "../../../domain/services/reminders/reminder-plan.js";
-import {
-  BullMQReminderSchedulerAdapter,
-  TODO_REMINDER_QUEUE,
-} from "./bullmq-reminder-scheduler.adapter.js";
+import { TODO_REMINDER_QUEUE } from "./todo-reminder-queue.constants.js";
+import { TodoReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.js";
 
 const USER_ID = "user-1";
 const HOUR_MS = 60 * 60 * 1000;
 
-describe("BullMQReminderSchedulerAdapter — 영속 리마인더 스케줄링", () => {
+describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", () => {
   let runtime: FakeJobRuntime;
-  let adapter: BullMQReminderSchedulerAdapter;
+  let adapter: TodoReminderSchedulerAdapter;
 
   beforeEach(() => {
     runtime = new FakeJobRuntime();
-    adapter = new BullMQReminderSchedulerAdapter(runtime);
+    adapter = new TodoReminderSchedulerAdapter(runtime);
   });
 
   it("2시간 뒤 마감은 60분·10분 작업을 고유 키로 등록한다", async () => {

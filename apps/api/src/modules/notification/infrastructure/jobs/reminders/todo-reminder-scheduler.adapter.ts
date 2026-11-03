@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { z } from "zod";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -12,32 +11,17 @@ import {
   planReminderJobs,
   REMINDER_IMMEDIATE_LABEL,
 } from "../../../domain/services/reminders/reminder-plan.js";
+import { todoReminderJobKey } from "../notification-job-keys.js";
+import {
+  TODO_REMINDER_JOB_NAME,
+  TODO_REMINDER_JOB_POLICY,
+  TODO_REMINDER_QUEUE,
+} from "./todo-reminder-queue.constants.js";
 
-export const TODO_REMINDER_QUEUE = "todo-reminder.v1";
-export const TODO_REMINDER_LEGACY_QUEUE = "todo-reminder";
-export const TODO_REMINDER_JOB_NAME = "send-reminder";
-
-export const reminderJobDataSchema = z.object({
-  todoId: z.number(),
-  userId: z.string(),
-  stageLabel: z.string(),
-});
-
-export type ReminderJobData = z.infer<typeof reminderJobDataSchema>;
-
-/**
- * BullMQ 리마인더 스케줄러 어댑터.
- *
- * - Redis 기반 지연 잡으로 정확한 시점에 리마인더 발송
- * - jobId 기반 중복 방지 (동일 todoId + stage = 덮어쓰기)
- * - 서버 재시작 후에도 잡 유지 (Redis 영속성)
- *
- * 예약 계획(어떤 단계를 언제)은 도메인 정책(planReminderJobs)이 결정하고,
- * 어댑터는 계획을 BullMQ 큐에 등록만 한다.
- */
+/** 예약 계획은 도메인 planReminderJobs가 정하고, 이 어댑터는 단계별 지연 작업을 job runtime에 등록·취소한다. */
 @Injectable()
-export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
-  readonly #logger = new Logger(BullMQReminderSchedulerAdapter.name);
+export class TodoReminderSchedulerAdapter implements IReminderScheduler {
+  readonly #logger = new Logger(TodoReminderSchedulerAdapter.name);
 
   constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
@@ -50,12 +34,10 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
   }
 
   async #scheduleAsync(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
-    // 기존 잡 제거 (재스케줄링 지원)
     await this.#cancelAsync(todoId);
 
     const jobs = planReminderJobs(scheduledTime.getTime(), Date.now());
 
-    // scheduledTime이 이미 과거면 아무것도 안 함
     if (jobs.length === 0) {
       this.#logger.debug(`Scheduled time already passed: todoId=${todoId}, skipping`);
       return;
@@ -69,14 +51,9 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
           data: { todoId, userId, stageLabel: job.label },
         },
         {
-          idempotencyKey: `reminder_${todoId}_${job.label}`,
+          ...TODO_REMINDER_JOB_POLICY,
+          idempotencyKey: todoReminderJobKey(todoId, job.label),
           startAfter: new Date(Date.now() + job.delay),
-          retryLimit: 2,
-          retryDelaySeconds: 5,
-          retryBackoff: true,
-          expireInSeconds: 10 * 60,
-          retentionSeconds: 24 * 60 * 60,
-          deleteAfterSeconds: 24 * 60 * 60,
         },
       );
 
@@ -94,7 +71,7 @@ export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
     let cancellationStatus: ReminderCancellationResult["status"] = "missing";
 
     for (const label of allReminderLabels()) {
-      const jobId = `reminder_${todoId}_${label}`;
+      const jobId = todoReminderJobKey(todoId, label);
       try {
         const result = await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
         if (result.status === "cancelled") {

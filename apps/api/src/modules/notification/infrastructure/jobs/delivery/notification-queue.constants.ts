@@ -2,20 +2,11 @@ import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
-/** 알림 큐의 이름·메시지 스키마·운영 정책을 소유하는 단일 계약. */
-
-// =============================================================================
-// Queue Name
-// =============================================================================
+import { NOTIFICATION_MILESTONES } from "../../../domain/types/delivery/notification-milestone.js";
 
 export const NOTIFICATION_QUEUE = "notification.v1";
-export const NOTIFICATION_LEGACY_QUEUE = "notification";
+export const NOTIFICATION_DEAD_LETTER_QUEUE = "notification-dead-letter.v1";
 
-// =============================================================================
-// Job Names
-// =============================================================================
-
-/** 알림 잡 이름 상수 */
 export const NotificationJobName = {
   FOLLOW_NEW: "follow-new",
   FOLLOW_MUTUAL: "follow-mutual",
@@ -27,14 +18,37 @@ export const NotificationJobName = {
   PUSH_RECEIPTS: "push-receipts",
 } as const;
 
-/** 기존 재시도·보관 계약. JobRuntime이 각 backend 옵션으로 변환한다. */
+const DAY_SECONDS = 24 * 60 * 60;
+
 export const NOTIFICATION_JOB_POLICY = {
   retryLimit: 2,
   retryDelaySeconds: 1,
   retryBackoff: true,
   expireInSeconds: 5 * 60,
-  retentionSeconds: 7 * 24 * 60 * 60,
-  deleteAfterSeconds: 24 * 60 * 60,
+  retentionSeconds: 7 * DAY_SECONDS,
+  deleteAfterSeconds: DAY_SECONDS,
+} as const;
+
+/** 재시도를 다 쓴 이벤트는 사람이 원인을 확인할 수 있게 더 오래 보관한다. */
+export const NOTIFICATION_DEAD_LETTER_JOB_POLICY = {
+  ...NOTIFICATION_JOB_POLICY,
+  retryLimit: 0,
+  retentionSeconds: 14 * DAY_SECONDS,
+  deleteAfterSeconds: 14 * DAY_SECONDS,
+} as const;
+
+export const NOTIFICATION_EVENT_JOB_POLICY = {
+  ...NOTIFICATION_JOB_POLICY,
+  deadLetter: {
+    queue: NOTIFICATION_DEAD_LETTER_QUEUE,
+    jobPolicy: NOTIFICATION_DEAD_LETTER_JOB_POLICY,
+  },
+} as const;
+
+/** 호출자는 커밋 뒤 결과를 기다리지 않으므로 일시적인 DB 오류만 짧게 다시 시도한다. */
+export const NOTIFICATION_ENQUEUE_RETRY = {
+  retries: 3,
+  delayMs: 200,
 } as const;
 
 export const NOTIFICATION_WORKER_POLICY = {
@@ -42,36 +56,30 @@ export const NOTIFICATION_WORKER_POLICY = {
   pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE,
 } as const;
 
-export const PUSH_RECEIPT_SCHEDULE = {
-  key: "push-receipts-scheduler",
-  cron: "*/5 * * * *",
+export const NOTIFICATION_DEAD_LETTER_WORKER_POLICY = {
+  teamSize: 1,
+  pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+  queuePolicy: NOTIFICATION_DEAD_LETTER_JOB_POLICY,
 } as const;
 
-// =============================================================================
-// Job Data Interfaces
-// =============================================================================
+/** receipt 정리는 실행 예산(45초) 안에서 끝나므로 1분마다 돌려도 겹치지 않는다. */
+export const PUSH_RECEIPT_SCHEDULE = {
+  key: "push-receipts-scheduler",
+  cron: "* * * * *",
+} as const;
 
-/**
- * 새 팔로우 요청 잡 데이터
- */
 const FollowNewJobDataSchema = z.object({
   followerId: z.string().min(1),
   followingId: z.string().min(1),
   followerName: z.string(),
 });
 
-/**
- * 맞팔로우 성립 잡 데이터
- */
 const FollowMutualJobDataSchema = z.object({
   userId: z.string().min(1),
   friendId: z.string().min(1),
   friendName: z.string(),
 });
 
-/**
- * Nudge 발송 잡 데이터
- */
 const NudgeSentJobDataSchema = z.object({
   nudgeId: z.number().int(),
   senderId: z.string().min(1),
@@ -82,9 +90,6 @@ const NudgeSentJobDataSchema = z.object({
   message: z.string().optional(),
 });
 
-/**
- * Cheer 발송 잡 데이터
- */
 const CheerSentJobDataSchema = z.object({
   cheerId: z.number().int(),
   senderId: z.string().min(1),
@@ -93,14 +98,8 @@ const CheerSentJobDataSchema = z.object({
   message: z.string().optional(),
 });
 
-/**
- * 결제 문제 잡 데이터
- */
 const BillingIssueJobDataSchema = z.object({ userId: z.string().min(1) });
 
-/**
- * 친구 할일 전체 완료 잡 데이터
- */
 const FriendCompletedJobDataSchema = z.object({
   friendId: z.string().min(1),
   friendName: z.string(),
@@ -108,19 +107,9 @@ const FriendCompletedJobDataSchema = z.object({
   timezone: z.string().min(1),
 });
 
-/**
- * 마일스톤 달성 잡 데이터
- */
 const MilestoneReachedJobDataSchema = z.object({
   userId: z.string().min(1),
-  milestone: z.enum([
-    "FIRST_COMPLETE",
-    "COUNT_10",
-    "COUNT_50",
-    "COUNT_100",
-    "STREAK_3",
-    "FIRST_FRIEND",
-  ]),
+  milestone: z.enum(NOTIFICATION_MILESTONES),
 });
 
 export const NotificationRuntimeJobSchema = z.discriminatedUnion("name", [
@@ -158,11 +147,6 @@ export const NotificationRuntimeJobSchema = z.discriminatedUnion("name", [
   }),
 ]);
 
-// =============================================================================
-// Schema-derived public types
-// =============================================================================
-
-/** 런타임 검증 스키마가 큐 타입 계약의 단일 원본이다. */
 export type NotificationRuntimeJob = z.output<typeof NotificationRuntimeJobSchema>;
 export type NotificationJobNameValue = NotificationRuntimeJob["name"];
 export type NotificationJobOf<Name extends NotificationJobNameValue> = Extract<
