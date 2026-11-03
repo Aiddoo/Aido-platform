@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "3fe97d2a-1b90-47f6-bed5-2739f4164dad",
+  "prevIds": [
+    "df3e26d8-19ce-48ba-82ac-3dc40a4d4be3"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "OAuthState",
+        "isNewUser"
+      ],
+      "writes": [
+        "s|col|public.OAuthState.isNewUser",
+        "n|col|public.OAuthState.isNewUser",
+        "e|col|public.OAuthState.isNewUser"
+      ],
+      "reads": [
+        "n|tbl|public.OAuthState",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "OAuthState",
+        "name": "isNewUser",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

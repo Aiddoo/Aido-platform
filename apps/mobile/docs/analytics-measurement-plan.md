@@ -12,7 +12,7 @@
 | P0   | `screen_view.screen_name`이 실제 경로(`/invite/ABC123`, `/users/{id}/report`, `/todo/123`)          | 초대 코드·사용자 id 유출 + 화면 수 폭증(GA `(other)` 행). 라우트 템플릿으로 |
 | P0   | 개발·프리뷰 트래픽이 운영 속성 `aido-997b5`에 섞임                                                  | 모든 지표 오염. §5-h                                                        |
 | P0   | 구매 이벤트가 3중(`subscription_started` + RevenueCat `purchase` + Firebase 자동 `in_app_purchase`) | 매출·전환 이중 집계. RevenueCat `purchase`만 원본으로                       |
-| P1   | 소셜 가입이 `auth_signup`이 아닌 `auth_login`으로만 남음                                            | 가입·활성화 퍼널 분모 왜곡                                                  |
+| P1   | 소셜 가입이 `auth_signup`이 아닌 `auth_login`으로만 남음 → 1.14.1 반영(§6)                          | 가입·활성화 퍼널 분모 왜곡                                                  |
 | P1   | 페이월 퍼널 중간 단계 없음(게이트 → 구독하기 탭 → 구독 화면 → 결제 시도/실패)                       | 게이트별 전환율 계산 불가                                                   |
 | P1   | `is_premium`에 ADMIN·초대 보상(GRANT) 포함, `subscription_status`는 FREE                            | 유료 전환율 왜곡. `premium_source` 추가                                     |
 
@@ -36,13 +36,13 @@
 
 **인증 / 세션**
 
-| 이벤트                                        | 파라미터                                                                       | 발생 위치                  | 의미                     |
-| --------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------- | ------------------------ |
-| `auth_signup`                                 | `method`: `email` (소셜은 발생 안 함 ⚠)                                        | 이메일 가입 성공           | 가입                     |
-| `auth_login`                                  | `method`: `email`·`google`·`apple`·`kakao`·`naver` 등(`OAuthProviderSlug`)     | 이메일 로그인 / OAuth 교환 | 로그인(소셜 가입 포함 ⚠) |
-| `auth_logout` / `auth_account_deleted`        | –                                                                              | 로그아웃 / 탈퇴            | 이탈 신호                |
-| `auth_social_linked` / `auth_social_unlinked` | `provider`                                                                     | 계정 연결 설정             | 계정 연동                |
-| `session_expired`                             | `reason`: `no-refresh-token`·`refresh-rejected-401`·`invalid-refresh-response` | `auth-provider`            | 비자발 로그아웃          |
+| 이벤트                                        | 파라미터                                                                       | 발생 위치                                          | 의미                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------- | -------------------------------------- |
+| `auth_signup`                                 | `method`: `email`·`google`·`apple`·`kakao`·`naver`                             | 이메일 가입 / 소셜 신규 가입(`isNewUser`, 1.14.1~) | 가입                                   |
+| `auth_login`                                  | `method`: `email`·`google`·`apple`·`kakao`·`naver` 등(`OAuthProviderSlug`)     | 이메일 로그인 / 소셜 기존 계정                     | 로그인(1.14.0 이하는 소셜 가입 포함 ⚠) |
+| `auth_logout` / `auth_account_deleted`        | –                                                                              | 로그아웃 / 탈퇴                                    | 이탈 신호                              |
+| `auth_social_linked` / `auth_social_unlinked` | `provider`                                                                     | 계정 연결 설정                                     | 계정 연동                              |
+| `session_expired`                             | `reason`: `no-refresh-token`·`refresh-rejected-401`·`invalid-refresh-response` | `auth-provider`                                    | 비자발 로그아웃                        |
 
 **할 일 / 카테고리**
 
@@ -203,7 +203,7 @@
 
 | 영역            | 질문                                         | KPI 정의                                                                                                          | GA 소스                                                                                                                            | 리포트                            |
 | --------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| 획득            | 가입이 늘고 있나, 어떤 방식으로?             | 일별 가입 수 · 방식 비율                                                                                          | `auth_signup.method` (소셜 수정 후)                                                                                                | 개요 카드                         |
+| 획득            | 가입이 늘고 있나, 어떤 방식으로?             | 일별 가입 수 · 방식 비율                                                                                          | `auth_signup.method` (1.14.1부터 소셜 포함)                                                                                        | 개요 카드                         |
 | 활성화          | 가입자가 가치를 경험하나?                    | 가입 7일 내 `activation_completed` 사용자 / 가입자                                                                | `auth_signup` → `todo_created` → `todo_completed{is_completed=true}` → `activation_completed`                                      | 유입경로(퍼널) 탐색               |
 | 리텐션          | 돌아오나?                                    | D1·D7·D30 재방문(첫 방문 코호트), 주간 활성 중 `todo_created` 수행 비율                                           | `first_open`(자동) 코호트 · 반환 기준 `todo_created`                                                                               | 코호트 탐색                       |
 | 핵심 사용 빈도  | 얼마나 쓰나?                                 | 활성 사용자당 주간 `todo_completed{is_completed=true}`                                                            | 이벤트 수 / 활성 사용자                                                                                                            | 개요 카드                         |
@@ -221,14 +221,14 @@
 
 ### (a) 키 이벤트 (6개)
 
-| 이벤트                 | 이유                       |
-| ---------------------- | -------------------------- |
-| `auth_signup`          | 획득 (소셜 가입 수정 선행) |
-| `activation_completed` | 활성화 북극성              |
-| `invite_link_shared`   | 바이럴 행동                |
-| `invite_redeemed`      | 바이럴 성과                |
-| `rc_trial_start`       | 수익화 선행                |
-| `purchase`             | 매출 (RevenueCat 원본)     |
+| 이벤트                 | 이유                        |
+| ---------------------- | --------------------------- |
+| `auth_signup`          | 획득 (1.14.1부터 소셜 포함) |
+| `activation_completed` | 활성화 북극성               |
+| `invite_link_shared`   | 바이럴 행동                 |
+| `invite_redeemed`      | 바이럴 성과                 |
+| `rc_trial_start`       | 수익화 선행                 |
+| `purchase`             | 매출 (RevenueCat 원본)      |
 
 해제: `in_app_purchase`(자동 수집, 기본 키 이벤트로 잡혀 있으면 끔) · `subscription_started`(키 이벤트로 지정하지 않음).
 
@@ -356,9 +356,10 @@
 | P1 Apple 로그인                | iOS 네이티브 Apple 로그인이 `auth_login`을 보내지 않던 누락을 채움(`method: apple`)                                                                                |                                                                                                                                                                  |
 | P1 날씨·오프라인               | `weather_opened{entry}` · `weather_briefing_shown{kind}` · `weather_location_registered{result}` · `weather_report_failed{cause}` · `offline_banner_shown`         | 값·시점은 `.claude/observability.md` 표. `entry`는 `/weather?entry=`(피드 배지·알림), 없으면 `other`                                                             |
 
-### 서버 후속 (미구현)
+### 1.14.1에 반영함
 
-- **소셜 가입 `auth_signup`**: `POST v1/auth/exchange`·Apple 콜백 응답(`authTokensSchema`)에 신규 가입 여부가 없다. 서버가 `isNewUser`(optional boolean)를 추가하면 앱이 `auth_signup{method}`를 분기한다. 그 전까지 소셜 가입은 `auth_login`으로만 남는다.
+- **소셜 가입 `auth_signup`**: 서버가 `POST v1/auth/exchange`·소셜 네이티브 콜백(Apple·Google·Kakao·Naver) 응답(`authTokensSchema`)에 `isNewUser`(optional boolean)를 싣는다. 이번 요청에서 사용자를 새로 만들었을 때만 true이고, 기존 계정·이메일 자동 연결·탈퇴 유예 복구는 false다. 앱은 성공 한 번에 `isNewUser`면 `auth_signup{method}`, 아니면 `auth_login{method}` 하나만 보낸다. 구 앱은 필드를 버려 계속 `auth_login`만 보내므로, 가입 추이는 앱 버전 1.14.1 이상에서 본다.
+- **`paywall_viewed` 점검**: 이미 `app/(app)/settings/subscription.tsx`의 `Paywall`이 요금제를 받은 뒤 마운트·`view`당 한 번 보내고 있었다(점검 오류). 코드 변경 없음.
 
 ### 남은 앱 작업
 

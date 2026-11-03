@@ -40,6 +40,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
         refreshToken: "refresh-token",
         userName: "테스터",
         profileImage: "https://example.com/photo.jpg",
+        isNewUser: true,
       };
       exchangeOAuthCodeUseCase.execute.mockResolvedValue(serviceResult);
 
@@ -55,6 +56,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
         name: serviceResult.userName,
         profileImage: serviceResult.profileImage,
         accountRestored: false,
+        isNewUser: true,
       });
     });
 
@@ -67,6 +69,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
         refreshToken: "refresh-token-2",
         userName: undefined,
         profileImage: undefined,
+        isNewUser: false,
       };
       exchangeOAuthCodeUseCase.execute.mockResolvedValue(serviceResult);
 
@@ -81,6 +84,7 @@ describe("OAuthController — OAuth 인증 컨트롤러", () => {
         name: null,
         profileImage: null,
         accountRestored: false,
+        isNewUser: false,
       });
     });
   });

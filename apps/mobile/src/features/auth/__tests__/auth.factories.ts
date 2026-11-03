@@ -12,7 +12,7 @@ import type {
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { Consent } from '../domains/auth.model';
+import type { AuthTokens, Consent } from '../domains/auth.model';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -24,6 +24,21 @@ const generateAuthTokensDto = (): AuthTokensDTO => ({
 
 export const createAuthTokensDto = (overrides?: Partial<AuthTokensDTO>): AuthTokensDTO => ({
   ...generateAuthTokensDto(),
+  ...overrides,
+});
+
+const generateAuthTokens = (): AuthTokens => ({
+  userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+  accessToken: 'access-token-jwt',
+  refreshToken: 'refresh-token-jwt',
+  userName: null,
+  userProfileImage: null,
+  accountRestored: false,
+  isNewUser: false,
+});
+
+export const createAuthTokens = (overrides?: Partial<AuthTokens>): AuthTokens => ({
+  ...generateAuthTokens(),
   ...overrides,
 });
 

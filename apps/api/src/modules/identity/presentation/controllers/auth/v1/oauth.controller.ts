@@ -109,7 +109,11 @@ export class OAuthController {
 ### 🔄 탈퇴 유예 계정 복구
 탈퇴 후 **30일 이내**에 동일 소셜 계정으로 로그인하면 자동 복구됩니다.
 - 응답의 \`accountRestored: true\`로 복구 여부 확인
-- 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시`,
+- 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시
+
+### 🆕 신규 가입 여부
+- 이 로그인에서 계정이 새로 만들어졌으면 \`isNewUser: true\`
+- 기존 계정 로그인·이메일 자동 연결·탈퇴 유예 복구는 \`isNewUser: false\``,
   })
   @ApiSuccessResponse({
     description: "토큰 교환 성공",
@@ -165,6 +169,10 @@ export class OAuthController {
 |------|------|------|----------------|
 | \`SOCIAL_0202\` | 401 | 유효하지 않은 토큰 | 재로그인 요청 |
 
+### 🆕 신규 가입 여부
+- 이 로그인에서 계정이 새로 만들어졌으면 응답의 \`isNewUser: true\`
+- 기존 계정 로그인·이메일 자동 연결·탈퇴 유예 복구는 \`isNewUser: false\`
+
 ### 💡 참고
 - Apple은 **최초 로그인 시에만** email/name을 제공합니다
 - "Hide My Email" 선택 시 \`random@privaterelay.appleid.com\` 형식 제공`,
@@ -185,7 +193,7 @@ export class OAuthController {
       nonce: dto.nonce,
     });
 
-    return AuthMapper.toAuthTokensResponse(result, appVersion);
+    return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
   }
 
   @Header("Vary", "Origin, X-App-Version")
@@ -246,7 +254,7 @@ export class OAuthController {
       metadata: extractMetadata(req, dto),
     });
 
-    return AuthMapper.toAuthTokensResponse(result, appVersion);
+    return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
   }
 
   @Get("google/start")
@@ -441,7 +449,7 @@ export class OAuthController {
       metadata: extractMetadata(req, dto),
     });
 
-    return AuthMapper.toAuthTokensResponse(result, appVersion);
+    return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
   }
 
   @Get("kakao/start")
@@ -630,7 +638,7 @@ export class OAuthController {
       metadata: extractMetadata(req, dto),
     });
 
-    return AuthMapper.toAuthTokensResponse(result, appVersion);
+    return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
   }
 
   @Get("naver/start")

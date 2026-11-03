@@ -22,6 +22,7 @@ describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
       refreshToken: "refresh-secret",
       userId: fixture.user.id,
       accountRestored: false,
+      isNewUser: false,
       ...overrides,
     });
     fixture.oauthStateRepository.states.set(state.id, state);
@@ -41,6 +42,7 @@ describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
       userName: undefined,
       profileImage: undefined,
       accountRestored: false,
+      isNewUser: false,
     });
     expect(fixture.oauthStateRepository.states.get(fixture.state.id)).toMatchObject({
       exchangedAt: AUTH_CREDENTIAL_TIME,
@@ -103,6 +105,25 @@ describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
       userName: fixture.state.userName,
       profileImage: fixture.state.profileImage,
       accountRestored: true,
+      isNewUser: false,
     });
+  });
+
+  it("저장된 신규 가입 여부를 그대로 반환한다", async () => {
+    // Given
+    const fixture = given({ isNewUser: true });
+    // When
+    const result = await fixture.useCase.execute({ code: "exchange-secret" });
+    // Then
+    expect(result.isNewUser).toBe(true);
+  });
+
+  it("신규 가입 여부가 없는 배포 전 교환 코드는 기존 로그인으로 본다", async () => {
+    // Given
+    const fixture = given({ isNewUser: null });
+    // When
+    const result = await fixture.useCase.execute({ code: "exchange-secret" });
+    // Then
+    expect(result.isNewUser).toBe(false);
   });
 });

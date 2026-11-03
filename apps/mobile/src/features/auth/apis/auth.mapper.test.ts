@@ -43,6 +43,7 @@ describe('toAuthTokens', () => {
       userName: '홍길동',
       userProfileImage: 'https://example.com/avatar.jpg',
       accountRestored: false,
+      isNewUser: false,
     });
   });
 
@@ -79,6 +80,28 @@ describe('toAuthTokens', () => {
 
     // Then
     expect(result.accountRestored).toBe(true);
+  });
+
+  test('isNewUser가 없는 구버전 서버 응답은 기존 로그인으로 본다', () => {
+    // Given
+    const dto = createAuthTokensDto();
+
+    // When
+    const result = toAuthTokens(dto);
+
+    // Then
+    expect(result.isNewUser).toBe(false);
+  });
+
+  test('isNewUser true → true 유지', () => {
+    // Given
+    const dto = createAuthTokensDto({ isNewUser: true });
+
+    // When
+    const result = toAuthTokens(dto);
+
+    // Then
+    expect(result.isNewUser).toBe(true);
   });
 });
 

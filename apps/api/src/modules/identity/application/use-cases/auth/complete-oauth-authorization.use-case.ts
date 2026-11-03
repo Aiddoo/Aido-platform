@@ -92,6 +92,7 @@ export class CompleteOAuthAuthorization {
       userName: loginResult.name ?? undefined,
       profileImage: loginResult.profileImage ?? undefined,
       accountRestored: loginResult.accountRestored,
+      isNewUser: loginResult.isNewUser,
     });
     this.#dependencies.logger.debug({
       event: IdentityLogEvent.OAUTH_EXCHANGE_CREATED,

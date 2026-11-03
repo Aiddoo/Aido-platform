@@ -24,7 +24,7 @@ export const useOpenAppleLoginMutationOptions = () => {
         toast.success(t('auth:toasts.accountRestored'));
       }
 
-      trackEvent('auth_login', { method: 'apple' });
+      trackEvent(data.isNewUser ? 'auth_signup' : 'auth_login', { method: 'apple' });
     },
     onError: () => {
       notifyError();

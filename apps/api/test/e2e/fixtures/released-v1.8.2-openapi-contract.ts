@@ -54,8 +54,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.14.0: /me(CurrentUserDto)에 optional isPremium·entitlements만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	prePremiumEntitlementsSchemasFingerprint:
 		"29a3b0988b2c0456613124a8f646c378127a224cc7f9922995b7ef500a4cbcec",
-	schemasFingerprint:
+	/** 1.15.0: 인증 토큰 응답(AuthTokensDto)에 optional isNewUser만 추가. 소셜 로그인·OAuth 코드 교환에서만 채우고, 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preSocialSignupSchemasFingerprint:
 		"446c6565975c5d11c8d87238594ccf38995ec10d7dbac109c968fa82c31e63e9",
+	schemasFingerprint:
+		"b0f816b4d60b8b4e8e74d15fd9bc41a17e3b3d91ebfe9462961349aaee662fdf",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",

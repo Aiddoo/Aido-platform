@@ -102,6 +102,7 @@ export class DrizzleOAuthStateRepository implements AuthOAuthStateRepositoryPort
       userName: state.userName,
       profileImage: state.profileImage,
       accountRestored: state.accountRestored,
+      isNewUser: state.isNewUser,
       expiresAt: state.expiresAt,
       exchangedAt: state.exchangedAt,
     };
@@ -117,6 +118,7 @@ export class DrizzleOAuthStateRepository implements AuthOAuthStateRepositoryPort
       userName?: string;
       profileImage?: string;
       accountRestored?: boolean;
+      isNewUser: boolean;
     },
   ): Promise<OAuthStateRow> {
     const [row] = await this.db
@@ -129,6 +131,7 @@ export class DrizzleOAuthStateRepository implements AuthOAuthStateRepositoryPort
         userName: data.userName,
         profileImage: data.profileImage,
         accountRestored: data.accountRestored,
+        isNewUser: data.isNewUser,
       })
       .where(eq(oAuthState.id, id))
       .returning();

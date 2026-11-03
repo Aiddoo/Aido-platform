@@ -62,6 +62,7 @@ describe("CompleteOAuthAuthorization — 코드 교환부터 실제 로그인까
         userId: result.userId,
         userName: result.name,
         profileImage: result.profileImage,
+        isNewUser: true,
       });
       expect(stored?.accessToken).toBeTruthy();
       expect(stored?.refreshToken).toBeTruthy();
