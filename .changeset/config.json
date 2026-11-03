@@ -5,7 +5,7 @@
   "fixed": [["@aido/api", "@aido/server"]],
   "linked": [],
   "access": "restricted",
-  "baseBranch": "develop",
+  "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "privatePackages": { "version": true, "tag": false },
   "ignore": [

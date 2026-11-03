@@ -171,7 +171,7 @@ pnpm dev
 | integration | `apps/api/test/integration/*.integration-spec.ts`   | 실제 PostgreSQL의 transaction·row lock·동시성·마이그레이션·job      |
 | e2e         | `apps/api/test/e2e/*.e2e-spec.ts`                   | HTTP 검증·권한·응답, OpenAPI와 배포된 앱 버전의 계약 fixture        |
 
-- **격리된 DB**: 실행마다 `aido_test_<run-id>` 템플릿 DB에 마이그레이션을 한 번 적용하고, worker 수만큼 복제한다. 각 worker는 자기 DB만 쓰고, 끝나면 자신이 만든 DB만 정리한다. 로컬은 Testcontainers, CI는 `AIDO_TEST_POSTGRES_URL`의 PostgreSQL service를 쓴다. `DATABASE_URL`은 테스트 DB로 쓰지 않는다.
+- **격리된 DB**: 실행마다 `aido_test_<run-id>` 템플릿 DB에 마이그레이션을 한 번 적용하고, worker 수만큼 복제한다. 각 worker는 자기 DB만 쓰고, 끝나면 자신이 만든 DB만 정리한다. 기본은 Testcontainers이고, `AIDO_TEST_POSTGRES_URL`을 주면 그 PostgreSQL을 쓴다. `DATABASE_URL`은 테스트 DB로 쓰지 않는다.
 - **실행 방식**: unit은 worker 병렬(`maxWorkers: 50%`)이다. integration·e2e는 worker별 DB로 파일 단위 병렬(기본 2~4, `AIDO_TEST_DB_WORKERS`로 조정) + 무작위 순서(`sequence.shuffle`)로 실행해 순서 의존을 드러낸다. 테스트 사이 정리는 FK 트리거를 끈 `DELETE`로 처리한다.
 - **외부 공급자**: Expo Push·Resend·AI SDK는 Fake 또는 고정 HTTP fixture로 격리한다. 실제 유료 호출(`ai:eval`)과 `test:performance`는 CI 밖에서 별도로 실행한다.
 
@@ -181,18 +181,17 @@ pnpm dev
 
 ```mermaid
 flowchart LR
-  PR[PR / push] --> Gate[CI Scope<br/>변경 범위 계산]
-  Gate --> Lint[Lint & Type Check]
-  Gate --> Unit[Test - Mobile & Contracts]
-  Gate --> API[Verify API<br/>unit · integration · 계약 게이트 · build]
-  Lint & Unit & API --> Img[Build & Push Image<br/>main 전용, GHCR]
+  Hook[로컬 lefthook<br/>unit · integration · 계약] --> PR[PR to main / main push]
+  PR --> Gate[CI Scope<br/>변경 범위 계산]
+  Gate --> Verify[Lint, Type Check & Build]
+  Verify --> Img[Build & Push Image<br/>main 전용, GHCR]
   Img --> Deploy[Deploy to EC2<br/>SSH · migrate → API · health]
 ```
 
-- **E2E**: 전체 e2e는 Actions 사용량을 아끼려고 CI에서 돌리지 않는다. 배포된 앱(1.7.x·1.8.2)의 OpenAPI 계약 게이트(`test:contract`)만 돌리고, 전체 e2e는 로컬 `pnpm test:e2e`로 확인한다.
+- **테스트**: GitHub Actions에서 돌리지 않는다. [lefthook](./lefthook.yml) pre-commit이 단위 테스트·typecheck·build를, pre-push가 통합 테스트와 배포된 앱의 OpenAPI 계약 게이트(`test:contract`)를 실행한다. 전체 e2e는 로컬 `pnpm test:e2e`로 확인한다.
 - **보안**: 워크플로 권한은 job 단위 최소 권한이고, 액션은 SHA로 고정한다. PR은 Dependency Review, main 이미지는 출처 증명(attestation)과 Trivy, 저장소는 CodeQL로 검사한다.
 - **변경 범위**: `CI Scope` job이 diff로 API·모바일·공유 계약 범위를 계산해 필요한 job만 실행한다. 문서만 바뀌면 heavy job을 건너뛴다.
-- **Stack PR**: 의존하는 PR은 같은 `stack:<release>` 라벨을 달고, 맨 위 tip 하나에만 `ci:stack-tip`을 단다. 중간 PR과 draft의 heavy job은 미루고, tip이 base와 모든 ancestor를 포함한 누적 diff를 한 번 검증한다. 같은 Git tree가 develop·main에 올라가면 tip의 성공 결과를 재사용한다.
+- **Stack PR**: 의존하는 PR은 같은 `stack:<release>` 라벨을 달고, 맨 위 tip 하나에만 `ci:stack-tip`을 단다. 중간 PR과 draft의 heavy job은 미루고, tip이 base와 모든 ancestor를 포함한 누적 diff를 한 번 검증한다. PR은 main을 향하고, 같은 Git tree가 main에 올라가면 tip 또는 일반 PR의 성공 결과를 재사용한다.
 - **이미지**: main의 API 변경이 검증되면 ARM64 API·migrate 이미지를 같은 커밋 SHA 태그로 빌드하고, Trivy(HIGH/CRITICAL) 검사를 통과한 경우에만 GHCR에 push한다.
 - **배포**: `Deploy to EC2` workflow가 두 이미지 태그를 확인한 뒤 SSH로 [`scripts/deploy.sh`](./scripts/deploy.sh)를 실행한다. **migrate 컨테이너가 먼저 실행되어** pg-boss·Drizzle 마이그레이션을 끝내야 API 컨테이너를 교체하며, health gate 실패 시 이전 API 이미지로 되돌린다.
 - **모바일**: Expo EAS로 빌드·제출한다 ([apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)).
