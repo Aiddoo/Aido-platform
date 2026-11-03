@@ -4,12 +4,11 @@ import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Text, VStack } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/format';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { clamp } from 'es-toolkit';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { TODO_COMMENT_PAGE_SIZE } from '../constants/todo-comment.constants';
 import {
   type TodoComment,
   TodoCommentPolicy,
@@ -38,21 +37,19 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
     thread.comment.id,
     anchoredReplyId != null,
   );
-  const repliesQuery = useInfiniteQuery(
-    useGetTodoCommentRepliesInfiniteQueryOptions({
-      todoId,
-      commentId: thread.comment.id,
-      aroundReplyId: anchoredReplyId,
-      isEnabled: isExpanded,
-    }),
-  );
+  const queryClient = useQueryClient();
+  const repliesOptions = useGetTodoCommentRepliesInfiniteQueryOptions({
+    todoId,
+    commentId: thread.comment.id,
+    aroundReplyId: anchoredReplyId,
+    isEnabled: isExpanded,
+  });
+  const repliesQuery = useInfiniteQuery(repliesOptions);
   const totalCount = thread.replySummary.totalCount;
 
-  const trackExpanded = (visibleCount: number) =>
-    trackEvent('todo_comment_replies_expanded', {
-      todo_id: todoId,
-      loaded_count: clamp(visibleCount + TODO_COMMENT_PAGE_SIZE.REPLIES, 0, totalCount),
-    });
+  // 펼친 뒤 실제로 불러온 답글 수를 페이지가 도착한 다음에 보낸다
+  const trackLoadedCount = (loadedCount: number) =>
+    trackEvent('todo_comment_replies_expanded', { todo_id: todoId, loaded_count: loadedCount });
 
   if (!isExpanded) {
     const preview = thread.previewReply;
@@ -68,7 +65,12 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
             label={{ kind: preview == null ? 'view' : 'viewMore', count: hiddenCount }}
             onPress={() => {
               setIsExpanded(true);
-              trackExpanded(0);
+              queryClient
+                .ensureInfiniteQueryData(repliesOptions)
+                .then((data) =>
+                  trackLoadedCount(TodoCommentPolicy.flattenReplies(data.pages).length),
+                )
+                .catch(noop);
             }}
           />
         )}
@@ -86,7 +88,7 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
       <TodoCommentReplies.Toggle
         label={{ kind: 'retry' }}
         onPress={() => {
-          repliesQuery.refetch().catch(() => undefined);
+          repliesQuery.refetch().catch(noop);
         }}
       />
     ))
@@ -101,7 +103,7 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
               label={{ kind: 'viewMore', count: remaining }}
               isConnectedBelow
               onPress={() => {
-                repliesQuery.fetchPreviousPage().catch(() => undefined);
+                repliesQuery.fetchPreviousPage().catch(noop);
               }}
             />
           )}
@@ -126,8 +128,10 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
               }
               onPress={() => {
                 if (hasNextPage) {
-                  trackExpanded(replies.length);
-                  repliesQuery.fetchNextPage().catch(() => undefined);
+                  repliesQuery
+                    .fetchNextPage()
+                    .then((result) => trackLoadedCount(result.data?.length ?? replies.length))
+                    .catch(noop);
                   return;
                 }
                 setIsExpanded(false);

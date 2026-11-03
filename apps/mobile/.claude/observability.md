@@ -61,11 +61,16 @@ track(analytics, 'session_expired', { reason });
 | `todo_comment_created`          | `todo_id` · `is_reply` · `chain_size`                                                                     | 댓글·답글 게시 성공(mutation `onSuccess`)            |
 | `todo_comment_deleted`          | `todo_id` · `is_reply`                                                                                    | 삭제 성공                                            |
 | `todo_comment_liked`            | `todo_id` · `is_liked` · `via`: `button`·`double_tap`                                                     | 좋아요 요청 성공(더블탭은 이미 좋아요면 보내지 않음) |
-| `todo_comment_replies_expanded` | `todo_id` · `loaded_count`                                                                                | "답글 N개 보기·더 보기"를 누를 때                    |
+| `todo_comment_replies_expanded` | `todo_id` · `loaded_count`                                                                                | "답글 N개 보기·더 보기"로 받은 페이지가 도착했을 때  |
 | `todo_comment_reply_started`    | `todo_id` · `target`: `comment`·`reply`                                                                   | "답글 달기"를 누를 때                                |
 | `todo_comment_hint_dismissed`   | `kind`: `double_tap` · `reason`: `close`·`used`                                                           | 더블탭 안내를 닫거나 처음 더블탭했을 때(계정당 1회)  |
 
 ---
+
+### 1.14.1 신규 측정기준/측정항목 (댓글)
+
+GA 등록 대상: 측정기준 `is_reply`, `via`, `is_liked`, `target`, `kind`, `reason`(기존), `sort` / 측정항목 `chain_size`, `loaded_count`.
+`loaded_count`는 답글 페이지가 도착한 뒤 실제로 불러온 답글 수다(추정값을 보내지 않는다). `depth`는 보내지 않는다.
 
 ## Sentry — 관측 (3원소)
 
