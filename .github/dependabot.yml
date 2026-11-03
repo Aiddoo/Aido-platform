@@ -83,6 +83,7 @@ updates:
         update-types: ['version-update:semver-major']
       # zod: @aido/api 서버 계약 동결 — minor도 검증 시맨틱 변화 이력(4.4.0)
       - dependency-name: 'zod'
+    target-branch: 'main'
     labels:
       - 'dependencies'
       - 'automated'
@@ -102,6 +103,7 @@ updates:
       # 프로덕션 런타임은 Node 24 LTS 라인을 유지한다.
       - dependency-name: 'node'
         update-types: ['version-update:semver-major']
+    target-branch: 'main'
     labels:
       - 'dependencies'
       - 'automated'
@@ -129,6 +131,7 @@ updates:
           - 'patch'
         patterns:
           - '*'
+    target-branch: 'main'
     labels:
       - 'dependencies'
       - 'github-actions'
