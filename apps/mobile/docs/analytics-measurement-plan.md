@@ -61,19 +61,23 @@
 
 **댓글 / 친구 / 재촉 / 신고**
 
-| 이벤트                                                                                           | 파라미터                                       | 의미                |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------------- |
-| `todo_comment_created` / `_deleted`                                                              | `todo_id`(id) · `depth`(int)                   | 대화 깊이           |
-| `todo_comment_liked`                                                                             | `todo_id` · `is_liked`                         |                     |
-| `todo_comment_sorted`                                                                            | `todo_id` · `sort`: `POPULAR`·`LATEST`         |                     |
-| `friend_request_sent`/`_cancelled`/`_accepted`/`_rejected`, `friend_removed`, `friend_reordered` | –                                              | 친구 그래프         |
-| `friend_search_submitted`                                                                        | `query_length_bucket`: `2_3`·`4_7`·`8_plus`    | 검색어 미전송(좋음) |
-| `friend_strip_hint_dismissed`                                                                    | `hint`: `invite`·`search`                      |                     |
-| `nudge_sent` / `remind_nudge_sent`                                                               | –                                              | 재촉                |
-| `nudge_replied`                                                                                  | `reply_kind`(`ReplyToNudgeInput['replyKind']`) |                     |
-| `nudge_thanks_sent`                                                                              | `recipient_count`(int)                         |                     |
-| `user_blocked` / `user_unblocked`                                                                | –                                              | 모더레이션          |
-| `content_reported`                                                                               | `target_type` · `reason`(서버 enum)            |                     |
+| 이벤트                                                                                           | 파라미터                                              | 의미                                   |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | -------------------------------------- |
+| `todo_comment_created`                                                                           | `todo_id`(id) · `is_reply` · `chain_size`(int)        | 댓글·답글 2단계(1.14.1+, `depth` 제거) |
+| `todo_comment_deleted`                                                                           | `todo_id` · `is_reply`                                |                                        |
+| `todo_comment_liked`                                                                             | `todo_id` · `is_liked` · `via`: `button`·`double_tap` | 더블탭 하트 비중                       |
+| `todo_comment_replies_expanded`                                                                  | `todo_id` · `loaded_count`(int)                       | 답글 펼침·더 보기                      |
+| `todo_comment_reply_started`                                                                     | `todo_id` · `target`: `comment`·`reply`               | 답글 달기 진입                         |
+| `todo_comment_hint_dismissed`                                                                    | `kind`: `double_tap` · `reason`: `close`·`used`       | 더블탭 안내 종료                       |
+| `todo_comment_sorted`                                                                            | `todo_id` · `sort`: `POPULAR`·`LATEST`                |                                        |
+| `friend_request_sent`/`_cancelled`/`_accepted`/`_rejected`, `friend_removed`, `friend_reordered` | –                                                     | 친구 그래프                            |
+| `friend_search_submitted`                                                                        | `query_length_bucket`: `2_3`·`4_7`·`8_plus`           | 검색어 미전송(좋음)                    |
+| `friend_strip_hint_dismissed`                                                                    | `hint`: `invite`·`search`                             |                                        |
+| `nudge_sent` / `remind_nudge_sent`                                                               | –                                                     | 재촉                                   |
+| `nudge_replied`                                                                                  | `reply_kind`(`ReplyToNudgeInput['replyKind']`)        |                                        |
+| `nudge_thanks_sent`                                                                              | `recipient_count`(int)                                |                                        |
+| `user_blocked` / `user_unblocked`                                                                | –                                                     | 모더레이션                             |
+| `content_reported`                                                                               | `target_type` · `reason`(서버 enum)                   |                                        |
 
 **친구 초대 (바이럴 루프)**
 

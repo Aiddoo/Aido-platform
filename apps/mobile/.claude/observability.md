@@ -45,19 +45,25 @@ track(analytics, 'session_expired', { reason });
 - **한 번만**: 노출 이벤트는 화면·구간마다 한 번이다. 재렌더·분 단위 갱신으로 다시 보내지 않는다.
 - **가입·로그인**: 인증 성공 한 번에 `auth_signup`·`auth_login` 중 **하나만** 보낸다. 소셜(OAuth 교환·Apple)은 서버 응답 `isNewUser`가 true면 `auth_signup`, 아니면 `auth_login`이다. 필드가 없는 구버전 서버 응답은 `auth_login`으로 본다. 탈퇴 유예 복구·이메일 자동 연결은 가입이 아니다.
 
-| 이벤트                        | 파라미터                                                                                                  | 시점                                              |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `auth_signup`                 | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 가입 / 소셜 신규 가입(`isNewUser`)         |
-| `auth_login`                  | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 로그인 / 소셜 기존 계정 로그인             |
-| `premium_gate_cta_tapped`     | `feature`(`PremiumFeature`)                                                                               | `usePremiumGate().subscribe`                      |
-| `paywall_viewed`              | `view`: `status`·`plans`                                                                                  | 요금제를 받아 페이월이 보였을 때                  |
-| `purchase_failed`             | `reason`: `network`·`server`·`store_unavailable`·`store_error`                                            | 결제 실패를 문의로 안내할 때(취소·승인 대기 제외) |
-| `ai_report_viewed`            | `report_id` · `report_type`: `WEEKLY`·`MONTHLY`                                                           | 저장된 리포트 상세                                |
-| `weather_opened`              | `entry`: `feed_badge`·`notification`·`other`                                                              | 날씨 화면 진입(`weatherHref(entry)`의 `?entry`)   |
-| `weather_briefing_shown`      | `kind`: `rainy`·`stormy`·`snowy`·`hot`·`rain_later`·`clear`·`tomorrow_morning`·`dry`·`no_scheduled_todos` | 브리핑이 처음 보였을 때                           |
-| `weather_location_registered` | `result`: `located`·`denied`·`unavailable`                                                                | 날씨 화면에서 위치 확인이 처음 끝났을 때          |
-| `weather_report_failed`       | `cause`: `no_location`·`provider_unavailable`·`offline`·`other`                                           | 리포트 실패 화면(위치 등록 대기 중 로딩은 제외)   |
-| `offline_banner_shown`        | –                                                                                                         | 오프라인 전환마다(`connectOnlineManager`)         |
+| 이벤트                          | 파라미터                                                                                                  | 시점                                                 |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `auth_signup`                   | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 가입 / 소셜 신규 가입(`isNewUser`)            |
+| `auth_login`                    | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 로그인 / 소셜 기존 계정 로그인                |
+| `premium_gate_cta_tapped`       | `feature`(`PremiumFeature`)                                                                               | `usePremiumGate().subscribe`                         |
+| `paywall_viewed`                | `view`: `status`·`plans`                                                                                  | 요금제를 받아 페이월이 보였을 때                     |
+| `purchase_failed`               | `reason`: `network`·`server`·`store_unavailable`·`store_error`                                            | 결제 실패를 문의로 안내할 때(취소·승인 대기 제외)    |
+| `ai_report_viewed`              | `report_id` · `report_type`: `WEEKLY`·`MONTHLY`                                                           | 저장된 리포트 상세                                   |
+| `weather_opened`                | `entry`: `feed_badge`·`notification`·`other`                                                              | 날씨 화면 진입(`weatherHref(entry)`의 `?entry`)      |
+| `weather_briefing_shown`        | `kind`: `rainy`·`stormy`·`snowy`·`hot`·`rain_later`·`clear`·`tomorrow_morning`·`dry`·`no_scheduled_todos` | 브리핑이 처음 보였을 때                              |
+| `weather_location_registered`   | `result`: `located`·`denied`·`unavailable`                                                                | 날씨 화면에서 위치 확인이 처음 끝났을 때             |
+| `weather_report_failed`         | `cause`: `no_location`·`provider_unavailable`·`offline`·`other`                                           | 리포트 실패 화면(위치 등록 대기 중 로딩은 제외)      |
+| `offline_banner_shown`          | –                                                                                                         | 오프라인 전환마다(`connectOnlineManager`)            |
+| `todo_comment_created`          | `todo_id` · `is_reply` · `chain_size`                                                                     | 댓글·답글 게시 성공(mutation `onSuccess`)            |
+| `todo_comment_deleted`          | `todo_id` · `is_reply`                                                                                    | 삭제 성공                                            |
+| `todo_comment_liked`            | `todo_id` · `is_liked` · `via`: `button`·`double_tap`                                                     | 좋아요 요청 성공(더블탭은 이미 좋아요면 보내지 않음) |
+| `todo_comment_replies_expanded` | `todo_id` · `loaded_count`                                                                                | "답글 N개 보기·더 보기"를 누를 때                    |
+| `todo_comment_reply_started`    | `todo_id` · `target`: `comment`·`reply`                                                                   | "답글 달기"를 누를 때                                |
+| `todo_comment_hint_dismissed`   | `kind`: `double_tap` · `reason`: `close`·`used`                                                           | 더블탭 안내를 닫거나 처음 더블탭했을 때(계정당 1회)  |
 
 ---
 

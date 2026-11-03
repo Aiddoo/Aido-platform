@@ -11,7 +11,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 상황                                                           | 읽을 문서                                                        |
 | -------------------------------------------------------------- | ---------------------------------------------------------------- |
 | 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md)               |
-| Todo 댓글 화면·대화·작성 시트                                  | [.claude/todo-comments.md](.claude/todo-comments.md)             |
+| Todo 댓글 한 화면·답글·작성 바·더블탭 하트                     | [.claude/todo-comments.md](.claude/todo-comments.md)             |
 | 테스트 작성 (Model · Service · 순수 util 중심)                 | [.claude/testing-guide.md](.claude/testing-guide.md)             |
 | UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN)       | [.claude/ui-components.md](.claude/ui-components.md)             |
 | 다국어 / 문자열 추가 (i18n, ko+en 카탈로그)                    | [.claude/i18n-guide.md](.claude/i18n-guide.md)                   |
@@ -21,6 +21,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)                 |
 | 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)             |
 | 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)             |
+| 1.14.1 할 일 댓글 한 화면(댓글·답글 2단계)·더블탭 하트         | [docs/releases/1.14.1-client.md](docs/releases/1.14.1-client.md) |
 | 1.14.0 날씨 화면 v2·Apple 날씨 표기·개발 빌드 분리·오프라인    | [docs/releases/1.14.0-client.md](docs/releases/1.14.0-client.md) |
 | 1.13.0 친구 초대 링크·보상·날짜·위젯 정비                      | [docs/releases/1.13.0-client.md](docs/releases/1.13.0-client.md) |
 | 1.12.1 Duo·Mac·SDK 58 정합성·구조 정비                         | [docs/releases/1.12.1-client.md](docs/releases/1.12.1-client.md) |
