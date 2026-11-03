@@ -1,6 +1,6 @@
 import { DAY_OF_WEEK_ORDER, type DayOfWeek, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
-import { groupBy } from "es-toolkit";
+import { groupBy, isNotNil, orderBy, uniq } from "es-toolkit";
 
 import type {
   RecordedActivityEvidence,
@@ -11,33 +11,27 @@ export function collectRecordedActivities(
   todos: readonly TodoSummaryForAnalysis[],
 ): RecordedActivityEvidence[] {
   return Object.entries(groupBy(todos, (todo) => todo.title)).map(([title, records]) => {
-    const days = new Map<DayOfWeek, { total: number; completed: number }>();
-    const recordedTimes = new Set<string>();
-    let completedOccurrences = 0;
-    for (const record of records) {
-      const day = dayIndexToDayOfWeek(dayjs.utc(record.startDate).day());
-      const counts = days.get(day) ?? { total: 0, completed: 0 };
-      counts.total += 1;
-      if (record.completed) {
-        counts.completed += 1;
-        completedOccurrences += 1;
-      }
-      days.set(day, counts);
-      if (record.scheduledTime != null) {
-        recordedTimes.add(record.scheduledTime);
-      }
-    }
+    const recordsByDay: Partial<Record<DayOfWeek, TodoSummaryForAnalysis[]>> = groupBy(
+      records,
+      (record) => dayIndexToDayOfWeek(dayjs.utc(record.startDate).day()),
+    );
     return {
       title,
       occurrences: records.length,
-      completedOccurrences,
+      completedOccurrences: countCompleted(records),
       days: DAY_OF_WEEK_ORDER.flatMap((day) => {
-        const counts = days.get(day);
-        return counts == null ? [] : [{ day, ...counts }];
+        const dayRecords = recordsByDay[day];
+        return dayRecords == null
+          ? []
+          : [{ day, total: dayRecords.length, completed: countCompleted(dayRecords) }];
       }),
-      recordedTimes: [...recordedTimes].sort(),
+      recordedTimes: uniq(records.map((record) => record.scheduledTime).filter(isNotNil)).sort(),
     };
   });
+}
+
+function countCompleted(records: readonly TodoSummaryForAnalysis[]): number {
+  return records.filter((record) => record.completed).length;
 }
 
 /** 반복된 성공 요일을 우선하고, 없으면 완료 수→기록 수→ISO 요일 순으로 한 요일을 고른다. */
@@ -46,11 +40,10 @@ export function selectRecordedDays(evidence: RecordedActivityEvidence) {
   if (repeatedSuccessfulDays.length > 0) {
     return repeatedSuccessfulDays.map((day) => day.day);
   }
-  const bestDay = [...evidence.days].sort(
-    (left, right) =>
-      right.completed - left.completed ||
-      right.total - left.total ||
-      DAY_OF_WEEK_ORDER.indexOf(left.day) - DAY_OF_WEEK_ORDER.indexOf(right.day),
+  const bestDay = orderBy(
+    evidence.days,
+    ["completed", "total", (day) => DAY_OF_WEEK_ORDER.indexOf(day.day)],
+    ["desc", "desc", "asc"],
   )[0];
   return bestDay == null ? [] : [bestDay.day];
 }

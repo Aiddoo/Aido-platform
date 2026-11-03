@@ -9,6 +9,7 @@ import {
   inviteMilestoneSchema,
   myInviteResponseSchema,
 } from '@aido/api';
+import { uniq } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -86,7 +87,7 @@ export function summarizeInvalidCharacters(
     return null;
   }
 
-  const uniqueCharacters = [...new Set(invalidCharacters.map(({ character }) => character))];
+  const uniqueCharacters = uniq(invalidCharacters.map(({ character }) => character));
 
   return {
     kind: invalidCharacters.every(({ kind }) => kind === 'confusable') ? 'confusable' : 'unused',

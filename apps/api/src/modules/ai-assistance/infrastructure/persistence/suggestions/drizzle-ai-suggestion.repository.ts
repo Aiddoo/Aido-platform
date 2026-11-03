@@ -1,8 +1,14 @@
-import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
+import {
+  AI_SUGGESTION_LIMITS,
+  DAY_OF_WEEK_ORDER,
+  type DayOfWeek,
+  dayIndexToDayOfWeek,
+} from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 import { and, eq, lt } from "drizzle-orm";
+import { compact, countBy, groupBy, sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -129,27 +135,17 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       },
     });
 
-    const dayMap = new Map<string, { total: number; completed: number }>();
-    for (const d of DAY_OF_WEEK_ORDER) {
-      dayMap.set(d, { total: 0, completed: 0 });
-    }
-
-    for (const c of completions) {
-      const dayName = dayIndexToDayOfWeek(dayjs.utc(c.date).day());
-      const entry = dayMap.get(dayName);
-      if (entry == null) {
-        continue;
-      }
-      entry.total += c.totalTodos;
-      entry.completed += c.completedTodos;
-    }
+    const completionsByDay: Partial<Record<DayOfWeek, typeof completions>> = groupBy(
+      completions,
+      (c) => dayIndexToDayOfWeek(dayjs.utc(c.date).day()),
+    );
 
     return DAY_OF_WEEK_ORDER.map((day) => {
-      const entry = dayMap.get(day) ?? { total: 0, completed: 0 };
+      const dayCompletions = completionsByDay[day] ?? [];
       return {
         day,
-        total: entry.total,
-        completed: entry.completed,
+        total: sumBy(dayCompletions, (c) => c.totalTodos),
+        completed: sumBy(dayCompletions, (c) => c.completedTodos),
       };
     });
   }
@@ -170,20 +166,10 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       },
     });
 
-    let morning = 0;
-    let afternoon = 0;
-
-    for (const t of todos) {
-      if (t.completedAt == null) {
-        continue;
-      }
-      const hour = dayjs(t.completedAt).tz(timezone).hour();
-      if (hour < 12) {
-        morning++;
-      } else {
-        afternoon++;
-      }
-    }
+    const { morning = 0, afternoon = 0 } = countBy(
+      compact(todos.map((t) => t.completedAt)),
+      (completedAt) => (dayjs(completedAt).tz(timezone).hour() < 12 ? "morning" : "afternoon"),
+    );
 
     const total = morning + afternoon;
     return {
