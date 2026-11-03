@@ -1,24 +1,32 @@
-import type { BroadcastContent } from "../../../domain/value-objects/admin/broadcast-content.vo.js";
+import type { NotificationAction } from "@aido/api";
+
 import type {
   AdminBroadcastMessage,
   AdminBroadcastType,
-  BroadcastAction,
 } from "../../read-models/admin/broadcast-message.read-model.js";
 
+export interface BroadcastMessageInput {
+  readonly title: string;
+  readonly body: string;
+  readonly type: AdminBroadcastType;
+  readonly action: NotificationAction | null | undefined;
+  readonly force: boolean;
+  readonly campaignKey?: string;
+}
+
 export function buildBroadcastMessages(
-  content: BroadcastContent,
+  input: BroadcastMessageInput,
   userIds: readonly string[],
-  type: AdminBroadcastType,
-  action: BroadcastAction | undefined,
-  force: boolean,
 ): AdminBroadcastMessage[] {
+  const { action } = input;
   return userIds.map((userId) => ({
     userId,
-    type,
-    title: content.title,
-    body: content.body,
+    type: input.type,
+    title: input.title,
+    body: input.body,
     action: action == null ? undefined : { ...action },
     metadata: action?.url ? { externalUrl: action.url } : undefined,
-    force,
+    force: input.force,
+    ...(input.campaignKey != null && { campaignKey: input.campaignKey }),
   }));
 }

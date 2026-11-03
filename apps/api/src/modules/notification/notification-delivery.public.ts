@@ -9,6 +9,11 @@ export {
   type NotificationRecipientLocaleReaderPort,
 } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 export {
+  PUSH_CAMPAIGN_OUTCOME_READER,
+  type PushCampaignOutcome,
+  type PushCampaignOutcomeReaderPort,
+} from "./application/ports/delivery/push-campaign-outcome.reader.port.js";
+export {
   PUSH_QUIET_HOURS_READER,
   type PushQuietHoursReaderPort,
 } from "./application/ports/delivery/push-quiet-hours.reader.port.js";

@@ -47,10 +47,13 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "ai-report-generation.v1",
       "admin-notification.v1",
       "todo-reminder.v1",
+      "notification.v1",
+      "notification-dead-letter.v1",
       "push-delivery.v1",
       "push-delivery-dead-letter.v1",
       "retention.v1",
-      "retention-dead-letter.v1",
+      "operations.broadcast-fan-out.v1",
+      "operations.broadcast-fan-out-dead-letter.v1",
     ]);
   });
 

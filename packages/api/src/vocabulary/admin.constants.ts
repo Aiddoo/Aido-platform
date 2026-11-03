@@ -21,3 +21,21 @@ export const BROADCAST_TARGET_FILTER = {
 
 export type BroadcastTargetFilter =
   (typeof BROADCAST_TARGET_FILTER)[keyof typeof BROADCAST_TARGET_FILTER];
+
+/**
+ * 브로드캐스트 캠페인 진행 상태
+ *
+ * - QUEUED: 접수했고 대상 분배 작업을 기다린다
+ * - FANNING_OUT: 대상 사용자에게 알림을 나눠 만드는 중이다
+ * - COMPLETED: 모든 대상에게 알림을 만들고 발송 대기열에 올렸다
+ * - FAILED: 분배 작업이 재시도를 다 쓰고 멈췄다
+ */
+export const BROADCAST_CAMPAIGN_STATUS = {
+  QUEUED: "QUEUED",
+  FANNING_OUT: "FANNING_OUT",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+} as const;
+
+export type BroadcastCampaignStatus =
+  (typeof BROADCAST_CAMPAIGN_STATUS)[keyof typeof BROADCAST_CAMPAIGN_STATUS];
