@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { planPullRequestCI, validateTreeProof, validationProofName } from './stack-policy.mjs';
+import {
+  VERIFY_JOB,
+  planPullRequestCI,
+  validateTreeProof,
+  validationProofName,
+} from './stack-policy.mjs';
 
 const repository = 'aiddoo/Aido-platform';
 function pull(number, branch, base, { stack = true, tip = false, draft = false } = {}) {
@@ -16,20 +21,20 @@ function pull(number, branch, base, { stack = true, tip = false, draft = false }
     ],
   };
 }
-const bottom = pull(1, 'upgrade/1.10-toolchain', 'develop');
+const bottom = pull(1, 'upgrade/1.10-toolchain', 'main');
 const top = pull(2, 'upgrade/1.10-release', bottom.head.ref, { tip: true });
 
 test('일반 PR은 자신의 기준 브랜치로 검증한다', () => {
   // Given
-  const current = pull(3, 'feature/todos', 'develop', { stack: false });
+  const current = pull(3, 'feature/todos', 'main', { stack: false });
   // When
   const result = planPullRequestCI(current, [], repository);
   // Then
   assert.equal(result.run, true);
-  assert.equal(result.base, 'develop');
+  assert.equal(result.base, 'main');
 });
 
-test('연결된 마지막 PR은 develop 대비 누적 변경을 검증한다', () => {
+test('연결된 마지막 PR은 main 대비 누적 변경을 검증한다', () => {
   // Given
   const members = [bottom, top];
   // When
@@ -37,7 +42,7 @@ test('연결된 마지막 PR은 develop 대비 누적 변경을 검증한다', (
   // Then
   assert.deepEqual(result, {
     run: true,
-    base: 'develop',
+    base: 'main',
     ancestors: ['sha-1'],
     reason: 'cumulative-stack-tip',
   });
@@ -59,7 +64,7 @@ test('중간 PR과 초안 PR은 무거운 검증을 실행하지 않는다', () 
 
 test('스택 라벨이 없는 신규 브랜치는 메타데이터를 기다린다', () => {
   // Given
-  const current = pull(3, 'upgrade/1.10-new', 'develop', { stack: false });
+  const current = pull(3, 'upgrade/1.10-new', 'main', { stack: false });
   // When
   const result = planPullRequestCI(current, [], repository);
   // Then
@@ -72,7 +77,7 @@ test('마지막 PR 중복·부모 누락·순환·분리된 스택은 검증을 
     [[{ ...bottom, labels: top.labels }, top], /exactly one/],
     [[top], /missing/],
     [[{ ...bottom, base: top.head }, top], /Circular/],
-    [[bottom, top, pull(3, 'upgrade/1.10-unrelated', 'develop')], /Disconnected/],
+    [[bottom, top, pull(3, 'upgrade/1.10-unrelated', 'main')], /Disconnected/],
   ];
   // When
   const plans = cases.map(([members, pattern]) => [
@@ -96,7 +101,7 @@ test('다른 저장소의 브랜치는 누적 검증을 승인할 수 없다', (
 
 test('1.10.1 브랜치는 라벨 부여 전 검증을 보류한다', () => {
   // Given
-  const current = pull(4, 'fix/1.10.1-weather', 'develop', { stack: false });
+  const current = pull(4, 'fix/1.10.1-weather', 'main', { stack: false });
   // When
   const result = planPullRequestCI(current, [], repository);
   // Then
@@ -106,7 +111,7 @@ test('1.10.1 브랜치는 라벨 부여 전 검증을 보류한다', () => {
 for (const branch of ['feat/1.11.0-nudges', 'fix/1.12.2-widgets', 'chore/2.0.0-release']) {
   test(`${branch}는 라벨 등록 전 무거운 검증을 보류한다`, () => {
     // Given: 릴리스 스택 브랜치가 먼저 생성되고 라벨은 아직 등록되지 않았다
-    const current = pull(4, branch, 'develop', { stack: false });
+    const current = pull(4, branch, 'main', { stack: false });
     // When: PR의 CI 범위를 판단한다
     const result = planPullRequestCI(current, [], repository);
     // Then: 버전을 하드코딩하지 않고 스택 메타데이터를 기다린다
@@ -118,7 +123,7 @@ for (const branch of ['feat/1.11.0-nudges', 'fix/1.12.2-widgets', 'chore/2.0.0-r
 test('동시에 열린 다른 릴리스 스택은 검증 대상에 포함하지 않는다', () => {
   // Given
   const labels = [{ name: 'stack:1.10.1' }];
-  const first = { ...pull(4, 'chore/1.10.1-ci', 'develop'), labels };
+  const first = { ...pull(4, 'chore/1.10.1-ci', 'main'), labels };
   const last = {
     ...pull(5, 'chore/1.10.1-release', first.head.ref),
     labels: [...labels, { name: 'ci:stack-tip' }],
@@ -141,7 +146,7 @@ test('하나의 PR이 두 릴리스 스택에 속할 수 없다', () => {
 test('서버 구조 스택도 같은 누적 tip 정책으로 검증한다', () => {
   // Given
   const labels = [{ name: 'stack:server-architecture' }];
-  const first = { ...pull(6, 'refactor/server-drizzle-foundation', 'develop'), labels };
+  const first = { ...pull(6, 'refactor/server-drizzle-foundation', 'main'), labels };
   const last = {
     ...pull(7, 'refactor/server-ci-conventions', first.head.ref),
     labels: [...labels, { name: 'ci:stack-tip' }],
@@ -153,14 +158,14 @@ test('서버 구조 스택도 같은 누적 tip 정책으로 검증한다', () =
   assert.deepEqual(result.ancestors, ['sha-6']);
 });
 
-test('서버 스택 브랜치도 라벨 등록 전 무거운 검증을 보류한다', () => {
+test('릴리스 버전이 없는 브랜치는 일반 PR로 바로 검증한다', () => {
   // Given
-  const current = pull(6, 'refactor/server-drizzle-foundation', 'develop', { stack: false });
+  const current = pull(6, 'refactor/server-drizzle-foundation', 'main', { stack: false });
   // When
   const result = planPullRequestCI(current, [], repository);
   // Then
-  assert.equal(result.reason, 'awaiting-stack-metadata');
-  assert.equal(result.run, false);
+  assert.equal(result.reason, 'regular');
+  assert.equal(result.run, true);
 });
 
 function proofFixture() {
@@ -213,12 +218,7 @@ function proofFixture() {
       workflow_run: { id: 101, head_sha: headSha },
     },
     pull: source,
-    jobs: ['Lint & Type Check', 'Verify API'].map((name) => ({
-      name,
-      run_id: 101,
-      status: 'completed',
-      conclusion: 'success',
-    })),
+    jobs: [{ name: VERIFY_JOB, run_id: 101, status: 'completed', conclusion: 'success' }],
   };
 }
 
@@ -227,8 +227,39 @@ test('head H와 실제 checkout P가 달라도 같은 tree·성공 attempt의 �
   assert.notEqual(input.proof.headSha, input.proof.testedCommit);
   assert.deepEqual(validateTreeProof(input), {
     reusable: true,
-    reason: 'successful-stack-tip-tree',
+    reason: 'successful-validated-tree',
   });
+});
+
+function regularProofFixture() {
+  const input = proofFixture();
+  input.proof.reason = 'regular';
+  input.proof.stackLabel = undefined;
+  input.proof.ancestors = [];
+  input.pull.labels = [];
+  input.pull.base.ref = 'main';
+  return input;
+}
+
+test('main으로 머지된 일반 PR의 같은 tree 검증을 main push에서 재사용한다', () => {
+  // Given
+  const input = regularProofFixture();
+  // When
+  const result = validateTreeProof(input);
+  // Then
+  assert.deepEqual(result, { reusable: true, reason: 'successful-validated-tree' });
+});
+
+test('main이 아닌 브랜치를 향한 일반 PR이나 stack 라벨이 붙은 일반 PR 증거는 재사용하지 않는다', () => {
+  // Given
+  const otherBase = regularProofFixture();
+  otherBase.pull.base.ref = 'feature/parent';
+  const labeled = regularProofFixture();
+  labeled.pull.labels = [{ name: 'stack:1.10.0' }];
+  // When
+  const results = [otherBase, labeled].map((input) => validateTreeProof(input).reusable);
+  // Then
+  assert.deepEqual(results, [false, false]);
 });
 
 test('원본 tip PR이 merge·close된 뒤에도 동일 tree 증거를 재사용한다', () => {
@@ -294,9 +325,9 @@ const invalidProofCases = [
     },
   ],
   [
-    'regular PR',
+    'tip 정책으로 기록됐지만 stack 라벨이 없는 PR',
     (f) => {
-      f.proof.reason = 'regular';
+      f.pull.labels = [];
     },
   ],
   [
@@ -360,9 +391,9 @@ const invalidProofCases = [
     },
   ],
   [
-    'Verify API skipped',
+    '검증 job skipped',
     (f) => {
-      f.jobs[1].conclusion = 'skipped';
+      f.jobs[0].conclusion = 'skipped';
     },
   ],
   [

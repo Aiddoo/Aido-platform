@@ -2,7 +2,7 @@ name: CI
 
 on:
   workflow_dispatch:
-  # develop은 스택 tip PR에서 이미 검증한다. 배포가 일어나는 main push만 돌고, 같은 tree의 성공한 tip 검증이 있으면 재사용한다.
+  # PR은 main을 향한다. main push는 이미지 발행·배포를 위해 돌고, 같은 tree의 성공한 PR 검증이 있으면 재사용한다.
   push:
     branches: [main]
   pull_request:
@@ -23,16 +23,8 @@ concurrency:
   cancel-in-progress: >-
     ${{ github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip' }}
 
-defaults:
-  run:
-    shell: bash # GitHub가 -eo pipefail을 적용하므로 tee 뒤에서도 테스트 실패가 보존된다.
-
 permissions:
   contents: read
-
-env:
-  TZ: UTC
-  DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
 
 jobs:
   gate:
@@ -48,16 +40,17 @@ jobs:
     outputs:
       run: ${{ steps.policy.outputs.run == 'true' && steps.validation.outputs.validation_reused != 'true' }}
       validation_reused: ${{ steps.validation.outputs.validation_reused }}
-      proof_run_url: ${{ steps.validation.outputs.proof_run_url }}
       api: ${{ steps.policy.outputs.api }}
       mobile: ${{ steps.policy.outputs.mobile }}
       shared: ${{ steps.policy.outputs.shared }}
       base_sha: ${{ steps.policy.outputs.base_sha }}
       head_sha: ${{ steps.policy.outputs.head_sha }}
     steps:
+      # 변경 파일 목록만 필요하므로 blob 없이 이력과 tree만 받는다.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          filter: blob:none
       # GitHub 공식 Octokit 클라이언트가 인증·pagination을 맡는다.
       # 저장소 고유의 스택/의존성 정책만 별도 모듈로 유지한다.
       - name: Resolve cumulative CI scope
@@ -66,15 +59,13 @@ jobs:
         with:
           script: |
             const { execFileSync } = require('node:child_process');
-            const { readdirSync, mkdirSync, writeFileSync } = require('node:fs');
+            const { mkdirSync, writeFileSync } = require('node:fs');
             const { join } = require('node:path');
-            const tests = readdirSync('scripts/ci').filter((file) => file.endsWith('.test.mjs'));
-            execFileSync(process.execPath, ['--test', ...tests.map((file) => `scripts/ci/${file}`)], { stdio: 'inherit' });
             const { planPullRequestCI, validationProofName } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
             const { dependencyScope } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
             const { owner, repo } = context.repo;
             const event = context.payload;
-            let plan = { run: true, base: 'develop', reason: 'push-or-dispatch', ancestors: [] };
+            let plan = { run: true, base: 'main', reason: 'push-or-dispatch', ancestors: [] };
             let baseSha = '';
             let headSha = context.sha;
             let currentPull;
@@ -123,14 +114,15 @@ jobs:
             core.setOutput('scope', JSON.stringify(scope));
             const attempt = Number(process.env.GITHUB_RUN_ATTEMPT);
             const proofDirectory = join(process.env.RUNNER_TEMP, 'ci-tree-proof');
-            if (context.eventName === 'pull_request' && plan.reason === 'cumulative-stack-tip' && Object.values(scope).some(Boolean)) {
+            const reusableSource = plan.reason === 'cumulative-stack-tip' || (plan.reason === 'regular' && plan.base === 'main');
+            if (context.eventName === 'pull_request' && reusableSource && Object.values(scope).some(Boolean)) {
               const headTree = execFileSync('git', ['rev-parse', `${headSha}^{tree}`], { encoding: 'utf8' }).trim();
               if (headTree === tree) {
                 mkdirSync(proofDirectory, { recursive: true });
                 writeFileSync(join(proofDirectory, 'proof.json'), JSON.stringify({
                   version: 1, repository: `${owner}/${repo}`, runId: context.runId, attempt,
                   pullNumber: currentPull.number, reason: plan.reason,
-                  stackLabel: currentPull.labels.find((label) => label.name.startsWith('stack:')).name,
+                  stackLabel: currentPull.labels.find((label) => label.name.startsWith('stack:'))?.name,
                   headSha, testedCommit, tree, baseSha, ancestors: plan.ancestors, scopes: scope,
                 }));
                 core.setOutput('proof_created', 'true');
@@ -226,7 +218,6 @@ jobs:
                 return;
               }
               core.setOutput('validation_reused', 'true');
-              core.setOutput('proof_run_url', run.html_url);
               await core.summary.addRaw(`Validation reused from [run ${run.id}, attempt ${run.run_attempt}](${run.html_url}). Head H=${proof.headSha}; tested checkout P=${proof.testedCommit}; tree=${proof.tree}. Current commit=${process.env.CHECKOUT_COMMIT}. Required jobs succeeded; current heavy jobs are deferred.`).write();
             } catch {
               core.warning('CI proof unavailable or invalid; current scope will be validated.');
@@ -246,21 +237,24 @@ jobs:
           head-ref: ${{ needs.gate.outputs.head_sha }}
           fail-on-severity: high
 
-  lint:
-    name: Lint & Type Check
+  # 테스트(단위·통합·계약)는 로컬 lefthook 훅에서 돌리고 CI는 정적 검사와 빌드만 확인한다(docs/conventions/git.md#커밋).
+  # 정적 검사와 API 빌드를 한 job에 두어 checkout·의존성 설치를 한 번만 한다.
+  verify:
+    name: Lint, Type Check & Build
     needs: gate
     if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Changeset 검사가 PR base부터의 변경 패키지를 계산한다.
-          # 표현식에서 숫자 0은 거짓이라 `&& 0 || 1`은 항상 1이 된다. 문자열로 비교해 PR에서만 전체 이력을 받는다.
+          # Changeset 검사가 PR base부터의 변경 패키지를 계산한다. 이력은 PR에서만 받고 blob은 필요할 때만 받는다.
+          # 표현식에서 숫자 0은 거짓이라 `&& 0 || 1`은 항상 1이 된다. 문자열로 비교한다.
           fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          filter: ${{ github.event_name == 'pull_request' && 'blob:none' || '' }}
 
       - uses: ./.github/actions/setup
         with:
@@ -276,10 +270,6 @@ jobs:
       # 위험을 수용한 advisory는 pnpm-workspace.yaml auditConfig.ignoreGhsas에서 관리한다.
       - name: Dependency audit
         run: pnpm audit --prod --audit-level high
-
-      - name: Type Check
-        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       # 서버·공유 계약을 바꾼 PR은 Changesets 변경 파일을 함께 올린다(docs/conventions/git.md#버전).
       # 모바일은 스토어 버전이라 Changesets에서 제외되어 있어 이 검사에 걸리지 않는다.
@@ -300,31 +290,21 @@ jobs:
       - name: Conventions
         run: node apps/mobile/scripts/check-mobile-conventions.mjs
 
-  # 테스트(단위·통합·계약)는 커밋 전 로컬 훅(simple-git-hooks)에서 돌리고 CI는 정적 검사와 빌드만 확인한다.
-  verify-api:
-    name: Verify API
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
-        with:
-          install-scope: api
+      - name: Type Check
+        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
+        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+
       - name: Build API and dependency closure
+        if: needs.gate.outputs.api == 'true'
         run: pnpm turbo run build --filter='!@aido/mobile'
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
   # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
   docker:
     name: Build & Push Image
-    needs: [gate, lint, verify-api]
+    needs: [gate, verify]
     if: >-
-      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.lint.result == 'skipped' && needs.verify-api.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success')) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.verify.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.verify.result == 'success')) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:

@@ -29,7 +29,7 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "postinstall": "turbo build --filter=./packages/*",
-    "prepare": "simple-git-hooks",
+    "prepare": "lefthook install",
     "test": "turbo run test",
     "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
@@ -45,25 +45,12 @@
     "@commitlint/types": "21.2.3",
     "commitizen": "4.3.2",
     "cz-conventional-changelog": "3.3.0",
-    "lint-staged": "17.6.0",
+    "lefthook": "2.2.1",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "simple-git-hooks": "2.14.0",
     "tsx": "4.23.15",
     "turbo": "2.11.10",
     "vite": "catalog:"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged && pnpm typecheck && pnpm test && pnpm build",
-    "pre-push": "pnpm test:integration && pnpm --filter @aido/server test:contract",
-    "commit-msg": "pnpm commitlint --edit $1"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
-      "oxlint --fix",
-      "oxfmt --write --no-error-on-unmatched-pattern"
-    ],
-    "*.{json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}": "oxfmt --write --no-error-on-unmatched-pattern"
   },
   "config": {
     "commitizen": {

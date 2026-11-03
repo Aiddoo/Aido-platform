@@ -1,6 +1,8 @@
 const TIP_LABEL = 'ci:stack-tip';
+const BASE_BRANCH = 'main';
+export const VERIFY_JOB = 'Lint, Type Check & Build';
 const STACK_LABEL_PATTERN = /^stack:[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
-const STACK_BRANCH_PATTERN = /^(?:[^/]+\/\d+\.\d+(?:\.\d+)?-|refactor\/server-)/;
+const STACK_BRANCH_PATTERN = /^[^/]+\/\d+\.\d+(?:\.\d+)?-/;
 
 const hasLabel = (pull, name) => pull.labels.some((label) => label.name === name);
 
@@ -12,15 +14,10 @@ export function planPullRequestCI(current, openPulls, repository) {
   const stackLabel = stackLabels[0]?.name;
   const isStack = STACK_BRANCH_PATTERN.test(current.head.ref) || stackLabel !== undefined;
   if (!isStack) {
-    return {
-      run: current.head.ref !== 'develop',
-      base: current.base.ref,
-      ancestors: [],
-      reason: 'regular',
-    };
+    return { run: true, base: current.base.ref, ancestors: [], reason: 'regular' };
   }
   if (!stackLabel) {
-    return { run: false, base: 'develop', ancestors: [], reason: 'awaiting-stack-metadata' };
+    return { run: false, base: BASE_BRANCH, ancestors: [], reason: 'awaiting-stack-metadata' };
   }
   const members = openPulls.filter((pull) => hasLabel(pull, stackLabel));
   const tips = members.filter((pull) => hasLabel(pull, TIP_LABEL));
@@ -28,7 +25,7 @@ export function planPullRequestCI(current, openPulls, repository) {
     throw new Error('A stack must have exactly one CI tip.');
   }
   if (!hasLabel(current, TIP_LABEL) || current.draft) {
-    return { run: false, base: 'develop', ancestors: [], reason: 'intermediate-or-draft' };
+    return { run: false, base: BASE_BRANCH, ancestors: [], reason: 'intermediate-or-draft' };
   }
   if (tips.length !== 1 || tips[0].number !== current.number) {
     throw new Error('The current pull request must be the live stack tip.');
@@ -51,18 +48,18 @@ export function planPullRequestCI(current, openPulls, repository) {
     if (pull.number !== current.number) {
       ancestors.push(pull.head.sha);
     }
-    if (pull.base.ref === 'develop') {
+    if (pull.base.ref === BASE_BRANCH) {
       break;
     }
     pull = byHead.get(pull.base.ref);
     if (!pull) {
-      throw new Error('The stack must connect to develop without missing pull requests.');
+      throw new Error(`The stack must connect to ${BASE_BRANCH} without missing pull requests.`);
     }
   }
   if (visited.size !== members.length) {
     throw new Error('Disconnected stack branches.');
   }
-  return { run: true, base: 'develop', ancestors, reason: 'cumulative-stack-tip' };
+  return { run: true, base: BASE_BRANCH, ancestors, reason: 'cumulative-stack-tip' };
 }
 
 export function validationProofName(runId, attempt) {
@@ -91,7 +88,7 @@ export function validateTreeProof({
   const scopeKeys = ['api', 'mobile', 'shared'];
   if (
     proof?.version !== 1 ||
-    proof.reason !== 'cumulative-stack-tip' ||
+    !['cumulative-stack-tip', 'regular'].includes(proof.reason) ||
     !Number.isSafeInteger(proof.runId) ||
     !Number.isSafeInteger(proof.attempt) ||
     proof.attempt < 1 ||
@@ -132,18 +129,22 @@ export function validateTreeProof({
   }
   const labels = Array.isArray(pull?.labels) ? pull.labels : [];
   const stackLabels = labels.filter((label) => STACK_LABEL_PATTERN.test(label.name));
+  const trustedSource =
+    proof.reason === 'regular'
+      ? stackLabels.length === 0 && pull?.base?.ref === BASE_BRANCH
+      : stackLabels.length === 1 &&
+        stackLabels[0].name === proof.stackLabel &&
+        labels.some((label) => label.name === TIP_LABEL);
   if (
+    !trustedSource ||
     pull?.number !== proof.pullNumber ||
     pull.draft !== false ||
     !sameRepo(pull.head?.repo?.full_name) ||
     !sameRepo(pull.base?.repo?.full_name) ||
     pull.head.sha !== proof.headSha ||
-    pull.head.ref !== run.head_branch ||
-    stackLabels.length !== 1 ||
-    stackLabels[0].name !== proof.stackLabel ||
-    !labels.some((label) => label.name === TIP_LABEL)
+    pull.head.ref !== run.head_branch
   ) {
-    return { reusable: false, reason: 'untrusted-tip' };
+    return { reusable: false, reason: 'untrusted-pull-request' };
   }
   if (
     !sha(currentTree) ||
@@ -162,24 +163,15 @@ export function validateTreeProof({
   ) {
     return { reusable: false, reason: 'insufficient-scope' };
   }
-  const requiredJobs = ['Lint & Type Check'];
-  if (proof.scopes.api) {
-    requiredJobs.push('Verify API');
-  }
+  const verifyJobs = Array.isArray(jobs) ? jobs.filter((job) => job.name === VERIFY_JOB) : [];
   if (
     jobsAttempt !== proof.attempt ||
-    !Array.isArray(jobs) ||
-    !requiredJobs.every((name) => {
-      const matches = jobs.filter((job) => job.name === name);
-      return (
-        matches.length === 1 &&
-        matches[0].run_id === run.id &&
-        matches[0].status === 'completed' &&
-        matches[0].conclusion === 'success'
-      );
-    })
+    verifyJobs.length !== 1 ||
+    verifyJobs[0].run_id !== run.id ||
+    verifyJobs[0].status !== 'completed' ||
+    verifyJobs[0].conclusion !== 'success'
   ) {
     return { reusable: false, reason: 'required-job-not-successful' };
   }
-  return { reusable: true, reason: 'successful-stack-tip-tree' };
+  return { reusable: true, reason: 'successful-validated-tree' };
 }
