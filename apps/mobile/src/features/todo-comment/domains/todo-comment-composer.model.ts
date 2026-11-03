@@ -38,6 +38,11 @@ export function editComposer(target: TodoComment): TodoCommentComposerForm {
   return { mode: { type: 'edit', target }, items: [{ content: target.content ?? '' }] };
 }
 
+/** 답글·수정을 쓰지 않은 채 키보드를 내리면(바깥 탭·뒤로가기) 작성기도 함께 닫는다. 쓴 글이 있으면 남긴다 */
+export function shouldCloseOnKeyboardHide({ mode, items }: TodoCommentComposerForm) {
+  return mode.type !== 'new' && items.every((item) => item.content.trim().length === 0);
+}
+
 export function canChainComposer(mode: TodoCommentComposerMode, itemCount: number) {
   return mode.type !== 'edit' && itemCount < TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE;
 }
@@ -119,6 +124,7 @@ export const TodoCommentComposer = {
   reply: replyComposer,
   edit: editComposer,
   canChain: canChainComposer,
+  shouldCloseOnKeyboardHide,
   targetOf,
   replyParentIdOf,
   draftTargetOf,

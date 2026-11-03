@@ -102,4 +102,22 @@ describe('TodoCommentComposer', () => {
     // Then
     expect(sourceUpdatedAt).toEqual([editedAt.getTime(), undefined]);
   });
+
+  it('답글·수정을 비운 채 키보드를 내리면 작성기를 닫고 쓴 글이 있으면 남긴다', () => {
+    // Given
+    const target = createTodoComment();
+
+    // When
+    const result = [
+      TodoCommentComposer.shouldCloseOnKeyboardHide(TodoCommentComposer.reply(target)),
+      TodoCommentComposer.shouldCloseOnKeyboardHide({
+        mode: { type: 'reply', target },
+        items: [{ content: '쓰던 글' }],
+      }),
+      TodoCommentComposer.shouldCloseOnKeyboardHide(TodoCommentComposer.new()),
+    ];
+
+    // Then
+    expect(result).toEqual([true, false, false]);
+  });
 });

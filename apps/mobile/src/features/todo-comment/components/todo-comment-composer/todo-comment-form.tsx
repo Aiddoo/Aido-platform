@@ -24,7 +24,7 @@ import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView, useWindowDimensions } from 'react-native';
-import { KeyboardController } from 'react-native-keyboard-controller';
+import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events';
@@ -73,7 +73,7 @@ export function TodoCommentForm({
 }: TodoCommentFormProps) {
   const { todoId } = useTodoScreenParams();
   const { height: viewportHeight } = useWindowDimensions();
-  const { control, setFocus } = useFormContext<TodoCommentComposerForm>();
+  const { control, setFocus, getValues, reset } = useFormContext<TodoCommentComposerForm>();
   const mode = useWatch({ control, name: 'mode' });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const isSubmitting = useIsTodoCommentSubmitting();
@@ -101,6 +101,15 @@ export function TodoCommentForm({
     const frame = requestAnimationFrame(() => setFocus('items.0.content'));
     return () => cancelAnimationFrame(frame);
   }, [mode.type, setFocus, targetId]);
+
+  useEffect(() => {
+    const subscription = KeyboardEvents.addListener('keyboardDidHide', () => {
+      if (TodoCommentComposer.shouldCloseOnKeyboardHide(getValues())) {
+        reset(TodoCommentComposer.new());
+      }
+    });
+    return () => subscription.remove();
+  }, [getValues, reset]);
 
   useEffect(
     () => () => {
