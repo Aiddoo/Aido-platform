@@ -54,6 +54,20 @@ job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`�
 
 기존 waiting/delayed/active/retry 작업의 payload·job name·queue alias·재시도 의미는 drain이 확인되기 전 유지한다. production BullMQ가 비었다는 확인 없이 legacy queue/key/worker를 일괄 삭제하지 않는다. 새 backend health만으로 과거 queue가 비었다고 판단하지 않는다. [`push-notifications.md`](./docs/push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다.
 
+알림 Context의 legacy worker(`notification`·`retention`·`todo-reminder`·`timezone-reminder`)는 1.14.1에서 제거했다. 2026-07-22 pg-boss 전환 뒤 이 이름으로 enqueue하는 코드는 없다. 1.14.1 API를 올리기 전에 아래 두 값이 모두 0인지 확인하고, 0이 아니면 이전 API에서 `JOB_REDIS_DRAIN_ENABLED=true`로 먼저 비운다.
+
+```sql
+-- pg-boss에 남은 이전 이름의 작업
+SELECT name, state, count(*) FROM pgboss.job
+WHERE name IN ('notification', 'retention', 'todo-reminder', 'timezone-reminder')
+  AND state IN ('created', 'retry', 'active')
+GROUP BY name, state;
+```
+
+Redis를 쓰던 배포라면 같은 이름의 BullMQ `wait`·`delayed`·`active` 크기도 확인한다(`LLEN bull:<queue>:wait`, `ZCARD bull:<queue>:delayed`, `LLEN bull:<queue>:active`).
+
+리텐션 발송은 공용 push-delivery outbox로 옮겨졌다. migration `retention_push_outbox_to_shared_outbox`가 아직 보내지 않은 리텐션 dispatch를 공용 outbox에 올리고 이전 리텐션 outbox를 `FAILED`(`MOVED_TO_PUSH_DISPATCH_OUTBOX`)로 닫아 이전 API worker가 같은 dispatch를 다시 잡지 못하게 한다. 이전 배포의 `retention-dispatch` 작업은 새 worker가 처리 없이 완료하고, `retention-outbox-relay-scheduler` 예약은 새 API가 시작할 때 해제한다. `RetentionPushOutbox` 테이블은 이전 이미지로 롤백할 수 있도록 남기며 1.14.1 운영 안정화 뒤 별도 migration으로 지운다.
+
 ## 롤백의 범위
 
 workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 application graph·marker·DDL·업무 데이터 rollback이 아니다.
