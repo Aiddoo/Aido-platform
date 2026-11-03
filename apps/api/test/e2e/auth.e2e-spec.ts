@@ -1152,6 +1152,8 @@ describe("인증 E2E", () => {
         .expect(200);
 
       // Then
+      expect(googleLogin.body.data.isNewUser).toBe(true);
+      expect(appleLogin.body.data.isNewUser).toBe(false);
       expect(appleLogin.body.data.userId).toBe(googleLogin.body.data.userId);
       for (const accessToken of [
         googleLogin.body.data.accessToken,
@@ -1198,6 +1200,44 @@ describe("인증 E2E", () => {
       }
       expect(latestAttempt.success).toBe(true);
       expect(latestAttempt.failureReason).toBeNull();
+    });
+
+    it("POST /auth/apple/callback - 기존 응답 필드는 그대로 두고 첫 가입만 isNewUser: true다", async () => {
+      // Given
+      const appleToken = "is-new-user-apple-token";
+      ctx.fakeOAuthTokenVerifierService.setCustomProfile("apple", appleToken, {
+        id: "is-new-user-apple-owner",
+        email: "is-new-user@example.com",
+        emailVerified: true,
+      });
+
+      // When
+      const signup = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/apple/callback")
+        .send({ idToken: appleToken })
+        .expect(200);
+      const login = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/apple/callback")
+        .send({ idToken: appleToken })
+        .expect(200);
+
+      // Then
+      for (const response of [signup, login]) {
+        expect(Object.keys(response.body.data).sort()).toEqual([
+          "accessToken",
+          "accountRestored",
+          "isNewUser",
+          "name",
+          "profileImage",
+          "refreshToken",
+          "userId",
+          "userTag",
+        ]);
+        expect(response.body.data.accountRestored).toBe(false);
+      }
+      expect(signup.body.data.isNewUser).toBe(true);
+      expect(login.body.data.isNewUser).toBe(false);
+      expect(login.body.data.userId).toBe(signup.body.data.userId);
     });
 
     it("POST /auth/naver/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
@@ -2300,6 +2340,7 @@ describe("인증 E2E", () => {
 
       // Then
       expect(restoration.body.data.accountRestored).toBe(true);
+      expect(restoration.body.data).not.toHaveProperty("isNewUser");
       const restoredProfile = await request(ctx.app.getHttpServer())
         .get("/v1/auth/me")
         .set("Authorization", `Bearer ${restoredAccessToken}`)
