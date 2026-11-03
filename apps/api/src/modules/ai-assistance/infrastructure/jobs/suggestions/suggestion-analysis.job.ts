@@ -72,9 +72,6 @@ export class SuggestionAnalysisJob implements OnModuleInit {
     );
   }
 
-  /**
-   * 대상 사용자를 조회하여 BullMQ 큐에 per-user 잡 등록
-   */
   async dispatchAnalysis(dispatchJob?: {
     updateProgress(progress: object): Promise<unknown>;
   }): Promise<void> {
@@ -138,14 +135,10 @@ export class SuggestionAnalysisJob implements OnModuleInit {
     });
   }
 
-  /**
-   * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
-   */
   async #catchUpIfNeeded(): Promise<void> {
     const kstNow = dayjs().tz(DISPATCH_CRON_TZ);
     const hour = kstNow.hour();
 
-    // 매일 07:30 이후
     if (hour > 7 || (hour === 7 && kstNow.minute() >= 30)) {
       this.#logger.log({ event: AiJobLogEvent.CATCH_UP, queueName: AI_SUGGESTION_QUEUE });
       await this.runtime.enqueue(
@@ -159,9 +152,6 @@ export class SuggestionAnalysisJob implements OnModuleInit {
     }
   }
 
-  /**
-   * jobId 중복 방지용 날짜 식별자 생성
-   */
   #getJobDeduplicationId(): string {
     return dayjs().tz(DISPATCH_CRON_TZ).format("YYYY-MM-DD");
   }

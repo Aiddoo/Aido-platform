@@ -107,7 +107,6 @@ export class TimezoneAwareReminderOrchestrator {
 
       const tzList = await this.#dependencies.preferenceReader.findActiveTimezones();
 
-      // 각 타임존별 Strategy를 병렬 처리
       const tasks = tzList.map((tz) => {
         const local = dayjs(sweptAt).tz(tz);
         const localHour = local.hour();
@@ -188,9 +187,6 @@ export class TimezoneAwareReminderOrchestrator {
     }
   }
 
-  /**
-   * Social Digest delayed job 핸들러
-   */
   async handleSocialDigest(payload: SocialDigestJobData): Promise<void> {
     try {
       if (!payload.recipientUserIds?.length) {
