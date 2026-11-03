@@ -14,6 +14,7 @@ import {
 } from '@src/shared/ui';
 import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { compact } from 'es-toolkit';
 import { useLocales } from 'expo-localization';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
@@ -21,8 +22,12 @@ import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanima
 import { match, P } from 'ts-pattern';
 
 import { WEATHER_CONDITION_LABEL_KEYS } from '../constants/weather-labels';
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import { type DailyForecastEntry, WeatherReportPolicy } from '../domains/weather-report.model';
+import { type PlaceName, WeatherLocationPolicy } from '../domains/weather-location.model';
+import {
+  type DailyForecastEntry,
+  type TemperatureReading,
+  WeatherReportPolicy,
+} from '../domains/weather-report.model';
 import {
   isConnectionError,
   isLocationNotRegisteredError,
@@ -35,7 +40,6 @@ import {
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
 import { toWeatherReportFailedCause } from '../utils/analytics/weather-analytics';
-import { formatDegreeNumber, formatDegrees } from '../utils/format-degrees';
 import { WeatherIcon } from './weather-icon';
 import { WeatherLocationPrompt } from './weather-location-prompt';
 import { WeatherResult } from './weather-result';
@@ -46,10 +50,12 @@ const HERO_TEXT_SHADOW = {
   textShadowRadius: 12,
 } as const;
 const PLACE_TYPE = { fontSize: 32, lineHeight: 40, letterSpacing: -0.9 };
+/** 긴 도시 이름은 72%까지 줄이고, 그래도 넘치면 말줄임한다. */
+const PLACE_MINIMUM_FONT_SCALE = 0.72;
 const LINE_TYPE = { fontSize: 21, lineHeight: 28, letterSpacing: -0.4 };
 /** 시안 V2Spec §6: 히어로 글자는 앱 글자 크기를 따르되 1.2배까지만 키운다. */
 const MAX_HERO_SCALE = 1.2;
-/** 세 글자 이상(−12, 100)은 한 줄에 들어가도록 display(96)에서 76으로 줄인다. */
+/** 세 자리(100)는 한 줄에 들어가도록 display(96)에서 76으로 줄인다. */
 const LONG_TEMPERATURE_LENGTH = 3;
 const LONG_TEMPERATURE_FONT_SIZE = 76;
 const TEMPERATURE_LETTER_SPACING_EM = -0.06;
@@ -63,11 +69,19 @@ const TEMPERATURE_OFFSET_EM = Platform.select({
   ios: { top: 0.06, bottomTrim: 0.14 },
   default: { top: -0.05, bottomTrim: 0.03 },
 });
-const DEGREE_POSITION_STYLE = {
-  position: 'absolute',
-  left: '100%',
-  top: 0,
-  letterSpacing: 0,
+/**
+ * 영하 기호는 숫자의 0.52배 크기로 숫자 세로 가운데에, °는 0.42배 크기로 숫자 위쪽에 붙인다.
+ * 글리프가 줄 상자 안에 놓이는 높이가 플랫폼마다 달라 위치를 em 단위로 맞춘다.
+ */
+const SIGN = {
+  scale: 0.52,
+  top: Platform.select({ ios: 0.27, default: 0.33 }),
+} as const;
+/** 숫자가 가운데에 오도록 양쪽에 같은 폭의 기호 자리를 둔다. */
+const SYMBOL_SLOT_EM = 0.32;
+const DEGREE = {
+  scale: 0.42,
+  top: Platform.select({ ios: 0.1, default: 0.18 }),
 } as const;
 const HERO_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1).factory())
@@ -100,11 +114,16 @@ export function WeatherHero() {
   });
   const now = useMinuteNow();
   const today = WeatherReportPolicy.todayForecast(data, now);
-  const placeName = location.status === 'ready' ? location.placeName : null;
+  const place = location.status === 'ready' ? location.place : null;
   const countryCode = location.status === 'ready' ? location.countryCode : null;
-  const place = placeName ?? t('hero.currentLocation');
-  const temperature = WeatherReportPolicy.displayTemperature(data.current.temperature, unit);
+  const title = place?.city ?? t('hero.currentLocation');
+  const reading = WeatherReportPolicy.temperatureReading(
+    WeatherReportPolicy.displayTemperature(data.current.temperature, unit),
+  );
   const condition = t(WEATHER_CONDITION_LABEL_KEYS[data.current.condition]);
+  const temperature = reading.isBelowZero
+    ? t('hero.temperatureBelowZero', { count: reading.magnitude })
+    : t('hero.temperature', { count: reading.magnitude });
 
   return (
     <Animated.View entering={HERO_ENTERING}>
@@ -114,20 +133,28 @@ export function WeatherHero() {
           className="w-full"
           accessible
           accessibilityRole="summary"
-          accessibilityLabel={t('hero.summary', { place, temperature, condition })}
+          accessibilityLabel={t('hero.summary', {
+            place: place == null ? title : compact([place.city, place.district]).join(' '),
+            temperature,
+            condition,
+          })}
         >
-          {placeName != null && <WeatherHero.LocationLabel countryCode={countryCode} />}
+          {place != null && (
+            <WeatherHero.LocationLabel countryCode={countryCode} district={place.district} />
+          )}
           <Text
             weight="medium"
             align="center"
             tone="onSky"
             maxLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={PLACE_MINIMUM_FONT_SCALE}
             className="mt-0.5 max-w-full"
             style={placeStyle}
           >
-            {place}
+            {title}
           </Text>
-          <WeatherHero.Temperature value={formatDegreeNumber(temperature)} />
+          <WeatherHero.Temperature reading={reading} />
           <Text
             weight="medium"
             align="center"
@@ -139,10 +166,10 @@ export function WeatherHero() {
           {today != null && (
             <Text weight="medium" align="center" tone="onSky" style={lineStyle}>
               {t('hero.highLow', {
-                high: formatDegrees(
+                high: WeatherReportPolicy.degrees(
                   WeatherReportPolicy.displayTemperature(today.temperatureMax, unit),
                 ),
-                low: formatDegrees(
+                low: WeatherReportPolicy.degrees(
                   WeatherReportPolicy.displayTemperature(today.temperatureMin, unit),
                 ),
               })}
@@ -158,11 +185,16 @@ export function WeatherHero() {
   );
 }
 
-/** 지명 위의 작은 위치 표시. 기기 위치로 받은 지명일 때만 보이고, 기기 지역과 다른 나라면 나라 이름을 붙인다. */
+/**
+ * 도시 위의 작은 위치 표시. 기기 위치로 받은 지명일 때만 보이고, 기기 지역과 다른 나라면 나라 이름을,
+ * 동네를 알면 동네 이름을 붙인다.
+ */
 WeatherHero.LocationLabel = function LocationLabel({
   countryCode,
+  district,
 }: {
   countryCode: string | null;
+  district: PlaceName['district'];
 }) {
   const { t, i18n } = useTranslation('weather');
   const [deviceLocale] = useLocales();
@@ -172,6 +204,7 @@ WeatherHero.LocationLabel = function LocationLabel({
     deviceLocale?.regionCode ?? null,
     i18n.language,
   );
+  const area = compact([country, district]);
 
   return (
     <HStack align="center" gap={5}>
@@ -185,48 +218,81 @@ WeatherHero.LocationLabel = function LocationLabel({
         className="text-on-sky/[0.78]"
         style={HERO_TEXT_SHADOW}
       >
-        {country == null
+        {area.length === 0
           ? t('hero.currentLocation')
-          : t('hero.currentLocationInCountry', { country })}
+          : t('hero.currentLocationIn', { area: area.join(' · ') })}
       </Text>
     </HStack>
   );
 };
 
 /**
- * 숫자만 가운데에 두고 °는 숫자 상자 오른쪽 바깥(left 100%)에 띄워, 도 기호 때문에 숫자가 왼쪽으로 밀리지 않게 한다.
- * RN Text 안의 중첩 Text는 absolute 배치가 되지 않아 View로 감싼다.
- * 크기는 display 토큰을 쓰고(앱 글자 크기와 무관), 세 글자 이상만 76으로 줄인다.
+ * 숫자 양쪽에 같은 폭의 기호 자리를 두어 숫자는 늘 가운데에 있고, 왼쪽 자리에 영하 기호, 오른쪽 자리에 °를 둔다.
+ * 크기는 display 토큰을 쓰고(앱 글자 크기와 무관), 세 자리만 76으로 줄인다.
  */
-WeatherHero.Temperature = function Temperature({ value }: { value: string }) {
-  const isLong = value.length >= LONG_TEMPERATURE_LENGTH;
+WeatherHero.Temperature = function Temperature({ reading }: { reading: TemperatureReading }) {
+  const digits = String(reading.magnitude);
+  const isLong = digits.length >= LONG_TEMPERATURE_LENGTH;
   const fontSize = isLong ? LONG_TEMPERATURE_FONT_SIZE : DISPLAY_FONT_SIZE;
   const style = {
     ...HERO_TEXT_SHADOW,
     ...(isLong ? { fontSize: LONG_TEMPERATURE_FONT_SIZE } : null),
     lineHeight: fontSize,
   };
+  const slotWidth = fontSize * SYMBOL_SLOT_EM;
 
   return (
-    <Box
+    <HStack
+      align="start"
       style={{
-        position: 'relative',
         marginTop: fontSize * TEMPERATURE_OFFSET_EM.top,
         marginBottom: -fontSize * TEMPERATURE_OFFSET_EM.bottomTrim,
       }}
     >
+      <Box style={{ width: slotWidth }} className="items-end">
+        {reading.isBelowZero && (
+          <WeatherHero.TemperatureSymbol fontSize={fontSize} symbol={SIGN} value="−" />
+        )}
+      </Box>
       <Text
         size="display"
         tone="onSky"
         weight="normal"
         style={{ ...style, letterSpacing: fontSize * TEMPERATURE_LETTER_SPACING_EM }}
       >
-        {value}
+        {digits}
       </Text>
-      <Text size="display" tone="onSky" weight="normal" style={[style, DEGREE_POSITION_STYLE]}>
-        °
-      </Text>
-    </Box>
+      <Box style={{ width: slotWidth }} className="items-start">
+        <WeatherHero.TemperatureSymbol fontSize={fontSize} symbol={DEGREE} value="°" />
+      </Box>
+    </HStack>
+  );
+};
+
+/** 큰 기온 옆의 작은 영하 기호·도 기호. 숫자 크기에 비례한 크기와 높이로 놓인다. */
+WeatherHero.TemperatureSymbol = function TemperatureSymbol({
+  fontSize,
+  symbol,
+  value,
+}: {
+  fontSize: number;
+  symbol: { scale: number; top: number };
+  value: string;
+}) {
+  return (
+    <Text
+      tone="onSky"
+      weight="normal"
+      style={{
+        ...HERO_TEXT_SHADOW,
+        marginTop: fontSize * symbol.top,
+        fontSize: fontSize * symbol.scale,
+        lineHeight: fontSize * symbol.scale,
+        letterSpacing: 0,
+      }}
+    >
+      {value}
+    </Text>
   );
 };
 

@@ -33,9 +33,11 @@
   "localTime": "현지 {{time}}",
   "hero": {
     "currentLocation": "현재 위치",
-    "currentLocationInCountry": "현재 위치 · {{country}}",
+    "currentLocationIn": "현재 위치 · {{area}}",
     "highLow": "최고 {{high}} 최저 {{low}}",
-    "summary": "{{place}}, 지금 {{temperature}}도, {{condition}}",
+    "summary": "{{place}}, 지금 {{temperature}}, {{condition}}",
+    "temperature": "{{count}}도",
+    "temperatureBelowZero": "영하 {{count}}도",
     "restOfDay": "남은 시간 {{condition}} · 강수 확률 {{chance}}%",
     "stale": "{{relative}} 정보예요"
   },

@@ -33,7 +33,9 @@ function createGateway(overrides: Partial<jest.Mocked<LocationGateway>> = {}) {
     getPermission: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
     requestPermission: jest.fn().mockResolvedValue({ granted: true, canAskAgain: true }),
     getCoordinates: jest.fn().mockResolvedValue(SEOUL),
-    getPlace: jest.fn().mockResolvedValue({ countryCode: 'KR', name: '서울 중구' }),
+    getPlace: jest
+      .fn()
+      .mockResolvedValue({ countryCode: 'KR', name: { city: '서울', district: '중구' } }),
     ...overrides,
   };
   return gateway;
@@ -103,7 +105,7 @@ describe('useWeatherLocation', () => {
     await waitFor(() =>
       expect(result.current).toEqual({
         status: 'ready',
-        placeName: '서울 중구',
+        place: { city: '서울', district: '중구' },
         countryCode: 'KR',
       }),
     );

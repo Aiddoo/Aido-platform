@@ -28,7 +28,6 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/get-weather-report-query-options';
-import { formatDegrees } from '../utils/format-degrees';
 import { toCompassDial, toPressureGauge } from '../utils/view-models/weather-dial.view-model';
 import {
   TILE_GRID_GAP,
@@ -80,12 +79,12 @@ export function WeatherDetailGrid() {
             minHeight={bodyMinHeight}
             icon="thermo"
             title={t('details.feelsLike')}
-            value={formatDegrees(
+            value={WeatherReportPolicy.degrees(
               WeatherReportPolicy.displayTemperature(current.apparentTemperature, unit),
             )}
             sub={t(FEELS_LIKE_LABEL_KEYS[feelsLike])}
             note={t(FEELS_LIKE_NOTE_KEYS[feelsLike], {
-              difference: formatDegrees(feelsDifference),
+              difference: WeatherReportPolicy.degrees(feelsDifference),
             })}
           />
         </GridItem>
@@ -173,7 +172,9 @@ export function WeatherDetailGrid() {
             title={t('details.humidity')}
             value={t('details.percentValue', { value: current.humidity })}
             sub={t('details.dewPoint', {
-              value: formatDegrees(WeatherReportPolicy.displayTemperature(current.dewPoint, unit)),
+              value: WeatherReportPolicy.degrees(
+                WeatherReportPolicy.displayTemperature(current.dewPoint, unit),
+              ),
             })}
             note={
               WeatherDetailPolicy.isMuggy(current.humidity)

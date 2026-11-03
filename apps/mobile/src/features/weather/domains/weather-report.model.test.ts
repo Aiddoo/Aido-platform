@@ -244,6 +244,34 @@ describe('WeatherReportPolicy.displayTemperature', () => {
   });
 });
 
+describe('WeatherReportPolicy.degrees', () => {
+  it.each([
+    [12, '12°'],
+    [0, '0°'],
+    [-3, '−3°'],
+  ])('%s도를 마이너스 기호를 써서 %s로 보여 준다', (value, expected) => {
+    // When
+    const text = WeatherReportPolicy.degrees(value);
+
+    // Then
+    expect(text).toBe(expected);
+  });
+});
+
+describe('WeatherReportPolicy.temperatureReading', () => {
+  it.each([
+    [-4, { isBelowZero: true, magnitude: 4 }],
+    [0, { isBelowZero: false, magnitude: 0 }],
+    [23, { isBelowZero: false, magnitude: 23 }],
+  ])('큰 기온 %s도는 영하 기호와 숫자를 나눠 %o로 읽는다', (value, expected) => {
+    // When
+    const reading = WeatherReportPolicy.temperatureReading(value);
+
+    // Then
+    expect(reading).toEqual(expected);
+  });
+});
+
 describe('WeatherReportPolicy.isStale', () => {
   it('공급자에서 받은 지 30분까지는 최신으로 본다', () => {
     // Given

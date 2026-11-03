@@ -105,7 +105,7 @@ describe('WeatherLocationPolicy.status', () => {
       {
         status: 'located',
         registered: { ...SEOUL, timezone: 'Asia/Seoul' },
-        placeName: '서울 중구',
+        place: { city: '서울', district: '중구' },
         countryCode: 'KR',
         revision: 1,
       },
@@ -113,7 +113,11 @@ describe('WeatherLocationPolicy.status', () => {
     );
 
     // Then
-    expect(status).toEqual({ status: 'ready', placeName: '서울 중구', countryCode: 'KR' });
+    expect(status).toEqual({
+      status: 'ready',
+      place: { city: '서울', district: '중구' },
+      countryCode: 'KR',
+    });
   });
 
   it.each(['needsPermission', 'denied'] as const)('권한 상태 %s를 그대로 전달한다', (state) => {

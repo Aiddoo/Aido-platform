@@ -6,7 +6,7 @@ import * as Linking from 'expo-linking';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import { type PlaceName, WeatherLocationPolicy } from '../domains/weather-location.model';
 import { useGetWeatherLocationQueryOptions } from '../queries/get-weather-location-query-options';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 
@@ -15,7 +15,7 @@ export type WeatherLocation =
   | { status: 'needsPermission'; request: () => Promise<void> }
   | { status: 'denied'; openSettings: () => Promise<void> }
   | { status: 'unavailable'; retry: () => Promise<void> }
-  | { status: 'ready'; placeName: string | null; countryCode: string | null };
+  | { status: 'ready'; place: PlaceName | null; countryCode: string | null };
 
 /**
  * 위치 권한·위치 읽기·서버 등록을 화면이 그릴 상태 하나로 모은다.
