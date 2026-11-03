@@ -42,6 +42,47 @@ export const NOTIFICATION_TYPE = {
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
+/** 푸시 알림을 눌렀을 때의 동작. DEEP_LINK는 앱 안 이동, BROWSER·WEBVIEW는 http(s) 주소 열기, NONE은 표시만 한다. */
+export const NOTIFICATION_ACTION_TYPE = {
+  DEEP_LINK: "DEEP_LINK",
+  BROWSER: "BROWSER",
+  WEBVIEW: "WEBVIEW",
+  NONE: "NONE",
+} as const;
+
+export type NotificationActionType =
+  (typeof NOTIFICATION_ACTION_TYPE)[keyof typeof NOTIFICATION_ACTION_TYPE];
+
+/** 댓글 알림이 무엇 때문에 왔는지. */
+export const NOTIFICATION_ACTIVITY_KIND = {
+  COMMENT: "COMMENT",
+  REPLY: "REPLY",
+  LIKE: "LIKE",
+} as const;
+
+/** 알림을 눌렀을 때 열 화면. 푸시 navigation의 판별 값이며 값은 추가만 한다. */
+export const NOTIFICATION_NAVIGATION_KIND = {
+  NONE: "NONE",
+  EXTERNAL_URL: "EXTERNAL_URL",
+  FEED: "FEED",
+  FRIEND_FEED: "FRIEND_FEED",
+  FRIENDS: "FRIENDS",
+  FRIEND_REQUESTS: "FRIEND_REQUESTS",
+  TODO: "TODO",
+  TODO_COMMENT: "TODO_COMMENT",
+  NUDGE: "NUDGE",
+  CHEER: "CHEER",
+  WEATHER: "WEATHER",
+  WEATHER_RESCHEDULE: "WEATHER_RESCHEDULE",
+  ACHIEVEMENTS: "ACHIEVEMENTS",
+  REPORTS: "REPORTS",
+  SUGGESTIONS: "SUGGESTIONS",
+  INVITE: "INVITE",
+  SUBSCRIPTION: "SUBSCRIPTION",
+  NOTIFICATIONS: "NOTIFICATIONS",
+  NOTIFICATION_SETTINGS: "NOTIFICATION_SETTINGS",
+} as const;
+
 /**
  * 공지(SYSTEM_NOTICE·ADMIN_BROADCAST·ADMIN_TARGETED)의 DEEP_LINK url로 보낼 수 있는 앱 경로.
  * 앱(1.13.0+)은 이 경로만 열고, 모르는 경로·쿼리·상세 id 경로는 이동하지 않는다. 이전 앱은 url을 무시한다.

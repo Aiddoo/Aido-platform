@@ -57,6 +57,13 @@ describe("PushNotificationPayloadFactory", () => {
           threadRootId: commentId,
           activityKind: "COMMENT",
         },
+        navigation: {
+          kind: "TODO_COMMENT",
+          todoId: 42,
+          commentId,
+          threadCommentId: commentId,
+          activityKind: "COMMENT",
+        },
         campaignKey: "transactional.v1",
         variantId: "comment.created.ko.v1",
         dispatchId: 202,
@@ -155,6 +162,7 @@ describe("PushNotificationPayloadFactory", () => {
       type: "WEATHER_MORNING",
       purpose: "SCHEDULED_SERVICE",
       action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain" },
+      navigation: { kind: "WEATHER_RESCHEDULE", todoIds: [12, 15], reason: "rain" },
     });
     expect(pushNotificationDataSchema.parse(payload.data)).toEqual(payload.data);
   });

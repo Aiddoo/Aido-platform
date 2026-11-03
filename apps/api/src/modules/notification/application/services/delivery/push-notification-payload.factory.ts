@@ -6,6 +6,7 @@ import { isMarketingNotification } from "../../../domain/services/delivery/push-
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import type { PushPayload } from "../../ports/delivery/push-provider.port.js";
+import { toNotificationNavigation } from "./notification-navigation.js";
 import { toNotificationRouting } from "./notification-routing.js";
 
 interface CreatePushNotificationPayloadInput {
@@ -90,6 +91,7 @@ export class PushNotificationPayloadFactory {
       context.cheerId = data.cheerId;
     }
     const routing = toNotificationRouting(data.metadata);
+    const navigation = toNotificationNavigation({ ...data, routing });
 
     return {
       notificationId,
@@ -100,6 +102,7 @@ export class PushNotificationPayloadFactory {
       },
       ...(Object.keys(context).length > 0 && { context }),
       ...(routing && { routing }),
+      ...(navigation && { navigation }),
       ...(data.campaignKey && { campaignKey: data.campaignKey }),
       ...(data.variantId && { variantId: data.variantId }),
       ...(data.purpose && { purpose: data.purpose }),
