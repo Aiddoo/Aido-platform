@@ -1,0 +1,176 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "33ef1cd0-e8f1-4704-864e-b1dc1c1230ab",
+  "prevIds": [
+    "df3e26d8-19ce-48ba-82ac-3dc40a4d4be3"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoComment",
+        "TodoComment_todoId_rootId_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoComment_todoId_rootId_idx",
+        "n|idx|public.TodoComment_todoId_rootId_idx",
+        "e|idx|public.TodoComment_todoId_rootId_idx",
+        "n|rel|public.TodoComment_todoId_rootId_idx"
+      ],
+      "reads": [
+        "e|tbl|public.TodoComment",
+        "n|sch|public",
+        "e|col|public.TodoComment.todoId",
+        "e|col|public.TodoComment.rootId"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "TodoComment",
+        "replyToCommentId"
+      ],
+      "writes": [
+        "s|col|public.TodoComment.replyToCommentId",
+        "n|col|public.TodoComment.replyToCommentId",
+        "e|col|public.TodoComment.replyToCommentId"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoComment",
+        "TodoComment_parentId_createdAt_id_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoComment_parentId_createdAt_id_idx",
+        "n|idx|public.TodoComment_parentId_createdAt_id_idx",
+        "e|idx|public.TodoComment_parentId_createdAt_id_idx",
+        "n|rel|public.TodoComment_parentId_createdAt_id_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public",
+        "n|col|public.TodoComment.parentId",
+        "n|col|public.TodoComment.createdAt",
+        "n|col|public.TodoComment.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoComment"
+      ],
+      "writes": [
+        "s|fk|public.TodoComment.TodoComment_replyToCommentId_fkey",
+        "n|fk|public.TodoComment.TodoComment_replyToCommentId_fkey",
+        "e|fk|public.TodoComment.TodoComment_replyToCommentId_fkey",
+        "n|con|public.TodoComment.TodoComment_replyToCommentId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public",
+        "n|tbl|public.TodoComment",
+        "n|sch|public",
+        "n|col|public.TodoComment.replyToCommentId",
+        "n|col|public.TodoComment.id",
+        "e|uniqueness|public.TodoComment.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoComment",
+        "name": "replyToCommentId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoComment",
+        "name": "TodoComment_parentId_createdAt_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "parentId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "createdAt",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoComment",
+        "name": "TodoComment_replyToCommentId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "replyToCommentId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "TodoComment",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"TodoComment_todoId_rootId_idx\"]"
+    }
+  ]
+}

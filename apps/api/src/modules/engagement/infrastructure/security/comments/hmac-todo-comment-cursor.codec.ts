@@ -7,12 +7,16 @@ import { Injectable } from "@nestjs/common";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import type {
-  TodoCommentOverviewCursor,
-  TodoCommentOverviewRootRecord,
-  TodoConversationCursor,
-  TodoConversationRecord,
-  TodoConversationScope,
+import {
+  TODO_COMMENT_PAGE_DIRECTION,
+  type TodoCommentPageDirection,
+  type TodoCommentRecord,
+  type TodoCommentRepliesCursor,
+  type TodoCommentThreadCursor,
+  type TodoCommentThreadRecord,
+  type TodoConversationCursor,
+  type TodoConversationRecord,
+  type TodoConversationScope,
 } from "../../../application/models/comments/todo-comment.types.js";
 import type { TodoCommentCursorCodecPort } from "../../../application/ports/comments/todo-comment-cursor-codec.port.js";
 
@@ -32,13 +36,23 @@ const conversationCursorSchema = z.strictObject({
   scope: z.enum(["TODO", "THREAD"]),
   position: cursorPositionSchema,
 });
-const overviewCursorSchema = z.strictObject({
+const directionSchema = z.enum(TODO_COMMENT_PAGE_DIRECTION);
+const threadsCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("overview"),
   sort: z.enum(TODO_COMMENT_SORT),
   todoId: z.number().int().positive(),
   rootId: z.cuid(),
   position: cursorPositionSchema,
+  direction: directionSchema.optional(),
+});
+const repliesCursorSchema = z.strictObject({
+  v: z.literal(1),
+  kind: z.literal("replies"),
+  todoId: z.number().int().positive(),
+  threadCommentId: z.cuid(),
+  replyId: z.cuid(),
+  direction: directionSchema,
 });
 
 function invalidCursor(): ApplicationException {
@@ -64,26 +78,20 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
     sort: TodoCommentSort,
     scope: TodoConversationScope = "TODO",
   ): string {
-    const cursor = conversationCursorSchema.safeParse({
+    return this.encodeParsed(conversationCursorSchema, {
       v: 1,
       kind: "conversation",
       sort,
       todoId: record.todoId,
       commentId: record.id,
-      threadId: record.rootId ?? record.id,
+      threadId: record.threadCommentId ?? record.id,
       scope,
       position: record.conversationPosition,
     });
-
-    if (!cursor.success) {
-      throw invalidCursor();
-    }
-
-    return this.encode(cursor.data);
   }
 
-  decodeOverview(cursor: string, sort: TodoCommentSort): TodoCommentOverviewCursor {
-    const parsedCursor = overviewCursorSchema.safeParse(this.decode(cursor));
+  decodeThreads(cursor: string, sort: TodoCommentSort): TodoCommentThreadCursor {
+    const parsedCursor = threadsCursorSchema.safeParse(this.decode(cursor));
 
     if (!parsedCursor.success || parsedCursor.data.sort !== sort) {
       throw invalidCursor();
@@ -92,19 +100,53 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
     return parsedCursor.data;
   }
 
-  encodeOverview(record: TodoCommentOverviewRootRecord, sort: TodoCommentSort): string {
-    if (record.parentId != null || record.rootId != null) {
+  encodeThreads(
+    record: TodoCommentThreadRecord,
+    sort: TodoCommentSort,
+    direction: TodoCommentPageDirection,
+  ): string {
+    if (record.threadCommentId != null) {
       throw invalidCursor();
     }
 
-    const cursor = overviewCursorSchema.safeParse({
+    return this.encodeParsed(threadsCursorSchema, {
       v: 1,
       kind: "overview",
       sort,
       todoId: record.todoId,
       rootId: record.id,
-      position: record.overviewPosition,
+      position: record.threadPosition,
+      direction,
     });
+  }
+
+  decodeReplies(cursor: string): TodoCommentRepliesCursor {
+    const parsedCursor = repliesCursorSchema.safeParse(this.decode(cursor));
+
+    if (!parsedCursor.success) {
+      throw invalidCursor();
+    }
+
+    return parsedCursor.data;
+  }
+
+  encodeReplies(record: TodoCommentRecord, direction: TodoCommentPageDirection): string {
+    if (record.threadCommentId == null) {
+      throw invalidCursor();
+    }
+
+    return this.encodeParsed(repliesCursorSchema, {
+      v: 1,
+      kind: "replies",
+      todoId: record.todoId,
+      threadCommentId: record.threadCommentId,
+      replyId: record.id,
+      direction,
+    });
+  }
+
+  private encodeParsed<Schema extends z.ZodType>(schema: Schema, value: z.input<Schema>): string {
+    const cursor = schema.safeParse(value);
 
     if (!cursor.success) {
       throw invalidCursor();

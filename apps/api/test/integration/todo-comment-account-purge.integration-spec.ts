@@ -14,6 +14,7 @@ import {
 import { TodoCommentAccountCleanup } from "#api/modules/engagement/application/services/comments/todo-comment-account-cleanup.service";
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/engagement-comments.public";
 import { DrizzleTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment-account-cleanup.store";
+import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
 import {
   AUTH_USER_REPOSITORY,
   AUTH_SECURITY_LOG_REPOSITORY,
@@ -41,6 +42,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { todoCommentAccountCleanupProvider } from "../../src/modules/engagement/engagement-comments-application.providers.js";
@@ -142,28 +144,29 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       clientRequestId: "00000000-0000-4000-8000-000000000001",
       content: "삭제될 루트",
       likeCount: 1,
-      replyCount: 1,
+      replyCount: 2,
     },
     {
       id: purgedChildId,
       todoId: todo.id,
       authorId: purgedUser.id,
       parentId: purgedRootId,
+      replyToCommentId: purgedRootId,
       rootId: purgedRootId,
       path: [purgedRootId],
       depth: 1,
       clientRequestId: "00000000-0000-4000-8000-000000000002",
-      content: "삭제될 중간 답글",
-      replyCount: 1,
+      content: "삭제될 답글",
     },
     {
       id: activeGrandchildId,
       todoId: todo.id,
       authorId: otherUser.id,
-      parentId: purgedChildId,
+      parentId: purgedRootId,
+      replyToCommentId: purgedChildId,
       rootId: purgedRootId,
-      path: [purgedRootId, purgedChildId],
-      depth: 2,
+      path: [purgedRootId],
+      depth: 1,
       clientRequestId: "00000000-0000-4000-8000-000000000003",
       content: "보존할 후속 답글",
     },
@@ -458,8 +461,18 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 
     // When
     await purgeDeletedAccounts.execute();
+    const reader = new DrizzleTodoCommentReader(createDatabaseTransactionFixture(client).txHost);
+    const replyToPurged = await reader.findCommentRecord(
+      fixture.todoId,
+      fixture.activeGrandchildId,
+    );
 
     // Then
+    expect(replyToPurged).toMatchObject({
+      replyToCommentId: fixture.purgedChildId,
+      replyToAuthorId: DELETED_COMMENT_AUTHOR_ID,
+      replyToAuthorName: null,
+    });
     expect(
       await client.query.user.findFirst({ where: { id: fixture.purgedUserId } }),
     ).toBeUndefined();
@@ -499,7 +512,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
           authorId: DELETED_COMMENT_AUTHOR_ID,
           content: null,
           deletedAt: expect.any(Date),
-          replyCount: 1,
+          replyCount: 0,
         }),
         expect.objectContaining({
           id: fixture.activeGrandchildId,

@@ -1,8 +1,10 @@
 import type {
-  ListTodoCommentOverviewParams,
+  ListTodoCommentRepliesParams,
+  ListTodoCommentThreadsParams,
   ListTodoConversationParams,
   TodoCommentRecord,
-  TodoCommentOverviewWindow,
+  TodoCommentThreadItemRecord,
+  TodoCommentWindow,
   TodoConversationWindow,
   TodoDetailsRecord,
 } from "../../models/comments/todo-comment.types.js";
@@ -16,10 +18,15 @@ export interface TodoCommentReaderPort {
   findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null>;
   findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null>;
   findCommentRecords(todoId: number, commentIds: readonly string[]): Promise<TodoCommentRecord[]>;
-  listOverview(params: ListTodoCommentOverviewParams): Promise<TodoCommentOverviewWindow | null>;
+  /** 기준 묶음을 찾지 못하면 null */
+  listThreads(
+    params: ListTodoCommentThreadsParams,
+  ): Promise<TodoCommentWindow<TodoCommentThreadItemRecord> | null>;
+  /** 기준 답글을 찾지 못하면 null */
+  listReplies(
+    params: ListTodoCommentRepliesParams,
+  ): Promise<TodoCommentWindow<TodoCommentRecord> | null>;
   listConversation(params: ListTodoConversationParams): Promise<TodoConversationWindow | null>;
-  /** 뿌리 → 부모 순서의 조상. path가 비면 빈 배열을 돌려준다. */
-  findAncestors(todoId: number, path: readonly string[]): Promise<TodoCommentRecord[]>;
   findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>>;
   findUserDisplayName(userId: string): Promise<string | null>;
 }

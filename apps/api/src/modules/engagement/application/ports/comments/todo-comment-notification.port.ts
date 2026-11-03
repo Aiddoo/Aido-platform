@@ -1,3 +1,5 @@
+import type { TodoCommentKind } from "@aido/api/vocabulary";
+
 export const TODO_COMMENT_NOTIFICATION = Symbol("TODO_COMMENT_NOTIFICATION");
 
 export interface TodoCommentActivityNotificationInput {
@@ -6,13 +8,16 @@ export interface TodoCommentActivityNotificationInput {
   readonly senderName: string | null;
   readonly todoId: number;
   readonly commentId: string;
-  /** 이 댓글이 속한 대화의 뿌리 */
+  /** 이 글이 속한 묶음의 머리 댓글. 알림 payload 이름은 구 앱 호환으로 유지한다 */
   readonly threadRootId: string;
 }
 
 export interface TodoCommentWrittenInput extends TodoCommentActivityNotificationInput {
-  /** 댓글인지 답글인지 — 받는 사람이 할 일 주인인지 부모 댓글 작성자인지와 짝을 이룬다. */
-  readonly isReply: boolean;
+  /**
+   * 무엇에 단 글인지. null이면 할 일에 단 댓글로 할 일 주인이 받고,
+   * 아니면 답글 대상(댓글 또는 답글) 작성자가 받는다.
+   */
+  readonly replyTarget: TodoCommentKind | null;
   /** 한 번에 이어 쓴 글 수. 여러 개여도 알림은 한 건이고, 개수는 문구가 말한다. */
   readonly commentCount: number;
 }

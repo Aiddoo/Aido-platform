@@ -4,6 +4,8 @@ import {
   createTodoResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentOverviewResponseSchema,
+  todoCommentRepliesResponseSchema,
+  todoCommentThreadsResponseSchema,
   todoConversationResponseSchema,
   z,
   type TodoComment,
@@ -129,22 +131,29 @@ describe("할 일 댓글 E2E", () => {
     return todoCommentOverviewResponseSchema.parse(response.body.data);
   }
 
-  it("깊이 제한 없이 답글을 한 화면의 DFS 대화로 읽고 focus 조상 문맥과 좋아요를 제공한다", async () => {
+  it("1.14.0 이하 앱이 깊은 답글 대상으로 써도 같은 묶음의 2단계 대화로 읽고 focus 문맥과 좋아요를 제공한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!", {
       name: "댓글 작성자",
     });
     const todoId = await createTodo(user.accessToken);
-
     const depth0 = await writeComment(user.accessToken, todoId, "댓글");
     const depth1 = await writeComment(user.accessToken, todoId, "답글", depth0);
     const depth2 = await writeComment(user.accessToken, todoId, "답글의 답글", depth1);
     const depth3 = await writeComment(user.accessToken, todoId, "그 답글의 답글", depth2);
 
+    // When
     const conversation = await getConversation(user.accessToken, todoId, {
       sort: "LATEST",
       size: 20,
     });
 
+    // Then
+    const lane = {
+      visualDepth: 1,
+      upperLaneDepths: [0],
+      incomingBranch: { fromDepth: 0, toDepth: 1 },
+    };
     expect(conversation.items.map((item) => item.comment.id)).toEqual([
       depth0,
       depth1,
@@ -158,7 +167,7 @@ describe("할 일 댓글 E2E", () => {
           threadId: depth0,
           parentId: null,
           depth: 0,
-          replyCount: 1,
+          replyCount: 3,
           replyTo: null,
         },
         connection: {
@@ -167,7 +176,6 @@ describe("할 일 댓글 E2E", () => {
           lowerLaneDepths: [0],
           incomingBranch: null,
         },
-        isFocused: false,
       },
       {
         comment: {
@@ -175,52 +183,35 @@ describe("할 일 댓글 E2E", () => {
           threadId: depth0,
           parentId: depth0,
           depth: 1,
-          replyCount: 1,
-          replyTo: { commentId: depth0 },
+          replyCount: 0,
+          replyTo: { commentId: depth0, authorName: "댓글 작성자" },
         },
-        connection: {
-          visualDepth: 1,
-          upperLaneDepths: [0],
-          lowerLaneDepths: [1],
-          incomingBranch: { fromDepth: 0, toDepth: 1 },
-        },
-        isFocused: false,
+        connection: { ...lane, lowerLaneDepths: [0] },
       },
       {
         comment: {
           id: depth2,
           threadId: depth0,
-          parentId: depth1,
-          depth: 2,
-          replyCount: 1,
+          parentId: depth0,
+          depth: 1,
+          replyCount: 0,
           replyTo: { commentId: depth1 },
         },
-        connection: {
-          visualDepth: 2,
-          upperLaneDepths: [1],
-          lowerLaneDepths: [2],
-          incomingBranch: { fromDepth: 1, toDepth: 2 },
-        },
-        isFocused: false,
+        connection: { ...lane, lowerLaneDepths: [0] },
       },
       {
         comment: {
           id: depth3,
           threadId: depth0,
-          parentId: depth2,
-          depth: 3,
+          parentId: depth0,
+          depth: 1,
           replyCount: 0,
           replyTo: { commentId: depth2 },
         },
-        connection: {
-          visualDepth: 3,
-          upperLaneDepths: [2],
-          lowerLaneDepths: [],
-          incomingBranch: { fromDepth: 2, toDepth: 3 },
-        },
-        isFocused: false,
+        connection: { ...lane, lowerLaneDepths: [] },
       },
     ]);
+    expect(conversation.items.every((item) => item.connection.visualDepth <= 1)).toBe(true);
 
     const focused = await getConversation(user.accessToken, todoId, {
       focusCommentId: depth2,
@@ -377,7 +368,7 @@ describe("할 일 댓글 E2E", () => {
     ]);
   });
 
-  it("overview는 root 단위 cursor와 owner 답글 preview, 삭제 조상을 포함한 요약을 제공한다", async () => {
+  it("overview는 묶음 단위 cursor와 owner 답글 preview, 남은 답글 수 요약을 제공한다", async () => {
     const owner = await ctx.helpers.createVerifiedUser("overview-owner@example.com", "Test1234!", {
       name: "할 일 주인",
     });
@@ -418,8 +409,8 @@ describe("할 일 댓글 E2E", () => {
         author: { id: owner.userId, isTodoOwner: true },
       },
       replySummary: {
-        totalCount: 3,
-        hiddenCount: 2,
+        totalCount: 2,
+        hiddenCount: 1,
         hasMore: true,
         participantAuthors: [
           { id: owner.userId, isTodoOwner: true },
@@ -457,101 +448,96 @@ describe("할 일 댓글 E2E", () => {
     expect(secondPage.pagination).toMatchObject({ hasPrevious: true, hasNext: false });
   });
 
-  it("답글이 남은 삭제 댓글은 묘비로 보존하고 마지막 후손 삭제 뒤 함께 걷는다", async () => {
+  it("답글이 남은 삭제 댓글은 묘비로 남고, 삭제한 답글은 묶음에서 빠지며 마지막 답글이 지워지면 묘비도 사라진다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
-    const depth0 = await writeComment(user.accessToken, todoId, "댓글");
-    const depth1 = await writeComment(user.accessToken, todoId, "답글", depth0);
-    const depth2 = await writeComment(user.accessToken, todoId, "답글의 답글", depth1);
+    const commentId = await writeComment(user.accessToken, todoId, "댓글");
+    const replyId = await writeComment(user.accessToken, todoId, "답글", commentId);
+    const nestedReplyId = await writeComment(user.accessToken, todoId, "답글의 답글", replyId);
+    const deleteComment = (id: string) =>
+      request(ctx.app.getHttpServer())
+        .delete(`/v1/todos/${todoId}/comments/${id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
 
-    await request(ctx.app.getHttpServer())
-      .delete(`/v1/todos/${todoId}/comments/${depth1}`)
-      .set("Authorization", `Bearer ${user.accessToken}`)
-      .expect(200);
-
-    const afterMiddleDelete = await getConversation(user.accessToken, todoId);
-    expect(afterMiddleDelete.items.map((item) => item.comment.id)).toEqual([
-      depth0,
-      depth1,
-      depth2,
-    ]);
-    expect(afterMiddleDelete.items[1]).toMatchObject({
-      comment: {
-        id: depth1,
-        isDeleted: true,
-        content: null,
-        author: null,
-        replyCount: 1,
-        viewer: { canEdit: false, canDelete: false, canReply: false },
-      },
-      connection: {
-        visualDepth: 1,
-        upperLaneDepths: [0],
-        lowerLaneDepths: [1],
-        incomingBranch: { fromDepth: 0, toDepth: 1 },
-      },
-    });
-    expect(afterMiddleDelete.items[2]?.connection).toEqual({
-      visualDepth: 2,
-      upperLaneDepths: [1],
-      lowerLaneDepths: [],
-      incomingBranch: { fromDepth: 1, toDepth: 2 },
-    });
-    const unrelatedRoot = await writeComment(user.accessToken, todoId, "다른 대화 원문");
-
+    // When
+    await deleteComment(commentId);
+    await deleteComment(replyId);
+    const afterDeletes = await getConversation(user.accessToken, todoId);
     const deletedFocus = await getConversation(user.accessToken, todoId, {
-      focusCommentId: depth1,
+      focusCommentId: replyId,
     });
-    expect(deletedFocus.focus).toBeNull();
-    expect(deletedFocus.items.map((item) => item.comment.id)).toEqual([depth0, depth1, depth2]);
-    expect(deletedFocus.items.some((item) => item.comment.id === unrelatedRoot)).toBe(false);
+    await deleteComment(nestedReplyId);
+    const afterLastReplyDelete = await getConversation(user.accessToken, todoId);
 
-    await request(ctx.app.getHttpServer())
-      .delete(`/v1/todos/${todoId}/comments/${depth2}`)
-      .set("Authorization", `Bearer ${user.accessToken}`)
-      .expect(200);
-
-    const afterLeafDelete = await getConversation(user.accessToken, todoId);
-    expect(afterLeafDelete.items).toMatchObject([
-      { comment: { id: unrelatedRoot, isDeleted: false, replyCount: 0 } },
-      { comment: { id: depth0, isDeleted: false, replyCount: 0 } },
+    // Then
+    expect(afterDeletes.items).toMatchObject([
+      {
+        comment: {
+          id: commentId,
+          isDeleted: true,
+          content: null,
+          author: null,
+          replyCount: 1,
+          viewer: { canEdit: false, canDelete: false, canReply: false },
+        },
+        connection: { visualDepth: 0, lowerLaneDepths: [0] },
+      },
+      {
+        comment: { id: nestedReplyId, depth: 1, replyTo: { commentId: replyId } },
+        connection: { visualDepth: 1, upperLaneDepths: [0], lowerLaneDepths: [] },
+      },
     ]);
-
-    const missingFocus = await getConversation(user.accessToken, todoId, {
-      focusCommentId: depth2,
+    expect(deletedFocus.focus).toMatchObject({ commentId: replyId, itemIndex: 1 });
+    expect(deletedFocus.items.map((item) => item.comment.id)).toEqual([
+      commentId,
+      replyId,
+      nestedReplyId,
+    ]);
+    expect(deletedFocus.items[1]).toMatchObject({
+      comment: { isDeleted: true, content: null },
+      isFocused: true,
     });
-    expect(missingFocus.focus).toBeNull();
-    expect(missingFocus.items).toEqual([]);
-
+    expect(afterLastReplyDelete.items).toEqual([]);
     const details = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${todoId}/details`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    expect(details.body.data.metrics.commentCount).toBe(2);
+    expect(details.body.data.metrics.commentCount).toBe(0);
   });
 
-  it("통합 POST로 이어 쓴 글은 사슬이 되고 원래 부모의 직계 답글 수만 하나 오른다", async () => {
+  it("통합 POST로 이어 쓴 글은 같은 묶음 끝에 차례로 붙고 각자 앞 글에 답하며 머리 답글 수가 개수만큼 오른다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const parentId = await writeComment(user.accessToken, todoId, "댓글");
-    const chain = await writeChain(user.accessToken, todoId, ["하나", "둘", "셋"], parentId);
-    const [first, second, third] = chain;
 
+    // When
+    const chain = await writeChain(user.accessToken, todoId, ["하나", "둘", "셋"], parentId);
+
+    // Then
+    const [first, second, third] = chain;
     expect(chain).toHaveLength(3);
-    expect(first).toMatchObject({ threadId: parentId, parentId, depth: 1, replyCount: 1 });
+    expect(first).toMatchObject({
+      threadId: parentId,
+      parentId,
+      depth: 1,
+      replyCount: 0,
+      replyTo: { commentId: parentId },
+    });
     expect(second).toMatchObject({
       threadId: parentId,
-      parentId: first?.id,
-      depth: 2,
-      replyCount: 1,
+      parentId,
+      depth: 1,
+      replyTo: { commentId: first?.id },
     });
     expect(third).toMatchObject({
       threadId: parentId,
-      parentId: second?.id,
-      depth: 3,
-      replyCount: 0,
+      parentId,
+      depth: 1,
+      replyTo: { commentId: second?.id },
     });
-
     const conversation = await getConversation(user.accessToken, todoId);
     expect(conversation.items.map((item) => item.comment.id)).toEqual([
       parentId,
@@ -559,10 +545,7 @@ describe("할 일 댓글 E2E", () => {
       second?.id,
       third?.id,
     ]);
-    expect(conversation.items[0]).toMatchObject({
-      comment: { id: parentId, replyCount: 1 },
-    });
-
+    expect(conversation.items[0]).toMatchObject({ comment: { id: parentId, replyCount: 3 } });
     const details = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${todoId}/details`)
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -981,5 +964,148 @@ describe("할 일 댓글 E2E", () => {
       .expect(400);
 
     expect(response.body.error.code).toBe("SYS_0002");
+  });
+
+  it("v2는 댓글 묶음과 대표 답글, 묶음 답글 페이지와 anchor 위치를 2단계로 돌려준다", async () => {
+    // Given
+    const owner = await ctx.helpers.createVerifiedUser("v2-owner@example.com", "Test1234!", {
+      name: "할 일 주인",
+    });
+    const friend = await ctx.helpers.createVerifiedUser("v2-friend@example.com", "Test1234!", {
+      name: "친구",
+    });
+    await ctx.helpers.createFriendship(owner, friend);
+    const todoId = await createTodo(owner.accessToken, "PUBLIC");
+    const commentId = await writeComment(friend.accessToken, todoId, "댓글");
+    const replyId = await writeComment(owner.accessToken, todoId, "주인 답글", commentId);
+    const [first, second] = await writeChain(friend.accessToken, todoId, ["이어서", "또"], replyId);
+    const otherCommentId = await writeComment(friend.accessToken, todoId, "다른 댓글");
+    const get = (path: string, query: Record<string, string | number> = {}) =>
+      request(ctx.app.getHttpServer())
+        .get(path)
+        .query(query)
+        .set("Authorization", `Bearer ${friend.accessToken}`)
+        .set("X-App-Version", "1.14.1");
+
+    // When
+    const threadsResponse = await get(`/v2/todos/${todoId}/comments`, { size: 1 }).expect(200);
+    const anchoredResponse = await get(`/v2/todos/${todoId}/comments`, {
+      size: 1,
+      anchorCommentId: second?.id ?? "",
+    }).expect(200);
+    const repliesResponse = await get(`/v2/todos/${todoId}/comments/${commentId}/replies`, {
+      size: 2,
+    }).expect(200);
+    const nextReplies = await get(`/v2/todos/${todoId}/comments/${commentId}/replies`, {
+      size: 2,
+      cursor:
+        todoCommentRepliesResponseSchema.parse(repliesResponse.body.data).pagination.nextCursor ??
+        "",
+    }).expect(200);
+    const replyAsThread = await get(`/v2/todos/${todoId}/comments/${replyId}/replies`).expect(404);
+
+    // Then
+    const threadsPage = todoCommentThreadsResponseSchema.parse(threadsResponse.body.data);
+    expect(threadsPage.items.map((item) => item.comment.id)).toEqual([otherCommentId]);
+    expect(threadsPage.anchor).toBeNull();
+    expect(threadsPage.pagination.hasNext).toBe(true);
+    const anchored = todoCommentThreadsResponseSchema.parse(anchoredResponse.body.data);
+    expect(anchored.anchor).toEqual({ threadCommentId: commentId, replyId: second?.id });
+    expect(anchored.items[0]).toMatchObject({
+      comment: { id: commentId, threadCommentId: null, replyCount: 3 },
+      previewReply: { id: replyId, author: { isTodoOwner: true } },
+      replySummary: { totalCount: 3, hiddenCount: 2 },
+    });
+    const replyPage = todoCommentRepliesResponseSchema.parse(repliesResponse.body.data);
+    expect(replyPage.items.map((item) => [item.id, item.threadCommentId, item.replyTo])).toEqual([
+      [replyId, commentId, { commentId, authorName: "친구" }],
+      [first?.id, commentId, { commentId: replyId, authorName: "할 일 주인" }],
+    ]);
+    expect(
+      todoCommentRepliesResponseSchema.parse(nextReplies.body.data).items.map((item) => item.id),
+    ).toEqual([second?.id]);
+    expect(replyAsThread.body.error.code).toBe("TODO_0831");
+  });
+
+  it("v1 개요는 v2와 같은 묶음을 1.14.0 이하 앱 계약 모양으로 돌려준다", async () => {
+    // Given
+    const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
+    const todoId = await createTodo(user.accessToken);
+    const commentId = await writeComment(user.accessToken, todoId, "댓글");
+    const replyId = await writeComment(user.accessToken, todoId, "답글", commentId);
+    await writeComment(user.accessToken, todoId, "답글의 답글", replyId);
+
+    // When
+    const overview = await getOverview(user.accessToken, todoId);
+
+    // Then
+    expect(overview.items[0]).toMatchObject({
+      comment: { id: commentId, depth: 0, replyCount: 2 },
+      previewReply: { id: replyId, parentId: commentId, depth: 1 },
+      replySummary: { totalCount: 2, hiddenCount: 1, hasMore: true },
+    });
+  });
+
+  it("v2 목록은 답글이 남은 지운 댓글만 묘비로 남기고 지운 답글·빈 묘비·지운 anchor를 내보내지 않는다", async () => {
+    // Given
+    const user = await ctx.helpers.createVerifiedUser("v2-delete@example.com", "Test1234!");
+    const todoId = await createTodo(user.accessToken);
+    const commentId = await writeComment(user.accessToken, todoId, "댓글");
+    const firstReplyId = await writeComment(user.accessToken, todoId, "첫 답글", commentId);
+    const secondReplyId = await writeComment(user.accessToken, todoId, "둘째 답글", firstReplyId);
+    const remove = (id: string) =>
+      request(ctx.app.getHttpServer())
+        .delete(`/v1/todos/${todoId}/comments/${id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`);
+    const get = async (path: string, query: Record<string, string> = {}) =>
+      (
+        await request(ctx.app.getHttpServer())
+          .get(path)
+          .query(query)
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(200)
+      ).body.data;
+
+    // When
+    await remove(commentId).expect(200);
+    await remove(commentId).expect(200);
+    await remove(firstReplyId).expect(200);
+    const tombstoned = todoCommentThreadsResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments`),
+    );
+    const remainingReplies = todoCommentRepliesResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments/${commentId}/replies`),
+    );
+    const deletedAnchor = todoCommentThreadsResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments`, { anchorCommentId: firstReplyId }),
+    );
+    const replyToDeleted = await request(ctx.app.getHttpServer())
+      .post(`/v1/todos/${todoId}/comments`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ parentId: firstReplyId, items: [{ clientRequestId: randomUUID(), content: "답" }] })
+      .expect(409);
+    const editDeleted = await request(ctx.app.getHttpServer())
+      .patch(`/v1/todos/${todoId}/comments/${firstReplyId}`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ content: "수정" })
+      .expect(409);
+    await remove(secondReplyId).expect(200);
+    const emptied = todoCommentThreadsResponseSchema.parse(
+      await get(`/v2/todos/${todoId}/comments`),
+    );
+
+    // Then
+    expect(tombstoned.items).toMatchObject([
+      {
+        comment: { id: commentId, isDeleted: true, content: null, likeCount: 0, replyCount: 1 },
+        previewReply: { id: secondReplyId, replyTo: { commentId: firstReplyId } },
+        replySummary: { totalCount: 1, hiddenCount: 0 },
+      },
+    ]);
+    expect(remainingReplies.items.map((item) => item.id)).toEqual([secondReplyId]);
+    expect(deletedAnchor.anchor).toBeNull();
+    expect(replyToDeleted.body.error.code).toBe("TODO_0833");
+    expect(editDeleted.body.error.code).toBe("TODO_0833");
+    expect(emptied.items).toEqual([]);
   });
 });

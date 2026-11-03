@@ -418,6 +418,14 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("Your comment got a reply", `See what ${mention(senderName)} said`),
     ],
   },
+  TODO_COMMENT_REPLY_TO_REPLY: {
+    variants: [
+      ({ senderName }) => copy(`${senderName} replied to your reply`, "Tap to read the reply"),
+      ({ senderName }) =>
+        copy(`New reply from ${mention(senderName)}`, "Keep the conversation going 🐾"),
+      ({ senderName }) => copy("Your reply got a reply", `See what ${mention(senderName)} said`),
+    ],
+  },
   TODO_COMMENT_REPLY_CHAIN: {
     variants: [
       ({ count, senderName }) =>

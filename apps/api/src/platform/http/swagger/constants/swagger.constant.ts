@@ -62,6 +62,9 @@ export const SWAGGER_TAGS = {
   /** 날씨 v2 - 위치 등록, 전 세계 날씨 리포트 조회 */
   WEATHER_V2: "Weather v2",
 
+  /** 할 일 댓글 v2 - 댓글 묶음·답글 읽기 */
+  TODO_COMMENTS_V2: "Todo Comments v2",
+
   // ============================================
   // Admin APIs (관리자/백오피스용) - 추후 확장
   // ============================================
@@ -157,6 +160,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
   [SWAGGER_TAGS.WEATHER_V2]:
     "1.14.0 이상 앱용. 전 세계 좌표의 현재·다음 1시간·시간별·일별 날씨와 특보를 Apple WeatherKit에서 받아 약 5km 칸 단위로 30분(강수 임박 시 10분) 캐시하고, 공급자 장애 때는 6시간 안의 마지막 데이터를 돌려줍니다. 한국 위치는 에어코리아 대기질을 함께 제공합니다.",
+
+  [SWAGGER_TAGS.TODO_COMMENTS_V2]:
+    "1.14.1 이상 앱용. 댓글과 답글 2단계 묶음을 읽는다. 작성·수정·삭제·좋아요는 v1 경로를 함께 쓴다.",
 
   [SWAGGER_TAGS.ADMIN_USERS]: "관리자용: 회원 조회, 정지, 탈퇴 처리",
 

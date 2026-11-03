@@ -464,6 +464,16 @@ export const SOCIAL_TEMPLATES = {
         copy("내 댓글에 답글이 달렸어요", `${honorific(senderName)}의 답글을 확인해봐요`),
     ],
   },
+  TODO_COMMENT_REPLY_TO_REPLY: {
+    variants: [
+      ({ senderName }) =>
+        copy(`${named(senderName, "이/가")} 답글을 남겼어요`, "내 답글에 새 답글이 달렸어요"),
+      ({ senderName }) =>
+        copy(`${honorific(senderName)}의 답글이 왔어요`, "이어서 대화해볼까요? 🐾"),
+      ({ senderName }) =>
+        copy("내 답글에 답글이 달렸어요", `${honorific(senderName)}의 답글을 확인해봐요`),
+    ],
+  },
   TODO_COMMENT_REPLY_CHAIN: {
     variants: [
       ({ senderName, count }) =>

@@ -34,7 +34,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
       todoId: 42,
       commentId: "cmcomment0000000000000001",
       threadRootId: "cmroot000000000000000001",
-      isReply: false,
+      replyTarget: null,
       commentCount: 1,
     };
     const variantContext = {
@@ -109,7 +109,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
       todoId: 42,
       commentId: "cmcomment0000000000000001",
       threadRootId: "cmroot000000000000000001",
-      isReply: true,
+      replyTarget: "COMMENT" as const,
       commentCount: 2,
     };
 
@@ -133,7 +133,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
       todoId: 42,
       commentId: "cmcomment0000000000000001",
       threadRootId: "cmroot000000000000000001",
-      isReply: false,
+      replyTarget: null,
       commentCount: 1,
     };
 

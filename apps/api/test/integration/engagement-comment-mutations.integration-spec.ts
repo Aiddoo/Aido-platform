@@ -12,7 +12,7 @@ import {
   TODO_COMMENT_REPOSITORY,
   type TodoCommentRepositoryPort,
 } from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
-import { GetTodoCommentOverview } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-overview.use-case";
+import { GetTodoCommentThreads } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-threads.use-case";
 import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
 import { GetTodoDetails } from "#api/modules/engagement/application/use-cases/comments/get-todo-details.use-case";
 import { LikeTodoComment } from "#api/modules/engagement/application/use-cases/comments/like-todo-comment.use-case";
@@ -130,7 +130,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         authorId,
         clientRequestId: randomUUID(),
         content: `루트 ${index}`,
-        replyCount: 1,
+        replyCount: 2,
         createdAt: new Date(AT.getTime() + index * 1000),
       });
       await client.insert(todoComment).values({
@@ -140,10 +140,10 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         clientRequestId: randomUUID(),
         content: `답글 ${index}`,
         parentId: rootId,
+        replyToCommentId: rootId,
         rootId,
         path: [rootId],
         depth: 1,
-        replyCount: 1,
         createdAt: new Date(AT.getTime() + index * 1000 + 100),
       });
       await client.insert(todoComment).values({
@@ -152,10 +152,11 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         authorId,
         clientRequestId: randomUUID(),
         content: `하위 답글 ${index}`,
-        parentId: childId,
+        parentId: rootId,
+        replyToCommentId: childId,
         rootId,
-        path: [rootId, childId],
-        depth: 2,
+        path: [rootId],
+        depth: 1,
         createdAt: new Date(AT.getTime() + index * 1000 + 200),
       });
       if (index === 0) {
@@ -183,16 +184,28 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     statements = null;
     return { result, count: executed.length };
   }
-  it("루트 댓글이 1개든 3개든 개요는 같은 수의 쿼리로 읽는다", async () => {
+  it("묶음이 1개든 3개든 목록은 같은 수의 쿼리로 읽는다", async () => {
     // Given
-    const overview = context.module.get(GetTodoCommentOverview);
+    const threads = context.module.get(GetTodoCommentThreads);
 
     // When
     const one = await measure(() =>
-      overview.execute({ todoId, viewerId: userId, sort: "POPULAR", size: 1 }),
+      threads.execute({
+        todoId,
+        viewerId: userId,
+        sort: "POPULAR",
+        size: 1,
+        page: { kind: "FIRST" },
+      }),
     );
     const three = await measure(() =>
-      overview.execute({ todoId, viewerId: userId, sort: "POPULAR", size: 3 }),
+      threads.execute({
+        todoId,
+        viewerId: userId,
+        sort: "POPULAR",
+        size: 3,
+        page: { kind: "FIRST" },
+      }),
     );
 
     // Then
@@ -202,7 +215,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     expect(three.result.items).toHaveLength(3);
   });
 
-  it("대화와 깊은 focus 조회도 전체 작성자와 좋아요를 일괄 조회한다", async () => {
+  it("대화와 답글의 답글 focus 조회도 전체 작성자와 좋아요를 일괄 조회한다", async () => {
     // Given
     const conversation = context.module.get(GetTodoConversation);
 
@@ -229,7 +242,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       itemIndex: 0,
       precedingAncestors: expect.any(Array),
     });
-    expect(focus.result.focus?.precedingAncestors).toHaveLength(2);
+    expect(focus.result.focus?.precedingAncestors).toHaveLength(1);
     expect(focus.result.items.at(0)?.comment.id).toBe(focusId);
   });
 

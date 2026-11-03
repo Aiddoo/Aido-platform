@@ -99,7 +99,7 @@ export class DrizzleTodoCommentAccountCleanupStore implements TodoCommentAccount
           ),
         ),
       );
-    // 물리 삭제 대신 묘비를 남겨 다른 작성자의 자손과 대화 rail을 보존합니다.
+    // 물리 삭제 대신 묘비를 남겨 다른 작성자의 답글이 묶음에 남게 합니다.
     await this.db
       .update(todoComment)
       .set({
@@ -135,42 +135,24 @@ export class DrizzleTodoCommentAccountCleanupStore implements TodoCommentAccount
         ),
       );
 
-    // 삭제된 중간 댓글도 active descendant의 path에 있으면 보입니다. 그 집합을 먼저 만든 뒤
-    // 각 부모가 실제로 보여 주는 직계 자식 수를 다시 계산합니다.
-    const activeComments = this.db.$with("active_comments").as(
-      this.db
-        .select({ id: todoComment.id, path: todoComment.path })
-        .from(todoComment)
-        .where(and(inArray(todoComment.todoId, todoIds), isNull(todoComment.deletedAt))),
-    );
-    const visibleCommentIds = this.db.$with("visible_comment_ids").as(
-      this.db
-        .select({ id: activeComments.id })
-        .from(activeComments)
-        .union(
-          this.db
-            .select({ id: sql<string>`UNNEST(${activeComments.path})`.as("id") })
-            .from(activeComments),
-        ),
-    );
-    const child = alias(todoComment, "child");
+    // 묶음 머리 댓글의 답글 수는 지워지지 않은 답글 수입니다. 답글은 답글 수를 갖지 않습니다.
+    const reply = alias(todoComment, "reply");
     const replyCounts = this.db.$with("reply_counts").as(
       this.db
         .select({
           id: todoComment.id,
-          replyCount: sql<number>`COUNT(${visibleCommentIds.id})::integer`.as("replyCount"),
+          replyCount:
+            sql<number>`(count(${reply.id}) filter (where ${reply.deletedAt} IS NULL))::integer`.as(
+              "replyCount",
+            ),
         })
         .from(todoComment)
-        .leftJoin(
-          child,
-          and(eq(child.todoId, todoComment.todoId), eq(child.parentId, todoComment.id)),
-        )
-        .leftJoin(visibleCommentIds, eq(visibleCommentIds.id, child.id))
-        .where(inArray(todoComment.todoId, todoIds))
+        .leftJoin(reply, eq(reply.parentId, todoComment.id))
+        .where(and(inArray(todoComment.todoId, todoIds), isNull(todoComment.parentId)))
         .groupBy(todoComment.id),
     );
     await this.db
-      .with(activeComments, visibleCommentIds, replyCounts)
+      .with(replyCounts)
       .update(todoComment)
       .set({ replyCount: sql`${replyCounts.replyCount}` })
       .from(replyCounts)

@@ -28,7 +28,7 @@ DB adapter를 고칠 때는 "읽기·쓰기와 transaction"을 본다. 스키마
   - 연결 풀은 세션 `TimeZone=UTC`를 고정하므로 결과가 process 시간대와 무관하다([날짜 규칙](../../../docs/conventions/dates.md)).
 - Raw SQL은 ORM이 표현하지 못하는 곳에만 쓴다. Drizzle `sql` 템플릿에 테이블·컬럼을 참조로 넘긴다(`${todo.id}`). 해당하는 곳:
   - `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED) RETURNING` 원자 claim
-  - 재귀 CTE(댓글 대화 트리)·윈도 집계
+  - LATERAL(댓글 묶음의 대표 답글·참여자)·윈도 집계
   - `pg_advisory_xact_lock`
   - pg-boss SQL bridge(`drizzle-pg-boss.database.ts`)
 - 잠금·CAS·rollback은 실제 PostgreSQL integration으로 확인한다. mock 쿼리 인자로 경쟁 안전성을 주장하지 않는다.
