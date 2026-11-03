@@ -131,8 +131,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get todoNudgeService() {
       return dependency('todoNudgeService');
     },
-    get reorderCoachmarkService() {
-      return dependency('reorderCoachmarkService');
+    get coachmarkService() {
+      return dependency('coachmarkService');
     },
     get friendStripHintService() {
       return dependency('friendStripHintService');

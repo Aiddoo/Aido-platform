@@ -1,150 +1,117 @@
 import type {
-  TodoComment as TodoCommentDto,
-  TodoCommentOverviewResponse,
-  TodoConversationItem as TodoConversationItemDto,
-  TodoConversationResponse,
+  TodoComment as TodoCommentV1Dto,
+  TodoCommentThreadsResponse,
+  TodoCommentV2,
 } from '@aido/api';
 
-import { toTodoCommentOverviewPage, toTodoConversationPage } from './todo-comment.mapper';
+import { toTodoCommentFromV1, toTodoCommentThreadPage } from './todo-comment.mapper';
 
-const ROOT_ID = 'cm12345678901234567890123';
+const HEAD_ID = 'cm12345678901234567890123';
 const REPLY_ID = 'cm22345678901234567890123';
 
-function createCommentDto(overrides: Partial<TodoCommentDto> = {}): TodoCommentDto {
+function createV2Dto(overrides: Partial<TodoCommentV2> = {}): TodoCommentV2 {
   return {
-    id: ROOT_ID,
-    threadId: ROOT_ID,
-    parentId: null,
-    depth: 0,
+    id: HEAD_ID,
+    todoId: 42,
+    threadCommentId: null,
+    replyTo: null,
     author: {
       id: 'cm32345678901234567890123',
       name: '김철수',
+      userTag: 'WNTQJEEE',
       profileImage: null,
       isTodoOwner: true,
     },
     content: '오늘 운동 완료',
-    isDeleted: false,
-    isEdited: false,
     likeCount: 0,
     replyCount: 1,
-    replyTo: null,
-    viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
+    isDeleted: false,
+    isAuthorBlocked: false,
+    isEdited: false,
+    viewer: {
+      isLiked: false,
+      canEdit: true,
+      canDelete: true,
+      canReply: true,
+      canReport: false,
+      canBlock: false,
+    },
     createdAt: '2026-08-26T00:00:00.000Z',
     editedAt: null,
     ...overrides,
   };
 }
 
-function createConversationItemDto(
-  comment: TodoCommentDto,
-  overrides: Partial<TodoConversationItemDto> = {},
-): TodoConversationItemDto {
-  return {
-    comment,
-    connection: {
-      visualDepth: comment.depth,
-      upperLaneDepths: comment.depth === 0 ? [] : [comment.depth - 1],
-      lowerLaneDepths: [],
-      incomingBranch:
-        comment.depth === 0 ? null : { fromDepth: comment.depth - 1, toDepth: comment.depth },
-    },
-    isFocused: false,
-    ...overrides,
-  };
-}
-
 describe('todo comment mapper', () => {
-  test('overview의 root와 대표 답글 날짜를 변환하고 서버 집계는 그대로 둔다', () => {
+  test('묶음 페이지의 날짜만 Date로 바꾸고 서버 집계·anchor는 그대로 둔다', () => {
     // Given
-    const root = createCommentDto();
-    const previewReply = createCommentDto({
-      id: REPLY_ID,
-      parentId: ROOT_ID,
-      depth: 1,
-      createdAt: '2026-08-26T00:01:00.000Z',
-    });
-    const dto: TodoCommentOverviewResponse = {
+    const dto: TodoCommentThreadsResponse = {
       items: [
         {
-          comment: root,
-          previewReply,
-          replySummary: {
-            totalCount: 4,
-            hiddenCount: 3,
-            hasMore: true,
-            participantAuthors: previewReply.author == null ? [] : [previewReply.author],
-          },
+          comment: createV2Dto(),
+          previewReply: createV2Dto({
+            id: REPLY_ID,
+            threadCommentId: HEAD_ID,
+            replyCount: 0,
+            editedAt: '2026-08-26T00:02:00.000Z',
+          }),
+          replySummary: { totalCount: 4, hiddenCount: 3, participantAuthors: [] },
         },
       ],
       pagination: {
         previousCursor: null,
-        nextCursor: 'next-root',
+        nextCursor: 'next',
         hasPrevious: false,
         hasNext: true,
-        size: 20,
+        size: 30,
       },
+      anchor: { threadCommentId: HEAD_ID, replyId: REPLY_ID },
     };
 
     // When
-    const result = toTodoCommentOverviewPage(dto);
+    const page = toTodoCommentThreadPage(dto);
 
     // Then
-    expect(result.items[0]?.comment.createdAt).toEqual(new Date(root.createdAt));
-    expect(result.items[0]?.previewReply?.createdAt).toEqual(new Date(previewReply.createdAt));
-    expect(result.items[0]?.replySummary).toEqual(dto.items[0]?.replySummary);
+    expect(page.items[0]?.comment.createdAt).toEqual(new Date('2026-08-26T00:00:00.000Z'));
+    expect(page.items[0]?.previewReply?.editedAt).toEqual(new Date('2026-08-26T00:02:00.000Z'));
+    expect(page.items[0]?.replySummary).toEqual(dto.items[0]?.replySummary);
+    expect(page.anchor).toEqual(dto.anchor);
   });
 
-  test('conversation과 focus 조상의 연결 상태를 다시 계산하지 않고 보존한다', () => {
+  test('v1 쓰기 응답의 parentId를 묶음 머리로, 빠진 1.13.0 필드는 할 수 없음으로 읽는다', () => {
     // Given
-    const root = createCommentDto();
-    const focused = createCommentDto({
+    const dto: TodoCommentV1Dto = {
       id: REPLY_ID,
-      parentId: ROOT_ID,
+      threadId: HEAD_ID,
+      parentId: HEAD_ID,
       depth: 1,
-    });
-    const rootItem = createConversationItemDto(root, {
-      connection: {
-        visualDepth: 0,
-        upperLaneDepths: [],
-        lowerLaneDepths: [0],
-        incomingBranch: null,
+      author: {
+        id: 'cm32345678901234567890123',
+        name: '이영희',
+        profileImage: null,
+        isTodoOwner: false,
       },
-    });
-    const focusedItem = createConversationItemDto(focused, {
-      connection: {
-        visualDepth: 1,
-        upperLaneDepths: [0],
-        lowerLaneDepths: [],
-        incomingBranch: { fromDepth: 0, toDepth: 1 },
-      },
-      isFocused: true,
-    });
-    const dto: TodoConversationResponse = {
-      items: [focusedItem],
-      focus: {
-        commentId: focused.id,
-        itemIndex: 0,
-        precedingAncestors: [rootItem],
-        omittedAncestorCount: 0,
-      },
-      pagination: {
-        previousCursor: null,
-        nextCursor: null,
-        hasPrevious: false,
-        hasNext: false,
-        size: 20,
-      },
+      content: '저도요',
+      isDeleted: false,
+      isEdited: false,
+      likeCount: 0,
+      replyCount: 0,
+      replyTo: { commentId: HEAD_ID, authorName: '김철수' },
+      viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
+      createdAt: '2026-08-26T00:00:00.000Z',
+      editedAt: null,
     };
 
     // When
-    const result = toTodoConversationPage(dto);
+    const comment = toTodoCommentFromV1(42, dto);
 
     // Then
-    expect(result.items[0]?.connection).toEqual(focusedItem.connection);
-    expect(result.items[0]?.isFocused).toBe(true);
-    expect(result.focus?.precedingAncestors[0]?.connection).toEqual(rootItem.connection);
-    expect(result.focus?.precedingAncestors[0]?.comment.createdAt).toEqual(
-      new Date(root.createdAt),
-    );
+    expect(comment).toMatchObject({
+      todoId: 42,
+      threadCommentId: HEAD_ID,
+      isAuthorBlocked: false,
+      author: { userTag: null },
+      viewer: { canReport: false, canBlock: false },
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { useLogger, useReorderCoachmarkService } from '@src/bootstrap/providers/di-context';
+import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { errorMessageOf } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -7,8 +7,9 @@ import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useEffect, useState } from 'react';
+import { match } from 'ts-pattern';
 
-import type { ReorderCoachmarkKind } from '../apis/reorder-coachmark.repository';
+type ReorderCoachmarkKind = 'todo' | 'category';
 
 /**
  * 처음 재정렬이 가능해진 계정에 한 번만 길게 눌러 옮기는 방법을 알린다.
@@ -41,8 +42,16 @@ ReorderCoachmark.Contents = function Contents({
 }) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
-  const service = useReorderCoachmarkService();
-  const [isVisible, setIsVisible] = useState(() => service.claim({ accountId, kind }));
+  const service = useCoachmarkService();
+  const [isVisible, setIsVisible] = useState(() =>
+    service.claim({
+      accountId,
+      kind: match(kind)
+        .with('todo', () => 'todo-reorder' as const)
+        .with('category', () => 'category-reorder' as const)
+        .exhaustive(),
+    }),
+  );
 
   if (!isVisible) {
     return null;

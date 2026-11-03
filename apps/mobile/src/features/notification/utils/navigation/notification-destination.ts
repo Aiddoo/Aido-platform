@@ -1,7 +1,6 @@
 import {
   dateSchema,
   NOTIFICATION_TYPE,
-  TODO_COMMENT_SORT,
   type NotificationAction,
   type NotificationContext,
   type NotificationRouting,
@@ -10,10 +9,6 @@ import {
 } from '@aido/api';
 import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
-import {
-  createTodoCommentScreenHrefs,
-  createTodoCommentThreadHref,
-} from '@src/features/todo-comment/utils/navigation/todo-comment-route';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { createTodoDetailHref } from '@src/features/todo/utils/navigation/todo-detail-href';
 import { weatherHref } from '@src/features/weather/utils/navigation/weather-href';
@@ -25,12 +20,7 @@ import { z } from 'zod';
 
 export type NotificationDestination =
   | { kind: 'none' }
-  | {
-      kind: 'route';
-      href: Href;
-      /** 목적지 아래에 먼저 쌓을 상위 화면. 댓글 대화에서 뒤로가면 그 할 일의 댓글 개요로 올라간다. */
-      parentHref?: Href;
-    }
+  | { kind: 'route'; href: Href }
   | { kind: 'browser'; url: string }
   | { kind: 'webview'; url: string };
 
@@ -198,121 +188,95 @@ function toRouteDestination(
 ): NotificationDestination {
   const toTodoFeed = (target: TodoTarget) => toTodoFeedTarget(target, viewerId);
   const feedDate = today ? 'today' : undefined;
-  return match(routing)
-    .with({ type: 'NUDGE_RECEIVED', nudgeId: P.number, todoId: P.number }, ({ nudgeId }) => ({
-      kind: 'route' as const,
-      href: { pathname: '/nudges/[nudgeId]' as const, params: { nudgeId } },
-    }))
-    .with(
-      { type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED'), nudgeId: P.number },
-      ({ nudgeId }) => ({
+  return (
+    match(routing)
+      .with({ type: 'NUDGE_RECEIVED', nudgeId: P.number, todoId: P.number }, ({ nudgeId }) => ({
         kind: 'route' as const,
         href: { pathname: '/nudges/[nudgeId]' as const, params: { nudgeId } },
-      }),
-    )
-    .with({ type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED') }, () => ({
-      kind: 'route' as const,
-      href: '/notifications' as const,
-    }))
-    .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER'), todoId: P.number }, (routing) => ({
-      kind: 'route' as const,
-      href: createTodoDetailHref(windowSizeClass, {
-        todoId: routing.todoId,
-        ...toTodoFeed(routing),
-      }),
-    }))
-    .with({ type: 'NUDGE_RECEIVED', friendId: P.string }, ({ friendId }) => ({
-      kind: 'route' as const,
-      href: createFeedHref({ friendId, date: feedDate }),
-    }))
-    .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER') }, () => ({
-      kind: 'route' as const,
-      href: createFeedHref({ date: feedDate }),
-    }))
-    .with({ type: P.union('WEATHER_MORNING', 'WEATHER_EVENING') }, () => ({
-      kind: 'route' as const,
-      href: weatherHref('notification'),
-    }))
-    .with({ type: 'TODO_SHARED', commentId: P.string }, (routing) =>
-      windowSizeClass === 'compact'
-        ? toCommentThreadDestination(routing.todoId, routing.commentId)
-        : {
-            kind: 'route' as const,
-            href: createTodoDetailHref(windowSizeClass, {
-              todoId: routing.todoId,
-              comment: routing.commentId,
-              ...toTodoFeed(routing),
-            }),
-          },
-    )
-    .with({ type: 'TODO_SHARED' }, (routing) => ({
-      kind: 'route' as const,
-      href: createTodoDetailHref(windowSizeClass, {
-        todoId: routing.todoId,
-        ...toTodoFeed(routing),
-      }),
-    }))
-    .with(
-      {
-        type: P.union('FOLLOW_ACCEPTED', 'CHEER_RECEIVED', 'FRIEND_COMPLETED', 'NUDGE_SUGGEST'),
-      },
-      ({ friendId }) => ({
+      }))
+      .with(
+        { type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED'), nudgeId: P.number },
+        ({ nudgeId }) => ({
+          kind: 'route' as const,
+          href: { pathname: '/nudges/[nudgeId]' as const, params: { nudgeId } },
+        }),
+      )
+      .with({ type: P.union('NUDGE_REPLIED', 'NUDGE_THANKED') }, () => ({
+        kind: 'route' as const,
+        href: '/notifications' as const,
+      }))
+      .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER'), todoId: P.number }, (routing) => ({
+        kind: 'route' as const,
+        href: createTodoDetailHref(windowSizeClass, {
+          todoId: routing.todoId,
+          ...toTodoFeed(routing),
+        }),
+      }))
+      .with({ type: 'NUDGE_RECEIVED', friendId: P.string }, ({ friendId }) => ({
         kind: 'route' as const,
         href: createFeedHref({ friendId, date: feedDate }),
-      }),
-    )
-    .with({ type: 'FOLLOW_NEW' }, () => ({
-      kind: 'route' as const,
-      href: { pathname: '/friends' as const, params: { view: 'receiver' } },
-    }))
-    .with({ type: 'WEEKLY_ACHIEVEMENT' }, () => ({
-      kind: 'route' as const,
-      href: '/achievements' as const,
-    }))
-    .with({ type: P.union('WEEKLY_REPORT', 'MONTHLY_REPORT') }, () => ({
-      kind: 'route' as const,
-      href: '/reports' as const,
-    }))
-    .with({ type: 'AI_SUGGESTION' }, () => ({
-      kind: 'route' as const,
-      href: '/suggestions' as const,
-    }))
-    .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED', 'INVITE_PROGRESS') }, () => ({
-      kind: 'route' as const,
-      href: myInviteHref(),
-    }))
-    .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
-      kind: 'route' as const,
-      href: subscriptionHref(),
-    }))
-    .with({ type: 'FEED' }, () => ({
-      kind: 'route' as const,
-      href: createFeedHref({ date: feedDate }),
-    }))
-    .exhaustive();
+      }))
+      .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER') }, () => ({
+        kind: 'route' as const,
+        href: createFeedHref({ date: feedDate }),
+      }))
+      .with({ type: P.union('WEATHER_MORNING', 'WEATHER_EVENING') }, () => ({
+        kind: 'route' as const,
+        href: weatherHref('notification'),
+      }))
+      // 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치(`?comment=`)로 연다. 펼친 화면은 피드 pane이다
+      .with({ type: 'TODO_SHARED' }, (routing) => ({
+        kind: 'route' as const,
+        href: createTodoDetailHref(windowSizeClass, {
+          todoId: routing.todoId,
+          comment: routing.commentId,
+          ...toTodoFeed(routing),
+        }),
+      }))
+      .with(
+        {
+          type: P.union('FOLLOW_ACCEPTED', 'CHEER_RECEIVED', 'FRIEND_COMPLETED', 'NUDGE_SUGGEST'),
+        },
+        ({ friendId }) => ({
+          kind: 'route' as const,
+          href: createFeedHref({ friendId, date: feedDate }),
+        }),
+      )
+      .with({ type: 'FOLLOW_NEW' }, () => ({
+        kind: 'route' as const,
+        href: { pathname: '/friends' as const, params: { view: 'receiver' } },
+      }))
+      .with({ type: 'WEEKLY_ACHIEVEMENT' }, () => ({
+        kind: 'route' as const,
+        href: '/achievements' as const,
+      }))
+      .with({ type: P.union('WEEKLY_REPORT', 'MONTHLY_REPORT') }, () => ({
+        kind: 'route' as const,
+        href: '/reports' as const,
+      }))
+      .with({ type: 'AI_SUGGESTION' }, () => ({
+        kind: 'route' as const,
+        href: '/suggestions' as const,
+      }))
+      .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED', 'INVITE_PROGRESS') }, () => ({
+        kind: 'route' as const,
+        href: myInviteHref(),
+      }))
+      .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
+        kind: 'route' as const,
+        href: subscriptionHref(),
+      }))
+      .with({ type: 'FEED' }, () => ({
+        kind: 'route' as const,
+        href: createFeedHref({ date: feedDate }),
+      }))
+      .exhaustive()
+  );
 }
 
 interface TodoTarget {
   todoOwnerId?: string;
   todoDate?: string;
-}
-
-/**
- * 접힌 화면의 댓글 목적지. 대화 화면 아래에 그 할 일의 댓글 개요를 쌓아 뒤로가면 개요로 올라간다.
- * 펼친 화면은 Stack이 없는 피드 상세 pane이 search로 대화를 연다.
- */
-function toCommentThreadDestination(todoId: number, commentId: string) {
-  const route = {
-    sort: TODO_COMMENT_SORT.LATEST,
-    view: 'conversation' as const,
-    commentId,
-    form: null,
-  };
-  return {
-    kind: 'route' as const,
-    href: createTodoCommentThreadHref({ todoId, route }),
-    parentHref: createTodoCommentScreenHrefs({ todoId, route }).overviewHref,
-  };
 }
 
 /** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */

@@ -1,56 +1,40 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { KeyboardController } from 'react-native-keyboard-controller';
+import { match } from 'ts-pattern';
 
-import { useTodoCommentPresentation } from '../components/providers/todo-comment-presentation-provider';
-import { useCancelTodoCommentScreenTransition } from '../components/providers/todo-comment-screen-transition-provider';
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import {
-  getTodoCommentBackResult,
-  type TodoCommentBackResult,
-} from '../utils/navigation/todo-comment-back';
+  type TodoCommentComposerForm,
+  TodoCommentComposer,
+} from '../domains/todo-comment-composer.model';
+import { getTodoCommentBackResult } from '../utils/navigation/todo-comment-back';
 import { useIsTodoCommentSubmitting } from './use-is-todo-comment-submitting';
-import { useTodoCommentRoute } from './use-todo-comment-route';
 
-interface TodoCommentBack {
-  result: TodoCommentBackResult;
-  handleBack: () => boolean;
-}
-
-export function useTodoCommentBack(): TodoCommentBack {
-  const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
+/** Header back과 Android back이 같은 순서로 동작한다. 작성기를 닫았으면 true를 돌려준다 */
+export function useTodoCommentBack() {
   const logger = useLogger();
-  const presentation = useTodoCommentPresentation();
+  const { control, reset } = useFormContext<TodoCommentComposerForm>();
+  const mode = useWatch({ control, name: 'mode' });
   const isSubmitting = useIsTodoCommentSubmitting();
-  const cancelPendingTransition = useCancelTodoCommentScreenTransition();
-  const result = useMemo(
-    () => getTodoCommentBackResult({ route: commentRoute, isSubmitting, presentation }),
-    [commentRoute, isSubmitting, presentation],
+  const result = getTodoCommentBackResult({ mode, isSubmitting });
+
+  const handleBack = useCallback(
+    () =>
+      match(result)
+        .with('blocked', () => true)
+        .with('native', () => false)
+        .with('closeComposer', () => {
+          KeyboardController.dismiss({ animated: false }).catch((error) =>
+            logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error }),
+          );
+          reset(TodoCommentComposer.new());
+          return true;
+        })
+        .exhaustive(),
+    [logger, reset, result],
   );
-
-  const handleBack = useCallback(() => {
-    if (result.status === 'blocked') {
-      return true;
-    }
-
-    cancelPendingTransition();
-
-    if (result.status === 'native') {
-      return false;
-    }
-
-    KeyboardController.dismiss({ animated: false }).catch((error) =>
-      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error }),
-    );
-
-    if (result.destination === 'overview') {
-      updateCommentRoute.showOverview();
-    } else if (commentRoute.view === 'conversation') {
-      updateCommentRoute.openConversation(commentRoute.commentId);
-    }
-
-    return true;
-  }, [cancelPendingTransition, commentRoute, logger, result, updateCommentRoute]);
 
   return { result, handleBack };
 }

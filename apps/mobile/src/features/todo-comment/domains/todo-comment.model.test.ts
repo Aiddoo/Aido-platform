@@ -1,171 +1,249 @@
-import { createTodoComment, createTodoCommentReply } from '../__tests__/todo-comment.factories';
-import { TodoCommentDraftPolicy, TodoCommentPolicy } from './todo-comment.model';
+import {
+  createTodoComment,
+  createTodoCommentReply,
+  createTodoCommentThread,
+} from '../__tests__/todo-comment.factories';
+import { TodoCommentPolicy } from './todo-comment.model';
 
 describe('TodoCommentPolicy', () => {
-  describe('canLike', () => {
-    test('살아 있는 댓글은 어느 깊이에서든 좋아요할 수 있다', () => {
-      // Given
-      const comment = createTodoComment();
-      const deepReply = createTodoCommentReply(createTodoCommentReply(comment));
+  it('차단한 사용자의 글은 삭제보다 차단 상태로 그린다', () => {
+    // Given
+    const blocked = createTodoComment({ isDeleted: true, isAuthorBlocked: true, content: null });
+    const deleted = createTodoComment({ isDeleted: true, content: null, author: null });
 
-      // When
-      const result = TodoCommentPolicy.canLike(deepReply);
+    // When
+    const states = [blocked, deleted, createTodoComment()].map(TodoCommentPolicy.displayState);
 
-      // Then
-      expect(result).toBe(true);
-    });
-
-    test('삭제된 댓글은 좋아요할 수 없다', () => {
-      // Given
-      const comment = createTodoComment({ isDeleted: true });
-
-      // When
-      const result = TodoCommentPolicy.canLike(comment);
-
-      // Then
-      expect(result).toBe(false);
-    });
+    // Then
+    expect(states).toEqual(['blockedAuthor', 'deleted', 'active']);
   });
 
-  describe('canReply', () => {
-    test('서버가 허용한 댓글에만 답글을 달 수 있다', () => {
-      // Given
-      const allowed = createTodoComment();
-      const denied = createTodoComment({
-        viewer: {
-          isLiked: false,
-          canEdit: false,
-          canDelete: false,
-          canReply: false,
-          canReport: false,
-          canBlock: false,
-        },
-      });
+  it('지운 글에는 좋아요·답글·수정·복사·신고를 열지 않는다', () => {
+    // Given
+    const deleted = createTodoComment({ isDeleted: true, content: null });
 
-      // When
-      const allowedResult = TodoCommentPolicy.canReply(allowed);
-      const deniedResult = TodoCommentPolicy.canReply(denied);
+    // When
+    const actions = [
+      TodoCommentPolicy.canLike(deleted),
+      TodoCommentPolicy.canReply(deleted),
+      TodoCommentPolicy.isEditable(deleted),
+      TodoCommentPolicy.canCopy(deleted),
+      TodoCommentPolicy.hasActions(deleted),
+    ];
 
-      // Then
-      expect(allowedResult).toBe(true);
-      expect(deniedResult).toBe(false);
-    });
-
-    test('묘비가 된 댓글은 답글을 받지 못한다 — 대화 화면의 입력바가 이 판단을 따른다', () => {
-      // Given - 답글이 남아 목록에는 보이지만 삭제된 댓글
-      const tombstone = createTodoComment({ isDeleted: true, replyCount: 2 });
-
-      // When
-      const result = TodoCommentPolicy.canReply(tombstone);
-
-      // Then
-      expect(result).toBe(false);
-    });
+    // Then
+    expect(actions).toEqual([false, false, false, false, false]);
   });
 
-  describe('canEdit · canDelete', () => {
-    test('서버가 준 허가를 각각 따른다', () => {
-      // Given - 삭제만 열린 댓글
-      const deletableOnly = createTodoComment({
-        viewer: {
-          isLiked: false,
-          canEdit: false,
-          canDelete: true,
-          canReply: true,
-          canReport: false,
-          canBlock: false,
-        },
-      });
-
-      // When & Then
-      expect(TodoCommentPolicy.canEdit(deletableOnly)).toBe(false);
-      expect(TodoCommentPolicy.canDelete(deletableOnly)).toBe(true);
+  it('멘션 대상이 탈퇴·차단으로 이름이 없으면 @멘션을 그리지 않는다', () => {
+    // Given
+    const head = createTodoComment();
+    const reply = createTodoCommentReply(head, {
+      replyTo: { commentId: head.id, authorName: null },
     });
 
-    test('삭제된 댓글은 어느 쪽도 열리지 않는다', () => {
-      // Given
-      const comment = createTodoComment({ isDeleted: true });
+    // When
+    const mention = TodoCommentPolicy.mentionName(reply);
 
-      // When & Then
-      expect(TodoCommentPolicy.canEdit(comment)).toBe(false);
-      expect(TodoCommentPolicy.canDelete(comment)).toBe(false);
-    });
+    // Then
+    expect(mention).toBeNull();
   });
 
-  describe('isDeletingOthers', () => {
-    test('지울 수만 있고 고칠 수 없으면 할 일 주인이 남의 댓글을 지우는 경우다', () => {
-      // Given
-      const othersComment = createTodoComment({
-        viewer: {
-          isLiked: false,
-          canEdit: false,
-          canDelete: true,
-          canReply: true,
-          canReport: true,
-          canBlock: true,
-        },
-      });
-      const ownComment = createTodoComment({
-        viewer: {
-          isLiked: false,
-          canEdit: true,
-          canDelete: true,
-          canReply: true,
-          canReport: false,
-          canBlock: false,
-        },
-      });
-
-      // When & Then
-      expect(TodoCommentPolicy.isDeletingOthers(othersComment)).toBe(true);
-      expect(TodoCommentPolicy.isDeletingOthers(ownComment)).toBe(false);
+  it('태그가 없는 작성자는 #태그 자리를 비운다', () => {
+    // Given
+    const withoutTag = createTodoComment({
+      author: { id: 'u', name: '매튜', userTag: null, profileImage: null, isTodoOwner: false },
     });
+
+    // When
+    const labels = [createTodoComment(), withoutTag].map(TodoCommentPolicy.userTagLabel);
+
+    // Then
+    expect(labels).toEqual(['#WNTQJEEE', null]);
   });
 
-  describe('hasActions', () => {
-    test('수정·삭제·신고·차단 중 하나라도 열려 있으면 메뉴를 보인다', () => {
-      // Given
-      const mine = createTodoComment();
-      const others = createTodoCommentReply(createTodoComment());
-      const readOnly = createTodoComment({
-        viewer: {
-          isLiked: false,
-          canEdit: false,
-          canDelete: false,
-          canReply: true,
-          canReport: false,
-          canBlock: false,
-        },
-      });
-
-      // When & Then
-      expect(TodoCommentPolicy.hasActions(mine)).toBe(true);
-      expect(TodoCommentPolicy.hasActions(others)).toBe(true);
-      expect(TodoCommentPolicy.hasActions(readOnly)).toBe(false);
+  it('내 할 일의 남의 글은 지울 수만 있어 남의 글 삭제로 확인받는다', () => {
+    // Given
+    const others = createTodoComment({
+      viewer: {
+        isLiked: false,
+        canEdit: false,
+        canDelete: true,
+        canReply: true,
+        canReport: true,
+        canBlock: true,
+      },
     });
 
-    test('삭제되거나 차단으로 가린 댓글은 메뉴를 보이지 않는다', () => {
-      // Given
-      const hidden = createTodoComment({ isDeleted: true, isAuthorBlocked: true, author: null });
+    // When
+    const result = [
+      TodoCommentPolicy.isDeletingOthers(others),
+      TodoCommentPolicy.isDeletingOthers(createTodoComment()),
+    ];
 
-      // When
-      const result = TodoCommentPolicy.hasActions(hidden);
-
-      // Then
-      expect(result).toBe(false);
-    });
+    // Then
+    expect(result).toEqual([true, false]);
   });
-});
 
-describe('TodoCommentDraftPolicy', () => {
-  describe('hasCapacity', () => {
-    test.each([
-      ['한 칸', 1, true],
-      ['상한 직전', 4, true],
-      ['상한', 5, false],
-      ['상한 초과', 6, false],
-    ])('%s(%i개)이면 %s', (_label, count, expected) => {
-      expect(TodoCommentDraftPolicy.hasCapacity(count)).toBe(expected);
+  it('답글이 남은 댓글만 지워도 묘비로 남는다', () => {
+    // Given
+    const withReplies = createTodoComment({ replyCount: 2 });
+    const reply = createTodoCommentReply(withReplies, { replyCount: 0 });
+
+    // When
+    const result = [
+      TodoCommentPolicy.leavesTombstoneOnDelete(withReplies),
+      TodoCommentPolicy.leavesTombstoneOnDelete(createTodoComment()),
+      TodoCommentPolicy.leavesTombstoneOnDelete(reply),
+    ];
+
+    // Then
+    expect(result).toEqual([true, false, false]);
+  });
+
+  it('좋아요는 같은 상태면 그대로 두고 0 아래로 내려가지 않는다', () => {
+    // Given
+    const liked = createTodoComment({
+      likeCount: 0,
+      viewer: { ...createTodoComment().viewer, isLiked: true },
     });
+
+    // When
+    const same = TodoCommentPolicy.withLikeToggled(liked, true);
+    const unliked = TodoCommentPolicy.withLikeToggled(liked, false);
+
+    // Then
+    expect(same).toBe(liked);
+    expect(unliked.likeCount).toBe(0);
+    expect(unliked.viewer.isLiked).toBe(false);
+  });
+
+  it('펼친 뒤 남은 답글 수는 전체에서 불러온 수를 뺀 값이고 음수가 되지 않는다', () => {
+    // Given
+    const thread = createTodoCommentThread({ comment: createTodoComment({ replyCount: 12 }) });
+
+    // When
+    const counts = [10, 12, 15].map((loaded) => TodoCommentPolicy.hiddenReplyCount(thread, loaded));
+
+    // Then
+    expect(counts).toEqual([2, 0, 0]);
+  });
+
+  it('대표 답글이 없던 묶음에 답글을 달면 그 답글이 대표가 되고 수가 늘어난다', () => {
+    // Given
+    const head = createTodoComment();
+    const thread = createTodoCommentThread({ comment: head, previewReply: null });
+    const reply = createTodoCommentReply(head);
+
+    // When
+    const next = TodoCommentPolicy.withReplyAdded(thread, [reply]);
+
+    // Then
+    expect(next.previewReply).toBe(reply);
+    expect(next.comment.replyCount).toBe(1);
+    expect(next.replySummary).toMatchObject({ totalCount: 1, hiddenCount: 0 });
+  });
+
+  it('답글이 남은 댓글을 지우면 묘비가 되고 답글은 그대로다', () => {
+    // Given
+    const thread = createTodoCommentThread({ comment: createTodoComment({ replyCount: 2 }) });
+
+    // When
+    const next = TodoCommentPolicy.withCommentRemoved(thread, thread.comment);
+
+    // Then
+    expect(next?.comment).toMatchObject({
+      isDeleted: true,
+      content: null,
+      author: null,
+      likeCount: 0,
+    });
+    expect(next?.previewReply).toBe(thread.previewReply);
+  });
+
+  it('답글 없는 댓글을 지우면 묶음째 사라진다', () => {
+    // Given
+    const thread = createTodoCommentThread({
+      comment: createTodoComment({ replyCount: 0 }),
+      previewReply: null,
+    });
+
+    // When
+    const next = TodoCommentPolicy.withCommentRemoved(thread, thread.comment);
+
+    // Then
+    expect(next).toBeNull();
+  });
+
+  it('묘비 댓글의 마지막 답글을 지우면 묶음째 사라진다', () => {
+    // Given
+    const head = createTodoComment({ replyCount: 1, isDeleted: true, content: null, author: null });
+    const reply = createTodoCommentReply(head);
+    const thread = createTodoCommentThread({ comment: head, previewReply: reply });
+
+    // When
+    const next = TodoCommentPolicy.withCommentRemoved(thread, reply);
+
+    // Then
+    expect(next).toBeNull();
+  });
+
+  it('다른 묶음의 답글을 지워도 이 묶음은 같은 참조로 남는다', () => {
+    // Given
+    const thread = createTodoCommentThread();
+    const otherReply = createTodoCommentReply(createTodoComment({ id: 'other' }));
+
+    // When
+    const next = TodoCommentPolicy.withCommentRemoved(thread, otherReply);
+
+    // Then
+    expect(next).toBe(thread);
+  });
+
+  it('여러 페이지에 걸친 같은 묶음은 한 번만 보인다', () => {
+    // Given
+    const thread = createTodoCommentThread();
+    const pagination = {
+      previousCursor: null,
+      nextCursor: null,
+      hasPrevious: false,
+      hasNext: false,
+      size: 30,
+    };
+
+    // When
+    const threads = TodoCommentPolicy.flattenThreads([
+      { items: [thread], pagination, anchor: null },
+      { items: [thread], pagination, anchor: null },
+    ]);
+
+    // Then
+    expect(threads).toHaveLength(1);
+  });
+
+  it('먼저 붙인 새 답글은 남은 페이지를 받으면 작성 순 자리로 옮겨 간다', () => {
+    // Given
+    const head = createTodoComment();
+    const [older, posted] = [
+      createTodoCommentReply(head, { id: 'older' }),
+      createTodoCommentReply(head, { id: 'posted' }),
+    ];
+    const first = createTodoCommentReply(head, { id: 'first' });
+    const pagination = {
+      previousCursor: null,
+      nextCursor: null,
+      hasPrevious: false,
+      hasNext: false,
+      size: 10,
+    };
+
+    // When
+    const replies = TodoCommentPolicy.flattenReplies([
+      { items: [first, posted], pagination },
+      { items: [older, posted], pagination },
+    ]);
+
+    // Then
+    expect(replies.map((reply) => reply.id)).toEqual(['first', 'older', 'posted']);
   });
 });

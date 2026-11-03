@@ -11,33 +11,14 @@ import { resolveNotificationDestination } from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 const COMPACT = { windowSizeClass: 'compact' } as const;
-// 대화 화면 아래에 그 할 일의 댓글 개요를 쌓아 뒤로가기가 개요로 올라간다.
+// 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치로 연다.
 const COMMENT_THREAD_DESTINATION = {
   kind: 'route',
-  href: {
-    pathname: '/todo/[todoId]/comments/[commentId]',
-    params: {
-      todoId: 42,
-      commentId: COMMENT_ID,
-      sort: 'LATEST',
-      intent: undefined,
-      returnTo: undefined,
-    },
-  },
-  parentHref: {
-    pathname: '/todo/[todoId]',
-    params: {
-      todoId: 42,
-      sort: 'LATEST',
-      comment: undefined,
-      intent: undefined,
-      returnTo: undefined,
-    },
-  },
+  href: { pathname: '/todo/[todoId]', params: { todoId: 42, comment: COMMENT_ID } },
 };
 
 describe('resolveNotificationDestination', () => {
-  test('댓글 routing은 댓글 개요 위에 쌓은 대화 화면의 focus로 이동한다', () => {
+  test('댓글 routing은 할 일 상세를 그 댓글 위치로 연다', () => {
     expect(
       resolveNotificationDestination(
         {

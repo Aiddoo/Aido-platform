@@ -1,92 +1,91 @@
 import type {
   DeleteTodoCommentResponse,
-  TodoComment as TodoCommentDTO,
-  TodoCommentOverviewItem as TodoCommentOverviewItemDTO,
-  TodoCommentOverviewResponse,
-  TodoCommentLikeResponse,
+  TodoComment as TodoCommentV1DTO,
   TodoCommentChainResponse,
+  TodoCommentLikeResponse,
   TodoCommentMutationResponse,
-  TodoConversationItem as TodoConversationItemDTO,
-  TodoConversationResponse,
+  TodoCommentRepliesResponse,
+  TodoCommentThread as TodoCommentThreadDTO,
+  TodoCommentThreadsResponse,
+  TodoCommentV2,
 } from '@aido/api';
 
 import type {
   TodoComment,
   TodoCommentChain,
   TodoCommentLikeResult,
-  TodoCommentOverviewItem,
-  TodoCommentOverviewPage,
-  TodoConversationItem,
-  TodoConversationPage,
+  TodoCommentReplyPage,
+  TodoCommentThread,
+  TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
 
-export const toTodoComment = (dto: TodoCommentDTO): TodoComment => ({
-  id: dto.id,
-  threadId: dto.threadId,
-  parentId: dto.parentId,
-  depth: dto.depth,
-  author: dto.author,
-  content: dto.content,
-  isDeleted: dto.isDeleted,
-  // 1.13.0 이전 서버는 차단·신고 필드를 보내지 않으므로 할 수 없는 것으로 읽는다
-  isAuthorBlocked: dto.isAuthorBlocked ?? false,
-  isEdited: dto.isEdited,
-  likeCount: dto.likeCount,
-  replyCount: dto.replyCount,
-  replyTo: dto.replyTo,
-  viewer: {
-    ...dto.viewer,
-    canReport: dto.viewer.canReport ?? false,
-    canBlock: dto.viewer.canBlock ?? false,
-  },
-  createdAt: new Date(dto.createdAt),
-  editedAt: dto.editedAt ? new Date(dto.editedAt) : null,
-});
+export function toTodoComment(dto: TodoCommentV2): TodoComment {
+  return {
+    ...dto,
+    createdAt: new Date(dto.createdAt),
+    editedAt: dto.editedAt == null ? null : new Date(dto.editedAt),
+  };
+}
 
-export const toTodoCommentChain = (dto: TodoCommentChainResponse): TodoCommentChain => ({
-  comments: dto.comments.map(toTodoComment),
-});
+/** 쓰기 응답은 v1 모양이다. v1의 parentId는 묶음 머리라 v2의 threadCommentId와 같다 */
+export function toTodoCommentFromV1(todoId: number, dto: TodoCommentV1DTO): TodoComment {
+  return {
+    id: dto.id,
+    todoId,
+    threadCommentId: dto.parentId,
+    replyTo: dto.replyTo,
+    author: dto.author == null ? null : { ...dto.author, userTag: dto.author.userTag ?? null },
+    content: dto.content,
+    likeCount: dto.likeCount,
+    replyCount: dto.replyCount,
+    isDeleted: dto.isDeleted,
+    isAuthorBlocked: dto.isAuthorBlocked ?? false,
+    isEdited: dto.isEdited,
+    viewer: {
+      ...dto.viewer,
+      canReport: dto.viewer.canReport ?? false,
+      canBlock: dto.viewer.canBlock ?? false,
+    },
+    createdAt: new Date(dto.createdAt),
+    editedAt: dto.editedAt == null ? null : new Date(dto.editedAt),
+  };
+}
 
-export const toMutatedComment = (dto: TodoCommentMutationResponse): TodoComment =>
-  toTodoComment(dto.comment);
+export function toTodoCommentThread(dto: TodoCommentThreadDTO): TodoCommentThread {
+  return {
+    comment: toTodoComment(dto.comment),
+    previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),
+    replySummary: dto.replySummary,
+  };
+}
 
-export const toTodoCommentOverviewItem = (
-  dto: TodoCommentOverviewItemDTO,
-): TodoCommentOverviewItem => ({
-  comment: toTodoComment(dto.comment),
-  previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),
-  replySummary: dto.replySummary,
-});
+export function toTodoCommentThreadPage(dto: TodoCommentThreadsResponse): TodoCommentThreadPage {
+  return {
+    items: dto.items.map(toTodoCommentThread),
+    pagination: dto.pagination,
+    anchor: dto.anchor,
+  };
+}
 
-export const toTodoCommentOverviewPage = (
-  dto: TodoCommentOverviewResponse,
-): TodoCommentOverviewPage => ({
-  items: dto.items.map(toTodoCommentOverviewItem),
-  pagination: dto.pagination,
-});
+export function toTodoCommentReplyPage(dto: TodoCommentRepliesResponse): TodoCommentReplyPage {
+  return { items: dto.items.map(toTodoComment), pagination: dto.pagination };
+}
 
-export const toTodoConversationItem = (dto: TodoConversationItemDTO): TodoConversationItem => ({
-  comment: toTodoComment(dto.comment),
-  connection: dto.connection,
-  isFocused: dto.isFocused,
-});
+export function toTodoCommentChain(
+  todoId: number,
+  dto: TodoCommentChainResponse,
+): TodoCommentChain {
+  return { comments: dto.comments.map((comment) => toTodoCommentFromV1(todoId, comment)) };
+}
 
-export const toTodoConversationPage = (dto: TodoConversationResponse): TodoConversationPage => ({
-  items: dto.items.map(toTodoConversationItem),
-  focus:
-    dto.focus == null
-      ? null
-      : {
-          ...dto.focus,
-          precedingAncestors: dto.focus.precedingAncestors.map(toTodoConversationItem),
-        },
-  pagination: dto.pagination,
-});
+export function toMutatedComment(todoId: number, dto: TodoCommentMutationResponse): TodoComment {
+  return toTodoCommentFromV1(todoId, dto.comment);
+}
 
-export const toTodoCommentLikeResult = (dto: TodoCommentLikeResponse): TodoCommentLikeResult => ({
-  commentId: dto.commentId,
-  isLiked: dto.isLiked,
-  likeCount: dto.likeCount,
-});
+export function toTodoCommentLikeResult(dto: TodoCommentLikeResponse): TodoCommentLikeResult {
+  return { commentId: dto.commentId, isLiked: dto.isLiked, likeCount: dto.likeCount };
+}
 
-export const toDeletedCommentId = (dto: DeleteTodoCommentResponse): string => dto.commentId;
+export function toDeletedCommentId(dto: DeleteTodoCommentResponse): string {
+  return dto.commentId;
+}

@@ -3,62 +3,66 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
 import {
-  withOptimisticTodoCommentLike,
-  withTodoCommentLikeResult,
-} from '../utils/todo-comment-cache-transforms';
-import {
   cancelTodoCommentQueries,
-  invalidateTodoCommentQueries,
-  optimisticallyUpdateTodoCommentCaches,
+  findCachedTodoComment,
+  patchTodoCommentCaches,
   restoreTodoCommentCaches,
-  updateTodoCommentCaches,
+  snapshotTodoCommentCaches,
 } from './todo-comment-cache';
 
+export type TodoCommentLikeVia = 'button' | 'double_tap';
+
 interface SetTodoCommentLikeMutationParams {
-  commentId: string;
   isLiked: boolean;
+  via: TodoCommentLikeVia;
 }
 
-export function useSetTodoCommentLikeMutationOptions({ todoId }: { todoId: number }) {
+/** 같은 댓글의 연타는 scope로 차례대로 보낸다. 다른 댓글과 목록은 다시 받지 않는다 */
+export function useSetTodoCommentLikeMutationOptions({
+  todoId,
+  commentId,
+}: {
+  todoId: number;
+  commentId: string;
+}) {
   const service = useTodoCommentService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
-    mutationFn: async ({ commentId, isLiked }: SetTodoCommentLikeMutationParams) =>
+    scope: { id: `todo-comment-like:${commentId}` },
+    mutationFn: async ({ isLiked }: SetTodoCommentLikeMutationParams) =>
       unwrap(await service.setCommentLike(todoId, commentId, isLiked)),
-    onMutate: async ({ commentId, isLiked }) => {
+    onMutate: async ({ isLiked }) => {
       await cancelTodoCommentQueries({ queryClient, todoId });
-      const snapshot = optimisticallyUpdateTodoCommentCaches({
+      const snapshot = snapshotTodoCommentCaches({ queryClient, todoId });
+      const target = findCachedTodoComment({ queryClient, todoId, commentId });
+      patchTodoCommentCaches({
         queryClient,
         todoId,
         commentId,
-        transform: (comment) =>
-          comment.viewer.isLiked === isLiked
-            ? comment
-            : withOptimisticTodoCommentLike(comment, isLiked),
+        transform: (comment) => TodoCommentPolicy.withLikeToggled(comment, isLiked),
       });
-
-      return { snapshot };
+      return { snapshot, target };
     },
     onError: (error, _params, context) => {
       if (context != null) {
-        restoreTodoCommentCaches({ queryClient, snapshot: context.snapshot });
+        restoreTodoCommentCaches(queryClient, context.snapshot);
       }
-      handleMutationError(error, 'like');
+      handleMutationError(error, 'like', context?.target);
     },
-    onSuccess: (result) => {
-      trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked });
-      updateTodoCommentCaches({
+    onSuccess: (result, { via }) => {
+      trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked, via });
+      patchTodoCommentCaches({
         queryClient,
         todoId,
         commentId: result.commentId,
-        transform: (comment) => withTodoCommentLikeResult(comment, result),
+        transform: (comment) => TodoCommentPolicy.withLikeResult(comment, result),
       });
     },
-    onSettled: () => invalidateTodoCommentQueries({ queryClient, todoId }),
   });
 }

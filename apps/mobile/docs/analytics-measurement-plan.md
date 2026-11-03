@@ -61,19 +61,23 @@
 
 **댓글 / 친구 / 재촉 / 신고**
 
-| 이벤트                                                                                           | 파라미터                                       | 의미                |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ------------------- |
-| `todo_comment_created` / `_deleted`                                                              | `todo_id`(id) · `depth`(int)                   | 대화 깊이           |
-| `todo_comment_liked`                                                                             | `todo_id` · `is_liked`                         |                     |
-| `todo_comment_sorted`                                                                            | `todo_id` · `sort`: `POPULAR`·`LATEST`         |                     |
-| `friend_request_sent`/`_cancelled`/`_accepted`/`_rejected`, `friend_removed`, `friend_reordered` | –                                              | 친구 그래프         |
-| `friend_search_submitted`                                                                        | `query_length_bucket`: `2_3`·`4_7`·`8_plus`    | 검색어 미전송(좋음) |
-| `friend_strip_hint_dismissed`                                                                    | `hint`: `invite`·`search`                      |                     |
-| `nudge_sent` / `remind_nudge_sent`                                                               | –                                              | 재촉                |
-| `nudge_replied`                                                                                  | `reply_kind`(`ReplyToNudgeInput['replyKind']`) |                     |
-| `nudge_thanks_sent`                                                                              | `recipient_count`(int)                         |                     |
-| `user_blocked` / `user_unblocked`                                                                | –                                              | 모더레이션          |
-| `content_reported`                                                                               | `target_type` · `reason`(서버 enum)            |                     |
+| 이벤트                                                                                           | 파라미터                                              | 의미                                   |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | -------------------------------------- |
+| `todo_comment_created`                                                                           | `todo_id`(id) · `is_reply` · `chain_size`(int)        | 댓글·답글 2단계(1.14.1+, `depth` 제거) |
+| `todo_comment_deleted`                                                                           | `todo_id` · `is_reply`                                |                                        |
+| `todo_comment_liked`                                                                             | `todo_id` · `is_liked` · `via`: `button`·`double_tap` | 더블탭 하트 비중                       |
+| `todo_comment_replies_expanded`                                                                  | `todo_id` · `loaded_count`(int)                       | 답글 펼침·더 보기                      |
+| `todo_comment_reply_started`                                                                     | `todo_id` · `target`: `comment`·`reply`               | 답글 달기 진입                         |
+| `todo_comment_hint_dismissed`                                                                    | `kind`: `double_tap` · `reason`: `close`·`used`       | 더블탭 안내 종료                       |
+| `todo_comment_sorted`                                                                            | `todo_id` · `sort`: `POPULAR`·`LATEST`                |                                        |
+| `friend_request_sent`/`_cancelled`/`_accepted`/`_rejected`, `friend_removed`, `friend_reordered` | –                                                     | 친구 그래프                            |
+| `friend_search_submitted`                                                                        | `query_length_bucket`: `2_3`·`4_7`·`8_plus`           | 검색어 미전송(좋음)                    |
+| `friend_strip_hint_dismissed`                                                                    | `hint`: `invite`·`search`                             |                                        |
+| `nudge_sent` / `remind_nudge_sent`                                                               | –                                                     | 재촉                                   |
+| `nudge_replied`                                                                                  | `reply_kind`(`ReplyToNudgeInput['replyKind']`)        |                                        |
+| `nudge_thanks_sent`                                                                              | `recipient_count`(int)                                |                                        |
+| `user_blocked` / `user_unblocked`                                                                | –                                                     | 모더레이션                             |
+| `content_reported`                                                                               | `target_type` · `reason`(서버 enum)                   |                                        |
 
 **친구 초대 (바이럴 루프)**
 
@@ -278,6 +282,22 @@
 | `moved_count`       | 날씨 옮긴 할 일 수 | 표준 | 날씨 옮기기 효과      |
 | `todo_count`        | 대상 할 일 수      | 표준 | 옮기기 대상·AI 변환량 |
 | `days_since_signup` | 가입 후 경과일     | 표준 | 활성화 소요일 평균    |
+
+### (c-1) 1.14.1 신규 측정기준/측정항목 (댓글 2단계·더블탭)
+
+이벤트 이름은 그대로 두고 매개변수만 바뀐다. `todo_comment_created`·`_deleted`의 `depth`는 1.14.1부터 보내지 않는다.
+
+| 파라미터       | 범위     | 표시 이름      | 값                            | 이벤트                                     |
+| -------------- | -------- | -------------- | ----------------------------- | ------------------------------------------ |
+| `is_reply`     | 측정기준 | 답글 여부      | `true`·`false`                | todo_comment_created, todo_comment_deleted |
+| `via`          | 측정기준 | 좋아요 방식    | `button`·`double_tap`         | todo_comment_liked                         |
+| `is_liked`     | 측정기준 | 좋아요 상태    | `true`·`false`                | todo_comment_liked                         |
+| `target`       | 측정기준 | 답글 대상      | `comment`·`reply`             | todo_comment_reply_started                 |
+| `kind`         | 측정기준 | 안내 종류      | `double_tap`                  | todo_comment_hint_dismissed                |
+| `reason`       | 측정기준 | 사유(기존)     | `close`·`used`                | todo_comment_hint_dismissed                |
+| `sort`         | 측정기준 | 댓글 정렬      | `LATEST`·`POPULAR`            | todo_comment_sorted                        |
+| `chain_size`   | 측정항목 | 이어 쓴 글 수  | 1~5 (표준)                    | todo_comment_created                       |
+| `loaded_count` | 측정항목 | 불러온 답글 수 | 페이지 도착 뒤 실제 수 (표준) | todo_comment_replies_expanded              |
 
 ### (d) 잠재고객
 

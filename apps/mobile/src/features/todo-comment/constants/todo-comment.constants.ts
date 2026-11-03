@@ -1,0 +1,16 @@
+import { TODO_COMMENT_LIMITS } from '@aido/api';
+
+export const TODO_COMMENT_PAGE_SIZE = {
+  THREADS: TODO_COMMENT_LIMITS.DEFAULT_PAGE_SIZE,
+  REPLIES: TODO_COMMENT_LIMITS.REPLY_PAGE_DEFAULT_SIZE,
+} as const;
+
+export const TODO_COMMENT_QUERY_TIMING = {
+  latestStaleTime: 30_000,
+  popularStaleTime: 10_000,
+  gcTime: 30 * 60_000,
+} as const;
+
+export const TODO_COMMENT_HIGHLIGHT_DURATION_MS = 1_600;
+
+export const TODO_COMMENT_INPUT_NATIVE_ID = 'todo-comment-input';
