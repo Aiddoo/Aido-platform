@@ -607,7 +607,7 @@ export const WEATHER_CONDITION_LABEL = {
   HEAVY_SNOW: "Heavy snow",
   HAIL: "Hail",
   HOT: "Hot",
-  FRIGID: "Frigid",
+  FRIGID: "Freezing",
 } satisfies Record<WeatherCondition, string>;
 
 /** 영어는 "tomorrow"의 위치가 시간대마다 달라 내일을 포함한 완결된 구로 둔다. */
