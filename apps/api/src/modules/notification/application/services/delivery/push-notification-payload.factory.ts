@@ -51,21 +51,14 @@ export class PushNotificationPayloadFactory {
   }
 
   createBatch(input: CreatePushNotificationPayloadInput): BatchPushNotificationPayload {
-    const { data, notificationId, dispatchId } = input;
+    const { data, dispatchId } = input;
     const minAppVersion = notificationMinAppVersion(data.type);
     return {
       userId: data.userId,
       dispatchId,
       requiresFeatureCapability: data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
       ...(minAppVersion != null && { minAppVersion }),
-      title: data.title,
-      body: data.body,
-      data: {
-        ...this.#createNotificationData(data, notificationId),
-        dispatchId,
-      },
-      // 기존 배치 provider 계약은 categoryId를 전달하지 않는다. 단건과의 차이는
-      // 후속 제품 변경에서 별도로 다루고 이번 구조 분리에서는 유지한다.
+      ...this.createSingle(input),
     };
   }
 

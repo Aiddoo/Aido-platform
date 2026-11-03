@@ -93,7 +93,7 @@ describe("PushNotificationPayloadFactory", () => {
     expect(optOutTokens.issue).toHaveBeenCalledWith("user-1");
   });
 
-  it("배치는 기존 provider 계약대로 categoryId를 생략하면서 동일한 마케팅 data를 유지한다", () => {
+  it("마케팅 배치도 단건과 같은 interactive category와 opt-out data를 싣는다", () => {
     const payload = factory.createBatch({
       data: {
         userId: "user-1",
@@ -119,7 +119,7 @@ describe("PushNotificationPayloadFactory", () => {
         marketingOptOutToken: "signed-opt-out-token",
       },
     });
-    expect(payload).not.toHaveProperty("categoryId");
+    expect(payload.categoryId).toBe("MARKETING");
   });
 
   it("명시 action URL은 타입과 함께 보존한다", () => {
