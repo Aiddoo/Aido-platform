@@ -70,6 +70,8 @@ import { useTodoCommentReveal } from './todo-comment-reveal';
 const NAME_MIN_VISIBLE_CHARS = 4;
 const NAME_MIN_WIDTH = 52;
 const NAME_SHRINK_PRIORITY = 1000;
+/** 이 폭보다 좁으면(좁은 pane의 답글) 이름 4글자·시간·⋯가 한 줄에 다 들어가지 않아 태그·시간을 둘째 줄로 내린다 */
+const SINGLE_AUTHOR_LINE_MIN_WIDTH = 220;
 const MENU_ICON_SIZE = 18;
 const MENU_WIDTH = 200;
 const MORE_HIT_SLOP = 12;
@@ -156,7 +158,7 @@ function useCommentTimeLabel(comment: TodoComment) {
 
 /**
  * 잘리는 순서는 이름(최소 4글자는 남김) → #태그다. 작성자 표시·시간·⋯는 줄지 않는다.
- * 가장 큰 글자에서는 태그와 시간을 둘째 줄로 내리고 ⋯는 첫 줄 끝에 둔다.
+ * 가장 큰 글자이거나 줄이 좁으면 태그와 시간을 둘째 줄로 내리고 ⋯는 첫 줄 끝에 둔다.
  */
 function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }) {
   const { t } = useTranslation('todoComment');
@@ -165,10 +167,16 @@ function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }
   const timeLabel = useCommentTimeLabel(comment);
   const tagLabel = TodoCommentPolicy.userTagLabel(comment);
   const name = comment.author?.name ?? t('list.unknownUser');
-  const isMetaOnSecondLine = fontScale === 'xlarge';
+  const [lineWidth, setLineWidth] = useState<number | null>(null);
+  const isNarrow = lineWidth != null && lineWidth < fontScaledSize(SINGLE_AUTHOR_LINE_MIN_WIDTH);
+  const isMetaOnSecondLine = fontScale === 'xlarge' || isNarrow;
 
   return (
-    <VStack gap={1} className="min-w-0">
+    <VStack
+      gap={1}
+      className="min-w-0"
+      onLayout={(event) => setLineWidth(event.nativeEvent.layout.width)}
+    >
       <HStack gap={4} align="center" className="min-w-0">
         <Text
           size="b4"
