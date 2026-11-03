@@ -3,57 +3,37 @@ import type {
   TodoConversationConnection,
   TodoConversationItem,
 } from "@aido/api";
-import { uniq } from "es-toolkit";
 
-import type {
-  TodoCommentRecord,
-  TodoConversationRecord,
-} from "../../models/comments/todo-comment.types.js";
+import type { TodoCommentRecord } from "../../models/comments/todo-comment.types.js";
 import { toTodoCommentResponse } from "./todo-comment.presenter.js";
 
-function isDirectParent(
-  parent: TodoCommentRecord | null | undefined,
-  child: TodoCommentRecord | null | undefined,
-): boolean {
-  return parent != null && child != null ? child.parentId === parent.id : false;
-}
-
-/** Wire lane은 순서와 중복을 허용하지 않는다. reader 결과도 경계에서 한 번 정규화한다. */
-function normalizeLaneDepths(depths: readonly number[]): number[] {
-  return uniq(depths).sort((left, right) => left - right);
-}
-
-function toIncomingBranch(depth: number): TodoConversationConnection["incomingBranch"] {
-  return depth === 0 ? null : { fromDepth: depth - 1, toDepth: depth };
+function toVisualDepth(record: TodoCommentRecord): 0 | 1 {
+  return record.threadCommentId == null ? 0 : 1;
 }
 
 /**
- * recursive reader가 전체 DFS에서 열어 둔 조상 lane에 현재 행의 branch를 더한다.
- * 클라이언트는 parentId·depth·인접 행을 다시 비교하지 않고 이 topology만 그린다.
+ * 1.14.0 이하 앱은 이 topology를 그대로 그린다. 묶음은 2단계라 lane은 묶음 머리의 0 하나뿐이고,
+ * 다음 행이 같은 묶음의 답글이면 lane이 이어진다.
  */
 function toConversationConnection(
-  record: TodoConversationRecord,
-  nextRecord: TodoConversationRecord | null | undefined,
+  record: TodoCommentRecord,
+  nextRecord: TodoCommentRecord | null | undefined,
 ): TodoConversationConnection {
-  const upperLaneDepths =
-    record.depth === 0
-      ? record.continuingAncestorDepths
-      : [...record.continuingAncestorDepths, record.depth - 1];
-  const lowerLaneDepths = isDirectParent(record, nextRecord)
-    ? [...record.continuingAncestorDepths, record.depth]
-    : record.continuingAncestorDepths;
+  const visualDepth = toVisualDepth(record);
+  const threadCommentId = record.threadCommentId ?? record.id;
+  const continuesThread = nextRecord?.threadCommentId === threadCommentId;
 
   return {
-    visualDepth: record.depth,
-    upperLaneDepths: normalizeLaneDepths(upperLaneDepths),
-    lowerLaneDepths: normalizeLaneDepths(lowerLaneDepths),
-    incomingBranch: toIncomingBranch(record.depth),
+    visualDepth,
+    upperLaneDepths: visualDepth === 0 ? [] : [0],
+    lowerLaneDepths: continuesThread ? [0] : [],
+    incomingBranch: visualDepth === 0 ? null : { fromDepth: 0, toDepth: 1 },
   };
 }
 
 export function toTodoConversationItems(input: {
-  records: readonly TodoConversationRecord[];
-  nextRecord: TodoConversationRecord | null;
+  records: readonly TodoCommentRecord[];
+  nextRecord: TodoCommentRecord | null;
   focusCommentId: string | null;
   viewerId: string;
   likedCommentIds: ReadonlySet<string>;
@@ -74,11 +54,7 @@ export function toTodoConversationItems(input: {
   }));
 }
 
-/**
- * Focus snapshot은 일반 DFS 목록이 아니라 생략된 조상 사슬이다.
- * 각 행의 부모 lane→아바타 branch와 다음 직계 자식으로 내려가는 lane만 명시해
- * page 안의 sibling branch topology와 섞지 않는다.
- */
+/** focus 답글 앞에 따로 싣는 묶음 머리. 아래 lane만 열어 focus 쪽으로 이어진다. */
 export function toTodoConversationAncestorItems(input: {
   records: readonly TodoCommentRecord[];
   viewerId: string;
@@ -93,10 +69,10 @@ export function toTodoConversationAncestorItems(input: {
       input.blockedAuthorIds,
     ),
     connection: {
-      visualDepth: record.depth,
-      upperLaneDepths: record.depth === 0 ? [] : [record.depth - 1],
-      lowerLaneDepths: [record.depth],
-      incomingBranch: toIncomingBranch(record.depth),
+      visualDepth: 0,
+      upperLaneDepths: [],
+      lowerLaneDepths: [0],
+      incomingBranch: null,
     },
     isFocused: false,
   }));

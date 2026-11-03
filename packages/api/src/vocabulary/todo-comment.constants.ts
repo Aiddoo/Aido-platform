@@ -17,3 +17,11 @@ export const TODO_COMMENT_SORT = {
 } as const;
 
 export type TodoCommentSort = (typeof TODO_COMMENT_SORT)[keyof typeof TODO_COMMENT_SORT];
+
+/** 댓글은 할 일에 바로 단 글(묶음 머리), 답글은 그 묶음에 붙은 글이다 */
+export const TODO_COMMENT_KIND = {
+  COMMENT: "COMMENT",
+  REPLY: "REPLY",
+} as const;
+
+export type TodoCommentKind = (typeof TODO_COMMENT_KIND)[keyof typeof TODO_COMMENT_KIND];

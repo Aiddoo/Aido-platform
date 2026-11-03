@@ -21,8 +21,8 @@ export function toTodoCommentResponse(
   const authorId = record.authorId;
   const isAuthorBlocked = blockedAuthorIds.has(authorId);
   const isHidden = record.deletedAt != null || isAuthorBlocked;
-  const isParentAuthorBlocked =
-    record.parentAuthorId != null && blockedAuthorIds.has(record.parentAuthorId);
+  const isReplyTargetAuthorBlocked =
+    record.replyToAuthorId != null && blockedAuthorIds.has(record.replyToAuthorId);
   const viewer = getTodoCommentViewerPermissions({
     isDeleted: isHidden,
     isLiked: likedCommentIds.has(record.id),
@@ -33,9 +33,9 @@ export function toTodoCommentResponse(
 
   return {
     id: record.id,
-    threadId: record.rootId ?? record.id,
-    parentId: record.parentId,
-    depth: record.depth,
+    threadId: record.threadCommentId ?? record.id,
+    parentId: record.threadCommentId,
+    depth: record.threadCommentId == null ? 0 : 1,
     author: !isHidden
       ? {
           id: authorId,
@@ -52,11 +52,11 @@ export function toTodoCommentResponse(
     likeCount: isHidden ? 0 : record.likeCount,
     replyCount: record.replyCount,
     replyTo:
-      record.parentId == null
+      record.replyToCommentId == null
         ? null
         : {
-            commentId: record.parentId,
-            authorName: isParentAuthorBlocked ? null : record.parentAuthorName,
+            commentId: record.replyToCommentId,
+            authorName: isReplyTargetAuthorBlocked ? null : record.replyToAuthorName,
           },
     viewer,
     createdAt: record.createdAt,
@@ -67,7 +67,7 @@ export function toTodoCommentResponse(
 /** 응답에 실릴 수 있는 작성자 ID. 차단 관계를 한 번에 조회하는 후보로 쓴다. */
 export function collectCommentAuthorIds(records: readonly TodoCommentRecord[]): string[] {
   return records.flatMap((record) =>
-    record.parentAuthorId == null ? [record.authorId] : [record.authorId, record.parentAuthorId],
+    record.replyToAuthorId == null ? [record.authorId] : [record.authorId, record.replyToAuthorId],
   );
 }
 

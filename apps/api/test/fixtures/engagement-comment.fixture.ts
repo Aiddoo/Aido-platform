@@ -27,12 +27,10 @@ export function createCommentRecordFixture(
   return {
     id: "cm1rootcomment000000000001",
     todoId: 1,
-    parentId: null,
-    rootId: null,
-    path: [],
-    depth: 0,
-    parentAuthorId: null,
-    parentAuthorName: null,
+    threadCommentId: null,
+    replyToCommentId: null,
+    replyToAuthorId: null,
+    replyToAuthorName: null,
     authorId: ENGAGEMENT_OWNER_ID,
     authorName: "작성자",
     authorUserTag: null,
@@ -53,7 +51,6 @@ export function createConversationRecordFixture(
   return {
     ...createCommentRecordFixture(overrides),
     conversationPosition: { rootLikeCount: 0, rootReplyCount: 0 },
-    continuingAncestorDepths: [],
     ...overrides,
   };
 }
@@ -85,9 +82,9 @@ export function createEngagementCommentFixture() {
       todoId: 1,
       authorId: ENGAGEMENT_OWNER_ID,
       parentId: null,
-      rootId: null,
-      path: [],
+      replyToCommentId: null,
       content: "댓글 원문",
+      replyCount: 0,
       deletedAt: null,
       editedAt: null,
       createdAt: at,

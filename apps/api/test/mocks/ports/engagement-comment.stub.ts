@@ -24,6 +24,7 @@ import {
 } from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
 import { TodoComment } from "#api/modules/engagement/domain/aggregates/comments/todo-comment.aggregate";
 import type { TodoCommentState } from "#api/modules/engagement/domain/records/comments/todo-comment.record";
+import { CommentPlacement } from "#api/modules/engagement/domain/value-objects/comments/comment-placement.vo";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 interface LikeState {
@@ -39,10 +40,8 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
   readonly comments = new Map<string, TodoCommentState>();
   readonly likes = new Map<string, LikeState>();
   readonly commentCounts = new Map<number, number>();
-  readonly replyCounts = new Map<string, number>();
   readonly viewCounts = new Map<number, number>();
   readonly views = new Set<string>();
-  readonly ancestorSettlements: Array<{ commentId: string; path: readonly string[] }> = [];
   readonly replays = new Map<string, ReplayState>();
   readonly likeCounts = new Map<string, number>();
   #nextCommentId = 0;
@@ -82,10 +81,10 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
         id,
         todoId: input.todoId,
         authorId: input.authorId,
-        parentId: placement.parentId?.getValue() ?? null,
-        rootId: placement.rootId?.getValue() ?? null,
-        path: placement.path,
+        parentId: placement.kind === "COMMENT" ? null : placement.threadCommentId,
+        replyToCommentId: placement.kind === "COMMENT" ? null : placement.replyToCommentId,
         content: item.content,
+        replyCount: placement.kind === "COMMENT" ? input.items.length - 1 : 0,
         deletedAt: null,
         editedAt: null,
         createdAt: at,
@@ -95,13 +94,13 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
       if (created === undefined) {
         throw new Error("댓글 fixture 저장 실패");
       }
-      placement = placement.under(TodoComment.reconstitute(created).id);
+      placement = CommentPlacement.replyTo({ id: created.id, placement });
       commentIds.push(id);
     }
     const command = {
       todoId: input.todoId,
       authorId: input.authorId,
-      parentId: input.placement.parentId?.getValue() ?? null,
+      parentId: input.placement.kind === "COMMENT" ? null : input.placement.replyToCommentId,
       items: structuredClone(input.items),
     };
     for (const item of input.items) {
@@ -133,16 +132,21 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
     this.commentCounts.set(todoId, count - 1);
     return true;
   }
-  async incrementReplyCount(parentId: string): Promise<boolean> {
-    const parent = this.comments.get(parentId);
-    if (parent === undefined || parent.deletedAt !== null) {
+  async increaseReplyCount(commentId: string, amount: number): Promise<boolean> {
+    const comment = this.comments.get(commentId);
+    if (comment === undefined || comment.parentId !== null) {
       return false;
     }
-    this.replyCounts.set(parentId, (this.replyCounts.get(parentId) ?? 0) + 1);
+    this.seed({ ...comment, replyCount: comment.replyCount + amount });
     return true;
   }
-  async dropDeletedFromAncestors(commentId: string, path: readonly string[]): Promise<void> {
-    this.ancestorSettlements.push({ commentId, path: [...path] });
+  async decreaseReplyCount(commentId: string): Promise<boolean> {
+    const comment = this.comments.get(commentId);
+    if (comment === undefined || comment.parentId !== null || comment.replyCount === 0) {
+      return false;
+    }
+    this.seed({ ...comment, replyCount: comment.replyCount - 1 });
+    return true;
   }
   async setLike(
     todoId: number,
@@ -172,7 +176,7 @@ export class StubEngagementCommentRepository implements TodoCommentRepositoryPor
       comment.deletedAt === null &&
       like?.isLiked === true &&
       !like.wasEverNotified
-      ? { recipientId: comment.authorId, threadRootId: comment.rootId ?? comment.id }
+      ? { recipientId: comment.authorId, threadRootId: comment.parentId ?? comment.id }
       : null;
   }
   async recordView(todoId: number, viewerId: string) {
@@ -217,7 +221,6 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   readonly details = new Map<number, TodoDetailsRecord>();
   conversationWindow: TodoConversationWindow | null = null;
   overviewWindow: TodoCommentOverviewWindow | null = null;
-  ancestors: TodoCommentRecord[] | undefined;
   likedCommentIds: Set<string> | undefined;
   constructor(readonly repository: StubEngagementCommentRepository) {}
   async findAccessibleTodoOwnerId(todoId: number, viewerId: string) {
@@ -237,6 +240,10 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
     if (comment?.todoId !== todoId) {
       return null;
     }
+    const replyTarget =
+      comment.replyToCommentId == null
+        ? undefined
+        : this.repository.comments.get(comment.replyToCommentId);
     return {
       id: comment.id,
       todoId,
@@ -245,22 +252,14 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
       authorUserTag: null,
       authorProfileImage: null,
       todoOwnerId: this.todoOwners.get(todoId) ?? comment.authorId,
-      parentId: comment.parentId,
-      parentAuthorId:
-        comment.parentId === null
-          ? null
-          : (this.repository.comments.get(comment.parentId)?.authorId ?? null),
-      parentAuthorName:
-        comment.parentId === null
-          ? null
-          : (this.names.get(this.repository.comments.get(comment.parentId)?.authorId ?? "") ??
-            null),
-      rootId: comment.rootId,
-      path: [...comment.path],
-      depth: comment.path.length,
+      threadCommentId: comment.parentId,
+      replyToCommentId: comment.replyToCommentId,
+      replyToAuthorId: replyTarget?.authorId ?? null,
+      replyToAuthorName:
+        replyTarget == null ? null : (this.names.get(replyTarget.authorId) ?? null),
       content: comment.content,
       likeCount: this.repository.likeCounts.get(comment.id) ?? 0,
-      replyCount: this.repository.replyCounts.get(comment.id) ?? 0,
+      replyCount: comment.replyCount,
       deletedAt: comment.deletedAt?.toISOString() ?? null,
       editedAt: comment.editedAt?.toISOString() ?? null,
       createdAt: comment.createdAt.toISOString(),
@@ -275,11 +274,6 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   }
   async listOverview(_params: ListTodoCommentOverviewParams) {
     return structuredClone(this.overviewWindow);
-  }
-  async findAncestors(todoId: number, path: readonly string[]) {
-    return this.ancestors === undefined
-      ? this.findCommentRecords(todoId, path)
-      : structuredClone(this.ancestors);
   }
   async findLikedCommentIds(ids: readonly string[], viewerId: string) {
     return this.likedCommentIds === undefined

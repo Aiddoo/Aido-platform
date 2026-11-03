@@ -4,7 +4,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
 
 import {
   isUniqueConstraintViolation,
@@ -13,6 +12,7 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoComment, todoCommentLike, todoView } from "#api/platform/database/schema/index";
+import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import type {
@@ -27,15 +27,19 @@ import {
   type TodoCommentRepositoryPort,
 } from "../../../application/ports/comments/todo-comment.repository.port.js";
 import { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
-import { TodoCommentId } from "../../../domain/value-objects/comments/todo-comment-id.vo.js";
+import { CommentPlacement } from "../../../domain/value-objects/comments/comment-placement.vo.js";
 
 type CommentRow = typeof todoComment.$inferSelect;
 type ReplayRow = Pick<
   CommentRow,
-  "id" | "todoId" | "authorId" | "parentId" | "clientRequestId" | "requestFingerprint" | "content"
+  | "id"
+  | "todoId"
+  | "authorId"
+  | "replyToCommentId"
+  | "clientRequestId"
+  | "requestFingerprint"
+  | "content"
 >;
-
-const chainComment = alias(todoComment, "comment");
 
 function commentCommandFingerprint(input: TodoCommentChainCommand): string {
   const command = JSON.stringify({
@@ -55,14 +59,33 @@ function toAggregate(row: CommentRow): TodoComment {
     todoId: row.todoId,
     authorId: row.authorId,
     parentId: row.parentId,
-    rootId: row.rootId,
-    path: row.path,
+    replyToCommentId: row.replyToCommentId,
     content: row.content,
+    replyCount: row.replyCount,
     deletedAt: row.deletedAt,
     editedAt: row.editedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
+}
+
+/**
+ * 묶음 머리(parentId)와 답글 대상만 읽는다. rootId·path·depth는 이전 API 이미지로 롤백해도
+ * 같은 묶음으로 읽히도록 2단계 값으로 함께 쓴다.
+ * TODO: 1.14.1 다음 릴리스의 contract 마이그레이션에서 세 컬럼을 drop할 때 함께 제거한다.
+ */
+function toStoredPlacement(placement: CommentPlacement) {
+  if (placement.kind === "COMMENT") {
+    return { parentId: null, replyToCommentId: null, rootId: null, path: [], depth: 0 };
+  }
+
+  return {
+    parentId: placement.threadCommentId,
+    replyToCommentId: placement.replyToCommentId,
+    rootId: placement.threadCommentId,
+    path: [placement.threadCommentId],
+    depth: 1,
+  };
 }
 
 function orderReplayRows(
@@ -89,16 +112,16 @@ function orderReplayRows(
 function isLegacyReplay(ordered: readonly ReplayRow[], command: TodoCommentChainCommand): boolean {
   return ordered.every((row, index) => {
     const previous = ordered[index - 1];
-    const expectedParentId = index === 0 ? command.parentId : previous?.id;
+    const expectedReplyToId = index === 0 ? command.parentId : previous?.id;
     const item = command.items[index];
 
     return (
       item != null &&
-      // nullish-strict: undefined는 목록 밖 항목, null은 루트 댓글의 부모다
-      expectedParentId !== undefined &&
+      // nullish-strict: undefined는 목록 밖 항목, null은 할 일에 단 댓글이다
+      expectedReplyToId !== undefined &&
       row.todoId === command.todoId &&
       row.authorId === command.authorId &&
-      row.parentId === expectedParentId &&
+      row.replyToCommentId === expectedReplyToId &&
       row.content === item.content
     );
   });
@@ -143,7 +166,7 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
         id: true,
         todoId: true,
         authorId: true,
-        parentId: true,
+        replyToCommentId: true,
         clientRequestId: true,
         requestFingerprint: true,
         content: true,
@@ -169,19 +192,22 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
     throw new TodoCommentIdempotencyConflict();
   }
 
-  /** 글마다 부모가 바로 앞 글이라 insert는 순차지만, 응답 projection은 reader가 한 번에 hydrate한다. */
+  /**
+   * 이어 쓴 글은 모두 같은 묶음에 붙고 각자 바로 앞 글에 답한다. 답글 대상이 앞 글의 id라
+   * insert는 순차지만, 응답 projection은 reader가 한 번에 hydrate한다.
+   * 묶음 안 답글은 작성 시각 순서라 같은 트랜잭션 시각에 1ms씩 더해 쓴 순서를 남긴다.
+   */
   async createCommentChain(
     input: CreateTodoCommentChainInput,
   ): Promise<TodoCommentChainCreationResult> {
     const requestFingerprint = commentCommandFingerprint({
       todoId: input.todoId,
       authorId: input.authorId,
-      parentId: input.placement.parentId?.getValue() ?? null,
+      parentId: input.placement.kind === "COMMENT" ? null : input.placement.replyToCommentId,
       items: input.items,
     });
     let placement = input.placement;
     const commentIds: string[] = [];
-    const lastIndex = input.items.length - 1;
 
     try {
       for (const [index, item] of input.items.entries()) {
@@ -193,17 +219,15 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
             clientRequestId: item.clientRequestId,
             requestFingerprint,
             content: item.content,
-            parentId: placement.parentId?.getValue() ?? null,
-            rootId: placement.rootId?.getValue() ?? null,
-            path: [...placement.path],
-            depth: placement.depth,
-            replyCount: index < lastIndex ? 1 : 0,
+            ...toStoredPlacement(placement),
+            replyCount: placement.kind === "COMMENT" ? input.items.length - 1 : 0,
+            createdAt: sql`CURRENT_TIMESTAMP + ${index} * INTERVAL '1 millisecond'`,
           })
           .returning({ id: todoComment.id });
         const created = requireRecord(row);
 
         commentIds.push(created.id);
-        placement = placement.under(TodoCommentId.create(created.id));
+        placement = CommentPlacement.replyTo({ id: created.id, placement });
       }
     } catch (error) {
       if (isIdempotencyRace(error)) {
@@ -241,7 +265,6 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
         and(
           eq(todoComment.id, comment.id.getValue()),
           eq(todoComment.todoId, comment.todoId),
-          eq(todoComment.authorId, comment.authorId),
           isNull(todoComment.deletedAt),
         ),
       )
@@ -283,60 +306,30 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
     return changed.length === 1;
   }
 
-  async incrementReplyCount(parentId: string): Promise<boolean> {
+  async increaseReplyCount(commentId: string, amount: number): Promise<boolean> {
     const updated = await this.db
       .update(todoComment)
-      .set({ replyCount: sql`${todoComment.replyCount} + ${1}` })
-      .where(and(eq(todoComment.id, parentId), isNull(todoComment.deletedAt)))
+      .set({ replyCount: sql`${todoComment.replyCount} + ${amount}` })
+      .where(and(eq(todoComment.id, commentId), isNull(todoComment.parentId)))
       .returning({ id: todoComment.id });
 
     return updated.length === 1;
   }
 
-  async dropDeletedFromAncestors(commentId: string, path: readonly string[]): Promise<void> {
-    const chain = [commentId, ...[...path].reverse()];
-    const commentIds = sql.join(
-      chain.map((id) => sql`${id}`),
-      sql`, `,
-    );
-
-    // 방금 삭제한 행이 화면에서 사라질 때만 부모의 표시 가능한 직계 답글 수를 내린다.
-    // 삭제된 부모가 마지막 자식을 잃으면 같은 규칙을 조상까지 이어 가되, 깊이마다 왕복하지 않는다.
-    await this.db.execute(sql`
-      WITH RECURSIVE chain AS (
-        SELECT item."commentId", item."ordinal"::INTEGER
-        FROM unnest(ARRAY[${commentIds}]::TEXT[])
-          WITH ORDINALITY AS item("commentId", "ordinal")
-      ),
-      invisible AS (
-        SELECT chain."commentId", chain."ordinal"
-        FROM chain
-        INNER JOIN ${todoComment} AS ${chainComment} ON ${chainComment.id} = chain."commentId"
-        WHERE chain."ordinal" = 1
-          AND ${chainComment.deletedAt} IS NOT NULL
-          AND ${chainComment.replyCount} = 0
-
-        UNION ALL
-
-        SELECT chain."commentId", chain."ordinal"
-        FROM invisible AS child
-        INNER JOIN chain ON chain."ordinal" = child."ordinal" + 1
-        INNER JOIN ${todoComment} AS ${chainComment} ON ${chainComment.id} = chain."commentId"
-        WHERE ${chainComment.deletedAt} IS NOT NULL
-          AND ${chainComment.replyCount} = 1
-      ),
-      parents_to_decrement AS (
-        SELECT parent."commentId"
-        FROM invisible AS child
-        INNER JOIN chain AS parent ON parent."ordinal" = child."ordinal" + 1
+  async decreaseReplyCount(commentId: string): Promise<boolean> {
+    const updated = await this.db
+      .update(todoComment)
+      .set({ replyCount: sql`${todoComment.replyCount} - ${1}` })
+      .where(
+        and(
+          eq(todoComment.id, commentId),
+          isNull(todoComment.parentId),
+          gt(todoComment.replyCount, 0),
+        ),
       )
-      UPDATE ${todoComment}
-      SET ${sql.identifier(todoComment.replyCount.name)} = ${todoComment.replyCount} - 1,
-        ${sql.identifier(todoComment.updatedAt.name)} = CURRENT_TIMESTAMP
-      FROM parents_to_decrement AS target
-      WHERE ${todoComment.id} = target."commentId"
-        AND ${todoComment.replyCount} > 0
-    `);
+      .returning({ id: todoComment.id });
+
+    return updated.length === 1;
   }
 
   async setLike(
@@ -419,7 +412,7 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
     userId: string,
   ): Promise<{ readonly recipientId: string; readonly threadRootId: string } | null> {
     const row = await this.db.query.todoComment.findFirst({
-      columns: { id: true, authorId: true, rootId: true },
+      columns: { id: true, authorId: true, parentId: true },
       where: {
         id: commentId,
         todoId,
@@ -427,13 +420,13 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
         likes: { userId, isActive: true, notifiedAt: { isNull: true } },
       },
     });
-    return row == null ? null : { recipientId: row.authorId, threadRootId: row.rootId ?? row.id };
+    return row == null ? null : { recipientId: row.authorId, threadRootId: row.parentId ?? row.id };
   }
 
   async markLikeNotified(commentId: string, userId: string): Promise<void> {
     const affected = await this.db
       .update(todoCommentLike)
-      .set({ notifiedAt: new Date() })
+      .set({ notifiedAt: now() })
       .where(
         and(
           eq(todoCommentLike.commentId, commentId),

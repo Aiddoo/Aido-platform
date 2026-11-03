@@ -14,9 +14,9 @@ function createComment(overrides: Partial<Parameters<typeof TodoComment.reconsti
     todoId: 1,
     authorId: AUTHOR_ID,
     parentId: null,
-    rootId: null,
-    path: [],
+    replyToCommentId: null,
     content: "함께 해요",
+    replyCount: 0,
     deletedAt: null,
     editedAt: null,
     createdAt,
@@ -57,13 +57,14 @@ describe("TodoComment — 댓글 Aggregate", () => {
     const comment = createComment();
     const deletedAt = new Date("2026-08-14T02:00:00.000Z");
 
-    comment.delete({ actorId: AUTHOR_ID, todoOwnerId: OWNER_ID, deletedAt });
-    comment.delete({
+    const first = comment.markDeleted({ actorId: AUTHOR_ID, todoOwnerId: OWNER_ID, deletedAt });
+    const second = comment.markDeleted({
       actorId: AUTHOR_ID,
       todoOwnerId: OWNER_ID,
       deletedAt: new Date("2026-08-14T03:00:00.000Z"),
     });
 
+    expect([first, second]).toEqual([true, false]);
     expect(comment.content).toBeNull();
     expect(comment.deletedAt).toEqual(deletedAt);
   });
@@ -74,7 +75,7 @@ describe("TodoComment — 댓글 Aggregate", () => {
     const deletedAt = new Date("2026-08-14T02:00:00.000Z");
 
     // When
-    comment.delete({ actorId: OWNER_ID, todoOwnerId: OWNER_ID, deletedAt });
+    comment.markDeleted({ actorId: OWNER_ID, todoOwnerId: OWNER_ID, deletedAt });
 
     // Then
     expect(comment.content).toBeNull();
@@ -87,7 +88,7 @@ describe("TodoComment — 댓글 Aggregate", () => {
 
     // When / Then
     expect(() =>
-      comment.delete({
+      comment.markDeleted({
         actorId: "cm1stranger00000000000001",
         todoOwnerId: OWNER_ID,
         deletedAt: new Date("2026-08-14T02:00:00.000Z"),
@@ -96,34 +97,76 @@ describe("TodoComment — 댓글 Aggregate", () => {
   });
 
   it("삭제된 댓글의 상호작용을 거부한다", () => {
+    // Given
     const comment = createComment({
       content: null,
       deletedAt: new Date("2026-08-14T02:00:00.000Z"),
     });
 
-    expect(() => comment.assertCanReceiveInteraction()).toThrow(DomainException);
+    // When / Then
+    expect(() => comment.assertActive()).toThrow(DomainException);
   });
 
-  it("최상위 댓글은 자기 자신이 대화의 뿌리다", () => {
+  it("댓글은 자기 자신이 묶음 머리다", () => {
     // Given
     const comment = createComment();
 
-    expect(comment.threadRootId.getValue()).toBe("cm1todoacomment00000000001");
+    // When / Then
+    expect(comment.threadCommentId).toBe("cm1todoacomment00000000001");
+    expect(comment.isReply).toBe(false);
   });
 
-  it("답글의 자리는 부모를 이어받고 뿌리는 그대로 둔다", () => {
+  it("답글에 답한 자리는 같은 묶음에 붙고 답글 대상만 바뀐다", () => {
+    // Given
     const reply = createComment({
       id: "cm1todoacomment00000000002",
       parentId: "cm1todoacomment00000000001",
-      rootId: "cm1todoacomment00000000001",
-      path: ["cm1todoacomment00000000001"],
+      replyToCommentId: "cm1todoacomment00000000001",
     });
 
-    const grandChildPlacement = reply.placeReply();
+    // When
+    const placement = reply.placeReply();
 
-    expect(grandChildPlacement.parentId?.getValue()).toBe("cm1todoacomment00000000002");
-    expect(grandChildPlacement.rootId?.getValue()).toBe("cm1todoacomment00000000001");
-    expect(grandChildPlacement.depth).toBe(2);
+    // Then
+    expect(placement).toEqual({
+      kind: "REPLY",
+      threadCommentId: "cm1todoacomment00000000001",
+      replyToCommentId: "cm1todoacomment00000000002",
+    });
+  });
+
+  it("댓글은 답글 수를 늘리고 줄인다", () => {
+    // Given
+    const comment = createComment({ replyCount: 1 });
+
+    // When
+    comment.applyReplyAdded(2);
+    comment.applyReplyRemoved();
+
+    // Then
+    expect(comment.replyCount).toBe(2);
+  });
+
+  it("답글은 답글 수를 갖지 않는다", () => {
+    // Given
+    const reply = createComment({
+      parentId: "cm1todoacomment00000000009",
+      replyToCommentId: "cm1todoacomment00000000009",
+    });
+
+    // When / Then
+    expect(() => reply.applyReplyAdded(1)).toThrow(DomainException);
+    expect(() => reply.applyReplyRemoved()).toThrow(DomainException);
+  });
+
+  it("답글 수는 0 아래로 내려가지 않는다", () => {
+    // Given
+    const comment = createComment();
+
+    // When / Then
+    expect(() => comment.applyReplyRemoved()).toThrow(
+      expect.objectContaining({ errorCode: ErrorCode.SYS_0003 }),
+    );
   });
 
   it("삭제된 댓글은 답글을 받지 못한다", () => {
@@ -147,15 +190,13 @@ describe("TodoComment — 댓글 Aggregate", () => {
     expect(comment.snapshot).toEqual(before);
   });
 
-  it("복원 날짜와 조상 배열의 외부 변경은 댓글의 저장 상태를 바꾸지 않는다", () => {
+  it("복원 날짜의 외부 변경은 댓글의 저장 상태를 바꾸지 않는다", () => {
     // Given
     const date = new Date("2026-08-14T01:00:00.000Z");
-    const rootId = "cm1todoacomment00000000001";
-    const path = [rootId];
+    const commentId = "cm1todoacomment00000000001";
     const comment = createComment({
-      parentId: rootId,
-      rootId,
-      path,
+      parentId: commentId,
+      replyToCommentId: commentId,
       createdAt: date,
       updatedAt: date,
       editedAt: date,
@@ -163,11 +204,10 @@ describe("TodoComment — 댓글 Aggregate", () => {
 
     // When
     date.setUTCFullYear(2030);
-    path.push("잘못된 조상");
 
     // Then
     expect(comment.snapshot).toMatchObject({
-      path: [rootId],
+      parentId: commentId,
       createdAt: new Date("2026-08-14T01:00:00.000Z"),
       updatedAt: new Date("2026-08-14T01:00:00.000Z"),
       editedAt: new Date("2026-08-14T01:00:00.000Z"),

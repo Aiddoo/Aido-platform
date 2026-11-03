@@ -13,12 +13,10 @@ import { HmacTodoCommentCursorCodec } from "./hmac-todo-comment-cursor.codec.js"
 const record: TodoConversationRecord = {
   id: "cm1todoacomment00000000001",
   todoId: 1,
-  parentId: null,
-  rootId: null,
-  path: [],
-  depth: 0,
-  parentAuthorId: null,
-  parentAuthorName: null,
+  threadCommentId: null,
+  replyToCommentId: null,
+  replyToAuthorId: null,
+  replyToAuthorName: null,
   authorId: "cm1author0000000000000001",
   authorName: "작성자",
   authorUserTag: null,
@@ -31,7 +29,6 @@ const record: TodoConversationRecord = {
   editedAt: null,
   createdAt: "2026-08-14T00:00:00.000Z",
   conversationPosition: { rootLikeCount: 3, rootReplyCount: 2 },
-  continuingAncestorDepths: [],
 };
 const overviewRoot: TodoCommentOverviewRootRecord = {
   ...record,
@@ -91,7 +88,7 @@ describe("HmacTodoCommentCursorCodec", () => {
   );
 
   it("답글과 focus cursor의 thread 경계를 보존한다", () => {
-    const reply = { ...record, id: "cm1todoacomment00000000002", rootId: record.id };
+    const reply = { ...record, id: "cm1todoacomment00000000002", threadCommentId: record.id };
     const cursor = codec.encodeConversation(reply, TODO_COMMENT_SORT.LATEST, "THREAD");
 
     expect(codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toMatchObject({
@@ -163,8 +160,8 @@ describe("HmacTodoCommentCursorCodec", () => {
     const reply: TodoCommentOverviewRootRecord = {
       ...overviewRoot,
       id: "cm1todoacomment00000000002",
-      parentId: overviewRoot.id,
-      rootId: overviewRoot.id,
+      threadCommentId: overviewRoot.id,
+      replyToCommentId: overviewRoot.id,
     };
 
     expect(() => codec.encodeOverview(reply, TODO_COMMENT_SORT.LATEST)).toThrow();

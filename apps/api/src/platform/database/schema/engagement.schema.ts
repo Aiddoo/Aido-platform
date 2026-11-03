@@ -32,6 +32,7 @@ export const todoComment = pgTable(
     parentId: text(),
     path: text().array().default([]).notNull(),
     replyCount: integer().default(0).notNull(),
+    replyToCommentId: text(),
     requestFingerprint: char({ length: 64 }),
     rootId: text(),
     todoId: integer().notNull(),
@@ -56,6 +57,13 @@ export const todoComment = pgTable(
       .onUpdate("cascade")
       .onDelete("cascade"),
     foreignKey({
+      columns: [table.replyToCommentId],
+      foreignColumns: [table.id],
+      name: "TodoComment_replyToCommentId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("set null"),
+    foreignKey({
       columns: [table.todoId],
       foreignColumns: [todo.id],
       name: "TodoComment_todoId_fkey",
@@ -78,10 +86,11 @@ export const todoComment = pgTable(
       table.createdAt.asc().nullsLast(),
       table.id.asc().nullsLast(),
     ),
-    index("TodoComment_todoId_rootId_idx").using(
+    index("TodoComment_parentId_createdAt_id_idx").using(
       "btree",
-      table.todoId.asc().nullsLast(),
-      table.rootId.asc().nullsLast(),
+      table.parentId.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+      table.id.asc().nullsLast(),
     ),
     unique("TodoComment_authorId_clientRequestId_key").on(table.authorId, table.clientRequestId),
   ],

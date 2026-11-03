@@ -43,11 +43,10 @@ describe("toTodoCommentResponse — 차단 관계 가리기", () => {
     // Given
     const record = createCommentRecordFixture({
       id: "cm1replycomment00000000001",
-      parentId: "cm1rootcomment000000000001",
-      rootId: "cm1rootcomment000000000001",
-      depth: 1,
-      parentAuthorId: BLOCKED_AUTHOR_ID,
-      parentAuthorName: "차단한 사람",
+      threadCommentId: "cm1rootcomment000000000001",
+      replyToCommentId: "cm1rootcomment000000000001",
+      replyToAuthorId: BLOCKED_AUTHOR_ID,
+      replyToAuthorName: "차단한 사람",
       authorId: ENGAGEMENT_OWNER_ID,
     });
 
@@ -62,6 +61,6 @@ describe("toTodoCommentResponse — 차단 관계 가리기", () => {
     // Then
     expect(response.isDeleted).toBe(false);
     expect(response.isAuthorBlocked).toBe(false);
-    expect(response.replyTo).toEqual({ commentId: record.parentId, authorName: null });
+    expect(response.replyTo).toEqual({ commentId: record.replyToCommentId, authorName: null });
   });
 });

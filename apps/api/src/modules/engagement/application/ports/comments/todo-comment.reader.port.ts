@@ -18,8 +18,6 @@ export interface TodoCommentReaderPort {
   findCommentRecords(todoId: number, commentIds: readonly string[]): Promise<TodoCommentRecord[]>;
   listOverview(params: ListTodoCommentOverviewParams): Promise<TodoCommentOverviewWindow | null>;
   listConversation(params: ListTodoConversationParams): Promise<TodoConversationWindow | null>;
-  /** 뿌리 → 부모 순서의 조상. path가 비면 빈 배열을 돌려준다. */
-  findAncestors(todoId: number, path: readonly string[]): Promise<TodoCommentRecord[]>;
   findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>>;
   findUserDisplayName(userId: string): Promise<string | null>;
 }

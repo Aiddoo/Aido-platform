@@ -70,7 +70,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
       sort,
       todoId: record.todoId,
       commentId: record.id,
-      threadId: record.rootId ?? record.id,
+      threadId: record.threadCommentId ?? record.id,
       scope,
       position: record.conversationPosition,
     });
@@ -93,7 +93,7 @@ export class HmacTodoCommentCursorCodec implements TodoCommentCursorCodecPort {
   }
 
   encodeOverview(record: TodoCommentOverviewRootRecord, sort: TodoCommentSort): string {
-    if (record.parentId != null || record.rootId != null) {
+    if (record.threadCommentId != null) {
       throw invalidCursor();
     }
 

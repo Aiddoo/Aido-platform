@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { z } from "@aido/api";
+import { todoConversationConnectionSchema } from "@aido/api";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/application/ports/comments/todo-comment-cursor-codec.port";
 import {
@@ -11,10 +11,9 @@ import {
 } from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
 import { GetTodoCommentOverview } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-overview.use-case";
 import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
-import { ThreadPlacement } from "#api/modules/engagement/domain/value-objects/comments/thread-placement.vo";
+import { CommentPlacement } from "#api/modules/engagement/domain/value-objects/comments/comment-placement.vo";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.repository";
-import { buildTodoConversationTreeCtes } from "#api/modules/engagement/infrastructure/persistence/comments/todo-conversation-tree.sql";
 import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/infrastructure/security/comments/hmac-todo-comment-cursor.codec";
 import { DrizzleUserBlockRepository } from "#api/modules/social/infrastructure/persistence/blocks/drizzle-user-block.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -42,34 +41,6 @@ const DELETED_LEAF = "cm1conversationdeletedleaf001";
 const OWNER_REPLY = "cm1conversationownerreply0001";
 const PARTICIPANT_A_REPLY = "cm1conversationparticipantareply1";
 const PARTICIPANT_B_REPLY = "cm1conversationparticipantbreply1";
-
-const explainPlanNodeSchema = z
-  .object({
-    "Node Type": z.string(),
-    "Actual Rows": z.number().optional(),
-    Plans: z.array(z.unknown()).optional(),
-  })
-  .loose();
-
-function findPlanActualRows(plan: unknown, nodeType: string): number | null {
-  const parsed = explainPlanNodeSchema.safeParse(plan);
-  if (!parsed.success) {
-    return null;
-  }
-
-  if (parsed.data["Node Type"] === nodeType) {
-    return parsed.data["Actual Rows"] ?? null;
-  }
-
-  for (const child of parsed.data.Plans ?? []) {
-    const actualRows = findPlanActualRows(child, nodeType);
-    if (actualRows !== null) {
-      return actualRows;
-    }
-  }
-
-  return null;
-}
 
 describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
@@ -175,7 +146,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         authorId: "conversation-author",
         clientRequestId: "00000000-0000-4000-8000-000000000001",
         content: "오래된 루트",
-        replyCount: 2,
+        replyCount: 3,
         createdAt: new Date("2026-08-26T01:00:00.000Z"),
       },
       {
@@ -191,6 +162,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-author",
         parentId: ROOT_A,
+        replyToCommentId: ROOT_A,
         rootId: ROOT_A,
         path: [ROOT_A],
         depth: 1,
@@ -203,24 +175,25 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-author",
         parentId: ROOT_A,
+        replyToCommentId: ROOT_A,
         rootId: ROOT_A,
         path: [ROOT_A],
         depth: 1,
         clientRequestId: "00000000-0000-4000-8000-000000000004",
         content: "같은 시각 id가 앞인 형제",
-        replyCount: 1,
         createdAt: siblingCreatedAt,
       },
       {
         id: GRANDCHILD,
         todoId,
         authorId: "conversation-author",
-        parentId: CHILD_A,
+        parentId: ROOT_A,
+        replyToCommentId: CHILD_A,
         rootId: ROOT_A,
-        path: [ROOT_A, CHILD_A],
-        depth: 2,
+        path: [ROOT_A],
+        depth: 1,
         clientRequestId: "00000000-0000-4000-8000-000000000005",
-        content: "형제보다 먼저 이어지는 자손",
+        content: "답글에 단 답글",
         createdAt: new Date("2026-08-26T02:30:00.000Z"),
       },
     ]);
@@ -231,7 +204,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     await testDatabase.stop();
   });
 
-  it("루트는 최신순, 하위 댓글은 부모 다음 순서로 정렬하고 같은 시각이면 id 순서를 지키며 쿼리 1번에 읽는다", async () => {
+  it("묶음은 최신순, 묶음 안은 머리 다음 답글을 작성 순으로 정렬하고 같은 시각이면 id 순서를 지키며 쿼리 1번에 읽는다", async () => {
     // Given
     const input = {
       todoId,
@@ -246,15 +219,14 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([ROOT_B, ROOT_A, CHILD_A]);
-    expect(window?.items.map((item) => item.continuingAncestorDepths)).toEqual([[], [], [0]]);
-    expect(window?.nextRecord?.id).toBe(GRANDCHILD);
-    expect(window?.nextRecord?.continuingAncestorDepths).toEqual([0]);
+    expect(window?.items.map((item) => item.threadCommentId)).toEqual([null, null, ROOT_A]);
+    expect(window?.nextRecord?.id).toBe(CHILD_Z);
     expect(window?.hasPrevious).toBe(false);
     expect(window?.hasNext).toBe(true);
     expect(count).toBe(1);
   });
 
-  it("개요는 쿼리 2번으로 주인의 답글 미리보기와 하위 댓글 요약을 루트별로 계산한다", async () => {
+  it("개요는 쿼리 2번으로 주인의 답글 미리보기와 참여자를 묶음별로 고르고 답글 수는 머리 값을 쓴다", async () => {
     // Given
     await client.insert(user).values([
       {
@@ -278,6 +250,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-owner",
         parentId: ROOT_A,
+        replyToCommentId: ROOT_A,
         rootId: ROOT_A,
         path: [ROOT_A],
         depth: 1,
@@ -290,6 +263,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-participant-a",
         parentId: ROOT_A,
+        replyToCommentId: ROOT_A,
         rootId: ROOT_A,
         path: [ROOT_A],
         depth: 1,
@@ -302,6 +276,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-participant-b",
         parentId: ROOT_A,
+        replyToCommentId: ROOT_A,
         rootId: ROOT_A,
         path: [ROOT_A],
         depth: 1,
@@ -323,7 +298,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     expect(window?.items[0]).toMatchObject({
       comment: { id: ROOT_A },
       previewReply: { id: OWNER_REPLY, authorId: "conversation-owner" },
-      totalCount: 6,
+      totalCount: 5,
       participantAuthors: [
         { id: "conversation-owner", isTodoOwner: true },
         { id: "conversation-author", isTodoOwner: false },
@@ -343,6 +318,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-author",
         parentId: ROOT_B,
+        replyToCommentId: ROOT_B,
         rootId: ROOT_B,
         path: [ROOT_B],
         depth: 1,
@@ -355,6 +331,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-author",
         parentId: ROOT_B,
+        replyToCommentId: ROOT_B,
         rootId: ROOT_B,
         path: [ROOT_B],
         depth: 1,
@@ -452,7 +429,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     expect(secondPage.items.map((item) => item.comment.id)).toEqual([ROOT_A]);
   });
 
-  it("after 경계에서도 같은 루트 묶음의 연속성을 보존한다", async () => {
+  it("after 경계에서도 같은 묶음의 답글 순서를 이어 간다", async () => {
     // Given
     const input = {
       todoId,
@@ -462,15 +439,14 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       scope: "TODO",
       anchorCommentId: CHILD_A,
       anchorThreadId: ROOT_A,
-      anchorPosition: { rootLikeCount: 0, rootReplyCount: 2 },
+      anchorPosition: { rootLikeCount: 0, rootReplyCount: 3 },
     } as const;
 
     // When
     const window = await reader.listConversation(input);
 
     // Then
-    expect(window?.items.map((item) => item.id)).toEqual([GRANDCHILD, CHILD_Z]);
-    expect(window?.items.map((item) => item.continuingAncestorDepths)).toEqual([[0], []]);
+    expect(window?.items.map((item) => item.id)).toEqual([CHILD_Z, GRANDCHILD]);
     expect(window?.previousRecord?.id).toBe(CHILD_A);
     expect(window?.hasPrevious).toBe(true);
     expect(window?.hasNext).toBe(false);
@@ -486,18 +462,16 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       scope: "TODO",
       anchorCommentId: GRANDCHILD,
       anchorThreadId: ROOT_A,
-      anchorPosition: { rootLikeCount: 0, rootReplyCount: 2 },
+      anchorPosition: { rootLikeCount: 0, rootReplyCount: 3 },
     } as const;
 
     // When
     const window = await reader.listConversation(input);
 
     // Then
-    expect(window?.items.map((item) => item.id)).toEqual([ROOT_A, CHILD_A]);
-    expect(window?.items.map((item) => item.continuingAncestorDepths)).toEqual([[], [0]]);
-    expect(window?.previousRecord?.id).toBe(ROOT_B);
+    expect(window?.items.map((item) => item.id)).toEqual([CHILD_A, CHILD_Z]);
+    expect(window?.previousRecord?.id).toBe(ROOT_A);
     expect(window?.nextRecord?.id).toBe(GRANDCHILD);
-    expect(window?.nextRecord?.continuingAncestorDepths).toEqual([0]);
     expect(window?.hasPrevious).toBe(true);
     expect(window?.hasNext).toBe(true);
   });
@@ -519,8 +493,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     expect(window?.items.map((item) => item.id)).toEqual([
       ROOT_A,
       CHILD_A,
-      GRANDCHILD,
       CHILD_Z,
+      GRANDCHILD,
       ROOT_B,
     ]);
   });
@@ -550,7 +524,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       mode: "AFTER",
       scope: "TODO",
       anchorCommentId: firstAnchor.id,
-      anchorThreadId: firstAnchor.rootId ?? firstAnchor.id,
+      anchorThreadId: firstAnchor.threadCommentId ?? firstAnchor.id,
       anchorPosition: firstAnchor.conversationPosition,
     });
     const secondAnchor = secondPage?.items.at(-1);
@@ -564,16 +538,16 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       mode: "AFTER",
       scope: "TODO",
       anchorCommentId: secondAnchor.id,
-      anchorThreadId: secondAnchor.rootId ?? secondAnchor.id,
+      anchorThreadId: secondAnchor.threadCommentId ?? secondAnchor.id,
       anchorPosition: secondAnchor.conversationPosition,
     });
 
     // Then
     expect(firstPage?.items.map((item) => item.id)).toEqual([ROOT_A, CHILD_A]);
-    expect(secondPage?.items.map((item) => item.id)).toEqual([GRANDCHILD, CHILD_Z]);
+    expect(secondPage?.items.map((item) => item.id)).toEqual([CHILD_Z, GRANDCHILD]);
     expect(secondAnchor.conversationPosition).toEqual({
       rootLikeCount: 3,
-      rootReplyCount: 2,
+      rootReplyCount: 3,
     });
     expect(thirdPage?.items.map((item) => item.id)).toEqual([ROOT_B]);
   });
@@ -614,7 +588,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         mode: "AFTER",
         scope: "TODO",
         anchorCommentId: anchor.id,
-        anchorThreadId: anchor.rootId ?? anchor.id,
+        anchorThreadId: anchor.threadCommentId ?? anchor.id,
         anchorPosition: anchor.conversationPosition,
       });
 
@@ -622,8 +596,8 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       expect(firstPage?.items.map((item) => item.id)).toEqual([
         ROOT_A,
         CHILD_A,
-        GRANDCHILD,
         CHILD_Z,
+        GRANDCHILD,
         ROOT_B,
       ]);
       expect(nextPage?.items.map((item) => item.id)).toEqual([ROOT_C]);
@@ -647,6 +621,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         todoId,
         authorId: "conversation-author",
         parentId: NEW_ROOT,
+        replyToCommentId: NEW_ROOT,
         rootId: NEW_ROOT,
         path: [NEW_ROOT],
         depth: 1,
@@ -673,7 +648,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       size: 2,
       scope: "TODO",
       anchorCommentId: anchor.id,
-      anchorThreadId: anchor.rootId ?? anchor.id,
+      anchorThreadId: anchor.threadCommentId ?? anchor.id,
       anchorPosition: anchor.conversationPosition,
     } as const;
 
@@ -703,19 +678,19 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       size: 3,
       mode: "FOCUS",
       scope: "THREAD",
-      anchorCommentId: CHILD_Z,
+      anchorCommentId: GRANDCHILD,
     } as const;
 
     // When
     const window = await reader.listConversation(input);
 
     // Then
-    expect(window?.items.map((item) => item.id)).toEqual([CHILD_A, GRANDCHILD, CHILD_Z]);
+    expect(window?.items.map((item) => item.id)).toEqual([CHILD_A, CHILD_Z, GRANDCHILD]);
     expect(window?.anchorIndex).toBe(2);
     expect(window?.items.some((item) => item.id === ROOT_B)).toBe(false);
   });
 
-  it("focus 재귀 CTE는 큰 다른 대화를 순회하지 않고 선택한 루트만 확장한다", async () => {
+  it("focus는 다른 큰 묶음이 있어도 선택한 묶음만 읽는다", async () => {
     // Given
     await client.insert(todoComment).values(
       Array.from({ length: 500 }, (_, index) => ({
@@ -729,25 +704,20 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     );
 
     // When
-    const { rows } = await client.execute<{ "QUERY PLAN": unknown }>(sql`
-      EXPLAIN (ANALYZE, FORMAT JSON)
-      WITH RECURSIVE ${buildTodoConversationTreeCtes({
-        todoId,
-        mode: "FOCUS",
-        scope: "THREAD",
-        anchorCommentId: CHILD_A,
-      })}
-      SELECT * FROM tree
-    `);
+    const window = await reader.listConversation({
+      todoId,
+      sort: "LATEST",
+      size: 10,
+      mode: "FOCUS",
+      scope: "THREAD",
+      anchorCommentId: CHILD_A,
+    });
 
     // Then
-    const planDocument = z
-      .array(z.object({ Plan: z.unknown() }).loose())
-      .parse(rows.at(0)?.["QUERY PLAN"]);
-    expect(findPlanActualRows(planDocument.at(0)?.Plan, "Recursive Union")).toBe(4);
+    expect(window?.items.map((item) => item.id)).toEqual([ROOT_A, CHILD_A, CHILD_Z, GRANDCHILD]);
   });
 
-  it("루트 focus는 선택한 루트와 후손만 반환한다", async () => {
+  it("머리 댓글 focus는 그 묶음의 머리와 답글만 반환한다", async () => {
     // Given
     const input = {
       todoId,
@@ -762,7 +732,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     const window = await reader.listConversation(input);
 
     // Then
-    expect(window?.items.map((item) => item.id)).toEqual([ROOT_A, CHILD_A, GRANDCHILD, CHILD_Z]);
+    expect(window?.items.map((item) => item.id)).toEqual([ROOT_A, CHILD_A, CHILD_Z, GRANDCHILD]);
     expect(window?.hasPrevious).toBe(false);
     expect(window?.hasNext).toBe(false);
   });
@@ -777,7 +747,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       scope: "TODO",
       anchorCommentId: CHILD_A,
       anchorThreadId: ROOT_B,
-      anchorPosition: { rootLikeCount: 0, rootReplyCount: 2 },
+      anchorPosition: { rootLikeCount: 0, rootReplyCount: 3 },
     } as const;
 
     // When
@@ -787,7 +757,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     expect(window).toBeNull();
   });
 
-  it("후손 때문에 보존된 삭제 댓글 focus는 같은 대화만 안전하게 보여 준다", async () => {
+  it("삭제된 답글로 열어도 묘비로 focus를 채우고 1.14.0 이하 앱의 대화 계약을 지킨다", async () => {
     // Given
     await softDeleteComment(CHILD_A, new Date("2026-08-26T04:00:00.000Z"));
     const useCase = new GetTodoConversation({
@@ -806,20 +776,21 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     });
 
     // Then
-    expect(response.focus).toBeNull();
-    expect(response.items.map((item) => item.comment.id)).toEqual([ROOT_A, CHILD_A, GRANDCHILD]);
-    expect(response.items.at(-1)).toMatchObject({
-      comment: { id: GRANDCHILD },
-    });
+    expect(response.focus).toMatchObject({ commentId: CHILD_A, itemIndex: 1 });
+    expect(response.items.map((item) => item.comment.id)).toEqual([ROOT_A, CHILD_A, CHILD_Z]);
     expect(response.items[1]).toMatchObject({
-      comment: { id: CHILD_A, isDeleted: true, author: null, content: null },
-      isFocused: false,
+      comment: { id: CHILD_A, isDeleted: true, author: null, content: null, depth: 1 },
+      isFocused: true,
     });
+    expect(
+      [...response.items, ...(response.focus?.precedingAncestors ?? [])].every(
+        (item) => todoConversationConnectionSchema.safeParse(item.connection).success,
+      ),
+    ).toBe(true);
   });
 
-  it("삭제된 마지막 댓글 focus는 다른 루트로 대체하지 않고 빈 대화를 반환한다", async () => {
+  it("답글에 단 답글 focus는 같은 묶음 안에서 머리 lane과 @대상을 그린다", async () => {
     // Given
-    await softDeleteComment(CHILD_Z, new Date("2026-08-26T04:00:00.000Z"));
     const useCase = new GetTodoConversation({
       reader: reader,
       cursorCodec: cursorCodec,
@@ -831,14 +802,52 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       todoId,
       viewerId: "conversation-owner",
       sort: "LATEST",
-      focusCommentId: CHILD_Z,
+      focusCommentId: GRANDCHILD,
+      size: 2,
+    });
+
+    // Then
+    expect(response.items.map((item) => item.comment.id)).toEqual([CHILD_Z, GRANDCHILD]);
+    expect(response.items.at(-1)).toMatchObject({
+      comment: { parentId: ROOT_A, depth: 1, replyTo: { commentId: CHILD_A } },
+      connection: {
+        visualDepth: 1,
+        upperLaneDepths: [0],
+        lowerLaneDepths: [],
+        incomingBranch: { fromDepth: 0, toDepth: 1 },
+      },
+      isFocused: true,
+    });
+    expect(response.focus?.precedingAncestors.map((item) => item.comment.id)).toEqual([ROOT_A]);
+    expect(
+      [...response.items, ...(response.focus?.precedingAncestors ?? [])].every(
+        (item) => todoConversationConnectionSchema.safeParse(item.connection).success,
+      ),
+    ).toBe(true);
+  });
+
+  it("답글 없는 삭제 댓글 focus는 다른 묶음으로 대체하지 않고 묘비 하나만 돌려준다", async () => {
+    // Given
+    await softDeleteComment(ROOT_B, new Date("2026-08-26T04:00:00.000Z"));
+    const useCase = new GetTodoConversation({
+      reader: reader,
+      cursorCodec: cursorCodec,
+      blockReader: blockRepository,
+    });
+
+    // When
+    const response = await useCase.execute({
+      todoId,
+      viewerId: "conversation-owner",
+      sort: "LATEST",
+      focusCommentId: ROOT_B,
       size: 3,
     });
 
     // Then
     expect(response).toMatchObject({
-      items: [],
-      focus: null,
+      items: [{ comment: { id: ROOT_B, isDeleted: true }, isFocused: true }],
+      focus: { commentId: ROOT_B, itemIndex: 0 },
       pagination: { hasPrevious: false, hasNext: false },
     });
   });
@@ -894,7 +903,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     const input = {
       todoId,
       authorId: "conversation-author",
-      placement: ThreadPlacement.topLevel(),
+      placement: CommentPlacement.comment(),
       items: [
         {
           clientRequestId: "00000000-0000-4000-8000-000000000001",

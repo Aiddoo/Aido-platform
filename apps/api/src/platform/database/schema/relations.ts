@@ -221,9 +221,15 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.todoComment.id,
       alias: "TodoComment_parentId_fkey",
     }),
+    replyTo: r.one.todoComment({
+      from: r.todoComment.replyToCommentId,
+      to: r.todoComment.id,
+      alias: "TodoComment_replyToCommentId_fkey",
+    }),
     todo: r.one.todo({ from: r.todoComment.todoId, to: r.todo.id, optional: false }),
     likes: r.many.todoCommentLike(),
     children: r.many.todoComment({ alias: "TodoComment_parentId_fkey" }),
+    replies: r.many.todoComment({ alias: "TodoComment_replyToCommentId_fkey" }),
   },
   todoCommentLike: {
     comment: r.one.todoComment({
