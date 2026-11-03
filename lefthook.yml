@@ -1,0 +1,39 @@
+# 테스트는 GitHub Actions가 아닌 이 훅에서 실행한다(docs/conventions/git.md#커밋).
+# https://lefthook.dev/configuration/
+
+pre-commit:
+  piped: true
+  jobs:
+    # 수정 도구가 먼저 staged 파일을 고치고 다시 stage한 뒤 검사가 그 결과를 본다.
+    - name: oxlint
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'
+      run: pnpm exec oxlint --fix {staged_files}
+      stage_fixed: true
+    - name: oxfmt
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}'
+      run: pnpm exec oxfmt --write --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
+    - name: verify
+      group:
+        parallel: true
+        jobs:
+          - name: ci-policy
+            glob: 'scripts/ci/*.mjs'
+            run: node --test scripts/ci/*.test.mjs
+          # 한 번의 turbo 실행이 공통 ^build를 한 번만 수행하고 변경 없는 패키지는 캐시를 쓴다.
+          - name: typecheck-test-build
+            run: pnpm turbo run typecheck test build
+
+# 로컬 Docker PostgreSQL이 필요하다.
+pre-push:
+  piped: true
+  jobs:
+    - name: integration
+      run: pnpm test:integration
+    - name: contract
+      run: pnpm --filter @aido/server test:contract
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm exec commitlint --edit {1}
