@@ -5,7 +5,7 @@
  * 외부 의존성(DB/Queue/Network) 없이 입력 → 출력만으로 정의되어 테스트·재사용이 용이.
  */
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
-import { uniq } from "es-toolkit";
+import { orderBy, partition, uniq } from "es-toolkit";
 
 import type {
   DetectedPattern,
@@ -122,13 +122,11 @@ function findRecordedActivity(
   if (exact != null) {
     return exact;
   }
-  return activities
-    .filter((activity) => hasRecordedActivityTitle(title, activity.title))
-    .sort(
-      (left, right) =>
-        right.completedOccurrences - left.completedOccurrences ||
-        right.occurrences - left.occurrences,
-    )[0];
+  return orderBy(
+    activities.filter((activity) => hasRecordedActivityTitle(title, activity.title)),
+    ["completedOccurrences", "occurrences"],
+    ["desc", "desc"],
+  )[0];
 }
 
 export interface StarterPatternCandidate {
@@ -175,18 +173,8 @@ export function normalizeStarterSuggestions(
  */
 export function applyTypeCap(patterns: Pattern[]): Pattern[] {
   const noMatchCap = AI_SUGGESTION_LIMITS.NO_MATCH_TYPE_CAP;
-  const matched: Pattern[] = [];
-  const noMatched: Pattern[] = [];
-  for (const p of patterns) {
-    if (p.matchedTitles.length === 0) {
-      noMatched.push(p);
-      continue;
-    }
-    matched.push(p);
-  }
-  const cappedNoMatched = [...noMatched]
-    .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, noMatchCap);
+  const [noMatched, matched] = partition(patterns, (p) => p.matchedTitles.length === 0);
+  const cappedNoMatched = orderBy(noMatched, ["confidence"], ["desc"]).slice(0, noMatchCap);
   return [...matched, ...cappedNoMatched];
 }
 

@@ -1,11 +1,11 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { FEATURE_KEYS, type FeatureKey } from '@src/shared/observability/telemetry-keys';
+import { DAY_MS } from '@src/shared/utils/date-format';
 import { z } from 'zod';
 
 import { track } from './track';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
 const KEY_PREFIX = 'aido_feature_attribution_v1';
 

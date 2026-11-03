@@ -28,17 +28,15 @@ function createRecord(overrides: Partial<TodoConversationRecord> = {}): TodoConv
 }
 
 describe("GetTodoConversation", () => {
-  it("페이지 경계 밖 자식으로 내려가는 lane과 양방향 cursor를 서버가 확정한다", async () => {
+  it("페이지 경계 밖 같은 묶음 답글로 이어지는 lane과 양방향 cursor를 서버가 확정한다", async () => {
     // Given
     const reader = createEngagementCommentReader();
     const cursorCodec = new StubEngagementCursorCodec();
     const first = createRecord();
     const child = createRecord({
       id: CHILD_ID,
-      parentId: ROOT_ID,
-      rootId: ROOT_ID,
-      path: [ROOT_ID],
-      depth: 1,
+      threadCommentId: ROOT_ID,
+      replyToCommentId: ROOT_ID,
     });
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     reader.conversationWindow = {
@@ -47,8 +45,8 @@ describe("GetTodoConversation", () => {
       previousRecord: createRecord({ id: "cm1previous000000000000001" }),
       nextRecord: createRecord({
         id: "cm1nextreply0000000000001",
-        parentId: CHILD_ID,
-        rootId: ROOT_ID,
+        threadCommentId: ROOT_ID,
+        replyToCommentId: CHILD_ID,
       }),
       hasPrevious: true,
       hasNext: true,
@@ -87,7 +85,7 @@ describe("GetTodoConversation", () => {
         connection: {
           visualDepth: 1,
           upperLaneDepths: [0],
-          lowerLaneDepths: [1],
+          lowerLaneDepths: [0],
           incomingBranch: { fromDepth: 0, toDepth: 1 },
         },
         isFocused: false,
@@ -101,24 +99,19 @@ describe("GetTodoConversation", () => {
     expect(response.pagination.nextCursor).not.toBeNull();
   });
 
-  it("인접 형제를 직접 잇지 않고 부모 lane에 각각 branch로 연결한다", async () => {
+  it("답글에 단 답글도 같은 묶음의 1단계 답글로 머리 lane에 branch를 단다", async () => {
     // Given
     const reader = createEngagementCommentReader();
     const cursorCodec = new StubEngagementCursorCodec();
     const firstChild = createRecord({
       id: CHILD_ID,
-      parentId: ROOT_ID,
-      rootId: ROOT_ID,
-      path: [ROOT_ID],
-      depth: 1,
-      continuingAncestorDepths: [0],
+      threadCommentId: ROOT_ID,
+      replyToCommentId: ROOT_ID,
     });
     const sibling = createRecord({
       id: "cm1sibling0000000000000001",
-      parentId: ROOT_ID,
-      rootId: ROOT_ID,
-      path: [ROOT_ID],
-      depth: 1,
+      threadCommentId: ROOT_ID,
+      replyToCommentId: CHILD_ID,
     });
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     reader.conversationWindow = {
@@ -165,47 +158,31 @@ describe("GetTodoConversation", () => {
     ]);
   });
 
-  it("focus는 현재 window index와 잘린 조상 문맥을 한 번만 싣는다", async () => {
+  it("focus 답글 앞 페이지 밖의 묶음 머리를 한 번만 따로 싣는다", async () => {
     // Given
     const reader = createEngagementCommentReader();
     vi.spyOn(reader, "listConversation");
-    vi.spyOn(reader, "findAncestors");
-
+    vi.spyOn(reader, "findCommentRecords").mockResolvedValue([createRecord()]);
     const cursorCodec = new StubEngagementCursorCodec();
-    const ancestors = Array.from({ length: 20 }, (_, index) => {
-      const id = `cm1ancestor${String(index).padStart(15, "0")}`;
-      return createRecord({
-        id,
-        parentId:
-          index === 0
-            ? "cm1omittedancestor000000002"
-            : `cm1ancestor${String(index - 1).padStart(15, "0")}`,
-        rootId: ROOT_ID,
-        depth: index + 2,
-      });
+    const previousReply = createRecord({
+      id: "cm1previousreply000000001",
+      threadCommentId: ROOT_ID,
+      replyToCommentId: ROOT_ID,
     });
-    const allAncestorIds = [
-      "cm1omittedancestor000000001",
-      "cm1omittedancestor000000002",
-      ...ancestors.map((ancestor) => ancestor.id),
-    ];
     const focused = createRecord({
       id: CHILD_ID,
-      parentId: ancestors.at(-1)?.id ?? ROOT_ID,
-      rootId: ROOT_ID,
-      path: allAncestorIds,
-      depth: allAncestorIds.length,
+      threadCommentId: ROOT_ID,
+      replyToCommentId: previousReply.id,
     });
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     reader.conversationWindow = {
-      items: [createRecord(), focused],
+      items: [previousReply, focused],
       anchorIndex: 1,
       previousRecord: null,
       nextRecord: null,
-      hasPrevious: false,
+      hasPrevious: true,
       hasNext: false,
     };
-    reader.ancestors = ancestors;
     reader.likedCommentIds = new Set();
     const useCase = new GetTodoConversation({
       reader: reader,
@@ -219,33 +196,26 @@ describe("GetTodoConversation", () => {
       viewerId: VIEWER_ID,
       sort: TODO_COMMENT_SORT.LATEST,
       focusCommentId: CHILD_ID,
-      size: 30,
+      size: 2,
     });
 
     // Then
     expect(response.focus).toMatchObject({
       commentId: CHILD_ID,
       itemIndex: 1,
-      omittedAncestorCount: 2,
+      omittedAncestorCount: 0,
     });
-    expect(response.focus?.precedingAncestors).toHaveLength(20);
-    expect(response.focus?.precedingAncestors.at(-1)).toMatchObject({
-      connection: {
-        visualDepth: 21,
-        upperLaneDepths: [20],
-        lowerLaneDepths: [21],
-        incomingBranch: { fromDepth: 20, toDepth: 21 },
+    expect(response.focus?.precedingAncestors).toMatchObject([
+      {
+        comment: { id: ROOT_ID },
+        connection: { visualDepth: 0, upperLaneDepths: [], lowerLaneDepths: [0] },
       },
-      isFocused: false,
-    });
-    expect(response.items[1]).toMatchObject({
-      comment: { id: CHILD_ID },
-      isFocused: true,
-    });
+    ]);
+    expect(response.items[1]).toMatchObject({ comment: { id: CHILD_ID }, isFocused: true });
     expect(reader.listConversation).toHaveBeenCalledWith(
       expect.objectContaining({ mode: "FOCUS", scope: "THREAD" }),
     );
-    expect(reader.findAncestors).toHaveBeenCalledWith(TODO_ID, allAncestorIds.slice(-20));
+    expect(reader.findCommentRecords).toHaveBeenCalledWith(TODO_ID, [ROOT_ID]);
   });
 
   it("다른 todo의 cursor는 reader를 호출하기 전에 거부한다", async () => {
@@ -385,24 +355,19 @@ describe("GetTodoConversation", () => {
     expect(reader.findLikedCommentIds).not.toHaveBeenCalled();
   });
 
-  it("후손 때문에 보존된 삭제 댓글은 같은 thread만 돌려주고 focus 표시는 하지 않는다", async () => {
+  it("삭제된 댓글로 열어도 묘비로 focus를 채운다", async () => {
     // Given
     const reader = createEngagementCommentReader();
-    vi.spyOn(reader, "listConversation");
-    vi.spyOn(reader, "findAncestors");
-
+    vi.spyOn(reader, "findCommentRecords");
     const cursorCodec = new StubEngagementCursorCodec();
     const deletedFocus = createRecord({
       id: CHILD_ID,
-      parentId: ROOT_ID,
-      rootId: ROOT_ID,
-      path: [ROOT_ID],
-      depth: 1,
+      threadCommentId: ROOT_ID,
+      replyToCommentId: ROOT_ID,
       deletedAt: "2026-08-26T01:00:00.000Z",
       content: null,
       authorId: "cm1deletedcommentauthor000001",
       authorName: null,
-      replyCount: 1,
     });
     reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     reader.conversationWindow = {
@@ -421,24 +386,22 @@ describe("GetTodoConversation", () => {
     });
 
     // When
-    await expect(
-      useCase.execute({
-        todoId: TODO_ID,
-        viewerId: VIEWER_ID,
-        sort: TODO_COMMENT_SORT.LATEST,
-        focusCommentId: CHILD_ID,
-        size: 30,
-      }),
-    ).resolves.toMatchObject({
-      items: [
-        { comment: { id: ROOT_ID } },
-        { comment: { id: CHILD_ID, isDeleted: true }, isFocused: false },
-      ],
-      focus: null,
+    const response = await useCase.execute({
+      todoId: TODO_ID,
+      viewerId: VIEWER_ID,
+      sort: TODO_COMMENT_SORT.LATEST,
+      focusCommentId: CHILD_ID,
+      size: 30,
     });
 
     // Then
-    expect(reader.findAncestors).not.toHaveBeenCalled();
-    expect(reader.listConversation).toHaveBeenCalledTimes(1);
+    expect(response).toMatchObject({
+      items: [
+        { comment: { id: ROOT_ID } },
+        { comment: { id: CHILD_ID, isDeleted: true, content: null }, isFocused: true },
+      ],
+      focus: { commentId: CHILD_ID, itemIndex: 1, precedingAncestors: [] },
+    });
+    expect(reader.findCommentRecords).not.toHaveBeenCalled();
   });
 });

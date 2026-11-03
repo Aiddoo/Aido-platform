@@ -3,10 +3,8 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi, type MockInstance } from "vitest";
 
-import {
-  BullMQReminderSchedulerAdapter,
-  TODO_REMINDER_QUEUE,
-} from "#api/modules/notification/infrastructure/jobs/reminders/bullmq-reminder-scheduler.adapter";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
+import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { REMINDER_SCHEDULER } from "#api/modules/notification/notification-reminders.public";
 import { TODO_REMINDER } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
 import { TodoDeletedEvent } from "#api/modules/planning/domain/events/todos/todo-deleted.event";
@@ -40,12 +38,12 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
         EventEmitterDomainEventPublisher,
         TodoDeletedHandler,
         TodoRescheduledHandler,
-        BullMQReminderSchedulerAdapter,
+        TodoReminderSchedulerAdapter,
         TodoReminderAdapter,
         { provide: JOB_RUNTIME, useValue: runtime },
         {
           provide: REMINDER_SCHEDULER,
-          useExisting: BullMQReminderSchedulerAdapter,
+          useExisting: TodoReminderSchedulerAdapter,
         },
         { provide: TODO_REMINDER, useExisting: TodoReminderAdapter },
       ],

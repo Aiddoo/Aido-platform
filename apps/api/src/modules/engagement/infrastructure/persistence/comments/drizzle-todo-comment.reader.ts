@@ -7,284 +7,88 @@ import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { nullableRawTimestampSchema } from "#api/platform/database/raw-timestamp.schema";
-import { todo, todoComment, userProfile, user } from "#api/platform/database/schema/index";
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
 
 import type {
-  ListTodoCommentOverviewParams,
+  ListTodoCommentRepliesParams,
+  ListTodoCommentThreadsParams,
   ListTodoConversationParams,
-  TodoCommentOverviewRootRecord,
-  TodoCommentOverviewWindow,
   TodoCommentParticipantAuthorRecord,
   TodoCommentRecord,
+  TodoCommentThreadItemRecord,
+  TodoCommentThreadRecord,
+  TodoCommentWindow,
   TodoConversationRecord,
   TodoConversationWindow,
   TodoDetailsRecord,
 } from "../../../application/models/comments/todo-comment.types.js";
 import type { TodoCommentReaderPort } from "../../../application/ports/comments/todo-comment.reader.port.js";
-import { buildTodoConversationTreeCtes } from "./todo-conversation-tree.sql.js";
+import {
+  commentColumns,
+  commentJoins,
+  commentRowSchema,
+  rootPositionRowSchema,
+  toCommentRecord,
+  toRootPosition,
+} from "./todo-comment-row.mapper.js";
+import {
+  toTodoCommentKeysetWindow,
+  type MarkedTodoCommentRow,
+  type TodoCommentRowMarker,
+} from "./todo-comment-window.js";
 import { toTodoResponse } from "./todo-details.mapper.js";
 
-type CommentWithRelationsRow = typeof todoComment.$inferSelect & {
-  author: AuthorRow | null;
-  parent: { authorId: string; author: { profile: { name: string | null } | null } | null } | null;
-  todo: { userId: string } | null;
-};
-interface AuthorRow {
-  userTag: string;
-  profile: { name: string | null; profileImage: string | null } | null;
-}
-
-const commentRelations = {
-  author: {
-    columns: { userTag: true },
-    with: { profile: { columns: { name: true, profileImage: true } } },
-  },
-  parent: {
-    columns: { authorId: true },
-    with: { author: { columns: {}, with: { profile: { columns: { name: true } } } } },
-  },
-  todo: { columns: { userId: true } },
-} as const;
-
-const authorProfile = alias(userProfile, "author_profile");
-const authorUser = alias(user, "author_user");
-const parentComment = alias(todoComment, "parent_comment");
-const parentProfile = alias(userProfile, "parent_profile");
 const candidateComment = alias(todoComment, "candidate");
 const anchorComment = alias(todoComment, "comment");
-const childComment = alias(todoComment, "child");
-const previewAuthorProfile = alias(userProfile, "preview_author_profile");
-const previewAuthorUser = alias(user, "preview_author_user");
-const previewParent = alias(todoComment, "preview_parent");
-const previewParentProfile = alias(userProfile, "preview_parent_profile");
+const headComment = alias(todoComment, "head");
+const replyComment = alias(todoComment, "reply");
+const focusComment = alias(todoComment, "focus");
+const previewComment = alias(todoComment, "preview");
+const participantComment = alias(todoComment, "participant");
 const participantProfile = alias(userProfile, "participant_profile");
+const participantUser = alias(user, "participant_user");
 
-const nullableText = z.string().nullable();
-const nullableInt = z.number().int().nullable();
-const pathSchema = z.array(z.string()).nullable();
+const markerSchema = z.enum(["PAGE", "PREVIOUS", "NEXT", "BEFORE", "FOCUS", "AFTER"]);
+const markedCommentRowSchema = commentRowSchema.extend({ marker: markerSchema });
+const markedRootRowSchema = markedCommentRowSchema.extend(rootPositionRowSchema.shape);
+type MarkedRootRow = z.infer<typeof markedRootRowSchema>;
 
-const commentColumnsSchema = {
-  commentId: nullableText,
-  todoId: nullableInt,
-  parentId: nullableText,
-  rootId: nullableText,
-  path: pathSchema,
-  depth: nullableInt,
-  authorId: nullableText,
-  authorName: nullableText,
-  authorUserTag: nullableText,
-  authorProfileImage: nullableText,
-  parentAuthorId: nullableText,
-  parentAuthorName: nullableText,
-  todoOwnerId: nullableText,
-  content: nullableText,
-  likeCount: nullableInt,
-  replyCount: nullableInt,
-  rootLikeCount: nullableInt,
-  rootReplyCount: nullableInt,
-  deletedAt: nullableRawTimestampSchema,
-  editedAt: nullableRawTimestampSchema,
-  createdAt: nullableRawTimestampSchema,
-};
-
-const conversationRowSchema = z.object({
-  ...commentColumnsSchema,
-  marker: z.enum(["PAGE", "PREVIOUS", "NEXT", "BEFORE", "FOCUS", "AFTER"]),
-  continuingAncestorDepths: z.array(z.number().int()).nullable(),
-});
-type ConversationQueryRow = z.infer<typeof conversationRowSchema>;
-
-const overviewRootRowSchema = z.object({
-  ...commentColumnsSchema,
-  marker: z.enum(["PAGE", "PREVIOUS", "NEXT"]),
-});
-type OverviewRootQueryRow = z.infer<typeof overviewRootRowSchema>;
-
-const overviewSummaryRowSchema = z.object({
+const threadSummaryRowSchema = commentRowSchema.extend({
   rootId: z.string(),
-  totalCount: z.coerce.bigint(),
-  previewCommentId: nullableText,
-  previewTodoId: nullableInt,
-  previewParentId: nullableText,
-  previewRootId: nullableText,
-  previewPath: pathSchema,
-  previewDepth: nullableInt,
-  previewAuthorId: nullableText,
-  previewAuthorName: nullableText,
-  previewAuthorUserTag: nullableText,
-  previewAuthorProfileImage: nullableText,
-  previewParentAuthorId: nullableText,
-  previewParentAuthorName: nullableText,
-  todoOwnerId: z.string(),
-  previewContent: nullableText,
-  previewLikeCount: nullableInt,
-  previewReplyCount: nullableInt,
-  previewDeletedAt: nullableRawTimestampSchema,
-  previewEditedAt: nullableRawTimestampSchema,
-  previewCreatedAt: nullableRawTimestampSchema,
-  participantAuthorId: nullableText,
-  participantAuthorName: nullableText,
-  participantAuthorProfileImage: nullableText,
+  participantAuthorId: z.string().nullable(),
+  participantAuthorName: z.string().nullable(),
+  participantAuthorUserTag: z.string().nullable(),
+  participantAuthorProfileImage: z.string().nullable(),
   participantIsTodoOwner: z.boolean().nullable(),
 });
-type OverviewSummaryQueryRow = z.infer<typeof overviewSummaryRowSchema>;
+type ThreadSummaryRow = z.infer<typeof threadSummaryRowSchema>;
 
-interface OverviewRootWindow {
-  items: TodoCommentOverviewRootRecord[];
-  previousRecord: TodoCommentOverviewRootRecord | null;
-  nextRecord: TodoCommentOverviewRootRecord | null;
-  hasPrevious: boolean;
-  hasNext: boolean;
-}
-
-interface OverviewSummaryRecord {
+interface ThreadSummary {
   previewReply: TodoCommentRecord | null;
-  totalCount: number;
   participantAuthors: TodoCommentParticipantAuthorRecord[];
 }
 
-function requireValue<T>(value: T | null, field: string): T {
-  if (value == null) {
-    throw new Error(`댓글 대화 조회 결과에 ${field} 값이 없습니다.`);
-  }
-
-  return value;
+function toMarkedRecords<Row extends { marker: TodoCommentRowMarker }, T>(
+  rows: readonly Row[],
+  toRecord: (row: Row) => T | null,
+): MarkedTodoCommentRow<T>[] {
+  return rows.flatMap((row) => {
+    const record = toRecord(row);
+    return record == null ? [] : [{ marker: row.marker, record }];
+  });
 }
 
-function toSafeCount(value: bigint, field: string): number {
-  const count = Number(value);
-  if (!Number.isSafeInteger(count) || count < 0) {
-    throw new Error(`댓글 개요 조회 결과의 ${field} 값을 확인해주세요.`);
-  }
-
-  return count;
+function toThreadRecord(row: MarkedRootRow): TodoCommentThreadRecord | null {
+  const record = toCommentRecord(row);
+  return record == null ? null : { ...record, threadPosition: toRootPosition(row) };
 }
 
-function toRecord(row: CommentWithRelationsRow): TodoCommentRecord {
-  return {
-    id: row.id,
-    todoId: row.todoId,
-    parentId: row.parentId,
-    rootId: row.rootId,
-    path: row.path,
-    depth: row.depth,
-    parentAuthorId: row.parent?.authorId ?? null,
-    parentAuthorName: row.parent?.author?.profile?.name ?? null,
-    authorId: requireValue(row.authorId, "authorId"),
-    authorName: row.author?.profile?.name ?? null,
-    authorUserTag: row.author?.userTag ?? null,
-    authorProfileImage: row.author?.profile?.profileImage ?? null,
-    todoOwnerId: requireRecord(row.todo).userId,
-    content: row.content,
-    likeCount: row.likeCount,
-    replyCount: row.replyCount,
-    deletedAt: toISOStringOrNull(row.deletedAt),
-    editedAt: toISOStringOrNull(row.editedAt),
-    createdAt: toISOString(row.createdAt),
-  };
+function toConversationRecord(row: MarkedRootRow): TodoConversationRecord | null {
+  const record = toCommentRecord(row);
+  return record == null ? null : { ...record, conversationPosition: toRootPosition(row) };
 }
 
-function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord | null {
-  if (row.commentId == null) {
-    return null;
-  }
-
-  return {
-    id: row.commentId,
-    todoId: requireValue(row.todoId, "todoId"),
-    parentId: row.parentId,
-    rootId: row.rootId,
-    path: [...requireValue(row.path, "path")],
-    depth: requireValue(row.depth, "depth"),
-    parentAuthorId: row.parentAuthorId,
-    parentAuthorName: row.parentAuthorName,
-    authorId: requireValue(row.authorId, "authorId"),
-    authorName: row.authorName,
-    authorUserTag: row.authorUserTag,
-    authorProfileImage: row.authorProfileImage,
-    todoOwnerId: requireValue(row.todoOwnerId, "todoOwnerId"),
-    content: row.content,
-    likeCount: requireValue(row.likeCount, "likeCount"),
-    replyCount: requireValue(row.replyCount, "replyCount"),
-    conversationPosition: {
-      rootLikeCount: requireValue(row.rootLikeCount, "rootLikeCount"),
-      rootReplyCount: requireValue(row.rootReplyCount, "rootReplyCount"),
-    },
-    continuingAncestorDepths: requireValue(
-      row.continuingAncestorDepths,
-      "continuingAncestorDepths",
-    ),
-    deletedAt: toISOStringOrNull(row.deletedAt),
-    editedAt: toISOStringOrNull(row.editedAt),
-    createdAt: toISOString(requireValue(row.createdAt, "createdAt")),
-  };
-}
-
-function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRootRecord | null {
-  if (row.commentId == null) {
-    return null;
-  }
-
-  return {
-    id: row.commentId,
-    todoId: requireValue(row.todoId, "todoId"),
-    parentId: row.parentId,
-    rootId: row.rootId,
-    path: [...requireValue(row.path, "path")],
-    depth: requireValue(row.depth, "depth"),
-    parentAuthorId: row.parentAuthorId,
-    parentAuthorName: row.parentAuthorName,
-    authorId: requireValue(row.authorId, "authorId"),
-    authorName: row.authorName,
-    authorUserTag: row.authorUserTag,
-    authorProfileImage: row.authorProfileImage,
-    todoOwnerId: requireValue(row.todoOwnerId, "todoOwnerId"),
-    content: row.content,
-    likeCount: requireValue(row.likeCount, "likeCount"),
-    replyCount: requireValue(row.replyCount, "replyCount"),
-    overviewPosition: {
-      rootLikeCount: requireValue(row.rootLikeCount, "rootLikeCount"),
-      rootReplyCount: requireValue(row.rootReplyCount, "rootReplyCount"),
-    },
-    deletedAt: toISOStringOrNull(row.deletedAt),
-    editedAt: toISOStringOrNull(row.editedAt),
-    createdAt: toISOString(requireValue(row.createdAt, "createdAt")),
-  };
-}
-
-function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecord | null {
-  if (row.previewCommentId == null) {
-    return null;
-  }
-
-  return {
-    id: row.previewCommentId,
-    todoId: requireValue(row.previewTodoId, "previewTodoId"),
-    parentId: row.previewParentId,
-    rootId: row.previewRootId,
-    path: [...requireValue(row.previewPath, "previewPath")],
-    depth: requireValue(row.previewDepth, "previewDepth"),
-    parentAuthorId: row.previewParentAuthorId,
-    parentAuthorName: row.previewParentAuthorName,
-    authorId: requireValue(row.previewAuthorId, "previewAuthorId"),
-    authorName: row.previewAuthorName,
-    authorUserTag: row.previewAuthorUserTag,
-    authorProfileImage: row.previewAuthorProfileImage,
-    todoOwnerId: row.todoOwnerId,
-    content: row.previewContent,
-    likeCount: requireValue(row.previewLikeCount, "previewLikeCount"),
-    replyCount: requireValue(row.previewReplyCount, "previewReplyCount"),
-    deletedAt: toISOStringOrNull(row.previewDeletedAt),
-    editedAt: toISOStringOrNull(row.previewEditedAt),
-    createdAt: toISOString(requireValue(row.previewCreatedAt, "previewCreatedAt")),
-  };
-}
-
-function toParticipantAuthor(
-  row: OverviewSummaryQueryRow,
-): TodoCommentParticipantAuthorRecord | null {
+function toParticipantAuthor(row: ThreadSummaryRow): TodoCommentParticipantAuthorRecord | null {
   if (row.participantAuthorId == null) {
     return null;
   }
@@ -292,9 +96,16 @@ function toParticipantAuthor(
   return {
     id: row.participantAuthorId,
     name: row.participantAuthorName,
+    userTag: row.participantAuthorUserTag,
     profileImage: row.participantAuthorProfileImage,
     isTodoOwner: row.participantIsTodoOwner ?? false,
   };
+}
+
+function toPageMode(
+  mode: ListTodoCommentThreadsParams["mode"] | ListTodoCommentRepliesParams["mode"],
+): "INITIAL" | "BEFORE" | "AFTER" | "FOCUS" {
+  return mode === "ANCHOR" || mode === "AROUND" ? "FOCUS" : mode;
 }
 
 @Injectable()
@@ -389,12 +200,8 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async findCommentRecord(todoId: number, commentId: string): Promise<TodoCommentRecord | null> {
-    const row = await this.db.query.todoComment.findFirst({
-      where: { id: commentId, todoId },
-      with: commentRelations,
-    });
-
-    return row == null ? null : toRecord(row);
+    const [record] = await this.findCommentRecords(todoId, [commentId]);
+    return record ?? null;
   }
 
   async findCommentRecords(
@@ -405,54 +212,65 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       return [];
     }
 
-    const rows = await this.db.query.todoComment.findMany({
-      where: { todoId, id: { in: [...commentIds] } },
-      with: commentRelations,
-    });
-    const rowsById = new Map(rows.map((row) => [row.id, row]));
+    const rows = await this.queryRows(
+      commentRowSchema,
+      sql`
+			SELECT ${commentColumns(sql`comment`)}
+			FROM ${todoComment} AS ${anchorComment}
+			${commentJoins(sql`comment`)}
+			WHERE ${anchorComment.todoId} = ${todoId}
+				AND ${anchorComment.id} IN (${sql.join(
+          commentIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+		`,
+    );
+    const recordsById = new Map(
+      rows.flatMap((row) => {
+        const record = toCommentRecord(row);
+        return record == null ? [] : [[record.id, record] as const];
+      }),
+    );
 
     return commentIds.flatMap((commentId) => {
-      const row = rowsById.get(commentId);
-      return row == null ? [] : [toRecord(row)];
+      const record = recordsById.get(commentId);
+      return record == null ? [] : [record];
     });
   }
 
-  /** Overview는 root keyset과 선택된 root들의 descendant aggregate를 각각 한 번만 읽는다. */
-  async listOverview(
-    params: ListTodoCommentOverviewParams,
-  ): Promise<TodoCommentOverviewWindow | null> {
-    const rootWindow = await this.listOverviewRoots(params);
-    if (rootWindow == null) {
+  /** 묶음 머리 keyset을 읽고, 고른 묶음마다 대표 답글과 참여자를 LATERAL로 한 번에 붙인다. */
+  async listThreads(
+    params: ListTodoCommentThreadsParams,
+  ): Promise<TodoCommentWindow<TodoCommentThreadItemRecord> | null> {
+    const window = await this.listThreadComments(params);
+    if (window == null) {
       return null;
     }
 
-    const summaries = await this.findOverviewSummaries(
+    const summaries = await this.findThreadSummaries(
       params.todoId,
-      rootWindow.items.map((record) => record.id),
+      window.items.map((record) => record.id),
     );
 
     return {
-      items: rootWindow.items.map((comment) => {
+      items: window.items.map((comment) => {
         const summary = summaries.get(comment.id);
         return {
           comment,
           previewReply: summary?.previewReply ?? null,
-          totalCount: summary?.totalCount ?? 0,
+          totalCount: comment.replyCount,
           participantAuthors: summary?.participantAuthors ?? [],
         };
       }),
-      previousRecord: rootWindow.previousRecord,
-      nextRecord: rootWindow.nextRecord,
-      hasPrevious: rootWindow.hasPrevious,
-      hasNext: rootWindow.hasNext,
+      hasPrevious: window.hasPrevious,
+      hasNext: window.hasNext,
     };
   }
 
-  private async listOverviewRoots(
-    params: ListTodoCommentOverviewParams,
-  ): Promise<OverviewRootWindow | null> {
-    const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";
-    if (isCursorPage && (params.anchorRootId == null || params.anchorPosition == null)) {
+  private async listThreadComments(
+    params: ListTodoCommentThreadsParams,
+  ): Promise<TodoCommentWindow<TodoCommentThreadRecord> | null> {
+    if (params.mode !== "INITIAL" && params.anchorCommentId == null) {
       return null;
     }
 
@@ -464,354 +282,191 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       params.anchorPosition == null
         ? sql`anchor."replyCount"`
         : sql`${params.anchorPosition.rootReplyCount}`;
-    const rootOrder =
-      params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`${candidateComment.createdAt} DESC, ${candidateComment.id} DESC`
-        : sql`${candidateComment.likeCount} DESC, ${candidateComment.replyCount} DESC, ${candidateComment.createdAt} DESC, ${candidateComment.id} DESC`;
-    const reverseRootOrder =
-      params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`${candidateComment.createdAt} ASC, ${candidateComment.id} ASC`
-        : sql`${candidateComment.likeCount} ASC, ${candidateComment.replyCount} ASC, ${candidateComment.createdAt} ASC, ${candidateComment.id} ASC`;
-    const selectedOrder =
-      params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`selected."createdAt" DESC, selected."id" DESC`
-        : sql`selected."likeCount" DESC, selected."replyCount" DESC, selected."createdAt" DESC, selected."id" DESC`;
-    const afterAnchor =
-      params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`
-					ROW(${candidateComment.createdAt}, ${candidateComment.id})
-						< ROW(anchor."createdAt", anchor."id")
-				`
-        : sql`
-					ROW(
-						${candidateComment.likeCount},
-						${candidateComment.replyCount},
-						${candidateComment.createdAt},
-						${candidateComment.id}
-					) < ROW(
-						${boundaryLikeCount},
-						${boundaryReplyCount},
-						anchor."createdAt",
-						anchor."id"
-					)
-				`;
-    const beforeAnchor =
-      params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`
-					ROW(${candidateComment.createdAt}, ${candidateComment.id})
-						> ROW(anchor."createdAt", anchor."id")
-				`
-        : sql`
-					ROW(
-						${candidateComment.likeCount},
-						${candidateComment.replyCount},
-						${candidateComment.createdAt},
-						${candidateComment.id}
-					) > ROW(
-						${boundaryLikeCount},
-						${boundaryReplyCount},
-						anchor."createdAt",
-						anchor."id"
-					)
-				`;
+    const isLatest = params.sort === TODO_COMMENT_SORT.LATEST;
+    const rootOrder = isLatest
+      ? sql`${candidateComment.createdAt} DESC, ${candidateComment.id} DESC`
+      : sql`${candidateComment.likeCount} DESC, ${candidateComment.replyCount} DESC, ${candidateComment.createdAt} DESC, ${candidateComment.id} DESC`;
+    const reverseRootOrder = isLatest
+      ? sql`${candidateComment.createdAt} ASC, ${candidateComment.id} ASC`
+      : sql`${candidateComment.likeCount} ASC, ${candidateComment.replyCount} ASC, ${candidateComment.createdAt} ASC, ${candidateComment.id} ASC`;
+    const selectedOrder = isLatest
+      ? sql`selected."createdAt" DESC, selected."id" DESC`
+      : sql`selected."likeCount" DESC, selected."replyCount" DESC, selected."createdAt" DESC, selected."id" DESC`;
+    const candidatePosition = isLatest
+      ? sql`ROW(${candidateComment.createdAt}, ${candidateComment.id})`
+      : sql`ROW(${candidateComment.likeCount}, ${candidateComment.replyCount}, ${candidateComment.createdAt}, ${candidateComment.id})`;
+    const anchorPosition = isLatest
+      ? sql`ROW(anchor."createdAt", anchor."id")`
+      : sql`ROW(${boundaryLikeCount}, ${boundaryReplyCount}, anchor."createdAt", anchor."id")`;
+    const visibleThread = sql`
+			${candidateComment.todoId} = ${params.todoId}
+				AND ${candidateComment.parentId} IS NULL
+				AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
+		`;
+    const anchorVisibility =
+      params.mode === "ANCHOR"
+        ? sql`AND (${anchorComment.deletedAt} IS NULL OR ${anchorComment.replyCount} > 0)`
+        : sql``;
     const anchorCte = sql`
 			anchor AS (
 				SELECT comment.*
 				FROM ${todoComment} AS ${anchorComment}
 				WHERE ${anchorComment.todoId} = ${params.todoId}
-					AND ${anchorComment.id} = ${params.anchorRootId ?? null}::TEXT
+					AND ${anchorComment.id} = ${params.anchorCommentId ?? null}::TEXT
 					AND ${anchorComment.parentId} IS NULL
+					${anchorVisibility}
+			)
+		`;
+    const after = (marker: TodoCommentRowMarker) => sql`
+			(
+				SELECT candidate.*, ${marker}::TEXT AS "marker"
+				FROM ${todoComment} AS ${candidateComment}
+				CROSS JOIN anchor
+				WHERE ${visibleThread} AND ${candidatePosition} < ${anchorPosition}
+				ORDER BY ${rootOrder}
+				LIMIT ${params.size + 1}
+			)
+		`;
+    const before = (marker: TodoCommentRowMarker) => sql`
+			(
+				SELECT candidate.*, ${marker}::TEXT AS "marker"
+				FROM ${todoComment} AS ${candidateComment}
+				CROSS JOIN anchor
+				WHERE ${visibleThread} AND ${candidatePosition} > ${anchorPosition}
+				ORDER BY ${reverseRootOrder}
+				LIMIT ${params.size + 1}
 			)
 		`;
     const selectionCte = (() => {
-      if (params.mode === "INITIAL") {
-        return sql`
-					selected AS (
-						SELECT candidate.*, 'PAGE'::TEXT AS "marker"
-						FROM ${todoComment} AS ${candidateComment}
-						WHERE ${candidateComment.todoId} = ${params.todoId}
-							AND ${candidateComment.parentId} IS NULL
-							AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
-						ORDER BY ${rootOrder}
-						LIMIT ${params.size + 1}
-					)
-				`;
-      }
-
-      if (params.mode === "AFTER") {
-        return sql`
-					${anchorCte},
-					selected AS (
-						(
+      switch (params.mode) {
+        case "INITIAL":
+          return sql`
+						selected AS (
 							SELECT candidate.*, 'PAGE'::TEXT AS "marker"
 							FROM ${todoComment} AS ${candidateComment}
-							CROSS JOIN anchor
-							WHERE ${candidateComment.todoId} = ${params.todoId}
-								AND ${candidateComment.parentId} IS NULL
-								AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
-								AND (${afterAnchor})
+							WHERE ${visibleThread}
 							ORDER BY ${rootOrder}
 							LIMIT ${params.size + 1}
 						)
+					`;
+        case "AFTER":
+          return sql`${anchorCte}, selected AS (
+						${after("PAGE")}
 						UNION ALL
 						SELECT anchor.*, 'PREVIOUS'::TEXT AS "marker" FROM anchor
-					)
-				`;
+					)`;
+        case "BEFORE":
+          return sql`${anchorCte}, selected AS (
+						${before("PAGE")}
+						UNION ALL
+						SELECT anchor.*, 'NEXT'::TEXT AS "marker" FROM anchor
+					)`;
+        case "ANCHOR":
+          return sql`${anchorCte}, selected AS (
+						${before("BEFORE")}
+						UNION ALL
+						SELECT anchor.*, 'FOCUS'::TEXT AS "marker" FROM anchor
+						UNION ALL
+						${after("AFTER")}
+					)`;
       }
-
-      return sql`
-				${anchorCte},
-				selected AS (
-					(
-						SELECT candidate.*, 'PAGE'::TEXT AS "marker"
-						FROM ${todoComment} AS ${candidateComment}
-						CROSS JOIN anchor
-						WHERE ${candidateComment.todoId} = ${params.todoId}
-							AND ${candidateComment.parentId} IS NULL
-							AND (${candidateComment.deletedAt} IS NULL OR ${candidateComment.replyCount} > 0)
-							AND (${beforeAnchor})
-						ORDER BY ${reverseRootOrder}
-						LIMIT ${params.size + 1}
-					)
-					UNION ALL
-					SELECT anchor.*, 'NEXT'::TEXT AS "marker" FROM anchor
-				)
-			`;
     })();
 
     const rows = await this.queryRows(
-      overviewRootRowSchema,
+      markedRootRowSchema,
       sql`
 			WITH ${selectionCte}
 			SELECT
 				selected."marker",
-				selected."id" AS "commentId",
-				selected."todoId",
-				selected."parentId",
-				selected."rootId",
-				to_json(selected."path") AS "path",
-				selected."depth",
-				selected."authorId",
-				${authorProfile.name} AS "authorName",
-				${authorUser.userTag} AS "authorUserTag",
-				${authorProfile.profileImage} AS "authorProfileImage",
-				NULL::TEXT AS "parentAuthorId",
-				NULL::TEXT AS "parentAuthorName",
-				${todo.userId} AS "todoOwnerId",
-				selected."content",
-				selected."likeCount",
-				selected."replyCount",
+				${commentColumns(sql`selected`)},
 				selected."likeCount" AS "rootLikeCount",
-				selected."replyCount" AS "rootReplyCount",
-				selected."deletedAt",
-				selected."editedAt",
-				selected."createdAt"
+				selected."replyCount" AS "rootReplyCount"
 			FROM selected
-			INNER JOIN ${todo} ON ${todo.id} = selected."todoId"
-			LEFT JOIN ${userProfile} AS ${authorProfile} ON ${authorProfile.userId} = selected."authorId"
-			LEFT JOIN ${user} AS ${authorUser} ON ${authorUser.id} = selected."authorId"
+			${commentJoins(sql`selected`)}
 			ORDER BY ${selectedOrder}
 		`,
     );
 
-    if (isCursorPage && rows.length === 0) {
+    if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;
     }
 
-    const markedRecords = rows.flatMap((row) => {
-      const record = toOverviewRootRecord(row);
-      return record == null ? [] : [{ marker: row.marker, record }];
-    });
-    return this.toOverviewRootWindow(markedRecords, params);
+    const window = toTodoCommentKeysetWindow(
+      toMarkedRecords(rows, toThreadRecord),
+      toPageMode(params.mode),
+      params.size,
+    );
+    return { items: window.items, hasPrevious: window.hasPrevious, hasNext: window.hasNext };
   }
 
-  private toOverviewRootWindow(
-    markedRecords: readonly {
-      marker: OverviewRootQueryRow["marker"];
-      record: TodoCommentOverviewRootRecord;
-    }[],
-    params: ListTodoCommentOverviewParams,
-  ): OverviewRootWindow {
-    const pageCandidates = markedRecords
-      .filter(({ marker }) => marker === "PAGE")
-      .map(({ record }) => record);
-
-    if (params.mode === "BEFORE") {
-      const hasPrevious = pageCandidates.length > params.size;
-      const items = hasPrevious ? pageCandidates.slice(-params.size) : pageCandidates;
-      return {
-        items,
-        previousRecord: hasPrevious ? (pageCandidates.at(-params.size - 1) ?? null) : null,
-        nextRecord: markedRecords.find(({ marker }) => marker === "NEXT")?.record ?? null,
-        hasPrevious: items.length > 0 && hasPrevious,
-        hasNext: items.length > 0,
-      };
-    }
-
-    const hasNext = pageCandidates.length > params.size;
-    const items = hasNext ? pageCandidates.slice(0, params.size) : pageCandidates;
-    return {
-      items,
-      previousRecord:
-        params.mode === "AFTER"
-          ? (markedRecords.find(({ marker }) => marker === "PREVIOUS")?.record ?? null)
-          : null,
-      nextRecord: hasNext ? (pageCandidates[params.size] ?? null) : null,
-      hasPrevious: items.length > 0 && params.mode === "AFTER",
-      hasNext: items.length > 0 && hasNext,
-    };
-  }
-
-  private async findOverviewSummaries(
+  private async findThreadSummaries(
     todoId: number,
-    rootIds: readonly string[],
-  ): Promise<Map<string, OverviewSummaryRecord>> {
-    if (rootIds.length === 0) {
+    threadCommentIds: readonly string[],
+  ): Promise<Map<string, ThreadSummary>> {
+    if (threadCommentIds.length === 0) {
       return new Map();
     }
 
-    const rootIdList = sql.join(
-      rootIds.map((id) => sql`${id}`),
-      sql`, `,
-    );
     const rows = await this.queryRows(
-      overviewSummaryRowSchema,
+      threadSummaryRowSchema,
       sql`
-			WITH RECURSIVE requested_roots AS (
-				SELECT requested."rootId", requested."ordinal"
-				FROM unnest(ARRAY[${rootIdList}]::TEXT[])
-					WITH ORDINALITY AS requested("rootId", "ordinal")
-			),
-			descendant_tree AS (
-				SELECT
-					child.*,
-					requested."rootId" AS "threadId",
-					ARRAY[
-						lpad(((extract(epoch FROM ${childComment.createdAt}) * 1000000)::BIGINT)::TEXT, 20, '0') || ':' || ${childComment.id}
-					]::TEXT[] AS "dfsPath"
-				FROM requested_roots AS requested
-				INNER JOIN ${todoComment} AS ${childComment} ON ${childComment.parentId} = requested."rootId"
-				WHERE ${childComment.todoId} = ${todoId}
-
-				UNION ALL
-
-				SELECT
-					child.*,
-					parent."threadId",
-					parent."dfsPath" || ARRAY[
-						lpad(((extract(epoch FROM ${childComment.createdAt}) * 1000000)::BIGINT)::TEXT, 20, '0') || ':' || ${childComment.id}
-					]::TEXT[]
-				FROM ${todoComment} AS ${childComment}
-				INNER JOIN descendant_tree AS parent ON parent."id" = ${childComment.parentId}
-				WHERE ${childComment.todoId} = ${todoId}
-			),
-			visible_summary AS (
-				SELECT descendant."threadId", COUNT(*)::BIGINT AS "totalCount"
-				FROM descendant_tree AS descendant
-				WHERE descendant."deletedAt" IS NULL OR descendant."replyCount" > 0
-				GROUP BY descendant."threadId"
-			),
-			preview_ranked AS (
-				SELECT
-					descendant.*,
-					ROW_NUMBER() OVER (
-						PARTITION BY descendant."threadId"
-						ORDER BY
-							(descendant."authorId" = ${todo.userId}) DESC,
-							descendant."createdAt" ASC,
-							descendant."id" ASC
-					) AS "previewRank"
-				FROM descendant_tree AS descendant
-				INNER JOIN ${todo} ON ${todo.id} = descendant."todoId"
-				WHERE descendant."parentId" = descendant."threadId"
-					AND descendant."deletedAt" IS NULL
-			),
-			preview AS (
-				SELECT * FROM preview_ranked WHERE "previewRank" = 1
-			),
-			author_first_ranked AS (
-				SELECT
-					descendant.*,
-					ROW_NUMBER() OVER (
-						PARTITION BY descendant."threadId", descendant."authorId"
-						ORDER BY descendant."dfsPath" ASC
-					) AS "authorAppearanceRank"
-				FROM descendant_tree AS descendant
-				WHERE descendant."deletedAt" IS NULL
-					AND descendant."authorId" IS NOT NULL
-			),
-			author_first AS (
-				SELECT * FROM author_first_ranked WHERE "authorAppearanceRank" = 1
-			),
-			participant_ranked AS (
-				SELECT
-					author_first.*,
-					ROW_NUMBER() OVER (
-						PARTITION BY author_first."threadId"
-						ORDER BY
-							(author_first."authorId" = ${todo.userId}) DESC,
-							author_first."dfsPath" ASC,
-							author_first."authorId" ASC
-					) AS "participantRank"
-				FROM author_first
-				INNER JOIN ${todo} ON ${todo.id} = author_first."todoId"
-			),
-			participants AS (
-				SELECT * FROM participant_ranked
-				WHERE "participantRank" <= ${TODO_COMMENT_LIMITS.OVERVIEW_PARTICIPANT_MAX_SIZE}
-			)
 			SELECT
 				requested."rootId",
-				COALESCE(summary."totalCount", 0)::BIGINT AS "totalCount",
-				preview."id" AS "previewCommentId",
-				preview."todoId" AS "previewTodoId",
-				preview."parentId" AS "previewParentId",
-				preview."rootId" AS "previewRootId",
-				to_json(preview."path") AS "previewPath",
-				preview."depth" AS "previewDepth",
-				preview."authorId" AS "previewAuthorId",
-				${previewAuthorProfile.name} AS "previewAuthorName",
-				${previewAuthorUser.userTag} AS "previewAuthorUserTag",
-				${previewAuthorProfile.profileImage} AS "previewAuthorProfileImage",
-				${previewParent.authorId} AS "previewParentAuthorId",
-				${previewParentProfile.name} AS "previewParentAuthorName",
-				${todo.userId} AS "todoOwnerId",
-				preview."content" AS "previewContent",
-				preview."likeCount" AS "previewLikeCount",
-				preview."replyCount" AS "previewReplyCount",
-				preview."deletedAt" AS "previewDeletedAt",
-				preview."editedAt" AS "previewEditedAt",
-				preview."createdAt" AS "previewCreatedAt",
+				${commentColumns(sql`preview`)},
 				participant."authorId" AS "participantAuthorId",
 				${participantProfile.name} AS "participantAuthorName",
+				${participantUser.userTag} AS "participantAuthorUserTag",
 				${participantProfile.profileImage} AS "participantAuthorProfileImage",
-				(participant."authorId" = ${todo.userId}) AS "participantIsTodoOwner"
-			FROM requested_roots AS requested
-			INNER JOIN ${todo} ON ${todo.id} = ${todoId}
-			LEFT JOIN visible_summary AS summary ON summary."threadId" = requested."rootId"
-			LEFT JOIN preview ON preview."threadId" = requested."rootId"
-			LEFT JOIN ${userProfile} AS ${previewAuthorProfile}
-				ON ${previewAuthorProfile.userId} = preview."authorId"
-			LEFT JOIN ${user} AS ${previewAuthorUser} ON ${previewAuthorUser.id} = preview."authorId"
-			LEFT JOIN ${todoComment} AS ${previewParent} ON ${previewParent.id} = preview."parentId"
-			LEFT JOIN ${userProfile} AS ${previewParentProfile}
-				ON ${previewParentProfile.userId} = ${previewParent.authorId}
-			LEFT JOIN participants AS participant ON participant."threadId" = requested."rootId"
+				(participant."authorId" = owner_todo."userId") AS "participantIsTodoOwner"
+			FROM unnest(ARRAY[${sql.join(
+        threadCommentIds.map((id) => sql`${id}`),
+        sql`, `,
+      )}]::TEXT[]) WITH ORDINALITY AS requested("rootId", "ordinal")
+			INNER JOIN ${todo} AS owner_todo ON owner_todo."id" = ${todoId}
+			LEFT JOIN LATERAL (
+				SELECT preview.*
+				FROM ${todoComment} AS ${previewComment}
+				WHERE ${previewComment.parentId} = requested."rootId"
+					AND ${previewComment.deletedAt} IS NULL
+				ORDER BY
+					(${previewComment.authorId} = owner_todo."userId") DESC,
+					${previewComment.createdAt} ASC,
+					${previewComment.id} ASC
+				LIMIT 1
+			) AS preview ON TRUE
+			${commentJoins(sql`preview`)}
+			LEFT JOIN LATERAL (
+				SELECT
+					${participantComment.authorId} AS "authorId",
+					MIN(${participantComment.createdAt}) AS "firstRepliedAt"
+				FROM ${todoComment} AS ${participantComment}
+				WHERE ${participantComment.parentId} = requested."rootId"
+					AND ${participantComment.deletedAt} IS NULL
+				GROUP BY ${participantComment.authorId}
+				ORDER BY
+					(${participantComment.authorId} = owner_todo."userId") DESC,
+					MIN(${participantComment.createdAt}) ASC,
+					${participantComment.authorId} ASC
+				LIMIT ${TODO_COMMENT_LIMITS.OVERVIEW_PARTICIPANT_MAX_SIZE}
+			) AS participant ON TRUE
 			LEFT JOIN ${userProfile} AS ${participantProfile}
 				ON ${participantProfile.userId} = participant."authorId"
-			ORDER BY requested."ordinal" ASC, participant."participantRank" ASC NULLS LAST
+			LEFT JOIN ${user} AS ${participantUser} ON ${participantUser.id} = participant."authorId"
+			ORDER BY
+				requested."ordinal" ASC,
+				(participant."authorId" = owner_todo."userId") DESC,
+				participant."firstRepliedAt" ASC NULLS LAST,
+				participant."authorId" ASC
 		`,
     );
 
-    const summaries = new Map<string, OverviewSummaryRecord>();
+    const summaries = new Map<string, ThreadSummary>();
     for (const row of rows) {
-      const existing = summaries.get(row.rootId);
       const participant = toParticipantAuthor(row);
-
+      const existing = summaries.get(row.rootId);
       if (existing == null) {
         summaries.set(row.rootId, {
-          previewReply: toOverviewPreviewRecord(row),
-          totalCount: toSafeCount(row.totalCount, "totalCount"),
+          previewReply: toCommentRecord(row),
           participantAuthors: participant == null ? [] : [participant],
         });
         continue;
@@ -825,9 +480,114 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     return summaries;
   }
 
+  /** 묶음 하나의 답글을 작성 순서로 읽는다. 지운 답글은 목록에서 빠지지만 cursor 위치로는 남는다. */
+  async listReplies(
+    params: ListTodoCommentRepliesParams,
+  ): Promise<TodoCommentWindow<TodoCommentRecord> | null> {
+    if (params.mode !== "INITIAL" && params.anchorReplyId == null) {
+      return null;
+    }
+
+    const visibleReply = sql`
+			${candidateComment.todoId} = ${params.todoId}
+				AND ${candidateComment.parentId} = ${params.threadCommentId}
+				AND ${candidateComment.deletedAt} IS NULL
+		`;
+    const candidatePosition = sql`ROW(${candidateComment.createdAt}, ${candidateComment.id})`;
+    const anchorPosition = sql`ROW(anchor."createdAt", anchor."id")`;
+    const anchorVisibility =
+      params.mode === "AROUND" ? sql`AND ${anchorComment.deletedAt} IS NULL` : sql``;
+    const anchorCte = sql`
+			anchor AS (
+				SELECT comment.*
+				FROM ${todoComment} AS ${anchorComment}
+				WHERE ${anchorComment.todoId} = ${params.todoId}
+					AND ${anchorComment.parentId} = ${params.threadCommentId}
+					AND ${anchorComment.id} = ${params.anchorReplyId ?? null}::TEXT
+					${anchorVisibility}
+			)
+		`;
+    const after = (marker: TodoCommentRowMarker) => sql`
+			(
+				SELECT candidate.*, ${marker}::TEXT AS "marker"
+				FROM ${todoComment} AS ${candidateComment}
+				CROSS JOIN anchor
+				WHERE ${visibleReply} AND ${candidatePosition} > ${anchorPosition}
+				ORDER BY ${candidateComment.createdAt} ASC, ${candidateComment.id} ASC
+				LIMIT ${params.size + 1}
+			)
+		`;
+    const before = (marker: TodoCommentRowMarker) => sql`
+			(
+				SELECT candidate.*, ${marker}::TEXT AS "marker"
+				FROM ${todoComment} AS ${candidateComment}
+				CROSS JOIN anchor
+				WHERE ${visibleReply} AND ${candidatePosition} < ${anchorPosition}
+				ORDER BY ${candidateComment.createdAt} DESC, ${candidateComment.id} DESC
+				LIMIT ${params.size + 1}
+			)
+		`;
+    const selectionCte = (() => {
+      switch (params.mode) {
+        case "INITIAL":
+          return sql`
+						selected AS (
+							SELECT candidate.*, 'PAGE'::TEXT AS "marker"
+							FROM ${todoComment} AS ${candidateComment}
+							WHERE ${visibleReply}
+							ORDER BY ${candidateComment.createdAt} ASC, ${candidateComment.id} ASC
+							LIMIT ${params.size + 1}
+						)
+					`;
+        case "AFTER":
+          return sql`${anchorCte}, selected AS (
+						${after("PAGE")}
+						UNION ALL
+						SELECT anchor.*, 'PREVIOUS'::TEXT AS "marker" FROM anchor
+					)`;
+        case "BEFORE":
+          return sql`${anchorCte}, selected AS (
+						${before("PAGE")}
+						UNION ALL
+						SELECT anchor.*, 'NEXT'::TEXT AS "marker" FROM anchor
+					)`;
+        case "AROUND":
+          return sql`${anchorCte}, selected AS (
+						${before("BEFORE")}
+						UNION ALL
+						SELECT anchor.*, 'FOCUS'::TEXT AS "marker" FROM anchor
+						UNION ALL
+						${after("AFTER")}
+					)`;
+      }
+    })();
+
+    const rows = await this.queryRows(
+      markedCommentRowSchema,
+      sql`
+			WITH ${selectionCte}
+			SELECT selected."marker", ${commentColumns(sql`selected`)}
+			FROM selected
+			${commentJoins(sql`selected`)}
+			ORDER BY selected."createdAt" ASC, selected."id" ASC
+		`,
+    );
+
+    if (params.mode !== "INITIAL" && rows.length === 0) {
+      return null;
+    }
+
+    const window = toTodoCommentKeysetWindow(
+      toMarkedRecords(rows, toCommentRecord),
+      toPageMode(params.mode),
+      params.size,
+    );
+    return { items: window.items, hasPrevious: window.hasPrevious, hasNext: window.hasNext };
+  }
+
   /**
-   * root block은 최신/인기순으로, block 안은 형제 createdAt/id 오름차순 DFS로 세운다.
-   * 재귀 CTE가 만든 DFS key를 keyset 비교하고, 경계 앞뒤 한 행만 더 읽어 rail 연속성도 확정한다.
+   * 묶음은 최신/인기순으로, 묶음 안은 머리 댓글 다음 답글을 작성 순으로 세운다.
+   * 묶음 위치와 (머리 여부, createdAt, id)를 keyset 비교하고, 경계 뒤 한 행을 더 읽어 연결선 연속성을 확정한다.
    */
   async listConversation(
     params: ListTodoConversationParams,
@@ -843,12 +603,9 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     }
 
     const snapshotBoundary =
-      params.anchorPosition == null
+      params.anchorPosition == null || params.anchorThreadId == null
         ? null
-        : {
-            position: params.anchorPosition,
-            threadId: requireValue(params.anchorThreadId ?? null, "anchorThreadId"),
-          };
+        : { position: params.anchorPosition, threadId: params.anchorThreadId };
     const boundaryThreadId = sql`anchor."threadId"`;
     const boundaryRootLikeCount =
       snapshotBoundary == null
@@ -859,13 +616,24 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
         ? sql`anchor."rootReplyCount"`
         : sql`${snapshotBoundary.position.rootReplyCount}`;
     const boundaryRootCreatedAt = sql`anchor."rootCreatedAt"`;
-    const boundaryDfsPath = sql`anchor."dfsPath"`;
+    const candidateThreadOrder = sql`ROW(candidate."replyRank", candidate."createdAt", candidate."id")`;
+    const boundaryThreadOrder = sql`ROW(anchor."replyRank", anchor."createdAt", anchor."id")`;
     const cursorScopeCondition =
       params.scope === "THREAD" ? sql`candidate."threadId" = anchor."threadId"` : sql`TRUE`;
-    const focusAnchorVisibilityCondition =
-      params.mode === "FOCUS"
-        ? sql`(tree."deletedAt" IS NULL OR tree."replyCount" > 0)`
+    const threadCondition = (() => {
+      if (params.mode === "FOCUS") {
+        return sql`${headComment.id} = (
+					SELECT COALESCE(${focusComment.parentId}, ${focusComment.id})
+					FROM ${todoComment} AS ${focusComment}
+					WHERE ${focusComment.todoId} = ${params.todoId}
+						AND ${focusComment.id} = ${params.anchorCommentId ?? null}::TEXT
+				)`;
+      }
+
+      return params.scope === "THREAD"
+        ? sql`${headComment.id} = ${params.anchorThreadId ?? null}::TEXT`
         : sql`TRUE`;
+    })();
     const candidateRootLikeCountAtBoundary =
       snapshotBoundary == null
         ? sql`candidate."rootLikeCount"`
@@ -908,16 +676,16 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 			`;
     const candidateOrder =
       params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`candidate."rootCreatedAt" DESC, candidate."threadId" DESC, candidate."dfsPath" ASC`
-        : sql`${candidateRootLikeCountAtBoundary} DESC, ${candidateRootReplyCountAtBoundary} DESC, candidate."rootCreatedAt" DESC, candidate."threadId" DESC, candidate."dfsPath" ASC`;
+        ? sql`candidate."rootCreatedAt" DESC, candidate."threadId" DESC, candidate."replyRank" ASC, candidate."createdAt" ASC, candidate."id" ASC`
+        : sql`${candidateRootLikeCountAtBoundary} DESC, ${candidateRootReplyCountAtBoundary} DESC, candidate."rootCreatedAt" DESC, candidate."threadId" DESC, candidate."replyRank" ASC, candidate."createdAt" ASC, candidate."id" ASC`;
     const reverseCandidateOrder =
       params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`candidate."rootCreatedAt" ASC, candidate."threadId" ASC, candidate."dfsPath" DESC`
-        : sql`${candidateRootLikeCountAtBoundary} ASC, ${candidateRootReplyCountAtBoundary} ASC, candidate."rootCreatedAt" ASC, candidate."threadId" ASC, candidate."dfsPath" DESC`;
+        ? sql`candidate."rootCreatedAt" ASC, candidate."threadId" ASC, candidate."replyRank" DESC, candidate."createdAt" DESC, candidate."id" DESC`
+        : sql`${candidateRootLikeCountAtBoundary} ASC, ${candidateRootReplyCountAtBoundary} ASC, candidate."rootCreatedAt" ASC, candidate."threadId" ASC, candidate."replyRank" DESC, candidate."createdAt" DESC, candidate."id" DESC`;
     const selectedOrder =
       params.sort === TODO_COMMENT_SORT.LATEST
-        ? sql`selected."rootCreatedAt" DESC, selected."threadId" DESC, selected."dfsPath" ASC`
-        : sql`${selectedRootLikeCountAtBoundary} DESC, ${selectedRootReplyCountAtBoundary} DESC, selected."rootCreatedAt" DESC, selected."threadId" DESC, selected."dfsPath" ASC`;
+        ? sql`selected."rootCreatedAt" DESC, selected."threadId" DESC, selected."replyRank" ASC, selected."createdAt" ASC, selected."id" ASC`
+        : sql`${selectedRootLikeCountAtBoundary} DESC, ${selectedRootReplyCountAtBoundary} DESC, selected."rootCreatedAt" DESC, selected."threadId" DESC, selected."replyRank" ASC, selected."createdAt" ASC, selected."id" ASC`;
     const afterAnchor =
       params.sort === TODO_COMMENT_SORT.LATEST
         ? sql`
@@ -928,7 +696,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 					)
 					OR (
 						candidate."threadId" = ${boundaryThreadId}
-						AND candidate."dfsPath" > ${boundaryDfsPath}
+						AND ${candidateThreadOrder} > ${boundaryThreadOrder}
 					)
 				`
         : sql`
@@ -948,7 +716,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 					)
 					OR (
 						candidate."threadId" = ${boundaryThreadId}
-						AND candidate."dfsPath" > ${boundaryDfsPath}
+						AND ${candidateThreadOrder} > ${boundaryThreadOrder}
 					)
 				`;
     const beforeAnchor =
@@ -961,7 +729,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 					)
 					OR (
 						candidate."threadId" = ${boundaryThreadId}
-						AND candidate."dfsPath" < ${boundaryDfsPath}
+						AND ${candidateThreadOrder} < ${boundaryThreadOrder}
 					)
 				`
         : sql`
@@ -981,7 +749,7 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 					)
 					OR (
 						candidate."threadId" = ${boundaryThreadId}
-						AND candidate."dfsPath" < ${boundaryDfsPath}
+						AND ${candidateThreadOrder} < ${boundaryThreadOrder}
 					)
 				`;
     const anchorCte = sql`
@@ -989,7 +757,6 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 				SELECT tree.*
 				FROM tree
 				WHERE tree."id" = ${params.anchorCommentId ?? null}::TEXT
-					AND (${focusAnchorVisibilityCondition})
 					AND (
 						${params.anchorThreadId ?? null}::TEXT IS NULL
 						OR tree."threadId" = ${params.anchorThreadId ?? null}::TEXT
@@ -1079,40 +846,45 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
 			`;
     })();
     const rows = await this.queryRows(
-      conversationRowSchema,
+      markedRootRowSchema,
       sql`
-			WITH RECURSIVE ${buildTodoConversationTreeCtes(params)},
+			WITH threads AS (
+				SELECT head.*
+				FROM ${todoComment} AS ${headComment}
+				WHERE ${headComment.todoId} = ${params.todoId}
+					AND ${headComment.parentId} IS NULL
+					AND (${threadCondition})
+			),
+			tree AS (
+				SELECT
+					head.*,
+					head."id" AS "threadId",
+					head."likeCount" AS "rootLikeCount",
+					head."replyCount" AS "rootReplyCount",
+					head."createdAt" AS "rootCreatedAt",
+					0 AS "replyRank"
+				FROM threads AS head
+
+				UNION ALL
+
+				SELECT
+					reply.*,
+					head."id",
+					head."likeCount",
+					head."replyCount",
+					head."createdAt",
+					1
+				FROM threads AS head
+				INNER JOIN ${todoComment} AS ${replyComment} ON ${replyComment.parentId} = head."id"
+			),
 			${selectionCte}
 			SELECT
 				selected."marker",
-				selected."id" AS "commentId",
-				selected."todoId",
-				selected."parentId",
-				selected."rootId",
-				to_json(selected."path") AS "path",
-				selected."depth",
-				selected."authorId",
-				${authorProfile.name} AS "authorName",
-				${authorUser.userTag} AS "authorUserTag",
-				${authorProfile.profileImage} AS "authorProfileImage",
-				${parentComment.authorId} AS "parentAuthorId",
-				${parentProfile.name} AS "parentAuthorName",
-				${todo.userId} AS "todoOwnerId",
-				selected."content",
-				selected."likeCount",
-				selected."replyCount",
+				${commentColumns(sql`selected`)},
 				${selectedRootLikeCountAtBoundary} AS "rootLikeCount",
-				${selectedRootReplyCountAtBoundary} AS "rootReplyCount",
-				to_json(selected."continuingAncestorDepths") AS "continuingAncestorDepths",
-				selected."deletedAt",
-				selected."editedAt",
-				selected."createdAt"
+				${selectedRootReplyCountAtBoundary} AS "rootReplyCount"
 			FROM selected
-			LEFT JOIN ${todo} ON ${todo.id} = selected."todoId"
-			LEFT JOIN ${userProfile} AS ${authorProfile} ON ${authorProfile.userId} = selected."authorId"
-			LEFT JOIN ${user} AS ${authorUser} ON ${authorUser.id} = selected."authorId"
-			LEFT JOIN ${todoComment} AS ${parentComment} ON ${parentComment.id} = selected."parentId"
-			LEFT JOIN ${userProfile} AS ${parentProfile} ON ${parentProfile.userId} = ${parentComment.authorId}
+			${commentJoins(sql`selected`)}
 			ORDER BY ${selectedOrder}
 		`,
     );
@@ -1121,100 +893,11 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
       return null;
     }
 
-    const markedRecords = rows.flatMap((row) => {
-      const record = toConversationRecord(row);
-      return record == null ? [] : [{ marker: row.marker, record }];
-    });
-    return this.toConversationWindow(markedRecords, params);
-  }
-
-  private toConversationWindow(
-    markedRecords: readonly {
-      marker: ConversationQueryRow["marker"];
-      record: TodoConversationRecord;
-    }[],
-    params: ListTodoConversationParams,
-  ): TodoConversationWindow {
-    if (params.mode === "FOCUS") {
-      return this.toFocusWindow(markedRecords, params.size);
-    }
-
-    const pageCandidates = markedRecords
-      .filter(({ marker }) => marker === "PAGE")
-      .map(({ record }) => record);
-    if (params.mode === "BEFORE") {
-      const hasPrevious = pageCandidates.length > params.size;
-      const items = hasPrevious ? pageCandidates.slice(-params.size) : pageCandidates;
-      return {
-        items,
-        anchorIndex: null,
-        previousRecord: hasPrevious ? (pageCandidates.at(-params.size - 1) ?? null) : null,
-        nextRecord: markedRecords.find(({ marker }) => marker === "NEXT")?.record ?? null,
-        hasPrevious: items.length > 0 && hasPrevious,
-        hasNext: items.length > 0,
-      };
-    }
-
-    const hasNext = pageCandidates.length > params.size;
-    const items = hasNext ? pageCandidates.slice(0, params.size) : pageCandidates;
-    return {
-      items,
-      anchorIndex: null,
-      previousRecord:
-        params.mode === "AFTER"
-          ? (markedRecords.find(({ marker }) => marker === "PREVIOUS")?.record ?? null)
-          : null,
-      nextRecord: hasNext ? (pageCandidates[params.size] ?? null) : null,
-      hasPrevious: items.length > 0 && params.mode === "AFTER",
-      hasNext: items.length > 0 && hasNext,
-    };
-  }
-
-  private toFocusWindow(
-    markedRecords: readonly {
-      marker: ConversationQueryRow["marker"];
-      record: TodoConversationRecord;
-    }[],
-    size: number,
-  ): TodoConversationWindow {
-    const before = markedRecords
-      .filter(({ marker }) => marker === "BEFORE")
-      .map(({ record }) => record);
-    const after = markedRecords
-      .filter(({ marker }) => marker === "AFTER")
-      .map(({ record }) => record);
-    const focus = markedRecords.find(({ marker }) => marker === "FOCUS")?.record;
-    if (focus == null) {
-      return {
-        items: [],
-        anchorIndex: null,
-        previousRecord: null,
-        nextRecord: null,
-        hasPrevious: false,
-        hasNext: false,
-      };
-    }
-
-    const desiredBefore = Math.floor(size / 2);
-    let beforeCount = Math.min(desiredBefore, before.length);
-    let afterCount = Math.min(size - beforeCount - 1, after.length);
-    beforeCount = Math.min(before.length, beforeCount + (size - beforeCount - afterCount - 1));
-    afterCount = Math.min(after.length, size - beforeCount - 1);
-    const selectedBefore = beforeCount === 0 ? [] : before.slice(-beforeCount);
-    const selectedAfter = after.slice(0, afterCount);
-
-    return {
-      items: [...selectedBefore, focus, ...selectedAfter],
-      anchorIndex: selectedBefore.length,
-      previousRecord: before.at(-beforeCount - 1) ?? null,
-      nextRecord: after[afterCount] ?? null,
-      hasPrevious: before.length > beforeCount,
-      hasNext: after.length > afterCount,
-    };
-  }
-
-  async findAncestors(todoId: number, path: readonly string[]): Promise<TodoCommentRecord[]> {
-    return this.findCommentRecords(todoId, path);
+    return toTodoCommentKeysetWindow(
+      toMarkedRecords(rows, toConversationRecord),
+      params.mode,
+      params.size,
+    );
   }
 
   async findLikedCommentIds(commentIds: readonly string[], viewerId: string): Promise<Set<string>> {

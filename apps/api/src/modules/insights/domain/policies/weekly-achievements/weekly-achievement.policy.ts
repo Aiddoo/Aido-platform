@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
-import { sumBy } from "es-toolkit";
+import { sortBy, sumBy } from "es-toolkit";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
@@ -110,9 +110,10 @@ export function computeSummary(rows: readonly WeeklyAchievementRow[]): WeeklyAch
     sumBy(rows, (row) => completionRateOf(row.totalTodos, row.completedTodos)) / totalWeeks,
   );
 
-  const records: readonly WeeklyAchievementRecord[] = rows
-    .map((row) => ({ year: row.year, week: row.week }))
-    .sort((a, b) => a.year - b.year || a.week - b.week);
+  const records: readonly WeeklyAchievementRecord[] = sortBy(
+    rows.map((row) => ({ year: row.year, week: row.week })),
+    ["year", "week"],
+  );
 
   const { currentStreak, bestStreak } = computeStreak(records);
 

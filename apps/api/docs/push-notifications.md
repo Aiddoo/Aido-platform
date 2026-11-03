@@ -92,6 +92,23 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 
 공지(`SYSTEM_NOTICE`·`ADMIN_BROADCAST`·`ADMIN_TARGETED`)는 종류만으로 갈 곳을 정할 수 없어 `DEEP_LINK` url에 앱 경로를 싣는다. 경로는 `@aido/api/vocabulary`의 `NOTICE_DEEP_LINK_PATH`(`/feed`, `/achievements`, `/weather`, `/friends`, `/friends/invite`, `/settings/subscription`, `/settings/notifications`) 중에서만 고른다. 1.13.0 앱은 이 경로만 열고 모르는 경로·쿼리·상세 id 경로는 이동하지 않으며, 이전 앱은 url을 무시하고 지금처럼 앱만 연다. url은 추가 필드라 기존 payload·응답 모양은 바뀌지 않는다.
 
+### 푸시 navigation (1.14.1+)
+
+push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판별하는 유니온이다(`@aido/api`의 `notificationNavigationSchema`, kind 값은 `@aido/api/vocabulary`의 `NOTIFICATION_NAVIGATION_KIND`). 서버는 `toNotificationNavigation`(Notification `application/services/delivery/notification-navigation.ts`) 하나에서 kind별 builder로 만들고, 앱은 `match(navigation).exhaustive()`로 목적지를 고른다.
+
+| kind                 | 싣는 값                                                                                                                        | 알림                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TODO_COMMENT`       | `todoId`, `commentId`, `threadCommentId`(대화 머리 댓글 = `routing.threadRootId`), `activityKind`, `todoOwnerId?`, `todoDate?` | 댓글·답글·좋아요(`TODO_SHARED`)                                                                                                                                       |
+| `TODO`               | `todoId`, `todoOwnerId?`, `todoDate?`                                                                                          | 댓글 재료가 없는 `TODO_SHARED`, `TODO_REMINDER`, 할 일 콕                                                                                                             |
+| `NUDGE`              | `nudgeId`                                                                                                                      | 할 일 콕, `NUDGE_REPLIED`·`NUDGE_THANKED`                                                                                                                             |
+| `CHEER`              | `cheerId`, `friendId`                                                                                                          | `CHEER_RECEIVED`                                                                                                                                                      |
+| `FRIEND_FEED`        | `friendId`                                                                                                                     | `FOLLOW_ACCEPTED`, `FRIEND_COMPLETED`, `NUDGE_SUGGEST`, 할 일 없는 콕                                                                                                 |
+| `WEATHER_RESCHEDULE` | `todoIds`, `reason`                                                                                                            | 옮기기 링크가 있는 `WEATHER_MORNING`                                                                                                                                  |
+| `EXTERNAL_URL`       | `url`(http(s)), `presentation`(`BROWSER`·`WEBVIEW`)                                                                            | `BROWSER`·`WEBVIEW` 액션                                                                                                                                              |
+| 화면만               | —                                                                                                                              | `FEED`, `FRIENDS`, `FRIEND_REQUESTS`, `WEATHER`, `ACHIEVEMENTS`, `REPORTS`, `SUGGESTIONS`, `INVITE`, `SUBSCRIPTION`, `NOTIFICATIONS`, `NOTIFICATION_SETTINGS`, `NONE` |
+
+목적지는 1.14.0 앱이 `type`·`action`·`context`·`routing`으로 고르던 곳과 같다. 그래서 `type`(`TODO_SHARED` 등 기존 값 포함)·`action`·`context`·`routing`은 구 앱 호환용으로 계속 함께 싣는다. 계약을 통과하지 못하는 값이면 `navigation`을 싣지 않고, 앱 schema도 모양이 틀린 `navigation`만 버려 기존 필드로 이동한다. 알림함 REST 응답(`NotificationListResponseDto`)은 배포 앱 fingerprint에 고정돼 있어 `navigation`을 더하지 않는다.
+
 | 공지         | url                                                                                           |
 | ------------ | --------------------------------------------------------------------------------------------- |
 | Retention V2 | 단계 정책이 고른 `/feed` 또는 `/achievements`                                                 |
@@ -144,7 +161,7 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 
 ## 구버전 클라이언트 호환성
 
-v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`, `context`의 이름과 의미는 바꾸지 않는다. v1.5 계열의 `dispatchId`, `campaignKey`, `variantId`, `purpose`, `marketingOptOutToken`은 모두 optional 추가 필드다. 과거 Zod object는 알 수 없는 optional 필드를 제거하므로 그대로 파싱된다.
+v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`, `context`의 이름과 의미는 바꾸지 않는다. v1.5 계열의 `dispatchId`, `campaignKey`, `variantId`, `purpose`, `marketingOptOutToken`은 모두 optional 추가 필드다. 1.14.1의 `navigation`도 optional 추가 필드다. 과거 Zod object는 알 수 없는 optional 필드를 제거하므로 그대로 파싱된다.
 
 호환성 테스트는 Git 릴리스 이력의 실제 알림 타입 enum을 반영한 v1.0~~v1.1, v1.2~~v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
 
@@ -156,21 +173,61 @@ v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`
 
 ## Delivery·receipt·롤아웃
 
-알림 기록, PushDispatch와 outbox, 외부 Expo 발송은 분리된다. worker는 publication generation·job ID·delivery attempt fence로 claim/finalize/retry를 제한한다. stale worker가 새 generation을 끝내지 못하게 하는 내부 원자성은 외부 푸시 exactly-once와 다르다.
+알림 기록, PushDispatch와 outbox, 외부 공급자 발송은 분리된다. 알림을 만드는 모든 경로(소셜·리마인더·리텐션·관리자 브로드캐스트)는 같은 transaction에서 `Notification`·`PushDispatch`·`PushDispatchOutbox`를 쓰고, commit 뒤 `push-delivery.v1` 작업이 발송한다. worker는 publication generation·job ID·delivery attempt fence로 claim/finalize/retry를 제한한다. stale worker가 새 generation을 끝내지 못하게 하는 내부 원자성은 외부 푸시 exactly-once와 다르다.
 
-Expo ticket 수락은 TICKET_ACCEPTED, receipt 성공은 DELIVERED다. receipt 조회 대상은 생성 후 15분 이상 24시간 이하인 TICKET_ACCEPTED 행이며 createdAt/id 순서로 제한한다. 너무 오래된 missing ticket이 앞 배치를 계속 차지하지 않지만 해당 행은 별도 terminal 처리 없이 남는다. SDK의 빈 receipt map은 받은 결과만 반영하고 응답 누락 ticket을 실패로 추측하지 않는다.
+공급자 경계는 채널 중립 `PushProvider` Port다(현재 Expo, 이후 FCM·Web Push). 공급자 오류 코드는 Adapter 안에서 `PushFailureKind`로 바꾼다.
 
-receipt 갱신은 TICKET_ACCEPTED에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. DeviceNotRegistered는 저장된 발송 token SHA256과 현재 token이 같을 때만 현재 token 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 하나의 UNIT_OF_WORK에서 처리하고 실패 시 함께 rollback한다. commit 뒤 user별 token cache invalidation은 allSettled로 실패를 격리해 기록한다.
+| PushFailureKind        | Expo 원본                                                  | 처리                                                    |
+| ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| `DEVICE_UNREGISTERED`  | `DeviceNotRegistered`                                      | 발송 당시 토큰이 그대로면 비활성화                      |
+| `INVALID_TOKEN`        | SDK 토큰 형식 검사 실패                                    | 비활성화                                                |
+| `PAYLOAD_TOO_LARGE`    | `MessageTooBig`, 4096 byte 초과                            | 실패 기록, 토큰 유지                                    |
+| `RATE_LIMITED`         | `MessageRateExceeded`                                      | 그 메시지만 1·2·4초 backoff 뒤 재전송, 남으면 실패 기록 |
+| `PROVIDER_REJECTED`    | `InvalidCredentials`, `DeveloperError`, `MismatchSenderId` | 실패 기록                                               |
+| `PROVIDER_UNAVAILABLE` | `ExpoError`, `ProviderError`                               | 실패 기록                                               |
+| `RECEIPT_EXPIRED`      | receipt 보관 기간(약 24시간) 안에 결과 없음                | `UNKNOWN`으로 닫음                                      |
+| `UNKNOWN`              | 그 밖의 코드                                               | 실패 기록                                               |
 
-새 nullable fingerprint DDL이 API보다 먼저 필요하다. 이전 행의 null fingerprint는 상태만 반영하며 token을 추측해 비활성화하지 않는다. 배포 순서·contract marker·이미지 rollback 범위는 [DEPLOYMENT.md](../DEPLOYMENT.md#db-전환-api보다-먼저-적용)에 있다.
+`PushDeliveryAttempt.failureKind`가 판단 기준이고 `errorCode`·`errorMessage`는 공급자 원본 진단 기록이다. 코드의 `providerTicketId`는 기존 컬럼 `expoTicketId`를 그대로 쓴다(운영 데이터를 옮기지 않으려고 컬럼 이름은 바꾸지 않았다).
+
+공급자 처리량: Expo 프로젝트 한도는 초당 600건이다. Adapter가 프로세스 안에서 초당 500건 토큰 버킷으로 청크(100건) 전송을 직렬화하고, SDK가 HTTP 429를 backoff 재시도하며 동시 요청을 6개로 제한한다. 운영 API는 단일 프로세스라 이 한도가 곧 전체 한도다. 인스턴스를 늘리면 `EXPO_PUSH_MESSAGES_PER_SECOND`를 인스턴스 수로 나눠야 한다.
+
+receipt 확인은 1분마다 돈다. 한 실행은 45초 예산 안에서 900건씩 남은 ticket이 없을 때까지 이어서 확인한다. 대상은 수락 뒤 15분~24시간이고 아직 확인하지 않았거나 마지막 확인이 15분 지난 `TICKET_ACCEPTED`이며, 확인 시각이 오래된 순서다. 결과가 아직 없는 ticket은 확인 시각만 남겨 뒤로 보내므로 오래된 ticket이 배치 앞자리를 계속 차지하지 않는다. 24시간이 지나도 결과가 없으면 `UNKNOWN`·`RECEIPT_EXPIRED`로 닫는다.
+
+receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. 토큰을 끄는 실패는 저장된 발송 token SHA256과 현재 token이 같을 때만 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 하나의 UNIT_OF_WORK에서 처리하고 실패 시 함께 rollback한다. commit 뒤 user별 token cache invalidation은 allSettled로 실패를 격리해 기록한다.
 
 남는 한계:
 
 - 보호는 이미 저장된 발송 당시 A fingerprint와 현재 B token 비교에 적용된다. network send 도중 token 회전으로 기존 token 문자열 lookup이 실패하면 attempt가 생략될 수 있다.
 - 같은 token을 다시 등록하는 ABA 등록 세대는 SHA256만으로 구별하지 못한다.
-- 앞 청크가 수락된 뒤 다음 청크 transport가 실패하면 전체 논리 배치 retry에서 중복 전달이 가능하다. SDK error 원문과 typed progress/cause 계약은 유지하며 원문/token/body/credential은 로그에 남기지 않는다.
-- receipt는 외부 provider handoff 결과다. 기기 알림 표시·사용자 열람·production drain 완료·운영 exactly-once를 보장하지 않는다.
+- 앞 청크가 수락된 뒤 다음 청크 transport가 실패하면 전체 논리 배치 retry에서 중복 전달이 가능하다. 원문/token/body/credential은 로그에 남기지 않는다.
+- receipt는 외부 provider handoff 결과다. 기기 알림 표시·사용자 열람·운영 exactly-once를 보장하지 않는다.
 
-기본 job runtime은 PostgreSQL/pg-boss다. legacy Redis/BullMQ queue aliases·payload·retry는 production 잔존 작업의 drain이 확인되기 전 제거하지 않는다. 일반 notification 잡은 `retryLimit=2`(최초 시도를 포함해 최대 3회)이며 push-delivery 잡의 별도 재시도 정책과 구분한다. 선택 backend/drain의 운영 절차는 [DEPLOYMENT.md](../DEPLOYMENT.md#job-전환과-잔존-작업)에 있다.
+## 큐와 작업 key
 
-로컬 실제 PostgreSQL은 rotation/replay/age 경계/legacy null/lifecycle 저장·rollback을, 실제 설치 Expo SDK + 차단된 HTTP fixture는 ticket/transport 순서·오류 반환·로그 비노출을 검증한다. 외부 network나 기기에 실제 발송한 증거와 구분한다. [Expo 공식 sending 문서](https://docs.expo.dev/push-notifications/sending-notifications/)는 15분 receipt 확인과 24시간 보관, DeviceNotRegistered 처리를 설명한다.
+큐 이름은 운영 계약이다. 새 큐는 `<context>.<purpose>.v1`, 작업 이름은 kebab-case로 짓고, 기존 큐는 남은 작업을 잃지 않도록 이름을 바꾸지 않는다. 큐마다 상수 모듈 하나가 이름·payload zod schema·재시도·보관·worker 정책을 소유하고 worker는 그 schema로 입력을 검증한다. 같은 원인 이벤트의 작업은 pg-boss `singletonKey`와 결정적 job id로 한 번만 저장된다.
+
+| 큐                                         | 작업                                                  | key                                                                                                                                                                                      | 실패                                                              |
+| ------------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `notification.v1`                          | follow·nudge·cheer·billing·friend-completed·milestone | `nudge-<id>`, `cheer-<id>`, `follow-new-<a>-<b>`, `follow-mutual-<user>-<friend>`, `billing-issue-<user>-<UTC 날짜>`, `friend-completed-<friend>-<현지 날짜>`, `milestone-<user>-<단계>` | 2회 재시도 뒤 `notification-dead-letter.v1`(14일 보관, 기록만)    |
+| `notification.v1`                          | `push-receipts`(1분 예약)                             | 예약 key `push-receipts-scheduler`                                                                                                                                                       | 2회 재시도                                                        |
+| `push-delivery.v1`                         | `deliver-dispatches`, `relay-outbox`(1분 예약)        | publication 집합의 SHA256                                                                                                                                                                | 5회 재시도 뒤 `push-delivery-dead-letter.v1`가 outbox를 다시 연다 |
+| `operations.broadcast-fan-out.v1`          | `fan-out-campaign`                                    | `broadcast-fan-out-<campaignId>-<cursor 또는 start>`                                                                                                                                     | 5회 재시도 뒤 DLQ가 캠페인을 `FAILED`로 닫음                      |
+| `retention.v1`                             | `retention-stage-sweep`(1분 예약)                     | 예약 key                                                                                                                                                                                 | 4회 재시도                                                        |
+| `todo-reminder.v1`, `timezone-reminder.v1` | 리마인더                                              | `reminder_<todoId>_<단계>`                                                                                                                                                               | 기존 정책                                                         |
+
+key builder는 `notification-job-keys.ts`(알림 Context)와 각 큐 상수 모듈에 순수 함수로 있다. 다른 Context는 커밋 뒤 `NotificationQueueService`로 이벤트를 넘기며 결과를 기다리지 않는다. 일시적인 저장 실패는 200ms 간격으로 3번 다시 시도하고, 그래도 실패하면 작업 이름과 오류 종류만 error로 남긴다. 종료 시 저장 중인 이벤트는 job runtime이 멈추기 전에 마친다.
+
+DB 연결: 앱 풀(`DATABASE_POOL_MAX` 기본 10)과 pg-boss 풀(`max: 3`)은 따로다. 앱 풀을 쓰는 worker 동시성은 push-delivery 5, notification 5, broadcast fan-out 1, 리마인더 1+1, retention 1이다. 각 작업은 짧은 transaction(claim·finalize·outbox 쓰기) 동안만 연결을 잡고 Expo 호출과 commit 뒤 enqueue 중에는 잡지 않는다. fan-out 한 페이지는 알림·dispatch·outbox 500건씩을 한 transaction에 쓴다. 최악의 경우 worker 13개가 동시에 연결을 원하면 HTTP 요청이 잠시 풀을 기다릴 수 있으므로 worker 동시성을 늘릴 때는 풀 크기를 함께 본다.
+
+## 관리자 브로드캐스트 캠페인
+
+`POST /v2/admin/notifications/broadcasts`는 캠페인을 만들고 첫 분배 작업을 같은 transaction에 등록한 뒤 202와 `campaignId`를 돌려준다. 요청 ID가 같은 재요청은 처음 캠페인을 돌려주고(내용이 다르면 409 `ADMIN_1405`), 대상이 없으면 404 `ADMIN_1402`다. 관리자마다 분당 5회까지다.
+
+분배 작업은 대상 사용자를 ID 순서로 500명씩 읽어 캠페인 key(`admin-broadcast:<campaignId>`)가 붙은 알림을 만든다. 페이지 저장과 cursor 전진이 한 transaction이라 worker가 죽어도 다음 시도가 마지막 커밋 cursor부터 이어 가며, 한 실행이 60초를 넘기면 다음 cursor 작업을 남긴다. 탈퇴·정지된 사용자는 다음 페이지 조회에서 빠지고, 수신 설정·야간·빈도 제한·토큰 상태는 발송 시점에 공용 정책으로 판단한다.
+
+`GET /v2/admin/notifications/broadcasts/{campaignId}`는 분배 진행(`recipients.processed`·`queued`), 사용자별 발송 상태(`dispatches`), 기기별 전달 결과(`deliveries`)를 집계한다. `queued`는 알림을 만들어 대기열에 올린 수이며 전달 수가 아니다. v1 `POST /v1/admin/notifications/broadcast`는 deprecated다. 같은 캠페인으로 접수하고 기존 응답 shape(`successCount`=대기열에 올릴 대상 수)를 유지한다.
+
+리텐션 실험은 단계 정책·예약만 소유한다. 발송할 단계는 공용 알림 발행(`purpose=ENGAGEMENT`, 단건 dispatch)으로 넘기므로 빈도 제한·광고성 동의·야간 억제·토큰 정리·receipt가 다른 알림과 같다.
+
+로컬 실제 PostgreSQL은 rotation/replay/age 경계/legacy null/lifecycle 저장·rollback과 receipt 만료·재확인 순서를, 실제 설치 Expo SDK + 차단된 HTTP fixture는 ticket/transport 순서·실패 분류·MessageRateExceeded 재전송·로그 비노출을 검증한다. 외부 network나 기기에 실제 발송한 증거와 구분한다. [Expo 공식 sending 문서](https://docs.expo.dev/push-notifications/sending-notifications/)는 15분 receipt 확인과 24시간 보관, 초당 600건 한도와 MessageRateExceeded backoff를 설명한다.

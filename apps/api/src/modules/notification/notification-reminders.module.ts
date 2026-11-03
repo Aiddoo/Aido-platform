@@ -22,14 +22,12 @@ import { TODO_REMINDER_READER } from "./application/ports/reminders/todo-reminde
 import { WEATHER_REMINDER_READER } from "./application/ports/reminders/weather-reminder-reader.port.js";
 import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/reminders/weekly-achievement-stats-reader.port.js";
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/reminders/scheduler-dedup.adapter.js";
-import { BullMQReminderSchedulerAdapter } from "./infrastructure/jobs/reminders/bullmq-reminder-scheduler.adapter.js";
-import {
-  TimezoneReminderQueueModule,
-  TimezoneReminderQueueService,
-} from "./infrastructure/jobs/reminders/index.js";
+import { TimezoneReminderQueueModule } from "./infrastructure/jobs/reminders/timezone-reminder-queue.module.js";
 import { TimezoneReminderProcessor } from "./infrastructure/jobs/reminders/timezone-reminder-queue.processor.js";
+import { TimezoneReminderQueueService } from "./infrastructure/jobs/reminders/timezone-reminder-queue.service.js";
+import { TodoReminderQueueProcessor } from "./infrastructure/jobs/reminders/todo-reminder-queue.processor.js";
+import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/reminders/todo-reminder-scheduler.adapter.js";
 import { DrizzleSchedulerReader } from "./infrastructure/persistence/reminders/drizzle-scheduler.reader.js";
-import { TodoReminderProcessor } from "./infrastructure/processors/reminders/todo-reminder.processor.js";
 import { NotificationDeliveryModule } from "./notification-delivery.module.js";
 import {
   eveningReminderStrategyProvider,
@@ -48,17 +46,6 @@ import {
   winbackStrategyProvider,
 } from "./notification-reminders-application.providers.js";
 
-/**
- * NotificationRemindersModule (클린아키텍처 4계층 + 포트/어댑터)
- *
- * 일정 기반 알림을 처리하는 모듈.
- * - 타임존 인식 리마인더: 매분 Sweep (BullMQ Job Scheduler — 아침/저녁 리마인더 통합)
- * - BullMQ 지연 잡: 투두 생성/수정 시 정확한 시점에 리마인더 예약 (Redis 영속성)
- *
- * - domain: 스케줄 정책(순수 함수) — 알림 시간·리마인더 단계·winback·onboarding
- * - application: 오케스트레이터·13 전략·리더/enqueuer 포트
- * - infrastructure: Drizzle 리더·BullMQ 큐/스케줄러/프로세서
- */
 @Module({
   imports: [
     TimezoneReminderQueueModule,
@@ -108,18 +95,15 @@ import {
       provide: SCHEDULER_PREFERENCE_READER,
       useExisting: DrizzleSchedulerReader,
     },
-    // enqueue 포트 (BullMQ 큐 서비스 재사용)
     {
       provide: TIMEZONE_REMINDER_ENQUEUER,
       useExisting: TimezoneReminderQueueService,
     },
-    // BullMQ 프로세서 (진입 어댑터)
     TimezoneReminderProcessor,
-    TodoReminderProcessor,
-    // 리마인더 스케줄러 포트 (todo 소비)
+    TodoReminderQueueProcessor,
     {
       provide: REMINDER_SCHEDULER,
-      useClass: BullMQReminderSchedulerAdapter,
+      useClass: TodoReminderSchedulerAdapter,
     },
   ],
   exports: [REMINDER_SCHEDULER],

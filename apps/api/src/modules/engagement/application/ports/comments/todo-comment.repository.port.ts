@@ -36,13 +36,10 @@ export interface TodoCommentRepositoryPort {
   increaseTodoCommentCount(todoId: number, amount: number): Promise<void>;
   /** 댓글 수가 양수일 때만 내린다. 불변식이 깨졌으면 false. */
   decrementTodoCommentCount(todoId: number): Promise<boolean>;
-  /** 삭제되지 않은 부모에만 답글 자리를 하나 추가한다. */
-  incrementReplyCount(parentId: string): Promise<boolean>;
-  /**
-   * 삭제된 댓글이 목록에서 사라진 만큼 조상의 답글 수를 줄인다.
-   * 답글이 남은 댓글은 묘비로 자리를 지키므로 사라짐이 거기서 멈춘다.
-   */
-  dropDeletedFromAncestors(commentId: string, path: readonly string[]): Promise<void>;
+  /** 묶음 머리 댓글의 답글 수를 늘린다. 머리가 없으면 false. */
+  increaseReplyCount(commentId: string, amount: number): Promise<boolean>;
+  /** 묶음 머리 댓글의 답글 수가 양수일 때만 하나 내린다. 불변식이 깨졌으면 false. */
+  decreaseReplyCount(commentId: string): Promise<boolean>;
   setLike(todoId: number, commentId: string, userId: string): Promise<TodoCommentLikeTransition>;
   findPendingLikeNotification(
     todoId: number,

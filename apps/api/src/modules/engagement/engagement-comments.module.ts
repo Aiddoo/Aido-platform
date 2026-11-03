@@ -15,7 +15,8 @@ import { TODO_VIEW_CACHE } from "./application/ports/comments/todo-view-cache.po
 import { TodoCommentAccountCleanup } from "./application/services/comments/todo-comment-account-cleanup.service.js";
 import {
   deleteTodoCommentProvider,
-  getTodoCommentOverviewProvider,
+  getTodoCommentRepliesProvider,
+  getTodoCommentThreadsProvider,
   getTodoConversationProvider,
   getTodoDetailsProvider,
   likeTodoCommentProvider,
@@ -31,10 +32,11 @@ import { DrizzleTodoCommentReader } from "./infrastructure/persistence/comments/
 import { DrizzleTodoCommentRepository } from "./infrastructure/persistence/comments/drizzle-todo-comment.repository.js";
 import { HmacTodoCommentCursorCodec } from "./infrastructure/security/comments/hmac-todo-comment-cursor.codec.js";
 import { TodoCommentController } from "./presentation/controllers/comments/v1/todo-comment.controller.js";
+import { TodoCommentV2Controller } from "./presentation/controllers/comments/v2/todo-comment.controller.js";
 
 @Module({
   imports: [NotificationDeliveryModule, PlanningTodosModule, SocialBlocksModule],
-  controllers: [TodoCommentController],
+  controllers: [TodoCommentController, TodoCommentV2Controller],
   providers: [
     HmacTodoCommentCursorCodec,
     { provide: TODO_COMMENT_CURSOR_CODEC, useExisting: HmacTodoCommentCursorCodec },
@@ -51,7 +53,8 @@ import { TodoCommentController } from "./presentation/controllers/comments/v1/to
     { provide: TODO_VIEW_CACHE, useClass: TodoViewCacheAdapter },
     { provide: TODO_COMMENT_BLOCK_READER, useExisting: USER_BLOCK_READER },
     getTodoDetailsProvider,
-    getTodoCommentOverviewProvider,
+    getTodoCommentRepliesProvider,
+    getTodoCommentThreadsProvider,
     getTodoConversationProvider,
     todoCommentAccountCleanupProvider,
     { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },

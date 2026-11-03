@@ -1,4 +1,4 @@
-import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 import { match } from "ts-pattern";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
@@ -11,17 +11,20 @@ import { SendFollowRequestNotification } from "../../../application/use-cases/de
 import { SendFriendCompletionNotifications } from "../../../application/use-cases/delivery/send-friend-completion-notifications.use-case.js";
 import { SendMilestoneNotification } from "../../../application/use-cases/delivery/send-milestone-notification.use-case.js";
 import { SendNudgeNotification } from "../../../application/use-cases/delivery/send-nudge-notification.use-case.js";
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 import {
-  NOTIFICATION_LEGACY_QUEUE,
+  NOTIFICATION_DEAD_LETTER_QUEUE,
+  NOTIFICATION_DEAD_LETTER_WORKER_POLICY,
   NOTIFICATION_QUEUE,
   NOTIFICATION_WORKER_POLICY,
   NotificationJobName,
   NotificationRuntimeJobSchema,
 } from "./notification-queue.constants.js";
 
-/** Queue adapter: validates transport input and routes it to application use cases. */
 @Injectable()
 export class NotificationQueueProcessor implements OnModuleInit {
+  readonly #logger = new Logger(NotificationQueueProcessor.name);
+
   constructor(
     private readonly sendFollowRequest: SendFollowRequestNotification,
     private readonly sendFollowAccepted: SendFollowAcceptedNotification,
@@ -51,14 +54,23 @@ export class NotificationQueueProcessor implements OnModuleInit {
       NOTIFICATION_WORKER_POLICY,
     );
     await this.runtime.work(
-      NOTIFICATION_LEGACY_QUEUE,
+      NOTIFICATION_DEAD_LETTER_QUEUE,
       async (jobs) => {
         for (const job of jobs) {
-          await this.process({ name: job.name, data: job.data });
+          this.recordDeadLetter(job.data);
         }
       },
-      NOTIFICATION_WORKER_POLICY,
+      NOTIFICATION_DEAD_LETTER_WORKER_POLICY,
     );
+  }
+
+  /** 재시도를 다 쓴 알림 이벤트는 다시 보내지 않는다. 늦은 소셜 알림은 의미가 없어 기록만 남긴다. */
+  recordDeadLetter(untrustedJob: unknown): void {
+    const parsed = NotificationRuntimeJobSchema.safeParse(untrustedJob);
+    this.#logger.error({
+      event: NotificationProviderLogEvent.JOB_DEAD_LETTERED,
+      jobName: parsed.success ? parsed.data.name : "invalid",
+    });
   }
 
   async process(untrustedJob: unknown): Promise<void> {

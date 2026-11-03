@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
@@ -44,7 +46,10 @@ export class AdminController {
   @ApiDoc({
     summary: "전체/조건부 알림 발송",
     operationId: "broadcastNotification",
-    description: `지정된 대상 필터에 따라 여러 사용자에게 알림을 발송합니다.
+    deprecated: true,
+    description: `관리자 도구가 v2 캠페인 API(\`POST /v2/admin/notifications/broadcasts\`)로 옮길 때까지 유지합니다.
+
+v2와 같은 캠페인으로 접수하고 바로 응답합니다. 응답 수는 접수 시점에 발송 대기열에 올릴 대상 수이며 전달 결과가 아닙니다. 요청 ID가 없어 재요청은 새 캠페인이 됩니다.
 
 **대상 필터 옵션**
 - \`ALL\`: 모든 활성 사용자
@@ -62,6 +67,7 @@ export class AdminController {
     @Body({ schema: BroadcastNotificationDto }) dto: BroadcastNotificationDto,
   ): Promise<BroadcastResultDto> {
     return this.#broadcastNotification.execute({
+      requestId: randomUUID(),
       title: dto.title,
       body: dto.body,
       targetFilter: dto.targetFilter,

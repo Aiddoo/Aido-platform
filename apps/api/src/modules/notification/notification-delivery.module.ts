@@ -20,6 +20,7 @@ import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delive
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
 import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
+import { PUSH_CAMPAIGN_OUTCOME_READER } from "./application/ports/delivery/push-campaign-outcome.reader.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/delivery/push-delivery-outbox.repository.port.js";
@@ -51,6 +52,7 @@ import { DrizzleClientAppVersionReader } from "./infrastructure/persistence/deli
 import { DrizzleNotificationTodoTargetReader } from "./infrastructure/persistence/delivery/drizzle-notification-todo-target.reader.js";
 import { DrizzleNotificationReader } from "./infrastructure/persistence/delivery/drizzle-notification.reader.js";
 import { DrizzleNotificationRepository } from "./infrastructure/persistence/delivery/drizzle-notification.repository.js";
+import { DrizzlePushCampaignOutcomeReader } from "./infrastructure/persistence/delivery/drizzle-push-campaign-outcome.reader.js";
 import { DrizzlePushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository.js";
 import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository.js";
@@ -139,6 +141,7 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
     DrizzlePushReceiptRepository,
     { provide: PUSH_RECEIPT_REPOSITORY, useExisting: DrizzlePushReceiptRepository },
+    { provide: PUSH_CAMPAIGN_OUTCOME_READER, useClass: DrizzlePushCampaignOutcomeReader },
     DrizzlePushDispatchStagingRepository,
     { provide: PUSH_DISPATCH_STAGING, useExisting: DrizzlePushDispatchStagingRepository },
     DrizzlePushDeliveryOutboxRepository,
@@ -236,9 +239,7 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     PUSH_QUIET_HOURS_READER,
     NotificationAccountCleanup,
     NotificationQueueModule,
-    PUSH_PROVIDER,
-    PUSH_RATE_LIMITER,
-    MARKETING_PUSH_OPT_OUT_TOKEN,
+    PUSH_CAMPAIGN_OUTCOME_READER,
   ],
 })
 export class NotificationDeliveryModule {}

@@ -191,8 +191,10 @@ export const pushDeliveryAttempt = pgTable(
     dispatchId: integer().notNull(),
     errorCode: varchar({ length: 100 }),
     errorMessage: varchar({ length: 500 }),
-    expoTicketId: varchar({ length: 100 }),
+    failureKind: varchar({ length: 40 }),
     id: serial().primaryKey(),
+    /** 공급자 중립 이름. 컬럼은 운영 데이터 호환을 위해 기존 이름을 유지한다. */
+    providerTicketId: varchar("expoTicketId", { length: 100 }),
     pushTokenId: integer().notNull(),
     receiptCheckedAt: timestamp({ precision: 3 }),
     status: pushDeliveryStatus().default("PENDING").notNull(),
@@ -226,7 +228,7 @@ export const pushDeliveryAttempt = pgTable(
       table.dispatchId,
       table.pushTokenId,
     ),
-    unique("PushDeliveryAttempt_expoTicketId_key").on(table.expoTicketId),
+    unique("PushDeliveryAttempt_expoTicketId_key").on(table.providerTicketId),
   ],
 );
 

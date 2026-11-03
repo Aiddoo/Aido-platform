@@ -1,4 +1,4 @@
-import { decideRetentionStage, localDateString } from "./stage-policy.js";
+import { decideRetentionStage } from "./stage-policy.js";
 
 describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
   const base = {
@@ -59,9 +59,5 @@ describe("decideRetentionStage — D7 리텐션 단계 정책", () => {
         activeToday: true,
       }),
     ).toEqual({ kind: "EVALUATE_ONLY", reason: "ACTIVE_ON_D7" });
-  });
-
-  it("locale 출력 형식과 무관하게 사용자 현지 날짜를 YYYY-MM-DD로 만든다", () => {
-    expect(localDateString(new Date("2026-07-15T15:30:00.000Z"), "Asia/Seoul")).toBe("2026-07-16");
   });
 });

@@ -132,6 +132,7 @@ export interface SocialCopyVariablesByKey {
   readonly TODO_COMMENT: { readonly senderName: string };
   readonly TODO_COMMENT_CHAIN: { readonly senderName: string; readonly count: number };
   readonly TODO_COMMENT_REPLY: { readonly senderName: string };
+  readonly TODO_COMMENT_REPLY_TO_REPLY: { readonly senderName: string };
   readonly TODO_COMMENT_REPLY_CHAIN: { readonly senderName: string; readonly count: number };
   readonly TODO_COMMENT_LIKE: { readonly senderName: string };
 }

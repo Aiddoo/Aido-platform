@@ -1,82 +1,20 @@
 import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
-import type { Mocked } from "vitest";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
-
-import { DispatchRetentionPush } from "../../../application/use-cases/retention/dispatch-retention-push.use-case.js";
-import { RecoverFailedRetentionDelivery } from "../../../application/use-cases/retention/recover-failed-retention-delivery.use-case.js";
-import {
-  RETENTION_DEAD_LETTER_QUEUE,
-  RETENTION_DEAD_LETTER_WORKER_POLICY,
-  RetentionJobName,
-} from "./retention-queue.constants.js";
+import { ProcessRetentionStages } from "../../../application/use-cases/retention/process-retention-stages.use-case.js";
+import { RetentionJobName } from "./retention-queue.constants.js";
 import { RetentionQueueProcessor } from "./retention-queue.processor.js";
 
-describe("RetentionQueueProcessor", () => {
-  let processor: RetentionQueueProcessor;
-  let runtime: Mocked<JobRuntimePort>;
-  let dispatch: Mocked<DispatchRetentionPush>;
-  let recover: Mocked<RecoverFailedRetentionDelivery>;
+describe("RetentionQueueProcessor — 리텐션 작업 처리", () => {
+  it("단계 sweep 작업은 단계 처리로 넘기고 이전 배포가 남긴 발송 작업은 처리 없이 완료한다", async () => {
+    // Given
+    const { unit: processor, unitRef } = await TestBed.solitary(RetentionQueueProcessor).compile();
+    const processStages = unitRef.get(ProcessRetentionStages);
 
-  beforeEach(async () => {
-    const compiled = await TestBed.solitary(RetentionQueueProcessor)
-      .mock<JobRuntimePort>(JOB_RUNTIME)
-      .impl(() => ({
-        start: vi.fn(),
-        stop: vi.fn(),
-        enqueue: vi.fn(),
-        schedule: vi.fn(),
-        unschedule: vi.fn(),
-        cancel: vi.fn(),
-        work: vi.fn(),
-        health: vi.fn(),
-      }))
-      .compile();
-    processor = compiled.unit;
-    runtime = compiled.unitRef.get(JOB_RUNTIME);
-    dispatch = compiled.unitRef.get(DispatchRetentionPush);
-    recover = compiled.unitRef.get(RecoverFailedRetentionDelivery);
-  });
+    // When
+    await processor.process({ name: "retention-dispatch", data: { outboxId: "outbox-1" } });
+    await processor.process({ name: RetentionJobName.STAGE_SWEEP, data: {} });
 
-  it("actual envelope id/attempt와 final-attempt 의미를 dispatch use case에 전달한다", async () => {
-    await processor.process("retention-job", 5, {
-      name: RetentionJobName.DISPATCH,
-      data: { outboxId: "outbox-1", publishAttempt: 2 },
-    });
-
-    expect(dispatch.execute).toHaveBeenCalledWith({
-      outboxId: "outbox-1",
-      publishAttempt: 2,
-      processingJobId: "retention-job",
-      processingJobAttempt: 5,
-      isFinalAttempt: true,
-    });
-  });
-
-  it("전용 DLQ worker는 legacy/current strict payload를 recovery use case에 전달한다", async () => {
-    await processor.onModuleInit();
-    const deadLetterWorker = runtime.work.mock.calls.find(
-      ([queue]) => queue === RETENTION_DEAD_LETTER_QUEUE,
-    )?.[1];
-
-    await deadLetterWorker?.([
-      {
-        id: "retention-dlq-job",
-        name: RETENTION_DEAD_LETTER_QUEUE,
-        data: {
-          name: RetentionJobName.DISPATCH,
-          data: { outboxId: "outbox-1", publishAttempt: 2 },
-        },
-        attempt: 1,
-      },
-    ]);
-
-    expect(recover.execute).toHaveBeenCalledWith({ outboxId: "outbox-1", publishAttempt: 2 });
-    expect(runtime.work).toHaveBeenCalledWith(
-      RETENTION_DEAD_LETTER_QUEUE,
-      expect.any(Function),
-      RETENTION_DEAD_LETTER_WORKER_POLICY,
-    );
+    // Then
+    expect(processStages.execute).toHaveBeenCalledTimes(1);
   });
 });

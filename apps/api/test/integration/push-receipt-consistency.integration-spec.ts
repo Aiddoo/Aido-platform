@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import { vi } from "vitest";
 
+import { pushReceiptCheckWindow } from "#api/modules/notification/application/policies/delivery/push-receipt.policy";
+import type { PushReceiptResult } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { ReconcilePushReceipts } from "#api/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
@@ -22,6 +24,17 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 const AT = new Date("2026-10-08T03:00:00.000Z");
 const ACCEPTED_AT = new Date("2026-10-08T02:40:00.000Z");
 const fingerprint = (token: string) => createHash("sha256").update(token).digest("hex");
+const unregistered = (ticketId: string): PushReceiptResult => ({
+  ticketId,
+  status: "failed",
+  failure: { kind: "DEVICE_UNREGISTERED", providerCode: "DeviceNotRegistered" },
+});
+const delivered = (ticketId: string): PushReceiptResult => ({ ticketId, status: "delivered" });
+const payloadTooLarge = (ticketId: string): PushReceiptResult => ({
+  ticketId,
+  status: "failed",
+  failure: { kind: "PAYLOAD_TOO_LARGE", providerCode: "MessageTooBig" },
+});
 
 describe("receipt 정합성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -77,7 +90,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         pushTokenId: token.id,
         tokenFingerprint: options.legacy === true ? null : fingerprint(token.token),
         status: "TICKET_ACCEPTED",
-        expoTicketId: `ticket-${suffix}`,
+        providerTicketId: `ticket-${suffix}`,
         createdAt: options.acceptedAt ?? ACCEPTED_AT,
       })
       .returning();
@@ -95,9 +108,20 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     };
   }
 
+  function record(
+    f: { readonly receipts: DrizzlePushReceiptRepository },
+    results: readonly PushReceiptResult[],
+  ) {
+    return f.receipts.recordPushReceipts({
+      requestedTicketIds: results.map(({ ticketId }) => ticketId),
+      results,
+      checkedAt: AT,
+    });
+  }
+
   async function readAttempt(ticketId: string) {
     return requireRecord(
-      await client.query.pushDeliveryAttempt.findFirst({ where: { expoTicketId: ticketId } }),
+      await client.query.pushDeliveryAttempt.findFirst({ where: { providerTicketId: ticketId } }),
     );
   }
 
@@ -112,9 +136,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     });
 
     // When
-    const invalid = await f.receipts.recordPushReceipts([
-      { ticketId: f.ticketId, delivered: false, errorCode: "DeviceNotRegistered" },
-    ]);
+    const invalid = await record(f, [unregistered(f.ticketId)]);
     await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));
 
     // Then
@@ -134,9 +156,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const f = await fixture("same");
 
     // When
-    const invalid = await f.receipts.recordPushReceipts([
-      { ticketId: f.ticketId, delivered: false, errorCode: "DeviceNotRegistered" },
-    ]);
+    const invalid = await record(f, [unregistered(f.ticketId)]);
     await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));
 
     // Then
@@ -149,9 +169,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
   it("receipt 확인 뒤 등록이 토큰을 회전해도 이전 문자열의 비활성화는 새 토큰을 건드리지 않는다", async () => {
     // Given
     const f = await fixture("between");
-    const invalid = await f.receipts.recordPushReceipts([
-      { ticketId: f.ticketId, delivered: false, errorCode: "DeviceNotRegistered" },
-    ]);
+    const invalid = await record(f, [unregistered(f.ticketId)]);
 
     // When
     await f.tokens.registerPushToken({
@@ -174,9 +192,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const f = await fixture("legacy", { legacy: true });
 
     // When
-    const invalid = await f.receipts.recordPushReceipts([
-      { ticketId: f.ticketId, delivered: false, errorCode: "DeviceNotRegistered" },
-    ]);
+    const invalid = await record(f, [unregistered(f.ticketId)]);
 
     // Then
     expect(invalid).toEqual([]);
@@ -189,12 +205,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
   it("이미 확인된 delivered receipt는 뒤늦은 중복 오류로 되돌아가지 않는다", async () => {
     // Given
     const f = await fixture("delivered");
-    await f.receipts.recordPushReceipts([{ ticketId: f.ticketId, delivered: true }]);
+    await record(f, [delivered(f.ticketId)]);
 
     // When
-    const replay = await f.receipts.recordPushReceipts([
-      { ticketId: f.ticketId, delivered: false, errorCode: "DeviceNotRegistered" },
-    ]);
+    const replay = await record(f, [unregistered(f.ticketId)]);
 
     // Then
     expect(replay).toEqual([]);
@@ -204,16 +218,15 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
   it("이미 실패한 receipt도 중복 성공 응답으로 되돌아가지 않는다", async () => {
     // Given
     const f = await fixture("failed");
-    await f.receipts.recordPushReceipts([
-      { ticketId: f.ticketId, delivered: false, errorCode: "MessageTooBig" },
-    ]);
+    await record(f, [payloadTooLarge(f.ticketId)]);
 
     // When
-    await f.receipts.recordPushReceipts([{ ticketId: f.ticketId, delivered: true }]);
+    await record(f, [delivered(f.ticketId)]);
 
     // Then
     expect(await readAttempt(f.ticketId)).toMatchObject({
       status: "FAILED",
+      failureKind: "PAYLOAD_TOO_LARGE",
       errorCode: "MessageTooBig",
     });
   });
@@ -224,10 +237,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const recent = await fixture("recent");
 
     // When
-    const pending = await old.receipts.findPendingPushReceipts(1);
+    const pending = await old.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT), 1);
 
     // Then
-    expect(pending.map((item) => item.ticketId)).toEqual([recent.ticketId]);
+    expect(pending).toEqual([recent.ticketId]);
   });
 
   it("15분 이전 ticket은 대기하고 15분 경계 ticket부터 조회한다", async () => {
@@ -236,10 +249,51 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const ready = await fixture("ready", { acceptedAt: new Date("2026-10-08T02:45:00.000Z") });
 
     // When
-    const pending = await waiting.receipts.findPendingPushReceipts(900);
+    const pending = await waiting.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT), 900);
 
     // Then
-    expect(pending.map((item) => item.ticketId)).toEqual([ready.ticketId]);
+    expect(pending).toEqual([ready.ticketId]);
+  });
+
+  it("아직 결과가 없는 ticket은 확인 시각만 남겨 다른 ticket보다 뒤로 미룬다", async () => {
+    // Given: 가장 오래된 ticket의 receipt가 아직 오지 않는다
+    const stuck = await fixture("stuck", { acceptedAt: new Date("2026-10-08T01:00:00.000Z") });
+    const next = await fixture("next");
+
+    // When
+    await stuck.receipts.recordPushReceipts({
+      requestedTicketIds: [stuck.ticketId],
+      results: [],
+      checkedAt: AT,
+    });
+    const pending = await stuck.receipts.findPendingTicketIds(pushReceiptCheckWindow(AT), 1);
+
+    // Then
+    expect(pending).toEqual([next.ticketId]);
+    expect(await readAttempt(stuck.ticketId)).toMatchObject({
+      status: "TICKET_ACCEPTED",
+      receiptCheckedAt: AT,
+    });
+  });
+
+  it("보관 기간 안에 receipt가 오지 않은 ticket은 결과 미상으로 닫는다", async () => {
+    // Given
+    const expired = await fixture("expired", { acceptedAt: new Date("2026-10-07T01:00:00.000Z") });
+    const fresh = await fixture("fresh");
+
+    // When
+    const closed = await expired.receipts.expireUnreceipted(
+      pushReceiptCheckWindow(AT).acceptedAfter,
+      100,
+    );
+
+    // Then
+    expect(closed).toBe(1);
+    expect(await readAttempt(expired.ticketId)).toMatchObject({
+      status: "UNKNOWN",
+      failureKind: "RECEIPT_EXPIRED",
+    });
+    expect((await readAttempt(fresh.ticketId)).status).toBe("TICKET_ACCEPTED");
   });
 
   it("실제 outbox claim·finalize는 토큰 원문 대신 발송 토큰의 SHA256을 저장한다", async () => {
@@ -279,7 +333,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         {
           fence: claim.fence,
           context: { timezone: "UTC", localDate: new Date("2026-10-08T00:00:00.000Z") },
-          results: [{ token: f.token.token, success: true, ticketId: "finalized-ticket" }],
+          results: [{ token: f.token.token, status: "accepted", ticketId: "finalized-ticket" }],
         },
       ]),
     );
@@ -315,12 +369,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       },
       pushProvider: {
         async getReceipts(ticketIds) {
-          requests.push(ticketIds);
-          return ticketIds.map((ticketId) => ({
-            ticketId,
-            delivered: false,
-            errorCode: "DeviceNotRegistered",
-          }));
+          requests.push([...ticketIds]);
+          return ticketIds.map(unregistered);
         },
       },
       unitOfWork: f.uow,

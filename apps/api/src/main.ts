@@ -85,6 +85,10 @@ async function bootstrap() {
       .addTag(SWAGGER_TAGS.USER_AUTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH])
       .addTag(SWAGGER_TAGS.TODOS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODOS])
       .addTag(SWAGGER_TAGS.TODO_CATEGORIES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_CATEGORIES])
+      .addTag(
+        SWAGGER_TAGS.TODO_COMMENTS_V2,
+        SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_COMMENTS_V2],
+      )
       .addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
       // 소셜 기능 APIs
       .addTag(SWAGGER_TAGS.FOLLOWS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS])
@@ -156,6 +160,8 @@ async function bootstrap() {
 | ADMIN_1401 | 403 | 관리자 권한이 필요합니다 |
 | ADMIN_1402 | 404 | 알림 대상 사용자가 없습니다 |
 | ADMIN_1403 | 400 | 유효하지 않은 필터 조건입니다 |
+| ADMIN_1404 | 404 | 브로드캐스트 캠페인을 찾을 수 없습니다 |
+| ADMIN_1405 | 409 | 같은 요청 ID로 다른 브로드캐스트가 이미 접수되었습니다 |
 | REPORT_2255 | 404 | 신고를 찾을 수 없습니다 |
 `)
       .setVersion(apiVersion)

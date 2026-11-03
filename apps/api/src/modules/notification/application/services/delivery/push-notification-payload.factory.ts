@@ -6,6 +6,7 @@ import { isMarketingNotification } from "../../../domain/services/delivery/push-
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import type { PushPayload } from "../../ports/delivery/push-provider.port.js";
+import { toNotificationNavigation } from "./notification-navigation.js";
 import { toNotificationRouting } from "./notification-routing.js";
 
 interface CreatePushNotificationPayloadInput {
@@ -50,21 +51,14 @@ export class PushNotificationPayloadFactory {
   }
 
   createBatch(input: CreatePushNotificationPayloadInput): BatchPushNotificationPayload {
-    const { data, notificationId, dispatchId } = input;
+    const { data, dispatchId } = input;
     const minAppVersion = notificationMinAppVersion(data.type);
     return {
       userId: data.userId,
       dispatchId,
       requiresFeatureCapability: data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
       ...(minAppVersion != null && { minAppVersion }),
-      title: data.title,
-      body: data.body,
-      data: {
-        ...this.#createNotificationData(data, notificationId),
-        dispatchId,
-      },
-      // 기존 배치 provider 계약은 categoryId를 전달하지 않는다. 단건과의 차이는
-      // 후속 제품 변경에서 별도로 다루고 이번 구조 분리에서는 유지한다.
+      ...this.createSingle(input),
     };
   }
 
@@ -90,6 +84,7 @@ export class PushNotificationPayloadFactory {
       context.cheerId = data.cheerId;
     }
     const routing = toNotificationRouting(data.metadata);
+    const navigation = toNotificationNavigation({ ...data, routing });
 
     return {
       notificationId,
@@ -100,6 +95,7 @@ export class PushNotificationPayloadFactory {
       },
       ...(Object.keys(context).length > 0 && { context }),
       ...(routing && { routing }),
+      ...(navigation && { navigation }),
       ...(data.campaignKey && { campaignKey: data.campaignKey }),
       ...(data.variantId && { variantId: data.variantId }),
       ...(data.purpose && { purpose: data.purpose }),

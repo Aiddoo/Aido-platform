@@ -60,7 +60,7 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
     ]);
   });
 
-  it("500명 경계를 넘는 전체 발송은 활성 사용자만 ID 순서대로 누락과 중복 없이 나눈다", async () => {
+  it("500명 경계를 넘는 전체 대상은 cursor로 활성 사용자만 ID 순서대로 누락과 중복 없이 나눈다", async () => {
     // Given
     const activeUsers = Array.from({ length: 501 }, (_, index) =>
       UserFixture.create({ id: `active-${String(index).padStart(4, "0")}` }),
@@ -74,14 +74,14 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
       ]);
 
     // When
-    const batches = [];
-    for await (const batch of directory.streamTargetUserIds("ALL")) {
-      batches.push(batch);
-    }
+    const firstPage = await directory.findTargetUserIdsAfter("ALL", null, 500);
+    const secondPage = await directory.findTargetUserIdsAfter("ALL", firstPage.at(-1) ?? null, 500);
+    const total = await directory.countTargets("ALL");
 
     // Then
-    expect(batches.map((batch) => batch.length)).toEqual([500, 1]);
-    expect(batches.flat()).toEqual(activeUsers.map((item) => item.id));
+    expect([firstPage.length, secondPage.length]).toEqual([500, 1]);
+    expect([...firstPage, ...secondPage]).toEqual(activeUsers.map((item) => item.id));
+    expect(total).toBe(501);
   });
 
   it("지정 발송은 기존 상태 필터를 바꾸지 않고 삭제되거나 없는 사용자만 제외한다", async () => {

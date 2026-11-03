@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
 import type { TodoCommentState } from "../../records/comments/todo-comment.record.js";
-import { ThreadPlacement } from "../../value-objects/comments/thread-placement.vo.js";
+import { CommentPlacement } from "../../value-objects/comments/comment-placement.vo.js";
 import { TodoCommentContent } from "../../value-objects/comments/todo-comment-content.vo.js";
 import { TodoCommentId } from "../../value-objects/comments/todo-comment-id.vo.js";
 
@@ -11,8 +11,9 @@ interface TodoCommentProps {
   id: TodoCommentId;
   todoId: number;
   authorId: string;
-  placement: ThreadPlacement;
+  placement: CommentPlacement;
   content: TodoCommentContent | null;
+  replyCount: number;
   deletedAt: Date | null;
   editedAt: Date | null;
   createdAt: Date;
@@ -25,15 +26,15 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
       id: TodoCommentId.create(props.id),
       todoId: props.todoId,
       authorId: props.authorId,
-      placement: ThreadPlacement.reconstitute({
+      placement: CommentPlacement.reconstitute({
         parentId: props.parentId,
-        rootId: props.rootId,
-        path: props.path,
+        replyToCommentId: props.replyToCommentId,
       }),
       content:
         props.content == null || props.content.length === 0
           ? null
           : TodoCommentContent.create(props.content),
+      replyCount: props.replyCount,
       deletedAt: props.deletedAt == null ? null : new Date(props.deletedAt),
       editedAt: props.editedAt == null ? null : new Date(props.editedAt),
       createdAt: new Date(props.createdAt),
@@ -53,18 +54,23 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
     return this.props.authorId;
   }
 
-  get placement(): ThreadPlacement {
+  get placement(): CommentPlacement {
     return this.props.placement;
   }
 
-  get threadRootId(): TodoCommentId {
-    return this.props.placement.rootId ?? this.props.id;
+  get isReply(): boolean {
+    return this.props.placement.kind === "REPLY";
   }
 
-  placeReply(): ThreadPlacement {
-    this.assertCanReceiveInteraction();
+  /** 이 글이 속한 묶음의 머리 댓글. 댓글이면 자기 자신이다 */
+  get threadCommentId(): string {
+    return this.props.placement.kind === "COMMENT"
+      ? this.props.id.getValue()
+      : this.props.placement.threadCommentId;
+  }
 
-    return this.props.placement.under(this.props.id);
+  get replyCount(): number {
+    return this.props.replyCount;
   }
 
   get isDeleted(): boolean {
@@ -84,19 +90,30 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
   }
 
   get snapshot(): TodoCommentState {
+    const placement = this.props.placement;
+
     return {
       id: this.props.id.getValue(),
       todoId: this.props.todoId,
       authorId: this.props.authorId,
-      parentId: this.props.placement.parentId?.getValue() ?? null,
-      rootId: this.props.placement.rootId?.getValue() ?? null,
-      path: this.props.placement.path,
+      parentId: placement.kind === "COMMENT" ? null : placement.threadCommentId,
+      replyToCommentId: placement.kind === "COMMENT" ? null : placement.replyToCommentId,
       content: this.content,
+      replyCount: this.props.replyCount,
       deletedAt: this.deletedAt,
       editedAt: this.editedAt,
       createdAt: new Date(this.props.createdAt),
       updatedAt: new Date(this.props.updatedAt),
     };
+  }
+
+  placeReply(): CommentPlacement {
+    this.assertActive();
+
+    return CommentPlacement.replyTo({
+      id: this.props.id.getValue(),
+      placement: this.props.placement,
+    });
   }
 
   edit(userId: string, content: string, editedAt: Date): void {
@@ -107,37 +124,61 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
     this.props.updatedAt = new Date(editedAt);
   }
 
-  /** 작성자와 할 일 주인만 지울 수 있다. 주인은 자기 할 일에 달린 남의 댓글을 모두에게서 지운다 */
-  delete(input: { actorId: string; todoOwnerId: string; deletedAt: Date }): void {
+  /**
+   * 작성자와 할 일 주인만 지울 수 있다. 주인은 자기 할 일에 달린 남의 댓글을 모두에게서 지운다.
+   * 이미 지운 글이면 아무것도 바꾸지 않고 false다.
+   */
+  markDeleted(input: { actorId: string; todoOwnerId: string; deletedAt: Date }): boolean {
     if (input.actorId !== this.props.authorId && input.actorId !== input.todoOwnerId) {
       throw new DomainException(ErrorCode.TODO_0832, { commentId: this.props.id.getValue() });
     }
-    const { deletedAt } = input;
 
     if (this.isDeleted) {
-      return;
+      return false;
     }
 
     this.props.content = null;
-    this.props.deletedAt = new Date(deletedAt);
-    this.props.updatedAt = new Date(deletedAt);
+    this.props.deletedAt = new Date(input.deletedAt);
+    this.props.updatedAt = new Date(input.deletedAt);
+    return true;
   }
 
-  assertCanReceiveInteraction(): void {
-    this.assertActive();
+  /** 답글 수는 묶음 머리인 댓글만 가진다 */
+  applyReplyAdded(count: number): void {
+    this.assertComment();
+    if (!Number.isSafeInteger(count) || count < 1) {
+      throw new DomainException(ErrorCode.SYS_0002, { commentId: this.props.id.getValue() });
+    }
+
+    this.props.replyCount += count;
   }
 
-  private assertAuthor(userId: string): void {
-    if (this.props.authorId !== userId) {
-      throw new DomainException(ErrorCode.TODO_0832, {
+  applyReplyRemoved(): void {
+    this.assertComment();
+    if (this.props.replyCount === 0) {
+      throw new DomainException(ErrorCode.SYS_0003, { commentId: this.props.id.getValue() });
+    }
+
+    this.props.replyCount -= 1;
+  }
+
+  assertActive(): void {
+    if (this.isDeleted) {
+      throw new DomainException(ErrorCode.TODO_0833, {
         commentId: this.props.id.getValue(),
       });
     }
   }
 
-  private assertActive(): void {
-    if (this.isDeleted) {
-      throw new DomainException(ErrorCode.TODO_0833, {
+  private assertComment(): void {
+    if (this.props.placement.kind !== "COMMENT") {
+      throw new DomainException(ErrorCode.SYS_0003, { commentId: this.props.id.getValue() });
+    }
+  }
+
+  private assertAuthor(userId: string): void {
+    if (this.props.authorId !== userId) {
+      throw new DomainException(ErrorCode.TODO_0832, {
         commentId: this.props.id.getValue(),
       });
     }

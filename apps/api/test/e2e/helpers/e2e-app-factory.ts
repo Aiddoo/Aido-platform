@@ -33,9 +33,9 @@ import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/deliv
 import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
 import { TimezoneReminderProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/timezone-reminder-queue.processor";
+import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
-import { TodoReminderProcessor } from "#api/modules/notification/infrastructure/processors/reminders/todo-reminder.processor";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
@@ -78,7 +78,7 @@ import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.
 const BACKGROUND_PROCESSORS = [
   AdminNotificationProcessor,
   TimezoneReminderProcessor,
-  TodoReminderProcessor,
+  TodoReminderQueueProcessor,
   SuggestionAnalysisProcessor,
   ReportGenerationProcessor,
   AccountPurgeProcessor,

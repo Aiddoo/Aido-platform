@@ -1,6 +1,6 @@
 import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
-import { uniq } from "es-toolkit";
+import { range, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import type {
@@ -306,7 +306,7 @@ interface RecurrenceWindow {
 
 function daysBetween(from: CalendarDay, to: CalendarDay): DayOfWeek[] {
   const count = to.diff(from, "day");
-  return Array.from({ length: count + 1 }, (_, offset) => {
+  return range(count + 1).map((offset) => {
     const isoDay = from.add(offset, "day").isoWeekday();
     return DAY_OF_WEEK_ORDER[isoDay - 1] ?? "MON";
   });

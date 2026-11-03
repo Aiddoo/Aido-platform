@@ -11,7 +11,8 @@ import { TODO_COMMENT_REPOSITORY } from "./application/ports/comments/todo-comme
 import { TODO_VIEW_CACHE } from "./application/ports/comments/todo-view-cache.port.js";
 import { TodoCommentAccountCleanup } from "./application/services/comments/todo-comment-account-cleanup.service.js";
 import { DeleteTodoComment } from "./application/use-cases/comments/delete-todo-comment.use-case.js";
-import { GetTodoCommentOverview } from "./application/use-cases/comments/get-todo-comment-overview.use-case.js";
+import { GetTodoCommentReplies } from "./application/use-cases/comments/get-todo-comment-replies.use-case.js";
+import { GetTodoCommentThreads } from "./application/use-cases/comments/get-todo-comment-threads.use-case.js";
 import { GetTodoConversation } from "./application/use-cases/comments/get-todo-conversation.use-case.js";
 import { GetTodoDetails } from "./application/use-cases/comments/get-todo-details.use-case.js";
 import { LikeTodoComment } from "./application/use-cases/comments/like-todo-comment.use-case.js";
@@ -19,14 +20,24 @@ import { UnlikeTodoComment } from "./application/use-cases/comments/unlike-todo-
 import { UpdateTodoComment } from "./application/use-cases/comments/update-todo-comment.use-case.js";
 import { WriteTodoCommentChain } from "./application/use-cases/comments/write-todo-comment-chain.use-case.js";
 
-export const getTodoCommentOverviewProvider: FactoryProvider<GetTodoCommentOverview> = {
-  provide: GetTodoCommentOverview,
+export const getTodoCommentThreadsProvider: FactoryProvider<GetTodoCommentThreads> = {
+  provide: GetTodoCommentThreads,
   inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
   useFactory: (
-    reader: ConstructorParameters<typeof GetTodoCommentOverview>[0]["reader"],
-    cursorCodec: ConstructorParameters<typeof GetTodoCommentOverview>[0]["cursorCodec"],
-    blockReader: ConstructorParameters<typeof GetTodoCommentOverview>[0]["blockReader"],
-  ) => new GetTodoCommentOverview({ reader, cursorCodec, blockReader }),
+    reader: ConstructorParameters<typeof GetTodoCommentThreads>[0]["reader"],
+    cursorCodec: ConstructorParameters<typeof GetTodoCommentThreads>[0]["cursorCodec"],
+    blockReader: ConstructorParameters<typeof GetTodoCommentThreads>[0]["blockReader"],
+  ) => new GetTodoCommentThreads({ reader, cursorCodec, blockReader }),
+};
+
+export const getTodoCommentRepliesProvider: FactoryProvider<GetTodoCommentReplies> = {
+  provide: GetTodoCommentReplies,
+  inject: [TODO_COMMENT_READER, TODO_COMMENT_CURSOR_CODEC, TODO_COMMENT_BLOCK_READER],
+  useFactory: (
+    reader: ConstructorParameters<typeof GetTodoCommentReplies>[0]["reader"],
+    cursorCodec: ConstructorParameters<typeof GetTodoCommentReplies>[0]["cursorCodec"],
+    blockReader: ConstructorParameters<typeof GetTodoCommentReplies>[0]["blockReader"],
+  ) => new GetTodoCommentReplies({ reader, cursorCodec, blockReader }),
 };
 
 export const getTodoConversationProvider: FactoryProvider<GetTodoConversation> = {

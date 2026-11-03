@@ -1,3 +1,5 @@
+import type { NudgeReplyKind, TodoCommentKind } from "@aido/api/vocabulary";
+
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import * as en from "./locales/en.js";
@@ -92,8 +94,14 @@ interface TodoCommentNotificationBase extends LocalizedVariantInput {
 
 export type TodoCommentNotificationCopyInput =
   | (TodoCommentNotificationBase & {
-      readonly activityKind: "COMMENT" | "REPLY";
+      readonly activityKind: "COMMENT";
       readonly commentCount: number;
+    })
+  | (TodoCommentNotificationBase & {
+      readonly activityKind: "REPLY";
+      readonly commentCount: number;
+      /** 답한 글이 답글이면 "내 답글에"로 말한다 */
+      readonly replyTarget: TodoCommentKind;
     })
   | (TodoCommentNotificationBase & {
       readonly activityKind: "LIKE";
@@ -326,12 +334,21 @@ export function createTodoCommentNotificationMessage(
         });
   }
 
-  return isChain
+  if (isChain) {
+    return renderLocalizedNotification({
+      template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY_CHAIN,
+      variables: { senderName, count: input.commentCount },
+      variantContext: input.variantContext,
+      templateKey: "todo_comment.reply_chain",
+    });
+  }
+
+  return input.replyTarget === "REPLY"
     ? renderLocalizedNotification({
-        template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY_CHAIN,
-        variables: { senderName, count: input.commentCount },
+        template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY_TO_REPLY,
+        variables: { senderName },
         variantContext: input.variantContext,
-        templateKey: "todo_comment.reply_chain",
+        templateKey: "todo_comment.reply_to_reply",
       })
     : renderLocalizedNotification({
         template: templates.SOCIAL_TEMPLATES.TODO_COMMENT_REPLY,
@@ -340,4 +357,3 @@ export function createTodoCommentNotificationMessage(
         templateKey: "todo_comment.reply",
       });
 }
-import type { NudgeReplyKind } from "@aido/api/vocabulary";

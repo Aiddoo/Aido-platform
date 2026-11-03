@@ -1,3 +1,5 @@
+import { now } from "#api/shared/domain/date/utils/core";
+
 import { assignRetentionVariant } from "../../../domain/services/retention/experiment-assignment.js";
 import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
 import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
@@ -21,7 +23,7 @@ export class EnrollRetentionExperiment {
     await this.#dependencies.repository.enroll({
       userId,
       variant: assignRetentionVariant(userId, this.#dependencies.config.treatmentPercent),
-      startedAt: activated ? new Date() : null,
+      startedAt: activated ? now() : null,
     });
   }
 }

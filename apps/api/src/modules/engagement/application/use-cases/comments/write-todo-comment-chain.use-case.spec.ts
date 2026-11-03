@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 
+import { MutationLockKeys } from "#api/shared/application/ports/index";
 import {
   createEngagementCommentFixture,
   ENGAGEMENT_TIME,
@@ -58,11 +59,119 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
         todoId: 1,
         commentId: comment.id,
         threadRootId: comment.id,
-        isReply: false,
+        replyTarget: null,
         commentCount: 1,
       },
     ]);
     expect(fixture.invalidatedTodoIds).toEqual([1]);
+  });
+
+  it("할 일에 이어 쓴 글은 첫 글을 머리로 한 묶음의 답글이 되고 각자 앞 글에 답한다", async () => {
+    // Given
+    const chain = {
+      ...input(),
+      items: [
+        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "첫 글" },
+        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a12", content: "둘째 글" },
+        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a13", content: "셋째 글" },
+      ],
+    };
+
+    // When
+    const result = await new WriteTodoCommentChain(fixture).execute(chain);
+
+    // Then
+    const [first, second, third] = result.comments;
+    expect(result.comments.map((comment) => [comment.depth, comment.replyTo?.commentId])).toEqual([
+      [0, undefined],
+      [1, first?.id],
+      [1, second?.id],
+    ]);
+    expect(third?.parentId).toBe(first?.id);
+    expect(fixture.repository.comments.get(first?.id ?? "")?.replyCount).toBe(2);
+    expect(fixture.repository.commentCounts.get(1)).toBe(3);
+  });
+
+  it("답글에 답하면 같은 묶음 끝에 붙고 머리 답글 수를 올리며 답글 작성자에게 알린다", async () => {
+    // Given
+    const comment = fixture.addComment({ replyCount: 1 });
+    const reply = fixture.addComment({
+      authorId: ENGAGEMENT_OWNER_ID,
+      parentId: comment.id,
+      replyToCommentId: comment.id,
+    });
+    const lock = vi.spyOn(fixture.mutationLock, "acquire");
+    const chain = {
+      ...input(),
+      parentId: reply.id,
+      items: [
+        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "첫 답" },
+        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a12", content: "이어서" },
+      ],
+    };
+
+    // When
+    const result = await new WriteTodoCommentChain(fixture).execute(chain);
+
+    // Then
+    const [first, second] = result.comments;
+    expect(first).toMatchObject({
+      parentId: comment.id,
+      threadId: comment.id,
+      depth: 1,
+      replyTo: { commentId: reply.id },
+    });
+    expect(second).toMatchObject({
+      parentId: comment.id,
+      depth: 1,
+      replyTo: { commentId: first?.id },
+    });
+    expect(fixture.repository.comments.get(comment.id)?.replyCount).toBe(3);
+    expect(fixture.repository.comments.get(reply.id)?.replyCount).toBe(0);
+    expect(lock).toHaveBeenCalledWith([
+      MutationLockKeys.todoCommentRequest(
+        ENGAGEMENT_VIEWER_ID,
+        chain.items[0]?.clientRequestId ?? "",
+      ),
+      MutationLockKeys.todoCommentRequest(
+        ENGAGEMENT_VIEWER_ID,
+        chain.items[1]?.clientRequestId ?? "",
+      ),
+      MutationLockKeys.todoComment(reply.id),
+      MutationLockKeys.todoComment(comment.id),
+    ]);
+    expect(fixture.notification.written).toEqual([
+      expect.objectContaining({
+        recipientId: ENGAGEMENT_OWNER_ID,
+        threadRootId: comment.id,
+        replyTarget: "REPLY",
+        commentCount: 2,
+      }),
+    ]);
+  });
+
+  it("묘비가 된 댓글의 답글에도 답할 수 있지만 삭제된 글에는 답하지 못한다", async () => {
+    // Given
+    const comment = fixture.addComment({
+      replyCount: 1,
+      content: null,
+      deletedAt: ENGAGEMENT_TIME,
+    });
+    const reply = fixture.addComment({ parentId: comment.id, replyToCommentId: comment.id });
+    const useCase = new WriteTodoCommentChain(fixture);
+
+    // When
+    await useCase.execute({ ...input(), parentId: reply.id });
+
+    // Then
+    expect(fixture.repository.comments.get(comment.id)?.replyCount).toBe(2);
+    await expect(
+      useCase.execute({
+        ...input(),
+        parentId: comment.id,
+        items: [{ clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a19", content: "답" }],
+      }),
+    ).rejects.toMatchObject({ errorCode: "TODO_0833" });
   });
 
   it("차단 관계인 사람의 댓글에는 답글을 저장하지 않는다", async () => {

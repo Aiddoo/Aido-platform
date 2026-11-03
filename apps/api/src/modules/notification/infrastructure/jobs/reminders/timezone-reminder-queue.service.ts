@@ -17,11 +17,6 @@ import {
 /** Sweep 잡은 페이로드가 없다 (크론 트리거) */
 const SWEEP_JOB_DATA: SweepRemindersJobData = {};
 
-/**
- * 타임존 리마인더 BullMQ 큐 서비스.
- *
- * {@link TimezoneReminderEnqueuerPort} 구현 — enqueue 진입점.
- */
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 
 @Injectable()

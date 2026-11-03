@@ -4,10 +4,7 @@ import { NotificationDeliveryModule } from "#api/modules/notification/notificati
 
 import { RETENTION_CONFIG } from "./application/ports/retention/retention-config.port.js";
 import { RETENTION_ENROLLMENT } from "./application/ports/retention/retention-enrollment.port.js";
-import { RETENTION_JOB_ENQUEUER } from "./application/ports/retention/retention-job-enqueuer.port.js";
-import { RETENTION_PUSH_SENDER } from "./application/ports/retention/retention-push-sender.port.js";
 import { RETENTION_REPOSITORY } from "./application/ports/retention/retention.repository.port.js";
-import { ExpoRetentionPushSenderAdapter } from "./infrastructure/adapters/retention/expo-retention-push-sender.adapter.js";
 import { RetentionConfigAdapter } from "./infrastructure/adapters/retention/retention-config.adapter.js";
 import { RetentionEnrollmentAdapter } from "./infrastructure/adapters/retention/retention-enrollment.adapter.js";
 import { RetentionQueueProcessor } from "./infrastructure/jobs/retention/retention-queue.processor.js";
@@ -15,11 +12,8 @@ import { RetentionQueueService } from "./infrastructure/jobs/retention/retention
 import { DrizzleRetentionRepository } from "./infrastructure/persistence/retention/drizzle-retention.repository.js";
 import {
   activateRetentionExperimentProvider,
-  dispatchRetentionPushProvider,
   enrollRetentionExperimentProvider,
   processRetentionStagesProvider,
-  recoverFailedRetentionDeliveryProvider,
-  relayRetentionOutboxProvider,
 } from "./notification-retention-application.providers.js";
 
 @Module({
@@ -29,21 +23,12 @@ import {
     activateRetentionExperimentProvider,
     enrollRetentionExperimentProvider,
     processRetentionStagesProvider,
-    relayRetentionOutboxProvider,
-    dispatchRetentionPushProvider,
-    recoverFailedRetentionDeliveryProvider,
     DrizzleRetentionRepository,
     RetentionConfigAdapter,
-    ExpoRetentionPushSenderAdapter,
     RetentionQueueService,
     RetentionQueueProcessor,
     { provide: RETENTION_REPOSITORY, useExisting: DrizzleRetentionRepository },
     { provide: RETENTION_CONFIG, useExisting: RetentionConfigAdapter },
-    {
-      provide: RETENTION_PUSH_SENDER,
-      useExisting: ExpoRetentionPushSenderAdapter,
-    },
-    { provide: RETENTION_JOB_ENQUEUER, useExisting: RetentionQueueService },
     {
       provide: RETENTION_ENROLLMENT,
       useExisting: RetentionEnrollmentAdapter,

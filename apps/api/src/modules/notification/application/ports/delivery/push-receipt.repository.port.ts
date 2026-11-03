@@ -1,18 +1,22 @@
+import type { PushReceiptCheckWindow } from "../../policies/delivery/push-receipt.policy.js";
 import type { PushReceiptResult } from "./push-provider.port.js";
 
 export const PUSH_RECEIPT_REPOSITORY = Symbol("PUSH_RECEIPT_REPOSITORY");
-
-export interface PendingPushReceipt {
-  readonly ticketId: string;
-}
 
 export interface InvalidPushToken {
   readonly token: string;
   readonly userId: string;
 }
 
-/** Expo ticket의 최종 receipt 상태를 조회·반영하는 포트. */
 export interface PushReceiptRepositoryPort {
-  findPendingPushReceipts(limit: number): Promise<PendingPushReceipt[]>;
-  recordPushReceipts(results: PushReceiptResult[]): Promise<InvalidPushToken[]>;
+  /** 아직 확인하지 않았거나 확인한 지 재확인 간격이 지난 ticket을 오래된 확인 순으로 고른다. */
+  findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]>;
+  /** 결과가 온 ticket은 종결하고 아직 결과가 없는 ticket은 확인 시각만 남긴다. */
+  recordPushReceipts(input: {
+    readonly requestedTicketIds: readonly string[];
+    readonly results: readonly PushReceiptResult[];
+    readonly checkedAt: Date;
+  }): Promise<InvalidPushToken[]>;
+  /** 보관 기간 안에 receipt가 오지 않은 ticket을 결과 미상으로 닫는다. */
+  expireUnreceipted(acceptedBefore: Date, limit: number): Promise<number>;
 }

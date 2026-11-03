@@ -1,69 +1,48 @@
 import type {
-  BatchPushResult,
   PushPayload,
   PushProvider,
   PushReceiptResult,
   PushResult,
 } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 
-/**
- * 테스트용 FakePushProvider
- *
- * 실제 Expo Push를 호출하지 않고, 발송된 알림을 메모리에 저장합니다.
- */
+/** 실제 Expo를 부르지 않고 보낸 payload를 메모리에 남긴다. */
 export class FakePushProvider implements PushProvider {
   readonly name = "fake";
-  private _sentPayloads: PushPayload[] = [];
-  private _ticketSequence = 0;
+  #sentPayloads: PushPayload[] = [];
+  #ticketSequence = 0;
 
   validateToken(token: string): boolean {
     return token.startsWith("ExponentPushToken[") || token.startsWith("fake-");
   }
 
-  async send(payload: PushPayload): Promise<PushResult> {
-    this._sentPayloads.push(payload);
-    return {
+  async sendBatch(payloads: readonly PushPayload[]): Promise<PushResult[]> {
+    this.#sentPayloads.push(...payloads);
+    return payloads.map((payload) => ({
       token: payload.token,
-      success: true,
-      ticketId: this.nextTicketId(),
-    };
-  }
-
-  async sendBatch(payloads: PushPayload[]): Promise<BatchPushResult> {
-    this._sentPayloads.push(...payloads);
-    const results: PushResult[] = payloads.map((payload) => ({
-      token: payload.token,
-      success: true,
-      ticketId: this.nextTicketId(),
+      status: "accepted",
+      ticketId: this.#nextTicketId(),
     }));
-    return {
-      total: payloads.length,
-      successCount: payloads.length,
-      failureCount: 0,
-      results,
-      invalidTokens: [],
-    };
   }
 
-  async getReceipts(ticketIds: string[]): Promise<PushReceiptResult[]> {
-    return ticketIds.map((ticketId) => ({ ticketId, delivered: true }));
+  async getReceipts(ticketIds: readonly string[]): Promise<PushReceiptResult[]> {
+    return ticketIds.map((ticketId) => ({ ticketId, status: "delivered" }));
   }
 
   getSentPayloads(): PushPayload[] {
-    return [...this._sentPayloads];
+    return [...this.#sentPayloads];
   }
 
   getSentCount(): number {
-    return this._sentPayloads.length;
+    return this.#sentPayloads.length;
   }
 
   clear(): void {
-    this._sentPayloads = [];
-    this._ticketSequence = 0;
+    this.#sentPayloads = [];
+    this.#ticketSequence = 0;
   }
 
-  private nextTicketId(): string {
-    this._ticketSequence += 1;
-    return `fake-ticket-${Date.now()}-${this._ticketSequence}`;
+  #nextTicketId(): string {
+    this.#ticketSequence += 1;
+    return `fake-ticket-${Date.now()}-${this.#ticketSequence}`;
   }
 }

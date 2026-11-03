@@ -5,14 +5,17 @@ import { withTimeout } from "es-toolkit";
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import {
+  NOTIFICATION_DEAD_LETTER_QUEUE,
+  NOTIFICATION_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_QUEUE,
 } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
+import { RETENTION_QUEUE } from "#api/modules/notification/notification-retention-jobs.public";
 import {
-  RETENTION_DEAD_LETTER_QUEUE,
-  RETENTION_QUEUE,
-} from "#api/modules/notification/notification-retention-jobs.public";
+  BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
+  BROADCAST_FAN_OUT_QUEUE,
+} from "#api/modules/operations/operations-admin-jobs.public";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/operations-notifications-jobs.public";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
@@ -22,10 +25,13 @@ const MONITORED_QUEUES = [
   AI_REPORT_QUEUE,
   ADMIN_NOTIFICATION_QUEUE,
   TODO_REMINDER_QUEUE,
+  NOTIFICATION_QUEUE,
+  NOTIFICATION_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_QUEUE,
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   RETENTION_QUEUE,
-  RETENTION_DEAD_LETTER_QUEUE,
+  BROADCAST_FAN_OUT_QUEUE,
+  BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
 ] as const;
 
 /**

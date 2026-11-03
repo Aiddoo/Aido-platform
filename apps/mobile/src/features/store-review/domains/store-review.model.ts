@@ -1,8 +1,7 @@
 import { dateSchema } from '@aido/api';
+import { DAY_MS } from '@src/shared/utils/date-format';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
-
-const DAY_MS = 86_400_000;
 
 /** 하루에 할 일이 한두 개뿐인 사용자도 닿도록 완료 횟수가 아니라 할 일을 끝낸 서로 다른 날로 본다 */
 export const STORE_REVIEW_MIN_ACTIVE_DAYS = 3;

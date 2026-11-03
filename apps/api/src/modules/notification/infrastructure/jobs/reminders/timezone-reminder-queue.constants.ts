@@ -1,29 +1,8 @@
-/**
- * Timezone Reminder BullMQ 큐 상수 및 잡 타입 정의 (인프라).
- *
- * 잡 페이로드 계약은 application 포트가 소유하고, 여기서는 BullMQ 큐/잡 이름과
- * 프로세서용 판별 유니온(discriminated union)만 정의한다.
- */
 import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
-import type {
-  ReminderHourChangedJobData,
-  SocialDigestJobData,
-} from "../../../application/ports/reminders/timezone-reminder-enqueuer.port.js";
-
-export type {
-  ReminderHourChangedJobData,
-  SocialDigestJobData,
-} from "../../../application/ports/reminders/timezone-reminder-enqueuer.port.js";
-
-// =============================================================================
-// Queue / Job Names
-// =============================================================================
-
 export const TIMEZONE_REMINDER_QUEUE = "timezone-reminder.v1";
-export const TIMEZONE_REMINDER_LEGACY_QUEUE = "timezone-reminder";
 
 export const TimezoneReminderJobName = {
   SWEEP_REMINDERS: "sweep-reminders",
@@ -71,11 +50,5 @@ export const TimezoneReminderRuntimeJobSchema = z.discriminatedUnion("name", [
 
 /** Sweep reminders 잡 데이터 (크론에서 트리거, 데이터 없음) */
 export type SweepRemindersJobData = Record<string, never>;
-
-/** 모든 잡 데이터 유니온 타입 (Queue<T> 제네릭용) */
-export type TimezoneReminderJobData =
-  | ReminderHourChangedJobData
-  | SweepRemindersJobData
-  | SocialDigestJobData;
 
 /** 이름으로 판별되는 잡 유니온 (프로세서 진입 타입) */

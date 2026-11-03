@@ -20,7 +20,7 @@ export const todoCommentAuthorSchema = z
 
 export const todoCommentReplyTargetSchema = z
   .object({
-    commentId: z.cuid().describe("직계 부모 댓글 ID (CUID)"),
+    commentId: z.cuid().describe("답한 글 ID (같은 묶음의 댓글 또는 답글, CUID)"),
     authorName: z.string().nullable().describe("답글 대상 작성자 이름 (확인할 수 없으면 null)"),
   })
   .describe("답글 대상");
@@ -44,16 +44,13 @@ export const todoCommentViewerSchema = z
   })
   .describe("현재 사용자의 댓글 권한과 상태");
 
-/** 대화와 개요에서 공유하는 평탄한 댓글 본문·위치 정보. */
+/** 대화와 개요에서 공유하는 v1 댓글. 1.14.1부터 댓글·답글 2단계 값만 내려간다. */
 export const todoCommentSchema = z
   .object({
     id: z.cuid().describe("댓글 ID (CUID)"),
-    /** 최상위 댓글은 자기 id, 답글은 최상위 댓글 id */
-    threadId: z.cuid().describe("댓글 대화의 최상위 댓글 ID (CUID)"),
-    /** 직계 부모. null이면 최상위 댓글 */
-    parentId: z.cuid().nullable().describe("직계 부모 댓글 ID (최상위 댓글이면 null)"),
-    /** 뿌리에서 이 댓글까지의 깊이 (최상위는 0) */
-    depth: z.number().int().nonnegative().describe("대화에서 댓글의 깊이 (최상위 댓글은 0)"),
+    threadId: z.cuid().describe("묶음 머리 댓글 ID (댓글이면 자기 ID)"),
+    parentId: z.cuid().nullable().describe("답글이 속한 묶음 머리 댓글 ID (댓글이면 null)"),
+    depth: z.number().int().nonnegative().describe("댓글은 0, 답글은 1"),
     author: todoCommentAuthorSchema
       .nullable()
       .describe("댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)"),
@@ -67,9 +64,7 @@ export const todoCommentSchema = z
       ),
     isEdited: z.boolean().describe("댓글 수정 여부"),
     likeCount: z.number().int().nonnegative().describe("활성 좋아요 수"),
-    /** 직계 답글 수 (자손 총합이 아니다) */
-    replyCount: z.number().int().nonnegative().describe("화면에 표시되는 직계 답글 수"),
-    /** 누구에게 단 답글인지 — @멘션의 근거 */
+    replyCount: z.number().int().nonnegative().describe("묶음에 보이는 답글 수 (답글은 0)"),
     replyTo: todoCommentReplyTargetSchema.nullable().describe("답글 대상 (최상위 댓글이면 null)"),
     viewer: todoCommentViewerSchema,
     createdAt: datetimeSchema.describe("댓글 생성 시각 (ISO 8601 UTC)"),
@@ -89,7 +84,7 @@ export const todoCommentCursorPaginationSchema = z
 
 export const todoCommentReplySummarySchema = z
   .object({
-    totalCount: z.number().int().nonnegative().describe("표시 가능한 전체 답글과 후손 수"),
+    totalCount: z.number().int().nonnegative().describe("묶음에 보이는 전체 답글 수"),
     hiddenCount: z.number().int().nonnegative().describe("개요에서 아직 보여 주지 않은 댓글 수"),
     hasMore: z.boolean().describe("개요 밖에 더 볼 댓글이 있는지 여부"),
     participantAuthors: z
@@ -104,7 +99,7 @@ export const todoCommentReplySummarySchema = z
 export const todoCommentOverviewItemSchema = z
   .object({
     comment: todoCommentSchema.describe("최상위 댓글"),
-    previewReply: todoCommentSchema.nullable().describe("대표 직계 답글 (없으면 null)"),
+    previewReply: todoCommentSchema.nullable().describe("대표 답글 (없으면 null)"),
     replySummary: todoCommentReplySummarySchema,
   })
   .describe("댓글 개요 항목");
@@ -209,20 +204,22 @@ export const todoConversationFocusSchema = z
       .array(todoConversationItemSchema)
       .max(TODO_COMMENT_LIMITS.FOCUS_ANCESTOR_MAX_SIZE)
       .describe(
-        `현재 페이지 앞에서 이어지는 focus 조상 목록 (최대 ${TODO_COMMENT_LIMITS.FOCUS_ANCESTOR_MAX_SIZE}개)`,
+        `focus 답글 앞 페이지 밖의 묶음 머리 댓글 (최대 ${TODO_COMMENT_LIMITS.FOCUS_ANCESTOR_MAX_SIZE}개)`,
       ),
     omittedAncestorCount: z
       .number()
       .int()
       .nonnegative()
-      .describe("응답 크기 제한으로 생략한 더 오래된 조상 수"),
+      .describe("생략한 앞 문맥 수 (2단계라 항상 0)"),
   })
   .describe("focus 댓글의 대화 문맥");
 
-/** 한 todo의 root block들을 유지한 parent-before-child DFS 대화 페이지. */
+/** 묶음 순서를 유지하고 묶음 안은 머리 댓글 다음 답글을 작성 순으로 둔 대화 페이지. */
 export const todoConversationResponseSchema = z
   .object({
-    items: z.array(todoConversationItemSchema).describe("부모가 자식보다 먼저 오는 댓글 대화 행"),
+    items: z
+      .array(todoConversationItemSchema)
+      .describe("묶음 머리가 답글보다 먼저 오는 댓글 대화 행"),
     focus: todoConversationFocusSchema.nullable().describe("focus 댓글 문맥 (일반 목록이면 null)"),
     pagination: todoCommentCursorPaginationSchema,
   })
@@ -248,10 +245,7 @@ export const todoDetailsResponseSchema = z
   })
   .describe("댓글 화면용 할 일 상세 응답");
 
-/**
- * 작성 응답 — 한 번에 이어 쓴 사슬 전체를 위에서 아래 순서로 돌려준다.
- * 한 개만 썼으면 길이 1이다.
- */
+/** 이어 쓴 글 전체를 쓴 순서로 돌려준다. 한 개만 썼으면 길이 1이다. */
 export const todoCommentChainResponseSchema = z
   .object({
     comments: z

@@ -1,5 +1,6 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
+import { orderBy } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import {
@@ -154,9 +155,10 @@ export class AnalyzeAndCreateSuggestions {
     const currentDate = dayjs.utc(now());
     const expiresAt = currentDate.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day").toDate();
 
-    const limitedPatterns = [...patterns]
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER);
+    const limitedPatterns = orderBy(patterns, ["confidence"], ["desc"]).slice(
+      0,
+      AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER,
+    );
 
     const createdCount = await this.#dependencies.unitOfWork.run(async () => {
       const { userMutationLock, entitlementReader } = this.#dependencies;

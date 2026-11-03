@@ -57,15 +57,21 @@ export type GrowthSummaryResponse = z.infer<typeof growthSummaryResponseSchema>;
 /**
  * 알림 브로드캐스트 결과 응답
  *
- * - successCount: 성공적으로 발송된 알림 수
- * - failCount: 발송 실패한 알림 수
- * - totalTargets: 전체 대상 사용자 수
+ * - successCount: 발송 대기열에 올린 수 (전달 성공 수 아님)
+ * - failCount: 대기열에 올리지 못한 수
+ * - totalTargets: 대상 사용자 수
  */
 export const broadcastResultSchema = z
   .object({
-    successCount: z.number().int().nonnegative().describe("성공적으로 발송된 알림 수"),
-    failCount: z.number().int().nonnegative().describe("발송 실패한 알림 수"),
-    totalTargets: z.number().int().nonnegative().describe("전체 대상 사용자 수"),
+    successCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe(
+        "알림을 만들어 발송 대기열에 올린 수. 전달 성공 수가 아니며 전달 결과는 v2 캠페인 조회로 확인한다",
+      ),
+    failCount: z.number().int().nonnegative().describe("대상 중 대기열에 올리지 못한 수"),
+    totalTargets: z.number().int().nonnegative().describe("접수 시점의 대상 사용자 수"),
   })
   .describe("알림 브로드캐스트 결과")
   .meta({

@@ -24,6 +24,7 @@ import type {
   ReservePushDeliveryRateLimitInput,
 } from "../../../application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import type { PushDeliveryPublication } from "../../../application/types/delivery/push-delivery.types.js";
+import { toAttemptOutcome } from "./push-delivery-attempt.mapper.js";
 import {
   lockPublicationGenerations,
   matchesPublicationGeneration,
@@ -413,8 +414,8 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
             .where(inArray(pushToken.token, allTokens));
     const tokenIdByValue = new Map(tokens.map((token) => [token.token, token.id]));
     const finalizationValues = inputs.map((input) => {
-      const sent = input.results.some((result) => result.success);
-      const firstError = input.results.find((result) => !result.success)?.error;
+      const sent = input.results.some((result) => result.status === "accepted");
+      const firstFailure = input.results.find((result) => result.status === "rejected");
       return sql`(
 				${input.fence.dispatchId}::INTEGER,
 				${input.fence.publishAttempt}::INTEGER,
@@ -423,7 +424,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
 				${input.context.timezone}::VARCHAR(50),
 				${toDateString(input.context.localDate)}::DATE,
 				${sent ? "SENT" : "FAILED"}::"PushDispatchStatus",
-				${sent ? null : (firstError?.slice(0, 500) ?? null)}::VARCHAR(500)
+				${sent || firstFailure?.status !== "rejected" ? null : firstFailure.failure.kind}::VARCHAR(500)
 			)`;
     });
     const finalized = publicationRowsSchema.parse(
@@ -492,11 +493,8 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
           {
             dispatchId: input.fence.dispatchId,
             pushTokenId,
-            status: result.success ? ("TICKET_ACCEPTED" as const) : ("FAILED" as const),
-            expoTicketId: result.ticketId ?? null,
             tokenFingerprint: pushTokenFingerprint(result.token),
-            errorCode: result.errorCode ?? null,
-            errorMessage: result.error?.slice(0, 500) ?? null,
+            ...toAttemptOutcome(result),
           },
         ];
       });
@@ -509,7 +507,8 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
           target: [pushDeliveryAttempt.dispatchId, pushDeliveryAttempt.pushTokenId],
           set: {
             status: excluded(pushDeliveryAttempt.status),
-            expoTicketId: excluded(pushDeliveryAttempt.expoTicketId),
+            providerTicketId: excluded(pushDeliveryAttempt.providerTicketId),
+            failureKind: excluded(pushDeliveryAttempt.failureKind),
             tokenFingerprint: excluded(pushDeliveryAttempt.tokenFingerprint),
             errorCode: excluded(pushDeliveryAttempt.errorCode),
             errorMessage: excluded(pushDeliveryAttempt.errorMessage),

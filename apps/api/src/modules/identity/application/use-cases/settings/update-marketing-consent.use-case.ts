@@ -1,6 +1,7 @@
 import type { UpdateMarketingConsentResponse } from "@aido/api";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveMarketingAgreement } from "../../../domain/services/settings/marketing-consent-policy.js";
 import { IdentitySettingsLogEvent } from "../../observability/settings/identity-settings-log.events.js";
@@ -28,7 +29,7 @@ export class UpdateMarketingConsent {
     const updated = await this.#dependencies.consentRepository.upsertMarketingConsent(
       input.userId,
       {
-        agreedAt: resolveMarketingAgreement(input.agreed, new Date()),
+        agreedAt: resolveMarketingAgreement(input.agreed, now()),
       },
     );
     this.#dependencies.logger.log({

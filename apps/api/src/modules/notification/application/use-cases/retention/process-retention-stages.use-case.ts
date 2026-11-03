@@ -1,12 +1,14 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { now } from "#api/shared/domain/date/utils/core";
+import { localDateInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import { RETENTION_CAMPAIGN_KEY } from "../../../domain/policies/retention/retention.constants.js";
-import { retentionPushSkipReason } from "../../../domain/services/retention/push-eligibility.js";
 import {
-  decideRetentionStage,
-  localDateString,
-} from "../../../domain/services/retention/stage-policy.js";
+  RETENTION_CAMPAIGN_KEY,
+  RETENTION_EXPERIMENT_KEY,
+} from "../../../domain/policies/retention/retention.constants.js";
+import { retentionPushSkipReason } from "../../../domain/services/retention/push-eligibility.js";
+import { decideRetentionStage } from "../../../domain/services/retention/stage-policy.js";
 import { type RetentionNotificationCopySelection } from "../../messages/delivery/notification-copy.types.js";
 import { createRetentionNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
@@ -15,12 +17,18 @@ import {
   type RetentionRepositoryPort,
   type RetentionStageCandidate,
 } from "../../ports/retention/retention.repository.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
 
 interface ProcessRetentionStagesDependencies {
   readonly repository: Pick<
     RetentionRepositoryPort,
-    "createDelivery" | "findScheduledStages" | "markStageSkipped" | "recordD7Result"
+    | "findScheduledStages"
+    | "linkStageNotification"
+    | "markStageOutboxed"
+    | "markStageSkipped"
+    | "recordD7Result"
   >;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly logger: Pick<ApplicationLogger, "debug" | "error">;
@@ -40,7 +48,7 @@ export class ProcessRetentionStages {
     const candidates = await this.#dependencies.repository.findScheduledStages(200);
     for (const candidate of candidates) {
       try {
-        await this.#processCandidate(candidate, new Date());
+        await this.#processCandidate(candidate, now());
       } catch {
         this.#dependencies.logger.error({
           event: NotificationRetentionLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
@@ -54,13 +62,13 @@ export class ProcessRetentionStages {
   async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
     const returnedWithinWindow = Boolean(
       candidate.lastActiveAt &&
-      localDateString(candidate.lastActiveAt, candidate.timezone) >
-        localDateString(candidate.startedAt, candidate.timezone),
+      localDateInTimezone(candidate.lastActiveAt, candidate.timezone) >
+        localDateInTimezone(candidate.startedAt, candidate.timezone),
     );
     const activeToday = Boolean(
       candidate.lastActiveAt &&
-      localDateString(candidate.lastActiveAt, candidate.timezone) ===
-        localDateString(now, candidate.timezone),
+      localDateInTimezone(candidate.lastActiveAt, candidate.timezone) ===
+        localDateInTimezone(now, candidate.timezone),
     );
 
     if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
@@ -121,18 +129,29 @@ export class ProcessRetentionStages {
         locale: candidate.locale,
         selectionContext: {
           recipientId: candidate.userId,
-          occurrenceKey: localDateString(now, candidate.timezone),
+          occurrenceKey: localDateInTimezone(now, candidate.timezone),
         },
       });
-      await this.#dependencies.repository.createDelivery({
-        stageId: candidate.stageId,
+      if (!(await this.#dependencies.repository.markStageOutboxed(candidate.stageId))) {
+        return;
+      }
+      const notification = await this.#dependencies.notificationPublisher.publish({
         userId: candidate.userId,
-        timezone: candidate.timezone,
+        type: "SYSTEM_NOTICE",
         title: message.title,
         body: message.body,
-        route: decision.route,
+        action: { type: "DEEP_LINK", url: decision.route },
+        campaignKey: RETENTION_CAMPAIGN_KEY,
         variantId: message.variantId,
+        purpose: "ENGAGEMENT",
+        metadata: { retentionExperiment: RETENTION_EXPERIMENT_KEY },
       });
+      if (notification != null) {
+        await this.#dependencies.repository.linkStageNotification(
+          candidate.stageId,
+          notification.id,
+        );
+      }
     });
 
     this.#dependencies.logger.debug({

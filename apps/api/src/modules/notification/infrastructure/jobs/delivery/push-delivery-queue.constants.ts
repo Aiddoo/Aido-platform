@@ -2,8 +2,15 @@ import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
+import { PUSH_DELIVERY_JOB_MAX_PUBLICATIONS } from "../../../application/types/delivery/push-delivery.types.js";
+
 export const PUSH_DELIVERY_QUEUE = "push-delivery.v1";
 export const PUSH_DELIVERY_DEAD_LETTER_QUEUE = "push-delivery-dead-letter.v1";
+
+export const PUSH_DELIVERY_RELAY_SCHEDULE = {
+  key: "push-delivery-outbox-relay-scheduler",
+  cron: "* * * * *",
+} as const;
 
 export const PushDeliveryJobName = {
   RELAY_OUTBOX: "relay-outbox",
@@ -18,7 +25,7 @@ const PushDeliveryPublicationSchema = z.strictObject({
 const PushDeliveryPublicationBatchSchema = z
   .array(PushDeliveryPublicationSchema)
   .min(1)
-  .max(100)
+  .max(PUSH_DELIVERY_JOB_MAX_PUBLICATIONS)
   .check(({ value: publications, issues }) => {
     const dispatchIds = new Set<number>();
     for (const publication of publications) {

@@ -1,3 +1,5 @@
+import { DAY_MS } from '@src/shared/utils/date-format';
+
 import {
   createEmptyStoreReviewState,
   STORE_REVIEW_MAX_REQUESTS_PER_WINDOW,
@@ -9,7 +11,6 @@ import {
   StoreReviewTransitions,
 } from './store-review.model';
 
-const DAY_MS = 86_400_000;
 const NOW = new Date('2026-10-27T12:00:00.000Z');
 const daysBefore = (days: number) => new Date(NOW.getTime() - days * DAY_MS);
 

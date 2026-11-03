@@ -1,0 +1,1 @@
+ALTER TABLE "PushDeliveryAttempt" ADD COLUMN "failureKind" varchar(40);

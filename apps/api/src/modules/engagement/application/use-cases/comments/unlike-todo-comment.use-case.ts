@@ -47,7 +47,7 @@ export class UnlikeTodoComment {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
-      comment.assertCanReceiveInteraction();
+      comment.assertActive();
       return this.#dependencies.repository.removeLike(input.todoId, input.commentId, input.userId);
     });
 

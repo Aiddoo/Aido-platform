@@ -57,6 +57,13 @@ describe("PushNotificationPayloadFactory", () => {
           threadRootId: commentId,
           activityKind: "COMMENT",
         },
+        navigation: {
+          kind: "TODO_COMMENT",
+          todoId: 42,
+          commentId,
+          threadCommentId: commentId,
+          activityKind: "COMMENT",
+        },
         campaignKey: "transactional.v1",
         variantId: "comment.created.ko.v1",
         dispatchId: 202,
@@ -86,7 +93,7 @@ describe("PushNotificationPayloadFactory", () => {
     expect(optOutTokens.issue).toHaveBeenCalledWith("user-1");
   });
 
-  it("배치는 기존 provider 계약대로 categoryId를 생략하면서 동일한 마케팅 data를 유지한다", () => {
+  it("마케팅 배치도 단건과 같은 interactive category와 opt-out data를 싣는다", () => {
     const payload = factory.createBatch({
       data: {
         userId: "user-1",
@@ -112,7 +119,7 @@ describe("PushNotificationPayloadFactory", () => {
         marketingOptOutToken: "signed-opt-out-token",
       },
     });
-    expect(payload).not.toHaveProperty("categoryId");
+    expect(payload.categoryId).toBe("MARKETING");
   });
 
   it("명시 action URL은 타입과 함께 보존한다", () => {
@@ -155,6 +162,7 @@ describe("PushNotificationPayloadFactory", () => {
       type: "WEATHER_MORNING",
       purpose: "SCHEDULED_SERVICE",
       action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=12,15&reason=rain" },
+      navigation: { kind: "WEATHER_RESCHEDULE", todoIds: [12, 15], reason: "rain" },
     });
     expect(pushNotificationDataSchema.parse(payload.data)).toEqual(payload.data);
   });
