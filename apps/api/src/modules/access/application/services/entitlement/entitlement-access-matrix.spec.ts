@@ -114,6 +114,12 @@ describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스
 });
 
 describe("assertEntitled — 기능별 기존 거부 코드", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => vi.useRealTimers());
+
   it.each([
     { feature: "AI_REPORT", errorCode: ErrorCode.AI_1308 },
     { feature: "AI_SUGGESTION", errorCode: ErrorCode.AI_1309 },

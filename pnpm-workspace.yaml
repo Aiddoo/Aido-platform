@@ -27,9 +27,9 @@ allowBuilds:
   '@parcel/watcher': false
   '@scarf/scarf': false
   cpu-features: false
+  lefthook: false
   msgpackr-extract: false
   protobufjs: false
-  simple-git-hooks: false
   ssh2: false
   unrs-resolver: false
   workerd: false
