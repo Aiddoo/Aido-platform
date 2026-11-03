@@ -15,7 +15,7 @@ import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-contro
 
 import type { TodoCommentThread } from '../domains/todo-comment.model';
 
-const REVEAL_MARGIN = 12;
+const REVEAL_MARGIN = 16;
 
 interface TodoCommentRevealValue {
   listRef: RefObject<FlashListRef<TodoCommentThread> | null>;
@@ -72,9 +72,13 @@ export function TodoCommentRevealProvider({ children }: PropsWithChildren) {
         });
         return;
       }
+      // 키보드가 다 오른 뒤 작성 바(대상 안내 줄 포함)의 레이아웃이 끝난 다음 frame에 잰다
       pendingRef.current = KeyboardEvents.addListener('keyboardDidShow', () => {
         clearPending();
-        scrollAboveComposer(target);
+        frameRef.current = requestAnimationFrame(() => {
+          frameRef.current = null;
+          scrollAboveComposer(target);
+        });
       });
     },
     [clearPending, scrollAboveComposer],
