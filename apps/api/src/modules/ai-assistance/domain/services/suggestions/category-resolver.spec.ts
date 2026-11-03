@@ -45,6 +45,22 @@ describe("resolveSuggestedCategoryId — 제안 카테고리 해석", () => {
     expect(result).toBe(3);
   });
 
+  it("최빈 카테고리가 동률이면 먼저 등장한 카테고리를 고른다", () => {
+    // Given
+    const todos: TodoSummaryForAnalysis[] = [
+      makeTodo({ title: "팀 미팅", categoryId: 9, categoryName: "업무" }),
+      makeTodo({ title: "팀 미팅", categoryId: 2, categoryName: "일반" }),
+      makeTodo({ title: "팀 미팅", categoryId: 2, categoryName: "일반" }),
+      makeTodo({ title: "팀 미팅", categoryId: 9, categoryName: "업무" }),
+    ];
+
+    // When
+    const result = resolveSuggestedCategoryId("회의 정리", ["팀 미팅"], todos);
+
+    // Then
+    expect(result).toBe(9);
+  });
+
   it("제목 매칭 없고 매칭된 투두도 없으면 null", () => {
     // Given
     const todos: TodoSummaryForAnalysis[] = [makeTodo({ title: "공부", categoryName: "자기계발" })];
