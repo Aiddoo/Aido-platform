@@ -220,4 +220,30 @@ describe('TodoCommentPolicy', () => {
     // Then
     expect(threads).toHaveLength(1);
   });
+
+  it('먼저 붙인 새 답글은 남은 페이지를 받으면 작성 순 자리로 옮겨 간다', () => {
+    // Given
+    const head = createTodoComment();
+    const [older, posted] = [
+      createTodoCommentReply(head, { id: 'older' }),
+      createTodoCommentReply(head, { id: 'posted' }),
+    ];
+    const first = createTodoCommentReply(head, { id: 'first' });
+    const pagination = {
+      previousCursor: null,
+      nextCursor: null,
+      hasPrevious: false,
+      hasNext: false,
+      size: 10,
+    };
+
+    // When
+    const replies = TodoCommentPolicy.flattenReplies([
+      { items: [first, posted], pagination },
+      { items: [older, posted], pagination },
+    ]);
+
+    // Then
+    expect(replies.map((reply) => reply.id)).toEqual(['first', 'older', 'posted']);
+  });
 });

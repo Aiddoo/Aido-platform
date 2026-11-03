@@ -142,11 +142,9 @@ export function flattenThreads(pages: readonly TodoCommentThreadPage[]) {
   );
 }
 
+/** 방금 쓴 답글은 마지막 페이지 끝에 먼저 붙고, 남은 페이지를 받으면 그 뒤 위치(작성 순)로 옮겨 간다 */
 export function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
-  return uniqBy(
-    pages.flatMap((page) => page.items),
-    (reply) => reply.id,
-  );
+  return uniqBy(pages.flatMap((page) => page.items).toReversed(), (reply) => reply.id).toReversed();
 }
 
 export function anchorOf(pages: readonly TodoCommentThreadPage[]) {

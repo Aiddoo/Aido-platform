@@ -116,20 +116,17 @@ describe('todo-comment-cache-pages', () => {
     expect(findCommentInReplyPages(next, 'r2')).toBe(second);
   });
 
-  it('끝까지 읽은 답글 목록에만 새 답글을 끝에 붙인다', () => {
+  it('방금 쓴 답글은 남은 페이지가 있어도 마지막 페이지 끝에 붙는다', () => {
     // Given
     const head = createTodoComment();
     const existing = createTodoCommentReply(head, { id: 'r1' });
     const posted = createTodoCommentReply(head, { id: 'r2' });
 
     // When
-    const complete = appendRepliesToReplyPages(replyPages(false, [existing]), [posted]);
-    const partialData = replyPages(true, [existing]);
-    const partial = appendRepliesToReplyPages(partialData, [posted]);
+    const next = appendRepliesToReplyPages(replyPages(true, [existing]), [posted]);
 
     // Then
-    expect(complete?.pages[0]?.items).toEqual([existing, posted]);
-    expect(partial).toBe(partialData);
+    expect(next?.pages[0]?.items).toEqual([existing, posted]);
   });
 
   it('새 답글은 그 묶음의 답글 수만 늘린다', () => {

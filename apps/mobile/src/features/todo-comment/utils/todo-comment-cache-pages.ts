@@ -158,13 +158,13 @@ export function addRepliesToThreadPages(
   });
 }
 
-/** 다음 페이지가 남았으면 그 페이지가 순서대로 가져온다. 끝까지 읽은 목록만 새 답글을 끝에 붙인다 */
+/** 방금 쓴 답글은 마지막 페이지 끝에 붙여 바로 보인다. 남은 페이지를 받으면 flattenReplies가 작성 순 자리로 옮긴다 */
 export function appendRepliesToReplyPages(
   data: TodoCommentReplyPages | undefined,
   replies: readonly TodoComment[],
 ): TodoCommentReplyPages | undefined {
   const lastPage = data?.pages.at(-1);
-  if (data == null || lastPage == null || lastPage.pagination.hasNext) {
+  if (data == null || lastPage == null) {
     return data;
   }
 
