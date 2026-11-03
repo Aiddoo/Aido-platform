@@ -59,6 +59,33 @@ brew install cocoapods
 
 ---
 
+#### 스토어 제출용 로컬 빌드 (production)
+
+`eas build --local`은 시도마다 원격 빌드 번호를 올린다. 실패한 시도도 번호를 쓰므로 아래 조건을 갖춘 뒤 한 번에 돌린다.
+
+```bash
+# 1. main을 독립 clone으로 받는다 (작업 중인 checkout·worktree를 쓰지 않는다)
+gh repo clone Aiddoo/Aido-platform /tmp/aido-build -- --depth 1 --branch main
+cd /tmp/aido-build && pnpm install --frozen-lockfile
+# google-services.json, GoogleService-Info.plist를 apps/mobile에 둔다 (git 제외 파일)
+
+# 2. 압축 단계만 먼저 확인한다 (빌드 번호를 올리지 않는다)
+cd apps/mobile
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false \
+  eas build:inspect -p android -e production --stage archive --output /tmp/aido-archive --force
+
+# 3. 플랫폼마다 TMPDIR을 나눠 동시에 빌드한다
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-ios \
+  eas build --local -p ios --profile production --non-interactive --output ~/Desktop/aido-<버전>.ipa < /dev/null
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-android \
+  eas build --local -p android --profile production --non-interactive --output ~/Desktop/aido-<버전>.aab < /dev/null
+```
+
+| 증상                                                                    | 원인                                                                                        | 대책                                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `Compressing project files` 뒤 오류 없이 종료(exit 0), 빌드 번호만 오름 | 전역 `core.fsmonitor=true`가 EAS 임시 복사본 `.git`에 소켓을 만들고, 복사가 소켓에서 멈춘다 | 명령에만 `core.fsmonitor=false`를 준다(위 `GIT_CONFIG_*`) |
+| `createBundleReleaseJsAndAssets` `ENOTEMPTY …/metro-cache`              | iOS·Android가 같은 `TMPDIR`의 Metro 캐시를 동시에 쓴다                                      | 플랫폼마다 `TMPDIR`을 나눈다                              |
+
 ### 네이티브 의존성 메모
 
 - `@react-native-kakao/share`(2.4.11)의 podspec은 `RNCKakaoCore`와 `RNCKakaoSocial`을, `RNCKakaoSocial`은 `RNCKakaoUser`를 요구한다. share의 `peerDependencies`에는 core만 있어서 `@react-native-kakao/social`과 `@react-native-kakao/user`를 같은 버전(2.4.11, `pnpm-workspace.yaml` catalog)으로 직접 둔다. 빠지면 `pod install`이 `Unable to find a specification for 'RNCKakaoSocial'`로 실패한다.
