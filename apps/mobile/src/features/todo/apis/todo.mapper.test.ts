@@ -119,3 +119,36 @@ describe('toDailyCompletionsResult', () => {
     expect(result.dateRange.startDate).toBe('2026-03-01');
   });
 });
+
+describe('toTodo의 반복 규칙', () => {
+  test('소유자 응답의 규칙을 앱 모델로 옮긴다', () => {
+    // Given
+    const dto = createTodoDto({
+      recurrenceGroupId: 'series-1',
+      repeat: { frequency: 'WEEKLY', interval: 2, weekdays: ['TUE'], end: { type: 'NEVER' } },
+    });
+
+    // When
+    const todo = toTodo(dto);
+
+    // Then
+    expect(todo.repeat).toEqual({
+      frequency: 'WEEKLY',
+      interval: 2,
+      weekdays: ['TUE'],
+      end: { type: 'NEVER' },
+    });
+  });
+
+  test('구 서버·친구 응답처럼 키가 없으면 규칙은 null이다', () => {
+    // Given
+    const { repeat: _repeat, ...dto } = createTodoDto({ recurrenceGroupId: 'series-1' });
+
+    // When
+    const todo = toTodo(dto);
+
+    // Then
+    expect(todo.repeat).toBeNull();
+    expect(todo.recurrenceGroupId).toBe('series-1');
+  });
+});

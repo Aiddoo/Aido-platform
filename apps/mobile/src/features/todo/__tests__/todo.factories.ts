@@ -20,6 +20,7 @@ const generateTodoDto = (): TodoDto => ({
   isAllDay: false,
   visibility: 'PUBLIC',
   recurrenceGroupId: null,
+  repeat: null,
   items: [],
   itemStats: { total: 0, completed: 0 },
   commentCount: 0,

@@ -14,14 +14,11 @@ import {
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
-  LockIcon,
-  RepeatIcon,
   MoreIcon,
   PlusIcon,
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Result,
-  Text,
 } from '@src/shared/ui';
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
@@ -63,6 +60,8 @@ import {
   TodoLabel,
   TodoProgress,
   TodoRow,
+  TodoScheduleLine,
+  TodoTitleLine,
 } from '../todo-row';
 
 export function TodoList() {
@@ -267,26 +266,18 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
         />
       }
       top={
-        <HStack gap={4} align="center">
-          <TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>
-          {TodoPolicy.isRecurring(todo) && (
-            <RepeatIcon
-              width={14}
-              height={14}
-              colorClassName="text-gray-5"
-              accessibilityLabel={t('scope.repeatLabel')}
-            />
-          )}
-          {todo.visibility === 'PRIVATE' && (
-            <LockIcon width={14} height={14} colorClassName="text-gray-5" />
-          )}
-        </HStack>
+        <TodoTitleLine
+          label={
+            <TodoLabel isChecked={todo.completed} className="flex-1">
+              {todo.title}
+            </TodoLabel>
+          }
+          isPrivate={todo.visibility === 'PRIVATE'}
+        />
       }
       middle={
-        formattedTime != null ? (
-          <Text size="e1" shade={6}>
-            {formattedTime}
-          </Text>
+        formattedTime != null || TodoPolicy.isRecurring(todo) ? (
+          <TodoScheduleLine todo={todo} timeLabel={formattedTime} />
         ) : undefined
       }
       bottom={

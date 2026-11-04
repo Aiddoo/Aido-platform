@@ -102,6 +102,7 @@
       "countSuffix_one": "{{count}} time",
       "countSuffix_other": "{{count}} times"
     },
+    "spokenRule": "Repeats {{rule}}",
     "monthEndHint": "In shorter months, it repeats on the last day"
   },
   "scope": {
@@ -114,8 +115,7 @@
     "editFollowingHint": "Changes from {{date}} onward",
     "deleteThisOnlyHint": "Only {{date}} is deleted",
     "deleteFollowingHint": "Deleted from {{date}} onward",
-    "deleteAllHint": "Completed ones are deleted too",
-    "repeatLabel": "Repeating to-do"
+    "deleteAllHint": "Completed ones are deleted too"
   },
   "chip": {
     "repeat": "Repeat",

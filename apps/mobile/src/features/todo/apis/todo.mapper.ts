@@ -1,6 +1,7 @@
 import type {
   DailyCompletionSummary as DailyCompletionSummaryDTO,
   DailyCompletionsRangeResponse,
+  FriendTodoListResponse,
   Todo as TodoDto,
   TodoDetailsResponse,
   TodoListResponse,
@@ -16,6 +17,7 @@ import type {
   TodoListResult,
 } from '../domains/todo.model';
 import { toSubTodo } from './sub-todo.mapper';
+import { toRepeat } from './todo-series.mapper';
 
 export const toTodo = (dto: TodoDto): Todo => ({
   id: dto.id,
@@ -28,6 +30,8 @@ export const toTodo = (dto: TodoDto): Todo => ({
   isAllDay: dto.isAllDay,
   visibility: dto.visibility,
   recurrenceGroupId: dto.recurrenceGroupId,
+  // 구 서버 응답과 친구 할 일에는 키가 없다
+  repeat: dto.repeat == null ? null : toRepeat(dto.repeat),
   subTodos: dto.items.map(toSubTodo),
   subTodoStats: { total: dto.itemStats.total, completed: dto.itemStats.completed },
   commentCount: dto.commentCount,
@@ -79,6 +83,15 @@ export function toTodoDetails(dto: TodoDetailsResponse): TodoDetails {
     },
     permissions: { ...dto.permissions },
     metrics: { ...dto.metrics },
+  };
+}
+
+/** 친구 응답에는 규칙(`repeat`)과 회차 날짜가 없다 */
+export function toFriendTodoListResult(dto: FriendTodoListResponse): TodoListResult {
+  return {
+    todos: dto.items.map(toTodo),
+    hasNext: dto.pagination.hasNext,
+    nextCursor: dto.pagination.nextCursor,
   };
 }
 

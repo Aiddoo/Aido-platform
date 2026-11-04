@@ -14,7 +14,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { type Todo, TodoPolicy } from '../domains/todo.model';
+import type { Todo } from '../domains/todo.model';
 import { useGetTodoSeriesQueryOptions } from '../queries/get-todo-series-query-options';
 import { useGetTodosByDateQueryOptions } from '../queries/get-todos-by-date-query-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
@@ -56,7 +56,8 @@ TodoEditBottomSheet.Form = function Form() {
     onExit: () => sheet.exit(),
   };
 
-  return TodoPolicy.isRecurring(todo) && todo.recurrenceGroupId != null ? (
+  // 규칙은 목록 응답에 실려 있다. 구 서버 응답처럼 규칙이 없는 회차만 따로 읽는다
+  return todo.repeat == null && todo.recurrenceGroupId != null ? (
     <TodoEditBottomSheet.SeriesForm todo={todo} seriesId={todo.recurrenceGroupId} {...sheetProps} />
   ) : (
     <AddTodoBottomSheet mode="edit" todo={todo} {...sheetProps} />

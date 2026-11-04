@@ -2,6 +2,7 @@ import {
   type CreateTodoInput,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
+  friendTodoListResponseSchema,
   type GetTodosQuery,
   type ReorderTodoInput,
   reorderTodoResponseSchema,
@@ -40,6 +41,7 @@ import {
 } from './todo-series.mapper';
 import {
   toDailyCompletionsResult,
+  toFriendTodoListResult,
   toTodo,
   toTodoDetails,
   toTodoListResult,
@@ -118,14 +120,14 @@ export class TodoService {
       return result;
     }
 
-    const parsed = todoListResponseSchema.safeParse(result.value);
+    const parsed = friendTodoListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid getFriendTodos response: ${parsed.error.message}`,
       );
     }
 
-    return ok(toTodoListResult(parsed.data));
+    return ok(toFriendTodoListResult(parsed.data));
   };
 
   toggleTodoComplete = async (

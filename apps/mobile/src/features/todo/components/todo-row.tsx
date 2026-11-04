@@ -1,7 +1,11 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
+  LockIcon,
+  RepeatIcon,
   Text,
   TextSkeleton,
   VStack,
@@ -10,6 +14,14 @@ import { cn } from '@src/shared/utils/cn';
 import { tv } from '@src/shared/utils/tv';
 import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+
+import { type Todo, TodoPolicy } from '../domains/todo.model';
+import { formatRepeatCadence } from '../utils/format-repeat-summary';
+
+/** `TodoLabel`의 b3 한 줄 높이. 잠금 아이콘을 첫 줄 가운데에 맞춘다 */
+const TITLE_LINE_HEIGHT = 20;
+const REPEAT_ICON_SIZE = 13;
+const SPOKEN_WEEKDAY_SEPARATOR = ', ';
 
 /** 행 안쪽 컨트롤을 스크린리더 동작으로 제공할 때 쓰는 이름. */
 export const TODO_ROW_ACCESSIBILITY_ACTION = {
@@ -127,6 +139,75 @@ export function TodoLabel({ isChecked, children, ...props }: TodoLabelProps) {
     >
       {children}
     </Text>
+  );
+}
+
+interface TodoTitleLineProps {
+  label: ReactNode;
+  isPrivate: boolean;
+}
+
+/** 제목은 여러 줄로 늘어나고 잠금 아이콘은 첫 줄 끝에 고정한다 */
+export function TodoTitleLine({ label, isPrivate }: TodoTitleLineProps) {
+  const fontScaledSize = useFontScaledSize();
+
+  return (
+    <HStack gap={4} align="start">
+      {label}
+      {isPrivate && (
+        <Box className="justify-center" style={{ height: fontScaledSize(TITLE_LINE_HEIGHT) }}>
+          <LockIcon width={14} height={14} colorClassName="text-gray-5" />
+        </Box>
+      )}
+    </HStack>
+  );
+}
+
+interface TodoScheduleLineProps {
+  todo: Todo;
+  /** 표시할 시간. 종일이면 null */
+  timeLabel: string | null;
+}
+
+/** "오전 10:00 · ↻ 매주 월·목". 목록에는 주기만 보이고 끝나는 날은 보이지 않는다. 긴 줄은 말줄임 없이 다음 줄로 */
+export function TodoScheduleLine({ todo, timeLabel }: TodoScheduleLineProps) {
+  const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
+  const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
+  const { repeat } = todo;
+  const isRepeating = TodoPolicy.isRecurring(todo);
+  const ruleLabel = repeat == null ? t('chip.repeat') : formatRepeatCadence(repeat);
+  const spokenRule =
+    repeat == null
+      ? t('chip.repeat')
+      : t('repeat.spokenRule', {
+          rule: formatRepeatCadence(repeat, { weekdaySeparator: SPOKEN_WEEKDAY_SEPARATOR }),
+        });
+  const spokenLabel = [timeLabel, isRepeating ? spokenRule : null]
+    .filter((part) => part != null)
+    .join(', ');
+
+  return (
+    <HStack gap={4} align="center" className="flex-wrap" accessibilityLabel={spokenLabel}>
+      {timeLabel != null && (
+        <Text size="e1" shade={6} className="tabular-nums">
+          {timeLabel}
+        </Text>
+      )}
+      {timeLabel != null && isRepeating && (
+        <Text size="e1" shade={6}>
+          ·
+        </Text>
+      )}
+      {isRepeating && (
+        <HStack gap={2} align="center" className="shrink">
+          <RepeatIcon width={repeatIconSize} height={repeatIconSize} colorClassName="text-gray-6" />
+          <Text size="e1" shade={6} className="shrink">
+            {ruleLabel}
+          </Text>
+        </HStack>
+      )}
+    </HStack>
   );
 }
 

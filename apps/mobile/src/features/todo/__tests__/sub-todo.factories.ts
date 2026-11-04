@@ -24,6 +24,7 @@ const generateParentTodo = (): Todo => ({
   isAllDay: false,
   visibility: 'PUBLIC',
   recurrenceGroupId: null,
+  repeat: null,
   subTodos: [],
   subTodoStats: { total: 0, completed: 0 },
   commentCount: 0,

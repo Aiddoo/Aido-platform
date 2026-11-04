@@ -7,7 +7,7 @@ import type { Todo } from '../domains/todo.model';
 
 export function toTodoEditFormValues(
   todo: Todo,
-  repeat: TodoRepeat | null = null,
+  repeat: TodoRepeat | null = todo.repeat,
 ): AddTodoFormInput {
   return {
     title: todo.title,

@@ -98,6 +98,7 @@
       "untilSuffix": "{{date}}까지",
       "countSuffix": "{{count}}회"
     },
+    "spokenRule": "{{rule}} 반복",
     "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요"
   },
   "scope": {
@@ -110,8 +111,7 @@
     "editFollowingHint": "{{date}}부터 쭉 바뀌어요",
     "deleteThisOnlyHint": "{{date}} 할 일만 지워져요",
     "deleteFollowingHint": "{{date}}부터 쭉 지워져요",
-    "deleteAllHint": "완료한 기록도 함께 지워져요",
-    "repeatLabel": "반복 할 일"
+    "deleteAllHint": "완료한 기록도 함께 지워져요"
   },
   "chip": {
     "repeat": "반복",

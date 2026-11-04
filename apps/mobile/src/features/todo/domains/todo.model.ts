@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
 import { todoCategorySchema as categorySchema } from './todo-category.model';
+import { todoRepeatSchema } from './todo-repeat.model';
 
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 
@@ -26,6 +27,8 @@ export const todoSchema = z.object({
   isAllDay: z.boolean(),
   visibility: todoVisibilitySchema,
   recurrenceGroupId: z.string().nullable(),
+  /** 반복 규칙. 단일 할 일이나 규칙이 없는 옛 묶음, 친구 할 일은 null */
+  repeat: todoRepeatSchema.nullable(),
   subTodos: z.array(subTodoSchema),
   subTodoStats: subTodoStatsSchema,
   commentCount: z.int().nonnegative(),
