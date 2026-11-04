@@ -10,7 +10,7 @@
   "keyPoints": {
     "title": "핵심 포인트",
     "playFrom": "{{time}}부터 듣기",
-    "marked": "중요 표시"
+    "marked": "중요 표시한 문장"
   },
   "player": {
     "play": "재생",
@@ -36,7 +36,7 @@
       "doing": "진행 중"
     },
     "characters": "{{amount}}자",
-    "marks": "깃발 {{count}}개",
+    "marks": "중요 표시 {{count}}개",
     "hint": "보통 10초 안에 끝나요. 화면을 닫아도 글자는 남아요.",
     "title": "정리하고 있어요",
     "readyTitle": "들은 내용",
@@ -58,7 +58,11 @@
     },
     "keyPoint": {
       "title": "시간을 누르면 그때부터 들려요",
-      "description": "깃발은 녹음할 때 \"중요해요\"로 표시한 순간이에요."
+      "description": "깃발은 녹음할 때 중요 표시한 순간이에요."
+    },
+    "mark": {
+      "title": "중요한 말이 나오면 눌러보세요",
+      "description": "지금 말하는 문장, 말이 없으면 방금 말한 문장에 표시돼요. AI가 정리할 때 핵심 포인트로 먼저 골라요. 녹음은 멈추지 않아요."
     }
   },
   "record": {
@@ -66,7 +70,10 @@
     "close": "닫기",
     "pause": "일시정지",
     "finish": "끝내기",
-    "mark": "중요해요",
+    "mark": "중요 표시",
+    "markWithCount": "중요 표시 {{amount}}",
+    "markA11y": "중요 표시, 지금까지 {{amount}}개",
+    "markInfo": "중요 표시 설명 보기",
     "privacy": "녹음 파일은 아이두 서버로 보내지 않아요",
     "pausedLabel": "잠시 멈춤",
     "pausedTitle": "잠깐 멈췄어요",
@@ -103,7 +110,7 @@
   "result": {
     "defaultTitle": "말로 남긴 메모",
     "meta": "{{date}} · {{duration}}",
-    "metaMarks": "{{date}} · {{duration}} · 중요 {{amount}}개",
+    "metaMarks": "{{date}} · {{duration}} · 중요 표시 {{amount}}개",
     "tabs": {
       "summary": "요약",
       "todos": "할 일 {{amount}}",

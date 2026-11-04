@@ -23,7 +23,7 @@ interface ProvisionalSentence {
 export interface VoiceNoteCaptions {
   sentences: readonly VoiceNoteSentence[];
   provisional: readonly ProvisionalSentence[];
-  /** "중요해요"를 누른 시각(노트 시계) */
+  /** 중요 표시를 누른 시각(노트 시계) */
   bookmarksMs: readonly number[];
 }
 
@@ -236,6 +236,16 @@ export function getCaptionSentences(
       isBookmarked: captions.bookmarksMs.some((ms) => previousEnd <= ms && ms < nextStart),
     };
   });
+}
+
+/** 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다 */
+export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
+  const sentences = getCaptionSentences(captions, 0);
+  if (sentences.length === 0) {
+    return Math.min(captions.bookmarksMs.length, 1);
+  }
+
+  return sentences.filter(({ isBookmarked }) => isBookmarked).length;
 }
 
 /** 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다 */

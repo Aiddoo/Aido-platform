@@ -5,9 +5,11 @@ import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitle
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { toPremiumBenefitAmounts } from '@src/features/subscription/utils/view-models/plan-benefit.view-model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { RecordControl } from '@src/features/voice/components/note/record-control';
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
+import { VoiceNoteMarkControl } from '@src/features/voice/components/note/voice-note-mark-control';
 import {
   useLiveWaveform,
   WaveformTimeline,
@@ -26,13 +28,11 @@ import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
-  FlagIcon,
   HStack,
   PauseIcon,
   QueryErrorBoundary,
@@ -45,15 +45,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
-import {
-  type ComponentProps,
-  type ReactNode,
-  Suspense,
-  useEffect,
-  useEffectEvent,
-  useState,
-} from 'react';
+import { Suspense, useEffect, useEffectEvent, useState } from 'react';
 import { ActivityIndicator, BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
@@ -218,7 +210,7 @@ function VoiceNoteRecordScreen() {
     ))
     .otherwise(() => (
       <VStack gap={12}>
-        <HStack justify="center" align="start" gap={24}>
+        <HStack justify="center" align="start">
           <RecordControl
             label={t('record.pause')}
             onPress={recording.pause}
@@ -236,14 +228,11 @@ function VoiceNoteRecordScreen() {
           >
             <Box className="size-5 rounded-sm bg-white" />
           </RecordControl>
-          <RecordControl
-            label={t('record.mark')}
+          <VoiceNoteMarkControl
+            markCount={recording.markCount}
+            isListening={state.status === 'listening'}
             onPress={recording.mark}
-            isDisabled={state.status !== 'listening'}
-            testID="voice-note-mark"
-          >
-            <FlagIcon width={22} height={22} colorClassName="text-main" />
-          </RecordControl>
+          />
         </HStack>
         <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
           {t('record.privacy')}
@@ -348,43 +337,6 @@ function RecordingWaveform({
       flagIndexes={bookmarksMs.map(getBarIndexAt)}
       className="self-stretch"
     />
-  );
-}
-
-interface RecordControlProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
-  label: string;
-  isPrimary?: boolean;
-  children: ReactNode;
-}
-
-function RecordControl({
-  label,
-  isPrimary = false,
-  children,
-  ...pressableProps
-}: RecordControlProps) {
-  const fontScaledSize = useFontScaledSize();
-  const size = fontScaledSize(isPrimary ? 64 : 52);
-
-  return (
-    <VStack align="center" gap={8}>
-      <PressableFeedback
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={{ width: size, height: size }}
-        className={cn(
-          'items-center justify-center rounded-full',
-          isPrimary ? 'bg-main' : 'bg-gray-2',
-          pressableProps.isDisabled === true && 'opacity-50',
-        )}
-        {...pressableProps}
-      >
-        {children}
-      </PressableFeedback>
-      <Text size="e1" shade={7} maxLines={1}>
-        {label}
-      </Text>
-    </VStack>
   );
 }
 

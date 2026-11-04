@@ -81,7 +81,11 @@ toast.error(t('friend:toast.sendFailed'));
   | 초대 보상 기간                                        | 프리미엄 7일                           | 7 days of Premium                      |
   | 말로 할 일 만들기 (마이크 접근성 라벨·코치마크 제목)  | 말로 할 일 만들기                      | Speak to add                           |
   | 할 일 추가 시트 표시 라벨 (남은 횟수 `N번 남음` 포함) | AI로 할 일 만들기 ⓘ · {{count}}번 남음 | Make to-dos with AI ⓘ · {{count}} left |
-  | 중요 표시                                             | 중요해요                               | Mark                                   |
+  | 말로 메모하기 행동·버튼                               | 중요 표시                              | Mark                                   |
+  | 표시된 문장                                           | 중요 표시한 문장                       | Marked sentence                        |
+  | 표시 개수 (버튼 라벨은 `중요 표시 N`·`Mark N`)        | 중요 표시 N개                          | N marked                               |
+  | 표시를 고른 결과 묶음                                 | 핵심 포인트                            | Key points                             |
+  | 파형·결과 아이콘 (아이콘 설명에만 쓴다)               | 깃발                                   | flag                                   |
   | 음성 결과                                             | 핵심 포인트 · 요약 · 전체 글           | Key points · Summary · Transcript      |
 
 - ko/en은 같은 키·같은 보간 변수로 함께 추가한다(`locale-parity.test.ts`).

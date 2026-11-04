@@ -6,6 +6,7 @@ import {
   createVoiceNoteFromTranscript,
   getCaptionInterimText,
   getCaptionSentences,
+  getMarkedSentenceCount,
   splitIntoSentences,
   withBookmark,
 } from './voice-note-caption.model';
@@ -182,6 +183,59 @@ describe('withBookmark', () => {
       false,
       true,
     ]);
+  });
+});
+
+describe('getMarkedSentenceCount', () => {
+  test('아무것도 누르지 않았으면 0개다', () => {
+    // Given
+    const captions = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+
+    // When
+    const count = getMarkedSentenceCount(captions);
+
+    // Then
+    expect(count).toBe(0);
+  });
+
+  test('같은 문장을 여러 번 눌러도 한 문장으로 센다', () => {
+    // Given
+    const captions = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+
+    // When
+    const count = getMarkedSentenceCount(withBookmark(withBookmark(captions, 2_500), 3_000));
+
+    // Then
+    expect(count).toBe(1);
+  });
+
+  test('다른 문장을 누르면 문장마다 하나씩 센다', () => {
+    // Given
+    const first = applyCaptionResult(createVoiceNoteCaptions(), final('첫 문장.'), clock(2_000));
+    const second = applyCaptionResult(
+      withBookmark(first, 2_500),
+      final('둘째 문장.'),
+      clock(8_000),
+    );
+
+    // When
+    const count = getMarkedSentenceCount(withBookmark(second, 8_500));
+
+    // Then
+    expect(count).toBe(2);
+  });
+
+  test('문장이 나오기 전에 누르면 곧 나올 첫 문장 하나로 센다', () => {
+    // Given
+    const pressed = withBookmark(withBookmark(createVoiceNoteCaptions(), 300), 600);
+
+    // When
+    const beforeSpeech = getMarkedSentenceCount(pressed);
+    const afterSpeech = applyCaptionResult(pressed, final('첫 문장.'), clock(2_000));
+
+    // Then
+    expect(beforeSpeech).toBe(1);
+    expect(getCaptionSentences(afterSpeech, 2_000)[0]?.isBookmarked).toBe(true);
   });
 });
 

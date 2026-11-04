@@ -26,6 +26,7 @@ import {
   createVoiceNoteCaptions,
   getCaptionInterimText,
   getCaptionSentences,
+  getMarkedSentenceCount,
   hasCaptionText,
   type VoiceNoteCaptions,
   withBookmark,
@@ -359,6 +360,8 @@ export function useVoiceNoteRecording({
     /** 이어 받은 글자까지 포함해 들은 글자가 있다. 있으면 묻지 않고 지우면 안 된다 */
     hasText: hasCaptionText(captions),
     bookmarksMs: captions.bookmarksMs,
+    /** 중요 표시한 문장 수. 정리·결과 화면의 개수와 같은 기준이다 */
+    markCount: getMarkedSentenceCount(captions),
     start,
     mark,
     discard,

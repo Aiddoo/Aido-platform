@@ -10,7 +10,7 @@
   "keyPoints": {
     "title": "Key points",
     "playFrom": "Play from {{time}}",
-    "marked": "Marked"
+    "marked": "Marked sentence"
   },
   "player": {
     "play": "Play",
@@ -37,8 +37,7 @@
     },
     "characters_one": "{{amount}} character",
     "characters_other": "{{amount}} characters",
-    "marks_one": "{{count}} mark",
-    "marks_other": "{{count}} marks",
+    "marks": "{{count}} marked",
     "hint": "Usually done in 10 seconds. Your text is kept if you leave.",
     "title": "Summarizing",
     "readyTitle": "What we heard",
@@ -60,7 +59,11 @@
     },
     "keyPoint": {
       "title": "Tap a time to hear that part",
-      "description": "The flag marks a moment you tapped \"Mark.\""
+      "description": "The flag shows a moment you marked while recording."
+    },
+    "mark": {
+      "title": "Tap when something matters",
+      "description": "Marks the sentence being said, or the last one if there's a pause. AI puts marked sentences first in your key points. Recording keeps going."
     }
   },
   "record": {
@@ -69,6 +72,9 @@
     "pause": "Pause",
     "finish": "Finish",
     "mark": "Mark",
+    "markWithCount": "Mark {{amount}}",
+    "markA11y": "Mark, {{amount}} marked so far",
+    "markInfo": "About marking",
     "privacy": "Audio files aren't sent to Aido's servers",
     "pausedLabel": "Paused",
     "pausedTitle": "We paused for you",
