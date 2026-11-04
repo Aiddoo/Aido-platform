@@ -44,6 +44,33 @@ describe('TodoService', () => {
       }
     });
 
+    test('응답에 모르는 반복 빈도가 있어도 목록은 살리고 그 할 일만 규칙을 비운다', async () => {
+      // Given
+      const dto = {
+        ...createTodoListResponseDto(),
+        items: [
+          { ...createTodoDto({ id: 1 }), repeat: { frequency: 'YEARLY', end: { type: 'NEVER' } } },
+          createTodoDto({
+            id: 2,
+            repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
+          }),
+        ],
+      };
+      httpClient.get.mockResolvedValue({ ok: true, value: dto });
+
+      // When
+      const result = await service.getTodos({ size: 20 });
+
+      // Then
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.todos.map(({ id, repeat }) => ({ id, repeat }))).toEqual([
+          { id: 1, repeat: null },
+          { id: 2, repeat: { frequency: 'DAILY', end: { type: 'NEVER' } } },
+        ]);
+      }
+    });
+
     test('HTTP 에러 → Result.err 반환', async () => {
       // Given
       const apiError = createTodoApiError();
@@ -446,6 +473,34 @@ describe('TodoService', () => {
       httpClient.get.mockResolvedValue({
         ok: false,
         error: createTodoApiError({ code: 'TODO_0841', message: '없음' }),
+      });
+
+      // When
+      const result = await service.getTodoSeries('series-1');
+
+      // Then
+      expect(result).toEqual({ ok: true, value: null });
+    });
+
+    test('규칙의 빈도를 모르면 규칙이 없는 것처럼 돌려준다', async () => {
+      // Given
+      httpClient.get.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'series-1',
+          title: '물 마시기',
+          categoryId: 1,
+          visibility: 'PUBLIC',
+          scheduledTime: null,
+          timezone: 'Asia/Seoul',
+          repeat: { frequency: 'YEARLY', end: { type: 'NEVER' } },
+          startDate: '2026-11-02',
+          nextOccurrenceDate: null,
+          isActive: false,
+          checklist: [],
+          createdAt: '2026-11-02T00:00:00.000Z',
+          updatedAt: '2026-11-02T00:00:00.000Z',
+        },
       });
 
       // When

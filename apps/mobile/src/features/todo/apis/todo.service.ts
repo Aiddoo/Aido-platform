@@ -5,16 +5,10 @@ import {
   friendTodoListResponseSchema,
   type GetTodosQuery,
   type ReorderTodoInput,
-  reorderTodoResponseSchema,
   type ToggleTodoCompleteInput,
-  todoDetailsResponseSchema,
-  todoListResponseSchema,
-  todoSeriesResponseSchema,
-  createTodoResponseSchema,
   todoSummaryResponseSchema,
   type UpdateTodoInput,
   type UpdateTodoScheduleInput,
-  updateTodoResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -40,12 +34,18 @@ import {
   toUpdateTodoRequest,
 } from './todo-series.mapper';
 import {
+  createTodoEnvelopeSchema,
+  reorderTodoEnvelopeSchema,
+  todoDetailsEnvelopeSchema,
+  todoListEnvelopeSchema,
+  todoSeriesEnvelopeSchema,
   toDailyCompletionsResult,
   toFriendTodoListResult,
   toTodo,
   toTodoDetails,
   toTodoListResult,
   toTodoSummary,
+  updateTodoEnvelopeSchema,
 } from './todo.mapper';
 
 export class TodoService {
@@ -75,7 +75,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = todoListResponseSchema.safeParse(result.value);
+    const parsed = todoListEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid getTodos response: ${parsed.error.message}`);
     }
@@ -140,7 +140,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = createTodoResponseSchema.safeParse(result.value);
+    const parsed = createTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid toggleTodoComplete response: ${parsed.error.message}`,
@@ -157,7 +157,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = createTodoResponseSchema.safeParse(result.value);
+    const parsed = createTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid createTodo response: ${parsed.error.message}`);
     }
@@ -179,7 +179,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    const parsed = updateTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid updateTodo response: ${parsed.error.message}`);
     }
@@ -201,7 +201,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    const parsed = updateTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid updateTodoSchedule response: ${parsed.error.message}`,
@@ -310,7 +310,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = createTodoResponseSchema.safeParse(result.value);
+    const parsed = createTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid createRepeatingTodo response: ${parsed.error.message}`,
@@ -334,12 +334,17 @@ export class TodoService {
       return isTodoSeriesNotFoundError(result.error) ? ok(null) : result;
     }
 
-    const parsed = todoSeriesResponseSchema.safeParse(result.value);
+    const parsed = todoSeriesEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid getTodoSeries response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoSeries(parsed.data));
+    // 모르는 빈도면 규칙이 없는 것처럼 다룬다
+    return ok(
+      parsed.data.repeat == null
+        ? null
+        : toTodoSeries({ ...parsed.data, repeat: parsed.data.repeat }),
+    );
   };
 
   /** 이 회차 뒤로 반복을 끝낸다. 이미 끝났으면 서버가 TODO_0846으로 알린다 */
@@ -353,7 +358,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    const parsed = updateTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid stopTodoSeries response: ${parsed.error.message}`,
@@ -373,7 +378,7 @@ export class TodoService {
       return result;
     }
 
-    const parsed = reorderTodoResponseSchema.safeParse(result.value);
+    const parsed = reorderTodoEnvelopeSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid reorderTodo response: ${parsed.error.message}`);
     }
@@ -391,7 +396,7 @@ export class TodoService {
       return response;
     }
 
-    const parsed = todoDetailsResponseSchema.safeParse(response.value);
+    const parsed = todoDetailsEnvelopeSchema.safeParse(response.value);
     if (!parsed.success) {
       throw new ParseError(`[TodoService] Invalid todo details: ${parsed.error.message}`);
     }
