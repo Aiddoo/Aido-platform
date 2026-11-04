@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 1.2.0 · **Last Updated**: 2026-10-14 · **Owner**: Aido Mobile Team
+**Version**: 1.3.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 새 기능 추가 시 이 문서의 패턴을 **반드시** 따릅니다.
@@ -74,15 +74,16 @@ export interface HttpClient {
 }
 ```
 
-| Port                    | 구현체                                                    | 위치                                         |
-| ----------------------- | --------------------------------------------------------- | -------------------------------------------- |
-| `HttpClient`            | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`             |
-| `Storage`               | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts`     |
-| `EnumerableSyncStorage` | 초안·조회 캐시용 암호화 MMKV 인스턴스(AES-256, 키 공유)   | `shared/infra/storage/mmkv-draft-storage.ts` |
-| `Logger`                | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                       |
-| `Analytics`             | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                    |
-| `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
-| `NetworkStatusGateway`  | `expoNetworkStatusGateway`(expo-network)                  | `shared/infra/network/`                      |
+| Port                      | 구현체                                                    | 위치                                         |
+| ------------------------- | --------------------------------------------------------- | -------------------------------------------- |
+| `HttpClient`              | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`             |
+| `Storage`                 | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts`     |
+| `EnumerableSyncStorage`   | 초안·조회 캐시용 암호화 MMKV 인스턴스(AES-256, 키 공유)   | `shared/infra/storage/mmkv-draft-storage.ts` |
+| `Logger`                  | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                       |
+| `Analytics`               | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                    |
+| `ErrorReporter`           | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
+| `NetworkStatusGateway`    | `expoNetworkStatusGateway`(expo-network)                  | `shared/infra/network/`                      |
+| `PushNotificationGateway` | `expoPushNotificationGateway`(expo-notifications)         | `shared/infra/notification/`                 |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 > 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
@@ -259,6 +260,9 @@ interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'c
   `RadioGroup`은 `value`/`onValueChange`, 비활성은 `isDisabled`를 그대로 쓴다. `disabled`·`selected`·`onToggle`처럼
   같은 의미의 다른 이름을 만들지 않는다.
 - 오버레이 시트·다이얼로그는 `isOpen`/`onOpenChange` 계약을 따른다.
+- 래퍼는 자기 역할(단위 suffix·숫자 포맷·계산, 도메인 문구·권한 요청)이 있을 때만 만든다(`AmountInput`, `PushPermissionDialog`). 역할이 없으면 shared/HeroUI 원본을 그대로 쓴다.
+- 도메인 다이얼로그는 `ConfirmDialog`를 `Omit<ComponentProps<typeof ConfirmDialog>, 'title' | 'description' | 'cancelButton' | 'confirmButton' | 'secondaryButton'>`로 확장해 `isOpen`/`onOpenChange`는 원본 그대로 받고 문구·버튼은 안에서 채운다.
+- 컴포넌트는 바깥 레이아웃(margin·폭·위치)을 모른다. `className`만 받아 Screen이 간격을 정한다. 카드 자신의 모양(`rounded-xl bg-gray-1 px-4 py-3.5`)은 컴포넌트 몫이다.
 
 **도메인 식별자는 Props로 받지 않는다.** 화면 식별자(`todoId`, `friendId`, 선택된 항목 id)는 검증된
 `use…ScreenParams()`나 상태 튜플 훅에서 컴포넌트가 직접 읽는다. 값이 `== null`이면 `.Empty`를 보여 준다.
@@ -288,6 +292,15 @@ export function FriendCalendar() {
   </Suspense>
 </QueryErrorBoundary>
 ```
+
+**단계별 조각은 네임스페이스로, 문구는 경우마다 한 줄씩.** 부모에 결합된 조각은 `PushPermissionCard.Ask`·
+`.RequestSystem`·`.OpenSettings`·`.EnableInApp`처럼 부모 파일에 묶고, 본체는 Policy가 준 step을
+`match(step)….exhaustive()`로 고른다. 제품이 문구를 자주 다듬는 표시는 `map`으로 돌리지 않고
+`CalculationResult`의 `Record`처럼 경우마다 한 줄씩 나란히 적는다(`PushPermissionStatusRow`의 상태 라벨도 같다).
+
+Screen은 경계를 위에서 아래로 쌓고, 컴포넌트가 자기 데이터를 구독한다. 홈 피드는
+`<QueryErrorBoundary fallback={() => null}><Suspense fallback={null}><PushPermissionCard className="mx-4 mb-3" /></Suspense></QueryErrorBoundary>`로
+조립한다. 카드는 권한·선호 설정을 `useSuspenseQueries`로 직접 읽고, 숨길 때는 `null`을 돌려준다.
 
 #### 목록·스켈레톤
 
@@ -462,7 +475,39 @@ export const WeatherReportPolicy = {
 - 다른 피처의 Policy를 재수출하거나 위임만 하는 함수를 두지 않는다.
 - 색상·i18n 키 같은 표시 값은 Policy가 반환하지 않는다. Policy는 등급·단계 같은 의미 값을 돌려주고
   컴포넌트가 `satisfies Record<Grade, …>` 맵으로 표시한다.
-- Policy 테스트는 Given / When / Then 주석으로 경계값을 검증한다.
+- Policy 테스트는 `*.model.test.ts`에서 fixture(`createX(overrides)`)로 경계값까지 검증한다.
+
+**예: `push-permission.model.ts`** — 한 파일에 모델·순수 함수·Facade를 모은다.
+
+```typescript
+export const pushPermissionSchema = z.object({
+  status: z.enum(PUSH_PERMISSION_STATUS),
+  canAskAgain: z.boolean(),
+});
+
+export function isDeliveryAllowed(permission: PushPermission): boolean {
+  // GRANTED 또는 PROVISIONAL
+}
+
+export function getNextPushPermissionStep(
+  permission: PushPermission,
+  { pushEnabled }: { pushEnabled: boolean },
+): PushPermissionStep {
+  // ASK · REQUEST_SYSTEM · OPEN_SETTINGS · ENABLE_IN_APP · NONE
+}
+
+export const PushPermissionPolicy = {
+  isDeliveryAllowed,
+  isNotDetermined,
+  canRequestSystemDialog,
+  isBlockedUntilSettings,
+  isPromptSnoozed,
+  nextStep: getNextPushPermissionStep,
+} as const;
+```
+
+- 모델은 서버 DTO가 아니라 OS 값을 `push-permission.mapper.ts`가 바꾼 클라이언트 모델에 의존한다.
+- Policy는 "다음에 무엇을 해야 하나"(step)까지만 정한다. 문구와 버튼은 컴포넌트가 `match(step)`으로 정한다.
 
 **Domain Error**: 클라이언트 비즈니스 에러 (서버 에러 `ApiError`와 완전히 별개)
 
@@ -820,13 +865,44 @@ export function {Feature}List() {
 
 ---
 
-## DI (의존성 주입)
-
-`bootstrap/providers/di-provider.tsx`에서 모든 인스턴스를 생성합니다.
+## Port·Adapter·DI
 
 ```
-Storage → HttpClient → Service → DIContext → use{Feature}Service() 훅
+core/ports (인터페이스) ← shared/infra (어댑터) ← di-provider (조립) → di-context (use{X}Service 훅)
 ```
+
+- **포트**: OS·네트워크·저장소 같은 외부 경계는 `core/ports/`에 인터페이스로 정의한다.
+- **어댑터**: 벤더·Expo 모듈 호출은 `shared/infra/`의 어댑터에만 둔다. 서비스와 컴포넌트는 포트만 안다.
+- **조립**: `bootstrap/providers/di-provider.tsx`(composition root)가 어댑터와 서비스를 만들고, `di-context.tsx`의
+  `DIContainer`와 `use{X}Service` 훅으로 내보낸다. 사용처는 훅으로만 서비스를 받는다.
+- **Mapper는 DI에 넣지 않는다.** DTO·OS 값을 모델로 바꾸는 순수 함수라 서비스가 직접 import한다.
+- **테스트**: 포트를 구현한 stub을 DI로 주입한다. `jest.mock`은 어댑터 경계 테스트에만 쓴다([testing-guide](./testing-guide.md)).
+
+예: `PushNotificationGateway`(포트) → `expoPushNotificationGateway`(어댑터) → `PushDeviceService`.
+
+```typescript
+// core/ports/push-notification-gateway.ts
+export interface PushNotificationGateway {
+  getPermission(): Promise<PushPermissionResponse>;
+  ensureChannel(): Promise<void>;
+  getToken(): Promise<string>;
+  // …
+}
+
+// di-provider.tsx
+const pushDeviceService = new PushDeviceService(
+  expoPushNotificationGateway,
+  deviceIdService,
+  authHttpClient,
+  logger,
+);
+
+// di-context.tsx
+export const usePushDeviceService = () => useDI().pushDeviceService;
+```
+
+서비스는 게이트웨이가 준 OS 원본(`PushPermissionResponse`)을 `push-permission.mapper.ts`로 모델(`PushPermission`)에 바꾼 뒤에만 Policy에 넘긴다.
+동작 흐름은 [push-notifications](../docs/push-notifications.md)를 본다.
 
 **새 Feature 등록**
 
@@ -836,13 +912,10 @@ export interface DIContainer {
   {feature}Service: {Feature}Service;
 }
 
-// 2. di-provider.tsx — useState 초기화에서 생성
+// 2. di-provider.tsx — useState 초기화에서 생성하고 return에 추가
 const {feature}Service = new {Feature}Service(authHttpClient);
 
-// 3. return에 추가
-return { {feature}Service };
-
-// 4. di-context.tsx — 훅 export 추가 (사용처는 di-context에서 import)
+// 3. di-context.tsx — 훅 export 추가 (사용처는 di-context에서 import)
 export const use{Feature}Service = () => useDI().{feature}Service;
 ```
 
