@@ -6,7 +6,6 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -19,14 +18,13 @@ import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 interface ConvertMemoToTodosMutationParams {
   memoId: number;
   input: ConvertMemoToTodosInput;
-  source?: 'manual' | 'ai';
 }
 
 export const useConvertMemoToTodosMutationOptions = () => {
   const haptics = useHaptics();
   const service = useMemoService();
   const activationService = useActivationService();
-  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
+  const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
@@ -35,23 +33,10 @@ export const useConvertMemoToTodosMutationOptions = () => {
       const result = await service.convertToTodos(memoId, input);
       return unwrap(result);
     },
-    onSuccess: (_data, { memoId, input, source = 'ai' }) => {
+    onSuccess: (_data, { memoId }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
-      if (source === 'manual') {
-        toast.success(t('memo:toasts.convertedOne'));
-        trackEvent('memo_converted_to_todo', { memo_id: memoId });
-        return;
-      }
-      toast.success(t('memo:toasts.convertedMany', { count: input.todos.length }));
-      trackEvent('memo_converted_to_todos', {
-        memo_id: memoId,
-        todo_count: input.todos.length,
-        source: 'ai',
-      });
-      const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
-        trackAttributedFeatureSuccess({ accountId, feature: 'memo_ai' });
-      }
+      toast.success(t('memo:toasts.convertedOne'));
+      trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },
     onError: (error) => {
       haptics.notify('error');

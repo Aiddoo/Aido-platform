@@ -1,158 +1,101 @@
-import { AI_PARSE_LIMITS } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
-import { MemoTodoEditor } from '@src/features/memo/components/memo-todo-editor';
-import { memoReviewFormSchema } from '@src/features/memo/domains/memo-review-form.schema';
 import {
   memoScreenParamsSchema,
   useMemoScreenParams,
 } from '@src/features/memo/hooks/use-memo-screen-params';
-import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
-import { toReviewedMemoConversionInput } from '@src/features/memo/utils/to-reviewed-memo-conversion-input';
-import { isApiError } from '@src/shared/errors';
+import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
+import { createMemoPlanDraftKey } from '@src/features/memo/utils/memo-plan-draft';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { PlanReview } from '@src/features/voice/components/plan/plan-review';
+import {
+  type PlanReviewFormValues,
+  planReviewFormSchema,
+  toVoicePlanFromDraft,
+} from '@src/features/voice/domains/plan-review-form.schema';
+import { voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
+import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
+import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  KeyboardAdaptiveButton,
-  QueryErrorBoundary,
-  Result,
-  StyledSafeAreaView,
-  Text,
-  VStack,
-  type QueryErrorFallbackProps,
-} from '@src/shared/ui';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { QueryErrorBoundary, Result, StyledSafeAreaView } from '@src/shared/ui';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Suspense, useEffect, useState } from 'react';
-import { FormProvider, useFieldArray, useForm, useFormState } from 'react-hook-form';
-import { ActivityIndicator } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-
-/** 고치는 제목을 키보드 위 생성 버튼보다 이만큼 더 위에 둔다 */
-const FOCUSED_TITLE_GAP = 16;
+import { Suspense, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { ActivityIndicator, ScrollView } from 'react-native';
 
 function AiReviewScreen() {
-  const haptics = useHaptics();
   const { t } = useTranslation('memo');
   const goBack = useSingleTap(router.back);
-  const { memoId } = useMemoScreenParams();
-  const queryClient = useQueryClient();
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
-  const parsedResult = getParsedMemo(queryClient, { memoId });
+  const { memoId } = useMemoScreenParams();
+  const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
+    queries: [
+      useGetMemoQueryOptions({ memoId }),
+      useGetMeQueryOptions(),
+      useGetTodoCategoriesQueryOptions(),
+    ],
+  });
+  const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
+    createMemoPlanDraftKey({ userId: user.id, memoId }),
+    { sourceUpdatedAt: memo.updatedAt.getTime() },
+  );
+  const fallbackCategoryId = categoriesResult.categories[0]?.id;
 
-  const formMethods = useForm({
-    resolver: zodResolver(memoReviewFormSchema),
-    defaultValues: { todos: parsedResult?.todos ?? [] },
+  const form = useForm<PlanReviewFormValues>({
+    resolver: zodResolver(planReviewFormSchema),
+    defaultValues: restoredDraft?.form,
     mode: 'onChange',
   });
-  const { control, handleSubmit } = formMethods;
-  const { fields, remove } = useFieldArray({ control, name: 'todos' });
-  const { isValid } = useFormState({ control });
-  const convertMutation = useMutation(useConvertMemoToTodosMutationOptions());
-  // 글꼴 크기에 따라 달라지는 실제 버튼 높이만큼 올려 큰 글꼴·작은 화면에서도 제목이 버튼에 가리지 않게 한다
-  const [submitButtonHeight, setSubmitButtonHeight] = useState(0);
-
-  useEffect(() => {
-    if (!parsedResult) {
-      goBack();
-    }
-  }, [parsedResult, goBack]);
-
-  const handleRemoveTodo = (index: number) => {
-    haptics.impact('light');
-    remove(index);
-  };
-
-  const handleConfirm = handleSubmit(({ todos }) => {
-    convertMutation.mutate(
-      {
-        memoId,
-        input: toReviewedMemoConversionInput(todos),
-      },
-      {
-        onSuccess: () => {
-          dismiss();
-          navigate('/feed');
-        },
-      },
-    );
+  // 나눈 결과는 저장하기 전까지 기기에 남긴다. 초안이 비었을 때만 지우므로 고치지 않은 상태도 남는다
+  const discardDraft = useFormDraftAutosave(form.subscribe, {
+    initialValues: { actions: [] },
+    saveDraft: (form) =>
+      saveDraft({ omittedTodoCount: restoredDraft?.omittedTodoCount ?? 0, form }),
+    clearDraft,
   });
 
-  if (!parsedResult) {
+  useEffect(() => {
+    if (restoredDraft == null) {
+      goBack();
+    }
+  }, [restoredDraft, goBack]);
+
+  if (restoredDraft == null) {
     return null;
   }
 
-  if (fields.length === 0) {
+  if (fallbackCategoryId == null) {
     return (
       <Result
-        title={t('aiReview.noTodosTitle')}
+        title={t('aiReview.noCategory')}
         button={<Result.Button onPress={() => goBack()}>{t('aiReview.goBack')}</Result.Button>}
       />
     );
   }
 
   return (
-    <FormProvider {...formMethods}>
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 16 }}
-        bottomOffset={submitButtonHeight + FOCUSED_TITLE_GAP}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      >
-        {parsedResult.omittedTodoCount > 0 && (
-          <Text size="b3" shade={6}>
-            {t('aiReview.omittedTodos', {
-              count: parsedResult.omittedTodoCount,
-              max: AI_PARSE_LIMITS.MEMO_MAX_TODOS,
-            })}
-          </Text>
-        )}
-        {fields.map((field, index) => (
-          <MemoTodoEditor key={field.id} index={index} onRemove={() => handleRemoveTodo(index)} />
-        ))}
-      </KeyboardAwareScrollView>
-
-      <KeyboardAdaptiveButton
-        onLayout={(event) => setSubmitButtonHeight(event.nativeEvent.layout.height)}
-        onPress={() => handleConfirm()}
-        isDisabled={!isValid}
-        isLoading={convertMutation.isPending}
-        testID="ai-review-submit"
-      >
-        {t('aiReview.createCount', { count: fields.length })}
-      </KeyboardAdaptiveButton>
-    </FormProvider>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
+      <PlanReview
+        form={form}
+        plan={toVoicePlanFromDraft(planIdOf(memoId), restoredDraft)}
+        fallbackCategoryId={fallbackCategoryId}
+        onApplied={() => {
+          discardDraft();
+          dismiss();
+          navigate('/feed');
+        }}
+      />
+    </ScrollView>
   );
 }
 
-AiReviewScreen.Loading = function Loading() {
-  const { t } = useTranslation('memo');
-  return (
-    <VStack className="flex-1 items-center justify-center gap-3">
-      <ActivityIndicator size="large" />
-      <Text size="b3" shade={7}>
-        {t('aiReview.analyzing')}
-      </Text>
-    </VStack>
-  );
-};
-
-AiReviewScreen.Error = function ErrorFallback({ error }: Pick<QueryErrorFallbackProps, 'error'>) {
-  const { t } = useTranslation('memo');
-  const goBack = useSingleTap(router.back);
-  const message = isApiError(error) ? error.message : t('aiReview.retryLater');
-
-  return (
-    <Result
-      title={t('aiReview.parseFailed')}
-      description={message}
-      button={<Result.Button onPress={() => goBack()}>{t('aiReview.goBack')}</Result.Button>}
-    />
-  );
-};
+const planIdOf = (memoId: number) => ({
+  planId: voicePlanIdSchema.parse(`memo-${memoId}`),
+  source: 'memo' as const,
+});
 
 export default function AiReviewRoute() {
   const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
@@ -162,9 +105,9 @@ export default function AiReviewRoute() {
   }
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
-      <QueryErrorBoundary fallback={({ error }) => <AiReviewScreen.Error error={error} />}>
-        <Suspense fallback={<AiReviewScreen.Loading />}>
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
+      <QueryErrorBoundary resetKeys={[params.data.memoId]}>
+        <Suspense fallback={<ActivityIndicator className="flex-1" />}>
           <AiReviewScreen />
         </Suspense>
       </QueryErrorBoundary>

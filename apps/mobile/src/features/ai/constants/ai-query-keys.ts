@@ -9,6 +9,4 @@ export const AI_QUERY_KEYS = {
   details: () => [...AI_QUERY_KEYS.all, 'detail'] as const,
   detail: ({ reportId }: { reportId: number }) =>
     [...AI_QUERY_KEYS.details(), { reportId }] as const,
-  parseMemo: ({ memoId }: { memoId: number }) =>
-    [...AI_QUERY_KEYS.all, 'parse-memo', { memoId }] as const,
 } as const;

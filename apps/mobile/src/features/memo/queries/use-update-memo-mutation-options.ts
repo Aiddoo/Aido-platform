@@ -1,6 +1,5 @@
 import type { UpdateMemoInput } from '@aido/api';
 import { useHaptics, useMemoService } from '@src/bootstrap/providers/di-context';
-import { clearParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -31,7 +30,6 @@ export const useUpdateMemoMutationOptions = () => {
       await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
       queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
       trackEvent('memo_updated', { memo_id: memoId });
-      clearParsedMemo(queryClient, { memoId });
     },
     onError: (error) => {
       haptics.notify('error');

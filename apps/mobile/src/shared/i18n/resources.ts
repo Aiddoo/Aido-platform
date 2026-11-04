@@ -20,6 +20,7 @@ import enUser from './locales/en/user.json';
 import enValidation from './locales/en/validation.json';
 import enVoiceNote from './locales/en/voice-note.json';
 import enVoice from './locales/en/voice.json';
+import enVoicePlan from './locales/en/voicePlan.json';
 import enWeather from './locales/en/weather.json';
 import enWidget from './locales/en/widget.json';
 import koAchievement from './locales/ko/achievement.json';
@@ -44,6 +45,7 @@ import koUser from './locales/ko/user.json';
 import koValidation from './locales/ko/validation.json';
 import koVoiceNote from './locales/ko/voice-note.json';
 import koVoice from './locales/ko/voice.json';
+import koVoicePlan from './locales/ko/voicePlan.json';
 import koWeather from './locales/ko/weather.json';
 import koWidget from './locales/ko/widget.json';
 
@@ -58,6 +60,7 @@ export const resources = {
     todoComment: koTodoComment,
     auth: koAuth,
     memo: koMemo,
+    voicePlan: koVoicePlan,
     moderation: koModeration,
     friend: koFriend,
     invite: koInvite,
@@ -84,6 +87,7 @@ export const resources = {
     todoComment: enTodoComment,
     auth: enAuth,
     memo: enMemo,
+    voicePlan: enVoicePlan,
     moderation: enModeration,
     friend: enFriend,
     invite: enInvite,

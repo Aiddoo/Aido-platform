@@ -1,8 +1,8 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useHaptics } from '@src/bootstrap/providers/di-context';
+import { useDraftService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
-import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
+import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
@@ -32,7 +32,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { useMutation, useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
@@ -42,6 +42,7 @@ import { ActivityIndicator, Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useResolveClassNames } from 'uniwind';
 
+import type { MemoItem } from '../../domains/memo.model';
 import { useMemoScreenParams } from '../../hooks/use-memo-screen-params';
 import { useSelectedMemo } from '../../hooks/use-selected-memo';
 import { useGetMemoQueryOptions } from '../../queries/get-memo-query-options';
@@ -49,8 +50,8 @@ import { useDeleteMemoMutationOptions } from '../../queries/use-delete-memo-muta
 import { useToggleMemoPinMutationOptions } from '../../queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '../../queries/use-update-memo-mutation-options';
 import { createMemoDraftKey } from '../../utils/memo-draft';
+import { createMemoPlanDraftKey } from '../../utils/memo-plan-draft';
 import { memoAiReviewHref } from '../../utils/navigation/memo-href';
-import { AiParseConfirmDialog } from '../ai-parse-confirm-dialog';
 import {
   MEMO_TOOLBAR_ICON,
   MemoActionButton,
@@ -187,7 +188,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 
-  const aiParse = useAiParseAction();
+  const aiParse = useAiParseAction({ memo, userId: user.id });
   const convertToTodo = useConvertToTodoAction(() => {
     leaveMemo();
     navigate('/feed');
@@ -365,25 +366,29 @@ function MemoDeleteDialog({ isOpen, onOpenChange, isPending, onConfirm }: MemoDe
 }
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 AI 정리 동작을 쓴다. */
-function useAiParseAction() {
+function useAiParseAction({ memo, userId }: { memo: MemoItem; userId: string }) {
   const push = useSingleTap(router.push);
-  const { memoId } = useMemoScreenParams();
-  const overlay = useOverlay();
-  const queryClient = useQueryClient();
+  const draftService = useDraftService();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
+  const parseMutation = useMutation(useParseMemoMutationOptions());
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
-  const hasCategory = categoriesQuery.data?.categories[0] != null;
+  const defaultCategoryId = categoriesQuery.data?.categories[0]?.id;
   const aiConsent = useAiDataSharingConsentGate();
   const toast = useAppToast();
   const { t } = useTranslation('errors');
+  const sourceUpdatedAt = memo.updatedAt.getTime();
 
   const handlePress = async () => {
-    if (getParsedMemo(queryClient, { memoId })) {
-      push(memoAiReviewHref(memoId));
+    // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
+    const draft = draftService.restore(createMemoPlanDraftKey({ userId, memoId: memo.id }), {
+      sourceUpdatedAt,
+    });
+    if (draft.status === 'restored') {
+      push(memoAiReviewHref(memo.id));
       return;
     }
-    if (!gate.guard()) {
+    if (defaultCategoryId == null || !gate.guard()) {
       return;
     }
     const consent = await aiConsent.ensureAgreed();
@@ -391,33 +396,20 @@ function useAiParseAction() {
       return;
     }
 
-    await overlay.open(({ isOpen, close, exit }) => {
-      const handleOpenChange = (open: boolean) => {
-        if (!open) {
-          close();
-          exit();
-        }
-      };
+    try {
+      await parseMutation.mutateAsync({
+        memoId: memo.id,
+        content: memo.content,
+        categoryId: defaultCategoryId,
+        sourceUpdatedAt,
+      });
+      push(memoAiReviewHref(memo.id));
+      return;
+    } catch {
+      // 오류 안내는 mutation이 맡는다. 동의 없음(AI_1311)만 여기서 동의부터 다시 시작한다
+    }
 
-      return (
-        <QueryErrorBoundary
-          fallback={({ reset }) => (
-            <AiParseConfirmDialog.Error
-              isOpen={isOpen}
-              onOpenChange={handleOpenChange}
-              reset={reset}
-            />
-          )}
-        >
-          <Suspense fallback={null}>
-            <AiParseConfirmDialog isOpen={isOpen} memoId={memoId} onOpenChange={handleOpenChange} />
-          </Suspense>
-        </QueryErrorBoundary>
-      );
-    });
-
-    // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 확인 창이 닫히고 동의 캐시가 미응답이 된다.
-    // 확인 창은 Portal이라 그 위에 시트를 띄울 수 없어, 창이 닫힌 뒤 동의부터 다시 시작한다
+    // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 동의 캐시가 미응답이 된다
     if (!aiConsent.isAgreementRequired()) {
       return;
     }
@@ -431,8 +423,8 @@ function useAiParseAction() {
 
   return {
     handlePress,
-    isDisabled: !hasCategory || entitlementsQuery.isLoading,
-    isLoading: entitlementsQuery.isLoading,
+    isDisabled: defaultCategoryId == null || entitlementsQuery.isLoading || parseMutation.isPending,
+    isLoading: entitlementsQuery.isLoading || parseMutation.isPending,
   };
 }
 

@@ -47,6 +47,7 @@ import { createRecognitionLanguageRepository } from '@src/features/voice/apis/re
 import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
 import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
+import { VoiceService } from '@src/features/voice/apis/voice.service';
 import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
@@ -233,6 +234,7 @@ export function DIProvider({
 
     // Memo
     const memoService = new MemoService(authHttpClient);
+    const voiceService = new VoiceService(authHttpClient, logger);
     const moderationService = new ModerationService(authHttpClient);
 
     // Todo
@@ -344,6 +346,7 @@ export function DIProvider({
       inviteShareService,
       inquiryService,
       memoService,
+      voiceService,
       moderationService,
       subTodoService,
       todoService,

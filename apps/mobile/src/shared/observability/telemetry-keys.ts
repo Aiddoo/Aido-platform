@@ -20,6 +20,7 @@ import type { PremiumGateAnalyticsFeature } from '@src/features/subscription/uti
 import type { PurchaseFailedReason } from '@src/features/subscription/utils/analytics/purchase-failed-reason';
 import type { SubscriptionStatus } from '@src/features/user/domains/user.model';
 import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
+import type { VoicePlanFailureCause } from '@src/features/voice/domains/voice.error';
 import type {
   WeatherBriefingKind,
   WeatherLocationRegisteredResult,
@@ -323,7 +324,8 @@ export type EntitlementGateSurface =
   | 'notification_center'
   | 'app_icon_settings'
   | 'reminder_settings'
-  | 'report_detail';
+  | 'report_detail'
+  | 'voice_note';
 
 /** precheck: 시작 전에 남은 횟수 0을 보고 막았다 · server: 서버가 한도 오류로 막았다 */
 export type LimitReachedTrigger = 'precheck' | 'server';
@@ -375,6 +377,26 @@ export interface AiEventMap {
   ai_suggestion_acted: { action: 'accept' | 'dismiss' };
   ai_report_viewed: { report_id: number; report_type: ReportType };
   ai_data_sharing_consent_changed: { agreed: boolean };
+}
+
+/** 계획을 만든 흐름. 제목·내용은 이벤트에 싣지 않는다 */
+export type VoicePlanAnalyticsSource = 'quick_voice' | 'quick_text' | 'voice_note' | 'memo';
+
+export interface VoiceEventMap {
+  voice_plan_generated: {
+    source: VoicePlanAnalyticsSource;
+    todo_count: number;
+    memo_count: number;
+    duplicate_count: number;
+    charged: boolean;
+  };
+  voice_plan_failed: { source: VoicePlanAnalyticsSource; cause: VoicePlanFailureCause };
+  voice_plan_applied: {
+    source: VoicePlanAnalyticsSource;
+    todo_count: number;
+    memo_count: number;
+    skipped_count: number;
+  };
 }
 
 export interface UserEventMap {
@@ -430,7 +452,6 @@ export interface MemoEventMap {
   memo_deleted: { memo_id: number };
   memo_pin_toggled: { memo_id: number; is_pinned: boolean };
   memo_converted_to_todo: { memo_id: number };
-  memo_converted_to_todos: { memo_id: number; todo_count: number; source: string };
 }
 
 export interface WeatherEventMap {
@@ -469,6 +490,7 @@ export type AppEventMap = AuthEventMap &
   VoiceEventMap &
   CoachmarkEventMap &
   AiEventMap &
+  VoiceEventMap &
   UserEventMap &
   NotificationEventMap &
   BadgeEventMap &

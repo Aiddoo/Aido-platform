@@ -246,7 +246,6 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             {
               memoId: convertProps.memoId,
               input: toMemoConversionInput(values),
-              source: 'manual',
             },
             {
               onSuccess: () => {

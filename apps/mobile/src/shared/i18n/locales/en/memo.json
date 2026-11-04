@@ -27,8 +27,6 @@
   },
   "toasts": {
     "convertedOne": "Converted the memo into a to-do",
-    "convertedMany_one": "Converted the memo into {{count}} to-do",
-    "convertedMany_other": "Converted the memo into {{count}} to-dos",
     "deleted": "Memo deleted",
     "retryLater": "Please try again later",
     "reorderFailed": "Failed to change the order",
@@ -36,26 +34,8 @@
     "limitReached": "You've reached the memo limit",
     "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
   },
-  "aiDialog": {
-    "confirmTitle": "We'll turn this note into to-dos",
-    "warnWithDeduction": "If you leave while we're working on it, you won't get the result and it will count as a use.",
-    "warnNoDeduction": "If you leave while we're working on it, you won't get the result.",
-    "start": "Start"
-  },
   "aiReview": {
-    "titleLabel": "To-do title",
-    "analyzing": "Analyzing your memo...",
-    "parseFailed": "Couldn't turn it into to-dos",
-    "retryLater": "Please try again later",
     "goBack": "Go back",
-    "noTodosTitle": "No to-dos to create",
-    "createCount_one": "Create {{count}} to-do",
-    "createCount_other": "Create {{count}} to-dos",
-    "omittedTodos_one": "We made up to {{max}} to-dos. The other {{count}} stays in your memo.",
-    "omittedTodos_other": "We made up to {{max}} to-dos. The other {{count}} stay in your memo.",
-    "allDay": "All day",
-    "categoryFallback": "Category",
-    "weeklyRepeat": "Weekly on {{days}}",
-    "select": "Select"
+    "noCategory": "Couldn't find a category"
   }
 }

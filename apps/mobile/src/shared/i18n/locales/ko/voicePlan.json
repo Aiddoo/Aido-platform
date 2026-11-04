@@ -1,0 +1,56 @@
+{
+  "plan": {
+    "title": "할 일 {{count}}개로 나눴어요",
+    "titleMemoOnly": "메모로 정리했어요",
+    "hint": "추가할 것만 오른쪽에서 골라주세요. 누르면 고칠 수 있어요.",
+    "omitted": "할 일이 많아서 일부만 나눴어요. 나머지 {{count}}개는 만들지 않았어요.",
+    "empty": "할 일을 찾지 못했어요",
+    "duplicate": "이미 있어요",
+    "select": "{{title}} 추가하기",
+    "memoCaption": "메모로 저장해요",
+    "apply": "할 일 {{count}}개 추가",
+    "applyMemo": "메모 저장"
+  },
+  "applied": {
+    "todos": "할 일 {{count}}개를 추가했어요",
+    "todosAndMemo": "할 일 {{count}}개와 메모를 저장했어요",
+    "memo": "메모를 저장했어요"
+  },
+  "edit": {
+    "titleLabel": "할 일 제목"
+  },
+  "failure": {
+    "network": {
+      "title": "인터넷에 연결되지 않았어요",
+      "description": "연결을 확인하고 다시 시도해주세요."
+    },
+    "limit": {
+      "title": "횟수를 다 썼어요",
+      "description": "한도를 확인해주세요."
+    },
+    "too-long": {
+      "title": "내용이 너무 길어요",
+      "description": "조금 줄여서 다시 시도해주세요."
+    },
+    "in-progress": {
+      "title": "아직 정리하고 있어요",
+      "description": "잠시 뒤에 다시 시도해주세요."
+    },
+    "key-expired": {
+      "title": "결과를 다시 받아야 해요",
+      "description": "다시 정리하면 횟수가 한 번 더 차감될 수 있어요."
+    },
+    "ai-unavailable": {
+      "title": "지금은 정리하지 못했어요",
+      "description": "잠시 후 다시 시도해주세요."
+    },
+    "unknown": {
+      "title": "잘 안 됐어요",
+      "description": "잠시 후 다시 시도해주세요."
+    },
+    "rejected": {
+      "title": "저장할 수 없는 내용이 있어요",
+      "description": "카드를 고쳐서 다시 시도해주세요."
+    }
+  }
+}

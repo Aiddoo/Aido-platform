@@ -1,0 +1,202 @@
+import {
+  type ApplyAction as ApplyActionDto,
+  type ApplyActionPlanRequest,
+  actionPlanSchema,
+  type ParseMemoResponse,
+  type ParsedMemoTodo,
+  PLANNED_ACTION_TYPES,
+  plannedActionSchema,
+  quickPlanResponseSchema,
+  voiceNoteDigestResponseSchema,
+} from '@aido/api';
+import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
+import { toRepeat, toRepeatDto } from '@src/features/todo/apis/todo-series.mapper';
+import type { TodoRepeat } from '@src/features/todo/domains/todo-repeat.model';
+import { toDate } from '@src/shared/utils/date';
+import { formatDateKey } from '@src/shared/utils/date-format';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
+import { match } from 'ts-pattern';
+import { z } from 'zod';
+
+import {
+  type PlannedAction,
+  type QuickPlanResult,
+  type VoicePlan,
+  type VoiceNoteDigestResult,
+  type VoicePlanSource,
+  voicePlanSchema,
+} from '../domains/voice-plan.model';
+
+/**
+ * 새 서버가 더한 모르는 행동 타입 하나 때문에 계획 전체를 버리지 않도록 행동은 느슨하게 받고,
+ * 아는 타입만 {@link toVoicePlan}이 계약대로 검증한다.
+ */
+const lenientActionPlanSchema = actionPlanSchema.extend({ actions: z.array(z.unknown()) });
+
+export const quickPlanEnvelopeSchema = quickPlanResponseSchema.extend({
+  plan: lenientActionPlanSchema,
+});
+
+export const voiceNoteDigestEnvelopeSchema = voiceNoteDigestResponseSchema.extend({
+  plan: lenientActionPlanSchema,
+});
+
+interface LenientActionPlan {
+  actions: readonly unknown[];
+  omittedTodoCount: number;
+}
+
+const KNOWN_ACTION_TYPES: readonly string[] = PLANNED_ACTION_TYPES;
+
+function isKnownAction(action: unknown) {
+  return (
+    typeof action === 'object' &&
+    action != null &&
+    'type' in action &&
+    typeof action.type === 'string' &&
+    KNOWN_ACTION_TYPES.includes(action.type)
+  );
+}
+
+const toPlannedAction = (dto: z.infer<typeof plannedActionSchema>): PlannedAction =>
+  match(dto)
+    .returnType<PlannedAction>()
+    .with({ type: 'CREATE_TODO' }, (todo) => ({
+      type: 'create-todo',
+      actionId: todo.key,
+      title: todo.title,
+      startDate: toDate(todo.startDate),
+      endDate: todo.endDate == null ? null : toDate(todo.endDate),
+      scheduledTime: todo.scheduledTime,
+      repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
+      visibility: todo.visibility,
+      items: todo.items.map(({ title }) => ({ title })),
+      categoryId: todo.categoryId,
+      duplicateOfTodoId: todo.duplicateOfTodoId,
+    }))
+    .with({ type: 'CREATE_MEMO' }, (memo) => ({
+      type: 'create-memo',
+      actionId: memo.key,
+      title: memo.title,
+      content: memo.content,
+    }))
+    .exhaustive();
+
+/** 빠른 계획·녹음 정리의 계획을 `VoicePlan`으로 바꾼다. 모르는 행동 타입은 버린다 */
+export function toVoicePlan(
+  planId: string,
+  source: VoicePlanSource,
+  { actions, omittedTodoCount }: LenientActionPlan,
+): VoicePlan {
+  const known = actions
+    .filter(isKnownAction)
+    .map((action) => toPlannedAction(plannedActionSchema.parse(action)));
+  return voicePlanSchema.parse({ planId, source, actions: known, omittedTodoCount });
+}
+
+export function toQuickPlanResult(
+  dto: z.infer<typeof quickPlanEnvelopeSchema>,
+  { planId, source }: { planId: string; source: 'quick-voice' | 'quick-text' },
+): QuickPlanResult {
+  return {
+    plan: toVoicePlan(planId, source, dto.plan),
+    featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
+    charged: dto.charged,
+  };
+}
+
+const isParsedMemoRepeating = (todo: ParsedMemoTodo) =>
+  todo.repeat != null || todo.recurrence != null;
+
+/** 1.15.0 서버는 `repeat`을 주고, 이전 서버는 요일+종료일(`recurrence`)만 준다 */
+function toParsedMemoRepeat({ repeat, recurrence }: ParsedMemoTodo): TodoRepeat | null {
+  if (repeat != null) {
+    return toRepeat(repeat);
+  }
+  return recurrence == null
+    ? null
+    : {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: recurrence.daysOfWeek,
+        end: { type: 'UNTIL', date: recurrence.endDate },
+      };
+}
+
+/** 메모 정리 응답(`parse-memo`)도 같은 계획으로 만든다 */
+export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse): VoicePlan {
+  const actions = dto.data.todos.map((todo, index): PlannedAction => ({
+    type: 'create-todo',
+    actionId: `memo-todo-${index}`,
+    title: todo.title,
+    startDate: toDate(todo.startDate),
+    endDate: isParsedMemoRepeating(todo) || todo.endDate == null ? null : toDate(todo.endDate),
+    scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
+    repeat: toParsedMemoRepeat(todo),
+    visibility: null,
+    items: todo.items,
+    categoryId: todo.categoryId,
+    duplicateOfTodoId: null,
+  }));
+  return voicePlanSchema.parse({
+    planId,
+    source: 'memo',
+    actions,
+    omittedTodoCount: dto.meta.omittedTodoCount ?? 0,
+  });
+}
+
+const toApplyAction = (action: PlannedAction, fallbackCategoryId: number): ApplyActionDto =>
+  match(action)
+    .returnType<ApplyActionDto>()
+    .with({ type: 'create-todo' }, (todo) => ({
+      type: 'CREATE_TODO',
+      key: todo.actionId,
+      title: todo.title,
+      startDate: formatDateKey(todo.startDate, getDeviceTimezone()),
+      endDate: todo.endDate == null ? null : formatDateKey(todo.endDate, getDeviceTimezone()),
+      scheduledTime: todo.scheduledTime,
+      repeat: todo.repeat == null ? null : toRepeatDto(todo.repeat),
+      visibility: todo.visibility,
+      items: todo.items,
+      categoryId: todo.categoryId ?? fallbackCategoryId,
+    }))
+    .with({ type: 'create-memo' }, (memo) => ({
+      type: 'CREATE_MEMO',
+      key: memo.actionId,
+      title: memo.title,
+      content: memo.content,
+    }))
+    .exhaustive();
+
+const APPLY_SOURCE = {
+  'quick-voice': 'QUICK_VOICE',
+  'quick-text': 'QUICK_TEXT',
+  'voice-note': 'VOICE_NOTE',
+  memo: 'MEMO',
+} as const satisfies Record<VoicePlanSource, ApplyActionPlanRequest['source']>;
+
+export function toApplyActionPlanRequest(
+  source: VoicePlanSource,
+  actions: readonly PlannedAction[],
+  fallbackCategoryId: number,
+): ApplyActionPlanRequest {
+  return {
+    source: APPLY_SOURCE[source],
+    actions: actions.map((action) => toApplyAction(action, fallbackCategoryId)),
+  };
+}
+
+export function toVoiceNoteDigestResult(
+  dto: z.infer<typeof voiceNoteDigestEnvelopeSchema>,
+  planId: string,
+): VoiceNoteDigestResult {
+  return {
+    plan: toVoicePlan(planId, 'voice-note', dto.plan),
+    title: dto.title,
+    summary: dto.summary,
+    keyPoints: dto.keyPoints.map(({ text, startMs }) => ({ text, startMs })),
+    featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
+    charged: dto.charged,
+  };
+}

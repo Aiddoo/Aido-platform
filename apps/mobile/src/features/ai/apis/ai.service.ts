@@ -9,6 +9,9 @@ import {
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
+import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
+import { toVoicePlanFromParsedMemo } from '@src/features/voice/apis/voice-plan.mapper';
+import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
@@ -20,7 +23,7 @@ import type {
   AiSuggestionActionInput,
   AiSuggestionActionResult,
   GetAiReportsParams,
-  ParsedMemoResult,
+  ParsedMemoPlan,
   ReportStatus,
 } from '../domains/ai.model';
 import type { ParsedTodoResult } from '../domains/parsed-todo.model';
@@ -28,7 +31,6 @@ import {
   toAiReport,
   toAiSuggestion,
   toAiSuggestionActionResult,
-  toParsedMemoResult,
   toReportStatus,
 } from './ai.mapper';
 import { toParsedTodoResult } from './parsed-todo.mapper';
@@ -148,7 +150,8 @@ export class AiService {
   parseMemo = async (
     content: string,
     categoryId: number,
-  ): Promise<Result<ParsedMemoResult, ApiError>> => {
+    planId: string,
+  ): Promise<Result<ParsedMemoPlan, ApiError>> => {
     const result = await this.#httpClient.post('v1/ai/parse-memo', {
       content,
       categoryId,
@@ -167,7 +170,19 @@ export class AiService {
       throw new ParseError(`[AiService] Invalid parseMemo response: ${parsed.error.message}`);
     }
 
-    return ok(toParsedMemoResult(parsed.data));
+    try {
+      return ok({
+        plan: toVoicePlanFromParsedMemo(planId, parsed.data),
+        featureQuota:
+          parsed.data.featureQuota == null ? null : toFeatureQuota(parsed.data.featureQuota),
+      });
+    } catch (error) {
+      this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
+        method: 'parseMemo',
+        zodError: error instanceof Error ? error.message : undefined,
+      });
+      throw new ParseError('[AiService] Invalid parseMemo plan');
+    }
   };
 
   handleSuggestionAction = async (

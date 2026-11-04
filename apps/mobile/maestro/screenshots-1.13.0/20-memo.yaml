@@ -26,18 +26,16 @@ onFlowStart:
 - tapOn: '할 일로 변환|Convert to to-do'
 - waitForAnimationToEnd:
     timeout: 3000
-# 무료 계정은 이번 달 AI 횟수를 다 쓴 상태라 한도 안내가, 프리미엄은 시작 확인이 뜬다
+# 무료 계정은 이번 달 AI 횟수를 다 쓴 상태라 한도 안내가, 프리미엄은 바로 나눈다
 - takeScreenshot: 22_메모_AI_시작_안내
 - runFlow:
     when:
       true: ${MAESTRO_SHOT_ROLE == 'premium'}
     commands:
       # 실제 AI(parse-memo, 로컬 API의 Gemini)로 메모를 할 일로 나눈다. 결과는 저장하지 않는다
-      - tapOn:
-          id: memo-ai-start
       - extendedWaitUntil:
           visible:
-            id: ai-review-submit
+            id: plan-review-apply
           timeout: 60000
       - waitForAnimationToEnd:
           timeout: 3000

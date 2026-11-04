@@ -27,7 +27,6 @@
   },
   "toasts": {
     "convertedOne": "메모를 할 일로 변환했어요",
-    "convertedMany": "메모를 {{count}}개의 할 일로 변환했어요",
     "deleted": "메모를 삭제했어요",
     "retryLater": "잠시 후 다시 시도해주세요",
     "reorderFailed": "순서 변경에 실패했어요",
@@ -35,24 +34,8 @@
     "limitReached": "메모 개수가 한도에 도달했어요",
     "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용을 지웠어요"
   },
-  "aiDialog": {
-    "confirmTitle": "메모를 할 일로 나눠드릴게요",
-    "warnWithDeduction": "나누는 중에 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.",
-    "warnNoDeduction": "나누는 중에 화면을 벗어나면 결과를 받을 수 없어요.",
-    "start": "시작하기"
-  },
   "aiReview": {
-    "titleLabel": "할 일 제목",
-    "analyzing": "메모를 분석하고 있어요...",
-    "parseFailed": "할 일로 나누지 못했어요",
-    "retryLater": "잠시 후 다시 시도해 주세요",
     "goBack": "돌아가기",
-    "noTodosTitle": "생성할 할 일이 없어요",
-    "createCount": "{{count}}개 할 일 생성",
-    "omittedTodos": "할 일이 많아서 {{max}}개까지 만들었어요. 나머지 {{count}}개는 메모에 그대로 있어요",
-    "allDay": "종일",
-    "categoryFallback": "카테고리",
-    "weeklyRepeat": "매주 {{days}}",
-    "select": "선택하기"
+    "noCategory": "카테고리를 찾을 수 없어요"
   }
 }

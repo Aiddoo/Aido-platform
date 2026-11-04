@@ -1,0 +1,61 @@
+{
+  "plan": {
+    "title_one": "Found {{count}} to-do",
+    "title_other": "Found {{count}} to-dos",
+    "titleMemoOnly": "Saved as a note",
+    "hint": "Pick the ones to add on the right. Tap to edit.",
+    "omitted_one": "Too many to-dos, so we split only some. The other {{count}} wasn't made.",
+    "omitted_other": "Too many to-dos, so we split only some. The other {{count}} weren't made.",
+    "empty": "No to-dos found",
+    "duplicate": "Already added",
+    "select": "Add {{title}}",
+    "memoCaption": "Saved as a note",
+    "apply_one": "Add {{count}} to-do",
+    "apply_other": "Add {{count}} to-dos",
+    "applyMemo": "Save note"
+  },
+  "applied": {
+    "todos_one": "Added {{count}} to-do",
+    "todos_other": "Added {{count}} to-dos",
+    "todosAndMemo_one": "Saved {{count}} to-do and a note",
+    "todosAndMemo_other": "Saved {{count}} to-dos and a note",
+    "memo": "Saved your note"
+  },
+  "edit": {
+    "titleLabel": "To-do title"
+  },
+  "failure": {
+    "network": {
+      "title": "You're offline",
+      "description": "Check your connection and try again."
+    },
+    "limit": {
+      "title": "You've used all your tries",
+      "description": "Check your limit."
+    },
+    "too-long": {
+      "title": "That's too long",
+      "description": "Shorten it a little and try again."
+    },
+    "in-progress": {
+      "title": "Still working on it",
+      "description": "Please try again in a moment."
+    },
+    "key-expired": {
+      "title": "We need to get the result again",
+      "description": "Trying again may count as another use."
+    },
+    "ai-unavailable": {
+      "title": "Couldn't sort it out right now",
+      "description": "Please try again later."
+    },
+    "unknown": {
+      "title": "Something went wrong",
+      "description": "Please try again later."
+    },
+    "rejected": {
+      "title": "Some cards can't be saved",
+      "description": "Edit the cards and try again."
+    }
+  }
+}

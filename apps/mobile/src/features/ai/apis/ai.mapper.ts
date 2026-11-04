@@ -1,17 +1,14 @@
 import type {
   AiReport as AiReportDto,
-  ParseMemoResponse as ParseMemoResponseDto,
   RecurringSuggestion as RecurringSuggestionDto,
   ReportStatus as ReportStatusDto,
   SuggestionActionResponse as SuggestionActionResponseDto,
 } from '@aido/api';
-import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
 
 import type {
   AiReport,
   AiSuggestion,
   AiSuggestionActionResult,
-  ParsedMemoResult,
   ReportStatus,
 } from '../domains/ai.model';
 
@@ -37,13 +34,3 @@ export const toAiSuggestion = (dto: RecurringSuggestionDto): AiSuggestion => ({
 export const toAiSuggestionActionResult = (
   dto: SuggestionActionResponseDto,
 ): AiSuggestionActionResult => ({ ...dto, suggestion: toAiSuggestion(dto.suggestion) });
-
-export const toParsedMemoResult = ({
-  data,
-  meta,
-  featureQuota,
-}: ParseMemoResponseDto): ParsedMemoResult => ({
-  ...data,
-  omittedTodoCount: meta.omittedTodoCount == null ? 0 : meta.omittedTodoCount,
-  featureQuota: featureQuota == null ? null : toFeatureQuota(featureQuota),
-});

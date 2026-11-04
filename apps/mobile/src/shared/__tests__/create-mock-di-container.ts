@@ -126,6 +126,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get inquiryService() {
       return dependency('inquiryService');
     },
+    get voiceService() {
+      return dependency('voiceService');
+    },
     get memoService() {
       return dependency('memoService');
     },
