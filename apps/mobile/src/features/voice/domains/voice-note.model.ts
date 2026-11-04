@@ -66,6 +66,22 @@ export const voiceNoteDigestRequestSchema = z.object({
 });
 export type VoiceNoteDigestRequest = z.infer<typeof voiceNoteDigestRequestSchema>;
 
+/**
+ * 카드 저장 요청. 저장 응답을 받기 전에 화면을 떠나도 다시 눌렀을 때 같은 키를 써 두 번 저장되지 않게 초안에 남긴다.
+ * 카드를 고쳐서 보내면 새 키를 쓰도록 내용 지문을 함께 든다.
+ */
+export const voiceNotePlanApplyRequestSchema = z.object({
+  idempotencyKey: z.string().min(1),
+  fingerprint: z.string(),
+});
+export type VoiceNotePlanApplyRequest = z.infer<typeof voiceNotePlanApplyRequestSchema>;
+
+/** 메모로 저장 요청. 내용이 정리 결과로 정해져 있어 키만 남긴다 */
+export const voiceNoteMemoSaveRequestSchema = z.object({
+  idempotencyKey: z.string().min(1),
+});
+export type VoiceNoteMemoSaveRequest = z.infer<typeof voiceNoteMemoSaveRequestSchema>;
+
 /** 고친 카드까지 든 검토 초안. 통째로 읽지 못하면 글자와 요약은 살리고 이 칸만 비워 화면이 알리게 한다 */
 const storedPlanDraftSchema = z.codec(z.unknown(), z.custom<PlanReviewDraft | null>(), {
   decode: (raw) => planReviewDraftSchema.safeParse(raw).data ?? null,
@@ -83,7 +99,9 @@ export const voiceNoteSchema = z.object({
   digest: voiceNoteDigestSchema.nullable(),
   digestRequest: voiceNoteDigestRequestSchema.nullable(),
   planDraft: storedPlanDraftSchema,
+  planApplyRequest: voiceNotePlanApplyRequestSchema.nullable().default(null),
   appliedAt: instantSchema.nullable(),
+  memoSaveRequest: voiceNoteMemoSaveRequestSchema.nullable().default(null),
   memoSavedAt: instantSchema.nullable(),
 });
 export type VoiceNote = z.infer<typeof voiceNoteSchema>;
@@ -105,7 +123,9 @@ export function createVoiceNote({ draftId, locale, createdAt }: CreateVoiceNoteI
     digest: null,
     digestRequest: null,
     planDraft: null,
+    planApplyRequest: null,
     appliedAt: null,
+    memoSaveRequest: null,
     memoSavedAt: null,
   };
 }
@@ -161,12 +181,26 @@ export function withDigestResult(note: VoiceNote, result: VoiceNoteDigestResult)
   };
 }
 
+export function withPlanApplyRequest(
+  note: VoiceNote,
+  planApplyRequest: VoiceNotePlanApplyRequest | null,
+): VoiceNote {
+  return { ...note, planApplyRequest };
+}
+
 export function withAppliedAt(note: VoiceNote, appliedAt: Date): VoiceNote {
-  return { ...note, appliedAt, planDraft: null };
+  return { ...note, appliedAt, planDraft: null, planApplyRequest: null };
+}
+
+export function withMemoSaveRequest(
+  note: VoiceNote,
+  memoSaveRequest: VoiceNoteMemoSaveRequest | null,
+): VoiceNote {
+  return { ...note, memoSaveRequest };
 }
 
 export function withMemoSavedAt(note: VoiceNote, memoSavedAt: Date): VoiceNote {
-  return { ...note, memoSavedAt };
+  return { ...note, memoSavedAt, memoSaveRequest: null };
 }
 
 export interface VoiceNoteDigestInput {

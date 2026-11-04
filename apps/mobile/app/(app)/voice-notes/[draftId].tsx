@@ -22,9 +22,12 @@ import {
   VoiceNotePolicy,
   withAppliedAt,
   withMemoSavedAt,
+  withMemoSaveRequest,
+  withPlanApplyRequest,
   withPlanDraft,
 } from '@src/features/voice/domains/voice-note.model';
 import { isTodoAction, voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
+import { isPlanKeyConflictError } from '@src/features/voice/domains/voice.error';
 import { useVoiceNoteDigest } from '@src/features/voice/hooks/use-voice-note-digest';
 import {
   useVoiceNoteParams,
@@ -390,7 +393,16 @@ function VoiceNotePlanPane({ note }: { note: VoiceNote }) {
           planDraft,
         )}
         fallbackCategoryId={fallbackCategoryId}
-        onApplied={() => {
+        requestStore={{
+          find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
+          save: (request) => {
+            const latest = drafts.find(accountId, draftId);
+            if (latest != null) {
+              drafts.save(accountId, withPlanApplyRequest(latest, request));
+            }
+          },
+        }}
+        onSaved={() => {
           const latest = drafts.find(accountId, draftId);
           if (latest != null) {
             drafts.save(accountId, withAppliedAt(latest, new Date()));
@@ -406,8 +418,16 @@ function SaveAsMemoButton({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const { accountId, draftId } = useCurrentVoiceNote();
   const { drafts } = useVoiceNoteStorageService();
-  const mutation = useMutation(useApplyActionPlanMutationOptions());
-  const [idempotencyKey] = useState(randomUUID);
+  const mutation = useMutation(
+    useApplyActionPlanMutationOptions({
+      onSaved: () => {
+        const latest = drafts.find(accountId, draftId);
+        if (latest != null) {
+          drafts.save(accountId, withMemoSavedAt(latest, new Date()));
+        }
+      },
+    }),
+  );
   const memo = createDigestMemo(note);
 
   if (note.memoSavedAt != null) {
@@ -421,30 +441,44 @@ function SaveAsMemoButton({ note }: { note: VoiceNote }) {
     return null;
   }
 
+  const saveMemoRequest = (idempotencyKey: string | null) => {
+    const latest = drafts.find(accountId, draftId);
+    if (latest != null) {
+      drafts.save(
+        accountId,
+        withMemoSaveRequest(latest, idempotencyKey == null ? null : { idempotencyKey }),
+      );
+    }
+  };
+
+  const handleSave = () => {
+    // 응답을 놓친 뒤 다시 눌러도 같은 키라 메모가 두 장이 되지 않는다
+    const idempotencyKey = note.memoSaveRequest?.idempotencyKey ?? randomUUID();
+    saveMemoRequest(idempotencyKey);
+    mutation.mutate(
+      {
+        source: 'voice-note',
+        sourceMemoId: null,
+        actions: [memo],
+        fallbackCategoryId: UNUSED_CATEGORY_ID,
+        skippedCount: 0,
+        idempotencyKey,
+      },
+      {
+        onError: (error) => {
+          if (isPlanKeyConflictError(error)) {
+            saveMemoRequest(null);
+          }
+        },
+      },
+    );
+  };
+
   return (
     <TextButton
       size="medium"
       isDisabled={mutation.isPending}
-      onPress={() =>
-        mutation.mutate(
-          {
-            source: 'voice-note',
-            sourceMemoId: null,
-            actions: [memo],
-            fallbackCategoryId: UNUSED_CATEGORY_ID,
-            skippedCount: 0,
-            idempotencyKey,
-          },
-          {
-            onSuccess: () => {
-              const latest = drafts.find(accountId, draftId);
-              if (latest != null) {
-                drafts.save(accountId, withMemoSavedAt(latest, new Date()));
-              }
-            },
-          },
-        )
-      }
+      onPress={handleSave}
       testID="voice-note-save-memo"
     >
       {t('result.saveMemo')}

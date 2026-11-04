@@ -24,11 +24,12 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { NetworkError } from '@src/shared/errors';
 import { ApiError } from '@src/shared/errors/api-error';
 import { err, ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
@@ -48,6 +49,30 @@ jest.mock('expo-router', () => ({
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
+const planDraftWithTodo = createPlanReviewDraft(
+  voicePlanSchema.parse({
+    planId: DRAFT_ID,
+    source: 'voice-note',
+    sourceMemoId: null,
+    omittedTodoCount: 0,
+    actions: [
+      {
+        type: 'create-todo',
+        actionId: 'todo-1',
+        title: '운동',
+        startDate: new Date(2026, 10, 5, 12),
+        endDate: null,
+        scheduledTime: null,
+        repeat: null,
+        visibility: null,
+        items: [],
+        categoryId: 1,
+        duplicateOfTodoId: null,
+      },
+    ],
+  }),
+);
 
 const emptyPlanDraft = createPlanReviewDraft(
   voicePlanSchema.parse({
@@ -90,7 +115,7 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
   });
   queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'H12' });
 
-  await renderUi(
+  const { unmount } = await renderUi(
     <LocalDateProvider>
       <OverlayProvider>
         <VoiceNoteRoute />
@@ -119,7 +144,7 @@ async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], 
     },
   );
 
-  return { httpClient, storage };
+  return { httpClient, storage, unmount };
 }
 
 describe('말로 메모 화면', () => {
@@ -206,5 +231,81 @@ describe('말로 메모 화면', () => {
 
     // Then
     expect(await screen.findByTestId('voice-note-applied')).toHaveTextContent('할 일을 추가했어요');
+  });
+
+  test('할 일 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남긴다', async () => {
+    // Given
+    const { httpClient, storage, unmount } = await renderScreen(
+      { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
+      'todos',
+    );
+    let respond = () => {};
+    httpClient.post.mockReturnValue(
+      new Promise((resolve) => {
+        respond = () => resolve(ok({ todos: [], memo: null }));
+      }),
+    );
+    await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+    await fireEvent.press(screen.getByTestId('plan-review-apply'));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+
+    // When
+    await act(async () => unmount());
+    await act(async () => respond());
+
+    // Then
+    await waitFor(() =>
+      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).toBeInstanceOf(Date),
+    );
+  });
+
+  test('할 일 저장 응답을 놓치고 다시 열어 눌러도 같은 키로 보낸다', async () => {
+    // Given
+    const { httpClient, storage, unmount } = await renderScreen(
+      { digest: createVoiceNoteDigest(), planDraft: planDraftWithTodo },
+      'todos',
+    );
+    httpClient.post.mockRejectedValue(new NetworkError());
+    await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+    await fireEvent.press(screen.getByTestId('plan-review-apply'));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+    const firstKey = httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'];
+    await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+
+    // When
+    await act(async () => unmount());
+    const reopened = storage.drafts.find(ACCOUNT_ID, DRAFT_ID);
+
+    // Then
+    expect(reopened?.planApplyRequest?.idempotencyKey).toBe(firstKey);
+  });
+
+  test('메모로 저장을 누르고 화면을 떠나도 응답이 오면 저장했다고 초안에 남기고 키를 지운다', async () => {
+    // Given
+    const { httpClient, storage, unmount } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+    let respond = () => {};
+    httpClient.post.mockReturnValue(
+      new Promise((resolve) => {
+        respond = () => resolve(ok({ todos: [], memo: null }));
+      }),
+    );
+    await fireEvent.press(await screen.findByTestId('voice-note-save-memo'));
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest?.idempotencyKey).toBe(
+      httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'],
+    );
+
+    // When
+    await act(async () => unmount());
+    await act(async () => respond());
+
+    // Then
+    await waitFor(() =>
+      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSavedAt).toBeInstanceOf(Date),
+    );
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest).toBeNull();
   });
 });

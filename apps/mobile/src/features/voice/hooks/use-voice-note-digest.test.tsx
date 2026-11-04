@@ -23,7 +23,7 @@ import { err, ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import { onlineManager } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import { createVoiceNoteFixture } from '../__tests__/voice-note.factories';
@@ -158,6 +158,29 @@ describe('useVoiceNoteDigest', () => {
     expect(screen.getByTestId('failure', { includeHiddenElements: true })).toHaveTextContent(
       'none',
     );
+  });
+
+  test('기다리는 사이 초안을 지웠으면 늦은 응답이 초안을 되살리지 않는다', async () => {
+    // Given
+    const { httpClient, storage } = await renderDigest();
+    let respond = () => {};
+    httpClient.post.mockReturnValue(
+      new Promise((resolve) => {
+        respond = () => resolve(ok(createDigestDto()));
+      }),
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('digest')).catch(jest.fn());
+    });
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
+
+    // When
+    storage.discard(ACCOUNT_ID, DRAFT_ID);
+    await act(async () => respond());
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('pending')).toHaveTextContent('false'));
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeUndefined();
   });
 
   test('오프라인이어도 멈추지 않고 네트워크 실패로 알리며 글자를 그대로 둔다', async () => {

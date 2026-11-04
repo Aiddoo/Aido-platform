@@ -30,12 +30,19 @@ export interface ApplyActionPlanParams {
   idempotencyKey: string;
 }
 
+interface UseApplyActionPlanMutationOptionsParams {
+  /** 저장이 끝났다. `mutate` 콜백과 달리 화면이 내려간 뒤에 응답이 와도 불린다 */
+  onSaved?: () => void;
+}
+
 /**
  * 확인한 행동을 저장한다. 횟수는 차감하지 않고, 같은 키로 다시 보내면 서버가 저장한 결과를 돌려준다.
  * 메모에서 만든 계획은 저장에 성공하면 서버가 원본 메모를 지운다. 메모 목록과 개수 한도를 다시 읽고,
  * 화면이 떠나는 중이라 상세 캐시는 건드리지 않는다(예전 메모 변환과 같다).
  */
-export const useApplyActionPlanMutationOptions = () => {
+export const useApplyActionPlanMutationOptions = ({
+  onSaved,
+}: UseApplyActionPlanMutationOptionsParams = {}) => {
   const haptics = useHaptics();
   const voiceService = useVoiceService();
   const activationService = useActivationService();
@@ -60,6 +67,7 @@ export const useApplyActionPlanMutationOptions = () => {
         ),
       ),
     onSuccess: ({ todoCount, hasMemo }, { source, sourceMemoId, skippedCount }) => {
+      onSaved?.();
       haptics.notify('success');
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);

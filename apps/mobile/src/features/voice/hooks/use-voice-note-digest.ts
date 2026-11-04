@@ -78,7 +78,11 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
 
     try {
       const result = await mutation.mutateAsync({ ...request, signal: abortController.signal });
-      drafts.save(accountId, withDigestResult(drafts.find(accountId, draftId) ?? note, result));
+      // 기다리는 사이 초안을 지웠거나 로그아웃했으면 늦은 응답으로 되살리지 않는다
+      const latest = drafts.find(accountId, draftId);
+      if (latest != null) {
+        drafts.save(accountId, withDigestResult(latest, result));
+      }
     } catch (error) {
       if (abortController.signal.aborted) {
         return;

@@ -45,11 +45,7 @@ import {
   useWatch,
 } from 'react-hook-form';
 
-import {
-  type PreparedPlanRequest,
-  PlanRequestPolicy,
-  preparePlanRequest,
-} from '../../domains/plan-request.model';
+import { PlanRequestPolicy, preparePlanRequest } from '../../domains/plan-request.model';
 import {
   type PlanReviewFormValues,
   toPlanSelection,
@@ -65,6 +61,17 @@ import {
 } from '../../utils/view-models/plan-todo.view-model';
 import { PlanTodoEditSheet } from './plan-todo-edit-sheet';
 
+/** 저장 요청의 멱등 키와 내용 지문 */
+export interface PlanApplyRequest {
+  idempotencyKey: string;
+  fingerprint: string;
+}
+
+interface PlanApplyRequestStore {
+  find: () => PlanApplyRequest | null;
+  save: (request: PlanApplyRequest | null) => void;
+}
+
 interface PlanReviewProps {
   /** 폼은 화면이 소유한다. `createPlanReviewFormValues`로 만든 값으로 화면이 `useForm`을 만들어 넘긴다 */
   form: UseFormReturn<PlanReviewFormValues>;
@@ -75,8 +82,12 @@ interface PlanReviewProps {
   isCharged?: boolean;
   /** 추가 버튼 왼쪽에 둘 보조 동작(예: 다시 말하기). 카드가 없으면 안내 아래에 둔다 */
   secondaryAction?: ReactNode;
-  /** 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
-  onApplied: () => void;
+  /** 저장 요청의 키를 화면 밖에 남길 곳. 없으면 이 화면이 떠 있는 동안만 기억한다 */
+  requestStore?: PlanApplyRequestStore;
+  /** 저장이 끝났다. 화면이 내려간 뒤에 응답이 와도 불리므로 저장 표시를 여기서 남긴다 */
+  onSaved?: () => void;
+  /** 화면이 떠 있을 때 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
+  onApplied?: () => void;
   /** 메모에서 만든 계획의 원본 메모가 이미 없다. 초안을 버리고 떠나는 일은 화면이 맡는다 */
   onSourceMissing?: () => void;
 }
@@ -91,6 +102,8 @@ export function PlanReview({
   fallbackCategoryId,
   isCharged = true,
   secondaryAction,
+  requestStore,
+  onSaved,
   onApplied,
   onSourceMissing,
 }: PlanReviewProps) {
@@ -110,8 +123,8 @@ export function PlanReview({
       })),
   });
   const { isValid } = useFormState({ control });
-  const applyMutation = useMutation(useApplyActionPlanMutationOptions());
-  const preparedRequestRef = useRef<PreparedPlanRequest<unknown> | null>(null);
+  const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved }));
+  const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
 
   const selection = toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.countSelectedTodos(plan, selection);
@@ -122,13 +135,19 @@ export function PlanReview({
       { ...plan, actions: toPlannedActions(values) },
       toPlanSelection(values),
     );
+    const input = { source: plan.source, actions: selected, fallbackCategoryId };
+    const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
     // 같은 카드를 다시 보내면 처음 키를 다시 써 두 번 저장되지 않고, 고쳐서 보내면 새 키를 쓴다
     const prepared = preparePlanRequest({
-      previous: preparedRequestRef.current,
-      input: { source: plan.source, actions: selected, fallbackCategoryId },
+      previous: previous == null ? null : { ...previous, input },
+      input,
       createIdempotencyKey: randomUUID,
     });
-    preparedRequestRef.current = prepared;
+    const rememberRequest = (request: PlanApplyRequest | null) => {
+      memoryRequestRef.current = request;
+      requestStore?.save(request);
+    };
+    rememberRequest({ idempotencyKey: prepared.idempotencyKey, fingerprint: prepared.fingerprint });
 
     applyMutation.mutate(
       {
@@ -141,12 +160,14 @@ export function PlanReview({
       },
       {
         onSuccess: () => {
-          preparedRequestRef.current = null;
-          onApplied();
+          memoryRequestRef.current = null;
+          onApplied?.();
         },
         // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
         onError: (error) => {
-          preparedRequestRef.current = PlanRequestPolicy.getAfterFailure(prepared, error);
+          if (PlanRequestPolicy.getAfterFailure(prepared, error) == null) {
+            rememberRequest(null);
+          }
           if (isSourceMemoMissingError(error)) {
             onSourceMissing?.();
           }
