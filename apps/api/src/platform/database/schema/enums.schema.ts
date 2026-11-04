@@ -1,4 +1,9 @@
-import { PUSH_PERMISSION_STATUS, QUOTA_CHARGE_STATUSES, QUOTA_METERS } from "@aido/api/vocabulary";
+import {
+  PUSH_PERMISSION_STATUS,
+  QUOTA_CHARGE_STATUSES,
+  QUOTA_METERS,
+  TODO_REPEAT_FREQUENCIES,
+} from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const accountProvider = pgEnum("AccountProvider", [
@@ -133,6 +138,7 @@ export const subscriptionStatus = pgEnum("SubscriptionStatus", [
 export const suggestionStatus = pgEnum("SuggestionStatus", ["PENDING", "ACCEPTED", "DISMISSED"]);
 export const timeFormat = pgEnum("TimeFormat", ["TWELVE_HOUR", "TWENTY_FOUR_HOUR"]);
 export const todoVisibility = pgEnum("TodoVisibility", ["PUBLIC", "PRIVATE"]);
+export const todoRepeatFrequency = pgEnum("TodoRepeatFrequency", TODO_REPEAT_FREQUENCIES);
 export const userRole = pgEnum("UserRole", ["USER", "ADMIN"]);
 export const userStatus = pgEnum("UserStatus", ["ACTIVE", "LOCKED", "SUSPENDED", "PENDING_VERIFY"]);
 export const verificationType = pgEnum("VerificationType", [

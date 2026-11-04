@@ -27,7 +27,7 @@ export interface CreateRecurringTodosInput {
 interface CreateRecurringTodosDependencies {
   readonly writer: Pick<TodoCreationWriter, "createRecurring">;
   readonly effects: Pick<TodoCreationEffects, "publishRecurring">;
-  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findManyByRecurrenceGroupId">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findManyBySeriesId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
 }
@@ -51,11 +51,11 @@ export class CreateRecurringTodos {
       return this.#dependencies.writer.createRecurring(plan);
     });
 
-    await this.#dependencies.effects.publishRecurring(created, data.userId, plan.recurrenceGroupId);
+    await this.#dependencies.effects.publishRecurring(created, data.userId, plan.seriesId);
 
-    const todos = await this.#dependencies.todoReadRepository.findManyByRecurrenceGroupId(
+    const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       data.userId,
-      plan.recurrenceGroupId,
+      plan.seriesId,
     );
 
     return { todos, count: plan.drafts.length };

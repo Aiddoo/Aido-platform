@@ -19,7 +19,7 @@ export interface RecurringTodoCreationPlan {
   readonly categoryId: number;
   readonly drafts: readonly TodoCreationDraft[];
   readonly items: readonly { title: string }[] | undefined;
-  readonly recurrenceGroupId: string;
+  readonly seriesId: string;
 }
 
 function planDraftOn(data: CreateTodoData, date: string, endDate: Date | null): TodoCreationDraft {
@@ -62,7 +62,7 @@ export function planRecurringTodoCreation(
     categoryId: data.categoryId,
     drafts: dates.map((date) => planDraftOn(data, date, null)),
     items: data.items,
-    recurrenceGroupId: randomUUID(),
+    seriesId: randomUUID(),
   };
 }
 
@@ -105,7 +105,7 @@ export class TodoCreationWriter {
   }
 
   async createRecurring(plan: RecurringTodoCreationPlan): Promise<Todo[]> {
-    const { userId, categoryId, drafts, items, recurrenceGroupId } = plan;
+    const { userId, categoryId, drafts, items, seriesId } = plan;
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
     const activeInCategory = await this.#dependencies.todoRepository.countActiveByCategory(
       userId,
@@ -123,6 +123,6 @@ export class TodoCreationWriter {
       ...draft,
       sortOrder: maxSortOrder + 1 + index,
     }));
-    return this.#dependencies.todoRepository.createMany(plans, recurrenceGroupId, items);
+    return this.#dependencies.todoRepository.createMany(plans, seriesId, items);
   }
 }

@@ -479,11 +479,11 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     expect(databaseSqlState(failure)).toBe("22021");
     expect(writes.filter((statement) => statement.includes('insert into "Todo"'))).toHaveLength(2);
     const todos = await client.query.todo.findMany({
-      columns: { id: true, title: true, recurrenceGroupId: true },
+      columns: { id: true, title: true, seriesId: true },
       where: { userId },
     });
     expect(todos).toHaveLength(1);
-    expect(todos.at(0)).toMatchObject({ title: "앞선 성공 항목", recurrenceGroupId: null });
+    expect(todos.at(0)).toMatchObject({ title: "앞선 성공 항목", seriesId: null });
     expect(await client.$count(todoItem)).toBe(0);
     expect(await repository.findByIdAndUserId(seeded.id, userId)).not.toBeNull();
     const events = publishAll.mock.calls
@@ -492,7 +492,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     expect(events).toHaveLength(1);
     expect(events.at(0)?.todoId).toBe(todos.at(0)?.id);
     process.stdout.write(
-      `NOTES_ROLLBACK_AFTER ${JSON.stringify({ sqlState: databaseSqlState(failure), parentInsertStatements: 2, committedTodoCount: todos.length, committedTodoCreatedEvents: events.length, failedRecurringParents: todos.filter((todo) => todo.recurrenceGroupId !== null).length })}\n`,
+      `NOTES_ROLLBACK_AFTER ${JSON.stringify({ sqlState: databaseSqlState(failure), parentInsertStatements: 2, committedTodoCount: todos.length, committedTodoCreatedEvents: events.length, failedRecurringParents: todos.filter((todo) => todo.seriesId !== null).length })}\n`,
     );
   });
 });

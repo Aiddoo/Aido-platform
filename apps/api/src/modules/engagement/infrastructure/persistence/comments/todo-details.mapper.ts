@@ -37,7 +37,7 @@ export function toTodoResponse(row: TodoDetailsRow): Todo {
     scheduledTime: toISOStringOrNull(row.scheduledTime),
     isAllDay: row.isAllDay,
     visibility: row.visibility,
-    recurrenceGroupId: row.recurrenceGroupId,
+    recurrenceGroupId: row.seriesId,
     category: {
       id: requireRecord(row.category).id,
       name: requireRecord(row.category).name,

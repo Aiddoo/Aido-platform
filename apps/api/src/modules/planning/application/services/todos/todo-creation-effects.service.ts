@@ -30,12 +30,12 @@ export class TodoCreationEffects {
   async publishRecurring(
     created: readonly Todo[],
     userId: string,
-    recurrenceGroupId: string,
+    seriesId: string,
   ): Promise<void> {
     this.#dependencies.logger.log({
       event: PlanningTodoLogEvent.RECURRING_CREATED,
       userId,
-      recurrenceGroupId,
+      seriesId,
       todoCount: created.length,
     });
     await this.#publish(created, userId);

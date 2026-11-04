@@ -78,7 +78,7 @@ export interface TodoProps {
   completedAt: Date | null;
   schedule: TodoSchedule;
   visibility: TodoVisibility;
-  recurrenceGroupId: string | null;
+  seriesId: string | null;
   items: TodoItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -100,7 +100,7 @@ export class Todo extends AggregateRoot<TodoProps> {
       completedAt: props.completedAt == null ? null : new Date(props.completedAt),
       schedule: props.schedule,
       visibility: props.visibility,
-      recurrenceGroupId: props.recurrenceGroupId,
+      seriesId: props.seriesId,
       items: props.items.map((item) => item.clone()),
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),

@@ -57,7 +57,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       completedAt: record.completedAt,
       schedule: TodoSchedule.reconstitute(record),
       visibility: record.visibility,
-      recurrenceGroupId: record.recurrenceGroupId,
+      seriesId: record.seriesId,
       items: record.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -80,13 +80,13 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
 
   async createMany(
     plans: readonly TodoCreationPlan[],
-    recurrenceGroupId: string,
+    seriesId: string,
     inlineItems?: readonly { title: string }[],
   ): Promise<Todo[]> {
     const created: Todo[] = [];
     for (const plan of plans) {
       const todo = await this.create(plan);
-      this.#record(todo.getId().getValue()).recurrenceGroupId = recurrenceGroupId;
+      this.#record(todo.getId().getValue()).seriesId = seriesId;
       if (inlineItems !== undefined) {
         await this.createInlineItems(todo.getId().getValue(), [...inlineItems]);
       }
@@ -234,14 +234,9 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   async findOwnerId(id: number): Promise<string | null> {
     return this.records.get(id)?.userId ?? null;
   }
-  async findManyByRecurrenceGroupId(
-    userId: string,
-    recurrenceGroupId: string,
-  ): Promise<TodoResponse[]> {
+  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]> {
     const records = [...this.records.values()]
-      .filter(
-        (record) => record.userId === userId && record.recurrenceGroupId === recurrenceGroupId,
-      )
+      .filter((record) => record.userId === userId && record.seriesId === seriesId)
       .sort((left, right) => left.sortOrder - right.sortOrder);
     const responses: TodoResponse[] = [];
     for (const record of records) {

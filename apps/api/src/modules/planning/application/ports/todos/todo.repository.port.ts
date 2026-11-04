@@ -64,7 +64,7 @@ export interface TodoRepositoryPort {
    */
   createMany(
     items: readonly TodoCreationPlan[],
-    recurrenceGroupId: string,
+    seriesId: string,
     inlineItems?: readonly { title: string }[],
   ): Promise<Todo[]>;
 

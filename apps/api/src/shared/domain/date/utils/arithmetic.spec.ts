@@ -13,6 +13,7 @@ import { vi } from "vitest";
  */
 import {
   addDays,
+  addDaysToDateKey,
   addMilliseconds,
   addMinutes,
   addMonths,
@@ -114,5 +115,20 @@ describe("arithmetic", () => {
     it("from 미지정 시 현재 시각 기준", () => {
       expect(subtractMilliseconds(0)).toEqual(FROZEN_TIME);
     });
+  });
+});
+
+describe("addDaysToDateKey", () => {
+  it.each([
+    { key: "2028-02-28", days: 1, expected: "2028-02-29" },
+    { key: "2027-02-28", days: 1, expected: "2027-03-01" },
+    { key: "2026-12-31", days: 1, expected: "2027-01-01" },
+    { key: "2026-03-01", days: -1, expected: "2026-02-28" },
+    { key: "2027-03-14", days: 1, expected: "2027-03-15" },
+  ])("$key + $days일 = $expected", ({ key, days, expected }) => {
+    // When
+    const result = addDaysToDateKey(key, days);
+    // Then
+    expect(result).toBe(expected);
   });
 });

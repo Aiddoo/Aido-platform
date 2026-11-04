@@ -60,6 +60,8 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 **1.14.2 migration 뒤에는 이미지를 1.14.1 이하로만 되돌리지 않는다.** `drop_legacy_comment_path_and_retention_outbox`가 `TodoComment.path`·`depth`·`rootId` 열과 `RetentionPushOutbox`를 지웠다. 이전 이미지는 지운 열에 값을 쓰므로 댓글 작성이 실패한다. API를 되돌려야 하면 1.14.2 이상 이미지를 쓴다.
 
+**1.15.0 반복 할 일(`todo_series`)**은 1.14.2 이미지로 되돌릴 수 있도록 `Todo`→`TodoSeries` FK와 `CHECK ((recurrenceGroupId IS NULL) = (occurrenceDate IS NULL))`를 걸지 않았다. 되돌린 동안 옛 코드가 만든 묶음은 규칙이 없고 `occurrenceDate`도 NULL이다. 1.16.0에서 이 고아 묶음을 보정한 뒤 FK(`NOT VALID`→`VALIDATE`)와 CHECK를 건다.
+
 nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
 
 새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 schema가 함께 바뀌는 릴리스는 해당 graph의 rollout 제한을 [migration.md](../../docs/server/migration.md)와 함께 확인한다.

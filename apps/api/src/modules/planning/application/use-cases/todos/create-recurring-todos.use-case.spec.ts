@@ -186,7 +186,7 @@ describe("반복 할 일 생성", () => {
       entered.resolve();
       await publication.promise;
     };
-    const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyByRecurrenceGroupId");
+    const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyBySeriesId");
     // When
     const execution = useCase.execute(
       inputOf({ startDate: "2026-03-02", endDate: "2026-03-02", daysOfWeek: ["MON"] }),
@@ -216,7 +216,7 @@ describe("반복 할 일 생성", () => {
           throw failure;
         };
       }
-      const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyByRecurrenceGroupId");
+      const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyBySeriesId");
       // When / Then
       await expect(
         useCase.execute(

@@ -254,7 +254,7 @@ export class DrizzleAiSuggestionRepository implements AiSuggestionRepositoryPort
       with: { category: { columns: { name: true } } },
       where: {
         userId,
-        recurrenceGroupId: { isNull: true },
+        seriesId: { isNull: true },
         startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
       },
       // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.

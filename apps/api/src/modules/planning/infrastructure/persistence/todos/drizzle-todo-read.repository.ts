@@ -136,12 +136,9 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
       .limit(limit);
   }
 
-  async findManyByRecurrenceGroupId(
-    userId: string,
-    recurrenceGroupId: string,
-  ): Promise<TodoResponse[]> {
+  async findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]> {
     const rows = await this.db.query.todo.findMany({
-      where: { userId, recurrenceGroupId },
+      where: { userId, seriesId },
       with: todoWith,
       orderBy: { sortOrder: "asc" },
     });

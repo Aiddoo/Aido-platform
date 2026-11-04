@@ -20,7 +20,7 @@ interface StagedTodoCreatorDependencies {
   readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishRecurring">;
   readonly todoReadRepository: Pick<
     TodoReadRepositoryPort,
-    "findByIdAndUserId" | "findManyByRecurrenceGroupId"
+    "findByIdAndUserId" | "findManyBySeriesId"
   >;
 }
 
@@ -58,14 +58,14 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
   ): Promise<StagedTodoCreation> {
     const plan = planRecurringTodoCreation(input, recurrence);
     const created = await this.#dependencies.writer.createRecurring(plan);
-    const todos = await this.#dependencies.todoReadRepository.findManyByRecurrenceGroupId(
+    const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       input.userId,
-      plan.recurrenceGroupId,
+      plan.seriesId,
     );
     return {
       todos,
       afterCommit: () =>
-        this.#dependencies.effects.publishRecurring(created, input.userId, plan.recurrenceGroupId),
+        this.#dependencies.effects.publishRecurring(created, input.userId, plan.seriesId),
     };
   }
 }

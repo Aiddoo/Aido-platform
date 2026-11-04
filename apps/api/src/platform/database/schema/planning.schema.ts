@@ -1,19 +1,24 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
+  jsonb,
+  smallint,
   text,
   timestamp,
   varchar,
   boolean,
   serial,
   date,
+  check,
   index,
   foreignKey,
   primaryKey,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { todoVisibility } from "./enums.schema.js";
+import { todoRepeatFrequency, todoVisibility } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
 export const todo = pgTable(
@@ -27,7 +32,9 @@ export const todo = pgTable(
     endDate: date({ mode: "date" }),
     id: serial().primaryKey(),
     isAllDay: boolean().default(true).notNull(),
-    recurrenceGroupId: varchar({ length: 36 }),
+    occurrenceDate: date({ mode: "date" }),
+    // 코드 이름은 seriesId. 출시 앱·1.14.2 롤백 호환을 위해 DB 열 이름은 그대로 둔다.
+    seriesId: varchar("recurrenceGroupId", { length: 36 }),
     scheduledTime: timestamp({ precision: 3, withTimezone: true }),
     sortOrder: integer().default(0).notNull(),
     startDate: date({ mode: "date" }).notNull(),
@@ -60,7 +67,9 @@ export const todo = pgTable(
       table.completed.asc().nullsLast(),
       table.scheduledTime.asc().nullsLast(),
     ),
-    index("Todo_recurrenceGroupId_idx").using("btree", table.recurrenceGroupId.asc().nullsLast()),
+    uniqueIndex("Todo_recurrenceGroupId_occurrenceDate_key")
+      .on(table.seriesId, table.occurrenceDate)
+      .where(sql`${table.occurrenceDate} IS NOT NULL`),
     index("Todo_userId_categoryId_idx").using(
       "btree",
       table.userId.asc().nullsLast(),
@@ -144,6 +153,74 @@ export const todoCategory = pgTable(
       table.sortOrder.asc().nullsLast(),
     ),
     unique("TodoCategory_userId_name_key").on(table.userId, table.name),
+  ],
+);
+
+export const todoSeries = pgTable(
+  "TodoSeries",
+  {
+    categoryId: integer().notNull(),
+    checklistTemplate: jsonb().$type<{ title: string }[]>().default([]).notNull(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    generatedCount: integer().default(0).notNull(),
+    // 기존 recurrenceGroupId 값을 그대로 이어 쓰므로 Todo.recurrenceGroupId와 같은 형식이다.
+    id: varchar({ length: 36 }).primaryKey(),
+    nextOccurrenceDate: date({ mode: "date" }),
+    repeatCount: smallint(),
+    repeatFrequency: todoRepeatFrequency().notNull(),
+    repeatInterval: smallint().default(1).notNull(),
+    repeatMonthDay: smallint(),
+    repeatUntil: date({ mode: "date" }),
+    repeatWeekdays: text().array(),
+    scheduledLocalTime: varchar({ length: 5 }),
+    sortOrder: integer().notNull(),
+    startDate: date({ mode: "date" }).notNull(),
+    timezone: varchar({ length: 50 }).notNull(),
+    title: varchar({ length: 200 }).notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+    visibility: todoVisibility().default("PUBLIC").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.categoryId],
+      foreignColumns: [todoCategory.id],
+      name: "TodoSeries_categoryId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("restrict"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "TodoSeries_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("TodoSeries_nextOccurrenceDate_idx")
+      .on(table.nextOccurrenceDate)
+      .where(sql`${table.nextOccurrenceDate} IS NOT NULL`),
+    index("TodoSeries_userId_nextOccurrenceDate_idx").on(table.userId, table.nextOccurrenceDate),
+    index("TodoSeries_categoryId_idx").on(table.categoryId),
+    check("TodoSeries_repeatInterval_check", sql`${table.repeatInterval} IN (1, 2)`),
+    check(
+      "TodoSeries_repeatWeekdays_check",
+      sql`(${table.repeatFrequency} = 'WEEKLY') = (${table.repeatWeekdays} IS NOT NULL AND cardinality(${table.repeatWeekdays}) > 0) AND (${table.repeatWeekdays} IS NULL OR ${table.repeatWeekdays} <@ ARRAY['MON','TUE','WED','THU','FRI','SAT','SUN']::text[])`,
+    ),
+    check(
+      "TodoSeries_repeatMonthDay_check",
+      sql`(${table.repeatFrequency} = 'MONTHLY') = (${table.repeatMonthDay} IS NOT NULL) AND (${table.repeatMonthDay} IS NULL OR ${table.repeatMonthDay} BETWEEN 1 AND 31)`,
+    ),
+    check(
+      "TodoSeries_repeatCount_check",
+      sql`${table.repeatCount} IS NULL OR ${table.repeatCount} BETWEEN 1 AND 365`,
+    ),
+    check(
+      "TodoSeries_repeatEnd_check",
+      sql`${table.repeatUntil} IS NULL OR ${table.repeatCount} IS NULL`,
+    ),
   ],
 );
 

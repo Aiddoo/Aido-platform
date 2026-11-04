@@ -50,7 +50,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
         isAllDay: row.isAllDay,
       }),
       visibility: row.visibility,
-      recurrenceGroupId: row.recurrenceGroupId,
+      seriesId: row.seriesId,
       items: row.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -93,12 +93,12 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
 
   async createMany(
     items: readonly TodoCreationPlan[],
-    recurrenceGroupId: string,
+    seriesId: string,
     inlineItems: readonly { title: string }[] = [],
   ): Promise<Todo[]> {
     const rows = await this.db
       .insert(todo)
-      .values(items.map((item) => ({ ...item, recurrenceGroupId })))
+      .values(items.map((item) => ({ ...item, seriesId })))
       .returning();
     const itemRows =
       inlineItems.length === 0

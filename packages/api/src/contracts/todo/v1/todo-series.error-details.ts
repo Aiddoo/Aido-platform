@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema } from "../../../common/datetime.js";
+import { todoRepeatSchema } from "./todo.common.js";
 
 export const todoSeriesNotFoundErrorDetailsSchema = z
   .object({ seriesId: z.string().describe("찾지 못한 반복 할 일 ID") })
@@ -14,7 +15,10 @@ export const todoSeriesLimitErrorDetailsSchema = z
   .describe("TODO_0842 상세");
 
 export const todoSeriesNoDatesErrorDetailsSchema = z
-  .object({ startDate: dateSchema.describe("요청한 시작일 (YYYY-MM-DD)") })
+  .object({
+    startDate: dateSchema.describe("요청한 시작일 (YYYY-MM-DD)"),
+    repeat: todoRepeatSchema.optional().describe("요청한 반복 규칙"),
+  })
   .describe("TODO_0843 상세");
 
 export const todoSeriesScopeErrorDetailsSchema = z

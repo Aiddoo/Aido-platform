@@ -26,7 +26,7 @@ export function createTodoResponseFixture(record: PlanningTodoRecord): TodoRespo
     scheduledTime: record.scheduledTime?.toISOString() ?? null,
     isAllDay: record.isAllDay,
     visibility: record.visibility,
-    recurrenceGroupId: record.recurrenceGroupId,
+    recurrenceGroupId: record.seriesId,
     category: { ...record.category },
     items,
     itemStats: { total: items.length, completed: items.filter((item) => item.completed).length },

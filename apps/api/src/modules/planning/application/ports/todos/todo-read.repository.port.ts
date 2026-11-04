@@ -25,7 +25,7 @@ export interface TodoReadRepositoryPort {
   findOwnerId(id: number): Promise<string | null>;
 
   /** 반복 그룹 전체 조회 (sortOrder asc — 생성 순서와 동일) */
-  findManyByRecurrenceGroupId(userId: string, recurrenceGroupId: string): Promise<TodoResponse[]>;
+  findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]>;
 
   findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
 

@@ -36,7 +36,8 @@ export class TodoBuilder {
       scheduledTime: null,
       isAllDay: true,
       visibility: "PUBLIC",
-      recurrenceGroupId: null,
+      seriesId: null,
+      occurrenceDate: null,
       completed: false,
       completedAt: null,
       viewCount: 0,
@@ -152,8 +153,8 @@ export class TodoBuilder {
 
   // === 반복 생성 그룹 관련 ===
 
-  withRecurrenceGroupId(groupId: string | null): TodoBuilder {
-    this.data.recurrenceGroupId = groupId;
+  withSeriesId(seriesId: string | null): TodoBuilder {
+    this.data.seriesId = seriesId;
     return this;
   }
 
