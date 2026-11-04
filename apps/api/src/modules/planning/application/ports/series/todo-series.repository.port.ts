@@ -1,5 +1,4 @@
 import type { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
-import type { SeriesOwnerActivity } from "../../../domain/policies/series/series-dormancy.policy.js";
 
 export const TODO_SERIES_REPOSITORY = Symbol("TODO_SERIES_REPOSITORY");
 
@@ -15,10 +14,6 @@ export interface DueTodoSeriesQuery {
 export interface TodoSeriesRef {
   readonly id: string;
   readonly userId: string;
-}
-
-export interface DueTodoSeries extends TodoSeriesRef {
-  readonly owner: SeriesOwnerActivity;
 }
 
 export interface TodoSeriesRepositoryPort {
@@ -38,8 +33,8 @@ export interface TodoSeriesRepositoryPort {
 
   countActiveByUserId(userId: string): Promise<number>;
 
-  findDueBatch(query: DueTodoSeriesQuery): Promise<readonly DueTodoSeries[]>;
+  findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
 
-  /** 커서가 through 이하인 이 사용자의 규칙. 정지·탈퇴 대기 계정은 비어 있다. */
+  /** 커서가 through 이하인 이 사용자의 규칙. */
   findIdsBehind(userId: string, through: string): Promise<readonly string[]>;
 }

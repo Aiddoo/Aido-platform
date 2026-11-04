@@ -35,6 +35,7 @@ describe("복귀 회차 채우기", () => {
   function catchUp(overrides: { deadlineMs?: number } = {}) {
     return new TodoSeriesCatchUp({
       seriesRepository: fixture.todoSeriesRepository,
+      seriesOwner: fixture.seriesOwner,
       dueRun,
       logger: fixture.logger,
       ...overrides,

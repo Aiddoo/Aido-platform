@@ -3,6 +3,11 @@ import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { mock } from "vitest-mock-extended";
 
+import type {
+  AccessSnapshot,
+  EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import type { TodoReminderPort } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
 import { TodoSeriesDueRun } from "#api/modules/planning/application/services/series/todo-series-due-run.service";
@@ -10,6 +15,7 @@ import type { TodoCreationEffects } from "#api/modules/planning/application/serv
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
+import { TodoSeriesOwnerAdapter } from "#api/modules/planning/infrastructure/adapters/series/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -85,8 +91,14 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       });
     });
     const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
+    const entitlements = mock<EntitlementReaderPort>();
+    entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ isPremium: false }));
     return new MaterializeDueTodoSeries({
       seriesRepository,
+      seriesOwner: new TodoSeriesOwnerAdapter(
+        new DrizzleUserRepository(fixture.txHost),
+        entitlements,
+      ),
       dueRun: new TodoSeriesDueRun({
         seriesRepository,
         materializer: new TodoOccurrenceMaterializer({

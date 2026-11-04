@@ -8,7 +8,10 @@ import {
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
-import { createTodoReminderNotificationMessage } from "../../../application/messages/delivery/notification-messages.js";
+import {
+  createTodoReminderNotificationMessage,
+  createTodoSeriesPausedNotificationMessage,
+} from "../../../application/messages/delivery/notification-messages.js";
 import {
   TODO_REMINDER_READER,
   type TodoReminderReaderPort,
@@ -19,10 +22,13 @@ import {
 } from "../../../application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import { todoSeriesPausedJobKey } from "../notification-job-keys.js";
 import {
   todoReminderJobSchema,
   TODO_REMINDER_QUEUE,
   TODO_REMINDER_WORKER_POLICY,
+  TODO_SERIES_PAUSED_JOB_NAME,
+  TODO_SERIES_PAUSED_JOB_POLICY,
 } from "./todo-reminder-queue.constants.js";
 
 @Injectable()
@@ -61,6 +67,10 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
       return;
     }
+    if (parsedJob.data.name === TODO_SERIES_PAUSED_JOB_NAME) {
+      await this.#sendSeriesPausedNotice(parsedJob.data.data);
+      return;
+    }
     const { todoId, userId, stageLabel } = parsedJob.data.data;
 
     this.#logger.debug({
@@ -82,7 +92,9 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return;
     }
 
-    if (todo.seriesId != null && (await this.seriesOwnerDormancy.isOwnerDormant(userId))) {
+    const dormantSince =
+      todo.seriesId == null ? null : await this.seriesOwnerDormancy.findDormantSince(userId);
+    if (dormantSince != null) {
       // 운영에서 세므로 debug가 아닌 info다. 단계·식별자만 남긴다.
       this.#logger.log({
         event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
@@ -90,6 +102,14 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
         userId,
         stage: resolveReminderStage(stageLabel),
       });
+      await this.runtime?.enqueue(
+        TODO_REMINDER_QUEUE,
+        { name: TODO_SERIES_PAUSED_JOB_NAME, data: { todoId, userId } },
+        {
+          ...TODO_SERIES_PAUSED_JOB_POLICY,
+          idempotencyKey: todoSeriesPausedJobKey(userId, dormantSince),
+        },
+      );
       return;
     }
 
@@ -136,6 +156,36 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     });
 
     this.#logger.log({ event: NotificationProviderLogEvent.JOB_COMPLETED, todoId, userId, stage });
+  }
+
+  async #sendSeriesPausedNotice(job: { readonly todoId: number; readonly userId: string }) {
+    const { todoId, userId } = job;
+    const locale = await this.recipientLocaleReader.getLocale(userId);
+    const message = createTodoSeriesPausedNotificationMessage({
+      locale,
+      variantContext: {
+        campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
+        recipientId: userId,
+        occurrenceKey: `${todoId}:series-paused`,
+      },
+    });
+    // 리마인더와 같은 종류·목적으로 보내 기존 알림 동의를 그대로 따른다. 탭하면 그 할 일로 간다.
+    await this.notificationPublisher.publish({
+      userId,
+      type: "TODO_REMINDER",
+      purpose: "SCHEDULED_SERVICE",
+      campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
+      variantId: message.variantId,
+      title: message.title,
+      body: message.body,
+      todoId,
+      metadata: { stage: "series-paused" },
+    });
+    this.#logger.log({
+      event: NotificationProviderLogEvent.TODO_SERIES_PAUSED_SENT,
+      todoId,
+      userId,
+    });
   }
 }
 

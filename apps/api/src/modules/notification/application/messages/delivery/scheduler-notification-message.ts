@@ -74,6 +74,18 @@ export function createTodoReminderNotificationMessage({
   });
 }
 
+export function createTodoSeriesPausedNotificationMessage({
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: LocalizedVariantInput = {}): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SCHEDULER_TEMPLATES.TODO_SERIES_PAUSED,
+    variables: undefined,
+    variantContext,
+    templateKey: "todo_series.paused",
+  });
+}
+
 export function createMorningNoTodoNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,

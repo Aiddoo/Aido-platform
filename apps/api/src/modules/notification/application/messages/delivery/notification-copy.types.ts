@@ -33,6 +33,7 @@ export interface SchedulerCopyVariablesByKey {
   readonly TODO_REMINDER_60MIN: { readonly todoTitle: string };
   readonly TODO_REMINDER_10MIN: { readonly todoTitle: string };
   readonly TODO_REMINDER_IMMEDIATE: { readonly todoTitle: string };
+  readonly TODO_SERIES_PAUSED: undefined;
   readonly MORNING_REMINDER: { readonly count: number };
   readonly EVENING_COMPLETE: undefined;
   readonly EVENING_PARTIAL: { readonly remaining: number };

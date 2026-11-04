@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
-import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
 import {
   type AuthAccountLifecycleRepositoryPort,
@@ -9,10 +9,16 @@ import {
   type AuthUserProfileRecord,
   type AuthUserRepositoryPort,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import type { UserActivity } from "#api/modules/identity/application/ports/auth/user-activity.reader.port";
 import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { user, userActivityDay, userProfile } from "#api/platform/database/schema/index";
+import {
+  user,
+  userActivityDay,
+  userPreference,
+  userProfile,
+} from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -150,6 +156,25 @@ export class DrizzleUserRepository
 
   async markEmailVerified(id: string): Promise<UserRow> {
     return this.update(id, { emailVerifiedAt: now(), status: "ACTIVE" });
+  }
+
+  async findActiveAccounts(userIds: readonly string[]): Promise<readonly UserActivity[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    const rows = await this.db
+      .select({
+        userId: user.id,
+        lastActiveAt: user.lastActiveAt,
+        signedUpAt: user.createdAt,
+        timezone: userPreference.timezone,
+      })
+      .from(user)
+      .leftJoin(userPreference, eq(userPreference.userId, user.id))
+      .where(
+        and(inArray(user.id, [...userIds]), isNull(user.deletedAt), ne(user.status, "SUSPENDED")),
+      );
+    return rows;
   }
 
   async findLastSeenAppVersion(userId: string): Promise<string | null> {

@@ -58,6 +58,9 @@ export const SCHEDULER_TEMPLATES = {
       ({ todoTitle }) => copy("Starting is half the work", `Take step one on “${todoTitle}”`),
     ],
   },
+  TODO_SERIES_PAUSED: {
+    variants: [staticCopy("Repeating to-do reminders paused", "Open the app to start them again")],
+  },
   MORNING_REMINDER: {
     variants: [
       ({ count }) => copy(`${countLabel(count, "to-do")} today ☀️`, "Start with the easiest one"),

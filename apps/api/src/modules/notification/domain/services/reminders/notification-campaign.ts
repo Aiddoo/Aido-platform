@@ -4,6 +4,7 @@
  */
 export const SCHEDULER_CAMPAIGN_KEY = {
   TODO_REMINDER: "todo_reminder_v4",
+  TODO_SERIES_PAUSED: "todo_series_paused_v1",
   MORNING_REMINDER: "morning_reminder_v4",
   EVENING_REMINDER: "evening_reminder_v4",
   WEEKLY_ACHIEVEMENT: "weekly_achievement_v4",

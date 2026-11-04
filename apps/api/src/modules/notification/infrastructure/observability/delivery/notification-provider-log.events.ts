@@ -9,6 +9,7 @@ export const NotificationProviderLogEvent = {
   JOB_STARTED: "notification.job_started",
   JOB_SKIPPED: "notification.job_skipped",
   TODO_REMINDER_DORMANT_OWNER_SKIPPED: "notification.todo-reminder.dormant-owner.skipped",
+  TODO_SERIES_PAUSED_SENT: "notification.todo-series.paused-notice.sent",
   JOB_COMPLETED: "notification.job_completed",
   JOB_ENQUEUED: "notification.job_enqueued",
   SCHEDULE_REGISTERED: "notification.schedule_registered",

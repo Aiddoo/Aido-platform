@@ -7,6 +7,7 @@ import {
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
+import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import {
   TODO_REMINDER_READER,
@@ -18,7 +19,13 @@ import {
 } from "../../../application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
-import { type ReminderJobData, TODO_REMINDER_JOB_NAME } from "./todo-reminder-queue.constants.js";
+import {
+  type ReminderJobData,
+  TODO_REMINDER_JOB_NAME,
+  TODO_REMINDER_QUEUE,
+  TODO_SERIES_PAUSED_JOB_NAME,
+  TODO_SERIES_PAUSED_JOB_POLICY,
+} from "./todo-reminder-queue.constants.js";
 import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 
 const USER_ID = "user-1";
@@ -74,12 +81,12 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Given
       setupMocks();
       reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
-      seriesOwnerDormancy.isOwnerDormant.mockResolvedValue(true);
+      seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
       const log = logSpy();
       // When
       await processor.process(makeJob({ stageLabel: "10min" }));
       // Then
-      expect(seriesOwnerDormancy.isOwnerDormant).toHaveBeenCalledWith(USER_ID);
+      expect(seriesOwnerDormancy.findDormantSince).toHaveBeenCalledWith(USER_ID);
       expect(notificationPublisher.publish).not.toHaveBeenCalled();
       expect(log).toHaveBeenCalledExactlyOnceWith({
         event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
@@ -90,11 +97,77 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       expect(JSON.stringify(log.mock.calls)).not.toContain(TODO_TITLE);
     });
 
+    it("휴면 기간마다 같은 key로 안내 작업을 하나만 등록한다", async () => {
+      // Given
+      const runtime = new FakeJobRuntime();
+      const withRuntime = new TodoReminderQueueProcessor(
+        reader,
+        seriesOwnerDormancy,
+        notificationPublisher,
+        recipientLocaleReader,
+        runtime,
+      );
+      setupMocks();
+      reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
+      seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
+      // When
+      await withRuntime.process(makeJob({ stageLabel: "60min" }));
+      await withRuntime.process(makeJob({ stageLabel: "10min" }));
+      // Then
+      expect(runtime.enqueueCalls).toEqual([
+        {
+          queue: TODO_REMINDER_QUEUE,
+          data: {
+            name: TODO_SERIES_PAUSED_JOB_NAME,
+            data: { todoId: 1, userId: USER_ID },
+          },
+          options: {
+            ...TODO_SERIES_PAUSED_JOB_POLICY,
+            idempotencyKey: `series-paused_${USER_ID}_2026-08-01`,
+          },
+        },
+      ]);
+    });
+
+    it.each([
+      { locale: "ko", title: "반복 할 일 알림을 잠시 멈췄어요", body: "앱을 열면 다시 시작돼요" },
+      {
+        locale: "en",
+        title: "Repeating to-do reminders paused",
+        body: "Open the app to start them again",
+      },
+    ] as const)(
+      "안내 작업은 $locale 문구를 리마인더와 같은 동의로 보낸다",
+      async ({ locale, title, body }) => {
+        // Given
+        recipientLocaleReader.getLocale.mockResolvedValue(locale);
+        vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+        // When
+        await processor.process({
+          name: TODO_SERIES_PAUSED_JOB_NAME,
+          data: { todoId: 7, userId: USER_ID },
+        });
+        // Then
+        expect(notificationPublisher.publish).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            userId: USER_ID,
+            type: "TODO_REMINDER",
+            purpose: "SCHEDULED_SERVICE",
+            campaignKey: "todo_series_paused_v1",
+            todoId: 7,
+            title,
+            body,
+            metadata: { stage: "series-paused" },
+          }),
+        );
+      },
+    );
+
     it("소유자가 활동 중이면 반복 회차도 그대로 보낸다", async () => {
       // Given
       setupMocks();
       reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
-      seriesOwnerDormancy.isOwnerDormant.mockResolvedValue(false);
+      seriesOwnerDormancy.findDormantSince.mockResolvedValue(null);
       // When
       await processor.process(makeJob());
       // Then
@@ -104,11 +177,11 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     it("단일 할 일은 휴면을 묻지 않고 그대로 보낸다", async () => {
       // Given
       setupMocks();
-      seriesOwnerDormancy.isOwnerDormant.mockResolvedValue(true);
+      seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
       // When
       await processor.process(makeJob());
       // Then
-      expect(seriesOwnerDormancy.isOwnerDormant).not.toHaveBeenCalled();
+      expect(seriesOwnerDormancy.findDormantSince).not.toHaveBeenCalled();
       expect(notificationPublisher.publish).toHaveBeenCalledOnce();
     });
   });

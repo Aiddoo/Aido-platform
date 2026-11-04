@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
@@ -22,8 +24,8 @@ import { TODO_REMINDER_READER } from "./application/ports/reminders/todo-reminde
 import { TODO_SERIES_OWNER_DORMANCY } from "./application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { WEATHER_REMINDER_READER } from "./application/ports/reminders/weather-reminder-reader.port.js";
 import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/reminders/weekly-achievement-stats-reader.port.js";
-import { DrizzleTodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/reminders/drizzle-todo-series-owner-dormancy.adapter.js";
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/reminders/scheduler-dedup.adapter.js";
+import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter.js";
 import { TimezoneReminderQueueModule } from "./infrastructure/jobs/reminders/timezone-reminder-queue.module.js";
 import { TimezoneReminderProcessor } from "./infrastructure/jobs/reminders/timezone-reminder-queue.processor.js";
 import { TimezoneReminderQueueService } from "./infrastructure/jobs/reminders/timezone-reminder-queue.service.js";
@@ -55,6 +57,8 @@ import {
     NotificationDeliveryModule,
     WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
+    AccessModule,
+    IdentityUserAccessModule,
   ],
   providers: [
     // 오케스트레이터 + 전략 (application)
@@ -84,7 +88,7 @@ import {
       useExisting: DrizzleSchedulerReader,
     },
     { provide: TODO_REMINDER_READER, useExisting: DrizzleSchedulerReader },
-    { provide: TODO_SERIES_OWNER_DORMANCY, useClass: DrizzleTodoSeriesOwnerDormancyAdapter },
+    { provide: TODO_SERIES_OWNER_DORMANCY, useClass: TodoSeriesOwnerDormancyAdapter },
     // 날씨 알림은 화면과 같은 v2 리포트·칸 캐시를 weather Context의 공개 capability로 읽는다.
     // useExisting은 두 Port의 구조 호환을 검사하지 않으므로 반환 타입으로 컴파일러가 확인하게 한다.
     {

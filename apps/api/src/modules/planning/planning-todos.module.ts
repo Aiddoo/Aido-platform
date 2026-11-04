@@ -1,9 +1,12 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "../access/access-entitlement.public.js";
 import { IdentitySettingsModule } from "../identity/identity-settings.public.js";
+import { IdentityUserAccessModule } from "../identity/identity-user-access.public.js";
 import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
 import { NotificationRemindersModule } from "../notification/notification-reminders.public.js";
 import { SocialFriendsModule } from "../social/social-friends.public.js";
+import { TODO_SERIES_OWNER } from "./application/ports/series/todo-series-owner.port.js";
 import { TODO_SERIES_REPOSITORY } from "./application/ports/series/todo-series.repository.port.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
@@ -21,6 +24,7 @@ import { TODO_VIEW_CACHE_INVALIDATOR } from "./application/ports/todos/todo-view
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoViewCacheInvalidator } from "./application/services/todos/todo-view-cache.invalidator.js";
+import { TodoSeriesOwnerAdapter } from "./infrastructure/adapters/series/todo-series-owner.adapter.js";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/todos/category-ownership.adapter.js";
 import { FriendAdapter } from "./infrastructure/adapters/todos/friend.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/todos/streak.adapter.js";
@@ -42,6 +46,8 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     PlanningCategoriesModule,
     NotificationRemindersModule,
     IdentitySettingsModule,
+    IdentityUserAccessModule,
+    AccessModule,
   ],
   controllers: [TodoController, TodoSeriesController],
   providers: [
@@ -49,6 +55,7 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     DrizzleTodoReadRepository,
     { provide: TODO_REPOSITORY, useExisting: DrizzleTodoRepository },
     { provide: TODO_SERIES_REPOSITORY, useClass: DrizzleTodoSeriesRepository },
+    { provide: TODO_SERIES_OWNER, useClass: TodoSeriesOwnerAdapter },
     { provide: TODO_READ_REPOSITORY, useExisting: DrizzleTodoReadRepository },
     { provide: TODO_PLAN_READER, useExisting: DrizzleTodoReadRepository },
     { provide: CATEGORY_OWNERSHIP, useClass: CategoryOwnershipAdapter },

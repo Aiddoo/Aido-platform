@@ -42,6 +42,10 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       3,
     ],
     [
+      "TODO_SERIES_PAUSED",
+      1,
+    ],
+    [
       "MORNING_REMINDER",
       5,
     ],

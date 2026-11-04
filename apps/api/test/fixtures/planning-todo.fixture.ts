@@ -12,6 +12,7 @@ import {
   StubPlanningTodoRepository,
   StubPlanningTodoReadRepository,
   StubPlanningTodoReminder,
+  StubPlanningTodoSeriesOwner,
   StubPlanningTodoSeriesRepository,
   StubPlanningTodoCache,
   StubPlanningEventPublisher,
@@ -46,6 +47,7 @@ export function createPlanningTodoFixture(
   const todoRepository = new StubPlanningTodoRepository(records, seriesStore);
   const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);
   const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
+  const seriesOwner = new StubPlanningTodoSeriesOwner();
   const todoReminder = new StubPlanningTodoReminder();
   const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository, todoReminder });
   const seriesEffects = new TodoSeriesEditEffects({
@@ -84,6 +86,7 @@ export function createPlanningTodoFixture(
     todoSeriesRepository,
     todoReminder,
     seriesRepository: todoSeriesRepository,
+    seriesOwner,
     seriesEffects,
     occurrenceMaterializer,
     todoCache,

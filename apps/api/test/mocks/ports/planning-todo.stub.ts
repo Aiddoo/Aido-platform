@@ -7,8 +7,9 @@ import type {
   FindFriendTodosParams,
   FindTodosParams,
 } from "#api/modules/planning/application/models/todos/todo.types";
+import type { TodoSeriesOwnerPort } from "#api/modules/planning/application/ports/series/todo-series-owner.port";
 import type {
-  DueTodoSeries,
+  TodoSeriesRef,
   DueTodoSeriesQuery,
   TodoSeriesRepositoryPort,
 } from "#api/modules/planning/application/ports/series/todo-series.repository.port";
@@ -338,9 +339,34 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
 }
 
 /** 저장한 규칙을 메모리에 두고 복원해 돌려주는 Fake. 잠금은 흉내 내지 않는다. */
-export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
+export class StubPlanningTodoSeriesOwner implements TodoSeriesOwnerPort {
   /** 비워 두면 소유자가 방금 활동한 것으로 읽는다. */
-  ownerActivity: SeriesOwnerActivity | null = null;
+  activity: SeriesOwnerActivity | null = null;
+  readonly paidUserIds = new Set<string>();
+  /** 정지·탈퇴 대기 계정 */
+  readonly suspendedUserIds = new Set<string>();
+  async findOperatingOwners(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
+    return new Map(
+      userIds
+        .filter((userId) => !this.suspendedUserIds.has(userId))
+        .map((userId) => [
+          userId,
+          this.activity ?? {
+            lastActiveAt: new Date(),
+            signedUpAt: new Date(),
+            timezone: "UTC",
+          },
+        ]),
+    );
+  }
+  async hasPaidAccess(userId: string): Promise<boolean> {
+    return this.paidUserIds.has(userId);
+  }
+}
+
+export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
   constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
   async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
     const series = this.store.get(id);
@@ -373,7 +399,7 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
       (series) => series.getUserId() === userId && series.isActive(),
     ).length;
   }
-  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly DueTodoSeries[]> {
+  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
     return [...this.store.values()]
       .filter((series) => {
         const next = series.getNextOccurrenceDate();
@@ -386,11 +412,6 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
       .map((series) => ({
         id: series.getId(),
         userId: series.getUserId(),
-        owner: this.ownerActivity ?? {
-          lastActiveAt: new Date(),
-          signedUpAt: new Date(),
-          timezone: "UTC",
-        },
       }))
       .sort((left, right) => left.id.localeCompare(right.id))
       .slice(0, query.limit);

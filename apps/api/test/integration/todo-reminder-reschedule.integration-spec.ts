@@ -1,7 +1,11 @@
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
+import {
+  TODO_REMINDER_QUEUE,
+  TODO_SERIES_PAUSED_JOB_NAME,
+  TODO_SERIES_PAUSED_JOB_POLICY,
+} from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.constants";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -135,6 +139,34 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
       },
       { timeout: 15_000, interval: 200 },
     );
+  });
+
+  it("휴면 안내는 끝난 뒤에도 행이 남아 같은 기간에 다시 등록되지 않는다", async () => {
+    // Given
+    const job = {
+      name: TODO_SERIES_PAUSED_JOB_NAME,
+      data: { todoId: nextTodoId, userId: USER_ID },
+    };
+    const options = {
+      ...TODO_SERIES_PAUSED_JOB_POLICY,
+      idempotencyKey: `series-paused_${USER_ID}_${nextTodoId}`,
+    };
+    const handled = vi.fn().mockResolvedValue(undefined);
+    await runtime.work(TODO_REMINDER_QUEUE, handled, { teamSize: 1, pollingIntervalSeconds: 1 });
+    await runtime.enqueue(TODO_REMINDER_QUEUE, job, options);
+    await vi.waitFor(
+      async () => {
+        const jobs = await boss.findJobs(TODO_REMINDER_QUEUE, { key: options.idempotencyKey });
+        expect(jobs[0]?.state).toBe("completed");
+      },
+      { timeout: 15_000, interval: 200 },
+    );
+    // When
+    const again = await runtime.enqueue(TODO_REMINDER_QUEUE, job, options);
+    // Then
+    expect(again).toBeNull();
+    const [kept] = await boss.findJobs(TODO_REMINDER_QUEUE, { key: options.idempotencyKey });
+    expect(kept?.deleteAfterSeconds).toBe(TODO_SERIES_PAUSED_JOB_POLICY.deleteAfterSeconds);
   });
 
   it("트랜잭션이 되돌려지면 지운 작업이 그대로 남고 새 작업도 없다", async () => {

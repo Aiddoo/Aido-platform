@@ -3,7 +3,12 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { mock } from "vitest-mock-extended";
 
-import { DrizzleTodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/drizzle-todo-series-owner-dormancy.adapter";
+import type {
+  AccessSnapshot,
+  EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
+import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
+import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/infrastructure/adapters/reminders/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-scheduler.adapter";
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
 import { TodoSeriesCatchUp } from "#api/modules/planning/application/services/series/todo-series-catch-up.service";
@@ -12,6 +17,7 @@ import { TodoCreationEffects } from "#api/modules/planning/application/services/
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { RepeatRule } from "#api/modules/planning/domain/value-objects/series/repeat-rule.vo";
+import { TodoSeriesOwnerAdapter } from "#api/modules/planning/infrastructure/adapters/series/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/infrastructure/persistence/series/drizzle-todo-series.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/infrastructure/persistence/todos/drizzle-todo.repository";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -47,12 +53,14 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let runtime: FakeJobRuntime;
   let userId: string;
+  const paidUserIds = new Set<string>();
   let categoryId: number;
 
   beforeAll(async () => {
     client = await database.start();
   });
   beforeEach(async () => {
+    paidUserIds.clear();
     await database.cleanup();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(RETURNED_AT);
@@ -119,10 +127,23 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     });
   }
 
+  function entitlements() {
+    const reader = mock<EntitlementReaderPort>();
+    reader.getAccessSnapshot.mockImplementation(async (id) =>
+      mock<AccessSnapshot>({ isPremium: paidUserIds.has(id) }),
+    );
+    return reader;
+  }
+
+  function seriesOwner() {
+    return new TodoSeriesOwnerAdapter(new DrizzleUserRepository(fixture.txHost), entitlements());
+  }
+
   /** 서버 프로세스 하나. 메모리 캐시는 프로세스마다 따로다. */
   function catchUp() {
     return new TodoSeriesCatchUp({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
+      seriesOwner: seriesOwner(),
       dueRun: dueRun(),
       logger: new Logger("DormancyIntegration"),
     });
@@ -131,6 +152,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   function job() {
     return new MaterializeDueTodoSeries({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
+      seriesOwner: seriesOwner(),
       dueRun: dueRun(),
       alert: mock<OperationalAlertPort>(),
       logger: new Logger("DormancyIntegration"),
@@ -487,6 +509,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const id = await seedStaleSeries();
       const broken = new TodoSeriesCatchUp({
         seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
+        seriesOwner: seriesOwner(),
         dueRun: {
           materialize: async () => {
             throw new Error("쓰기 실패");
@@ -525,7 +548,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   describe("리마인더 발송 시점의 휴면", () => {
     function dormancy() {
-      return new DrizzleTodoSeriesOwnerDormancyAdapter(fixture.txHost);
+      return new TodoSeriesOwnerDormancyAdapter(
+        new DrizzleUserRepository(fixture.txHost),
+        entitlements(),
+      );
     }
 
     it.each([
@@ -538,9 +564,9 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       // When
-      const dormant = await dormancy().isOwnerDormant(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(owner.userId);
       // Then
-      expect(dormant).toBe(expected);
+      expect(dormantSince).toBe(expected ? lastActiveAt.slice(0, 10) : null);
     });
 
     it("활동 기록이 없으면 가입일로 재고 설정 행이 없어도 판단한다", async () => {
@@ -550,16 +576,29 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
       });
       // When
-      const dormant = await dormancy().isOwnerDormant(owner.userId);
+      const dormantSince = await dormancy().findDormantSince(owner.userId);
       // Then
-      expect(dormant).toBe(true);
+      expect(dormantSince).toBe("2026-01-01");
     });
 
     it("지워진 계정은 휴면으로 보지 않는다", async () => {
       // When
-      const dormant = await dormancy().isOwnerDormant("no-such-user");
+      const dormantSince = await dormancy().findDormantSince("no-such-user");
       // Then
-      expect(dormant).toBe(false);
+      expect(dormantSince).toBeNull();
+    });
+
+    it("유효한 유료 사용자는 오래 안 열어도 휴면이 아니다", async () => {
+      // Given
+      const owner = await seedUser("paid@example.com", "DORMANTP", {
+        lastActiveAt: new Date("2026-01-01T00:00:00.000Z"),
+        timezone: "UTC",
+      });
+      paidUserIds.add(owner.userId);
+      // When
+      const dormantSince = await dormancy().findDormantSince(owner.userId);
+      // Then
+      expect(dormantSince).toBeNull();
     });
   });
 });

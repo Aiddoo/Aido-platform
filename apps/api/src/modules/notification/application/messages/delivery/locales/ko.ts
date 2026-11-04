@@ -68,6 +68,9 @@ export const SCHEDULER_TEMPLATES = {
       ({ todoTitle }) => copy("시작이 반이에요", `‘${todoTitle}’ 첫걸음만 떼볼까요?`),
     ],
   },
+  TODO_SERIES_PAUSED: {
+    variants: [staticCopy("반복 할 일 알림을 잠시 멈췄어요", "앱을 열면 다시 시작돼요")],
+  },
   MORNING_REMINDER: {
     variants: [
       ({ count }) => copy(`오늘 할 일 ${count}개 ☀️`, "제일 쉬운 것부터 하나 끝내봐요"),

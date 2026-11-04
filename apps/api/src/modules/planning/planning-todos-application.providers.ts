@@ -8,6 +8,7 @@ import {
 } from "#api/shared/application/ports/index";
 import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 
+import { TODO_SERIES_OWNER } from "./application/ports/series/todo-series-owner.port.js";
 import { TODO_SERIES_REPOSITORY } from "./application/ports/series/todo-series.repository.port.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
@@ -68,13 +69,15 @@ export const todoSeriesDueRunProvider: FactoryProvider<TodoSeriesDueRun> = {
 
 export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
   provide: TodoSeriesCatchUp,
-  inject: [TODO_SERIES_REPOSITORY, TodoSeriesDueRun],
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRun],
   useFactory: (
     seriesRepository: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesRepository"],
+    seriesOwner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesOwner"],
     dueRun: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRun"],
   ) =>
     new TodoSeriesCatchUp({
       seriesRepository,
+      seriesOwner,
       dueRun,
       logger: new Logger(TodoSeriesCatchUp.name),
     }),
@@ -82,14 +85,16 @@ export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
 
 export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
   provide: MaterializeDueTodoSeries,
-  inject: [TODO_SERIES_REPOSITORY, TodoSeriesDueRun, OPERATIONAL_ALERT],
+  inject: [TODO_SERIES_REPOSITORY, TODO_SERIES_OWNER, TodoSeriesDueRun, OPERATIONAL_ALERT],
   useFactory: (
     seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
+    seriesOwner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesOwner"],
     dueRun: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRun"],
     alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
   ) =>
     new MaterializeDueTodoSeries({
       seriesRepository,
+      seriesOwner,
       dueRun,
       alert,
       logger: new Logger(MaterializeDueTodoSeries.name),

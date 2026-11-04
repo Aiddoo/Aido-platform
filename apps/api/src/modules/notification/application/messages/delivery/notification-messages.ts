@@ -8,6 +8,7 @@ export {
   createSocialDigestNotificationMessage,
   createStreakAtRiskNotificationMessage,
   createTodoReminderNotificationMessage,
+  createTodoSeriesPausedNotificationMessage,
   createWeeklyAchievementNotificationMessage,
 } from "./scheduler-notification-message.js";
 export {

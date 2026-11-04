@@ -32,6 +32,7 @@ describe("회차 채우기", () => {
   function useCase(overrides: { deadlineMs?: number; batchSize?: number } = {}) {
     return new MaterializeDueTodoSeries({
       seriesRepository: fixture.todoSeriesRepository,
+      seriesOwner: fixture.seriesOwner,
       dueRun: new TodoSeriesDueRun({
         seriesRepository: fixture.todoSeriesRepository,
         materializer: fixture.occurrenceMaterializer,
@@ -124,7 +125,7 @@ describe("회차 채우기", () => {
   it("소유자가 휴면이면 건너뛰고 커서를 그대로 둔다", async () => {
     // Given
     await seed("series-1");
-    fixture.todoSeriesRepository.ownerActivity = {
+    fixture.seriesOwner.activity = {
       lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
       signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
@@ -139,10 +140,35 @@ describe("회차 채우기", () => {
     expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ dormantCount: 1 }));
   });
 
+  it("휴면 기간이어도 유효한 유료 사용자의 규칙은 그대로 채운다", async () => {
+    // Given
+    await seed("series-1");
+    fixture.seriesOwner.activity = {
+      lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
+      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    };
+    fixture.seriesOwner.paidUserIds.add(fixture.userId);
+    // When
+    const result = await useCase().execute();
+    // Then
+    expect(result).toMatchObject({ processedCount: 1, createdCount: 3, dormantCount: 0 });
+  });
+
+  it("정지·탈퇴 대기 계정은 건너뛰고 휴면으로도 세지 않는다", async () => {
+    // Given
+    await seed("series-1");
+    fixture.seriesOwner.suspendedUserIds.add(fixture.userId);
+    // When
+    const result = await useCase().execute();
+    // Then
+    expect(result).toMatchObject({ processedCount: 0, createdCount: 0, dormantCount: 0 });
+  });
+
   it("휴면 기준일인 60일째까지는 그대로 채운다", async () => {
     // Given
     await seed("series-1");
-    fixture.todoSeriesRepository.ownerActivity = {
+    fixture.seriesOwner.activity = {
       lastActiveAt: new Date("2026-09-06T00:00:00.000Z"),
       signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",

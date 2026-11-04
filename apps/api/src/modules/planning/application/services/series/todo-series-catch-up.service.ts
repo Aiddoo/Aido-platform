@@ -5,6 +5,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
+import type { TodoSeriesOwnerPort } from "../../ports/series/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { TodoSeriesDueRun } from "./todo-series-due-run.service.js";
 
@@ -17,6 +18,7 @@ export const TODO_SERIES_CATCH_UP_BUDGET = {
 
 interface TodoSeriesCatchUpDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findIdsBehind">;
+  readonly seriesOwner: Pick<TodoSeriesOwnerPort, "findOperatingOwners">;
   readonly dueRun: Pick<TodoSeriesDueRun, "materialize">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly deadlineMs?: number;
@@ -63,9 +65,14 @@ export class TodoSeriesCatchUp {
 
   async #catchUp(userId: string, through: string): Promise<void> {
     const startedAt = Date.now();
-    const { seriesRepository, logger } = this.#dependencies;
+    const { seriesRepository, seriesOwner, logger } = this.#dependencies;
     try {
-      const seriesIds = await seriesRepository.findIdsBehind(userId, through);
+      const behindIds = await seriesRepository.findIdsBehind(userId, through);
+      // 세션 캐시(30초) 동안은 정지·탈퇴 대기 계정의 토큰도 통과한다.
+      const seriesIds =
+        behindIds.length > 0 && (await seriesOwner.findOperatingOwners([userId])).has(userId)
+          ? behindIds
+          : [];
       const { createdCount, failedCount, timedOut } = await this.#materializeAll(userId, seriesIds);
       const settled = failedCount === 0 && !timedOut;
       this.#nextCheckAt.set(
