@@ -105,9 +105,9 @@ export class TodoCreationWriter {
       rule: RepeatRule.from(repeat),
       startDate: toDateString(data.startDate),
       checklistTemplate: data.items ?? [],
-      sortOrder: await this.#dependencies.todoRepository.getMaxSortOrder(userId),
       at,
     });
+    series.assertWithinPastLimit(at);
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
     const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
     if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {

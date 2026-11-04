@@ -7,7 +7,6 @@ import type { TodoCachePort } from "../../ports/todos/todo-cache.port.js";
 export interface TodoSeriesEditEffect {
   readonly seriesId: string;
   readonly userId: string;
-  readonly events: readonly { readonly eventName: string }[];
 }
 
 interface TodoSeriesEditEffectsDependencies {
@@ -29,7 +28,6 @@ export class TodoSeriesEditEffects {
     await todoCache.invalidateTodoCategories(effect.userId);
     await todoCache.invalidateFriendTodos(effect.userId);
     await eventPublisher.publishAll([
-      ...effect.events,
       new TodoOccurrencesChangedEvent(effect.seriesId, effect.userId),
     ]);
   }

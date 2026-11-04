@@ -166,6 +166,8 @@ export const todoSeries = pgTable(
     // 기존 recurrenceGroupId 값을 그대로 이어 쓰므로 Todo.recurrenceGroupId와 같은 형식이다.
     id: varchar({ length: 36 }).primaryKey(),
     nextOccurrenceDate: date({ mode: "date" }),
+    // 이후 수정으로 나뉜 구간을 재귀 없이 한 쿼리로 묶는다. 원본 행이 먼저 지워질 수 있어 FK를 걸지 않는다.
+    originSeriesId: varchar({ length: 36 }).notNull(),
     repeatCount: smallint(),
     repeatFrequency: todoRepeatFrequency().notNull(),
     repeatInterval: smallint().default(1).notNull(),
@@ -173,7 +175,6 @@ export const todoSeries = pgTable(
     repeatUntil: date({ mode: "date" }),
     repeatWeekdays: text().array(),
     scheduledLocalTime: varchar({ length: 5 }),
-    sortOrder: integer().notNull(),
     startDate: date({ mode: "date" }).notNull(),
     timezone: varchar({ length: 50 }).notNull(),
     title: varchar({ length: 200 }).notNull(),
@@ -204,6 +205,7 @@ export const todoSeries = pgTable(
       .where(sql`${table.nextOccurrenceDate} IS NOT NULL`),
     index("TodoSeries_userId_nextOccurrenceDate_idx").on(table.userId, table.nextOccurrenceDate),
     index("TodoSeries_categoryId_idx").on(table.categoryId),
+    index("TodoSeries_userId_originSeriesId_idx").on(table.userId, table.originSeriesId),
     check("TodoSeries_repeatInterval_check", sql`${table.repeatInterval} IN (1, 2)`),
     check(
       "TodoSeries_repeatWeekdays_check",

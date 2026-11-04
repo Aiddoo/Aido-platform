@@ -160,7 +160,6 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       rule: overrides.rule ?? RepeatRule.daily({ type: "NEVER" }),
       startDate: overrides.startDate ?? "2026-03-01",
       checklistTemplate: [{ title: "항목" }],
-      sortOrder: 0,
       at: LAST_MOVED_AT,
     });
     await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);

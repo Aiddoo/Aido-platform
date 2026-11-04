@@ -4,6 +4,9 @@ import { DATE_FORMAT } from "../constants/date.constant.js";
 import { now } from "./core.js";
 
 const DEFAULT_TIMEZONE = "UTC";
+const MINUTE_MS = 60 * 1000;
+/** 겹치는 구간은 길어야 2시간이라 이만큼 앞선 시점이면 항상 전환 전이다. */
+const OVERLAP_LOOKBACK_MS = 3 * 60 * MINUTE_MS;
 
 /**
  * 알림 배송·자격 판정 전용 폴백 타임존.
@@ -81,7 +84,22 @@ export function parseLocalDateTime(
   timeStr: string,
   tz: string = DEFAULT_TIMEZONE,
 ): Date {
-  return dayjs.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz)).utc().toDate();
+  const timezone = resolveTimezone(tz);
+  const parsed = dayjs.tz(`${dateStr}T${timeStr}:00`, timezone);
+  // 가을 전환으로 같은 벽시계가 두 번이면 RFC 5545대로 앞쪽(전환 전 오프셋)을 쓴다.
+  // 조금 앞선 시점의 오프셋이 더 크면 그 사이에 시계가 되돌아간 것이다.
+  const offsetBefore = dayjs(parsed.valueOf() - OVERLAP_LOOKBACK_MS)
+    .tz(timezone)
+    .utcOffset();
+  if (offsetBefore > parsed.utcOffset()) {
+    const earlier = dayjs(parsed.valueOf() - (offsetBefore - parsed.utcOffset()) * MINUTE_MS).tz(
+      timezone,
+    );
+    if (earlier.format("YYYY-MM-DDTHH:mm") === `${dateStr}T${timeStr}`) {
+      return earlier.utc().toDate();
+    }
+  }
+  return parsed.utc().toDate();
 }
 
 /**

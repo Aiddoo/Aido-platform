@@ -52,6 +52,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     categoryId = category.id;
     await client.insert(todoSeries).values({
       id: SERIES_ID,
+      originSeriesId: SERIES_ID,
       userId,
       categoryId,
       title: "물 마시기",
@@ -60,7 +61,6 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
       repeatInterval: 1,
       repeatWeekdays: ["MON", "THU"],
       startDate: new Date("2026-11-02T00:00:00.000Z"),
-      sortOrder: 0,
     });
   });
 

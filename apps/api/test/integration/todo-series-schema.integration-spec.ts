@@ -22,17 +22,20 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
 
-function readDataMigrationStatements(): string[] {
-  const folder = readdirSync(MIGRATIONS_DIR).find((name) => name.endsWith("_todo_series"));
+function readMigrationStatements(suffix: string): string[] {
+  const folder = readdirSync(MIGRATIONS_DIR).find((name) => name.endsWith(suffix));
   if (folder == null) {
-    throw new Error("todo_series 마이그레이션 폴더 누락");
+    throw new Error(`${suffix} 마이그레이션 폴더 누락`);
   }
   return readFileSync(join(MIGRATIONS_DIR, folder, "migration.sql"), "utf8")
     .split("--> statement-breakpoint")
-    .map((statement) => statement.trim())
-    .filter((statement) =>
-      /^(-- [^\n]*\n)?(UPDATE "Todo"|INSERT INTO "TodoSeries")/.test(statement),
-    );
+    .map((statement) => statement.trim());
+}
+
+function readDataMigrationStatements(): string[] {
+  return readMigrationStatements("_todo_series").filter((statement) =>
+    /^(-- [^\n]*\n)?(UPDATE "Todo"|INSERT INTO "TodoSeries")/.test(statement),
+  );
 }
 
 describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
@@ -88,10 +91,21 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
     return row;
   }
 
+  /** 후속 마이그레이션이 바꾼 칸을 당시 모양으로 돌린 뒤 이관과 후속 마이그레이션을 차례로 적용한다. */
   async function runDataMigration() {
-    for (const statement of readDataMigrationStatements()) {
-      await client.execute(sql.raw(statement));
-    }
+    await client.transaction(async (tx) => {
+      await tx.execute(
+        sql.raw(
+          `ALTER TABLE "TodoSeries" DROP COLUMN "originSeriesId", ADD COLUMN "sortOrder" integer`,
+        ),
+      );
+      for (const statement of [
+        ...readDataMigrationStatements(),
+        ...readMigrationStatements("_todo_series_origin"),
+      ]) {
+        await tx.execute(sql.raw(statement));
+      }
+    });
   }
 
   describe("기존 묶음 이관", () => {
@@ -149,7 +163,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         repeatUntil: new Date("2026-03-04T00:00:00.000Z"),
         nextOccurrenceDate: null,
         generatedCount: 2,
-        sortOrder: 7,
+        originSeriesId: "group-b",
         createdAt: new Date("2026-03-01T00:00:00.000Z"),
         checklistTemplate: [{ title: "첫째" }, { title: "둘째" }],
       });
@@ -189,15 +203,16 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
 
   describe("제약", () => {
     function seriesRow(overrides: Partial<typeof todoSeries.$inferInsert> = {}) {
+      const id = createEntityId();
       return {
-        id: createEntityId(),
+        id,
+        originSeriesId: id,
         userId,
         categoryId,
         title: "규칙",
         timezone: "UTC",
         repeatFrequency: "DAILY" as const,
         startDate: new Date("2026-03-02T00:00:00.000Z"),
-        sortOrder: 0,
         ...overrides,
       };
     }
@@ -275,7 +290,6 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         rule,
         startDate: "2026-11-02",
         checklistTemplate: [{ title: "항목" }],
-        sortOrder: 3,
         at: new Date("2026-11-01T00:00:00.000Z"),
       });
     }
@@ -333,7 +347,6 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
           rule: RepeatRule.daily({ type: "NEVER" }),
           startDate: "2027-06-01",
           checklistTemplate: [],
-          sortOrder: 0,
           at: new Date("2026-11-01T00:00:00.000Z"),
         }),
       );

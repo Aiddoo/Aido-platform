@@ -186,7 +186,7 @@ describe("RepeatRule — 반복 규칙", () => {
       // When
       const next = rule.continuingFrom("2026-11-05", "2026-11-08");
       // Then
-      expect(next.getEnd()).toEqual({ type: "COUNT", count: 7 });
+      expect(next.toSpec().end).toEqual({ type: "COUNT", count: 7 });
     });
   });
 });

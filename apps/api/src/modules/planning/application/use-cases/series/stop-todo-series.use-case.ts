@@ -68,7 +68,9 @@ export class StopTodoSeries {
       throw new ApplicationException(ErrorCode.TODO_0846, { seriesId });
     }
     await seriesRepository.update(series);
-    const deletedTodoIds = await todoRepository.deleteOccurrences(seriesId, {
+    const deletedTodoIds = await todoRepository.deleteOccurrences({
+      userId,
+      seriesIds: [seriesId],
       fromDate: addDaysToDateKey(lastDate, 1),
       includeCompleted: false,
     });
@@ -81,7 +83,6 @@ export class StopTodoSeries {
     await this.#dependencies.effects.publish({
       seriesId: series.getId(),
       userId,
-      events: series.pullDomainEvents(),
     });
     this.#dependencies.logger.log({
       event: PlanningTodoSeriesLogEvent.STOPPED,

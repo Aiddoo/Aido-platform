@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, isNotNull, isNull, lte, ne } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lte, ne } from "drizzle-orm";
 import { match } from "ts-pattern";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -22,6 +22,7 @@ type TodoSeriesRow = typeof todoSeries.$inferSelect;
 function toDomain(row: TodoSeriesRow): TodoSeries {
   return TodoSeries.reconstitute({
     id: row.id,
+    originSeriesId: row.originSeriesId,
     userId: row.userId,
     categoryId: row.categoryId,
     title: row.title,
@@ -31,7 +32,6 @@ function toDomain(row: TodoSeriesRow): TodoSeries {
     rule: toRepeatRule(row),
     startDate: toDateString(row.startDate),
     checklistTemplate: row.checklistTemplate,
-    sortOrder: row.sortOrder,
     nextOccurrenceDate: toDateStringOrNull(row.nextOccurrenceDate),
     generatedCount: row.generatedCount,
     createdAt: row.createdAt,
@@ -52,6 +52,7 @@ function toRow(series: TodoSeries): typeof todoSeries.$inferInsert {
     .exhaustive();
   return {
     id: snapshot.id,
+    originSeriesId: snapshot.originSeriesId,
     userId: snapshot.userId,
     categoryId: snapshot.categoryId,
     title: snapshot.title,
@@ -66,7 +67,6 @@ function toRow(series: TodoSeries): typeof todoSeries.$inferInsert {
     repeatUntil,
     repeatCount,
     checklistTemplate: [...snapshot.checklistTemplate],
-    sortOrder: snapshot.sortOrder,
     nextOccurrenceDate:
       snapshot.nextOccurrenceDate == null ? null : parseDateOnly(snapshot.nextOccurrenceDate),
     generatedCount: snapshot.generatedCount,
@@ -112,8 +112,21 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     requireRecord(updated[0]);
   }
 
-  async delete(id: string): Promise<void> {
-    await this.db.delete(todoSeries).where(eq(todoSeries.id, id));
+  async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .select({ id: todoSeries.id })
+      .from(todoSeries)
+      .where(and(eq(todoSeries.userId, userId), eq(todoSeries.originSeriesId, originSeriesId)))
+      .orderBy(asc(todoSeries.id))
+      .for("update");
+    return rows.map((row) => row.id);
+  }
+
+  async deleteMany(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
+    await this.db.delete(todoSeries).where(inArray(todoSeries.id, [...ids]));
   }
 
   countActiveByUserId(userId: string): Promise<number> {

@@ -32,7 +32,10 @@ interface DeleteTodoDependencies {
     TodoRepositoryPort,
     "findByIdAndUserId" | "delete" | "deleteOccurrences"
   >;
-  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update" | "delete">;
+  readonly seriesRepository: Pick<
+    TodoSeriesRepositoryPort,
+    "lockForUpdate" | "update" | "lockFamilyIds" | "deleteMany"
+  >;
   readonly seriesEffects: Pick<TodoSeriesEditEffects, "publish">;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
@@ -109,13 +112,24 @@ export class DeleteTodo {
       const pivot = toDateString(occurrenceDate);
       const deletedTodoIds = await match(scope)
         .with("ALL", async () => {
-          const ids = await todoRepository.deleteOccurrences(seriesId, { includeCompleted: true });
-          // 회차가 하나도 남지 않으므로 규칙도 함께 없앤다.
-          await seriesRepository.delete(seriesId);
+          // 이후 수정으로 나뉜 앞 구간까지 사용자에게는 하나의 반복 할 일이다.
+          // 규칙이 없는 묶음(1.14.2로 되돌린 동안 생긴 것)은 그 묶음만 지운다.
+          const seriesIds =
+            series == null
+              ? [seriesId]
+              : await seriesRepository.lockFamilyIds(userId, series.getOriginSeriesId());
+          const ids = await todoRepository.deleteOccurrences({
+            userId,
+            seriesIds,
+            includeCompleted: true,
+          });
+          await seriesRepository.deleteMany(seriesIds);
           return ids;
         })
         .with("THIS_AND_FOLLOWING", async () => {
-          const ids = await todoRepository.deleteOccurrences(seriesId, {
+          const ids = await todoRepository.deleteOccurrences({
+            userId,
+            seriesIds: [seriesId],
             fromDate: pivot,
             includeCompleted: false,
           });
@@ -126,13 +140,12 @@ export class DeleteTodo {
         })
         .exhaustive();
       await todoReminder.cancelReminders(deletedTodoIds);
-      return { seriesId, deletedTodoIds, events: series?.pullDomainEvents() ?? [] };
+      return { seriesId, deletedTodoIds };
     });
 
     await this.#dependencies.seriesEffects.publish({
       seriesId: deleted.seriesId,
       userId,
-      events: deleted.events,
     });
     this.#dependencies.logger.log({
       event: PlanningTodoLogEvent.DELETED,

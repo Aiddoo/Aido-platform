@@ -31,7 +31,10 @@ export interface TodoSeriesRepositoryPort {
 
   update(series: TodoSeries): Promise<void>;
 
-  delete(id: string): Promise<void>;
+  /** 분할로 이어진 규칙을 모두 잠그고 id를 돌려준다. 원본 id가 같은 규칙이 한 묶음이다. */
+  lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]>;
+
+  deleteMany(ids: readonly string[]): Promise<void>;
 
   countActiveByUserId(userId: string): Promise<number>;
 

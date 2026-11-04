@@ -154,17 +154,20 @@ describe("반복 할 일 생성 E2E", () => {
         await client.update(userTable).set(patch).where(eq(userTable.id, userId));
       }
       await client.insert(todoSeries).values(
-        Array.from({ length: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER }, () => ({
-          id: createEntityId(),
-          userId,
-          categoryId,
-          title: "시드",
-          timezone: "UTC",
-          repeatFrequency: "DAILY" as const,
-          startDate: new Date(),
-          nextOccurrenceDate: new Date(),
-          sortOrder: 0,
-        })),
+        Array.from({ length: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER }, () => {
+          const id = createEntityId();
+          return {
+            id,
+            originSeriesId: id,
+            userId,
+            categoryId,
+            title: "시드",
+            timezone: "UTC",
+            repeatFrequency: "DAILY" as const,
+            startDate: new Date(),
+            nextOccurrenceDate: new Date(),
+          };
+        }),
       );
       // When
       const response = await post("/v1/todos", {

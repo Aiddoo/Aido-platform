@@ -62,6 +62,20 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 **1.15.0 반복 할 일(`todo_series`)**은 1.14.2 이미지로 되돌릴 수 있도록 `Todo`→`TodoSeries` FK와 `CHECK ((recurrenceGroupId IS NULL) = (occurrenceDate IS NULL))`를 걸지 않았다. 되돌린 동안 옛 코드가 만든 묶음은 규칙이 없고 `occurrenceDate`도 NULL이다. 1.16.0에서 이 고아 묶음을 보정한 뒤 FK(`NOT VALID`→`VALIDATE`)와 CHECK를 건다.
 
+1.15.0에서 1.14.2 이미지로 되돌리면 이미지 교체 직후 아래 SQL을 한 번 실행한다. 이관으로 모든 레거시 묶음에 규칙이 생겼는데 옛 코드는 카테고리를 지울 때 `Todo`만 옮기므로, 이 FK(`ON DELETE RESTRICT`)가 남아 있으면 반복이 있던 카테고리를 지울 수 없다.
+
+```sql
+ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey";
+```
+
+다시 1.15.0 이상으로 올릴 때는 이 사이 지워진 카테고리를 가리키는 규칙을 먼저 정리한 뒤 같은 이름의 FK를 `NOT VALID`→`VALIDATE`로 다시 건다.
+
+**1.15.0 배포 전 확인**: `todo_series` 이관은 `Todo` 전체를 잠근다(로컬 측정 126만 행·26만 행 묶음에서 약 5초, 앱 요청 제한 10초, `lock_timeout` 5초). 실행 전에 운영 DB에서 읽기 전용으로 아래 건수를 본다. 묶음 행이 수만을 넘으면 칸 추가·채우기·`CREATE UNIQUE INDEX CONCURRENTLY`로 나눈다. 2026-11 기준 묶음 119개·1,834행이라 그대로 실행한다.
+
+```sql
+SELECT count(DISTINCT "recurrenceGroupId") AS series, count(*) AS rows FROM "Todo" WHERE "recurrenceGroupId" IS NOT NULL;
+```
+
 nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
 
 새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 schema가 함께 바뀌는 릴리스는 해당 graph의 rollout 제한을 [migration.md](../../docs/server/migration.md)와 함께 확인한다.

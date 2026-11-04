@@ -127,11 +127,13 @@ export interface TodoRepositoryPort {
     occurrence: TodoOccurrenceAttachment,
   ): Promise<void>;
 
-  /** fromDate 이후 회차를 지우고 지운 id를 돌려준다. 완료 회차는 includeCompleted일 때만 지운다. */
-  deleteOccurrences(
-    seriesId: string,
-    options: { readonly fromDate?: string; readonly includeCompleted: boolean },
-  ): Promise<readonly number[]>;
+  /** 규칙들의 fromDate 이후 회차를 지우고 지운 id를 돌려준다. 완료 회차는 includeCompleted일 때만 지운다. */
+  deleteOccurrences(query: {
+    readonly userId: string;
+    readonly seriesIds: readonly string[];
+    readonly fromDate?: string;
+    readonly includeCompleted: boolean;
+  }): Promise<readonly number[]>;
 
   deleteMany(todoIds: readonly number[]): Promise<void>;
 

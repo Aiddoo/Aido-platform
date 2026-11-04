@@ -198,26 +198,25 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return updated.length;
   }
 
-  async getTodoCount(categoryId: number): Promise<number> {
-    const todos = await this.db.$count(todo, eq(todo.categoryId, categoryId));
-    const activeSeries = await this.db.$count(
+  getTodoCount(categoryId: number): Promise<number> {
+    return this.db.$count(todo, eq(todo.categoryId, categoryId));
+  }
+
+  countActiveSeries(categoryId: number): Promise<number> {
+    return this.db.$count(
       todoSeries,
       and(eq(todoSeries.categoryId, categoryId), isNotNull(todoSeries.nextOccurrenceDate)),
     );
-    return todos + activeSeries;
   }
 
-  async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<number> {
-    const moved = await this.db
+  async moveTodosToCategory(fromCategoryId: number, toCategoryId: number): Promise<void> {
+    await this.db
       .update(todo)
       .set({ categoryId: toCategoryId })
-      .where(eq(todo.categoryId, fromCategoryId))
-      .returning({ id: todo.id });
-    const movedSeries = await this.db
+      .where(eq(todo.categoryId, fromCategoryId));
+    await this.db
       .update(todoSeries)
       .set({ categoryId: toCategoryId })
-      .where(eq(todoSeries.categoryId, fromCategoryId))
-      .returning({ id: todoSeries.id });
-    return moved.length + movedSeries.length;
+      .where(eq(todoSeries.categoryId, fromCategoryId));
   }
 }

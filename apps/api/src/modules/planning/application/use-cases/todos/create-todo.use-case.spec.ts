@@ -9,7 +9,6 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 
 import { TodoOccurrencesCreatedEvent } from "../../../domain/events/series/todo-occurrences-created.event.js";
-import { TodoSeriesStartedEvent } from "../../../domain/events/series/todo-series.events.js";
 import { TodoCreatedEvent } from "../../../domain/events/todos/todo-created.event.js";
 import { MAX_OCCURRENCES_PER_RUN } from "../../services/series/todo-occurrence-materializer.service.js";
 import { StagedTodoCreator } from "../../services/todos/staged-todo-creator.service.js";
@@ -239,9 +238,9 @@ describe("할 일 생성", () => {
       expect(series?.nextOccurrenceDate).toBe("2027-01-02");
     });
 
-    it("아주 먼 과거에서 시작해도 한 번에 상한까지만 만들고 나머지는 커서에 남긴다", async () => {
+    it("상한 안의 지난 시작일도 한 번에 상한까지만 만들고 나머지는 커서에 남긴다", async () => {
       // Given
-      const startDate = new Date("2020-01-01T00:00:00Z");
+      const startDate = new Date("2025-05-15T00:00:00Z");
       // When
       const { todos, series } = await useCase.execute(seriesInput({ startDate }));
       // Then
@@ -377,7 +376,6 @@ describe("할 일 생성", () => {
         todos.map((todo) => todo.id),
       );
       expect(fixture.eventPublisher.events).toEqual([
-        new TodoSeriesStartedEvent(series?.id ?? "", fixture.userId),
         new TodoOccurrencesCreatedEvent(series?.id ?? "", fixture.userId, 3),
       ]);
     });

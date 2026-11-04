@@ -1,0 +1,121 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "65803fed-b866-4f94-a6fc-aa45e9225d99",
+  "prevIds": [
+    "ac96b0ba-a6f1-4476-86e4-f24801367472"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "TodoSeries",
+        "originSeriesId"
+      ],
+      "writes": [
+        "s|col|public.TodoSeries.originSeriesId",
+        "n|col|public.TodoSeries.originSeriesId",
+        "e|col|public.TodoSeries.originSeriesId"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "TodoSeries",
+        "sortOrder"
+      ],
+      "writes": [
+        "s|col|public.TodoSeries.sortOrder",
+        "n|col|public.TodoSeries.sortOrder",
+        "e|col|public.TodoSeries.sortOrder"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoSeries",
+        "TodoSeries_userId_originSeriesId_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoSeries_userId_originSeriesId_idx",
+        "n|idx|public.TodoSeries_userId_originSeriesId_idx",
+        "e|idx|public.TodoSeries_userId_originSeriesId_idx",
+        "n|rel|public.TodoSeries_userId_originSeriesId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoSeries",
+        "n|sch|public",
+        "n|col|public.TodoSeries.userId",
+        "n|col|public.TodoSeries.originSeriesId"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "originSeriesId",
+        "type": "varchar(36)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoSeries",
+        "name": "TodoSeries_userId_originSeriesId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "userId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "originSeriesId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"TodoSeries\",\"sortOrder\"]"
+    }
+  ]
+}

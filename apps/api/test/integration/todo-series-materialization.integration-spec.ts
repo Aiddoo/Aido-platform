@@ -118,7 +118,6 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       rule: RepeatRule.daily({ type: "NEVER" }),
       startDate: overrides.startDate ?? "2026-11-05",
       checklistTemplate: [{ title: "항목" }],
-      sortOrder: 0,
       at: AT,
     });
     await new DrizzleTodoSeriesRepository(fixture.txHost).insert(series);
@@ -245,19 +244,22 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     expect(published.map((entry) => entry.seriesId)).toEqual(ids);
   });
 
-  it("며칠 멈췄다 돌면 커서부터 빠진 회차를 지난 날짜까지 채운다", async () => {
+  it("며칠 멈췄다 돌면 커서가 앞서 있어 지난 날 없이 밀린 만큼만 채운다", async () => {
     // Given
     const id = createEntityId();
-    await seedSeries(id, { startDate: "2026-10-30" });
+    await seedSeries(id);
+    await useCase().execute();
+    vi.setSystemTime(new Date("2026-11-11T00:00:00.000Z"));
     // When
     const result = await useCase().execute();
     // Then
-    expect(result.createdCount).toBe(HORIZON_ROWS + 6);
+    expect(result.createdCount).toBe(6);
+    expect(await nextOccurrenceOf(id)).toBe("2027-02-10");
     const first = await client.query.todo.findFirst({
       where: { seriesId: id },
       orderBy: { occurrenceDate: "asc" },
     });
-    expect(first?.startDate.toISOString().slice(0, 10)).toBe("2026-10-30");
+    expect(first?.startDate.toISOString().slice(0, 10)).toBe("2026-11-05");
   });
 
   it("이미 있는 회차는 건너뛰고 효과에는 새로 만든 행만 넘긴다", async () => {

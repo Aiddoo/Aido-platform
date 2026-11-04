@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { TodoRepeat, Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
+import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -62,7 +62,7 @@ interface UpdateFollowingTodosDependencies {
     | "reassignOccurrences"
     | "moveOccurrence"
     | "deleteMany"
-    | "getMaxSortOrder"
+    | "countCategoryUsage"
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly seriesRepository: Pick<
@@ -79,8 +79,8 @@ interface UpdateFollowingTodosDependencies {
 }
 
 /**
- * 이 회차와 이후 미완료 회차를 함께 고친다. 제목·카테고리·공개·시간은 제자리 수정이고,
- * 규칙·체크리스트가 바뀌면 이 회차부터 새 규칙으로 나눈다. 기준이 첫 회차면 나누지 않는다.
+ * 이 회차와 이후 미완료 회차를 함께 고친다. 제목·카테고리·공개·시간·체크리스트는 제자리 수정이고,
+ * 규칙이 바뀌면 이 회차부터 새 규칙으로 나눈다. 기준이 첫 회차면 나누지 않는다.
  * 완료한 회차의 내용은 건드리지 않는다.
  */
 export class UpdateFollowingTodos {
@@ -144,7 +144,6 @@ export class UpdateFollowingTodos {
     await this.#dependencies.effects.publish({
       seriesId: edited.target.getId(),
       userId,
-      events: [...edited.source.pullDomainEvents(), ...edited.target.pullDomainEvents()],
     });
     if (edited.split) {
       this.#dependencies.logger.log({
@@ -174,17 +173,23 @@ export class UpdateFollowingTodos {
       scheduledLocalTime: resolveLocalTime(input),
     };
 
+    if (ruleChanged && !series.isActive()) {
+      // 끝난 규칙의 규칙을 바꾸면 다시 진행 중이 된다.
+      await this.#assertSeriesLimit(series.getUserId());
+    }
+    if (input.categoryId != null && input.categoryId !== series.getCategoryId()) {
+      await this.#assertCategoryLimit(series.getUserId(), input.categoryId);
+    }
+
     let target = series;
     let split = false;
-    if ((ruleChanged || checklistChanged) && pivot !== series.getStartDate()) {
-      if (!series.isActive()) {
-        await this.#assertSeriesLimit(series.getUserId());
-      }
+    // 체크리스트는 새로 만드는 회차에만 복사하므로 규칙이 그대로면 나눌 이유가 없다.
+    // 나누면 그 구간을 처음부터 다시 계산해 "이 할 일만" 지운 회차가 되살아난다.
+    if (ruleChanged && pivot !== series.getStartDate()) {
       target = series.splitFrom(
         pivot,
-        { ...details, rule: ruleChanged ? rule : undefined, checklistTemplate: input.checklist },
+        { ...details, rule, checklistTemplate: input.checklist },
         randomUUID(),
-        await todoRepository.getMaxSortOrder(series.getUserId()),
         at,
       );
       split = true;
@@ -325,6 +330,19 @@ export class UpdateFollowingTodos {
       }));
     await todoRepository.updateOccurrenceTimes(times);
     return times;
+  }
+
+  async #assertCategoryLimit(userId: string, categoryId: number): Promise<void> {
+    const activeCount = await this.#dependencies.todoRepository.countCategoryUsage(
+      userId,
+      categoryId,
+    );
+    if (activeCount >= TODO_LIMITS.MAX_PER_CATEGORY) {
+      throw new ApplicationException(ErrorCode.TODO_0811, {
+        activeCount,
+        maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
+      });
+    }
   }
 
   async #assertSeriesLimit(userId: string): Promise<void> {

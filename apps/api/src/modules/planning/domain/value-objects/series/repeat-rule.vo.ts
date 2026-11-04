@@ -122,10 +122,6 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
       .exhaustive();
   }
 
-  getEnd(): RepeatEnd {
-    return this.value.end;
-  }
-
   /**
    * [from, through] 안의 회차 날짜. 끝이 COUNT면 generatedCount를 뺀 나머지만 돌려준다.
    * 전체를 하루씩 돌지 않고 규칙이 맞는 날짜로 바로 건너뛴다.

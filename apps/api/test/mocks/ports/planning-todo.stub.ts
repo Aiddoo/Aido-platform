@@ -187,14 +187,19 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       isAllDay: occurrence.scheduledTime === null,
     });
   }
-  async deleteOccurrences(
-    seriesId: string,
-    options: { readonly fromDate?: string; readonly includeCompleted: boolean },
-  ): Promise<readonly number[]> {
-    const rows = await this.findOccurrencesFrom(seriesId, options.fromDate ?? "0000-01-01");
-    const ids = rows
-      .filter((row) => options.includeCompleted || !row.completed)
-      .map((row) => row.todoId);
+  async deleteOccurrences(query: {
+    readonly userId: string;
+    readonly seriesIds: readonly string[];
+    readonly fromDate?: string;
+    readonly includeCompleted: boolean;
+  }): Promise<readonly number[]> {
+    const ids: number[] = [];
+    for (const seriesId of query.seriesIds) {
+      const rows = await this.findOccurrencesFrom(seriesId, query.fromDate ?? "0000-01-01");
+      ids.push(
+        ...rows.filter((row) => query.includeCompleted || !row.completed).map((row) => row.todoId),
+      );
+    }
     await this.deleteMany(ids);
     return ids;
   }
@@ -351,8 +356,17 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   async update(series: TodoSeries): Promise<void> {
     this.store.set(series.getId(), this.#copy(series));
   }
-  async delete(id: string): Promise<void> {
-    this.store.delete(id);
+  async lockFamilyIds(userId: string, originSeriesId: string): Promise<readonly string[]> {
+    return [...this.store.values()]
+      .filter(
+        (series) => series.getUserId() === userId && series.getOriginSeriesId() === originSeriesId,
+      )
+      .map((series) => series.getId());
+  }
+  async deleteMany(ids: readonly string[]): Promise<void> {
+    for (const id of ids) {
+      this.store.delete(id);
+    }
   }
   async countActiveByUserId(userId: string): Promise<number> {
     return [...this.store.values()].filter(

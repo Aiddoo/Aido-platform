@@ -100,6 +100,51 @@ describe("timezone", () => {
       expect(result).toEqual(new Date("2026-07-15T18:00:00.000Z"));
     });
 
+    it.each([
+      {
+        zone: "America/New_York",
+        date: "2026-11-01",
+        time: "01:30",
+        at: "2026-11-01T05:30:00.000Z",
+      },
+      { zone: "Europe/London", date: "2026-10-25", time: "01:30", at: "2026-10-25T00:30:00.000Z" },
+      {
+        zone: "Australia/Sydney",
+        date: "2027-04-04",
+        time: "02:30",
+        at: "2027-04-03T15:30:00.000Z",
+      },
+      {
+        zone: "Australia/Lord_Howe",
+        date: "2027-04-04",
+        time: "01:45",
+        at: "2027-04-03T14:45:00.000Z",
+      },
+      { zone: "America/Havana", date: "2026-11-01", time: "00:30", at: "2026-11-01T04:30:00.000Z" },
+    ])("$zone 가을 전환으로 겹치는 $time 은 앞쪽을 고른다", ({ zone, date, time, at }) => {
+      // When
+      const result = parseLocalDateTime(date, time, zone);
+      // Then
+      expect(result.toISOString()).toBe(at);
+    });
+
+    it.each([
+      { name: "겹치기 직전", time: "00:59", at: "2026-11-01T04:59:00.000Z" },
+      { name: "겹침이 끝난 뒤", time: "02:00", at: "2026-11-01T07:00:00.000Z" },
+    ])("겹치지 않는 시각은 그대로다: $name", ({ time, at }) => {
+      // When
+      const result = parseLocalDateTime("2026-11-01", time, "America/New_York");
+      // Then
+      expect(result.toISOString()).toBe(at);
+    });
+
+    it("봄 전환으로 없는 시각은 뒤로 민다", () => {
+      // When
+      const result = parseLocalDateTime("2026-03-08", "02:30", "America/New_York");
+      // Then
+      expect(result.toISOString()).toBe("2026-03-08T07:30:00.000Z");
+    });
+
     it("기본 타임존(UTC)이면 시간 그대로 반환", () => {
       const result = parseLocalDateTime("2026-01-15", "14:00");
       expect(result).toEqual(new Date("2026-01-15T14:00:00.000Z"));

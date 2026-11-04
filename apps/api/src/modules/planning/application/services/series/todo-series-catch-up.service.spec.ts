@@ -54,7 +54,6 @@ describe("복귀 회차 채우기", () => {
         rule: RepeatRule.daily({ type: "NEVER" }),
         startDate: "2026-03-01",
         checklistTemplate: [],
-        sortOrder: 0,
         at: LAST_MOVED_AT,
       }).toPersistence(),
       nextOccurrenceDate,

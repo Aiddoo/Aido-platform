@@ -54,7 +54,6 @@ export class TodoCreationEffects {
     const userId = series.getUserId();
     await this.#invalidateCaches(userId);
     await this.#dependencies.eventPublisher.publishAll([
-      ...series.pullDomainEvents(),
       new TodoOccurrencesCreatedEvent(series.getId(), userId, occurrences.length),
     ]);
   }

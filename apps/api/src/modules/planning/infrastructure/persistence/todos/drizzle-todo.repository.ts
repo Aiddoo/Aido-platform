@@ -237,19 +237,23 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     });
   }
 
-  async deleteOccurrences(
-    seriesId: string,
-    options: { readonly fromDate?: string; readonly includeCompleted: boolean },
-  ): Promise<readonly number[]> {
+  async deleteOccurrences(query: {
+    readonly userId: string;
+    readonly seriesIds: readonly string[];
+    readonly fromDate?: string;
+    readonly includeCompleted: boolean;
+  }): Promise<readonly number[]> {
     const deleted = await this.db
       .delete(todo)
       .where(
         and(
-          eq(todo.seriesId, seriesId),
-          options.fromDate == null
+          // seriesId만으로는 부분 유니크 인덱스를 못 타 Todo 전체를 훑는다. userId 인덱스로 좁힌다.
+          eq(todo.userId, query.userId),
+          inArray(todo.seriesId, [...query.seriesIds]),
+          query.fromDate == null
             ? undefined
-            : gte(todo.occurrenceDate, parseDateOnly(options.fromDate)),
-          options.includeCompleted ? undefined : eq(todo.completed, false),
+            : gte(todo.occurrenceDate, parseDateOnly(query.fromDate)),
+          query.includeCompleted ? undefined : eq(todo.completed, false),
         ),
       )
       .returning({ id: todo.id });

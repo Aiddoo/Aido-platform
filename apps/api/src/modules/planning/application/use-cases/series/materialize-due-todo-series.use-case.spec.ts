@@ -57,7 +57,6 @@ describe("회차 채우기", () => {
       rule: RepeatRule.daily({ type: "COUNT", count: 3 }),
       startDate,
       checklistTemplate: [],
-      sortOrder: 0,
       at: AT,
     });
     await fixture.todoSeriesRepository.insert(series);

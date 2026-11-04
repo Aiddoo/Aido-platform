@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
+import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual } from "es-toolkit";
 
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
@@ -7,14 +7,15 @@ import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { localDateInTimezone, parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
-import {
-  TodoSeriesEndedEvent,
-  TodoSeriesStartedEvent,
-} from "../../events/series/todo-series.events.js";
-import { isDormantSince } from "../../policies/series/series-dormancy.policy.js";
 import type { RepeatRule } from "../../value-objects/series/repeat-rule.vo.js";
 import { TodoTitle } from "../../value-objects/todos/todo-title.vo.js";
 import type { TodoCreationDraft } from "../todos/todo.aggregate.js";
+
+/**
+ * 새 규칙이 만들 수 있는 지난 회차 상한. 아주 먼 과거에서 시작하면 요청 안에서 수백 행이 지난 미완료로
+ * 쌓인다. 출시 앱의 /recurring은 366일 안의 날짜만 보내므로 이 상한에 닿지 않는다.
+ */
+const MAX_PAST_OCCURRENCES_ON_START = RECURRING_TODO_LIMITS.MAX_DAYS_RANGE;
 
 export interface ChecklistTemplateItem {
   readonly title: string;
@@ -22,6 +23,8 @@ export interface ChecklistTemplateItem {
 
 export interface TodoSeriesProps {
   id: string;
+  /** 분할 전 맨 처음 규칙의 id. 분할된 구간을 한 쿼리로 묶는다. 처음 규칙은 자기 id다. */
+  originSeriesId: string;
   userId: string;
   categoryId: number;
   title: string;
@@ -31,7 +34,6 @@ export interface TodoSeriesProps {
   rule: RepeatRule;
   startDate: string;
   checklistTemplate: readonly ChecklistTemplateItem[];
-  sortOrder: number;
   nextOccurrenceDate: string | null;
   generatedCount: number;
   createdAt: Date;
@@ -40,6 +42,8 @@ export interface TodoSeriesProps {
 
 export interface TodoSeriesStartInput {
   readonly id: string;
+  /** 분할로 이어지는 규칙만 넘긴다. 없으면 이 규칙이 원본이다. */
+  readonly originSeriesId?: string;
   readonly userId: string;
   readonly categoryId: number;
   readonly title: string;
@@ -49,7 +53,6 @@ export interface TodoSeriesStartInput {
   readonly rule: RepeatRule;
   readonly startDate: string;
   readonly checklistTemplate: readonly ChecklistTemplateItem[];
-  readonly sortOrder: number;
   readonly at: Date;
 }
 
@@ -93,8 +96,9 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
         repeat: input.rule.toSpec(),
       });
     }
-    const series = new TodoSeries({
+    return new TodoSeries({
       id: input.id,
+      originSeriesId: input.originSeriesId ?? input.id,
       userId: input.userId,
       categoryId: input.categoryId,
       title: input.title,
@@ -104,14 +108,21 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       rule: input.rule,
       startDate: input.startDate,
       checklistTemplate: input.checklistTemplate.map((item) => ({ title: item.title })),
-      sortOrder: input.sortOrder,
       nextOccurrenceDate: first,
       generatedCount: 0,
       createdAt: new Date(input.at),
       updatedAt: new Date(input.at),
     });
-    series.raise(new TodoSeriesStartedEvent(input.id, input.userId));
-    return series;
+  }
+
+  /** 새로 시작하는 규칙만 확인한다. 분할은 이미 있던 규칙을 잇는 것이라 지난 회차 수와 상관없다. */
+  assertWithinPastLimit(at: Date): void {
+    const { rule, startDate, timezone } = this.props;
+    if (
+      rule.countBefore(startDate, localDateInTimezone(at, timezone)) > MAX_PAST_OCCURRENCES_ON_START
+    ) {
+      throw new DomainException(ErrorCode.TODO_0845, { field: "startDate" });
+    }
   }
 
   static #assertChecklist(items: readonly ChecklistTemplateItem[]): void {
@@ -150,17 +161,13 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
 
   /**
    * 자리 비운 동안 멈춘 커서를 오늘 이후 첫 회차로 옮긴다. 지난 날은 만들지 않지만 COUNT는 달력으로 세어
-   * 그 횟수의 날짜가 다 지났으면 끝난다. 커서는 언제나 기간(90일)만큼 앞서 있으므로 오늘보다 뒤처졌다면 규칙 행이
-   * 그만큼 오래 멈춘 것이다. 최근에 움직인 규칙의 지난 날짜(과거에 시작해 이어 만드는 중)는 그대로 채운다.
+   * 그 횟수의 날짜가 다 지났으면 끝난다. 채울 때마다 커서는 기간(90일)만큼 앞서므로 오늘보다 뒤처졌다면
+   * 그만큼 채우지 못한 것이다. 규칙 행을 고쳤는지(updatedAt)는 채운 시점과 상관없어 보지 않는다.
    */
   skipDormantGap(at: Date): boolean {
-    const { nextOccurrenceDate, generatedCount, rule, startDate, timezone, updatedAt } = this.props;
+    const { nextOccurrenceDate, generatedCount, rule, startDate, timezone } = this.props;
     const today = localDateInTimezone(at, timezone);
-    if (
-      nextOccurrenceDate == null ||
-      nextOccurrenceDate >= today ||
-      !isDormantSince(updatedAt, timezone, at)
-    ) {
+    if (nextOccurrenceDate == null || nextOccurrenceDate >= today) {
       return false;
     }
     this.props.generatedCount = Math.max(generatedCount, rule.countBefore(startDate, today));
@@ -191,15 +198,19 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     };
   }
 
-  /** date 뒤로 회차를 만들지 않는다. 더 끝낼 게 없으면 false다. */
+  /**
+   * date 뒤로 회차를 만들지 않는다. 더 끝낼 게 없으면 false다.
+   * 규칙이 이미 date 안에서 끝나도 커서가 뒤처져 있으면 아직 만들 회차가 남은 것이라 커서를 닫는다.
+   */
   stopAfter(date: string): boolean {
-    if (this.#isEndedAfter(date)) {
+    const ruleEnded = this.#isEndedAfter(date);
+    if (ruleEnded && this.props.nextOccurrenceDate == null) {
       return false;
     }
-    const next = addDaysToDateKey(date, 1);
-    this.props.rule = this.props.rule.endingBefore(next);
+    if (!ruleEnded) {
+      this.props.rule = this.props.rule.endingBefore(addDaysToDateKey(date, 1));
+    }
     this.props.nextOccurrenceDate = null;
-    this.raise(new TodoSeriesEndedEvent(this.props.id, this.props.userId));
     return true;
   }
 
@@ -210,17 +221,12 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
   }
 
   /** pivotDate부터 새 규칙으로 잇고 이 규칙은 그 전날로 끝낸다. 만든 뒤의 회차 수는 0이다. */
-  splitFrom(
-    pivotDate: string,
-    changes: TodoSeriesChanges,
-    newId: string,
-    sortOrder: number,
-    at: Date,
-  ): TodoSeries {
+  splitFrom(pivotDate: string, changes: TodoSeriesChanges, newId: string, at: Date): TodoSeries {
     const { title, categoryId, visibility, scheduledLocalTime, checklistTemplate } = this.props;
     const rule = changes.rule ?? this.props.rule.continuingFrom(this.props.startDate, pivotDate);
     const next = TodoSeries.planCreation({
       id: newId,
+      originSeriesId: this.props.originSeriesId,
       userId: this.props.userId,
       categoryId: changes.categoryId ?? categoryId,
       title: changes.title ?? title,
@@ -232,7 +238,6 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       rule,
       startDate: pivotDate,
       checklistTemplate: changes.checklistTemplate ?? checklistTemplate,
-      sortOrder,
       at,
     });
     this.stopAfter(addDaysToDateKey(pivotDate, -1));
@@ -301,6 +306,10 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     return this.props.userId;
   }
 
+  getOriginSeriesId(): string {
+    return this.props.originSeriesId;
+  }
+
   getStartDate(): string {
     return this.props.startDate;
   }
@@ -317,10 +326,6 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     return this.props.title;
   }
 
-  getVisibility(): TodoVisibility {
-    return this.props.visibility;
-  }
-
   getTimezone(): string {
     return this.props.timezone;
   }
@@ -335,10 +340,6 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
 
   getNextOccurrenceDate(): string | null {
     return this.props.nextOccurrenceDate;
-  }
-
-  getGeneratedCount(): number {
-    return this.props.generatedCount;
   }
 
   isActive(): boolean {

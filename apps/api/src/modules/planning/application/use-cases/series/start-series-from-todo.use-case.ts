@@ -34,10 +34,7 @@ export interface StartedSeriesFromTodo {
 }
 
 interface StartSeriesFromTodoDependencies {
-  readonly todoRepository: Pick<
-    TodoRepositoryPort,
-    "findByIdAndUserId" | "attachToSeries" | "getMaxSortOrder"
-  >;
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "attachToSeries">;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
   readonly materializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
   readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
@@ -106,9 +103,9 @@ export class StartSeriesFromTodo {
       rule: RepeatRule.from(repeat),
       startDate,
       checklistTemplate: todo.getItemTitles(),
-      sortOrder: await todoRepository.getMaxSortOrder(userId),
       at,
     });
+    series.assertWithinPastLimit(at);
     const drafts = materializer.planFirstRun(series, at);
     const [first, ...following] = drafts;
     if (first == null) {
