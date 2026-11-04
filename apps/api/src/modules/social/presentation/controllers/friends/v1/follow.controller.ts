@@ -13,6 +13,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -31,6 +32,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import { AcceptFriendRequest } from "../../../../application/use-cases/friends/accept-friend-request.use-case.js";
 import { GetFriendResourceLimit } from "../../../../application/use-cases/friends/get-friend-resource-limit.use-case.js";
@@ -72,6 +74,8 @@ import {
  *   자동 수락: A→B(PENDING) + B→A(POST) = A↔B(ACCEPTED)
  * ```
  */
+const FRIEND_REQUEST_THROTTLE = { ttl: 60_000, limit: 30 } as const;
+
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
 @Controller("follows")
@@ -90,6 +94,8 @@ export class FollowController {
   ) {}
 
   @Post(":userTag")
+  @ThrottleByUser()
+  @Throttle({ default: FRIEND_REQUEST_THROTTLE })
   @ApiParam({
     name: "userTag",
     description: "친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",
@@ -103,7 +109,9 @@ export class FollowController {
 
 상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).
 
-내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).`,
+내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).
+
+사용자마다 분당 30회까지 보낼 수 있고, 넘으면 429(SYS_0001)를 돌려줍니다.`,
   })
   @ApiCreatedResponse({ type: SendFriendRequestResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -130,14 +138,14 @@ export class FollowController {
     };
   }
 
+  @Patch(":userId/accept")
+  @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Patch(":userId/accept")
-  @HttpCode(HttpStatus.OK)
   @ApiParam({
     name: "userId",
     description: "수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
@@ -227,14 +235,14 @@ export class FollowController {
     return { message: "친구를 삭제했습니다." };
   }
 
+  @Patch("friends/:followId/reorder")
+  @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Patch("friends/:followId/reorder")
-  @HttpCode(HttpStatus.OK)
   @ApiParam({
     name: "followId",
     description: "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
@@ -289,13 +297,13 @@ export class FollowController {
     return this.getFriendResourceLimitUseCase.execute({ userId: user.userId });
   }
 
+  @Get("friends")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("friends")
   @ApiDoc({
     summary: "친구 목록 조회",
     operationId: "getFriends",
@@ -331,13 +339,13 @@ export class FollowController {
     };
   }
 
+  @Get("search")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("search")
   @ApiDoc({
     summary: "사용자 검색 (이름 또는 Aido ID)",
     operationId: "searchUsers",
@@ -374,13 +382,13 @@ export class FollowController {
     };
   }
 
+  @Get("requests/received")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("requests/received")
   @ApiDoc({
     summary: "받은 친구 요청 목록",
     operationId: "getReceivedFriendRequests",
@@ -410,13 +418,13 @@ export class FollowController {
     };
   }
 
+  @Get("requests/sent")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("requests/sent")
   @ApiDoc({
     summary: "보낸 친구 요청 목록",
     operationId: "getSentFriendRequests",

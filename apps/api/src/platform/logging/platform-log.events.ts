@@ -18,8 +18,6 @@ export const PlatformLogEvent = {
   JOB_HEALTH_CHECK_FAILED: "jobs.health-check.failed",
   JOB_WORKER_FORCE_CLOSED: "jobs.worker.force-closed",
   JOB_DEAD_LETTER_MOVE_FAILED: "jobs.dead-letter.move.failed",
-  HEALTH_CHECK_REQUESTED: "health.check.requested",
-  HEALTH_CHECK_COMPLETED: "health.check.completed",
   CACHE_INITIALIZED: "cache.adapter.initialized",
   CACHE_ENTRY_READ: "cache.entry.read",
   CACHE_ENTRY_WRITTEN: "cache.entry.written",

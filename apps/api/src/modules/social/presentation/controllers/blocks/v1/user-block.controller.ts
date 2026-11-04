@@ -11,6 +11,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -23,9 +24,11 @@ import {
   ApiDoc,
   ApiNotFoundError,
   ApiSuccessResponse,
+  ApiTooManyRequestsError,
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import { BlockUser } from "../../../../application/use-cases/blocks/block-user.use-case.js";
@@ -45,6 +48,8 @@ const USER_ID_PARAM = {
   example: "clz7x5p8k0005qz0z8z8z8z8z",
 } as const;
 
+const BLOCK_THROTTLE = { ttl: 60_000, limit: 30 } as const;
+
 @ApiTags(SWAGGER_TAGS.BLOCKS)
 @ApiBearerAuth()
 @Controller("blocks")
@@ -57,6 +62,8 @@ export class UserBlockController {
 
   @Post(":userId")
   @HttpCode(HttpStatus.OK)
+  @ThrottleByUser()
+  @Throttle({ default: BLOCK_THROTTLE })
   @ApiParam(USER_ID_PARAM)
   @ApiDoc({
     summary: "사용자 차단",
@@ -72,6 +79,7 @@ export class UserBlockController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.BLOCK_2201)
   @ApiNotFoundError(ErrorCode.BLOCK_2202)
+  @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async block(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
@@ -90,6 +98,8 @@ export class UserBlockController {
 
   @Delete(":userId")
   @HttpCode(HttpStatus.OK)
+  @ThrottleByUser()
+  @Throttle({ default: BLOCK_THROTTLE })
   @ApiParam(USER_ID_PARAM)
   @ApiDoc({
     summary: "차단 해제",
@@ -101,6 +111,7 @@ export class UserBlockController {
   })
   @ApiSuccessResponse({ type: UnblockUserResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async unblock(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
@@ -113,13 +124,13 @@ export class UserBlockController {
     return { message: "차단을 해제했습니다." };
   }
 
+  @Get()
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get()
   @ApiDoc({
     summary: "차단한 사용자 목록",
     operationId: "getBlockedUsers",

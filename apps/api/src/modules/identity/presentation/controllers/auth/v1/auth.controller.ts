@@ -50,6 +50,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
@@ -66,6 +67,7 @@ import {
   VerifyEmailDto,
 } from "../../../schemas/auth/v1/index.js";
 import { extractMetadata } from "./auth-controller.utils.js";
+import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
@@ -87,7 +89,7 @@ export class AuthController {
 
   @Post("register")
   @Public()
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Throttle({ default: AUTH_THROTTLE.REGISTER })
   @ApiDoc({
     summary: "회원가입",
     operationId: "register",
@@ -110,6 +112,9 @@ export class AuthController {
 | 코드 | 상황 |
 |------|------|
 | EMAIL_0501 | 이미 가입된 이메일 |
+
+### ⏱️ 제한사항
+- IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
   @ApiCreatedResponse({ type: MessageResponseDto })
@@ -126,15 +131,16 @@ export class AuthController {
     return AuthMapper.toRegisterResponse(result);
   }
 
+  @Post("verify-email")
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  @Throttle({ default: AUTH_THROTTLE.VERIFY_EMAIL })
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Post("verify-email")
-  @Public()
-  @HttpCode(HttpStatus.OK)
   @ApiDoc({
     summary: "이메일 인증 코드 확인",
     operationId: "verifyEmail",
@@ -153,12 +159,15 @@ export class AuthController {
 | refreshToken | 7일 |
 
 ### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| EMAIL_0502 | 잘못된 인증 코드 |
-| EMAIL_0504 | 만료된 인증 코드 |
-| EMAIL_0505 | 인증 코드 시도 횟수 초과 |
-| USER_0604 | 이미 인증 완료된 사용자 |
+| 코드 | 상태 | 상황 |
+|------|------|------|
+| EMAIL_0502 | 404 | 가입하지 않은 이메일 |
+| VERIFY_0751 | 401 | 인증 코드가 틀렸거나 만료·사용된 코드 |
+| VERIFY_0754 | 429 | 인증 시도 5회 초과. 새 코드를 요청해야 합니다 |
+| USER_0604 | 409 | 이미 인증 완료된 사용자 |
+
+### ⏱️ 제한사항
+- IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
   @ApiSuccessResponse({ type: AuthTokensDto })
@@ -177,8 +186,9 @@ export class AuthController {
   }
 
   @Post("resend-verification")
-  @Public()
   @HttpCode(HttpStatus.OK)
+  @Public()
+  @Throttle({ default: AUTH_THROTTLE.RESEND_VERIFICATION })
   @ApiDoc({
     summary: "인증 코드 재발송",
     operationId: "resendVerificationCode",
@@ -191,6 +201,7 @@ export class AuthController {
 
 ### ⏱️ 제한사항
 - 마지막 발송 후 **1분 이내** 재요청 불가
+- IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 
 ### ⚠️ 에러 케이스
 | 코드 | 상황 |
@@ -207,16 +218,16 @@ export class AuthController {
     return result;
   }
 
+  @Post("login")
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  @Throttle({ default: AUTH_THROTTLE.LOGIN })
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Post("login")
-  @Public()
-  @Throttle({ default: { ttl: 60000, limit: 10 } })
-  @HttpCode(HttpStatus.OK)
   @ApiDoc({
     summary: "이메일 로그인",
     operationId: "login",
@@ -239,11 +250,14 @@ export class AuthController {
 | Refresh Token | 7일 | Secure Storage |
 
 ### ⚠️ 에러 케이스
-| 코드 | 상황 | 클라이언트 처리 |
-|------|------|----------------|
-| USER_0602 | 이메일/비밀번호 불일치 | 재입력 요청 |
-| USER_0605 | 계정 잠금 (5회 실패) | 15분 대기 안내 |
-| USER_0608 | 이메일 미인증 | 인증 화면 이동 + resend-verification 호출 |
+| 코드 | 상태 | 상황 | 클라이언트 처리 |
+|------|------|------|----------------|
+| USER_0602 | 401 | 이메일/비밀번호 불일치 | 재입력 요청 |
+| USER_0605 | 403 | 정지된 계정 | 고객센터 안내 |
+| USER_0607 | 423 | 계정 잠금 (5회 실패) | 15분 대기 안내 |
+| USER_0608 | 401 | 이메일 미인증 | 인증 화면 이동 + resend-verification 호출 |
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 ### 🔄 탈퇴 유예 계정 복구
 탈퇴 후 **30일 이내**에 동일 이메일로 로그인하면 자동 복구됩니다.
@@ -269,8 +283,8 @@ export class AuthController {
   }
 
   @Post("logout")
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiDoc({
     summary: "로그아웃 (현재 기기)",
     operationId: "logout",
@@ -305,8 +319,8 @@ export class AuthController {
   }
 
   @Post("logout-all")
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiDoc({
     summary: "전체 로그아웃 (모든 기기)",
     operationId: "logoutAll",
@@ -344,11 +358,11 @@ export class AuthController {
   }
 
   @Post("refresh")
+  @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: { ttl: 60000, limit: 20 } })
   @UseGuards(JwtRefreshGuard)
   @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: AUTH_THROTTLE.REFRESH })
   @ApiDoc({
     summary: "토큰 갱신",
     operationId: "refreshTokens",
@@ -368,6 +382,8 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 |------|------|----------------|
 | AUTH_0104 | 유효하지 않은 토큰 | 재로그인 |
 | SESSION_0704 | 토큰 재사용 감지 | 전체 세션 무효화, 재로그인 |
+
+IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		`,
   })
   @ApiSuccessResponse({ type: RefreshTokensDto })
@@ -392,9 +408,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   }
 
   @Post("forgot-password")
-  @Public()
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
+  @Public()
+  @Throttle({ default: AUTH_THROTTLE.FORGOT_PASSWORD })
   @ApiDoc({
     summary: "비밀번호 재설정 - 코드 요청",
     operationId: "forgotPassword",
@@ -414,6 +430,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 💡 참고
 - 보안상 등록되지 않은 이메일이어도 동일한 성공 응답을 반환합니다 (이메일 존재 여부 노출 방지)
 - 소셜 로그인 사용자가 비밀번호를 **새로 설정**하려면 → \`POST /auth/password/setup-code\` (로그인 필요)
+- IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
@@ -430,8 +447,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   }
 
   @Post("reset-password")
-  @Public()
   @HttpCode(HttpStatus.OK)
+  @Public()
+  @Throttle({ default: AUTH_THROTTLE.RESET_PASSWORD })
   @ApiDoc({
     summary: "비밀번호 재설정 - 새 비밀번호 설정",
     operationId: "resetPassword",
@@ -451,11 +469,12 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### ⚠️ 에러 케이스
 | 코드 | 상황 | 클라이언트 처리 |
 |------|------|----------------|
-| VERIFY_0751 | 잘못된 인증 코드 | 재입력 요청 |
-| VERIFY_0752 | 만료된 인증 코드 | 코드 재발송 안내 |
+| VERIFY_0751 | 잘못되거나 만료·사용된 코드, 가입하지 않은 이메일 | 재입력 요청, 코드 재발송 안내 |
 | VERIFY_0754 | 인증 시도 횟수 초과 | 코드 재발송 안내 |
 | USER_0606 | 탈퇴한 계정 | 재가입 안내 |
 | USER_0613 | 소셜 전용 계정 | "소셜 로그인을 이용해주세요" 안내 |
+
+IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 ### 🔒 보안
 - 성공 시 모든 기존 세션이 무효화됩니다 (재로그인 필요)
@@ -476,9 +495,10 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   }
 
   @Post("password/setup-code")
-  @ApiBearerAuth()
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ThrottleByUser()
+  @Throttle({ default: AUTH_THROTTLE.PASSWORD_SETUP_CODE })
   @ApiDoc({
     summary: "비밀번호 최초 설정 - 코드 요청",
     operationId: "requestPasswordSetupCode",
@@ -504,6 +524,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 💡 참고
 - 이미 비밀번호가 있는 사용자가 비밀번호를 **변경**하려면 → \`PATCH /auth/password\` (로그인 필요)
 - 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
+- 사용자마다 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
@@ -515,8 +536,10 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   }
 
   @Post("password")
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ThrottleByUser()
+  @Throttle({ default: AUTH_THROTTLE.SET_PASSWORD })
   @ApiDoc({
     summary: "비밀번호 최초 설정 - 비밀번호 생성",
     operationId: "setPassword",
@@ -546,6 +569,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 
 ### 🔒 보안
 - 기존 세션이 유지됩니다 (재로그인 불필요)
+- 사용자마다 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
@@ -568,8 +592,10 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   }
 
   @Patch("password")
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ThrottleByUser()
+  @Throttle({ default: AUTH_THROTTLE.CHANGE_PASSWORD })
   @ApiDoc({
     summary: "비밀번호 변경",
     operationId: "changePassword",
@@ -596,6 +622,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 💡 참고
 - 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
 - 소셜 계정에 비밀번호를 **처음 설정**하려면 → \`POST /auth/password/setup-code\`
+- 사용자마다 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })

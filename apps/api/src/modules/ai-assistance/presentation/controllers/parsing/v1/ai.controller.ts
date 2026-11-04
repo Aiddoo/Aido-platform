@@ -35,6 +35,11 @@ import {
   ParseTodoResponseDto,
 } from "../../../schemas/parsing/v1/index.js";
 
+const AI_PARSE_THROTTLE = {
+  TODO: { ttl: 60_000, limit: 20 },
+  MEMO: { ttl: 60_000, limit: 10 },
+} as const;
+
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
 @Controller("ai")
@@ -73,10 +78,10 @@ export class AiController {
    */
   @Post("parse-todo")
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
   // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
   @ThrottleByUser()
-  @Throttle({ default: { ttl: 60_000, limit: 20 } })
-  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  @Throttle({ default: AI_PARSE_THROTTLE.TODO })
   @ApiHeader({
     name: "x-app-version",
     required: false,
@@ -87,6 +92,13 @@ export class AiController {
     required: false,
     description: "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
     example: "Asia/Seoul",
+  })
+  @ApiHeader({
+    name: "Accept-Language",
+    description:
+      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
+    required: false,
+    example: "ko",
   })
   @ApiDoc({
     summary: "자연어 텍스트를 투두 데이터로 파싱",
@@ -197,13 +209,6 @@ if (confirmed) {
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
   @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
-  @ApiHeader({
-    name: "Accept-Language",
-    description:
-      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
-    required: false,
-    example: "ko",
-  })
   async parseTodo(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
@@ -284,10 +289,10 @@ if (confirmed) {
    */
   @Post("parse-memo")
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
   // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
   @ThrottleByUser()
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
-  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  @Throttle({ default: AI_PARSE_THROTTLE.MEMO })
   @ApiHeader({
     name: "x-app-version",
     required: false,
@@ -298,6 +303,13 @@ if (confirmed) {
     required: false,
     description: "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
     example: "Asia/Seoul",
+  })
+  @ApiHeader({
+    name: "Accept-Language",
+    description:
+      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
+    required: false,
+    example: "ko",
   })
   @ApiDoc({
     summary: "메모 내용을 다중 할 일 + 서브투두로 파싱",
@@ -361,13 +373,6 @@ if (confirmed) {
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
   @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
-  @ApiHeader({
-    name: "Accept-Language",
-    description:
-      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
-    required: false,
-    example: "ko",
-  })
   async parseMemo(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
