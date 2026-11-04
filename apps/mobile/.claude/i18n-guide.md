@@ -79,16 +79,10 @@ toast.error(t('friend:toast.sendFailed'));
   | 초대 보상 도장                                        | 발자국                                 | paw prints                             |
   | 친구 재촉                                             | 콕 / 콕 찌르기                         | nudge                                  |
   | 초대 보상 기간                                        | 프리미엄 7일                           | 7 days of Premium                      |
-  | AI 할 일 만들기 (한도 `AI_PARSE`, 글·말·메모 공통)    | AI 할 일 만들기                        | AI to-dos                              |
   | 말로 할 일 만들기 (마이크 접근성 라벨·코치마크 제목)  | 말로 할 일 만들기                      | Speak to add                           |
   | 할 일 추가 시트 표시 라벨 (남은 횟수 `N번 남음` 포함) | AI로 할 일 만들기 ⓘ · {{count}}번 남음 | Make to-dos with AI ⓘ · {{count}} left |
-  | 말로 메모하기 (긴 녹음, 한도 `VOICE_NOTE`)            | 말로 메모하기                          | Voice notes                            |
-  | 메모를 할 일로 나누기                                 | 메모를 할 일로 나누기                  | Turn note into to-dos                  |
-  | 반복                                                  | 반복 할 일 / 반복 끝내기               | repeating to-do / Stop repeating       |
   | 중요 표시                                             | 중요해요                               | Mark                                   |
   | 음성 결과                                             | 핵심 포인트 · 요약 · 전체 글           | Key points · Summary · Transcript      |
-  | 남은 횟수                                             | 이번 달 {{count}}번 남음               | {{count}} left this month              |
-  | 차감 안 됨                                            | 횟수는 차감되지 않아요                 | This didn't count                      |
 
 - ko/en은 같은 키·같은 보간 변수로 함께 추가한다(`locale-parity.test.ts`).
 
@@ -105,7 +99,7 @@ toast.error(t('friend:toast.sendFailed'));
 | 반복                                     | 반복 할 일 / 반복 끝내기            | repeating to-do / Stop repeating  |
 | 남은 횟수(알약)                          | N번 남음 / 이번 달 다 씀·오늘 다 씀 | N left / Used up this month·today |
 | 남은 횟수(문장)                          | 이번 달 N번 남았어요                | N left this month                 |
-| 실패했지만 차감 없음                     | 횟수는 차감되지 않았어요            | This didn't count                 |
+| 실패했지만 차감 없음                     | 횟수는 차감되지 않아요·않았어요     | This didn't count                 |
 | 프리미엄 버튼(대안 행동 다음)            | 프리미엄으로 넉넉하게 쓰기          | Get more with Premium             |
 
 - 한도 도달 제목은 `이번 달 {기능}를 다 썼어요`·`오늘 {기능}를 다 썼어요`, 설명은 `{날짜}에 다시 N번 생겨요. 프리미엄은 {혜택}.` 공식을 쓴다(`subscription:gate.*`). `모두 사용했어요`는 `다 썼어요`로 쓴다.

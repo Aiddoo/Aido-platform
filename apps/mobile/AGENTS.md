@@ -22,7 +22,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)             |
 | 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)             |
 | 푸시 알림 클라이언트 (권한·토큰 보고·안내)                     | [docs/push-notifications.md](docs/push-notifications.md)         |
-| 현재 릴리스 1.14.2 변경                                        | [docs/releases/1.14.2-client.md](docs/releases/1.14.2-client.md) |
+| 현재 릴리스 1.15.0 변경                                        | [docs/releases/1.15.0-client.md](docs/releases/1.15.0-client.md) |
 | 지난 릴리스                                                    | [docs/releases/](docs/releases/)                                 |
 | EAS 빌드                                                       | [docs/eas-build-guide.md](docs/eas-build-guide.md)               |
 | EAS Secrets 관리                                               | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md)                       |

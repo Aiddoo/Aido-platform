@@ -1,6 +1,6 @@
 # Aido GA4(Firebase) 측정 계획
 
-**기준**: 앱 1.14.0 · Firebase 프로젝트 `aido-997b5` · 작성 2026-11-03 · 1.15.0 예정 항목(음성·한도)은 구현 전 정의이며 배포 후 검증한다
+**기준**: 앱 1.15.0 · Firebase 프로젝트 `aido-997b5` · 작성 2026-11-03 · 음성·한도 이벤트는 코드(`telemetry-keys.ts`)와 맞췄고 실제 수집은 배포 후 검증한다
 **원칙**: 이벤트 정의의 단일 원본은 `src/shared/observability/telemetry-keys.ts`(`AppEventMap`). 이 문서는 "무엇을 보고 어떤 결정을 내리나"와 GA 콘솔 설정값을 정리한다. 규칙은 `.claude/observability.md`를 따른다.
 
 ---
@@ -101,23 +101,16 @@
 
 **AI / 메모**
 
-| 이벤트                                       | 파라미터                                                                | 의미                                                                                                          |
-| -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `ai_parse_used`                              | `success`(bool)                                                         | 할 일·메모 AI 파싱(어느 쪽인지 구분 없음 ⚠)                                                                   |
-| `ai_suggestion_acted`                        | `action`: `accept`·`dismiss`                                            | AI 제안 처리                                                                                                  |
-| `ai_report_viewed`                           | `report_id`(id) · `report_type`(string)                                 | **정의만 있고 호출 없음** ⚠                                                                                   |
-| `ai_data_sharing_consent_changed`            | `agreed`(bool)                                                          |                                                                                                               |
-| `memo_created`                               | –                                                                       |                                                                                                               |
-| `memo_updated`/`_deleted`/`memo_pin_toggled` | `memo_id`(id) · `is_pinned`                                             |                                                                                                               |
-| `memo_converted_to_todo`                     | `memo_id`                                                               | 수동 1건 변환                                                                                                 |
-| `memo_converted_to_todos`                    | `memo_id` · `todo_count`(int) · `source`: `ai`(string 타입 ⚠)           | AI 다건 변환(1.15.0부터 메모 AI 검토 저장 시 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지) |
-| `voice_plan_applied`                         | `source` · `todo_count`(int) · `memo_count`(int) · `skipped_count`(int) | 계획 카드 저장(말한 내용·제목은 보내지 않음)                                                                  |
-| `voice_capture_started`                      | `mode` · `entry` · `locale` · `on_device`(bool)                         | 인식 시작. `mode`는 `quick`·`note`, `on_device`로 기기 인식 비율을 본다                                       |
-| `voice_capture_finished`                     | `mode` · `outcome` · `duration_bucket` · `pause_count`(int)             | 끝내기·취소. `outcome: upgraded`는 90초 제안에서 말로 메모하기로 넘어간 것, 길이는 구간으로만 보낸다          |
-| `voice_capture_failed`                       | `mode` · `reason`                                                       | 복구할 수 없는 인식 오류                                                                                      |
-| `voice_capture_resumed`                      | `mode` · `cause`: `app_background`·`interrupted`·`user`·`limit`         | 이어 듣기                                                                                                     |
-| `voice_offline_model_requested`              | `locale` · `result`                                                     | Android 기기 인식 언어 모델 받기. 거절하면 `declined`                                                         |
-| `voice_note_key_point_played`                | `position_bucket`                                                       | 핵심 포인트를 눌러 그 지점부터 듣기                                                                           |
+| 이벤트                                       | 파라미터                                                      | 의미                                                                                                          |
+| -------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `ai_parse_used`                              | `success`(bool)                                               | 할 일·메모 AI 파싱(어느 쪽인지 구분 없음 ⚠)                                                                   |
+| `ai_suggestion_acted`                        | `action`: `accept`·`dismiss`                                  | AI 제안 처리                                                                                                  |
+| `ai_report_viewed`                           | `report_id`(id) · `report_type`(string)                       | **정의만 있고 호출 없음** ⚠                                                                                   |
+| `ai_data_sharing_consent_changed`            | `agreed`(bool)                                                |                                                                                                               |
+| `memo_created`                               | –                                                             |                                                                                                               |
+| `memo_updated`/`_deleted`/`memo_pin_toggled` | `memo_id`(id) · `is_pinned`                                   |                                                                                                               |
+| `memo_converted_to_todo`                     | `memo_id`                                                     | 수동 1건 변환                                                                                                 |
+| `memo_converted_to_todos`                    | `memo_id` · `todo_count`(int) · `source`: `ai`(string 타입 ⚠) | AI 다건 변환(1.15.0부터 메모 AI 검토 저장 시 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지) |
 
 **알림 / 배지 / 설정 / 생명주기**
 
@@ -153,26 +146,26 @@
 | `subscription_restored` | –                                                                                                                          | 복원                                            |
 | `screen_view`           | `screen_name` = `screen_class` = 정규화된 pathname                                                                         | 모든 화면 ⚠ 동적 세그먼트 미치환                |
 
-**음성 (1.15.0 예정)**: 빠른 말하기(`quick`)와 긴 녹음(`note`)이 같은 이벤트를 쓰고 `mode`로 구분한다. 말한 내용·전사 글자·할 일 제목은 보내지 않고, 길이는 구간으로만 보낸다.
+**음성**: 빠른 말하기(`quick`)와 말로 메모하기(`note`)가 같은 이벤트를 쓰고 `mode`로 구분한다. 말한 내용·전사 글자·할 일 제목은 보내지 않고, 길이는 구간으로만 보낸다.
 
-| 이벤트                          | 파라미터                                                                                                                           | 발생 시점                  | 의미                 |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | -------------------- |
-| `voice_capture_started`         | `mode`: `quick`·`note` · `entry`: `add_todo_sheet`·`memo_tab`·`quick_voice_upgrade` · `locale` · `on_device`(bool)                 | 인식 시작                  | 음성 입력 시작       |
-| `voice_capture_finished`        | `mode` · `outcome`: `completed`·`cancelled`·`empty` · `duration_bucket`: `lt_30s`·`30s_3m`·`3m_10m`·`10m_30m` · `pause_count`(int) | 끝내기·취소                | 음성 입력 완료·이탈  |
-| `voice_capture_failed`          | `mode` · `reason`(인식 오류 코드)                                                                                                  | 복구 불가 오류             | 인식 실패            |
-| `voice_capture_resumed`         | `mode` · `cause`: `app_background`·`interrupted`                                                                                   | 이어 듣기                  | 중단 후 복귀         |
-| `voice_offline_model_requested` | `locale` · `result`                                                                                                                | Android 오프라인 모델 받기 | 온디바이스 인식 준비 |
-| `voice_plan_generated`          | `source`: `quick_voice`·`voice_note`·`memo` · `todo_count`(int) · `duplicate_count`(int) · `has_memo`(bool)                        | 계획 도착                  | AI 계획 결과         |
-| `voice_plan_failed`             | `source` · `error_code`                                                                                                            | 계획 실패                  |                      |
-| `voice_plan_applied`            | `source` · `selected_count`(int) · `edited_count`(int) · `deselected_count`(int) · `has_memo`(bool)                                | 저장                       | 핵심 전환            |
-| `voice_note_key_point_played`   | `position_bucket`                                                                                                                  | 핵심 포인트로 재생         | 유료 해자 사용도     |
+| 이벤트                          | 파라미터                                                                                                                                                          | 발생 시점                        | 의미                                                 |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------- |
+| `voice_capture_started`         | `mode`: `quick`·`note` · `entry`: `add_todo_sheet`·`memo_tab`·`quick_voice_upgrade` · `locale` · `on_device`(bool)                                                | 인식 시작                        | 기기 인식 비율은 `on_device`로 본다                  |
+| `voice_capture_finished`        | `mode` · `outcome`: `completed`·`cancelled`·`empty`·`upgraded` · `duration_bucket`: `lt_30s`·`30s_3m`·`3m_10m`·`10m_30m` · `pause_count`(int)                     | 끝내기·취소                      | `upgraded`는 90초 제안에서 말로 메모하기로 넘어간 것 |
+| `voice_capture_failed`          | `mode` · `reason`(인식 오류 코드)                                                                                                                                 | 복구 불가 오류                   | 인식 실패                                            |
+| `voice_capture_resumed`         | `mode` · `cause`: `app_background`·`interrupted`·`user`·`limit`                                                                                                   | 이어 듣기                        | 중단 후 복귀                                         |
+| `voice_offline_model_requested` | `locale` · `result`: `downloaded`·`scheduled`·`dialog-opened`·`unavailable`·`declined`                                                                            | Android 기기 인식 언어 모델 받기 | 기기 인식 준비                                       |
+| `voice_plan_generated`          | `source`: `quick_voice`·`quick_text`·`voice_note`·`memo` · `todo_count`(int) · `memo_count`(int) · `duplicate_count`(int) · `charged`(bool, 메모 나누기에는 없음) | 계획 도착                        | AI 계획 결과                                         |
+| `voice_plan_failed`             | `source` · `cause`: `network`·`limit`·`too-long`·`in-progress`·`rejected`·`key-conflict`·`source-memo-missing`·`ai-unavailable`·`unknown`                         | 계획 실패                        | 동의가 필요해 막힌 경우(AI_1311)는 보내지 않는다     |
+| `voice_plan_applied`            | `source` · `todo_count`(int) · `memo_count`(int) · `skipped_count`(int)                                                                                           | 저장                             | 핵심 전환                                            |
+| `voice_note_key_point_played`   | `position_bucket`                                                                                                                                                 | 핵심 포인트로 재생               | 핵심 포인트 사용도                                   |
 
-**한도·결제 유도 (1.15.0 예정)**: 같은 `feature`·`surface` 값을 `premium_gate_*`와 공유한다. `feature` 값은 `premium_gate_shown`의 값 집합에 `voice_note`(긴 녹음)를 더한다. 빠른 말하기는 `ai_parse`로 센다.
+**한도·결제 유도**: 같은 `feature`·`surface` 값을 `premium_gate_*`와 공유한다. `feature` 값은 `premium_gate_shown`의 값 집합에 `voice_note`(긴 녹음)를 더한다. 빠른 말하기는 `ai_parse`로 센다.
 
 | 이벤트                     | 파라미터                                               | 발생 시점        | 의미            |
 | -------------------------- | ------------------------------------------------------ | ---------------- | --------------- |
 | `limit_reached_shown`      | `feature` · `surface` · `trigger`: `precheck`·`server` | 한도 Dialog 노출 | 한도 도달 노출  |
-| `limit_reached_cta_tapped` | `feature` · `surface`                                  | "구독 보기" 탭   | 업그레이드 시도 |
+| `limit_reached_cta_tapped` | `feature` · `surface`                                  | "구독하기" 탭    | 업그레이드 시도 |
 
 ### 1-3. 점검 결과
 
@@ -341,19 +334,19 @@
 
 ### (e) 유입경로 탐색 (정확한 단계)
 
-| 퍼널               | 단계                                                                                                                               | 설정                                            |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| 활성화             | 1 `auth_signup` → 2 `todo_created` → 3 `todo_completed` (`is_completed = true`) → 4 `activation_completed`                         | 닫힌 퍼널, 7일 내, 분류 `method`                |
-| 초대(공유자)       | 1 `invite_entry_tapped` → 2 `invite_link_shared`                                                                                   | 닫힌 퍼널, 분류 `entry`·`channel`               |
-| 초대(수신자)       | 1 `invite_link_opened` → 2 `auth_signup` 또는 `auth_login` → 3 `invite_redeemed`                                                   | 열린 퍼널, 1일 내, 분류 `source`                |
-| 페이월             | 1 `premium_gate_shown` → 2 `screen_view` (`screen_name = /settings/subscription`) → 3 `rc_trial_start` 또는 `purchase`             | 닫힌 퍼널, 1일 내, 분류 `feature`               |
-| 날씨 옮기기        | 1 `screen_view` (`/weather`) → 2 `weather_reschedule_opened` → 3 `weather_reschedule_applied`                                      | 열린 퍼널, 분류 `reason`, 필터 앱 버전 ≥ 1.14.0 |
-| 날씨 위치          | 1 `screen_view` (`/weather`) → 2 `weather_location_permission_result` (`result = granted`)                                         | 닫힌 퍼널                                       |
-| 기능 발견          | 1 `feature_hub_impression` → 2 `feature_card_cta` → 3 `feature_action_success`                                                     | 닫힌 퍼널, 7일 내, 분류 `feature`               |
-| 음성 (1.15.0 예정) | 1 `voice_capture_started` → 2 `voice_capture_finished` (`outcome = completed`) → 3 `voice_plan_generated` → 4 `voice_plan_applied` | 닫힌 퍼널, 1일 내(제안), 분류 `mode`            |
-| 결제 (1.15.0 예정) | 1 `limit_reached_shown` → 2 `limit_reached_cta_tapped` → 3 `purchase`                                                              | 닫힌 퍼널, 1일 내(제안), 분류 `feature`         |
+| 퍼널         | 단계                                                                                                                               | 설정                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 활성화       | 1 `auth_signup` → 2 `todo_created` → 3 `todo_completed` (`is_completed = true`) → 4 `activation_completed`                         | 닫힌 퍼널, 7일 내, 분류 `method`                |
+| 초대(공유자) | 1 `invite_entry_tapped` → 2 `invite_link_shared`                                                                                   | 닫힌 퍼널, 분류 `entry`·`channel`               |
+| 초대(수신자) | 1 `invite_link_opened` → 2 `auth_signup` 또는 `auth_login` → 3 `invite_redeemed`                                                   | 열린 퍼널, 1일 내, 분류 `source`                |
+| 페이월       | 1 `premium_gate_shown` → 2 `screen_view` (`screen_name = /settings/subscription`) → 3 `rc_trial_start` 또는 `purchase`             | 닫힌 퍼널, 1일 내, 분류 `feature`               |
+| 날씨 옮기기  | 1 `screen_view` (`/weather`) → 2 `weather_reschedule_opened` → 3 `weather_reschedule_applied`                                      | 열린 퍼널, 분류 `reason`, 필터 앱 버전 ≥ 1.14.0 |
+| 날씨 위치    | 1 `screen_view` (`/weather`) → 2 `weather_location_permission_result` (`result = granted`)                                         | 닫힌 퍼널                                       |
+| 기능 발견    | 1 `feature_hub_impression` → 2 `feature_card_cta` → 3 `feature_action_success`                                                     | 닫힌 퍼널, 7일 내, 분류 `feature`               |
+| 음성         | 1 `voice_capture_started` → 2 `voice_capture_finished` (`outcome = completed`) → 3 `voice_plan_generated` → 4 `voice_plan_applied` | 닫힌 퍼널, 1일 내(제안), 분류 `mode`            |
+| 결제         | 1 `limit_reached_shown` → 2 `limit_reached_cta_tapped` → 3 `purchase`                                                              | 닫힌 퍼널, 1일 내(제안), 분류 `feature`         |
 
-(1.15.0 예정 두 퍼널의 기간 1일은 제안값이며 페이월 퍼널과 맞췄다. 결제 3단계는 RevenueCat `purchase` 원본이다. GA 측정기준 등록과 `todo_count`·`selected_count` 측정항목은 배포 후 사용자 확인을 받아 추가한다.)
+(음성·결제 퍼널의 기간 1일은 제안값이며 페이월 퍼널과 맞췄다. 결제 3단계는 RevenueCat `purchase` 원본이다. GA 측정기준 등록과 `todo_count`·`skipped_count` 측정항목은 배포 후 사용자 확인을 받아 추가한다.)
 
 (1.14.0부터 페이월 퍼널 2단계는 `premium_gate_cta_tapped` → `paywall_viewed`로 본다. 이전 버전 비교에만 `screen_view`를 쓴다.)
 

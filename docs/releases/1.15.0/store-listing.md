@@ -1,6 +1,6 @@
-# 1.15.0 스토어 문구 초안 (예정)
+# 1.15.0 스토어 문구 초안
 
-**상태: 초안.** 구현과 QA가 끝나고 문구를 확정한 뒤 `apps/mobile/store-metadata/listing/`에 옮긴다. 옮긴 뒤에는 `pnpm --filter @aido/mobile store:check`로 글자 수와 용어를 검사한다. 이 문서는 listing 파일을 바꾸지 않는다.
+**상태: 초안.** QA가 끝나고 문구를 확정한 뒤 `apps/mobile/store-metadata/listing/`에 옮긴다. 옮긴 뒤에는 `pnpm --filter @aido/mobile store:check`로 글자 수와 용어를 검사한다. 이 문서는 listing 파일을 바꾸지 않는다.
 
 ## 공통 원칙
 
