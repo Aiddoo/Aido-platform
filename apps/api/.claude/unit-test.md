@@ -26,7 +26,7 @@
 
 실제 예제:
 
-- [TransactionalEmailSender](../src/modules/notification/application/senders/email/transactional-email.sender.spec.ts): state Stub에 실제 템플릿·태그·결과를 기록한다.
+- [TransactionalEmailSender](../src/modules/notification/application/senders/email/transactional-email.sender.spec.ts): 큐·예산 Stub에 실제 템플릿·태그·발송 요청 결과(queued·rejected)를 기록한다.
 - [ReconcilePushReceipts](../src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.spec.ts): 캐시 상태와 commit gate로 실패 전달/커밋 뒤 무효화를 검증한다. 실제 receipt rollback 증거와 분리한다.
 - [Weather 조건 조회](../src/modules/weather/application/use-cases/forecast/get-weather-conditions.use-case.spec.ts): 실제 Application 흐름과 fixture의 시간·날짜·부분 결과 경계를 확인한다.
 
@@ -54,7 +54,7 @@ Nest metadata/DI가 필요한 대상은 기존 `TestBed.solitary()` 또는 `Test
 
 현재 서버의 공급자 검증은 설치된 실제 SDK + fetch/HTTP Stub + fixture `Response`를 사용한다. MSW 공통 harness는 현재 서버에 없다. 기존 Stub으로 충분하면 문서 패턴을 맞추려고 MSW나 다른 의존성을 추가하지 않는다. 해당 작업에 이미 MSW 환경이 있는 경우에도 unmatched 요청을 차단하고 테스트 사이 handlers를 복원하는 같은 격리 원칙을 적용한다.
 
-- [Resend Adapter](../src/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter.spec.ts), [StubResendHttp](../test/mocks/resend-http.stub.ts): SDK의 payload·헤더·오류를 고정 HTTP 응답으로 확인한다. 미준비 요청은 실제 네트워크로 전달하지 않는다.
+- [Resend Adapter](../src/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter.spec.ts), [StubResendHttp](../test/mocks/resend-http.stub.ts): `describeEmailSenderContract`와 SDK의 payload·헤더·오류·회로를 고정 HTTP 응답으로 확인한다. 미준비 요청은 실제 네트워크로 전달하지 않는다.
 - [AI SDK Adapter](../src/modules/ai-assistance/infrastructure/adapters/parsing/ai-sdk.adapter.spec.ts): 실제 Google factory/설치 SDK의 wire와 schema-invalid raw JSON 거절을 확인한다. Fake/schema 통과는 실제 모델의 의미 품질이나 유료 가치 증거가 아니다.
 - fetch 주입 또는 해당 suite의 `vi.stubGlobal`/spy를 이용한다. global/env 교체는 비동시 suite에서만 하고 `afterEach`에 복원한다. SDK 전체 mock은 기본으로 쓰지 않는다. 불가피한 경우 실제 오류 타입·schema 검증 경계를 남기고 검증하지 못한 wire 범위를 기록한다.
 

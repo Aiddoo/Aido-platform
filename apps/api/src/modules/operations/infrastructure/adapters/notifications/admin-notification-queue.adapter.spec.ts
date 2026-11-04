@@ -28,7 +28,7 @@ describe("AdminNotificationQueueAdapter", () => {
   });
 
   it("SEND 잡을 공통 재시도 옵션으로 등록한다", async () => {
-    await adapter.enqueueSend("admin", { title: "제목", body: "본문" });
+    await adapter.enqueueSend("admin", { title: "제목", body: "본문", severity: "info" });
 
     expect(runtime.enqueue).toHaveBeenCalledWith(
       ADMIN_NOTIFICATION_QUEUE,
@@ -36,7 +36,7 @@ describe("AdminNotificationQueueAdapter", () => {
         name: "send-notification",
         data: {
           channel: "admin",
-          notification: { title: "제목", body: "본문" },
+          notification: { title: "제목", body: "본문", severity: "info" },
         },
       },
       expect.objectContaining({
@@ -49,7 +49,7 @@ describe("AdminNotificationQueueAdapter", () => {
   it("jobId 옵션을 공통 옵션에 병합한다", async () => {
     await adapter.enqueueSend(
       "admin",
-      { title: "제목", body: "본문" },
+      { title: "제목", body: "본문", severity: "info" },
       { jobId: "signup-summary_2026-02-10" },
     );
 

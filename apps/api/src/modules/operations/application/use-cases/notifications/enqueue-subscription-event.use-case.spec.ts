@@ -53,7 +53,10 @@ describe("EnqueueSubscriptionEvent", () => {
 
     expect(getNotification()?.fields).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: "금액", value: "₩3,900 (≈ $2.99)" }),
+        expect.objectContaining({
+          label: "금액",
+          value: { kind: "text", text: "₩3,900 (≈ $2.99)" },
+        }),
       ]),
     );
   });
@@ -73,8 +76,8 @@ describe("EnqueueSubscriptionEvent", () => {
     expect(getNotification()?.fields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: "금액",
-          value: expect.stringContaining("2.99"),
+          label: "금액",
+          value: { kind: "text", text: expect.stringContaining("2.99") },
         }),
       ]),
     );
@@ -94,7 +97,9 @@ describe("EnqueueSubscriptionEvent", () => {
     const notification = getNotification();
     expect(notification?.body).toContain("매튜");
     expect(notification?.fields).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: "이름", value: "매튜" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ label: "이름", value: { kind: "text", text: "매튜" } }),
+      ]),
     );
   });
 

@@ -1,6 +1,8 @@
 export const OperationsNotificationsLogEvent = {
   SEND_STARTED: "operations.notifications.send.started",
   SEND_COMPLETED: "operations.notifications.send.completed",
+  SEND_SKIPPED: "operations.notifications.send.skipped",
+  SEND_REJECTED: "operations.notifications.send.rejected",
   SIGNUP_ENQUEUE_FAILED: "operations.notifications.signup.enqueue-failed",
   SUBSCRIPTION_ENQUEUE_FAILED: "operations.notifications.subscription.enqueue-failed",
   SUMMARY_STARTED: "operations.notifications.summary.started",

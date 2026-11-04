@@ -92,7 +92,7 @@ commit
 - queue/job 이름, payload schema, retry/backoff, attempt 의미, enqueue 조건은 queue 소유 Context의 계약이다. 외부 입력은 신뢰하지 않으며 producer/consumer가 같은 schema를 사용한다. pg-boss는 at-least-once이므로 handler는 같은 payload의 재실행에 멱등이어야 한다(`singletonKey`, unique key, 상태 fence, 위의 boolean 전이).
 - Date instant, DB DATE/calendar label, 사용자 timezone을 구분한다. 날짜 문자열을 process timezone의 instant로 바꾼 뒤 요일을 계산하지 않는다. DST 기간은 각 경계를 대상 zone에 다시 해석한다. 기존 shared date helper를 사용한다.
 - locale별 사용자 copy·AI 지시문·response schema는 Application의 typed catalog나 Presentation이 소유한다. Domain 숫자 판단과 상태 규칙은 번역 문자열을 만들거나 파싱하지 않는다. 예: AI `application/prompts`, Notification `application/messages`, Email `application/services/email/email-message.factory.ts`·`application/templates/email`.
-- Provider의 wire JSON/SDK 타입은 Infrastructure에서 변환한다. Application의 이메일 HTML이나 관리자 채널 표시처럼 순수 렌더링을 둔 기존 흐름은 I/O 구현과 구분한다.
+- Provider의 wire JSON/SDK 타입은 Infrastructure에서 변환한다. Application의 이메일 HTML처럼 순수 렌더링을 둔 기존 흐름은 I/O 구현과 구분한다. 관리자 알림은 벤더 중립 모델(severity·필드)만 Application이 만들고 Discord embed 같은 채널 표시는 어댑터가 렌더링한다. 이메일·관리자 알림 어댑터는 Module 조립과 `EMAIL_PROVIDER`·`ADMIN_NOTIFIER_PROVIDER` 설정 한 곳에서 고른다.
 
 ## 외부 호출 정책·계량·운영 경보
 

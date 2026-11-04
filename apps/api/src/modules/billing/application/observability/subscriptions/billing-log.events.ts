@@ -9,7 +9,6 @@ export const BillingLogEvent = {
   WEBHOOK_DUPLICATE: "billing.subscription.webhook.duplicate",
   WEBHOOK_NO_CHANGE: "billing.subscription.webhook.no-change",
   WEBHOOK_COMPLETED: "billing.subscription.webhook.completed",
-  WEBHOOK_ALERT_FAILED: "billing.subscription.webhook.alert.failed",
   SUBSCRIPTION_CHAIN_ADOPTED: "billing.subscription.chain.adopted",
   PREMIUM_GRANT_RECORDED: "billing.premium-grant.recorded",
   PREMIUM_GRANT_SWEPT: "billing.premium-grant.swept",

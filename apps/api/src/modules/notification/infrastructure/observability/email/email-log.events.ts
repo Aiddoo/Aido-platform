@@ -1,5 +1,5 @@
 export const EmailLogEvent = {
   DELIVERY_SIMULATED: "notification.email.delivery.simulated",
-  DELIVERY_COMPLETED: "notification.email.delivery.completed",
   DELIVERY_FAILED: "notification.email.delivery.failed",
+  JOB_INVALID: "notification.email.job.invalid",
 } as const;

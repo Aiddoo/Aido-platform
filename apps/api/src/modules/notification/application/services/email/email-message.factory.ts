@@ -36,6 +36,7 @@ export function createVerificationCodeEmail(
   idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
+    kind: "verification",
     to,
     subject: getVerificationCodeSubject(),
     html: getVerificationCodeHtml(data),
@@ -51,6 +52,7 @@ export function createPasswordResetEmail(
   idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
+    kind: "password-reset",
     to,
     subject: getPasswordResetSubject(),
     html: getPasswordResetHtml(data),
@@ -66,6 +68,7 @@ export function createPasswordSetupEmail(
   idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
+    kind: "password-setup",
     to,
     subject: getPasswordSetupSubject(),
     html: getPasswordSetupHtml(data),
@@ -77,6 +80,7 @@ export function createPasswordSetupEmail(
 
 export function createInquiryEmail(to: string, data: InquiryTemplateData): EmailMessage {
   return EmailMessage.create({
+    kind: "inquiry",
     to,
     subject: getInquirySubject(data.categoryLabel),
     html: getInquiryHtml(data),
@@ -90,6 +94,7 @@ export function createInquiryEmail(to: string, data: InquiryTemplateData): Email
 
 export function createUserReportEmail(to: string, data: UserReportTemplateData): EmailMessage {
   return EmailMessage.create({
+    kind: "user-report",
     to,
     subject: getUserReportSubject(data),
     html: getUserReportHtml(data),

@@ -35,7 +35,7 @@ describe("관리자 알림 큐 계약", () => {
         name: AdminNotificationJobName.SEND,
         data: {
           channel: "payment",
-          notification: { title: "결제", body: "완료" },
+          notification: { title: "결제", body: "완료", severity: "success" },
         },
       }).success,
     ).toBe(true);
@@ -45,5 +45,40 @@ describe("관리자 알림 큐 계약", () => {
         data: { channel: "unknown", notification: {} },
       }).success,
     ).toBe(false);
+  });
+
+  it("배포 중 큐에 남은 이전 형식 알림은 info 알림으로 바꿔 받아들인다", () => {
+    // Given
+    const legacy = {
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "admin",
+        notification: {
+          title: "가입",
+          body: "새 회원",
+          color: 0x57f287,
+          fields: [{ name: "이메일", value: "user@example.com", inline: true }],
+        },
+      },
+    };
+
+    // When
+    const parsed = AdminNotificationRuntimeJobSchema.parse(legacy);
+
+    // Then
+    expect(parsed).toEqual({
+      name: AdminNotificationJobName.SEND,
+      data: {
+        channel: "admin",
+        notification: {
+          title: "가입",
+          body: "새 회원",
+          severity: "info",
+          fields: [
+            { label: "이메일", value: { kind: "text", text: "user@example.com" }, inline: true },
+          ],
+        },
+      },
+    });
   });
 });

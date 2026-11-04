@@ -10,7 +10,7 @@ import { type CreateInquiryInput, CreateInquiry } from "./create-inquiry.use-cas
 
 class StubInquiryMailer implements InquiryMailerPort {
   readonly attempts: InquirySubmission[] = [];
-  result: InquiryDeliveryResult = { success: true };
+  result: InquiryDeliveryResult = { status: "queued" };
 
   async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
     this.attempts.push({ ...submission });
@@ -78,7 +78,7 @@ describe("CreateInquiry — 문의 접수", () => {
     // Given
     const { useCase, mailer, logger } = setup();
     const privateError = "synthetic-inquiry-content-sensitive";
-    mailer.result = { success: false, error: privateError };
+    mailer.result = { status: "rejected", reason: privateError };
     // When
     const error = await useCase.execute(makeInput()).catch((failure: unknown) => failure);
     // Then - production HTTP details는 원래 숨겨졌으며 Application 예외 경계를 검증한다.

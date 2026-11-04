@@ -23,17 +23,15 @@ export class EmailInquiryMailerAdapter implements InquiryMailerPort {
     private readonly configService: TypedConfigService,
   ) {}
 
-  async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
+  deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
     const supportEmail = this.configService.email.supportEmail;
 
-    const result = await this.emailSender.sendInquiry(supportEmail, {
+    return this.emailSender.sendInquiry(supportEmail, {
       userEmail: submission.userEmail,
       category: submission.category,
       categoryLabel: submission.categoryLabel,
       content: submission.content,
       submittedAt: submission.submittedAt,
     });
-
-    return { success: result.success, error: result.error };
   }
 }

@@ -1,16 +1,14 @@
 import type { AuthEmailSenderPort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import type { EmailKind } from "#api/modules/notification/domain/types/email/email-delivery.types";
+import type { EmailTag } from "#api/modules/notification/domain/value-objects/email/email-message.vo";
 import type {
-  EmailTag,
-  EmailType,
-} from "#api/modules/notification/domain/value-objects/email/email-message.vo";
-import type {
-  EmailSendResult,
+  EmailDispatch,
   InquiryTemplateData,
   UserReportTemplateData,
 } from "#api/modules/notification/notification-email.public";
 
 interface SentEmail extends VerificationEmailData {
-  type: EmailType;
+  type: EmailKind;
   sentAt: Date;
   idempotencyKey?: string;
   tags?: EmailTag[];
@@ -42,7 +40,7 @@ export class FakeEmailService implements AuthEmailSenderPort {
     to: string,
     data: VerificationEmailData,
     idempotencyKey?: string,
-  ): Promise<EmailSendResult> {
+  ): Promise<EmailDispatch> {
     return this.#recordCode(to, data, "verification", idempotencyKey);
   }
 
@@ -50,7 +48,7 @@ export class FakeEmailService implements AuthEmailSenderPort {
     to: string,
     data: VerificationEmailData,
     idempotencyKey?: string,
-  ): Promise<EmailSendResult> {
+  ): Promise<EmailDispatch> {
     return this.#recordCode(to, data, "password-setup", idempotencyKey);
   }
 
@@ -58,40 +56,40 @@ export class FakeEmailService implements AuthEmailSenderPort {
     to: string,
     data: VerificationEmailData,
     idempotencyKey?: string,
-  ): Promise<EmailSendResult> {
+  ): Promise<EmailDispatch> {
     return this.#recordCode(to, data, "password-reset", idempotencyKey);
   }
 
-  async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
+  async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailDispatch> {
     const failure = this.#failureResult();
     if (failure !== null) {
       return failure;
     }
     this.#sentInquiries.push({ to, data, sentAt: new Date() });
-    return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
+    return { status: "queued" };
   }
 
-  async sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailSendResult> {
+  async sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailDispatch> {
     const failure = this.#failureResult();
     if (failure !== null) {
       return failure;
     }
     this.#sentUserReports.push({ to, data, sentAt: new Date() });
-    return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
+    return { status: "queued" };
   }
 
   #recordCode(
     to: string,
     data: VerificationEmailData,
-    type: EmailType,
+    type: EmailKind,
     idempotencyKey?: string,
-  ): EmailSendResult {
+  ): EmailDispatch {
     if (
       idempotencyKey !== undefined &&
       idempotencyKey.length > 0 &&
       this.#idempotencyKeys.has(idempotencyKey)
     ) {
-      return { success: true, messageId: `fake-duplicate-${Date.now()}`, retryCount: 0 };
+      return { status: "queued" };
     }
     const failure = this.#failureResult();
     if (failure !== null) {
@@ -111,7 +109,7 @@ export class FakeEmailService implements AuthEmailSenderPort {
         { name: "environment", value: "test" },
       ],
     });
-    return { success: true, messageId: `fake-${Date.now()}`, retryCount: 0 };
+    return { status: "queued" };
   }
 
   getLastCode(email: string): string | undefined {
@@ -176,11 +174,11 @@ export class FakeEmailService implements AuthEmailSenderPort {
     return this.#failureCount;
   }
 
-  #failureResult(): EmailSendResult | null {
+  #failureResult(): EmailDispatch | null {
     if (this.#failureCount >= this.#maximumFailures) {
       return null;
     }
     this.#failureCount += 1;
-    return { success: false, error: "Simulated failure for testing", retryCount: 0 };
+    return { status: "rejected", reason: "queue_unavailable" };
   }
 }

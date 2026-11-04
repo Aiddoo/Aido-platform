@@ -35,12 +35,31 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 
   describe("SEND 라우팅", () => {
     it("SEND 잡 → SendAdminNotificationUseCase에 채널·알림을 위임한다", async () => {
-      const notification = { title: "테스트", body: "내용" };
+      const notification = { title: "테스트", body: "내용", severity: "success" } as const;
       const job = createSendJob({ channel: "payment", notification });
 
       await processor.process(job);
 
       expect(sendAdminNotification.execute).toHaveBeenCalledWith("payment", notification);
+    });
+  });
+
+  it("배포 중 남은 이전 형식 SEND 잡도 info 알림으로 바꿔 위임한다", async () => {
+    // Given
+    const legacy = {
+      name: AdminNotificationJobName.SEND,
+      data: { channel: "admin", notification: { title: "가입", body: "새 회원", color: 0x57f287 } },
+    };
+
+    // When
+    await processor.process(legacy);
+
+    // Then
+    expect(sendAdminNotification.execute).toHaveBeenCalledWith("admin", {
+      title: "가입",
+      body: "새 회원",
+      severity: "info",
+      fields: [],
     });
   });
 
@@ -63,7 +82,10 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
     // When / Then
     await expect(
       processor.process(
-        createSendJob({ channel: "admin", notification: { title: "제목", body: "본문" } }),
+        createSendJob({
+          channel: "admin",
+          notification: { title: "제목", body: "본문", severity: "info" },
+        }),
       ),
     ).rejects.toBe(error);
   });

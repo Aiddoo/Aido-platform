@@ -6,7 +6,10 @@ import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
-import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
+import {
+  ADMIN_NOTIFICATION_SEVERITIES,
+  type AdminNotification,
+} from "../../../application/read-models/notifications/admin-notification.read-model.js";
 
 export const ADMIN_NOTIFICATION_QUEUE = "admin-notification.v1";
 
@@ -53,17 +56,45 @@ export interface AdminNotificationSendData {
 const AdminNotificationSchema = z.object({
   title: z.string(),
   body: z.string(),
+  severity: z.enum(ADMIN_NOTIFICATION_SEVERITIES),
   fields: z
     .array(
       z.object({
-        name: z.string(),
-        value: z.string(),
+        label: z.string(),
+        value: z.discriminatedUnion("kind", [
+          z.object({ kind: z.literal("text"), text: z.string() }),
+          z.object({ kind: z.literal("datetime"), iso: z.string() }),
+        ]),
         inline: z.boolean().optional(),
       }),
     )
     .optional(),
-  color: z.number().optional(),
+  link: z.string().optional(),
 });
+
+/**
+ * 채널 중립 알림 이전(1.14) 형식. 배포 중 큐에 남은 잡(보관 24시간)을 한 릴리스 동안 받아들이고,
+ * 색은 의미를 알 수 없어 info로 둔다. 다음 릴리스에서 지운다.
+ */
+const LegacyAdminNotificationSchema = z
+  .object({
+    title: z.string(),
+    body: z.string(),
+    fields: z
+      .array(z.object({ name: z.string(), value: z.string(), inline: z.boolean().optional() }))
+      .optional(),
+    color: z.number().optional(),
+  })
+  .transform(({ title, body, fields }): AdminNotification => ({
+    title,
+    body,
+    severity: "info",
+    fields: (fields ?? []).map(({ name, value, inline }) => ({
+      label: name,
+      value: { kind: "text", text: value },
+      ...(inline == null ? {} : { inline }),
+    })),
+  }));
 
 export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
   z.object({
@@ -74,7 +105,7 @@ export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
     name: z.literal(AdminNotificationJobName.SEND),
     data: z.object({
       channel: z.enum(["admin", "payment"]),
-      notification: AdminNotificationSchema,
+      notification: z.union([AdminNotificationSchema, LegacyAdminNotificationSchema]),
     }),
   }),
 ]);

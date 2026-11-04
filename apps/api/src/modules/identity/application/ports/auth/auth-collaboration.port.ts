@@ -50,24 +50,24 @@ export interface AuthCachePort {
   ): Promise<AuthCachedUserProfile | undefined>;
 }
 
-export interface AuthEmailResult {
-  success: boolean;
-  error?: string;
-}
+/** 인증 메일 발송 요청의 결과. queued는 발송 큐에 담았다는 뜻이고 실제 발송은 비동기다. */
+export type AuthEmailDispatch =
+  | { readonly status: "queued" }
+  | { readonly status: "rejected"; readonly reason: string };
 
 export interface AuthEmailSenderPort {
   sendVerificationCode(
     to: string,
     data: { code: string; expiryMinutes: number },
-  ): Promise<AuthEmailResult>;
+  ): Promise<AuthEmailDispatch>;
   sendPasswordResetCode(
     to: string,
     data: { code: string; expiryMinutes: number },
-  ): Promise<AuthEmailResult>;
+  ): Promise<AuthEmailDispatch>;
   sendPasswordSetupCode(
     to: string,
     data: { code: string; expiryMinutes: number },
-  ): Promise<AuthEmailResult>;
+  ): Promise<AuthEmailDispatch>;
 }
 
 export interface AuthUserRegisteredNotification {

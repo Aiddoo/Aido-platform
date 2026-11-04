@@ -10,6 +10,7 @@ import {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_QUEUE,
 } from "#api/modules/notification/notification-delivery-jobs.public";
+import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/notification-email-jobs.public";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { RETENTION_QUEUE } from "#api/modules/notification/notification-retention-jobs.public";
 import {
@@ -24,6 +25,7 @@ const MONITORED_QUEUES = [
   AI_SUGGESTION_QUEUE,
   AI_REPORT_QUEUE,
   ADMIN_NOTIFICATION_QUEUE,
+  EMAIL_DELIVERY_QUEUE,
   TODO_REMINDER_QUEUE,
   NOTIFICATION_QUEUE,
   NOTIFICATION_DEAD_LETTER_QUEUE,

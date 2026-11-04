@@ -1,65 +1,112 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
+import type { NotificationChannel } from "../../ports/notifications/admin-notification-queue.port.js";
+import type { AdminNotifyOutcome } from "../../ports/notifications/admin-notifier.port.js";
 import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
-import { SendAdminNotification } from "./send-admin-notification.use-case.js";
+import {
+  AdminNotificationRetryableError,
+  SendAdminNotification,
+} from "./send-admin-notification.use-case.js";
+
+const notification: AdminNotification = {
+  title: "synthetic-private-admin-title",
+  body: "synthetic-private-admin-body",
+  severity: "info",
+};
+
+class StubNotifier {
+  readonly sent: { channel: NotificationChannel; notification: AdminNotification }[] = [];
+
+  constructor(private readonly outcome: AdminNotifyOutcome) {}
+
+  async send(channel: NotificationChannel, sentNotification: AdminNotification) {
+    this.sent.push({ channel, notification: sentNotification });
+    return this.outcome;
+  }
+}
+
+class RecordingLogger {
+  readonly entries: unknown[] = [];
+
+  debug(entry: unknown): void {
+    this.entries.push(entry);
+  }
+
+  log(entry: unknown): void {
+    this.entries.push(entry);
+  }
+
+  warn(entry: unknown): void {
+    this.entries.push(entry);
+  }
+}
+
+function setup(outcome: AdminNotifyOutcome) {
+  const notifier = new StubNotifier(outcome);
+  const alert = new RecordingOperationalAlert();
+  const logger = new RecordingLogger();
+  const useCase = new SendAdminNotification({ notifier, alert, logger });
+  return { useCase, notifier, alert, logger };
+}
 
 describe("SendAdminNotification", () => {
-  let useCase: SendAdminNotification;
-  let adminNotifier: Mocked<
-    ConstructorParameters<typeof SendAdminNotification>[0]["adminNotifier"]
-  >;
-  let paymentNotifier: Mocked<
-    ConstructorParameters<typeof SendAdminNotification>[0]["paymentNotifier"]
-  >;
+  it.each(["admin", "payment"] as const)(
+    "%s 채널로 포트에 그대로 넘기고 내용은 로그에 남기지 않는다",
+    async (channel) => {
+      // Given
+      const { useCase, notifier, alert, logger } = setup({ status: "sent" });
 
-  let logger: Mocked<ConstructorParameters<typeof SendAdminNotification>[0]["logger"]>;
+      // When
+      await useCase.execute(channel, notification);
 
-  const notification: AdminNotification = {
-    title: "synthetic-private-admin-title",
-    body: "synthetic-private-admin-body",
-  };
+      // Then
+      expect(notifier.sent).toEqual([{ channel, notification }]);
+      expect(alert.alerts).toEqual([]);
+      const logged = JSON.stringify(logger.entries);
+      expect(logged).not.toContain(notification.title);
+      expect(logged).not.toContain(notification.body);
+    },
+  );
 
-  beforeEach(async () => {
-    const sendAdminNotificationDependencies = mockDeep<
-      ConstructorParameters<typeof SendAdminNotification>[0]
-    >({});
-    const unit = new SendAdminNotification(sendAdminNotificationDependencies);
-    logger = sendAdminNotificationDependencies.logger;
-    useCase = unit;
-    adminNotifier = sendAdminNotificationDependencies.adminNotifier;
-    paymentNotifier = sendAdminNotificationDependencies.paymentNotifier;
-    adminNotifier.send.mockResolvedValue({ success: true });
-    paymentNotifier.send.mockResolvedValue({ success: true });
+  it("채널이 설정되지 않아 건너뛰면 던지지도 경보를 올리지도 않는다", async () => {
+    // Given
+    const { useCase, alert } = setup({ status: "skipped", reason: "not_configured" });
+
+    // When
+    const execution = useCase.execute("admin", notification);
+
+    // Then
+    await expect(execution).resolves.toBeUndefined();
+    expect(alert.alerts).toEqual([]);
   });
 
-  it("admin 채널 → ADMIN_NOTIFIER로 발송해야 한다", async () => {
-    await useCase.execute("admin", notification);
+  it("재시도 가능한 실패는 던져서 큐가 다시 시도하게 한다", async () => {
+    // Given
+    const { useCase, alert } = setup({ status: "failed", retryable: true, statusCode: 503 });
 
-    expect(adminNotifier.send).toHaveBeenCalledWith(notification);
-    expect(paymentNotifier.send).not.toHaveBeenCalled();
-    expect(logger.debug).toHaveBeenCalledTimes(1);
-    expect(logger.log).toHaveBeenCalledTimes(1);
-    const logged = JSON.stringify([logger.debug.mock.calls, logger.log.mock.calls]);
-    expect(logged).not.toContain(notification.title);
-    expect(logged).not.toContain(notification.body);
+    // When
+    const execution = useCase.execute("admin", notification);
+
+    // Then
+    await expect(execution).rejects.toBeInstanceOf(AdminNotificationRetryableError);
+    expect(alert.alerts).toEqual([]);
   });
 
-  it("payment 채널 → PAYMENT_NOTIFIER로 발송해야 한다", async () => {
+  it("재시도해도 소용없는 거절은 던지지 않고 운영 경보를 한 번 올린다", async () => {
+    // Given
+    const { useCase, alert } = setup({ status: "failed", retryable: false, statusCode: 404 });
+
+    // When
     await useCase.execute("payment", notification);
 
-    expect(paymentNotifier.send).toHaveBeenCalledWith(notification);
-    expect(adminNotifier.send).not.toHaveBeenCalled();
-  });
-
-  it("send 실패 시 Error를 throw해야 한다 (작업 재시도 트리거)", async () => {
-    adminNotifier.send.mockResolvedValue({
-      success: false,
-      error: "Webhook 404",
-    });
-
-    await expect(useCase.execute("admin", notification)).rejects.toThrow(
-      "Discord webhook failed: Webhook 404",
-    );
+    // Then
+    expect(alert.alerts).toEqual([
+      expect.objectContaining({
+        key: "operations.admin-notification.rejected",
+        severity: "warning",
+        tags: { channel: "payment" },
+        details: { statusCode: 404 },
+      }),
+    ]);
   });
 });

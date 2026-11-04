@@ -169,10 +169,10 @@ export class TypedConfigService {
 
   get email() {
     return {
+      provider: this.get("EMAIL_PROVIDER"),
       apiKey: this.get("RESEND_API_KEY"),
       from: this.get("EMAIL_FROM"),
       fromName: this.get("EMAIL_FROM_NAME"),
-      isConfigured: !!this.get("RESEND_API_KEY"),
       supportEmail: this.get("SUPPORT_EMAIL"),
     };
   }
@@ -304,6 +304,10 @@ export class TypedConfigService {
 
   get logLevel(): string | undefined {
     return this.get("LOG_LEVEL");
+  }
+
+  get adminNotifierProvider() {
+    return this.get("ADMIN_NOTIFIER_PROVIDER");
   }
 
   get discordSignupWebhookUrl(): string | undefined {

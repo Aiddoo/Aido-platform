@@ -1,18 +1,17 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import {
-  AdminEventNotifier,
-  type AdminNotifier,
-  PAYMENT_NOTIFIER,
-} from "#api/modules/operations/operations-notifications.public";
+import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { SENTRY_DOMAIN, SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
-import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import {
+  OPERATIONAL_ALERT,
+  type OperationalAlertPort,
+} from "#api/shared/application/ports/operational-alert.port";
 import { maskUserId } from "#api/shared/domain/utils/mask.util";
 
-import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";
+import { BillingAlertKey } from "../../../application/observability/subscriptions/billing-alerts.js";
 import type {
   SubscriptionEventNotifierPort,
   WebhookFailureContext,
@@ -22,20 +21,16 @@ import type { SubscriptionEventPayload } from "../../../application/types/subscr
 /**
  * 구독 이벤트 알림 어댑터.
  *
- * 관리자 알림(Discord)은 admin-notification 큐로, 결제 이슈 푸시는 notification 큐로
+ * 관리자 알림은 admin-notification 큐로, 결제 이슈 푸시는 notification 큐로
  * fire-and-forget 위임한다. 트랜잭션 커밋 후 use-case가 호출한다.
- * 웹훅 처리 실패는 Sentry(에러 관측)·Discord(관리자 알림)로 보고한다 — 벤더 SDK는
- * infrastructure에 격리한다.
+ * 웹훅 처리 실패는 Sentry 예외와 운영 경보로 보고한다 — 벤더 SDK는 infrastructure에 격리한다.
  */
 @Injectable()
 export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
-  readonly #logger = new Logger(SubscriptionEventNotifierAdapter.name);
-
   constructor(
     private readonly adminEventNotifier: AdminEventNotifier,
     private readonly notificationQueueService: NotificationQueueService,
-    @Inject(PAYMENT_NOTIFIER)
-    private readonly paymentNotifier: AdminNotifier,
+    @Inject(OPERATIONAL_ALERT) private readonly alert: OperationalAlertPort,
     private readonly config: TypedConfigService,
   ) {}
 
@@ -70,45 +65,12 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
       Sentry.captureException(error);
     });
 
-    // 2. Discord 관리자 알림 (fire-and-forget)
-    this.#notifyWebhookError(error, context).catch((alertError: unknown) =>
-      this.#logger.warn({
-        event: BillingLogEvent.WEBHOOK_ALERT_FAILED,
-        eventId: context.eventId,
-        errorType: toErrorType(alertError),
-      }),
-    );
-  }
-
-  async #notifyWebhookError(error: unknown, context: WebhookFailureContext): Promise<void> {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    await this.paymentNotifier.send({
-      title: "Webhook 처리 에러",
-      body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
-      color: 0xff0000,
-      fields: [
-        {
-          name: "에러",
-          value: errorMessage.slice(0, 1024),
-          inline: false,
-        },
-        {
-          name: "이벤트 타입",
-          value: context.eventType,
-          inline: true,
-        },
-        {
-          name: "사용자 ID",
-          value: context.appUserId ?? "-",
-          inline: true,
-        },
-        {
-          name: "상품",
-          value: context.productId ?? "-",
-          inline: true,
-        },
-      ],
+    this.alert.raise({
+      key: BillingAlertKey.WEBHOOK_PROCESSING_FAILED,
+      severity: "error",
+      message: "RevenueCat 웹훅 처리에 실패했습니다",
+      tags: { eventType: context.eventType, store: context.store ?? "unknown" },
+      details: { eventId: context.eventId ?? null, productId: context.productId ?? null },
     });
   }
 }

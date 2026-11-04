@@ -68,10 +68,7 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
 
   it("설정의 supportEmail로 문의를 위임한다", async () => {
     // Given
-    mockEmailService.sendInquiry.mockResolvedValue({
-      success: true,
-      messageId: "msg-integration",
-    });
+    mockEmailService.sendInquiry.mockResolvedValue({ status: "queued" });
 
     // When
     const result = await adapter.deliver({
@@ -91,14 +88,14 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
         categoryLabel: "기타",
       }),
     );
-    expect(result).toEqual({ success: true, error: undefined });
+    expect(result).toEqual({ status: "queued" });
   });
 
-  it("EmailService 실패 결과를 그대로 전달 결과로 매핑한다", async () => {
+  it("발송 요청 거절 결과를 그대로 전달 결과로 돌려준다", async () => {
     // Given
     mockEmailService.sendInquiry.mockResolvedValue({
-      success: false,
-      error: "Service unavailable",
+      status: "rejected",
+      reason: "queue_unavailable",
     });
 
     // When
@@ -111,9 +108,6 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
     });
 
     // Then
-    expect(result).toEqual({
-      success: false,
-      error: "Service unavailable",
-    });
+    expect(result).toEqual({ status: "rejected", reason: "queue_unavailable" });
   });
 });

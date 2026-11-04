@@ -46,6 +46,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "ai-suggestion-analysis.v1",
       "ai-report-generation.v1",
       "admin-notification.v1",
+      "email-delivery.v1",
       "todo-reminder.v1",
       "notification.v1",
       "notification-dead-letter.v1",

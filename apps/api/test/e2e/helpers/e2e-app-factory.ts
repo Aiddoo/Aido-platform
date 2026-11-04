@@ -32,6 +32,7 @@ import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/
 import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/email/email-delivery-queue.processor";
 import { TimezoneReminderProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/timezone-reminder-queue.processor";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/todo-reminder-queue.processor";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
@@ -40,7 +41,6 @@ import { TransactionalEmailSender } from "#api/modules/notification/notification
 import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
-import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
 import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
@@ -77,6 +77,7 @@ import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.
 
 const BACKGROUND_PROCESSORS = [
   AdminNotificationProcessor,
+  EmailDeliveryQueueProcessor,
   TimezoneReminderProcessor,
   TodoReminderQueueProcessor,
   SuggestionAnalysisProcessor,
@@ -131,7 +132,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeEmailService = new FakeEmailService();
   const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
   const fakeAdminNotifier = new FakeAdminNotifier();
-  const fakePaymentNotifier = new FakeAdminNotifier();
   const fakePushProvider = new FakePushProvider();
   const fakeAiGenerator = new FakeAiGenerator();
   const fakeWeatherProvider = new FakeWeatherProvider();
@@ -226,8 +226,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     })
     .overrideProvider(ADMIN_NOTIFIER)
     .useValue(fakeAdminNotifier)
-    .overrideProvider(PAYMENT_NOTIFIER)
-    .useValue(fakePaymentNotifier)
     .overrideProvider(PUSH_PROVIDER)
     .useValue(fakePushProvider)
     .overrideProvider(AI_GENERATOR)
@@ -301,7 +299,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeOAuthTokenVerifierService.clear(),
         () => fakeOAuthProviderRegistry?.clear(),
         () => fakeAdminNotifier.clear(),
-        () => fakePaymentNotifier.clear(),
         () => fakePushProvider.clear(),
         () => fakeAiGenerator.clear(),
         () => fakeWeatherProvider.clear(),

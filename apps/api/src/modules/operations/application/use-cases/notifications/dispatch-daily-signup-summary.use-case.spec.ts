@@ -60,10 +60,13 @@ describe("DispatchDailySignupSummary", () => {
         title: "일일 가입 리포트 | 2026-02-10 (KST)",
         body: "전일 신규 가입은 5명입니다.\n\n가입 채널별\n- 이메일: 3명\n- Google: 2명",
         fields: expect.arrayContaining([
-          expect.objectContaining({ name: "전일 신규 가입", value: "5명" }),
           expect.objectContaining({
-            name: "집계 기준",
-            value: "2026-02-10 00:00 ~ 23:59 (KST)",
+            label: "전일 신규 가입",
+            value: { kind: "text", text: "5명" },
+          }),
+          expect.objectContaining({
+            label: "집계 기준",
+            value: { kind: "text", text: "2026-02-10 00:00 ~ 23:59 (KST)" },
           }),
         ]),
       }),
@@ -86,7 +89,9 @@ describe("DispatchDailySignupSummary", () => {
     const notification = getNotification();
     expect(notification?.body).toBe("전일 신규 가입은 0명입니다.");
     expect(notification?.fields).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: "전일 신규 가입", value: "0명" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ label: "전일 신규 가입", value: { kind: "text", text: "0명" } }),
+      ]),
     );
   });
 

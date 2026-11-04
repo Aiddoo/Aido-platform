@@ -140,11 +140,12 @@ export class ReportContent {
       const delivery = await this.#dependencies.notifier.notifyOperators(
         buildUserReportSubmission(report, userTags),
       );
-      if (!delivery.success) {
+      if (delivery.status === "rejected") {
         this.#dependencies.logger.warn({
           event: SocialReportLogEvent.OPERATOR_NOTIFY_FAILED,
           reportId: report.id,
           errorType: "delivery-rejected",
+          reason: delivery.reason,
         });
       }
     } catch {

@@ -13,8 +13,9 @@ const basePayload: UserRegisteredEventPayload = {
   registeredAt: "2026-07-11T00:00:00.000Z",
 };
 
-function fieldValue(message: ReturnType<typeof buildUserRegisteredMessage>, name: string) {
-  return message.fields?.find((field) => field.name === name)?.value;
+function fieldText(message: AdminNotification, label: string): string | undefined {
+  const value = message.fields?.find((field) => field.label === label)?.value;
+  return value?.kind === "text" ? value.text : undefined;
 }
 
 describe("buildUserRegisteredMessage — 회원가입 알림", () => {
@@ -39,14 +40,18 @@ describe("buildUserRegisteredMessage — 회원가입 알림", () => {
     expect(message.title).toBe("👋 새로운 회원가입");
     expect(message.body).toBe("**아이도** 님이 가입했습니다.");
     expect(message.fields).toEqual([
-      { name: "이메일", value: "user@example.com", inline: true },
-      { name: "이름", value: "아이도", inline: true },
-      { name: "가입 방식", value: "Apple", inline: true },
-      { name: "기기", value: "🍎 iOS 18.1 · iPhone 16 Pro", inline: true },
-      { name: "앱 버전", value: "v1.14.0 (123)", inline: true },
-      { name: "언어·시간대", value: "ko · Asia/Seoul", inline: true },
-      { name: "사용자 ID", value: "user-1", inline: false },
-      { name: "가입 시각", value: "<t:1783728000:f>", inline: false },
+      { label: "이메일", value: { kind: "text", text: "user@example.com" }, inline: true },
+      { label: "이름", value: { kind: "text", text: "아이도" }, inline: true },
+      { label: "가입 방식", value: { kind: "text", text: "Apple" }, inline: true },
+      { label: "기기", value: { kind: "text", text: "🍎 iOS 18.1 · iPhone 16 Pro" }, inline: true },
+      { label: "앱 버전", value: { kind: "text", text: "v1.14.0 (123)" }, inline: true },
+      { label: "언어·시간대", value: { kind: "text", text: "ko · Asia/Seoul" }, inline: true },
+      { label: "사용자 ID", value: { kind: "text", text: "user-1" }, inline: false },
+      {
+        label: "가입 시각",
+        value: { kind: "datetime", iso: "2026-07-11T00:00:00.000Z" },
+        inline: false,
+      },
     ]);
   });
 
@@ -64,7 +69,7 @@ describe("buildUserRegisteredMessage — 회원가입 알림", () => {
     const message = buildUserRegisteredMessage(payload);
 
     // Then
-    expect(fieldValue(message, "기기")).toBe("🤖 Android 15 · Pixel 9");
+    expect(fieldText(message, "기기")).toBe("🤖 Android 15 · Pixel 9");
   });
 
   it("빌드 번호가 없으면 앱 버전만 표시한다", () => {
@@ -75,7 +80,7 @@ describe("buildUserRegisteredMessage — 회원가입 알림", () => {
     const message = buildUserRegisteredMessage(payload);
 
     // Then
-    expect(fieldValue(message, "앱 버전")).toBe("v1.14.0");
+    expect(fieldText(message, "앱 버전")).toBe("v1.14.0");
   });
 
   it("OS 버전을 보내지 않는 구 앱은 플랫폼·모델·앱 버전만 표시한다", () => {
@@ -91,9 +96,9 @@ describe("buildUserRegisteredMessage — 회원가입 알림", () => {
     const message = buildUserRegisteredMessage(payload);
 
     // Then
-    expect(fieldValue(message, "기기")).toBe("🤖 Android · Galaxy S24");
-    expect(fieldValue(message, "앱 버전")).toBe("v1.13.1");
-    expect(fieldValue(message, "언어·시간대")).toBe("—");
+    expect(fieldText(message, "기기")).toBe("🤖 Android · Galaxy S24");
+    expect(fieldText(message, "앱 버전")).toBe("v1.13.1");
+    expect(fieldText(message, "언어·시간대")).toBe("—");
   });
 
   it("기기 정보가 없으면 가입 방식으로 추측하지 않고 —로 표시한다", () => {
@@ -104,9 +109,9 @@ describe("buildUserRegisteredMessage — 회원가입 알림", () => {
     const message = buildUserRegisteredMessage(payload);
 
     // Then
-    expect(fieldValue(message, "기기")).toBe("—");
-    expect(fieldValue(message, "앱 버전")).toBe("—");
-    expect(fieldValue(message, "언어·시간대")).toBe("—");
+    expect(fieldText(message, "기기")).toBe("—");
+    expect(fieldText(message, "앱 버전")).toBe("—");
+    expect(fieldText(message, "언어·시간대")).toBe("—");
   });
 
   it("이름이 없으면 이메일 앞부분을 이름으로 쓴다", () => {
@@ -117,7 +122,7 @@ describe("buildUserRegisteredMessage — 회원가입 알림", () => {
 
     // Then
     expect(message.body).toBe("**user** 님이 가입했습니다.");
-    expect(fieldValue(message, "이름")).toBe("user");
+    expect(fieldText(message, "이름")).toBe("user");
   });
 });
 
@@ -140,40 +145,44 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     periodType: "NORMAL",
   };
 
-  function subscriptionField(message: AdminNotification, name: string) {
-    return message.fields?.find((field) => field.name === name)?.value;
-  }
-
   it("운영 iOS 신규 구매는 모든 공통 필드를 정해진 순서로 표시한다", () => {
     const message = buildSubscriptionEventMessage(purchase);
 
     expect(message.title).toBe("🎉 새로운 구독 구매");
     expect(message.body).toBe("**매튜** 님의 구독 이벤트 (INITIAL_PURCHASE)");
-    expect(message.color).toBe(0x57f287);
+    expect(message.severity).toBe("success");
     expect(message.fields).toEqual([
-      { name: "이메일", value: "matthew@example.com", inline: true },
-      { name: "이름", value: "매튜", inline: true },
-      { name: "상품", value: "월간 · aido_premium_monthly", inline: true },
-      { name: "스토어", value: "Apple App Store", inline: true },
-      { name: "기기", value: "🍎 iOS", inline: true },
-      { name: "금액", value: "₩3,900 (≈ $2.99)", inline: true },
-      { name: "환경", value: "운영", inline: true },
-      { name: "구독 유형", value: "일반", inline: true },
-      { name: "자동 갱신", value: "켜짐", inline: true },
-      { name: "국가", value: "🇰🇷 KR", inline: true },
-      { name: "구매일", value: "<t:1793491200:f>", inline: true },
-      { name: "만료일", value: "<t:1796083200:f>", inline: true },
-      { name: "트랜잭션", value: "`2000000123456789`", inline: false },
-      { name: "사용자 ID", value: "user-1", inline: false },
+      { label: "이메일", value: { kind: "text", text: "matthew@example.com" }, inline: true },
+      { label: "이름", value: { kind: "text", text: "매튜" }, inline: true },
+      { label: "상품", value: { kind: "text", text: "월간 · aido_premium_monthly" }, inline: true },
+      { label: "스토어", value: { kind: "text", text: "Apple App Store" }, inline: true },
+      { label: "기기", value: { kind: "text", text: "🍎 iOS" }, inline: true },
+      { label: "금액", value: { kind: "text", text: "₩3,900 (≈ $2.99)" }, inline: true },
+      { label: "환경", value: { kind: "text", text: "운영" }, inline: true },
+      { label: "구독 유형", value: { kind: "text", text: "일반" }, inline: true },
+      { label: "자동 갱신", value: { kind: "text", text: "켜짐" }, inline: true },
+      { label: "국가", value: { kind: "text", text: "🇰🇷 KR" }, inline: true },
+      {
+        label: "구매일",
+        value: { kind: "datetime", iso: "2026-11-01T00:00:00.000Z" },
+        inline: true,
+      },
+      {
+        label: "만료일",
+        value: { kind: "datetime", iso: "2026-12-01T00:00:00.000Z" },
+        inline: true,
+      },
+      { label: "트랜잭션", value: { kind: "text", text: "`2000000123456789`" }, inline: false },
+      { label: "사용자 ID", value: { kind: "text", text: "user-1" }, inline: false },
     ]);
   });
 
-  it("샌드박스 결제는 제목 접두어·회색·환경 필드로 매출이 아님을 표시한다", () => {
+  it("샌드박스 결제는 제목 접두어·info 등급·환경 필드로 매출이 아님을 표시한다", () => {
     const message = buildSubscriptionEventMessage({ ...purchase, environment: "SANDBOX" });
 
     expect(message.title).toBe("[샌드박스] 🎉 새로운 구독 구매");
-    expect(message.color).toBe(0x747f8d);
-    expect(subscriptionField(message, "환경")).toBe("🧪 샌드박스 (테스트 결제 · 매출 아님)");
+    expect(message.severity).toBe("info");
+    expect(fieldText(message, "환경")).toBe("🧪 샌드박스 (테스트 결제 · 매출 아님)");
   });
 
   it("선택 정보가 없어도 같은 필드를 유지하고 값은 —로 표시하며 이름은 이메일 앞부분으로 대체한다", () => {
@@ -185,7 +194,7 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     });
 
     expect(message.body).toBe("**renewer** 님의 구독 이벤트 (EXPIRATION)");
-    expect(message.fields?.map((field) => field.name)).toEqual([
+    expect(message.fields?.map((field) => field.label)).toEqual([
       "이메일",
       "이름",
       "상품",
@@ -202,12 +211,12 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
       "트랜잭션",
       "사용자 ID",
     ]);
-    expect(subscriptionField(message, "이름")).toBe("renewer");
-    expect(subscriptionField(message, "상품")).toBe("custom_product");
-    expect(subscriptionField(message, "금액")).toBe("—");
-    expect(subscriptionField(message, "환경")).toBe("—");
-    expect(subscriptionField(message, "만료 사유")).toBe("—");
-    expect(subscriptionField(message, "자동 갱신")).toBe("꺼짐");
+    expect(fieldText(message, "이름")).toBe("renewer");
+    expect(fieldText(message, "상품")).toBe("custom_product");
+    expect(fieldText(message, "금액")).toBe("—");
+    expect(fieldText(message, "환경")).toBe("—");
+    expect(fieldText(message, "만료 사유")).toBe("—");
+    expect(fieldText(message, "자동 갱신")).toBe("꺼짐");
   });
 
   it("Android 갱신은 Play Store·Android와 USD 결제 금액을 표시한다", () => {
@@ -223,10 +232,10 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     });
 
     expect(message.title).toBe("🔄 구독 갱신");
-    expect(subscriptionField(message, "스토어")).toBe("Google Play Store");
-    expect(subscriptionField(message, "기기")).toBe("🤖 Android · Pixel 9 · v1.4.0");
-    expect(subscriptionField(message, "금액")).toBe("$2.99");
-    expect(subscriptionField(message, "트랜잭션")).toBe("`GPA.3345…345..0`");
+    expect(fieldText(message, "스토어")).toBe("Google Play Store");
+    expect(fieldText(message, "기기")).toBe("🤖 Android · Pixel 9 · v1.4.0");
+    expect(fieldText(message, "금액")).toBe("$2.99");
+    expect(fieldText(message, "트랜잭션")).toBe("`GPA.3345…345..0`");
   });
 
   it("CUSTOMER_SUPPORT 취소는 환불로 표시하고 사유를 한국어와 원문으로 함께 적는다", () => {
@@ -237,9 +246,9 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     });
 
     expect(message.title).toBe("↩️ 구독 환불");
-    expect(message.color).toBe(0xe91e63);
-    expect(subscriptionField(message, "취소 사유")).toBe("고객지원 환불 (CUSTOMER_SUPPORT)");
-    expect(subscriptionField(message, "자동 갱신")).toBe("꺼짐");
+    expect(message.severity).toBe("critical");
+    expect(fieldText(message, "취소 사유")).toBe("고객지원 환불 (CUSTOMER_SUPPORT)");
+    expect(fieldText(message, "자동 갱신")).toBe("꺼짐");
   });
 
   it("일반 해지는 구독 취소로 표시한다", () => {
@@ -250,16 +259,16 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
     });
 
     expect(message.title).toBe("❌ 구독 취소");
-    expect(subscriptionField(message, "취소 사유")).toBe("사용자 해지 (UNSUBSCRIBE)");
+    expect(fieldText(message, "취소 사유")).toBe("사용자 해지 (UNSUBSCRIBE)");
   });
 
-  it("결제 문제는 경고 색과 재시도 중인 자동 갱신 상태를 표시한다", () => {
+  it("결제 문제는 warning 등급과 재시도 중인 자동 갱신 상태를 표시한다", () => {
     const message = buildSubscriptionEventMessage({ ...purchase, eventType: "BILLING_ISSUE" });
 
     expect(message.title).toBe("⚠️ 결제 문제 감지");
-    expect(message.color).toBe(0xf1c40f);
-    expect(subscriptionField(message, "자동 갱신")).toBe("켜짐 (결제 재시도 중)");
-    expect(subscriptionField(message, "취소 사유")).toBeUndefined();
+    expect(message.severity).toBe("warning");
+    expect(fieldText(message, "자동 갱신")).toBe("켜짐 (결제 재시도 중)");
+    expect(fieldText(message, "취소 사유")).toBeUndefined();
   });
 
   it.each([
@@ -280,7 +289,22 @@ describe("buildSubscriptionEventMessage — 결제 알림", () => {
       periodType: "TRIAL",
     });
 
-    expect(subscriptionField(message, "상품")).toBe("연간 · aido_premium_yearly");
-    expect(subscriptionField(message, "구독 유형")).toBe("무료 체험");
+    expect(fieldText(message, "상품")).toBe("연간 · aido_premium_yearly");
+    expect(fieldText(message, "구독 유형")).toBe("무료 체험");
+  });
+
+  it("RevenueCat 고객 화면 주소가 있으면 알림 링크로 싣는다", () => {
+    // Given
+    const customerUrl = "https://app.revenuecat.com/projects/p1/customers/c1";
+
+    // When
+    const message = buildSubscriptionEventMessage({
+      ...purchase,
+      revenueCatCustomerUrl: customerUrl,
+    });
+
+    // Then
+    expect(message.link).toBe(customerUrl);
+    expect(message.fields?.map((field) => field.label)).not.toContain("RevenueCat");
   });
 });

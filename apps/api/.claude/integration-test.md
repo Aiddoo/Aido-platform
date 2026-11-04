@@ -47,7 +47,7 @@ DB/socket/job의 timer는 native로 유지한다. 날짜만 필요한 경우 Dat
 
 ## 공급자 SDK와 HTTP fixture
 
-[이메일 Integration](../test/integration/email.integration-spec.ts)은 실제 NotificationEmailModule/Resend SDK와 고정 `StubResendHttp`를 조립한다. 외부 요청 대신 fixture 응답으로 payload·인증/idempotency 헤더·오류·retry/backoff를 확인한다. DB가 없는 이 suite의 retry timer는 제어할 수 있다. 이를 native DB와 timer가 섞인 테스트에 그대로 적용하지 않는다.
+[이메일 Integration](../test/integration/email.integration-spec.ts)은 실제 NotificationEmailModule 배선·Resend SDK·고정 `StubResendHttp`로 큐에 담기 → worker 발송을 확인한다(큐 런타임은 FakeJobRuntime). [이메일 큐 Integration](../test/integration/email-delivery-queue.integration-spec.ts)은 실제 pg-boss·PostgreSQL에서 암호화 저장·중복 건 한 번 발송·backoff 재시도를, [발송 예산 Integration](../test/integration/email-budget.integration-spec.ts)은 실제 Postgres 계량기에서 동시 예약 정확성을 확인한다. 어댑터 계약(`email-sender.contract.ts`·`admin-notifier.contract.ts`)은 어댑터 spec에서 같은 시나리오로 돌린다.
 
 미설정/unmatched 요청은 차단하고 각 테스트의 fixture 응답 소비, globals/env/timer 복원과 module 종료를 확인한다. transport를 교체한 결과는 실제 공급자 운영 품질·SLA 증거가 아니다. E2E의 외부 Fake와 wire fixture는 서로 다른 경계를 검증하며 둘 중 하나를 전체 SDK mock으로 대체할 필요는 없다.
 

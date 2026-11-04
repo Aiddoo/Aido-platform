@@ -43,8 +43,8 @@ describe("EnqueueUserRegistered", () => {
     expect(notification?.fields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: "기기",
-          value: "🍎 iOS · iPhone 15 Pro",
+          label: "기기",
+          value: { kind: "text", text: "🍎 iOS · iPhone 15 Pro" },
         }),
       ]),
     );

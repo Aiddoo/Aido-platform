@@ -1,4 +1,7 @@
-import type { UserReportNotifierPort } from "#api/modules/social/application/ports/reports/user-report-notifier.port";
+import type {
+  UserReportDeliveryResult,
+  UserReportNotifierPort,
+} from "#api/modules/social/application/ports/reports/user-report-notifier.port";
 import type {
   FindRecentUserReportParams,
   UserReportRepositoryPort,
@@ -86,8 +89,10 @@ export class StubUserReportNotifier implements UserReportNotifierPort {
   readonly submissions: UserReportSubmission[] = [];
   shouldFail = false;
 
-  async notifyOperators(submission: UserReportSubmission) {
+  async notifyOperators(submission: UserReportSubmission): Promise<UserReportDeliveryResult> {
     this.submissions.push(submission);
-    return this.shouldFail ? { success: false, error: "rejected" } : { success: true };
+    return this.shouldFail
+      ? { status: "rejected", reason: "queue_unavailable" }
+      : { status: "queued" };
   }
 }

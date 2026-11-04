@@ -2,7 +2,7 @@ import { vi } from "vitest";
 /**
  * SubscriptionEventNotifierAdapter 단위 테스트
  *
- * 웹훅 실패 보고(reportWebhookFailure)의 Sentry 태깅·Discord 메시지 형식을 검증한다.
+ * 웹훅 실패 보고(reportWebhookFailure)의 Sentry 태깅·운영 경보를 검증한다.
  * Sentry SDK는 벤더 경계라 vi.mock으로 격리한다(프로젝트 규칙 — vendor/native만 허용).
  * withScope는 팩토리에서 즉시 콜백을 호출해 mockScope로 태깅을 관측한다.
  */
@@ -12,17 +12,14 @@ vi.mock("@sentry/nestjs", () => ({
   withScope: vi.fn((cb: (scope: typeof mockScope) => void) => cb(mockScope)),
 }));
 
-import { Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { TestBed } from "@suites/unit";
 
-import {
-  AdminEventNotifier,
-  PAYMENT_NOTIFIER,
-} from "#api/modules/operations/operations-notifications.public";
+import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 import { SUBSCRIPTION_TIME } from "#test/fixtures/subscription.fixture";
-import { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import type { WebhookFailureContext } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
@@ -32,14 +29,13 @@ const captureException = vi.mocked(Sentry.captureException);
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
   let adapter: SubscriptionEventNotifierAdapter;
-  let notifier: FakeAdminNotifier;
+  let alerts: RecordingOperationalAlert;
   let context: WebhookFailureContext;
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(SUBSCRIPTION_TIME);
-    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
-    notifier = new FakeAdminNotifier();
+    alerts = new RecordingOperationalAlert();
     context = {
       eventType: "INITIAL_PURCHASE",
       eventId: "evt-1",
@@ -49,8 +45,8 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     };
 
     const { unit } = await TestBed.solitary(SubscriptionEventNotifierAdapter)
-      .mock(PAYMENT_NOTIFIER)
-      .impl(() => notifier)
+      .mock(OPERATIONAL_ALERT)
+      .final(alerts)
       .compile();
 
     adapter = unit;
@@ -77,47 +73,45 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
     expect(captureException).toHaveBeenCalledWith(error);
   });
 
-  it("Discord로 에러 메시지를 전송한다 (제목·색·필드 byte-identical)", async () => {
+  it("운영 경보에는 이벤트 식별자만 싣고 오류 원문·사용자 id는 싣지 않는다", () => {
     // Given
-    const error = new Error("Processing failed");
+    const error = new Error("private-provider-message user-123");
 
     // When
     adapter.reportWebhookFailure(error, context);
 
     // Then
-    expect(notifier.getSentNotifications()).toEqual([
-      expect.objectContaining({
-        title: "Webhook 처리 에러",
-        body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
-        color: 0xff0000,
-        fields: expect.arrayContaining([
-          expect.objectContaining({ name: "에러", value: "Processing failed" }),
-          expect.objectContaining({
-            name: "이벤트 타입",
-            value: "INITIAL_PURCHASE",
-          }),
-          expect.objectContaining({ name: "사용자 ID", value: "user-123" }),
-          expect.objectContaining({ name: "상품", value: "premium_monthly" }),
-        ]),
-      }),
+    expect(alerts.alerts).toEqual([
+      {
+        key: "billing.subscription.webhook.processing-failed",
+        severity: "error",
+        message: "RevenueCat 웹훅 처리에 실패했습니다",
+        tags: { eventType: "INITIAL_PURCHASE", store: "APP_STORE" },
+        details: { eventId: "evt-1", productId: "premium_monthly" },
+      },
     ]);
+    expect(JSON.stringify(alerts.alerts)).not.toContain("private-provider-message");
+    expect(JSON.stringify(alerts.alerts)).not.toContain("user-123");
   });
 
-  it("Discord 전송 실패는 삼킨다 (호출자에 전파 없음)", async () => {
+  it("스토어·이벤트 id가 없는 웹훅도 경보를 올린다", () => {
     // Given
-    vi.spyOn(notifier, "send").mockRejectedValueOnce(new Error("Discord down"));
+    const transfer: WebhookFailureContext = { eventType: "TRANSFER" };
 
-    // When & Then — 동기 호출은 throw하지 않는다
-    expect(() => adapter.reportWebhookFailure(new Error("x"), context)).not.toThrow();
-    await vi.waitFor(() => expect(Logger.prototype.warn).toHaveBeenCalledTimes(1));
+    // When
+    adapter.reportWebhookFailure(new Error("x"), transfer);
+
+    // Then
+    expect(alerts.alerts[0]).toMatchObject({
+      tags: { eventType: "TRANSFER", store: "unknown" },
+      details: { eventId: null, productId: null },
+    });
   });
 
   describe("구독 이벤트 운영 알림", () => {
     async function adapterWithProjectId(projectId: string | undefined) {
       const forwarded: SubscriptionEventPayload[] = [];
       const { unit } = await TestBed.solitary(SubscriptionEventNotifierAdapter)
-        .mock(PAYMENT_NOTIFIER)
-        .impl(() => notifier)
         .mock(AdminEventNotifier)
         .impl(() => ({
           notifySubscriptionEvent: (event: SubscriptionEventPayload) => forwarded.push(event),

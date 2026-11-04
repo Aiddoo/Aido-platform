@@ -1,6 +1,8 @@
 import type { RevenueCatEventType, RevenueCatStore } from "@aido/api/vocabulary";
 
-/** Discord 알림에서 사용하는 내부 이벤트 키 */
+import type { AdminNotificationSeverity } from "../../read-models/notifications/admin-notification.read-model.js";
+
+/** 관리자 알림에서 사용하는 내부 이벤트 키 */
 export type SubscriptionEventKey =
   | "subscription.purchased"
   | "subscription.one_time_purchased"
@@ -35,76 +37,76 @@ export const REFUND_CANCEL_REASON = "CUSTOMER_SUPPORT";
 
 interface EventMeta {
   title: string;
-  color: number;
+  severity: AdminNotificationSeverity;
   emoji: string;
 }
 
 export const EVENT_META: Record<SubscriptionEventKey, EventMeta> = {
   "subscription.purchased": {
     title: "새로운 구독 구매",
-    color: 0x57f287,
+    severity: "success",
     emoji: "🎉",
   },
   "subscription.one_time_purchased": {
     title: "일회성 구매",
-    color: 0x57f287,
+    severity: "success",
     emoji: "🛒",
   },
   "subscription.renewed": {
     title: "구독 갱신",
-    color: 0x3498db,
+    severity: "info",
     emoji: "🔄",
   },
   "subscription.cancelled": {
     title: "구독 취소",
-    color: 0xe74c3c,
+    severity: "critical",
     emoji: "❌",
   },
   "subscription.expired": {
     title: "구독 만료",
-    color: 0x95a5a6,
+    severity: "info",
     emoji: "⏰",
   },
   "subscription.billing_issue": {
     title: "결제 문제 감지",
-    color: 0xf1c40f,
+    severity: "warning",
     emoji: "⚠️",
   },
   "subscription.uncancelled": {
     title: "구독 취소 철회",
-    color: 0x2ecc71,
+    severity: "success",
     emoji: "✅",
   },
   "subscription.product_changed": {
     title: "구독 상품 변경",
-    color: 0x9b59b6,
+    severity: "info",
     emoji: "🔀",
   },
   "subscription.refunded": {
     title: "구독 환불",
-    color: 0xe91e63,
+    severity: "critical",
     emoji: "↩️",
   },
   "subscription.extended": {
     title: "구독 연장",
-    color: 0x2ecc71,
+    severity: "success",
     emoji: "⏳",
   },
   "subscription.transferred": {
     title: "구독 이전",
-    color: 0x1abc9c,
+    severity: "info",
     emoji: "🔁",
   },
 };
 
 export const DEFAULT_META: EventMeta = {
   title: "구독 이벤트",
-  color: 0x7289da,
+  severity: "info",
   emoji: "📋",
 };
 
-/** 샌드박스(테스트 결제)는 이벤트 색과 무관하게 회색으로 구분한다. */
-export const SANDBOX_COLOR = 0x747f8d;
+/** 샌드박스(테스트 결제)는 이벤트 종류와 무관하게 info로 낮춘다. */
+export const SANDBOX_SEVERITY: AdminNotificationSeverity = "info";
 
 /** 이벤트 직후 자동 갱신 상태. 이벤트 자체로 확정할 수 없으면 생략한다. */
 export const AUTO_RENEW_LABELS: Partial<Record<SubscriptionEventKey, string>> = {

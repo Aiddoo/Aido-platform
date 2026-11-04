@@ -1,36 +1,40 @@
+import type { NotificationChannel } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
 import type {
-  AdminNotifier,
-  AdminNotifyResult,
+  AdminNotifierPort,
+  AdminNotifyOutcome,
 } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import type { AdminNotification } from "#api/modules/operations/application/read-models/notifications/admin-notification.read-model";
+
+export interface SentAdminNotification {
+  readonly channel: NotificationChannel;
+  readonly notification: AdminNotification;
+}
 
 /**
  * 테스트용 FakeAdminNotifier
  *
- * 실제 Discord 웹훅을 호출하지 않고, 발송된 알림을 메모리에 저장합니다.
+ * 실제 알림 채널을 호출하지 않고, 발송된 알림을 채널과 함께 메모리에 저장합니다.
  */
-export class FakeAdminNotifier implements AdminNotifier {
-  readonly name = "fake";
-  private _sentNotifications: AdminNotification[] = [];
+export class FakeAdminNotifier implements AdminNotifierPort {
+  #sent: SentAdminNotification[] = [];
 
-  async send(notification: AdminNotification): Promise<AdminNotifyResult> {
-    this._sentNotifications.push(notification);
-    return { success: true };
+  async send(
+    channel: NotificationChannel,
+    notification: AdminNotification,
+  ): Promise<AdminNotifyOutcome> {
+    this.#sent.push({ channel, notification });
+    return { status: "sent" };
   }
 
-  getSentNotifications(): AdminNotification[] {
-    return [...this._sentNotifications];
-  }
-
-  getLastNotification(): AdminNotification | undefined {
-    return this._sentNotifications[this._sentNotifications.length - 1];
+  getSent(channel?: NotificationChannel): SentAdminNotification[] {
+    return this.#sent.filter((sent) => channel == null || sent.channel === channel);
   }
 
   getSentCount(): number {
-    return this._sentNotifications.length;
+    return this.#sent.length;
   }
 
   clear(): void {
-    this._sentNotifications = [];
+    this.#sent = [];
   }
 }
