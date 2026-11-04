@@ -96,7 +96,7 @@ commit
 
 ## 유료 기능과 권한
 
-권한 주체는 FREE·PREMIUM(유효한 스토어 구독 또는 보상 기간)·ADMIN(모든 기능 무제한) 셋이다. 판단은 Access의 [entitlement-limits.policy](../src/modules/access/domain/policies/entitlement/entitlement-limits.policy.ts) 하나이고, 카탈로그에는 무료·프리미엄 값만 두며 ADMIN은 정책이 처리한다.
+권한 주체는 FREE·PREMIUM(유효한 스토어 구독 또는 보상 기간)·ADMIN(모든 기능 무제한) 셋이다. 플랜 숫자는 `@aido/api/vocabulary`의 `PLAN_CATALOG` 한 곳에만 두고(출시 앱이 읽는 `PREMIUM_FEATURES`는 그 부분집합), 무료·프리미엄 판단은 [paid-access.policy](../src/modules/access/domain/policies/entitlement/paid-access.policy.ts)의 `hasPaidAccess`, 한도 판단은 [entitlement.policy](../src/modules/access/domain/policies/entitlement/entitlement.policy.ts) 하나다. ADMIN은 정책이 처리한다. 무제한으로 보이는 프리미엄 quota에 `fairUse.premium`이 있으면 서버는 그 상한으로 막고(`resolveQuotaLimit`), 출시 앱 응답은 표시 한도(null)를 그대로 보여 준다.
 
 | 질문                         | 쓰는 곳                                                                                                                                               |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -106,7 +106,7 @@ commit
 
 유료 기능 추가 방법:
 
-1. `@aido/api/vocabulary`의 `PREMIUM_FEATURE_KEYS`·`PREMIUM_FEATURES`에 kind(quota·resource·flag)와 free/premium 값을 추가한다. 앱만 막는 기능은 `clientOnly`.
+1. `@aido/api/vocabulary`의 `PLAN_CATALOG`(plan-catalog.constants.ts)에 kind(quota·resource·flag)와 free/premium 값을 추가한다. 출시 앱 /me가 아는 기능만 `PREMIUM_FEATURES`에 두고, 새 기능은 `PLAN_CATALOG`에만 더해 `GET /v1/entitlements`로 내보낸다. 앱만 막는 기능은 `clientOnly`.
 2. 서버가 막는 flag면 [entitlement-guard](../src/modules/access/application/services/entitlement/entitlement-guard.ts)에 기존 ErrorCode를 연결하고 UseCase에서 `assertEntitled`를 호출한다. quota·resource는 `limitOf`로 한도를 읽고 사용량은 소유 Context가 센다.
 3. `/me.entitlements` 계약(`premiumEntitlementsSchema`)에 키를 추가한다. 이전 앱은 모르는 키를 무시한다.
 4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다.

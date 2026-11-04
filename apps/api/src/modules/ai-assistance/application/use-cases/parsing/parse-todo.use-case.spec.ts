@@ -1,8 +1,12 @@
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
 import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
 import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 function createFixture() {
   const fixture = createAiQuotaFixture();
@@ -70,7 +74,10 @@ describe("ParseTodo — v1 롤백 경로", () => {
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(await fixture.quota.read(fixture.userId)).toMatchObject({ used: 1, limit: 5 });
+    expect(await fixture.quota.read(fixture.userId)).toMatchObject({
+      used: 1,
+      limit: FREE_AI_LIMIT,
+    });
     expect(result.data).toMatchObject({ title: "팀 미팅", categoryId: 7 });
     expect(result.meta).toMatchObject({
       model: "fake:test-model",
@@ -94,7 +101,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
   it("한도가 소진된 요청은 provider를 호출하지 않고 AI_1303을 반환한다", async () => {
     // Given
     const fixture = createFixture();
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < FREE_AI_LIMIT; index += 1) {
       await fixture.quota.reserve(fixture.userId);
     }
     // When

@@ -10,10 +10,11 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import { AiQuotaUsage } from "../../../domain/aggregates/quotas/ai-quota-usage.aggregate.js";
 import {
-  Feature,
-  resolveEffectiveSubscriptionStatus,
-  resolveFeatureLimit,
-} from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+  NO_RESOURCE_BONUSES,
+  resolveAccessContext,
+  resolveFeatureAccess,
+  resolveQuotaLimit,
+} from "../../../domain/policies/entitlement/entitlement.policy.js";
 import { getNextAiQuotaResetAt } from "../../../domain/policies/quotas/ai-quota-period.policy.js";
 import { AccessQuotaLogEvent } from "../../observability/quotas/access-quota-log.events.js";
 import type { AiQuotaUserMutationLockPort } from "../../ports/quotas/ai-quota-user-mutation-lock.port.js";
@@ -30,12 +31,14 @@ interface AiQuotaServiceDependencies {
   readonly logger: ApplicationLogger;
 }
 
-function aiParseLimit(state: AiQuotaState, at: Date): number | null {
-  return resolveFeatureLimit(
-    state.role,
-    resolveEffectiveSubscriptionStatus(state.subscriptionStatus, state.accessDeadline, at),
-    Feature.AI_PARSE,
-  );
+/** 출시 앱(/v1/ai/usage·/me)에 보이는 한도. 프리미엄은 공정 사용 상한이 있어도 무제한(null)으로 보인다. */
+function displayedAiParseLimit(state: AiQuotaState, at: Date): number | null {
+  const { tier } = resolveAccessContext(state, at);
+  return resolveFeatureAccess(tier, "AI_PARSE", NO_RESOURCE_BONUSES).limit;
+}
+
+function enforcedAiParseLimit(state: AiQuotaState, at: Date): number | null {
+  return resolveQuotaLimit(resolveAccessContext(state, at).tier, "AI_PARSE").limit;
 }
 
 export class AiQuotaService implements AiQuotaPort {
@@ -51,7 +54,7 @@ export class AiQuotaService implements AiQuotaPort {
     const usage = AiQuotaUsage.reconstitute({ userId, count: state.count, resetAt: state.resetAt });
     return {
       used: usage.usedAt(at),
-      limit: aiParseLimit(state, at),
+      limit: displayedAiParseLimit(state, at),
       resetsAt: toISOString(getNextAiQuotaResetAt(at)),
     };
   }
@@ -68,7 +71,7 @@ export class AiQuotaService implements AiQuotaPort {
         resetAt: state.resetAt,
       });
       const at = now();
-      const decision = usage.reserve({ at, limit: aiParseLimit(state, at) });
+      const decision = usage.reserve({ at, limit: enforcedAiParseLimit(state, at) });
       if (decision.status === "exceeded") {
         throw new ApplicationException(ErrorCode.AI_1303, {
           used: decision.used,

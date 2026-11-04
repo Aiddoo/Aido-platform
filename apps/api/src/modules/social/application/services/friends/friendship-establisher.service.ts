@@ -1,7 +1,6 @@
 import { INVITE_FRIENDSHIP, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { Resource } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   type AfterCommitTaskRegistryPort,
@@ -32,7 +31,7 @@ interface FriendshipEstablisherDependencies {
     | "getMaxSortOrderForFriends"
     | "getUserDisplayName"
   >;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimitInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOfInTx">;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly effects: Pick<
     FriendshipEffects,
@@ -95,11 +94,11 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
   }
 
   async #isAtFriendLimit(userId: string): Promise<boolean> {
-    const [entitlement, friendCount] = await Promise.all([
-      this.#dependencies.entitlementReader.getResourceLimitInTx(userId, Resource.FRIEND),
+    const [friendLimit, friendCount] = await Promise.all([
+      this.#dependencies.entitlementReader.limitOfInTx(userId, "FRIEND"),
       this.#dependencies.followRepository.countMutualFriends(userId),
     ]);
-    return hasReachedFriendLimit(entitlement.maxCount, friendCount);
+    return hasReachedFriendLimit(friendLimit, friendCount);
   }
 
   async #request(

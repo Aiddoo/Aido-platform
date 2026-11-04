@@ -17,7 +17,7 @@ const CACHED_SUBSCRIPTION_STATE_SCHEMA = z.looseObject({
   status: z.string().nullable(),
   isAdmin: z.boolean(),
   accessDeadlineMs: z.number().nullable().optional(),
-  resourceBonuses: z.object({ CATEGORY: z.number(), FRIEND: z.number() }),
+  resourceBonuses: z.object({ FRIEND: z.number() }),
 }) satisfies z.ZodType<CachedSubscriptionState>;
 
 @Injectable()

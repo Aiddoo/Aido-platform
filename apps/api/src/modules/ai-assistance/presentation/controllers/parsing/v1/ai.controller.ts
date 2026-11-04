@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
+import { AI_PARSE_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -34,6 +34,11 @@ import {
   ParseTodoRequestDto,
   ParseTodoResponseDto,
 } from "../../../schemas/parsing/v1/index.js";
+
+const AI_PARSE_QUOTA_DOC = `AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
+- 무료: **월 ${PLAN_CATALOG.AI_PARSE.free}회**
+- 프리미엄: 넉넉하게 (월 ${PLAN_CATALOG.AI_PARSE.fairUse.premium.toLocaleString("ko-KR")}회까지, 넘으면 AI_1303)
+- 다시 채우는 때: KST 매월 1일 00:00`;
 
 const AI_PARSE_THROTTLE = {
   TODO: { ttl: 60_000, limit: 20 },
@@ -161,9 +166,7 @@ AI는 문장에서 날짜·시각 표현의 종류만 읽고, 실제 날짜·요
 - 모델을 겨냥한 명령만 있는 입력은 제목 "입력 확인 필요"(en: "Needs review")의 오늘 종일 할 일로 응답하며 사용량을 차감하지 않습니다.
 
 ## 🚫 사용량 제한
-- 무료 유저: **월 5회** (Todo 파싱과 메모 파싱 합산)
-- 프리미엄: 무제한 (향후)
-- 리셋 시간: KST 매월 1일 00:00
+${AI_PARSE_QUOTA_DOC}
 
 ## 💡 입력 예시
 | 입력 | 예상 출력 |
@@ -363,9 +366,7 @@ if (confirmed) {
 \`\`\`
 
 ## 🚫 사용량 제한
-- 기존 AI 파싱과 **월간 사용량 공유** (parse-todo와 동일 카운트)
-- 무료 유저: 월 5회 / 프리미엄: 무제한
-- 리셋: KST 매월 1일 00:00`,
+${AI_PARSE_QUOTA_DOC}`,
   })
   @ApiSuccessResponse({ type: ParseMemoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

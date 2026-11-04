@@ -1,4 +1,7 @@
-import { Feature, type EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import {
+  calculateRemainingLimit,
+  type EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
 import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
@@ -7,7 +10,7 @@ import type { CheerRepositoryPort } from "../../ports/cheers/cheer.repository.po
 
 interface GetCheerLimitDependencies {
   readonly cheerRepository: Pick<CheerRepositoryPort, "countSentSince">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getFeatureLimit" | "calculateRemaining">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOf">;
 }
 
 export class GetCheerLimit {
@@ -22,8 +25,8 @@ export class GetCheerLimit {
     readonly timezone: string;
   }): Promise<CheerLimitSnapshot> {
     const window = dayWindowInTimezone(now(), input.timezone);
-    const [{ dailyLimit }, used] = await Promise.all([
-      this.#dependencies.entitlementReader.getFeatureLimit(input.userId, Feature.CHEER),
+    const [dailyLimit, used] = await Promise.all([
+      this.#dependencies.entitlementReader.limitOf(input.userId, "CHEER"),
       this.#dependencies.cheerRepository.countSentSince(
         input.userId,
         window.startsAt,
@@ -33,7 +36,7 @@ export class GetCheerLimit {
     return {
       dailyLimit,
       used,
-      remaining: this.#dependencies.entitlementReader.calculateRemaining(dailyLimit, used),
+      remaining: calculateRemainingLimit(dailyLimit, used),
     };
   }
 }

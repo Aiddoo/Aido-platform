@@ -1,6 +1,4 @@
 export const AI_PARSE_LIMITS = {
-  /** 무료 사용자 월간 AI 파싱 제한 (KST 기준 매월 1일 00:00 리셋) */
-  FREE_MONTHLY_LIMIT: 5,
   /** parse-todo 입력 최대 길이. 요청 검증과 프롬프트 입력이 같은 값을 쓴다. */
   TODO_TEXT_MAX_LENGTH: 500,
   /** parse-memo가 만드는 할 일 최대 수. 넘친 수는 meta.omittedTodoCount로 알린다. */

@@ -1,15 +1,15 @@
+import type { SubscriptionStatus } from "@aido/api/vocabulary";
+
 import { isSame } from "#api/shared/domain/date/utils/compare";
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot } from "#api/shared/domain/index";
-
-export type SubscriptionStatusValue = "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED";
 
 export interface SubscriptionProps {
   id: number;
   userId: string;
   revenueCatId: string;
   productId: string;
-  status: SubscriptionStatusValue;
+  status: SubscriptionStatus;
   startedAt: Date;
   expiresAt: Date;
   /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
@@ -60,7 +60,7 @@ export class Subscription extends AggregateRoot<SubscriptionProps> {
   get productId(): string {
     return this.props.productId;
   }
-  get status(): SubscriptionStatusValue {
+  get status(): SubscriptionStatus {
     return this.props.status;
   }
   get expiresAt(): Date {

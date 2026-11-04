@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import { Resource } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
@@ -42,7 +41,7 @@ interface SendFriendRequestDependencies {
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimitInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOfInTx">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly effects: Pick<
     FriendshipEffects,
@@ -70,14 +69,14 @@ export class SendFriendRequest {
         MutationLockKeys.friendList(userId),
         MutationLockKeys.friendList(targetUserId),
       ]);
-      const [entitlement, friendCount] = await Promise.all([
-        this.#dependencies.entitlementReader.getResourceLimitInTx(userId, Resource.FRIEND),
+      const [friendLimit, friendCount] = await Promise.all([
+        this.#dependencies.entitlementReader.limitOfInTx(userId, "FRIEND"),
         this.#dependencies.followRepository.countMutualFriends(userId),
       ]);
-      if (hasReachedFriendLimit(entitlement.maxCount, friendCount)) {
+      if (hasReachedFriendLimit(friendLimit, friendCount)) {
         throw new ApplicationException(ErrorCode.FOLLOW_0909, {
           current: friendCount,
-          limit: entitlement.maxCount,
+          limit: friendLimit,
         });
       }
 

@@ -1,4 +1,4 @@
-import { FOLLOW_LIMITS } from "@aido/api";
+import { PLAN_CATALOG } from "@aido/api";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -20,7 +20,7 @@ import { resourceBonus, user as userTable } from "#api/platform/database/schema/
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const FREE_LIMIT = FOLLOW_LIMITS.FREE_MAX_FRIENDS; // 5
+const FREE_LIMIT = PLAN_CATALOG.FRIEND.free;
 
 describe("팔로우 리소스 제한 E2E", () => {
   let ctx: E2eTestContext;

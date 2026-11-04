@@ -9,11 +9,8 @@ import type {
   EntitlementDatabasePort,
   EntitlementUserState,
 } from "../../../application/ports/entitlement/entitlement-state.port.js";
-import {
-  NO_RESOURCE_BONUSES,
-  resolvePremiumAccessDeadline,
-  type ResourceBonuses,
-} from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+import type { ResourceBonuses } from "../../../domain/policies/entitlement/entitlement.policy.js";
+import { resolvePremiumAccessDeadline } from "../../../domain/policies/entitlement/paid-access.policy.js";
 
 /** Authorization reads participate in the caller's CLS transaction. */
 @Injectable()
@@ -51,11 +48,7 @@ export class DrizzleEntitlementReader implements EntitlementDatabasePort {
       .from(resourceBonus)
       .where(eq(resourceBonus.userId, userId))
       .groupBy(resourceBonus.resource);
-    // DB ResourceType에는 아직 FRIEND만 있다
     const friend = groups.find((group) => group.resource === "FRIEND")?.quantity;
-    return {
-      ...NO_RESOURCE_BONUSES,
-      FRIEND: friend == null ? 0 : Number(friend),
-    };
+    return { FRIEND: friend == null ? 0 : Number(friend) };
   }
 }

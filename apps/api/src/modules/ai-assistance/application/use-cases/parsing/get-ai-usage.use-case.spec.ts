@@ -1,6 +1,10 @@
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
 
 import { GetAiUsage } from "./get-ai-usage.use-case.js";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 describe("GetAiUsage", () => {
   beforeEach(() => {
@@ -15,7 +19,7 @@ describe("GetAiUsage", () => {
     // When
     const usage = await useCase.execute({ userId: fixture.userId });
     // Then
-    expect(usage).toEqual({ used: 3, limit: 5, resetsAt: "2026-04-30T15:00:00.000Z" });
+    expect(usage).toEqual({ used: 3, limit: FREE_AI_LIMIT, resetsAt: "2026-04-30T15:00:00.000Z" });
   });
   it("새로운 기간은 저장된 과거 사용량을 변경하지 않고 0으로 표시한다", async () => {
     // Given

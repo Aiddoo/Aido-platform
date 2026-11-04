@@ -1,9 +1,6 @@
-import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
+import type { SubscriptionEnvironment, SubscriptionStatus } from "@aido/api/vocabulary";
 
-import type {
-  Subscription,
-  SubscriptionStatusValue,
-} from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
+import type { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
 import type { StoreSubscriptionEntitlement } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 
 export const SUBSCRIPTION_REPOSITORY = Symbol("SUBSCRIPTION_REPOSITORY");
@@ -12,7 +9,7 @@ export const SUBSCRIPTION_REPOSITORY = Symbol("SUBSCRIPTION_REPOSITORY");
 export interface SubscriptionUser {
   id: string;
   email: string;
-  subscriptionStatus: SubscriptionStatusValue;
+  subscriptionStatus: SubscriptionStatus;
   subscriptionExpiresAt: Date | null;
   revenueCatUserId: string | null;
   profile: { name: string | null } | null;
@@ -23,7 +20,7 @@ export interface CreateSubscriptionData {
   userId: string;
   revenueCatId: string;
   productId: string;
-  status: SubscriptionStatusValue;
+  status: SubscriptionStatus;
   startedAt: Date;
   expiresAt: Date;
   lastProcessedEventId?: string | null;
@@ -33,7 +30,7 @@ export interface CreateSubscriptionData {
 
 /** 구독 상태 업데이트 데이터 */
 export interface UpdateSubscriptionStatusData {
-  status?: SubscriptionStatusValue;
+  status?: SubscriptionStatus;
   expiresAt?: Date;
   gracePeriodEndsAt?: Date | null;
   cancelledAt?: Date | null;
@@ -43,7 +40,7 @@ export interface UpdateSubscriptionStatusData {
 
 /** User 테이블 구독 상태 동기화 데이터 */
 export interface UpdateUserSubscriptionStatusData {
-  subscriptionStatus: SubscriptionStatusValue;
+  subscriptionStatus: SubscriptionStatus;
   subscriptionExpiresAt?: Date | null;
   revenueCatUserId?: string;
 }

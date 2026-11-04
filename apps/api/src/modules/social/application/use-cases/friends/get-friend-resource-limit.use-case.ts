@@ -1,7 +1,4 @@
-import {
-  Resource,
-  type EntitlementReaderPort,
-} from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 
 import type { FollowReader } from "../../services/friends/follow.reader.js";
 
@@ -16,7 +13,7 @@ export interface GetFriendResourceLimitResult {
 
 interface GetFriendResourceLimitDependencies {
   readonly reader: Pick<FollowReader, "countFriends">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimit">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOf">;
 }
 
 export class GetFriendResourceLimit {
@@ -27,10 +24,10 @@ export class GetFriendResourceLimit {
   }
 
   async execute(input: GetFriendResourceLimitInput): Promise<GetFriendResourceLimitResult> {
-    const [entitlement, friendCount] = await Promise.all([
-      this.#dependencies.entitlementReader.getResourceLimit(input.userId, Resource.FRIEND),
+    const [maxCount, friendCount] = await Promise.all([
+      this.#dependencies.entitlementReader.limitOf(input.userId, "FRIEND"),
       this.#dependencies.reader.countFriends(input.userId),
     ]);
-    return { friendCount, maxCount: entitlement.maxCount };
+    return { friendCount, maxCount };
   }
 }

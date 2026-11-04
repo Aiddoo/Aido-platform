@@ -1,3 +1,5 @@
+import { ErrorCode, Errors } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
@@ -16,7 +18,7 @@ import {
  * ### 테스트 범위
  * - POST /ai/parse-todo: 자연어 파싱
  * - GET /ai/usage: 사용량 조회
- * - 월간 사용량 제한 (5회/월, KST 매월 1일 00:00 리셋)
+ * - 월간 사용량 제한 (PLAN_CATALOG.AI_PARSE, KST 매월 1일 00:00 리셋)
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
 import { user } from "#api/platform/database/schema/index";
@@ -29,6 +31,8 @@ import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-set
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 describe("AI E2E", () => {
   let ctx: E2eTestContext;
@@ -241,7 +245,7 @@ describe("AI E2E", () => {
           .expect(200);
 
         expect(usageResponse.body.data.data.used).toBe(3);
-        expect(usageResponse.body.data.data.limit).toBe(5);
+        expect(usageResponse.body.data.data.limit).toBe(FREE_AI_LIMIT);
         expect(fakeAiProvider.getCallCount()).toBe(3);
       });
 
@@ -320,9 +324,9 @@ describe("AI E2E", () => {
     });
 
     describe("사용량 제한", () => {
-      it("5회 초과 시 429 에러 반환 (AI_1303)", async () => {
+      it("무료 한도를 넘으면 429 에러 반환 (AI_1303)", async () => {
         // Given
-        await setUsage(testUserId, 5);
+        await setUsage(testUserId, FREE_AI_LIMIT);
 
         // When
         const response = await request(ctx.app.getHttpServer())
@@ -334,7 +338,7 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(429);
         expect(response.body.error.code).toBe("AI_1303");
-        expect(response.body.error.message).toContain("월간 AI 사용 횟수를 초과");
+        expect(response.body.error.message).toBe(Errors[ErrorCode.AI_1303].message);
 
         expect(fakeAiProvider.getCallCount()).toBe(0);
       });
@@ -350,7 +354,7 @@ describe("AI E2E", () => {
         const previousMonthFirstDay = new Date(
           Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1),
         );
-        await setUsageWithResetAt(testUserId, 5, previousMonthFirstDay);
+        await setUsageWithResetAt(testUserId, FREE_AI_LIMIT, previousMonthFirstDay);
 
         // When
         const parseResponse = await request(ctx.app.getHttpServer())
@@ -368,7 +372,7 @@ describe("AI E2E", () => {
           .expect(200);
 
         expect(usageResponse.body.data.data.used).toBe(1);
-        expect(usageResponse.body.data.data.limit).toBe(5);
+        expect(usageResponse.body.data.data.limit).toBe(FREE_AI_LIMIT);
       });
 
       it("resetsAt 필드는 KST 매월 1일 00:00 의 UTC 시각을 반환한다", async () => {
@@ -390,7 +394,7 @@ describe("AI E2E", () => {
         expect(kstDate.getUTCDate()).toBe(1);
       });
 
-      it("정확히 5회까지는 성공, 6회째에 429 에러", async () => {
+      it("무료 한도까지는 성공하고 그다음 요청은 429 에러", async () => {
         // Given
         fakeAiProvider.setDefaultResponse({
           title: "테스트",
@@ -399,7 +403,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < FREE_AI_LIMIT; i++) {
           await request(ctx.app.getHttpServer())
             .post("/v1/ai/parse-todo")
             .set("Authorization", `Bearer ${accessToken}`)
@@ -413,11 +417,11 @@ describe("AI E2E", () => {
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
-          .send({ text: "테스트 6" });
+          .send({ text: "한도 초과" });
 
         expect(response.status).toBe(429);
         expect(response.body.error.code).toBe("AI_1303");
-        expect(fakeAiProvider.getCallCount()).toBe(5);
+        expect(fakeAiProvider.getCallCount()).toBe(FREE_AI_LIMIT);
       });
     });
 
@@ -575,7 +579,7 @@ describe("AI E2E", () => {
         expect(response.body.data.success).toBe(true);
         expect(response.body.data.data).toMatchObject({
           used: 0,
-          limit: 5,
+          limit: FREE_AI_LIMIT,
         });
         expect(response.body.data.data.resetsAt).toBeDefined();
       });
@@ -593,13 +597,13 @@ describe("AI E2E", () => {
         expect(response.status).toBe(200);
         expect(response.body.data.data).toMatchObject({
           used: 3,
-          limit: 5,
+          limit: FREE_AI_LIMIT,
         });
       });
 
       it("사용량이 최대인 경우", async () => {
         // Given
-        await setUsage(testUserId, 5);
+        await setUsage(testUserId, FREE_AI_LIMIT);
 
         // When
         const response = await request(ctx.app.getHttpServer())
@@ -609,8 +613,8 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(200);
         expect(response.body.data.data).toMatchObject({
-          used: 5,
-          limit: 5,
+          used: FREE_AI_LIMIT,
+          limit: FREE_AI_LIMIT,
         });
       });
 
@@ -750,7 +754,7 @@ describe("AI E2E", () => {
         startDate: "2025-01-26",
         isAllDay: true,
       });
-      await setUsage(testUserId, 5);
+      await setUsage(testUserId, FREE_AI_LIMIT);
 
       // When
       const failedResponse = await request(ctx.app.getHttpServer())
@@ -924,7 +928,7 @@ describe("AI E2E", () => {
 
       it("사용량 초과 시 429", async () => {
         // Given
-        await setUsage(testUserId, 5);
+        await setUsage(testUserId, FREE_AI_LIMIT);
 
         // When
         const response = await request(ctx.app.getHttpServer())

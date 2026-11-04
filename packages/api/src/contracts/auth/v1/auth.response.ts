@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../../vocabulary/auth.constants.js";
-import type { PremiumFeature } from "../../../vocabulary/premium-features.constants.js";
-import { PREMIUM_SOURCE } from "../../../vocabulary/subscription.constants.js";
+import type { PremiumFeature } from "../../../vocabulary/plan-catalog.constants.js";
+import { PREMIUM_SOURCE, SUBSCRIPTION_STATUS } from "../../../vocabulary/subscription.constants.js";
 import { deviceTypeSchema, oauthProviderSchema } from "./auth.request.js";
 
 export const userStatusSchema = z.enum(USER_STATUS).describe("사용자 계정 상태");
@@ -110,13 +110,9 @@ export const currentUserPayloadSchema = z
 
 export type CurrentUserPayload = z.infer<typeof currentUserPayloadSchema>;
 
-export const SUBSCRIPTION_STATUS = ["FREE", "ACTIVE", "EXPIRED", "CANCELLED"] as const;
-
 export const subscriptionStatusSchema = z
   .enum(SUBSCRIPTION_STATUS)
   .describe("구독 상태 (FREE: 무료, ACTIVE: 구독 중, EXPIRED: 만료, CANCELLED: 취소)");
-
-export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
 export const premiumSourceSchema = z
   .enum(PREMIUM_SOURCE)

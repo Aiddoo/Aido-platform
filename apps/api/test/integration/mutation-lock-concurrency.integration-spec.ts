@@ -585,18 +585,8 @@ function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
   return { getDailyLimitInTx: async () => limit };
 }
 
-function createReaderEntitlement(
-  dailyLimit: number,
-): Pick<EntitlementReaderPort, "getFeatureLimit" | "calculateRemaining"> {
-  return {
-    getFeatureLimit: async () => ({
-      dailyLimit,
-      isAdmin: false,
-      subscriptionStatus: "FREE",
-    }),
-    calculateRemaining: (limit: number | null, used: number) =>
-      limit === null ? null : Math.max(0, limit - used),
-  };
+function createReaderEntitlement(dailyLimit: number): Pick<EntitlementReaderPort, "limitOf"> {
+  return { limitOf: async () => dailyLimit };
 }
 
 function createTodoCategoryCache(): TodoCategoryCachePort {

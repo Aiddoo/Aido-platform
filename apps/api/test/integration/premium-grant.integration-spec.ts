@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
-import { ENTITLEMENT_READER, Resource } from "#api/modules/access/access-entitlement.public";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { PREMIUM_GRANT_REPOSITORY } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
@@ -747,7 +747,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionExpiresAt: null,
     });
     expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
-    expect((await entitlement.getResourceLimitInTx(userId, Resource.FRIEND)).maxCount).toBeNull();
+    expect(await entitlement.limitOfInTx(userId, "FRIEND")).toBeNull();
   });
 
   it.each([

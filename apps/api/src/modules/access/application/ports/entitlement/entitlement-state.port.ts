@@ -1,4 +1,4 @@
-import type { ResourceBonuses } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+import type { ResourceBonuses } from "../../../domain/policies/entitlement/entitlement.policy.js";
 
 export interface EntitlementUserState {
   readonly role: string;

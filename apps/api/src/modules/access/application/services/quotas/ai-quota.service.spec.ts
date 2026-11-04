@@ -1,4 +1,8 @@
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 describe("AiQuotaService", () => {
   beforeEach(() => {
@@ -24,15 +28,15 @@ describe("AiQuotaService", () => {
   });
   it("정확한 한도 도달 요청은 저장된 사용량을 변경하지 않는다", async () => {
     // Given
-    const fixture = createAiQuotaFixture({ count: 5 });
+    const fixture = createAiQuotaFixture({ count: FREE_AI_LIMIT });
     // When
     const execution = fixture.quota.reserve(fixture.userId);
     // Then
     await expect(execution).rejects.toMatchObject({
       errorCode: "AI_1303",
-      details: { used: 5, limit: 5 },
+      details: { used: FREE_AI_LIMIT, limit: FREE_AI_LIMIT },
     });
-    expect(fixture.repository.users.get(fixture.userId)?.count).toBe(5);
+    expect(fixture.repository.users.get(fixture.userId)?.count).toBe(FREE_AI_LIMIT);
   });
   it.each([
     { role: "ADMIN", subscriptionStatus: "FREE" },
@@ -56,7 +60,7 @@ describe("AiQuotaService", () => {
     // Then
     expect(await fixture.quota.read(fixture.userId)).toEqual({
       used: 1,
-      limit: 5,
+      limit: FREE_AI_LIMIT,
       resetsAt: "2026-05-31T15:00:00.000Z",
     });
   });
@@ -73,7 +77,7 @@ describe("AiQuotaService", () => {
   });
   it("예약은 캐시와 무관하게 현재 구독 상태의 한도를 사용한다", async () => {
     // Given
-    const fixture = createAiQuotaFixture({ subscriptionStatus: "ACTIVE", count: 5 });
+    const fixture = createAiQuotaFixture({ subscriptionStatus: "ACTIVE", count: FREE_AI_LIMIT });
     await fixture.quota.read(fixture.userId);
     const state = await fixture.repository.findQuotaState(fixture.userId);
     if (state == null) {
@@ -84,7 +88,7 @@ describe("AiQuotaService", () => {
     const execution = fixture.quota.reserve(fixture.userId);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: "AI_1303" });
-    expect((await fixture.quota.read(fixture.userId)).limit).toBe(5);
+    expect((await fixture.quota.read(fixture.userId)).limit).toBe(FREE_AI_LIMIT);
   });
   it("사용자가 사라지면 조회와 예약은 USER_0601이고 실패 보상은 안전하게 종료한다", async () => {
     // Given

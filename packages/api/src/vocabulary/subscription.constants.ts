@@ -1,3 +1,8 @@
+/** 사용자 구독 projection 상태 (FREE: 무료, ACTIVE: 구독 중, EXPIRED: 만료, CANCELLED: 취소) */
+export const SUBSCRIPTION_STATUS = ["FREE", "ACTIVE", "EXPIRED", "CANCELLED"] as const;
+
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUS)[number];
+
 /**
  * 알려진 RevenueCat 이벤트 타입 (코드 참조 및 switch문용)
  *

@@ -10,7 +10,7 @@ import type {
   AiQuotaRepositoryPort,
   AiQuotaState,
 } from "../../../application/ports/quotas/ai-quota.repository.port.js";
-import { resolvePremiumAccessDeadline } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+import { resolvePremiumAccessDeadline } from "../../../domain/policies/entitlement/paid-access.policy.js";
 
 @Injectable()
 export class DrizzleAiQuotaRepository implements AiQuotaRepositoryPort {

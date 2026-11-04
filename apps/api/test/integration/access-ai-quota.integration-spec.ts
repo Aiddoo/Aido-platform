@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 
 import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
-  Feature,
 } from "#api/modules/access/access-entitlement.public";
 import {
   AI_QUOTA,
@@ -30,6 +30,8 @@ import {
   destroyE2eApp,
   type E2eTestContext,
 } from "../e2e/helpers/e2e-app-factory.js";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 const newMonthAt = new Date("2026-09-30T15:00:01.000Z");
 const oldMonthAt = new Date("2026-09-30T14:59:59.000Z");
@@ -61,7 +63,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       id: createEntityId(),
       email: "access-quota@example.com",
       userTag: "QUOTBF01",
-      aiUsageCount: 4,
+      aiUsageCount: FREE_AI_LIMIT - 1,
       aiUsageResetAt: newMonthAt,
       subscriptionStatus: "FREE",
       createdAt: newMonthAt,
@@ -121,7 +123,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
   it("무료 한도 직전의 동시 두 요청은 하나만 소비해야 한다", async () => {
     // Given
     expect(await repository.findQuotaState(userId)).toMatchObject({
-      count: 4,
+      count: FREE_AI_LIMIT - 1,
       resetAt: newMonthAt,
     });
 
@@ -134,16 +136,19 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     expect(observedWaiters).toBe(2);
     expect(fulfilled).toBe(1);
     expect(outcomes.find((outcome) => outcome.status === "rejected")).toMatchObject({
-      reason: { errorCode: ErrorCode.AI_1303, details: { used: 5, limit: 5 } },
+      reason: {
+        errorCode: ErrorCode.AI_1303,
+        details: { used: FREE_AI_LIMIT, limit: FREE_AI_LIMIT },
+      },
     });
-    expect(usage?.count).toBe(5);
+    expect(usage?.count).toBe(FREE_AI_LIMIT);
   });
 
   it("새 달의 동시 두 요청은 각각 소비되어 사용량 2를 저장해야 한다", async () => {
     // Given
     await client
       .update(userTable)
-      .set({ aiUsageCount: 5, aiUsageResetAt: oldMonthAt })
+      .set({ aiUsageCount: FREE_AI_LIMIT, aiUsageResetAt: oldMonthAt })
       .where(eq(userTable.id, userId));
 
     // When
@@ -194,9 +199,9 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       // Given
       await client
         .update(userTable)
-        .set({ role, subscriptionStatus, aiUsageCount: 5 })
+        .set({ role, subscriptionStatus, aiUsageCount: FREE_AI_LIMIT })
         .where(eq(userTable.id, userId));
-      expect((await entitlement.getFeatureLimit(userId, Feature.AI_PARSE)).dailyLimit).toBeNull();
+      expect(await entitlement.limitOf(userId, "AI_PARSE")).toBeNull();
       await client
         .update(userTable)
         .set({ role: "USER", subscriptionStatus: "FREE" })
@@ -205,22 +210,24 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       // When
       await expect(quota.reserve(userId)).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1303,
-        details: { used: 5, limit: 5 },
+        details: { used: FREE_AI_LIMIT, limit: FREE_AI_LIMIT },
       });
-      expect((await repository.findQuotaState(userId))?.count).toBe(5);
+      expect((await repository.findQuotaState(userId))?.count).toBe(FREE_AI_LIMIT);
     },
   );
 
-  it("보상 기간만 있는 사용자는 AI 파싱이 무제한이고 보상이 끝나는 시각부터 sweep 전에도 월 5회로 돌아간다", async () => {
+  it("보상 기간만 있는 사용자는 AI 파싱이 무제한이고 보상이 끝나는 시각부터 sweep 전에도 무료 한도로 돌아간다", async () => {
     // Given
-    await client.update(userTable).set({ aiUsageCount: 5 }).where(eq(userTable.id, userId));
+    await client
+      .update(userTable)
+      .set({ aiUsageCount: FREE_AI_LIMIT })
+      .where(eq(userTable.id, userId));
     await context.module
       .get<PremiumGranterPort>(PREMIUM_GRANTER)
       .grant({ userId, source: "INVITE", sourceKey: "invite:ai-quota", durationDays: 7 });
     const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
     vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
-    const limitDuringGrant = (await entitlement.getFeatureLimit(userId, Feature.AI_PARSE))
-      .dailyLimit;
+    const limitDuringGrant = await entitlement.limitOf(userId, "AI_PARSE");
 
     // When
     const duringGrant = await quota.reserve(userId);
@@ -232,7 +239,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     expect(duringGrant).toBeDefined();
     await expect(afterGrant).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1303,
-      details: { limit: 5 },
+      details: { limit: FREE_AI_LIMIT },
     });
   });
 
@@ -240,16 +247,16 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     // Given
     await client
       .update(userTable)
-      .set({ aiUsageCount: 5, aiUsageResetAt: oldMonthAt })
+      .set({ aiUsageCount: FREE_AI_LIMIT, aiUsageResetAt: oldMonthAt })
       .where(eq(userTable.id, userId));
 
     // When
     const usage = await quota.read(userId);
 
     // Then
-    expect(usage).toEqual({ used: 0, limit: 5, resetsAt: "2026-10-31T15:00:00.000Z" });
+    expect(usage).toEqual({ used: 0, limit: FREE_AI_LIMIT, resetsAt: "2026-10-31T15:00:00.000Z" });
     expect(await repository.findQuotaState(userId)).toMatchObject({
-      count: 5,
+      count: FREE_AI_LIMIT,
       resetAt: oldMonthAt,
     });
   });
@@ -262,13 +269,13 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
     await expect(
       unitOfWork.run(async () => {
         await quota.reserve(userId);
-        expect((await repository.findQuotaState(userId))?.count).toBe(5);
+        expect((await repository.findQuotaState(userId))?.count).toBe(FREE_AI_LIMIT);
         throw failure;
       }),
     ).rejects.toBe(failure);
 
     // Then
-    expect((await repository.findQuotaState(userId))?.count).toBe(4);
+    expect((await repository.findQuotaState(userId))?.count).toBe(FREE_AI_LIMIT - 1);
   });
 
   it("한 사용자의 잠금 대기는 다른 사용자의 quota 예약을 막지 않는다", async () => {
@@ -327,7 +334,7 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
 
     // Then
     expect((await blocked)[0]?.status).toBe("fulfilled");
-    expect((await repository.findQuotaState(userId))?.count).toBe(5);
+    expect((await repository.findQuotaState(userId))?.count).toBe(FREE_AI_LIMIT);
   });
 
   it("저장소의 보상 UPDATE는 현재 resetAt과 양수 카운터가 일치할 때만 적용한다", async () => {

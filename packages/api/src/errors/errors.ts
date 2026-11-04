@@ -1,3 +1,4 @@
+import { PLAN_CATALOG } from "../vocabulary/plan-catalog.constants.js";
 import { HttpStatus } from "./http-status.js";
 import type { ErrorDefinition } from "./types.js";
 
@@ -1096,9 +1097,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.AI_1303]: {
     code: "AI_1303",
-    message: "월간 AI 사용 횟수를 초과했습니다.",
-    description:
-      "무료 사용자는 한 달에 5회까지만 AI 기능을 사용할 수 있습니다. (KST 매월 1일 00:00 리셋)",
+    message: "이번 달 AI 할 일 만들기를 다 썼습니다.",
+    description: `AI 할 일 만들기는 무료 월 ${PLAN_CATALOG.AI_PARSE.free}회, 프리미엄은 넉넉하게(월 ${PLAN_CATALOG.AI_PARSE.fairUse.premium.toLocaleString("ko-KR")}회까지) 쓸 수 있습니다. KST 매월 1일 00:00에 다시 채워지며, 이 응답은 횟수를 차감하지 않았습니다.`,
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.AI_1304]: {

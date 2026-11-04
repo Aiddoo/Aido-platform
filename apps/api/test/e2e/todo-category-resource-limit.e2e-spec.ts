@@ -1,4 +1,4 @@
-import { PREMIUM_FEATURES, TODO_CATEGORY_LIMITS } from "@aido/api";
+import { PLAN_CATALOG } from "@aido/api";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -14,7 +14,7 @@ import { user as userTable } from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-const FREE_LIMIT = TODO_CATEGORY_LIMITS.FREE_MAX_COUNT; // 3
+const FREE_LIMIT = PLAN_CATALOG.TODO_CATEGORY.free;
 
 describe("할 일 카테고리 리소스 제한 E2E", () => {
   let ctx: E2eTestContext;
@@ -102,7 +102,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
         .expect(200);
 
       // Then
-      expect(limitResponse.body.data.maxCount).toBe(PREMIUM_FEATURES.TODO_CATEGORY.premium);
+      expect(limitResponse.body.data.maxCount).toBe(PLAN_CATALOG.TODO_CATEGORY.premium);
       expect(limitResponse.body.data.categoryCount).toBe(5);
     });
   });

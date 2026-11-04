@@ -2,7 +2,6 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   RESOURCE_BONUS_GRANTER,
-  Resource,
   type ResourceBonusGranterPort,
 } from "#api/modules/access/access-entitlement.public";
 
@@ -20,7 +19,7 @@ export class FriendSlotRewardApplier implements RewardApplier {
   async apply(grant: RewardGrantRecord): Promise<void> {
     await this.resourceBonusGranter.grant({
       userId: grant.recipientId,
-      resource: Resource.FRIEND,
+      resource: "FRIEND",
       quantity: grant.quantity,
       sourceKey: rewardGrantSourceKey(grant.id),
     });

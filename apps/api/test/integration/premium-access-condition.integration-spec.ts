@@ -1,7 +1,9 @@
 import { ConfigService } from "@nestjs/config";
 
 import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { hasPaidAccess } from "#api/modules/access/domain/policies/entitlement/paid-access.policy";
 import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
+import { activeSubscriptionCondition } from "#api/modules/access/infrastructure/persistence/entitlement/premium-access.condition";
 import { DrizzleSchedulerReader } from "#api/modules/notification/infrastructure/persistence/reminders/drizzle-scheduler.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
@@ -39,6 +41,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   let memory: InMemoryCacheAdapter;
   let reader: DrizzleSchedulerReader;
   let entitlement: EntitlementService;
+  let entitlementReader: DrizzleEntitlementReader;
   let userIds: Record<Scenario, string>;
 
   beforeAll(async () => {
@@ -50,9 +53,10 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       new CacheService(memory),
       new TypedConfigService(new ConfigService<EnvConfig, true>({})),
     );
+    entitlementReader = new DrizzleEntitlementReader(txHost);
     entitlement = new EntitlementService({
       cacheService: { wrapSubscription: (_userId, factory) => factory() },
-      database: new DrizzleEntitlementReader(txHost),
+      database: entitlementReader,
     });
   });
 
@@ -168,6 +172,36 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     // Then
     for (const decision of decisions) {
       expect(decision.sql, decision.scenario).toBe(decision.service);
+    }
+  });
+
+  it("유료 접근은 TS hasPaidAccess·/me isPremium·SQL activeSubscriptionCondition이 모두 같다", async () => {
+    // Given
+    const at = new Date();
+    const sqlRows = await client
+      .select({ id: user.id, paid: activeSubscriptionCondition(user, at) })
+      .from(user);
+    const sqlPaid = new Map(sqlRows.map((row) => [row.id, row.paid === true]));
+
+    // When
+    const decisions = await Promise.all(
+      Object.entries(userIds).map(async ([scenario, id]) => {
+        const state = await entitlementReader.findUserState(id);
+        return {
+          scenario,
+          sql: sqlPaid.get(id),
+          ts: state != null && hasPaidAccess(state, at),
+          isPremium: (await entitlement.getAccessSnapshot(id)).isPremium,
+        };
+      }),
+    );
+
+    // Then
+    for (const decision of decisions) {
+      expect([decision.ts, decision.isPremium], decision.scenario).toEqual([
+        decision.sql,
+        decision.sql,
+      ]);
     }
   });
 });

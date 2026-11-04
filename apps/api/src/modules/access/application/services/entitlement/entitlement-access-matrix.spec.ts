@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
+import { PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
@@ -32,9 +32,9 @@ afterEach(() => vi.useRealTimers());
 
 describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스", () => {
   it.each([
-    { subject: "FREE", aiParse: 5, friend: 5, aiReport: false, isPremium: false },
+    { subject: "FREE", aiParse: 10, friend: 5, aiReport: false, isPremium: false },
     { subject: "PREMIUM", aiParse: null, friend: null, aiReport: true, isPremium: true },
-    { subject: "EXPIRED_ACTIVE", aiParse: 5, friend: 5, aiReport: false, isPremium: false },
+    { subject: "EXPIRED_ACTIVE", aiParse: 10, friend: 5, aiReport: false, isPremium: false },
     { subject: "ADMIN", aiParse: null, friend: null, aiReport: true, isPremium: false },
   ] as const)(
     "$subject는 AI 파싱 한도 $aiParse·친구 한도 $friend·AI 리포트 $aiReport·isPremium $isPremium이다",
@@ -72,7 +72,7 @@ describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스
 
     // Then
     expect(tier).toBe("ADMIN");
-    expect(Object.keys(features)).toEqual([...PREMIUM_FEATURE_KEYS]);
+    expect(Object.keys(features)).toEqual([...PLAN_FEATURE_KEYS]);
     expect(Object.values(features).every((access) => access.allowed && access.limit == null)).toBe(
       true,
     );
@@ -82,7 +82,7 @@ describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스
     // Given
     const premium = createEntitlementFixture(SUBJECTS.PREMIUM);
     const free = createEntitlementFixture(SUBJECTS.FREE);
-    free.database.resourceBonuses.set(free.userId, { CATEGORY: 0, FRIEND: 2 });
+    free.database.resourceBonuses.set(free.userId, { FRIEND: 2 });
 
     // When
     const premiumCategory = await premium.service.limitOf(premium.userId, "TODO_CATEGORY");

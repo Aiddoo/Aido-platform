@@ -1,4 +1,4 @@
-import type { BonusResource } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+import type { BonusResource } from "../../../domain/policies/entitlement/entitlement.policy.js";
 
 export interface GrantResourceBonusInput {
   readonly userId: string;

@@ -13,7 +13,7 @@
 import {
   NO_RESOURCE_BONUSES,
   resolveAllFeatureAccess,
-} from "#api/modules/access/domain/policies/entitlement/entitlement-limits.policy";
+} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 import type {
   CurrentUserResult,
   ExchangeCodeResult,

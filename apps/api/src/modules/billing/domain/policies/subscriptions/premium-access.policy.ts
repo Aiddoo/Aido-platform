@@ -3,13 +3,12 @@ import {
   PREMIUM_GRANT_ENDING_NOTICE_DAYS,
   PREMIUM_SOURCE,
   type PremiumSource,
+  type SubscriptionStatus,
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
 
 import { addDays, addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 import { storeEntitlementEndsAt, storePeriodEndsAt } from "#api/shared/domain/store-renewal-grace";
-
-import type { SubscriptionStatusValue } from "../../aggregates/subscriptions/subscription.aggregate.js";
 
 export type PremiumGrantStatusValue = "BANKED" | "ACTIVE" | "ENDED" | "REVOKED";
 
@@ -24,7 +23,7 @@ const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
 
 /** 스토어 구독 행 중 프리미엄 판단에 필요한 값 */
 export interface StoreEntitlement {
-  readonly status: SubscriptionStatusValue;
+  readonly status: SubscriptionStatus;
   readonly expiresAt: Date;
   /** 스토어 결제 유예(billing grace)의 끝. 그때까지 갱신되지 않아도 엔타이틀먼트가 남는다. */
   readonly gracePeriodEndsAt?: Date | null;
@@ -119,7 +118,7 @@ export function premiumGrantDaysOf(durationMs: number): number {
  */
 export interface StoreEventChainState {
   readonly revenueCatId: string;
-  readonly status: SubscriptionStatusValue;
+  readonly status: SubscriptionStatus;
   readonly expiresAt?: Date | null;
   readonly gracePeriodEndsAt?: Date | null;
 }

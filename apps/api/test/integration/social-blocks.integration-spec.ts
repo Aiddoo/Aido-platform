@@ -112,11 +112,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       mutationLock,
       entitlementReader: {
-        getResourceLimitInTx: async () => ({
-          maxCount: null,
-          isAdmin: false,
-          subscriptionStatus: "ACTIVE",
-        }),
+        limitOfInTx: async () => null,
       },
       blockReader: blockRepository,
       effects,

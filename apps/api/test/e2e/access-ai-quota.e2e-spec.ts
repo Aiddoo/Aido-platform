@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
-  Feature,
 } from "#api/modules/access/access-entitlement.public";
 import {
   AI_PROVIDER,
@@ -22,6 +22,8 @@ import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-set
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+
+const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 const oldMonthAt = new Date("2026-04-30T14:59:59.000Z");
 const newMonthAt = new Date("2026-04-30T15:00:01.000Z");
@@ -140,7 +142,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
 
   it("무료 한도의 마지막 1회에 겹친 두 요청은 하나만 AI를 호출하고 다른 요청은 429로 거부한다", async () => {
     // Given
-    await setQuota({ count: 4, resetAt: oldMonthAt });
+    await setQuota({ count: FREE_AI_LIMIT - 1, resetAt: oldMonthAt });
     const deferred = provider.deferNext();
     const requests = [parseTodo().then(), parseTodo().then()];
     let responses: Awaited<(typeof requests)[number]>[] = [];
@@ -163,8 +165,11 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     }
     expect(responses.map((response) => response.status).sort()).toEqual([200, 429]);
     expect(provider.getCallCount()).toBe(1);
-    expect((await storedQuota())?.aiUsageCount).toBe(5);
-    expect((await readUsage().expect(200)).body.data.data).toMatchObject({ used: 5, limit: 5 });
+    expect((await storedQuota())?.aiUsageCount).toBe(FREE_AI_LIMIT);
+    expect((await readUsage().expect(200)).body.data.data).toMatchObject({
+      used: FREE_AI_LIMIT,
+      limit: FREE_AI_LIMIT,
+    });
   });
 
   it("AI 공급자 호출 실패는 기존 503 오류를 반환하고 예약한 사용량만 되돌린다", async () => {
@@ -180,12 +185,15 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     expect(response.body.error.code).toBe(ErrorCode.AI_1301);
     expect(provider.getCallCount()).toBe(1);
     expect((await storedQuota())?.aiUsageCount).toBe(2);
-    expect((await readUsage().expect(200)).body.data.data).toMatchObject({ used: 2, limit: 5 });
+    expect((await readUsage().expect(200)).body.data.data).toMatchObject({
+      used: 2,
+      limit: FREE_AI_LIMIT,
+    });
   });
 
   it("KST 월초 조회는 지난달 사용량을 0으로 보여주고 다음 달 1일의 리셋 시각을 반환한다", async () => {
     // Given
-    await setQuota({ count: 5, resetAt: oldMonthAt });
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
     vi.setSystemTime(newMonthAt);
 
     // When
@@ -193,8 +201,12 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
 
     // Then
     expect(response.status).toBe(200);
-    expect(response.body.data.data).toEqual({ used: 0, limit: 5, resetsAt: nextResetAt });
-    expect((await storedQuota())?.aiUsageCount).toBe(5);
+    expect(response.body.data.data).toEqual({
+      used: 0,
+      limit: FREE_AI_LIMIT,
+      resetsAt: nextResetAt,
+    });
+    expect((await storedQuota())?.aiUsageCount).toBe(FREE_AI_LIMIT);
     expect(provider.getCallCount()).toBe(0);
   });
 
@@ -224,7 +236,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       expect(previousResponse.body.error.code).toBe(ErrorCode.AI_1301);
       expect((await readUsage().expect(200)).body.data.data).toEqual({
         used: 1,
-        limit: 5,
+        limit: FREE_AI_LIMIT,
         resetsAt: nextResetAt,
       });
       expect(await storedQuota()).toMatchObject({
@@ -240,10 +252,10 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
 
   it("FREE 권한 캐시가 남아도 DB의 ACTIVE 구독은 무료 한도 이상을 사용할 수 있다", async () => {
     // Given
-    await setQuota({ count: 5, resetAt: oldMonthAt });
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect((await entitlement.getFeatureLimit(user.userId, Feature.AI_PARSE)).dailyLimit).toBe(5);
-    await setQuota({ count: 5, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
+    expect(await entitlement.limitOf(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
 
     // When
     const response = await parseTodo();
@@ -251,19 +263,20 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Then
     expect(response.status).toBe(200);
     expect(provider.getCallCount()).toBe(1);
-    expect((await storedQuota())?.aiUsageCount).toBe(6);
-    expect((await readUsage().expect(200)).body.data.data).toMatchObject({ used: 6, limit: null });
-    expect((await entitlement.getFeatureLimit(user.userId, Feature.AI_PARSE)).dailyLimit).toBe(5);
+    expect((await storedQuota())?.aiUsageCount).toBe(FREE_AI_LIMIT + 1);
+    expect((await readUsage().expect(200)).body.data.data).toMatchObject({
+      used: FREE_AI_LIMIT + 1,
+      limit: null,
+    });
+    expect(await entitlement.limitOf(user.userId, "AI_PARSE")).toBe(FREE_AI_LIMIT);
   });
 
   it("ACTIVE 권한 캐시가 남아도 DB에서 FREE가 된 사용자는 소진한 무료 한도를 넘을 수 없다", async () => {
     // Given
-    await setQuota({ count: 5, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(
-      (await entitlement.getFeatureLimit(user.userId, Feature.AI_PARSE)).dailyLimit,
-    ).toBeNull();
-    await setQuota({ count: 5, resetAt: oldMonthAt, subscriptionStatus: "FREE" });
+    expect(await entitlement.limitOf(user.userId, "AI_PARSE")).toBeNull();
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "FREE" });
 
     // When
     const response = await parseTodo();
@@ -272,10 +285,11 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     expect(response.status).toBe(429);
     expect(response.body.error.code).toBe(ErrorCode.AI_1303);
     expect(provider.getCallCount()).toBe(0);
-    expect((await storedQuota())?.aiUsageCount).toBe(5);
-    expect((await readUsage().expect(200)).body.data.data).toMatchObject({ used: 5, limit: 5 });
-    expect(
-      (await entitlement.getFeatureLimit(user.userId, Feature.AI_PARSE)).dailyLimit,
-    ).toBeNull();
+    expect((await storedQuota())?.aiUsageCount).toBe(FREE_AI_LIMIT);
+    expect((await readUsage().expect(200)).body.data.data).toMatchObject({
+      used: FREE_AI_LIMIT,
+      limit: FREE_AI_LIMIT,
+    });
+    expect(await entitlement.limitOf(user.userId, "AI_PARSE")).toBeNull();
   });
 });
