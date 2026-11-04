@@ -99,6 +99,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
           `ALTER TABLE "TodoSeries" DROP COLUMN "originSeriesId", ADD COLUMN "sortOrder" integer`,
         ),
       );
+      await tx.execute(sql.raw(`DROP INDEX "QuotaCharge_requestHash_createdAt_idx"`));
       for (const statement of [
         ...readDataMigrationStatements(),
         ...readMigrationStatements("_todo_series_origin"),

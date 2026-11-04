@@ -115,27 +115,28 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
   it("이미 끝난 단계 작업이 보존 중이어도 다시 예약할 수 있다", async () => {
     // Given
     const todoId = nextTodoId;
-    const soon = new Date(Date.now() + 5 * MINUTE_MS);
-    await scheduler.scheduleReminder(todoId, soon, USER_ID);
-    const handled = vi.fn().mockResolvedValue(undefined);
-    await runtime.work(TODO_REMINDER_QUEUE, handled, { teamSize: 1, pollingIntervalSeconds: 1 });
-    await vi.waitFor(
+    const key = `reminder_${todoId}_immediate`;
+    await scheduler.scheduleReminder(todoId, new Date(Date.now() + 5 * MINUTE_MS), USER_ID);
+    await runtime.work(TODO_REMINDER_QUEUE, vi.fn().mockResolvedValue(undefined), {
+      teamSize: 1,
+      pollingIntervalSeconds: 1,
+    });
+    const finished = await vi.waitFor(
       async () => {
-        const jobs = await boss.findJobs(TODO_REMINDER_QUEUE, {
-          key: `reminder_${todoId}_immediate`,
-        });
-        expect(jobs[0]?.state).toBe("completed");
+        const [job] = await boss.findJobs(TODO_REMINDER_QUEUE, { key });
+        expect(job?.state).toBe("completed");
+        return job;
       },
       { timeout: 15_000, interval: 200 },
     );
-
     // When
     await scheduler.scheduleReminder(todoId, new Date(Date.now() + 8 * MINUTE_MS), USER_ID);
-
     // Then
     await vi.waitFor(
-      () => {
-        expect(handled.mock.calls.flat(2).length).toBeGreaterThanOrEqual(2);
+      async () => {
+        const [job] = await boss.findJobs(TODO_REMINDER_QUEUE, { key });
+        expect(job?.createdOn.getTime()).toBeGreaterThan(finished?.createdOn.getTime() ?? 0);
+        expect(job?.state).toBe("completed");
       },
       { timeout: 15_000, interval: 200 },
     );
