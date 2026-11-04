@@ -26,14 +26,14 @@
 
 정확한 버전은 [`pnpm-workspace.yaml`](./pnpm-workspace.yaml)의 catalog와 각 `package.json`을 따른다.
 
-| 영역      | 기술                                                                                         |
-| --------- | -------------------------------------------------------------------------------------------- |
-| 서버      | NestJS 12.3 (ESM, SWC), Drizzle ORM 1.0 RC, PostgreSQL 16, pg-boss 12, AI SDK 7 (Google)     |
-| 공유 계약 | `@aido/api`: Zod 4.6 스키마·오류 코드·공용 vocabulary                                        |
-| 모바일    | Expo SDK 58, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky |
-| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                            |
-| 툴링      | Node.js 24.22.2, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.90, Oxfmt 0.75         |
-| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                      |
+| 영역      | 기술                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| 서버      | NestJS 12.3 (ESM, SWC), Drizzle ORM 1.0 RC, PostgreSQL 16, pg-boss 12, AI SDK 7 (Google)         |
+| 공유 계약 | `@aido/api`: Zod 4.6 스키마·오류 코드·공용 vocabulary                                            |
+| 모바일    | Expo SDK 58.0.x, React Native 0.88, React 19.3, Expo Router, TanStack Query 5, HeroUI Native, Ky |
+| 테스트    | Vitest 5 + Testcontainers(서버·계약), Jest 30 + jest-expo(모바일)                                |
+| 툴링      | Node.js 24.22.2, pnpm 12.15, Turborepo 2.11, TypeScript 6.0, Oxlint 1.91, Oxfmt 0.76             |
+| 인프라    | Docker Compose, GitHub Actions, GHCR, AWS EC2, Expo EAS                                          |
 
 ## 아키텍처
 
@@ -77,7 +77,8 @@ flowchart LR
 - Domain·Application은 Nest·ORM·vendor SDK에 의존하지 않는다. Nest Module이 Composition Root로서 UseCase와 Port 구현을 연결한다.
 - Controller는 UseCase를 직접 호출한다. 다른 Context는 `*.public.ts`로 공개한 capability만 사용한다.
 - 트랜잭션은 `UNIT_OF_WORK`와 CLS transaction(`@nestjs-cls/transactional`)으로 관리하고, 외부 발송은 커밋 이후에 실행한다.
-- job 저장소는 PostgreSQL(pg-boss)이다. push rate limit 기본 저장소도 PostgreSQL이고, Redis는 선택한 캐시·rate limit backend에만 쓴다.
+- job은 PostgreSQL(pg-boss)만 쓴다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우의 캐시·rate limit에만 쓴다.
+- 앱 헤더(`X-App-Version`·`X-Timezone`·`X-Request-Id` 등)는 요청마다 한 번 `RequestClient`로 정규화한다. `X-Request-Id`는 응답으로 돌려주고 로그 `reqId`와 Sentry `request_id`가 된다.
 
 상세: [apps/api/.claude/architecture.md](./apps/api/.claude/architecture.md)
 
