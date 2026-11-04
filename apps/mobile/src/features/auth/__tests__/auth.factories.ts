@@ -63,6 +63,7 @@ const generateConsent = (): Consent => ({
   marketingPushAgreedAt: null,
   aiDataSharingDecision: 'UNDECIDED',
   aiDataSharingAgreedAt: null,
+  aiDataSharingConsentVersion: null,
 });
 
 export const createConsent = (overrides?: Partial<Consent>): Consent => ({

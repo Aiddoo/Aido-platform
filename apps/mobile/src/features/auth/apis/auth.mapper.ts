@@ -48,6 +48,7 @@ export const toConsent = (dto: ConsentResponse): Consent => ({
   // 1.13.0 이전 서버는 AI 동의 필드를 주지 않는다. 답하지 않은 것으로 보고 AI 전에 안내를 띄운다
   aiDataSharingDecision: dto.aiDataSharingDecision ?? 'UNDECIDED',
   aiDataSharingAgreedAt: dto.aiDataSharingAgreedAt ? new Date(dto.aiDataSharingAgreedAt) : null,
+  aiDataSharingConsentVersion: dto.aiDataSharingConsentVersion ?? null,
 });
 
 export const toRegisterResult = (dto: RegisterResponse): RegisterResult => ({
@@ -80,6 +81,7 @@ export const toUpdateAiDataSharingConsentResult = (
 ): UpdateAiDataSharingConsentResult => ({
   aiDataSharingDecision: dto.aiDataSharingDecision,
   aiDataSharingAgreedAt: dto.aiDataSharingAgreedAt ? new Date(dto.aiDataSharingAgreedAt) : null,
+  aiDataSharingConsentVersion: dto.aiDataSharingConsentVersion,
 });
 
 export const toDeleteAccountResult = (dto: DeleteAccountResponse): DeleteAccountResult => ({

@@ -28,6 +28,8 @@ const PRIVACY_LINK_MIN_HEIGHT = 44;
 type AiConsentBottomSheetProps = Omit<ComponentProps<typeof ModalBottomSheet>, 'children'> & {
   /** 동의를 저장한 뒤 호출된다. 시트를 닫고 원래 하려던 AI 동작을 잇는다 */
   onAgree: () => void;
+  /** 이전 안내에 동의한 사람에게 바뀐 내용을 다시 알린다. 답하지 않아도 이전 동의는 그대로다 */
+  isRenewal?: boolean;
 };
 
 /**
@@ -37,6 +39,7 @@ type AiConsentBottomSheetProps = Omit<ComponentProps<typeof ModalBottomSheet>, '
 export function AiConsentBottomSheet({
   onAgree,
   onOpenChange,
+  isRenewal = false,
   ...sheetProps
 }: AiConsentBottomSheetProps) {
   const { t } = useTranslation('ai');
@@ -93,7 +96,7 @@ export function AiConsentBottomSheet({
               {t('consent.title')}
             </H4>
             <Text size="b3" shade={7} align="center">
-              {t('consent.subtitle')}
+              {isRenewal ? t('consent.renewal.subtitle') : t('consent.subtitle')}
             </Text>
           </VStack>
         </VStack>
@@ -157,7 +160,7 @@ export function AiConsentBottomSheet({
         </VStack>
 
         <Text size="e1" shade={6} align="center">
-          {t('consent.declineNotice')}
+          {isRenewal ? t('consent.renewal.declineNotice') : t('consent.declineNotice')}
         </Text>
       </VStack>
     </ModalBottomSheet>

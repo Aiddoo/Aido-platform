@@ -38,6 +38,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
               ...consent,
               aiDataSharingDecision: agreed ? 'AGREED' : 'DECLINED',
               aiDataSharingAgreedAt: agreed ? new Date() : null,
+              aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
             },
       );
 

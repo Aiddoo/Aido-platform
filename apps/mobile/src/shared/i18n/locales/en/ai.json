@@ -142,6 +142,10 @@
     },
     "privacyLink": "View Privacy Policy",
     "declineNotice": "If you don't agree, only AI features turn off. You can still add to-dos yourself.",
+    "renewal": {
+      "subtitle": "We added AI processors, so here's the updated notice.",
+      "declineNotice": "If you skip this, AI features keep working under your previous consent."
+    },
     "later": "Not now",
     "agree": "Agree",
     "saveFailed": "Couldn't save your choice. Please try again.",

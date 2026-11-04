@@ -280,6 +280,7 @@ describe('AuthService', () => {
           marketingPushAgreedAt: null,
           aiDataSharingDecision: 'UNDECIDED',
           aiDataSharingAgreedAt: null,
+          aiDataSharingConsentVersion: null,
         },
       });
     });

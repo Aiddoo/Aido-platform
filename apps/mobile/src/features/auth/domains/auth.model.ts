@@ -1,4 +1,5 @@
 import { aiDataSharingDecisionSchema, PASSWORD_RULES } from '@aido/api';
+import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({
@@ -20,13 +21,20 @@ export const consentSchema = z.object({
   marketingPushAgreedAt: z.coerce.date().nullable(),
   aiDataSharingDecision: aiDataSharingDecisionSchema,
   aiDataSharingAgreedAt: z.coerce.date().nullable(),
+  /** 마지막으로 답한 안내 버전. 답한 적이 없거나 서버가 주지 않으면 null */
+  aiDataSharingConsentVersion: z.string().nullable(),
 });
 export type Consent = z.infer<typeof consentSchema>;
 
 export const ConsentPolicy = {
-  /** 지금 안내 버전에 동의했을 때만 AI에 내용을 보낸다. 안내가 바뀌면 서버가 UNDECIDED로 돌려준다 */
+  /** 이전 안내 버전 동의도 AGREED다. 서버가 그 버전의 처리 업체만 쓰므로 기능은 그대로 동작한다 */
   hasAgreedToAiDataSharing: (consent: Consent): boolean =>
     consent.aiDataSharingDecision === 'AGREED',
+  /** 이전 안내에 동의한 사람에게 바뀐 안내를 보여 줘야 하는지. 버전을 모르면 묻지 않는다 */
+  shouldShowAiConsentRenewal: (consent: Consent): boolean =>
+    consent.aiDataSharingDecision === 'AGREED' &&
+    consent.aiDataSharingConsentVersion != null &&
+    consent.aiDataSharingConsentVersion !== AI_DATA_SHARING_CONSENT.VERSION,
 } as const;
 
 export const registerResultSchema = z.object({
@@ -57,6 +65,7 @@ export type UpdateMarketingPushConsentResult = z.infer<
 export const updateAiDataSharingConsentResultSchema = consentSchema.pick({
   aiDataSharingDecision: true,
   aiDataSharingAgreedAt: true,
+  aiDataSharingConsentVersion: true,
 });
 export type UpdateAiDataSharingConsentResult = z.infer<
   typeof updateAiDataSharingConsentResultSchema
