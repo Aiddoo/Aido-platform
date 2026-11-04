@@ -278,10 +278,14 @@ export const TodoRepeatPickerContent = ({
   );
 };
 
+/** 렌더에서 쓰는 폼 값 전체. 렌더 중 getValues()는 React Compiler가 캐시해 갱신되지 않으므로 useWatch의 값을 쓴다 */
 function useRepeatFormValues(): TodoRepeatFormValues {
-  const { control, getValues } = useFormContext<TodoRepeatFormValues>();
-  useWatch({ control });
-  return getValues();
+  const { control } = useFormContext<TodoRepeatFormValues>();
+
+  return useWatch({
+    control,
+    compute: (values) => ({ ...values, weekdays: [...values.weekdays] }),
+  });
 }
 
 interface RepeatPickerHeaderProps {
