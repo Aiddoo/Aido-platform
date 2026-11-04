@@ -3,13 +3,12 @@ import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 import {
   RETENTION_QUEUE,
   RETENTION_STAGE_SWEEP_SCHEDULE,
-  RETIRED_RETENTION_OUTBOX_RELAY_SCHEDULE_KEY,
   RetentionJobName,
 } from "./retention-queue.constants.js";
 import { RetentionQueueService } from "./retention-queue.service.js";
 
 describe("RetentionQueueService — 리텐션 예약", () => {
-  it("단계 sweep만 예약하고 공용 outbox로 옮긴 relay 예약은 해제한다", async () => {
+  it("단계 sweep 예약만 등록한다", async () => {
     // Given
     const runtime = new FakeJobRuntime();
     const service = new RetentionQueueService(runtime);
@@ -26,9 +25,6 @@ describe("RetentionQueueService — 리텐션 예약", () => {
         queue: RETENTION_QUEUE,
         data: { name: RetentionJobName.STAGE_SWEEP, data: {} },
       }),
-    ]);
-    expect(runtime.unscheduleCalls).toEqual([
-      { scheduleKey: RETIRED_RETENTION_OUTBOX_RELAY_SCHEDULE_KEY, queue: RETENTION_QUEUE },
     ]);
   });
 });

@@ -25,16 +25,13 @@ export const todoComment = pgTable(
     content: varchar({ length: 500 }),
     createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     deletedAt: timestamp({ precision: 3 }),
-    depth: integer().default(0).notNull(),
     editedAt: timestamp({ precision: 3 }),
     id: text().primaryKey().$defaultFn(createEntityId),
     likeCount: integer().default(0).notNull(),
     parentId: text(),
-    path: text().array().default([]).notNull(),
     replyCount: integer().default(0).notNull(),
     replyToCommentId: text(),
     requestFingerprint: char({ length: 64 }),
-    rootId: text(),
     todoId: integer().notNull(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()

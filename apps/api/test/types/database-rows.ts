@@ -22,7 +22,6 @@ export type RetentionExperimentAssignment =
   typeof tables.retentionExperimentAssignment.$inferSelect;
 export type RetentionExperimentResult = typeof tables.retentionExperimentResult.$inferSelect;
 export type RetentionExperimentStage = typeof tables.retentionExperimentStage.$inferSelect;
-export type RetentionPushOutbox = typeof tables.retentionPushOutbox.$inferSelect;
 export type SecurityLog = typeof tables.securityLog.$inferSelect;
 export type Session = typeof tables.session.$inferSelect;
 export type Subscription = typeof tables.subscription.$inferSelect;
@@ -62,7 +61,6 @@ export type RetentionExperimentStageStatus =
   (typeof tables.retentionExperimentStageStatus.enumValues)[number];
 export type RetentionExperimentVariant =
   (typeof tables.retentionExperimentVariant.enumValues)[number];
-export type RetentionOutboxStatus = (typeof tables.retentionOutboxStatus.enumValues)[number];
 export type SecurityEvent = (typeof tables.securityEvent.enumValues)[number];
 export type SubscriptionStatus = (typeof tables.subscriptionStatus.enumValues)[number];
 export type SuggestionStatus = (typeof tables.suggestionStatus.enumValues)[number];

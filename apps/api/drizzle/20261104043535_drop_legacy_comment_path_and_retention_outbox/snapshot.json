@@ -1,0 +1,200 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "009cef0c-3a51-4afc-bf24-2c7a8b29193b",
+  "prevIds": [
+    "3fe97d2a-1b90-47f6-bed5-2739f4164dad",
+    "ba25afa7-53d5-4bd4-8b6a-7564dea6fc6e",
+    "33ef1cd0-e8f1-4704-864e-b1dc1c1230ab"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionPushOutbox"
+      ],
+      "writes": [
+        "s|tbl|public.RetentionPushOutbox",
+        "n|tbl|public.RetentionPushOutbox",
+        "e|tbl|public.RetentionPushOutbox",
+        "n|rel|public.RetentionPushOutbox",
+        "n|type|public.RetentionPushOutbox"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "TodoComment",
+        "depth"
+      ],
+      "writes": [
+        "s|col|public.TodoComment.depth",
+        "n|col|public.TodoComment.depth",
+        "e|col|public.TodoComment.depth"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "TodoComment",
+        "path"
+      ],
+      "writes": [
+        "s|col|public.TodoComment.path",
+        "n|col|public.TodoComment.path",
+        "e|col|public.TodoComment.path"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "TodoComment",
+        "rootId"
+      ],
+      "writes": [
+        "s|col|public.TodoComment.rootId",
+        "n|col|public.TodoComment.rootId",
+        "e|col|public.TodoComment.rootId"
+      ],
+      "reads": [
+        "n|tbl|public.TodoComment",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "RetentionOutboxStatus"
+      ],
+      "writes": [
+        "s|enum|public.RetentionOutboxStatus",
+        "n|enum|public.RetentionOutboxStatus",
+        "e|enum|public.RetentionOutboxStatus",
+        "n|type|public.RetentionOutboxStatus"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "tables\u0000[\"public\",\"RetentionPushOutbox\"]"
+    },
+    {
+      "op": "drop",
+      "key": "enums\u0000[\"public\",\"RetentionOutboxStatus\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"TodoComment\",\"depth\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"TodoComment\",\"path\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"TodoComment\",\"rootId\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"attempts\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"availableAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"createdAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"dispatchId\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"lastError\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"lockedAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"notificationId\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"publishedAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"stageId\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"status\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"RetentionPushOutbox\",\"updatedAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"RetentionPushOutbox_status_availableAt_id_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"RetentionPushOutbox_status_lockedAt_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"RetentionPushOutbox\",\"RetentionPushOutbox_stageId_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "pks\u0000[\"public\",\"RetentionPushOutbox\",\"RetentionPushOutbox_pkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "uniques\u0000[\"public\",\"RetentionPushOutbox\",\"RetentionPushOutbox_dispatchId_key\"]"
+    },
+    {
+      "op": "drop",
+      "key": "uniques\u0000[\"public\",\"RetentionPushOutbox\",\"RetentionPushOutbox_notificationId_key\"]"
+    },
+    {
+      "op": "drop",
+      "key": "uniques\u0000[\"public\",\"RetentionPushOutbox\",\"RetentionPushOutbox_stageId_key\"]"
+    }
+  ]
+}

@@ -1,20 +1,8 @@
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { DrizzleRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/drizzle-retention.repository";
-import { requireRecord } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
-import {
-  notification,
-  pushDispatch,
-  retentionPushOutbox,
-  todo,
-  todoCategory,
-  userPreference,
-} from "#api/platform/database/schema/index";
+import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -233,72 +221,4 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const stored = await db.query.retentionExperimentStage.findFirst({ where: { id: stage.id } });
     expect(stored?.status).toBe("SCHEDULED");
   });
-
-  it("배포 migration은 아직 보내지 않은 리텐션 발송만 공용 outbox로 옮긴다", async () => {
-    // Given: 대기 중인 발송 하나와 이미 끝난 발송 하나가 이전 리텐션 outbox에 있다
-    const userId = await createUser("migrate1@example.com");
-    await repository.enroll({ userId, variant: "TREATMENT", startedAt: new Date() });
-    const [pendingStage, sentStage] = [await stageOf(userId, "D0"), await stageOf(userId, "D1")];
-    const seed = async (stageId: string, dispatchStatus: "PROCESSING" | "SENT") => {
-      const [created] = await db
-        .insert(notification)
-        .values({ userId, type: "SYSTEM_NOTICE", title: "t", body: "b", purpose: "ENGAGEMENT" })
-        .returning({ id: notification.id });
-      const notificationId = requireRecord(created).id;
-      const [dispatch] = await db
-        .insert(pushDispatch)
-        .values({
-          notificationId,
-          userId,
-          purpose: "ENGAGEMENT",
-          status: dispatchStatus,
-          processingJobId: dispatchStatus === "PROCESSING" ? "old-retention-job" : null,
-        })
-        .returning({ id: pushDispatch.id });
-      const dispatchId = requireRecord(dispatch).id;
-      await db.insert(retentionPushOutbox).values({
-        stageId,
-        notificationId,
-        dispatchId,
-        status: dispatchStatus === "SENT" ? "PUBLISHED" : "PROCESSING",
-      });
-      return dispatchId;
-    };
-    const pendingDispatchId = await seed(pendingStage.id, "PROCESSING");
-    const sentDispatchId = await seed(sentStage.id, "SENT");
-
-    // When
-    for (const statement of await readMigrationStatements(
-      "retention_push_outbox_to_shared_outbox",
-    )) {
-      await db.execute(sql.raw(statement));
-    }
-
-    // Then
-    const [sharedOutboxes, pendingDispatch, retentionOutboxes] = await Promise.all([
-      db.query.pushDispatchOutbox.findMany(),
-      db.query.pushDispatch.findFirst({ where: { id: pendingDispatchId } }),
-      db.query.retentionPushOutbox.findMany({ orderBy: { dispatchId: "asc" } }),
-    ]);
-    expect(sharedOutboxes.map((outbox) => outbox.dispatchId)).toEqual([pendingDispatchId]);
-    expect(sharedOutboxes[0]).toMatchObject({ deliveryMode: "SINGLE", status: "PENDING" });
-    expect(pendingDispatch).toMatchObject({ status: "PENDING", processingJobId: null });
-    expect(retentionOutboxes.map(({ dispatchId, status }) => ({ dispatchId, status }))).toEqual([
-      { dispatchId: pendingDispatchId, status: "FAILED" },
-      { dispatchId: sentDispatchId, status: "PUBLISHED" },
-    ]);
-  });
 });
-
-async function readMigrationStatements(name: string): Promise<string[]> {
-  const drizzleDirectory = fileURLToPath(new URL("../../drizzle/", import.meta.url));
-  const directory = (await readdir(drizzleDirectory)).find((entry) => entry.endsWith(`_${name}`));
-  if (directory == null) {
-    throw new Error(`migration not found: ${name}`);
-  }
-  const text = await readFile(join(drizzleDirectory, directory, "migration.sql"), "utf8");
-  return text
-    .split("--> statement-breakpoint")
-    .map((statement) => statement.trim())
-    .filter((statement) => statement.length > 0);
-}

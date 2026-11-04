@@ -93,12 +93,6 @@ export const retentionExperimentVariant = pgEnum("RetentionExperimentVariant", [
   "CONTROL",
   "TREATMENT",
 ]);
-export const retentionOutboxStatus = pgEnum("RetentionOutboxStatus", [
-  "PENDING",
-  "PROCESSING",
-  "PUBLISHED",
-  "FAILED",
-]);
 export const securityEvent = pgEnum("SecurityEvent", [
   "REGISTRATION",
   "LOGIN_SUCCESS",

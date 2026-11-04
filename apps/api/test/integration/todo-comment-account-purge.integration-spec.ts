@@ -138,9 +138,6 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       todoId: todo.id,
       authorId: purgedUser.id,
       parentId: null,
-      rootId: null,
-      path: [],
-      depth: 0,
       clientRequestId: "00000000-0000-4000-8000-000000000001",
       content: "삭제될 루트",
       likeCount: 1,
@@ -152,9 +149,6 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       authorId: purgedUser.id,
       parentId: purgedRootId,
       replyToCommentId: purgedRootId,
-      rootId: purgedRootId,
-      path: [purgedRootId],
-      depth: 1,
       clientRequestId: "00000000-0000-4000-8000-000000000002",
       content: "삭제될 답글",
     },
@@ -164,9 +158,6 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       authorId: otherUser.id,
       parentId: purgedRootId,
       replyToCommentId: purgedChildId,
-      rootId: purgedRootId,
-      path: [purgedRootId],
-      depth: 1,
       clientRequestId: "00000000-0000-4000-8000-000000000003",
       content: "보존할 후속 답글",
     },
@@ -175,9 +166,6 @@ async function createCommentTree(client: TestDatabaseClient): Promise<CommentTre
       todoId: todo.id,
       authorId: otherUser.id,
       parentId: null,
-      rootId: null,
-      path: [],
-      depth: 0,
       clientRequestId: "00000000-0000-4000-8000-000000000004",
       content: "다른 사용자의 루트",
       likeCount: 1,
@@ -484,7 +472,6 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     ).toMatchObject({ status: "LOCKED", deletedAt: null, accounts: [] });
     const comments = await client.query.todoComment.findMany({
       where: { todoId: fixture.todoId },
-      orderBy: { depth: "asc" },
     });
     const rollbackCompatibleComments = await client.query.todoComment.findMany({
       where: { id: { in: [fixture.purgedRootId, fixture.purgedChildId] } },

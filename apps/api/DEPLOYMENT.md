@@ -66,7 +66,7 @@ GROUP BY name, state;
 
 Redis를 쓰던 배포라면 같은 이름의 BullMQ `wait`·`delayed`·`active` 크기도 확인한다(`LLEN bull:<queue>:wait`, `ZCARD bull:<queue>:delayed`, `LLEN bull:<queue>:active`).
 
-리텐션 발송은 공용 push-delivery outbox로 옮겨졌다. migration `retention_push_outbox_to_shared_outbox`가 아직 보내지 않은 리텐션 dispatch를 공용 outbox에 올리고 이전 리텐션 outbox를 `FAILED`(`MOVED_TO_PUSH_DISPATCH_OUTBOX`)로 닫아 이전 API worker가 같은 dispatch를 다시 잡지 못하게 한다. 이전 배포의 `retention-dispatch` 작업은 새 worker가 처리 없이 완료하고, `retention-outbox-relay-scheduler` 예약은 새 API가 시작할 때 해제한다. `RetentionPushOutbox` 테이블은 이전 이미지로 롤백할 수 있도록 남기며 1.14.1 운영 안정화 뒤 별도 migration으로 지운다.
+리텐션 발송은 1.14.1부터 공용 push-delivery outbox를 쓴다. 1.14.2의 migration `drop_legacy_comment_path_and_retention_outbox`가 이전 `RetentionPushOutbox` 테이블과 `TodoComment.path`·`depth`·`rootId` 열을 지운다. 1.14.1 이하 API 이미지는 지운 열에 값을 쓰므로, 이 migration을 적용한 DB에서 이미지만 롤백하면 댓글 작성이 실패한다.
 
 ## 롤백의 범위
 

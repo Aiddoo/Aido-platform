@@ -69,22 +69,14 @@ function toAggregate(row: CommentRow): TodoComment {
   });
 }
 
-/**
- * 묶음 머리(parentId)와 답글 대상만 읽는다. rootId·path·depth는 이전 API 이미지로 롤백해도
- * 같은 묶음으로 읽히도록 2단계 값으로 함께 쓴다.
- * TODO: 1.14.1 다음 릴리스의 contract 마이그레이션에서 세 컬럼을 drop할 때 함께 제거한다.
- */
 function toStoredPlacement(placement: CommentPlacement) {
   if (placement.kind === "COMMENT") {
-    return { parentId: null, replyToCommentId: null, rootId: null, path: [], depth: 0 };
+    return { parentId: null, replyToCommentId: null };
   }
 
   return {
     parentId: placement.threadCommentId,
     replyToCommentId: placement.replyToCommentId,
-    rootId: placement.threadCommentId,
-    path: [placement.threadCommentId],
-    depth: 1,
   };
 }
 

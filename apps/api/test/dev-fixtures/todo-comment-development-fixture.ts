@@ -548,7 +548,8 @@ async function verifyStoredCalculations(input: {
 
   for (const row of fixtureRows) {
     assertEqual(row.likeCount, row.likes.length, `${row.id} active likes`);
-    assertEqual(row.depth, row.parentId === null ? 0 : 1, `${row.id} 2단계 depth`);
+    const thread = fixtureRows.find((candidate) => candidate.id === row.parentId);
+    assertEqual(thread?.parentId ?? null, null, `${row.id} 2단계 묶음 머리`);
     const [visibleReplies] = await input.db
       .select({ count: count() })
       .from(todoComment)

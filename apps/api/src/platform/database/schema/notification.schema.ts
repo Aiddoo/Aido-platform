@@ -31,7 +31,6 @@ import {
   retentionExperimentStageName,
   retentionExperimentStageStatus,
   retentionExperimentVariant,
-  retentionOutboxStatus,
 } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
@@ -461,49 +460,5 @@ export const retentionExperimentStage = pgTable(
     ),
     unique("RetentionExperimentStage_assignmentId_stage_key").on(table.assignmentId, table.stage),
     unique("RetentionExperimentStage_notificationId_key").on(table.notificationId),
-  ],
-);
-
-export const retentionPushOutbox = pgTable(
-  "RetentionPushOutbox",
-  {
-    attempts: integer().default(0).notNull(),
-    availableAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    dispatchId: integer().notNull(),
-    id: text().primaryKey().$defaultFn(createEntityId),
-    lastError: varchar({ length: 500 }),
-    lockedAt: timestamp({ precision: 3 }),
-    notificationId: integer().notNull(),
-    publishedAt: timestamp({ precision: 3 }),
-    stageId: text().notNull(),
-    status: retentionOutboxStatus().default("PENDING").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.stageId],
-      foreignColumns: [retentionExperimentStage.id],
-      name: "RetentionPushOutbox_stageId_fkey",
-    })
-      .onUpdate("cascade")
-      .onDelete("cascade"),
-    index("RetentionPushOutbox_status_availableAt_id_idx").using(
-      "btree",
-      table.status.asc().nullsLast(),
-      table.availableAt.asc().nullsLast(),
-      table.id.asc().nullsLast(),
-    ),
-    index("RetentionPushOutbox_status_lockedAt_idx").using(
-      "btree",
-      table.status.asc().nullsLast(),
-      table.lockedAt.asc().nullsLast(),
-    ),
-    unique("RetentionPushOutbox_dispatchId_key").on(table.dispatchId),
-    unique("RetentionPushOutbox_notificationId_key").on(table.notificationId),
-    unique("RetentionPushOutbox_stageId_key").on(table.stageId),
   ],
 );

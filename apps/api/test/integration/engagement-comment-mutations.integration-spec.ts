@@ -141,9 +141,6 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         content: `답글 ${index}`,
         parentId: rootId,
         replyToCommentId: rootId,
-        rootId,
-        path: [rootId],
-        depth: 1,
         createdAt: new Date(AT.getTime() + index * 1000 + 100),
       });
       await client.insert(todoComment).values({
@@ -154,9 +151,6 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         content: `하위 답글 ${index}`,
         parentId: rootId,
         replyToCommentId: childId,
-        rootId,
-        path: [rootId],
-        depth: 1,
         createdAt: new Date(AT.getTime() + index * 1000 + 200),
       });
       if (index === 0) {

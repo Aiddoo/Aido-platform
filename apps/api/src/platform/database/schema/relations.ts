@@ -177,14 +177,6 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.retentionExperimentAssignment.id,
       optional: false,
     }),
-    outbox: r.one.retentionPushOutbox(),
-  },
-  retentionPushOutbox: {
-    stage: r.one.retentionExperimentStage({
-      from: r.retentionPushOutbox.stageId,
-      to: r.retentionExperimentStage.id,
-      optional: false,
-    }),
   },
   rewardGrant: {
     recipient: r.one.user({ from: r.rewardGrant.recipientId, to: r.user.id, optional: false }),
