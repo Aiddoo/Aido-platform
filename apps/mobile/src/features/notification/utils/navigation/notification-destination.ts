@@ -1,12 +1,4 @@
-import {
-  dateSchema,
-  NOTIFICATION_TYPE,
-  type NotificationAction,
-  type NotificationContext,
-  type NotificationRouting,
-  type NotificationType,
-  todoCommentIdSchema,
-} from '@aido/api';
+import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
@@ -17,6 +9,13 @@ import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 import { z } from 'zod';
+
+import type {
+  NotificationAction,
+  NotificationContext,
+  NotificationRouting,
+  NotificationType,
+} from '../../domains/notification.model';
 
 export type NotificationDestination =
   | { kind: 'none' }
@@ -34,14 +33,14 @@ export interface NotificationDestinationSource {
 /** 서버(1.13.0+)가 할 일 알림에 싣는 할 일 주인·날짜. 예전 알림에는 없다. */
 const todoTargetShape = {
   todoOwnerId: z.string().min(1).optional().catch(undefined),
-  todoDate: dateSchema.optional().catch(undefined),
+  todoDate: z.iso.date().optional().catch(undefined),
 };
 
 const routingSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal(NOTIFICATION_TYPE.TODO_SHARED),
     todoId: z.number().int().positive(),
-    commentId: todoCommentIdSchema.optional().catch(undefined),
+    commentId: z.cuid().optional().catch(undefined),
     ...todoTargetShape,
   }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.FOLLOW_NEW) }),

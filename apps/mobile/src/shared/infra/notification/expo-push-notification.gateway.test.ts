@@ -17,6 +17,12 @@ jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(),
   getExpoPushTokenAsync: jest.fn(),
   addPushTokenListener: jest.fn(),
+  addNotificationReceivedListener: jest.fn(),
+  addNotificationResponseReceivedListener: jest.fn(),
+  addNotificationResponseClearedListener: jest.fn(),
+  getLastNotificationResponse: jest.fn(),
+  clearLastNotificationResponse: jest.fn(),
+  setNotificationCategoryAsync: jest.fn(),
 }));
 
 const getPermissionsAsync = jest.mocked(Notifications.getPermissionsAsync);
@@ -98,4 +104,128 @@ describe('expoPushNotificationGateway', () => {
     await failure;
     jest.useRealTimers();
   });
+
+  test('알림 응답은 SDK 모양 없이 식별자·버튼·data만 담아 알린다', () => {
+    // Given
+    const remove = jest.fn();
+    let sdkListener: Parameters<
+      typeof Notifications.addNotificationResponseReceivedListener
+    >[0] = () => {};
+    jest
+      .mocked(Notifications.addNotificationResponseReceivedListener)
+      .mockImplementation((listener) => {
+        sdkListener = listener;
+        return { remove };
+      });
+    const listener = jest.fn();
+
+    // When
+    const unsubscribe = expoPushNotificationGateway.addResponseListener(listener);
+    sdkListener(createSdkResponse({ id: 'req-1', actionIdentifier: 'MARKETING_OPT_OUT' }));
+    unsubscribe();
+
+    // Then
+    expect(listener).toHaveBeenCalledWith({
+      id: 'req-1',
+      actionIdentifier: 'MARKETING_OPT_OUT',
+      data: { notificationId: 1 },
+    });
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  test('앱이 켜진 동안 도착한 알림은 data만 알리고 구독 해제를 돌려준다', () => {
+    // Given
+    const remove = jest.fn();
+    let sdkListener: Parameters<typeof Notifications.addNotificationReceivedListener>[0] = () => {};
+    jest.mocked(Notifications.addNotificationReceivedListener).mockImplementation((listener) => {
+      sdkListener = listener;
+      return { remove };
+    });
+    const listener = jest.fn();
+
+    // When
+    const unsubscribe = expoPushNotificationGateway.addReceivedListener(listener);
+    sdkListener(createSdkResponse({ id: 'req-2' }).notification);
+    unsubscribe();
+
+    // Then
+    expect(listener).toHaveBeenCalledWith({ data: { notificationId: 1 } });
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  test('마지막 응답이 없으면 null이고 있으면 같은 DTO로 바꾼다', () => {
+    // Given
+    const getLast = jest.mocked(Notifications.getLastNotificationResponse);
+    getLast.mockReturnValueOnce(null);
+    getLast.mockReturnValueOnce(createSdkResponse({ id: 'req-3' }));
+
+    // When
+    const none = expoPushNotificationGateway.getLastResponse();
+    const last = expoPushNotificationGateway.getLastResponse();
+
+    // Then
+    expect(none).toBeNull();
+    expect(last).toEqual({
+      id: 'req-3',
+      actionIdentifier: 'default',
+      data: { notificationId: 1 },
+    });
+  });
+
+  test('마지막 응답 지우기는 SDK에 그대로 넘긴다', () => {
+    // Given
+    // When
+    expoPushNotificationGateway.clearLastResponse();
+
+    // Then
+    expect(Notifications.clearLastNotificationResponse).toHaveBeenCalledTimes(1);
+  });
+
+  test('카테고리는 버튼 제목과 옵션을 SDK 모양으로 바꿔 등록한다', async () => {
+    // Given
+    jest.mocked(Notifications.setNotificationCategoryAsync).mockResolvedValue({
+      identifier: 'MARKETING',
+      actions: [],
+      options: undefined,
+    });
+
+    // When
+    await expoPushNotificationGateway.setCategory({
+      identifier: 'MARKETING',
+      actions: [{ identifier: 'OPT_OUT', title: '수신 거부', opensAppToForeground: true }],
+    });
+
+    // Then
+    expect(Notifications.setNotificationCategoryAsync).toHaveBeenCalledWith('MARKETING', [
+      { identifier: 'OPT_OUT', buttonTitle: '수신 거부', options: { opensAppToForeground: true } },
+    ]);
+  });
 });
+
+function createSdkResponse({
+  id,
+  actionIdentifier = 'default',
+}: {
+  id: string;
+  actionIdentifier?: string;
+}): Notifications.NotificationResponse {
+  return {
+    actionIdentifier,
+    notification: {
+      date: 0,
+      request: {
+        identifier: id,
+        content: {
+          title: null,
+          subtitle: null,
+          body: null,
+          data: { notificationId: 1 },
+          categoryIdentifier: null,
+          sound: null,
+          threadIdentifier: null,
+        },
+        trigger: { type: 'unknown' },
+      },
+    },
+  };
+}

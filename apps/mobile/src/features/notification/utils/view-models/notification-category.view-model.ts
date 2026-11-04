@@ -1,6 +1,7 @@
-import type { NotificationType } from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
+
+import type { NotificationType } from '../../domains/notification.model';
 
 const notificationCategoryKeySchema = z.enum([
   'friend',

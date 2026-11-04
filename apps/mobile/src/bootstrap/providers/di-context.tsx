@@ -6,6 +6,7 @@ import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
+import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
@@ -68,6 +69,8 @@ export interface DIContainer {
   speechRecognizer: SpeechRecognizer;
   /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
   purchasesGateway: PurchasesGateway;
+  /** OS 알림 SDK. 권한·토큰은 서비스가, 알림 수신·응답·카테고리는 훅이 이 포트로 쓴다 */
+  pushNotificationGateway: PushNotificationGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
   /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
@@ -159,6 +162,7 @@ export const useErrorReporter = () => useDI().errorReporter;
 export const useHaptics = () => useDI().haptics;
 export const useSpeechRecognizer = () => useDI().speechRecognizer;
 export const usePurchasesGateway = () => useDI().purchasesGateway;
+export const usePushNotificationGateway = () => useDI().pushNotificationGateway;
 export const useDraftService = () => useDI().draftService;
 export const useQueryCacheStorage = () => useDI().queryCacheStorage;
 export const useRecognitionLanguageRepository = () => useDI().recognitionLanguageRepository;

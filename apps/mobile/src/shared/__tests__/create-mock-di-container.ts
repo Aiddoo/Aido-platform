@@ -66,6 +66,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get purchasesGateway() {
       return dependency('purchasesGateway');
     },
+    get pushNotificationGateway() {
+      return dependency('pushNotificationGateway');
+    },
     get tokenStore() {
       return dependency('tokenStore');
     },

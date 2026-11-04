@@ -36,9 +36,8 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
     authStatus: status,
     handleNotificationResponse,
   });
-  const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
-  useColdStartNotificationResponse({ response: lastNotificationResponse, processResponse });
+  useColdStartNotificationResponse({ processResponse });
   useNativeNotificationListeners({ processResponse, handleForegroundNotification });
   useMarketingNotificationCategory();
   usePushDeviceSync({ authStatus: status });

@@ -323,6 +323,7 @@ export function DIProvider({
       haptics: expoHapticsGateway,
       speechRecognizer: expoSpeechRecognizerGateway,
       purchasesGateway: revenueCatPurchasesGateway,
+      pushNotificationGateway: expoPushNotificationGateway,
       tokenStore,
       sessionManager,
       tokenRefresher,

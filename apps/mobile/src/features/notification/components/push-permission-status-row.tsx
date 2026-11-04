@@ -1,4 +1,4 @@
-import { PUSH_PERMISSION_STATUS } from '@aido/api';
+import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, Text, VStack } from '@src/shared/ui';

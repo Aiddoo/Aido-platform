@@ -1,5 +1,5 @@
-import { pushNotificationDataSchema } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import type { ReceivedPushNotification } from '@src/core/ports/push-notification-gateway';
 import { invalidateFriends } from '@src/features/friend/queries/friend-cache';
 import { invalidateOnInviteNotification } from '@src/features/invite/queries/invite-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
@@ -7,9 +7,9 @@ import { invalidateMe } from '@src/features/user/queries/user-cache';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
-import type * as Notifications from 'expo-notifications';
 import { useCallback, useEffect, useMemo } from 'react';
 
+import { toPushNotificationPayload } from '../apis/notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 
@@ -25,13 +25,13 @@ export function useForegroundNotificationSync({
   const logger = useLogger();
   const syncNotification = useMemo(
     () =>
-      debounce((notification?: Notifications.Notification) => {
+      debounce((notification?: ReceivedPushNotification) => {
         const tasks: Promise<void>[] = [
           queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
           notificationService.syncBadgeCount(),
         ];
-        const result = pushNotificationDataSchema.safeParse(notification?.request.content.data);
-        const type = result.success ? result.data.type : undefined;
+        const result = toPushNotificationPayload(notification?.data);
+        const type = result.success ? result.payload.type : undefined;
         if (type === 'NUDGE_RECEIVED' || type === 'NUDGE_REPLIED' || type === 'NUDGE_THANKED') {
           tasks.push(invalidateNudgeInteractions(queryClient));
         }
@@ -60,7 +60,7 @@ export function useForegroundNotificationSync({
   }, [syncNotification, isAuthenticated]);
 
   return useCallback(
-    (notification?: Notifications.Notification) => {
+    (notification?: ReceivedPushNotification) => {
       if (!isAuthenticated) {
         return;
       }

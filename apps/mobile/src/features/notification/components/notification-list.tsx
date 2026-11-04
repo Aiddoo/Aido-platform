@@ -1,4 +1,3 @@
-import type { NotificationCategory } from '@aido/api';
 import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
@@ -29,7 +28,11 @@ import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { type Notification, NotificationPolicy } from '../domains/notification.model';
+import {
+  type Notification,
+  type NotificationCategory,
+  NotificationPolicy,
+} from '../domains/notification.model';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/get-notifications-infinite-query-options';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';

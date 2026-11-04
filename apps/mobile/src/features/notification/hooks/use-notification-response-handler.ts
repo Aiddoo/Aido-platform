@@ -1,4 +1,3 @@
-import type { PushNotificationData } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -10,12 +9,13 @@ import { useCallback } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import type { PushNotificationPayload } from '../domains/notification.model';
 import { optimisticallyMarkNotificationsRead } from '../queries/notification-cache';
 import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
 import { useNotificationNavigation } from './use-notification-navigation';
 
 export type NotificationResponseInput = {
-  data: PushNotificationData;
+  data: PushNotificationPayload;
   actionIdentifier: string;
   isCurrentSession: () => boolean;
 };

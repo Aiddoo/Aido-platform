@@ -1,6 +1,7 @@
 import type {
   IosPushAuthorizationStatus,
   PushNotificationGateway,
+  PushNotificationResponse,
   PushPermissionResponse,
 } from '@src/core/ports/push-notification-gateway';
 import { withTimeout } from 'es-toolkit';
@@ -28,6 +29,16 @@ function toPushPermissionResponse(
     status: response.status,
     canAskAgain: response.canAskAgain,
     iosStatus: response.ios ? IOS_AUTHORIZATION_STATUS[response.ios.status] : null,
+  };
+}
+
+function toPushNotificationResponse(
+  response: Notifications.NotificationResponse,
+): PushNotificationResponse {
+  return {
+    id: response.notification.request.identifier,
+    actionIdentifier: response.actionIdentifier,
+    data: response.notification.request.content.data ?? {},
   };
 }
 
@@ -63,6 +74,37 @@ export const expoPushNotificationGateway: PushNotificationGateway = {
       listener();
     });
     return () => subscription.remove();
+  },
+  addReceivedListener: (listener) => {
+    const subscription = Notifications.addNotificationReceivedListener((notification) =>
+      listener({ data: notification.request.content.data ?? {} }),
+    );
+    return () => subscription.remove();
+  },
+  addResponseListener: (listener) => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) =>
+      listener(toPushNotificationResponse(response)),
+    );
+    return () => subscription.remove();
+  },
+  addResponseClearedListener: (listener) => {
+    const subscription = Notifications.addNotificationResponseClearedListener(listener);
+    return () => subscription.remove();
+  },
+  getLastResponse: () => {
+    const response = Notifications.getLastNotificationResponse();
+    return response == null ? null : toPushNotificationResponse(response);
+  },
+  clearLastResponse: () => Notifications.clearLastNotificationResponse(),
+  setCategory: async ({ identifier, actions }) => {
+    await Notifications.setNotificationCategoryAsync(
+      identifier,
+      actions.map(({ identifier: actionIdentifier, title, opensAppToForeground }) => ({
+        identifier: actionIdentifier,
+        buttonTitle: title,
+        options: { opensAppToForeground },
+      })),
+    );
   },
   setBadgeCount: async (count) => {
     await Notifications.setBadgeCountAsync(count);

@@ -1,11 +1,16 @@
 import {
   type NotificationInboxResponse,
   type NotificationInboxItem as ServerNotification,
-  type NotificationRouting,
   notificationRoutingSchema,
+  pushNotificationDataSchema,
 } from '@aido/api';
 
-import type { Notification, NotificationListResult } from '../domains/notification.model';
+import type {
+  Notification,
+  NotificationListResult,
+  NotificationRouting,
+  PushNotificationPayload,
+} from '../domains/notification.model';
 
 export function toNotification(server: ServerNotification): Notification {
   const routing = toNotificationRouting(server.metadata);
@@ -43,3 +48,41 @@ export const toNotificationListResult = (
   hasMore: server.hasMore,
   nextCursor: server.nextCursor,
 });
+
+export type PushNotificationPayloadResult =
+  | { success: true; payload: PushNotificationPayload }
+  | { success: false; error: Error };
+
+/** OS가 준 푸시 data를 앱 모델로 읽는다. 모양이 맞지 않으면 error를 돌려준다 */
+export function toPushNotificationPayload(data: unknown): PushNotificationPayloadResult {
+  const parsed = pushNotificationDataSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error };
+  }
+
+  const {
+    notificationId,
+    type,
+    action,
+    context,
+    routing,
+    campaignKey,
+    variantId,
+    purpose,
+    marketingOptOutToken,
+  } = parsed.data;
+  return {
+    success: true,
+    payload: {
+      notificationId,
+      type,
+      action,
+      context,
+      routing,
+      campaignKey,
+      variantId,
+      purpose,
+      marketingOptOutToken,
+    },
+  };
+}

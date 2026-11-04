@@ -1,11 +1,11 @@
-import {
-  NOTIFICATION_CATEGORY,
-  type NotificationCategory,
-  getNotificationsQuerySchema,
-} from '@aido/api';
+import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { SentNudgeList } from '@src/features/notification/components/sent-nudge-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
+import {
+  type NotificationCategory,
+  notificationCategorySchema,
+} from '@src/features/notification/domains/notification.model';
 import { useNotificationCategoryParam } from '@src/features/notification/hooks/use-notification-category-param';
 import { useNotificationDirectionParam } from '@src/features/notification/hooks/use-notification-direction-param';
 import {
@@ -19,8 +19,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
-
-const notificationCategorySchema = getNotificationsQuerySchema.shape.category;
 
 export default function NotificationsScreen() {
   const { t } = useTranslation('notification');

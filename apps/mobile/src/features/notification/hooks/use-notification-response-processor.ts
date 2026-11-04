@@ -1,12 +1,13 @@
-import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
-import { useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
+import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { toError } from '@src/shared/errors';
-import * as Notifications from 'expo-notifications';
 import { useNavigationContainerRef } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { toPushNotificationPayload } from '../apis/notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import type { PushNotificationPayload } from '../domains/notification.model';
 import {
   getNotificationResponseDisposition,
   type NotificationAuthStatus,
@@ -16,7 +17,7 @@ import type { useNotificationResponseHandler } from './use-notification-response
 type PendingNotificationResponse = {
   responseId: string;
   actionIdentifier: string;
-  data: PushNotificationData;
+  data: PushNotificationPayload;
   accountId: string | null;
   receivedAt: number;
 };
@@ -35,6 +36,7 @@ export function useNotificationResponseProcessor({
   handleNotificationResponse: ReturnType<typeof useNotificationResponseHandler>;
 }) {
   const logger = useLogger();
+  const gateway = usePushNotificationGateway();
   const navigationRef = useNavigationContainerRef();
   const [isNavigationReady, setIsNavigationReady] = useState(() => navigationRef.isReady());
   const pendingResponses = useRef(new Map<string, PendingNotificationResponse>());
@@ -69,12 +71,12 @@ export function useNotificationResponseProcessor({
     ) {
       pendingResponses.current.clear();
       try {
-        Notifications.clearLastNotificationResponse();
+        gateway.clearLastResponse();
       } catch (error) {
         logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, { error });
       }
     }
-  }, [accountId, authStatus, logger]);
+  }, [accountId, authStatus, gateway, logger]);
 
   const processPendingResponse = useCallback(
     async (response: PendingNotificationResponse) => {
@@ -123,7 +125,7 @@ export function useNotificationResponseProcessor({
             handledResponseIds.current.delete(oldest);
           }
         }
-        Notifications.clearLastNotificationResponse();
+        gateway.clearLastResponse();
       } catch (error) {
         logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, {
           error: toError(error),
@@ -132,18 +134,16 @@ export function useNotificationResponseProcessor({
         processingResponseIds.current.delete(responseId);
       }
     },
-    [accountId, authStatus, handleNotificationResponse, isNavigationReady, logger],
+    [accountId, authStatus, gateway, handleNotificationResponse, isNavigationReady, logger],
   );
 
   const processResponse = useCallback(
-    (response: Notifications.NotificationResponse) => {
-      const responseId = response.notification.request.identifier;
+    (response: PushNotificationResponse) => {
+      const responseId = response.id;
       if (handledResponseIds.current.has(responseId)) {
         return;
       }
-      const parsed = pushNotificationDataSchema.safeParse(
-        response.notification.request.content.data,
-      );
+      const parsed = toPushNotificationPayload(response.data);
       if (!parsed.success) {
         logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, { error: parsed.error });
         return;
@@ -151,7 +151,7 @@ export function useNotificationResponseProcessor({
       const pending = pendingResponses.current.get(responseId) ?? {
         responseId,
         actionIdentifier: response.actionIdentifier,
-        data: parsed.data,
+        data: parsed.payload,
         accountId,
         receivedAt: Date.now(),
       };

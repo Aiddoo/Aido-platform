@@ -1,5 +1,8 @@
-import { useLogger } from '@src/bootstrap/providers/di-context';
-import * as Notifications from 'expo-notifications';
+import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
+import type {
+  PushNotificationResponse,
+  ReceivedPushNotification,
+} from '@src/core/ports/push-notification-gateway';
 import { useEffect } from 'react';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -8,22 +11,22 @@ export function useNativeNotificationListeners({
   processResponse,
   handleForegroundNotification,
 }: {
-  processResponse: (response: Notifications.NotificationResponse) => void;
-  handleForegroundNotification: (notification?: Notifications.Notification) => void;
+  processResponse: (response: PushNotificationResponse) => void;
+  handleForegroundNotification: (notification?: ReceivedPushNotification) => void;
 }) {
   const logger = useLogger();
+  const gateway = usePushNotificationGateway();
 
   useEffect(() => {
-    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+    const unsubscribeReceived = gateway.addReceivedListener((notification) => {
       logger.info(NOTIFICATION_LOG_EVENT.FOREGROUND_RECEIVED);
       handleForegroundNotification(notification);
     });
-    const responseSubscription =
-      Notifications.addNotificationResponseReceivedListener(processResponse);
+    const unsubscribeResponse = gateway.addResponseListener(processResponse);
 
     return () => {
-      receivedSubscription.remove();
-      responseSubscription.remove();
+      unsubscribeReceived();
+      unsubscribeResponse();
     };
-  }, [handleForegroundNotification, logger, processResponse]);
+  }, [gateway, handleForegroundNotification, logger, processResponse]);
 }

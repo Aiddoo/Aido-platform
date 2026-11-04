@@ -1,0 +1,94 @@
+import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
+import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { act, renderHook } from '@testing-library/react-native';
+import type { PropsWithChildren } from 'react';
+
+import { createPushNotificationGatewayStub } from '../__tests__/notification.factories';
+import { NotificationService } from '../apis/notification.service';
+import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import { useForegroundNotificationSync } from './use-foreground-notification-sync';
+
+async function setup(isAuthenticated: boolean) {
+  const notificationService = new NotificationService(
+    createMockHttpClient(),
+    createPushNotificationGatewayStub(),
+  );
+  const syncBadgeCount = jest.spyOn(notificationService, 'syncBadgeCount').mockResolvedValue();
+  const queryClient = createTestQueryClient();
+  const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
+  const container = createMockDIContainer({
+    notificationService,
+    logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  });
+  const wrapper = ({ children }: PropsWithChildren) => (
+    <StaticDIProvider container={container}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </StaticDIProvider>
+  );
+  const hook = await renderHook(() => useForegroundNotificationSync({ isAuthenticated }), {
+    wrapper,
+  });
+  return { syncBadgeCount, invalidateQueries, ...hook };
+}
+
+describe('useForegroundNotificationSync', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('알림이 도착하면 목록을 다시 받고 배지를 맞춘다', async () => {
+    // Given
+    const { result, syncBadgeCount, invalidateQueries } = await setup(true);
+
+    // When
+    result.current({ data: {} });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: NOTIFICATION_QUERY_KEYS.all });
+    expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('data가 계약에 맞지 않아도 목록과 배지는 맞춘다', async () => {
+    // Given
+    const { result, syncBadgeCount } = await setup(true);
+
+    // When
+    result.current(undefined);
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('로그인하지 않았으면 아무것도 하지 않는다', async () => {
+    // Given
+    const { result, syncBadgeCount } = await setup(false);
+
+    // When
+    result.current({ data: {} });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(syncBadgeCount).not.toHaveBeenCalled();
+  });
+
+  it('1초 안에 여러 알림이 와도 한 번만 맞춘다', async () => {
+    // Given
+    const { result, syncBadgeCount } = await setup(true);
+
+    // When
+    result.current({ data: {} });
+    result.current({ data: {} });
+    await act(() => jest.advanceTimersByTimeAsync(1000));
+
+    // Then
+    expect(syncBadgeCount).toHaveBeenCalledTimes(1);
+  });
+});

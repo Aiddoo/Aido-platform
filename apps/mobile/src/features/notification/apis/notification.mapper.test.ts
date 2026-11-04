@@ -1,5 +1,9 @@
 import { createNotificationListResponseDto } from '../__tests__/notification.factories';
-import { toNotification, toNotificationListResult } from './notification.mapper';
+import {
+  toNotification,
+  toNotificationListResult,
+  toPushNotificationPayload,
+} from './notification.mapper';
 
 jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
 
@@ -124,4 +128,45 @@ describe('toNotificationListResult', () => {
     expect(result.notifications).toEqual([]);
     expect(result.unreadCount).toBe(0);
   });
+});
+
+describe('toPushNotificationPayload', () => {
+  const validData = {
+    notificationId: 7,
+    type: 'NUDGE_RECEIVED',
+    action: { type: 'DEEP_LINK' },
+    context: { nudgeId: 3 },
+    campaignKey: 'spring',
+    unknownField: 'ignored',
+  };
+
+  test('계약에 맞는 data는 앱 모델로 읽고 모르는 키는 버린다', () => {
+    // Given
+    // When
+    const result = toPushNotificationPayload(validData);
+
+    // Then
+    expect(result).toEqual({
+      success: true,
+      payload: {
+        notificationId: 7,
+        type: 'NUDGE_RECEIVED',
+        action: { type: 'DEEP_LINK' },
+        context: { nudgeId: 3 },
+        campaignKey: 'spring',
+      },
+    });
+  });
+
+  test.each([undefined, {}, { ...validData, type: 'UNKNOWN_TYPE' }])(
+    '모양이 맞지 않으면 오류를 돌려준다: %j',
+    (data) => {
+      // Given
+      // When
+      const result = toPushNotificationPayload(data);
+
+      // Then
+      expect(result.success).toBe(false);
+    },
+  );
 });

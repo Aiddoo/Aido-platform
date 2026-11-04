@@ -1,22 +1,25 @@
-import { NOTIFICATION_CATEGORY, getNotificationsQuerySchema } from '@aido/api';
+import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { z } from 'zod';
 
-const notificationCategorySearchSchema = z.object({
-  category: getNotificationsQuerySchema.shape.category.catch(NOTIFICATION_CATEGORY.ALL),
-});
+import {
+  type NotificationCategory,
+  notificationCategorySchema,
+} from '../domains/notification.model';
 
-type NotificationCategoryParam = z.output<typeof notificationCategorySearchSchema>['category'];
+const notificationCategorySearchSchema = z.object({
+  category: notificationCategorySchema.catch(NOTIFICATION_CATEGORY.ALL),
+});
 
 /** 알림 URL의 `category` param을 검증해 읽고 바꾼다. */
 export function useNotificationCategoryParam(): readonly [
-  NotificationCategoryParam,
-  (category: NotificationCategoryParam) => void,
+  NotificationCategory,
+  (category: NotificationCategory) => void,
 ] {
   const { category } = notificationCategorySearchSchema.parse(useLocalSearchParams());
   const setCategory = useCallback(
-    (value: NotificationCategoryParam) => router.setParams({ category: value }),
+    (value: NotificationCategory) => router.setParams({ category: value }),
     [],
   );
 

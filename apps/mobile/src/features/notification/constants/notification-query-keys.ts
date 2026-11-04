@@ -1,4 +1,4 @@
-import type { NotificationCategory } from '@aido/api';
+import type { NotificationCategory } from '../domains/notification.model';
 
 export interface NotificationListFilters {
   category?: NotificationCategory;
