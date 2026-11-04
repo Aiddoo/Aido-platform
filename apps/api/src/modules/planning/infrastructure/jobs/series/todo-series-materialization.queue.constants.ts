@@ -2,7 +2,6 @@ import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtim
 
 export const TODO_SERIES_MATERIALIZATION_QUEUE = "todo-series-materialization.v1";
 export const TODO_SERIES_MATERIALIZATION_JOB_NAME = "materialize-due-series";
-export type TodoSeriesMaterializationJobData = Record<string, never>;
 
 export const TODO_SERIES_MATERIALIZATION_SCHEDULE = {
   id: "daily-todo-series-materialization-scheduler",

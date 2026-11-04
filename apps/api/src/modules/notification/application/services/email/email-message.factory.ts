@@ -33,7 +33,6 @@ import {
 export function createVerificationCodeEmail(
   to: string,
   data: VerificationCodeTemplateData,
-  idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
     kind: "verification",
@@ -42,14 +41,12 @@ export function createVerificationCodeEmail(
     html: getVerificationCodeHtml(data),
     text: getVerificationCodeText(data),
     tags: [{ name: "type", value: "verification" }],
-    idempotencyKey,
   });
 }
 
 export function createPasswordResetEmail(
   to: string,
   data: PasswordResetTemplateData,
-  idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
     kind: "password-reset",
@@ -58,14 +55,12 @@ export function createPasswordResetEmail(
     html: getPasswordResetHtml(data),
     text: getPasswordResetText(data),
     tags: [{ name: "type", value: "password-reset" }],
-    idempotencyKey,
   });
 }
 
 export function createPasswordSetupEmail(
   to: string,
   data: PasswordSetupTemplateData,
-  idempotencyKey?: string,
 ): EmailMessage {
   return EmailMessage.create({
     kind: "password-setup",
@@ -74,7 +69,6 @@ export function createPasswordSetupEmail(
     html: getPasswordSetupHtml(data),
     text: getPasswordSetupText(data),
     tags: [{ name: "type", value: "password-setup" }],
-    idempotencyKey,
   });
 }
 

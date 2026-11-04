@@ -34,7 +34,7 @@ import {
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/index";
+import { ApplicationException, DomainException } from "#api/shared/domain/index";
 
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../../application/use-cases/todos/change-todo-category.use-case.js";
@@ -299,29 +299,42 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.TODO_0812)
-  @ApiForbiddenError(ErrorCode.TODO_0813)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.TODO_0813, ErrorCode.TODO_0842])
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   async createRecurring(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
     @Timezone() timezone: string,
   ): Promise<CreateRecurringTodoResponseDto> {
-    const { todos } = await this.createTodoUseCase.execute({
-      userId: user.userId,
-      title: dto.title,
-      categoryId: dto.categoryId,
-      startDate: parseDateOnly(dto.startDate),
-      scheduledTime: dto.scheduledTime,
-      timezone,
-      isAllDay: dto.isAllDay,
-      visibility: dto.visibility,
-      repeat: {
-        frequency: "WEEKLY",
-        interval: 1,
-        weekdays: dto.daysOfWeek,
-        end: { type: "UNTIL", date: dto.endDate },
-      },
-    });
+    const { todos } = await this.createTodoUseCase
+      .execute({
+        userId: user.userId,
+        title: dto.title,
+        categoryId: dto.categoryId,
+        startDate: parseDateOnly(dto.startDate),
+        scheduledTime: dto.scheduledTime,
+        timezone,
+        isAllDay: dto.isAllDay,
+        visibility: dto.visibility,
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: dto.daysOfWeek,
+          end: { type: "UNTIL", date: dto.endDate },
+        },
+      })
+      .catch((error: unknown) => {
+        // 출시 앱 계약: 이 경로의 날짜 없음은 SYS_0002다. TODO_0843은 새 경로의 코드다.
+        if (error instanceof DomainException && error.errorCode === ErrorCode.TODO_0843) {
+          throw new ApplicationException(ErrorCode.SYS_0002, {
+            message: "선택한 기간과 요일에 해당하는 날짜가 없습니다",
+            startDate: dto.startDate,
+            endDate: dto.endDate,
+            daysOfWeek: dto.daysOfWeek,
+          });
+        }
+        throw error;
+      });
 
     return {
       message: `반복 할 일이 ${todos.length}개 생성되었습니다.`,

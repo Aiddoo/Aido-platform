@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, vi } from "vitest";
 
-import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import {
   USAGE_SUBJECT_ALL,
   type UsageKey,
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import { EMAIL_SENT_METER, MeteredEmailBudgetAdapter } from "./metered-email-budget.adapter.js";

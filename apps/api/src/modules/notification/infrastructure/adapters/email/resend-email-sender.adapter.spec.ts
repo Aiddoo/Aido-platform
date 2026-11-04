@@ -9,7 +9,7 @@ import {
   type HttpResponseStep,
 } from "#test/mocks/resend-http.stub";
 
-import { createVerificationCodeEmail } from "../../../application/services/email/email-message.factory.js";
+import { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import { EmailLogEvent } from "../../observability/email/email-log.events.js";
 import {
   describeEmailSenderContract,
@@ -20,11 +20,15 @@ import { ResendEmailSenderAdapter } from "./resend-email-sender.adapter.js";
 const recipient = "private@example.com";
 const verificationCode = "987654";
 const message = (idempotencyKey?: string) =>
-  createVerificationCodeEmail(
-    recipient,
-    { code: verificationCode, expiryMinutes: 15 },
+  EmailMessage.create({
+    kind: "verification",
+    to: recipient,
+    subject: "인증 코드",
+    html: `<p>${verificationCode}</p>`,
+    text: verificationCode,
+    tags: [{ name: "type", value: "verification" }],
     idempotencyKey,
-  );
+  });
 
 const success = resendResponseFixture("send.success.json");
 const unavailable = resendResponseFixture("send.application-error.json", 500);
@@ -110,7 +114,7 @@ describe("ResendEmailSenderAdapter", () => {
       expect.objectContaining({
         from: "Aido <noreply@example.com>",
         to: recipient,
-        subject: "[아이두] 이메일 인증 코드",
+        subject: "인증 코드",
         text: expect.stringContaining(verificationCode),
         tags: [
           { name: "type", value: "verification" },

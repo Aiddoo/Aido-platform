@@ -55,7 +55,7 @@ Nest metadata/DI가 필요한 대상은 기존 `TestBed.solitary()` 또는 `Test
 현재 서버의 공급자 검증은 설치된 실제 SDK + fetch/HTTP Stub + fixture `Response`를 사용한다. MSW 공통 harness는 현재 서버에 없다. 기존 Stub으로 충분하면 문서 패턴을 맞추려고 MSW나 다른 의존성을 추가하지 않는다. 해당 작업에 이미 MSW 환경이 있는 경우에도 unmatched 요청을 차단하고 테스트 사이 handlers를 복원하는 같은 격리 원칙을 적용한다.
 
 - [Resend Adapter](../src/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter.spec.ts), [StubResendHttp](../test/mocks/resend-http.stub.ts): `describeEmailSenderContract`와 SDK의 payload·헤더·오류·회로를 고정 HTTP 응답으로 확인한다. 미준비 요청은 실제 네트워크로 전달하지 않는다.
-- [AI SDK Adapter](../src/modules/ai-assistance/infrastructure/adapters/parsing/ai-sdk.adapter.spec.ts): 실제 Google factory/설치 SDK의 wire와 schema-invalid raw JSON 거절을 확인한다. Fake/schema 통과는 실제 모델의 의미 품질이나 유료 가치 증거가 아니다.
+- [AI SDK Generator](../src/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator.spec.ts): 실제 Google factory/설치 SDK의 wire와 schema-invalid raw JSON 거절을 확인한다. Fake/schema 통과는 실제 모델의 의미 품질이나 유료 가치 증거가 아니다.
 - fetch 주입 또는 해당 suite의 `vi.stubGlobal`/spy를 이용한다. global/env 교체는 비동시 suite에서만 하고 `afterEach`에 복원한다. SDK 전체 mock은 기본으로 쓰지 않는다. 불가피한 경우 실제 오류 타입·schema 검증 경계를 남기고 검증하지 못한 wire 범위를 기록한다.
 
 ORM mock의 `.all()` 결과는 `nativeRows(databaseFixture(...))`, 단건은 필요한 projection 필드와 실제 null을 반환한다. `assertNativeWhere`/`assertNativeOrder`로 AST·바인딩을 확인할 수 있지만 SQL의 실제 실행 의미를 입증하지는 않는다.

@@ -1,4 +1,5 @@
-import { InMemoryUsageMeterAdapter } from "./in-memory-usage-meter.adapter.js";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
+
 import { describeUsageMeterContract } from "./usage-meter.contract.js";
 
 describe("InMemoryUsageMeterAdapter", () => {

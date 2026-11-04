@@ -33,13 +33,13 @@ import type { Coordinate } from "#api/modules/weather/domain/value-objects/forec
 import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
 import { WeatherKitUsageMeter } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-usage.meter";
-import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import {
   weatherAttributionFixture,
   weatherForecastFixture,
   weatherReportFixture,
 } from "#test/fixtures/weather.fixture";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 export class StubWeatherLocationRepository implements WeatherLocationRepositoryPort {

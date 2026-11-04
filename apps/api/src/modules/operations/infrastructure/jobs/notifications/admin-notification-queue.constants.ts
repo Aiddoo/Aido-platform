@@ -114,7 +114,3 @@ export interface AdminNotificationJobMap {
   [AdminNotificationJobName.DISPATCH_SUMMARY]: Record<string, never>;
   [AdminNotificationJobName.SEND]: AdminNotificationSendData;
 }
-
-export type AdminNotificationJobData = AdminNotificationJobMap[keyof AdminNotificationJobMap];
-
-export type AdminNotificationRuntimeJob = z.infer<typeof AdminNotificationRuntimeJobSchema>;

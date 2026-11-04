@@ -15,9 +15,9 @@ import { AiSpendGuard } from "#api/modules/ai-assistance/infrastructure/adapters
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";
 import type { EnvConfig } from "#api/platform/config/schemas/index";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import type { UsageMeterPort } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 
 import { RecordingOperationalAlert } from "./recording-operational-alert.js";
 

@@ -2,7 +2,6 @@ import type { Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
-import type { StagedTodoCreatorPort } from "#api/modules/planning/planning-todos.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
@@ -13,6 +12,7 @@ import {
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
+import type { MemoTodoCreatorPort } from "../../ports/memos/memo-todo-creator.port.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
 
 export interface ConvertMemoToTodoData {
@@ -39,7 +39,7 @@ export interface ConvertMemoToTodoInput {
 
 interface ConvertMemoToTodoDependencies {
   readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
-  readonly todoCreator: StagedTodoCreatorPort;
+  readonly todoCreator: MemoTodoCreatorPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly afterCommit: AfterCommitTaskRegistryPort;

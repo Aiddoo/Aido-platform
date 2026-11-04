@@ -2,7 +2,7 @@ import type {
   EmailDeliveryOutcome,
   EmailSenderPort,
 } from "../../../application/ports/email/email-sender.port.js";
-import { createVerificationCodeEmail } from "../../../application/services/email/email-message.factory.js";
+import { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 
 export const EMAIL_CONTRACT_SCENARIOS = [
   "success",
@@ -66,7 +66,15 @@ export function describeEmailSenderContract(harness: EmailSenderContractHarness)
     });
 
     const message = () =>
-      createVerificationCodeEmail(RECIPIENT, { code: CODE, expiryMinutes: 10 }, IDEMPOTENCY_KEY);
+      EmailMessage.create({
+        kind: "verification",
+        to: RECIPIENT,
+        subject: "인증 코드",
+        html: `<p>${CODE}</p>`,
+        text: CODE,
+        tags: [{ name: "type", value: "verification" }],
+        idempotencyKey: IDEMPOTENCY_KEY,
+      });
 
     it.each(harness.scenarios)(
       "%s 상황은 벤더 중립 결과로 돌려주고 던지지 않는다",

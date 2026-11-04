@@ -13,8 +13,6 @@ export type AiThinking = (typeof AI_THINKING_LEVELS)[number];
 /** 킬 스위치. interactive-only는 리포트·제안 같은 배경 생성만 멈춘다. 바꾸면 재시작해야 반영된다. */
 export const AI_GENERATION_MODES = ["on", "interactive-only", "off"] as const;
 
-export type AiGenerationMode = (typeof AI_GENERATION_MODES)[number];
-
 const thinkingLevel = (fallback: AiThinking) => z.enum(AI_THINKING_LEVELS).default(fallback);
 const milliseconds = (fallback: number) => z.coerce.number().int().positive().default(fallback);
 const usd = (fallback: number) => z.coerce.number().nonnegative().default(fallback);

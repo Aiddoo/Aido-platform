@@ -3,10 +3,8 @@ import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import {
-  STAGED_TODO_CREATOR,
-  type StagedTodoCreatorPort,
-} from "#api/modules/planning/planning-todos.public";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *

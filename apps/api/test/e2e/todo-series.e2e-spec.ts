@@ -476,6 +476,22 @@ describe("반복 할 일 생성 E2E", () => {
       expect(series?.nextOccurrenceDate).not.toBeNull();
     });
 
+    it("POST /v1/todos/recurring은 해당 날짜가 없으면 옛 코드 SYS_0002다", async () => {
+      // Given
+      const sunday = "2027-01-03";
+      // When
+      const response = await post("/v1/todos/recurring", {
+        title: "없는 요일",
+        categoryId,
+        startDate: sunday,
+        endDate: sunday,
+        daysOfWeek: ["MON"],
+      });
+      // Then
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
+    });
+
     it("POST /v1/todos/recurring의 366일 검증은 그대로다", async () => {
       // When
       const response = await post("/v1/todos/recurring", {

@@ -2,7 +2,6 @@ import type { Memo, Todo, TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { mock } from "vitest-mock-extended";
 
-import type { CreateTodoData } from "#api/modules/planning/planning-todos.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
@@ -15,6 +14,7 @@ import type {
   PlannedTodo,
 } from "../../../domain/value-objects/plans/action-plan.vo.js";
 import type { PlanApplicationRecord } from "../../ports/plans/plan-application.repository.port.js";
+import type { PlannedTodoDraft } from "../../ports/plans/plan-todo-creator.port.js";
 import { ApplyActionPlan } from "./apply-action-plan.use-case.js";
 
 const USER_ID = "user-1";
@@ -50,7 +50,7 @@ function todoResponse(id: number): Todo {
 function setup(ownedCategoryIds: readonly number[] = [1]) {
   const order: string[] = [];
   const records = new Map<string, PlanApplicationRecord>();
-  const stagedInputs: CreateTodoData[] = [];
+  const stagedInputs: PlannedTodoDraft[] = [];
   const registered: (() => Promise<void>)[] = [];
   const createdMemos: { userId: string; content: string }[] = [];
   const deletedMemoIds: number[] = [];

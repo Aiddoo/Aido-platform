@@ -79,17 +79,19 @@ describe("TransactionalEmailSender — 트랜잭션 이메일 발송 요청", ()
     const data = { code: "123456", expiryMinutes: 10 };
 
     // When
-    const result = await emailSender.sendVerificationCode("user@test.com", data, "idem-1");
+    const result = await emailSender.sendVerificationCode("user@test.com", data);
 
     // Then
     expect(result).toEqual({ status: "queued" });
-    expect(queue.deliveries).toEqual([{ deliveryId: "idem-1", message: queuedMessage() }]);
+    expect(queue.deliveries).toEqual([
+      { deliveryId: expect.any(String), message: queuedMessage() },
+    ]);
     expect(queuedMessage().subject).toBe("[아이두] 이메일 인증 코드");
     expect(queuedMessage().tags).toEqual([{ name: "type", value: "verification" }]);
     expect(budget.reserved).toEqual(["critical"]);
   });
 
-  it("멱등 키가 없으면 발송 건마다 새 deliveryId를 만든다", async () => {
+  it("인증 메일은 발송 건마다 새 deliveryId를 만든다", async () => {
     // Given
     const data = { code: "123456", expiryMinutes: 10 };
 
@@ -232,11 +234,10 @@ describe("TransactionalEmailSender — 트랜잭션 이메일 발송 요청", ()
     queue.result = "duplicate";
 
     // When
-    const result = await emailSender.sendVerificationCode(
-      "user@test.com",
-      { code: "123456", expiryMinutes: 10 },
-      "idem-1",
-    );
+    const result = await emailSender.sendVerificationCode("user@test.com", {
+      code: "123456",
+      expiryMinutes: 10,
+    });
 
     // Then
     expect(result).toEqual({ status: "queued" });

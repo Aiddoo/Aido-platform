@@ -8,12 +8,12 @@ import { NotificationEmailModule } from "#api/modules/notification/notification-
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import {
   type HttpResponseStep,

@@ -4,6 +4,7 @@ import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import type { StagedTodoCreatorPort } from "#api/modules/planning/application/ports/todos/staged-todo-creator.port";
 import {
   TODO_REPOSITORY,
   type TodoRepositoryPort,
@@ -14,10 +15,7 @@ import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/cr
 import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
 import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
 import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
-import {
-  STAGED_TODO_CREATOR,
-  type StagedTodoCreatorPort,
-} from "#api/modules/planning/planning-todos.public";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -510,7 +508,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       expect(await client.$count(todo, eq(todo.title, "포트 반복"))).toBe(0);
     });
 
-    it("커밋에 성공하면 그 뒤에 회차마다 생성 이벤트를 낸다", async () => {
+    it("커밋에 성공하면 그 뒤에 규칙당 생성 이벤트 하나를 낸다", async () => {
       // Given
       const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
       const publishAll = vi.spyOn(publisher, "publishAll");
@@ -520,7 +518,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
       });
       // Then
       expect(staged.todos).toHaveLength(2);
-      expect(publishAll.mock.calls.flatMap(([events]) => events)).toHaveLength(2);
+      expect(publishAll.mock.calls.flatMap(([events]) => events)).toHaveLength(1);
       expect(staged.todos.every((created) => !created.isAllDay)).toBe(true);
     });
   });

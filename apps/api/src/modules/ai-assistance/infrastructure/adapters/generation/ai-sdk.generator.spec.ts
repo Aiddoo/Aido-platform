@@ -2,13 +2,13 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 import { Logger } from "@nestjs/common";
 import { z } from "zod";
 
-import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import { ok, status, StubProviderAdapter } from "#test/mocks/ai-provider-adapter.stub";
 import {
   createAiSdkGenerator,
   createAiTestConfig,
   stubAccessTiers,
 } from "#test/mocks/ai-provider-http.stub";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 
 import {
   AiGenerationError,

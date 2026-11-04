@@ -17,10 +17,10 @@ import { TransactionalEmailSender } from "#api/modules/notification/notification
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
-import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import { USAGE_METER } from "#api/platform/metering/interfaces/usage-meter.interface";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
+import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { resendResponseFixture, StubResendHttp } from "#test/mocks/resend-http.stub";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -29,6 +29,22 @@ import { TestDatabase } from "#test/setup/test-database";
 
 const SCHEMA = "pgboss";
 const recipient = "private@example.com";
+const reportOf = (reportId: string) => ({
+  reportId,
+  reporterId: "u1",
+  reporterTag: "A",
+  targetUserId: "u2",
+  targetUserTag: "B",
+  targetType: "PROFILE" as const,
+  targetTypeLabel: "사용자",
+  targetId: null,
+  reason: "SPAM" as const,
+  reasonLabel: "스팸",
+  detail: null,
+  submittedAt: "2026-03-09 10:00",
+  resolutionEndpoint: "POST /x",
+  resolutionDocsUrl: null,
+});
 const code = "987654";
 
 async function eventually(assertion: () => Promise<void>, timeoutMs = 30_000): Promise<void> {
@@ -159,22 +175,19 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     vi.stubGlobal("fetch", http.fetch);
 
     // When
-    const dispatch = await sender.sendVerificationCode(
-      recipient,
-      { code, expiryMinutes: 15 },
-      "delivery-complete",
-    );
+    const dispatch = await sender.sendVerificationCode(recipient, { code, expiryMinutes: 15 });
 
     // Then
     expect(dispatch).toEqual({ status: "queued" });
     await eventually(async () => {
-      const [job] = await boss.findJobs("email-delivery.v1", { key: "delivery-complete" });
-      expect(job?.state).toBe("completed");
-      expect(JSON.stringify(job?.data)).not.toContain(code);
-      expect(JSON.stringify(job?.data)).not.toContain(recipient);
+      const jobs = await boss.findJobs("email-delivery.v1");
+      expect(http.requests).toHaveLength(1);
+      expect(jobs.every((job) => job.state === "completed")).toBe(true);
+      expect(JSON.stringify(jobs.map((job) => job.data))).not.toContain(code);
+      expect(JSON.stringify(jobs.map((job) => job.data))).not.toContain(recipient);
     });
     expect(http.requests).toHaveLength(1);
-    expect(http.request().headers.get("idempotency-key")).toBe("delivery-complete");
+    expect(http.request().headers.get("idempotency-key")).toEqual(expect.any(String));
     expect(await http.request().json()).toEqual(
       expect.objectContaining({ to: recipient, text: expect.stringContaining(code) }),
     );
@@ -187,14 +200,16 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
     // When
     const results = await Promise.all([
-      sender.sendVerificationCode(recipient, { code, expiryMinutes: 15 }, "delivery-duplicate"),
-      sender.sendVerificationCode(recipient, { code, expiryMinutes: 15 }, "delivery-duplicate"),
+      sender.sendUserReport(recipient, reportOf("delivery-duplicate")),
+      sender.sendUserReport(recipient, reportOf("delivery-duplicate")),
     ]);
 
     // Then
     expect(results).toEqual([{ status: "queued" }, { status: "queued" }]);
     await eventually(async () => {
-      const jobs = await boss.findJobs("email-delivery.v1", { key: "delivery-duplicate" });
+      const jobs = await boss.findJobs("email-delivery.v1", {
+        key: "user-report:delivery-duplicate",
+      });
       expect(jobs).toHaveLength(1);
       expect(jobs[0]?.state).toBe("completed");
     });
@@ -210,15 +225,15 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     vi.stubGlobal("fetch", http.fetch);
 
     // When
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes: 15 }, "delivery-retry");
+    await sender.sendUserReport(recipient, reportOf("delivery-retry"));
 
     // Then
     await eventually(async () => {
-      const [job] = await boss.findJobs("email-delivery.v1", { key: "delivery-retry" });
+      const [job] = await boss.findJobs("email-delivery.v1", { key: "user-report:delivery-retry" });
       expect(job?.state).toBe("completed");
     });
     expect(http.requests).toHaveLength(2);
-    expect(http.request(0).headers.get("idempotency-key")).toBe("delivery-retry");
-    expect(http.request(1).headers.get("idempotency-key")).toBe("delivery-retry");
+    expect(http.request(0).headers.get("idempotency-key")).toBe("user-report:delivery-retry");
+    expect(http.request(1).headers.get("idempotency-key")).toBe("user-report:delivery-retry");
   }, 60_000);
 });

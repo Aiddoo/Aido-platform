@@ -3,7 +3,6 @@ export const TODO_LIMITS = {
 } as const;
 
 export const RECURRING_TODO_LIMITS = {
-  MAX_INSTANCES: 100,
   MAX_DAYS_RANGE: 366,
 } as const;
 

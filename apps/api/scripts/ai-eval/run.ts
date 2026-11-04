@@ -40,7 +40,6 @@ import { GoogleProviderAdapter } from "../../src/modules/ai-assistance/infrastru
 import { OpenAiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/openai.provider-adapter.js";
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
 import { TypedConfigService } from "../../src/platform/config/services/config.service.js";
-import { InMemoryUsageMeterAdapter } from "../../src/platform/metering/adapters/in-memory-usage-meter.adapter.js";
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
 import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
 import {
@@ -60,6 +59,7 @@ import {
   type VoiceNoteDigestGoldenCase,
   voiceNoteDigestGoldenCaseSchema,
 } from "../../test/fixtures/ai-golden/golden-cases.js";
+import { InMemoryUsageMeterAdapter } from "../../test/mocks/in-memory-usage-meter.adapter.js";
 
 const THRESHOLDS = { date: 0.97, title: 0.9, duplicate: 0.9, noAction: 1 } as const;
 

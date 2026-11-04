@@ -1,23 +1,22 @@
 import type { Todo } from "@aido/api";
 
 import type {
-  CreateTodoData,
-  StagedTodoCreation,
-  StagedTodoCreatorPort,
-} from "#api/modules/planning/planning-todos.public";
+  MemoTodoCreatorPort,
+  MemoTodoDraft,
+} from "#api/modules/notes/application/ports/memos/memo-todo-creator.port";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { TodoBuilder } from "#test/builders/todo.builder";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
-export class StubNotesTodoCreator implements StagedTodoCreatorPort {
-  readonly singleInputs: CreateTodoData[] = [];
-  readonly recurringInputs: CreateTodoData[] = [];
+export class StubNotesTodoCreator implements MemoTodoCreatorPort {
+  readonly singleInputs: MemoTodoDraft[] = [];
+  readonly recurringInputs: MemoTodoDraft[] = [];
   readonly stagedTodos = new Map<number, Todo>();
   readonly settledTodoIds: number[] = [];
   recurringResult: readonly Todo[] = [];
 
-  async stage(data: CreateTodoData): Promise<StagedTodoCreation> {
+  async stage(data: MemoTodoDraft): ReturnType<MemoTodoCreatorPort["stage"]> {
     if (data.repeat != null) {
       this.recurringInputs.push(structuredClone(data));
       return this.#stage(this.recurringResult);
@@ -40,14 +39,13 @@ export class StubNotesTodoCreator implements StagedTodoCreatorPort {
     return this.#stage([createTodoResponseFixture(record)]);
   }
 
-  #stage(todos: readonly Todo[]): StagedTodoCreation {
+  #stage(todos: readonly Todo[]): Awaited<ReturnType<MemoTodoCreatorPort["stage"]>> {
     const staged = structuredClone(todos);
     for (const todo of staged) {
       this.stagedTodos.set(todo.id, todo);
     }
     return {
       todos: staged,
-      series: null,
       afterCommit: async () => {
         this.settledTodoIds.push(...staged.map((todo) => todo.id));
       },

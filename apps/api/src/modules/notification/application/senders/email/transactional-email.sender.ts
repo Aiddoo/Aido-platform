@@ -49,28 +49,16 @@ export class TransactionalEmailSender {
     this.#dependencies = dependencies;
   }
 
-  sendVerificationCode(
-    to: string,
-    data: VerificationCodeTemplateData,
-    idempotencyKey?: string,
-  ): Promise<EmailDispatch> {
-    return this.#dispatch(createVerificationCodeEmail(to, data, idempotencyKey));
+  sendVerificationCode(to: string, data: VerificationCodeTemplateData): Promise<EmailDispatch> {
+    return this.#dispatch(createVerificationCodeEmail(to, data));
   }
 
-  sendPasswordResetCode(
-    to: string,
-    data: PasswordResetTemplateData,
-    idempotencyKey?: string,
-  ): Promise<EmailDispatch> {
-    return this.#dispatch(createPasswordResetEmail(to, data, idempotencyKey));
+  sendPasswordResetCode(to: string, data: PasswordResetTemplateData): Promise<EmailDispatch> {
+    return this.#dispatch(createPasswordResetEmail(to, data));
   }
 
-  sendPasswordSetupCode(
-    to: string,
-    data: PasswordSetupTemplateData,
-    idempotencyKey?: string,
-  ): Promise<EmailDispatch> {
-    return this.#dispatch(createPasswordSetupEmail(to, data, idempotencyKey));
+  sendPasswordSetupCode(to: string, data: PasswordSetupTemplateData): Promise<EmailDispatch> {
+    return this.#dispatch(createPasswordSetupEmail(to, data));
   }
 
   /**

@@ -1,8 +1,6 @@
 export { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 export {
   AI_GENERATOR,
-  AI_TASK_CLASSES,
-  AI_TASK_IDS,
   type AiGenerationMeta,
   type AiGenerationRequest,
   type AiGenerationResult,

@@ -8,7 +8,6 @@ import {
   premiumFeatureDenied,
 } from "#api/modules/access/access-entitlement.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/planning-todos.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
@@ -26,6 +25,7 @@ import type { Suggestion } from "../../../domain/aggregates/suggestions/suggesti
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
+import type { SuggestionTodoCreatorPort } from "../../ports/suggestions/suggestion-todo-creator.port.js";
 
 export interface HandleSuggestionActionInput {
   readonly userId: string;
@@ -54,7 +54,7 @@ export interface SuggestionActionResult {
  */
 interface HandleSuggestionActionDependencies {
   readonly repository: Pick<AiSuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
-  readonly todoCreator: StagedTodoCreatorPort;
+  readonly todoCreator: SuggestionTodoCreatorPort;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;

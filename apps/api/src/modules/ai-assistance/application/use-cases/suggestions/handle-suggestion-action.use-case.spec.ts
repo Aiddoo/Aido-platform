@@ -162,7 +162,6 @@ describe("HandleSuggestionAction", () => {
     repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
     creator.stage.mockResolvedValue({
       todos: Array.from({ length: 12 }, () => todoResponse),
-      series: null,
       afterCommit,
     });
 
@@ -311,7 +310,7 @@ describe("HandleSuggestionAction", () => {
         createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
       );
       repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.stage.mockResolvedValue({ todos: [todoResponse], series: null, afterCommit });
+      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
       // When
       await useCase.execute({
         userId: mockUserId,
@@ -340,7 +339,7 @@ describe("HandleSuggestionAction", () => {
         createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
       );
       repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.stage.mockResolvedValue({ todos: [todoResponse], series: null, afterCommit });
+      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
       // When
       await useCase.execute({
         userId: mockUserId,

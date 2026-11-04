@@ -23,15 +23,6 @@ describe("EmailMessage 값 객체", () => {
       expect(message.tags).toEqual([{ name: "type", value: "verification" }]);
       expect(message.idempotencyKey).toBeUndefined();
     });
-
-    it("idempotencyKey를 보존한다", () => {
-      const message = createVerificationCodeEmail(
-        "user@test.com",
-        { code: "123456", expiryMinutes: 10 },
-        "idem-1",
-      );
-      expect(message.idempotencyKey).toBe("idem-1");
-    });
   });
 
   describe("inquiry", () => {

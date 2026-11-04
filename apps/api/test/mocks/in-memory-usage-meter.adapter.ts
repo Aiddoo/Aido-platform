@@ -1,13 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
-import { now } from "#api/shared/domain/date/utils/core";
-
 import type {
   UsageIncrement,
   UsageKey,
   UsageMeterPort,
   UsageReservation,
-} from "../interfaces/usage-meter.interface.js";
+} from "#api/platform/metering/interfaces/usage-meter.interface";
+import { now } from "#api/shared/domain/date/utils/core";
 
 interface Entry {
   used: number;
@@ -16,7 +15,7 @@ interface Entry {
 
 const keyOf = (key: UsageKey) => `${key.meter}\u0000${key.periodKey}\u0000${key.subject}`;
 
-/** 단일 프로세스 테스트·로컬용 계량기. 운영은 Postgres 어댑터를 쓴다. */
+/** 단일 프로세스 테스트용 계량기. 운영은 Postgres 어댑터를 쓴다. */
 @Injectable()
 export class InMemoryUsageMeterAdapter implements UsageMeterPort {
   readonly #entries = new Map<string, Entry>();

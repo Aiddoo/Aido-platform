@@ -3,10 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import type { ActionPlanSource } from "@aido/api/vocabulary";
 
 import type { PlanMemoWriterPort } from "#api/modules/notes/notes-memos.public";
-import type {
-  StagedTodoCreatorPort,
-  TodoPlanReaderPort,
-} from "#api/modules/planning/planning-todos.public";
+import type { TodoPlanReaderPort } from "#api/modules/planning/planning-todos.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   type AfterCommitTaskRegistryPort,
@@ -26,6 +23,7 @@ import type {
   PlanApplicationRecord,
   PlanApplicationRepositoryPort,
 } from "../../ports/plans/plan-application.repository.port.js";
+import type { PlanTodoCreatorPort } from "../../ports/plans/plan-todo-creator.port.js";
 import type { PlanningContextReaderPort } from "../../ports/plans/planning-context.reader.port.js";
 import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
@@ -45,7 +43,7 @@ interface ApplyActionPlanDependencies {
   readonly afterCommit: AfterCommitTaskRegistryPort;
   readonly repository: Pick<PlanApplicationRepositoryPort, "findByKey" | "insert">;
   readonly contextReader: Pick<PlanningContextReaderPort, "findOwnedCategoryIds">;
-  readonly todoCreator: Pick<StagedTodoCreatorPort, "stage">;
+  readonly todoCreator: PlanTodoCreatorPort;
   readonly memoWriter: PlanMemoWriterPort;
   readonly todoReader: Pick<TodoPlanReaderPort, "findManyByIds">;
   readonly logger: Pick<ApplicationLogger, "log">;
