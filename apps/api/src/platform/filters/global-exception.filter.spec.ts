@@ -5,7 +5,15 @@ import { ErrorCode, Errors } from "@aido/api/errors";
  *
  * PostgreSQL SQLSTATE 23505 매핑, 업무 오류, HttpException, 알 수 없는 에러 처리 검증
  */
-import { type ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
+import {
+  type ArgumentsHost,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  MethodNotAllowedException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import type { PinoLogger } from "nestjs-pino";
 import { vi, type Mock } from "vitest";
@@ -19,14 +27,16 @@ import { sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import { GlobalExceptionFilter } from "./global-exception.filter.js";
 
+const sentryScope = vi.hoisted(() => ({
+  setUser: vi.fn(),
+  setTags: vi.fn(),
+  setExtra: vi.fn(),
+}));
+
 vi.mock("@sentry/nestjs", () => ({
   captureException: vi.fn(),
   withScope: vi.fn((callback: (scope: unknown) => void) => {
-    callback({
-      setUser: vi.fn(),
-      setTags: vi.fn(),
-      setExtra: vi.fn(),
-    });
+    callback(sentryScope);
   }),
 }));
 
@@ -118,9 +128,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0004);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.stringContaining("Unknown database unique constraint"),
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith({
+        event: "database.unique-constraint.unknown",
+        constraint: "unknown",
+      });
     });
 
     it("SQLSTATE 23503 FK constraint violation은 400 SYS_0002로 처리해야 한다", () => {
@@ -177,6 +188,34 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
     });
 
+    it.each([
+      [
+        "검증 실패(400)",
+        new BadRequestException({ statusCode: 400, message: "Validation failed", errors: [] }),
+        ErrorCode.SYS_0002,
+      ],
+      ["없는 route(404)", new NotFoundException("Cannot GET /v1/unknown"), ErrorCode.SYS_0002],
+      ["허용하지 않는 method(405)", new MethodNotAllowedException(), ErrorCode.SYS_0002],
+      ["문자열 응답의 4xx", new HttpException("Gone", HttpStatus.GONE), ErrorCode.SYS_0002],
+      [
+        "요청 한도 초과(429)",
+        new HttpException("ThrottlerException: Too Many Requests", HttpStatus.TOO_MANY_REQUESTS),
+        ErrorCode.SYS_0001,
+      ],
+      ["객체 응답의 5xx", new ServiceUnavailableException({ status: "error" }), ErrorCode.SYS_0001],
+    ])("HttpException %s은 상태로 공통 코드를 정한다", (_, exception, code) => {
+      // Given
+      const status = exception.getStatus();
+
+      // When
+      filter.catch(exception, mockHost);
+
+      // Then
+      expect(mockResponse.status).toHaveBeenCalledWith(status);
+      const body = errorEnvelopeSchema.parse(mockResponse.json.mock.calls[0]?.[0]);
+      expect(body.error.code).toBe(code);
+    });
+
     it("알 수 없는 에러를 500 SYS_0001로 처리해야 한다", () => {
       // Given
       const exception = new Error("unexpected error");
@@ -202,6 +241,21 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       // Then
       expect(Sentry.withScope).toHaveBeenCalledTimes(1);
       expect(Sentry.captureException).toHaveBeenCalledWith(exception);
+    });
+
+    it("5xx 캡처에 사용자 ID만 싣고 IP는 보내지 않는다", () => {
+      // Given
+      mockRequest.user = { userId: "user-1" };
+
+      // When
+      filter.catch(new Error("boom"), mockHost);
+      mockRequest.user = undefined;
+      filter.catch(new Error("boom"), mockHost);
+
+      // Then
+      expect(sentryScope.setUser).toHaveBeenNthCalledWith(1, { id: "user-1" });
+      expect(sentryScope.setUser).toHaveBeenNthCalledWith(2, null);
+      expect(JSON.stringify(sentryScope.setUser.mock.calls)).not.toContain("ip_address");
     });
 
     it("4xx 클라이언트 에러는 Sentry에 캡처하지 않아야 한다", () => {
