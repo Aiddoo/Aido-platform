@@ -1,10 +1,13 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { errorMessageOf } from '@src/shared/errors/to-error';
-import { debounce } from 'es-toolkit';
+import { debounce } from 'es-toolkit/compat';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
-import { VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS } from '../constants/voice-note.constants';
+import {
+  VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
+  VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
+} from '../constants/voice-note.constants';
 import { type VoiceNote, voiceNoteSchema } from '../domains/voice-note.model';
 
 const KEY_PREFIX = 'aido_voice_note_draft_v1:';
@@ -32,6 +35,7 @@ interface Dependencies {
   storage: EnumerableSyncStorage;
   logger: Pick<Logger, 'warn'>;
   debounceMs?: number;
+  maxWaitMs?: number;
 }
 
 interface PendingSave {
@@ -49,14 +53,31 @@ export function createVoiceNoteDraftRepository({
   storage,
   logger,
   debounceMs = VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS,
+  maxWaitMs = VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS,
 }: Dependencies): VoiceNoteDraftRepository {
   const pendingSaves = new Map<string, PendingSave>();
   const listeners = new Set<() => void>();
   let snapshot: { accountId: string; notes: readonly VoiceNote[] } | null = null;
 
+  const notifyListeners = () => listeners.forEach((listener) => listener());
+
   const notify = () => {
     snapshot = null;
-    listeners.forEach((listener) => listener());
+    notifyListeners();
+  };
+
+  /** 쓴 초안 한 건만 스냅샷에서 바꾼다. 녹음 중 저장마다 다른 초안까지 다시 해석하지 않는다 */
+  const replaceInSnapshot = (accountId: string, note: VoiceNote) => {
+    if (snapshot?.accountId !== accountId) {
+      return;
+    }
+    const hasNote = snapshot.notes.some(({ draftId }) => draftId === note.draftId);
+    snapshot = {
+      accountId,
+      notes: hasNote
+        ? snapshot.notes.map((current) => (current.draftId === note.draftId ? note : current))
+        : [...snapshot.notes, note],
+    };
   };
 
   const read = (key: string): VoiceNote | undefined => {
@@ -85,7 +106,8 @@ export function createVoiceNoteDraftRepository({
   const write = (accountId: string, note: VoiceNote) => {
     try {
       storage.set(createKey(accountId, note.draftId), JSON.stringify(voiceNoteSchema.encode(note)));
-      notify();
+      replaceInSnapshot(accountId, note);
+      notifyListeners();
     } catch (error) {
       logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: errorMessageOf(error) });
     }
@@ -94,6 +116,11 @@ export function createVoiceNoteDraftRepository({
   const cancelPending = (key: string) => {
     pendingSaves.get(key)?.run.cancel();
     pendingSaves.delete(key);
+  };
+
+  /** 아직 저장소에 없는 초안의 대기 쓰기도 취소해야 지운 뒤 되살아나지 않는다 */
+  const cancelPendingWhere = (matches: (key: string) => boolean) => {
+    [...pendingSaves.keys()].filter(matches).forEach(cancelPending);
   };
 
   const findKeys = (matches: (key: string) => boolean) =>
@@ -139,10 +166,14 @@ export function createVoiceNoteDraftRepository({
 
       const created: PendingSave = {
         note,
-        run: debounce(() => {
-          pendingSaves.delete(key);
-          write(accountId, created.note);
-        }, debounceMs),
+        run: debounce(
+          () => {
+            pendingSaves.delete(key);
+            write(accountId, created.note);
+          },
+          debounceMs,
+          { maxWait: maxWaitMs },
+        ),
       };
       pendingSaves.set(key, created);
       created.run();
@@ -161,18 +192,15 @@ export function createVoiceNoteDraftRepository({
 
     removeAllExceptOwner: (accountId) => {
       const ownerPrefix = createOwnerPrefix(accountId);
-      for (const key of findKeys((candidate) => !candidate.startsWith(ownerPrefix))) {
-        cancelPending(key);
-        storage.delete(key);
-      }
+      const isOtherOwner = (candidate: string) => !candidate.startsWith(ownerPrefix);
+      cancelPendingWhere(isOtherOwner);
+      findKeys(isOtherOwner).forEach((key) => storage.delete(key));
       notify();
     },
 
     removeAll: () => {
-      for (const key of findKeys(() => true)) {
-        cancelPending(key);
-        storage.delete(key);
-      }
+      cancelPendingWhere(() => true);
+      findKeys(() => true).forEach((key) => storage.delete(key));
       notify();
     },
   };

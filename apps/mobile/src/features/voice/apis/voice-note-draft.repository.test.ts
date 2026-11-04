@@ -190,4 +190,65 @@ describe('VoiceNoteDraftRepository', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(repository.getSnapshot('user-1')).toHaveLength(1);
   });
+
+  test('말이 끊이지 않아도 최대 대기 시간이 지나면 쓴다', () => {
+    // Given
+    const { repository } = createRepository();
+
+    // When
+    for (let elapsed = 0; elapsed < 6_000; elapsed += 500) {
+      repository.scheduleSave('user-1', createVoiceNoteFixture());
+      jest.advanceTimersByTime(500);
+    }
+
+    // Then
+    expect(repository.find('user-1', 'draft-1')).toBeDefined();
+  });
+
+  test('한 초안을 저장해도 다른 초안은 다시 해석하지 않는다', () => {
+    // Given
+    const { storage, repository } = createRepository();
+    repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1' }));
+    repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-2' }));
+    const before = repository.getSnapshot('user-1');
+    const getString = jest.spyOn(storage, 'getString');
+
+    // When
+    repository.save('user-1', createVoiceNoteFixture({ draftId: 'draft-1', durationMs: 1_000 }));
+    const after = repository.getSnapshot('user-1');
+
+    // Then
+    expect(getString).not.toHaveBeenCalled();
+    expect(after).not.toBe(before);
+    expect(after.find(({ draftId }) => draftId === 'draft-1')?.durationMs).toBe(1_000);
+    expect(after.find(({ draftId }) => draftId === 'draft-2')).toBe(
+      before.find(({ draftId }) => draftId === 'draft-2'),
+    );
+  });
+
+  test('저장소에 아직 없는 초안의 대기 쓰기도 전체 삭제 뒤에 되살아나지 않는다', () => {
+    // Given
+    const { repository } = createRepository();
+    repository.scheduleSave('user-1', createVoiceNoteFixture());
+
+    // When
+    repository.removeAll();
+    jest.advanceTimersByTime(10_000);
+
+    // Then
+    expect(repository.find('user-1', 'draft-1')).toBeUndefined();
+  });
+
+  test('다른 계정의 대기 쓰기는 소유자만 남길 때 함께 취소한다', () => {
+    // Given
+    const { repository } = createRepository();
+    repository.scheduleSave('user-2', createVoiceNoteFixture());
+
+    // When
+    repository.removeAllExceptOwner('user-1');
+    jest.advanceTimersByTime(10_000);
+
+    // Then
+    expect(repository.find('user-2', 'draft-1')).toBeUndefined();
+  });
 });

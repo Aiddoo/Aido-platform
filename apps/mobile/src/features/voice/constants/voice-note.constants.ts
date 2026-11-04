@@ -6,6 +6,9 @@ export const VOICE_RECORDING_ORPHAN_RETENTION_DAYS = 1;
 /** 확정 문장이 이어서 들어올 때 초안 쓰기를 모으는 시간 */
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;
 
+/** 말이 끊이지 않아도 이 시간마다는 쓴다. 앱이 꺼져도 이만큼만 잃는다 */
+export const VOICE_NOTE_DRAFT_SAVE_MAX_WAIT_MS = 5_000;
+
 /** 문서 폴더 아래 녹음 폴더 이름. 아래에 계정별 폴더를 둔다 */
 export const VOICE_RECORDING_ROOT_DIRECTORY = 'voice-notes';
 
