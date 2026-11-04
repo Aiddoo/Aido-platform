@@ -10,7 +10,7 @@ export const PLANNED_ACTION_TYPES = ["CREATE_TODO", "CREATE_MEMO"] as const;
 export type PlannedActionType = (typeof PLANNED_ACTION_TYPES)[number];
 
 /** AI_1315 details.reason */
-export const ACTION_PLAN_REJECTION_REASONS = ["CATEGORY_NOT_OWNED", "UNSUPPORTED_REPEAT"] as const;
+export const ACTION_PLAN_REJECTION_REASONS = ["CATEGORY_NOT_OWNED"] as const;
 export type ActionPlanRejectionReason = (typeof ACTION_PLAN_REJECTION_REASONS)[number];
 
 /** QuotaCharge·PlanApplication 키 열 길이와 같다. */

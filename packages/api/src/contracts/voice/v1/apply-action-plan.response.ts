@@ -4,7 +4,9 @@ import { memoSchema } from "../../memo/v1/memo.response.js";
 import { todoSchema } from "../../todo/v1/todo.response.js";
 
 export const applyActionPlanResponseSchema = z.object({
-  todos: z.array(todoSchema).describe("저장한 할 일 (반복이면 만든 회차 전부)"),
+  todos: z
+    .array(todoSchema)
+    .describe("저장한 할 일. 반복이면 첫 회차만 담고 규칙은 recurrenceGroupId로 조회한다"),
   memo: memoSchema.nullable().describe("저장한 메모. 없으면 null"),
 });
 

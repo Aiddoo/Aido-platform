@@ -1232,7 +1232,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     code: "AI_1315",
     message: "저장할 계획이 올바르지 않습니다.",
     description:
-      "계획을 저장하지 않았습니다. details.reason이 CATEGORY_NOT_OWNED면 내 카테고리가 아닌 카테고리(details.categoryIds)가 들어 있는 것이고, UNSUPPORTED_REPEAT면 아직 저장할 수 없는 반복 설정입니다.",
+      "계획을 저장하지 않았습니다. details.reason이 CATEGORY_NOT_OWNED면 내 카테고리가 아닌 카테고리(details.categoryIds)가 들어 있는 것입니다.",
     httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
   [ErrorCode.AI_1316]: {
