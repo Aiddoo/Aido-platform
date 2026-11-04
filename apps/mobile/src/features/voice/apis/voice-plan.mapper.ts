@@ -91,7 +91,13 @@ export function toVoicePlan(
   const known = actions
     .filter(isKnownAction)
     .map((action) => toPlannedAction(plannedActionSchema.parse(action)));
-  return voicePlanSchema.parse({ planId, source, actions: known, omittedTodoCount });
+  return voicePlanSchema.parse({
+    planId,
+    source,
+    sourceMemoId: null,
+    actions: known,
+    omittedTodoCount,
+  });
 }
 
 export function toQuickPlanResult(
@@ -141,6 +147,7 @@ export function toVoicePlanFromParsedMemo(planId: string, dto: ParseMemoResponse
   return voicePlanSchema.parse({
     planId,
     source: 'memo',
+    sourceMemoId: null,
     actions,
     omittedTodoCount: dto.meta.omittedTodoCount ?? 0,
   });
@@ -180,9 +187,11 @@ export function toApplyActionPlanRequest(
   source: VoicePlanSource,
   actions: readonly PlannedAction[],
   fallbackCategoryId: number,
+  sourceMemoId: number | null = null,
 ): ApplyActionPlanRequest {
   return {
     source: APPLY_SOURCE[source],
+    ...(sourceMemoId != null && { sourceMemoId }),
     actions: actions.map((action) => toApplyAction(action, fallbackCategoryId)),
   };
 }

@@ -101,16 +101,17 @@
 
 **AI / 메모**
 
-| 이벤트                                       | 파라미터                                                      | 의미                                        |
-| -------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------- |
-| `ai_parse_used`                              | `success`(bool)                                               | 할 일·메모 AI 파싱(어느 쪽인지 구분 없음 ⚠) |
-| `ai_suggestion_acted`                        | `action`: `accept`·`dismiss`                                  | AI 제안 처리                                |
-| `ai_report_viewed`                           | `report_id`(id) · `report_type`(string)                       | **정의만 있고 호출 없음** ⚠                 |
-| `ai_data_sharing_consent_changed`            | `agreed`(bool)                                                |                                             |
-| `memo_created`                               | –                                                             |                                             |
-| `memo_updated`/`_deleted`/`memo_pin_toggled` | `memo_id`(id) · `is_pinned`                                   |                                             |
-| `memo_converted_to_todo`                     | `memo_id`                                                     | 수동 1건 변환                               |
-| `memo_converted_to_todos`                    | `memo_id` · `todo_count`(int) · `source`: `ai`(string 타입 ⚠) | AI 다건 변환                                |
+| 이벤트                                       | 파라미터                                                                | 의미                                                                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `ai_parse_used`                              | `success`(bool)                                                         | 할 일·메모 AI 파싱(어느 쪽인지 구분 없음 ⚠)                                                                   |
+| `ai_suggestion_acted`                        | `action`: `accept`·`dismiss`                                            | AI 제안 처리                                                                                                  |
+| `ai_report_viewed`                           | `report_id`(id) · `report_type`(string)                                 | **정의만 있고 호출 없음** ⚠                                                                                   |
+| `ai_data_sharing_consent_changed`            | `agreed`(bool)                                                          |                                                                                                               |
+| `memo_created`                               | –                                                                       |                                                                                                               |
+| `memo_updated`/`_deleted`/`memo_pin_toggled` | `memo_id`(id) · `is_pinned`                                             |                                                                                                               |
+| `memo_converted_to_todo`                     | `memo_id`                                                               | 수동 1건 변환                                                                                                 |
+| `memo_converted_to_todos`                    | `memo_id` · `todo_count`(int) · `source`: `ai`(string 타입 ⚠)           | AI 다건 변환(1.15.0부터 메모 AI 검토 저장 시 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지) |
+| `voice_plan_applied`                         | `source` · `todo_count`(int) · `memo_count`(int) · `skipped_count`(int) | 계획 카드 저장(말한 내용·제목은 보내지 않음)                                                                  |
 
 **알림 / 배지 / 설정 / 생명주기**
 

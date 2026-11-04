@@ -36,6 +36,7 @@ const memo = (): PlannedMemo => ({
 const planOf = (...actions: VoicePlan['actions']): VoicePlan => ({
   planId: voicePlanIdSchema.parse('plan-1'),
   source: 'quick-voice',
+  sourceMemoId: null,
   actions,
   omittedTodoCount: 0,
 });

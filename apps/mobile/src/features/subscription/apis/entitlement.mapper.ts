@@ -78,6 +78,15 @@ export function findLimitedFeature(error: unknown): LimitedFeature | null {
   };
 }
 
+/** 처리 중·결과 만료·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도. 없으면 null */
+export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
+  if (!isApiError(error)) {
+    return null;
+  }
+  const details = quotaErrorDetailsSchema.safeParse(error.details);
+  return details.success ? toFeatureQuota(details.data.featureQuota) : null;
+}
+
 /** 서버가 이 요청으로 사용 횟수를 차감하지 않았다고 알린 오류인지 */
 export function isNotChargedError(error: unknown): boolean {
   return isApiError(error) && notChargedErrorDetailsSchema.safeParse(error.details).success;

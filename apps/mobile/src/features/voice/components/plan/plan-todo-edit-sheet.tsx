@@ -80,7 +80,11 @@ export function PlanTodoEditSheet({
       return;
     }
     const { isSelected, ...currentTodo } = current;
-    setValue(`actions.${index}`, { ...change(currentTodo), isSelected }, { shouldDirty: true });
+    setValue(
+      `actions.${index}`,
+      { ...change(currentTodo), isSelected },
+      { shouldDirty: true, shouldValidate: true },
+    );
   };
 
   const startDateKey = formatDateKey(todo.startDate, getDeviceTimezone());

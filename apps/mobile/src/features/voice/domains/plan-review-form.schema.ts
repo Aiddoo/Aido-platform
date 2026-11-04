@@ -91,12 +91,13 @@ export function createPlanReviewDraft(
 
 /** 초안에서 `PlanReview`가 받는 계획을 되살린다 */
 export function toVoicePlanFromDraft(
-  { planId, source }: Pick<VoicePlan, 'planId' | 'source'>,
+  { planId, source, sourceMemoId }: Pick<VoicePlan, 'planId' | 'source' | 'sourceMemoId'>,
   draft: PlanReviewDraft,
 ): VoicePlan {
   return {
     planId,
     source,
+    sourceMemoId,
     actions: toPlannedActions(draft.form),
     omittedTodoCount: draft.omittedTodoCount,
   };

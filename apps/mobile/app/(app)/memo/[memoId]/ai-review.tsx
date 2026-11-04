@@ -87,6 +87,11 @@ function AiReviewScreen() {
           dismiss();
           navigate('/feed');
         }}
+        onSourceMissing={() => {
+          discardDraft();
+          dismiss();
+          navigate('/memo');
+        }}
       />
     </ScrollView>
   );
@@ -95,6 +100,7 @@ function AiReviewScreen() {
 const planIdOf = (memoId: number) => ({
   planId: voicePlanIdSchema.parse(`memo-${memoId}`),
   source: 'memo' as const,
+  sourceMemoId: memoId,
 });
 
 export default function AiReviewRoute() {

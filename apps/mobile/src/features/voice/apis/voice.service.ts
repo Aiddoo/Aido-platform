@@ -82,18 +82,24 @@ export class VoiceService {
     );
   };
 
-  /** 사용자가 확인한 행동만 저장한다. 차감 없음 */
+  /** 사용자가 확인한 행동만 저장한다. 차감 없음. 반복은 첫 회차만 돌려받고 목록을 다시 읽어 본다 */
   applyActionPlan = async (
     {
       source,
+      sourceMemoId,
       actions,
       fallbackCategoryId,
-    }: { source: VoicePlanSource; actions: readonly PlannedAction[]; fallbackCategoryId: number },
+    }: {
+      source: VoicePlanSource;
+      sourceMemoId: number | null;
+      actions: readonly PlannedAction[];
+      fallbackCategoryId: number;
+    },
     idempotencyKey: string,
   ): Promise<Result<AppliedPlanResult, ApiError>> => {
     const result = await this.#httpClient.post(
       'v1/action-plans/apply',
-      toApplyActionPlanRequest(source, actions, fallbackCategoryId),
+      toApplyActionPlanRequest(source, actions, fallbackCategoryId, sourceMemoId),
       { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey } },
     );
     if (!result.ok) {

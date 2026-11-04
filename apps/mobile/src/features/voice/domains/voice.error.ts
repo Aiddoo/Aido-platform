@@ -9,6 +9,8 @@ export type VoicePlanFailureCause =
   | 'in-progress'
   | 'rejected'
   | 'key-expired'
+  | 'key-conflict'
+  | 'source-memo-missing'
   | 'ai-unavailable'
   | 'unknown';
 
@@ -19,6 +21,11 @@ export function isPlanKeyExpiredError(error: unknown) {
 /** 같은 키로 다른 내용을 보냈다. 내용을 고쳐 다시 보낼 때는 새 키를 만든다 */
 export function isPlanKeyConflictError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.AI_1318);
+}
+
+/** 메모에서 만든 계획을 저장하는데 원본 메모가 이미 없다. 저장되지 않았고 초안도 의미가 없다 */
+export function isSourceMemoMissingError(error: unknown) {
+  return isApiError(error) && error.hasCode(ErrorCode.MEMO_2001);
 }
 
 /** 이 오류 뒤에 다시 보낼 때는 처음 키를 쓰지 않고 새 키를 만든다 */
@@ -45,12 +52,14 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
   if (error.hasCode(ErrorCode.AI_1315)) {
     return 'rejected';
   }
-  if (
-    isPlanKeyExpiredError(error) ||
-    isPlanKeyConflictError(error) ||
-    error.hasCode(ErrorCode.AI_1316)
-  ) {
+  if (isPlanKeyExpiredError(error)) {
     return 'key-expired';
+  }
+  if (isPlanKeyConflictError(error)) {
+    return 'key-conflict';
+  }
+  if (isSourceMemoMissingError(error)) {
+    return 'source-memo-missing';
   }
   if (
     error.hasCode(ErrorCode.AI_1301) ||

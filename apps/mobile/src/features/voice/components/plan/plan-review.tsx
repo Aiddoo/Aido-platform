@@ -41,17 +41,22 @@ import {
   type UseFormReturn,
   useFieldArray,
   useFormContext,
+  useFormState,
   useWatch,
 } from 'react-hook-form';
 
-import { type PreparedPlanRequest, preparePlanRequest } from '../../domains/plan-request.model';
+import {
+  type PreparedPlanRequest,
+  PlanRequestPolicy,
+  preparePlanRequest,
+} from '../../domains/plan-request.model';
 import {
   type PlanReviewFormValues,
   toPlanSelection,
   toPlannedActions,
 } from '../../domains/plan-review-form.schema';
 import { isDuplicateAction, type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
-import { shouldRenewPlanKey } from '../../domains/voice.error';
+import { isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/use-apply-action-plan-mutation-options';
 import {
   getPlanTodoSubtitle,
@@ -72,6 +77,8 @@ interface PlanReviewProps {
   secondaryAction?: ReactNode;
   /** 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
   onApplied: () => void;
+  /** 메모에서 만든 계획의 원본 메모가 이미 없다. 초안을 버리고 떠나는 일은 화면이 맡는다 */
+  onSourceMissing?: () => void;
 }
 
 /**
@@ -85,11 +92,24 @@ export function PlanReview({
   isCharged = true,
   secondaryAction,
   onApplied,
+  onSourceMissing,
 }: PlanReviewProps) {
   const { t } = useTranslation(['voicePlan', 'subscription']);
   const { control, handleSubmit } = form;
   const { fields } = useFieldArray({ control, name: 'actions' });
-  const actions = useWatch({ control, name: 'actions' });
+  // 폼 전체가 아니라 목록을 다시 그릴 때 필요한 값만 구독한다. 카드 제목을 고치는 동안 화면 전체를 다시 그리지 않는다
+  const actions = useWatch({
+    control,
+    name: 'actions',
+    compute: (values) =>
+      values.map((action) => ({
+        actionId: action.actionId,
+        isSelected: action.isSelected,
+        categoryId: action.type === 'create-todo' ? action.categoryId : null,
+        isMemo: action.type === 'create-memo',
+      })),
+  });
+  const { isValid } = useFormState({ control });
   const applyMutation = useMutation(useApplyActionPlanMutationOptions());
   const preparedRequestRef = useRef<PreparedPlanRequest<unknown> | null>(null);
 
@@ -113,6 +133,7 @@ export function PlanReview({
     applyMutation.mutate(
       {
         source: plan.source,
+        sourceMemoId: plan.sourceMemoId,
         actions: selected,
         fallbackCategoryId,
         skippedCount: values.actions.length - selected.length,
@@ -125,8 +146,9 @@ export function PlanReview({
         },
         // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
         onError: (error) => {
-          if (shouldRenewPlanKey(error)) {
-            preparedRequestRef.current = null;
+          preparedRequestRef.current = PlanRequestPolicy.getAfterFailure(prepared, error);
+          if (isSourceMemoMissingError(error)) {
+            onSourceMissing?.();
           }
         },
       },
@@ -166,15 +188,17 @@ export function PlanReview({
             const action = actions[index];
             const previous = actions[index - 1];
             const categoryId =
-              action?.type === 'create-todo' ? (action.categoryId ?? fallbackCategoryId) : null;
+              action == null || action.isMemo ? null : (action.categoryId ?? fallbackCategoryId);
             const previousCategoryId =
-              previous?.type === 'create-todo' ? (previous.categoryId ?? fallbackCategoryId) : null;
+              previous == null || previous.isMemo
+                ? null
+                : (previous.categoryId ?? fallbackCategoryId);
             return (
               <VStack key={field.id} gap={8}>
                 {categoryId != null && categoryId !== previousCategoryId && (
                   <PlanReview.CategoryHeader categoryId={categoryId} />
                 )}
-                {action?.type === 'create-memo' ? (
+                {action?.isMemo ? (
                   <PlanReview.MemoRow index={index} />
                 ) : (
                   <PlanReview.TodoRow index={index} fallbackCategoryId={fallbackCategoryId} />
@@ -188,7 +212,7 @@ export function PlanReview({
           {secondaryAction}
           <Box className="flex-1">
             <Button
-              isDisabled={!canApply}
+              isDisabled={!canApply || !isValid}
               isLoading={applyMutation.isPending}
               onPress={() => handleApply()}
               testID="plan-review-apply"

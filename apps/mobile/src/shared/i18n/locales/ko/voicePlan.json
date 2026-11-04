@@ -51,6 +51,14 @@
     "rejected": {
       "title": "저장할 수 없는 내용이 있어요",
       "description": "카드를 고쳐서 다시 시도해주세요."
+    },
+    "key-conflict": {
+      "title": "내용이 바뀌었어요",
+      "description": "한 번 더 누르면 지금 내용으로 저장해요."
+    },
+    "source-memo-missing": {
+      "title": "메모를 찾을 수 없어요",
+      "description": "이미 지워진 메모라 저장하지 않았어요."
     }
   }
 }

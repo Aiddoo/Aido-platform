@@ -59,6 +59,8 @@ export type VoicePlanSource = z.infer<typeof voicePlanSourceSchema>;
 export const voicePlanSchema = z.object({
   planId: voicePlanIdSchema,
   source: voicePlanSourceSchema,
+  /** 메모에서 만든 계획의 원본 메모. 저장에 성공하면 서버가 이 메모를 지운다 */
+  sourceMemoId: z.int().positive().nullable(),
   actions: z
     .array(plannedActionSchema)
     .max(ACTION_PLAN_LIMITS.MAX_TODOS + ACTION_PLAN_LIMITS.MAX_MEMOS),

@@ -56,6 +56,14 @@
     "rejected": {
       "title": "Some cards can't be saved",
       "description": "Edit the cards and try again."
+    },
+    "key-conflict": {
+      "title": "The content changed",
+      "description": "Tap again to save the current version."
+    },
+    "source-memo-missing": {
+      "title": "We couldn't find this memo",
+      "description": "It was already deleted, so nothing was saved."
     }
   }
 }
