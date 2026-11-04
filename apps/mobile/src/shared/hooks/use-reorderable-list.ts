@@ -1,5 +1,5 @@
 import { useHaptics } from '@src/bootstrap/providers/di-context';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   type ReorderableListDragEndEvent,
   type ReorderableListReorderEvent,
@@ -22,9 +22,15 @@ interface UseReorderableListParams<TItem, TId> {
   onReorder: (reordered: ReorderedList<TItem, TId>) => void;
 }
 
+interface ReorderHold<TItem> {
+  items: TItem[];
+  updatedAt: number;
+  isDragging: boolean;
+}
+
 /**
  * 서버 순서를 받아 `ReorderableList`/`NestedReorderableList`에 그대로 펼칠 props를 만든다.
- * 놓으면 화면 순서를 먼저 바꾸고 서버에 이동 지시를 보낸다. 끄는 동안 들어온 서버 순서는 놓은 뒤 반영한다.
+ * 평소에는 받은 목록을 그대로 그린다. 끄는 동안과 놓은 뒤 서버 값이 새로 올 때까지만 화면 순서를 붙잡는다.
  */
 export function useReorderableList<TItem, TId>({
   items,
@@ -34,34 +40,18 @@ export function useReorderableList<TItem, TId>({
   onReorder,
 }: UseReorderableListParams<TItem, TId>) {
   const haptics = useHaptics();
-  const [data, setData] = useState(items);
-  const isDraggingRef = useRef(false);
-  const syncedAtRef = useRef(updatedAt);
-
-  const syncServerItems = () => {
-    if (syncedAtRef.current === updatedAt) {
-      return;
-    }
-    syncedAtRef.current = updatedAt;
-    setData(items);
-  };
-
-  useEffect(() => {
-    if (isDraggingRef.current || isPending) {
-      return;
-    }
-    syncServerItems();
-  }, [items, updatedAt, isPending]);
+  const [hold, setHold] = useState<ReorderHold<TItem> | null>(null);
+  const isHolding = hold != null && (hold.isDragging || isPending || hold.updatedAt === updatedAt);
+  const data = isHolding ? hold.items : items;
 
   const handleDragStart = () => {
-    isDraggingRef.current = true;
+    setHold({ items: data, updatedAt, isDragging: true });
     haptics.impact('medium');
   };
 
   const handleDragEnd = ({ from, to }: ReorderableListDragEndEvent) => {
-    isDraggingRef.current = false;
     if (from === to) {
-      syncServerItems();
+      setHold(null);
     }
   };
 
@@ -73,10 +63,11 @@ export function useReorderableList<TItem, TId>({
     const reorderedItems = reorderItems(data, from, to);
     const instruction = getReorderInstruction(reorderedItems, from, to, getItemId);
     if (instruction == null) {
+      setHold(null);
       return;
     }
 
-    setData(reorderedItems);
+    setHold({ items: reorderedItems, updatedAt, isDragging: false });
     onReorder({ instruction, items: reorderedItems });
   };
 
