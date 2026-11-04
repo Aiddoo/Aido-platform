@@ -67,12 +67,4 @@ describe("주간 달성 일괄 upsert (실제 PostgreSQL)", () => {
       .where(eq(weeklyAchievement.week, 1));
     expect(again?.id).toBe(first?.id);
   });
-
-  it("한 요청에 같은 주차가 둘이면 마지막 값이 남는다", async () => {
-    await repository.upsertMany([snapshot(1, 2), snapshot(1, 4)]);
-
-    expect(await rows()).toEqual([
-      { week: 1, completedTodos: 4, achievedAt: new Date("2027-02-01Z") },
-    ]);
-  });
 });

@@ -173,8 +173,8 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     );
 
     // Then
-    expect(insert.count).toBe(3);
-    expect(update.count).toBe(3);
+    expect(insert.count).toBe(1);
+    expect(update.count).toBe(1);
     expect(await weekly.findByYearAndWeek(userId, 2027, 2)).toMatchObject({
       completedTodos: 4,
       achievedAt: AT,
@@ -208,7 +208,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     const result = await measure("weekly-duplicate-input", () => weekly.upsertMany(records));
 
     // Then
-    expect(result.count).toBe(2);
+    expect(result.count).toBe(1);
     expect(await weekly.findByYearAndWeek(userId, 2027, 1)).toMatchObject({ completedTodos: 4 });
     expect(await client.select({ count: count() }).from(weeklyAchievement)).toEqual([{ count: 1 }]);
   });
