@@ -7,10 +7,13 @@ import type { AiGenerationPolicy } from "../ai-generation-policy.js";
 
 export type AiProviderOptions = NonNullable<SystemModelMessage["providerOptions"]>;
 
+/** 전역 provider 문자열 ID를 쓰지 않으므로 모델 객체만 받는다. */
+export type AiLanguageModel = Exclude<LanguageModel, string>;
+
 export interface AiProviderModel {
   /** `<provider>:<model>` */
   readonly id: string;
-  readonly model: LanguageModel;
+  readonly model: AiLanguageModel;
 }
 
 /**

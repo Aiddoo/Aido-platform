@@ -1,6 +1,7 @@
 import { createOpenAI, type OpenAILanguageModelResponsesOptions } from "@ai-sdk/openai";
 import { Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
+import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
@@ -14,6 +15,26 @@ import type {
 import { classifyAiSdkError, type ProviderErrorBody } from "./ai-sdk-failure.js";
 
 const BLOCKED_CODES = new Set(["content_filter", "content_policy_violation"]);
+
+/** 모델 거절은 200 응답의 refusal 조각으로 온다. SDK 응답 schema는 이 조각을 몰라 APICallError로 던진다. */
+const refusalResponseSchema = z.object({
+  output: z.array(z.object({ content: z.array(z.object({ type: z.string() })).optional() })),
+});
+
+function hasRefusal(responseBody: string | undefined): boolean {
+  if (responseBody == null) {
+    return false;
+  }
+  try {
+    const parsed = refusalResponseSchema.safeParse(JSON.parse(responseBody));
+    return (
+      parsed.success &&
+      parsed.data.output.some((item) => item.content?.some((part) => part.type === "refusal"))
+    );
+  } catch {
+    return false;
+  }
+}
 
 /** OpenAI(Responses API). 3순위. 크레딧 소진도 429로 오므로 code insufficient_quota로 구분한다. */
 @Injectable()
@@ -61,7 +82,11 @@ export class OpenAiProviderAdapter implements AiProviderAdapter {
 function classifyOpenAiResponse(
   statusCode: number | undefined,
   body: ProviderErrorBody,
+  responseBody: string | undefined,
 ): AiFailureKind {
+  if (statusCode === 200 && hasRefusal(responseBody)) {
+    return "BLOCKED";
+  }
   if (body.code === "insufficient_quota" || body.type === "insufficient_quota") {
     return "QUOTA_EXHAUSTED";
   }

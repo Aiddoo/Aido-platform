@@ -1,5 +1,5 @@
 import { zodSchema } from "ai";
-import { isPlainObject } from "es-toolkit";
+import { isPlainObject, mapValues } from "es-toolkit";
 import { z } from "zod";
 
 import { exampleOutputs } from "#test/fixtures/ai-prompt.fixture";
@@ -116,6 +116,90 @@ describe("업체 공통 구조화 출력 규칙", () => {
     // Then
     expect(violations[0]).not.toEqual([]);
     expect(violations[1]).toEqual([]);
+  });
+
+  describe("배열·객체 칸을 JSON 문자열로 보낸 응답", () => {
+    const planPrompts = [
+      { id: quickPlanPrompt.id, schema: quickPlanPrompt.schema, system: QUICK_PLAN_SYSTEM_KO },
+      {
+        id: voiceNoteDigestPrompt.id,
+        schema: voiceNoteDigestPrompt.schema,
+        system: VOICE_NOTE_DIGEST_SYSTEM_KO,
+      },
+      { id: parseMemoPrompt.id, schema: parseMemoPrompt.schema, system: PARSE_MEMO_SYSTEM_KO },
+      { id: parseTodoPrompt.id, schema: parseTodoPrompt.schema, system: PARSE_TODO_SYSTEM_KO },
+    ];
+
+    /** 객체의 배열·객체 칸을 모두 JSON 문자열로 바꾼다. 실측 응답 `{"actions":"[...]"}`와 같은 모양이다. */
+    function stringifyContainers(output: Record<string, unknown>) {
+      return mapValues(output, (value) =>
+        Array.isArray(value) || isPlainObject(value) ? JSON.stringify(value) : value,
+      );
+    }
+
+    it.each(planPrompts)(
+      "$id 예시의 모든 칸을 문자열로 보내도 같은 값으로 받는다",
+      ({ schema, system }) => {
+        // Given
+        const outputs = exampleOutputs(system).filter(isPlainObject);
+        // When
+        const parsed = outputs.map((output) => schema.parse(stringifyContainers(output)));
+        // Then
+        expect(outputs.length).toBeGreaterThan(0);
+        expect(parsed).toEqual(outputs.map((output) => schema.parse(output)));
+      },
+    );
+
+    it("리포트의 tips와 제안의 picks도 문자열이면 풀어서 받는다", () => {
+      // Given
+      const report = { summary: "잘했어요", tips: JSON.stringify(["일찍 시작하기"]) };
+      const suggestion = { picks: JSON.stringify([]) };
+      // When
+      const parsed = [reportPrompt.schema.parse(report), suggestionPrompt.schema.parse(suggestion)];
+      // Then
+      expect(parsed).toEqual([{ summary: "잘했어요", tips: ["일찍 시작하기"] }, { picks: [] }]);
+    });
+
+    it("행동 배열 안의 항목만 문자열이어도 풀어서 받는다", () => {
+      // Given
+      const memo = { type: "CREATE_MEMO", title: "와이파이", content: "거실 공유기 뒷면" };
+      // When
+      const parsed = quickPlanPrompt.schema.parse({ actions: [JSON.stringify(memo)] });
+      // Then
+      expect(parsed).toEqual({ actions: [memo] });
+    });
+
+    it("JSON처럼 보이는 문자열 칸은 그대로 둔다", () => {
+      // Given
+      const schema = llmObject({ title: z.string(), note: z.string().nullable() });
+      // When
+      const parsed = schema.parse({ title: '["회의","준비"]', note: '{"a":1}' });
+      // Then
+      expect(parsed).toEqual({ title: '["회의","준비"]', note: '{"a":1}' });
+    });
+
+    it.each([
+      { name: "JSON이 아닌 문자열", actions: "할 일 없음" },
+      { name: "잘린 JSON", actions: '[{"type":"CREATE_TODO"' },
+      { name: "배열이 아닌 JSON 값", actions: "3" },
+    ])("$name 값은 원래 값 그대로 schema가 거부한다", ({ actions }) => {
+      // When
+      const result = quickPlanPrompt.schema.safeParse({ actions });
+      // Then
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]).toMatchObject({ path: ["actions"], code: "invalid_type" });
+    });
+
+    it("문자열로 풀어 받는 처리는 업체에 보내는 JSON Schema를 바꾸지 않는다", async () => {
+      // When
+      const jsonSchema = await zodSchema(quickPlanPrompt.schema).jsonSchema;
+      // Then
+      expect(jsonSchema).toMatchObject({
+        type: "object",
+        required: ["actions"],
+        properties: { actions: { type: "array" } },
+      });
+    });
   });
 
   it("모델이 뺀 칸과 undefined인 칸은 null로 채우고 받은 값은 그대로 둔다", () => {

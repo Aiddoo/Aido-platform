@@ -11,6 +11,7 @@ import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import {
   ACCOUNT_NOTIFICATION_CLEANUP,
   ACCOUNT_TODO_COMMENT_CLEANUP,
+  ACCOUNT_USAGE_CLEANUP,
 } from "./application/ports/auth/account-cleanup.port.js";
 import {
   AUTH_EMAIL_SENDER,
@@ -278,6 +279,7 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
     AUTH_SECURITY_LOG_REPOSITORY,
     ACCOUNT_NOTIFICATION_CLEANUP,
     ACCOUNT_TODO_COMMENT_CLEANUP,
+    ACCOUNT_USAGE_CLEANUP,
   ],
   useFactory: (
     userRepository: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["userRepository"],
@@ -289,6 +291,7 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
       typeof PurgeDeletedAccounts
     >[0]["notificationCleanup"],
     todoCommentCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["todoCommentCleanup"],
+    usageCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["usageCleanup"],
   ) =>
     new PurgeDeletedAccounts({
       userRepository,
@@ -296,6 +299,7 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
       securityLogRepository,
       notificationCleanup,
       todoCommentCleanup,
+      usageCleanup,
       logger: new Logger(PurgeDeletedAccounts.name),
     }),
 };

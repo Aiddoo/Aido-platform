@@ -12,6 +12,7 @@ export const SCHEDULE_RULES_KO = {
 - "다음 주 월요일"처럼 주와 요일을 함께 말하면 반드시 WEEKDAY와 weekOffset이다. 메모·목록의 한 줄이어도 같다: "- 다음 주 월요일 오전 10시 회의" → kind WEEKDAY, weekday MON, weekOffset 1.
 - "M월 D일" → CALENDAR_DATE month M, day D. 연도는 말했을 때만 year에 쓰고 아니면 null이다. "N일", "이번 달 N일" → CALENDAR_DATE day N이고 month는 null이다.
 - 월초 → MONTH_START, 월말 → MONTH_END, 연초 → YEAR_START, 연말 → YEAR_END. amount는 0이 이번, 1이 다음이다.
+- 달 이름을 말한 "M월 말", "M월 초"는 MONTH_END·MONTH_START가 아니라 CALENDAR_DATE다: month M, day는 그 달의 마지막 날이나 1일이다.
 - endDate는 끝을 나타내는 표현이 있을 때만 쓰고 없으면 null이다: "~까지", "A부터 B까지", "N일 동안". "금요일까지 보고서"는 date가 NONE이고 endDate가 금요일이다.
 </date_rules>`,
   time: `<time_rules>
@@ -59,6 +60,7 @@ export const SCHEDULE_RULES_EN = {
 - "next Monday" or "Monday next week" is always WEEKDAY with weekOffset 1, never OFFSET_WEEKS, also inside a memo or list line: "- team meeting next Monday 10am" → kind WEEKDAY, weekday MON, weekOffset 1.
 - "March 5", "5 March" → CALENDAR_DATE month 3, day 5. Set year only when it is stated, otherwise null. "the 5th" → CALENDAR_DATE day 5 with month null.
 - start of the month → MONTH_START, end of the month → MONTH_END, start/end of the year → YEAR_START/YEAR_END. amount 0 means this one, 1 means the next one.
+- A named month ("the end of March", "early March") is CALENDAR_DATE, never MONTH_END or MONTH_START: month 3, day is the last day of that month or 1.
 - Use endDate only for an end expression, otherwise null: "by X", "until X", "from A to B", "for N days". "Report by Friday" has date NONE and endDate Friday.
 </date_rules>`,
   time: `<time_rules>

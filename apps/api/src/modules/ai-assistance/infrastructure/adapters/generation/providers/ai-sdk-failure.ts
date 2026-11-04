@@ -4,13 +4,16 @@ import {
   NoOutputGeneratedError,
   RetryError,
   TypeValidationError,
+  wrapLanguageModel,
 } from "ai";
 import { z } from "zod";
 
-import type {
-  AiFailureKind,
-  AiUpstreamCause,
+import {
+  type AiFailureKind,
+  type AiUpstreamCause,
+  resolveAiFailureRule,
 } from "../../../../application/ports/generation/ai-generation.errors.js";
+import type { AiLanguageModel } from "./ai-provider-adapter.js";
 
 const ABORT_ERROR_NAMES = new Set(["TimeoutError", "AbortError"]);
 /** 공급자 상태·오류 코드로 남기는 값은 고정 기호뿐이다(원문 문장이 섞이지 않게 모양을 제한한다). */
@@ -47,6 +50,7 @@ export function readProviderErrorBody(responseBody: string | undefined): Provide
 export type ApiCallErrorClassifier = (
   statusCode: number | undefined,
   body: ProviderErrorBody,
+  responseBody: string | undefined,
 ) => AiFailureKind;
 
 /**
@@ -61,7 +65,11 @@ export function classifyAiSdkError(
     return classifyAiSdkError(error.lastError, classifyApiCall);
   }
   if (APICallError.isInstance(error)) {
-    return classifyApiCall(error.statusCode, readProviderErrorBody(error.responseBody));
+    return classifyApiCall(
+      error.statusCode,
+      readProviderErrorBody(error.responseBody),
+      error.responseBody,
+    );
   }
   if (NoObjectGeneratedError.isInstance(error)) {
     if (error.finishReason === "length") {
@@ -79,6 +87,45 @@ export function classifyAiSdkError(
     return "TIMEOUT";
   }
   return "UPSTREAM";
+}
+
+/**
+ * 결제·인증 실패는 다시 불러도 같으므로 SDK 재시도에서 뺀다. SDK는 HTTP 상태만 보고 소진 429도
+ * 재시도 대상으로 표시하므로 분류 결과로 그 표시를 끈다.
+ */
+export function withoutRetryOnBillingFailure(
+  model: AiLanguageModel,
+  classify: (error: unknown) => AiFailureKind,
+): AiLanguageModel {
+  return wrapLanguageModel({
+    model,
+    middleware: {
+      wrapGenerate: async ({ doGenerate }) => {
+        try {
+          return await doGenerate();
+        } catch (error) {
+          if (
+            APICallError.isInstance(error) &&
+            error.isRetryable &&
+            resolveAiFailureRule(classify(error)).breaker === "billing"
+          ) {
+            throw new APICallError({
+              message: error.message,
+              url: error.url,
+              requestBodyValues: error.requestBodyValues,
+              statusCode: error.statusCode,
+              responseHeaders: error.responseHeaders,
+              responseBody: error.responseBody,
+              cause: error.cause,
+              data: error.data,
+              isRetryable: false,
+            });
+          }
+          throw error;
+        }
+      },
+    },
+  });
 }
 
 /** 실패한 시도가 쓴 토큰. 출력 검증 실패도 요금이 나가므로 비용에 더한다. */

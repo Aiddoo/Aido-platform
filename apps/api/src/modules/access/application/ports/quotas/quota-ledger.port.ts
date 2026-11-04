@@ -54,7 +54,10 @@ export interface QuotaLedgerPort {
   reserve(input: QuotaReserveInput): Promise<QuotaReservation>;
   /** 바뀌었으면 true. 이미 확정·환불된 예약이나 이전 시도면 false다. 저장 오류는 기록하고 삼킨다. */
   commit(reservation: QuotaReservation): Promise<boolean>;
-  /** 정확히 한 번만 돌려준다. 두 번째 호출·확정된 예약은 false다. 오류는 원래 요청 오류를 덮지 않도록 삼킨다. */
+  /**
+   * 정확히 한 번만 돌려준다. 두 번째 호출·확정된 예약은 false다. 오류는 원래 요청 오류를 덮지 않도록 삼키고
+   * false를 돌려주므로, false면 호출부는 응답에 charged:false를 주장하지 않는다.
+   */
   refund(reservation: QuotaReservation, reason: QuotaRefundReason): Promise<boolean>;
   read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota>;
   /** GET /v1/entitlements. 일간 quota(CHEER·NUDGE) 사용량은 소유 Context가 세어 넘긴다. */

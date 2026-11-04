@@ -112,7 +112,7 @@ commit
 | 프리미엄 출처·기간 표시(/me) | `PREMIUM_ACCESS_READER`(Billing). 권한 판단에는 쓰지 않는다                                                                                           |
 | 돈이 드는 횟수(AI·녹음 정리) | `QUOTA_LEDGER`(`access-quota.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`·`readSnapshot`이 주는 `featureQuota`                               |
 
-사용 횟수 원장(`QuotaLedger`): AI 호출 전에 사용자 행 잠금 UoW 안에서 최신 권한으로 집행 한도(`resolveQuotaLimit`)를 다시 읽고 카운터를 올린 뒤 `QuotaCharge`(RESERVED)를 남긴다. 결과를 주면 COMMITTED, 실패·빈 결과면 REFUNDED로 조건부 전이해 환불은 정확히 한 번이다. `Idempotency-Key`가 같으면 COMMITTED는 `alreadyCommitted`(차감 없음), 처리 중이면 AI_1314, 환불된 키는 같은 행에서 다시 차감한다. 기간은 KST 달력 월(`QuotaWindow`)이고, AI_PLAN은 출시 앱과 같은 `User.aiUsageCount`·`aiUsageResetAt`, 나머지 계량기는 `QuotaUsage`(조건부 upsert)를 센다. 한도 오류는 `details: { charged: false, featureQuota }`다. 소유 Context가 세는 한도(응원·콕 찌르기 일간, 친구·카테고리 개수)도 한도 오류에 같은 상세를 싣고, `featureQuota`는 `ENTITLEMENT_READER.featureQuotaInTx`(센 사용량을 넘김)로 만든다.
+사용 횟수 원장(`QuotaLedger`): AI 호출 전에 사용자 행 잠금 UoW 안에서 최신 권한으로 집행 한도(`resolveQuotaLimit`)를 다시 읽고 카운터를 올린 뒤 `QuotaCharge`(RESERVED)를 남긴다. 결과를 주면 COMMITTED, 실패·빈 결과면 REFUNDED로 조건부 전이해 환불은 정확히 한 번이다. `Idempotency-Key`가 같으면 COMMITTED는 `alreadyCommitted`(차감 없음), 처리 중이면 AI_1314, 환불된 키는 같은 행에서 다시 차감한다. 기간은 KST 달력 월(`QuotaWindow`)이고, AI_PLAN은 출시 앱과 같은 `User.aiUsageCount`·`aiUsageResetAt`, 나머지 계량기는 `QuotaUsage`(조건부 upsert)를 센다. 한도 오류는 `details: { charged: false, featureQuota }`다. 소유 Context가 세는 한도(응원·콕 찌르기 일간, 친구·카테고리 개수)도 한도 오류에 같은 상세를 싣고, `featureQuota`는 `ENTITLEMENT_READER.featureQuotaInTx`(센 사용량을 넘김)로 만든다. 프로세스가 죽어 남은 RESERVED는 `quota-abandoned-refund.v1` 잡(10분 주기)이 이어받기 기준 시간이 지난 것만 돌려준다.
 
 유료 기능 추가 방법:
 

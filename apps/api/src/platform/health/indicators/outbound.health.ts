@@ -4,8 +4,8 @@ import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/term
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
 /**
- * 외부 호출 회로가 열린 정책 이름을 알린다. 회로가 열려도 각 기능은 폴백·거절로 계속 응답하므로
- * 503을 만들지 않고 up에 degraded만 붙인다.
+ * 외부 호출 회로가 열렸는지 알린다. 회로가 열려도 각 기능은 폴백·거절로 계속 응답하므로 503을 만들지
+ * 않고 up에 degraded만 붙인다. 공개 응답이라 정책 이름은 싣지 않고 outbound.circuit.* 로그로만 남긴다.
  */
 @Injectable()
 export class OutboundHealthIndicator {
@@ -15,11 +15,9 @@ export class OutboundHealthIndicator {
   ) {}
 
   isHealthy(key: string): HealthIndicatorResult {
-    const openCircuits = Object.entries(this.registry.states())
-      .filter(([_name, state]) => state.openBreakers.length > 0)
-      .map(([name]) => name);
-    return this.healthIndicatorService
-      .check(key)
-      .up({ degraded: openCircuits.length > 0, openCircuits });
+    const degraded = Object.values(this.registry.states()).some(
+      (state) => state.openBreakers.length > 0,
+    );
+    return this.healthIndicatorService.check(key).up({ degraded });
   }
 }

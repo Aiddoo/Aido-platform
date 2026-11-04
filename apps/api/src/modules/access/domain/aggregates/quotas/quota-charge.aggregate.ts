@@ -4,6 +4,7 @@ import { match } from "ts-pattern";
 import { AggregateRoot } from "#api/shared/domain/index";
 
 import {
+  QUOTA_ABANDONED_REFUND_REASON,
   QUOTA_CHARGE_AMOUNT,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
 } from "../../constants/quotas/quota.constants.js";
@@ -167,5 +168,17 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
     this.props.refundReason = input.reason;
     this.props.updatedAt = new Date(input.at);
     return true;
+  }
+
+  /** 끝내 응답하지 못한 요청의 예약을 돌려준다. 이어받을 수 있을 만큼 오래된 예약만 바뀐다. */
+  refundAbandoned(at: Date): boolean {
+    if (this.replayAt(at) !== "TAKE_OVER") {
+      return false;
+    }
+    return this.refund({
+      attempt: this.props.attempt,
+      reason: QUOTA_ABANDONED_REFUND_REASON,
+      at,
+    });
   }
 }

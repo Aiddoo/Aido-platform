@@ -3,7 +3,10 @@ import { PLAN_CATALOG, PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 
 import { QUOTA_LEDGER_TIME, createQuotaLedgerFixture } from "#test/fixtures/quota-ledger.fixture";
 
-import { QUOTA_RESERVATION_TAKEOVER_AFTER_MS } from "../../../domain/constants/quotas/quota.constants.js";
+import {
+  QUOTA_ABANDONED_REFUND_BATCH_SIZE,
+  QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
+} from "../../../domain/constants/quotas/quota.constants.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 const FREE_VOICE_LIMIT = PLAN_CATALOG.VOICE_NOTE.free;
@@ -422,6 +425,88 @@ describe("QuotaLedgerService", () => {
           reason: "NO_ACTION",
         },
       ]);
+    });
+  });
+
+  describe("멈춘 예약 정리", () => {
+    it("이어받을 시간이 지난 예약만 돌려주고 완료 수를 남긴다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserve(fixture);
+      vi.setSystemTime(QUOTA_LEDGER_TIME.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS - 1);
+      await reserve(fixture);
+      vi.setSystemTime(QUOTA_LEDGER_TIME.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+
+      // When
+      await fixture.ledger.refundAbandonedReservations();
+
+      // Then
+      expect((await fixture.ledger.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+      expect(fixture.repository.charges.get("charge-1")).toMatchObject({
+        status: "REFUNDED",
+        refundReason: "ABANDONED",
+      });
+      expect(fixture.repository.charges.get("charge-2")).toMatchObject({ status: "RESERVED" });
+      expect(fixture.ledgerLogger.log).toHaveBeenCalledWith({
+        event: "access.quota.abandoned-refund.completed",
+        candidateCount: 1,
+        refundedCount: 1,
+        failedCount: 0,
+      });
+    });
+
+    it("다시 돌아도 한 번만 돌려주고 늦게 온 확정·환불은 아무것도 바꾸지 않는다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture({ aiUsageCount: 2 });
+      const reservation = await reserve(fixture);
+      vi.setSystemTime(QUOTA_LEDGER_TIME.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+
+      // When
+      await fixture.ledger.refundAbandonedReservations();
+      await fixture.ledger.refundAbandonedReservations();
+      const lateCommit = await fixture.ledger.commit(reservation);
+      const lateRefund = await fixture.ledger.refund(reservation, "FAILED");
+
+      // Then
+      expect([lateCommit, lateRefund]).toEqual([false, false]);
+      expect((await fixture.ledger.read(fixture.userId, "AI_PARSE")).used).toBe(2);
+    });
+
+    it("한 건의 저장 오류는 기록만 하고 다음 건을 계속 돌려준다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserve(fixture);
+      await reserve(fixture);
+      vi.setSystemTime(QUOTA_LEDGER_TIME.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+      vi.spyOn(fixture.repository, "updateCharge").mockRejectedValueOnce(new TypeError("db down"));
+
+      // When
+      await fixture.ledger.refundAbandonedReservations();
+
+      // Then
+      expect(fixture.repository.charges.get("charge-2")).toMatchObject({ status: "REFUNDED" });
+      expect(fixture.ledgerLogger.error).toHaveBeenCalledWith({
+        event: "access.quota.refund-failed",
+        chargeId: "charge-1",
+        meter: "AI_PLAN",
+        errorType: "TypeError",
+      });
+      expect(fixture.ledgerLogger.log).toHaveBeenCalledWith(
+        expect.objectContaining({ refundedCount: 1, failedCount: 1 }),
+      );
+    });
+
+    it("한 번에 정해진 수만 돌려주고 남은 예약은 다음 주기에 돌려준다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      const find = vi.spyOn(fixture.repository, "findAbandonedReservations");
+      // When
+      await fixture.ledger.refundAbandonedReservations();
+      // Then
+      expect(find).toHaveBeenCalledWith(
+        new Date(QUOTA_LEDGER_TIME.getTime() - QUOTA_RESERVATION_TAKEOVER_AFTER_MS),
+        QUOTA_ABANDONED_REFUND_BATCH_SIZE,
+      );
     });
   });
 

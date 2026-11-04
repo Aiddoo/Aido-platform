@@ -1,7 +1,7 @@
 import type { QuotaChargeStatus, QuotaMeter } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { match } from "ts-pattern";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -165,6 +165,16 @@ export class DrizzleQuotaLedgerRepository implements QuotaLedgerRepositoryPort {
       .from(quotaCharge)
       .where(eq(quotaCharge.id, chargeId));
     return row == null ? null : toQuotaCharge(row);
+  }
+
+  async findAbandonedReservations(cutoff: Date, limit: number): Promise<readonly QuotaCharge[]> {
+    const rows = await this.txHost.tx
+      .select()
+      .from(quotaCharge)
+      .where(and(eq(quotaCharge.status, "RESERVED"), lte(quotaCharge.updatedAt, cutoff)))
+      .orderBy(asc(quotaCharge.updatedAt))
+      .limit(limit);
+    return rows.map(toQuotaCharge);
   }
 
   async findChargeByKey(

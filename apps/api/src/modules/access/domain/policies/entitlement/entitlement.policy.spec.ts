@@ -2,6 +2,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import {
   calculateRemainingLimit,
+  isExemptFromUserSpendLimit,
   NO_RESOURCE_BONUSES,
   resolveAccessContext,
   resolveAllFeatureAccess,
@@ -14,6 +15,17 @@ import {
 const AT = new Date("2028-03-04T00:00:00.000Z");
 
 describe("권한 정책 — 카탈로그와 접근 주체", () => {
+  it.each([
+    { tier: "FREE", exempt: false },
+    { tier: "PREMIUM", exempt: false },
+    { tier: "ADMIN", exempt: true },
+  ] as const)("$tier 등급의 사용자 비용 예산 면제는 $exempt 이다", ({ tier, exempt }) => {
+    // When
+    const result = isExemptFromUserSpendLimit(tier);
+    // Then
+    expect(result).toBe(exempt);
+  });
+
   it.each([
     { role: "USER", subscriptionStatus: "ACTIVE", expected: { tier: "PREMIUM", isPremium: true } },
     { role: "USER", subscriptionStatus: "CANCELLED", expected: { tier: "FREE", isPremium: false } },

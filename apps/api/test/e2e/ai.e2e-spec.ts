@@ -1,10 +1,11 @@
-import { notChargedErrorDetailsSchema } from "@aido/api";
+import { notChargedErrorDetailsSchema, parseTodoResponseSchema } from "@aido/api";
 import { ErrorCode, Errors } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
 
+import { QUOTA_LEDGER, type QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 /**
  * AI 모듈 E2E 테스트
@@ -164,6 +165,28 @@ describe("AI E2E", () => {
         });
 
         expect(fakeAiGenerator.getCallCount()).toBe(1);
+      });
+
+      it("확정 뒤 한도를 읽지 못해도 파싱 결과를 주고 featureQuota만 뺀다", async () => {
+        // Given
+        fakeAiGenerator.setResponse({ title: "회의", date: onDate(2025, 1, 26) });
+        const ledger = ctx.module.get<QuotaLedgerPort>(QUOTA_LEDGER);
+        const read = ledger.read.bind(ledger);
+        vi.spyOn(ledger, "read")
+          .mockImplementationOnce(read)
+          .mockRejectedValueOnce(new TypeError("db down"));
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/ai/parse-todo")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .set("X-Timezone", "Asia/Seoul")
+          .send({ text: "내일 회의" });
+
+        // Then
+        expect(response.status).toBe(200);
+        expect(parseTodoResponseSchema.parse(response.body.data).data.title).toBeDefined();
+        expect(response.body.data).not.toHaveProperty("featureQuota");
       });
 
       it("categoryId가 포함된 요청 시 응답에 categoryId가 반환됨", async () => {
@@ -517,6 +540,25 @@ describe("AI E2E", () => {
         expect(notChargedErrorDetailsSchema.parse(response.body.error.details)).toEqual({
           charged: false,
         });
+      });
+
+      it("환불이 저장되지 않으면 같은 코드만 주고 차감 없음 상세를 싣지 않는다", async () => {
+        // Given
+        fakeAiGenerator.setAvailable(false);
+        const ledger = ctx.module.get<QuotaLedgerPort>(QUOTA_LEDGER);
+        vi.spyOn(ledger, "refund").mockResolvedValueOnce(false);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/ai/parse-todo")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .set("X-Timezone", "Asia/Seoul")
+          .send({ text: "내일 회의" });
+
+        // Then
+        expect(response.status).toBe(503);
+        expect(response.body.error.code).toBe("AI_1301");
+        expect(response.body.error.details).toBeUndefined();
       });
 
       it("할 일을 만들지 못하면 422 AI_1302와 차감 없음 상세를 준다", async () => {

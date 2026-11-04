@@ -43,7 +43,11 @@ import {
   type AiProviderAdapter,
   type AiProviderModel,
 } from "./providers/ai-provider-adapter.js";
-import { describeUpstreamCause, readFailedUsage } from "./providers/ai-sdk-failure.js";
+import {
+  describeUpstreamCause,
+  readFailedUsage,
+  withoutRetryOnBillingFailure,
+} from "./providers/ai-sdk-failure.js";
 
 /** 사람이 키·요청을 확인해야 하는 실패. 다음 업체로 넘기면서 error로 남긴다. */
 const OPERATOR_FAILURES: ReadonlySet<AiFailureKind> = new Set(["AUTH", "BAD_REQUEST"]);
@@ -212,7 +216,7 @@ export class AiSdkGenerator implements AiGeneratorPort {
     context: ChainContext,
   ): Promise<AiGenerationResult<T>> {
     const { policy, signal, cost } = context;
-    const route = planAiRoute({
+    const routeInput = {
       order: this.config.ai.providerOrder,
       configured: new Set(
         [...this.#adapters.values()]
@@ -220,6 +224,9 @@ export class AiSdkGenerator implements AiGeneratorPort {
           .map((adapter) => adapter.id),
       ),
       agreedVersion: request.agreedConsentVersion,
+    };
+    const route = planAiRoute({
+      ...routeInput,
       openCircuits: new Set(
         AI_PROVIDER_IDS.filter((provider) => this.#providerPolicies.get(provider)?.isOpen()),
       ),
@@ -281,7 +288,9 @@ export class AiSdkGenerator implements AiGeneratorPort {
       );
     }
     if (last == null) {
-      throw new AiGenerationError("UNAVAILABLE", {
+      const hasEligibleProvider =
+        planAiRoute({ ...routeInput, openCircuits: new Set() }).length > 0;
+      throw new AiGenerationError(hasEligibleProvider ? "CIRCUIT_OPEN" : "UNAVAILABLE", {
         provider: null,
         attempts,
         fallbackFrom: null,
@@ -304,14 +313,11 @@ export class AiSdkGenerator implements AiGeneratorPort {
       Math.floor(policy.deadlineMs - (performance.now() - startedAt)),
       1,
     );
+    const frontShareMs = Math.floor(policy.deadlineMs * FRONT_PROVIDER_DEADLINE_SHARE);
     const attemptSignal = isLast
       ? signal
-      : AbortSignal.any([
-          signal,
-          AbortSignal.timeout(
-            Math.min(remainingMs, Math.floor(policy.deadlineMs * FRONT_PROVIDER_DEADLINE_SHARE)),
-          ),
-        ]);
+      : AbortSignal.any([signal, AbortSignal.timeout(Math.min(remainingMs, frontShareMs))]);
+    const hadFullShare = remainingMs >= frontShareMs;
     const inputChars = request.system.length + request.prompt.length;
     const providerPolicy = this.#providerPolicies.get(adapter.id);
     if (providerPolicy == null) {
@@ -323,7 +329,9 @@ export class AiSdkGenerator implements AiGeneratorPort {
         try {
           const systemOptions = adapter.getSystemProviderOptions(request.system);
           const generated = await generateText({
-            model: model.model,
+            model: withoutRetryOnBillingFailure(model.model, (error) =>
+              adapter.classifyError(error),
+            ),
             ...(request.system !== "" && {
               instructions: {
                 role: "system",
@@ -353,6 +361,10 @@ export class AiSdkGenerator implements AiGeneratorPort {
           if (generated.finishReason === "content-filter") {
             throw new AiAttemptFailure("BLOCKED", request.task, {});
           }
+          // 추론이 출력 상한을 다 쓰면 본문 없이 끝나 SDK는 output 접근에서 스키마 오류처럼 실패한다.
+          if (generated.finishReason === "length" && generated.text.trim() === "") {
+            throw new AiAttemptFailure("TRUNCATED", request.task, {});
+          }
           return { generated, output: generated.output };
         } catch (error) {
           if (error instanceof AiAttemptFailure) {
@@ -372,7 +384,13 @@ export class AiSdkGenerator implements AiGeneratorPort {
               }),
             );
           }
-          throw new AiAttemptFailure(kind, request.task, { cause: error });
+          const callerAborted = request.signal?.aborted === true;
+          throw new AiAttemptFailure(
+            kind,
+            request.task,
+            { cause: error },
+            kind !== "TIMEOUT" || (hadFullShare && !callerAborted),
+          );
         }
       }, attemptSignal);
       return {

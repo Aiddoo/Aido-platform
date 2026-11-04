@@ -15,7 +15,7 @@ describe("OutboundHealthIndicator", () => {
     vi.restoreAllMocks();
   });
 
-  it("회로가 열린 정책이 있어도 up을 유지하고 degraded와 정책 이름만 알린다", async () => {
+  it("회로가 열린 정책이 있어도 up을 유지하고 공개 응답에는 degraded만 싣는다", async () => {
     // Given
     const registry = new OutboundPolicyRegistry(new RecordingOperationalAlert());
     const vendor = registry.get({
@@ -30,8 +30,7 @@ describe("OutboundHealthIndicator", () => {
     // When
     const result = indicator.isHealthy("outbound");
     // Then
-    expect(result).toEqual({
-      outbound: { status: "up", degraded: true, openCircuits: ["vendor"] },
-    });
+    expect(result).toEqual({ outbound: { status: "up", degraded: true } });
+    expect(JSON.stringify(result)).not.toContain("vendor");
   });
 });

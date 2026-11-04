@@ -15,6 +15,8 @@ import {
   QUOTA_LEDGER_REPOSITORY,
   type QuotaLedgerRepositoryPort,
 } from "#api/modules/access/application/ports/quotas/quota-ledger.repository.port";
+import { QuotaLedgerService } from "#api/modules/access/application/services/quotas/quota-ledger.service";
+import { QUOTA_RESERVATION_TAKEOVER_AFTER_MS } from "#api/modules/access/domain/constants/quotas/quota.constants";
 import { QuotaWindow } from "#api/modules/access/domain/value-objects/quotas/quota-window.vo";
 import {
   PREMIUM_GRANTER,
@@ -45,6 +47,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let ledger: QuotaLedgerPort;
+  let service: QuotaLedgerService;
   let repository: QuotaLedgerRepositoryPort;
   let unitOfWork: UnitOfWorkPort;
   let entitlement: EntitlementReaderPort;
@@ -55,6 +58,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     ledger = context.module.get(QUOTA_LEDGER);
+    service = context.module.get(QuotaLedgerService, { strict: false });
     repository = context.module.get(QUOTA_LEDGER_REPOSITORY);
     unitOfWork = context.module.get(UNIT_OF_WORK);
     entitlement = context.module.get(ENTITLEMENT_READER);
@@ -160,6 +164,89 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     }
     return { outcomes: await outcomes, observedWaiters };
   }
+
+  describe("멈춘 예약 정리", () => {
+    const stale = new Date(newMonthAt.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+
+    it("이어받을 시간이 지난 RESERVED만 돌려주고 확정·최근 예약은 그대로 둔다", async () => {
+      // Given
+      await client.update(userTable).set({ aiUsageCount: 0 }).where(eq(userTable.id, userId));
+      await ledger.reserve(input());
+      const committed = await ledger.reserve(input());
+      await ledger.commit(committed);
+      vi.setSystemTime(stale.getTime() - 1);
+      await ledger.reserve(input());
+      vi.setSystemTime(stale);
+
+      // When
+      await service.refundAbandonedReservations();
+
+      // Then
+      expect((await storedAiUsage())?.count).toBe(2);
+      expect((await storedCharges()).map((charge) => charge.status).toSorted()).toEqual([
+        "COMMITTED",
+        "REFUNDED",
+        "RESERVED",
+      ]);
+    });
+
+    it("정리 두 번이 잠금을 두고 경쟁해도 정확히 한 번만 돌려준다", async () => {
+      // Given
+      await ledger.reserve(input({ feature: "VOICE_NOTE" }));
+      await ledger.reserve(input({ feature: "AI_PARSE" }));
+      vi.setSystemTime(stale);
+
+      // When
+      const { outcomes, observedWaiters } = await contend(() =>
+        service.refundAbandonedReservations(),
+      );
+
+      // Then
+      expect(observedWaiters).toBe(2);
+      expect(outcomes.every((outcome) => outcome.status === "fulfilled")).toBe(true);
+      expect((await storedAiUsage())?.count).toBe(FREE_AI_LIMIT - 1);
+      expect(await storedVoiceUsage()).toBe(0);
+      expect(await storedCharges()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ status: "REFUNDED", refundReason: "ABANDONED", attempt: 1 }),
+        ]),
+      );
+    });
+
+    it("환불과 이어받기가 경쟁해도 순 차감이 어긋나지 않는다", async () => {
+      // Given
+      const key = "stale-key";
+      await ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
+      vi.setSystemTime(stale);
+
+      // When
+      const swept = service.refundAbandonedReservations();
+      const retried = ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
+      const [, reservation] = await Promise.all([swept, retried]);
+
+      // Then
+      const [charge] = await storedCharges();
+      expect(charge).toMatchObject({ status: "RESERVED", attempt: reservation.attempt });
+      expect(await storedVoiceUsage()).toBe(1);
+    });
+
+    it("정리한 뒤 늦게 온 확정은 무시되고 같은 키 재시도는 한 번만 다시 차감한다", async () => {
+      // Given
+      const key = "late-key";
+      const first = await ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
+      vi.setSystemTime(stale);
+      await service.refundAbandonedReservations();
+
+      // When
+      const lateCommit = await ledger.commit(first);
+      const retried = await ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
+
+      // Then
+      expect(lateCommit).toBe(false);
+      expect(retried.attempt).toBe(2);
+      expect(await storedVoiceUsage()).toBe(1);
+    });
+  });
 
   describe("동시 예약", () => {
     it("무료 AI 한도 직전의 동시 두 요청은 하나만 차감하고 다른 요청은 차감 없이 AI_1303이다", async () => {

@@ -97,7 +97,12 @@ interface EvalCase {
 }
 
 const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
-const titleKey = (title: string) => title.toLowerCase().replace(/[\s\p{P}]/gu, "");
+/** 관사·소유격 유무("Fix the copy"·"Fix copy")는 같은 답이고 제목 규칙도 짧게 쓰라고 한다. */
+const titleKey = (title: string) =>
+  title
+    .toLowerCase()
+    .replace(/\b(a|an|the|my)\b/g, "")
+    .replace(/[\s\p{P}]/gu, "");
 const titleMatches = (expected: string, actual: string) =>
   titleKey(actual).includes(titleKey(expected)) || titleKey(expected).includes(titleKey(actual));
 const options = { agreedConsentVersion: AI_DATA_SHARING_CONSENT.VERSION, userId: null } as const;
@@ -314,7 +319,10 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
       config,
       adapters,
       new OutboundPolicyRegistry(alert),
-      new AiSpendGuard(config, new InMemoryUsageMeterAdapter(), alert),
+      // eval은 userId가 null이라 사용자 예산·등급을 읽지 않는다.
+      new AiSpendGuard(config, new InMemoryUsageMeterAdapter(), alert, {
+        getAccessSnapshot: () => Promise.reject(new Error("eval has no user")),
+      }),
     ),
     available,
     thinking: config.ai.tasks[task].thinking,

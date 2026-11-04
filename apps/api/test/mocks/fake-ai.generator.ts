@@ -34,8 +34,8 @@ const DEFAULT_TOKEN_USAGE: FakeTokenUsage = { input: 150, output: 50, reasoning:
 /** 생성기가 끝내 실패했을 때 던지는 오류(업체 체인 정보 없이 종류만). */
 export function createAiGenerationError(kind: AiFailureKind): AiGenerationError {
   return new AiGenerationError(kind, {
-    provider: kind === "UNAVAILABLE" ? null : "google",
-    attempts: kind === "UNAVAILABLE" ? 0 : 1,
+    provider: kind === "UNAVAILABLE" || kind === "CIRCUIT_OPEN" ? null : "google",
+    attempts: kind === "UNAVAILABLE" || kind === "CIRCUIT_OPEN" ? 0 : 1,
     fallbackFrom: null,
     estimatedCostMicroUsd: 0,
     upstream: null,

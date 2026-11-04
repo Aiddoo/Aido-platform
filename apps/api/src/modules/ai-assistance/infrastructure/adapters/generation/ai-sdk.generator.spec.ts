@@ -4,9 +4,16 @@ import { z } from "zod";
 
 import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
 import { ok, status, StubProviderAdapter } from "#test/mocks/ai-provider-adapter.stub";
-import { createAiSdkGenerator, createAiTestConfig } from "#test/mocks/ai-provider-http.stub";
+import {
+  createAiSdkGenerator,
+  createAiTestConfig,
+  stubAccessTiers,
+} from "#test/mocks/ai-provider-http.stub";
 
-import { AiGenerationError } from "../../../application/ports/generation/ai-generation.errors.js";
+import {
+  AiGenerationError,
+  isTransientAiFailure,
+} from "../../../application/ports/generation/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../../application/ports/generation/ai-generator.port.js";
 
 const schema = z.object({ title: z.string() });
@@ -18,6 +25,7 @@ interface ChainInput {
   readonly openai?: StubProviderAdapter;
   readonly env?: Record<string, string>;
   readonly meter?: InMemoryUsageMeterAdapter;
+  readonly access?: ReturnType<typeof stubAccessTiers>;
 }
 
 function createChain(input: ChainInput) {
@@ -27,8 +35,11 @@ function createChain(input: ChainInput) {
   const openai = input.openai ?? new StubProviderAdapter("openai", [ok()], "gpt-6-luna");
   const meter = input.meter ?? new InMemoryUsageMeterAdapter();
   const config = createAiTestConfig(input.env);
-  const { generator, alert } = createAiSdkGenerator(config, [anthropic, google, openai], { meter });
-  return { generator, alert, meter, anthropic, google, openai };
+  const { generator, alert, registry } = createAiSdkGenerator(config, [anthropic, google, openai], {
+    meter,
+    ...(input.access != null && { access: input.access }),
+  });
+  return { generator, alert, registry, meter, anthropic, google, openai };
 }
 
 function request(
@@ -280,6 +291,76 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     expect(warn).toHaveBeenCalledWith(
       expect.objectContaining({ event: "ai.provider.fallback", errorType: "TIMEOUT" }),
     );
+  });
+
+  it("앞 업체가 시간을 쓴 뒤 남은 시간만 받은 업체의 TIMEOUT은 장애 회로에 쌓지 않는다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
+      google: new StubProviderAdapter("google", [{ type: "hang" }], "gemini-3.1-flash-lite"),
+      env: { AI_DEADLINE_PARSE_TODO_MS: "40", AI_BREAKER_HEALTH_THRESHOLD: "2" },
+    });
+    // When
+    for (const prompt of ["첫 요청", "둘째 요청"]) {
+      await chain.generator.generate(request({ prompt })).catch((cause: unknown) => cause);
+    }
+    // Then
+    expect(chain.google.callCount).toBe(2);
+    expect(chain.registry.states()["ai:anthropic"]?.openBreakers).toEqual(["health"]);
+    expect(chain.registry.states()["ai:google"]?.openBreakers).toEqual([]);
+  });
+
+  it("정해진 시간을 온전히 받은 업체의 TIMEOUT은 장애 회로에 쌓는다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
+      env: {
+        AI_PROVIDER_ORDER: "anthropic",
+        AI_DEADLINE_PARSE_TODO_MS: "20",
+        AI_BREAKER_HEALTH_THRESHOLD: "2",
+      },
+    });
+    // When
+    for (const prompt of ["첫 요청", "둘째 요청"]) {
+      await chain.generator.generate(request({ prompt })).catch((cause: unknown) => cause);
+    }
+    // Then
+    expect(chain.registry.states()["ai:anthropic"]?.openBreakers).toEqual(["health"]);
+  });
+
+  it("호출자가 끊은 시도는 업체 장애로 세지 않는다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
+      env: { AI_PROVIDER_ORDER: "anthropic", AI_BREAKER_HEALTH_THRESHOLD: "1" },
+    });
+    const controller = new AbortController();
+    // When
+    const pending = chain.generator
+      .generate(request({ signal: controller.signal }))
+      .catch((cause: unknown) => cause);
+    await vi.waitFor(() => expect(chain.anthropic.callCount).toBe(1));
+    controller.abort();
+    const failure = await pending;
+    // Then
+    expect(failure).toMatchObject({ kind: "TIMEOUT" });
+    expect(chain.registry.states()["ai:anthropic"]?.openBreakers).toEqual([]);
+  });
+
+  it("추론 토큰이 상한을 다 써 본문 없이 끝나면 TRUNCATED이고 다시 묻지도 넘기지도 않는다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter(
+        "anthropic",
+        [{ type: "finish", reason: "length", text: "" }],
+        "claude-haiku-5-5",
+      ),
+    });
+    // When
+    const failure = await generate(chain.generator).catch((cause: unknown) => cause);
+    // Then
+    expect(failure).toMatchObject({ kind: "TRUNCATED", errorCode: "AI_1302", attempts: 1 });
+    expect([chain.anthropic.callCount, chain.google.callCount]).toEqual([1, 0]);
   });
 
   it.each([
@@ -534,6 +615,88 @@ describe("AiSdkGenerator — 입력 상한·킬 스위치·비용 예산", () =>
     expect(chain.anthropic.callCount).toBe(1);
   });
 
+  it.each([
+    { tier: "FREE", limited: true },
+    { tier: "PREMIUM", limited: true },
+    { tier: "ADMIN", limited: false },
+  ] as const)(
+    "사용자 일 예산을 다 쓴 $tier 등급의 제한 여부는 $limited 이다",
+    async ({ tier, limited }) => {
+      // Given
+      const meter = new InMemoryUsageMeterAdapter();
+      await meter.add([{ key: spendKey("2026-11-05", "user-1"), amount: 250_000 }]);
+      const chain = createChain({ meter, access: stubAccessTiers({ "user-1": tier }) });
+      // When
+      const outcome = await generate(chain.generator).catch((cause: unknown) => cause);
+      // Then
+      if (limited) {
+        expect(outcome).toMatchObject({ kind: "USER_SPEND_LIMITED", errorCode: "AI_1310" });
+        expect(chain.anthropic.callCount).toBe(0);
+      } else {
+        expect(outcome).toMatchObject({ provider: "anthropic" });
+      }
+    },
+  );
+
+  it("사용자 일 예산에서 빠진 ADMIN의 사용량도 전역·사용자 일에 그대로 기록한다", async () => {
+    // Given
+    const meter = new InMemoryUsageMeterAdapter();
+    await meter.add([{ key: spendKey("2026-11-05", "user-1"), amount: 250_000 }]);
+    const chain = createChain({ meter, access: stubAccessTiers({ "user-1": "ADMIN" }) });
+    // When
+    const result = await generate(chain.generator);
+    // Then
+    const cost = result.estimatedCostMicroUsd ?? 0;
+    expect(await meter.read([spendKey("2026-11-05"), spendKey("2026-11-05", "user-1")])).toEqual([
+      cost,
+      250_000 + cost,
+    ]);
+  });
+
+  it("ADMIN도 킬 스위치·전역 예산·입력 상한은 그대로 받는다", async () => {
+    // Given
+    const access = stubAccessTiers({ "user-1": "ADMIN" });
+    const meter = new InMemoryUsageMeterAdapter();
+    await meter.add([{ key: spendKey("2026-11-05"), amount: 3_000_000 }]);
+    const killed = createChain({ access, env: { AI_GENERATION_MODE: "off" } });
+    const overBudget = createChain({ access, meter });
+    const allowed = createChain({ access });
+    // When
+    const failures = await Promise.all([
+      generate(killed.generator).catch((cause: unknown) => cause),
+      generate(overBudget.generator).catch((cause: unknown) => cause),
+      allowed.generator
+        .generate(request({ prompt: "가".repeat(11), maxInputChars: 10 }))
+        .catch((cause: unknown) => cause),
+    ]);
+    // Then
+    expect(failures).toEqual([
+      expect.objectContaining({ kind: "HALTED" }),
+      expect.objectContaining({ kind: "HALTED" }),
+      expect.objectContaining({ kind: "BAD_REQUEST" }),
+    ]);
+    expect(allowed.anthropic.callCount).toBe(0);
+  });
+
+  it("예산 안의 사용자는 등급을 읽지 않고 등급을 읽지 못한 초과 사용자는 제한을 유지한다", async () => {
+    // Given
+    const meter = new InMemoryUsageMeterAdapter();
+    await meter.add([{ key: spendKey("2026-11-05", "over"), amount: 250_000 }]);
+    const access = stubAccessTiers();
+    const read = vi.spyOn(access, "getAccessSnapshot").mockRejectedValue(new TypeError("db down"));
+    const chain = createChain({ meter, access });
+    // When
+    await chain.generator.generate(request({ userId: "within" }));
+    const callsWithinBudget = read.mock.calls.length;
+    const limited = await chain.generator
+      .generate(request({ userId: "over" }))
+      .catch((cause: unknown) => cause);
+    // Then
+    expect(callsWithinBudget).toBe(0);
+    expect(limited).toMatchObject({ kind: "USER_SPEND_LIMITED" });
+    expect(error).toHaveBeenCalledWith({ event: "ai.spend.read-failed", errorType: "TypeError" });
+  });
+
   it("요청이 끝나면 실패한 시도까지 더한 추정 비용을 전역 일·월·사용자 일에 한 번씩 더한다", async () => {
     // Given
     const chain = createChain({
@@ -776,5 +939,62 @@ describe("AiSdkGenerator — 업체 회로 (공용 OutboundPolicy, 가짜 시계
     }
     // Then
     expect(chain.anthropic.callCount).toBe(6);
+  });
+
+  it("보낼 업체의 회로가 모두 열려 있으면 일시 실패 CIRCUIT_OPEN이고 키가 없는 경우와 구분한다", async () => {
+    // Given
+    const chain = createChain({
+      google: new StubProviderAdapter("google", [status(402)], "gemini-3.1-flash-lite"),
+    });
+    const noKey = createChain({
+      google: new StubProviderAdapter("google", [ok()], "gemini-3.1-flash-lite", false),
+    });
+    await generate(chain.generator, "2026-10-26").catch((cause: unknown) => cause);
+    // When
+    const open = await generate(chain.generator, "2026-10-26").catch((cause: unknown) => cause);
+    const unavailable = await generate(noKey.generator, "2026-10-26").catch(
+      (cause: unknown) => cause,
+    );
+    // Then
+    expect(open).toMatchObject({ kind: "CIRCUIT_OPEN", errorCode: "AI_1301", attempts: 0 });
+    expect(isTransientAiFailure("CIRCUIT_OPEN")).toBe(true);
+    expect(unavailable).toMatchObject({ kind: "UNAVAILABLE", errorCode: "AI_1301" });
+    expect(isTransientAiFailure("UNAVAILABLE")).toBe(false);
+    expect(chain.google.callCount).toBe(1);
+  });
+
+  it("리포트의 시험 호출이 끝나지 않아도 짧은 요청은 기다리지 않고 다음 업체로 간다", async () => {
+    // Given
+    const anthropic = new StubProviderAdapter(
+      "anthropic",
+      [status(402), { type: "hang" }],
+      "claude-haiku-5-5",
+    );
+    const chain = createCircuitChain(anthropic);
+    await chain.generateQuickPlan();
+    vi.setSystemTime(NOW.getTime() + 15 * MINUTE);
+    const controller = new AbortController();
+    const probe = chain.generator
+      .generate(
+        request({
+          task: "report",
+          taskClass: "background",
+          prompt: "리포트",
+          maxInputChars: 16_000,
+          signal: controller.signal,
+        }),
+      )
+      .catch((cause: unknown) => cause);
+    await vi.waitFor(() => expect(anthropic.callCount).toBe(2));
+    // When
+    const startedAt = performance.now();
+    const short = await chain.generator.generate(request({ prompt: "짧은 요청" }));
+    const waitedMs = performance.now() - startedAt;
+    controller.abort();
+    await probe;
+    // Then
+    expect(short).toMatchObject({ provider: "google", fallbackFrom: null });
+    expect(waitedMs).toBeLessThan(1_000);
+    expect(anthropic.callCount).toBe(2);
   });
 });

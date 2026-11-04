@@ -17,7 +17,11 @@ import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { QuotaCharge } from "../../../domain/aggregates/quotas/quota-charge.aggregate.js";
-import { QUOTA_CHARGE_AMOUNT } from "../../../domain/constants/quotas/quota.constants.js";
+import {
+  QUOTA_ABANDONED_REFUND_BATCH_SIZE,
+  QUOTA_CHARGE_AMOUNT,
+  QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
+} from "../../../domain/constants/quotas/quota.constants.js";
 import {
   NO_RESOURCE_BONUSES,
   resolveAccessContext,
@@ -149,28 +153,10 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     }
     const meter = meterOf(reservation.feature);
     try {
-      const refunded = await this.#dependencies.unitOfWork.run(async () => {
-        const { repository, userMutationLock } = this.#dependencies;
-        if (!(await userMutationLock.lockById(reservation.userId))) {
-          return false;
-        }
-        const charge = await repository.findCharge(reservation.chargeId);
-        if (charge == null) {
-          return false;
-        }
-        const expected = { status: charge.status, attempt: charge.attempt };
-        if (!charge.refund({ attempt: reservation.attempt, reason, at: now() })) {
-          return false;
-        }
-        if (!(await repository.updateCharge(charge, expected))) {
-          return false;
-        }
-        await repository.subtractUsage(reservation.userId, meter, {
-          periodKey: charge.periodKey,
-          amount: charge.amount,
-        });
-        return true;
-      });
+      const refunded = await this.#refundLocked(
+        { userId: reservation.userId, chargeId: reservation.chargeId },
+        (charge) => charge.refund({ attempt: reservation.attempt, reason, at: now() }),
+      );
       if (refunded) {
         this.#dependencies.logger.log({
           event: AccessQuotaLogEvent.REFUNDED,
@@ -189,6 +175,44 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       });
       return false;
     }
+  }
+
+  /**
+   * 프로세스가 죽어 확정도 환불도 못 한 예약을 돌려준다. 잠금 안에서 최신 상태를 다시 보고 조건부로 저장하므로
+   * 여러 번 돌거나 늦게 온 확정·환불·이어받기와 겹쳐도 한 번만 돌려준다.
+   */
+  async refundAbandonedReservations(): Promise<void> {
+    const { repository, logger } = this.#dependencies;
+    const cutoff = new Date(now().getTime() - QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+    const candidates = await repository.findAbandonedReservations(
+      cutoff,
+      QUOTA_ABANDONED_REFUND_BATCH_SIZE,
+    );
+    let refundedCount = 0;
+    let failedCount = 0;
+    for (const candidate of candidates) {
+      try {
+        const refunded = await this.#refundLocked(
+          { userId: candidate.userId, chargeId: candidate.id },
+          (charge) => charge.refundAbandoned(now()),
+        );
+        refundedCount += refunded ? 1 : 0;
+      } catch (error) {
+        failedCount += 1;
+        logger.error({
+          event: AccessQuotaLogEvent.REFUND_FAILED,
+          chargeId: candidate.id,
+          meter: candidate.meter,
+          errorType: toErrorType(error),
+        });
+      }
+    }
+    logger.log({
+      event: AccessQuotaLogEvent.ABANDONED_REFUND_COMPLETED,
+      candidateCount: candidates.length,
+      refundedCount,
+      failedCount,
+    });
   }
 
   async read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota> {
@@ -232,6 +256,32 @@ export class QuotaLedgerService implements QuotaLedgerPort {
         ),
       ),
     };
+  }
+
+  /** 사용자 행을 잠그고 최신 차감에 환불 전이를 적용한다. 전이가 실제로 저장되면 사용량을 되돌린다. */
+  async #refundLocked(
+    target: { readonly userId: string; readonly chargeId: string },
+    transition: (charge: QuotaCharge) => boolean,
+  ): Promise<boolean> {
+    const { repository, userMutationLock, unitOfWork } = this.#dependencies;
+    return unitOfWork.run(async () => {
+      if (!(await userMutationLock.lockById(target.userId))) {
+        return false;
+      }
+      const charge = await repository.findCharge(target.chargeId);
+      if (charge == null) {
+        return false;
+      }
+      const expected = { status: charge.status, attempt: charge.attempt };
+      if (!transition(charge) || !(await repository.updateCharge(charge, expected))) {
+        return false;
+      }
+      await repository.subtractUsage(target.userId, charge.meter, {
+        periodKey: charge.periodKey,
+        amount: charge.amount,
+      });
+      return true;
+    });
   }
 
   async #replay(

@@ -1,5 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import {
+  ENTITLEMENT_READER,
+  type EntitlementReaderPort,
+  isExemptFromUserSpendLimit,
+} from "#api/modules/access/access-entitlement.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import {
   USAGE_METER,
@@ -55,6 +60,8 @@ export class AiSpendGuard {
     private readonly config: TypedConfigService,
     @Inject(USAGE_METER) private readonly meter: Pick<UsageMeterPort, "add" | "read">,
     @Inject(OPERATIONAL_ALERT) private readonly alert: OperationalAlertPort,
+    @Inject(ENTITLEMENT_READER)
+    private readonly access: Pick<EntitlementReaderPort, "getAccessSnapshot">,
   ) {}
 
   async decide(input: {
@@ -64,7 +71,21 @@ export class AiSpendGuard {
     const { ai } = this.config;
     const enabled = ai.enabled[input.taskClass];
     const spend = enabled ? await this.#readSpend(input.userId) : EMPTY_SPEND;
-    return decideAiSpend({ taskClass: input.taskClass, enabled, spend, limits: ai.budget });
+    const decision = decideAiSpend({
+      taskClass: input.taskClass,
+      enabled,
+      spend,
+      limits: ai.budget,
+    });
+    // 전역 판단을 모두 통과한 뒤의 결과이므로 면제 대상이면 그대로 허용한다.
+    if (
+      decision.type === "user-limited" &&
+      input.userId != null &&
+      (await this.#isExemptFromUserLimit(input.userId))
+    ) {
+      return { type: "allowed" };
+    }
+    return decision;
   }
 
   async record(userId: string | null, microUsd: number): Promise<void> {
@@ -91,6 +112,20 @@ export class AiSpendGuard {
         microUsd,
         errorType: toErrorType(error),
       });
+    }
+  }
+
+  /** 예산을 넘긴 사용자만 등급을 읽어 평소 요청에 조회를 더하지 않는다. 못 읽으면 제한을 유지한다. */
+  async #isExemptFromUserLimit(userId: string): Promise<boolean> {
+    try {
+      const { tier } = await this.access.getAccessSnapshot(userId);
+      return isExemptFromUserSpendLimit(tier);
+    } catch (error) {
+      this.#logger.error({
+        event: AiGuardLogEvent.SPEND_READ_FAILED,
+        errorType: toErrorType(error),
+      });
+      return false;
     }
   }
 

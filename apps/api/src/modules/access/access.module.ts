@@ -23,6 +23,7 @@ import { EntitlementService } from "./application/services/entitlement/entitleme
 import { ResourceBonusGranter } from "./application/services/entitlement/resource-bonus-granter.service.js";
 import { QuotaLedgerService } from "./application/services/quotas/quota-ledger.service.js";
 import { EntitlementCacheAdapter } from "./infrastructure/adapters/entitlement/entitlement-cache.adapter.js";
+import { QuotaAbandonedRefundJob } from "./infrastructure/jobs/quotas/quota-abandoned-refund.job.js";
 import { DrizzleEntitlementReader } from "./infrastructure/persistence/entitlement/drizzle-entitlement.reader.js";
 import { DrizzleResourceBonusRepository } from "./infrastructure/persistence/entitlement/drizzle-resource-bonus.repository.js";
 import { DrizzleQuotaLedgerRepository } from "./infrastructure/persistence/quotas/drizzle-quota-ledger.repository.js";
@@ -32,6 +33,7 @@ import { DrizzleQuotaLedgerRepository } from "./infrastructure/persistence/quota
   providers: [
     entitlementServiceProvider,
     quotaLedgerServiceProvider,
+    QuotaAbandonedRefundJob,
     DrizzleEntitlementReader,
     EntitlementCacheAdapter,
     { provide: ENTITLEMENT_READER, useExisting: EntitlementService },

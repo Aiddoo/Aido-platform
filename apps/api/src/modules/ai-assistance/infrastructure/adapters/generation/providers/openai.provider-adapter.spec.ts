@@ -58,6 +58,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     { fixture: "engine-overloaded.503.json", kind: "OVERLOADED" },
     { fixture: "server-error.500.json", kind: "UPSTREAM" },
     { fixture: "invalid-request.400.json", kind: "BAD_REQUEST" },
+    { fixture: "refusal.200.json", kind: "BLOCKED" },
   ] as const)("OpenAI $fixture 응답은 $kind로 분류한다", async ({ fixture, kind }) => {
     // Given
     fetchSpy.mockResolvedValue(aiProviderErrorResponse("openai", fixture));
@@ -130,5 +131,61 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
       reasoning: { effort: "low" },
       text: { format: { type: "json_schema", strict: true } },
     });
+  });
+
+  it("모델 거절(refusal)은 BLOCKED로 끝내고 다시 묻지 않으며 장애 회로에 쌓지 않는다", async () => {
+    // Given
+    fetchSpy.mockImplementation(async () => aiProviderErrorResponse("openai", "refusal.200.json"));
+    const config = createAiTestConfig({
+      AI_PROVIDER_ORDER: "openai",
+      AI_BREAKER_HEALTH_THRESHOLD: "1",
+    });
+    const { generator, registry } = createAiSdkGenerator(config, [
+      new OpenAiProviderAdapter(config),
+    ]);
+    // When
+    const failure = await generator
+      .generate({
+        task: "parse-todo",
+        taskClass: "interactive",
+        userId: null,
+        maxInputChars: 5_000,
+        promptVersion: "parse-todo@test",
+        system: "규칙",
+        prompt: "독서",
+        schema,
+        agreedConsentVersion: "2026-11-04",
+      })
+      .catch((cause: unknown) => cause);
+    // Then
+    expect(failure).toMatchObject({ kind: "BLOCKED", errorCode: "AI_1302", attempts: 1 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(registry.states()["ai:openai"]?.openBreakers).toEqual([]);
+  });
+
+  it("insufficient_quota 429는 마지막 업체여도 SDK가 다시 부르지 않는다", async () => {
+    // Given
+    fetchSpy.mockImplementation(async () =>
+      aiProviderErrorResponse("openai", "insufficient-quota.429.json"),
+    );
+    const config = createAiTestConfig({ AI_PROVIDER_ORDER: "openai" });
+    const { generator } = createAiSdkGenerator(config, [new OpenAiProviderAdapter(config)]);
+    // When
+    const failure = await generator
+      .generate({
+        task: "parse-todo",
+        taskClass: "interactive",
+        userId: null,
+        maxInputChars: 5_000,
+        promptVersion: "parse-todo@test",
+        system: "규칙",
+        prompt: "독서",
+        schema,
+        agreedConsentVersion: "2026-11-04",
+      })
+      .catch((cause: unknown) => cause);
+    // Then
+    expect(failure).toMatchObject({ kind: "QUOTA_EXHAUSTED" });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

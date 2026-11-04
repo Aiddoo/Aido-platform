@@ -8,6 +8,7 @@ import {
   createAiSdkGenerator,
 } from "#test/mocks/ai-provider-http.stub";
 
+import { quickPlanPrompt } from "../../../../application/prompts/planning/quick-plan/index.js";
 import { AnthropicProviderAdapter } from "./anthropic.provider-adapter.js";
 
 const schema = z.object({ title: z.string() });
@@ -51,6 +52,7 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
 
   it.each([
     { fixture: "billing-error.402.json", kind: "QUOTA_EXHAUSTED" },
+    { fixture: "credit-balance-too-low.400.json", kind: "QUOTA_EXHAUSTED" },
     { fixture: "authentication-error.401.json", kind: "AUTH" },
     { fixture: "rate-limit-error.429.json", kind: "RATE_LIMITED" },
     { fixture: "overloaded-error.529.json", kind: "OVERLOADED" },
@@ -146,5 +148,32 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
     const options = adapter.getProviderOptions({ ...POLICY, thinking });
     // Then
     expect(options["anthropic"]).toEqual({ structuredOutputMode: "jsonTool", ...expected });
+  });
+
+  it("JSON 도구 입력의 배열 칸을 문자열로 보낸 응답은 다시 묻지 않고 그대로 받는다", async () => {
+    // Given - 실제 평가에서 받은 모양: actions가 JSON 문자열이다
+    const action = {
+      type: "CREATE_MEMO",
+      title: "와이파이 비밀번호",
+      content: "거실 공유기 뒷면",
+    };
+    fetchSpy.mockImplementation(async () => messageResponse({ actions: JSON.stringify([action]) }));
+    const config = createAiTestConfig({ AI_PROVIDER_ORDER: "anthropic" });
+    const { generator } = createAiSdkGenerator(config, [new AnthropicProviderAdapter(config)]);
+    // When
+    const result = await generator.generate({
+      task: "quick-plan",
+      taskClass: "interactive",
+      userId: null,
+      maxInputChars: quickPlanPrompt.maxInputChars,
+      promptVersion: quickPlanPrompt.version,
+      system: "규칙",
+      prompt: "입력",
+      schema: quickPlanPrompt.schema,
+      agreedConsentVersion: "2026-11-04",
+    });
+    // Then
+    expect(result).toMatchObject({ output: { actions: [action] }, attempts: 1 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

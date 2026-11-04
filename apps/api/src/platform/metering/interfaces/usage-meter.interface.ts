@@ -36,4 +36,6 @@ export interface UsageMeterPort {
   read(keys: readonly UsageKey[]): Promise<readonly number[]>;
   /** cutoff 전에 마지막으로 바뀐 기간을 지우고 지운 행 수를 돌려준다 */
   prune(cutoff: Date): Promise<number>;
+  /** 사용자 id를 대상으로 한 모든 기간을 지운다(계정 영구 삭제). 지운 행 수를 돌려준다 */
+  deleteSubject(subject: string): Promise<number>;
 }

@@ -232,4 +232,28 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
     // Then
     expect(policy.isOpen()).toBe(true);
   });
+
+  it("시험 호출이 진행 중이면 다른 호출은 기다리지 않고 거절하고 결과가 나면 다시 받는다", async () => {
+    // Given
+    const { policy } = createPolicy();
+    for (let index = 0; index < 3; index += 1) {
+      await policy.execute(fail).catch(() => null);
+    }
+    vi.setSystemTime(START.getTime() + 60_000);
+    const { promise: probeResult, resolve: finishProbe } = Promise.withResolvers<string>();
+    const probe = policy.execute(() => probeResult);
+    const waiter = vi.fn(async () => "waiter");
+    // When
+    const rejected = await policy.execute(waiter).catch((error: unknown) => error);
+    const openDuringProbe = policy.isOpen();
+    finishProbe("probe");
+    await probe;
+    const afterProbe = await policy.execute(waiter);
+    // Then
+    expect(rejected).toBeInstanceOf(OutboundRejectedError);
+    expect(rejected).toMatchObject({ reason: "circuit-open" });
+    expect(openDuringProbe).toBe(true);
+    expect(afterProbe).toBe("waiter");
+    expect(waiter).toHaveBeenCalledTimes(1);
+  });
 });

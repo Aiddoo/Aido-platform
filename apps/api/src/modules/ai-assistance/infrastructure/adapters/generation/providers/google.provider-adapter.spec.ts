@@ -31,6 +31,15 @@ function modelResponse(text: string, withUsage = true): Response {
   });
 }
 
+/** SDK 재시도가 기다리지 않도록 retry-after-ms 0을 붙인 업체 오류 응답 */
+function retryNow(fixture: string): Response {
+  const response = aiProviderErrorResponse("google", fixture);
+  return new Response(response.body, {
+    status: response.status,
+    headers: { "content-type": "application/json", "retry-after-ms": "0" },
+  });
+}
+
 function createGenerator(env: Record<string, string> = {}) {
   const config = createAiTestConfig({ AI_PROVIDER_ORDER: "google", ...env });
   return createAiSdkGenerator(config, [new GoogleProviderAdapter(config)]).generator;
@@ -83,7 +92,9 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
 
   it.each([
     { fixture: "prepayment-depleted.429.json", kind: "QUOTA_EXHAUSTED" },
+    { fixture: "spending-cap.429.json", kind: "QUOTA_EXHAUSTED" },
     { fixture: "resource-exhausted.429.json", kind: "RATE_LIMITED" },
+    { fixture: "billing-details-rate-limit.429.json", kind: "RATE_LIMITED" },
     { fixture: "api-key-invalid.400.json", kind: "AUTH" },
     { fixture: "permission-denied.403.json", kind: "AUTH" },
     { fixture: "safety-blocked.400.json", kind: "BLOCKED" },
@@ -283,6 +294,55 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     });
     expect(JSON.stringify(Reflect.get(Object(error), "upstream"))).not.toContain("overloaded");
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("billing 문구가 든 일반 429는 결제 회로를 열지 않아 다음 요청도 Gemini를 부른다", async () => {
+    // Given
+    fetchSpy.mockImplementationOnce(async () => retryNow("billing-details-rate-limit.429.json"));
+    fetchSpy.mockImplementationOnce(async () => retryNow("billing-details-rate-limit.429.json"));
+    fetchSpy.mockImplementation(async () => modelResponse(JSON.stringify(output)));
+    const config = createAiTestConfig({ AI_PROVIDER_ORDER: "google" });
+    const { generator, alert } = createAiSdkGenerator(config, [new GoogleProviderAdapter(config)]);
+    // When
+    const failure = await generator.generate(request({ schema })).catch((cause: unknown) => cause);
+    const next = await generator.generate(request({ schema, prompt: "다음" }));
+    // Then
+    expect(failure).toMatchObject({ kind: "RATE_LIMITED", errorCode: "AI_1310" });
+    expect(next.provider).toBe("google");
+    expect(alert.alerts).toEqual([]);
+  });
+
+  it.each([
+    { fixture: "prepayment-depleted.429.json", kind: "QUOTA_EXHAUSTED", calls: 1 },
+    { fixture: "spending-cap.429.json", kind: "QUOTA_EXHAUSTED", calls: 1 },
+    { fixture: "billing-details-rate-limit.429.json", kind: "RATE_LIMITED", calls: 2 },
+  ] as const)(
+    "마지막 업체의 $fixture 응답은 $kind 실패이고 SDK가 모두 $calls 번 부른다",
+    async ({ fixture, kind, calls }) => {
+      // Given
+      fetchSpy.mockImplementation(async () => retryNow(fixture));
+      // When
+      const failure = await createGenerator()
+        .generate(request({ schema }))
+        .catch((cause: unknown) => cause);
+      // Then
+      expect(failure).toMatchObject({ kind });
+      expect(fetchSpy).toHaveBeenCalledTimes(calls);
+    },
+  );
+
+  it("본문 없이 출력 상한으로 끝난 응답은 TRUNCATED로 끝내고 다시 묻지도 넘기지도 않는다", async () => {
+    // Given
+    fetchSpy.mockResolvedValue(
+      Response.json({
+        candidates: [{ content: { role: "model", parts: [] }, finishReason: "MAX_TOKENS" }],
+      }),
+    );
+    // When
+    const execution = createGenerator().generate(request({ schema }));
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "TRUNCATED", attempts: 1 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("네트워크 오류는 원인 체인의 오류 code만 남긴다", async () => {

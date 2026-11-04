@@ -18,7 +18,7 @@ export const PLANNING_RULES_KO = {
 </visibility_rules>`,
   duplicate: `<duplicate_rules>
 - context.upcomingTodos에 같은 일이 있으면 duplicateOfTodoId에 그 id를 쓴다. 같은 일은 같은 행동이고, 말한 날짜가 그 할 일의 date와 같거나 그 할 일이 repeating인 경우다.
-- 비슷하기만 하거나 날짜가 다르면 null이다. 겹쳐도 할 일은 그대로 만든다(사용자가 고른다).
+- 비슷하기만 하거나 날짜가 다르면 null이다. 겹쳐도 할 일은 그대로 만든다(사용자가 고른다). "계속한다"처럼 이미 하는 일을 이어 간다는 말도 CREATE_TODO로 쓰고 겹침만 표시한다.
 </duplicate_rules>`,
 } as const;
 
@@ -39,6 +39,6 @@ export const PLANNING_RULES_EN = {
 </visibility_rules>`,
   duplicate: `<duplicate_rules>
 - When context.upcomingTodos already has the same to-do, put its id in duplicateOfTodoId. Same means the same action, and either the stated day equals that to-do's date or that to-do is repeating.
-- Merely similar to-dos or different days are null. Still create the to-do even when it is a duplicate (the user decides).
+- Merely similar to-dos or different days are null. Still create the to-do even when it is a duplicate (the user decides). "Keep doing X" about existing work is also a CREATE_TODO with the duplicate marked.
 </duplicate_rules>`,
 } as const;

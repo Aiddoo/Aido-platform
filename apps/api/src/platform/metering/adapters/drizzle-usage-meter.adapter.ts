@@ -114,4 +114,12 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
       .returning({ meter: outboundUsage.meter });
     return deleted.length;
   }
+
+  async deleteSubject(subject: string): Promise<number> {
+    const deleted = await this.txHost.tx
+      .delete(outboundUsage)
+      .where(eq(outboundUsage.subject, subject))
+      .returning({ meter: outboundUsage.meter });
+    return deleted.length;
+  }
 }

@@ -18,7 +18,11 @@ import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-r
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
 import { parseMemoPrompt } from "../../prompts/parsing/parse-memo/index.js";
-import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import {
+  describeParsingFailure,
+  readFeatureQuotaOrNull,
+  withoutChargedClaim,
+} from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
@@ -31,8 +35,8 @@ export interface ParseMemoMeta extends ParseTodoMeta {
 export interface ParseMemoResult {
   data: ParsedMemoData;
   meta: ParseMemoMeta;
-  /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량 */
-  featureQuota: MeteredFeatureQuota;
+  /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량. 읽지 못했으면 null이고 응답에서 빠진다 */
+  featureQuota: MeteredFeatureQuota | null;
 }
 
 /**
@@ -99,8 +103,8 @@ export class ParseMemo {
     try {
       parsed = await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
-      await quota.refund(reservation, "FAILED");
-      throw error;
+      const refunded = await quota.refund(reservation, "FAILED");
+      throw refunded ? error : withoutChargedClaim(error);
     }
     // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
     if (parsed.charge) {
@@ -108,7 +112,11 @@ export class ParseMemo {
     } else {
       await quota.refund(reservation, "NO_ACTION");
     }
-    return { ...parsed.result, featureQuota: await quota.read(userId, "AI_PARSE") };
+    const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
+      userId,
+      task: parseMemoPrompt.id,
+    });
+    return { ...parsed.result, featureQuota };
   }
 
   async #parse(
@@ -184,7 +192,7 @@ export class ParseMemo {
           validationIssues: error.issues.map(({ path, code }) => ({ path, code })),
         }),
       });
-      // 실패한 요청은 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다.
+      // 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다. 환불에 실패하면 호출부가 뗀다.
       throw new ApplicationException(failure.errorCode, { charged: false });
     }
   }

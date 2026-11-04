@@ -20,7 +20,10 @@ import { classifyAiSdkError, type ProviderErrorBody } from "./ai-sdk-failure.js"
  */
 const MIN_CACHEABLE_SYSTEM_CHARACTERS = 512;
 
-/** Claude. 1순위. 크레딧 소진은 HTTP 402 billing_error, 과부하는 529 overloaded_error로 온다. */
+/** 크레딧 소진이 402 billing_error가 아니라 400 invalid_request_error로 오는 경우의 문구 */
+const CREDIT_BALANCE_PATTERN = /credit balance is too low/i;
+
+/** Claude. 1순위. 크레딧 소진은 402 billing_error나 400 문구로, 과부하는 529 overloaded_error로 온다. */
 @Injectable()
 export class AnthropicProviderAdapter implements AiProviderAdapter {
   readonly id = "anthropic";
@@ -70,7 +73,11 @@ function classifyAnthropicResponse(
   statusCode: number | undefined,
   body: ProviderErrorBody,
 ): AiFailureKind {
-  if (statusCode === 402 || body.type === "billing_error") {
+  if (
+    statusCode === 402 ||
+    body.type === "billing_error" ||
+    (statusCode === 400 && CREDIT_BALANCE_PATTERN.test(body.message ?? ""))
+  ) {
     return "QUOTA_EXHAUSTED";
   }
   if (statusCode === 401 || statusCode === 403) {

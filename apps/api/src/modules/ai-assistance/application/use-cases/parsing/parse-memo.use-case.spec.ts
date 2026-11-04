@@ -66,7 +66,37 @@ describe("ParseMemo", () => {
       model: "fake:test-model",
       processingTimeMs: 0,
       tokenUsage: { input: 150, output: 50 },
-      promptVersion: "parse-memo@4",
+      promptVersion: "parse-memo@5",
+    });
+  });
+
+  it("환불이 저장되지 않으면 차감 없음을 주장하지 않고 같은 오류 코드만 준다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
+    vi.spyOn(fixture.repository, "updateCharge").mockRejectedValue(new TypeError("db down"));
+    // When
+    const failure = await fixture.useCase.execute(fixture.input).catch((cause: unknown) => cause);
+    // Then
+    expect(failure).toMatchObject({ errorCode: "AI_1301" });
+    expect(Reflect.get(Object(failure), "details")).toBeUndefined();
+  });
+
+  it("확정 뒤 한도를 읽지 못해도 결과를 살리고 featureQuota 없이 돌려주며 원인 종류만 남긴다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({ todos: [draftTodo("보고서 쓰기")], totalTaskCount: 1 });
+    vi.spyOn(fixture.quota, "read").mockRejectedValue(new TypeError("db down"));
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.featureQuota).toBeNull();
+    expect(result.data).toBeDefined();
+    expect([...fixture.repository.charges.values()][0]).toMatchObject({ status: "COMMITTED" });
+    expect(fixture.logger.warn).toHaveBeenCalledWith({
+      event: "ai.generation.quota-read-failed",
+      task: "parse-memo",
+      errorType: "TypeError",
     });
   });
 
@@ -400,7 +430,7 @@ describe("ParseMemo", () => {
       scheduledTime: "15:00",
       isAllDay: false,
     });
-    expect(result.meta.promptVersion).toBe("parse-memo@4");
+    expect(result.meta.promptVersion).toBe("parse-memo@5");
   });
 
   it("모든 할 일이 모델 대상 명령이면 안내 할 일 하나만 돌려주고 사용량을 차감하지 않는다", async () => {

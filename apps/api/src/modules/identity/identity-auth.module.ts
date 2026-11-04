@@ -46,6 +46,7 @@ import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verificatio
 import {
   accountNotificationCleanupProvider,
   accountTodoCommentCleanupProvider,
+  accountUsageCleanupProvider,
 } from "./identity-auth-account-cleanup.providers.js";
 import {
   changePasswordProvider,
@@ -200,6 +201,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     },
     accountNotificationCleanupProvider,
     accountTodoCommentCleanupProvider,
+    accountUsageCleanupProvider,
     PasswordService,
     sessionServiceProvider,
     TokenService,

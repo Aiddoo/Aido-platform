@@ -41,10 +41,16 @@ describe("resolveAiFailureRule", () => {
     },
   );
 
-  it("잡이 다시 시도할 일시 실패는 요청 한도와 장애 회로 종류뿐이다", () => {
+  it("잡이 다시 시도할 일시 실패는 요청 한도·장애 회로 종류와 열린 회로뿐이다", () => {
     // When
     const transient = AI_FAILURE_KINDS.filter((kind) => isTransientAiFailure(kind));
     // Then
-    expect(transient).toEqual(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT"]);
+    expect(transient).toEqual([
+      "RATE_LIMITED",
+      "OVERLOADED",
+      "UPSTREAM",
+      "TIMEOUT",
+      "CIRCUIT_OPEN",
+    ]);
   });
 });

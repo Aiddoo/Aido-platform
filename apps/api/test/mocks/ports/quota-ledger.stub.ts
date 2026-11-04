@@ -97,6 +97,14 @@ export class InMemoryQuotaLedgerRepository implements QuotaLedgerRepositoryPort 
     return props === undefined ? null : QuotaCharge.reconstitute(props);
   }
 
+  async findAbandonedReservations(cutoff: Date, limit: number): Promise<readonly QuotaCharge[]> {
+    return [...this.charges.values()]
+      .filter((charge) => charge.status === "RESERVED" && charge.updatedAt <= cutoff)
+      .toSorted((left, right) => left.updatedAt.getTime() - right.updatedAt.getTime())
+      .slice(0, limit)
+      .map((charge) => QuotaCharge.reconstitute(charge));
+  }
+
   async findChargeByKey(
     userId: string,
     meter: QuotaMeter,

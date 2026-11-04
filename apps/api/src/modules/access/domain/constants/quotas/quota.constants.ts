@@ -9,3 +9,9 @@ export const QUOTA_CHARGE_AMOUNT = 1;
  * 가장 긴 AI 작업 제한 시간(수십 초)보다 넉넉하게 둔다.
  */
 export const QUOTA_RESERVATION_TAKEOVER_AFTER_MS = 120_000;
+
+/** 처리하던 요청이 끝내 응답하지 못해 정리 작업이 돌려준 예약의 환불 사유 */
+export const QUOTA_ABANDONED_REFUND_REASON = "ABANDONED";
+
+/** 정리 작업 한 번에 돌려주는 멈춘 예약 수. 남은 예약은 다음 주기가 이어 받는다. */
+export const QUOTA_ABANDONED_REFUND_BATCH_SIZE = 500;

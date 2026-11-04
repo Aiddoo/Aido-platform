@@ -1,5 +1,7 @@
 import { type FactoryProvider, Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+
 import { AI_GENERATOR } from "./application/ports/generation/ai-generator.port.js";
 import { AiSdkGenerator } from "./infrastructure/adapters/generation/ai-sdk.generator.js";
 import { AiSpendGuard } from "./infrastructure/adapters/generation/ai-spend.guard.js";
@@ -22,6 +24,7 @@ const providerAdaptersProvider: FactoryProvider<readonly AiProviderAdapter[]> = 
  * 예산 누적은 USAGE_METER, 경보는 OPERATIONAL_ALERT를 쓴다. 다른 모듈은 AI_GENERATOR만 쓴다.
  */
 @Module({
+  imports: [AccessModule],
   providers: [
     AnthropicProviderAdapter,
     GoogleProviderAdapter,

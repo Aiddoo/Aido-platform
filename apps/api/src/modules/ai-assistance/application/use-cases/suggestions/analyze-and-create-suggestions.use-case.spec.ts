@@ -243,7 +243,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
       }),
   );
 
-  it.each(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT"] as const)(
+  it.each(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT", "CIRCUIT_OPEN"] as const)(
     "일시 장애 %s는 잡이 다시 시도하도록 던진다",
     (kind) =>
       withAiAssistanceTime(async () => {

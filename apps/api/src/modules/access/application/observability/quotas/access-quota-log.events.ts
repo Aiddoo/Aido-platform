@@ -7,4 +7,6 @@ export const AccessQuotaLogEvent = {
   IN_FLIGHT: "access.quota.in-flight",
   COMMIT_FAILED: "access.quota.commit-failed",
   REFUND_FAILED: "access.quota.refund-failed",
+  ABANDONED_REFUND_COMPLETED: "access.quota.abandoned-refund.completed",
+  ABANDONED_REFUND_FAILED: "access.quota.abandoned-refund.failed",
 } as const;

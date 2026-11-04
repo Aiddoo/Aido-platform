@@ -20,6 +20,8 @@ export class AiAttemptFailure extends Error {
     readonly kind: AiFailureKind,
     readonly task: AiTaskId,
     options: ErrorOptions,
+    /** 앞 업체가 시간을 다 썼거나 호출자가 끊은 TIMEOUT처럼 이 업체 탓이 아니면 회로에 세지 않는다 */
+    readonly countsAgainstProvider = true,
   ) {
     super(kind, options);
     this.name = AiAttemptFailure.name;
@@ -33,7 +35,9 @@ const PROVIDER_NAMES: Readonly<Record<AiProviderId, string>> = {
 };
 
 const failsBreaker = (kind: AiCircuitBreakerKind) => (error: unknown) =>
-  error instanceof AiAttemptFailure && resolveAiFailureRule(error.kind).breaker === kind;
+  error instanceof AiAttemptFailure &&
+  error.countsAgainstProvider &&
+  resolveAiFailureRule(error.kind).breaker === kind;
 
 /**
  * 업체별 회로. 결제·인증 실패는 한 번에 열고 운영 경보를 올리며, 일시 장애는 연속으로 쌓이면 연다.

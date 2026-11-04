@@ -231,7 +231,7 @@ if (confirmed) {
       success: true,
       data: result.data,
       meta: result.meta,
-      featureQuota: result.featureQuota,
+      ...(result.featureQuota != null && { featureQuota: result.featureQuota }),
     };
   }
 
@@ -394,7 +394,7 @@ ${AI_PARSE_QUOTA_DOC}`,
       success: true,
       data: result.data,
       meta: result.meta,
-      featureQuota: result.featureQuota,
+      ...(result.featureQuota != null && { featureQuota: result.featureQuota }),
     };
   }
 

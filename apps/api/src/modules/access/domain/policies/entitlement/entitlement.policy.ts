@@ -115,6 +115,14 @@ export function resolveQuotaLimit(tier: AccessTier, feature: PlanQuotaFeatureKey
   return { limit: definition.fairUse.premium, isFairUse: true };
 }
 
+/**
+ * ADMIN은 횟수·공정 사용 상한이 없으므로 사용자 일 비용 예산에서도 빠진다. 사용량 기록과 전역 예산·
+ * 킬 스위치·입력 상한은 등급과 상관없이 그대로다.
+ */
+export function isExemptFromUserSpendLimit(tier: AccessTier): boolean {
+  return tier === "ADMIN";
+}
+
 export function calculateRemainingLimit(limit: number | null, used: number): number | null {
   return limit == null ? null : Math.max(0, limit - used);
 }

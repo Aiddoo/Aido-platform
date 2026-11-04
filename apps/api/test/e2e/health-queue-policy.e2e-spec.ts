@@ -45,6 +45,15 @@ describe("영속 job runtime 상태 확인 E2E", () => {
     });
   });
 
+  it("외부 호출 상태는 내부 정책 이름 없이 degraded만 공개한다", async () => {
+    // When
+    const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
+
+    // Then
+    expect(response.body.data.info.outbound).toEqual({ status: "up", degraded: false });
+    expect(JSON.stringify(response.body)).not.toContain("openCircuits");
+  });
+
   it("backend 장애도 200/up을 유지하고 degraded 필드로만 알린다", async () => {
     health.mockResolvedValueOnce({
       backend: "postgres",

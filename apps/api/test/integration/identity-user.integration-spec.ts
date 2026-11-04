@@ -124,6 +124,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       securityLogRepository,
       notificationCleanup,
       todoCommentCleanup,
+      usageCleanup: { cleanupInTransaction: async () => undefined },
       unitOfWork: transaction.uow,
       logger,
     };

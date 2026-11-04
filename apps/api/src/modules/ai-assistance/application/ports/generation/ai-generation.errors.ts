@@ -14,13 +14,15 @@ export const AI_FAILURE_KINDS = [
   "TRUNCATED",
   "INVALID_OUTPUT",
   "UNAVAILABLE",
+  "CIRCUIT_OPEN",
   "HALTED",
   "USER_SPEND_LIMITED",
 ] as const;
 
 /**
  * 생성 실패를 폴백·회로·응답 코드 판단에 필요한 종류로만 나눈다.
- * UNAVAILABLE은 설정·동의·회로 때문에 시도할 업체가 없다는 뜻이다.
+ * UNAVAILABLE은 키·동의 범위에 시도할 업체가 없다는 뜻이고, CIRCUIT_OPEN은 업체는 있지만 회로가 열려
+ * 지금은 부를 수 없다는 뜻이다(잡은 나중에 다시 시도한다).
  * HALTED는 킬 스위치나 전역 비용 예산으로, USER_SPEND_LIMITED는 사용자 일 비용 예산으로
  * 업체를 부르지 않고 멈췄다는 뜻이다.
  */
@@ -80,7 +82,11 @@ export function resolveAiFailureRule(kind: AiFailureKind): AiFailureRule {
       breaker: null,
       errorCode: ErrorCode.AI_1302,
     }))
-    .with("UNAVAILABLE", () => ({ fallback: true, retrySameProvider: false, ...unavailable }))
+    .with("UNAVAILABLE", "CIRCUIT_OPEN", () => ({
+      fallback: true,
+      retrySameProvider: false,
+      ...unavailable,
+    }))
     .with("HALTED", () => ({ fallback: false, retrySameProvider: false, ...unavailable }))
     .with("USER_SPEND_LIMITED", () => ({
       fallback: false,
@@ -99,9 +105,13 @@ export function isWithheldAiFailure(kind: AiFailureKind): boolean {
   return kind === "UNAVAILABLE" || kind === "HALTED" || kind === "USER_SPEND_LIMITED";
 }
 
-/** 잡이 나중에 다시 시도하면 회복될 수 있는 실패(요청 과다·일시 장애) */
+/** 잡이 나중에 다시 시도하면 회복될 수 있는 실패(요청 과다·일시 장애·열린 회로) */
 export function isTransientAiFailure(kind: AiFailureKind): boolean {
-  return kind === "RATE_LIMITED" || resolveAiFailureRule(kind).breaker === "health";
+  return (
+    kind === "RATE_LIMITED" ||
+    kind === "CIRCUIT_OPEN" ||
+    resolveAiFailureRule(kind).breaker === "health"
+  );
 }
 
 /**

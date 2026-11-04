@@ -65,8 +65,8 @@ describe("ParseTodo", () => {
       recurrence: null,
       categoryId: 7,
     });
-    expect(result.meta.promptVersion).toBe("parse-todo@4");
-    expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@4");
+    expect(result.meta.promptVersion).toBe("parse-todo@5");
+    expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@5");
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
   });
 
@@ -221,6 +221,35 @@ describe("ParseTodo", () => {
     });
   });
 
+  it("환불이 저장되지 않으면 차감 없음을 주장하지 않고 같은 오류 코드만 준다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
+    vi.spyOn(fixture.repository, "updateCharge").mockRejectedValue(new TypeError("db down"));
+    // When
+    const failure = await fixture.useCase.execute(fixture.input).catch((cause: unknown) => cause);
+    // Then
+    expect(failure).toMatchObject({ errorCode: "AI_1301" });
+    expect(Reflect.get(Object(failure), "details")).toBeUndefined();
+  });
+
+  it("확정 뒤 한도를 읽지 못해도 결과를 살리고 featureQuota 없이 돌려주며 원인 종류만 남긴다", async () => {
+    // Given
+    const fixture = createFixture();
+    vi.spyOn(fixture.quota, "read").mockRejectedValue(new TypeError("db down"));
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.featureQuota).toBeNull();
+    expect(result.data).toBeDefined();
+    expect([...fixture.repository.charges.values()][0]).toMatchObject({ status: "COMMITTED" });
+    expect(fixture.logger.warn).toHaveBeenCalledWith({
+      event: "ai.generation.quota-read-failed",
+      task: "parse-todo",
+      errorType: "TypeError",
+    });
+  });
+
   it("보낼 수 있는 AI 업체가 없으면 예약을 환불하고 차감 없음과 함께 AI_1301을 반환한다", async () => {
     // Given
     const fixture = createFixture();
@@ -306,13 +335,13 @@ describe("ParseTodo", () => {
       taskClass: "interactive",
       userId: fixture.input.userId,
       maxInputChars: 5_000,
-      promptVersion: "parse-todo@4",
+      promptVersion: "parse-todo@5",
       agreedConsentVersion: "2026-10-26",
     });
     expect(fixture.logger.log).toHaveBeenCalledWith({
       event: "ai.generation.completed",
       task: "parse-todo",
-      promptVersion: "parse-todo@4",
+      promptVersion: "parse-todo@5",
       provider: "google",
       model: "fake:test-model",
       attempts: 1,

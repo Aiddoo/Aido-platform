@@ -1,10 +1,17 @@
 import type { ErrorCodeType } from "@aido/api/errors";
 
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+
 import {
+  AiGenerationLogEvent,
   type GenerationFailure,
   generationFailure,
 } from "../../observability/generation/ai-generation-log.events.js";
 import { resolveAiFailureRule } from "../../ports/generation/ai-generation.errors.js";
+import type { AiTaskId } from "../../ports/generation/ai-generator.port.js";
 
 export interface ParsingFailure extends GenerationFailure {
   readonly errorCode: ErrorCodeType;
@@ -14,4 +21,29 @@ export interface ParsingFailure extends GenerationFailure {
 export function describeParsingFailure(error: unknown): ParsingFailure {
   const failure = generationFailure(error);
   return { ...failure, errorCode: resolveAiFailureRule(failure.errorType).errorCode };
+}
+
+/** 환불하지 못한 요청은 차감 여부를 보장할 수 없으므로 details의 charged:false를 떼고 같은 코드로 던진다. */
+export function withoutChargedClaim(error: unknown): unknown {
+  return error instanceof ApplicationException ? new ApplicationException(error.errorCode) : error;
+}
+
+/** 확정·환불 뒤의 한도 읽기. 실패해도 이미 만든 결과를 잃지 않게 null을 돌려준다(응답 칸은 optional이다). */
+export async function readFeatureQuotaOrNull(
+  dependencies: {
+    readonly quota: Pick<QuotaLedgerPort, "read">;
+    readonly logger: Pick<ApplicationLogger, "warn">;
+  },
+  input: { readonly userId: string; readonly task: AiTaskId },
+): Promise<MeteredFeatureQuota | null> {
+  try {
+    return await dependencies.quota.read(input.userId, "AI_PARSE");
+  } catch (error) {
+    dependencies.logger.warn({
+      event: AiGenerationLogEvent.QUOTA_READ_FAILED,
+      task: input.task,
+      errorType: toErrorType(error),
+    });
+    return null;
+  }
 }

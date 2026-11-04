@@ -138,4 +138,33 @@ describe("QuotaCharge", () => {
     // Then
     expect(restored.updatedAt).toEqual(AT);
   });
+
+  it("끝내 응답하지 못한 예약은 이어받을 시간이 지난 뒤에만 돌려주고 사유를 남긴다", () => {
+    // Given
+    const reserved = charge();
+    const justBefore = new Date(AT.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS - 1);
+    const after = new Date(AT.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+
+    // When
+    const early = reserved.refundAbandoned(justBefore);
+    const late = reserved.refundAbandoned(after);
+    const again = reserved.refundAbandoned(after);
+
+    // Then
+    expect([early, late, again]).toEqual([false, true, false]);
+    expect(reserved).toMatchObject({ status: "REFUNDED", refundReason: "ABANDONED" });
+  });
+
+  it("확정한 차감은 오래돼도 돌려주지 않는다", () => {
+    // Given
+    const committed = charge();
+    committed.commit(1, AT);
+
+    // When
+    const refunded = committed.refundAbandoned(new Date(AT.getTime() + 86_400_000));
+
+    // Then
+    expect(refunded).toBe(false);
+    expect(committed.status).toBe("COMMITTED");
+  });
 });

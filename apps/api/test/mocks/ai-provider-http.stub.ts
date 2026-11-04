@@ -4,6 +4,12 @@ import { ConfigService } from "@nestjs/config";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import {
+  type AccessTier,
+  NO_RESOURCE_BONUSES,
+  resolveAllFeatureAccess,
+} from "#api/modules/access/domain/policies/entitlement/entitlement.policy";
 import { AiSdkGenerator } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator";
 import { AiSpendGuard } from "#api/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.guard";
 import type { AiProviderAdapter } from "#api/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter";
@@ -57,6 +63,22 @@ export async function captureProviderError(
   );
 }
 
+/** 사용자별 등급을 돌려주는 권한 reader. 정하지 않은 사용자는 FREE다. */
+export function stubAccessTiers(
+  tiers: Readonly<Record<string, AccessTier>> = {},
+): Pick<EntitlementReaderPort, "getAccessSnapshot"> {
+  return {
+    getAccessSnapshot: async (userId) => {
+      const tier = tiers[userId] ?? "FREE";
+      return {
+        tier,
+        isPremium: tier === "PREMIUM",
+        features: resolveAllFeatureAccess(tier, NO_RESOURCE_BONUSES),
+      };
+    },
+  };
+}
+
 /**
  * 실제 업체 체인(AiSdkGenerator)을 메모리 계량기·기록용 경보로 조립한다.
  * 회로 레지스트리를 새로 만들므로 생성기마다 회로 상태가 따로다.
@@ -64,7 +86,11 @@ export async function captureProviderError(
 export function createAiSdkGenerator(
   config: TypedConfigService,
   adapters: readonly AiProviderAdapter[],
-  options: { readonly alert?: RecordingOperationalAlert; readonly meter?: UsageMeterPort } = {},
+  options: {
+    readonly alert?: RecordingOperationalAlert;
+    readonly meter?: UsageMeterPort;
+    readonly access?: Pick<EntitlementReaderPort, "getAccessSnapshot">;
+  } = {},
 ) {
   const alert = options.alert ?? new RecordingOperationalAlert();
   const meter = options.meter ?? new InMemoryUsageMeterAdapter();
@@ -73,7 +99,7 @@ export function createAiSdkGenerator(
     config,
     adapters,
     registry,
-    new AiSpendGuard(config, meter, alert),
+    new AiSpendGuard(config, meter, alert, options.access ?? stubAccessTiers()),
   );
   return { generator, alert, meter, registry };
 }

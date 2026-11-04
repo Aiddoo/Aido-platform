@@ -90,7 +90,8 @@ export class OutboundPolicy {
   readonly #bulkhead: BulkheadPolicy | null;
   readonly #timeout: TimeoutPolicy | null;
   readonly #timeoutMs: number;
-  readonly #outer: IPolicy;
+  readonly #admission: IPolicy;
+  readonly #circuits: IPolicy;
   readonly #events: OutboundPolicyEvents;
 
   constructor(spec: OutboundPolicySpec, events: OutboundPolicyEvents) {
@@ -104,20 +105,24 @@ export class OutboundPolicy {
     this.#breakers = (spec.breakers ?? []).map((breakerSpec) =>
       this.#createBreaker(spec, breakerSpec),
     );
-    const policies: IPolicy[] = [
-      ...(this.#bulkhead == null ? [] : [this.#bulkhead]),
-      ...this.#breakers.map((breaker) => breaker.policy),
-    ];
-    this.#outer = policies.length === 0 ? noop : wrap(...policies);
+    this.#admission = this.#bulkhead ?? noop;
+    const [first, ...rest] = this.#breakers.map((breaker) => breaker.policy);
+    this.#circuits = first == null ? noop : wrap(first, ...rest);
   }
 
   /**
-   * 정책 안에서 호출한다. 회로가 열렸거나 대기열이 가득 차면 호출하지 않고 OutboundRejectedError,
-   * 시도별 제한 시간이 지나면 OutboundTimeoutError를 던진다. signal은 호출부 취소다.
+   * 정책 안에서 호출한다. 회로가 열렸거나 시험 호출이 진행 중이거나 대기열이 가득 차면 호출하지 않고
+   * OutboundRejectedError, 시도별 제한 시간이 지나면 OutboundTimeoutError를 던진다. signal은 호출부 취소다.
    */
   async execute<T>(call: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> {
     try {
-      return await this.#outer.execute(({ signal: inner }) => this.#attempt(call, inner), signal);
+      return await this.#admission.execute(({ signal: admitted }) => {
+        // cockatiel은 시험 호출이 끝날 때까지 다른 호출을 취소 신호 없이 세워 두므로 먼저 거절한다.
+        if (this.#isProbing()) {
+          throw new OutboundRejectedError(this.name, "circuit-open");
+        }
+        return this.#circuits.execute(({ signal: inner }) => this.#attempt(call, inner), admitted);
+      }, signal);
     } catch (error) {
       if (error instanceof BrokenCircuitError || error instanceof IsolatedCircuitError) {
         throw new OutboundRejectedError(this.name, "circuit-open");
@@ -130,7 +135,7 @@ export class OutboundPolicy {
     }
   }
 
-  /** 차단 시간 안이라 지금 부르면 바로 거절되는 회로가 있는지 */
+  /** 차단 시간 안이거나 시험 호출 중이라 지금 부르면 바로 거절되는 회로가 있는지 */
   isOpen(): boolean {
     return this.#openBreakers().length > 0;
   }
@@ -162,12 +167,17 @@ export class OutboundPolicy {
     }
   }
 
+  #isProbing(): boolean {
+    return this.#breakers.some(({ policy }) => policy.state === CircuitState.HalfOpen);
+  }
+
   #openBreakers(): string[] {
     const at = now().getTime();
     return this.#breakers
       .filter(
         ({ policy, openedAt, spec }) =>
           policy.state === CircuitState.Isolated ||
+          policy.state === CircuitState.HalfOpen ||
           (policy.state === CircuitState.Open &&
             openedAt != null &&
             at - openedAt < spec.halfOpenAfterMs),

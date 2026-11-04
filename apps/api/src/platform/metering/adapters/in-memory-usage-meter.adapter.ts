@@ -45,6 +45,17 @@ export class InMemoryUsageMeterAdapter implements UsageMeterPort {
     entry.updatedAt = now();
   }
 
+  async deleteSubject(subject: string): Promise<number> {
+    let deleted = 0;
+    for (const key of this.#entries.keys()) {
+      if (key.endsWith(`\u0000${subject}`)) {
+        this.#entries.delete(key);
+        deleted++;
+      }
+    }
+    return deleted;
+  }
+
   async read(keys: readonly UsageKey[]): Promise<readonly number[]> {
     return keys.map((key) => this.#entries.get(keyOf(key))?.used ?? 0);
   }

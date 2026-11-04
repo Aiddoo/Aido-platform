@@ -52,7 +52,7 @@ export const parseMemoPrompt: PromptDefinition<
   ParseMemoNormalizeContext
 > = {
   id: "parse-memo",
-  version: "parse-memo@4",
+  version: "parse-memo@5",
   taskClass: "interactive",
   // 30개 카테고리(이름 50자)와 5,000자 메모의 최대 user 턴이 약 8,200자다.
   maxInputChars: 10_000,

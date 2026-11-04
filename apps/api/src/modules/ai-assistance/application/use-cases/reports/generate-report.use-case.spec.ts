@@ -448,7 +448,7 @@ describe("GenerateReport", () => {
       });
     }));
 
-  it.each(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT"] as const)(
+  it.each(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT", "CIRCUIT_OPEN"] as const)(
     "마지막 시도 전 %s는 폴백을 저장하지 않고 잡 재시도를 위해 다시 던진다",
     (kind) =>
       withAiAssistanceTime(async () => {
@@ -497,6 +497,22 @@ describe("GenerateReport", () => {
           quotaCharged: false,
         }),
       );
+    }));
+
+  it("마지막 시도까지 회로가 열려 있으면 통계 기반 폴백을 저장한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given
+      const f = useReportActivity(createAiAssistanceFixture());
+      f.generator.setInvalidResponse(createAiGenerationError("CIRCUIT_OPEN"));
+      // When
+      await f.generateReport.execute({
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+        isFinalAttempt: true,
+      });
+      // Then
+      expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
     }));
 
   it("재시도로 회복되지 않는 출력 오류는 첫 시도에서도 폴백을 저장한다", () =>

@@ -41,7 +41,7 @@ const SECURITY_COPY: Readonly<Record<SupportedLocale, SecurityCopy>> = {
       SPEECH_NOISE:
         '"음", "그러니까", "아 잠깐" 같은 군말, 말 더듬기, 같은 말 반복, 받아쓰기 잡음은 무시한다. 말을 고쳐 말하면 마지막에 말한 내용을 따른다.',
       PROPER_NOUNS:
-        "받아쓰기로 비슷하게 들린 고유명사(사람·장소·프로젝트 이름)는 <context>의 카테고리 이름·할 일 제목에 있는 표기로 맞춘다. 근거가 없으면 들린 그대로 둔다.",
+        "받아쓰기는 고유명사(사람·장소·프로젝트 이름)를 소리가 비슷한 다른 글자나 일반 단어로 적는다. 입력의 말이 <context>의 카테고리 이름·할 일 제목 일부와 소리가 비슷하면 같은 이름으로 보고 title에 <context> 표기를 쓰며, 카테고리 이름이면 categoryId도 그 id로 쓴다. 이 표기 교정은 말한 그대로 쓰는 규칙보다 앞선다. 소리가 비슷한 이름이 없으면 들린 그대로 둔다.",
     },
   },
   en: {
@@ -62,7 +62,7 @@ const SECURITY_COPY: Readonly<Record<SupportedLocale, SecurityCopy>> = {
       SPEECH_NOISE:
         'Ignore filler words ("um", "like", "you know"), stutters, repeated words, and speech-recognition noise. When the user corrects themselves, follow the last version.',
       PROPER_NOUNS:
-        "When a proper noun (person, place, project) sounds like a category name or to-do title in <context>, use the spelling from <context>. Without such evidence, keep what was heard.",
+        "Speech recognition writes proper nouns (people, places, projects) as similar-sounding letters or ordinary words. When a phrase in the input sounds like part of a category name or to-do title in <context>, treat it as that name: use the spelling from <context> in the title, and when it is a category name also set categoryId to that id. This spelling fix comes before keeping titles as spoken. With no similar-sounding name, keep what was heard.",
     },
   },
 };

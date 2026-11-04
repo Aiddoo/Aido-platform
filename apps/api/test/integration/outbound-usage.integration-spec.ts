@@ -1,3 +1,8 @@
+import { ACCOUNT_DELETION } from "@aido/api";
+
+import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
+import { createEntityId } from "#api/platform/database/entity-id";
+import { user as userTable } from "#api/platform/database/schema/index";
 import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzle-usage-meter.adapter";
 import { describeUsageMeterContract } from "#api/platform/metering/adapters/usage-meter.contract";
 import {
@@ -5,8 +10,10 @@ import {
   USAGE_SUBJECT_ALL,
   type UsageMeterPort,
 } from "#api/platform/metering/interfaces/usage-meter.interface";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase } from "#test/setup/test-database";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
   createE2eApp,
@@ -18,12 +25,13 @@ const KEY = { meter: "email.sent", periodKey: "2026-11-05", subject: USAGE_SUBJE
 
 describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
+  let client: TestDatabaseClient;
   let context: E2eTestContext;
   let meter: UsageMeterPort;
 
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 12 }) });
-    await database.start();
+    client = await database.start();
     context = await createE2eApp({ testDatabase: database });
     meter = context.module.get(USAGE_METER);
   });
@@ -38,6 +46,29 @@ describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
   describeUsageMeterContract({
     createMeter: () => meter,
     cleanup: () => context.reset(),
+  });
+
+  it("계정을 영구 삭제하면 사용자 일 비용 행을 지우고 전역 행은 남긴다", async () => {
+    // Given
+    const user = UserFixture.create({
+      id: createEntityId(),
+      email: "usage-purge@example.com",
+      userTag: "USGPURGE",
+      status: "SUSPENDED",
+      deletedAt: subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1),
+    });
+    await client.insert(userTable).values(user);
+    const userKey = { meter: "ai.spend", periodKey: "2026-11-05", subject: user.id };
+    const globalKey = { ...userKey, subject: USAGE_SUBJECT_ALL };
+    await meter.add([
+      { key: userKey, amount: 100 },
+      { key: globalKey, amount: 100 },
+    ]);
+    // When
+    await context.module.get(PurgeDeletedAccounts, { strict: false }).execute();
+    // Then
+    expect(await meter.read([userKey, globalKey])).toEqual([0, 100]);
+    await context.reset();
   });
 
   it("운영 모듈은 Postgres 어댑터를 쓴다", () => {

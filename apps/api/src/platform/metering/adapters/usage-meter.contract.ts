@@ -47,6 +47,25 @@ export function describeUsageMeterContract(context: {
       expect(totals).toEqual([3, 3]);
     });
 
+    it("대상을 지우면 그 대상의 모든 기간만 지운다", async () => {
+      // Given
+      const otherPeriod = { ...USER, periodKey: "2026-11" };
+      const otherSubject = { ...USER, subject: "user-10" };
+      await meter.add([
+        { key: USER, amount: 1 },
+        { key: otherPeriod, amount: 2 },
+        { key: otherSubject, amount: 3 },
+        { key: DAY, amount: 4 },
+      ]);
+
+      // When
+      const deleted = await meter.deleteSubject("user-1");
+
+      // Then
+      expect(deleted).toBe(2);
+      expect(await meter.read([USER, otherPeriod, otherSubject, DAY])).toEqual([0, 0, 3, 4]);
+    });
+
     it("기간·대상이 다르면 따로 센다", async () => {
       // Given
       await meter.add([{ key: DAY, amount: 4 }]);

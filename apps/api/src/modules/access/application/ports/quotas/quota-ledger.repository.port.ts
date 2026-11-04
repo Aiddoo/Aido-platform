@@ -31,6 +31,8 @@ export interface QuotaLedgerRepositoryPort {
     input: { readonly periodKey: string; readonly amount: number },
   ): Promise<boolean>;
   findCharge(chargeId: string): Promise<QuotaCharge | null>;
+  /** cutoff 이전에 마지막으로 바뀐 RESERVED 차감을 오래된 순서로 돌려준다. */
+  findAbandonedReservations(cutoff: Date, limit: number): Promise<readonly QuotaCharge[]>;
   findChargeByKey(
     userId: string,
     meter: QuotaMeter,
