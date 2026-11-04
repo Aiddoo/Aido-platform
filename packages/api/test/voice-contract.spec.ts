@@ -56,11 +56,30 @@ describe("voice 계약", () => {
     const sameKeys = [todoAction("todo-0"), todoAction("todo-0")];
     // When
     const results = [tooMany, sameKeys].map(
-      (actions) => applyActionPlanRequestSchema.safeParse({ source: "MEMO", actions }).success,
+      (actions) =>
+        applyActionPlanRequestSchema.safeParse({ source: "QUICK_TEXT", actions }).success,
     );
     // Then
     expect(results).toEqual([false, false]);
   });
+
+  it.each([
+    { source: "MEMO", sourceMemoId: 7, valid: true },
+    { source: "MEMO", sourceMemoId: undefined, valid: false },
+    { source: "QUICK_VOICE", sourceMemoId: undefined, valid: true },
+    { source: "QUICK_VOICE", sourceMemoId: 7, valid: false },
+    { source: "VOICE_NOTE", sourceMemoId: 7, valid: false },
+  ])(
+    "source $source에 sourceMemoId $sourceMemoId는 유효=$valid다",
+    ({ source, sourceMemoId, valid }) => {
+      // Given
+      const request = { source, sourceMemoId, actions: [todoAction("todo-0")] };
+      // When
+      const parsed = applyActionPlanRequestSchema.safeParse(request);
+      // Then
+      expect(parsed.success).toBe(valid);
+    },
+  );
 
   it("계획 응답의 할 일은 카테고리와 겹침 표시가 없어도 된다", () => {
     // Given
