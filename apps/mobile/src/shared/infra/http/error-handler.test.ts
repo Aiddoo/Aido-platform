@@ -59,6 +59,24 @@ describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () =
     );
   });
 
+  it('요청 ID를 breadcrumb에 남겨 서버 로그·Sentry 이벤트와 잇는다', async () => {
+    // Given
+    const request = new Request('https://api.test/todos', {
+      headers: { 'X-Request-Id': '3f2b8c1e-5d4a-4b6f-9e2d-1a7c8b9d0e1f' },
+    });
+    const response = createErrorResponse(ErrorCode.TODO_0801, '할 일 없음', 404);
+
+    // When
+    await runKyAfterResponseHook(recordPublicApiFailureBreadcrumb, request, response);
+
+    // Then
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ requestId: '3f2b8c1e-5d4a-4b6f-9e2d-1a7c8b9d0e1f' }),
+      }),
+    );
+  });
+
   it('성공 응답에는 breadcrumb를 남기지 않는다', async () => {
     // Given
     const response = new Response(JSON.stringify({ success: true, data: {} }), { status: 200 });

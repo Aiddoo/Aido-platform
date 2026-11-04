@@ -146,7 +146,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ## 핵심 원칙 — 이벤트 남발 금지
 
-- **예측 가능한 4xx는 event가 아니다.** `Result.err()`로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다.
+- **예측 가능한 4xx는 event가 아니다.** `Result.err()`로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다. breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)로, 서버 로그 `reqId`·서버 Sentry `request_id` 태그와 같은 값이다.
 - event는 **예측 못한 문제**(ErrorBoundary 도달, 5xx·네트워크·파싱)와 **도메인 신호**(session_expired 등)에만.
 - 결과적으로 Sentry Issue 목록이 실제 문제로만 채워져 신호 대 잡음비가 좋아진다.
 

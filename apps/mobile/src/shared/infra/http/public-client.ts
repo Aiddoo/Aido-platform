@@ -1,19 +1,14 @@
 import { ENV } from '@src/shared/config/env';
-import { i18n } from '@src/shared/i18n';
-import { getDeviceHeaders } from '@src/shared/utils/device-headers';
-import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import ky, { type KyInstance } from 'ky';
 
 import { recordPublicApiFailureBreadcrumb } from './error-handler';
+import { type AppHeaderSource, applyPerRequestHeaders, createAppHeaders } from './request-headers';
 
 /**
  * 토큰 없이 호출하는 공개 API용 HTTP 클라이언트
  * - 로그인, 회원가입 등 인증 전 요청에 사용
  */
-export const createPublicClient = ({
-  appVersion,
-  appBuild,
-}: { appVersion?: string; appBuild?: string } = {}): KyInstance => {
+export const createPublicClient = ({ appVersion, appBuild }: AppHeaderSource = {}): KyInstance => {
   return ky.create({
     // v2: prefixUrl → prefix (append 시맨틱 동일)
     prefix: ENV.API_URL,
@@ -22,20 +17,10 @@ export const createPublicClient = ({
     retry: 0,
     headers: {
       'Content-Type': 'application/json',
-      ...(appVersion && { 'X-App-Version': appVersion }),
-      ...(appBuild && { 'X-App-Build': appBuild }),
-      ...getDeviceHeaders(),
+      ...createAppHeaders({ appVersion, appBuild }),
     },
     hooks: {
-      beforeRequest: [
-        ({ request }) => {
-          // 언어와 시간대는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
-          request.headers.set('X-Timezone', getDeviceTimezone());
-          if (i18n.language) {
-            request.headers.set('Accept-Language', i18n.language);
-          }
-        },
-      ],
+      beforeRequest: [applyPerRequestHeaders],
       afterResponse: [recordPublicApiFailureBreadcrumb],
     },
   });

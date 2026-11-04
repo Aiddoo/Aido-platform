@@ -60,7 +60,7 @@ import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
-import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
+import { createRefreshTokensRequest } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createKakaoShareClient } from '@src/shared/infra/kakao/kakao-share.client';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
@@ -152,7 +152,7 @@ export function DIProvider({
     // 동시 회전이 서버의 토큰 패밀리를 소모한다.
     const tokenRefresher = createTokenRefresher({
       tokenStore,
-      requestRefresh: requestRefreshTokens,
+      requestRefresh: createRefreshTokensRequest({ appVersion, appBuild }),
     });
 
     const authKyInstance = createAuthClient({
