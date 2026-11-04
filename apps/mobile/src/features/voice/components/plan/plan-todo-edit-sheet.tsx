@@ -1,3 +1,5 @@
+import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { CategorySelectInput } from '@src/features/todo/components/category-select-input';
 import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
 import {
@@ -12,6 +14,7 @@ import {
   ActionChip,
   BottomSheetInput,
   Box,
+  Button,
   CalendarIcon,
   ClockIcon,
   EyeIcon,
@@ -33,10 +36,14 @@ import {
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { useForm, useFormState, useWatch } from 'react-hook-form';
 import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
 
-import type { PlanReviewFormValues } from '../../domains/plan-review-form.schema';
+import {
+  type PlanTodoEditFormValues,
+  planTodoEditFormSchema,
+  type PlanTodoFormValues,
+} from '../../domains/plan-review-form.schema';
 import {
   type PlannedTodo,
   withRepeat,
@@ -46,46 +53,47 @@ import {
 import { PlanRepeatChip } from './plan-repeat';
 
 interface PlanTodoEditSheetProps {
-  /** 폼 `actions`에서 고칠 할 일의 위치 */
-  index: number;
+  /** 고치기 시작할 카드. 시트는 이 값의 사본을 고친다 */
+  todo: PlanTodoFormValues;
   /** 카테고리를 고르지 못한 할 일이 시작하는 시트의 현재 카테고리 */
   fallbackCategoryId: number;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  /** 확인을 눌렀다. 검증을 지난 값만 온다. 닫기만 하면 고친 값을 버린다 */
+  onConfirm: (todo: PlanTodoFormValues) => void;
 }
 
-/** 계획 카드 하나를 할 일 추가 시트와 같은 칩·바텀시트로 고친다. 고친 값은 곧바로 폼에 반영된다 */
+/** 계획 카드 하나를 할 일 추가 시트와 같은 칩·바텀시트로 고친다. 고친 값은 이 시트의 폼에만 있다가 확인할 때 돌려준다 */
 export function PlanTodoEditSheet({
-  index,
+  todo: initialTodo,
   fallbackCategoryId,
   isOpen,
   onOpenChange,
+  onConfirm,
 }: PlanTodoEditSheetProps) {
   const { t } = useTranslation(['todo', 'voicePlan', 'common']);
   const iconSize = useActionChipIconSize();
   const overlay = useOverlay();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
-  const { control, getValues, setValue } = useFormContext<PlanReviewFormValues>();
-  const todo = useWatch({ control, name: `actions.${index}` });
+  const { control, getValues, handleSubmit, setValue } = useForm<PlanTodoEditFormValues>({
+    resolver: zodResolver(planTodoEditFormSchema),
+    defaultValues: { todo: initialTodo },
+    mode: 'onChange',
+  });
+  const todo = useWatch({ control, name: 'todo' });
+  const { isValid } = useFormState({ control });
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
-  if (todo.type !== 'create-todo') {
-    return null;
-  }
-
   const update = (change: (current: PlannedTodo) => PlannedTodo) => {
-    const current = getValues(`actions.${index}`);
-    if (current.type !== 'create-todo') {
-      return;
-    }
-    const { isSelected, ...currentTodo } = current;
+    const { isSelected, ...current } = getValues('todo');
     setValue(
-      `actions.${index}`,
-      { ...change(currentTodo), isSelected },
+      'todo',
+      { ...change(current), isSelected },
       { shouldDirty: true, shouldValidate: true },
     );
   };
+  const handleConfirm = handleSubmit((values) => onConfirm(values.todo));
 
   const startDateKey = formatDateKey(todo.startDate, getDeviceTimezone());
   const dateLabel =
@@ -165,17 +173,17 @@ export function PlanTodoEditSheet({
   return (
     <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={12}>
-        <FormField control={control} name={`actions.${index}.title`}>
+        <FormField control={control} name="todo.title">
           {({ value, onChange }) => (
             <BottomSheetInput
               accessibilityLabel={t('voicePlan:edit.titleLabel')}
-              value={String(value)}
+              value={value}
               onChange={onChange}
-              maxLength={200}
+              maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
               size="medium"
               renderErrorMessage={false}
               returnKeyType="done"
-              onSubmitEditing={() => onOpenChange(false)}
+              onSubmitEditing={() => handleConfirm()}
             />
           )}
         </FormField>
@@ -235,6 +243,14 @@ export function PlanTodoEditSheet({
             onPress={handleCategoryChipPress}
           />
         </ScrollView>
+
+        <Button
+          isDisabled={!isValid}
+          onPress={() => handleConfirm()}
+          testID="plan-todo-edit-confirm"
+        >
+          {t('voicePlan:edit.confirm')}
+        </Button>
       </VStack>
     </KeyboardBottomSheet>
   );

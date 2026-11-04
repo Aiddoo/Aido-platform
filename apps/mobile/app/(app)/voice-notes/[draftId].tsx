@@ -345,7 +345,10 @@ function VoiceNotePlanPane({ note }: { note: VoiceNote }) {
   if (VoiceNotePolicy.hasNoPlannedTodos(note) && (planDraft?.form.actions.length ?? 0) === 0) {
     return <Result title={t('result.noTodos')} testID="voice-note-no-todos" />;
   }
-  if (planDraft == null || fallbackCategoryId == null) {
+  if (planDraft == null) {
+    return <Result title={t('result.planLost')} testID="voice-note-plan-lost" />;
+  }
+  if (fallbackCategoryId == null) {
     return <Result title={t('result.noTodos')} />;
   }
 

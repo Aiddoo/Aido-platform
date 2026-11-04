@@ -10,11 +10,27 @@ import { createPlanReviewDraft } from './plan-review-form.schema';
 import {
   createDigestInput,
   createDigestMemo,
+  hasNoPlannedTodos,
   VoiceNotePolicy,
   voiceNoteSchema,
   withDigestResult,
+  withPlanDraft,
 } from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
+
+const createPlannedTodo = (actionId: string, title: string) => ({
+  type: 'create-todo',
+  actionId,
+  title,
+  startDate: new Date('2026-11-05T12:00:00.000Z'),
+  endDate: null,
+  scheduledTime: null,
+  repeat: null,
+  visibility: null,
+  items: [],
+  categoryId: null,
+  duplicateOfTodoId: null,
+});
 
 describe('VoiceNotePolicy.canDigest', () => {
   test('글자가 있고 아직 정리하지 않았으면 정리할 수 있다', () => {
@@ -397,5 +413,41 @@ describe('VoiceNotePolicy.findRecordingIndexAt', () => {
 
     // Then
     expect(found).toBe(index);
+  });
+
+  test('저장된 초안에 제목이 빈 카드가 있어도 나머지 카드를 살리고 못 살린 수를 남긴다', () => {
+    // Given
+    const plan = voicePlanSchema.parse({
+      planId: 'draft-1',
+      source: 'voice-note',
+      sourceMemoId: null,
+      omittedTodoCount: 1,
+      actions: [createPlannedTodo('todo-1', '운동'), createPlannedTodo('todo-2', '장보기')],
+    });
+    const note = withPlanDraft(createVoiceNoteFixture(), createPlanReviewDraft(plan));
+    const stored = JSON.parse(JSON.stringify(voiceNoteSchema.encode(note)));
+    stored.planDraft.form.actions[0].title = '';
+
+    // When
+    const restored = voiceNoteSchema.decode(stored);
+
+    // Then
+    expect(restored.planDraft?.form.actions.map(({ title }) => title)).toEqual(['장보기']);
+    expect(restored.planDraft?.omittedTodoCount).toBe(2);
+    expect(hasNoPlannedTodos(restored)).toBe(false);
+  });
+
+  test('할 일 카드를 읽을 수 없게 된 노트를 할 일이 없었던 노트로 치지 않는다', () => {
+    // Given
+    const note = {
+      ...createVoiceNoteFixture({ digest: createVoiceNoteDigest() }),
+      planDraft: null,
+    };
+
+    // When
+    const result = hasNoPlannedTodos(note);
+
+    // Then
+    expect(result).toBe(false);
   });
 });

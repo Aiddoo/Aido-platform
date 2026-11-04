@@ -4,8 +4,8 @@
     "title_other": "Found {{count}} to-dos",
     "titleMemoOnly": "Saved as a note",
     "hint": "Pick the ones to add on the right. Tap to edit.",
-    "omitted_one": "Too many to-dos, so we split only some. The other {{count}} wasn't made.",
-    "omitted_other": "Too many to-dos, so we split only some. The other {{count}} weren't made.",
+    "omitted_one": "{{count}} to-do couldn't be included here.",
+    "omitted_other": "{{count}} to-dos couldn't be included here.",
     "empty": "No to-dos found",
     "duplicate": "Already added",
     "select": "Add {{title}}",
@@ -22,6 +22,7 @@
     "memo": "Saved your note"
   },
   "edit": {
+    "confirm": "Done",
     "titleLabel": "To-do title"
   },
   "failure": {

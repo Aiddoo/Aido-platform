@@ -111,6 +111,7 @@
       "todos": "To-dos {{amount}}",
       "transcript": "Transcript"
     },
+    "planLost": "We couldn't load the to-do cards. Your summary and text are still here.",
     "noTodos": "There was nothing to turn into to-dos. We kept the summary.",
     "applied": "To-dos added",
     "saveMemo": "Save note",

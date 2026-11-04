@@ -17,7 +17,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { VoiceService } from '../../apis/voice.service';
@@ -63,12 +63,29 @@ const PLAN: VoicePlan = {
   actions: [BIWEEKLY, GROCERIES],
 };
 
-function PlanReviewScreen({ plan = PLAN, isCharged }: { plan?: VoicePlan; isCharged?: boolean }) {
+function PlanReviewScreen({
+  plan = PLAN,
+  isCharged,
+  onValues,
+}: {
+  plan?: VoicePlan;
+  isCharged?: boolean;
+  onValues?: (values: PlanReviewFormValues) => void;
+}) {
   const form = useForm<PlanReviewFormValues>({
     resolver: zodResolver(planReviewFormSchema),
     defaultValues: createPlanReviewFormValues(plan),
     mode: 'onChange',
   });
+  useEffect(() => {
+    if (onValues == null) {
+      return;
+    }
+    return form.subscribe({
+      formState: { values: true },
+      callback: ({ values }) => onValues(values),
+    });
+  }, [form, onValues]);
 
   return (
     <PlanReview
@@ -81,7 +98,11 @@ function PlanReviewScreen({ plan = PLAN, isCharged }: { plan?: VoicePlan; isChar
   );
 }
 
-async function renderPlan(plan?: VoicePlan, isCharged?: boolean) {
+async function renderPlan(
+  plan?: VoicePlan,
+  isCharged?: boolean,
+  onValues?: (values: PlanReviewFormValues) => void,
+) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -94,7 +115,7 @@ async function renderPlan(plan?: VoicePlan, isCharged?: boolean) {
     <LocalDateProvider>
       <OverlayProvider>
         <Suspense fallback={null}>
-          <PlanReviewScreen plan={plan} isCharged={isCharged} />
+          <PlanReviewScreen plan={plan} isCharged={isCharged} onValues={onValues} />
         </Suspense>
       </OverlayProvider>
     </LocalDateProvider>,
@@ -156,5 +177,39 @@ describe('PlanReview', () => {
     // Then
     expect(await screen.findByText('장보기')).toBeTruthy();
     expect(screen.queryByText('횟수는 차감되지 않았어요')).toBeNull();
+  });
+
+  test('카드 제목을 지워도 확인 전에는 폼과 초안에 빈 제목이 들어가지 않는다', async () => {
+    // Given
+    const onValues = jest.fn();
+    await renderPlan(PLAN, true, onValues);
+    await fireEvent.press(await screen.findByText('장보기'));
+
+    // When
+    await fireEvent.changeText(await screen.findByLabelText('할 일 제목'), '');
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('plan-todo-edit-confirm')).toBeDisabled());
+    const lastValues = onValues.mock.lastCall?.[0];
+    expect(
+      lastValues?.actions.map((action: { title: string }) => action.title) ?? [],
+    ).not.toContain('');
+    expect(screen.getByTestId('plan-review-apply')).toBeEnabled();
+  });
+
+  test('카드 제목을 고치고 확인하면 그때 목록에 반영된다', async () => {
+    // Given
+    await renderPlan();
+    await fireEvent.press(await screen.findByText('장보기'));
+    await fireEvent.changeText(await screen.findByLabelText('할 일 제목'), '마트 가기');
+    expect(screen.queryByText('마트 가기')).toBeNull();
+
+    // When
+    await waitFor(() => expect(screen.getByTestId('plan-todo-edit-confirm')).toBeEnabled());
+    await fireEvent.press(screen.getByTestId('plan-todo-edit-confirm'));
+
+    // Then
+    expect(await screen.findByText('마트 가기')).toBeTruthy();
+    expect(screen.queryByText('장보기')).toBeNull();
   });
 });

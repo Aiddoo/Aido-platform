@@ -8,15 +8,13 @@ import {
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { z } from 'zod';
 
-const TITLE_MAX_LENGTH = 200;
-
 export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();
 export const plannedActionIdSchema = z.string().min(1);
 
 const plannedTodoShape = {
   type: z.literal('create-todo'),
   actionId: plannedActionIdSchema,
-  title: z.string().trim().min(1).max(TITLE_MAX_LENGTH),
+  title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH),
   startDate: z.date(),
   endDate: z.date().nullable(),
   /** null이면 종일 */
@@ -24,7 +22,9 @@ const plannedTodoShape = {
   repeat: todoRepeatSchema.nullable(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).nullable(),
   items: z
-    .array(z.object({ title: z.string().trim().min(1).max(TITLE_MAX_LENGTH) }))
+    .array(
+      z.object({ title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH) }),
+    )
     .max(TODO_ITEM_LIMITS.MAX_PER_TODO),
   /** AI가 고르지 못했으면 null. 저장할 때 시트의 현재 카테고리로 채운다 */
   categoryId: z.int().positive().nullable(),
@@ -34,7 +34,7 @@ const plannedTodoShape = {
 const plannedMemoShape = {
   type: z.literal('create-memo'),
   actionId: plannedActionIdSchema,
-  title: z.string().trim().max(TITLE_MAX_LENGTH),
+  title: z.string().trim().max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH),
   content: z.string().trim().min(1),
 };
 

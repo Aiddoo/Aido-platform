@@ -18,6 +18,8 @@ export const ACTION_PLAN_LIMITS = {
   MAX_TODOS: 10,
   /** 계획 하나의 메모 최대 수 */
   MAX_MEMOS: 1,
+  /** 계획의 할 일·하위 할 일·메모 제목 최대 길이 */
+  ACTION_TITLE_MAX_LENGTH: 200,
   /** 녹음 정리에 보내는 문장(segments) 최대 수 */
   DIGEST_MAX_SEGMENTS: 600,
   /** 녹음 정리 핵심 포인트 최대 수 */

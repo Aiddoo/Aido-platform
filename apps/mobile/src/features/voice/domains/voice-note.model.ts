@@ -66,7 +66,7 @@ export const voiceNoteDigestRequestSchema = z.object({
 });
 export type VoiceNoteDigestRequest = z.infer<typeof voiceNoteDigestRequestSchema>;
 
-/** 고친 카드까지 든 검토 초안. 깨졌으면 글자와 요약은 살리고 이 칸만 비운다 */
+/** 고친 카드까지 든 검토 초안. 통째로 읽지 못하면 글자와 요약은 살리고 이 칸만 비워 화면이 알리게 한다 */
 const storedPlanDraftSchema = z.codec(z.unknown(), z.custom<PlanReviewDraft | null>(), {
   decode: (raw) => planReviewDraftSchema.safeParse(raw).data ?? null,
   encode: (draft) => draft,
@@ -210,12 +210,13 @@ export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
     : { type: 'create-memo', actionId: 'voice-note-memo', title, content };
 }
 
-/** 정리했는데 저장할 할 일이 없다. 요약은 남았고 횟수는 썼다 */
+/** 정리했는데 저장할 할 일이 없다. 요약은 남았고 횟수는 썼다. 카드를 읽지 못한 경우(`planDraft`가 null)와 구분한다 */
 export function hasNoPlannedTodos(note: VoiceNote): boolean {
   return (
     note.digest != null &&
     note.appliedAt == null &&
-    !(note.planDraft?.form.actions.some(isTodoAction) ?? false)
+    note.planDraft != null &&
+    !note.planDraft.form.actions.some(isTodoAction)
   );
 }
 

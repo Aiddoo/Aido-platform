@@ -8,8 +8,6 @@ import { PLANNED_ACTION_KEY_MAX_LENGTH } from "../../../vocabulary/voice.constan
 import { tokenUsageSchema } from "../../ai/v1/ai-usage.response.js";
 import { todoRepeatSchema, todoVisibilitySchema } from "../../todo/v1/todo.common.js";
 
-const TITLE_MAX_LENGTH = 200;
-
 const plannedActionKeySchema = z
   .string()
   .min(1)
@@ -20,14 +18,21 @@ const plannedActionKeySchema = z
 export const plannedTodoFields = {
   type: z.literal("CREATE_TODO"),
   key: plannedActionKeySchema,
-  title: z.string().trim().min(1).max(TITLE_MAX_LENGTH).describe("할 일 제목 (말한 언어 그대로)"),
+  title: z
+    .string()
+    .trim()
+    .min(1)
+    .max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH)
+    .describe("할 일 제목 (말한 언어 그대로)"),
   startDate: dateSchema.describe("시작 날짜 (사용자 시간대 YYYY-MM-DD)"),
   endDate: nullableDateSchema.describe("기간의 끝 날짜. 하루짜리이거나 반복이면 null"),
   scheduledTime: timeOfDaySchema.nullable().describe("시각 (HH:mm). null이면 종일"),
   repeat: todoRepeatSchema.nullable().describe("반복 규칙. 반복이 아니면 null"),
   visibility: todoVisibilitySchema.nullable().describe("공개 범위. 말하지 않았으면 null(기본값)"),
   items: z
-    .array(z.object({ title: z.string().trim().min(1).max(TITLE_MAX_LENGTH) }))
+    .array(
+      z.object({ title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH) }),
+    )
     .max(TODO_ITEM_LIMITS.MAX_PER_TODO)
     .describe(`하위 할 일 (최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개)`),
 } as const;
@@ -35,7 +40,11 @@ export const plannedTodoFields = {
 export const plannedMemoActionSchema = z.object({
   type: z.literal("CREATE_MEMO"),
   key: plannedActionKeySchema,
-  title: z.string().trim().max(TITLE_MAX_LENGTH).describe("메모 제목 (비어 있을 수 있다)"),
+  title: z
+    .string()
+    .trim()
+    .max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH)
+    .describe("메모 제목 (비어 있을 수 있다)"),
   content: z
     .string()
     .trim()

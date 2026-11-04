@@ -305,23 +305,29 @@ PlanReview.TodoRow = function PlanTodoRow({
 
   const handlePress = () => {
     overlay.open(({ isOpen, close, exit }) => (
-      <FormProvider {...form}>
-        <QueryErrorBoundary fallback={() => null}>
-          <Suspense fallback={null}>
-            <PlanTodoEditSheet
-              index={index}
-              fallbackCategoryId={fallbackCategoryId}
-              isOpen={isOpen}
-              onOpenChange={(open) => {
-                if (!open) {
-                  close();
-                  exit();
-                }
-              }}
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      </FormProvider>
+      <QueryErrorBoundary fallback={() => null}>
+        <Suspense fallback={null}>
+          <PlanTodoEditSheet
+            todo={todo}
+            fallbackCategoryId={fallbackCategoryId}
+            isOpen={isOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                close();
+                exit();
+              }
+            }}
+            onConfirm={(edited) => {
+              form.setValue(`actions.${index}`, edited, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+              close();
+              exit();
+            }}
+          />
+        </Suspense>
+      </QueryErrorBoundary>
     ));
   };
 

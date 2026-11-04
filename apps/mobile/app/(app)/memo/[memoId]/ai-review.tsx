@@ -16,6 +16,7 @@ import {
 import { voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Result, StyledSafeAreaView } from '@src/shared/ui';
@@ -30,6 +31,7 @@ function AiReviewScreen() {
   const goBack = useSingleTap(router.back);
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
+  const toast = useAppToast();
   const { memoId } = useMemoScreenParams();
   const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
@@ -59,8 +61,10 @@ function AiReviewScreen() {
 
   useEffect(() => {
     if (restoredDraft == null) {
+      toast.warning(t('aiReview.draftLost'));
       goBack();
     }
+    // 화면이 열릴 때 초안이 없을 때 한 번만 알리고 돌아간다
   }, [restoredDraft, goBack]);
 
   if (restoredDraft == null) {
@@ -80,7 +84,7 @@ function AiReviewScreen() {
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
       <PlanReview
         form={form}
-        plan={toVoicePlanFromDraft(planIdOf(memoId), restoredDraft)}
+        plan={toVoicePlanFromDraft(createMemoPlanIdentity(memoId), restoredDraft)}
         fallbackCategoryId={fallbackCategoryId}
         onApplied={() => {
           discardDraft();
@@ -97,7 +101,7 @@ function AiReviewScreen() {
   );
 }
 
-const planIdOf = (memoId: number) => ({
+const createMemoPlanIdentity = (memoId: number) => ({
   planId: voicePlanIdSchema.parse(`memo-${memoId}`),
   source: 'memo' as const,
   sourceMemoId: memoId,

@@ -35,6 +35,7 @@
     "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
   },
   "aiReview": {
+    "draftLost": "We couldn't load the split to-dos. Please split the note again.",
     "goBack": "Go back",
     "noCategory": "Couldn't find a category"
   }
