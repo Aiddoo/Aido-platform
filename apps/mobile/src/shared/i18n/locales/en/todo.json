@@ -21,7 +21,8 @@
     "updateFailedRetry": "Try editing again in a moment",
     "deleteFailedRetry": "Try deleting again in a moment",
     "changeFailedRetry": "Try again in a moment",
-    "retryLater": "Please try again in a moment"
+    "retryLater": "Please try again in a moment",
+    "repeatUnavailable": "We're getting repeating to-dos ready. You'll be able to use this soon"
   },
   "errors": {
     "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
@@ -30,8 +31,6 @@
   "form": {
     "titleRequired": "Please enter a title",
     "titleMaxLength": "Title can be up to 200 characters",
-    "repeatEndDateRequired": "Please choose an end date for the repeat",
-    "repeatDaysRequired": "Please choose days to repeat",
     "nudgeMessageMax_one": "Your message can be up to {{count}} character",
     "nudgeMessageMax_other": "Your message can be up to {{count}} characters"
   },
@@ -44,22 +43,46 @@
     "allDay": "All day",
     "time": "Time",
     "selectTime": "Choose a time",
-    "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
-    "repeatPeriod": "Repeat period",
-    "selectPeriod": "Please choose a period",
-    "repeatDaily": "Repeats daily",
-    "repeatWeekdays": "Repeats on weekdays",
-    "repeatWeekends": "Repeats on weekends",
-    "repeatWeekly": "Repeats weekly on {{days}}",
-    "presetDaily": "Daily",
-    "presetWeekdays": "Weekdays",
-    "presetWeekends": "Weekends",
-    "selectDays": "Please choose days"
+    "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before"
+  },
+  "repeat": {
+    "kind": {
+      "NONE": "Never",
+      "DAILY": "Daily",
+      "WEEKDAYS": "Weekdays",
+      "WEEKLY": "Weekly",
+      "BIWEEKLY": "Every 2 weeks",
+      "MONTHLY": "Monthly on day {{day}}"
+    },
+    "weekdayPreset": {
+      "ALL": "All",
+      "WEEKDAYS": "Weekdays",
+      "WEEKENDS": "Weekends"
+    },
+    "end": {
+      "title": "Ends",
+      "NEVER": "Never",
+      "UNTIL": "On date",
+      "COUNT_one": "After {{count}} time",
+      "COUNT_other": "After {{count}} times",
+      "countDecrease": "Decrease count",
+      "countIncrease": "Increase count"
+    },
+    "summary": {
+      "DAILY": "Daily",
+      "WEEKDAYS": "Weekdays",
+      "WEEKLY": "Weekly on {{days}}",
+      "BIWEEKLY": "Every 2 weeks on {{days}}",
+      "MONTHLY": "Monthly on day {{day}}",
+      "untilSuffix": "until {{date}}",
+      "countSuffix_one": "{{count}} time",
+      "countSuffix_other": "{{count}} times"
+    },
+    "monthEndHint": "In shorter months, it repeats on the last day",
+    "horizonHint": "Repeating to-dos appear up to 3 months ahead"
   },
   "chip": {
     "repeat": "Repeat",
-    "daily": "Daily",
-    "weeklyDays": "Weekly on {{days}}",
     "allDay": "All day",
     "private": "Private",
     "public": "Public",

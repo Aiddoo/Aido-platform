@@ -8,11 +8,14 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import type { TodoSeriesEditOptions } from '../apis/todo-series.mapper';
+import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
 
 interface UpdateTodoMutationParams {
   todoId: number;
   input: UpdateTodoInput;
+  options?: TodoSeriesEditOptions;
 }
 
 export const useUpdateTodoMutationOptions = () => {
@@ -23,8 +26,8 @@ export const useUpdateTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async ({ todoId, input }: UpdateTodoMutationParams) => {
-      const result = await todoService.updateTodo(todoId, input);
+    mutationFn: async ({ todoId, input, options }: UpdateTodoMutationParams) => {
+      const result = await todoService.updateTodo(todoId, input, options);
       return unwrap(result);
     },
     onSuccess: (_data, variables) => {
@@ -36,6 +39,11 @@ export const useUpdateTodoMutationOptions = () => {
     },
     onError: (error) => {
       haptics.notify('error');
+
+      if (isTodoSeriesUnavailableError(error)) {
+        toast.error(t('todo:toast.repeatUnavailable'));
+        return;
+      }
 
       if (isApiError(error)) {
         toast.error(error.message);

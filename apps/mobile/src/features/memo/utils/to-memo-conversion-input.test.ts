@@ -10,9 +10,7 @@ const createFormData = (overrides: Partial<AddTodoFormInput> = {}): AddTodoFormI
   isAllDay: true,
   visibility: 'PUBLIC',
   categoryId: 7,
-  isRecurring: false,
-  repeatEndDate: null,
-  daysOfWeek: [],
+  repeat: null,
   source: 'manual',
   ...overrides,
 });
@@ -34,9 +32,12 @@ describe('toMemoConversionInput', () => {
   it('반복 기간과 요일을 유지하고 종일 일정의 남은 시간을 보내지 않는다', () => {
     const input = toMemoConversionInput(
       createFormData({
-        isRecurring: true,
-        repeatEndDate: new Date(2026, 9, 30),
-        daysOfWeek: ['MON', 'FRI'],
+        repeat: {
+          frequency: 'WEEKLY',
+          interval: 1,
+          weekdays: ['MON', 'FRI'],
+          end: { type: 'UNTIL', date: '2026-10-30' },
+        },
         scheduledTime: '13:30',
       }),
     );
@@ -49,14 +50,12 @@ describe('toMemoConversionInput', () => {
     expect(input.todos[0]?.scheduledTime).toBeUndefined();
   });
 
-  it('비반복 일정의 시간과 종료 날짜를 보존하고 이전 반복 초안은 보내지 않는다', () => {
+  it('비반복 일정의 시간과 종료 날짜를 보존하고 반복은 보내지 않는다', () => {
     const input = toMemoConversionInput(
       createFormData({
         isAllDay: false,
         scheduledTime: '13:30',
         endDate: new Date(2026, 9, 3),
-        daysOfWeek: ['MON'],
-        repeatEndDate: new Date(2026, 9, 30),
       }),
     );
 

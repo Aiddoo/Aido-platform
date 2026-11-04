@@ -137,6 +137,8 @@ export interface TodoEventMap {
     has_scheduled_time: boolean;
     is_all_day: boolean;
     visibility: 'PUBLIC' | 'PRIVATE';
+    repeat_frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+    repeat_end?: 'NEVER' | 'UNTIL' | 'COUNT';
   };
   todo_completed: { todo_id: number; is_completed: boolean };
   todo_deleted: { todo_id: number };

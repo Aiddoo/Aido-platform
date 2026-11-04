@@ -54,11 +54,11 @@ export const isSaturday = (date: Date): boolean => {
 };
 
 /** DayOfWeek 배열을 요일 순서로 정렬 후 로케일 라벨로 변환 (예: "월, 수, 금") */
-export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>
+export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[], separator = ', '): string =>
   [...daysOfWeek]
     .sort((a, b) => DAY_OF_WEEK_MAP[a] - DAY_OF_WEEK_MAP[b])
     .map((day) => t(`common:daysOfWeek.${day}`))
-    .join(', ');
+    .join(separator);
 
 export const getDayOfWeekLabel = (day: DayOfWeek): string => t(`common:daysOfWeek.${day}`);
 

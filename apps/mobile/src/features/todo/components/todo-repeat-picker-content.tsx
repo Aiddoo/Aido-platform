@@ -1,60 +1,36 @@
-import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api';
+import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
+import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, PlusIcon, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
-  formatDaysOfWeek,
   getDayOfWeekLabel,
   isAfterDay,
   isBeforeDay,
   isSameDay,
   isSameMonth,
+  toDate,
 } from '@src/shared/utils/date';
 import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { PressableFeedback } from 'heroui-native';
-import { useState } from 'react';
+import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 
+import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
+import type { TodoRepeatFormValues } from '../domains/todo-repeat-form.schema';
+import {
+  type TodoRepeat,
+  type TodoRepeatEndType,
+  type TodoRepeatKind,
+  TodoRepeatPolicy,
+} from '../domains/todo-repeat.model';
 import { useDatePicker } from '../hooks/use-date-picker';
-import { type RepeatSetting, useRepeatSetting } from '../hooks/use-repeat-setting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
-import { getDayOfWeekFromDate, hasSelectedDayInRange } from '../utils/day-of-week';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
-
-interface DayOfWeekSelectorProps {
-  repeatSetting: RepeatSetting;
-}
-
-type RepeatSummaryKey =
-  | 'picker.repeatDaily'
-  | 'picker.repeatWeekdays'
-  | 'picker.repeatWeekends'
-  | 'picker.repeatWeekly';
-
-const getRepeatSummaryKey = ({
-  isAllSelected,
-  isWeekdaysSelected,
-  isWeekendsSelected,
-}: {
-  isAllSelected: boolean;
-  isWeekdaysSelected: boolean;
-  isWeekendsSelected: boolean;
-}): RepeatSummaryKey => {
-  if (isAllSelected) {
-    return 'picker.repeatDaily';
-  }
-  if (isWeekdaysSelected) {
-    return 'picker.repeatWeekdays';
-  }
-  if (isWeekendsSelected) {
-    return 'picker.repeatWeekends';
-  }
-  return 'picker.repeatWeekly';
-};
 
 interface PresetChipProps {
   label: string;
@@ -66,6 +42,8 @@ function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
   return (
     <PressableFeedback
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
       className={cn(
         'h-8 items-center justify-center rounded-4xl px-3',
         isSelected ? 'bg-main' : 'bg-gray-2',
@@ -74,6 +52,7 @@ function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
       <Text
         size="b4"
         weight="medium"
+        maxLines={1}
         className={isSelected ? 'text-white' : undefined}
         shade={isSelected ? undefined : 7}
       >
@@ -93,6 +72,8 @@ function DayOfWeekChip({ day, isSelected, onPress }: DayOfWeekChipProps) {
   return (
     <PressableFeedback
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
       className={cn(
         'size-8 items-center justify-center rounded-4xl',
         isSelected ? 'bg-main' : 'bg-gray-2',
@@ -110,218 +91,282 @@ function DayOfWeekChip({ day, isSelected, onPress }: DayOfWeekChipProps) {
   );
 }
 
-function DayOfWeekSelector({ repeatSetting }: DayOfWeekSelectorProps) {
+interface RepeatKindSelectorProps {
+  startDateKey: string;
+}
+
+function RepeatKindSelector({ startDateKey }: RepeatKindSelectorProps) {
   const { t } = useTranslation('todo');
-  const {
-    selectedDays,
-    toggleDay,
-    toggleAllDays,
-    toggleWeekdays,
-    toggleWeekends,
-    isAllDaysSelected,
-    isWeekdaysSelected,
-    isWeekendsSelected,
-  } = repeatSetting;
+  const { control, getValues, setValue } = useFormContext<TodoRepeatFormValues>();
+  const kind = useWatch({ control, name: 'kind' });
+  const monthDay = Number(startDateKey.slice(8, 10));
+
+  const handleKindPress = (nextKind: TodoRepeatKind) => {
+    setValue('kind', nextKind);
+    setValue('repeat', TodoRepeatPolicy.withKind(getValues('repeat'), nextKind, startDateKey));
+  };
 
   return (
-    <VStack gap={12}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-1.5 px-4"
-      >
-        <PresetChip
-          label={t('picker.presetDaily')}
-          isSelected={isAllDaysSelected}
-          onPress={toggleAllDays}
-        />
-        <PresetChip
-          label={t('picker.presetWeekdays')}
-          isSelected={isWeekdaysSelected}
-          onPress={toggleWeekdays}
-        />
-        <PresetChip
-          label={t('picker.presetWeekends')}
-          isSelected={isWeekendsSelected}
-          onPress={toggleWeekends}
-        />
-        {DAYS_OF_WEEK.map((day) => (
-          <DayOfWeekChip
-            key={day}
-            day={day}
-            isSelected={selectedDays.includes(day)}
-            onPress={() => toggleDay(day)}
-          />
-        ))}
-      </ScrollView>
-      {selectedDays.length > 0 ? (
-        <Text size="b3" tone="brand" align="right" className="px-4">
-          *{' '}
-          {t(
-            getRepeatSummaryKey({
-              isAllSelected: isAllDaysSelected,
-              isWeekdaysSelected,
-              isWeekendsSelected,
-            }),
-            { days: formatDaysOfWeek(selectedDays) },
-          )}
-        </Text>
-      ) : (
-        <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
-          * {t('picker.selectDays')}
-        </Text>
-      )}
-    </VStack>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerClassName="gap-1.5 px-4"
+    >
+      <PresetChip
+        label={t('repeat.kind.NONE', { day: monthDay })}
+        isSelected={kind === 'NONE'}
+        onPress={() => handleKindPress('NONE')}
+      />
+      <PresetChip
+        label={t('repeat.kind.DAILY', { day: monthDay })}
+        isSelected={kind === 'DAILY'}
+        onPress={() => handleKindPress('DAILY')}
+      />
+      <PresetChip
+        label={t('repeat.kind.WEEKDAYS', { day: monthDay })}
+        isSelected={kind === 'WEEKDAYS'}
+        onPress={() => handleKindPress('WEEKDAYS')}
+      />
+      <PresetChip
+        label={t('repeat.kind.WEEKLY', { day: monthDay })}
+        isSelected={kind === 'WEEKLY'}
+        onPress={() => handleKindPress('WEEKLY')}
+      />
+      <PresetChip
+        label={t('repeat.kind.BIWEEKLY', { day: monthDay })}
+        isSelected={kind === 'BIWEEKLY'}
+        onPress={() => handleKindPress('BIWEEKLY')}
+      />
+      <PresetChip
+        label={t('repeat.kind.MONTHLY', { day: monthDay })}
+        isSelected={kind === 'MONTHLY'}
+        onPress={() => handleKindPress('MONTHLY')}
+      />
+    </ScrollView>
   );
 }
 
-interface RepeatInput {
-  daysOfWeek: DayOfWeek[];
-  repeatEndDate: Date | null;
+function WeekdaySelector() {
+  const { t } = useTranslation('todo');
+  const { control, getValues, setValue } = useFormContext<TodoRepeatFormValues>();
+  const repeat = useWatch({ control, name: 'repeat' });
+
+  if (repeat == null || repeat.frequency !== 'WEEKLY') {
+    return null;
+  }
+
+  const change = (next: TodoRepeat) => setValue('repeat', next);
+  const current = () => getValues('repeat') ?? repeat;
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerClassName="gap-1.5 px-4"
+    >
+      <PresetChip
+        label={t('repeat.weekdayPreset.ALL')}
+        isSelected={TodoRepeatPolicy.hasWeekdays(repeat, DAYS_OF_WEEK)}
+        onPress={() => change(TodoRepeatPolicy.withWeekdayPreset(current(), 'ALL'))}
+      />
+      <PresetChip
+        label={t('repeat.weekdayPreset.WEEKDAYS')}
+        isSelected={TodoRepeatPolicy.hasWeekdays(repeat, ['MON', 'TUE', 'WED', 'THU', 'FRI'])}
+        onPress={() => change(TodoRepeatPolicy.withWeekdayPreset(current(), 'WEEKDAYS'))}
+      />
+      <PresetChip
+        label={t('repeat.weekdayPreset.WEEKENDS')}
+        isSelected={TodoRepeatPolicy.hasWeekdays(repeat, ['SAT', 'SUN'])}
+        onPress={() => change(TodoRepeatPolicy.withWeekdayPreset(current(), 'WEEKENDS'))}
+      />
+      {DAYS_OF_WEEK.map((day) => (
+        <DayOfWeekChip
+          key={day}
+          day={day}
+          isSelected={repeat.weekdays.includes(day)}
+          onPress={() => change(TodoRepeatPolicy.withWeekdayToggled(current(), day))}
+        />
+      ))}
+    </ScrollView>
+  );
 }
 
-interface RepeatConfirmResult extends RepeatInput {
-  startDate: Date;
+interface CountStepperProps {
+  count: number;
+  onCountChange: (count: number) => void;
 }
 
-export type RepeatPickerCloseResult =
-  | { type: 'confirm'; value: RepeatConfirmResult }
-  | { type: 'reset' }
-  | { type: 'cancel' };
+function CountStepper({ count, onCountChange }: CountStepperProps) {
+  const { t } = useTranslation('todo');
+
+  return (
+    <HStack gap={12} align="center" className="px-4">
+      <PressableFeedback
+        onPress={() => onCountChange(count - 1)}
+        isDisabled={count <= TODO_REPEAT_COUNT.MIN}
+        accessibilityRole="button"
+        accessibilityLabel={t('repeat.end.countDecrease')}
+        className={cn(
+          'size-8 items-center justify-center rounded-full bg-gray-2',
+          count <= TODO_REPEAT_COUNT.MIN && 'opacity-40',
+        )}
+      >
+        <Text size="b2" weight="medium" shade={7}>
+          −
+        </Text>
+      </PressableFeedback>
+      <Text size="b2" weight="semibold" className="tabular-nums" tone="brand">
+        {t('repeat.end.COUNT', { count })}
+      </Text>
+      <PressableFeedback
+        onPress={() => onCountChange(count + 1)}
+        isDisabled={count >= TODO_REPEAT_COUNT.MAX}
+        accessibilityRole="button"
+        accessibilityLabel={t('repeat.end.countIncrease')}
+        className={cn(
+          'size-8 items-center justify-center rounded-full bg-gray-2',
+          count >= TODO_REPEAT_COUNT.MAX && 'opacity-40',
+        )}
+      >
+        <PlusIcon width={14} height={14} colorClassName="text-gray-7" />
+      </PressableFeedback>
+    </HStack>
+  );
+}
 
 interface TodoRepeatPickerContentProps {
   startDate: Date;
-  repeat: RepeatInput;
-  onClose: (result: RepeatPickerCloseResult) => void;
+  value: TodoRepeat | null;
+  onChange: (value: TodoRepeat | null) => void;
+  onCancel: () => void;
 }
 
-const getInitialSelectedDays = (startDate: Date, daysOfWeek: DayOfWeek[]): DayOfWeek[] => {
-  if (daysOfWeek.length > 0) {
-    return daysOfWeek;
-  }
-  const dayOfWeek = getDayOfWeekFromDate(startDate);
-  return dayOfWeek ? [dayOfWeek] : [];
-};
-
 export const TodoRepeatPickerContent = ({
-  startDate: initialStartDate,
-  repeat,
-  onClose,
+  startDate,
+  value,
+  onChange,
+  onCancel,
 }: TodoRepeatPickerContentProps) => {
-  const { t } = useTranslation(['todo', 'common']);
-  const [startDate, setStartDate] = useState(initialStartDate);
-  const picker = useDatePicker({ startDate });
-  const repeatSetting = useRepeatSetting({
-    isEnabled: true,
-    selectedDays: getInitialSelectedDays(initialStartDate, repeat.daysOfWeek),
-    endDate: repeat.repeatEndDate,
+  const { t } = useTranslation('todo');
+  const startDateKey = toDeviceDateKey(startDate);
+  const methods = useForm<TodoRepeatFormValues>({
+    defaultValues: { kind: TodoRepeatPolicy.getKind(value), repeat: value },
   });
 
-  const hasExistingRepeat = repeat.daysOfWeek.length > 0;
-  const hasCompleteRange = repeatSetting.endDate != null;
+  return (
+    <FormProvider {...methods}>
+      <VStack gap={20}>
+        <PickerHeader
+          title={t('picker.repeatTitle')}
+          onCancel={onCancel}
+          onConfirm={() => onChange(methods.getValues('repeat'))}
+        />
 
-  const isConfirmDisabled =
-    repeatSetting.selectedDays.length === 0 ||
-    repeatSetting.endDate == null ||
-    !hasSelectedDayInRange(startDate, repeatSetting.endDate, repeatSetting.selectedDays);
+        <RepeatKindSelector startDateKey={startDateKey} />
+        <WeekdaySelector />
+        <RepeatEndSection startDate={startDate} />
+      </VStack>
+    </FormProvider>
+  );
+};
 
-  const handleConfirm = () => {
-    if (isConfirmDisabled) {
-      return;
-    }
-    onClose({
-      type: 'confirm',
-      value: {
-        daysOfWeek: repeatSetting.selectedDays,
-        repeatEndDate: repeatSetting.endDate,
-        startDate,
-      },
-    });
-  };
+interface RepeatEndSectionProps {
+  startDate: Date;
+}
 
-  const today = useToday();
-  const dateFormatContext = useDateFormatContext();
+function RepeatEndSection({ startDate }: RepeatEndSectionProps) {
+  const { t } = useTranslation('todo');
+  const { control, getValues, setValue } = useFormContext<TodoRepeatFormValues>();
+  const repeat = useWatch({ control, name: 'repeat' });
+  const startDateKey = toDeviceDateKey(startDate);
 
-  const handleCalendarPress = (date: Date) => {
-    if (isBeforeDay(date, today)) {
-      return;
-    }
+  if (repeat == null) {
+    return null;
+  }
 
-    if (!hasCompleteRange) {
-      if (isAfterDay(date, startDate)) {
-        repeatSetting.setEndDate(date);
-      } else if (isBeforeDay(date, startDate)) {
-        setStartDate(date);
-      }
-      return;
-    }
-
-    setStartDate(date);
-    repeatSetting.clearEndDate();
-  };
+  const change = (next: TodoRepeat) => setValue('repeat', next);
+  const handleEndTypeChange = (type: TodoRepeatEndType) =>
+    change(TodoRepeatPolicy.withEndType(getValues('repeat') ?? repeat, type, startDateKey));
 
   return (
-    <VStack gap={20}>
-      <PickerHeader
-        title={t('picker.repeatTitle')}
-        onCancel={() => onClose({ type: 'cancel' })}
-        onConfirm={handleConfirm}
-        isConfirmDisabled={isConfirmDisabled}
-      />
-
-      <DayOfWeekSelector repeatSetting={repeatSetting} />
-
-      <RepeatCalendar
-        picker={picker}
-        today={today}
-        startDate={startDate}
-        endDate={repeatSetting.endDate}
-        onDatePress={handleCalendarPress}
-      />
-
-      <VStack className="border-t border-gray-2 px-4 pt-3">
-        <HStack align="center" justify="between" gap={8}>
-          <HStack gap={4} align="center" className="shrink">
-            <Text size="b3" tone="neutral" shade={7}>
-              {t('picker.repeatPeriod')}
-            </Text>
-            <Text size="b3" tone="neutral" shade={6}>
-              •
-            </Text>
-            {repeatSetting.endDate && !isSameDay(startDate, repeatSetting.endDate) ? (
-              <Text size="b3" tone="brand">
-                {formatDateKeyLabel(
-                  formatDateKey(startDate, getDeviceTimezone()),
-                  'monthDay',
-                  dateFormatContext,
-                )}{' '}
-                -{' '}
-                {formatDateKeyLabel(
-                  formatDateKey(repeatSetting.endDate, getDeviceTimezone()),
-                  'monthDay',
-                  dateFormatContext,
-                )}
-              </Text>
-            ) : (
-              <Text size="b3" tone="neutral" shade={5}>
-                {t('picker.selectPeriod')}
-              </Text>
-            )}
-          </HStack>
-          {hasExistingRepeat && (
-            <Button
-              size="small"
-              variant="weak"
-              color="danger"
-              display="inline"
-              onPress={() => onClose({ type: 'reset' })}
-            >
-              {t('common:actions.delete')}
-            </Button>
-          )}
+    <>
+      <VStack gap={12}>
+        <Text size="b3" tone="neutral" shade={7} className="px-4">
+          {t('repeat.end.title')}
+        </Text>
+        <HStack gap={6} className="px-4">
+          <PresetChip
+            label={t('repeat.end.NEVER')}
+            isSelected={repeat.end.type === 'NEVER'}
+            onPress={() => handleEndTypeChange('NEVER')}
+          />
+          <PresetChip
+            label={t('repeat.end.UNTIL')}
+            isSelected={repeat.end.type === 'UNTIL'}
+            onPress={() => handleEndTypeChange('UNTIL')}
+          />
+          <PresetChip
+            label={t('repeat.end.COUNT', {
+              count: repeat.end.type === 'COUNT' ? repeat.end.count : TODO_REPEAT_COUNT.DEFAULT,
+            })}
+            isSelected={repeat.end.type === 'COUNT'}
+            onPress={() => handleEndTypeChange('COUNT')}
+          />
         </HStack>
+        {repeat.end.type === 'COUNT' && (
+          <CountStepper
+            count={repeat.end.count}
+            onCountChange={(count) => change(TodoRepeatPolicy.withCount(repeat, count))}
+          />
+        )}
       </VStack>
-    </VStack>
+
+      {repeat.end.type === 'UNTIL' && (
+        <UntilCalendar
+          startDate={startDate}
+          untilDate={toDate(repeat.end.date)}
+          onUntilDateChange={(date) =>
+            change(TodoRepeatPolicy.withUntilDate(repeat, toDeviceDateKey(date)))
+          }
+        />
+      )}
+
+      <VStack gap={4} className="border-t border-gray-2 px-4 pt-3">
+        {TodoRepeatPolicy.isMonthDayClamped(repeat) && (
+          <Text size="b4" tone="neutral" shade={6} lineBreakStrategyIOS="hangul-word">
+            {t('repeat.monthEndHint')}
+          </Text>
+        )}
+        <Text size="b4" tone="neutral" shade={6} lineBreakStrategyIOS="hangul-word">
+          {t('repeat.horizonHint')}
+        </Text>
+      </VStack>
+    </>
+  );
+}
+
+interface UntilCalendarProps {
+  startDate: Date;
+  untilDate: Date;
+  onUntilDateChange: (date: Date) => void;
+}
+
+const UntilCalendar = ({ startDate, untilDate, onUntilDateChange }: UntilCalendarProps) => {
+  const picker = useDatePicker({ startDate: untilDate });
+  const today = useToday();
+
+  return (
+    <RepeatCalendar
+      picker={picker}
+      today={today}
+      startDate={startDate}
+      endDate={untilDate}
+      onDatePress={(date) => {
+        if (!isBeforeDay(date, startDate)) {
+          onUntilDateChange(date);
+        }
+      }}
+    />
   );
 };
 

@@ -1,5 +1,4 @@
 import {
-  type CreateRecurringTodoInput,
   type CreateTodoInput,
   createRecurringTodoResponseSchema,
   dailyCompletionsRangeResponseSchema,
@@ -19,8 +18,10 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import { err, ok, type Result } from '@src/shared/errors/result';
 
+import type { TodoEditScope, TodoSeries } from '../domains/todo-repeat.model';
+import { TodoSeriesUnavailableError } from '../domains/todo-series.error';
 import type {
   DailyCompletionsResult,
   Todo,
@@ -29,6 +30,12 @@ import type {
   TodoSummary,
   TodoListResult,
 } from '../domains/todo.model';
+import {
+  isLegacySeriesRequest,
+  type RepeatingTodoDraft,
+  type TodoSeriesEditOptions,
+  toLegacyRecurringRequest,
+} from './todo-series.mapper';
 import {
   toDailyCompletionsResult,
   toTodo,
@@ -155,7 +162,15 @@ export class TodoService {
     return ok(toTodo(parsed.data.todo));
   };
 
-  updateTodo = async (todoId: number, input: UpdateTodoInput): Promise<Result<Todo, ApiError>> => {
+  updateTodo = async (
+    todoId: number,
+    input: UpdateTodoInput,
+    options: TodoSeriesEditOptions = { scope: 'THIS_ONLY' },
+  ): Promise<Result<Todo, ApiError | TodoSeriesUnavailableError>> => {
+    if (!isLegacySeriesRequest(options.scope, options.repeat)) {
+      return err(new TodoSeriesUnavailableError());
+    }
+
     const result = await this.#httpClient.patch(`v1/todos/${todoId}`, input);
 
     if (!result.ok) {
@@ -173,7 +188,12 @@ export class TodoService {
   updateTodoSchedule = async (
     todoId: number,
     input: UpdateTodoScheduleInput,
-  ): Promise<Result<Todo, ApiError>> => {
+    scope: TodoEditScope = 'THIS_ONLY',
+  ): Promise<Result<Todo, ApiError | TodoSeriesUnavailableError>> => {
+    if (!isLegacySeriesRequest(scope)) {
+      return err(new TodoSeriesUnavailableError());
+    }
+
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/schedule`, input);
 
     if (!result.ok) {
@@ -190,7 +210,14 @@ export class TodoService {
     return ok(toTodo(parsed.data.todo));
   };
 
-  deleteTodo = async (todoId: number): Promise<Result<void, ApiError>> => {
+  deleteTodo = async (
+    todoId: number,
+    scope: TodoEditScope = 'THIS_ONLY',
+  ): Promise<Result<void, ApiError | TodoSeriesUnavailableError>> => {
+    if (!isLegacySeriesRequest(scope)) {
+      return err(new TodoSeriesUnavailableError());
+    }
+
     const result = await this.#httpClient.delete(`v1/todos/${todoId}`);
 
     if (!result.ok) {
@@ -276,10 +303,15 @@ export class TodoService {
     return ok(toTodoSummary(parsed.data));
   };
 
-  createRecurringTodo = async (
-    params: CreateRecurringTodoInput,
-  ): Promise<Result<Todo[], ApiError>> => {
-    const result = await this.#httpClient.post('v1/todos/recurring', params);
+  createRepeatingTodo = async (
+    draft: RepeatingTodoDraft,
+  ): Promise<Result<Todo[], ApiError | TodoSeriesUnavailableError>> => {
+    const request = toLegacyRecurringRequest(draft);
+    if (request == null) {
+      return err(new TodoSeriesUnavailableError());
+    }
+
+    const result = await this.#httpClient.post('v1/todos/recurring', request);
 
     if (!result.ok) {
       return result;
@@ -288,12 +320,22 @@ export class TodoService {
     const parsed = createRecurringTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
-        `[TodoService] Invalid createRecurringTodo response: ${parsed.error.message}`,
+        `[TodoService] Invalid createRepeatingTodo response: ${parsed.error.message}`,
       );
     }
 
     return ok(toTodos(parsed.data.todos));
   };
+
+  getTodoSeries = async (
+    _seriesId: string,
+    _signal?: AbortSignal,
+  ): Promise<Result<TodoSeries | null, ApiError>> => ok(null);
+
+  stopTodoSeries = async (
+    _todoId: number,
+  ): Promise<Result<void, ApiError | TodoSeriesUnavailableError>> =>
+    err(new TodoSeriesUnavailableError());
 
   reorderTodo = async (
     todoId: number,

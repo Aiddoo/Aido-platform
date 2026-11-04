@@ -84,6 +84,7 @@ const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/subscription/domains/customer-info.model.ts',
   'apps/mobile/src/features/subscription/domains/entitlement.model.ts',
   'apps/mobile/src/features/todo-comment/domains/todo-comment.model.ts',
+  'apps/mobile/src/features/todo/domains/todo-repeat.model.ts',
   'apps/mobile/src/features/voice/domains/',
 ];
 const SHARED_CONTRACT_MODULE = '@aido/api';

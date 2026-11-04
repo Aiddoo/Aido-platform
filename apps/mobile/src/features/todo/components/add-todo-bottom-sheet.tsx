@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
+import type { ParsedTodo } from '@src/features/ai/domains/parsed-todo.model';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
@@ -38,11 +39,11 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { formatDaysOfWeek } from '@src/shared/utils/date';
 import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
+import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
+import { isEqual } from 'es-toolkit';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
@@ -54,17 +55,16 @@ import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
+import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
+import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
-import {
-  type RepeatPickerCloseResult,
-  TodoRepeatPickerContent,
-} from './todo-repeat-picker-content';
+import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
 import { type TodoTimeValue, TodoTimePickerContent } from './todo-time-picker-content';
 
 interface AddTodoBottomSheetBaseProps {
@@ -109,6 +109,12 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetEditProps
   | AddTodoBottomSheetConvertMemoProps;
 
+function toParsedTodoRepeat({ isRecurring, recurrence }: ParsedTodo): TodoRepeat | null {
+  return isRecurring && recurrence != null
+    ? TodoRepeatPolicy.createWeeklyUntil(recurrence.daysOfWeek, toDeviceDateKey(recurrence.endDate))
+    : null;
+}
+
 function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
   return match(props)
     .returnType<AddTodoFormValues>()
@@ -121,9 +127,7 @@ function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues 
       isAllDay: initialValues?.isAllDay ?? true,
       categoryId,
       visibility: 'PUBLIC',
-      isRecurring: false,
-      repeatEndDate: null,
-      daysOfWeek: [],
+      repeat: null,
       source: 'manual',
     }))
     .with({ mode: 'convert-memo' }, ({ selectedDate, categoryId, initialValues }) => ({
@@ -134,9 +138,7 @@ function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues 
       isAllDay: true,
       categoryId,
       visibility: 'PUBLIC',
-      isRecurring: false,
-      repeatEndDate: null,
-      daysOfWeek: [],
+      repeat: null,
       source: 'manual',
     }))
     .exhaustive();
@@ -204,6 +206,10 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 isAllDay: values.isAllDay,
                 visibility: values.visibility,
               },
+              options: {
+                scope: 'THIS_ONLY',
+                ...(!isEqual(values.repeat, defaultValues.repeat) && { repeat: values.repeat }),
+              },
             },
             { onSuccess: onClose },
           );
@@ -229,21 +235,17 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             createProps.onSuccess?.();
           };
 
-          if (values.isRecurring) {
+          if (values.repeat != null) {
             await createRecurringMutation.mutateAsync(
               {
                 input: {
                   title: values.title,
                   startDate: formatDateKey(values.startDate, getDeviceTimezone()),
-                  endDate: formatDateKey(
-                    values.repeatEndDate ?? values.startDate,
-                    getDeviceTimezone(),
-                  ),
-                  daysOfWeek: values.daysOfWeek,
                   scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
                   isAllDay: values.isAllDay,
                   visibility: values.visibility,
                   categoryId: values.categoryId,
+                  repeat: values.repeat,
                 },
                 source: values.source,
               },
@@ -255,6 +257,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 input: {
                   title: values.title,
                   startDate: formatDateKey(values.startDate, getDeviceTimezone()),
+                  endDate: values.endDate
+                    ? formatDateKey(values.endDate, getDeviceTimezone())
+                    : undefined,
                   scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
                   isAllDay: values.isAllDay,
                   visibility: values.visibility,
@@ -287,6 +292,17 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         onExit={() => {
           exit();
           if (pickerResult) {
+            const { startDate, repeat } = methods.getValues();
+            if (repeat != null) {
+              methods.setValue(
+                'repeat',
+                TodoRepeatPolicy.withStartDate(
+                  repeat,
+                  toDeviceDateKey(startDate),
+                  toDeviceDateKey(pickerResult),
+                ),
+              );
+            }
             methods.setValue('startDate', pickerResult);
           }
           focusTodoInput();
@@ -342,39 +358,30 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   const handleRepeatChipPress = () => {
     Keyboard.dismiss();
-    let pickerResult: RepeatPickerCloseResult | null = null;
-    overlay.open<RepeatPickerCloseResult | null>(({ isOpen, close, exit }) => (
+    let pickerResult: { value: TodoRepeat | null } | null = null;
+    overlay.open<{ value: TodoRepeat | null } | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onOpenChange={() => close({ type: 'cancel' })}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
-          match(pickerResult)
-            .with({ type: 'reset' }, () => {
-              methods.setValue('isRecurring', false);
-              methods.setValue('daysOfWeek', []);
-              methods.setValue('repeatEndDate', null);
-            })
-            .with({ type: 'confirm' }, ({ value }) => {
-              methods.setValue('isRecurring', true);
-              methods.setValue('daysOfWeek', value.daysOfWeek);
-              methods.setValue('repeatEndDate', value.repeatEndDate);
-              methods.setValue('startDate', value.startDate);
-            })
-            .otherwise(noop);
+          if (pickerResult) {
+            methods.setValue('repeat', pickerResult.value);
+            if (pickerResult.value != null) {
+              methods.setValue('endDate', null);
+            }
+          }
           focusTodoInput();
         }}
       >
         <TodoRepeatPickerContent
           startDate={methods.getValues('startDate')}
-          repeat={{
-            daysOfWeek: methods.getValues('daysOfWeek') ?? [],
-            repeatEndDate: methods.getValues('repeatEndDate') ?? null,
+          value={methods.getValues('repeat') ?? null}
+          onChange={(value) => {
+            pickerResult = { value };
+            close(pickerResult);
           }}
-          onClose={(result) => {
-            pickerResult = result;
-            close(result);
-          }}
+          onCancel={() => close(null)}
         />
       </ModalBottomSheet>
     ));
@@ -548,16 +555,11 @@ const TimeChip = ({ onPress }: { onPress: () => void }) => {
 
 const RepeatChip = ({ onPress }: { onPress: () => void }) => {
   const actionChipIconSize = useActionChipIconSize();
-  const [isRecurring, daysOfWeek] = useWatch<AddTodoFormValues, ['isRecurring', 'daysOfWeek']>({
-    name: ['isRecurring', 'daysOfWeek'],
-  });
+  const repeat = useWatch<AddTodoFormValues, 'repeat'>({ name: 'repeat' });
   const { t } = useTranslation('todo');
-  const isActive = isRecurring && (daysOfWeek?.length ?? 0) > 0;
-  const days = daysOfWeek ?? [];
-  const label = match({ isActive, isEveryDay: days.length === 7 })
-    .with({ isActive: false }, () => t('chip.repeat'))
-    .with({ isEveryDay: true }, () => t('chip.daily'))
-    .otherwise(() => t('chip.weeklyDays', { days: formatDaysOfWeek(days) }));
+  const dateFormatContext = useDateFormatContext();
+  const isActive = repeat != null;
+  const label = repeat == null ? t('chip.repeat') : formatRepeatSummary(repeat, dateFormatContext);
 
   return (
     <ActionChip
@@ -723,17 +725,16 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
         },
         onSuccess: (result) => {
           const { data: parsedTodo } = result;
+          const parsedTodoRepeat = toParsedTodoRepeat(parsedTodo);
           methods.reset(
             (prev) => ({
               ...prev,
               title: parsedTodo.title,
               startDate: parsedTodo.startDate,
-              endDate: parsedTodo.endDate,
+              endDate: parsedTodoRepeat == null ? parsedTodo.endDate : null,
               scheduledTime: parsedTodo.scheduledTime,
               isAllDay: parsedTodo.scheduledTime ? false : parsedTodo.isAllDay,
-              isRecurring: parsedTodo.isRecurring,
-              daysOfWeek: parsedTodo.recurrence?.daysOfWeek ?? [],
-              repeatEndDate: parsedTodo.recurrence?.endDate ?? null,
+              repeat: parsedTodoRepeat,
               source: 'ai',
             }),
             { keepDirtyValues: true },

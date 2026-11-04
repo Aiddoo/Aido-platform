@@ -14,11 +14,14 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import { err, ok, type Result } from '@src/shared/errors/result';
 
 import type { TodoCategoriesResult, TodoCategory } from '../domains/todo-category.model';
+import type { TodoEditScope } from '../domains/todo-repeat.model';
+import { TodoSeriesUnavailableError } from '../domains/todo-series.error';
 import type { Todo } from '../domains/todo.model';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
+import { isLegacySeriesRequest } from './todo-series.mapper';
 import { toTodo } from './todo.mapper';
 
 export class TodoCategoryService {
@@ -111,7 +114,12 @@ export class TodoCategoryService {
   changeTodoCategory = async (
     todoId: number,
     input: ChangeTodoCategoryInput,
-  ): Promise<Result<Todo, ApiError>> => {
+    scope: TodoEditScope = 'THIS_ONLY',
+  ): Promise<Result<Todo, ApiError | TodoSeriesUnavailableError>> => {
+    if (!isLegacySeriesRequest(scope)) {
+      return err(new TodoSeriesUnavailableError());
+    }
+
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/category`, input);
 
     if (!result.ok) {

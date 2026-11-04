@@ -1,4 +1,3 @@
-import type { CreateRecurringTodoInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import {
   useActivationService,
@@ -14,10 +13,12 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import type { RepeatingTodoDraft } from '../apis/todo-series.mapper';
+import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
 
 export interface CreateRecurringTodoParams {
-  input: CreateRecurringTodoInput;
+  input: RepeatingTodoDraft;
   source: 'manual' | 'ai';
 }
 
@@ -31,7 +32,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
 
   return mutationOptions({
     mutationFn: async ({ input }: CreateRecurringTodoParams) => {
-      const result = await todoService.createRecurringTodo(input);
+      const result = await todoService.createRepeatingTodo(input);
       return unwrap(result);
     },
     onSuccess: (_data, { input, source }) => {
@@ -44,7 +45,9 @@ export const useCreateRecurringTodoMutationOptions = () => {
         is_recurring: true,
         has_scheduled_time: !!input.scheduledTime,
         is_all_day: input.isAllDay,
-        visibility: input.visibility ?? 'PUBLIC',
+        visibility: input.visibility,
+        repeat_frequency: input.repeat.frequency,
+        repeat_end: input.repeat.end.type,
       });
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
@@ -53,6 +56,11 @@ export const useCreateRecurringTodoMutationOptions = () => {
     },
     onError: (error) => {
       haptics.notify('error');
+
+      if (isTodoSeriesUnavailableError(error)) {
+        toast.error(t('todo:toast.repeatUnavailable'));
+        return;
+      }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
         toast.error(t('todo:toast.recurringCategoryLimit'));

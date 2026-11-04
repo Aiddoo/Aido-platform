@@ -21,7 +21,8 @@
     "updateFailedRetry": "잠시 후 다시 수정해 보세요",
     "deleteFailedRetry": "잠시 후 다시 삭제해 보세요",
     "changeFailedRetry": "잠시 후 다시 변경해 보세요",
-    "retryLater": "잠시 후 다시 시도해 주세요"
+    "retryLater": "잠시 후 다시 시도해 주세요",
+    "repeatUnavailable": "반복 할 일 기능을 준비하고 있어요. 곧 사용할 수 있어요"
   },
   "errors": {
     "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
@@ -29,8 +30,6 @@
   "form": {
     "titleRequired": "제목을 입력해 주세요",
     "titleMaxLength": "제목은 200자까지 입력할 수 있어요",
-    "repeatEndDateRequired": "반복 종료일을 선택해 주세요",
-    "repeatDaysRequired": "반복할 요일을 선택해 주세요",
     "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"
   },
   "picker": {
@@ -42,22 +41,44 @@
     "allDay": "종일",
     "time": "시간",
     "selectTime": "시간 선택",
-    "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요",
-    "repeatPeriod": "반복 기간",
-    "selectPeriod": "기간을 선택해주세요",
-    "repeatDaily": "매일 반복",
-    "repeatWeekdays": "주중 반복",
-    "repeatWeekends": "주말 반복",
-    "repeatWeekly": "매주 {{days}} 반복",
-    "presetDaily": "매일",
-    "presetWeekdays": "주중",
-    "presetWeekends": "주말",
-    "selectDays": "요일을 선택해주세요"
+    "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요"
+  },
+  "repeat": {
+    "kind": {
+      "NONE": "반복 안 함",
+      "DAILY": "매일",
+      "WEEKDAYS": "평일",
+      "WEEKLY": "매주",
+      "BIWEEKLY": "격주",
+      "MONTHLY": "매월 {{day}}일"
+    },
+    "weekdayPreset": {
+      "ALL": "전체",
+      "WEEKDAYS": "평일",
+      "WEEKENDS": "주말"
+    },
+    "end": {
+      "title": "종료",
+      "NEVER": "계속 반복",
+      "UNTIL": "날짜까지",
+      "COUNT": "{{count}}회",
+      "countDecrease": "횟수 줄이기",
+      "countIncrease": "횟수 늘리기"
+    },
+    "summary": {
+      "DAILY": "매일",
+      "WEEKDAYS": "평일",
+      "WEEKLY": "매주 {{days}}",
+      "BIWEEKLY": "격주 {{days}}",
+      "MONTHLY": "매월 {{day}}일",
+      "untilSuffix": "{{date}}까지",
+      "countSuffix": "{{count}}회"
+    },
+    "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
+    "horizonHint": "반복 할 일은 3개월 앞까지 미리 보여요"
   },
   "chip": {
     "repeat": "반복",
-    "daily": "매일",
-    "weeklyDays": "매주 {{days}}",
     "allDay": "종일",
     "private": "비공개",
     "public": "공개",
