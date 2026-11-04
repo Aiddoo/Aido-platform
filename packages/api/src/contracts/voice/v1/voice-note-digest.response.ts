@@ -37,9 +37,7 @@ export const voiceNoteDigestResponseSchema = z.object({
     .describe("이 요청을 반영한 VOICE_NOTE 한도·사용량. 결과는 주되 한도를 읽지 못했으면 null"),
   charged: z
     .boolean()
-    .describe(
-      "이 요청으로 횟수를 썼는지. 할 일을 찾지 못해 환불했으면 false다. 환불을 마치지 못했으면 true다",
-    ),
+    .describe("이 요청으로 횟수를 썼는지. 결과를 돌려준 정리는 할 일이 0개여도 true다"),
 });
 
 export type VoiceNoteDigestResponse = z.infer<typeof voiceNoteDigestResponseSchema>;

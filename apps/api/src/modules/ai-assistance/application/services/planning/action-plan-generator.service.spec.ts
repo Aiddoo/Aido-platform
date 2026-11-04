@@ -3,7 +3,7 @@ import { ACTION_PLAN_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
 import { mock } from "vitest-mock-extended";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
+import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import {
@@ -107,6 +107,35 @@ describe("ActionPlanGenerator", () => {
       await expect(failure).rejects.toMatchObject({ errorCode, details: undefined });
     },
   );
+
+  it("할 일 없는 빠른 계획은 차감하지 않는 결과로 남긴다", async () => {
+    // Given
+    const { aiGenerator, generator, logger } = setup();
+    aiGenerator.setRawResponse({ todos: [], memo: null });
+    // When
+    await generator.generateQuickPlan({ ...planningInput, text: "회의" });
+    // Then
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "NO_ACTION", quotaCharged: false }),
+    );
+  });
+
+  it("할 일 없는 녹음 정리도 요약이 있으면 차감하는 결과로 남긴다", async () => {
+    // Given
+    const { aiGenerator, generator, logger } = setup();
+    aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+    // When
+    const digest = await generator.digestVoiceNote({
+      ...planningInput,
+      transcript: "회의",
+      sentences: [],
+    });
+    // Then
+    expect(digest.isEmpty).toBe(false);
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "SUCCESS", quotaCharged: true }),
+    );
+  });
 
   it("로그에 말한 내용·제목을 남기지 않는다", async () => {
     // Given

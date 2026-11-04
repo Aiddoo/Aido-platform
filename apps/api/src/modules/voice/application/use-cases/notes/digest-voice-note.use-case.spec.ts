@@ -7,6 +7,7 @@ import {
   createPlanFlowFixture,
   digestDraft,
   InMemoryPlanResultReplay,
+  memoActionDraft,
   stubPlanningContextReader,
   todoActionDraft,
 } from "#test/fixtures/voice-plan.fixture";
@@ -27,13 +28,14 @@ const segments = [
 
 function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
   const fixture = createPlanFlowFixture(ledgerInput);
+  const replay = new InMemoryPlanResultReplay<VoiceNoteDigestResult>();
   const useCase = new DigestVoiceNote({
     runner: fixture.runner,
     quota: fixture.quota,
     generator: fixture.generator,
     contextReader: stubPlanningContextReader(),
     localePreferenceReader: fixture.localePreferenceReader,
-    replay: new InMemoryPlanResultReplay<VoiceNoteDigestResult>(),
+    replay,
     logger: fixture.logger,
   });
   const execute = (overrides: { text?: string; segments?: typeof segments } = {}) =>
@@ -48,7 +50,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
       ...overrides,
     });
   const used = async () => (await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used;
-  return { ...fixture, execute, used };
+  return { ...fixture, replay, execute, used };
 }
 
 describe("DigestVoiceNote", () => {
@@ -96,21 +98,92 @@ describe("DigestVoiceNote", () => {
     expect(aiGenerator.getLastPrompt()).not.toContain("4200");
   });
 
-  it("요약은 있고 할 일이 0개면 요약을 주되 환불해 charged:false다", async () => {
-    // Given
-    const { aiGenerator, execute, used } = setup();
-    aiGenerator.setRawResponse(digestDraft({ todos: [] }));
-    // When
-    const response = await execute();
-    // Then
-    expect(response.charged).toBe(false);
-    expect(response.summary).not.toBe("");
-    expect(await used()).toBe(0);
+  describe("할 일이 0개인 정리", () => {
+    it.each([
+      { name: "요약만", draft: { todos: [], keyPoints: [] } },
+      { name: "핵심 내용만", draft: { todos: [], summary: "" } },
+      { name: "요약과 핵심 내용", draft: { todos: [] } },
+    ])("$name 돌려주면 1회를 확정해 charged:true다", async ({ draft }) => {
+      // Given
+      const { aiGenerator, execute, used, repository } = setup();
+      aiGenerator.setRawResponse(digestDraft(draft));
+      // When
+      const response = await execute();
+      // Then
+      expect(response.charged).toBe(true);
+      expect(response.featureQuota).toMatchObject({ used: 1 });
+      expect(await used()).toBe(1);
+      expect([...repository.charges.values()]).toEqual([
+        expect.objectContaining({ status: "COMMITTED", refundReason: null }),
+      ]);
+    });
+
+    it("메모만 있어도 돌려줄 내용이 있으니 1회를 확정한다", async () => {
+      // Given
+      const { aiGenerator, execute, used } = setup();
+      aiGenerator.setRawResponse(
+        digestDraft({ summary: "", keyPoints: [], todos: [], memo: memoActionDraft() }),
+      );
+      // When
+      const response = await execute();
+      // Then
+      expect(response.charged).toBe(true);
+      expect(await used()).toBe(1);
+    });
+
+    it("같은 키의 재요청은 AI를 다시 부르지 않고 같은 결과와 charged:true를 주며 한 번만 차감한다", async () => {
+      // Given
+      const { aiGenerator, execute, used } = setup();
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      const first = await execute();
+      // When
+      const second = await execute();
+      // Then
+      expect(second.summary).toBe(first.summary);
+      expect(second.plan).toEqual(first.plan);
+      expect([first.charged, second.charged]).toEqual([true, true]);
+      expect(second.featureQuota).toMatchObject({ used: 1 });
+      expect(aiGenerator.getCallCount()).toBe(1);
+      expect(await used()).toBe(1);
+    });
+
+    it("기억한 결과가 없는 재요청은 AI_1317이고 이번 요청은 차감하지 않지만 앞선 1회는 남는다", async () => {
+      // Given
+      const { aiGenerator, execute, replay, used } = setup();
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      await execute();
+      replay.results.clear();
+      // When
+      const failure = execute();
+      // Then
+      await expect(failure).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1317,
+        details: { charged: false, featureQuota: expect.objectContaining({ used: 1 }) },
+      });
+      expect(aiGenerator.getCallCount()).toBe(1);
+      expect(await used()).toBe(1);
+    });
+
+    it.each([
+      { tier: "FREE", input: FREE, limit: PLAN_CATALOG.VOICE_NOTE.free },
+      { tier: "PREMIUM", input: PREMIUM, limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium },
+      { tier: "ADMIN", input: ADMIN, limit: null },
+    ])("$tier은 할 일 없는 정리도 사용량에 기록한다", async ({ input, limit }) => {
+      // Given
+      const { aiGenerator, execute, used } = setup(input);
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      // When
+      const response = await execute();
+      // Then
+      expect(response.charged).toBe(true);
+      expect(response.featureQuota).toMatchObject({ limit, used: 1 });
+      expect(await used()).toBe(1);
+    });
   });
 
   it("돌려줄 내용이 전혀 없으면 환불하고 AI_1302다", async () => {
     // Given
-    const { aiGenerator, execute, used } = setup();
+    const { aiGenerator, execute, used, repository } = setup();
     aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
     // When
     const failure = execute();
@@ -120,6 +193,23 @@ describe("DigestVoiceNote", () => {
       details: { charged: false },
     });
     expect(await used()).toBe(0);
+    expect([...repository.charges.values()]).toEqual([
+      expect.objectContaining({ status: "REFUNDED", refundReason: "NO_ACTION", attempt: 1 }),
+    ]);
+  });
+
+  it("돌려줄 내용이 없는데 환불에 실패하면 charged:false를 말하지 않는다", async () => {
+    // Given
+    const { aiGenerator, execute, quota } = setup();
+    aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
+    quota.refund = async () => false;
+    // When
+    const failure = execute();
+    // Then
+    await expect(failure).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1302,
+      details: undefined,
+    });
   });
 
   it("AI 실패는 정확히 한 번 환불하고 원장에 사유를 남긴다", async () => {

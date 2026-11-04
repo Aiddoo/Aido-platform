@@ -189,6 +189,59 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     });
 
     it.each([
+      { tier: "FREE", values: {}, limit: PLAN_CATALOG.VOICE_NOTE.free },
+      {
+        tier: "PREMIUM",
+        values: { subscriptionStatus: "ACTIVE" },
+        limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+      },
+      { tier: "ADMIN", values: { role: "ADMIN" }, limit: null },
+    ] as const)(
+      "$tier은 할 일 없는 정리도 1회를 쓰고 같은 키의 재요청은 같은 결과에 한 번만 센다",
+      async ({ tier, values, limit }) => {
+        // Given
+        const { accessToken } = await createUser(
+          `voice-summary-${tier.toLowerCase()}@test.com`,
+          values,
+        );
+        aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+        const key = nextKey();
+        // When
+        const first = await post("/v1/voice-notes/digest", accessToken, digestBody(), key).expect(
+          200,
+        );
+        const second = await post("/v1/voice-notes/digest", accessToken, digestBody(), key).expect(
+          200,
+        );
+        // Then
+        const parsedFirst = voiceNoteDigestResponseSchema.parse(first.body.data);
+        const parsedSecond = voiceNoteDigestResponseSchema.parse(second.body.data);
+        expect(parsedFirst.plan.actions).toEqual([]);
+        expect([parsedFirst.charged, parsedSecond.charged]).toEqual([true, true]);
+        expect(parsedSecond.summary).toBe(parsedFirst.summary);
+        expect(parsedFirst.featureQuota).toMatchObject({ limit, used: 1 });
+        expect(parsedSecond.featureQuota).toMatchObject({ limit, used: 1 });
+        expect(aiGenerator.getCallCount()).toBe(1);
+      },
+    );
+
+    it("돌려줄 내용이 전혀 없으면 422 AI_1302에 charged:false를 싣고 차감하지 않는다", async () => {
+      // Given
+      const { accessToken } = await createUser("voice-empty@test.com");
+      aiGenerator.setRawResponse(digestDraft({ title: "", summary: "", keyPoints: [], todos: [] }));
+      // When
+      const response = await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(422);
+      const entitlements = await request(ctx.app.getHttpServer())
+        .get("/v1/entitlements")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      // Then
+      expect(response.body.error.code).toBe(ErrorCode.AI_1302);
+      expect(response.body.error.details).toEqual({ charged: false });
+      expect(entitlements.body.data.features.VOICE_NOTE.used).toBe(0);
+    });
+
+    it.each([
       { tier: "FREE", values: {}, maxLength: maxCharacters.free },
       {
         tier: "PREMIUM",

@@ -62,7 +62,7 @@ export class VoiceNoteController {
 한 번에 보낼 수 있는 글자 수는 무료 ${maxCharacters.free.toLocaleString("ko-KR")}자, 프리미엄 ${maxCharacters.premium.toLocaleString("ko-KR")}자입니다(넘으면 AI_1312). 본문은 256KB까지입니다(넘으면 413). 프롬프트에서 길어지는 글자(\`<\`·\`>\`·\`&\`·따옴표·줄바꿈)는 늘어난 길이로 셉니다.
 
 ## 🚫 사용량
-말로 메모하기: 무료 월 ${PLAN_CATALOG.VOICE_NOTE.free}회, 프리미엄 넉넉하게(월 ${PLAN_CATALOG.VOICE_NOTE.fairUse.premium}회까지, 넘으면 AI_1313). 할 일을 찾지 못하거나 실패하면 차감하지 않습니다(\`charged\`). 분당 ${VOICE_NOTE_THROTTLE.MINUTE.default.limit}회, 하루 ${VOICE_NOTE_THROTTLE.DAY_LIMIT}회까지 보낼 수 있습니다.
+말로 메모하기: 무료 월 ${PLAN_CATALOG.VOICE_NOTE.free}회, 프리미엄 넉넉하게(월 ${PLAN_CATALOG.VOICE_NOTE.fairUse.premium}회까지, 넘으면 AI_1313). 요약이나 핵심 내용을 돌려주면 할 일이 0개여도 1회를 씁니다. 실패하거나 돌려줄 내용이 전혀 없으면 차감하지 않습니다(\`charged\`). 분당 ${VOICE_NOTE_THROTTLE.MINUTE.default.limit}회, 하루 ${VOICE_NOTE_THROTTLE.DAY_LIMIT}회까지 보낼 수 있습니다.
 
 ## 🔁 재시도
 같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 다시 보낼 수 없으면 AI_1317, 내용이 다르면 AI_1318입니다.`,

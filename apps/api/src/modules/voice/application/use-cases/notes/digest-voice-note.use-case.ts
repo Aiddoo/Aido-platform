@@ -59,11 +59,9 @@ interface DigestVoiceNoteDependencies {
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
 }
 
-function chargeOutcomeOf(digest: VoiceNoteDigestGeneration): PlanChargeOutcome {
-  if (digest.isEmpty) {
-    return "EMPTY";
-  }
-  return digest.plan.todos.length > 0 ? "CHARGE" : "NO_ACTION";
+/** 요약·핵심 내용도 결과이므로 할 일이 0개여도 횟수를 쓴다. 돌려줄 내용이 전혀 없을 때만 환불한다. */
+function resolveChargeOutcome(digest: VoiceNoteDigestGeneration): PlanChargeOutcome {
+  return digest.isEmpty ? "EMPTY" : "CHARGE";
 }
 
 /** 긴 전사 → 제목·요약·핵심 내용·실행 계획. 전사 글자는 요청이 끝나면 어디에도 남지 않는다. */
@@ -169,7 +167,7 @@ export class DigestVoiceNote {
         plan: toActionPlanView(digest.plan, context.upcomingTodos),
         meta: toActionPlanMeta(digest.meta, Date.now() - startedAt),
       },
-      outcome: chargeOutcomeOf(digest),
+      outcome: resolveChargeOutcome(digest),
     };
   }
 }

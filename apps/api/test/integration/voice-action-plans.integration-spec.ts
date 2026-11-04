@@ -252,23 +252,68 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       ]);
     });
 
-    it("할 일이 0개인 녹음 정리는 환불하고 VOICE_NOTE 사용량이 그대로다", async () => {
-      // Given
-      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
-      // When
-      const response = await digest.execute({
+    function runDigest(idempotencyKey: string) {
+      return digest.execute({
         userId,
         text: "오늘 회의는 좋았습니다.",
         durationSeconds: 60,
         segments: [],
-        idempotencyKey: "digest-1",
+        idempotencyKey,
         timezone: "Asia/Seoul",
         locale: "ko",
       });
-      // Then
-      expect(response.charged).toBe(false);
+    }
+
+    async function voiceNoteUsage() {
       const usage = await client.select().from(quotaUsage).where(eq(quotaUsage.userId, userId));
-      expect(usage.map((row) => row.used)).toEqual([0]);
+      return usage.map((row) => row.used);
+    }
+
+    it("할 일이 0개여도 요약을 돌려준 녹음 정리는 VOICE_NOTE 1회를 확정하고 재요청도 같다", async () => {
+      // Given
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      // When
+      const first = await runDigest("digest-1");
+      const second = await runDigest("digest-1");
+      // Then
+      expect([first.charged, second.charged]).toEqual([true, true]);
+      expect(second.summary).toBe(first.summary);
+      expect(aiGenerator.getCallCount()).toBe(1);
+      expect(await voiceNoteUsage()).toEqual([1]);
+      const charges = await client.select().from(quotaCharge).where(eq(quotaCharge.userId, userId));
+      expect(charges).toEqual([
+        expect.objectContaining({ status: "COMMITTED", attempt: 1, refundReason: null }),
+      ]);
+    });
+
+    it("돌려줄 내용이 전혀 없는 녹음 정리는 한 번 환불하고 AI_1302다", async () => {
+      // Given
+      aiGenerator.setRawResponse(digestDraft({ title: "", summary: "", keyPoints: [], todos: [] }));
+      // When
+      const failure = runDigest("digest-1");
+      // Then
+      await expect(failure).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1302,
+        details: { charged: false },
+      });
+      expect(await voiceNoteUsage()).toEqual([0]);
+      const charges = await client.select().from(quotaCharge).where(eq(quotaCharge.userId, userId));
+      expect(charges).toEqual([
+        expect.objectContaining({ status: "REFUNDED", refundReason: "NO_ACTION", attempt: 1 }),
+      ]);
+    });
+
+    it("AI 실패한 녹음 정리는 한 번 환불하고 charged:false다", async () => {
+      // Given
+      aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+      // When
+      const failure = runDigest("digest-1");
+      // Then
+      await expect(failure).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1301,
+        details: { charged: false },
+      });
+      expect(await voiceNoteUsage()).toEqual([0]);
     });
 
     it("원장에는 말한 내용 없이 지문 해시만 남는다", async () => {

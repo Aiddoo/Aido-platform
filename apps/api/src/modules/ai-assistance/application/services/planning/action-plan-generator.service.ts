@@ -119,7 +119,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
       built,
       { ...normalizeContext(input), sentenceCount: input.sentences.length },
       input.userId,
-      (digest) => digest.plan.todos.length > 0,
+      (digest) => !isEmptyVoiceNoteDigest(digest),
     );
     return {
       title: value.title,
@@ -136,7 +136,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
     built: BuiltPrompt,
     context: C,
     userId: string,
-    hasTodos: (result: R) => boolean,
+    keepsCharge: (result: R) => boolean,
   ): Promise<PromptGeneration<R>> {
     const { generator, consentReader, logger } = this.#dependencies;
     const startedAt = Date.now();
@@ -147,7 +147,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
         agreedConsentVersion: agreedVersion,
         userId,
       });
-      const quotaCharged = hasTodos(generation.value);
+      const quotaCharged = keepsCharge(generation.value);
       logger.log(
         generationCompletedLog(
           { ...logBase, outcome: quotaCharged ? "SUCCESS" : "NO_ACTION", quotaCharged },
