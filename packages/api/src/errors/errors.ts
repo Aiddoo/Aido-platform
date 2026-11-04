@@ -1,5 +1,6 @@
 import { PLAN_CATALOG } from "../vocabulary/plan-catalog.constants.js";
 import { TODO_SERIES_LIMITS } from "../vocabulary/todo.constants.js";
+import { IDEMPOTENCY_KEY_MAX_LENGTH } from "../vocabulary/voice.constants.js";
 import { HttpStatus } from "./http-status.js";
 import type { ErrorDefinition } from "./types.js";
 
@@ -215,10 +216,18 @@ export const ErrorCode = {
   AI_1310: "AI_1310",
   /** AI 데이터 처리 동의가 필요합니다 */
   AI_1311: "AI_1311",
+  /** 녹음이 한 번에 정리할 수 있는 길이를 넘었습니다 */
+  AI_1312: "AI_1312",
   /** 이번 달 말로 메모하기를 다 썼습니다 */
   AI_1313: "AI_1313",
   /** 같은 요청을 아직 처리하고 있습니다 */
   AI_1314: "AI_1314",
+  /** 저장할 계획이 올바르지 않습니다 */
+  AI_1315: "AI_1315",
+  /** Idempotency-Key 헤더가 필요합니다 */
+  AI_1316: "AI_1316",
+  /** 이미 처리한 요청의 결과를 다시 보낼 수 없습니다 */
+  AI_1317: "AI_1317",
 
   // 관리자 (ADMIN_1400-1499)
   /** 관리자 권한이 필요합니다 */
@@ -1198,6 +1207,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
       "1.13.0 이상 앱에서 지원하는 안내 버전의 AI 데이터 처리에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다. 동의한 안내 버전이 허용한 업체에만 글자를 보냅니다(2026-10-26: Google Gemini, 2026-11-04: Anthropic Claude·Google Gemini·OpenAI).",
     httpStatus: HttpStatus.FORBIDDEN,
   },
+  [ErrorCode.AI_1312]: {
+    code: "AI_1312",
+    message: "녹음이 한 번에 정리할 수 있는 길이를 넘었습니다.",
+    description: `말로 메모하기 한 번에 보낼 수 있는 글자 수는 무료 ${PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.free.toLocaleString("ko-KR")}자, 프리미엄 ${PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium.toLocaleString("ko-KR")}자입니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details에 보낸 글자 수(characterCount)·현재 등급의 상한(maxCharacters)·현재 한도(featureQuota)가 있습니다.`,
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
   [ErrorCode.AI_1313]: {
     code: "AI_1313",
     message: "이번 달 말로 메모하기를 다 썼습니다.",
@@ -1210,6 +1225,26 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       "같은 Idempotency-Key 요청이 아직 처리 중입니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다. 잠시 뒤 같은 키로 다시 보내면 처리 결과를 받습니다.",
     httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.AI_1315]: {
+    code: "AI_1315",
+    message: "저장할 계획이 올바르지 않습니다.",
+    description:
+      "계획을 저장하지 않았습니다. details.reason이 CATEGORY_NOT_OWNED면 내 카테고리가 아닌 카테고리(details.categoryIds)가 들어 있는 것이고, IDEMPOTENCY_KEY_REUSED면 같은 Idempotency-Key로 다른 내용을 보낸 것이며, UNSUPPORTED_REPEAT면 아직 저장할 수 없는 반복 설정입니다.",
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  [ErrorCode.AI_1316]: {
+    code: "AI_1316",
+    message: "Idempotency-Key 헤더가 필요합니다.",
+    description: `사용자 행동 한 번마다 ${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하의 인쇄 가능한 ASCII 키를 만들어 Idempotency-Key 헤더로 보내고, 재시도할 때 같은 키를 다시 보냅니다. 이 요청은 처리하지 않았고 횟수를 차감하지 않았습니다.`,
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.AI_1317]: {
+    code: "AI_1317",
+    message: "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
+    description:
+      "같은 Idempotency-Key 요청은 이미 처리해 차감했지만 서버는 정리 결과를 잠시만 메모리에 두므로 다시 보낼 결과가 없습니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다. 새로 정리하려면 새 키로 보냅니다.",
+    httpStatus: HttpStatus.GONE,
   },
 
   // 관리자 (ADMIN_1400-1499)

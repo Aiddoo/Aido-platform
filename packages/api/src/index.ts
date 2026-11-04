@@ -21,6 +21,7 @@ export * from "./contracts/user-block/index.js";
 export * from "./contracts/user-consent/index.js";
 export * from "./contracts/user-preference/index.js";
 export * from "./contracts/user-report/index.js";
+export * from "./contracts/voice/index.js";
 export * from "./contracts/weather/index.js";
 export * from "./contracts/weekly-achievement/index.js";
 

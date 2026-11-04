@@ -12,6 +12,10 @@ import {
   todoSeriesRuleErrorDetailsSchema,
   todoSeriesScopeErrorDetailsSchema,
 } from "../contracts/todo/v1/todo-series.error-details.js";
+import {
+  actionPlanRejectedErrorDetailsSchema,
+  voiceNoteTooLongErrorDetailsSchema,
+} from "../contracts/voice/v1/voice-error.details.js";
 import { ErrorCode, type ErrorCodeType } from "./errors.js";
 
 /** 친구 한도 초과(FOLLOW_0909)일 때 앱이 한도 안내에 쓰는 값 */
@@ -57,6 +61,9 @@ const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
   [ErrorCode.AI_1303]: quotaErrorDetailsSchema,
   [ErrorCode.AI_1313]: quotaErrorDetailsSchema,
   [ErrorCode.AI_1314]: quotaErrorDetailsSchema,
+  [ErrorCode.AI_1312]: voiceNoteTooLongErrorDetailsSchema,
+  [ErrorCode.AI_1315]: actionPlanRejectedErrorDetailsSchema,
+  [ErrorCode.AI_1317]: quotaErrorDetailsSchema,
 };
 
 /** 공개 상세가 정해진 코드면 그 스키마로 거른 값을, 아니면 undefined를 반환한다. */
