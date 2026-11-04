@@ -1,5 +1,6 @@
+import { Logger } from "@nestjs/common";
 import { TestBed } from "@suites/unit";
-import type { Mocked } from "vitest";
+import { vi, type Mocked } from "vitest";
 
 import {
   NotificationPublisher,
@@ -11,7 +12,12 @@ import {
   TODO_REMINDER_READER,
   type TodoReminderReaderPort,
 } from "../../../application/ports/reminders/todo-reminder-reader.port.js";
+import {
+  TODO_SERIES_OWNER_DORMANCY,
+  type TodoSeriesOwnerDormancyPort,
+} from "../../../application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 import { type ReminderJobData, TODO_REMINDER_JOB_NAME } from "./todo-reminder-queue.constants.js";
 import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 
@@ -30,6 +36,7 @@ const makeJob = (data: Partial<ReminderJobData> = {}) => ({
 describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () => {
   let processor: TodoReminderQueueProcessor;
   let reader: Mocked<TodoReminderReaderPort>;
+  let seriesOwnerDormancy: Mocked<TodoSeriesOwnerDormancyPort>;
   let notificationPublisher: Mocked<NotificationPublisher>;
   let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
 
@@ -38,6 +45,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
     processor = unit;
     reader = unitRef.get(TODO_REMINDER_READER);
+    seriesOwnerDormancy = unitRef.get(TODO_SERIES_OWNER_DORMANCY);
     notificationPublisher = unitRef.get(NotificationPublisher);
     recipientLocaleReader = unitRef.get(NOTIFICATION_RECIPIENT_LOCALE_READER);
     recipientLocaleReader.getLocale.mockResolvedValue("ko");
@@ -53,9 +61,57 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
   ) => {
     const { todoExists = true, notificationExists = false, todoTitle = TODO_TITLE } = options;
 
-    reader.findActiveTodo.mockResolvedValue(todoExists ? { id: 1, title: todoTitle } : null);
+    reader.findActiveTodo.mockResolvedValue(
+      todoExists ? { id: 1, title: todoTitle, seriesId: null } : null,
+    );
     reader.existsRecentReminderNotification.mockResolvedValue(notificationExists);
   };
+
+  describe("반복 회차와 휴면", () => {
+    const logSpy = () => vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+
+    it("소유자가 휴면이면 보내지 않고 내용 없이 로그 키로 남긴다", async () => {
+      // Given
+      setupMocks();
+      reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
+      seriesOwnerDormancy.isOwnerDormant.mockResolvedValue(true);
+      const log = logSpy();
+      // When
+      await processor.process(makeJob({ stageLabel: "10min" }));
+      // Then
+      expect(seriesOwnerDormancy.isOwnerDormant).toHaveBeenCalledWith(USER_ID);
+      expect(notificationPublisher.publish).not.toHaveBeenCalled();
+      expect(log).toHaveBeenCalledExactlyOnceWith({
+        event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
+        todoId: 1,
+        userId: USER_ID,
+        stage: "10min",
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toContain(TODO_TITLE);
+    });
+
+    it("소유자가 활동 중이면 반복 회차도 그대로 보낸다", async () => {
+      // Given
+      setupMocks();
+      reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
+      seriesOwnerDormancy.isOwnerDormant.mockResolvedValue(false);
+      // When
+      await processor.process(makeJob());
+      // Then
+      expect(notificationPublisher.publish).toHaveBeenCalledOnce();
+    });
+
+    it("단일 할 일은 휴면을 묻지 않고 그대로 보낸다", async () => {
+      // Given
+      setupMocks();
+      seriesOwnerDormancy.isOwnerDormant.mockResolvedValue(true);
+      // When
+      await processor.process(makeJob());
+      // Then
+      expect(seriesOwnerDormancy.isOwnerDormant).not.toHaveBeenCalled();
+      expect(notificationPublisher.publish).toHaveBeenCalledOnce();
+    });
+  });
 
   describe("정상 처리", () => {
     it("유효한 투두에 대해 알림을 발송한다", async () => {

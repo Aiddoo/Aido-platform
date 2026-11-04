@@ -17,6 +17,8 @@ import { TODO_READ_REPOSITORY } from "./application/ports/todos/todo-read.reposi
 import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
 import { TodoOccurrenceMaterializer } from "./application/services/series/todo-occurrence-materializer.service.js";
+import { TodoSeriesCatchUp } from "./application/services/series/todo-series-catch-up.service.js";
+import { TodoSeriesDueRun } from "./application/services/series/todo-series-due-run.service.js";
 import { TodoSeriesEditEffects } from "./application/services/series/todo-series-edit-effects.service.js";
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
@@ -45,30 +47,49 @@ import { UpdateTodoTitle } from "./application/use-cases/todos/update-todo-title
 import { UpdateTodoVisibility } from "./application/use-cases/todos/update-todo-visibility.use-case.js";
 import { UpdateTodo } from "./application/use-cases/todos/update-todo.use-case.js";
 
-export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
-  provide: MaterializeDueTodoSeries,
+export const todoSeriesDueRunProvider: FactoryProvider<TodoSeriesDueRun> = {
+  provide: TodoSeriesDueRun,
   inject: [
     TODO_SERIES_REPOSITORY,
     TodoOccurrenceMaterializer,
     TodoCreationEffects,
     UNIT_OF_WORK,
     MUTATION_LOCK,
-    OPERATIONAL_ALERT,
   ],
   useFactory: (
+    seriesRepository: ConstructorParameters<typeof TodoSeriesDueRun>[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof TodoSeriesDueRun>[0]["materializer"],
+    effects: ConstructorParameters<typeof TodoSeriesDueRun>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof TodoSeriesDueRun>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof TodoSeriesDueRun>[0]["mutationLock"],
+  ) => new TodoSeriesDueRun({ seriesRepository, materializer, effects, unitOfWork, mutationLock }),
+};
+
+export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
+  provide: TodoSeriesCatchUp,
+  inject: [TODO_SERIES_REPOSITORY, TodoSeriesDueRun],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesRepository"],
+    dueRun: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRun"],
+  ) =>
+    new TodoSeriesCatchUp({
+      seriesRepository,
+      dueRun,
+      logger: new Logger(TodoSeriesCatchUp.name),
+    }),
+};
+
+export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
+  provide: MaterializeDueTodoSeries,
+  inject: [TODO_SERIES_REPOSITORY, TodoSeriesDueRun, OPERATIONAL_ALERT],
+  useFactory: (
     seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
-    materializer: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["materializer"],
-    effects: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["effects"],
-    unitOfWork: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["unitOfWork"],
-    mutationLock: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["mutationLock"],
+    dueRun: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRun"],
     alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
   ) =>
     new MaterializeDueTodoSeries({
       seriesRepository,
-      materializer,
-      effects,
-      unitOfWork,
-      mutationLock,
+      dueRun,
       alert,
       logger: new Logger(MaterializeDueTodoSeries.name),
     }),
@@ -109,23 +130,26 @@ export const getTodoResourceLimitProvider: FactoryProvider<GetTodoResourceLimit>
 
 export const getTodoSummaryProvider: FactoryProvider<GetTodoSummary> = {
   provide: GetTodoSummary,
-  inject: [TODO_READ_REPOSITORY, STREAK_PORT],
+  inject: [TODO_READ_REPOSITORY, STREAK_PORT, TodoSeriesCatchUp],
   useFactory: (
     todoReadRepository: ConstructorParameters<typeof GetTodoSummary>[0]["todoReadRepository"],
     streakPort: ConstructorParameters<typeof GetTodoSummary>[0]["streakPort"],
-  ) => new GetTodoSummary({ todoReadRepository, streakPort }),
+    seriesCatchUp: ConstructorParameters<typeof GetTodoSummary>[0]["seriesCatchUp"],
+  ) => new GetTodoSummary({ todoReadRepository, streakPort, seriesCatchUp }),
 };
 
 export const getTodosProvider: FactoryProvider<GetTodos> = {
   provide: GetTodos,
-  inject: [TODO_READ_REPOSITORY, PaginationService],
+  inject: [TODO_READ_REPOSITORY, PaginationService, TodoSeriesCatchUp],
   useFactory: (
     todoReadRepository: ConstructorParameters<typeof GetTodos>[0]["todoReadRepository"],
     paginationService: ConstructorParameters<typeof GetTodos>[0]["paginationService"],
+    seriesCatchUp: ConstructorParameters<typeof GetTodos>[0]["seriesCatchUp"],
   ) =>
     new GetTodos({
       todoReadRepository,
       paginationService,
+      seriesCatchUp,
     }),
 };
 

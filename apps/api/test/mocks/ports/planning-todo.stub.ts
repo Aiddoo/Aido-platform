@@ -38,6 +38,7 @@ import {
   type TodoCreationPlan,
 } from "#api/modules/planning/domain/aggregates/todos/todo.aggregate";
 import { TodoItem } from "#api/modules/planning/domain/entities/todos/todo-item.entity";
+import type { SeriesOwnerActivity } from "#api/modules/planning/domain/policies/series/series-dormancy.policy";
 import { TodoId } from "#api/modules/planning/domain/value-objects/todos/todo-id.vo";
 import {
   TodoSchedule,
@@ -334,6 +335,8 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
 
 /** 저장한 규칙을 메모리에 두고 복원해 돌려주는 Fake. 잠금은 흉내 내지 않는다. */
 export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
+  /** 비워 두면 소유자가 방금 활동한 것으로 읽는다. */
+  ownerActivity: SeriesOwnerActivity | null = null;
   constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
   async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
     const series = this.store.get(id);
@@ -367,9 +370,25 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
           (query.afterId === null || series.getId() > query.afterId)
         );
       })
-      .map((series) => ({ id: series.getId(), userId: series.getUserId() }))
+      .map((series) => ({
+        id: series.getId(),
+        userId: series.getUserId(),
+        owner: this.ownerActivity ?? {
+          lastActiveAt: new Date(),
+          signedUpAt: new Date(),
+          timezone: "UTC",
+        },
+      }))
       .sort((left, right) => left.id.localeCompare(right.id))
       .slice(0, query.limit);
+  }
+  async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
+    return [...this.store.values()]
+      .filter((series) => {
+        const next = series.getNextOccurrenceDate();
+        return series.getUserId() === userId && next !== null && next <= through;
+      })
+      .map((series) => series.getId());
   }
   #copy(series: TodoSeries): TodoSeries {
     return TodoSeries.reconstitute({ ...series.toPersistence() });

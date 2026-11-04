@@ -5,7 +5,7 @@ import { match } from "ts-pattern";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todoSeries, user } from "#api/platform/database/schema/index";
+import { todoSeries, user, userPreference } from "#api/platform/database/schema/index";
 import { toDateString, toDateStringOrNull } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
@@ -125,10 +125,17 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
 
   async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly DueTodoSeries[]> {
     // 정지·탈퇴 대기 계정은 건너뛴다. 커서가 그대로라 복구되면 빠진 회차를 이어서 만든다.
-    return this.db
-      .select({ id: todoSeries.id, userId: todoSeries.userId })
+    const rows = await this.db
+      .select({
+        id: todoSeries.id,
+        userId: todoSeries.userId,
+        lastActiveAt: user.lastActiveAt,
+        signedUpAt: user.createdAt,
+        timezone: userPreference.timezone,
+      })
       .from(todoSeries)
       .innerJoin(user, eq(user.id, todoSeries.userId))
+      .leftJoin(userPreference, eq(userPreference.userId, todoSeries.userId))
       .where(
         and(
           isNotNull(todoSeries.nextOccurrenceDate),
@@ -140,5 +147,27 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       )
       .orderBy(asc(todoSeries.id))
       .limit(query.limit);
+    return rows.map(({ id, userId, lastActiveAt, signedUpAt, timezone }) => ({
+      id,
+      userId,
+      owner: { lastActiveAt, signedUpAt, timezone },
+    }));
+  }
+
+  async findIdsBehind(userId: string, through: string): Promise<readonly string[]> {
+    const rows = await this.db
+      .select({ id: todoSeries.id })
+      .from(todoSeries)
+      .innerJoin(user, eq(user.id, todoSeries.userId))
+      .where(
+        and(
+          eq(todoSeries.userId, userId),
+          lte(todoSeries.nextOccurrenceDate, parseDateOnly(through)),
+          // 세션 캐시(30초) 동안은 정지·탈퇴 대기 계정의 토큰도 통과한다.
+          isNull(user.deletedAt),
+          ne(user.status, "SUSPENDED"),
+        ),
+      );
+    return rows.map((row) => row.id);
   }
 }

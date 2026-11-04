@@ -6,6 +6,7 @@ import { createPlanningTodoFixture } from "#test/fixtures/planning-todo.fixture"
 
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
+import { TodoSeriesDueRun } from "../../services/series/todo-series-due-run.service.js";
 import { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
 import {
   MaterializeDueTodoSeries,
@@ -31,10 +32,13 @@ describe("회차 채우기", () => {
   function useCase(overrides: { deadlineMs?: number; batchSize?: number } = {}) {
     return new MaterializeDueTodoSeries({
       seriesRepository: fixture.todoSeriesRepository,
-      materializer: fixture.occurrenceMaterializer,
-      effects: new TodoCreationEffects(fixture),
-      unitOfWork: fixture.unitOfWork,
-      mutationLock: fixture.mutationLock,
+      dueRun: new TodoSeriesDueRun({
+        seriesRepository: fixture.todoSeriesRepository,
+        materializer: fixture.occurrenceMaterializer,
+        effects: new TodoCreationEffects(fixture),
+        unitOfWork: fixture.unitOfWork,
+        mutationLock: fixture.mutationLock,
+      }),
       alert,
       logger: fixture.logger,
       ...overrides,
@@ -116,5 +120,37 @@ describe("회차 채우기", () => {
     expect(result).toMatchObject({ processedCount: 0, timedOut: true });
     expect(fixture.records.size).toBe(0);
     expect(alert.raise).toHaveBeenCalledOnce();
+  });
+
+  it("소유자가 휴면이면 건너뛰고 커서를 그대로 둔다", async () => {
+    // Given
+    await seed("series-1");
+    fixture.todoSeriesRepository.ownerActivity = {
+      lastActiveAt: new Date("2026-09-05T00:00:00.000Z"),
+      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    };
+    // When
+    const result = await useCase().execute();
+    // Then
+    expect(result).toMatchObject({ processedCount: 0, createdCount: 0, dormantCount: 1 });
+    expect(fixture.records.size).toBe(0);
+    expect(fixture.seriesStore.get("series-1")?.getNextOccurrenceDate()).toBe("2026-11-05");
+    expect(alert.raise).not.toHaveBeenCalled();
+    expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ dormantCount: 1 }));
+  });
+
+  it("휴면 기준일인 60일째까지는 그대로 채운다", async () => {
+    // Given
+    await seed("series-1");
+    fixture.todoSeriesRepository.ownerActivity = {
+      lastActiveAt: new Date("2026-09-06T00:00:00.000Z"),
+      signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
+      timezone: "Asia/Seoul",
+    };
+    // When
+    const result = await useCase().execute();
+    // Then
+    expect(result).toMatchObject({ processedCount: 1, createdCount: 3, dormantCount: 0 });
   });
 });

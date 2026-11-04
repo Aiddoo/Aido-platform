@@ -35,6 +35,7 @@ export class TodoOccurrenceMaterializer {
   }
 
   planDueRun(series: TodoSeries, at: Date): TodoOccurrenceDraft[] {
+    series.skipDormantGap(at);
     return series.planOccurrences(
       occurrenceHorizon(series.getTimezone(), at),
       MAX_OCCURRENCES_PER_RUN,

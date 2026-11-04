@@ -19,8 +19,10 @@ import { SCHEDULER_DEDUP } from "./application/ports/reminders/scheduler-dedup.p
 import { SCHEDULER_PREFERENCE_READER } from "./application/ports/reminders/scheduler-preference-reader.port.js";
 import { TIMEZONE_REMINDER_ENQUEUER } from "./application/ports/reminders/timezone-reminder-enqueuer.port.js";
 import { TODO_REMINDER_READER } from "./application/ports/reminders/todo-reminder-reader.port.js";
+import { TODO_SERIES_OWNER_DORMANCY } from "./application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { WEATHER_REMINDER_READER } from "./application/ports/reminders/weather-reminder-reader.port.js";
 import { WEEKLY_ACHIEVEMENT_STATS_READER } from "./application/ports/reminders/weekly-achievement-stats-reader.port.js";
+import { DrizzleTodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/reminders/drizzle-todo-series-owner-dormancy.adapter.js";
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/reminders/scheduler-dedup.adapter.js";
 import { TimezoneReminderQueueModule } from "./infrastructure/jobs/reminders/timezone-reminder-queue.module.js";
 import { TimezoneReminderProcessor } from "./infrastructure/jobs/reminders/timezone-reminder-queue.processor.js";
@@ -82,6 +84,7 @@ import {
       useExisting: DrizzleSchedulerReader,
     },
     { provide: TODO_REMINDER_READER, useExisting: DrizzleSchedulerReader },
+    { provide: TODO_SERIES_OWNER_DORMANCY, useClass: DrizzleTodoSeriesOwnerDormancyAdapter },
     // 날씨 알림은 화면과 같은 v2 리포트·칸 캐시를 weather Context의 공개 capability로 읽는다.
     // useExisting은 두 Port의 구조 호환을 검사하지 않으므로 반환 타입으로 컴파일러가 확인하게 한다.
     {

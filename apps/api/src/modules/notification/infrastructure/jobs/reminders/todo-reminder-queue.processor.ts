@@ -13,6 +13,10 @@ import {
   TODO_REMINDER_READER,
   type TodoReminderReaderPort,
 } from "../../../application/ports/reminders/todo-reminder-reader.port.js";
+import {
+  TODO_SERIES_OWNER_DORMANCY,
+  type TodoSeriesOwnerDormancyPort,
+} from "../../../application/ports/reminders/todo-series-owner-dormancy.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 import {
@@ -28,6 +32,8 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   constructor(
     @Inject(TODO_REMINDER_READER)
     private readonly reader: TodoReminderReaderPort,
+    @Inject(TODO_SERIES_OWNER_DORMANCY)
+    private readonly seriesOwnerDormancy: TodoSeriesOwnerDormancyPort,
     private readonly notificationPublisher: NotificationPublisher,
     @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
     private readonly recipientLocaleReader: NotificationRecipientLocaleReaderPort,
@@ -72,6 +78,17 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
         todoId,
         userId,
         reason: "TODO_INACTIVE",
+      });
+      return;
+    }
+
+    if (todo.seriesId != null && (await this.seriesOwnerDormancy.isOwnerDormant(userId))) {
+      // 운영에서 세므로 debug가 아닌 info다. 단계·식별자만 남긴다.
+      this.#logger.log({
+        event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
+        todoId,
+        userId,
+        stage: resolveReminderStage(stageLabel),
       });
       return;
     }

@@ -4,6 +4,7 @@ import { omit } from "es-toolkit";
 import { mock } from "vitest-mock-extended";
 
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
+import { TodoSeriesDueRun } from "#api/modules/planning/application/services/series/todo-series-due-run.service";
 import type { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
@@ -76,12 +77,16 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
         todoIds: occurrences.map((occurrence) => occurrence.todoId),
       });
     });
+    const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
     return new MaterializeDueTodoSeries({
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
-      materializer: new TodoOccurrenceMaterializer({ todoRepository }),
-      effects,
-      unitOfWork: fixture.uow,
-      mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
+      seriesRepository,
+      dueRun: new TodoSeriesDueRun({
+        seriesRepository,
+        materializer: new TodoOccurrenceMaterializer({ todoRepository }),
+        effects,
+        unitOfWork: fixture.uow,
+        mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
+      }),
       alert: mock<OperationalAlertPort>(),
       logger: new Logger("SeriesJobIntegration"),
       ...overrides,

@@ -4,13 +4,14 @@ import { isEqual } from "es-toolkit";
 
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
+import { localDateInTimezone, parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
 import {
   TodoSeriesEndedEvent,
   TodoSeriesStartedEvent,
 } from "../../events/series/todo-series.events.js";
+import { isDormantSince } from "../../policies/series/series-dormancy.policy.js";
 import type { RepeatRule } from "../../value-objects/series/repeat-rule.vo.js";
 import { TodoTitle } from "../../value-objects/todos/todo-title.vo.js";
 import type { TodoCreationDraft } from "../todos/todo.aggregate.js";
@@ -145,6 +146,30 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
       this.props.generatedCount,
     );
     return dates.map((date) => this.#draftOn(date));
+  }
+
+  /**
+   * 자리 비운 동안 멈춘 커서를 오늘 이후 첫 회차로 옮긴다. 지난 날은 만들지 않지만 COUNT는 달력으로 세어
+   * 그 횟수의 날짜가 다 지났으면 끝난다. 커서는 언제나 기간(90일)만큼 앞서 있으므로 오늘보다 뒤처졌다면 규칙 행이
+   * 그만큼 오래 멈춘 것이다. 최근에 움직인 규칙의 지난 날짜(과거에 시작해 이어 만드는 중)는 그대로 채운다.
+   */
+  skipDormantGap(at: Date): boolean {
+    const { nextOccurrenceDate, generatedCount, rule, startDate, timezone, updatedAt } = this.props;
+    const today = localDateInTimezone(at, timezone);
+    if (
+      nextOccurrenceDate == null ||
+      nextOccurrenceDate >= today ||
+      !isDormantSince(updatedAt, timezone, at)
+    ) {
+      return false;
+    }
+    this.props.generatedCount = Math.max(generatedCount, rule.countBefore(startDate, today));
+    this.props.nextOccurrenceDate = rule.firstOnOrAfter(
+      startDate,
+      today,
+      this.props.generatedCount,
+    );
+    return true;
   }
 
   #draftOn(date: string): TodoOccurrenceDraft {

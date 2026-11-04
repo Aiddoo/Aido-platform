@@ -22,6 +22,7 @@ import { vi } from "vitest";
 import { USER_STREAK_ACCESS } from "#api/modules/identity/identity-settings.public";
 import { STREAK_PORT } from "#api/modules/planning/application/ports/todos/streak.port";
 import { TODO_READ_REPOSITORY } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
+import { TodoSeriesCatchUp } from "#api/modules/planning/application/services/series/todo-series-catch-up.service";
 import { GetTodoSummary } from "#api/modules/planning/application/use-cases/todos/get-todo-summary.use-case";
 import { StreakAdapter } from "#api/modules/planning/infrastructure/adapters/todos/streak.adapter";
 import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
@@ -50,6 +51,7 @@ describe("GetTodoSummary 통합 테스트 (Mock DB)", () => {
         { provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
         { provide: STREAK_PORT, useClass: StreakAdapter },
         { provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
+        { provide: TodoSeriesCatchUp, useValue: { ensureCaughtUp: vi.fn() } },
       ],
     }).compile();
 

@@ -537,7 +537,7 @@ export class DrizzleSchedulerReader
 
   async findActiveTodo(todoId: number): Promise<ActiveTodo | null> {
     const row = await this.db.query.todo.findFirst({
-      columns: { id: true, title: true },
+      columns: { id: true, title: true, seriesId: true },
       where: { id: todoId, completed: false },
     });
     return row ?? null;

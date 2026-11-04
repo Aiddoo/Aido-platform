@@ -58,6 +58,7 @@ export function createPlanningTodoFixture(
   const categoryOwnership = createCategoryOwnershipStub(categories, categoryOwners);
   const unitOfWork = createUnitOfWorkMock();
   const paginationService = new PaginationService();
+  const seriesCatchUp = { ensureCaughtUp: async (_userId: string) => undefined };
   const friendIds = new Set<string>();
   const friendPort = {
     async isMutualFriend(_userId: string, friendUserId: string) {
@@ -93,6 +94,7 @@ export function createPlanningTodoFixture(
     unitOfWork,
     logger,
     paginationService,
+    seriesCatchUp,
     friendIds,
     friendPort,
     streakContext,

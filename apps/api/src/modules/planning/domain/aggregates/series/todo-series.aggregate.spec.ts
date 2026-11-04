@@ -292,4 +292,161 @@ describe("TodoSeries — 반복 할 일", () => {
       expect(series.getScheduledLocalTime()).toBeNull();
     });
   });
+
+  describe("자리 비운 동안 멈춘 커서", () => {
+    const LAST_MOVED_AT = new Date("2026-06-01T00:00:00.000Z");
+    const RETURNED_AT = new Date("2026-11-05T03:00:00.000Z");
+
+    /** 6월 1일에 마지막으로 채워 커서가 멈춘 규칙 */
+    function stale(rule: RepeatRule, nextOccurrenceDate: string, generatedCount = 0): TodoSeries {
+      return TodoSeries.reconstitute({
+        ...start({
+          rule,
+          startDate: "2026-03-01",
+          timezone: "UTC",
+          at: LAST_MOVED_AT,
+        }).toPersistence(),
+        nextOccurrenceDate,
+        generatedCount,
+      });
+    }
+
+    it("오늘 이후 첫 회차로 옮기고 지난 날은 만들지 않는다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "NEVER" }), "2026-08-30", 182);
+      // When
+      const skipped = series.skipDormantGap(RETURNED_AT);
+      const drafts = series.planOccurrences("2027-02-03");
+      // Then
+      expect(skipped).toBe(true);
+      expect(drafts.at(0)?.occurrenceDate).toBe("2026-11-05");
+      expect(drafts).toHaveLength(91);
+      expect(series.getNextOccurrenceDate()).toBe("2027-02-04");
+    });
+
+    it("다시 불러도 바뀌지 않는다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "NEVER" }), "2026-08-30");
+      series.skipDormantGap(RETURNED_AT);
+      // When
+      const again = series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(again).toBe(false);
+      expect(series.getNextOccurrenceDate()).toBe("2026-11-05");
+    });
+
+    it("커서가 오늘이면 옮길 것이 없다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "NEVER" }), "2026-11-05");
+      // When
+      const skipped = series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(skipped).toBe(false);
+      expect(series.getNextOccurrenceDate()).toBe("2026-11-05");
+    });
+
+    it("최근에 움직인 규칙의 지난 날짜는 이어서 채운다", () => {
+      // Given
+      const series = TodoSeries.reconstitute({
+        ...start({ startDate: "2026-10-30", timezone: "UTC", at: RETURNED_AT }).toPersistence(),
+      });
+      // When
+      const skipped = series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(skipped).toBe(false);
+      expect(series.getNextOccurrenceDate()).toBe("2026-10-30");
+    });
+
+    it("규칙 시간대의 오늘로 잰다", () => {
+      // Given
+      const seoul = TodoSeries.reconstitute({
+        ...stale(RepeatRule.daily({ type: "NEVER" }), "2026-08-30").toPersistence(),
+        timezone: "Asia/Seoul",
+      });
+      const newYork = TodoSeries.reconstitute({
+        ...stale(RepeatRule.daily({ type: "NEVER" }), "2026-08-30").toPersistence(),
+        timezone: "America/New_York",
+      });
+      const at = new Date("2026-11-05T16:00:00.000Z");
+      // When
+      seoul.skipDormantGap(at);
+      newYork.skipDormantGap(at);
+      // Then
+      expect(seoul.getNextOccurrenceDate()).toBe("2026-11-06");
+      expect(newYork.getNextOccurrenceDate()).toBe("2026-11-05");
+    });
+
+    it("UNTIL이 지났으면 끝난 규칙이고 새 규칙을 만들지 않는다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "UNTIL", date: "2026-10-01" }), "2026-08-30");
+      // When
+      const skipped = series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(skipped).toBe(true);
+      expect(series.getNextOccurrenceDate()).toBeNull();
+      expect(series.isActive()).toBe(false);
+      expect(series.planOccurrences("2027-02-03")).toEqual([]);
+    });
+
+    it("UNTIL이 오늘이면 오늘 회차 하나만 남는다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "UNTIL", date: "2026-11-05" }), "2026-08-30");
+      // When
+      series.skipDormantGap(RETURNED_AT);
+      const drafts = series.planOccurrences("2027-02-03");
+      // Then
+      expect(drafts.map((draft) => draft.occurrenceDate)).toEqual(["2026-11-05"]);
+      expect(series.getNextOccurrenceDate()).toBeNull();
+    });
+
+    it("COUNT는 달력으로 세어 그 횟수의 날짜가 다 지났으면 끝난다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "COUNT", count: 100 }), "2026-05-20", 80);
+      // When
+      series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(series.getNextOccurrenceDate()).toBeNull();
+      expect(series.getGeneratedCount()).toBe(100);
+    });
+
+    it("COUNT가 남았으면 지난 날짜를 횟수에 넣고 남은 만큼만 만든다", () => {
+      // Given
+      const series = stale(RepeatRule.daily({ type: "COUNT", count: 250 }), "2026-05-20", 80);
+      // When
+      series.skipDormantGap(RETURNED_AT);
+      const drafts = series.planOccurrences("2027-02-03");
+      // Then
+      expect(series.getGeneratedCount()).toBe(250);
+      expect(drafts.at(0)?.occurrenceDate).toBe("2026-11-05");
+      expect(drafts).toHaveLength(250 - 249);
+    });
+
+    it("격주는 시작 주를 기준으로 그대로 이어진다", () => {
+      // Given
+      const rule = RepeatRule.weekly(["MON"], 2, { type: "NEVER" });
+      const series = TodoSeries.reconstitute({
+        ...start({
+          rule,
+          startDate: "2026-03-02",
+          timezone: "UTC",
+          at: LAST_MOVED_AT,
+        }).toPersistence(),
+        nextOccurrenceDate: "2026-08-17",
+      });
+      // When
+      series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(series.getNextOccurrenceDate()).toBe("2026-11-09");
+    });
+
+    it("매월 31일은 짧은 달의 말일로 이어진다", () => {
+      // Given
+      const rule = RepeatRule.monthly(31, { type: "NEVER" });
+      const series = stale(rule, "2026-08-31");
+      // When
+      series.skipDormantGap(RETURNED_AT);
+      // Then
+      expect(series.getNextOccurrenceDate()).toBe("2026-11-30");
+    });
+  });
 });
