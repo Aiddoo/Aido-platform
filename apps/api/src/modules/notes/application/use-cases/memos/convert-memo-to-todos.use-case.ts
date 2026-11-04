@@ -1,6 +1,8 @@
 import type { DayOfWeek, Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoVisibility } from "@aido/api/vocabulary";
 
+import type { StagedTodoCreatorPort } from "#api/modules/planning/planning-todos.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
@@ -9,26 +11,23 @@ import {
   type SavepointRunnerPort,
   type AfterCommitTaskRegistryPort,
 } from "#api/shared/application/ports/index";
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
-import type { StagedTodoCreatorPort } from "../../ports/memos/staged-todo-creator.port.js";
 
 export interface ConvertMemoToSingleTodoData {
   readonly title: string;
   readonly categoryId: number;
   readonly startDate: Date;
   readonly endDate?: Date | null;
-  readonly scheduledTime?: Date | null;
+  readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
-  readonly visibility?: "PUBLIC" | "PRIVATE";
+  readonly visibility?: TodoVisibility;
   readonly isRecurring?: boolean;
   readonly recurrence?: {
     daysOfWeek: DayOfWeek[];
-    endDate: Date;
+    endDate: string;
   };
   readonly items?: { title: string }[];
 }
@@ -84,39 +83,21 @@ export class ConvertMemoToTodos {
       const todos: Todo[] = [];
       for (const todoData of data.todos) {
         try {
-          const staged = await this.#dependencies.savepointRunner.run(() => {
-            if (todoData.isRecurring === true && todoData.recurrence != null) {
-              return this.#dependencies.todoCreator.stageRecurringTodos(
-                {
-                  userId,
-                  title: todoData.title,
-                  categoryId: todoData.categoryId,
-                  startDate: toDateString(todoData.startDate),
-                  endDate: toDateString(todoData.recurrence.endDate),
-                  daysOfWeek: todoData.recurrence.daysOfWeek,
-                  scheduledTime:
-                    todoData.scheduledTime == null
-                      ? null
-                      : toLocalTimeString(todoData.scheduledTime, timezone),
-                  isAllDay: todoData.isAllDay ?? true,
-                  visibility: todoData.visibility ?? "PUBLIC",
-                  items: todoData.items,
-                },
-                timezone,
-              );
-            }
-            return this.#dependencies.todoCreator.stageTodo({
+          const staged = await this.#dependencies.savepointRunner.run(() =>
+            this.#dependencies.todoCreator.stage({
               userId,
               title: todoData.title,
               categoryId: todoData.categoryId,
               startDate: todoData.startDate,
               endDate: todoData.endDate,
               scheduledTime: todoData.scheduledTime,
+              timezone,
               isAllDay: todoData.isAllDay ?? true,
               visibility: todoData.visibility ?? "PUBLIC",
               items: todoData.items,
-            });
-          });
+              recurrence: todoData.isRecurring === true ? todoData.recurrence : undefined,
+            }),
+          );
           this.#dependencies.afterCommit.register(staged.afterCommit);
           todos.push(...staged.todos);
         } catch (error) {

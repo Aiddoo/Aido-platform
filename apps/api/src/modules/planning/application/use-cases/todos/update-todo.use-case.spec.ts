@@ -60,7 +60,7 @@ describe("할 일 부분 수정", () => {
     });
     expect(fixture.records.get(1)?.scheduledTime).toEqual(new Date("2026-05-15T03:30:00Z"));
   });
-  it("명시한 null은 시간을 지우고 생략한 endDate와 false 값은 보존한다", async () => {
+  it("명시한 null은 시간을 지워 종일로 맞추고 생략한 endDate와 false 값은 보존한다", async () => {
     // Given
     const saved = fixture.records.get(1);
     if (saved == null) {
@@ -73,15 +73,29 @@ describe("할 일 부분 수정", () => {
       id: 1,
       userId: fixture.userId,
       timezone: "UTC",
-      data: { scheduledTime: null, isAllDay: false },
+      data: { scheduledTime: null, isAllDay: false, completed: false },
     });
     // Then
     expect(result).toMatchObject({
       scheduledTime: null,
       endDate: "2026-05-16",
-      isAllDay: false,
+      isAllDay: true,
       completed: false,
     });
+  });
+  it("시간만 보내도 종일을 함께 풀어 저장한다", async () => {
+    // Given
+    const input = {
+      id: 1,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { scheduledTime: "09:00" },
+    };
+    // When
+    const result = await useCase.execute(input);
+    // Then
+    expect(result).toMatchObject({ isAllDay: false, scheduledTime: expect.any(String) });
+    expect(fixture.records.get(1)?.isAllDay).toBe(false);
   });
   it("완료 상태가 바뀔 때만 completedAt을 바꾼다", async () => {
     // Given

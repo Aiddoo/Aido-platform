@@ -9,7 +9,6 @@ import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
 import { STAGED_TODO_CREATOR } from "./application/ports/todos/staged-todo-creator.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todos/todo-cache.port.js";
-import { TODO_CREATOR, type TodoCreatorPort } from "./application/ports/todos/todo-creator.port.js";
 import { TODO_NOTIFICATION } from "./application/ports/todos/todo-notification.port.js";
 import {
   TODO_READ_REPOSITORY,
@@ -20,8 +19,6 @@ import { TODO_VIEW_CACHE_INVALIDATOR } from "./application/ports/todos/todo-view
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoViewCacheInvalidator } from "./application/services/todos/todo-view-cache.invalidator.js";
-import { CreateRecurringTodos } from "./application/use-cases/todos/create-recurring-todos.use-case.js";
-import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
 import { CategoryOwnershipAdapter } from "./infrastructure/adapters/todos/category-ownership.adapter.js";
 import { FriendAdapter } from "./infrastructure/adapters/todos/friend.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/todos/streak.adapter.js";
@@ -57,17 +54,6 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     ...TODO_PROVIDERS,
     { provide: STAGED_TODO_CREATOR, useExisting: StagedTodoCreator },
     {
-      provide: TODO_CREATOR,
-      inject: [CreateTodo, CreateRecurringTodos],
-      useFactory: (
-        createTodo: CreateTodo,
-        createRecurringTodos: CreateRecurringTodos,
-      ): TodoCreatorPort => ({
-        createTodo: (input) => createTodo.execute(input),
-        createRecurringTodos: (data, timezone) => createRecurringTodos.execute({ data, timezone }),
-      }),
-    },
-    {
       provide: TodoViewCacheInvalidator,
       inject: [TODO_READ_REPOSITORY, TODO_CACHE],
       useFactory: (readRepository: TodoReadRepositoryPort, cache: TodoCachePort) =>
@@ -78,6 +64,6 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
       useExisting: TodoViewCacheInvalidator,
     },
   ],
-  exports: [TODO_CREATOR, STAGED_TODO_CREATOR, TODO_VIEW_CACHE_INVALIDATOR],
+  exports: [STAGED_TODO_CREATOR, TODO_VIEW_CACHE_INVALIDATOR],
 })
 export class PlanningTodosModule {}

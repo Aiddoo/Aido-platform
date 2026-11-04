@@ -8,11 +8,15 @@ import {
   USER_LOCALE_PREFERENCE_READER,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
 import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import {
+  AFTER_COMMIT_TASK_REGISTRY,
+  MUTATION_LOCK,
+  UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
 
 import { AI_SUGGESTION_REPOSITORY } from "./application/ports/suggestions/ai-suggestion.repository.port.js";
-import { RECURRING_TODO_CREATOR } from "./application/ports/suggestions/recurring-todo-creator.port.js";
 import { WEEKLY_REPORT_READER } from "./application/ports/suggestions/weekly-report-reader.port.js";
 import { SuggestionContextBuilder } from "./application/services/suggestions/suggestion-context.builder.js";
 import { AnalyzeAndCreateSuggestions } from "./application/use-cases/suggestions/analyze-and-create-suggestions.use-case.js";
@@ -98,30 +102,34 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
   provide: HandleSuggestionAction,
   inject: [
     AI_SUGGESTION_REPOSITORY,
-    RECURRING_TODO_CREATOR,
+    STAGED_TODO_CREATOR,
     ENTITLEMENT_READER,
     UNIT_OF_WORK,
     USER_MUTATION_LOCK,
+    MUTATION_LOCK,
+    AFTER_COMMIT_TASK_REGISTRY,
     USER_LOCALE_PREFERENCE_READER,
   ],
   useFactory: (
     repository: ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"],
-    recurringTodoCreator: ConstructorParameters<
-      typeof HandleSuggestionAction
-    >[0]["recurringTodoCreator"],
+    todoCreator: ConstructorParameters<typeof HandleSuggestionAction>[0]["todoCreator"],
     entitlementReader: ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"],
     unitOfWork: ConstructorParameters<typeof HandleSuggestionAction>[0]["unitOfWork"],
     userMutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["userMutationLock"],
+    mutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["mutationLock"],
+    afterCommit: ConstructorParameters<typeof HandleSuggestionAction>[0]["afterCommit"],
     localePreferenceReader: ConstructorParameters<
       typeof HandleSuggestionAction
     >[0]["localePreferenceReader"],
   ) =>
     new HandleSuggestionAction({
       repository,
-      recurringTodoCreator,
+      todoCreator,
       entitlementReader,
       unitOfWork,
       userMutationLock,
+      mutationLock,
+      afterCommit,
       localePreferenceReader,
       logger: new Logger(HandleSuggestionAction.name),
     }),

@@ -10,7 +10,6 @@ import type {
   AiGenerationResult,
 } from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import type { CreateSuggestionInput } from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
-import type { RecurringTodoCreatorPort } from "#api/modules/ai-assistance/application/ports/suggestions/recurring-todo-creator.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
@@ -26,6 +25,7 @@ import { AiDataSharingConsentReader } from "#api/modules/identity/application/se
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/drizzle-user-consent.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-client-app-version.reader";
+import type { StagedTodoCreatorPort } from "#api/modules/planning/planning-todos.public";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
@@ -38,8 +38,11 @@ import {
   todoCategory,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import type { AfterCommitTask } from "#api/shared/application/ports/index";
+import { TodoBuilder } from "#test/builders/todo.builder";
 import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
+import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -550,20 +553,24 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     return row.id;
   }
 
-  function action(creator: RecurringTodoCreatorPort) {
+  const registeredAfterCommit: AfterCommitTask[] = [];
+
+  function action(todoCreator: StagedTodoCreatorPort) {
     return new HandleSuggestionAction({
       repository: suggestions,
-      recurringTodoCreator: creator,
+      todoCreator,
       entitlementReader: entitlement,
       logger: new Logger("AiActionIntegration"),
       unitOfWork: fixture.uow,
       userMutationLock,
+      mutationLock: { acquire: async () => undefined },
+      afterCommit: { register: (task) => registeredAfterCommit.push(task) },
       localePreferenceReader: new StubUserLocalePreferenceReader(),
     });
   }
 
-  const creator: RecurringTodoCreatorPort = {
-    async createRecurring(input) {
+  const creator: StagedTodoCreatorPort = {
+    async stage(input) {
       const { id: _id, ...row } = TodoFixture.create({
         userId: input.userId,
         categoryId: input.categoryId,
@@ -571,9 +578,16 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         startDate: new Date("2026-10-12T00:00:00Z"),
       });
       await fixture.txHost.tx.insert(todo).values(row);
-      return { count: 1 };
+      return {
+        todos: [createTodoResponseFixture(TodoBuilder.create(input.userId).withId(1).build())],
+        afterCommit: async () => undefined,
+      };
     },
   };
+
+  beforeEach(() => {
+    registeredAfterCommit.length = 0;
+  });
 
   it("동시 수락 두 요청이 실제 잠금에서 대기해도 한 요청만 성공하고 Todo 한 개다", async () => {
     // Given
@@ -645,8 +659,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     // When
     await expect(
       action({
-        async createRecurring(...args) {
-          await creator.createRecurring(...args);
+        async stage(data) {
+          await creator.stage(data);
           throw failure;
         },
       }).execute(input),
@@ -657,7 +671,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     expect(
       await client.$count(todo, and(eq(todo.userId, userId), eq(todo.title, "독서 5분"))),
     ).toBe(0);
+    expect(registeredAfterCommit).toEqual([]);
     await expect(action(creator).execute(input)).resolves.toMatchObject({ createdTodosCount: 1 });
     expect((await suggestions.findByIdAndUserId(suggestionId, userId))?.status).toBe("ACCEPTED");
+    expect(registeredAfterCommit).toHaveLength(1);
   });
 });

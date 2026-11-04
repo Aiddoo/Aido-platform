@@ -2,21 +2,26 @@ import type { Todo } from "@aido/api";
 
 import type {
   CreateTodoData,
-  CreateRecurringTodoData,
   StagedTodoCreation,
   StagedTodoCreatorPort,
-} from "#api/modules/notes/application/ports/memos/staged-todo-creator.port";
+} from "#api/modules/planning/planning-todos.public";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { TodoBuilder } from "#test/builders/todo.builder";
 import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
 export class StubNotesTodoCreator implements StagedTodoCreatorPort {
   readonly singleInputs: CreateTodoData[] = [];
-  readonly recurringInputs: Array<{ data: CreateRecurringTodoData; timezone: string }> = [];
+  readonly recurringInputs: CreateTodoData[] = [];
   readonly stagedTodos = new Map<number, Todo>();
   readonly settledTodoIds: number[] = [];
   recurringResult: readonly Todo[] = [];
 
-  async stageTodo(data: CreateTodoData): Promise<StagedTodoCreation> {
+  async stage(data: CreateTodoData): Promise<StagedTodoCreation> {
+    if (data.recurrence != null) {
+      this.recurringInputs.push(structuredClone(data));
+      return this.#stage(this.recurringResult);
+    }
     this.singleInputs.push(structuredClone(data));
     const record = TodoBuilder.create(data.userId)
       .withId(this.stagedTodos.size + 1)
@@ -24,19 +29,15 @@ export class StubNotesTodoCreator implements StagedTodoCreatorPort {
       .withCategoryId(data.categoryId)
       .withStartDate(data.startDate)
       .withEndDate(data.endDate ?? null)
-      .withScheduledTime(data.scheduledTime ?? null)
+      .withScheduledTime(
+        data.scheduledTime == null
+          ? null
+          : parseLocalDateTime(toDateString(data.startDate), data.scheduledTime, data.timezone),
+      )
       .withIsAllDay(data.isAllDay ?? true)
       .withVisibility(data.visibility ?? "PUBLIC")
       .build();
     return this.#stage([createTodoResponseFixture(record)]);
-  }
-
-  async stageRecurringTodos(
-    data: CreateRecurringTodoData,
-    timezone: string,
-  ): Promise<StagedTodoCreation> {
-    this.recurringInputs.push({ data: structuredClone(data), timezone });
-    return this.#stage(this.recurringResult);
   }
 
   #stage(todos: readonly Todo[]): StagedTodoCreation {

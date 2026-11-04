@@ -10,7 +10,7 @@ import dayjs from "dayjs";
 export function expandRecurringDates(
   startDate: string,
   endDate: string,
-  daysOfWeek: DayOfWeek[],
+  daysOfWeek: readonly DayOfWeek[],
 ): string[] {
   const targetDays = new Set(daysOfWeek.map((d) => DAY_OF_WEEK_MAP[d]));
   const dates: string[] = [];

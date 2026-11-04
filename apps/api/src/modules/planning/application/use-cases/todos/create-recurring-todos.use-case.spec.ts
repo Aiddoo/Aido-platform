@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_LIMITS } from "@aido/api/vocabulary";
+import { type DayOfWeek, TODO_LIMITS } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
@@ -9,10 +10,18 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 
 import { TodoCreatedEvent } from "../../../domain/events/todos/todo-created.event.js";
-import type { CreateRecurringTodoData } from "../../models/todos/todo.types.js";
 import { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
 import { TodoCreationWriter } from "../../services/todos/todo-creation-writer.service.js";
 import { CreateRecurringTodos } from "./create-recurring-todos.use-case.js";
+
+type RecurringInput = {
+  title?: string;
+  startDate: string;
+  endDate: string;
+  daysOfWeek: readonly DayOfWeek[];
+  scheduledTime?: string;
+  items?: { title: string }[];
+};
 
 describe("반복 할 일 생성", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
@@ -32,20 +41,33 @@ describe("반복 할 일 생성", () => {
     vi.restoreAllMocks();
   });
 
+  function inputOf(input: RecurringInput, timezone = "UTC") {
+    return {
+      data: {
+        userId: fixture.userId,
+        title: input.title ?? "반복",
+        categoryId: 1,
+        startDate: parseDateOnly(input.startDate),
+        scheduledTime: input.scheduledTime,
+        timezone,
+        items: input.items,
+      },
+      recurrence: { daysOfWeek: input.daysOfWeek, endDate: input.endDate },
+    };
+  }
+
   it("선택한 요일에 연속 순서와 하위 항목을 저장하고 같은 그룹 응답을 반환한다", async () => {
     // Given
     fixture.records.clear();
-    const data: CreateRecurringTodoData = {
-      userId: fixture.userId,
+    const data: RecurringInput = {
       title: "반복 할 일",
-      categoryId: 1,
       startDate: "2026-03-02",
       endDate: "2026-03-08",
       daysOfWeek: ["MON", "WED", "FRI"],
       items: [{ title: "준비" }, { title: "실행" }],
     };
     // When
-    const result = await useCase.execute({ data, timezone: "Asia/Seoul" });
+    const result = await useCase.execute(inputOf(data, "Asia/Seoul"));
     // Then
     expect(result.count).toBe(3);
     expect(result.todos.map((todo) => [todo.startDate, todo.sortOrder])).toEqual([
@@ -99,47 +121,41 @@ describe("반복 할 일 생성", () => {
     async ({ startDate, endDate, timezone, expected }) => {
       // Given
       fixture.records.clear();
-      const data: CreateRecurringTodoData = {
-        userId: fixture.userId,
-        title: "반복",
-        categoryId: 1,
+      const data: RecurringInput = {
         startDate,
         endDate,
         daysOfWeek: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
         scheduledTime: "09:00",
       };
       // When
-      const result = await useCase.execute({ data, timezone });
+      const result = await useCase.execute(inputOf(data, timezone));
       // Then
       expect(result.todos.map((todo) => todo.scheduledTime)).toEqual(expected);
+      expect(result.todos.every((todo) => !todo.isAllDay)).toBe(true);
       expect(fixture.eventPublisher.events).toHaveLength(expected.length);
     },
   );
   it("선택된 날짜가 없거나 최대 인스턴스를 초과하면 쓰지 않는다", async () => {
     // Given
-    const data: CreateRecurringTodoData = {
-      userId: fixture.userId,
-      title: "반복",
-      categoryId: 1,
+    const data: RecurringInput = {
       startDate: "2026-03-02",
       endDate: "2026-03-02",
       daysOfWeek: ["SUN"],
     };
     const before = structuredClone([...fixture.records.values()]);
     // When / Then
-    await expect(useCase.execute({ data, timezone: "UTC" })).rejects.toMatchObject({
-      errorCode: ErrorCode.SYS_0002,
+    await expect(useCase.execute(inputOf(data))).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_0843,
+      details: { startDate: "2026-03-02" },
     });
     await expect(
-      useCase.execute({
-        data: {
-          ...data,
+      useCase.execute(
+        inputOf({
           startDate: "2026-01-01",
           endDate: "2028-12-31",
           daysOfWeek: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
-        },
-        timezone: "UTC",
-      }),
+        }),
+      ),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0812 });
     expect([...fixture.records.values()]).toEqual(before);
   });
@@ -149,16 +165,13 @@ describe("반복 할 일 생성", () => {
       fixture.records.set(id, createPlanningTodo(fixture.userId, id));
     }
     const count = fixture.records.size;
-    const data: CreateRecurringTodoData = {
-      userId: fixture.userId,
-      title: "반복",
-      categoryId: 1,
+    const data: RecurringInput = {
       startDate: "2026-03-02",
       endDate: "2026-03-08",
       daysOfWeek: ["MON", "WED", "FRI"],
     };
     // When / Then
-    await expect(useCase.execute({ data, timezone: "UTC" })).rejects.toMatchObject({
+    await expect(useCase.execute(inputOf(data))).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_0813,
     });
     expect(fixture.records.size).toBe(count);
@@ -175,17 +188,9 @@ describe("반복 할 일 생성", () => {
     };
     const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyByRecurrenceGroupId");
     // When
-    const execution = useCase.execute({
-      data: {
-        userId: fixture.userId,
-        title: "반복",
-        categoryId: 1,
-        startDate: "2026-03-02",
-        endDate: "2026-03-02",
-        daysOfWeek: ["MON"],
-      },
-      timezone: "UTC",
-    });
+    const execution = useCase.execute(
+      inputOf({ startDate: "2026-03-02", endDate: "2026-03-02", daysOfWeek: ["MON"] }),
+    );
     try {
       await Promise.race([entered.promise, execution]);
       // Then
@@ -214,17 +219,9 @@ describe("반복 할 일 생성", () => {
       const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyByRecurrenceGroupId");
       // When / Then
       await expect(
-        useCase.execute({
-          data: {
-            userId: fixture.userId,
-            title: "반복",
-            categoryId: 1,
-            startDate: "2026-03-02",
-            endDate: "2026-03-02",
-            daysOfWeek: ["MON"],
-          },
-          timezone: "UTC",
-        }),
+        useCase.execute(
+          inputOf({ startDate: "2026-03-02", endDate: "2026-03-02", daysOfWeek: ["MON"] }),
+        ),
       ).rejects.toBe(failure);
       expect(fixture.records.size).toBe(1);
       expect(responseRead).not.toHaveBeenCalled();

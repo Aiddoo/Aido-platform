@@ -238,10 +238,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       categoryId: dto.categoryId,
       startDate: parseDateOnly(dto.startDate),
       endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
-      scheduledTime:
-        dto.scheduledTime == null
-          ? undefined
-          : parseLocalDateTime(dto.startDate, dto.scheduledTime, timezone),
+      scheduledTime: dto.scheduledTime,
+      timezone,
       isAllDay: dto.isAllDay,
       visibility: dto.visibility,
       items: dto.items,
@@ -293,14 +291,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         userId: user.userId,
         title: dto.title,
         categoryId: dto.categoryId,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        daysOfWeek: dto.daysOfWeek,
+        startDate: parseDateOnly(dto.startDate),
         scheduledTime: dto.scheduledTime,
+        timezone,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
       },
-      timezone,
+      recurrence: { daysOfWeek: dto.daysOfWeek, endDate: dto.endDate },
     });
 
     return {

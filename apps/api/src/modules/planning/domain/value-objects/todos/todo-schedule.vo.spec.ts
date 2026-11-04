@@ -11,6 +11,71 @@ import { DomainException } from "#api/shared/domain/index";
 import { TodoSchedule } from "./todo-schedule.vo.js";
 
 describe("TodoSchedule — 일정 값 객체", () => {
+  const START = new Date("2026-03-01");
+  const TIME = new Date("2026-03-01T06:00:00.000Z");
+
+  it.each([
+    {
+      name: "종일인데 시간이 있으면 시간 일정",
+      isAllDay: true,
+      scheduledTime: TIME,
+      allDay: false,
+    },
+    {
+      name: "시간 일정인데 시간이 없으면 종일",
+      isAllDay: false,
+      scheduledTime: null,
+      allDay: true,
+    },
+  ])("$name으로 맞춘다", ({ isAllDay, scheduledTime, allDay }) => {
+    // Given
+    const props = { startDate: START, endDate: null, scheduledTime, isAllDay };
+    // When
+    const schedule = TodoSchedule.create(props);
+    // Then
+    expect(schedule.isAllDay()).toBe(allDay);
+    expect(schedule.getScheduledTime()).toEqual(scheduledTime);
+  });
+
+  it.each([
+    { name: "종일로 바꾸면 시간을 지운다", patch: { isAllDay: true }, time: null, allDay: true },
+    { name: "시간을 지우면 종일이 된다", patch: { scheduledTime: null }, time: null, allDay: true },
+    {
+      name: "시간과 종일이 함께 오면 시간을 따른다",
+      patch: { scheduledTime: TIME, isAllDay: true },
+      time: TIME,
+      allDay: false,
+    },
+  ])("부분 수정에서 $name", ({ patch, time, allDay }) => {
+    // Given
+    const schedule = TodoSchedule.create({
+      startDate: START,
+      endDate: null,
+      scheduledTime: TIME,
+      isAllDay: false,
+    });
+    // When
+    const patched = schedule.patch(patch);
+    // Then
+    expect(patched.getScheduledTime()).toEqual(time);
+    expect(patched.isAllDay()).toBe(allDay);
+  });
+
+  it("시간을 건드리지 않는 수정은 저장된 옛 종일+시간 행을 그대로 둔다", () => {
+    // Given
+    const legacy = TodoSchedule.reconstitute({
+      startDate: START,
+      endDate: null,
+      scheduledTime: TIME,
+      isAllDay: true,
+    });
+    // When
+    const patched = legacy.patch({ startDate: new Date("2026-03-02") });
+    // Then
+    expect(patched.isAllDay()).toBe(true);
+    expect(patched.getScheduledTime()).toEqual(TIME);
+  });
+
   it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {
     // Given
     const startDate = new Date("2026-03-01");

@@ -1,3 +1,4 @@
+import type { TodoVisibility } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gte, inArray, lte, max, sql } from "drizzle-orm";
@@ -14,11 +15,7 @@ import type {
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "../../../application/ports/todos/todo.repository.port.js";
-import {
-  Todo,
-  type TodoCreationPlan,
-  type TodoVisibility,
-} from "../../../domain/aggregates/todos/todo.aggregate.js";
+import { Todo, type TodoCreationPlan } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import { TodoItem } from "../../../domain/entities/todos/todo-item.entity.js";
 import { TodoId } from "../../../domain/value-objects/todos/todo-id.vo.js";
 import {
@@ -85,7 +82,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     return DrizzleTodoRepository.toDomain({ ...requireRecord(row), items: [] });
   }
 
-  async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
+  async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
     if (items.length === 0) {
       return;
     }

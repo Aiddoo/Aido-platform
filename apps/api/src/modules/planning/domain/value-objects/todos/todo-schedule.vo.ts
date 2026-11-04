@@ -20,14 +20,19 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   }
 
   static create(props: TodoScheduleProps): TodoSchedule {
-    if (props.endDate != null && props.endDate < props.startDate) {
+    TodoSchedule.#assertDateOrder(props);
+    // 출시 앱은 isAllDay 기본값(true)과 함께 시간을 보내므로 시간이 있으면 시간 일정으로 맞춘다.
+    return new TodoSchedule({ ...props, isAllDay: props.scheduledTime == null });
+  }
+
+  static #assertDateOrder({ startDate, endDate }: TodoScheduleProps): void {
+    if (endDate != null && endDate < startDate) {
       throw new DomainException(
         ErrorCode.SYS_0002,
-        { startDate: props.startDate, endDate: props.endDate },
+        { startDate, endDate },
         "종료 날짜는 시작 날짜보다 빠를 수 없습니다.",
       );
     }
-    return new TodoSchedule(props);
   }
 
   static reconstitute(props: TodoScheduleProps): TodoSchedule {
@@ -35,21 +40,27 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   }
 
   patch(partial: Partial<TodoScheduleProps>): TodoSchedule {
+    // nullish-strict: PATCH라 undefined는 기존 값 유지, null은 지우기다
+    const keepsTime = partial.scheduledTime === undefined;
+    const scheduledTime = !keepsTime
+      ? (partial.scheduledTime ?? null)
+      : partial.isAllDay === true
+        ? null
+        : this.getScheduledTime();
     const merged: TodoScheduleProps = {
       startDate: partial.startDate ?? this.getStartDate(),
       // nullish-strict: PATCH라 undefined는 기존 값 유지, null은 지우기다
       endDate: partial.endDate !== undefined ? partial.endDate : this.getEndDate(),
-      scheduledTime:
-        partial.scheduledTime !== undefined ? partial.scheduledTime : this.getScheduledTime(),
-      isAllDay: partial.isAllDay ?? this.value.isAllDay,
+      scheduledTime,
+      // 시간을 건드린 PATCH만 맞춘다. 저장된 옛 행은 사용자가 고칠 때까지 그대로 읽는다.
+      isAllDay: keepsTime && partial.isAllDay == null ? this.value.isAllDay : scheduledTime == null,
     };
 
     // nullish-strict: endDate null은 종료일 지우기라 날짜 변경이다
-    const touchesDates = partial.startDate != null || partial.endDate !== undefined;
-    if (touchesDates) {
-      return TodoSchedule.create(merged);
+    if (partial.startDate != null || partial.endDate !== undefined) {
+      TodoSchedule.#assertDateOrder(merged);
     }
-    return TodoSchedule.reconstitute(merged);
+    return new TodoSchedule(merged);
   }
 
   getStartDate(): Date {

@@ -8,11 +8,13 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import type { CreateTodoData } from "../../models/todos/todo.types.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import type { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
-import type { TodoCreationWriter } from "../../services/todos/todo-creation-writer.service.js";
+import {
+  planTodoCreation,
+  type TodoCreationWriter,
+} from "../../services/todos/todo-creation-writer.service.js";
 
 export type CreateTodoInput = CreateTodoData;
 
@@ -32,16 +34,7 @@ export class CreateTodo {
   }
 
   async execute(input: CreateTodoInput): Promise<TodoResponse> {
-    const draft = Todo.planCreation({
-      userId: input.userId,
-      categoryId: input.categoryId,
-      title: input.title,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      scheduledTime: input.scheduledTime,
-      isAllDay: input.isAllDay,
-      visibility: input.visibility,
-    });
+    const draft = planTodoCreation(input);
 
     const created = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([

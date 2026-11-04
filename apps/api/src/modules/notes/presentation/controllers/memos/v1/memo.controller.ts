@@ -30,7 +30,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
-import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 
 import { ConvertMemoToTodo } from "../../../../application/use-cases/memos/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodos } from "../../../../application/use-cases/memos/convert-memo-to-todos.use-case.js";
@@ -295,14 +294,12 @@ export class MemoController {
         categoryId: dto.categoryId,
         startDate: parseDateOnly(dto.startDate),
         endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
-        scheduledTime:
-          dto.scheduledTime == null
-            ? undefined
-            : parseLocalDateTime(dto.startDate, dto.scheduledTime, tz),
+        scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
         items: dto.items,
       },
+      timezone: tz,
     });
   }
 
@@ -354,10 +351,7 @@ export class MemoController {
           categoryId: todo.categoryId,
           startDate: parseDateOnly(todo.startDate),
           endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
-          scheduledTime:
-            todo.scheduledTime == null
-              ? undefined
-              : parseLocalDateTime(todo.startDate, todo.scheduledTime, tz),
+          scheduledTime: todo.scheduledTime,
           isAllDay: todo.isAllDay,
           visibility: todo.visibility,
           isRecurring: todo.isRecurring,
@@ -365,7 +359,7 @@ export class MemoController {
             todo.recurrence != null
               ? {
                   daysOfWeek: todo.recurrence.daysOfWeek,
-                  endDate: parseDateOnly(todo.recurrence.endDate),
+                  endDate: todo.recurrence.endDate,
                 }
               : undefined,
           items: todo.items,

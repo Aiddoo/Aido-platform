@@ -1,4 +1,5 @@
 import { PLAN_CATALOG } from "../vocabulary/plan-catalog.constants.js";
+import { TODO_SERIES_LIMITS } from "../vocabulary/todo.constants.js";
 import { HttpStatus } from "./http-status.js";
 import type { ErrorDefinition } from "./types.js";
 
@@ -144,6 +145,12 @@ export const ErrorCode = {
   TODO_0831: "TODO_0831",
   TODO_0832: "TODO_0832",
   TODO_0833: "TODO_0833",
+  TODO_0841: "TODO_0841",
+  TODO_0842: "TODO_0842",
+  TODO_0843: "TODO_0843",
+  TODO_0844: "TODO_0844",
+  TODO_0845: "TODO_0845",
+  TODO_0846: "TODO_0846",
 
   // Todo 카테고리 (TODO_CATEGORY_0850-0899)
   TODO_CATEGORY_0851: "TODO_CATEGORY_0851",
@@ -831,6 +838,42 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     code: "TODO_0833",
     message: "삭제된 댓글에는 이 작업을 할 수 없습니다.",
     description: "삭제된 댓글은 수정하거나 답글 또는 좋아요를 추가할 수 없습니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.TODO_0841]: {
+    code: "TODO_0841",
+    message: "반복 할 일을 찾을 수 없습니다.",
+    description: "해당 ID의 반복 할 일이 존재하지 않거나 현재 사용자의 것이 아닙니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_0842]: {
+    code: "TODO_0842",
+    message: `반복 할 일은 최대 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER}개까지 만들 수 있습니다.`,
+    description: "진행 중인 반복 할 일 수가 시스템 상한에 도달했습니다. 등급과 상관없이 같습니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_0843]: {
+    code: "TODO_0843",
+    message: "선택한 반복에 맞는 날짜가 없습니다.",
+    description: "시작일과 반복 설정으로 만들 수 있는 회차가 하나도 없습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0844]: {
+    code: "TODO_0844",
+    message: "반복 할 일이 아니라서 범위를 고를 수 없습니다.",
+    description: "반복 회차가 아닌 할 일에 수정·삭제 범위를 지정했습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0845]: {
+    code: "TODO_0845",
+    message: "반복 설정이 올바르지 않습니다.",
+    description: "요일·날짜·간격·종료 조합이 반복 규칙에 맞지 않습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_0846]: {
+    code: "TODO_0846",
+    message: "이미 끝난 반복입니다.",
+    description: "더 만들 회차가 없는 반복 할 일은 끝내거나 이어서 수정할 수 없습니다.",
     httpStatus: HttpStatus.CONFLICT,
   },
 

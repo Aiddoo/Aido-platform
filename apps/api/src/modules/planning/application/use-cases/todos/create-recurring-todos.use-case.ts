@@ -6,7 +6,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 
-import type { CreateRecurringTodoData } from "../../models/todos/todo.types.js";
+import type { CreateTodoData, TodoRecurrence } from "../../models/todos/todo.types.js";
 import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
 import type { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
 import {
@@ -20,8 +20,8 @@ export interface CreateRecurringTodosResult {
 }
 
 export interface CreateRecurringTodosInput {
-  readonly data: CreateRecurringTodoData;
-  readonly timezone: string;
+  readonly data: CreateTodoData;
+  readonly recurrence: TodoRecurrence;
 }
 
 interface CreateRecurringTodosDependencies {
@@ -40,9 +40,9 @@ export class CreateRecurringTodos {
   }
 
   async execute(input: CreateRecurringTodosInput): Promise<CreateRecurringTodosResult> {
-    const { data, timezone } = input;
+    const { data, recurrence } = input;
 
-    const plan = planRecurringTodoCreation(data, timezone);
+    const plan = planRecurringTodoCreation(data, recurrence);
     const created = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
         MutationLockKeys.todoCategory(data.userId),
@@ -58,6 +58,6 @@ export class CreateRecurringTodos {
       plan.recurrenceGroupId,
     );
 
-    return { todos, count: plan.dates.length };
+    return { todos, count: plan.drafts.length };
   }
 }

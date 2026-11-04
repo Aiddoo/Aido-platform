@@ -122,8 +122,8 @@ describe("Todo — 할 일 애그리게잇", () => {
         categoryId: 1,
         title: "새 할 일",
         startDate: new Date("2026-02-22"),
-        endDate: undefined,
-        scheduledTime: undefined,
+        endDate: null,
+        scheduledTime: null,
         isAllDay: true,
         visibility: "PUBLIC",
       });

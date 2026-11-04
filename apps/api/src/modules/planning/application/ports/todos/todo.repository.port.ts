@@ -1,8 +1,9 @@
+import type { TodoVisibility } from "@aido/api/vocabulary";
+
 import type {
   Todo,
   TodoCreationPlan,
   TodoDetailsPatch,
-  TodoVisibility,
 } from "../../../domain/aggregates/todos/todo.aggregate.js";
 import type { TodoScheduleProps } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
 
@@ -31,7 +32,7 @@ export interface TodoRepositoryPort {
   create(data: TodoCreationPlan): Promise<Todo>;
 
   /** 인라인 하위 항목 일괄 생성(생성 트랜잭션 내부에서 호출) */
-  createInlineItems(todoId: number, items: { title: string }[]): Promise<void>;
+  createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void>;
 
   /** 완료 상태 등 애그리게잇 변경분 영속화 */
   updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void>;

@@ -100,8 +100,12 @@ export class UpdateTodo {
       copyField("categoryId");
       copyField("startDate");
       copyField("endDate");
-      copyField("scheduledTime");
-      copyField("isAllDay");
+      // nullish-strict: scheduledTime null은 시간 지우기다
+      if (data.scheduledTime !== undefined || data.isAllDay != null) {
+        // 종일과 시간은 함께 맞춰지므로 한쪽만 보내도 둘 다 저장한다.
+        patch.scheduledTime = snapshot.scheduledTime;
+        patch.isAllDay = snapshot.isAllDay;
+      }
       copyField("visibility");
       if (data.completed != null) {
         patch.completed = snapshot.completed;

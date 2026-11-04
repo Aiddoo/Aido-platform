@@ -1,5 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import type {
   FindFriendTodosParams,
@@ -17,7 +18,6 @@ import type {
 import {
   Todo,
   type TodoCreationPlan,
-  type TodoVisibility,
 } from "#api/modules/planning/domain/aggregates/todos/todo.aggregate";
 import { TodoItem } from "#api/modules/planning/domain/entities/todos/todo-item.entity";
 import { TodoId } from "#api/modules/planning/domain/value-objects/todos/todo-id.vo";
@@ -69,8 +69,6 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     const record = {
       ...TodoBuilder.create(data.userId).withId(id).build(),
       ...structuredClone(data),
-      endDate: data.endDate === undefined ? null : structuredClone(data.endDate),
-      scheduledTime: data.scheduledTime === undefined ? null : structuredClone(data.scheduledTime),
     };
     this.records.set(id, record);
     const todo = await this.findByIdAndUserId(id, data.userId);
@@ -81,7 +79,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
   }
 
   async createMany(
-    plans: TodoCreationPlan[],
+    plans: readonly TodoCreationPlan[],
     recurrenceGroupId: string,
     inlineItems?: readonly { title: string }[],
   ): Promise<Todo[]> {

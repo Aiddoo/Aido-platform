@@ -2,8 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/index";
 
-import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
-import type { CreateTodoData, CreateRecurringTodoData } from "../../models/todos/todo.types.js";
+import type { CreateTodoData, TodoRecurrence } from "../../models/todos/todo.types.js";
 import type {
   StagedTodoCreation,
   StagedTodoCreatorPort,
@@ -12,6 +11,7 @@ import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.reposit
 import type { TodoCreationEffects } from "./todo-creation-effects.service.js";
 import {
   planRecurringTodoCreation,
+  planTodoCreation,
   type TodoCreationWriter,
 } from "./todo-creation-writer.service.js";
 
@@ -31,9 +31,14 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
     this.#dependencies = dependencies;
   }
 
-  async stageTodo(input: CreateTodoData): Promise<StagedTodoCreation> {
-    const draft = Todo.planCreation(input);
-    const created = await this.#dependencies.writer.create(draft, input.items);
+  stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+    return input.recurrence == null
+      ? this.#stageSingle(input)
+      : this.#stageRecurring(input, input.recurrence);
+  }
+
+  async #stageSingle(input: CreateTodoData): Promise<StagedTodoCreation> {
+    const created = await this.#dependencies.writer.create(planTodoCreation(input), input.items);
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
       created.getId().getValue(),
       input.userId,
@@ -47,11 +52,11 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
     };
   }
 
-  async stageRecurringTodos(
-    input: CreateRecurringTodoData,
-    timezone: string,
+  async #stageRecurring(
+    input: CreateTodoData,
+    recurrence: TodoRecurrence,
   ): Promise<StagedTodoCreation> {
-    const plan = planRecurringTodoCreation(input, timezone);
+    const plan = planRecurringTodoCreation(input, recurrence);
     const created = await this.#dependencies.writer.createRecurring(plan);
     const todos = await this.#dependencies.todoReadRepository.findManyByRecurrenceGroupId(
       input.userId,

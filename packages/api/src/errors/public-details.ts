@@ -4,6 +4,14 @@ import {
   notChargedErrorDetailsSchema,
   quotaErrorDetailsSchema,
 } from "../contracts/entitlement/v1/quota-error.details.js";
+import {
+  todoSeriesEndedErrorDetailsSchema,
+  todoSeriesLimitErrorDetailsSchema,
+  todoSeriesNoDatesErrorDetailsSchema,
+  todoSeriesNotFoundErrorDetailsSchema,
+  todoSeriesRuleErrorDetailsSchema,
+  todoSeriesScopeErrorDetailsSchema,
+} from "../contracts/todo/v1/todo-series.error-details.js";
 import { ErrorCode, type ErrorCodeType } from "./errors.js";
 
 /** 친구 한도 초과(FOLLOW_0909)일 때 앱이 한도 안내에 쓰는 값 */
@@ -32,6 +40,12 @@ export type FriendQuotaErrorDetails = z.infer<typeof friendQuotaErrorDetailsSche
 
 // 운영 응답에는 여기 등록한 코드의 검증된 필드만 싣고 나머지 details는 숨긴다
 const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
+  [ErrorCode.TODO_0841]: todoSeriesNotFoundErrorDetailsSchema,
+  [ErrorCode.TODO_0842]: todoSeriesLimitErrorDetailsSchema,
+  [ErrorCode.TODO_0843]: todoSeriesNoDatesErrorDetailsSchema,
+  [ErrorCode.TODO_0844]: todoSeriesScopeErrorDetailsSchema,
+  [ErrorCode.TODO_0845]: todoSeriesRuleErrorDetailsSchema,
+  [ErrorCode.TODO_0846]: todoSeriesEndedErrorDetailsSchema,
   [ErrorCode.TODO_CATEGORY_0857]: quotaErrorDetailsSchema,
   [ErrorCode.FOLLOW_0909]: friendQuotaErrorDetailsSchema,
   [ErrorCode.NUDGE_1101]: quotaErrorDetailsSchema,

@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
+import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
@@ -19,8 +19,6 @@ import {
 } from "../../value-objects/todos/todo-schedule.vo.js";
 import { TodoTitle } from "../../value-objects/todos/todo-title.vo.js";
 
-export type TodoVisibility = "PUBLIC" | "PRIVATE";
-
 export interface TodoDetailsPatch {
   title?: string;
   categoryId?: number;
@@ -37,8 +35,8 @@ export interface TodoCreationDraft {
   categoryId: number;
   title: string;
   startDate: Date;
-  endDate?: Date | null;
-  scheduledTime?: Date | null;
+  endDate: Date | null;
+  scheduledTime: Date | null;
   isAllDay: boolean;
   visibility: TodoVisibility;
 }
@@ -111,23 +109,18 @@ export class Todo extends AggregateRoot<TodoProps> {
 
   static planCreation(input: TodoCreationInput): TodoCreationDraft {
     TodoTitle.create(input.title);
-    // 생성 시점에도 일정 불변식(endDate >= startDate) 강제 — 도메인 자기방어
-    TodoSchedule.create({
+    const schedule = TodoSchedule.create({
       startDate: input.startDate,
       endDate: input.endDate ?? null,
       scheduledTime: input.scheduledTime ?? null,
       isAllDay: input.isAllDay ?? true,
-    });
+    }).getValue();
 
     return {
       userId: input.userId,
       categoryId: input.categoryId,
       title: input.title,
-      startDate: new Date(input.startDate),
-      endDate: input.endDate == null ? input.endDate : new Date(input.endDate),
-      scheduledTime:
-        input.scheduledTime == null ? input.scheduledTime : new Date(input.scheduledTime),
-      isAllDay: input.isAllDay ?? true,
+      ...schedule,
       visibility: input.visibility ?? "PUBLIC",
     };
   }

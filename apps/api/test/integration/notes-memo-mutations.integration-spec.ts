@@ -464,7 +464,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
               categoryId,
               startDate: AT,
               isRecurring: true,
-              recurrence: { daysOfWeek: ["FRI", "SAT"], endDate: new Date("2027-01-09") },
+              recurrence: { daysOfWeek: ["FRI", "SAT"], endDate: "2027-01-09" },
               items: [{ title: "저장 불가능\u0000item" }],
             },
           ],

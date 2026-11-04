@@ -1,5 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import {
   UNIT_OF_WORK,
@@ -9,7 +10,6 @@ import {
 } from "#api/shared/application/ports/index";
 
 import { MEMO_REPOSITORY } from "./application/ports/memos/memo.repository.port.js";
-import { STAGED_TODO_CREATOR } from "./application/ports/memos/staged-todo-creator.port.js";
 import { ConvertMemoToTodo } from "./application/use-cases/memos/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodos } from "./application/use-cases/memos/convert-memo-to-todos.use-case.js";
 import { CreateMemo } from "./application/use-cases/memos/create-memo.use-case.js";

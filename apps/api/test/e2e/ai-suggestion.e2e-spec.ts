@@ -4,9 +4,9 @@ import request from "supertest";
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import {
-  RECURRING_TODO_CREATOR,
-  type RecurringTodoCreatorPort,
-} from "#api/modules/ai-assistance/application/ports/suggestions/recurring-todo-creator.port";
+  STAGED_TODO_CREATOR,
+  type StagedTodoCreatorPort,
+} from "#api/modules/planning/planning-todos.public";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -272,13 +272,11 @@ describe("AI 제안 E2E", () => {
     const user = await createPremiumUser("ai-suggestion-failure@example.com", "Test1234!");
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
-    const creator = ctx.module.get<RecurringTodoCreatorPort>(RECURRING_TODO_CREATOR);
+    const creator = ctx.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
     const before = await ctx.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });
-    const failure = vi
-      .spyOn(creator, "createRecurring")
-      .mockRejectedValueOnce(new Error("테스트 생성 실패"));
+    const failure = vi.spyOn(creator, "stage").mockRejectedValueOnce(new Error("테스트 생성 실패"));
     try {
       // When
       const response = await request(ctx.app.getHttpServer())

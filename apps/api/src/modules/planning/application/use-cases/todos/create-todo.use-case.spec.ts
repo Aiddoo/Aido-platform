@@ -31,6 +31,27 @@ describe("할 일 생성", () => {
     vi.restoreAllMocks();
   });
 
+  it.each([
+    { name: "종일 기본값에 시간이 오면", isAllDay: true, scheduledTime: "09:30", allDay: false },
+    { name: "시간 일정인데 시간이 없으면", isAllDay: false, scheduledTime: null, allDay: true },
+  ])("$name 종일과 시간을 맞춰 저장한다", async ({ isAllDay, scheduledTime, allDay }) => {
+    // Given
+    fixture.records.clear();
+    // When
+    const result = await useCase.execute({
+      userId: fixture.userId,
+      title: "시간 맞춤",
+      categoryId: 1,
+      startDate: new Date("2026-05-16T00:00:00Z"),
+      scheduledTime,
+      isAllDay,
+      timezone: "Asia/Seoul",
+    });
+    // Then
+    expect(result.isAllDay).toBe(allDay);
+    expect(result.scheduledTime).toBe(allDay ? null : "2026-05-16T00:30:00.000Z");
+  });
+
   it("인라인 항목과 기본값을 저장하고 생성 이벤트와 새 응답을 반환한다", async () => {
     // Given
     fixture.records.clear();
@@ -41,6 +62,7 @@ describe("할 일 생성", () => {
       title: "새 할 일",
       categoryId: 1,
       startDate: new Date("2026-05-16T00:00:00Z"),
+      timezone: "UTC",
       items: [{ title: "첫 항목" }, { title: "둘째 항목" }],
     });
     // Then
@@ -72,6 +94,7 @@ describe("할 일 생성", () => {
       title: "새 할 일",
       categoryId: 1,
       startDate: PLANNING_TIME,
+      timezone: "UTC",
     };
     // When / Then
     await expect(useCase.execute(input)).rejects.toMatchObject({
@@ -95,6 +118,7 @@ describe("할 일 생성", () => {
         title: "초과 할 일",
         categoryId: 1,
         startDate: PLANNING_TIME,
+        timezone: "UTC",
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
     expect(fixture.records.size).toBe(TODO_LIMITS.MAX_PER_CATEGORY);
@@ -115,6 +139,7 @@ describe("할 일 생성", () => {
       title: "새 할 일",
       categoryId: 1,
       startDate: PLANNING_TIME,
+      timezone: "UTC",
     });
     try {
       await Promise.race([entered.promise, execution]);
@@ -150,6 +175,7 @@ describe("할 일 생성", () => {
           title: "새 할 일",
           categoryId: 1,
           startDate: PLANNING_TIME,
+          timezone: "UTC",
         }),
       ).rejects.toBe(failure);
       expect(fixture.records.size).toBe(1);

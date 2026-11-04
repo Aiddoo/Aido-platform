@@ -11,6 +11,10 @@ import { CreateRecurringTodos } from "#api/modules/planning/application/use-case
 import { ReorderTodoItems } from "#api/modules/planning/application/use-cases/todos/reorder-todo-items.use-case";
 import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/todos/toggle-todo-complete.use-case";
 import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
+import {
+  STAGED_TODO_CREATOR,
+  type StagedTodoCreatorPort,
+} from "#api/modules/planning/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -20,8 +24,10 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import {
+  AFTER_COMMIT_TASK_REGISTRY,
   DOMAIN_EVENT_PUBLISHER,
   UNIT_OF_WORK,
+  type AfterCommitTaskRegistryPort,
   type DomainEventPublisherPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -335,19 +341,18 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // When
     const response = await context.module.get(CreateRecurringTodos).execute({
-      timezone: "Asia/Seoul",
       data: {
         userId,
         categoryId,
         title: "반복 생성",
-        startDate: "2027-01-04",
-        endDate: "2027-01-06",
-        daysOfWeek: ["MON", "TUE", "WED"],
+        startDate: new Date("2027-01-04"),
         scheduledTime: null,
+        timezone: "Asia/Seoul",
         isAllDay: true,
         visibility: "PUBLIC",
         items: [{ title: "첫 항목" }, { title: "둘째 항목" }],
       },
+      recurrence: { daysOfWeek: ["MON", "TUE", "WED"], endDate: "2027-01-06" },
     });
     recording = null;
 
@@ -366,6 +371,55 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     );
   });
 
+  describe("커밋 후 생성 포트", () => {
+    function stageInsideUnitOfWork(afterStage: () => Promise<void>) {
+      const creator = context.module.get<StagedTodoCreatorPort>(STAGED_TODO_CREATOR);
+      const unitOfWork = context.module.get<UnitOfWorkPort>(UNIT_OF_WORK);
+      const registry = context.module.get<AfterCommitTaskRegistryPort>(AFTER_COMMIT_TASK_REGISTRY);
+      return unitOfWork.run(async () => {
+        const staged = await creator.stage({
+          userId,
+          categoryId,
+          title: "포트 반복",
+          startDate: new Date("2027-01-04"),
+          scheduledTime: "09:00",
+          timezone: "Asia/Seoul",
+          recurrence: { daysOfWeek: ["MON", "TUE"], endDate: "2027-01-05" },
+        });
+        registry.register(staged.afterCommit);
+        await afterStage();
+        return staged;
+      });
+    }
+
+    it("바깥 트랜잭션이 롤백되면 할 일도 생성 이벤트도 남지 않는다", async () => {
+      // Given
+      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
+      const publishAll = vi.spyOn(publisher, "publishAll");
+      const failure = new Error("바깥 작업 실패");
+      // When
+      const outcome = stageInsideUnitOfWork(() => Promise.reject(failure));
+      // Then
+      await expect(outcome).rejects.toBe(failure);
+      expect(publishAll).not.toHaveBeenCalled();
+      expect(await client.$count(todo, eq(todo.title, "포트 반복"))).toBe(0);
+    });
+
+    it("커밋에 성공하면 그 뒤에 회차마다 생성 이벤트를 낸다", async () => {
+      // Given
+      const publisher = context.module.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
+      const publishAll = vi.spyOn(publisher, "publishAll");
+      // When
+      const staged = await stageInsideUnitOfWork(async () => {
+        expect(publishAll).not.toHaveBeenCalled();
+      });
+      // Then
+      expect(staged.todos).toHaveLength(2);
+      expect(publishAll.mock.calls.flatMap(([events]) => events)).toHaveLength(2);
+      expect(staged.todos.every((created) => !created.isAllDay)).toBe(true);
+    });
+  });
+
   it("반복 item 저장이 실패하면 부모 bulk 생성도 rollback한다", async () => {
     // Given
     const repository = context.module.get<TodoRepositoryPort>(TODO_REPOSITORY);
@@ -381,6 +435,8 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             categoryId,
             title: "rollback 대상",
             startDate: AT,
+            endDate: null,
+            scheduledTime: null,
             sortOrder: 1,
             isAllDay: true,
             visibility: "PUBLIC",

@@ -1,5 +1,9 @@
-export { STAGED_TODO_CREATOR } from "./application/ports/todos/staged-todo-creator.port.js";
-export { TODO_CREATOR, type TodoCreatorPort } from "./application/ports/todos/todo-creator.port.js";
+export type { CreateTodoData } from "./application/models/todos/todo.types.js";
+export {
+  STAGED_TODO_CREATOR,
+  type StagedTodoCreation,
+  type StagedTodoCreatorPort,
+} from "./application/ports/todos/staged-todo-creator.port.js";
 export {
   TODO_VIEW_CACHE_INVALIDATOR,
   type TodoViewCacheInvalidatorPort,
