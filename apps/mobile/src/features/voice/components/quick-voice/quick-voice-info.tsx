@@ -5,7 +5,7 @@ import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queri
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { HStack, InfoIcon, MicIcon, Text, VStack } from '@src/shared/ui';
+import { HintPopoverContent, HStack, InfoIcon, MicIcon, Text, VStack } from '@src/shared/ui';
 import { toDateFormatLocale } from '@src/shared/utils/date-format';
 import { formatCount } from '@src/shared/utils/format';
 import { useQuery } from '@tanstack/react-query';
@@ -41,20 +41,9 @@ export function QuickVoiceInfo() {
             </HStack>
           </PressableFeedback>
         </Popover.Trigger>
-        <Popover.Portal disableFullWindowOverlay={false}>
-          <Popover.Overlay />
-          <Popover.Content
-            presentation="popover"
-            placement="top"
-            align="end"
-            avoidCollisions={false}
-            className="rounded-2xl border border-border px-4 py-3"
-          >
-            <Popover.Arrow />
-            <Popover.Close />
-            <QuickVoiceInfo.Contents />
-          </Popover.Content>
-        </Popover.Portal>
+        <HintPopoverContent icon={MicIcon} title={t('info.title')}>
+          <QuickVoiceInfo.Contents />
+        </HintPopoverContent>
       </Popover>
       <QuotaChip feature="AI_PARSE" />
     </HStack>
@@ -63,7 +52,6 @@ export function QuickVoiceInfo() {
 
 QuickVoiceInfo.Contents = function Contents() {
   const { t } = useTranslation('voice');
-  const fontScaledSize = useFontScaledSize();
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const getRefillSentence = useRefillSentence();
@@ -74,16 +62,6 @@ QuickVoiceInfo.Contents = function Contents() {
   return (
     <VStack gap={8}>
       <VStack gap={4}>
-        <HStack gap={4} align="center">
-          <MicIcon
-            width={fontScaledSize(18)}
-            height={fontScaledSize(18)}
-            colorClassName="text-main"
-          />
-          <Text size="b3" weight="semibold" className="shrink">
-            {t('info.title')}
-          </Text>
-        </HStack>
         <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
           {t('info.description')}
         </Text>

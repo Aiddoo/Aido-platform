@@ -1,18 +1,20 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { MicIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Popover } from 'heroui-native';
-import { type ComponentProps, useEffect, type ReactNode } from 'react';
+import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef } from 'react';
 
 import type { CoachmarkKind } from '../apis/coachmark.repository';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 
-interface CoachmarkPopoverProps extends Omit<
-  ComponentProps<typeof Popover>,
-  'isOpen' | 'onOpenChange' | 'children'
-> {
+interface CoachmarkPopoverProps
+  extends
+    Omit<ComponentProps<typeof Popover>, 'isOpen' | 'onOpenChange' | 'children'>,
+    Pick<
+      HintPopoverContentProps,
+      'icon' | 'placement' | 'align' | 'avoidCollisions' | 'isPassThrough'
+    > {
   kind: CoachmarkKind;
   title: string;
   description: string;
@@ -21,12 +23,17 @@ interface CoachmarkPopoverProps extends Omit<
   /** 이미 본 안내도 다시 연다(기능 소개에서 "지금 말해볼게요"를 눌러 온 경우). 닫으면 `onDismiss`로 알린다 */
   isForced?: boolean;
   onDismiss?: () => void;
+  /** 대상이 지금 눌리지 않을 때. `Popover.Trigger`가 대상의 비활성을 덮어써 여기로 받는다 */
+  isTargetDisabled?: boolean;
+  /** 이 값이 바뀌면 말풍선을 닫는다. 가리키던 자리가 움직이는 경우에 쓴다 */
+  dismissKey?: string;
   /** 말풍선이 가리킬 대상 */
   children: ReactNode;
 }
 
 /**
  * 처음 한 번 자동으로 열리는 말풍선. 행동 버튼은 없고, 닫거나 대상을 누르면 끝난다.
+ * 기본은 바깥 탭이 말풍선만 닫는다. 첫 탭이 대상에 닿아야 하면 `isPassThrough`를 쓴다.
  * 내 정보를 아직 못 읽었으면 대상만 그린다.
  */
 export function CoachmarkPopover({ kind, children, ...popoverProps }: CoachmarkPopoverProps) {
@@ -51,13 +58,20 @@ CoachmarkPopover.Contents = function Contents({
   isEnabled = true,
   isForced = false,
   onDismiss,
+  isTargetDisabled = false,
+  dismissKey,
+  icon = MicIcon,
+  placement,
+  align,
+  avoidCollisions,
+  isPassThrough,
   children,
   ...popoverProps
 }: CoachmarkPopoverProps & { accountId: string }) {
-  const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isOpen = (isPending || isForced) && isEnabled;
+  const shownDismissKeyRef = useRef(dismissKey);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,42 +87,33 @@ CoachmarkPopover.Contents = function Contents({
     }
   };
 
+  const closeForMovedTarget = useEffectEvent(() => {
+    if (isOpen) {
+      handleOpenChange(false);
+    }
+  });
+  useEffect(() => {
+    if (shownDismissKeyRef.current === dismissKey) {
+      return;
+    }
+    shownDismissKeyRef.current = dismissKey;
+    closeForMovedTarget();
+  }, [dismissKey]);
+
   return (
     <Popover {...popoverProps} isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <Popover.Trigger asChild>{children}</Popover.Trigger>
-      <Popover.Portal disableFullWindowOverlay={false}>
-        <Popover.Overlay />
-        <Popover.Content
-          presentation="popover"
-          placement="top"
-          align="end"
-          avoidCollisions={false}
-          className="rounded-2xl border border-border px-4 py-3"
-        >
-          <Popover.Arrow />
-          <Popover.Close />
-          <VStack gap={4}>
-            <HStack gap={4} align="center">
-              <MicIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-main"
-              />
-              <Text
-                size="b3"
-                weight="semibold"
-                className="shrink pr-6"
-                lineBreakStrategyIOS="hangul-word"
-              >
-                {title}
-              </Text>
-            </HStack>
-            <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-              {description}
-            </Text>
-          </VStack>
-        </Popover.Content>
-      </Popover.Portal>
+      <Popover.Trigger asChild isDisabled={isTargetDisabled}>
+        {children}
+      </Popover.Trigger>
+      <HintPopoverContent
+        icon={icon}
+        title={title}
+        description={description}
+        placement={placement}
+        align={align}
+        avoidCollisions={avoidCollisions}
+        isPassThrough={isPassThrough}
+      />
     </Popover>
   );
 };

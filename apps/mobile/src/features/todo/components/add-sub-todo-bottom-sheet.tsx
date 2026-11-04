@@ -13,6 +13,7 @@ import {
   ArrowUpIcon,
   BottomSheetInput,
   Box,
+  HintPopoverContent,
   HStack,
   InfoIcon,
   INQUIRY_SHEET_EXIT,
@@ -304,35 +305,11 @@ function SpeechTooltip() {
           </HStack>
         </PressableFeedback>
       </Popover.Trigger>
-      <Popover.Portal disableFullWindowOverlay={false}>
-        <Popover.Overlay />
-        <Popover.Content
-          presentation="popover"
-          placement="top"
-          align="end"
-          avoidCollisions={false}
-          className="rounded-2xl border border-border px-4 py-3"
-        >
-          <Popover.Arrow />
-          <VStack gap={4}>
-            <HStack gap={4} align="center">
-              <MicIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-main"
-              />
-
-              <Text size="b3" weight="semibold">
-                {t('subTodo.voiceTitle')}
-              </Text>
-            </HStack>
-
-            <Text size="b3" shade={6}>
-              {t('subTodo.voiceHint')}
-            </Text>
-          </VStack>
-        </Popover.Content>
-      </Popover.Portal>
+      <HintPopoverContent
+        icon={MicIcon}
+        title={t('subTodo.voiceTitle')}
+        description={t('subTodo.voiceHint')}
+      />
     </Popover>
   );
 }

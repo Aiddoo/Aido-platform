@@ -81,6 +81,50 @@ describe('CoachmarkPopover', () => {
     );
   });
 
+  it('가리키던 자리를 옮기면 닫고 끝난 것으로 남긴다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const coachmarkService = new CoachmarkService(
+      createCoachmarkRepository(createMemorySyncStorage()),
+    );
+    const analytics = createMockAnalytics();
+    const coachmark = (dismissKey: string) => (
+      <CoachmarkPopover
+        kind="repeat-horizon"
+        title="안내 제목"
+        description="안내 설명"
+        dismissKey={dismissKey}
+      >
+        <Text testID="target">대상</Text>
+      </CoachmarkPopover>
+    );
+    const { rerender } = await renderUi(coachmark('2027-03-01'), {
+      di: { coachmarkService, analytics, userService: new UserService(httpClient) },
+    });
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
+        kind: 'repeat-horizon',
+      }),
+    );
+
+    // When
+    await rerender(coachmark('2027-03-02'));
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_dismissed', {
+        kind: 'repeat-horizon',
+      }),
+    );
+    expect(
+      coachmarkService.isPending({
+        accountId: createCurrentUserDto().userId,
+        kind: 'repeat-horizon',
+      }),
+    ).toBe(false);
+  });
+
   it('이미 본 안내는 열지 않고 대상만 그린다', async () => {
     // When
     const { analytics } = await renderCoachmark({ isSeen: true });

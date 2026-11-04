@@ -36,6 +36,7 @@ export { Flex } from './flex';
 export { FormStepLayout, type FormStepLayoutProps } from './form-step-layout';
 export { Grid, GridItem, useGridColumns } from './grid';
 export { HStack } from './h-stack';
+export { HintPopoverContent, type HintPopoverContentProps } from './hint-popover';
 export { IconRadioItem, type IconRadioItemProps } from './icon-radio-item';
 export {
   AppleIcon,

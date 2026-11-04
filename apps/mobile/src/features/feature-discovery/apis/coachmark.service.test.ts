@@ -58,7 +58,13 @@ describe('CoachmarkService', () => {
 
   it('음성 안내는 기존 키 규칙으로 종류마다 따로 저장한다', () => {
     // Given
-    const kinds = ['voice-quick-start', 'voice-note-start', 'voice-key-point'] as const;
+    const kinds = [
+      'voice-quick-start',
+      'voice-note-start',
+      'voice-note-mark',
+      'voice-key-point',
+      'repeat-horizon',
+    ] as const;
 
     // When
     const keys = kinds.map((kind) => coachmarkStorageKey({ accountId: 'account-1', kind }));
@@ -67,7 +73,9 @@ describe('CoachmarkService', () => {
     expect(keys).toEqual([
       'aido_coachmark_v1:account-1:voice-quick-start',
       'aido_coachmark_v1:account-1:voice-note-start',
+      'aido_coachmark_v1:account-1:voice-note-mark',
       'aido_coachmark_v1:account-1:voice-key-point',
+      'aido_coachmark_v1:account-1:repeat-horizon',
     ]);
   });
 });

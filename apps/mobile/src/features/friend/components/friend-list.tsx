@@ -19,6 +19,7 @@ import {
   Button,
   DocsIcon,
   Flex,
+  HintPopoverContent,
   HStack,
   InfoIcon,
   ListRow,
@@ -357,21 +358,7 @@ function EditModeGuideTooltip() {
           />
         </PressableFeedback>
       </Popover.Trigger>
-      <Popover.Portal disableFullWindowOverlay={false}>
-        <Popover.Overlay />
-        <Popover.Content
-          presentation="popover"
-          placement="bottom"
-          align="end"
-          avoidCollisions={false}
-          className="rounded-2xl border border-border px-4 py-3"
-        >
-          <Popover.Arrow />
-          <Text size="b4" shade={6}>
-            {t('list.editHint')}
-          </Text>
-        </Popover.Content>
-      </Popover.Portal>
+      <HintPopoverContent placement="bottom" description={t('list.editHint')} />
     </Popover>
   );
 }

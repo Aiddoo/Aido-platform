@@ -81,6 +81,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `Avatar`                                                             | 선택 가능 아바타 아이콘                                                     | `src/shared/ui/avatar/avatar.md`                                 |
 | `ConfirmDialog`                                                      | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화)       | `src/shared/ui/confirm-dialog/confirm-dialog.md`                 |
 | `DashedDivider`                                                      | 카드 안 구획을 나누는 점선 구분선 (실선은 HeroUI `Separator`)               | `src/shared/ui/dashed-divider/dashed-divider.md`                 |
+| `HintPopoverContent`                                                 | 안내 말풍선 한 모양 (아이콘·제목·작은 X + 설명). `Popover` 안에 둔다        | `src/shared/ui/hint-popover/hint-popover.md`                     |
 | `IconRadioItem`                                                      | `RadioGroup` 안의 라디오 행 (라벨 · 선택적 설명 · 선택적 아이콘 인디케이터) | `src/shared/ui/icon-radio-item/icon-radio-item.md`               |
 | `SettingNavigation`, `SettingNavigation.Item`                        | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component)                | `src/shared/ui/setting-navigation/setting-navigation.md`         |
 | `SettingsCard`, `SettingsCard.Toggle`, `SettingsCard.ToggleSkeleton` | 설정 토글을 묶는 흰 카드 + ControlField 토글 + 같은 배치의 스켈레톤         | `src/shared/ui/settings-card/settings-card.md`                   |

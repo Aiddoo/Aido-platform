@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
-import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
@@ -209,16 +208,9 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
       </Text>
       {noTodosNotice}
       <VStack gap={4}>
-        <CoachmarkPopover
-          kind="voice-key-point"
-          title={t('coach.keyPoint.title')}
-          description={t('coach.keyPoint.description')}
-          isEnabled={(note.digest?.keyPoints.length ?? 0) > 0}
-        >
-          <Text size="b4" weight="semibold" shade={6}>
-            {t('keyPoints.title')}
-          </Text>
-        </CoachmarkPopover>
+        <Text size="b4" weight="semibold" shade={6}>
+          {t('keyPoints.title')}
+        </Text>
         <ResultKeyPoints note={note} player={player} canPlay={parts.length > 0} />
       </VStack>
       <DeleteVoiceNoteButton />
@@ -309,6 +301,7 @@ function ResultKeyPoints({ note, player, canPlay }: ResultPlaybackProps) {
 
   return (
     <KeyPointList
+      hasTimeCoachmark
       keyPoints={note.digest?.keyPoints ?? []}
       activeKeyPointId={activeKeyPointId}
       onPressKeyPoint={
