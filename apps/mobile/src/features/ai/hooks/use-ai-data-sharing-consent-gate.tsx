@@ -1,6 +1,7 @@
 import { useCoachmarkService } from '@src/bootstrap/providers/di-context';
 import { type Consent, ConsentPolicy } from '@src/features/auth/domains/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +22,7 @@ export function useAiDataSharingConsentGate() {
   const queryClient = useQueryClient();
   const coachmarkService = useCoachmarkService();
   const consentQueryOptions = useGetConsentQueryOptions();
+  const meQueryOptions = useGetMeQueryOptions();
 
   /** 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다 */
   const requestAgreement = ({ isRenewal = false }: { isRenewal?: boolean } = {}) =>
@@ -73,16 +75,20 @@ export function useAiDataSharingConsentGate() {
   /**
    * 계정마다 한 번만 동의 안내를 띄운다. 이미 한 번 봤거나 [나중에]를 눌렀다면 다시 묻지 않고 isAgreed는 false다.
    * 거절해도 동의를 철회하지 않으므로 호출한 쪽은 기존 동작을 이어 가고, 서버가 AI_1311로 막을 때만 다시 안내한다.
+   * 내 정보를 아직 못 받았으면 여기서 기다려, 마이크 권한처럼 뒤에 오는 단계가 동의 안내를 앞지르지 않게 한다.
    */
-  const ensureAgreedOnce = async (accountId: string): Promise<AiConsentCheck> => {
-    const consent = await queryClient.ensureQueryData(consentQueryOptions).catch(() => null);
-    if (consent == null) {
+  const ensureAgreedOnce = async (): Promise<AiConsentCheck> => {
+    const [consent, me] = await Promise.all([
+      queryClient.ensureQueryData(consentQueryOptions).catch(() => null),
+      queryClient.ensureQueryData(meQueryOptions).catch(() => null),
+    ]);
+    if (consent == null || me == null) {
       return { isAgreed: true, wasAsked: false };
     }
     if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
-      return { isAgreed: true, wasAsked: await showRenewalOnce(consent, accountId) };
+      return { isAgreed: true, wasAsked: await showRenewalOnce(consent, me.id) };
     }
-    if (!coachmarkService.claim({ accountId, kind: 'ai-consent-notice' })) {
+    if (!coachmarkService.claim({ accountId: me.id, kind: 'ai-consent-notice' })) {
       return { isAgreed: false, wasAsked: false };
     }
     return { isAgreed: await requestAgreement(), wasAsked: true };

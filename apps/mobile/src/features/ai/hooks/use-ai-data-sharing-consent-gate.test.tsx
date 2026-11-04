@@ -6,6 +6,8 @@ import { AUTH_QUERY_KEYS } from '@src/features/auth/constants/auth-query-keys';
 import type { Consent } from '@src/features/auth/domains/auth.model';
 import { createCoachmarkRepository } from '@src/features/feature-discovery/apis/coachmark.repository';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
+import { UserService } from '@src/features/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import {
   createHapticsStub,
@@ -16,6 +18,7 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { ok } from '@src/shared/errors/result';
 import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -38,18 +41,27 @@ function ConsentGateProbe() {
       <Button onPress={async () => setResult(JSON.stringify(await gate.ensureAgreed()))}>
         시작
       </Button>
+      <Button onPress={async () => setResult(JSON.stringify(await gate.ensureAgreedOnce()))}>
+        계정당 한 번 시작
+      </Button>
       <Text>{result}</Text>
     </>
   );
 }
 
-async function renderGate(consentOverrides: Partial<Consent>) {
+async function renderGate(
+  consentOverrides: Partial<Consent>,
+  { me = { id: 'account-1' } }: { me?: { id: string } | null } = {},
+) {
   const authHttp = createMockHttpClient();
+  const userHttp = createMockHttpClient();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consentOverrides));
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'account-1' });
+  if (me != null) {
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), me);
+  }
 
   await renderUi(
     <OverlayProvider>
@@ -61,6 +73,7 @@ async function renderGate(consentOverrides: Partial<Consent>) {
         haptics: createHapticsStub(),
         logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
         authService: new AuthService(createMockHttpClient(), authHttp, createMockTokenStore()),
+        userService: new UserService(userHttp),
         coachmarkService: new CoachmarkService(
           createCoachmarkRepository(createMemorySyncStorage()),
         ),
@@ -69,7 +82,7 @@ async function renderGate(consentOverrides: Partial<Consent>) {
     },
   );
 
-  return { authHttp };
+  return { authHttp, userHttp };
 }
 
 describe('useAiDataSharingConsentGate', () => {
@@ -106,6 +119,38 @@ describe('useAiDataSharingConsentGate', () => {
 
     // Then
     await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+  });
+
+  test('내 정보를 아직 못 받았으면 받을 때까지 기다린 뒤 재안내를 보여 준다', async () => {
+    // Given
+    const { userHttp } = await renderGate(
+      { aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: '2026-10-26' },
+      { me: null },
+    );
+    userHttp.get.mockResolvedValue(ok(createCurrentUserDto()));
+
+    // When
+    fireEvent.press(screen.getByText('계정당 한 번 시작'));
+
+    // Then
+    await screen.findByText(RENEWAL_NOTICE);
+    expect(userHttp.get).toHaveBeenCalledTimes(1);
+  });
+
+  test('내 정보를 읽지 못하면 묻지 않고 서버 판단에 맡긴다', async () => {
+    // Given
+    const { userHttp } = await renderGate(
+      { aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: '2026-10-26' },
+      { me: null },
+    );
+    userHttp.get.mockRejectedValue(new Error('offline'));
+
+    // When
+    fireEvent.press(screen.getByText('계정당 한 번 시작'));
+
+    // Then
+    await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));
+    expect(screen.queryByText(RENEWAL_NOTICE)).toBeNull();
   });
 
   test('현재 안내에 동의했으면 묻지 않는다', async () => {

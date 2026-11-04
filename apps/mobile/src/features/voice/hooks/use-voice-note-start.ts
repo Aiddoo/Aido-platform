@@ -1,8 +1,6 @@
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { voiceNoteRecordHref } from '../utils/navigation/voice-note-href';
@@ -20,16 +18,13 @@ export function useVoiceNoteStart() {
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const aiConsent = useAiDataSharingConsentGate();
   const ensureMicrophonePermission = useMicrophonePermission();
-  const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
   const push = useSingleTap(router.push);
 
   return async ({ onSubscribe, getRecordHref }: StartVoiceNoteOptions = {}) => {
     if (!gate.guard({ onSubscribe })) {
       return;
     }
-    if (me != null) {
-      await aiConsent.ensureAgreedOnce(me.id);
-    }
+    await aiConsent.ensureAgreedOnce();
     if (await ensureMicrophonePermission('note')) {
       push(getRecordHref?.() ?? voiceNoteRecordHref());
     }

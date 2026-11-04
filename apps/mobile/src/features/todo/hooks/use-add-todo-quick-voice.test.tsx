@@ -1,7 +1,13 @@
 import '@src/shared/i18n/init';
+import { PLAN_CATALOG } from '@aido/api/vocabulary';
+import { createConsent } from '@src/features/auth/__tests__/auth.factories';
 import { AuthService } from '@src/features/auth/apis/auth.service';
+import { AUTH_QUERY_KEYS } from '@src/features/auth/constants/auth-query-keys';
+import type { Consent } from '@src/features/auth/domains/auth.model';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
 import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
 import { UserService } from '@src/features/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
@@ -37,6 +43,7 @@ jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));
 
 const ACCOUNT_ID = 'user-1';
+const RENEWAL_SUBTITLE = 'AI 처리 업체가 늘어나 안내를 다시 드려요.';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 const createQuickPlanDto = (actions: unknown[], charged = true) => ({
@@ -79,6 +86,12 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
         testID="begin"
         onPress={() => quickVoice.begin({ locale: 'ko-KR', contextualStrings: [] })}
       />
+      <Pressable
+        testID="start"
+        onPress={() => {
+          quickVoice.start().catch(jest.fn());
+        }}
+      />
       <Pressable testID="finish" onPress={quickVoice.finish} />
       <Pressable testID="retry" onPress={quickVoice.retryPlanning} />
       <Pressable testID="type-instead" onPress={quickVoice.typeInstead} />
@@ -99,7 +112,11 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
   );
 }
 
-async function renderQuickVoice() {
+async function renderQuickVoice({
+  consent,
+  isCoachmarkSeen = true,
+  aiParseUsed,
+}: { consent?: Partial<Consent>; isCoachmarkSeen?: boolean; aiParseUsed?: number } = {}) {
   const httpClient = createMockHttpClient();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
@@ -108,6 +125,15 @@ async function renderQuickVoice() {
   const analytics = createMockAnalytics();
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  if (consent != null) {
+    queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), createConsent(consent));
+  }
+  if (aiParseUsed != null) {
+    queryClient.setQueryData(
+      ENTITLEMENT_QUERY_KEYS.snapshot(),
+      createEntitlementSnapshot({ used: { AI_PARSE: aiParseUsed } }),
+    );
+  }
 
   await renderUi(
     <LocalDateProvider>
@@ -124,7 +150,10 @@ async function renderQuickVoice() {
         todoCategoryService: new TodoCategoryService(httpClient),
         authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
         entitlementService: new EntitlementService(httpClient, logger),
-        coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
+        coachmarkService: new CoachmarkService({
+          isSeen: () => isCoachmarkSeen,
+          markSeen: jest.fn(),
+        }),
         recognitionLanguageRepository:
           createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer,
@@ -215,6 +244,83 @@ describe('useAddTodoQuickVoice', () => {
     // Then
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
+  });
+
+  describe('시작 순서', () => {
+    const PREVIOUS_AGREEMENT: Partial<Consent> = {
+      aiDataSharingDecision: 'AGREED',
+      aiDataSharingConsentVersion: '2026-10-26',
+    };
+
+    it('한도를 다 썼으면 한도 안내에서 멈추고 동의와 마이크를 묻지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderQuickVoice({
+        consent: PREVIOUS_AGREEMENT,
+        isCoachmarkSeen: false,
+        aiParseUsed: PLAN_CATALOG.AI_PARSE.free,
+      });
+
+      // When
+      await fireEvent.press(screen.getByTestId('start'));
+
+      // Then
+      await waitFor(() =>
+        expect(analytics.trackEvent).toHaveBeenCalledWith(
+          'limit_reached_shown',
+          expect.objectContaining({ surface: 'add_todo_sheet' }),
+        ),
+      );
+      expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
+      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+    });
+
+    it('이전 안내에 동의한 사람은 재안내를 닫은 뒤에야 마이크 권한을 묻는다', async () => {
+      // Given
+      const { speechRecognizer } = await renderQuickVoice({
+        consent: PREVIOUS_AGREEMENT,
+        isCoachmarkSeen: false,
+      });
+
+      // When
+      await fireEvent.press(screen.getByTestId('start'));
+      await screen.findByTestId('ai-consent-sheet');
+
+      // Then
+      expect(screen.getByText(RENEWAL_SUBTITLE)).toBeOnTheScreen();
+      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+      await fireEvent.press(screen.getByTestId('ai-consent-later'));
+      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
+    });
+
+    it('처음 쓰는 사람은 첫 안내를 닫은 뒤에야 마이크 권한을 묻는다', async () => {
+      // Given
+      const { speechRecognizer } = await renderQuickVoice({ consent: {}, isCoachmarkSeen: false });
+
+      // When
+      await fireEvent.press(screen.getByTestId('start'));
+      await screen.findByTestId('ai-consent-sheet');
+
+      // Then
+      expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
+      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+      await fireEvent.press(screen.getByTestId('ai-consent-later'));
+      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
+    });
+
+    it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {
+      // Given
+      const { speechRecognizer } = await renderQuickVoice({
+        consent: PREVIOUS_AGREEMENT,
+        isCoachmarkSeen: true,
+      });
+
+      // When
+      await fireEvent.press(screen.getByTestId('start'));
+
+      // Then
+      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
+      expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
+    });
   });
 
   describe('90초 제안', () => {
