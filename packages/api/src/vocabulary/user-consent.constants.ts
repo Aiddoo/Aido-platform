@@ -14,8 +14,8 @@ export type ConsentType = (typeof CONSENT_TYPE)[keyof typeof CONSENT_TYPE];
 /**
  * AI 데이터 처리 동의 안내 버전. 버전마다 글자를 보내는 AI 처리 업체가 다르다.
  * - 2026-10-26: 할 일·메모 글자와 리포트 통계를 Google Gemini로 보낸다(1.13·1.14 앱).
- * - 2026-11-04: 글자(말한 내용은 기기가 글자로 바꾼 것)만 Anthropic Claude·Google Gemini·OpenAI로 보낸다.
- *   녹음 파일은 기기에만 있고 서버로 보내지 않는다(1.15 앱).
+ * - 2026-11-04: 글자(말을 글자로 바꾼 내용 포함)만 Anthropic Claude·Google Gemini·OpenAI로 보낸다.
+ *   녹음 파일은 서버로 보내지 않는다(1.15 앱).
  *
  * 이전 버전 동의도 그 버전의 처리 업체 범위에서 계속 유효하므로 출시 앱 사용자에게 다시 묻지 않는다.
  * 안내 문구가 바뀌면 이 목록 끝에 새 버전을 더하고 VERSION을 올린다.
