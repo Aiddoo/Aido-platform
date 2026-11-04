@@ -28,6 +28,7 @@ export class PushTokenBuilder {
       token: `ExponentPushToken[test-token-${PushTokenBuilder.idCounter}]`,
       deviceId: `device-${PushTokenBuilder.idCounter}`,
       platform: "IOS",
+      sessionId: null,
       isActive: true,
       createdAt: now,
       updatedAt: now,

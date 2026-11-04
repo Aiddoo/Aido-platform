@@ -19,6 +19,7 @@ import type {
   AuthSessionRepositoryPort,
   AuthSecurityLogRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../ports/auth/session-push-device-releaser.port.js";
 import type { VerificationService } from "../../services/auth/verification.service.js";
 
 export interface ResetPasswordInput {
@@ -39,6 +40,7 @@ interface ResetPasswordDependencies {
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly logger: ApplicationLogger;
 }
 
@@ -93,6 +95,7 @@ export class ResetPassword {
         this.#dependencies.cacheService.invalidateSession(sessionId),
       ),
     );
+    await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     this.#dependencies.logger.log({
       event: IdentityLogEvent.PASSWORD_RESET_COMPLETED,
       userId: user.id,

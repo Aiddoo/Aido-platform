@@ -40,6 +40,7 @@ import {
 } from "#test/mocks/ports/auth-credentials.stub";
 import {
   StubAuthSessionRepository,
+  StubSessionPushDeviceReleaser,
   StubAuthSecurityLogRepository,
   StubAuthTokenIssuer,
 } from "#test/mocks/ports/auth-session.stub";
@@ -83,6 +84,7 @@ export function createAuthCredentialFixture(
   const verificationRepository = new StubAuthVerificationRepository();
   const verificationCodeSecurity = new StubVerificationCodeSecurity();
   const cacheService = new StubAuthProfileCache();
+  const pushDevices = new StubSessionPushDeviceReleaser();
   const emailSender = new FakeEmailService();
   const adminEventNotifier = new StubAuthRegistrationNotifier();
   const retentionEnroller = new StubAuthRetentionEnroller();
@@ -121,6 +123,7 @@ export function createAuthCredentialFixture(
     verificationRepository,
     verificationCodeSecurity,
     cacheService,
+    pushDevices,
     emailSender,
     adminEventNotifier,
     retentionEnroller,

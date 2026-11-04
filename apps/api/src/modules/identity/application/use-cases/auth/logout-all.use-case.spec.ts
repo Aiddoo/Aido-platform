@@ -6,6 +6,7 @@ import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
   StubAuthSessionRepository,
+  StubSessionPushDeviceReleaser,
   StubAuthSecurityLogRepository,
 } from "#test/mocks/ports/auth-session.stub";
 
@@ -40,7 +41,9 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
     ]);
     const cacheService = new StubAuthSessionCache([...sessionRepository.sessions.keys()]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
+    const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new LogoutAll({
+      pushDevices,
       sessionRepository,
       cacheService,
       securityLogRepository,
@@ -62,6 +65,7 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
     );
     expect(sessionRepository.sessions.get("other-session")?.revokedAt).toBeNull();
     expect(cacheService.sessionIds).toEqual(new Set(["other-session"]));
+    expect(pushDevices.releasedSessionIds).toEqual(["session-1", "session-2", "expired-session"]);
     expect(securityLogRepository.entries).toEqual([
       {
         userId,
@@ -78,7 +82,9 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
     const sessionRepository = new StubAuthSessionRepository();
     const cacheService = new StubAuthSessionCache();
     const securityLogRepository = new StubAuthSecurityLogRepository();
+    const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new LogoutAll({
+      pushDevices,
       sessionRepository,
       cacheService,
       securityLogRepository,

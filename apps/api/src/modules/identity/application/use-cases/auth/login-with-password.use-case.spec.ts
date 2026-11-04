@@ -234,6 +234,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       password: AUTH_CREDENTIAL_PASSWORD,
     });
     const changePassword = new ChangePassword({
+      pushDevices: fixture.pushDevices,
       userRepository: fixture.userRepository,
       accountRepository: fixture.accountRepository,
       passwordService: fixture.passwordService,

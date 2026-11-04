@@ -25,6 +25,7 @@ export class InMemoryPushDeviceStore
       | "registerPushToken"
       | "deletePushTokensByDevice"
       | "deleteAllPushTokensByUser"
+      | "deletePushTokensBySessions"
     >
 {
   readonly devices = new Map<DeviceKey, PushDevice>();
@@ -109,6 +110,26 @@ export class InMemoryPushDeviceStore
       this.tokens.delete(keyOf(row.userId, row.deviceId));
     }
     return { count: owned.length };
+  }
+
+  async deletePushDevicesBySessions(sessionIds: readonly string[]) {
+    const released = [...this.devices.values()].filter(
+      (device) => device.sessionId != null && sessionIds.includes(device.sessionId),
+    );
+    for (const device of released) {
+      this.devices.delete(keyOf(device.userId, device.deviceId));
+    }
+    return { userIds: released.map((device) => device.userId) };
+  }
+
+  async deletePushTokensBySessions(sessionIds: readonly string[]) {
+    const released = [...this.tokens.values()].filter(
+      (row) => row.sessionId != null && sessionIds.includes(row.sessionId),
+    );
+    for (const row of released) {
+      this.tokens.delete(keyOf(row.userId, row.deviceId));
+    }
+    return { userIds: released.map((row) => row.userId) };
   }
 
   async findPermissionStatusesByUsers(userIds: readonly string[], reportedSince: Date) {

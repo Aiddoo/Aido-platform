@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "dfcff0ba-ddc5-47b4-a375-67dfb59d742f",
+  "id": "aec5e317-8220-46ae-80fa-bb4c3301ae76",
   "prevIds": [
     "009cef0c-3a51-4afc-bf24-2c7a8b29193b"
   ],
@@ -47,6 +47,44 @@
       ]
     },
     {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "PushToken",
+        "sessionId"
+      ],
+      "writes": [
+        "s|col|public.PushToken.sessionId",
+        "n|col|public.PushToken.sessionId",
+        "e|col|public.PushToken.sessionId"
+      ],
+      "reads": [
+        "n|tbl|public.PushToken",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "PushDevice",
+        "PushDevice_sessionId_idx"
+      ],
+      "writes": [
+        "s|idx|public.PushDevice_sessionId_idx",
+        "n|idx|public.PushDevice_sessionId_idx",
+        "e|idx|public.PushDevice_sessionId_idx",
+        "n|rel|public.PushDevice_sessionId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.PushDevice",
+        "n|sch|public",
+        "n|col|public.PushDevice.sessionId"
+      ]
+    },
+    {
       "statementType": "create_index",
       "statementTarget": [
         "index",
@@ -64,6 +102,26 @@
         "n|tbl|public.PushDevice",
         "n|sch|public",
         "n|col|public.PushDevice.deviceId"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "PushToken",
+        "PushToken_sessionId_idx"
+      ],
+      "writes": [
+        "s|idx|public.PushToken_sessionId_idx",
+        "n|idx|public.PushToken_sessionId_idx",
+        "e|idx|public.PushToken_sessionId_idx",
+        "n|rel|public.PushToken_sessionId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.PushToken",
+        "n|sch|public",
+        "n|col|public.PushToken.sessionId"
       ]
     },
     {
@@ -87,6 +145,52 @@
         "n|col|public.PushDevice.userId",
         "n|col|public.User.id",
         "e|uniqueness|public.User.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDevice"
+      ],
+      "writes": [
+        "s|fk|public.PushDevice.PushDevice_sessionId_fkey",
+        "n|fk|public.PushDevice.PushDevice_sessionId_fkey",
+        "e|fk|public.PushDevice.PushDevice_sessionId_fkey",
+        "n|con|public.PushDevice.PushDevice_sessionId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.PushDevice",
+        "n|sch|public",
+        "n|tbl|public.Session",
+        "n|sch|public",
+        "n|col|public.PushDevice.sessionId",
+        "n|col|public.Session.id",
+        "e|uniqueness|public.Session.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "PushToken"
+      ],
+      "writes": [
+        "s|fk|public.PushToken.PushToken_sessionId_fkey",
+        "n|fk|public.PushToken.PushToken_sessionId_fkey",
+        "e|fk|public.PushToken.PushToken_sessionId_fkey",
+        "n|con|public.PushToken.PushToken_sessionId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.PushToken",
+        "n|sch|public",
+        "n|tbl|public.Session",
+        "n|sch|public",
+        "n|col|public.PushToken.sessionId",
+        "n|col|public.Session.id",
+        "e|uniqueness|public.Session.id"
       ]
     }
   ],
@@ -263,6 +367,22 @@
       "row": {
         "schema": "public",
         "table": "PushDevice",
+        "name": "sessionId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
         "name": "updatedAt",
         "type": "timestamp(3)",
         "typeSchema": null,
@@ -294,12 +414,76 @@
       "op": "create",
       "row": {
         "schema": "public",
+        "table": "PushToken",
+        "name": "sessionId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "PushDevice_sessionId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sessionId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
         "table": "PushDevice",
         "name": "PushDevice_deviceId_idx",
         "nameExplicit": true,
         "columns": [
           {
             "value": "deviceId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushToken",
+        "name": "PushToken_sessionId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "sessionId",
             "isExpression": false,
             "asc": true,
             "nullsFirst": false,
@@ -326,6 +510,46 @@
         ],
         "schemaTo": "public",
         "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "PushDevice_sessionId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "sessionId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "Session",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushToken",
+        "name": "PushToken_sessionId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "sessionId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "Session",
         "columnsTo": [
           "id"
         ],

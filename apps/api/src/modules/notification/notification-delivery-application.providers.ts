@@ -47,6 +47,7 @@ import { PublishPushDeliveryOutbox } from "./application/use-cases/delivery/publ
 import { ReconcilePushReceipts } from "./application/use-cases/delivery/reconcile-push-receipts.use-case.js";
 import { RecoverFailedPushDeliveries } from "./application/use-cases/delivery/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutbox } from "./application/use-cases/delivery/relay-push-delivery-outbox.use-case.js";
+import { ReleaseSessionPushDevices } from "./application/use-cases/delivery/release-session-push-devices.use-case.js";
 import { ReportPushDevice } from "./application/use-cases/delivery/report-push-device.use-case.js";
 import { SendBatchNotification } from "./application/use-cases/delivery/send-batch-notification.use-case.js";
 import { SendBillingIssueNotification } from "./application/use-cases/delivery/send-billing-issue-notification.use-case.js";
@@ -399,6 +400,28 @@ export const recoverFailedPushDeliveriesProvider: FactoryProvider<RecoverFailedP
     lifecycle: ConstructorParameters<typeof RecoverFailedPushDeliveries>[0]["lifecycle"],
     unitOfWork: ConstructorParameters<typeof RecoverFailedPushDeliveries>[0]["unitOfWork"],
   ) => new RecoverFailedPushDeliveries({ lifecycle, unitOfWork }),
+};
+
+export const releaseSessionPushDevicesProvider: FactoryProvider<ReleaseSessionPushDevices> = {
+  provide: ReleaseSessionPushDevices,
+  inject: [PUSH_DEVICE_REPOSITORY, PUSH_TOKEN_REPOSITORY, UNIT_OF_WORK, NOTIFICATION_CACHE],
+  useFactory: (
+    pushDeviceRepository: ConstructorParameters<
+      typeof ReleaseSessionPushDevices
+    >[0]["pushDeviceRepository"],
+    pushTokenRepository: ConstructorParameters<
+      typeof ReleaseSessionPushDevices
+    >[0]["pushTokenRepository"],
+    unitOfWork: ConstructorParameters<typeof ReleaseSessionPushDevices>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof ReleaseSessionPushDevices>[0]["cache"],
+  ) =>
+    new ReleaseSessionPushDevices({
+      pushDeviceRepository,
+      pushTokenRepository,
+      unitOfWork,
+      cache,
+      logger: new Logger(ReleaseSessionPushDevices.name),
+    }),
 };
 
 export const reportPushDeviceProvider: FactoryProvider<ReportPushDevice> = {

@@ -52,6 +52,7 @@ export function createPushTokenRepositoryMock(): PushTokenRepositoryPort {
     findActivePushTokensByUsers: vi.fn(),
     deletePushTokensByDevice: vi.fn().mockResolvedValue({ count: 0 }),
     deleteAllPushTokensByUser: vi.fn(),
+    deletePushTokensBySessions: vi.fn().mockResolvedValue({ userIds: [] }),
     deactivateInvalidTokens: vi.fn(),
   };
 }

@@ -103,6 +103,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
       // Then 권한은 GRANTED, 결과 문구는 그대로다
       expect(reportPushDeviceUseCase.execute).toHaveBeenCalledWith({
         userId: mockUser.userId,
+        sessionId: mockUser.sessionId,
         deviceId: "android_abc",
         platformHint: undefined,
         deviceModel: "SM-S931N",

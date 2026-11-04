@@ -69,6 +69,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       token: `ExponentPushToken[${suffix}-old]`,
       deviceId: "device",
       platform: "IOS",
+      sessionId: null,
       payloadVersion: 1,
     });
     const [notification] = await client
@@ -134,6 +135,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       token: "ExponentPushToken[rotation-new]",
       deviceId: "device",
       platform: "IOS",
+      sessionId: null,
       payloadVersion: 1,
     });
 
@@ -179,6 +181,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       token: "ExponentPushToken[between-new]",
       deviceId: "device",
       platform: "IOS",
+      sessionId: null,
       payloadVersion: 1,
     });
     const result = await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));

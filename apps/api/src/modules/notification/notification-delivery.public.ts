@@ -14,6 +14,10 @@ export {
   type PushCampaignOutcomeReaderPort,
 } from "./application/ports/delivery/push-campaign-outcome.reader.port.js";
 export {
+  SESSION_PUSH_DEVICE_RELEASE,
+  type SessionPushDeviceReleasePort,
+} from "./application/ports/delivery/session-push-device-release.port.js";
+export {
   PUSH_QUIET_HOURS_READER,
   type PushQuietHoursReaderPort,
 } from "./application/ports/delivery/push-quiet-hours.reader.port.js";

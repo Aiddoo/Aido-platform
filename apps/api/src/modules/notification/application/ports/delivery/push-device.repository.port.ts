@@ -14,6 +14,9 @@ export interface PushDeviceRepositoryPort {
   savePushDevice(device: PushDevice): Promise<void>;
   deletePushDevice(userId: string, deviceId: string): Promise<void>;
   deleteAllPushDevicesByUser(userId: string): Promise<void>;
+  deletePushDevicesBySessions(
+    sessionIds: readonly string[],
+  ): Promise<{ readonly userIds: readonly string[] }>;
   /** reportedSince 이후 보고한 기기의 권한. 그런 기기가 없는 사용자는 Map에 없다. */
   findPermissionStatusesByUsers(
     userIds: readonly string[],

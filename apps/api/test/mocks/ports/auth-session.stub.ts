@@ -11,6 +11,7 @@ import type {
   AuthSessionRepositoryPort,
   RotateAuthSessionInput,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/application/ports/auth/session-push-device-releaser.port";
 import type { CreateSessionData } from "#api/modules/identity/application/types/auth/index";
 import { SessionFixture } from "#test/fixtures/session.fixture";
 
@@ -136,6 +137,15 @@ export class StubAuthSessionCache implements Pick<AuthCachePort, "invalidateSess
 
   async invalidateSession(sessionId: string): Promise<void> {
     this.sessionIds.delete(sessionId);
+  }
+}
+
+/** 폐기 뒤 푸시 기기 해제를 요청한 세션을 순서대로 기록한다. */
+export class StubSessionPushDeviceReleaser implements SessionPushDeviceReleaserPort {
+  readonly releasedSessionIds: string[] = [];
+
+  async releaseSessions(sessionIds: readonly string[]): Promise<void> {
+    this.releasedSessionIds.push(...sessionIds);
   }
 }
 

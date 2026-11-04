@@ -27,5 +27,9 @@ export interface PushTokenRepositoryPort {
   findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]>;
   deletePushTokensByDevice(userId: string, deviceId: string): Promise<{ count: number }>;
   deleteAllPushTokensByUser(userId: string): Promise<{ count: number }>;
+  /** 지운 토큰마다 그 사용자 ID를 하나씩 돌려준다. */
+  deletePushTokensBySessions(
+    sessionIds: readonly string[],
+  ): Promise<{ readonly userIds: readonly string[] }>;
   deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }>;
 }

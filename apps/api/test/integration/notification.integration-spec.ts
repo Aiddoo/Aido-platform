@@ -437,6 +437,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // When
       const registration = facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         deviceId: "ios_device-1",
@@ -457,6 +458,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         token: mockPushToken,
@@ -467,6 +469,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // When
       await facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         token: mockPushToken,
@@ -490,6 +493,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         token: mockPushToken,
@@ -499,6 +503,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // When 같은 기기에서 사용자 B가 로그인해 같은 토큰을 등록한다
       const registration = facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: "other-user",
         token: mockPushToken,
@@ -519,6 +524,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         token: mockPushToken,
@@ -528,6 +534,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // When
       await facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         token: mockPushToken,
@@ -546,6 +553,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // When
       const registration = facade.reportPushDevice({
         permission: GRANTED_PERMISSION,
+        sessionId: null,
         payloadVersion: 1,
         userId: mockUserId,
         deviceId: "ios_device-1",

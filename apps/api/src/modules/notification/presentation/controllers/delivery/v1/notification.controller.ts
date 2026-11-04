@@ -172,6 +172,7 @@ export class NotificationController {
     const report = await this.reportPushDeviceUseCase.execute({
       ...pushDeviceContext(client),
       userId: user.userId,
+      sessionId: user.sessionId,
       deviceId: params.deviceId,
       permission: dto.permission,
       token: dto.token,
@@ -213,6 +214,7 @@ export class NotificationController {
     await this.reportPushDeviceUseCase.execute({
       ...pushDeviceContext(client),
       userId: user.userId,
+      sessionId: user.sessionId,
       deviceId: dto.deviceId ?? LEGACY_DEFAULT_DEVICE_ID,
       permission: { status: PUSH_PERMISSION_STATUS.GRANTED, canAskAgain: false },
       token: dto.token,

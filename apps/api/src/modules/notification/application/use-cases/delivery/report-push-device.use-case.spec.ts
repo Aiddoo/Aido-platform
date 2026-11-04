@@ -60,6 +60,7 @@ class RecordingLogger implements Pick<ApplicationLogger, "log" | "warn"> {
 function createCommand(overrides: Partial<ReportPushDeviceCommand> = {}): ReportPushDeviceCommand {
   return {
     userId: "user-a",
+    sessionId: "session-a",
     deviceId: "ios_device-a",
     permission: { status: "GRANTED", canAskAgain: false },
     token: VALID_TOKEN,

@@ -34,6 +34,8 @@ export const NotificationDeliveryLogEvent = {
   PUBLISH_PUSH_DELIVERY_OUTBOX_PUBLISH_MARK_FAILED:
     "notification.delivery.publish-push-delivery-outbox.publish-mark-failed",
   RECONCILE_PUSH_RECEIPTS_RECONCILED: "notification.delivery.reconcile-push-receipts.reconciled",
+  RELEASE_SESSION_PUSH_DEVICES_RELEASED:
+    "notification.delivery.release-session-push-devices.released",
   REPORT_PUSH_DEVICE_REPORTED: "notification.delivery.report-push-device.reported",
   REPORT_PUSH_DEVICE_OWNER_TRANSFERRED:
     "notification.delivery.report-push-device.owner-transferred",

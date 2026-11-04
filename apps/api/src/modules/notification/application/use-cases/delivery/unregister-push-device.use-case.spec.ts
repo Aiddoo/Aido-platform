@@ -27,6 +27,7 @@ async function setup() {
   for (const deviceId of ["ios_phone", "android_tablet"]) {
     await report.execute({
       userId: "user-a",
+      sessionId: null,
       deviceId,
       permission: { status: "GRANTED", canAskAgain: false },
       token: `ExponentPushToken[${deviceId}]`,

@@ -33,7 +33,7 @@ import {
   retentionExperimentStageStatus,
   retentionExperimentVariant,
 } from "./enums.schema.js";
-import { user } from "./identity.schema.js";
+import { session, user } from "./identity.schema.js";
 
 export const notification = pgTable(
   "Notification",
@@ -134,6 +134,7 @@ export const pushDevice = pgTable(
     permissionStatus: pushPermissionStatus().notNull(),
     platform: platform().notNull(),
     reportedAt: timestamp({ precision: 3 }).notNull(),
+    sessionId: text(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()
       .$defaultFn(() => new Date())
@@ -148,6 +149,14 @@ export const pushDevice = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("cascade"),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [session.id],
+      name: "PushDevice_sessionId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushDevice_sessionId_idx").using("btree", table.sessionId.asc().nullsLast()),
     index("PushDevice_deviceId_idx").using("btree", table.deviceId.asc().nullsLast()),
     unique("PushDevice_userId_deviceId_key").on(table.userId, table.deviceId),
   ],
@@ -164,6 +173,7 @@ export const pushToken = pgTable(
     lastUsedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     payloadVersion: integer().default(1).notNull(),
     platform: platform().notNull(),
+    sessionId: text(),
     token: varchar({ length: 255 }).notNull(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()
@@ -179,11 +189,19 @@ export const pushToken = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("cascade"),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [session.id],
+      name: "PushToken_sessionId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
     index("PushToken_userId_isActive_idx").using(
       "btree",
       table.userId.asc().nullsLast(),
       table.isActive.asc().nullsLast(),
     ),
+    index("PushToken_sessionId_idx").using("btree", table.sessionId.asc().nullsLast()),
     unique("PushToken_token_key").on(table.token),
     unique("PushToken_userId_deviceId_key").on(table.userId, table.deviceId),
   ],

@@ -32,6 +32,7 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
   async savePushDevice(device: PushDevice): Promise<void> {
     const values = {
       platform: device.platform,
+      sessionId: device.sessionId,
       permissionStatus: device.permission.status,
       permissionCanAskAgain: device.permission.canAskAgain,
       deviceModel: device.deviceModel,
@@ -52,6 +53,16 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
 
   async deleteAllPushDevicesByUser(userId: string): Promise<void> {
     await this.db.delete(pushDevice).where(eq(pushDevice.userId, userId));
+  }
+
+  async deletePushDevicesBySessions(
+    sessionIds: readonly string[],
+  ): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.db
+      .delete(pushDevice)
+      .where(inArray(pushDevice.sessionId, [...sessionIds]))
+      .returning({ userId: pushDevice.userId });
+    return { userIds: deleted.map((row) => row.userId) };
   }
 
   async findPermissionStatusesByUsers(

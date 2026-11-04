@@ -34,11 +34,13 @@ import {
 } from "./application/ports/delivery/push-rate-limiter.port.js";
 import { PUSH_RECEIPT_REPOSITORY } from "./application/ports/delivery/push-receipt.repository.port.js";
 import { PUSH_TOKEN_REPOSITORY } from "./application/ports/delivery/push-token.repository.port.js";
+import { SESSION_PUSH_DEVICE_RELEASE } from "./application/ports/delivery/session-push-device-release.port.js";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/delivery/user-notification-settings.port.js";
 import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
 import { NotificationAccountCleanup } from "./application/services/delivery/notification-account-cleanup.js";
 import { PushQuietHoursReader } from "./application/services/delivery/push-quiet-hours.reader.js";
+import { ReleaseSessionPushDevices } from "./application/use-cases/delivery/release-session-push-devices.use-case.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/delivery/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/delivery/notification-cache.adapter.js";
@@ -84,6 +86,7 @@ import {
   pushNotificationPayloadFactoryProvider,
   reconcilePushReceiptsProvider,
   recoverFailedPushDeliveriesProvider,
+  releaseSessionPushDevicesProvider,
   reportPushDeviceProvider,
   relayPushDeliveryOutboxProvider,
   sendBatchNotificationProvider,
@@ -113,6 +116,8 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     markAsReadProvider,
     markNotificationOpenedProvider,
     markAllAsReadProvider,
+    releaseSessionPushDevicesProvider,
+    { provide: SESSION_PUSH_DEVICE_RELEASE, useExisting: ReleaseSessionPushDevices },
     reportPushDeviceProvider,
     unregisterPushDeviceProvider,
     optOutMarketingPushProvider,
@@ -244,6 +249,7 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     NotificationAccountCleanup,
     NotificationQueueModule,
     PUSH_CAMPAIGN_OUTCOME_READER,
+    SESSION_PUSH_DEVICE_RELEASE,
   ],
 })
 export class NotificationDeliveryModule {}

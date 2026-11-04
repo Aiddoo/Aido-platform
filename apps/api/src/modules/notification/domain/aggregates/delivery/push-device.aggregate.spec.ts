@@ -6,6 +6,7 @@ import { PushDevice } from "./push-device.aggregate.js";
 function report(status: PushPermission["status"], token: string | null) {
   return PushDevice.report({
     userId: "user-a",
+    sessionId: "session-a",
     deviceId: "ios_device-a",
     platform: "IOS",
     permission: PushPermission.of({ status, canAskAgain: false }),
@@ -35,6 +36,7 @@ describe("PushDevice — 푸시 기기", () => {
     expect(() =>
       PushDevice.report({
         userId: "user-a",
+        sessionId: null,
         deviceId: "device-x",
         platform: null,
         permission: PushPermission.of({ status: "GRANTED", canAskAgain: false }),

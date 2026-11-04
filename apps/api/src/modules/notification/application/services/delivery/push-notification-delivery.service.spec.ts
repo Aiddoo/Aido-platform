@@ -62,6 +62,7 @@ function reportedDevice(input: {
 }): PushDevice {
   return PushDevice.report({
     userId: input.userId,
+    sessionId: null,
     deviceId: `ios_${input.userId}`,
     platform: "IOS",
     permission: PushPermission.of({ status: input.status, canAskAgain: false }),

@@ -9,6 +9,8 @@ import type { PushPermission } from "../../value-objects/delivery/push-permissio
 interface PushDeviceProps {
   readonly userId: string;
   readonly deviceId: string;
+  /** 보고한 로그인 세션. 세션이 끝나면 이 기기는 푸시 대상에서 빠진다. */
+  readonly sessionId: string | null;
   readonly platform: PushDevicePlatform;
   readonly permission: PushPermission;
   readonly token: string | null;
@@ -36,6 +38,10 @@ export class PushDevice extends AggregateRoot<PushDeviceProps> {
 
   get deviceId(): string {
     return this.props.deviceId;
+  }
+
+  get sessionId(): string | null {
+    return this.props.sessionId;
   }
 
   get platform(): PushDevicePlatform {

@@ -7,6 +7,7 @@ import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
   StubAuthSessionRepository,
+  StubSessionPushDeviceReleaser,
   StubAuthSecurityLogRepository,
   StubAuthTokenIssuer,
 } from "#test/mocks/ports/auth-session.stub";
@@ -51,7 +52,9 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
     const cacheService = new StubAuthSessionCache([sessionId]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const logger = mock<ApplicationLogger>();
+    const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new RefreshTokens({
+      pushDevices,
       sessionRepository,
       tokenService,
       cacheService,
@@ -64,6 +67,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
       tokenService,
       cacheService,
       securityLogRepository,
+      pushDevices,
       logger,
     };
   }
@@ -203,6 +207,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
       ]),
     );
     expect(fixture.cacheService.sessionIds).toEqual(new Set(["other-family"]));
+    expect(fixture.pushDevices.releasedSessionIds).toEqual([sessionId, "family-peer"]);
     expect(fixture.sessionRepository.sessions.get("other-family")?.revokedAt).toBeNull();
     expect(fixture.tokenService.issued).toEqual([]);
     expect(fixture.securityLogRepository.entries).toEqual([

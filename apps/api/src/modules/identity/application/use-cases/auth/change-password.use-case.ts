@@ -20,6 +20,7 @@ import type {
   AuthSessionRepositoryPort,
   AuthSecurityLogRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../ports/auth/session-push-device-releaser.port.js";
 
 export interface ChangePasswordInput {
   readonly userId: string;
@@ -40,6 +41,7 @@ interface ChangePasswordDependencies {
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly logger: ApplicationLogger;
 }
 
@@ -102,6 +104,7 @@ export class ChangePassword {
         this.#dependencies.cacheService.invalidateSession(sessionId),
       ),
     );
+    await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     this.#dependencies.logger.log({ event: IdentityLogEvent.PASSWORD_CHANGED, userId });
 
     return { message: "비밀번호가 변경되었습니다." };

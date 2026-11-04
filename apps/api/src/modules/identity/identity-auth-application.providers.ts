@@ -32,6 +32,7 @@ import {
   AUTH_OAUTH_STATE_REPOSITORY,
 } from "./application/ports/auth/auth-persistence.port.js";
 import { RETENTION_ENROLLER } from "./application/ports/auth/retention-enroller.port.js";
+import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/auth/session-push-device-releaser.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
 import { LinkOAuthIdentity } from "./application/services/auth/link-oauth-identity.service.js";
@@ -169,6 +170,7 @@ export const changePasswordProvider: FactoryProvider<ChangePassword> = {
     AUTH_CACHE,
     AUTH_SECURITY_LOG_REPOSITORY,
     UNIT_OF_WORK,
+    SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
     userRepository: ConstructorParameters<typeof ChangePassword>[0]["userRepository"],
@@ -178,8 +180,10 @@ export const changePasswordProvider: FactoryProvider<ChangePassword> = {
     cacheService: ConstructorParameters<typeof ChangePassword>[0]["cacheService"],
     securityLogRepository: ConstructorParameters<typeof ChangePassword>[0]["securityLogRepository"],
     unitOfWork: ConstructorParameters<typeof ChangePassword>[0]["unitOfWork"],
+    pushDevices: ConstructorParameters<typeof ChangePassword>[0]["pushDevices"],
   ) =>
     new ChangePassword({
+      pushDevices,
       userRepository,
       accountRepository,
       passwordService,
@@ -221,6 +225,7 @@ export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
     AUTH_SECURITY_LOG_REPOSITORY,
     UNIT_OF_WORK,
     AUTH_CACHE,
+    SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
     userRepository: ConstructorParameters<typeof DeleteAccount>[0]["userRepository"],
@@ -230,8 +235,10 @@ export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
     securityLogRepository: ConstructorParameters<typeof DeleteAccount>[0]["securityLogRepository"],
     unitOfWork: ConstructorParameters<typeof DeleteAccount>[0]["unitOfWork"],
     cacheService: ConstructorParameters<typeof DeleteAccount>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof DeleteAccount>[0]["pushDevices"],
   ) =>
     new DeleteAccount({
+      pushDevices,
       userRepository,
       accountRepository,
       sessionRepository,
@@ -483,13 +490,20 @@ export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {
 
 export const logoutProvider: FactoryProvider<Logout> = {
   provide: Logout,
-  inject: [AUTH_SESSION_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  inject: [
+    AUTH_SESSION_REPOSITORY,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    AUTH_CACHE,
+    SESSION_PUSH_DEVICE_RELEASER,
+  ],
   useFactory: (
     sessionRepository: ConstructorParameters<typeof Logout>[0]["sessionRepository"],
     securityLogRepository: ConstructorParameters<typeof Logout>[0]["securityLogRepository"],
     cacheService: ConstructorParameters<typeof Logout>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof Logout>[0]["pushDevices"],
   ) =>
     new Logout({
+      pushDevices,
       sessionRepository,
       securityLogRepository,
       cacheService,
@@ -498,13 +512,20 @@ export const logoutProvider: FactoryProvider<Logout> = {
 };
 export const logoutAllProvider: FactoryProvider<LogoutAll> = {
   provide: LogoutAll,
-  inject: [AUTH_SESSION_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  inject: [
+    AUTH_SESSION_REPOSITORY,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    AUTH_CACHE,
+    SESSION_PUSH_DEVICE_RELEASER,
+  ],
   useFactory: (
     sessionRepository: ConstructorParameters<typeof LogoutAll>[0]["sessionRepository"],
     securityLogRepository: ConstructorParameters<typeof LogoutAll>[0]["securityLogRepository"],
     cacheService: ConstructorParameters<typeof LogoutAll>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof LogoutAll>[0]["pushDevices"],
   ) =>
     new LogoutAll({
+      pushDevices,
       sessionRepository,
       securityLogRepository,
       cacheService,
@@ -535,14 +556,22 @@ export const provisionUserProvider: FactoryProvider<ProvisionUser> = {
 
 export const refreshTokensProvider: FactoryProvider<RefreshTokens> = {
   provide: RefreshTokens,
-  inject: [AUTH_SESSION_REPOSITORY, AUTH_TOKEN_ISSUER, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  inject: [
+    AUTH_SESSION_REPOSITORY,
+    AUTH_TOKEN_ISSUER,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    AUTH_CACHE,
+    SESSION_PUSH_DEVICE_RELEASER,
+  ],
   useFactory: (
     sessionRepository: ConstructorParameters<typeof RefreshTokens>[0]["sessionRepository"],
     tokenService: ConstructorParameters<typeof RefreshTokens>[0]["tokenService"],
     securityLogRepository: ConstructorParameters<typeof RefreshTokens>[0]["securityLogRepository"],
     cacheService: ConstructorParameters<typeof RefreshTokens>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof RefreshTokens>[0]["pushDevices"],
   ) =>
     new RefreshTokens({
+      pushDevices,
       sessionRepository,
       tokenService,
       securityLogRepository,
@@ -648,6 +677,7 @@ export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
     AUTH_CACHE,
     AUTH_SECURITY_LOG_REPOSITORY,
     UNIT_OF_WORK,
+    SESSION_PUSH_DEVICE_RELEASER,
   ],
   useFactory: (
     userRepository: ConstructorParameters<typeof ResetPassword>[0]["userRepository"],
@@ -658,8 +688,10 @@ export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
     cacheService: ConstructorParameters<typeof ResetPassword>[0]["cacheService"],
     securityLogRepository: ConstructorParameters<typeof ResetPassword>[0]["securityLogRepository"],
     unitOfWork: ConstructorParameters<typeof ResetPassword>[0]["unitOfWork"],
+    pushDevices: ConstructorParameters<typeof ResetPassword>[0]["pushDevices"],
   ) =>
     new ResetPassword({
+      pushDevices,
       userRepository,
       accountRepository,
       passwordService,
@@ -674,13 +706,20 @@ export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
 
 export const revokeSessionProvider: FactoryProvider<RevokeSession> = {
   provide: RevokeSession,
-  inject: [AUTH_SESSION_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  inject: [
+    AUTH_SESSION_REPOSITORY,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    AUTH_CACHE,
+    SESSION_PUSH_DEVICE_RELEASER,
+  ],
   useFactory: (
     sessionRepository: ConstructorParameters<typeof RevokeSession>[0]["sessionRepository"],
     securityLogRepository: ConstructorParameters<typeof RevokeSession>[0]["securityLogRepository"],
     cacheService: ConstructorParameters<typeof RevokeSession>[0]["cacheService"],
+    pushDevices: ConstructorParameters<typeof RevokeSession>[0]["pushDevices"],
   ) =>
     new RevokeSession({
+      pushDevices,
       sessionRepository,
       securityLogRepository,
       cacheService,

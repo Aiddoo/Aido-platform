@@ -22,6 +22,7 @@ import type { UserNotificationSettingsPort } from "../../ports/delivery/user-not
 
 export interface ReportPushDeviceCommand {
   readonly userId: string;
+  readonly sessionId: string | null;
   readonly deviceId: string;
   /** deviceId 접두어로 플랫폼을 알 수 없을 때만 쓰는 요청 헤더의 플랫폼. */
   readonly platformHint?: PushDevicePlatform;
@@ -82,6 +83,7 @@ export class ReportPushDevice {
 
     const device = PushDevice.report({
       userId: command.userId,
+      sessionId: command.sessionId,
       deviceId: command.deviceId,
       platform: platformFromDeviceId(command.deviceId) ?? command.platformHint ?? null,
       permission: PushPermission.of(command.permission),
@@ -165,6 +167,7 @@ export class ReportPushDevice {
           token,
           deviceId,
           platform: device.platform,
+          sessionId: device.sessionId,
           payloadVersion: command.payloadVersion,
           appVersion: command.appVersion,
         });

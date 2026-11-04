@@ -7,8 +7,8 @@ import {
 } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
 import { DrizzlePushDeviceRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
-import { pushDevice, pushToken, user } from "#api/platform/database/schema/index";
-import { UserFixture } from "#test/fixtures/index";
+import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
+import { SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -63,6 +63,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   function command(overrides: Partial<ReportPushDeviceCommand>): ReportPushDeviceCommand {
     return {
       userId: firstUserId,
+      sessionId: null,
       deviceId: "ios_first",
       permission: { status: "GRANTED", canAskAgain: false },
       token: TOKEN,
@@ -105,6 +106,28 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     expect(await client.select().from(pushToken)).toEqual([]);
     expect(await client.select({ userId: pushDevice.userId }).from(pushDevice)).toEqual([
       { userId: secondUserId },
+    ]);
+  });
+
+  it("로그인 세션이 지워지면(만료 정리) 그 세션의 기기·토큰 행도 함께 지워진다", async () => {
+    // Given 세션에 묶인 기기와 세션 없이 등록된 구 앱 기기
+    const loginSession = SessionFixture.create({ userId: firstUserId });
+    await client.insert(session).values(loginSession);
+    const { reportPushDevice } = createReportPushDevice();
+    await reportPushDevice.execute(command({ sessionId: loginSession.id }));
+    await reportPushDevice.execute(
+      command({ deviceId: "android_legacy", token: "ExponentPushToken[legacy]" }),
+    );
+
+    // When
+    await client.delete(session).where(eq(session.id, loginSession.id));
+
+    // Then
+    expect(await client.select({ deviceId: pushToken.deviceId }).from(pushToken)).toEqual([
+      { deviceId: "android_legacy" },
+    ]);
+    expect(await client.select({ deviceId: pushDevice.deviceId }).from(pushDevice)).toEqual([
+      { deviceId: "android_legacy" },
     ]);
   });
 

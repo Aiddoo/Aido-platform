@@ -7,6 +7,7 @@ import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
   StubAuthSessionRepository,
+  StubSessionPushDeviceReleaser,
   StubAuthSecurityLogRepository,
 } from "#test/mocks/ports/auth-session.stub";
 
@@ -28,7 +29,9 @@ describe("RevokeSession — 지정한 기기의 세션 종료", () => {
     const sessionRepository = new StubAuthSessionRepository(sessions);
     const cacheService = new StubAuthSessionCache([sessionId, "current-session"]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
+    const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new RevokeSession({
+      pushDevices,
       sessionRepository,
       cacheService,
       securityLogRepository,

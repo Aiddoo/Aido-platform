@@ -56,14 +56,23 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
   }
 
   async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
-    const { userId, token, deviceId, platform, payloadVersion, appVersion } = data;
+    const { userId, token, deviceId, platform, sessionId, payloadVersion, appVersion } = data;
     try {
       const [row] = await this.db
         .insert(pushToken)
-        .values({ userId, token, deviceId, platform, isActive: true, payloadVersion, appVersion })
+        .values({
+          userId,
+          token,
+          deviceId,
+          platform,
+          sessionId,
+          isActive: true,
+          payloadVersion,
+          appVersion,
+        })
         .onConflictDoUpdate({
           target: [pushToken.userId, pushToken.deviceId],
-          set: { token, platform, isActive: true, payloadVersion, appVersion },
+          set: { token, platform, sessionId, isActive: true, payloadVersion, appVersion },
         })
         .returning();
       return requireRecord(row);
@@ -112,6 +121,16 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .where(eq(pushToken.userId, userId))
       .returning({ id: pushToken.id });
     return { count: deleted.length };
+  }
+
+  async deletePushTokensBySessions(
+    sessionIds: readonly string[],
+  ): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.db
+      .delete(pushToken)
+      .where(inArray(pushToken.sessionId, [...sessionIds]))
+      .returning({ userId: pushToken.userId });
+    return { userIds: deleted.map((row) => row.userId) };
   }
 
   async deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }> {
