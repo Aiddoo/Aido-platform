@@ -1,3 +1,5 @@
+import { createTodoItemSchema } from '@aido/api';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import {
   useSubTodoScreenParams,
@@ -27,11 +29,13 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
@@ -155,7 +159,11 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
-  const [value, setValue] = useState(subTodo?.title ?? '');
+  const { control, handleSubmit, reset, setValue } = useForm({
+    resolver: zodResolver(createTodoItemSchema),
+    defaultValues: { title: subTodo?.title ?? '' },
+  });
+  const draftTitle = useWatch({ control, name: 'title' });
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
@@ -164,10 +172,10 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const isSubmitting = addSubTodo.isPending || updateSubTodo.isPending;
   const isBusy = isSubmitting || deleteSubTodo.isPending;
 
-  const isSubmitDisabled = !value.trim() || isBusy;
+  const isSubmitDisabled = !draftTitle.trim() || isBusy;
 
-  const handleSubmit = async () => {
-    const title = value.trim();
+  const submitSubTodo = handleSubmit(async (values) => {
+    const title = values.title.trim();
     if (!title || isBusy) {
       return;
     }
@@ -188,10 +196,10 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
     }
 
     if (subTodo == null) {
-      setValue('');
+      reset();
     }
     onClose();
-  };
+  });
 
   const handleDelete = async (target: SubTodo) => {
     if (isBusy) {
@@ -209,19 +217,23 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
 
   return (
     <VStack gap={12}>
-      <BottomSheetInput
-        ref={inputRef}
-        testID="sub-todo-input"
-        autoFocus
-        placeholder={t('subTodo.placeholder')}
-        value={value}
-        onChange={setValue}
-        maxLength={200}
-        size="medium"
-        renderErrorMessage={false}
-        returnKeyType="done"
-        onSubmitEditing={isSubmitDisabled ? onClose : handleSubmit}
-      />
+      <FormField control={control} name="title">
+        {({ value, onChange }) => (
+          <BottomSheetInput
+            ref={inputRef}
+            testID="sub-todo-input"
+            autoFocus
+            placeholder={t('subTodo.placeholder')}
+            value={value}
+            onChange={onChange}
+            maxLength={createTodoItemSchema.shape.title.maxLength ?? undefined}
+            size="medium"
+            renderErrorMessage={false}
+            returnKeyType="done"
+            onSubmitEditing={() => (isSubmitDisabled ? onClose() : submitSubTodo())}
+          />
+        )}
+      </FormField>
 
       <Box className="h-px bg-gray-2" />
 
@@ -244,11 +256,11 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
         <Box className="flex-1" />
 
         <SpeechTooltip />
-        <SpeechButton onResult={setValue} />
+        <SpeechButton onResult={(text) => setValue('title', text)} />
         <PressableFeedback
           testID="sub-todo-submit"
           isDisabled={isSubmitDisabled}
-          onPress={handleSubmit}
+          onPress={() => submitSubTodo()}
           style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
           className={cn(
             'items-center justify-center rounded-4xl',

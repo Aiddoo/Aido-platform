@@ -103,4 +103,36 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
     settleRequests();
   });
+
+  it('공백만 남기면 전송이 꺼진다', async () => {
+    const { settleRequests } = await renderEditSheet();
+
+    // Given 제목을 공백으로 바꾼다
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '   ');
+
+    // Then 전송 버튼이 꺼진다
+    await waitFor(() => {
+      expect(submitButton()).toBeDisabled();
+    });
+    settleRequests();
+  });
+
+  it('고친 제목은 앞뒤 공백을 지우고 보낸다', async () => {
+    const { httpClient, settleRequests } = await renderEditSheet();
+
+    // Given 제목을 앞뒤 공백과 함께 고친다
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '  우유 사기  ');
+
+    // When 전송한다
+    fireEvent.press(submitButton()).catch(() => undefined);
+
+    // Then 공백을 지운 제목으로 수정을 요청한다
+    await waitFor(() => {
+      expect(httpClient.patch).toHaveBeenCalledWith(expect.any(String), { title: '우유 사기' });
+    });
+    settleRequests();
+    await waitFor(() => {
+      expect(submitButton()).toBeEnabled();
+    });
+  });
 });
