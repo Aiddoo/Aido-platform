@@ -1,4 +1,4 @@
-import { Box } from '@src/shared/ui';
+import { Box, ModalBottomSheet, useOverlay } from '@src/shared/ui';
 import { type PropsWithChildren, useState } from 'react';
 import { Keyboard } from 'react-native';
 
@@ -8,8 +8,6 @@ import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.mode
 interface ScopeRequest {
   action: 'edit' | 'delete';
   date: string;
-  /** 규칙을 바꾸면 서버가 이 회차만 고치는 것을 받지 않아 이후 범위만 보인다 */
-  isFollowingOnly: boolean;
   resolve: (scope: TodoEditScope | null) => void;
 }
 
@@ -20,10 +18,10 @@ interface ScopeRequest {
 export function useSelectTodoScope() {
   const [request, setRequest] = useState<ScopeRequest | null>(null);
 
-  const selectScope = (action: ScopeRequest['action'], date: string, isFollowingOnly = false) =>
+  const selectScope = (action: ScopeRequest['action'], date: string) =>
     new Promise<TodoEditScope | null>((resolve) => {
       Keyboard.dismiss();
-      setRequest({ action, date, isFollowingOnly, resolve });
+      setRequest({ action, date, resolve });
     });
 
   const settle = (scope: TodoEditScope | null) => {
@@ -32,11 +30,8 @@ export function useSelectTodoScope() {
   };
 
   return {
-    selectEditScope: async (
-      date: string,
-      { isFollowingOnly = false }: { isFollowingOnly?: boolean } = {},
-    ): Promise<TodoUpdateScope | null> => {
-      const scope = await selectScope('edit', date, isFollowingOnly);
+    selectEditScope: async (date: string): Promise<TodoUpdateScope | null> => {
+      const scope = await selectScope('edit', date);
       return scope === 'ALL' ? null : scope;
     },
     selectDeleteScope: (date: string) => selectScope('delete', date),
@@ -62,11 +57,51 @@ export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
         <TodoScopeSelectContent
           action={scopeRequest.action}
           date={scopeRequest.date}
-          isFollowingOnly={scopeRequest.isFollowingOnly}
           onChange={settleScope}
           onBack={() => settleScope(null)}
         />
       )}
     </>
   );
+}
+
+/**
+ * 키보드를 쓰는 입력 시트에서 수정 범위를 묻는다. 안에서 내용을 갈아 끼우면 화면 폭 시트가 남고 키보드가 내려가는 동안
+ * 높이가 튀어서, 날짜·반복 선택처럼 떠 있는 시트를 위에 올린다. 아래 폼은 그대로라 입력값이 남는다.
+ * 뒤로 가거나 바깥을 눌러 닫으면 null이고, 닫힘이 끝난 뒤 onBack을 부른다.
+ */
+export function useSelectTodoEditScopeInOverlay({ onBack }: { onBack: () => void }) {
+  const overlay = useOverlay();
+
+  return (
+    date: string,
+    { isFollowingOnly = false }: { isFollowingOnly?: boolean } = {},
+  ): Promise<TodoUpdateScope | null> => {
+    Keyboard.dismiss();
+    let selectedScope: TodoUpdateScope | null = null;
+
+    return overlay.open<TodoUpdateScope | null>(({ isOpen, close, exit }) => (
+      <ModalBottomSheet
+        isOpen={isOpen}
+        onOpenChange={() => close(null)}
+        onExit={() => {
+          exit();
+          if (selectedScope == null) {
+            onBack();
+          }
+        }}
+      >
+        <TodoScopeSelectContent
+          action="edit"
+          date={date}
+          isFollowingOnly={isFollowingOnly}
+          onChange={(scope) => {
+            selectedScope = scope === 'ALL' ? null : scope;
+            close(selectedScope);
+          }}
+          onBack={() => close(null)}
+        />
+      </ModalBottomSheet>
+    ));
+  };
 }
