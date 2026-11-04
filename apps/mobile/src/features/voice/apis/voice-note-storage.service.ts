@@ -10,7 +10,7 @@ export interface VoiceNoteRecordingUsage {
   notes: { note: VoiceNote; bytes: number }[];
 }
 
-/** 기기 안에만 있는 말로 메모하기 초안과 녹음 파일. 둘은 항상 함께 지우고 사용자 범위를 지킨다 */
+/** 기기에 저장하는 말로 메모하기 초안과 녹음 파일(서버로 보내지 않는다). 둘은 항상 함께 지우고 사용자 범위를 지킨다 */
 export class VoiceNoteStorageService {
   readonly drafts: VoiceNoteDraftRepository;
   readonly recordings: VoiceRecordingRepository;

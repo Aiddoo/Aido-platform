@@ -45,7 +45,8 @@
     "marketingPushDescription": "Receive recommendations and return reminders by push",
     "aiDataSharing": {
       "label": "AI data sharing",
-      "description": "Sends what you type to Google Gemini to organize it into to-dos",
+      "description": "Sends what you type and your speech turned into text to Anthropic, Google, and OpenAI to organize it into to-dos. If your device can't recognize speech on its own, Apple or Google speech recognition may turn your voice into text. Audio files are never sent to Aido servers.",
+      "descriptionGoogleOnly": "Sends what you type to Google Gemini to organize it into to-dos",
       "agreedOn": "Agreed on {{date}}",
       "withdrawTitle": "Withdraw consent?",
       "withdrawDescription": "You won't be able to use AI to organize to-dos, reports, or suggestions. Existing to-dos stay.",
@@ -63,7 +64,7 @@
   },
   "voiceStorage": {
     "totalLabel": "Recordings on this device",
-    "description": "Audio files stay on this device. Voice notes and their audio are removed automatically after 30 days.",
+    "description": "Audio files are never sent to Aido servers. Voice notes and their audio are removed automatically after 30 days.",
     "empty": "No saved recordings",
     "removeOneTitle": "Delete this recording?",
     "removeAllTitle": "Delete all recordings?",

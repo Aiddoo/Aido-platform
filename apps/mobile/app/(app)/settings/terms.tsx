@@ -179,7 +179,12 @@ function AiDataSharingConsentCard() {
     <SettingsCard>
       <SettingsCard.Toggle
         label={t('settings:terms.aiDataSharing.label')}
-        description={t('settings:terms.aiDataSharing.description')}
+        description={
+          // 이전 안내에 동의한 사람의 글자는 서버가 그 안내의 처리 업체(Google)로만 보낸다
+          ConsentPolicy.shouldShowAiConsentRenewal(consent)
+            ? t('settings:terms.aiDataSharing.descriptionGoogleOnly')
+            : t('settings:terms.aiDataSharing.description')
+        }
         isSelected={isAgreed}
         onSelectedChange={handleSelectedChange}
         isDisabled={updateConsent.isPending}
