@@ -30,7 +30,6 @@
   "form": {
     "titleRequired": "Please enter a title",
     "titleMaxLength": "Title can be up to 200 characters",
-    "timeFormatInvalid": "Time must be in HH:mm format",
     "repeatEndDateRequired": "Please choose an end date for the repeat",
     "repeatDaysRequired": "Please choose days to repeat",
     "nudgeMessageMax_one": "Your message can be up to {{count}} character",

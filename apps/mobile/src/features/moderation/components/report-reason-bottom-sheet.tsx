@@ -67,7 +67,7 @@ export function ReportReasonBottomSheet({
   const { success, error: showErrorToast } = useAppToast();
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
   const reportContent = useMutation(useReportContentMutationOptions());
-  const formMethods = useForm<UserReportFormInput>({
+  const formMethods = useForm({
     resolver: zodResolver(userReportFormSchema),
     defaultValues: { detail: '' },
     mode: 'onChange',
