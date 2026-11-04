@@ -103,7 +103,7 @@ describe("voice 계약", () => {
     expect(parsed.success).toBe(true);
   });
 
-  it("AI_1312·AI_1315·AI_1317·AI_1318 공개 상세는 정해진 칸만 싣는다", () => {
+  it("AI_1312·AI_1315·AI_1318 공개 상세는 정해진 칸만 싣는다", () => {
     // Given
     const featureQuota = {
       feature: "VOICE_NOTE",
@@ -129,7 +129,6 @@ describe("voice 계약", () => {
       categoryIds: [9],
       userId: "u",
     });
-    const gone = toPublicErrorDetails(ErrorCode.AI_1317, { charged: false, featureQuota });
     const reused = toPublicErrorDetails(ErrorCode.AI_1318, { charged: false, userId: "u" });
     // Then
     expect(tooLong).toEqual({
@@ -139,7 +138,6 @@ describe("voice 계약", () => {
       maxCharacters: 4000,
     });
     expect(rejected).toEqual({ reason: "CATEGORY_NOT_OWNED", categoryIds: [9] });
-    expect(gone).toEqual({ charged: false, featureQuota });
     expect(reused).toEqual({ charged: false });
   });
 });

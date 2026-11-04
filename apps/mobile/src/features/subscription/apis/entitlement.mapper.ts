@@ -78,7 +78,7 @@ export function findLimitedFeature(error: unknown): LimitedFeature | null {
   };
 }
 
-/** 처리 중·결과 만료·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도. 없으면 null */
+/** 처리 중·길이 초과처럼 한도 오류가 아니어도 서버가 함께 준 현재 한도. 없으면 null */
 export function findErrorFeatureQuota(error: unknown): FeatureQuota | null {
   if (!isApiError(error)) {
     return null;

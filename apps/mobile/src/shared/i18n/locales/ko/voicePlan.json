@@ -36,10 +36,6 @@
       "title": "아직 정리하고 있어요",
       "description": "잠시 뒤에 다시 시도해주세요."
     },
-    "key-expired": {
-      "title": "결과를 다시 받아야 해요",
-      "description": "한 번 더 눌러 다시 정리해주세요."
-    },
     "ai-unavailable": {
       "title": "지금은 정리하지 못했어요",
       "description": "잠시 후 다시 시도해주세요."

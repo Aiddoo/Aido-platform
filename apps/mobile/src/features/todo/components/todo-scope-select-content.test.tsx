@@ -62,7 +62,7 @@ describe('TodoScopeSelectContent', () => {
 
     // Then
     expect(screen.getByText('11월 4일 할 일만 지워져요')).toBeTruthy();
-    expect(screen.getByText('완료한 기록도 함께 지워져요')).toBeTruthy();
+    expect(screen.getByText('지난 할 일과 완료한 기록까지 모두 지워져요')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith('ALL');
   });
 });

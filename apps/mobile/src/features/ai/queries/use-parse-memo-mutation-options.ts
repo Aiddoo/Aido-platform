@@ -48,7 +48,6 @@ export const useParseMemoMutationOptions = () => {
       trackEvent('voice_plan_generated', {
         source: toAnalyticsSource(plan.source),
         ...summarizePlanForAnalytics(plan),
-        charged: true,
       });
       // 결과는 기기에 남겨 화면을 벗어나거나 앱을 다시 켜도 잃지 않는다
       const accountId = getCachedMe(queryClient)?.id;

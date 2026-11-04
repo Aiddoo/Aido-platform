@@ -45,9 +45,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
         accountId,
         withDigestRequest(
           note,
-          request == null
-            ? null
-            : { idempotencyKey: request.idempotencyKey, hasExpired: request.hasExpired === true },
+          request == null ? null : { idempotencyKey: request.idempotencyKey },
         ),
       );
     }

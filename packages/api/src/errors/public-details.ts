@@ -63,7 +63,6 @@ const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
   [ErrorCode.AI_1314]: quotaErrorDetailsSchema,
   [ErrorCode.AI_1312]: voiceNoteTooLongErrorDetailsSchema,
   [ErrorCode.AI_1315]: actionPlanRejectedErrorDetailsSchema,
-  [ErrorCode.AI_1317]: quotaErrorDetailsSchema,
   [ErrorCode.AI_1318]: notChargedErrorDetailsSchema,
 };
 

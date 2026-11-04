@@ -23,8 +23,12 @@ export const useRegisterMutationOptions = () => {
       const result = await authService.register(input);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: ({ isEmailSent }) => {
       trackEvent('auth_signup', { method: 'email' });
+      // 가입은 됐다. 코드 입력 단계의 재발송으로 다시 받게 알린다
+      if (!isEmailSent) {
+        toast.warning(t('auth:toasts.verificationEmailNotSent'));
+      }
     },
     onError: (error) => {
       haptics.notify('error');

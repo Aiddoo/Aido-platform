@@ -40,6 +40,8 @@ export const ConsentPolicy = {
 export const registerResultSchema = z.object({
   message: z.string(),
   email: z.string(),
+  /** 인증 메일을 발송 큐에 담았는지. false면 가입은 됐고 재발송으로 다시 받는다 */
+  isEmailSent: z.boolean(),
 });
 export type RegisterResult = z.infer<typeof registerResultSchema>;
 

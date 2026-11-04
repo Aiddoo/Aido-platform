@@ -63,7 +63,6 @@ export type VoiceNoteRecording = z.infer<typeof voiceNoteRecordingSchema>;
 /** 정리를 다시 보낼 때 차감이 겹치지 않도록 앱을 다시 켜도 같은 멱등 키를 쓴다 */
 export const voiceNoteDigestRequestSchema = z.object({
   idempotencyKey: z.string().min(1),
-  hasExpired: z.boolean(),
 });
 export type VoiceNoteDigestRequest = z.infer<typeof voiceNoteDigestRequestSchema>;
 

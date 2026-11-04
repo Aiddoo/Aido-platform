@@ -41,10 +41,6 @@
       "title": "Still working on it",
       "description": "Please try again in a moment."
     },
-    "key-expired": {
-      "title": "We need to get the result again",
-      "description": "Tap once more to try again."
-    },
     "ai-unavailable": {
       "title": "Couldn't sort it out right now",
       "description": "Please try again later."

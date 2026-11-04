@@ -227,7 +227,6 @@ export const ErrorCode = {
   /** Idempotency-Key 헤더가 필요합니다 */
   AI_1316: "AI_1316",
   /** 이미 처리한 요청의 결과를 다시 보낼 수 없습니다 */
-  AI_1317: "AI_1317",
   /** 같은 Idempotency-Key로 다른 요청을 보냈습니다 */
   AI_1318: "AI_1318",
 
@@ -1240,13 +1239,6 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "Idempotency-Key 헤더가 필요합니다.",
     description: `사용자 행동 한 번마다 ${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하의 인쇄 가능한 ASCII 키를 만들어 Idempotency-Key 헤더로 보내고, 재시도할 때 같은 키를 다시 보냅니다. 이 요청은 처리하지 않았고 횟수를 차감하지 않았습니다.`,
     httpStatus: HttpStatus.BAD_REQUEST,
-  },
-  [ErrorCode.AI_1317]: {
-    code: "AI_1317",
-    message: "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
-    description:
-      "서버는 더 이상 이 코드를 내지 않습니다. 결과를 잃은 같은 Idempotency-Key 요청은 추가 차감 없이 다시 만들어 200으로 답합니다.",
-    httpStatus: HttpStatus.GONE,
   },
   [ErrorCode.AI_1318]: {
     code: "AI_1318",

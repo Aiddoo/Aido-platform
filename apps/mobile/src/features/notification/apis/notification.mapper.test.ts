@@ -1,4 +1,5 @@
 import { createNotificationListResponseDto } from '../__tests__/notification.factories';
+import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
 import {
   toNotification,
   toNotificationListResult,
@@ -169,4 +170,56 @@ describe('toPushNotificationPayload', () => {
       expect(result.success).toBe(false);
     },
   );
+});
+
+describe('반복 알림이 멈췄다는 안내(TODO_REMINDER, stage: series-paused)', () => {
+  test('모르는 stage가 와도 푸시를 읽고 탭하면 그 회차를 연다', () => {
+    // Given
+    const data = {
+      notificationId: 7,
+      type: 'TODO_REMINDER',
+      action: { type: 'DEEP_LINK' },
+      context: { todoId: 42 },
+      stage: 'series-paused',
+    };
+
+    // When
+    const result = toPushNotificationPayload(data);
+
+    // Then
+    if (!result.success) {
+      throw new Error('Expected push payload');
+    }
+    expect(
+      resolveNotificationDestination(result.payload, {
+        today: '2026-11-05',
+        windowSizeClass: 'compact',
+      }),
+    ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
+  });
+
+  test('알림 목록의 metadata에 stage만 있어도 목록이 깨지지 않고 그 회차를 연다', () => {
+    // Given
+    const [server] = createNotificationListResponseDto().notifications;
+    if (!server) {
+      throw new Error('Expected notification DTO');
+    }
+
+    // When
+    const notification = toNotification({
+      ...server,
+      type: 'TODO_REMINDER',
+      context: { todoId: 42 },
+      metadata: { stage: 'series-paused' },
+    });
+
+    // Then
+    expect(notification.routing).toBeUndefined();
+    expect(
+      resolveNotificationDestination(notification, {
+        today: '2026-11-05',
+        windowSizeClass: 'compact',
+      }),
+    ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
+  });
 });

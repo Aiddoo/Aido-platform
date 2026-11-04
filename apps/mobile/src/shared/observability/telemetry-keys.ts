@@ -398,7 +398,8 @@ export interface VoiceEventMap {
     todo_count: number;
     memo_count: number;
     duplicate_count: number;
-    charged: boolean;
+    /** 서버가 알려 준 차감 여부. 성공해도 false일 수 있고, 메모 나누기 응답에는 없다 */
+    charged?: boolean;
   };
   voice_plan_failed: { source: VoicePlanAnalyticsSource; cause: VoicePlanFailureCause };
   voice_plan_applied: {

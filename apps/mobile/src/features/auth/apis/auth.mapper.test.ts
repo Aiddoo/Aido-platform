@@ -192,7 +192,19 @@ describe('toRegisterResult', () => {
     expect(result).toEqual({
       message: dto.message,
       email: dto.email,
+      isEmailSent: true,
     });
+  });
+
+  test('인증 메일을 보내지 못했다는 응답을 그대로 옮긴다', () => {
+    // Given
+    const dto = createRegisterDto({ emailSent: false });
+
+    // When
+    const result = toRegisterResult(dto);
+
+    // Then
+    expect(result.isEmailSent).toBe(false);
   });
 });
 

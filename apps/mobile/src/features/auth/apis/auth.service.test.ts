@@ -403,7 +403,7 @@ describe('AuthService', () => {
       expect(publicHttpClient.post).toHaveBeenCalledWith('v1/auth/register', registerInput);
       expect(result).toEqual({
         ok: true,
-        value: { message: dto.message, email: dto.email },
+        value: { message: dto.message, email: dto.email, isEmailSent: true },
       });
     });
 

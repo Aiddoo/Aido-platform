@@ -44,6 +44,14 @@
         "title": "This repeat setting isn't valid",
         "description": "Please choose the repeat again."
       },
+      "too-many-past": {
+        "title": "That start date is too far back",
+        "description": "There are too many past occurrences. Pick a more recent start date."
+      },
+      "category-full": {
+        "title": "This category is full",
+        "description": "Complete some to-dos or pick another category. Your changes weren't saved."
+      },
       "ended": {
         "title": "This repeat has already ended",
         "description": "We refreshed your list."
@@ -116,7 +124,7 @@
     "editFollowingHint": "Changes from {{date}} onward",
     "deleteThisOnlyHint": "Only {{date}} is deleted",
     "deleteFollowingHint": "Deleted from {{date}} onward",
-    "deleteAllHint": "Completed ones are deleted too"
+    "deleteAllHint": "Past and completed ones are deleted too"
   },
   "chip": {
     "repeat": "Repeat",

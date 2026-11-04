@@ -54,6 +54,8 @@ export const toConsent = (dto: ConsentResponse): Consent => ({
 export const toRegisterResult = (dto: RegisterResponse): RegisterResult => ({
   message: dto.message,
   email: dto.email,
+  // 구 서버 응답에는 없다. 그때는 예전처럼 보냈다고 본다
+  isEmailSent: dto.emailSent ?? true,
 });
 
 export const toResendVerificationResult = (

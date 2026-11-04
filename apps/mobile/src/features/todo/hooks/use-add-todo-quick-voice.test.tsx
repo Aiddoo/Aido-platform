@@ -186,22 +186,6 @@ describe('useAddTodoQuickVoice', () => {
     expect(idempotencyKeyOf(httpClient, 1)).toBe(idempotencyKeyOf(httpClient, 0));
   });
 
-  it('결과 없음(AI_1317) 뒤의 사용자 재시도도 추가 차감이 없도록 같은 키를 쓴다', async () => {
-    // Given
-    const { httpClient, speechRecognizer } = await renderQuickVoice();
-    httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1317', '결과 없음', 410)));
-    httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
-    await speak(speechRecognizer);
-    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
-
-    // When
-    await fireEvent.press(screen.getByTestId('retry'));
-
-    // Then
-    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
-    expect(idempotencyKeyOf(httpClient, 1)).toBe(idempotencyKeyOf(httpClient, 0));
-  });
-
   it('내용이 다르다는 오류(AI_1318) 뒤에는 새 키로 보낸다', async () => {
     // Given
     const { httpClient, speechRecognizer } = await renderQuickVoice();

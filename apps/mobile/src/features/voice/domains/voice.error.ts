@@ -8,15 +8,10 @@ export type VoicePlanFailureCause =
   | 'too-long'
   | 'in-progress'
   | 'rejected'
-  | 'key-expired'
   | 'key-conflict'
   | 'source-memo-missing'
   | 'ai-unavailable'
   | 'unknown';
-
-export function isPlanKeyExpiredError(error: unknown) {
-  return isApiError(error) && error.hasCode(ErrorCode.AI_1317);
-}
 
 /** 같은 키로 다른 내용을 보냈다. 내용을 고쳐 다시 보낼 때는 새 키를 만든다 */
 export function isPlanKeyConflictError(error: unknown) {
@@ -51,9 +46,6 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
   }
   if (error.hasCode(ErrorCode.AI_1315)) {
     return 'rejected';
-  }
-  if (isPlanKeyExpiredError(error)) {
-    return 'key-expired';
   }
   if (isPlanKeyConflictError(error)) {
     return 'key-conflict';

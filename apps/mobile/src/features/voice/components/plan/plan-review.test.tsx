@@ -63,17 +63,25 @@ const PLAN: VoicePlan = {
   actions: [BIWEEKLY, GROCERIES],
 };
 
-function PlanReviewScreen({ plan = PLAN }: { plan?: VoicePlan }) {
+function PlanReviewScreen({ plan = PLAN, isCharged }: { plan?: VoicePlan; isCharged?: boolean }) {
   const form = useForm<PlanReviewFormValues>({
     resolver: zodResolver(planReviewFormSchema),
     defaultValues: createPlanReviewFormValues(plan),
     mode: 'onChange',
   });
 
-  return <PlanReview form={form} plan={plan} fallbackCategoryId={1} onApplied={jest.fn()} />;
+  return (
+    <PlanReview
+      form={form}
+      plan={plan}
+      isCharged={isCharged}
+      fallbackCategoryId={1}
+      onApplied={jest.fn()}
+    />
+  );
 }
 
-async function renderPlan(plan?: VoicePlan) {
+async function renderPlan(plan?: VoicePlan, isCharged?: boolean) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -86,7 +94,7 @@ async function renderPlan(plan?: VoicePlan) {
     <LocalDateProvider>
       <OverlayProvider>
         <Suspense fallback={null}>
-          <PlanReviewScreen plan={plan} />
+          <PlanReviewScreen plan={plan} isCharged={isCharged} />
         </Suspense>
       </OverlayProvider>
     </LocalDateProvider>,
@@ -136,5 +144,17 @@ describe('PlanReview', () => {
 
     // Then
     await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeDisabled());
+  });
+
+  test('성공 응답의 charged가 false여도 카드가 있으면 차감 문구를 보이지 않는다', async () => {
+    // Given
+    const isCharged = false;
+
+    // When
+    await renderPlan(PLAN, isCharged);
+
+    // Then
+    expect(await screen.findByText('장보기')).toBeTruthy();
+    expect(screen.queryByText('횟수는 차감되지 않았어요')).toBeNull();
   });
 });

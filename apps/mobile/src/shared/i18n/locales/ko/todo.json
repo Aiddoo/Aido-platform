@@ -44,6 +44,14 @@
         "title": "반복 설정이 올바르지 않아요",
         "description": "반복 설정을 다시 골라주세요."
       },
+      "too-many-past": {
+        "title": "시작일이 너무 오래전이에요",
+        "description": "지난 회차가 너무 많아요. 시작일을 더 가까운 날로 골라주세요."
+      },
+      "category-full": {
+        "title": "이 카테고리의 할 일이 가득 찼어요",
+        "description": "할 일을 완료하거나 다른 카테고리를 골라주세요. 고친 내용은 저장되지 않았어요."
+      },
       "ended": {
         "title": "이미 끝난 반복이에요",
         "description": "목록을 새로 불러왔어요."
@@ -112,7 +120,7 @@
     "editFollowingHint": "{{date}}부터 쭉 바뀌어요",
     "deleteThisOnlyHint": "{{date}} 할 일만 지워져요",
     "deleteFollowingHint": "{{date}}부터 쭉 지워져요",
-    "deleteAllHint": "완료한 기록도 함께 지워져요"
+    "deleteAllHint": "지난 할 일과 완료한 기록까지 모두 지워져요"
   },
   "chip": {
     "repeat": "반복",

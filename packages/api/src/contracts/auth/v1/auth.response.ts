@@ -336,12 +336,17 @@ export const registerResponseSchema = z
   .object({
     message: z.string().describe("응답 메시지"),
     email: z.email().describe("가입한 이메일 주소"),
+    emailSent: z
+      .boolean()
+      .optional()
+      .describe("인증 메일을 발송 큐에 담았는지. false면 가입은 됐고 재발송으로 다시 보내면 된다"),
   })
   .describe("회원가입 응답")
   .meta({
     example: {
       message: "인증 코드가 이메일로 발송되었습니다.",
       email: "dydals3440@gmail.com",
+      emailSent: true,
     },
   });
 

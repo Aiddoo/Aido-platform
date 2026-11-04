@@ -175,26 +175,6 @@ describe('useVoiceNoteDigest', () => {
     expect(savedKey).toBe(idempotencyKeyOf(httpClient, 0));
     expect(idempotencyKeyOf(httpClient, 1)).toBe(idempotencyKeyOf(httpClient, 0));
   });
-
-  test('결과 없음(AI_1317)도 첫 재시도는 같은 키로 보낸다', async () => {
-    // Given
-    const { httpClient } = await renderDigest();
-    httpClient.post.mockResolvedValueOnce(
-      err(new ApiError('AI_1317', '결과 없음', 410, { charged: false })),
-    );
-    httpClient.post.mockResolvedValueOnce(ok(createDigestDto()));
-    await fireEvent.press(screen.getByTestId('digest'));
-    await waitFor(() =>
-      expect(screen.getByTestId('failure')).toHaveTextContent('key-expired:true'),
-    );
-
-    // When
-    await fireEvent.press(screen.getByTestId('digest'));
-
-    // Then
-    await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
-    expect(idempotencyKeyOf(httpClient, 1)).toBe(idempotencyKeyOf(httpClient, 0));
-  });
 });
 
 describe('VoiceNoteDigestButton', () => {
