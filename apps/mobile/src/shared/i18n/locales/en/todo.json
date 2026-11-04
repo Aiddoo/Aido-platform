@@ -112,7 +112,12 @@
     },
     "spokenRule": "Repeats {{rule}}",
     "monthEndHint": "In shorter months, it repeats on the last day",
-    "horizonHint": "Repeating to-dos appear up to 3 months ahead"
+    "horizonHint": "Repeating to-dos appear up to 3 months ahead",
+    "horizonInfo": {
+      "title": "Far-off dates stay empty for now",
+      "description": "They fill in automatically as the date gets closer. Your repeat hasn't ended.",
+      "label": "More about repeating to-dos"
+    }
   },
   "scope": {
     "editTitle": "Edit repeating to-do",

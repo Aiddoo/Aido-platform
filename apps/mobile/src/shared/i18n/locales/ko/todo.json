@@ -108,7 +108,12 @@
     },
     "spokenRule": "{{rule}} 반복",
     "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
-    "horizonHint": "반복 할 일은 3개월 앞까지 미리 보여요"
+    "horizonHint": "반복 할 일은 3개월 앞까지 미리 보여요",
+    "horizonInfo": {
+      "title": "멀리 있는 날짜는 아직 비어 있어요",
+      "description": "날짜가 가까워지면 자동으로 이어서 보여요. 반복이 끝난 게 아니에요.",
+      "label": "반복 할 일 안내 자세히 보기"
+    }
   },
   "scope": {
     "editTitle": "반복 할 일 수정",

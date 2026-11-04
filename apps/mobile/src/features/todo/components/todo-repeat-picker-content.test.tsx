@@ -64,7 +64,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('* 매주 목 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목 반복')).toBeTruthy();
     expect(screen.getByText('기간을 선택해주세요')).toBeTruthy();
     expect(chip('목')).toBeSelected();
     expect(onChange).not.toHaveBeenCalled();
@@ -94,13 +94,13 @@ describe('TodoRepeatPickerContent', () => {
     await pressDay('금');
 
     // Then
-    expect(screen.getByText('* 매주 목, 금 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목, 금 반복')).toBeTruthy();
 
     // When
     await pressDay('금');
 
     // Then
-    expect(screen.getByText('* 매주 목 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목 반복')).toBeTruthy();
   });
 
   test('주중 프리셋은 월~금을 고르고 다시 누르면 요일이 비어 확인이 막힌다', async () => {
@@ -111,14 +111,14 @@ describe('TodoRepeatPickerContent', () => {
     await press('주중');
 
     // Then
-    expect(screen.getByText('* 주중 반복')).toBeTruthy();
+    expect(screen.getByText('주중 반복')).toBeTruthy();
 
     // When
     await press('주중');
     await confirm();
 
     // Then
-    expect(screen.getByText('* 요일을 선택해주세요')).toBeTruthy();
+    expect(screen.getByText('요일을 선택해주세요')).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -130,7 +130,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('격주');
 
     // Then
-    expect(screen.getByText('* 격주 목 반복')).toBeTruthy();
+    expect(screen.getByText('격주 목 반복')).toBeTruthy();
     expect(chip('목')).toBeSelected();
 
     // When
@@ -147,7 +147,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('격주');
 
     // Then
-    expect(screen.getByText('* 매주 목 반복')).toBeTruthy();
+    expect(screen.getByText('매주 목 반복')).toBeTruthy();
   });
 
   test('매월 n일을 켜면 요일 선택이 꺼지고 시작일의 날짜로 매월 반복한다', async () => {
@@ -160,7 +160,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('* 매월 5일 반복')).toBeTruthy();
+    expect(screen.getByText('매월 5일 반복')).toBeTruthy();
     expect(chip('목')).not.toBeSelected();
     expect(onChange).toHaveBeenCalledWith({
       startDate: START_DATE,
@@ -177,7 +177,7 @@ describe('TodoRepeatPickerContent', () => {
     await pressDay('월');
 
     // Then
-    expect(screen.getByText('* 매주 월 반복')).toBeTruthy();
+    expect(screen.getByText('매주 월 반복')).toBeTruthy();
     expect(chip('매월 5일')).not.toBeSelected();
   });
 
@@ -266,7 +266,7 @@ describe('TodoRepeatPickerContent', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('* 기간 안에 반복되는 날이 없어요')).toBeTruthy();
+    expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -417,7 +417,7 @@ describe('TodoRepeatPickerContent', () => {
     await press('7');
 
     // Then
-    expect(screen.getByText('* 기간 안에 반복되는 날이 없어요')).toBeTruthy();
+    expect(screen.getByText('기간 안에 반복되는 날이 없어요')).toBeTruthy();
     expect(screen.getByText('11월 5일 - 11월 7일')).toBeTruthy();
     expect(screen.getByText('6').props.className).toContain('text-gray-5');
   });

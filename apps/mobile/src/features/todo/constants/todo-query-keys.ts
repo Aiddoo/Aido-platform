@@ -15,6 +15,9 @@ export const TODO_QUERY_KEYS = {
   // 할 일·완료한 할 일이 있는지(시작 체크리스트) — completions() 하위라 생성·토글·삭제 invalidation을 상속한다
   existence: () => [...TODO_QUERY_KEYS.completions(), 'existence'] as const,
 
+  // 다가오는 반복 할 일이 있는지(3개월 안내) — 위와 같이 생성·토글·삭제 invalidation을 상속한다
+  upcomingRepeat: () => [...TODO_QUERY_KEYS.completions(), 'upcoming-repeat'] as const,
+
   // 선택된 날짜의 할 일 목록
   lists: () => [...TODO_QUERY_KEYS.all, 'list'] as const,
   listByDate: ({ date }: { date: string }) => [...TODO_QUERY_KEYS.lists(), { date }] as const,

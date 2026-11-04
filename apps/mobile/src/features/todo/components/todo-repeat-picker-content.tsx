@@ -47,6 +47,7 @@ import {
 } from '../utils/todo-repeat-form-values';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
+import { RepeatHintLine } from './repeat-hint-line';
 
 interface PresetChipProps {
   label: string;
@@ -242,21 +243,15 @@ function RepeatSummary() {
     .otherwise(() => t('picker.repeatWeekly', { days }));
 
   if (summary == null) {
-    return (
-      <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
-        * {t('picker.selectDays')}
-      </Text>
-    );
+    return <RepeatHintLine className="justify-end px-4">{t('picker.selectDays')}</RepeatHintLine>;
   }
 
   return issue === 'no-occurrence' ? (
-    <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
-      * {t('picker.noOccurrence')}
-    </Text>
+    <RepeatHintLine className="justify-end px-4">{t('picker.noOccurrence')}</RepeatHintLine>
   ) : (
-    <Text size="b3" tone="brand" align="right" className="px-4">
-      * {summary}
-    </Text>
+    <RepeatHintLine isHighlighted className="justify-end px-4">
+      {summary}
+    </RepeatHintLine>
   );
 }
 
@@ -516,11 +511,7 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
           )}
         </HStack>
       </HStack>
-      {isMonthDayClamped && (
-        <Text size="b4" tone="neutral" shade={6} lineBreakStrategyIOS="hangul-word">
-          {t('repeat.monthEndHint')}
-        </Text>
-      )}
+      {isMonthDayClamped && <RepeatHintLine>{t('repeat.monthEndHint')}</RepeatHintLine>}
     </VStack>
   );
 }
