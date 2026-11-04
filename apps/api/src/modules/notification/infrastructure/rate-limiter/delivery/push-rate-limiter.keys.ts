@@ -36,7 +36,4 @@ export const PushRateLimiterKeys = {
   /** 날짜와 독립된 dispatch 참여 유도 quota 예약 marker. */
   engagementReservation: (userId: string, reservationId: string): string =>
     `push-rate-reservation:engagement:${userId}:${reservationId}`,
-
-  reservationPlaceholder: (phase: "general" | "engagement", index = 0): string =>
-    `push-rate-reservation:unused:${phase}:${index}`,
 } as const;

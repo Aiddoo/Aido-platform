@@ -326,8 +326,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         {
           provide: PUSH_RATE_LIMITER,
           useValue: {
-            isRateLimited: vi.fn().mockResolvedValue(false),
-            isEngagementRateLimited: vi.fn().mockResolvedValue(false),
+            reserveGeneral: vi.fn().mockResolvedValue(false),
+            reserveEngagement: vi.fn().mockResolvedValue(false),
             reserveBatch: vi
               .fn()
               .mockImplementation(async (requests: unknown[]) => requests.map(() => false)),

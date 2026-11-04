@@ -22,9 +22,6 @@ export const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 
 /** 즉시 발송 label */
 export const REMINDER_IMMEDIATE_LABEL = "immediate";
 
-/** 하위 호환: 기존 임포트 유지 */
-export const REMINDER_LEAD_TIME_MS = REMINDER_MAX_LEAD_TIME_MS;
-
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {
   readonly label: string;

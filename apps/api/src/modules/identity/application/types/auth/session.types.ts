@@ -1,11 +1,4 @@
-import type { SessionInfo } from "@aido/api";
-
 import type { DeviceFingerprint } from "#api/modules/identity/domain/constants/auth/auth.constants";
-
-/**
- * @aido/api에서 re-export (하위 호환성 유지)
- */
-export type { SessionInfo };
 
 /**
  * 세션 생성 데이터 (API 내부 전용)
