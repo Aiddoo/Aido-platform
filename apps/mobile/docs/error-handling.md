@@ -173,7 +173,8 @@ new Error(String(error));
 
 // ✅ 원본은 cause로 보존
 errorReporter.captureException(toError(error), { feature: 'auth' });
-logger.warn('갱신 실패', { error: errorMessageOf(error) });
+logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, { error: errorMessageOf(error) });
+logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error)); // Sentry 이벤트 — captureException과 중복 금지
 ```
 
 ## 관측

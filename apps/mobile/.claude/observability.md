@@ -137,10 +137,27 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 - `logger.info/warn/error/debug`의 message는 자유 문자열(`'[Notification] ...'`) 대신 **기능별 `*_LOG_EVENT` 상수**를 쓴다. 서버의 `*-log.events.ts`와 같은 방식이다.
 - 위치는 기능 `constants/<feature>-log-events.ts`(공용 인프라는 해당 모듈 옆), 형태는 `export const X_LOG_EVENT = { KEY: 'feature.subject.outcome' } as const`.
-- 키 형식은 `<feature>.<subject>.<outcome>`(소문자·하이픈, 예 `notification.badge-sync.failed`). 레벨(`warn`/`error`)은 호출부가 정한다.
-- 가변 정보는 message가 아닌 `context`로 넘긴다. 포트(`Logger`)는 `message: string`을 유지하므로 어댑터·테스트 계약은 그대로다.
-- **PII 금지**: 토큰·이메일·좌표·알림 제목/본문·할 일 내용은 context에 넣지 않는다. 에러는 `error`/`message`만 남긴다.
-- 어댑터(`console-*`, `firebase-analytics`)와 `env.ts`의 개발용 진단 외에는 `console.*`을 직접 쓰지 않는다.
+- 레벨(`warn`/`error`)은 호출부가 정한다. 가변 정보는 message가 아닌 `context`로 넘긴다. 포트(`Logger`)는 `message: string`을 유지하므로 어댑터·테스트 계약은 그대로다.
+- **PII 금지**: 토큰·이메일·좌표·알림 제목/본문·할 일 내용은 context에 넣지 않는다.
+- 어댑터(`console-*`, `firebase-analytics`) 외에는 `console.*`을 직접 쓰지 않는다.
+
+### 이벤트 키 (서버·앱 공통)
+
+- 형식 `<context>.<subject>[.<detail>].<outcome>` — 소문자, 단어는 하이픈, 마디는 점(예 `todo-comment.submit.failed`, 서버 `identity.oauth.state.rejected`).
+- 첫 마디는 서버 Bounded Context / 앱 기능 폴더(공용 인프라는 모듈 이름: `token-refresher`, `network-status`), 마지막은 결과(`failed`·`completed`·`skipped` …).
+- Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(`todo-comment` → `todo_comment`). `SENTRY_FEATURES`와 같은 축이다.
+- 필드: `errorType`은 분류·예외 클래스 이름, `errorCode`는 공유 `ErrorCode` 값에만 쓴다. 서버의 기존 snake_case 키 일부는 대시보드 호환으로 유지하고, 새 키는 이 형식을 따른다.
+
+### 어느 쪽으로 남기나
+
+| 상황                               | 호출                                                  | Sentry                                     |
+| ---------------------------------- | ----------------------------------------------------- | ------------------------------------------ |
+| 운영 이벤트·격리된 실패            | `logger.info/warn(KEY, { error: errorMessageOf(e) })` | breadcrumb                                 |
+| 예측 못한 오류(경계 밖·백그라운드) | `logger.error(KEY, toError(e))`                       | 이벤트 `source=logger`·`feature=<첫 마디>` |
+| 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`       | 이벤트 `feature`(`SENTRY_FEATURES`)        |
+
+- `logger.error(KEY, Error)`는 그 자체로 Sentry 이벤트다. 같은 오류를 `captureException`으로 한 번 더 보내지 않는다. 이벤트가 필요 없는 실패는 `warn`이다.
+- context의 오류는 `{ error: errorMessageOf(error) }` 한 모양이다. 원본 `error` 객체·`toError(error).message`·`instanceof` 분기를 넣지 않는다.
 
 ---
 
