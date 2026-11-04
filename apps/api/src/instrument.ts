@@ -1,19 +1,20 @@
 import * as Sentry from "@sentry/nestjs";
 
+import { processEnv } from "./platform/config/env.js";
 import {
   isRequestBodyIgnored,
   resolveSentryOptions,
 } from "./platform/config/utils/sentry-options.js";
 
-const options = resolveSentryOptions(process.env);
+const options = resolveSentryOptions(processEnv);
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+  dsn: processEnv.SENTRY_DSN,
   // production(APP_ENV 기준)에서만 발송 — 개발서버/스테이징/로컬은 무발송.
   // enabled: false면 SDK가 transport를 만들지 않아 capture가 전부 no-op이다.
   enabled: options.enabled,
   environment: options.environment,
-  // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (e.g., release: process.env.SENTRY_RELEASE)
+  // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (e.g., release: processEnv.SENTRY_RELEASE)
   tracesSampleRate: options.tracesSampleRate,
   // 추적 헤더는 우리 서비스에만 전파한다 (외부 API가 baggage를 거부하는 사례 방지)
   tracePropagationTargets: [...options.tracePropagationTargets],

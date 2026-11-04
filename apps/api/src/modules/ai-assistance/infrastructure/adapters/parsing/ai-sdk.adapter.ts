@@ -1,8 +1,9 @@
 import type { GoogleLanguageModelOptions } from "@ai-sdk/google";
 import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { APICallError, generateText, Output } from "ai";
 import { createFallback } from "ai-fallback";
+
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import {
   type AiProvider,
@@ -51,16 +52,17 @@ export class AiSdkAdapter implements AiProvider {
   readonly #models: Readonly<Record<AiTaskId, ResolvedAiModel | null>>;
   readonly #fallback: ResolvedAiModel | null;
 
-  constructor(configService: ConfigService) {
-    const registry = createAiModelRegistry(configService);
-    const modelIds = readAiModelIds(configService);
+  constructor(configService: TypedConfigService) {
+    const { ai } = configService;
+    const registry = createAiModelRegistry({ google: ai.GOOGLE_GENERATIVE_AI_API_KEY });
+    const modelIds = readAiModelIds(ai);
     this.#models = {
       "parse-todo": resolveAiModel(registry, modelIds["parse-todo"]),
       "parse-memo": resolveAiModel(registry, modelIds["parse-memo"]),
       report: resolveAiModel(registry, modelIds.report),
       suggestion: resolveAiModel(registry, modelIds.suggestion),
     };
-    const fallbackId = readAiFallbackModelId(configService);
+    const fallbackId = readAiFallbackModelId(ai);
     this.#fallback = fallbackId == null ? null : resolveAiModel(registry, fallbackId);
     if (fallbackId != null && this.#fallback == null) {
       this.#logger.warn({ event: AiProviderLogEvent.MODEL_UNRESOLVED, model: fallbackId });

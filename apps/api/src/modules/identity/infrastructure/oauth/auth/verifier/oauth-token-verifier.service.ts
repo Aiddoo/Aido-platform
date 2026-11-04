@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 
 import { ErrorCode } from "@aido/api/errors";
 import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { OAuth2Client } from "google-auth-library";
 import { createRemoteJWKSet, errors, jwtVerify, type RemoteJWKSet } from "jose";
@@ -11,6 +10,7 @@ import { z } from "zod";
 
 import type { VerifiedProfile } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { readJson } from "#api/platform/http/read-json";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -80,11 +80,11 @@ export class OAuthTokenVerifierService {
   private static readonly NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me";
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly configService: TypedConfigService,
     @InjectHttpClient("oauth") private readonly http: HttpClient,
   ) {
     this.#googleClient = new OAuth2Client({
-      clientId: this.configService.get("GOOGLE_CLIENT_ID"),
+      clientId: this.configService.googleOAuth.clientId,
       // Google 공개키(cert) 조회도 같은 시간 제한을 쓴다
       transporterOptions: { timeout: OAUTH_PROVIDER_TIMEOUT_MS },
     });
@@ -113,16 +113,15 @@ export class OAuthTokenVerifierService {
     try {
       if (this.#appleJWKS == null) {
         const jwksUrl =
-          this.configService.get<string>("APPLE_JWKS_URL") ??
-          OAuthTokenVerifierService.APPLE_JWKS_URL;
-        const cooldownDuration = this.configService.get<number>("APPLE_JWKS_COOLDOWN_DURATION_MS");
+          this.configService.appleOAuth.jwksUrl ?? OAuthTokenVerifierService.APPLE_JWKS_URL;
+        const cooldownDuration = this.configService.appleOAuth.jwksCooldownDurationMs;
         this.#appleJWKS = createRemoteJWKSet(
           new URL(jwksUrl),
           cooldownDuration == null ? undefined : { cooldownDuration },
         );
       }
 
-      const appleClientId = this.configService.get<string>("APPLE_CLIENT_ID");
+      const appleClientId = this.configService.appleOAuth.clientId;
 
       const { payload } = await jwtVerify<AppleIdTokenClaims>(idToken, this.#appleJWKS, {
         issuer: OAuthTokenVerifierService.APPLE_ISSUER,
@@ -172,7 +171,7 @@ export class OAuthTokenVerifierService {
   // @see https://developers.google.com/identity/sign-in/web/backend-auth
   async verifyGoogleToken(idToken: string): Promise<VerifiedProfile> {
     try {
-      const googleClientId = this.configService.get<string>("GOOGLE_CLIENT_ID");
+      const googleClientId = this.configService.googleOAuth.clientId;
 
       const ticket = await this.#googleClient.verifyIdToken({
         idToken,

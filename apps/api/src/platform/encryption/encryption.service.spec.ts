@@ -22,8 +22,8 @@ describe("EncryptionService — 암호화 서비스", () => {
     // Given - Mock 설정 서비스
     const mockConfigService = mock<TypedConfigService>({
       tokenEncryptionKey: "test-encryption-key-must-be-at-least-32-characters-long",
+      tokenEncryptionSalt: undefined,
     });
-    mockConfigService.get.mockReturnValue(undefined);
 
     service = new EncryptionService(mockConfigService);
   });

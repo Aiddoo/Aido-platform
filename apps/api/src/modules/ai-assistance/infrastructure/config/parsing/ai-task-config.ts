@@ -1,7 +1,7 @@
 import type { FactoryProvider } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 
-import { aiSchema } from "#api/platform/config/schemas/ai.schema";
+import type { AiConfig } from "#api/platform/config/schemas/ai.schema";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import type { AiTaskId } from "../../../application/ports/parsing/ai-provider.port.js";
 import {
@@ -32,14 +32,8 @@ const AI_TASK_ENV_SUFFIX = {
 
 type AiTaskEnvSuffix = (typeof AI_TASK_ENV_SUFFIX)[AiTaskId];
 
-function readAiConfig(config: Pick<ConfigService, "get">) {
-  const keys = Object.keys(aiSchema.shape);
-  return aiSchema.parse(Object.fromEntries(keys.map((key) => [key, config.get(key)])));
-}
-
 /** env AI_MODEL_<TASK>가 없으면 기본 모델을 쓴다. */
-export function readAiModelIds(config: Pick<ConfigService, "get">): Record<AiTaskId, AiModelId> {
-  const env = readAiConfig(config);
+export function readAiModelIds(env: Readonly<AiConfig>): Record<AiTaskId, AiModelId> {
   const model = (suffix: AiTaskEnvSuffix) => {
     const value = env[`AI_MODEL_${suffix}`];
     return value == null ? DEFAULT_AI_MODEL_ID : toAiModelId(value);
@@ -53,13 +47,12 @@ export function readAiModelIds(config: Pick<ConfigService, "get">): Record<AiTas
 }
 
 /** env AI_FALLBACK_MODEL. 없으면 대체 모델 없이 기본 모델만 쓴다. */
-export function readAiFallbackModelId(config: Pick<ConfigService, "get">): AiModelId | null {
-  const value = readAiConfig(config).AI_FALLBACK_MODEL;
+export function readAiFallbackModelId(env: Readonly<AiConfig>): AiModelId | null {
+  const value = env.AI_FALLBACK_MODEL;
   return value == null ? null : toAiModelId(value);
 }
 
-export function readAiTaskSettings(config: Pick<ConfigService, "get">): AiTaskSettingsMap {
-  const env = readAiConfig(config);
+export function readAiTaskSettings(env: Readonly<AiConfig>): AiTaskSettingsMap {
   const settings = (suffix: AiTaskEnvSuffix) => ({
     // TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
     promptVersion: env[`AI_PROMPT_VERSION_${suffix}`],
@@ -75,6 +68,6 @@ export function readAiTaskSettings(config: Pick<ConfigService, "get">): AiTaskSe
 
 export const aiTaskSettingsProvider: FactoryProvider<AiTaskSettingsMap> = {
   provide: AI_TASK_SETTINGS,
-  inject: [ConfigService],
-  useFactory: (config: ConfigService) => readAiTaskSettings(config),
+  inject: [TypedConfigService],
+  useFactory: (config: TypedConfigService) => readAiTaskSettings(config.ai),
 };

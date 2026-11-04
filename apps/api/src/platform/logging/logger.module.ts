@@ -1,8 +1,7 @@
 import { type DynamicModule, Global, Module } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
 
-import type { EnvConfig } from "../config/index.js";
+import { TypedConfigService } from "../config/services/config.service.js";
 import type { LoggerModuleOptions } from "./interfaces/logger.interface.js";
 import { createLoggerOptions } from "./logger.options.js";
 
@@ -14,12 +13,12 @@ export class LoggerModule {
       module: LoggerModule,
       imports: [
         PinoLoggerModule.forRootAsync({
-          inject: [ConfigService],
-          useFactory: (config: ConfigService<EnvConfig, true>) =>
+          inject: [TypedConfigService],
+          useFactory: (config: TypedConfigService) =>
             createLoggerOptions(
               {
-                nodeEnv: config.get("NODE_ENV", { infer: true }),
-                level: config.get("LOG_LEVEL", { infer: true }),
+                nodeEnv: config.nodeEnv,
+                level: config.logLevel,
               },
               options,
             ),

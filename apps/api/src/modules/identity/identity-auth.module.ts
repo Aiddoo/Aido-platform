@@ -132,7 +132,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     JwtModule.registerAsync({
       inject: [TypedConfigService],
       useFactory: (configService: TypedConfigService) => ({
-        secret: configService.get("JWT_SECRET"),
+        secret: configService.jwtSecret,
       }),
     }),
     OperationsNotificationsModule,

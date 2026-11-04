@@ -43,7 +43,7 @@ export class HealthController {
     private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
     config: TypedConfigService,
   ) {
-    this.#instanceId = config.get("INSTANCE_ID") ?? randomUUID().slice(0, 8);
+    this.#instanceId = config.instanceId ?? randomUUID().slice(0, 8);
   }
 
   @Get()

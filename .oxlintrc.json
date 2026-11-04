@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["import", "typescript", "unicorn"],
+  "plugins": ["import", "typescript", "unicorn", "node"],
   "categories": {
     "correctness": "off"
   },
@@ -86,6 +86,13 @@
       "files": ["apps/mobile/index.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": ["apps/api/src/platform/config/env.ts", "**/*.spec.ts"],
+      "rules": {
+        "node/no-process-env": "error"
       }
     },
     {

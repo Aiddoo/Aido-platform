@@ -1,11 +1,11 @@
-import { ConfigService } from "@nestjs/config";
+import { aiSchema } from "#api/platform/config/schemas/ai.schema";
 
 import { readAiFallbackModelId, readAiModelIds, readAiTaskSettings } from "./ai-task-config.js";
 
 describe("AI 작업 설정", () => {
   it("env가 없으면 모든 작업에 기본 모델을 쓰고 parse-todo만 minimal, 나머지는 low thinking이다", () => {
     // Given
-    const config = new ConfigService({});
+    const config = aiSchema.parse({});
     // When
     const models = readAiModelIds(config);
     const settings = readAiTaskSettings(config);
@@ -20,7 +20,7 @@ describe("AI 작업 설정", () => {
 
   it("AI_THINKING_PARSE_TODO=low로 parse-todo의 minimal 기본값을 되돌릴 수 있다", () => {
     // Given
-    const config = new ConfigService({ AI_THINKING_PARSE_TODO: "low" });
+    const config = aiSchema.parse({ AI_THINKING_PARSE_TODO: "low" });
     // When
     const settings = readAiTaskSettings(config);
     // Then
@@ -29,7 +29,7 @@ describe("AI 작업 설정", () => {
 
   it("작업별 env는 해당 작업의 모델과 thinking만 바꾼다", () => {
     // Given
-    const config = new ConfigService({
+    const config = aiSchema.parse({
       AI_MODEL_PARSE_TODO: "gemini-3.5-flash-lite",
       AI_THINKING_PARSE_TODO: "minimal",
     });
@@ -45,7 +45,7 @@ describe("AI 작업 설정", () => {
 
   it("AI_PROMPT_VERSION_<TASK>=v1이면 그 작업만 v1 프롬프트로 되돌린다", () => {
     // Given
-    const config = new ConfigService({ AI_PROMPT_VERSION_PARSE_MEMO: "v1" });
+    const config = aiSchema.parse({ AI_PROMPT_VERSION_PARSE_MEMO: "v1" });
     // When
     const settings = readAiTaskSettings(config);
     // Then
@@ -55,14 +55,16 @@ describe("AI 작업 설정", () => {
 
   it("지원하지 않는 thinking 값은 부팅 단계에서 거절한다", () => {
     // Given
-    const config = new ConfigService({ AI_THINKING_REPORT: "high" });
-    // When / Then
-    expect(() => readAiTaskSettings(config)).toThrow();
+    const env = { AI_THINKING_REPORT: "high" };
+    // When
+    const result = aiSchema.safeParse(env);
+    // Then
+    expect(result.success).toBe(false);
   });
 
   it("모델 env는 provider를 쓴 값을 그대로, provider 없는 기존 값은 google로 읽는다", () => {
     // Given
-    const config = new ConfigService({
+    const config = aiSchema.parse({
       AI_MODEL_REPORT: "anthropic:claude-x",
       AI_MODEL_SUGGESTION: " gemini-2.5-flash-lite ",
       AI_FALLBACK_MODEL: "gemini-3.5-flash-lite",

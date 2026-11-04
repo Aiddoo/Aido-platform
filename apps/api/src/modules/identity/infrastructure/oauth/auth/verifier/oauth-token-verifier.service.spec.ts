@@ -3,17 +3,16 @@ import { createServer, type Server } from "node:http";
 
 import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
-import type { Mocked } from "vitest";
 import { vi, type Mock } from "vitest";
 
 import {
   OAUTH_PROVIDER_TIMEOUT_MS,
   OAuthTokenVerifierService,
 } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { asMock } from "#test/mocks/index";
 
@@ -37,7 +36,6 @@ async function responseFromFixture(fixture: {
 describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
   let service: OAuthTokenVerifierService;
   let mockGoogleVerifyIdToken: Mock;
-  let configService: Mocked<ConfigService>;
   let appleJwksUrl: string | undefined;
 
   beforeEach(async () => {
@@ -48,28 +46,23 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
       return { verifyIdToken: mockGoogleVerifyIdToken };
     });
 
-    const { unit, unitRef } = await TestBed.solitary(OAuthTokenVerifierService)
+    const { unit } = await TestBed.solitary(OAuthTokenVerifierService)
       .mock(getHttpClientToken("oauth"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
+      .mock(TypedConfigService)
+      .final({
+        googleOAuth: { clientId: "google-client-id" },
+        get appleOAuth() {
+          return {
+            clientId: "apple-client-id",
+            jwksUrl: appleJwksUrl,
+            jwksCooldownDurationMs: appleJwksUrl == null ? undefined : 0,
+          };
+        },
+      })
       .compile();
 
     service = unit;
-    configService = unitRef.get(ConfigService);
-
-    // ConfigService mock 설정
-    configService.get.mockImplementation((key: string) => {
-      const config: Record<string, string | number> = {
-        GOOGLE_CLIENT_ID: "google-client-id",
-        APPLE_CLIENT_ID: "apple-client-id",
-        ...(appleJwksUrl
-          ? {
-              APPLE_JWKS_URL: appleJwksUrl,
-              APPLE_JWKS_COOLDOWN_DURATION_MS: 0,
-            }
-          : {}),
-      };
-      return config[key];
-    });
   });
 
   afterEach(() => {

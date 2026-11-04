@@ -123,7 +123,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
           notifySubscriptionEvent: (event: SubscriptionEventPayload) => forwarded.push(event),
         }))
         .mock(TypedConfigService)
-        .impl((stubFn) => ({ get: stubFn().mockReturnValue(projectId) }))
+        .final({ revenuecat: { secretApiKey: undefined, webhookSecret: undefined, projectId } })
         .compile();
       return { unit, forwarded };
     }

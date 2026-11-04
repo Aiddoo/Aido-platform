@@ -5,6 +5,9 @@ import { APICallError, NoObjectGeneratedError, RetryError } from "ai";
 import type { MockInstance } from "vitest";
 import { z } from "zod";
 
+import type { EnvConfig } from "#api/platform/config/schemas/index";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+
 import { AiProviderError } from "../../../application/ports/parsing/ai-provider.port.js";
 import { AiSdkAdapter } from "./ai-sdk.adapter.js";
 
@@ -20,14 +23,18 @@ const policy = {
   timeoutMs: 12_000,
   maxRetries: 2,
 } as const;
+const FIXTURE_KEY = `fixture-${"k".repeat(30)}`;
 const base = { task: "parse-todo", promptVersion: "parse-todo@test", system: "", policy } as const;
 
 function createProvider(
   apiKey: string | undefined,
   env: Record<string, string> = {},
 ): AiSdkAdapter {
-  const config = new ConfigService({ GOOGLE_GENERATIVE_AI_API_KEY: apiKey, ...env });
-  return new AiSdkAdapter(config);
+  const config = new ConfigService<EnvConfig, true>({
+    GOOGLE_GENERATIVE_AI_API_KEY: apiKey,
+    ...env,
+  });
+  return new AiSdkAdapter(new TypedConfigService(config));
 }
 
 function modelResponse(text: string, withUsage = true): Response {
@@ -66,7 +73,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
   it("작업 정책의 thinking·토큰 상한·instructions를 wire로 보내고 사고 토큰과 종료 사유를 돌려준다", async () => {
     // Given
     fetchSpy.mockResolvedValue(modelResponse(JSON.stringify(output)));
-    const provider = createProvider("fixture-key");
+    const provider = createProvider(FIXTURE_KEY);
 
     // When
     const result = await provider.generateStructured({
@@ -115,7 +122,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
   it("AI_MODEL_<TASK> env가 있으면 그 작업만 다른 모델로 호출한다", async () => {
     // Given
     fetchSpy.mockImplementation(async () => modelResponse(JSON.stringify(output)));
-    const provider = createProvider("fixture-key", { AI_MODEL_REPORT: "gemini-3.5-flash-lite" });
+    const provider = createProvider(FIXTURE_KEY, { AI_MODEL_REPORT: "gemini-3.5-flash-lite" });
 
     // When
     const report = await provider.generateStructured({
@@ -150,7 +157,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
       .mockResolvedValueOnce(modelResponse(JSON.stringify(output), false));
 
     // When
-    const result = await createProvider("fixture-key").generateStructured({
+    const result = await createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -176,7 +183,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
       ),
     );
     // When
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -194,7 +201,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
       const logError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
       const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
-      const error = await createProvider("fixture-key")
+      const error = await createProvider(FIXTURE_KEY)
         .generateStructured({ ...base, prompt: "PROMPT_SECRET", schema })
         .catch((cause: unknown) => cause);
       expect(error).toBeInstanceOf(AiProviderError);
@@ -226,7 +233,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     fetchSpy.mockResolvedValue(modelResponse(JSON.stringify(memo)));
 
     // When - Google factory와 설치된 SDK로 구조화 응답을 생성
-    const result = await createProvider("fixture-key").generateStructured({
+    const result = await createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "발표 준비의 다섯 단계",
       schema: llmParsedMemoResultSchema,
@@ -291,7 +298,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     );
 
     // When - 별도 SDK mock 없이 실제 메모 스키마로 검증
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "발표 준비",
       schema: llmParsedMemoResultSchema,
@@ -313,7 +320,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     );
 
     // When
-    const error = await createProvider("fixture-key")
+    const error = await createProvider(FIXTURE_KEY)
       .generateStructured({ ...base, prompt: "독서", schema })
       .catch((cause: unknown) => cause);
 
@@ -335,7 +342,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -362,7 +369,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -387,7 +394,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -406,7 +413,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
       }),
     );
     // When
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -426,7 +433,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({
+    const execution = createProvider(FIXTURE_KEY).generateStructured({
       ...base,
       prompt: "독서",
       schema,
@@ -448,7 +455,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     const logError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
-    const error = await createProvider("fixture-key")
+    const error = await createProvider(FIXTURE_KEY)
       .generateStructured({ ...base, prompt: "SECRET_PROMPT", schema })
       .catch((cause: unknown) => cause);
 
@@ -471,7 +478,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     fetchSpy.mockRejectedValue(new TypeError("fetch failed", { cause: reset }));
 
     // When
-    const error = await createProvider("fixture-key")
+    const error = await createProvider(FIXTURE_KEY)
       .generateStructured({ ...base, prompt: "독서", schema, policy: { ...policy, maxRetries: 0 } })
       .catch((cause: unknown) => cause);
 
@@ -484,7 +491,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     const error = new Error("FIXTURE_SECRET");
     fetchSpy.mockRejectedValue(error);
     await expect(
-      createProvider("fixture-key").generateStructured({ ...base, prompt: "독서", schema }),
+      createProvider(FIXTURE_KEY).generateStructured({ ...base, prompt: "독서", schema }),
     ).rejects.toMatchObject({ kind: "UPSTREAM", cause: error });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
@@ -502,7 +509,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     it("provider를 쓴 env 값은 registry로 풀고 provider 없는 기존 값은 google로 읽는다", async () => {
       // Given
       fetchSpy.mockImplementation(async () => modelResponse(JSON.stringify(output)));
-      const provider = createProvider("fixture-key", {
+      const provider = createProvider(FIXTURE_KEY, {
         AI_MODEL_PARSE_TODO: "google:gemini-3.5-flash-lite",
         AI_MODEL_REPORT: "gemini-2.5-flash-lite",
       });
@@ -522,7 +529,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
 
     it("등록되지 않은 공급자의 모델을 쓰는 작업만 UNAVAILABLE이다", async () => {
       // Given
-      const provider = createProvider("fixture-key", { AI_MODEL_REPORT: "anthropic:claude-x" });
+      const provider = createProvider(FIXTURE_KEY, { AI_MODEL_REPORT: "anthropic:claude-x" });
       // When / Then
       expect(provider.isAvailable("report")).toBe(false);
       expect(provider.isAvailable("parse-todo")).toBe(true);
@@ -539,7 +546,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
         .mockResolvedValueOnce(modelResponse(JSON.stringify(output)));
       const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
       // When
-      const result = await createProvider("fixture-key", fallbackEnv).generateStructured({
+      const result = await createProvider(FIXTURE_KEY, fallbackEnv).generateStructured({
         ...base,
         prompt: "SECRET_PROMPT",
         schema,
@@ -563,7 +570,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
         .mockResolvedValueOnce(unavailable())
         .mockImplementation(async () => modelResponse(JSON.stringify(output)));
       vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
-      const provider = createProvider("fixture-key", fallbackEnv);
+      const provider = createProvider(FIXTURE_KEY, fallbackEnv);
       const request = { ...base, prompt: "x", schema, policy: { ...policy, maxRetries: 0 } };
       // When
       await provider.generateStructured(request);
@@ -577,7 +584,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
       // Given
       fetchSpy.mockResolvedValue(modelResponse(JSON.stringify({ title: 1 })));
       // When
-      const execution = createProvider("fixture-key", fallbackEnv).generateStructured({
+      const execution = createProvider(FIXTURE_KEY, fallbackEnv).generateStructured({
         ...base,
         prompt: "x",
         schema,
@@ -597,7 +604,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
         ),
       );
       // When
-      const execution = createProvider("fixture-key", fallbackEnv).generateStructured({
+      const execution = createProvider(FIXTURE_KEY, fallbackEnv).generateStructured({
         ...base,
         prompt: "x",
         schema,

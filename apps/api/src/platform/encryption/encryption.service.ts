@@ -15,7 +15,7 @@ export class EncryptionService {
   readonly #key: Buffer;
 
   constructor(configService: TypedConfigService) {
-    const salt = configService.get("TOKEN_ENCRYPTION_SALT") ?? DEFAULT_SALT;
+    const salt = configService.tokenEncryptionSalt ?? DEFAULT_SALT;
     this.#key = scryptSync(configService.tokenEncryptionKey, salt, KEY_LENGTH);
   }
 

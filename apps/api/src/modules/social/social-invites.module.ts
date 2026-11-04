@@ -67,7 +67,7 @@ import {
       provide: INVITE_CONFIG,
       inject: [TypedConfigService],
       useFactory: (config: TypedConfigService): InviteConfigPort => ({
-        isEnabled: config.get("INVITE_ENABLED"),
+        isEnabled: config.invite.enabled,
       }),
     },
     InviteCodeGenerator,

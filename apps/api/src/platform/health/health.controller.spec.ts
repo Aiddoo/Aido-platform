@@ -13,6 +13,8 @@ import { HealthCheckService } from "@nestjs/terminus";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+
 import { HealthController } from "./health.controller.js";
 
 describe("HealthController — 헬스 체크 컨트롤러", () => {
@@ -20,7 +22,10 @@ describe("HealthController — 헬스 체크 컨트롤러", () => {
   let mockHealthCheckService: Mocked<HealthCheckService>;
 
   beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(HealthController).compile();
+    const { unit, unitRef } = await TestBed.solitary(HealthController)
+      .mock(TypedConfigService)
+      .final({ instanceId: undefined })
+      .compile();
 
     controller = unit;
     mockHealthCheckService = unitRef.get(HealthCheckService);

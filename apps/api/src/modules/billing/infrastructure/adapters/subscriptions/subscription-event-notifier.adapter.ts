@@ -40,7 +40,7 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
   ) {}
 
   notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-    const projectId = this.config.get("REVENUECAT_PROJECT_ID");
+    const projectId = this.config.revenuecat.projectId;
     this.adminEventNotifier.notifySubscriptionEvent(
       projectId == null || payload.appUserId == null
         ? payload

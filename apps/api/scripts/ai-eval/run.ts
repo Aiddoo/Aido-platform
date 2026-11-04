@@ -26,6 +26,7 @@ import { resolveGenerationPolicy } from "../../src/modules/ai-assistance/applica
 import { normalizeTodoDraft } from "../../src/modules/ai-assistance/application/services/parsing/todo-draft.normalizer.js";
 import { AiSdkAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/parsing/ai-sdk.adapter.js";
 import { readAiTaskSettings } from "../../src/modules/ai-assistance/infrastructure/config/parsing/ai-task-config.js";
+import { TypedConfigService } from "../../src/platform/config/services/config.service.js";
 import {
   loadParseTodoGoldenCases,
   type ParseTodoGoldenCase,
@@ -74,14 +75,15 @@ function readThinking(value: string | undefined): AiThinking | undefined {
 const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
 
 async function main(): Promise<number> {
-  const config = new ConfigService(process.env);
+  const config = new TypedConfigService(new ConfigService(process.env));
   const provider = new AiSdkAdapter(config);
   if (!provider.isAvailable("parse-todo")) {
     console.log("GOOGLE_GENERATIVE_AI_API_KEY가 없어 live eval을 건너뜁니다.");
     return 0;
   }
   const thinking =
-    readThinking(process.env.AI_EVAL_THINKING) ?? readAiTaskSettings(config)["parse-todo"].thinking;
+    readThinking(process.env.AI_EVAL_THINKING) ??
+    readAiTaskSettings(config.ai)["parse-todo"].thinking;
   const only = new Set(
     (process.env.AI_EVAL_ONLY ?? "")
       .split(",")

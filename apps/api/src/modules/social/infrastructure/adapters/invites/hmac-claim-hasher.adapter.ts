@@ -15,7 +15,7 @@ export class HmacClaimHasherAdapter implements ClaimHasherPort {
   readonly #secret: string;
 
   constructor(config: TypedConfigService) {
-    this.#secret = config.get("INVITE_CLAIM_HASH_SECRET") ?? NON_PRODUCTION_SECRET;
+    this.#secret = config.invite.claimHashSecret ?? NON_PRODUCTION_SECRET;
   }
 
   hash(source: RewardClaimSource): string {
