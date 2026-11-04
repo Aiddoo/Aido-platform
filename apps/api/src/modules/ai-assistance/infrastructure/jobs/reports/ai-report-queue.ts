@@ -16,7 +16,6 @@ export const AiReportJobKey = {
     `report_${type}_${userId}_${periodId}`,
 } as const;
 
-/** 잡 이름 상수 */
 export const AiReportJobName = {
   DISPATCH: "dispatch-reports",
   GENERATE: "generate-report",
@@ -72,7 +71,6 @@ export interface AiReportGenerateData {
   reportType: "WEEKLY" | "MONTHLY";
 }
 
-/** 잡 이름 → 데이터 타입 매핑 */
 export interface AiReportJobMap {
   [AiReportJobName.DISPATCH]: AiReportDispatchData;
   [AiReportJobName.GENERATE]: AiReportGenerateData;

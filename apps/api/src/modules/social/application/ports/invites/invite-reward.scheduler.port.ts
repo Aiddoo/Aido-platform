@@ -11,6 +11,5 @@ export interface InviteRewardSchedulerPort {
    * 활성 UoW 안에서 부르면 지급 원장과 함께 커밋된다. pg-boss가 같은 DB transaction으로 작업을 쓰기 때문이다.
    */
   schedule(redemptionId: string, trigger: InviteRewardTrigger): Promise<void>;
-  /** 여러 수락의 작업을 한 번에 만든다. */
   scheduleMany(redemptionIds: readonly string[], trigger: InviteRewardTrigger): Promise<void>;
 }

@@ -56,7 +56,6 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
   }
 
   reportWebhookFailure(error: unknown, context: WebhookFailureContext): void {
-    // 1. Sentry 태깅 캡처 (결제 도메인 컨텍스트)
     Sentry.withScope((scope) => {
       scope.setTag(SENTRY_TAG.DOMAIN, SENTRY_DOMAIN.PAYMENT);
       scope.setTag(SENTRY_TAG.WEBHOOK_EVENT_TYPE, context.eventType);

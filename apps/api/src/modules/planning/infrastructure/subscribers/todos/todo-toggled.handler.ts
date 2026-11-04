@@ -131,9 +131,6 @@ export class TodoToggledHandler {
     }
   }
 
-  /**
-   * 마일스톤 달성 여부 체크 및 알림 큐 등록
-   */
   async #checkAndEnqueueMilestone(userId: string): Promise<void> {
     try {
       const count = await this.todoReadRepository.countCompletedByUser(userId);

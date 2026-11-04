@@ -6,9 +6,6 @@ import type { NotificationType } from "../../../domain/types/delivery/notificati
 /** 알림 메타데이터 입력 (DB jsonb 컬럼에 저장) */
 export type NotificationMetadataInput = Record<string, unknown>;
 
-/**
- * 알림 목록 조회 파라미터
- */
 export interface FindNotificationsParams {
   userId: string;
   cursor?: number;
@@ -17,9 +14,6 @@ export interface FindNotificationsParams {
   types?: NotificationType[];
 }
 
-/**
- * 푸시 토큰 목록 조회 파라미터
- */
 export interface FindPushTokensParams {
   userId: string;
   activeOnly?: boolean;
@@ -104,7 +98,6 @@ export interface NotificationAction {
  * }
  */
 export interface CreateNotificationData {
-  /** 알림 수신 대상 사용자 ID */
   userId: string;
 
   /**
@@ -130,10 +123,8 @@ export interface CreateNotificationData {
    */
   type: NotificationType;
 
-  /** 알림 제목 (푸시 알림 타이틀) */
   title: string;
 
-  /** 알림 본문 (푸시 알림 바디) */
   body: string;
 
   /**

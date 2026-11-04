@@ -8,7 +8,6 @@ const GOOGLE_GENERATIVE_AI_API_KEY_PATTERN = /^[A-Za-z0-9._-]{30,}$/;
  * 향후 확장용 - 현재는 선택적
  */
 export const externalSchema = z.object({
-  // RevenueCat 구독 관리
   REVENUECAT_SECRET_API_KEY: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   /** 운영 알림의 RevenueCat 고객 화면 링크용 공개 프로젝트 ID(비밀 아님) */

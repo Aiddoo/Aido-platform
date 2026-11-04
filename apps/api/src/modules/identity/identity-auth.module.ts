@@ -150,7 +150,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [
-    // Repositories
     DrizzleUserRepository,
     DrizzleAccountRepository,
     DrizzleSessionRepository,
@@ -193,7 +192,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     },
     accountNotificationCleanupProvider,
     accountTodoCommentCleanupProvider,
-    // Services
     PasswordService,
     sessionServiceProvider,
     TokenService,
@@ -255,14 +253,11 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
         http: HttpClient,
       ) => createOAuthProviderRegistry(configService, tokenVerifier, http),
     },
-    // Strategies
     JwtStrategy,
     JwtRefreshStrategy,
-    // Guards
     JwtAuthGuard,
     JwtRefreshGuard,
     LastActiveInterceptor,
-    // Jobs
     AccountPurgeJob,
     AccountPurgeProcessor,
   ],

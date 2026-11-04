@@ -45,7 +45,6 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
       this.pushTimestamps.set(userId, timestamps);
     }
 
-    // 윈도우 밖 타임스탬프 제거
     const filtered = timestamps.filter((t) => t > windowStart);
     this.pushTimestamps.set(userId, filtered);
 

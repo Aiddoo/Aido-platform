@@ -9,7 +9,6 @@ type PremiumUserColumns = Pick<
   "id" | "role" | "subscriptionStatus" | "subscriptionExpiresAt"
 >;
 
-/** 스토어 구독 행(또는 그 alias)의 엔타이틀먼트 판단 열 */
 export interface StoreEntitlementColumns {
   readonly status: AnyPgColumn;
   readonly expiresAt: AnyPgColumn;

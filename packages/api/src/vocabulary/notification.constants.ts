@@ -147,9 +147,7 @@ export const PUSH_DISPATCH_SKIP_REASON = {
 export type PushDispatchSkipReason =
   (typeof PUSH_DISPATCH_SKIP_REASON)[keyof typeof PUSH_DISPATCH_SKIP_REASON];
 
-// =========================================================================
 // 알림 카테고리
-// =========================================================================
 
 export const NOTIFICATION_CATEGORY = {
   ALL: "ALL",

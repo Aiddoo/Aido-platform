@@ -3,10 +3,6 @@ import { z } from "zod";
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
-// ============================================================================
-// AI 리포트 통계 서브스키마
-// ============================================================================
-
 export const reportStatsSchema = z.object({
   totalTodos: z.number().int().nonnegative(),
   completedTodos: z.number().int().nonnegative(),
@@ -42,10 +38,6 @@ export const timePatternItemSchema = z.object({
 });
 
 export type TimePatternItem = z.infer<typeof timePatternItemSchema>;
-
-// ============================================================================
-// AI 리포트 응답
-// ============================================================================
 
 export const reportTypeSchema = z.enum(["WEEKLY", "MONTHLY"]);
 
@@ -83,9 +75,7 @@ export const aiReportListResponseSchema = z.object({
 
 export type AiReportListResponse = z.infer<typeof aiReportListResponseSchema>;
 
-// ============================================================================
 // 리포트 상태 (다음 리포트 예정일)
-// ============================================================================
 
 export const reportStatusSchema = z.object({
   nextWeeklyAt: datetimeSchema,
@@ -103,10 +93,6 @@ export const reportStatusResponseSchema = z.object({
 });
 
 export type ReportStatusResponse = z.infer<typeof reportStatusResponseSchema>;
-
-// ============================================================================
-// 리포트 조회 쿼리
-// ============================================================================
 
 export const getAiReportsQuerySchema = z.object({
   type: reportTypeSchema.optional().describe("리포트 종류 (WEEKLY | MONTHLY, 생략 시 전체)"),

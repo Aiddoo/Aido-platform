@@ -62,14 +62,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
    * - 무효화: 로그아웃/세션 폐기 시 즉시 삭제
    */
   async validate(payload: JwtPayload): Promise<CurrentUserPayload> {
-    // Access Token 타입 확인
     if (payload.type !== "access") {
       throw new ApplicationException(ErrorCode.AUTH_0101, {
         reason: "Not an access token",
       });
     }
 
-    // sessionId 필수 확인
     if (!payload.sessionId) {
       throw new ApplicationException(ErrorCode.AUTH_0101, {
         reason: "Missing sessionId",
@@ -80,7 +78,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     const cachedSession = await this.#getCachedSessionSafe(payload.sessionId);
 
     if (cachedSession) {
-      // 캐시 히트: 캐시된 데이터로 유효성 검증
       this.sessionService.assertSessionValid(cachedSession, payload.sessionId);
 
       // Defense in Depth: 캐시된 사용자 상태 검증
@@ -96,11 +93,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       };
     }
 
-    // 2. 캐시 미스: DB에서 세션 조회
     const session = await this.sessionRepository.findById(payload.sessionId);
     this.sessionService.assertSessionValid(session, payload.sessionId);
 
-    // 3. 사용자 상태 조회 (Defense in Depth)
     const user = await this.userRepository.findById(session.userId);
 
     const userStatus = user?.status;

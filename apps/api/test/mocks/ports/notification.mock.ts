@@ -16,7 +16,6 @@ import type { UserNotificationSettingsPort } from "#api/modules/notification/app
  * 메서드 mock API는 spec에서 `unitRef.get<Port>(TOKEN)` 후 직접 접근한다.
  */
 
-/** NotificationRepositoryPort mock 팩토리. */
 export function createNotificationRepositoryMock(): NotificationRepositoryPort {
   return {
     createNotification: vi.fn(),
@@ -72,7 +71,6 @@ export function createNotificationRecipientLocaleReaderMock(): NotificationRecip
   return { getLocale: vi.fn(), getLocales: vi.fn() };
 }
 
-/** MarketingPushOptOutTokenPort mock 팩토리. */
 export function createMarketingPushOptOutTokenMock(): MarketingPushOptOutTokenPort {
   return {
     issue: vi.fn(),
@@ -80,7 +78,6 @@ export function createMarketingPushOptOutTokenMock(): MarketingPushOptOutTokenPo
   };
 }
 
-/** UserNotificationSettingsPort mock 팩토리. */
 export function createUserNotificationSettingsMock(): UserNotificationSettingsPort {
   return {
     upsertPushTimezone: vi.fn(),

@@ -108,7 +108,6 @@ export class DrizzleUserRepository
 
   // userTag가 없으면 자동 생성 (중복 시 재시도)
   async create(data: Omit<UserInsert, "userTag"> & { userTag?: string }): Promise<UserRow> {
-    // userTag가 제공되지 않으면 자동 생성
     const userTag = data.userTag ?? (await this.#generateUniqueUserTag());
 
     try {
@@ -140,7 +139,6 @@ export class DrizzleUserRepository
       this.#logger.warn({ event: IdentityInfraLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
     }
 
-    // 모든 재시도 실패 시 (극히 드문 경우)
     throw new ApplicationException(ErrorCode.USER_0611, {
       attempts: DrizzleUserRepository.MAX_USER_TAG_RETRIES,
     });

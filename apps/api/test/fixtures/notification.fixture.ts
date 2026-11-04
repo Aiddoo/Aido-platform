@@ -22,9 +22,6 @@ let pushTokenCounter = 0;
  * ```
  */
 export const NotificationFixture = {
-  /**
-   * Notification 엔티티 생성
-   */
   create: (overrides: Partial<Notification> = {}): Notification => {
     const id = ++notificationCounter;
     const now = new Date();
@@ -53,9 +50,6 @@ export const NotificationFixture = {
     };
   },
 
-  /**
-   * 읽은 Notification 생성
-   */
   createRead: (overrides: Partial<Notification> = {}): Notification => {
     return NotificationFixture.create({
       isRead: true,
@@ -64,9 +58,6 @@ export const NotificationFixture = {
     });
   },
 
-  /**
-   * 특정 타입의 Notification 생성
-   */
   createByType: (type: NotificationType, overrides: Partial<Notification> = {}): Notification => {
     return NotificationFixture.create({
       type,
@@ -74,28 +65,16 @@ export const NotificationFixture = {
     });
   },
 
-  /**
-   * 여러 Notification 생성
-   */
   createMany: (count: number, overrides: Partial<Notification> = {}): Notification[] => {
     return Array.from({ length: count }, () => NotificationFixture.create(overrides));
   },
 
-  /**
-   * 카운터 리셋
-   */
   reset: (): void => {
     notificationCounter = 0;
   },
 };
 
-/**
- * PushToken Fixture 팩토리
- */
 export const PushTokenFixture = {
-  /**
-   * PushToken 엔티티 생성
-   */
   create: (overrides: Partial<PushToken> = {}): PushToken => {
     const id = ++pushTokenCounter;
     const now = new Date();
@@ -116,9 +95,6 @@ export const PushTokenFixture = {
     };
   },
 
-  /**
-   * 비활성 PushToken 생성
-   */
   createInactive: (overrides: Partial<PushToken> = {}): PushToken => {
     return PushTokenFixture.create({
       isActive: false,
@@ -126,9 +102,6 @@ export const PushTokenFixture = {
     });
   },
 
-  /**
-   * 카운터 리셋
-   */
   reset: (): void => {
     pushTokenCounter = 0;
   },

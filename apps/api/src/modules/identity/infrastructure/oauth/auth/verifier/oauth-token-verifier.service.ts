@@ -174,7 +174,6 @@ export class OAuthTokenVerifierService {
     try {
       const googleClientId = this.configService.get<string>("GOOGLE_CLIENT_ID");
 
-      // Google ID Token 검증
       const ticket = await this.#googleClient.verifyIdToken({
         idToken,
         audience: googleClientId,
@@ -264,7 +263,6 @@ export class OAuthTokenVerifierService {
     } catch (error) {
       this.#logVerifyFailed("KAKAO", error);
 
-      // ApplicationException은 그대로 전파
       if (error instanceof Error && error.name === "ApplicationException") {
         throw error;
       }
@@ -329,7 +327,6 @@ export class OAuthTokenVerifierService {
     } catch (error) {
       this.#logVerifyFailed("NAVER", error);
 
-      // ApplicationException은 그대로 전파
       if (error instanceof Error && error.name === "ApplicationException") {
         throw error;
       }

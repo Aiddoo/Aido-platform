@@ -8,17 +8,8 @@ import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
 
-// =============================================================================
-// Queue Name
-// =============================================================================
-
 export const ADMIN_NOTIFICATION_QUEUE = "admin-notification.v1";
 
-// =============================================================================
-// Job Names
-// =============================================================================
-
-/** 잡 이름 상수 */
 export const AdminNotificationJobName = {
   DISPATCH_SUMMARY: "dispatch-signup-summary",
   SEND: "send-notification",
@@ -52,10 +43,6 @@ export const DAILY_SIGNUP_SUMMARY_SCHEDULE = {
     deleteAfterSeconds: 24 * 60 * 60,
   },
 } as const;
-
-// =============================================================================
-// Job Data Interfaces
-// =============================================================================
 
 /** send-notification 잡 데이터 */
 export interface AdminNotificationSendData {
@@ -92,7 +79,6 @@ export const AdminNotificationRuntimeJobSchema = z.discriminatedUnion("name", [
   }),
 ]);
 
-/** 잡 이름 → 데이터 타입 매핑 */
 export interface AdminNotificationJobMap {
   [AdminNotificationJobName.DISPATCH_SUMMARY]: Record<string, never>;
   [AdminNotificationJobName.SEND]: AdminNotificationSendData;

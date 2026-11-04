@@ -73,7 +73,6 @@ async function bootstrap() {
 - Health 체크만 예외: \`GET /health\`
 `)
       .setVersion(apiVersion)
-      // 환경별 서버 URL
       .addServer("http://localhost:8080", "Local Development")
       .addServer("https://api-staging.aido.kr", "Staging")
       .addServer("https://api.aido.kr", "Production")
@@ -83,7 +82,6 @@ async function bootstrap() {
         bearerFormat: "JWT",
         description: "JWT 토큰을 입력하세요",
       })
-      // 핵심 기능 APIs
       .addTag(SWAGGER_TAGS.USER_AUTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH])
       .addTag(SWAGGER_TAGS.TODOS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODOS])
       .addTag(SWAGGER_TAGS.TODO_CATEGORIES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_CATEGORIES])
@@ -92,19 +90,16 @@ async function bootstrap() {
         SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_COMMENTS_V2],
       )
       .addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
-      // 소셜 기능 APIs
       .addTag(SWAGGER_TAGS.FOLLOWS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS])
       .addTag(SWAGGER_TAGS.CHEERS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.CHEERS])
       .addTag(SWAGGER_TAGS.NUDGES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NUDGES])
       .addTag(SWAGGER_TAGS.NOTIFICATIONS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.NOTIFICATIONS])
       .addTag(SWAGGER_TAGS.BLOCKS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.BLOCKS])
       .addTag(SWAGGER_TAGS.REPORTS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.REPORTS])
-      // 통계 APIs
       .addTag(
         SWAGGER_TAGS.DAILY_COMPLETIONS,
         SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.DAILY_COMPLETIONS],
       )
-      // 시스템 APIs
       .addTag(SWAGGER_TAGS.WEATHER_V1, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER_V1])
       .addTag(SWAGGER_TAGS.WEATHER_V2, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER_V2])
       .addTag(SWAGGER_TAGS.COMMON_HEALTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.COMMON_HEALTH])
@@ -128,13 +123,11 @@ async function bootstrap() {
         defaultModelExpandDepth: 2,
         // NestJS/Swagger 2026 베스트 프랙티스: operationId 표시로 클라이언트 SDK 생성 지원
         displayOperationId: true,
-        // 요청 시간 표시로 성능 모니터링 지원
         displayRequestDuration: true,
         syntaxHighlight: {
           activate: true,
           theme: "monokai",
         },
-        // 코드 스니펫 활성화 - 클라이언트 개발자가 바로 복사해서 사용 가능
         requestSnippetsEnabled: true,
         requestSnippets: {
           generators: {

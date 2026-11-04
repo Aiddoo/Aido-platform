@@ -47,7 +47,6 @@ const TRANSIENT_PROVIDER_ERRORS: ReadonlySet<string> = new Set([
   "TIMEOUT",
 ]);
 
-/** 기간 윈도우 계산 결과 */
 interface ReportWindow {
   year: number;
   period: number;
@@ -160,7 +159,6 @@ export class GenerateReport {
     };
   }
 
-  /** 지난 달 윈도우 */
   #monthlyWindow(localNow: dayjs.Dayjs, timezone: string): ReportWindow {
     const lastMonth = dayjs.utc(localNow.format("YYYY-MM-DD")).subtract(1, "month");
     const lastMonthStart = lastMonth.startOf("month");
@@ -179,9 +177,6 @@ export class GenerateReport {
     };
   }
 
-  /**
-   * 리포트 생성 오케스트레이션
-   */
   async #generateReport(params: {
     userId: string;
     timezone: string;

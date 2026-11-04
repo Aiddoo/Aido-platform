@@ -73,9 +73,6 @@ export class AiSuggestionController {
     private readonly handleSuggestionActionUseCase: HandleSuggestionAction,
   ) {}
 
-  /**
-   * GET /ai/suggestions - 대기 중인 제안 목록 조회
-   */
   @Get()
   @ApiDoc({
     summary: "AI 제안 목록 조회",
@@ -227,9 +224,6 @@ export class AiSuggestionController {
     return { suggestions: AiSuggestionMapper.toManyResponse(suggestions) };
   }
 
-  /**
-   * PATCH /ai/suggestions/:id - 제안 수락 또는 거절
-   */
   @Patch(":id")
   @HttpCode(HttpStatus.OK)
   @ApiDoc({

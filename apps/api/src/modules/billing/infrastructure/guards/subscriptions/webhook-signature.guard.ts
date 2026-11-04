@@ -26,7 +26,6 @@ export class WebhookSignatureGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const webhookSecret = this.config.revenuecat.webhookSecret;
 
-    // webhook secret이 미설정이면 환경에 따라 분기
     if (!webhookSecret) {
       if (this.config.isProduction) {
         this.#logger.error({ event: BillingLogEvent.WEBHOOK_SECRET_MISSING, action: "rejected" });

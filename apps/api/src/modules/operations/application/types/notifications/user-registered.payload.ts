@@ -5,19 +5,12 @@
  * AdminNotificationQueue에서 사용됩니다.
  */
 
-/**
- * 회원가입 이벤트 페이로드
- */
 export interface UserRegisteredEventPayload {
-  /** 신규 사용자 ID */
   readonly userId: string;
-  /** 이메일 */
   readonly email: string;
-  /** 가입 방식 */
   readonly provider: "credential" | "apple" | "google" | "kakao" | "naver";
   /** 가입 시각 (ISO string) */
   readonly registeredAt: string;
-  /** 닉네임/이름 */
   readonly name?: string;
   /** 요청에서 확인된 기기 플랫폼 */
   readonly devicePlatform?: "IOS" | "ANDROID" | "WEB";

@@ -113,7 +113,6 @@ export interface E2eTestContext {
 export interface E2eAppOptions {
   /** 전역 E2E bypass를 해제하고 실제 ThrottlerGuard를 검증하는 전용 suite용 */
   withRealThrottler?: boolean;
-  /** 추가 provider override 콜백 */
   customizeBuilder?: (
     builder: ReturnType<typeof Test.createTestingModule>,
   ) => ReturnType<typeof Test.createTestingModule>;

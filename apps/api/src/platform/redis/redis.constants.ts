@@ -1,8 +1,4 @@
 /**
- * Redis 모듈 DI 토큰
- */
-
-/**
  * 명령용 연결 (fail-fast: enableOfflineQueue false + commandTimeout)
  *
  * 캐시/락/스로틀/dedup/헬스 등 요청 경로의 일반 명령은 이 토큰을 사용한다.

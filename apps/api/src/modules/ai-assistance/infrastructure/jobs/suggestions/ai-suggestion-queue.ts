@@ -13,7 +13,6 @@ export const AiSuggestionJobKey = {
   analyze: (userId: string, date: string) => `suggestion_${userId}_${date}`,
 } as const;
 
-/** 잡 이름 상수 */
 export const AiSuggestionJobName = {
   DISPATCH: "dispatch-analysis",
   ANALYZE: "analyze-suggestion",
@@ -59,7 +58,6 @@ export interface AiSuggestionAnalyzeData {
   } | null;
 }
 
-/** 잡 이름 → 데이터 타입 매핑 */
 export interface AiSuggestionJobMap {
   [AiSuggestionJobName.DISPATCH]: Record<string, never>;
   [AiSuggestionJobName.ANALYZE]: AiSuggestionAnalyzeData;

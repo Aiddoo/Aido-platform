@@ -121,7 +121,6 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     reportPushDeviceProvider,
     unregisterPushDeviceProvider,
     optOutMarketingPushProvider,
-    // 크로스모듈 발송/디스패치 use-cases
     sendNotificationProvider,
     sendNotificationWithDedupProvider,
     persistBatchNotificationProvider,
@@ -136,7 +135,6 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     sendFriendCompletionNotificationsProvider,
     sendMilestoneNotificationProvider,
     reconcilePushReceiptsProvider,
-    // 책임별 persistence 포트 바인딩
     DrizzleNotificationRepository,
     { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
     DrizzleNotificationReader,
@@ -236,7 +234,6 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
       },
       inject: [TypedConfigService, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
     },
-    // 알림 큐 프로세서
     NotificationQueueProcessor,
   ],
   exports: [

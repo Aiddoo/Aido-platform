@@ -40,13 +40,11 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
     const now = Date.now();
     const existing = this.#locks.get(resource);
 
-    // 이미 잠겨있고 아직 만료되지 않은 경우
     if (existing && now < existing.expiresAt) {
       this.#logger.debug({ event: PlatformLogEvent.LOCK_BUSY, resource });
       return null;
     }
 
-    // 잠금 획득
     const entry: LockEntry = { expiresAt: now + ttlMs };
     this.#locks.set(resource, entry);
     this.#logger.debug({ event: PlatformLogEvent.LOCK_ACQUIRED, resource, ttlMs });
@@ -70,7 +68,6 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
       return false;
     }
 
-    // 만료 체크
     if (Date.now() >= entry.expiresAt) {
       this.#locks.delete(resource);
       return false;
@@ -78,8 +75,6 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
 
     return true;
   }
-
-  // === Private 헬퍼 ===
 
   #cleanup(): void {
     const now = Date.now();
