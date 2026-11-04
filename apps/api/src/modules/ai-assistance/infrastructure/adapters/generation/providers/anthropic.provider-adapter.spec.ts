@@ -151,13 +151,11 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
   });
 
   it("JSON 도구 입력의 배열 칸을 문자열로 보낸 응답은 다시 묻지 않고 그대로 받는다", async () => {
-    // Given - 실제 평가에서 받은 모양: actions가 JSON 문자열이다
-    const action = {
-      type: "CREATE_MEMO",
-      title: "와이파이 비밀번호",
-      content: "거실 공유기 뒷면",
-    };
-    fetchSpy.mockImplementation(async () => messageResponse({ actions: JSON.stringify([action]) }));
+    // Given - 실제 평가에서 받은 모양처럼 배열 칸이 JSON 문자열이다
+    const memo = { title: "와이파이 비밀번호", content: "거실 공유기 뒷면" };
+    fetchSpy.mockImplementation(async () =>
+      messageResponse({ todos: JSON.stringify([]), memo: JSON.stringify(memo) }),
+    );
     const config = createAiTestConfig({ AI_PROVIDER_ORDER: "anthropic" });
     const { generator } = createAiSdkGenerator(config, [new AnthropicProviderAdapter(config)]);
     // When
@@ -173,7 +171,7 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
       agreedConsentVersion: "2026-11-04",
     });
     // Then
-    expect(result).toMatchObject({ output: { actions: [action] }, attempts: 1 });
+    expect(result).toMatchObject({ output: { todos: [], memo }, attempts: 1 });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

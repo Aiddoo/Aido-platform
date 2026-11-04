@@ -6,13 +6,13 @@ import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 import type { RepeatPattern } from "../../../domain/types/parsing/todo-draft.types.js";
 import type {
   ActionPlanWarning,
-  CreateMemoActionDraft,
-  CreateTodoActionDraft,
+  MemoActionDraft,
   NormalizedActionPlan,
   NormalizedVoiceNoteDigest,
-  PlannedActionDraft,
   PlannedMemoDraft,
   PlannedTodoDraft,
+  QuickPlanDraft,
+  TodoActionDraft,
   VoiceNoteDigestDraft,
 } from "../../../domain/types/planning/action-plan-draft.types.js";
 import { removeInvisibleCharacters } from "../../prompts/kit/untrusted-input.js";
@@ -37,16 +37,8 @@ function cleanText(value: string, maxLength: number): string {
   return truncateGraphemes(removeInvisibleCharacters(value).trim(), maxLength);
 }
 
-function isTodoAction(action: PlannedActionDraft): action is CreateTodoActionDraft {
-  return action.type === "CREATE_TODO";
-}
-
-function isMemoAction(action: PlannedActionDraft): action is CreateMemoActionDraft {
-  return action.type === "CREATE_MEMO";
-}
-
 function normalizeTodo(
-  action: CreateTodoActionDraft,
+  action: TodoActionDraft,
   title: string,
   context: ActionPlanNormalizeContext,
   warnings: ActionPlanWarning[],
@@ -88,7 +80,7 @@ function normalizeTodo(
   };
 }
 
-function normalizeMemo(action: CreateMemoActionDraft): PlannedMemoDraft | null {
+function normalizeMemo(action: MemoActionDraft): PlannedMemoDraft | null {
   const content = cleanText(action.content, MEMO_LIMITS.MAX_CONTENT_LENGTH);
   if (content === "") {
     return null;
@@ -98,16 +90,16 @@ function normalizeMemo(action: CreateMemoActionDraft): PlannedMemoDraft | null {
 }
 
 /**
- * 모델이 낸 행동을 적용 가능한 계획 초안으로 맞춘다. 할 일은 말한 순서대로 앞의
- * ACTION_PLAN_LIMITS.MAX_TODOS개, 메모는 내용이 있는 첫 MAX_MEMOS개만 둔다. 모르는 카테고리·겹침 id는
- * null로 바꾸고, 반복이면 기간을 버린다. 빈 계획은 호출부가 차감하지 않고 환불한다.
+ * 모델이 낸 계획을 적용 가능한 초안으로 맞춘다. 할 일은 말한 순서대로 앞의 ACTION_PLAN_LIMITS.MAX_TODOS개만
+ * 두고, 내용이 빈 메모는 버린다. 모르는 카테고리·겹침 id는 null로 바꾸고, 반복이면 기간을 버린다.
+ * 빈 계획은 호출부가 차감하지 않고 환불한다.
  */
 export function normalizeActionPlan(
-  actions: readonly PlannedActionDraft[],
+  draft: QuickPlanDraft,
   context: ActionPlanNormalizeContext,
 ): NormalizedActionPlan {
   const warnings: ActionPlanWarning[] = [];
-  const titled = actions.filter(isTodoAction).map((action) => ({
+  const titled = draft.todos.map((action) => ({
     action,
     title: cleanTitle(action.title),
   }));
@@ -121,17 +113,9 @@ export function normalizeActionPlan(
   const todos = todoActions
     .slice(0, ACTION_PLAN_LIMITS.MAX_TODOS)
     .map(({ action, title }) => normalizeTodo(action, title, context, warnings));
-
-  const memos = actions
-    .filter(isMemoAction)
-    .map(normalizeMemo)
-    .filter((memo) => memo != null);
-  if (memos.length > ACTION_PLAN_LIMITS.MAX_MEMOS) {
-    warnings.push("MEMOS_TRUNCATED");
-  }
   return {
     todos,
-    memo: memos[0] ?? null,
+    memo: draft.memo == null ? null : normalizeMemo(draft.memo),
     omittedTodoCount: Math.max(todoActions.length - ACTION_PLAN_LIMITS.MAX_TODOS, 0),
     warnings,
   };
@@ -168,7 +152,7 @@ export function normalizeVoiceNoteDigest(
     title: cleanText(draft.title, ACTION_PLAN_LIMITS.DIGEST_TITLE_MAX_LENGTH).replace(/\s+/g, " "),
     summary: cleanText(draft.summary, ACTION_PLAN_LIMITS.DIGEST_SUMMARY_MAX_LENGTH),
     keyPoints,
-    plan: normalizeActionPlan(draft.actions, context),
+    plan: normalizeActionPlan(draft, context),
   };
 }
 

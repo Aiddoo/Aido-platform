@@ -84,6 +84,24 @@ function findViolations(node: unknown, path: string): string[] {
   ];
 }
 
+/** null이 아닌 갈래가 둘 이상인 anyOf의 경로. 도구 입력에서 유니온 배열은 문자열로 깨져 온다. */
+function findUnions(node: unknown, path: string): string[] {
+  if (Array.isArray(node)) {
+    return node.flatMap((item, index) => findUnions(item, `${path}[${index}]`));
+  }
+  if (!isPlainObject(node)) {
+    return [];
+  }
+  const { anyOf } = node;
+  const branches = Array.isArray(anyOf) ? anyOf : [];
+  const isUnion =
+    branches.filter((branch) => !(isPlainObject(branch) && branch["type"] === "null")).length > 1;
+  return [
+    ...(isUnion ? [path] : []),
+    ...Object.entries(node).flatMap(([key, value]) => findUnions(value, `${path}/${key}`)),
+  ];
+}
+
 describe("업체 공통 구조화 출력 규칙", () => {
   it.each([
     { id: parseTodoPrompt.id, schema: parseTodoPrompt.schema },
@@ -100,6 +118,23 @@ describe("업체 공통 구조화 출력 규칙", () => {
       // Then
       expect(jsonSchema.type).toBe("object");
       expect(findViolations(jsonSchema, "$")).toEqual([]);
+    },
+  );
+
+  it.each([
+    { id: parseTodoPrompt.id, schema: parseTodoPrompt.schema },
+    { id: parseMemoPrompt.id, schema: parseMemoPrompt.schema },
+    { id: quickPlanPrompt.id, schema: quickPlanPrompt.schema },
+    { id: voiceNoteDigestPrompt.id, schema: voiceNoteDigestPrompt.schema },
+    { id: reportPrompt.id, schema: reportPrompt.schema },
+    { id: suggestionPrompt.id, schema: suggestionPrompt.schema },
+  ] satisfies { id: string; schema: z.ZodType }[])(
+    "$id 출력 schema의 anyOf는 값과 null 둘뿐이라 객체 유니온이 없다",
+    async ({ schema }: { schema: z.ZodType }) => {
+      // When
+      const jsonSchema = await zodSchema(schema).jsonSchema;
+      // Then
+      expect(findUnions(jsonSchema, "$")).toEqual([]);
     },
   );
 
@@ -130,7 +165,7 @@ describe("업체 공통 구조화 출력 규칙", () => {
       { id: parseTodoPrompt.id, schema: parseTodoPrompt.schema, system: PARSE_TODO_SYSTEM_KO },
     ];
 
-    /** 객체의 배열·객체 칸을 모두 JSON 문자열로 바꾼다. 실측 응답 `{"actions":"[...]"}`와 같은 모양이다. */
+    /** 객체의 배열·객체 칸을 모두 JSON 문자열로 바꾼다. 실측한 `{"actions":"[...]"}`처럼 칸이 문자열로 온 모양이다. */
     function stringifyContainers(output: Record<string, unknown>) {
       return mapValues(output, (value) =>
         Array.isArray(value) || isPlainObject(value) ? JSON.stringify(value) : value,
@@ -160,13 +195,14 @@ describe("업체 공통 구조화 출력 규칙", () => {
       expect(parsed).toEqual([{ summary: "잘했어요", tips: ["일찍 시작하기"] }, { picks: [] }]);
     });
 
-    it("행동 배열 안의 항목만 문자열이어도 풀어서 받는다", () => {
+    it("배열 안의 항목만 문자열이어도 풀어서 받는다", () => {
       // Given
-      const memo = { type: "CREATE_MEMO", title: "와이파이", content: "거실 공유기 뒷면" };
+      const item = { summary: "잘했어요", tips: ["일찍 시작하기"] };
+      const schema = llmObject({ reports: z.array(reportPrompt.schema) });
       // When
-      const parsed = quickPlanPrompt.schema.parse({ actions: [JSON.stringify(memo)] });
+      const parsed = schema.parse({ reports: [JSON.stringify(item)] });
       // Then
-      expect(parsed).toEqual({ actions: [memo] });
+      expect(parsed).toEqual({ reports: [item] });
     });
 
     it("JSON처럼 보이는 문자열 칸은 그대로 둔다", () => {
@@ -179,15 +215,16 @@ describe("업체 공통 구조화 출력 규칙", () => {
     });
 
     it.each([
-      { name: "JSON이 아닌 문자열", actions: "할 일 없음" },
-      { name: "잘린 JSON", actions: '[{"type":"CREATE_TODO"' },
-      { name: "배열이 아닌 JSON 값", actions: "3" },
-    ])("$name 값은 원래 값 그대로 schema가 거부한다", ({ actions }) => {
+      { name: "JSON이 아닌 문자열", todos: "할 일 없음" },
+      { name: "잘린 JSON", todos: '[{"title":"운동"' },
+      { name: "끝에 괄호가 더 붙어 깨진 JSON", todos: '[{"title":"운동"}]}' },
+      { name: "배열이 아닌 JSON 값", todos: "3" },
+    ])("$name 값은 고쳐 받지 않고 schema가 거부한다", ({ todos }) => {
       // When
-      const result = quickPlanPrompt.schema.safeParse({ actions });
+      const result = quickPlanPrompt.schema.safeParse({ todos, memo: null });
       // Then
       expect(result.success).toBe(false);
-      expect(result.error?.issues[0]).toMatchObject({ path: ["actions"], code: "invalid_type" });
+      expect(result.error?.issues[0]).toMatchObject({ path: ["todos"], code: "invalid_type" });
     });
 
     it("문자열로 풀어 받는 처리는 업체에 보내는 JSON Schema를 바꾸지 않는다", async () => {
@@ -196,8 +233,8 @@ describe("업체 공통 구조화 출력 규칙", () => {
       // Then
       expect(jsonSchema).toMatchObject({
         type: "object",
-        required: ["actions"],
-        properties: { actions: { type: "array" } },
+        required: ["todos", "memo"],
+        properties: { todos: { type: "array" } },
       });
     });
   });

@@ -83,7 +83,7 @@ describe("프롬프트 kit", () => {
     const generator = new FakeAiGenerator().setRawResponse({ value: " 원문 " });
     const definition = {
       id: "quick-plan",
-      version: "quick-plan@3",
+      version: "quick-plan@4",
       taskClass: "interactive",
       maxInputChars: 100,
       schema: z.object({ value: z.string() }),
@@ -107,7 +107,7 @@ describe("프롬프트 kit", () => {
       taskClass: "interactive",
       maxInputChars: 100,
       userId: "user-1",
-      promptVersion: "quick-plan@3",
+      promptVersion: "quick-plan@4",
       system: "S",
       prompt: "P",
       agreedConsentVersion: null,

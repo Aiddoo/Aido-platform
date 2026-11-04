@@ -34,7 +34,7 @@ export const quickPlanPrompt: PromptDefinition<
   ActionPlanNormalizeContext
 > = {
   id: "quick-plan",
-  version: "quick-plan@3",
+  version: "quick-plan@4",
   taskClass: "interactive",
   // 카테고리 30개·다가오는 할 일 30개·1,000자 입력의 최대 user 턴이 약 9,800자다.
   maxInputChars: 12_000,
@@ -48,5 +48,5 @@ export const quickPlanPrompt: PromptDefinition<
       }),
     }),
   }),
-  normalize: (draft, context) => normalizeActionPlan(draft.actions, context),
+  normalize: normalizeActionPlan,
 };

@@ -3,7 +3,8 @@ import { ACTION_PLAN_LIMITS, MEMO_LIMITS, TODO_ITEM_LIMITS } from "@aido/api/voc
 import { dateRefFixture, planRepeatRefFixture } from "#test/fixtures/ai-response.fixture";
 
 import type {
-  CreateTodoActionDraft,
+  QuickPlanDraft,
+  TodoActionDraft,
   VoiceNoteDigestDraft,
 } from "../../../domain/types/planning/action-plan-draft.types.js";
 import {
@@ -15,9 +16,8 @@ import {
 
 const context = { ownedCategoryIds: new Set([1, 2]), upcomingTodoIds: new Set([41]) };
 
-function todo(overrides: Partial<CreateTodoActionDraft> = {}): CreateTodoActionDraft {
+function todo(overrides: Partial<TodoActionDraft> = {}): TodoActionDraft {
   return {
-    type: "CREATE_TODO",
     title: "운동",
     categoryId: null,
     date: dateRefFixture({ kind: "NONE" }),
@@ -32,49 +32,59 @@ function todo(overrides: Partial<CreateTodoActionDraft> = {}): CreateTodoActionD
 }
 
 function digest(overrides: Partial<VoiceNoteDigestDraft> = {}): VoiceNoteDigestDraft {
-  return { title: "회의", summary: "요약", keyPoints: [], actions: [], ...overrides };
+  return { title: "회의", summary: "요약", keyPoints: [], todos: [], memo: null, ...overrides };
+}
+
+function plan(overrides: Partial<QuickPlanDraft> = {}): QuickPlanDraft {
+  return { todos: [], memo: null, ...overrides };
 }
 
 describe("normalizeActionPlan", () => {
   it("소유하지 않은 카테고리와 목록에 없는 겹침 id는 null로 바꾼다", () => {
     // Given
-    const actions = [todo({ categoryId: 999, duplicateOfTodoId: 7 }), todo({ categoryId: 2 })];
+    const todos = [todo({ categoryId: 999, duplicateOfTodoId: 7 }), todo({ categoryId: 2 })];
     // When
-    const plan = normalizeActionPlan(actions, context);
+    const result = normalizeActionPlan(plan({ todos }), context);
     // Then
-    expect(plan.todos.map(({ categoryId }) => categoryId)).toEqual([null, 2]);
-    expect(plan.todos[0]?.duplicateOfTodoId).toBeNull();
-    expect(plan.warnings).toEqual(["UNKNOWN_CATEGORY", "UNKNOWN_DUPLICATE"]);
+    expect(result.todos.map(({ categoryId }) => categoryId)).toEqual([null, 2]);
+    expect(result.todos[0]?.duplicateOfTodoId).toBeNull();
+    expect(result.warnings).toEqual(["UNKNOWN_CATEGORY", "UNKNOWN_DUPLICATE"]);
   });
 
   it("다가오는 할 일 목록에 있는 겹침 id는 그대로 둔다", () => {
     // Given
-    const actions = [todo({ duplicateOfTodoId: 41 })];
+    const todos = [todo({ duplicateOfTodoId: 41 })];
     // When
-    const plan = normalizeActionPlan(actions, context);
+    const result = normalizeActionPlan(plan({ todos }), context);
     // Then
-    expect(plan.todos[0]?.duplicateOfTodoId).toBe(41);
-    expect(plan.warnings).toEqual([]);
+    expect(result.todos[0]?.duplicateOfTodoId).toBe(41);
+    expect(result.warnings).toEqual([]);
   });
 
-  it("할 일은 말한 순서대로 상한까지만, 메모는 내용 있는 첫 개만 두고 넘친 수를 알린다", () => {
+  it("할 일은 말한 순서대로 상한까지만 두고 넘친 수를 알린다", () => {
     // Given
     const todos = Array.from({ length: ACTION_PLAN_LIMITS.MAX_TODOS + 2 }, (_, index) =>
       todo({ title: `할 일 ${index}` }),
     );
-    const memos = [
-      { type: "CREATE_MEMO", title: "빈 메모", content: "  " },
-      { type: "CREATE_MEMO", title: "와이파이", content: "공유기 뒷면" },
-      { type: "CREATE_MEMO", title: "둘째", content: "내용" },
-    ] as const;
+    const memo = { title: "와이파이", content: "공유기 뒷면" };
     // When
-    const plan = normalizeActionPlan([...memos, ...todos], context);
+    const result = normalizeActionPlan(plan({ todos, memo }), context);
     // Then
-    expect(plan.todos).toHaveLength(ACTION_PLAN_LIMITS.MAX_TODOS);
-    expect(plan.todos.at(-1)?.title).toBe(`할 일 ${ACTION_PLAN_LIMITS.MAX_TODOS - 1}`);
-    expect(plan.omittedTodoCount).toBe(2);
-    expect(plan.memo).toEqual({ title: "와이파이", content: "공유기 뒷면" });
-    expect(plan.warnings).toEqual(["TODOS_TRUNCATED", "MEMOS_TRUNCATED"]);
+    expect(result.todos).toHaveLength(ACTION_PLAN_LIMITS.MAX_TODOS);
+    expect(result.todos.at(-1)?.title).toBe(`할 일 ${ACTION_PLAN_LIMITS.MAX_TODOS - 1}`);
+    expect(result.omittedTodoCount).toBe(2);
+    expect(result.memo).toEqual(memo);
+    expect(result.warnings).toEqual(["TODOS_TRUNCATED"]);
+  });
+
+  it("내용이 빈 메모는 버린다", () => {
+    // Given
+    const memo = { title: "빈 메모", content: "  " };
+    // When
+    const result = normalizeActionPlan(plan({ memo }), context);
+    // Then
+    expect(result.memo).toBeNull();
+    expect(isEmptyActionPlan(result)).toBe(true);
   });
 
   it("하위 항목은 빈 값·제목 반복·중복을 빼고 기존 하위 할 일 상한으로 자른다", () => {
@@ -87,11 +97,11 @@ describe("normalizeActionPlan", () => {
       ...Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO }, (_, index) => `항목 ${index}`),
     ];
     // When
-    const plan = normalizeActionPlan([todo({ items })], context);
+    const result = normalizeActionPlan(plan({ todos: [todo({ items })] }), context);
     // Then
-    expect(plan.todos[0]?.items).toHaveLength(TODO_ITEM_LIMITS.MAX_PER_TODO);
-    expect(plan.todos[0]?.items.slice(0, 2)).toEqual(["스트레칭", "항목 0"]);
-    expect(plan.warnings).toEqual(["ITEMS_TRUNCATED"]);
+    expect(result.todos[0]?.items).toHaveLength(TODO_ITEM_LIMITS.MAX_PER_TODO);
+    expect(result.todos[0]?.items.slice(0, 2)).toEqual(["스트레칭", "항목 0"]);
+    expect(result.warnings).toEqual(["ITEMS_TRUNCATED"]);
   });
 
   it("반복 할 일은 하루짜리라 기간(endDate)을 버리고, 반복이 아니면 기간을 둔다", () => {
@@ -99,51 +109,49 @@ describe("normalizeActionPlan", () => {
     const monday = dateRefFixture({ kind: "WEEKDAY", weekday: "MON", weekOffset: 1 });
     const sunday = dateRefFixture({ kind: "WEEKDAY", weekday: "SUN", weekOffset: 1 });
     const monthly = planRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 });
-    const actions = [
+    const todos = [
       todo({ endDate: sunday, repeat: monthly }),
       todo({ title: "출장", date: monday, endDate: sunday }),
     ];
     // When
-    const plan = normalizeActionPlan(actions, context);
+    const result = normalizeActionPlan(plan({ todos }), context);
     // Then
-    expect(plan.todos[0]?.schedule).toEqual({
+    expect(result.todos[0]?.schedule).toEqual({
       date: dateRefFixture({ kind: "NONE" }),
       endDate: null,
       time: null,
       repeat: monthly,
     });
-    expect(plan.todos[1]?.schedule.endDate).toEqual(sunday);
-    expect(plan.warnings).toEqual(["REPEAT_WITH_END_DATE"]);
+    expect(result.todos[1]?.schedule.endDate).toEqual(sunday);
+    expect(result.warnings).toEqual(["REPEAT_WITH_END_DATE"]);
   });
 
   it("제목의 보이지 않는 문자·연속 공백을 정리하고 빈 제목 할 일은 버린다", () => {
     // Given
-    const actions = [todo({ title: " 팀​  standup‮ 준비 " }), todo({ title: "​ " })];
+    const todos = [todo({ title: " 팀​  standup‮ 준비 " }), todo({ title: "​ " })];
     // When
-    const plan = normalizeActionPlan(actions, context);
+    const result = normalizeActionPlan(plan({ todos }), context);
     // Then
-    expect(plan.todos.map(({ title }) => title)).toEqual(["팀 standup 준비"]);
-    expect(plan.warnings).toEqual(["EMPTY_TITLE"]);
+    expect(result.todos.map(({ title }) => title)).toEqual(["팀 standup 준비"]);
+    expect(result.warnings).toEqual(["EMPTY_TITLE"]);
   });
 
   it("메모 제목이 비면 내용 첫 줄을 제목으로 쓰고 내용은 메모 상한으로 자른다", () => {
     // Given
     const content = `첫 줄\n${"가".repeat(MEMO_LIMITS.MAX_CONTENT_LENGTH)}`;
     // When
-    const plan = normalizeActionPlan([{ type: "CREATE_MEMO", title: "", content }], context);
+    const result = normalizeActionPlan(plan({ memo: { title: "", content } }), context);
     // Then
-    expect(plan.memo?.title).toBe("첫 줄");
-    expect(plan.memo?.content).toHaveLength(MEMO_LIMITS.MAX_CONTENT_LENGTH);
+    expect(result.memo?.title).toBe("첫 줄");
+    expect(result.memo?.content).toHaveLength(MEMO_LIMITS.MAX_CONTENT_LENGTH);
   });
 
   it("빈 출력은 빈 계획이다", () => {
-    // Given
-    const actions: CreateTodoActionDraft[] = [];
     // When
-    const plan = normalizeActionPlan(actions, context);
+    const result = normalizeActionPlan(plan(), context);
     // Then
-    expect(plan).toEqual({ todos: [], memo: null, omittedTodoCount: 0, warnings: [] });
-    expect(isEmptyActionPlan(plan)).toBe(true);
+    expect(result).toEqual({ todos: [], memo: null, omittedTodoCount: 0, warnings: [] });
+    expect(isEmptyActionPlan(result)).toBe(true);
   });
 });
 
@@ -206,11 +214,11 @@ describe("normalizeVoiceNoteDigest", () => {
     expect(results.map(isEmptyVoiceNoteDigest)).toEqual([true, false]);
   });
 
-  it("행동은 빠른 계획과 같은 규칙으로 정규화한다", () => {
+  it("계획은 빠른 계획과 같은 규칙으로 정규화한다", () => {
     // Given
-    const actions = [todo({ categoryId: 999, items: ["우유", "우유"] })];
+    const todos = [todo({ categoryId: 999, items: ["우유", "우유"] })];
     // When
-    const result = normalizeVoiceNoteDigest(digest({ actions }), { ...context, sentenceCount: 0 });
+    const result = normalizeVoiceNoteDigest(digest({ todos }), { ...context, sentenceCount: 0 });
     // Then
     expect(result.plan.todos[0]).toMatchObject({ categoryId: null, items: ["우유"] });
   });

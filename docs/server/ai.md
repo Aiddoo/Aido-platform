@@ -21,8 +21,8 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | parse-memo        | `prompts/parsing/parse-memo`         | `parse-memo@5`        |
 | report            | `prompts/reports/report`             | `report@3`            |
 | suggestion        | `prompts/suggestions/suggestion`     | `suggestion@3`        |
-| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@3`        |
-| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@3` |
+| quick-plan        | `prompts/planning/quick-plan`        | `quick-plan@4`        |
+| voice-note-digest | `prompts/planning/voice-note-digest` | `voice-note-digest@4` |
 
 - 작업 폴더는 `prompt.ko.ts`·`prompt.en.ts`(고정 system), `examples.ko.ts`·`examples.en.ts`, `schema.ts`(LLM schema), `index.ts`(정의·입력 타입)다. 파싱·계획이 함께 쓰는 일정 표현 schema·규칙·기준 시각은 `prompts/parsing/schedule`, 계획 공통 규칙·맥락은 `prompts/planning`에 있다.
 - 캐시 친화 순서: system은 `<role>` `<security>` `<language_policy>` `<output_contract>` `<rules>` `<examples>`(사용자 값 없음, 업체 어댑터가 Claude `cacheControl`을 건다) → user 턴은 동적 `<context>`(기준 시각·요일·시간대, 카테고리 id·이름, 계획은 다가오는 할 일 30개) → 맨 끝에 사용자 입력 블록(`<user_input>`·`<transcript>`·`<report_data>`·`<suggestion_data>`). 과제 지시는 `<output_contract>`에 있어 입력 뒤에 지시가 오지 않는다.
@@ -34,7 +34,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 세 업체가 같은 schema를 받도록 모든 LLM 출력 schema는 다음을 지킨다(`kit/prompt-schema-rules.spec.ts`가 `zodSchema(schema).jsonSchema`로 모든 정의를 검사한다).
 
-- 모든 칸 required, 값이 없을 수 있는 칸은 `.nullable()`, `.optional()`·`.nullish()` 금지. 루트는 object이고 `$ref`·재귀·`oneOf`·`allOf`·`const`·`default`·`pattern`·min/max 계열은 쓰지 않는다. 범위·길이는 서버 정규화가 맞춘다. `z.number().int()`는 안전 정수 min/max를 실으므로 `llmInteger()`를 쓰고, 판별 유니온은 `oneOf`·`const`가 되므로 `z.union` + `z.enum`을 쓴다.
+- 모든 칸 required, 값이 없을 수 있는 칸은 `.nullable()`, `.optional()`·`.nullish()` 금지. 루트는 object이고 `$ref`·재귀·`oneOf`·`allOf`·`const`·`default`·`pattern`·min/max 계열은 쓰지 않는다. 범위·길이는 서버 정규화가 맞춘다. `z.number().int()`는 안전 정수 min/max를 실으므로 `llmInteger()`를 쓴다. 객체 유니온은 쓰지 않는다(`oneOf`·`const`가 되거나, `anyOf`여도 Claude JSON 도구가 배열을 문자열로 내보내다 JSON을 깨뜨린 사례가 있다). 종류가 다른 값은 칸을 나눈다.
 - 없음은 모델 출력부터 도메인 IR(`todo-draft.types.ts`)까지 `null` 하나다. `?? undefined`로 되돌리지 않는다.
 - 객체는 `kit/llm-object.ts`의 `llmObject`·`nullableLlmObject`로 만든다. 비엄격 경로에서 모델이 뺀 칸은 preprocess가 null로 채우고, 배열·객체 칸을 JSON 문자열로 보내면(Claude JSON 도구 실측 `{"actions":"[...]"}`) 풀어서 받는다. 문자열을 받는 칸은 건드리지 않고, 풀리지 않으면 원래 값을 schema가 거부한다. `preprocess(...).nullable()`처럼 바깥에 씌우면 Zod가 required에서 그 칸을 빼 OpenAI strict가 400을 내므로 null 허용은 안쪽에 두고, `.extend` 대신 shape을 펼쳐 조합한다.
 - 업체 옵션: OpenAI `strictJsonSchema: true`와 `reasoningEffort` minimal→none, Google `structuredOutputs: true`, Claude `structuredOutputMode: "jsonTool"`(네이티브는 null 허용 칸 16개 제한, parse-todo는 29개)과 minimal이면 `thinking: disabled` + effort low.
@@ -43,7 +43,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ### 계획(quick-plan·voice-note-digest) 출력
 
-- 행동은 `CREATE_TODO`(title, categoryId|null, date·endDate·time 일정 표현, repeat 표현, visibility `PRIVATE`|null, items, duplicateOfTodoId|null)와 `CREATE_MEMO`(title, content) 유니온뿐이다. 녹음 정리는 앱 언어의 title·summary·keyPoints(`{ text, sentenceIndex|null }`)를 더한다. 모델은 날짜·시각을 계산하지 않고 표현만 낸다.
+- 모델 출력은 `todos`(title, categoryId|null, date·endDate·time 일정 표현, repeat 표현, visibility `PRIVATE`|null, items, duplicateOfTodoId|null)와 `memo`(title, content 또는 null)다. 공개 계획 모양은 정규화(`NormalizedActionPlan`) 뒤에 만든다. 기한("금요일까지")은 date NONE + endDate, 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. 녹음 정리는 앱 언어의 title·summary·keyPoints(`{ text, sentenceIndex|null }`)를 더한다. 모델은 날짜·시각을 계산하지 않고 표현만 낸다.
 - 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
 - 정규화(`application/services/planning/action-plan.normalizer.ts`): 할 일 앞의 `ACTION_PLAN_LIMITS.MAX_TODOS`(10)개·메모 1개, 하위 항목 `TODO_ITEM_LIMITS.MAX_PER_TODO`, 제목 200자, 모르는 카테고리·겹침 id → null, 반복이면 기간(endDate)을 버린다. 핵심 포인트는 5개, 문장 번호는 준 문장 범위 안의 값만 남긴다. 계획·요약·핵심 포인트가 모두 비면 빈 결과(`isEmptyActionPlan`·`isEmptyVoiceNoteDigest`)로 호출부가 환불한다.
 

@@ -42,7 +42,8 @@ export const SCHEDULE_RULES_KO = {
 - "이번 주 운동", "다음 주 회의"처럼 그 주 내내 하는 일 → THIS_WEEK, NEXT_WEEK, WEEK_AFTER_NEXT. "이번 주말", "다음 주말" → THIS_WEEKEND, NEXT_WEEKEND. "이번 주 주중" → THIS_WEEKDAYS.
 - 출장, 여행, 시험, 행사처럼 기간이 있는 단발 일정은 반복이 아니다. pattern은 NONE이고 date와 endDate로 기간을 나타낸다. "다음 주 내내 출장" → date 다음 주 월요일, endDate 다음 주 일요일.
 - 매년, 매월 n번째 요일, 3주 이상 간격, 시간 단위 반복은 UNSUPPORTED다. 말한 요일·날짜는 date에 그대로 쓴다.
-- 반복 종료를 말했을 때만 until("12월 말까지") 또는 forDuration("한 달 동안" → MONTH 1)을 쓴다. 종료를 말하지 않으면 둘 다 null이다(계속 반복). 종료일을 지어내지 않는다.
+- 반복의 요일·날짜는 daysOfWeek·monthDay에만 쓴다. date는 시작을 따로 말했을 때만 쓰고 아니면 NONE이다.
+- 반복 종료를 말했을 때만 until("12월 말까지" → CALENDAR_DATE month 12, day 31) 또는 forDuration("한 달 동안" → MONTH 1)을 쓴다. 종료를 말하지 않으면 둘 다 null이다(계속 반복). 종료일을 지어내지 않는다.
 - 반복 할 일은 하루짜리다. 반복이면 endDate는 null이다.
 </repeat_rules>`,
   planCategory: `<category_rules>
@@ -90,7 +91,8 @@ export const SCHEDULE_RULES_EN = {
 - Work spread across a whole week without "every", such as "workout this week" or "meetings next week" → THIS_WEEK, NEXT_WEEK, WEEK_AFTER_NEXT. "this weekend", "next weekend" → THIS_WEEKEND, NEXT_WEEKEND. "during the week" → THIS_WEEKDAYS.
 - One-off events that span days (business trip, vacation, exam, conference) are not repetition: pattern NONE, with the span in date and endDate. "away on a business trip all next week" → date next Monday, endDate next Sunday.
 - Yearly, "the nth weekday of the month", intervals of three weeks or more, and hourly repetition → UNSUPPORTED. Keep the stated weekday or date in date.
-- Use until ("until the end of December") or forDuration ("for a month" → MONTH 1) only when the end of the repetition is stated. Without a stated end, both are null (it keeps repeating). Never invent an end date.
+- Weekdays and days of a repetition go only in daysOfWeek and monthDay. Use date only when a start is stated separately, otherwise NONE.
+- Use until ("until the end of December" → CALENDAR_DATE month 12, day 31) or forDuration ("for a month" → MONTH 1) only when the end of the repetition is stated. Without a stated end, both are null (it keeps repeating). Never invent an end date.
 - A repeating to-do lasts one day. endDate is null when it repeats.
 </repeat_rules>`,
   planCategory: `<category_rules>

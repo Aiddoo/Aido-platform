@@ -6,11 +6,11 @@ import type {
 } from "../parsing/todo-draft.types.js";
 
 /**
- * 계획 프롬프트(quick-plan·voice-note-digest)가 내는 행동 표현.
+ * 계획 프롬프트(quick-plan·voice-note-digest)가 내는 표현. 도구 입력에서 유니온 배열이 문자열로 깨져 오는 일이
+ * 있어 모델 출력은 할 일 목록과 메모 하나로 나눈다.
  * 일정은 날짜가 아니라 표현(ScheduleDraft)이고, 서버 resolver가 사용자 시간대로 계산한다.
  */
-export interface CreateTodoActionDraft {
-  readonly type: "CREATE_TODO";
+export interface TodoActionDraft {
   readonly title: string;
   readonly categoryId: number | null;
   readonly date: DateRef;
@@ -24,16 +24,14 @@ export interface CreateTodoActionDraft {
   readonly duplicateOfTodoId: number | null;
 }
 
-export interface CreateMemoActionDraft {
-  readonly type: "CREATE_MEMO";
+export interface MemoActionDraft {
   readonly title: string;
   readonly content: string;
 }
 
-export type PlannedActionDraft = CreateTodoActionDraft | CreateMemoActionDraft;
-
 export interface QuickPlanDraft {
-  readonly actions: readonly PlannedActionDraft[];
+  readonly todos: readonly TodoActionDraft[];
+  readonly memo: MemoActionDraft | null;
 }
 
 export interface DigestKeyPointDraft {
@@ -65,7 +63,6 @@ export interface PlannedMemoDraft {
 
 export type ActionPlanWarning =
   | "TODOS_TRUNCATED"
-  | "MEMOS_TRUNCATED"
   | "ITEMS_TRUNCATED"
   | "UNKNOWN_CATEGORY"
   | "UNKNOWN_DUPLICATE"
