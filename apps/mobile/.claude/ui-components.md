@@ -340,7 +340,7 @@ Expo 공식 스킬(expo-animation·native-ui·data-fetching·router·ui)을 따�
   `useReduceMotion()`이 켜져 있으면 생략하고 색·투명도만 바꾼다.
 - **햅틱**: DI의 `useHaptics()`로 행동 1회에 같은 프레임에서 한 번 울린다. `expo-haptics`를 직접 import하지 않는다.
   worklet에서는 기준점을 넘을 때만 `scheduleOnRN`으로 부른다.
-- **오디오**: 녹음·재생은 `expo-audio`(`useAudioPlayer`·`useAudioPlayerStatus`)를 쓴다. `expo-av`는 쓰지 않는다.
+- **오디오**: 녹음·재생은 `expo-audio`를 쓴다(녹음 조각을 잇는 다시 듣기는 `useAudioPlaylist`). `expo-av`는 쓰지 않는다.
 - **데이터 화면 4상태**: 로딩(스켈레톤)·오류(`QueryErrorBoundary`)·빈 상태(`.Empty`)·데이터를 모두 그린다. 저장 실패는
   입력값을 지우지 않는다. 숫자 카운터는 `tabular-nums`로 폭이 흔들리지 않게 한다.
 - **키보드**: `react-native-keyboard-controller`를 쓴다.
