@@ -320,7 +320,14 @@ export interface NotificationEventMap {
   marketing_push_opted_out: { source: 'push_action' };
   marketing_push_opted_in: { source: 'feed_banner' };
   marketing_push_prompt_dismissed: { source: 'feed_banner' };
+  push_permission_prompt_shown: { source: PushPermissionPromptSource; step: string };
+  push_permission_prompt_dismissed: { source: PushPermissionPromptSource; step: string };
+  push_permission_requested: { source: PushPermissionPromptSource; status: string };
+  push_permission_settings_opened: { source: PushPermissionPromptSource };
 }
+
+/** 알림 권한 안내가 보인 곳 */
+export type PushPermissionPromptSource = 'activation' | 'feed_card' | 'settings';
 
 export interface BadgeEventMap {
   badge_summary_viewed: {

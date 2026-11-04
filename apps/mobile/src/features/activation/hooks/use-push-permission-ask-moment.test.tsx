@@ -10,11 +10,11 @@ import { PushDeviceService } from '@src/features/notification/apis/push-device.s
 import { createMockDIContainer, createMockHttpClient } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 
 import type { ActivationProgress, ActivationUser } from '../domains/activation.model';
-import { useAutomaticPushPermissionRequest } from './use-automatic-push-permission-request';
+import { usePushPermissionAskMoment } from './use-push-permission-ask-moment';
 
 type ActivationState = {
   config: FeatureDiscoveryConfig | undefined;
@@ -73,47 +73,65 @@ function setup(permissionStatus: 'undetermined' | 'granted' | 'denied' = 'undete
   return { gateway, wrapper };
 }
 
-describe('useAutomaticPushPermissionRequest', () => {
+describe('usePushPermissionAskMoment', () => {
   beforeEach(() => {
     mockActivationState = EXISTING_USER_STATE;
   });
 
-  it('기존 사용자가 아직 알림 권한을 정하지 않았으면 로그인하자마자 한 번 묻는다', async () => {
+  it('기존 사용자가 아직 알림 권한을 정하지 않았으면 로그인하자마자 안내할 차례가 된다', async () => {
     // Given
     const { gateway, wrapper } = setup('undetermined');
 
     // When
-    await renderHook(() => useAutomaticPushPermissionRequest(), { wrapper });
+    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
 
-    // Then
+    // Then 시스템 창은 안내에서 허용을 눌렀을 때만 뜬다
     await waitFor(() => {
-      expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
+      expect(result.current.isDue).toBe(true);
     });
+    expect(gateway.requestPermission).not.toHaveBeenCalled();
   });
 
-  it('이미 허용하거나 거절한 사용자에게는 시스템 창을 다시 띄우지 않는다', async () => {
+  it('안내를 마치면 같은 계정·활성화 시점에는 다시 묻지 않는다', async () => {
+    // Given
+    const { wrapper } = setup('undetermined');
+    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.isDue).toBe(true);
+    });
+
+    // When
+    await act(() => result.current.complete());
+
+    // Then
+    expect(result.current.isDue).toBe(false);
+  });
+
+  it('이미 허용하거나 거절한 사용자에게는 묻지 않는다', async () => {
     // Given
     const { gateway, wrapper } = setup('denied');
 
     // When
-    await renderHook(() => useAutomaticPushPermissionRequest(), { wrapper });
+    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
 
     // Then
     await waitFor(() => {
       expect(gateway.getPermission).toHaveBeenCalled();
     });
-    expect(gateway.requestPermission).not.toHaveBeenCalled();
+    expect(result.current.isDue).toBe(false);
   });
 
-  it('활성화 전 신규 사용자에게는 묻지 않고, 활성화하면 그때 묻는다', async () => {
+  it('활성화 전 신규 사용자에게는 묻지 않고, 활성화하면 그때 안내한다', async () => {
     // Given
     mockActivationState = { ...EXISTING_USER_STATE, user: NEW_USER };
     const { gateway, wrapper } = setup('undetermined');
-    const { rerender } = await renderHook(() => useAutomaticPushPermissionRequest(), { wrapper });
+    const { result, rerender } = await renderHook(() => usePushPermissionAskMoment(), {
+      wrapper,
+    });
     await waitFor(() => {
       expect(gateway.getPermission).toHaveBeenCalled();
     });
-    expect(gateway.requestPermission).not.toHaveBeenCalled();
+    expect(result.current.isDue).toBe(false);
 
     // When
     mockActivationState = {
@@ -127,7 +145,7 @@ describe('useAutomaticPushPermissionRequest', () => {
 
     // Then
     await waitFor(() => {
-      expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
+      expect(result.current.isDue).toBe(true);
     });
   });
 
@@ -139,14 +157,14 @@ describe('useAutomaticPushPermissionRequest', () => {
       isReady: false,
       hasUserError: true,
     };
-    const { gateway, wrapper } = setup('undetermined');
+    const { wrapper } = setup('undetermined');
 
     // When
-    await renderHook(() => useAutomaticPushPermissionRequest(), { wrapper });
+    const { result } = await renderHook(() => usePushPermissionAskMoment(), { wrapper });
 
     // Then
     await waitFor(() => {
-      expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
+      expect(result.current.isDue).toBe(true);
     });
   });
 });

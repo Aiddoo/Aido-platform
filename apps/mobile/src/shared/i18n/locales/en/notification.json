@@ -70,5 +70,33 @@
     "reminderEveningLabel": "Evening reminder",
     "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
     "reminderPremium": "Changing reminder times is available to premium subscribers only."
+  },
+  "permission": {
+    "card": {
+      "askTitle": "Get to-do reminders",
+      "askDescription": "We'll let you know about reminders and cheers from friends on time",
+      "deniedTitle": "Notifications are off",
+      "requestDescription": "Allow them again to get reminders",
+      "settingsDescription": "Turn on notifications in device settings to get reminders",
+      "appOffTitle": "Push notifications are off",
+      "appOffDescription": "Turn on push notifications in notification settings",
+      "allow": "Allow",
+      "openSettings": "Open settings",
+      "turnOn": "Turn on",
+      "dismiss": "Dismiss notification notice"
+    },
+    "dialog": {
+      "title": "Can we send you notifications?",
+      "description": "We'll remind you about to-dos, cheers and nudges from friends, and your streak. You can change this anytime in settings.",
+      "allow": "Get notifications",
+      "later": "Not now"
+    },
+    "status": {
+      "label": "Device notifications",
+      "granted": "Allowed",
+      "provisional": "Delivered quietly",
+      "denied": "Off · Turn on in device settings",
+      "notDetermined": "Not chosen yet"
+    }
   }
 }

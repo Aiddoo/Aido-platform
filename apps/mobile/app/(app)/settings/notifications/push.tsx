@@ -1,6 +1,7 @@
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
+import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
 import { useUpdatePushEnabledMutationOptions } from '@src/features/notification/queries/use-update-push-enabled-mutation-options';
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
@@ -32,6 +33,10 @@ function PushSettingsScreen() {
 
   return (
     <VStack gap={24}>
+      <SettingsCard>
+        <PushPermissionStatusRow />
+      </SettingsCard>
+
       <SettingsCard>
         <SettingsCard.Toggle
           label={t('settings.pushLabel')}
@@ -83,6 +88,9 @@ function PushSettingsScreen() {
 PushSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
+      <SettingsCard>
+        <SettingsCard.ToggleSkeleton hasDescription />
+      </SettingsCard>
       <SettingsCard>
         <SettingsCard.ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />

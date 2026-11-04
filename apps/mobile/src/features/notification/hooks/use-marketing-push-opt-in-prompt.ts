@@ -2,10 +2,12 @@ import { useMarketingPushPromptService } from '@src/bootstrap/providers/di-conte
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useToday } from '@src/shared/hooks/use-today';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
+import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
 import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet';
 
 interface MarketingPushOptInPrompt {
@@ -27,13 +29,18 @@ export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
   const marketingPushPromptService = useMarketingPushPromptService();
   const { trackEvent } = useTrack();
   const consentSheet = useMarketingPushConsentSheet();
-  const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
+  const [{ data: consent }, { data: permission }] = useSuspenseQueries({
+    queries: [useGetConsentQueryOptions(), useGetPushPermissionQueryOptions()],
+  });
   const [promptState] = useState(() => marketingPushPromptService.getState());
   const [dismissed, setDismissed] = useState(false);
   const today = useToday();
 
+  // 기기 알림이 꺼져 있으면 알림 권한 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
   const isVisible =
-    !dismissed && MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
+    !dismissed &&
+    PushPermissionPolicy.isDeliveryAllowed(permission) &&
+    MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
 
   const dismiss = () => {
     marketingPushPromptService.recordPrompt(new Date());

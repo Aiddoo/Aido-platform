@@ -70,5 +70,33 @@
     "reminderEveningLabel": "오후 리마인드",
     "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요",
     "reminderPremium": "리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요."
+  },
+  "permission": {
+    "card": {
+      "askTitle": "할 일 알림을 받아 보세요",
+      "askDescription": "리마인더와 친구의 응원을 제때 알려드려요",
+      "deniedTitle": "알림이 꺼져 있어요",
+      "requestDescription": "다시 허용하면 리마인더를 받을 수 있어요",
+      "settingsDescription": "기기 설정에서 알림을 켜면 리마인더를 받을 수 있어요",
+      "appOffTitle": "푸시 알림이 꺼져 있어요",
+      "appOffDescription": "알림 설정에서 푸시 알림을 켜 주세요",
+      "allow": "허용하기",
+      "openSettings": "설정 열기",
+      "turnOn": "켜기",
+      "dismiss": "알림 안내 닫기"
+    },
+    "dialog": {
+      "title": "알림을 보내드려도 될까요?",
+      "description": "할 일 리마인더, 친구의 응원·콕, 연속 기록 소식을 놓치지 않게 알려드려요. 언제든 설정에서 바꿀 수 있어요.",
+      "allow": "알림 받기",
+      "later": "나중에"
+    },
+    "status": {
+      "label": "기기 알림 권한",
+      "granted": "허용됨",
+      "provisional": "조용히 받는 중",
+      "denied": "꺼짐 · 기기 설정에서 켤 수 있어요",
+      "notDetermined": "아직 선택하지 않았어요"
+    }
   }
 }

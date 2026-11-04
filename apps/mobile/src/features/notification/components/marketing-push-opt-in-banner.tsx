@@ -1,5 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { Pressable } from 'react-native';
 
@@ -10,7 +11,11 @@ import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-
  *
  * 노출 여부·상호작용은 useMarketingPushOptInPrompt가 소유하고, 이 컴포넌트는 렌더만 한다.
  */
-export function MarketingPushOptInBanner() {
+interface MarketingPushOptInBannerProps {
+  className?: string;
+}
+
+export function MarketingPushOptInBanner({ className }: MarketingPushOptInBannerProps) {
   const { t } = useTranslation('notification');
   const { isVisible, open, dismiss } = useMarketingPushOptInPrompt();
 
@@ -19,7 +24,7 @@ export function MarketingPushOptInBanner() {
   }
 
   return (
-    <HStack align="center" gap={12} className="mx-4 mb-3 rounded-xl bg-gray-1 px-4 py-3.5">
+    <HStack align="center" gap={12} className={cn('rounded-xl bg-gray-1 px-4 py-3.5', className)}>
       <Pressable onPress={open} className="flex-1">
         <VStack gap={2}>
           <Text size="b3" weight="medium">

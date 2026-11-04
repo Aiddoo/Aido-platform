@@ -1,4 +1,3 @@
-import { useAutomaticPushPermissionRequest } from '@src/features/activation/hooks/use-automatic-push-permission-request';
 import { useColdStartNotificationResponse } from '@src/features/notification/hooks/use-cold-start-notification-response';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useMarketingNotificationCategory } from '@src/features/notification/hooks/use-marketing-notification-category';
@@ -43,7 +42,6 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   useNativeNotificationListeners({ processResponse, handleForegroundNotification });
   useMarketingNotificationCategory();
   usePushDeviceSync({ authStatus: status });
-  useAutomaticPushPermissionRequest();
   useNotificationBadgeSync(status);
 
   return children;
