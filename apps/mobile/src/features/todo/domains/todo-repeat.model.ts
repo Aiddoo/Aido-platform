@@ -310,12 +310,27 @@ export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): b
   return isBeyondRepeatHorizon(`${dateKey.slice(0, 8)}${lastDay}`, todayKey);
 }
 
+/**
+ * 3개월 안내를 보일지. 달력 아래 한 곳에서만 보인다. 월 보기는 그 달이 일부라도 넘어가면(점이 끊겨 보인다),
+ * 주 보기는 고른 날이 넘어가면 보인다.
+ */
+export function shouldShowRepeatHorizonHint(
+  dateKey: string,
+  todayKey: string,
+  viewMode: 'week' | 'month',
+): boolean {
+  return viewMode === 'month'
+    ? isMonthBeyondRepeatHorizon(dateKey, todayKey)
+    : isBeyondRepeatHorizon(dateKey, todayKey);
+}
+
 export const TodoRepeatPolicy = {
   getKind: getRepeatKind,
   createWeeklyUntil: createWeeklyUntilRepeat,
   hasSameRepeat,
   isBeyondHorizon: isBeyondRepeatHorizon,
   isMonthBeyondHorizon: isMonthBeyondRepeatHorizon,
+  shouldShowRepeatHorizonHint,
   getEditScopeDecision: getTodoEditScopeDecision,
   withStartDate: withRepeatStartDate,
   isMonthDayClamped: isRepeatMonthDayClamped,

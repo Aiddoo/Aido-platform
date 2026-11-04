@@ -20,8 +20,11 @@ export function MyCalendar() {
   const query = useQuery(
     useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
   );
-  const isBeyondHorizon =
-    viewMode === 'month' && TodoRepeatPolicy.isMonthBeyondHorizon(selectedDateKey, todayKey);
+  const isHorizonHintVisible = TodoRepeatPolicy.shouldShowRepeatHorizonHint(
+    selectedDateKey,
+    todayKey,
+    viewMode,
+  );
 
   return (
     <Calendar
@@ -29,7 +32,7 @@ export function MyCalendar() {
       status={
         query.isError ? (
           <Calendar.Error onRetry={() => query.refetch()} />
-        ) : isBeyondHorizon ? (
+        ) : isHorizonHintVisible ? (
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word" className="px-4">
             {t('repeat.horizonHint')}
           </Text>
