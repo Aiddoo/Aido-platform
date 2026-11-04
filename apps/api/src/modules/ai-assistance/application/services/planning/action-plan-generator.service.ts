@@ -101,7 +101,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
       definition,
       built,
       normalizeContext(input),
-      input.userId,
+      input,
       (plan) => plan.todos.length > 0,
     );
     return {
@@ -118,7 +118,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
       definition,
       built,
       { ...normalizeContext(input), sentenceCount: input.sentences.length },
-      input.userId,
+      input,
       (digest) => !isEmptyVoiceNoteDigest(digest),
     );
     return {
@@ -135,7 +135,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
     definition: PromptDefinition<I, O, R, C>,
     built: BuiltPrompt,
     context: C,
-    userId: string,
+    { userId, signal }: { readonly userId: string; readonly signal?: AbortSignal },
     keepsCharge: (result: R) => boolean,
   ): Promise<PromptGeneration<R>> {
     const { generator, consentReader, logger } = this.#dependencies;
@@ -146,6 +146,7 @@ export class ActionPlanGenerator implements ActionPlanGeneratorPort {
       const generation = await generateWithPrompt(generator, definition, built, context, {
         agreedConsentVersion: agreedVersion,
         userId,
+        signal,
       });
       const quotaCharged = keepsCharge(generation.value);
       logger.log(

@@ -1,5 +1,7 @@
 /** 이메일 발송의 운영 경보 key. */
 export const EmailAlertKey = {
+  /** 발송 큐의 잡을 풀지 못해 버렸다. 암호화 키 교체나 롤백을 확인해야 한다. */
+  DELIVERY_UNSEAL_FAILED: "notification.email.delivery-unseal-failed",
   /** 이메일 공급자 호출이 연속으로 실패해 회로가 열렸다. 인증 메일이 밀린다. */
   CIRCUIT_OPEN: "notification.email.circuit-open",
   /** 오늘 발송 수가 무료 한도의 경보 기준에 닿았다. */

@@ -101,6 +101,7 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     { fixture: "model-overloaded.503.json", kind: "OVERLOADED" },
     { fixture: "internal.500.json", kind: "UPSTREAM" },
     { fixture: "invalid-argument.400.json", kind: "BAD_REQUEST" },
+    { fixture: "not-found.404.json", kind: "UPSTREAM" },
   ] as const)("Gemini $fixture 응답은 $kind로 분류한다", async ({ fixture, kind }) => {
     // Given
     fetchSpy.mockResolvedValue(aiProviderErrorResponse("google", fixture));

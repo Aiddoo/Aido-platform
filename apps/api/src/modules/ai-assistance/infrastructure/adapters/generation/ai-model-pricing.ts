@@ -18,6 +18,11 @@ export const AI_MODEL_PRICING: Readonly<Record<string, ModelPrice>> = {
   "openai:gpt-6-luna": { input: 0.1, cacheRead: 0.01, cacheWrite: 0.125, output: 0.5 },
 };
 
+/** model은 AI_MODEL_PRICING의 키 형식(`업체:모델`)이다. */
+export function hasKnownPricing(model: string): boolean {
+  return AI_MODEL_PRICING[model] != null;
+}
+
 type TokenUsage = Pick<LanguageModelUsage, "inputTokens" | "inputTokenDetails" | "outputTokens">;
 
 /** 입력 전체 토큰은 캐시 읽기·쓰기를 포함하므로 나머지만 입력 단가로 센다. */

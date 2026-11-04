@@ -8,7 +8,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Locale, Timezone } from "#api/platform/http/decorators/index";
+import { ClientAbortSignal, Locale, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiDoc,
   ApiErrorCodesResponse,
@@ -218,6 +218,7 @@ if (confirmed) {
     @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
+    @ClientAbortSignal() signal: AbortSignal,
   ): Promise<ParseTodoResponseDto> {
     const result = await this.parseTodoUseCase.execute({
       text: dto.text,
@@ -225,6 +226,7 @@ if (confirmed) {
       timezone: tz,
       categoryId: dto.categoryId,
       locale,
+      signal,
     });
 
     return {
@@ -381,6 +383,7 @@ ${AI_PARSE_QUOTA_DOC}`,
     @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
+    @ClientAbortSignal() signal: AbortSignal,
   ): Promise<ParseMemoResponseDto> {
     const result = await this.parseMemoUseCase.execute({
       content: dto.content,
@@ -388,6 +391,7 @@ ${AI_PARSE_QUOTA_DOC}`,
       timezone: tz,
       categoryId: dto.categoryId,
       locale,
+      signal,
     });
 
     return {

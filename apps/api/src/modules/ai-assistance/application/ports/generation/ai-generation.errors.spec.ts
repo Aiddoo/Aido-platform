@@ -15,7 +15,7 @@ describe("resolveAiFailureRule", () => {
       breaker: "billing",
       code: ErrorCode.AI_1301,
     },
-    { kind: "AUTH", fallback: true, retry: false, breaker: "billing", code: ErrorCode.AI_1301 },
+    { kind: "AUTH", fallback: true, retry: false, breaker: "auth", code: ErrorCode.AI_1301 },
     { kind: "RATE_LIMITED", fallback: true, retry: false, breaker: null, code: ErrorCode.AI_1310 },
     {
       kind: "OVERLOADED",

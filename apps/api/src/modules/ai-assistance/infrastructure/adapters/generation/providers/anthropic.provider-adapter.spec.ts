@@ -58,6 +58,7 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
     { fixture: "overloaded-error.529.json", kind: "OVERLOADED" },
     { fixture: "api-error.500.json", kind: "UPSTREAM" },
     { fixture: "invalid-request-error.400.json", kind: "BAD_REQUEST" },
+    { fixture: "not-found-error.404.json", kind: "UPSTREAM" },
   ] as const)("Claude $fixture 응답은 $kind로 분류한다", async ({ fixture, kind }) => {
     // Given
     fetchSpy.mockResolvedValue(aiProviderErrorResponse("anthropic", fixture));

@@ -110,6 +110,22 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
     });
   });
 
+  it("시험 호출에서 세지 않는 오류가 나도 회로를 닫지 않고 다시 연다", async () => {
+    // Given
+    const { policy } = createPolicy();
+    for (let index = 0; index < 3; index += 1) {
+      await policy.execute(fail).catch(() => null);
+    }
+    vi.setSystemTime(START.getTime() + 60_000);
+    // When
+    const trial = policy.execute(async () => {
+      throw new Error("요청 오류");
+    });
+    // Then
+    await expect(trial).rejects.toThrow("요청 오류");
+    expect(policy.isOpen()).toBe(true);
+  });
+
   it("시험 호출이 실패하면 다시 열고 차단 시간을 새로 센다", async () => {
     // Given
     const { policy } = createPolicy();

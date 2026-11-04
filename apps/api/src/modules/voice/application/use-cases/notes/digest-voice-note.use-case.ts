@@ -45,6 +45,8 @@ export interface DigestVoiceNoteInput {
   readonly timezone: string | undefined;
   /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
   readonly locale: SupportedLocale | undefined;
+  /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
+  readonly signal?: AbortSignal;
 }
 
 interface DigestVoiceNoteDependencies {
@@ -95,7 +97,14 @@ export class DigestVoiceNote {
           idempotencyKey,
           requestHash: fingerprintRequest(userId, { text, durationSeconds, segments }),
           replay: this.#dependencies.replay,
-          generate: () => this.#generate(transcript, { userId, timezone, locale, startedAt }),
+          generate: () =>
+            this.#generate(transcript, {
+              userId,
+              timezone,
+              locale,
+              startedAt,
+              signal: input.signal,
+            }),
         });
       this.#dependencies.logger.log({
         event: VoiceLogEvent.NOTE_DIGEST_COMPLETED,
@@ -140,10 +149,11 @@ export class DigestVoiceNote {
       readonly timezone: string;
       readonly locale: SupportedLocale;
       readonly startedAt: number;
+      readonly signal?: AbortSignal;
     },
   ): Promise<ChargedGeneration<VoiceNoteDigestResult>> {
     const { contextReader, generator } = this.#dependencies;
-    const { userId, timezone, locale, startedAt } = request;
+    const { userId, timezone, locale, startedAt, signal } = request;
     const context = await contextReader.read(userId, timezone);
     const digest = await generator.digestVoiceNote({
       userId,
@@ -153,6 +163,7 @@ export class DigestVoiceNote {
       sentences: transcript.segments,
       categories: context.categories,
       upcomingTodos: context.upcomingTodos,
+      signal,
     });
     return {
       result: {

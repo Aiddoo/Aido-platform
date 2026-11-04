@@ -186,7 +186,11 @@ export class OutboundPolicy {
   }
 
   #createBreaker(policySpec: OutboundPolicySpec, spec: OutboundBreakerSpec): Breaker {
-    const handled = handleWhen(spec.handles);
+    // cockatiel은 세지 않는 오류를 성공으로 봐 시험 호출에서 회로를 닫는다. 시험 호출은 어떤 오류든 실패로 본다.
+    let circuit: CircuitBreakerPolicy | null = null;
+    const handled = handleWhen(
+      (error) => circuit?.state === CircuitState.HalfOpen || spec.handles(error),
+    );
     const policy = circuitBreaker(
       spec.handlesResult == null ? handled : handled.orWhenResult(spec.handlesResult),
       {
@@ -194,6 +198,7 @@ export class OutboundPolicy {
         breaker: new ConsecutiveBreaker(spec.consecutiveFailures),
       },
     );
+    circuit = policy;
     const breaker: Breaker = { spec, policy, openedAt: null };
     policy.onBreak((reason) => {
       breaker.openedAt = now().getTime();

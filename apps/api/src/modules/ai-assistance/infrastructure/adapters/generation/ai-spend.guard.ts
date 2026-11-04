@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { AI_PROVIDER_IDS } from "@aido/api/vocabulary";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import {
   ENTITLEMENT_READER,
@@ -29,6 +30,7 @@ import {
   decideAiSpend,
 } from "../../../domain/policies/generation/ai-spend.policy.js";
 import { AiGuardLogEvent } from "../../observability/generation/ai-provider-log.events.js";
+import { hasKnownPricing } from "./ai-model-pricing.js";
 
 /** 추정 비용 누적(micro-USD). subject "*"는 전역, 사용자 id는 사용자 일 예산이다. */
 export const AI_SPEND_METER = "ai.spend";
@@ -49,7 +51,7 @@ interface GlobalSnapshot {
  * 진행 중인 호출은 끝난 뒤에 더해지므로 상한은 그만큼 넘을 수 있다. 계량 오류는 생성을 막지 않는다.
  */
 @Injectable()
-export class AiSpendGuard {
+export class AiSpendGuard implements OnModuleInit {
   readonly #logger = new Logger(AiSpendGuard.name);
   #global: GlobalSnapshot | null = null;
   /** #usersDay 하루의 사용자별 비용 */
@@ -63,6 +65,22 @@ export class AiSpendGuard {
     @Inject(ENTITLEMENT_READER)
     private readonly access: Pick<EntitlementReaderPort, "getAccessSnapshot">,
   ) {}
+
+  /** 가격표에 없는 모델은 호출마다 최고 단가로 잡혀 예산이 빠르게 닳는다. 전체 중단 전에 기동 때 알린다. */
+  onModuleInit(): void {
+    const unpriced = AI_PROVIDER_IDS.filter((provider) => {
+      const { apiKey, model } = this.config.ai.providers[provider];
+      return apiKey != null && !hasKnownPricing(`${provider}:${model}`);
+    });
+    if (unpriced.length > 0) {
+      this.alert.raise({
+        key: AiAlertKey.MODEL_PRICING_UNKNOWN,
+        severity: "error",
+        message: "가격표에 없는 AI 모델이 설정되어 비용을 최고 단가로 잡습니다.",
+        details: { providers: unpriced.join(",") },
+      });
+    }
+  }
 
   async decide(input: {
     readonly taskClass: AiTaskClass;

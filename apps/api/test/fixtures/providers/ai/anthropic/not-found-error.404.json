@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "type": "not_found_error",
+    "message": "model: not-a-model"
+  },
+  "request_id": "req_fixture_not_found"
+}

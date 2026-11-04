@@ -186,22 +186,26 @@ export class AiSdkGenerator implements AiGeneratorPort {
   }
 
   async #generateOnce<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
-    const startedAt = performance.now();
     const settings = this.config.ai.tasks[request.task];
     const policy = resolveGenerationPolicy(request.task, request.taskClass, settings);
-    const deadline = AbortSignal.timeout(policy.deadlineMs);
-    const signal = request.signal == null ? deadline : AbortSignal.any([deadline, request.signal]);
     const cost = new CostMeter();
+    const chainSignals: AbortSignal[] = [];
     try {
-      return await this.#classPolicies[request.taskClass].execute(
-        () => this.#chain(request, { policy, signal, startedAt, cost }),
-        signal,
-      );
+      return await this.#classPolicies[request.taskClass].execute(() => {
+        // 제한 시간은 업체 체인의 몫이라 대기열을 지난 뒤부터 잰다. 대기 중 끊기면 호출자 신호가 취소한다.
+        const deadline = AbortSignal.timeout(policy.deadlineMs);
+        const signal =
+          request.signal == null ? deadline : AbortSignal.any([deadline, request.signal]);
+        chainSignals.push(signal);
+        return this.#chain(request, { policy, signal, startedAt: performance.now(), cost });
+      }, request.signal);
     } catch (error) {
       if (error instanceof OutboundRejectedError) {
         throw withheld("RATE_LIMITED");
       }
-      if (!(error instanceof AiGenerationError) && signal.aborted) {
+      const aborted =
+        request.signal?.aborted === true || chainSignals.some((signal) => signal.aborted);
+      if (!(error instanceof AiGenerationError) && aborted) {
         throw withheld("TIMEOUT");
       }
       throw error;

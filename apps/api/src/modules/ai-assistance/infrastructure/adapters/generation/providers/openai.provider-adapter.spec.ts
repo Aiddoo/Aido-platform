@@ -58,6 +58,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     { fixture: "engine-overloaded.503.json", kind: "OVERLOADED" },
     { fixture: "server-error.500.json", kind: "UPSTREAM" },
     { fixture: "invalid-request.400.json", kind: "BAD_REQUEST" },
+    { fixture: "not-found.404.json", kind: "UPSTREAM" },
     { fixture: "refusal.200.json", kind: "BLOCKED" },
   ] as const)("OpenAI $fixture 응답은 $kind로 분류한다", async ({ fixture, kind }) => {
     // Given

@@ -9,12 +9,14 @@ import {
   stubAccessTiers,
 } from "#test/mocks/ai-provider-http.stub";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 import {
   AiGenerationError,
   isTransientAiFailure,
 } from "../../../application/ports/generation/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../../application/ports/generation/ai-generator.port.js";
+import { AiSpendGuard } from "./ai-spend.guard.js";
 
 const schema = z.object({ title: z.string() });
 const NOW = new Date("2026-11-05T03:00:00.000Z");
@@ -70,6 +72,44 @@ const spendKey = (periodKey: string, subject = "*") => ({
   meter: "ai.spend",
   periodKey,
   subject,
+});
+
+describe("AiSpendGuard — 기동 검사", () => {
+  it("가격표에 없는 모델이 설정되면 기동 때 경보를 올린다", () => {
+    // Given
+    const config = createAiTestConfig({ AI_MODEL_ANTHROPIC: "claude-unknown-9" });
+    const alert = new RecordingOperationalAlert();
+    const guard = new AiSpendGuard(
+      config,
+      new InMemoryUsageMeterAdapter(),
+      alert,
+      stubAccessTiers(),
+    );
+    // When
+    guard.onModuleInit();
+    // Then
+    expect(alert.alerts).toEqual([
+      expect.objectContaining({
+        key: "ai.spend.model-pricing-unknown",
+        details: { providers: "anthropic" },
+      }),
+    ]);
+  });
+
+  it("기본 모델은 경보를 올리지 않는다", () => {
+    // Given
+    const alert = new RecordingOperationalAlert();
+    const guard = new AiSpendGuard(
+      createAiTestConfig(),
+      new InMemoryUsageMeterAdapter(),
+      alert,
+      stubAccessTiers(),
+    );
+    // When
+    guard.onModuleInit();
+    // Then
+    expect(alert.alerts).toEqual([]);
+  });
 });
 
 describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
@@ -499,6 +539,54 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     expect(chain.anthropic.callCount).toBe(1);
   });
 
+  it("제한 시간은 대기열을 지난 뒤부터 재므로 기다린 요청도 업체를 부른다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
+      env: { AI_PROVIDER_ORDER: "anthropic", AI_DEADLINE_REPORT_MS: "30" },
+    });
+    // When
+    await Promise.all(
+      [1, 2, 3].map((index) =>
+        chain.generator
+          .generate(request({ task: "report", taskClass: "background", prompt: `리포트 ${index}` }))
+          .catch((cause: unknown) => cause),
+      ),
+    );
+    // Then
+    expect(chain.anthropic.callCount).toBe(3);
+  });
+
+  it("앱이 대기열에서 끊으면 업체를 부르지 않고 TIMEOUT으로 끝낸다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
+      env: { AI_PROVIDER_ORDER: "anthropic", AI_DEADLINE_REPORT_MS: "50" },
+    });
+    const controller = new AbortController();
+    const running = [1, 2].map((index) =>
+      chain.generator
+        .generate(request({ task: "report", taskClass: "background", prompt: `앞선 ${index}` }))
+        .catch((cause: unknown) => cause),
+    );
+    // When
+    const queued = chain.generator
+      .generate(
+        request({
+          task: "report",
+          taskClass: "background",
+          prompt: "기다리는 요청",
+          signal: controller.signal,
+        }),
+      )
+      .catch((cause: unknown) => cause);
+    controller.abort();
+    // Then
+    await expect(queued).resolves.toMatchObject({ kind: "TIMEOUT" });
+    await Promise.all(running);
+    expect(chain.anthropic.callCount).toBe(2);
+  });
+
   it("동시 호출과 대기열을 넘친 사용자 요청은 업체를 부르지 않고 RATE_LIMITED(AI_1310)로 끝낸다", async () => {
     // Given
     const chain = createChain({
@@ -865,6 +953,28 @@ describe("AiSdkGenerator — 업체 회로 (공용 OutboundPolicy, 가짜 시계
     vi.restoreAllMocks();
   });
 
+  it("401은 한 번으로 열지 않고 연속 세 번째에 인증 회로를 열고 경보를 올린다", async () => {
+    // Given
+    const chain = createCircuitChain(
+      new StubProviderAdapter("anthropic", [status(401)], "claude-haiku-5-5"),
+    );
+    // When
+    const providers: string[] = [];
+    for (let index = 0; index < 4; index += 1) {
+      vi.setSystemTime(NOW.getTime() + (index + 1) * MINUTE);
+      providers.push((await chain.generateQuickPlan()).provider);
+    }
+    // Then
+    expect(providers).toEqual(["google", "google", "google", "google"]);
+    expect(chain.anthropic.callCount).toBe(3);
+    expect(chain.alert.alerts).toEqual([
+      expect.objectContaining({
+        key: "ai.provider.billing-circuit-opened",
+        tags: expect.objectContaining({ breaker: "auth", reason: "AUTH" }),
+      }),
+    ]);
+  });
+
   it("Claude 402 한 번이면 결제 회로를 열고 경보를 한 번 올린 뒤 차단 시간 동안 Claude를 건너뛴다", async () => {
     // Given
     const chain = createCircuitChain(
@@ -882,7 +992,7 @@ describe("AiSdkGenerator — 업체 회로 (공용 OutboundPolicy, 가짜 시계
       {
         key: "ai.provider.billing-circuit-opened",
         severity: "error",
-        message: "Claude 결제·인증 실패, 다음 순서 AI 업체로 전환",
+        message: "Claude 결제 실패, 다음 순서 AI 업체로 전환",
         tags: {
           policy: "ai:anthropic",
           breaker: "billing",

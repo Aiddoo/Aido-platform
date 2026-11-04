@@ -158,6 +158,17 @@ describe("Register — 이메일 계정 등록", () => {
     },
   );
 
+  it("발송 큐에 담지 못해도 emailSent:false와 재발송 안내를 돌려준다", async () => {
+    // Given
+    const fixture = given({ empty: true });
+    vi.spyOn(fixture.verificationService, "sendVerificationEmail").mockResolvedValueOnce(false);
+    // When
+    const result = await fixture.useCase.execute(input);
+    // Then
+    expect(result.emailSent).toBe(false);
+    expect(result.message).toContain("재발송");
+  });
+
   it("메일 발송 예외가 나도 저장한 가입을 유지하고 재발송 안내를 반환한다", async () => {
     // Given
     const fixture = given({ empty: true });

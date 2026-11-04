@@ -32,7 +32,9 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
     replay,
     logger: fixture.logger,
   });
-  const execute = (overrides: { text?: string; idempotencyKey?: string } = {}) =>
+  const execute = (
+    overrides: { text?: string; idempotencyKey?: string; signal?: AbortSignal } = {},
+  ) =>
     useCase.execute({
       userId: fixture.userId,
       text: "내일 회의록 보내기",
@@ -127,6 +129,27 @@ describe("CreateQuickPlan", () => {
       errorCode: ErrorCode.AI_1301,
       details: undefined,
     });
+  });
+
+  it("앱이 연결을 끊어 AI 호출이 멈추면 신호를 넘겼고 예약을 환불한다", async () => {
+    // Given
+    const { aiGenerator, execute, used, repository } = setup();
+    const controller = new AbortController();
+    const generate = vi
+      .spyOn(aiGenerator, "generate")
+      .mockRejectedValue(createAiGenerationError("TIMEOUT"));
+    // When
+    const failure = execute({ signal: controller.signal });
+    // Then
+    await expect(failure).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1301,
+      details: { charged: false },
+    });
+    expect(generate.mock.calls[0]?.[0].signal).toBe(controller.signal);
+    expect(await used()).toBe(0);
+    expect([...repository.charges.values()]).toEqual([
+      expect.objectContaining({ status: "REFUNDED", refundReason: "FAILED" }),
+    ]);
   });
 
   it("할 일 0개인데 환불에 실패하면 charged:true로 답한다", async () => {

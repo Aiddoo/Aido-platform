@@ -61,6 +61,8 @@ export interface ParseTodoInput {
   categoryId: number | undefined;
   /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
   locale: SupportedLocale | undefined;
+  /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
+  signal?: AbortSignal;
 }
 
 type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
@@ -153,7 +155,7 @@ export class ParseTodo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           requestedCategoryId: categoryId,
         },
-        { agreedConsentVersion: agreedVersion, userId },
+        { agreedConsentVersion: agreedVersion, userId, signal: input.signal },
       );
 
       const charge = value.intent === "TASK";

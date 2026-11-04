@@ -102,6 +102,10 @@ function classifyOpenAiResponse(
   if (statusCode === 503) {
     return "OVERLOADED";
   }
+  // 모델을 못 찾는 404는 입력이 아니라 우리 설정 문제다. 사용자에게 할 일 만들기 실패(AI_1302)로 답하지 않는다.
+  if (statusCode === 404) {
+    return "UPSTREAM";
+  }
   if (statusCode != null && statusCode >= 400 && statusCode < 500) {
     return "BAD_REQUEST";
   }

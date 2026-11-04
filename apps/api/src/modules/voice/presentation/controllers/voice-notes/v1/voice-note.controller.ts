@@ -9,7 +9,12 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { IdempotencyKey, Locale, Timezone } from "#api/platform/http/decorators/index";
+import {
+  ClientAbortSignal,
+  IdempotencyKey,
+  Locale,
+  Timezone,
+} from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
   ApiConflictError,
@@ -84,6 +89,7 @@ export class VoiceNoteController {
     @IdempotencyKey() idempotencyKey: string,
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
+    @ClientAbortSignal() signal: AbortSignal,
   ): Promise<VoiceNoteDigestResponseDto> {
     return this.digestVoiceNote.execute({
       userId: user.userId,
@@ -93,6 +99,7 @@ export class VoiceNoteController {
       idempotencyKey,
       timezone,
       locale,
+      signal,
     });
   }
 }

@@ -2,7 +2,13 @@ import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs
 
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+import {
+  OPERATIONAL_ALERT,
+  type OperationalAlertPort,
+} from "#api/shared/application/ports/operational-alert.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
+import { EmailAlertKey } from "../../../application/observability/email/email-alerts.js";
 import { DeliverEmail } from "../../../application/use-cases/email/deliver-email.use-case.js";
 import { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import { EmailLogEvent } from "../../observability/email/email-log.events.js";
@@ -23,6 +29,7 @@ export class EmailDeliveryQueueProcessor implements OnModuleInit {
   constructor(
     private readonly deliverEmail: DeliverEmail,
     private readonly encryption: EncryptionService,
+    @Inject(OPERATIONAL_ALERT) private readonly alert: OperationalAlertPort,
     @Optional()
     @Inject(JOB_RUNTIME)
     private readonly runtime?: JobRuntimePort,
@@ -63,7 +70,14 @@ export class EmailDeliveryQueueProcessor implements OnModuleInit {
     try {
       const sealed = SealedEmailSchema.parse(JSON.parse(this.encryption.decrypt(job.sealed)));
       return EmailMessage.create({ ...sealed, kind: job.kind, idempotencyKey: job.deliveryId });
-    } catch {
+    } catch (error) {
+      // 인증·문의 메일이 말없이 사라지므로 사람이 보게 한다. 키 교체나 롤백이 원인일 때가 많다.
+      this.alert.raise({
+        key: EmailAlertKey.DELIVERY_UNSEAL_FAILED,
+        severity: "error",
+        message: "발송 큐의 이메일을 풀지 못해 버렸습니다.",
+        details: { kind: job.kind, errorType: toErrorType(error) },
+      });
       return null;
     }
   }

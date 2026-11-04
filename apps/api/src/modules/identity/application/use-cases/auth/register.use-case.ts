@@ -111,14 +111,13 @@ export class Register {
       throw error;
     }
 
-    let emailSent = true;
+    let emailSent = false;
     try {
-      await this.#dependencies.verificationService.sendVerificationEmail(
+      emailSent = await this.#dependencies.verificationService.sendVerificationEmail(
         email,
         result.verificationCode,
       );
     } catch (error) {
-      emailSent = false;
       this.#dependencies.logger.error({
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         userId: result.user.id,

@@ -1,9 +1,10 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
+import { mock, type MockProxy } from "vitest-mock-extended";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
 
 import { createVerificationCodeEmail } from "../../../application/services/email/email-message.factory.js";
@@ -24,15 +25,17 @@ describe("EmailDeliveryQueueProcessor", () => {
     }),
   );
   let runtime: FakeJobRuntime;
+  let alert: MockProxy<OperationalAlertPort>;
   let deliveries: Parameters<DeliverEmail["execute"]>[0][];
   let processor: EmailDeliveryQueueProcessor;
 
   beforeEach(() => {
     runtime = new FakeJobRuntime();
+    alert = mock<OperationalAlertPort>();
     deliveries = [];
     const deliverEmail = mock<DeliverEmail>();
     deliverEmail.execute.mockImplementation(async (input) => void deliveries.push(input));
-    processor = new EmailDeliveryQueueProcessor(deliverEmail, encryption, runtime);
+    processor = new EmailDeliveryQueueProcessor(deliverEmail, encryption, alert, runtime);
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
   });
 
@@ -103,6 +106,12 @@ describe("EmailDeliveryQueueProcessor", () => {
     // Then
     expect(deliveries).toEqual([]);
     expect(Logger.prototype.warn).toHaveBeenCalledTimes(1);
+    expect(alert.raise).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        key: "notification.email.delivery-unseal-failed",
+        details: expect.objectContaining({ kind: "verification" }),
+      }),
+    );
   });
 
   it("시작하면 email-delivery.v1 worker를 teamSize 2, 2초 폴링으로 등록한다", async () => {

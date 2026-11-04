@@ -33,12 +33,12 @@ const TASK_MAX_OUTPUT_TOKENS: Readonly<Record<AiTaskId, number>> = {
   "voice-note-digest": 8192,
 };
 
-/** 배경 작업은 pg-boss 재시도가 따로 있어 한 요청 안의 모델 호출을 더 적게 둔다. */
+/** 재시도 층은 하나다. 배경 작업은 pg-boss가 다시 부르므로 SDK 재시도를 쓰지 않고 모델 호출도 더 적게 둔다. */
 const CLASS_LIMITS: Readonly<
   Record<AiTaskClass, Pick<AiGenerationPolicy, "lastProviderMaxRetries" | "maxModelCalls">>
 > = {
   interactive: { lastProviderMaxRetries: 1, maxModelCalls: 4 },
-  background: { lastProviderMaxRetries: 2, maxModelCalls: 3 },
+  background: { lastProviderMaxRetries: 0, maxModelCalls: 3 },
 };
 
 export function resolveGenerationPolicy(

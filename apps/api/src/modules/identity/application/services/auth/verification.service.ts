@@ -53,8 +53,8 @@ export class VerificationService {
     return result;
   }
 
-  // 발송 큐에 담지 못해도 로그만 남기고 예외를 던지지 않음 (재발송 가능)
-  async sendVerificationEmail(email: string, code: string): Promise<void> {
+  /** 발송 큐에 담았으면 true. 담지 못해도 예외를 던지지 않고 호출자가 다시 보내게 안내한다. */
+  async sendVerificationEmail(email: string, code: string): Promise<boolean> {
     const dispatch = await this.#dependencies.emailSender.sendVerificationCode(email, {
       code,
       expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
@@ -67,6 +67,7 @@ export class VerificationService {
         reason: dispatch.reason,
       });
     }
+    return dispatch.status === "queued";
   }
 
   async createAndSendPasswordReset(userId: string, email: string): Promise<VerificationCodeResult> {

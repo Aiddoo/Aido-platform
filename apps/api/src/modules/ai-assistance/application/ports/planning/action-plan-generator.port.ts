@@ -25,6 +25,7 @@ interface PlanGenerationInput {
   readonly locale: SupportedLocale;
   readonly categories: readonly PlanningCategory[];
   readonly upcomingTodos: readonly PlanningUpcomingTodo[];
+  readonly signal?: AbortSignal;
 }
 
 export interface QuickPlanGenerationInput extends PlanGenerationInput {

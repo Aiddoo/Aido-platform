@@ -28,7 +28,7 @@ export const AI_FAILURE_KINDS = [
  */
 export type AiFailureKind = (typeof AI_FAILURE_KINDS)[number];
 
-export type AiCircuitBreakerKind = "billing" | "health";
+export type AiCircuitBreakerKind = "billing" | "auth" | "health";
 
 export interface AiFailureRule {
   /** 다음 업체로 넘어가는지 */
@@ -46,10 +46,16 @@ const unavailable = { breaker: null, errorCode: ErrorCode.AI_1301 } as const;
 export function resolveAiFailureRule(kind: AiFailureKind): AiFailureRule {
   return match(kind)
     .returnType<AiFailureRule>()
-    .with("QUOTA_EXHAUSTED", "AUTH", () => ({
+    .with("QUOTA_EXHAUSTED", () => ({
       fallback: true,
       retrySameProvider: false,
       breaker: "billing",
+      errorCode: ErrorCode.AI_1301,
+    }))
+    .with("AUTH", () => ({
+      fallback: true,
+      retrySameProvider: false,
+      breaker: "auth",
       errorCode: ErrorCode.AI_1301,
     }))
     .with("RATE_LIMITED", () => ({

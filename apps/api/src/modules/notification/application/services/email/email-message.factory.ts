@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import {
   getInquiryHtml,
@@ -83,6 +85,10 @@ export function createInquiryEmail(to: string, data: InquiryTemplateData): Email
       { name: "type", value: "inquiry" },
       { name: "category", value: data.category },
     ],
+    // 응답을 못 받은 재전송이 운영자에게 두 번 가지 않게 같은 내용은 공급자가 한 번만 받는다.
+    idempotencyKey: `inquiry:${createHash("sha256")
+      .update(JSON.stringify([to, data.userEmail, data.category, data.content]))
+      .digest("hex")}`,
   });
 }
 

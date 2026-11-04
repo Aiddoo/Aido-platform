@@ -5,7 +5,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 ## 역할 분리
 
 - LLM은 언어 해석만 한다. 파싱 v2의 모델 출력은 날짜가 아니라 일정 표현(`TodoDraft`)이고, 날짜·요일·시각은 순수 함수 `domain/services/parsing/resolve-todo-schedule.ts`가 사용자 시간대 기준으로 계산한다.
-- 스키마는 세 단계다. LLM 스키마(관대, 길이·개수 제한 없음, 아래 업체 공통 규칙) → 서버 정규화 → `@aido/api` 공개 계약으로 최종 검증. 공개 계약은 optional `meta.promptVersion`과 parse-memo의 optional `meta.omittedTodoCount` 외에 바뀌지 않았다.
+- 스키마는 세 단계다. LLM 스키마(관대, 길이·개수 제한 없음, 아래 업체 공통 규칙) → 서버 정규화 → `@aido/api` 공개 계약으로 최종 검증. 공개 계약은 optional 칸(`meta.promptVersion`, parse-memo의 `meta.omittedTodoCount`, `featureQuota`, `repeat`)만 더했다.
 - parse-memo는 할 일을 합치지 않는다. 입력 순서대로 앞의 5개까지 만들고 나머지 수를 `meta.omittedTodoCount`로 알린다(메모 원문은 그대로 남는다). 서브투두도 합치지 않고 앞의 5개만 둔다.
 - 긴 메모가 `maxOutputTokens`를 넘어 TRUNCATED가 되지 않도록 v2 모델은 할 일을 앞의 8개까지만 쓰고, 메모 전체 할 일 수를 LLM schema의 `totalTaskCount`(모르면 null)로 함께 낸다. `totalTaskCount`는 schema에서 `todos` 뒤에 둔다(앞에 두면 사고 토큰이 적은 응답에서 과대 집계가 잦았다). 남은 수는 `max(totalTaskCount, 받은 할 일 수) − 5`이고, 모델이 전체 수를 null로 두면 받은 할 일 수로 센다.
 - 일정 계산은 사용자가 말한 날짜·시각을 우선한다. 날짜 없이 말한 때("아침에")가 오늘 이미 지났으면 다음 날 그 때로 넘기고, "오늘 아침"처럼 오늘을 말했는데 지났으면 오늘 종일로 둔다(지난 기본 시각을 만들지 않는다). 숫자 시각("오늘 오전 9시")은 지났어도 그대로 둔다. 상대 시각(`relativeMinutes`)은 1분 이상이고 날짜가 없거나 오늘일 때만 쓰며, 0이나 "내일"과 함께 온 값은 무시한다.
@@ -72,14 +72,14 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 | `AI_BUDGET_DAILY_USD` / `AI_BUDGET_MONTHLY_USD`                         | 전체 생성 중단 기준선                         | 3 / 30                                                      |
 | `AI_BUDGET_USER_DAILY_USD`                                              | 사용자 한 명의 일 추정 비용 상한              | 0.25                                                        |
 
-`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`·`QUICK_PLAN`·`VOICE_NOTE_DIGEST`다. 기본값은 `platform/config/schemas/ai.schema.ts` 한 곳에 있고 `TypedConfigService.ai`가 업체·작업 단위로 묶어 한 번 파싱한다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰 상한과 작업 분류(interactive·background)별 마지막 업체 SDK 재시도 수(1·2)·요청당 모델 호출 상한(`maxModelCalls` 4·3)은 `infrastructure/adapters/generation/ai-generation-policy.ts`에 있다. 킬 스위치·예산 env는 바꾸면 재시작해야 반영된다. Claude는 thinking을 `effort`(minimal·low → low, medium → medium)로, OpenAI는 `reasoningEffort`로, Gemini는 `thinkingLevel`로 보낸다.
+`<TASK>`는 `PARSE_TODO`·`PARSE_MEMO`·`REPORT`·`SUGGESTION`·`QUICK_PLAN`·`VOICE_NOTE_DIGEST`다. 기본값은 `platform/config/schemas/ai.schema.ts` 한 곳에 있고 `TypedConfigService.ai`가 업체·작업 단위로 묶어 한 번 파싱한다. 2026-10-26 live eval에서 parse-todo는 `minimal`이 `low`와 정확도가 같고(어려운 16건 16/16) p50이 1725→1239ms로 짧아 `minimal`을 쓴다. parse-memo는 `minimal`에서 `totalTaskCount`를 과대 집계해(긴 메모 5/5, 프롬프트 v2.1 뒤에도 5/5) `low`를 유지한다. 리포트·제안은 야간 배치라 지연 이득이 작아 `low`를 유지한다. 작업별 토큰 상한과 작업 분류(interactive·background)별 마지막 업체 SDK 재시도 수(1·0, 배경은 pg-boss가 다시 부른다)·요청당 모델 호출 상한(`maxModelCalls` 4·3)은 `infrastructure/adapters/generation/ai-generation-policy.ts`에 있다. 킬 스위치·예산 env는 바꾸면 재시작해야 반영된다. Claude는 thinking을 `effort`(minimal·low → low, medium → medium)로, OpenAI는 `reasoningEffort`로, Gemini는 `thinkingLevel`로 보낸다.
 
 ## 업체 체인·폴백·회로
 
 - Application은 `AI_GENERATOR`(`AiGeneratorPort.generate`) 하나만 안다(`ai-assistance-generation.public.ts`). 구현 `AiSdkGenerator`는 `ai-route.policy.ts`(순수 함수)로 업체 순서를 정한다: `AI_PROVIDER_ORDER` → 키가 있는 업체 → 사용자가 동의한 안내 버전이 허용한 업체(`ai-processor-consent.policy.ts`, 표는 `@aido/api/vocabulary`의 `AI_DATA_SHARING_CONSENT_PROVIDERS`) → 회로가 열린 업체 제외.
 - 동의 버전: 2026-10-26(1.13·1.14 앱) 동의는 Google만, 2026-11-04(1.15) 동의는 Anthropic·Google·OpenAI를 쓴다. 동의 화면이 없던 1.13 미만 앱 요청(동의 버전 없음)은 그때 안내한 Google만 쓴다. 이전 버전 동의 사용자에게 다시 묻지 않는다. use case는 identity 동의 reader에서 동의한 버전을 읽어 `agreedConsentVersion`으로 넘긴다.
 - 업체별 SDK 옵션과 오류 본문 해석은 `providers/{anthropic,google,openai}.provider-adapter.ts`(multi 토큰 `AI_PROVIDER_ADAPTERS`) 안에만 있다. Claude 402 `billing_error`·400 `credit balance is too low`, OpenAI 429 `insufficient_quota`, Gemini 429의 선불 잔액 소진·지출 상한 문구와 400의 결제 문구는 `QUOTA_EXHAUSTED`다. Gemini 일반 429는 "check your plan and billing details"를 담아도 `RATE_LIMITED`다. 401/403·잘못된 키는 `AUTH`, Claude 529·503은 `OVERLOADED`, Gemini safety 400·OpenAI content policy·200 응답의 `refusal` 조각은 `BLOCKED`다. 기록된 오류 본문은 `apps/api/test/fixtures/providers/ai/<업체>/`에 있다.
-- 앞 업체는 SDK 재시도 없이(`maxRetries: 0`) 바로 넘기고 마지막 업체만 작업 분류의 재시도 수를 쓴다. 재시도 층은 한 호출에 하나다(SDK `maxRetries`, 잡은 pg-boss). 체인 전체에 작업별 제한 시간 하나(`AbortSignal.any`)를 걸고, 마지막이 아닌 업체는 남은 시간을 이번 업체와 아직 시도하지 않은 업체의 몫(`resolveAttemptTime`, OpenAI 2·나머지 1)대로 나눈 만큼만 기다린 뒤 `TIMEOUT`으로 다음 업체에 넘긴다. 몫은 2026-11 live eval p95(parse-todo·quick-plan·digest: Claude 2.0·1.8·4.6초, Gemini 1.4·2.7·9.7초, OpenAI 5.8·6.3·7.8초)에서 정했고, 12·15·45초 체인에서 세 업체가 어떤 순서로 모두 멈춰도 각자 p95 이상(OpenAI 6·7.5·22.5초, 나머지 3·3.75·11.25초)을 받아 세 번째 업체까지 실제로 불린다. 앞 시도 때문에 몫의 90%도 받지 못한 업체의 `TIMEOUT`과 호출자가 끊은 시도는 그 업체 탓이 아니므로 장애 회로에 세지 않는다. 스키마 불일치(`INVALID_OUTPUT`)는 첫 업체에만 한 번 더 묻고, `BLOCKED`·`TRUNCATED`(본문 없이 출력 상한으로 끝난 응답 포함)는 다른 업체도 같게 실패하므로 넘기지 않는다. 결제·인증 실패는 SDK 재시도에서도 뺀다(`withoutRetryOnBillingFailure`). 요청당 모델 호출은 `maxModelCalls`를 넘지 않는다.
+- 앞 업체는 SDK 재시도 없이(`maxRetries: 0`) 바로 넘기고 마지막 업체만 작업 분류의 재시도 수를 쓴다. 재시도 층은 한 호출에 하나다(SDK `maxRetries`, 잡은 pg-boss). 대기열(bulkhead)을 지난 뒤부터 체인 전체에 작업별 제한 시간 하나(`AbortSignal.any`)를 걸고, 마지막이 아닌 업체는 남은 시간을 이번 업체와 아직 시도하지 않은 업체의 몫(`resolveAttemptTime`, OpenAI 2·나머지 1)대로 나눈 만큼만 기다린 뒤 `TIMEOUT`으로 다음 업체에 넘긴다. 몫은 2026-11 live eval p95(parse-todo·quick-plan·digest: Claude 2.0·1.8·4.6초, Gemini 1.4·2.7·9.7초, OpenAI 5.8·6.3·7.8초)에서 정했고, 12·15·45초 체인에서 세 업체가 어떤 순서로 모두 멈춰도 각자 p95 이상(OpenAI 6·7.5·22.5초, 나머지 3·3.75·11.25초)을 받아 세 번째 업체까지 실제로 불린다. 앱이 응답 전에 연결을 끊으면(`@ClientAbortSignal`) 체인을 멈추고 `TIMEOUT`으로 끝나 예약을 환불한다. 앞 시도 때문에 몫의 90%도 받지 못한 업체의 `TIMEOUT`과 호출자가 끊은 시도는 그 업체 탓이 아니므로 장애 회로에 세지 않는다. 다만 시험 호출(half-open)에서는 어떤 오류든 실패로 봐 회로를 닫지 않는다. 스키마 불일치(`INVALID_OUTPUT`)는 첫 업체에만 한 번 더 묻고, `BLOCKED`·`TRUNCATED`(본문 없이 출력 상한으로 끝난 응답 포함)는 다른 업체도 같게 실패하므로 넘기지 않는다. 결제·인증 실패는 SDK 재시도에서도 뺀다(`withoutRetryOnBillingFailure`). 요청당 모델 호출은 `maxModelCalls`를 넘지 않는다.
 - 회로: 공용 `OutboundPolicy`(`platform/resilience`, cockatiel, 프로세스 메모리 — 단일 컨테이너) 위에 업체별 얇은 spec(`ai-outbound.policies.ts`, 이름 `ai:anthropic`·`ai:google`·`ai:openai`)을 둔다. 결제 회로는 `QUOTA_EXHAUSTED`·`AUTH` 한 번에 열고 15분 뒤 시험 호출, 장애 회로는 `OVERLOADED`·`UPSTREAM`·`TIMEOUT` 연속 5번에 30초 연다. 시험 호출이 진행 중인 업체는 열린 회로처럼 건너뛰고 기다리지 않는다. 결제 회로가 열리면 운영 경보 포트(`OperationalAlertPort.raise`, key `ai.provider.billing-circuit-opened`, Sentry fingerprint = key, 태그 policy·breaker·reason·task)로 "Claude 결제·인증 실패, 다음 순서 AI 업체로 전환" 이슈를 남긴다.
 - 동시성: 작업 분류별 bulkhead `ai:interactive`(동시 8·대기 16)·`ai:background`(동시 2·대기 200). 대기열이 가득 차면 업체를 부르지 않고 `RATE_LIMITED`(AI_1310)다. 같은 사용자·작업·프롬프트 버전·지시·입력의 요청이 동시에 오면(sha256 키) 업체 호출 하나를 나눠 쓴다. 결과 저장형 캐시는 두지 않는다("내일"처럼 시점에 따라 답이 달라진다).
 
@@ -98,18 +98,19 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 생성 실패 종류와 처리는 `application/ports/generation/ai-generation.errors.ts`의 표 하나가 정한다.
 
-| 종류                            | 폴백                    | 회로    | 응답    |
-| ------------------------------- | ----------------------- | ------- | ------- |
-| QUOTA_EXHAUSTED · AUTH          | 예                      | billing | AI_1301 |
-| RATE_LIMITED                    | 예                      | -       | AI_1310 |
-| OVERLOADED · UPSTREAM · TIMEOUT | 예                      | health  | AI_1301 |
-| BAD_REQUEST                     | 예(error 로그)          | -       | AI_1302 |
-| BLOCKED · TRUNCATED             | 아니오                  | -       | AI_1302 |
-| INVALID_OUTPUT                  | 업체당 1회 재질문 뒤 예 | -       | AI_1302 |
-| UNAVAILABLE(키·동의 범위 밖)    | -                       | -       | AI_1301 |
-| CIRCUIT_OPEN(회로가 모두 열림)  | -                       | -       | AI_1301 |
-| HALTED(킬 스위치·전역 예산)     | 아니오                  | -       | AI_1301 |
-| USER_SPEND_LIMITED(사용자 예산) | 아니오                  | -       | AI_1310 |
+| 종류                                      | 폴백                    | 회로    | 응답    |
+| ----------------------------------------- | ----------------------- | ------- | ------- |
+| QUOTA_EXHAUSTED(1회에 열림)               | 예                      | billing | AI_1301 |
+| AUTH(연속 3회에 열림)                     | 예                      | auth    | AI_1301 |
+| RATE_LIMITED                              | 예                      | -       | AI_1310 |
+| OVERLOADED · UPSTREAM(404 포함) · TIMEOUT | 예                      | health  | AI_1301 |
+| BAD_REQUEST(404 제외 4xx)                 | 예(error 로그)          | -       | AI_1302 |
+| BLOCKED · TRUNCATED                       | 아니오                  | -       | AI_1302 |
+| INVALID_OUTPUT                            | 업체당 1회 재질문 뒤 예 | -       | AI_1302 |
+| UNAVAILABLE(키·동의 범위 밖)              | -                       | -       | AI_1301 |
+| CIRCUIT_OPEN(회로가 모두 열림)            | -                       | -       | AI_1301 |
+| HALTED(킬 스위치·전역 예산)               | 아니오                  | -       | AI_1301 |
+| USER_SPEND_LIMITED(사용자 예산)           | 아니오                  | -       | AI_1310 |
 
 끝내 실패하면 마지막 시도의 종류로 응답한다. 사용자 요청의 AI_1301·AI_1302·AI_1310은 예약을 환불한 뒤 던지므로 공개 상세 `{ charged: false }`를 싣는다(앱 문구 "횟수는 차감되지 않았어요"). 환불이 저장되지 않으면 차감 여부를 보장할 수 없으므로 상세 없이 같은 코드만 준다. 실패와 모델 대상 명령만 있는 입력(NO_ACTION)은 사용량을 차감하지 않는다. 사용량은 Access의 `QuotaLedger`가 센다: 공급자 호출 전에 `reserve`(한도 초과 AI_1303, 녹음 정리 AI_1313, 같은 키 처리 중 AI_1314 — 모두 `details: { charged: false, featureQuota }`), 결과를 주면 `commit`, 실패는 `refund(FAILED)`, NO_ACTION은 `refund(NO_ACTION)`이고 환불은 정확히 한 번이다. 요청(같은 키의 재예약·재생성은 한 줄)마다 `QuotaCharge` 한 줄이 남아 고객 문의 때 최종 상태와 시도 수(`attempt`)로 차감·환불을 설명한다. 재예약이 같은 행을 덮어쓰므로 시도별 이력은 로그(`access.quota.*`, `chargeId`)로 본다. 성공 응답은 갱신된 `featureQuota`를 함께 준다. 확정 뒤 한도를 읽지 못하면 결과를 살리고 `featureQuota`만 뺀다(`ai.generation.quota-read-failed`). 프로세스가 죽어 끝나지 못한 RESERVED는 10분 주기 `quota-abandoned-refund.v1` 잡이 `QUOTA_RESERVATION_TAKEOVER_AFTER_MS`(2분)가 지난 것만 `refundReason = ABANDONED`로 돌려준다(사용자 행 잠금 + 조건부 갱신이라 멱등). 30분 넘게 남은 예약이 있거나 돌려주지 못하면 `access.quota.stale-reservation` 경보를 올린다. 같은 잡이 7일 지난 `requestHash`를 지운다. 리포트는 일시 실패(`RATE_LIMITED`·`OVERLOADED`·`UPSTREAM`·`TIMEOUT`)를 마지막 잡 시도 전까지 다시 던지고, 이후에만 폴백을 `contentSource = FALLBACK`으로 저장한다. 제안 잡도 일시 실패만 다시 던지고 출력 오류·차단·잘림은 같은 비용으로 같게 실패하므로 건너뛴다. 보낼 업체가 없거나 킬 스위치·예산으로 멈추면 리포트는 폴백을 저장하고 제안은 건너뛴다.
 

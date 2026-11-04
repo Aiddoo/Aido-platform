@@ -48,6 +48,8 @@ export interface ParseMemoInput {
   categoryId: number;
   /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
   locale: SupportedLocale | undefined;
+  /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
+  signal?: AbortSignal;
 }
 
 type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
@@ -141,7 +143,7 @@ export class ParseMemo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           defaultCategoryId: categoryId,
         },
-        { agreedConsentVersion: agreedVersion, userId },
+        { agreedConsentVersion: agreedVersion, userId, signal: input.signal },
       );
       const { data, omittedTodoCount } = value;
       const charge = !value.noAction;

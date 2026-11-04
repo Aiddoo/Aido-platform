@@ -70,6 +70,8 @@ ALTER TABLE "TodoSeries" DROP CONSTRAINT "TodoSeries_categoryId_fkey";
 
 다시 1.15.0 이상으로 올릴 때는 이 사이 지워진 카테고리를 가리키는 규칙을 먼저 정리한 뒤 같은 이름의 FK를 `NOT VALID`→`VALIDATE`로 다시 건다.
 
+1.14.2로 되돌릴 때의 다른 영향: `email-delivery.v1` 큐에 남은 인증 메일은 재배포 전까지 나가지 않는다. `admin-notification.v1`의 새 형식 잡은 옛 worker가 버린다(운영 알림이라 수용). 2026-11-04 AI 데이터 공유 동의자는 옛 서버에서 UNDECIDED로 보인다(개인정보 쪽으로 안전한 방향이고, 다시 올리면 돌아온다).
+
 **1.15.0 배포 전 확인**: `todo_series` 이관은 `Todo` 전체를 잠근다(로컬 측정 126만 행·26만 행 묶음에서 약 5초, 앱 요청 제한 10초, `lock_timeout` 5초). 실행 전에 운영 DB에서 읽기 전용으로 아래 건수를 본다. 묶음 행이 수만을 넘으면 칸 추가·채우기·`CREATE UNIQUE INDEX CONCURRENTLY`로 나눈다. 2026-11 기준 묶음 119개·1,834행이라 그대로 실행한다.
 
 ```sql
@@ -104,7 +106,7 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 | RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                               |
 
-운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
+운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`·`ai.*`(예산 초과로 유료 포함 AI 전체 중단·결제 회로·가격표 없는 모델)·`weather.*`(WeatherKit 호출량)·`access.quota.*`(돌려주지 못한 예약)·`planning.todo-series.*`(회차 채우기 실패)인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
 
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 

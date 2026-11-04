@@ -9,7 +9,12 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { IdempotencyKey, Locale, Timezone } from "#api/platform/http/decorators/index";
+import {
+  ClientAbortSignal,
+  IdempotencyKey,
+  Locale,
+  Timezone,
+} from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
   ApiConflictError,
@@ -68,6 +73,7 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
     @IdempotencyKey() idempotencyKey: string,
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
+    @ClientAbortSignal() signal: AbortSignal,
   ): Promise<QuickPlanResponseDto> {
     return this.createQuickPlan.execute({
       userId: user.userId,
@@ -76,6 +82,7 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
       idempotencyKey,
       timezone,
       locale,
+      signal,
     });
   }
 }
