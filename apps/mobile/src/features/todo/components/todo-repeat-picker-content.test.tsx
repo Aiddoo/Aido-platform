@@ -70,16 +70,16 @@ describe('TodoRepeatPickerContent', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  test('계속을 고르면 기간 줄이 계속 반복으로 바뀌고 확인할 수 있다', async () => {
+  test('계속 반복을 켜면 기간 줄이 계속으로 바뀌고 확인할 수 있으며 다시 누르면 기간 선택으로 돌아간다', async () => {
     // Given
     const { onChange } = await renderSheet();
 
     // When
-    await press('계속');
+    await press('계속 반복');
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 5일 - 계속 반복')).toBeTruthy();
+    expect(screen.getByText('11월 5일부터 계속')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith({
       startDate: START_DATE,
       repeat: WEEKLY_THURSDAY_FOREVER,
@@ -134,7 +134,7 @@ describe('TodoRepeatPickerContent', () => {
     expect(chip('목')).toBeSelected();
 
     // When
-    await press('계속');
+    await press('계속 반복');
     await confirm();
 
     // Then
@@ -156,7 +156,7 @@ describe('TodoRepeatPickerContent', () => {
 
     // When
     await press('매월 5일');
-    await press('계속');
+    await press('계속 반복');
     await confirm();
 
     // Then
@@ -181,21 +181,42 @@ describe('TodoRepeatPickerContent', () => {
     expect(chip('매월 5일')).not.toBeSelected();
   });
 
-  test('횟수를 고르면 스테퍼가 나오고 기간 줄에 횟수가 보인다', async () => {
+  test('말로 만든 횟수 반복을 열면 횟수를 보이고 그대로 저장하며 계속 반복 버튼으로 바꿀 수 있다', async () => {
     // Given
-    const { onChange } = await renderSheet();
+    const counted: TodoRepeat = {
+      ...WEEKLY_THURSDAY_FOREVER,
+      end: { type: 'COUNT', count: 10 },
+    };
+    const { onChange } = await renderSheet({ repeat: counted });
 
     // When
-    await press('횟수');
-    await fireEvent.press(screen.getByLabelText('횟수 늘리기'));
     await confirm();
 
     // Then
-    expect(screen.getByText('11회')).toBeTruthy();
-    expect(screen.getByText('11월 5일부터 11회')).toBeTruthy();
+    expect(screen.getByText('11월 5일부터 10회')).toBeTruthy();
+    expect(onChange).toHaveBeenCalledWith({ startDate: START_DATE, repeat: counted });
+
+    // When
+    await press('계속 반복');
+
+    // Then
+    expect(screen.getByText('11월 5일부터 계속')).toBeTruthy();
+  });
+
+  test('계속 상태에서 시작일 뒤 날짜를 누르면 그날까지 날짜 종료가 된다', async () => {
+    // Given
+    const { onChange } = await renderSheet();
+    await press('계속 반복');
+
+    // When
+    await press('12');
+    await confirm();
+
+    // Then
+    expect(screen.getByText('11월 5일 - 11월 12일')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith({
       startDate: START_DATE,
-      repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'COUNT', count: 11 } },
+      repeat: { ...WEEKLY_THURSDAY_FOREVER, end: { type: 'UNTIL', date: '2026-11-12' } },
     });
   });
 
@@ -204,7 +225,6 @@ describe('TodoRepeatPickerContent', () => {
     const { onChange } = await renderSheet();
 
     // When
-    await press('날짜');
     await confirm();
 
     // Then
@@ -226,7 +246,6 @@ describe('TodoRepeatPickerContent', () => {
   test('기간을 고른 뒤 달력을 다시 누르면 시작일을 새로 고르고 종료일은 비워진다', async () => {
     // Given
     await renderSheet();
-    await press('날짜');
     await press('12');
 
     // When
@@ -257,11 +276,11 @@ describe('TodoRepeatPickerContent', () => {
     await press('주말');
 
     // When
-    await press('계속');
+    await press('계속 반복');
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 7일 - 계속 반복')).toBeTruthy();
+    expect(screen.getByText('11월 7일부터 계속')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith({
       startDate: START_DATE,
       repeat: {
@@ -301,21 +320,22 @@ describe('TodoRepeatPickerContent', () => {
     expect(haptics.selection).toHaveBeenCalledTimes(1);
   });
 
-  test('계속이나 횟수에서 달력을 누르면 시작일이 바뀌고 매월 n일도 따라간다', async () => {
+  test('시작일을 새로 고르면 매월 n일도 따라간다', async () => {
     // Given
     const { onChange } = await renderSheet();
     await press('매월 5일');
-    await press('계속');
+    await press('12');
 
     // When
-    await press('12');
+    await press('19');
+    await press('26');
     await confirm();
 
     // Then
-    expect(screen.getByText('매월 12일')).toBeTruthy();
+    expect(screen.getByText('매월 19일')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith({
-      startDate: new Date(2026, 10, 12),
-      repeat: { frequency: 'MONTHLY', monthDay: 12, end: { type: 'NEVER' } },
+      startDate: new Date(2026, 10, 19),
+      repeat: { frequency: 'MONTHLY', monthDay: 19, end: { type: 'UNTIL', date: '2026-11-26' } },
     });
   });
 

@@ -47,7 +47,7 @@
     "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
     "repeatPeriod": "Repeat period",
     "selectPeriod": "Please choose a period",
-    "periodNever": "{{date}} - repeats forever",
+    "periodNever": "From {{date}}, ongoing",
     "periodCount_one": "From {{date}}, {{count}} time",
     "periodCount_other": "From {{date}}, {{count}} times",
     "repeatDaily": "Repeats daily",
@@ -61,19 +61,11 @@
     "presetWeekends": "Weekends",
     "presetBiweekly": "Every 2 weeks",
     "presetMonthly": "Monthly on day {{day}}",
-    "endNever": "Forever",
-    "endUntil": "Until",
-    "endCount": "Count",
+    "repeatForever": "Repeat forever",
     "selectDays": "Please choose days",
     "noOccurrence": "No repeating days in this period"
   },
   "repeat": {
-    "end": {
-      "COUNT_one": "After {{count}} time",
-      "COUNT_other": "After {{count}} times",
-      "countDecrease": "Decrease count",
-      "countIncrease": "Increase count"
-    },
     "summary": {
       "DAILY": "Daily",
       "WEEKDAYS": "Weekdays",

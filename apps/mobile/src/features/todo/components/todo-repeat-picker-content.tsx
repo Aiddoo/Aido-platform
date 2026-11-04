@@ -3,16 +3,7 @@ import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  Box,
-  Button,
-  HStack,
-  PlusIcon,
-  Text,
-  VStack,
-} from '@src/shared/ui';
+import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   formatDaysOfWeek,
@@ -26,22 +17,17 @@ import {
 import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
-import { clamp, without, xor } from 'es-toolkit';
+import { without, xor } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
-import {
-  TODO_REPEAT_COUNT,
-  TODO_REPEAT_WEEKDAYS,
-  TODO_REPEAT_WEEKEND_DAYS,
-} from '../constants/todo-repeat.constants';
+import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
 import type { TodoRepeatFormValues } from '../domains/todo-repeat-form.schema';
 import {
   getMonthDayOfDateKey,
   type TodoRepeat,
-  type TodoRepeatEndType,
   TodoRepeatPolicy,
 } from '../domains/todo-repeat.model';
 import { useDatePicker } from '../hooks/use-date-picker';
@@ -259,81 +245,6 @@ function RepeatSummary() {
   );
 }
 
-function CountStepper() {
-  const { t } = useTranslation('todo');
-  const { control, setValue } = useFormContext<TodoRepeatFormValues>();
-  const count = useWatch({ control, name: 'count' });
-  const changeCount = (next: number) =>
-    setValue('count', clamp(next, TODO_REPEAT_COUNT.MIN, TODO_REPEAT_COUNT.MAX));
-
-  return (
-    <HStack gap={12} align="center">
-      <PressableFeedback
-        onPress={() => changeCount(count - 1)}
-        isDisabled={count <= TODO_REPEAT_COUNT.MIN}
-        accessibilityRole="button"
-        accessibilityLabel={t('repeat.end.countDecrease')}
-        className={cn(
-          'size-8 items-center justify-center rounded-full bg-gray-2',
-          count <= TODO_REPEAT_COUNT.MIN && 'opacity-40',
-        )}
-      >
-        <Text size="b2" weight="medium" shade={7}>
-          −
-        </Text>
-      </PressableFeedback>
-      <Text size="b2" weight="semibold" className="tabular-nums" tone="brand">
-        {t('repeat.end.COUNT', { count })}
-      </Text>
-      <PressableFeedback
-        onPress={() => changeCount(count + 1)}
-        isDisabled={count >= TODO_REPEAT_COUNT.MAX}
-        accessibilityRole="button"
-        accessibilityLabel={t('repeat.end.countIncrease')}
-        className={cn(
-          'size-8 items-center justify-center rounded-full bg-gray-2',
-          count >= TODO_REPEAT_COUNT.MAX && 'opacity-40',
-        )}
-      >
-        <PlusIcon width={14} height={14} colorClassName="text-gray-7" />
-      </PressableFeedback>
-    </HStack>
-  );
-}
-
-function RepeatEndSelector() {
-  const { t } = useTranslation('todo');
-  const { control, setValue } = useFormContext<TodoRepeatFormValues>();
-  const endType = useWatch({ control, name: 'endType' });
-  const handleEndTypePress = (type: TodoRepeatEndType) => {
-    setValue('endType', type);
-    setValue('untilDate', null);
-  };
-
-  return (
-    <HStack align="center" justify="between" className="px-4">
-      <HStack gap={6}>
-        <PresetChip
-          label={t('picker.endUntil')}
-          isSelected={endType === 'UNTIL'}
-          onPress={() => handleEndTypePress('UNTIL')}
-        />
-        <PresetChip
-          label={t('picker.endNever')}
-          isSelected={endType === 'NEVER'}
-          onPress={() => handleEndTypePress('NEVER')}
-        />
-        <PresetChip
-          label={t('picker.endCount')}
-          isSelected={endType === 'COUNT'}
-          onPress={() => handleEndTypePress('COUNT')}
-        />
-      </HStack>
-      {endType === 'COUNT' && <CountStepper />}
-    </HStack>
-  );
-}
-
 interface RepeatPickerValue {
   startDate: Date;
   repeat: TodoRepeat | null;
@@ -362,7 +273,6 @@ export const TodoRepeatPickerContent = ({
         <DayOfWeekSelector />
         <RepeatCalendarSection picker={picker} />
         <RepeatPeriodFooter value={value} onChange={onChange} />
-        <RepeatEndSelector />
       </VStack>
     </FormProvider>
   );
@@ -448,22 +358,18 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
       return;
     }
 
-    if (endType !== 'UNTIL') {
+    if (endType === 'UNTIL' && untilDate != null) {
       changeStartDate(date);
+      setValue('untilDate', null);
       return;
     }
 
-    if (untilDate == null) {
-      if (isAfterDay(date, startDate)) {
-        setValue('untilDate', date);
-      } else if (isBeforeDay(date, startDate)) {
-        changeStartDate(date);
-      }
-      return;
+    if (isAfterDay(date, startDate)) {
+      setValue('endType', 'UNTIL');
+      setValue('untilDate', date);
+    } else if (isBeforeDay(date, startDate)) {
+      changeStartDate(date);
     }
-
-    changeStartDate(date);
-    setValue('untilDate', null);
   };
 
   return (
@@ -486,6 +392,7 @@ interface RepeatPeriodFooterProps {
 
 function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const { setValue } = useFormContext<TodoRepeatFormValues>();
   const values = useRepeatFormValues();
   const dateFormatContext = useDateFormatContext();
   const formatMonthDay = (date: Date) =>
@@ -498,9 +405,14 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
       : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
   const periodStart = firstOccurrenceKey == null ? values.startDate : toDate(firstOccurrenceKey);
 
+  const handleForeverPress = () => {
+    setValue('endType', values.endType === 'NEVER' ? 'UNTIL' : 'NEVER');
+    setValue('untilDate', null);
+  };
+
   return (
     <VStack gap={4} className="border-t border-gray-2 px-4 pt-3">
-      <HStack align="center" justify="between" gap={8}>
+      <HStack align="center" justify="between" gap={8} className="flex-wrap gap-y-2">
         <HStack gap={4} align="center" className="shrink">
           <Text size="b3" tone="neutral" shade={7}>
             {t('picker.repeatPeriod')}
@@ -535,17 +447,24 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
             )
             .exhaustive()}
         </HStack>
-        {value.repeat != null && (
-          <Button
-            size="small"
-            variant="weak"
-            color="danger"
-            display="inline"
-            onPress={() => onChange({ startDate: value.startDate, repeat: null })}
-          >
-            {t('common:actions.delete')}
-          </Button>
-        )}
+        <HStack gap={6} align="center">
+          <PresetChip
+            label={t('picker.repeatForever')}
+            isSelected={values.endType === 'NEVER'}
+            onPress={handleForeverPress}
+          />
+          {value.repeat != null && (
+            <Button
+              size="small"
+              variant="weak"
+              color="danger"
+              display="inline"
+              onPress={() => onChange({ startDate: value.startDate, repeat: null })}
+            >
+              {t('common:actions.delete')}
+            </Button>
+          )}
+        </HStack>
       </HStack>
       {monthlyRepeat != null && TodoRepeatPolicy.isMonthDayClamped(monthlyRepeat) && (
         <Text size="b4" tone="neutral" shade={6} lineBreakStrategyIOS="hangul-word">
