@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Param, Post } from "@nestjs/common";
-import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
   Admin,
@@ -13,6 +13,7 @@ import {
   ApiDoc,
   ApiForbiddenError,
   ApiNotFoundError,
+  ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
@@ -45,12 +46,8 @@ export class AdminUserReportController {
 
 이미 처리한 신고를 다시 처리하면 첫 처리 기록을 그대로 돌려줍니다. 조치 내용은 신고자·신고된 사용자에게 보이지 않습니다.`,
   })
-  @ApiParam({
-    name: "reportId",
-    description: "처리할 신고 ID (CUID 25자, 신고 접수 이메일의 신고 ID)",
-    example: "clz7x5p8k0123qz0z8z8z8z8z",
-  })
   @ApiCreatedResponse({ type: ResolveUserReportResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.REPORT_2255)

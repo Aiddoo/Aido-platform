@@ -71,7 +71,7 @@ export const TODO_COMMENT_THROTTLE = {
 } as const;
 
 const DEPRECATED_READ_DESCRIPTION =
-  "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 `GET /v2/todos/{todoId}/comments`와 `…/comments/{commentId}/replies`를 씁니다. 댓글·답글 2단계 값만 내려갑니다.";
+  "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 `GET /v2/todos/{todoId}/comments`와 `…/comments/{commentId}/replies`를 씁니다. 댓글·답글 2단계 값만 내려갑니다. 1.14.0 이하 앱 사용자가 사라지면 제거합니다.";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
@@ -88,14 +88,19 @@ export class TodoCommentController {
     private readonly unlikeTodoComment: UnlikeTodoComment,
   ) {}
 
+  @Get("details")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("details")
-  @ApiDoc({ summary: "댓글 화면용 할 일 상세 조회", operationId: "getTodoDetails" })
+  @ApiDoc({
+    summary: "댓글 화면용 할 일 상세 조회",
+    operationId: "getTodoDetails",
+    description:
+      "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다.",
+  })
   @ApiSuccessResponse({ type: TodoDetailsResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
@@ -112,13 +117,13 @@ export class TodoCommentController {
     return TodoCommentMapper.toDetails(result, appVersion);
   }
 
+  @Get("comments/overview")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("comments/overview")
   @ApiDoc({
     summary: "할 일 댓글 개요 조회",
     operationId: "getTodoCommentOverview",
@@ -145,13 +150,13 @@ export class TodoCommentController {
     return TodoCommentMapper.toOverview(toTodoCommentOverviewResponse(result), appVersion);
   }
 
+  @Get("conversation")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("conversation")
   @ApiDoc({
     summary: "할 일 댓글 대화 조회",
     operationId: "getTodoConversation",
@@ -160,7 +165,7 @@ export class TodoCommentController {
   })
   @ApiSuccessResponse({ type: TodoConversationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
   async getConversation(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
@@ -180,15 +185,15 @@ export class TodoCommentController {
     return TodoCommentMapper.toConversation(result, appVersion);
   }
 
+  @Post("comments")
+  @ThrottleByUser()
+  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Post("comments")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @ApiDoc({
     summary: "할 일 댓글 작성 (한 번에 이어 쓰기 가능)",
     operationId: "createTodoComment",
@@ -199,7 +204,7 @@ export class TodoCommentController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.BLOCK_2204)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
-  @ApiConflictError(ErrorCode.TODO_0833)
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.TODO_0833, ErrorCode.SYS_0003])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async writeComments(
     @CurrentUser() user: CurrentUserPayload,
@@ -217,21 +222,26 @@ export class TodoCommentController {
     return TodoCommentMapper.toChain(result, appVersion);
   }
 
+  @Patch("comments/:commentId")
+  @ThrottleByUser()
+  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Patch("comments/:commentId")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
-  @ApiDoc({ summary: "본인 댓글 수정", operationId: "updateTodoComment" })
+  @ApiDoc({
+    summary: "본인 댓글 수정",
+    operationId: "updateTodoComment",
+    description:
+      "본인이 쓴 댓글의 내용을 고칩니다. 삭제된 댓글은 고칠 수 없습니다. 사용자마다 분당 30회까지입니다.",
+  })
   @ApiSuccessResponse({ type: TodoCommentMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.TODO_0832)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
-  @ApiConflictError(ErrorCode.TODO_0833)
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.TODO_0833, ErrorCode.SYS_0003])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async updateComment(
     @CurrentUser() user: CurrentUserPayload,
@@ -262,6 +272,7 @@ export class TodoCommentController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.TODO_0832)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])
+  @ApiConflictError(ErrorCode.SYS_0003)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   deleteComment(
     @CurrentUser() user: CurrentUserPayload,
@@ -277,7 +288,12 @@ export class TodoCommentController {
   @Put("comments/:commentId/likes")
   @ThrottleByUser()
   @Throttle(TODO_COMMENT_THROTTLE.LIKE)
-  @ApiDoc({ summary: "댓글 좋아요", operationId: "likeTodoComment" })
+  @ApiDoc({
+    summary: "댓글 좋아요",
+    operationId: "likeTodoComment",
+    description:
+      "댓글에 좋아요를 누릅니다. 이미 눌렀어도 성공하고 좋아요 수는 늘지 않습니다. 차단 관계인 사용자의 댓글에는 누를 수 없습니다. 사용자마다 분당 120회까지입니다.",
+  })
   @ApiSuccessResponse({ type: TodoCommentLikeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.BLOCK_2204)
@@ -298,7 +314,12 @@ export class TodoCommentController {
   @Delete("comments/:commentId/likes")
   @ThrottleByUser()
   @Throttle(TODO_COMMENT_THROTTLE.LIKE)
-  @ApiDoc({ summary: "댓글 좋아요 취소", operationId: "unlikeTodoComment" })
+  @ApiDoc({
+    summary: "댓글 좋아요 취소",
+    operationId: "unlikeTodoComment",
+    description:
+      "누른 좋아요를 취소합니다. 누르지 않은 댓글도 성공합니다. 사용자마다 분당 120회까지입니다.",
+  })
   @ApiSuccessResponse({ type: TodoCommentLikeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0831])

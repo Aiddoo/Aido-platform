@@ -242,16 +242,25 @@ export class AiSuggestionController {
 |------|------|------|-------|------|
 | \`action\` | string | ✅ | - | \`"accept"\` 또는 \`"dismiss"\` |
 | \`categoryId\` | number | ❌ | - | 수락 시 할 일을 추가할 카테고리 ID |
-| \`startDate\` | string | ❌ | 오늘 | 반복 시작일 (YYYY-MM-DD) |
-| \`endDate\` | string | ❌ | 4주 후 | 반복 종료일 (YYYY-MM-DD) |
+| \`startDate\` | string | ❌ | 사용자 로컬 오늘 | 반복 시작일 (YYYY-MM-DD) |
+| \`endDate\` | string | ❌ | 시작 기준 4주 후 | 반복 종료일 (YYYY-MM-DD) |
 
 ## ✅ accept 시 동작
 1. 지정된 카테고리에 반복 할 일이 자동 생성됩니다.
 2. 응답의 \`createdTodosCount\`에 생성된 할 일 개수가 반환됩니다.
 3. 제안 상태가 \`ACCEPTED\`로 변경됩니다.
+4. \`categoryId\`가 없으면 400(SYS_0002)입니다. 기본 날짜의 "오늘"은 \`X-Timezone\`, 없으면 저장된 사용자 시간대 기준입니다.
 
 ## ❌ dismiss 시 동작
-- 제안 상태가 \`DISMISSED\`로 변경되고, 더 이상 목록에 나타나지 않습니다.`,
+- 제안 상태가 \`DISMISSED\`로 변경되고, 더 이상 목록에 나타나지 않습니다.
+
+## ⚠️ 오류
+| 코드 | 상태 | 상황 |
+|------|------|------|
+| AI_1305 | 404 | 제안이 없거나 내 제안이 아님 |
+| AI_1306 | 409 | 이미 처리한 제안 |
+| AI_1307 | 410 | 만료된 제안 |
+| AI_1309 | 403 | 프리미엄이 아님 |`,
   })
   @ApiSuccessResponse({ type: SuggestionActionResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

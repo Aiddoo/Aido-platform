@@ -12,6 +12,7 @@ import {
   ApiNotFoundError,
   ApiSuccessResponse,
   ApiTooManyRequestsError,
+  ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
@@ -48,8 +49,8 @@ export class AdminBroadcastCampaignController {
   }
 
   @Post()
-  @Admin()
   @HttpCode(HttpStatus.ACCEPTED)
+  @Admin()
   @ThrottleByUser()
   @Throttle({ default: BROADCAST_CREATION_THROTTLE })
   @ApiDoc({
@@ -66,6 +67,7 @@ export class AdminBroadcastCampaignController {
     description: "접수됨",
     type: BroadcastCampaignAcceptedDto,
   })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1402)
   @ApiConflictError(ErrorCode.ADMIN_1405)
@@ -93,6 +95,7 @@ export class AdminBroadcastCampaignController {
       "캠페인 분배 진행(처리한 대상·대기열에 올린 수)과 사용자별 발송 상태, 기기별 전달 결과를 집계해 돌려줍니다. 전달 결과는 공급자 receipt를 반영하는 1분 주기 작업 뒤에 갱신됩니다.",
   })
   @ApiSuccessResponse({ type: BroadcastCampaignDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1404)
   async get(

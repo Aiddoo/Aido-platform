@@ -56,7 +56,7 @@ export type SuggestionActionResponse = z.infer<typeof suggestionActionResponseSc
 // ============================================================================
 
 export const suggestionIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.coerce.number().int().positive().describe("AI 제안 고유 ID (양의 정수, 예: 1)"),
 });
 
 export type SuggestionIdParam = z.infer<typeof suggestionIdParamSchema>;

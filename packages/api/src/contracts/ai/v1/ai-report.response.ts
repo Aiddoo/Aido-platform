@@ -109,8 +109,14 @@ export type ReportStatusResponse = z.infer<typeof reportStatusResponseSchema>;
 // ============================================================================
 
 export const getAiReportsQuerySchema = z.object({
-  type: reportTypeSchema.optional(),
-  limit: z.coerce.number().int().positive().max(50).default(10),
+  type: reportTypeSchema.optional().describe("리포트 종류 (WEEKLY | MONTHLY, 생략 시 전체)"),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(50)
+    .default(10)
+    .describe("페이지 크기 (1-50, 기본값: 10)"),
 });
 
 export type GetAiReportsQuery = z.infer<typeof getAiReportsQuerySchema>;

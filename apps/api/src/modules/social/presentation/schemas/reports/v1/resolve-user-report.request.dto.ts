@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 export const ResolveUserReportParamDto = resolveUserReportParamSchema.meta({
   id: "ResolveUserReportParamDto",
+  apiParameter: true,
 });
 export type ResolveUserReportParamDto = z.infer<typeof ResolveUserReportParamDto>;
 

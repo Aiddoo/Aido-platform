@@ -37,7 +37,7 @@ export class WeatherController {
     operationId: "updateLocation",
     deprecated: true,
     description: `
-> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다. 1.13.1 이하 앱 사용자가 사라지면 제거합니다.
 GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)로 자동 변환됩니다.
 날씨 예보, 부가 정보 조회, 오전/오후 날씨 알림의 기준 위치로 사용됩니다.
 
@@ -79,7 +79,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     operationId: "getWeatherForecast",
     deprecated: true,
     description: `
-> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다. 1.13.1 이하 앱 사용자가 사라지면 제거합니다.
 기상청 단기예보 기반 날씨 예보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -162,7 +162,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     operationId: "getWeatherConditions",
     deprecated: true,
     description: `
-> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다. 1.13.1 이하 앱 사용자가 사라지면 제거합니다.
 체감온도, 자외선지수, 일출/일몰, 미세먼지 등 부가 정보를 조회합니다.
 
 ### 쿼리 파라미터

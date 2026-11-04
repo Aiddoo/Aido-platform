@@ -29,7 +29,12 @@ export class AppConfigController {
   @Public()
   @RawResponse()
   @Header("Cache-Control", "private, no-store")
-  @ApiDoc({ summary: "Published app versions", operationId: "getAppVersionConfig" })
+  @ApiDoc({
+    summary: "스토어 최신 앱 버전 조회",
+    operationId: "getAppVersionConfig",
+    description:
+      "로그인 없이 iOS·Android 스토어에 공개된 최신 앱 버전을 돌려줍니다. 설정이 꺼져 있거나 한 플랫폼이라도 버전이 없으면 enabled: false만 보냅니다. 응답은 캐시하지 않습니다.",
+  })
   @ApiExtraModels(AppVersionDisabledResponseDto, AppVersionEnabledResponseDto)
   @ApiResponse({
     status: 200,
@@ -45,10 +50,10 @@ export class AppConfigController {
   @RawResponse()
   @Header("Cache-Control", "private, no-store")
   @ApiDoc({
-    summary: "Feature discovery rollout configuration",
+    summary: "기능 발견 배포 설정 조회",
     operationId: "getFeatureDiscoveryConfig",
     description:
-      "Public kill-switch configuration only. Campaign copy and user data are never returned.",
+      "로그인 없이 기능 발견의 운영 kill switch 설정만 돌려줍니다. 캠페인 문구와 사용자 데이터는 담지 않습니다. 응답은 캐시하지 않습니다.",
   })
   @ApiExtraModels(FeatureDiscoveryDisabledResponseDto, FeatureDiscoveryEnabledResponseDto)
   @ApiResponse({
