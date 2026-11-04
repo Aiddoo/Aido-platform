@@ -169,6 +169,7 @@ describe('VoiceNoteMarkControl', () => {
 
     // Then
     expect(screen.getByText('중요 표시 2')).toBeTruthy();
+    expect(screen.getByTestId('voice-note-mark-active')).toBeTruthy();
     expect(screen.getByLabelText('중요 표시, 지금까지 2개')).toBeTruthy();
   });
 
@@ -179,5 +180,6 @@ describe('VoiceNoteMarkControl', () => {
     // Then
     expect(screen.getByText('중요 표시')).toBeTruthy();
     expect(screen.queryByText(/중요 표시 \d/)).toBeNull();
+    expect(screen.queryByTestId('voice-note-mark-active')).toBeNull();
   });
 });

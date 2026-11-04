@@ -5,7 +5,10 @@ import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitle
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { toPremiumBenefitAmounts } from '@src/features/subscription/utils/view-models/plan-benefit.view-model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { RecordControl } from '@src/features/voice/components/note/record-control';
+import {
+  RECORD_CONTROL_ICON_SIZE,
+  RecordControl,
+} from '@src/features/voice/components/note/record-control';
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
@@ -28,6 +31,7 @@ import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -36,6 +40,7 @@ import {
   HStack,
   PauseIcon,
   QueryErrorBoundary,
+  StopIcon,
   StyledSafeAreaView,
   Text,
   useConfirmDialog,
@@ -53,6 +58,8 @@ function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
   useKeepAwake();
   const isCompact = useWindowSizeClass() === 'compact';
+  const fontScaledSize = useFontScaledSize();
+  const controlIconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
@@ -168,77 +175,88 @@ function VoiceNoteRecordScreen() {
       className="min-h-24 flex-1"
     />
   );
-  const footer = match(state)
-    .with({ status: P.union('paused', 'failed') }, (stopped) => (
-      <VStack gap={12}>
-        <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
-          <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
-            {stopped.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
-          </Text>
-          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-            {match(stopped)
-              .with({ status: 'paused' }, ({ cause }) => t(`record.pausedDescription.${cause}`))
-              .with(
-                { status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') },
-                () => t('record.failedPermission'),
-              )
-              .otherwise(() => t('record.failedDescription'))}
-          </Text>
-        </VStack>
-        <HStack gap={8}>
-          {VoiceCapturePolicy.canFinish(stopped) && (
-            <Box flex={1}>
-              <Button
-                variant="weak"
-                color="dark"
-                onPress={recording.finish}
-                testID="voice-note-summarize"
-              >
-                {t('record.summarize')}
-              </Button>
-            </Box>
-          )}
-          {canResume && (
-            <Box flex={1}>
-              <Button onPress={recording.resume} testID="voice-note-resume">
-                {t('record.resume')}
-              </Button>
-            </Box>
-          )}
-        </HStack>
-      </VStack>
-    ))
-    .otherwise(() => (
-      <VStack gap={12}>
-        <HStack justify="center" align="start">
-          <RecordControl
-            label={t('record.pause')}
-            onPress={recording.pause}
-            isDisabled={state.status !== 'listening'}
-            testID="voice-note-pause"
-          >
-            <PauseIcon width={22} height={22} colorClassName="text-gray-7" />
-          </RecordControl>
-          <RecordControl
-            label={t('record.finish')}
-            onPress={recording.finish}
-            isDisabled={!VoiceCapturePolicy.canFinish(state)}
-            isPrimary
-            testID="voice-note-finish"
-          >
-            <Box className="size-5 rounded-sm bg-white" />
-          </RecordControl>
-          <VoiceNoteMarkControl
-            markCount={recording.markCount}
-            isListening={state.status === 'listening'}
-            onPress={recording.mark}
-          />
-        </HStack>
-        <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-          {t('record.privacy')}
-        </Text>
-      </VStack>
-    ));
+  const footer = (
+    <VStack gap={12} className="self-stretch">
+      {match(state)
+        .with({ status: P.union('paused', 'failed') }, (stopped) => (
+          <VStack gap={12}>
+            <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
+              <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+                {stopped.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
+              </Text>
+              <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                {match(stopped)
+                  .with({ status: 'paused' }, ({ cause }) => t(`record.pausedDescription.${cause}`))
+                  .with(
+                    { status: 'failed', reason: P.union('not-allowed', 'service-not-allowed') },
+                    () => t('record.failedPermission'),
+                  )
+                  .otherwise(() => t('record.failedDescription'))}
+              </Text>
+            </VStack>
+            <HStack gap={8}>
+              {VoiceCapturePolicy.canFinish(stopped) && (
+                <Box flex={1}>
+                  <Button
+                    size="large"
+                    variant="weak"
+                    color="dark"
+                    onPress={recording.finish}
+                    testID="voice-note-summarize"
+                  >
+                    {t('record.summarize')}
+                  </Button>
+                </Box>
+              )}
+              {canResume && (
+                <Box flex={1}>
+                  <Button size="large" onPress={recording.resume} testID="voice-note-resume">
+                    {t('record.resume')}
+                  </Button>
+                </Box>
+              )}
+            </HStack>
+          </VStack>
+        ))
+        .otherwise(() => (
+          <HStack align="start" className="w-full max-w-90 self-center">
+            <RecordControl
+              label={t('record.pause')}
+              onPress={recording.pause}
+              isDisabled={state.status !== 'listening'}
+              testID="voice-note-pause"
+            >
+              <PauseIcon
+                width={controlIconSize}
+                height={controlIconSize}
+                colorClassName="text-gray-7"
+              />
+            </RecordControl>
+            <RecordControl
+              label={t('record.finish')}
+              onPress={recording.finish}
+              isDisabled={!VoiceCapturePolicy.canFinish(state)}
+              isPrimary
+              testID="voice-note-finish"
+            >
+              <StopIcon
+                width={controlIconSize}
+                height={controlIconSize}
+                colorClassName="text-white dark:text-gray-9"
+              />
+            </RecordControl>
+            <VoiceNoteMarkControl
+              markCount={recording.markCount}
+              isListening={state.status === 'listening'}
+              onPress={recording.mark}
+            />
+          </HStack>
+        ))}
+      <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+        {t('record.privacy')}
+      </Text>
+    </VStack>
+  );
 
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">

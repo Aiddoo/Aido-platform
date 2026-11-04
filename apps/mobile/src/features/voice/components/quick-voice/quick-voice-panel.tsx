@@ -154,11 +154,6 @@ QuickVoicePanel.Listening = function Listening({
                 label={t('listening.cancel')}
                 iconSize={fontScaledSize(18)}
               />
-              <Box flex={1}>
-                <Button size="large" onPress={onResume} testID="quick-voice-resume">
-                  {t('listening.resume')}
-                </Button>
-              </Box>
               {canFinish && (
                 <Box flex={1}>
                   <Button
@@ -172,6 +167,11 @@ QuickVoicePanel.Listening = function Listening({
                   </Button>
                 </Box>
               )}
+              <Box flex={1}>
+                <Button size="large" onPress={onResume} testID="quick-voice-resume">
+                  {t('listening.resume')}
+                </Button>
+              </Box>
             </HStack>
           </VStack>
         ) : (
