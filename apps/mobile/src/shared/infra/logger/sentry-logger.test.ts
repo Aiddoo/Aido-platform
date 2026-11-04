@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 
-import { createSentryLogger } from './sentry-logger';
+import { createSentryLogger, logEventFeature } from './sentry-logger';
 
 jest.mock('@sentry/react-native', () => ({
   addBreadcrumb: jest.fn(),
@@ -75,4 +75,37 @@ describe('createSentryLogger', () => {
     expect(addBreadcrumb).toHaveBeenCalledTimes(1);
     expect(captureException).not.toHaveBeenCalled();
   });
+
+  it('error의 message가 이벤트 키면 첫 마디를 feature 태그로 붙인다', () => {
+    // Given
+    const error = new Error('boom');
+
+    // When
+    createSentryLogger().error('todo-comment.submit.failed', error);
+
+    // Then
+    expect(captureException).toHaveBeenCalledWith(error, {
+      tags: { source: 'logger', feature: 'todo_comment' },
+      extra: { loggerMessage: 'todo-comment.submit.failed' },
+    });
+  });
+});
+
+describe('logEventFeature', () => {
+  it.each([
+    ['ai.response.parse-failed', 'ai'],
+    ['todo-comment.submit.failed', 'todo_comment'],
+    ['token-refresher.access-token-read.failed', 'token_refresher'],
+  ])('이벤트 키 %s의 feature는 %s다', (message, feature) => {
+    // When / Then
+    expect(logEventFeature(message)).toBe(feature);
+  });
+
+  it.each(['failed', '[Notification] 실패', 'support_mail.open_failed', 'Todo.submit.failed'])(
+    '이벤트 키 형식이 아닌 %s는 feature가 없다',
+    (message) => {
+      // When / Then
+      expect(logEventFeature(message)).toBeUndefined();
+    },
+  );
 });
