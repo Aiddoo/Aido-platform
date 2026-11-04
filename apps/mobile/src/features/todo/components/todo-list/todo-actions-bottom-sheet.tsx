@@ -139,7 +139,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
       return;
     }
 
-    const scope = await selectDeleteScope();
+    const scope = await selectDeleteScope(todo.startDate);
     if (scope == null) {
       return;
     }

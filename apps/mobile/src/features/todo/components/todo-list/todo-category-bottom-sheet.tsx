@@ -79,7 +79,9 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
         submitLabel={t('actions.changeSubmit')}
         isLoading={changeCategory.isPending}
         onChange={async (categoryId) => {
-          const scope = TodoPolicy.isRecurring(todo) ? await selectEditScope() : undefined;
+          const scope = TodoPolicy.isRecurring(todo)
+            ? await selectEditScope(todo.startDate)
+            : undefined;
           // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
           if (scope === null) {
             return;

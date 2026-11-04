@@ -7,6 +7,7 @@ import type { TodoEditScope } from '../domains/todo-repeat.model';
 
 interface ScopeRequest {
   action: 'edit' | 'delete';
+  date: string;
   resolve: (scope: TodoEditScope | null) => void;
 }
 
@@ -17,10 +18,10 @@ interface ScopeRequest {
 export function useSelectTodoScope() {
   const [request, setRequest] = useState<ScopeRequest | null>(null);
 
-  const selectScope = (action: ScopeRequest['action']) =>
+  const selectScope = (action: ScopeRequest['action'], date: string) =>
     new Promise<TodoEditScope | null>((resolve) => {
       Keyboard.dismiss();
-      setRequest({ action, resolve });
+      setRequest({ action, date, resolve });
     });
 
   const settle = (scope: TodoEditScope | null) => {
@@ -29,8 +30,8 @@ export function useSelectTodoScope() {
   };
 
   return {
-    selectEditScope: () => selectScope('edit'),
-    selectDeleteScope: () => selectScope('delete'),
+    selectEditScope: (date: string) => selectScope('edit', date),
+    selectDeleteScope: (date: string) => selectScope('delete', date),
     scopeRequest: request,
     settleScope: settle,
   };
@@ -52,6 +53,7 @@ export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
       {scopeRequest != null && (
         <TodoScopeSelectContent
           action={scopeRequest.action}
+          date={scopeRequest.date}
           onChange={settleScope}
           onBack={() => settleScope(null)}
         />

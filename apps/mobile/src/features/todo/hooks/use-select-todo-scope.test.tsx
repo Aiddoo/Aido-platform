@@ -1,5 +1,7 @@
 import '@src/shared/i18n/init';
+import { createErrorReporterStub, createMockAnalytics } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { Text } from '@src/shared/ui';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
@@ -17,7 +19,7 @@ function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) =>
       <TextInput testID="title" value={title} onChangeText={setTitle} />
       <Pressable
         testID="save"
-        onPress={async () => onSettled(await scopeSelector.selectEditScope())}
+        onPress={async () => onSettled(await scopeSelector.selectEditScope('2026-11-04'))}
       />
       <Text>폼</Text>
     </TodoScopeStep>
@@ -26,7 +28,12 @@ function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) =>
 
 async function renderSheet() {
   const onSettled = jest.fn();
-  await renderUi(<SheetProbe onSettled={onSettled} />);
+  await renderUi(
+    <LocalDateProvider>
+      <SheetProbe onSettled={onSettled} />
+    </LocalDateProvider>,
+    { di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub() } },
+  );
   await fireEvent.changeText(screen.getByTestId('title'), '장보기');
   // 범위를 고를 때까지 끝나지 않는 핸들러라 기다리지 않는다
   fireEvent.press(screen.getByTestId('save')).catch(() => undefined);

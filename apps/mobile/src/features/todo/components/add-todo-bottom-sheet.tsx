@@ -190,7 +190,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       await match(props)
         .with({ mode: 'edit' }, async ({ todo }) => {
           const isSeries = TodoPolicy.isRecurring(todo);
-          const scope = isSeries ? await selectEditScope() : 'THIS_ONLY';
+          const scope = isSeries ? await selectEditScope(todo.startDate) : 'THIS_ONLY';
           if (scope == null) {
             focusTodoInput();
             return;

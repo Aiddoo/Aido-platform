@@ -81,11 +81,13 @@
   "scope": {
     "editTitle": "Edit repeating to-do",
     "deleteTitle": "Delete repeating to-do",
-    "editTHIS_ONLY": "This to-do only",
-    "editTHIS_AND_FOLLOWING": "This and following",
-    "deleteTHIS_ONLY": "Delete this only",
-    "deleteTHIS_AND_FOLLOWING": "Delete this and following",
-    "deleteALL": "Delete all",
+    "thisOnly": "Just this one",
+    "thisAndFollowing": "This and following",
+    "allRepeats": "All repeats",
+    "editThisOnlyHint": "Only {{date}} changes",
+    "editFollowingHint": "Changes from {{date}} onward",
+    "deleteThisOnlyHint": "Only {{date}} is deleted",
+    "deleteFollowingHint": "Deleted from {{date}} onward",
     "deleteAllHint": "Completed ones are deleted too",
     "repeatLabel": "Repeating to-do"
   },

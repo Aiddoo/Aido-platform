@@ -77,11 +77,13 @@
   "scope": {
     "editTitle": "반복 할 일 수정",
     "deleteTitle": "반복 할 일 삭제",
-    "editTHIS_ONLY": "이 할 일만",
-    "editTHIS_AND_FOLLOWING": "이 할 일과 이후 할 일",
-    "deleteTHIS_ONLY": "이 할 일만 삭제",
-    "deleteTHIS_AND_FOLLOWING": "이 할 일과 이후 할 일 삭제",
-    "deleteALL": "모든 반복 할 일 삭제",
+    "thisOnly": "이 할 일만",
+    "thisAndFollowing": "이 할 일과 이후 할 일",
+    "allRepeats": "모든 반복 할 일",
+    "editThisOnlyHint": "{{date}} 할 일만 바뀌어요",
+    "editFollowingHint": "{{date}}부터 쭉 바뀌어요",
+    "deleteThisOnlyHint": "{{date}} 할 일만 지워져요",
+    "deleteFollowingHint": "{{date}}부터 쭉 지워져요",
     "deleteAllHint": "완료한 기록도 함께 지워져요",
     "repeatLabel": "반복 할 일"
   },

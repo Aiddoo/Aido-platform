@@ -1,45 +1,62 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
-  ArrowRightIcon,
   Box,
+  CalendarIcon,
   HStack,
   ListRow,
+  RepeatIcon,
   Text,
   TrashIcon,
   VStack,
 } from '@src/shared/ui';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { PressableFeedback } from 'heroui-native';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 import type { TodoEditScope } from '../domains/todo-repeat.model';
 
 type TodoScopeAction = 'edit' | 'delete';
 
 interface ScopeRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
+  icon: ReactNode;
   label: string;
+  description: string;
   isDanger?: boolean;
 }
 
-function ScopeRow({ label, isDanger = false, ...pressableProps }: ScopeRowProps) {
+function ScopeRow({
+  icon,
+  label,
+  description,
+  isDanger = false,
+  ...pressableProps
+}: ScopeRowProps) {
   return (
     <PressableFeedback accessibilityRole="button" accessibilityLabel={label} {...pressableProps}>
       <ListRow
         horizontalPadding="medium"
         verticalPadding="medium"
+        left={
+          <Box
+            className={
+              isDanger
+                ? 'size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20'
+                : 'size-7 items-center justify-center rounded-full bg-gray-2'
+            }
+          >
+            {icon}
+          </Box>
+        }
         contents={
           <ListRow.Texts
-            type="1RowTypeA"
+            type="2RowTypeA"
             top={label}
             topProps={{ size: 'b2', ...(isDanger && { tone: 'danger' as const }) }}
+            bottom={description}
+            bottomProps={{ size: 'e1', shade: 6, lineBreakStrategyIOS: 'hangul-word' }}
           />
-        }
-        right={
-          isDanger ? (
-            <TrashIcon width={16} height={16} colorClassName="text-error" />
-          ) : (
-            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />
-          )
         }
       />
     </PressableFeedback>
@@ -48,13 +65,24 @@ function ScopeRow({ label, isDanger = false, ...pressableProps }: ScopeRowProps)
 
 interface TodoScopeSelectContentProps {
   action: TodoScopeAction;
+  /** 범위를 정하는 할 일의 날짜(YYYY-MM-DD). 설명에 "n월 n일"로 보인다 */
+  date: string;
   onChange: (scope: TodoEditScope) => void;
   /** 같은 시트 안의 한 단계로 보일 때, 누르면 앞 화면으로 돌아간다 */
   onBack?: () => void;
 }
 
-export function TodoScopeSelectContent({ action, onChange, onBack }: TodoScopeSelectContentProps) {
+export function TodoScopeSelectContent({
+  action,
+  date,
+  onChange,
+  onBack,
+}: TodoScopeSelectContentProps) {
   const { t } = useTranslation(['todo', 'common']);
+  const dateFormatContext = useDateFormatContext();
+  const dateLabel = formatDateKeyLabel(date, 'monthDay', dateFormatContext);
+  const calendarIcon = <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />;
+  const repeatIcon = <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />;
 
   return (
     <VStack gap={8} testID="todo-scope-select">
@@ -76,32 +104,31 @@ export function TodoScopeSelectContent({ action, onChange, onBack }: TodoScopeSe
         </Text>
         <Box className="flex-1" />
       </HStack>
-      {action === 'edit' ? (
-        <>
-          <ScopeRow label={t('scope.editTHIS_ONLY')} onPress={() => onChange('THIS_ONLY')} />
-          <ScopeRow
-            label={t('scope.editTHIS_AND_FOLLOWING')}
-            onPress={() => onChange('THIS_AND_FOLLOWING')}
-          />
-        </>
-      ) : (
-        <>
-          <ScopeRow label={t('scope.deleteTHIS_ONLY')} onPress={() => onChange('THIS_ONLY')} />
-          <ScopeRow
-            label={t('scope.deleteTHIS_AND_FOLLOWING')}
-            onPress={() => onChange('THIS_AND_FOLLOWING')}
-          />
-          <ScopeRow isDanger label={t('scope.deleteALL')} onPress={() => onChange('ALL')} />
-          <Text
-            size="b4"
-            tone="neutral"
-            shade={6}
-            className="px-4"
-            lineBreakStrategyIOS="hangul-word"
-          >
-            {t('scope.deleteAllHint')}
-          </Text>
-        </>
+      <ScopeRow
+        icon={calendarIcon}
+        label={t('scope.thisOnly')}
+        description={t(action === 'edit' ? 'scope.editThisOnlyHint' : 'scope.deleteThisOnlyHint', {
+          date: dateLabel,
+        })}
+        onPress={() => onChange('THIS_ONLY')}
+      />
+      <ScopeRow
+        icon={repeatIcon}
+        label={t('scope.thisAndFollowing')}
+        description={t(
+          action === 'edit' ? 'scope.editFollowingHint' : 'scope.deleteFollowingHint',
+          { date: dateLabel },
+        )}
+        onPress={() => onChange('THIS_AND_FOLLOWING')}
+      />
+      {action === 'delete' && (
+        <ScopeRow
+          isDanger
+          icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+          label={t('scope.allRepeats')}
+          description={t('scope.deleteAllHint')}
+          onPress={() => onChange('ALL')}
+        />
       )}
     </VStack>
   );

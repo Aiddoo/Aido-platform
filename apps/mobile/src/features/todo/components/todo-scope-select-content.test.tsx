@@ -1,32 +1,47 @@
 import '@src/shared/i18n/init';
+import { createErrorReporterStub, createMockAnalytics } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
+import type { ReactElement } from 'react';
 
 import { TodoScopeSelectContent } from './todo-scope-select-content';
 
+const renderScope = (ui: ReactElement) =>
+  renderUi(<LocalDateProvider>{ui}</LocalDateProvider>, {
+    di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub() },
+  });
+
 describe('TodoScopeSelectContent', () => {
-  test('수정은 이 할 일만과 이후 할 일 두 가지를 보여준다', async () => {
+  test('수정은 이 할 일만과 이후 할 일 두 가지를 날짜 설명과 함께 보여준다', async () => {
     // Given
     const onChange = jest.fn();
-    await renderUi(<TodoScopeSelectContent action="edit" onChange={onChange} />);
+    await renderScope(
+      <TodoScopeSelectContent action="edit" date="2026-11-04" onChange={onChange} />,
+    );
 
     // When
     await fireEvent.press(screen.getByLabelText('이 할 일과 이후 할 일'));
 
     // Then
-    expect(screen.queryByLabelText('모든 반복 할 일 삭제')).toBeNull();
+    expect(screen.getByText('11월 4일 할 일만 바뀌어요')).toBeTruthy();
+    expect(screen.getByText('11월 4일부터 쭉 바뀌어요')).toBeTruthy();
+    expect(screen.queryByLabelText('모든 반복 할 일')).toBeNull();
     expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
   });
 
-  test('삭제는 전체 삭제와 완료 기록 안내까지 보여준다', async () => {
+  test('삭제는 전체 삭제와 완료 기록 안내까지 한 행으로 보여준다', async () => {
     // Given
     const onChange = jest.fn();
-    await renderUi(<TodoScopeSelectContent action="delete" onChange={onChange} />);
+    await renderScope(
+      <TodoScopeSelectContent action="delete" date="2026-11-04" onChange={onChange} />,
+    );
 
     // When
-    await fireEvent.press(screen.getByLabelText('모든 반복 할 일 삭제'));
+    await fireEvent.press(screen.getByLabelText('모든 반복 할 일'));
 
     // Then
+    expect(screen.getByText('11월 4일 할 일만 지워져요')).toBeTruthy();
     expect(screen.getByText('완료한 기록도 함께 지워져요')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith('ALL');
   });
