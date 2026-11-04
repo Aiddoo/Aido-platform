@@ -53,6 +53,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const planAbortRef = useRef<AbortController | null>(null);
   const voiceNoteStorage = useVoiceNoteStorageService();
   const startVoiceNote = useVoiceNoteStart();
+  /** 다시 말하기로 입력 칸이 잠깐 보이는 동안 키보드를 올리지 않는다 */
+  const [isRestarting, setIsRestarting] = useState(false);
 
   const onCaptured = async (text: string): Promise<CapturedPlan> => {
     const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
@@ -104,6 +106,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   }, [failedStatus, methods, session.state.transcript]);
 
   const start = async () => {
+    const hasFailed = session.state.status === 'failed';
     if (!gate.guard({ onSubscribe: onExit })) {
       return;
     }
@@ -113,19 +116,39 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     if (!(await ensureMicrophonePermission('quick'))) {
       return;
     }
+    // 실패한 세션에서 다시 누르면 처음부터 듣는다. 들은 글자는 이미 입력 칸에 옮겨 뒀다
+    if (hasFailed) {
+      session.cancel();
+    }
     await session.begin({ locale, contextualStrings: getSpeechContext() });
   };
 
   /** 고른 카드를 버리고 처음부터 다시 듣는다 */
   const restart = async () => {
+    setIsRestarting(true);
     planRequestRef.current = null;
     session.cancel();
-    await start();
+    try {
+      await start();
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  const moveTranscriptToTitle = () => {
+    methods.setValue('title', getTranscriptText(session.state.transcript), { shouldDirty: true });
+  };
+
+  /** 정리를 기다리다 그만둔다. 글자는 입력 칸에 남기고, 같은 글자를 다시 보내면 같은 키라 두 번 차감되지 않는다 */
+  const cancelPlanning = () => {
+    planAbortRef.current?.abort();
+    moveTranscriptToTitle();
+    session.cancel();
   };
 
   /** 계획에 할 일이 없을 때 들은 글자를 입력 칸에 옮겨 직접 고치게 한다 */
   const typeInstead = () => {
-    methods.setValue('title', getTranscriptText(session.state.transcript), { shouldDirty: true });
+    moveTranscriptToTitle();
     planRequestRef.current = null;
     session.cancel();
   };
@@ -172,6 +195,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     setLocale: changeLocale,
     start,
     restart,
+    isRestarting,
+    cancelPlanning,
     typeInstead,
     continueAsVoiceNote,
   };

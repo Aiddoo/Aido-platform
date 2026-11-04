@@ -430,4 +430,26 @@ describe('VoiceCapturePolicy', () => {
       expect(next).toMatchObject({ status: 'preparing', ...seed });
     });
   });
+
+  it('듣는 중에 final 없이 구간이 끝나면 듣던 글자를 확정해 다음 구간이 덮지 못한다', () => {
+    // Given
+    const state = reduceVoiceCapture(
+      reduceVoiceCapture(reduceVoiceCapture(createVoiceCaptureState(), { type: 'prepare' }), {
+        type: 'start',
+        at: 0,
+      }),
+      { type: 'result', result: { transcript: '앞에서 한 말', isFinal: false } },
+    );
+
+    // When
+    const ended = reduceVoiceCapture(state, { type: 'end' });
+    const next = reduceVoiceCapture(ended, {
+      type: 'result',
+      result: { transcript: '이어서 한 말', isFinal: false },
+    });
+
+    // Then
+    expect(ended.status).toBe('listening');
+    expect(next.transcript).toEqual({ sentences: ['앞에서 한 말'], interim: '이어서 한 말' });
+  });
 });

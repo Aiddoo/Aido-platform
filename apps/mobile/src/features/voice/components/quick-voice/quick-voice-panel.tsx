@@ -188,7 +188,14 @@ QuickVoicePanel.Listening = function Listening({
   );
 };
 
-QuickVoicePanel.Planning = function Planning({ state }: { state: VoiceCaptureState }) {
+QuickVoicePanel.Planning = function Planning({
+  state,
+  onCancel,
+}: {
+  state: VoiceCaptureState;
+  /** 정리를 그만두고 들은 글자를 입력 칸으로 옮긴다 */
+  onCancel: () => void;
+}) {
   const { t } = useTranslation('voice');
   const orbLevel = useSharedValue(0);
   const text = getTranscriptText(state.transcript);
@@ -210,6 +217,14 @@ QuickVoicePanel.Planning = function Planning({ state }: { state: VoiceCaptureSta
           </Text>
         </HStack>
         <QuickVoicePanel.CardsLoading />
+        <TextButton
+          size="small"
+          className="self-center"
+          onPress={onCancel}
+          testID="quick-voice-planning-cancel"
+        >
+          {t('planning.cancel')}
+        </TextButton>
       </VStack>
     </Animated.View>
   );

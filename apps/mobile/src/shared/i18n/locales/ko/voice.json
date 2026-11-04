@@ -32,6 +32,7 @@
     "autoFinishHint": "말이 멈추면 알아서 정리할게요"
   },
   "planning": {
+    "cancel": "그만두고 직접 입력",
     "title": "할 일로 나누는 중…"
   },
   "review": {

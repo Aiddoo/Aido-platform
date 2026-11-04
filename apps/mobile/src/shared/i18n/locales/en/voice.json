@@ -32,6 +32,7 @@
     "autoFinishHint": "We'll wrap up when you pause"
   },
   "planning": {
+    "cancel": "Stop and type instead",
     "title": "Splitting into to-dos…"
   },
   "review": {

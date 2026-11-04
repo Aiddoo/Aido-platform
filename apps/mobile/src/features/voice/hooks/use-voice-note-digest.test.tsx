@@ -17,10 +17,12 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { NetworkError } from '@src/shared/errors';
 import { ApiError } from '@src/shared/errors/api-error';
 import { err, ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
+import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
@@ -156,6 +158,22 @@ describe('useVoiceNoteDigest', () => {
     expect(screen.getByTestId('failure', { includeHiddenElements: true })).toHaveTextContent(
       'none',
     );
+  });
+
+  test('오프라인이어도 멈추지 않고 네트워크 실패로 알리며 글자를 그대로 둔다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const { httpClient, storage } = await renderDigest();
+    httpClient.post.mockRejectedValue(new NetworkError());
+
+    // When
+    await fireEvent.press(screen.getByTestId('digest'));
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('failure')).toHaveTextContent('network:false'));
+    expect(screen.getByTestId('pending')).toHaveTextContent('false');
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.sentences).toHaveLength(1);
+    onlineManager.setOnline(true);
   });
 
   test('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {

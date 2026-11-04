@@ -44,6 +44,8 @@ export const useApplyActionPlanMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에도 멈춰 기다리지 않고 바로 실패해 고친 카드를 남긴 채 안내한다
+    networkMode: 'always',
     mutationFn: async ({
       source,
       sourceMemoId,

@@ -25,10 +25,12 @@ import {
 } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { NetworkError } from '@src/shared/errors';
 import { ApiError } from '@src/shared/errors/api-error';
 import { err, ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
+import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { useForm, useWatch } from 'react-hook-form';
@@ -95,6 +97,13 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Pressable testID="finish" onPress={quickVoice.finish} />
       <Pressable testID="retry" onPress={quickVoice.retryPlanning} />
       <Pressable testID="type-instead" onPress={quickVoice.typeInstead} />
+      <Pressable testID="cancel-planning" onPress={quickVoice.cancelPlanning} />
+      <Pressable
+        testID="start"
+        onPress={() => {
+          quickVoice.start().catch(jest.fn());
+        }}
+      />
       <Pressable
         testID="continue-as-note"
         onPress={() => {
@@ -167,7 +176,7 @@ async function renderQuickVoice({
     },
   );
 
-  return { httpClient, speechRecognizer, voiceNoteStorage, onExit, analytics };
+  return { httpClient, speechRecognizer, voiceNoteStorage, onExit, analytics, queryClient };
 }
 
 async function speak(speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>) {
@@ -370,6 +379,67 @@ describe('useAddTodoQuickVoice', () => {
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
       expect(screen.getByTestId('consent-required')).toHaveTextContent('false');
     });
+  });
+
+  it('오프라인이어도 멈추지 않고 실패로 넘어가 글자를 입력 칸에 남긴다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    httpClient.post.mockRejectedValue(new NetworkError());
+
+    // When
+    await speak(speechRecognizer);
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
+    expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
+    onlineManager.setOnline(true);
+  });
+
+  it('정리를 기다리다 그만두면 요청을 끊고 글자를 입력 칸으로 옮긴다', async () => {
+    // Given
+    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    httpClient.post.mockReturnValue(new Promise(() => undefined));
+    await speak(speechRecognizer);
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('planning'));
+
+    // When
+    await fireEvent.press(screen.getByTestId('cancel-planning'));
+
+    // Then
+    expect(screen.getByTestId('status')).toHaveTextContent('idle');
+    expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
+    expect(httpClient.post.mock.calls[0]?.[2]?.signal?.aborted).toBe(true);
+  });
+
+  it('권한 오류로 실패한 뒤 마이크를 다시 누르면 글자를 유지한 채 새로 듣는다', async () => {
+    // Given
+    const { speechRecognizer, queryClient } = await renderQuickVoice();
+    queryClient.setQueryData(
+      AUTH_QUERY_KEYS.consent(),
+      createConsent({ aiDataSharingDecision: 'AGREED', aiDataSharingConsentVersion: null }),
+    );
+    await fireEvent.press(screen.getByTestId('begin'));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+    await act(async () =>
+      speechRecognizer.emit({
+        type: 'result',
+        transcript: '말한 내용',
+        isFinal: true,
+        segments: [],
+      }),
+    );
+    await act(async () => speechRecognizer.emit({ type: 'error', code: 'service-not-allowed' }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    expect(screen.getByTestId('status')).toHaveTextContent('failed');
+
+    // When
+    await fireEvent.press(screen.getByTestId('start'));
+
+    // Then
+    await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('status')).toHaveTextContent('preparing');
+    expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
   });
 
   describe('90초 제안', () => {

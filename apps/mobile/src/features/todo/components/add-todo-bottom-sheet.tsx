@@ -477,7 +477,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         }}
       >
         {match(voice.state)
-          .with({ status: P.union('listening', 'paused', 'finalizing') }, () => (
+          .with({ status: P.union('preparing', 'listening', 'paused', 'finalizing') }, () => (
             <QuickVoicePanel
               state={voice.state}
               level={voice.level}
@@ -490,7 +490,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               onContinueAsVoiceNote={voice.continueAsVoiceNote}
             />
           ))
-          .with({ status: 'planning' }, () => <QuickVoicePanel.Planning state={voice.state} />)
+          .with({ status: 'planning' }, () => (
+            <QuickVoicePanel.Planning state={voice.state} onCancel={voice.cancelPlanning} />
+          ))
           .with({ status: 'review' }, ({ plan, isCharged }) => (
             <AddTodoVoiceReview
               plan={plan}
@@ -517,7 +519,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 {({ onChange, value }) => (
                   <BottomSheetInput
                     ref={todoInputRef}
-                    autoFocus={!isVoiceHintRequested}
+                    autoFocus={!isVoiceHintRequested && !voice.isRestarting}
                     placeholder={t('add.placeholder')}
                     value={value}
                     onChange={onChange}
