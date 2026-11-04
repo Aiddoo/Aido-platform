@@ -81,14 +81,13 @@ export const createPushDeviceResponseDto = (
   ...overrides,
 });
 
-/** 실기기에서 알림을 허용한 상태가 기본값이다. 테스트마다 다른 부분만 덮어쓴다 */
+/** 알림을 허용했고 토큰도 받는 기기가 기본값이다. 테스트마다 다른 부분만 덮어쓴다 */
 export const createPushNotificationGatewayStub = (
   overrides?: Partial<jest.Mocked<PushNotificationGateway>>,
 ): jest.Mocked<PushNotificationGateway> => ({
   getPermission: jest.fn(async () => createPushPermissionResponse()),
   requestPermission: jest.fn(async () => createPushPermissionResponse()),
   ensureChannel: jest.fn(async () => {}),
-  isPhysicalDevice: jest.fn(() => true),
   getToken: jest.fn(async () => 'ExponentPushToken[device-123]'),
   addTokenListener: jest.fn((_listener: () => void) => () => {}),
   setBadgeCount: jest.fn(async (_count: number) => {}),

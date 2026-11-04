@@ -6,7 +6,7 @@ import { errorMessageOf } from '@src/shared/errors';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
-import { isEqual } from 'es-toolkit';
+import { isEqual, noop } from 'es-toolkit';
 import { Platform } from 'react-native';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -30,6 +30,7 @@ export class PushDeviceService {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
   #lastReported: ReportedPushDevice | null = null;
+  #reportInFlight: Promise<unknown> | null = null;
 
   constructor(
     gateway: PushNotificationGateway,
@@ -48,7 +49,7 @@ export class PushDeviceService {
 
   /** 시스템 권한 창을 띄우고, 바뀐 권한을 바로 서버에 알린다 */
   requestPermission = async (): Promise<PushPermission> => {
-    await this.#gateway.ensureChannel();
+    await this.#ensureChannel();
     const permission = toPushPermission(await this.#gateway.requestPermission());
     this.#logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUESTED, { ...permission });
 
@@ -80,6 +81,7 @@ export class PushDeviceService {
       return ok(null);
     }
 
+    await this.#ensureChannel();
     const permission = await this.readPermission();
     const token = isDeliveryAllowed(permission) ? await this.#issueToken() : null;
     const deviceId = await this.#deviceIdService.get();
@@ -94,7 +96,13 @@ export class PushDeviceService {
       return ok(lastReported.device);
     }
 
-    const result = await this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input);
+    const request = this.#httpClient.put(`v1/notifications/push-devices/${deviceId}`, input);
+    this.#reportInFlight = request;
+    const result = await request.finally(() => {
+      if (this.#reportInFlight === request) {
+        this.#reportInFlight = null;
+      }
+    });
     if (!result.ok) {
       return result;
     }
@@ -117,6 +125,8 @@ export class PushDeviceService {
   };
 
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
+    // 보고가 해제보다 늦게 도착하면 로그아웃한 기기로 푸시가 다시 간다. 진행 중인 보고를 먼저 끝낸다
+    await this.#reportInFlight?.catch(noop);
     this.#lastReported = null;
     const deviceId = await this.#deviceIdService.get();
     const result = await this.#httpClient.delete('v1/notifications/token', {
@@ -136,14 +146,20 @@ export class PushDeviceService {
 
   openSettings = (): Promise<void> => this.#gateway.openSettings();
 
-  /** 시뮬레이터이거나 발급에 실패하면 null이다. 권한 상태는 토큰 없이도 보고한다 */
-  async #issueToken(): Promise<string | null> {
-    if (!this.#gateway.isPhysicalDevice()) {
-      return null;
-    }
-
+  /** Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한 상태는 읽고 보고한다 */
+  async #ensureChannel(): Promise<void> {
     try {
       await this.#gateway.ensureChannel();
+    } catch (error) {
+      this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_CHANNEL_SETUP_FAILED, {
+        error: errorMessageOf(error),
+      });
+    }
+  }
+
+  /** 오프라인·APNs 없는 시뮬레이터·Play 서비스 없는 에뮬레이터에서는 null이다. 권한 상태는 토큰 없이도 보고한다 */
+  async #issueToken(): Promise<string | null> {
+    try {
       return await this.#gateway.getToken();
     } catch (error) {
       this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_ISSUE_FAILED, {

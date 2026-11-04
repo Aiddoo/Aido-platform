@@ -4,7 +4,6 @@ import type {
   PushPermissionResponse,
 } from '@src/core/ports/push-notification-gateway';
 import Constants from 'expo-constants';
-import * as Device from 'expo-device';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 
@@ -40,7 +39,6 @@ export const expoPushNotificationGateway: PushNotificationGateway = {
       lightColor: '#FF231F7C',
     });
   },
-  isPhysicalDevice: () => Device.isDevice,
   getToken: async () => {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
     const token = await Notifications.getExpoPushTokenAsync({ projectId });

@@ -98,23 +98,24 @@ describe('PushDeviceService.report', () => {
     );
   });
 
-  it('시뮬레이터는 토큰 없이도 권한 상태를 보고한다', async () => {
+  it('시뮬레이터라도 OS가 토큰을 주면 그 토큰으로 보고한다', async () => {
     // Given
-    const gateway = createPushNotificationGatewayStub({ isPhysicalDevice: jest.fn(() => false) });
+    const gateway = createPushNotificationGatewayStub({
+      getToken: jest.fn(async () => 'ExponentPushToken[simulator]'),
+    });
     const { service, httpClient } = setup(gateway);
 
     // When
     await service.report();
 
     // Then
-    expect(gateway.getToken).not.toHaveBeenCalled();
     expect(httpClient.put).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ token: null }),
+      expect.objectContaining({ token: 'ExponentPushToken[simulator]' }),
     );
   });
 
-  it('토큰 발급이 실패해도 권한 상태는 보고하고 경고로 남긴다', async () => {
+  it('토큰 발급이 실패하면(오프라인·APNs 없는 시뮬레이터) token null로 권한만 보고하고 경고로 남긴다', async () => {
     // Given
     const { service, httpClient, logger } = setup(
       createPushNotificationGatewayStub({
@@ -137,12 +138,16 @@ describe('PushDeviceService.report', () => {
     });
   });
 
-  it('Android는 토큰을 받기 전에 알림 채널을 만든다', async () => {
+  it('Android 알림 채널을 먼저 만든 뒤 권한을 읽고 토큰을 받는다', async () => {
     // Given
     const order: string[] = [];
     const gateway = createPushNotificationGatewayStub({
       ensureChannel: jest.fn(async () => {
         order.push('channel');
+      }),
+      getPermission: jest.fn(async () => {
+        order.push('permission');
+        return createPushPermissionResponse();
       }),
       getToken: jest.fn(async () => {
         order.push('token');
@@ -155,7 +160,7 @@ describe('PushDeviceService.report', () => {
     await service.report();
 
     // Then
-    expect(order).toEqual(['channel', 'token']);
+    expect(order).toEqual(['channel', 'permission', 'token']);
   });
 
   it('이번 세션에 같은 값을 이미 보냈으면 다시 요청하지 않고, 토큰이 바뀌면 다시 보낸다', async () => {
@@ -275,5 +280,33 @@ describe('PushDeviceService.unregister', () => {
     });
     expect(result).toEqual({ ok: true, value: undefined });
     expect(httpClient.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('보고가 진행 중이면 끝난 뒤에 해제해 로그아웃한 기기가 다시 활성화되지 않게 한다', async () => {
+    // Given
+    const { service, httpClient } = setup();
+    let resolvePut: ((value: { ok: true; value: unknown }) => void) | undefined;
+    httpClient.put.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePut = resolve;
+        }),
+    );
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    const reporting = service.report();
+    while (resolvePut == null) {
+      await Promise.resolve();
+    }
+
+    // When
+    const unregistering = service.unregister();
+    await Promise.resolve();
+    const deletedBeforeReportSettled = httpClient.delete.mock.calls.length > 0;
+    resolvePut({ ok: true, value: createPushDeviceResponseDto() });
+    await Promise.all([reporting, unregistering]);
+
+    // Then
+    expect(deletedBeforeReportSettled).toBe(false);
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
   });
 });

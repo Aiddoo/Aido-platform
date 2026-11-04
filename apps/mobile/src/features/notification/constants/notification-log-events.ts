@@ -14,6 +14,7 @@ export const NOTIFICATION_LOG_EVENT = {
   FOREGROUND_HANDLER_FAILED: 'notification.foreground-handler.failed',
   PUSH_DEVICE_REPORTED: 'notification.push-device.reported',
   PUSH_DEVICE_REPORT_FAILED: 'notification.push-device.report-failed',
+  PUSH_CHANNEL_SETUP_FAILED: 'notification.push-channel.setup-failed',
   PUSH_TOKEN_ISSUE_FAILED: 'notification.push-token.issue-failed',
   PUSH_PERMISSION_REQUESTED: 'notification.push-permission.requested',
   PUSH_PERMISSION_REQUEST_FAILED: 'notification.push-permission.request-failed',
