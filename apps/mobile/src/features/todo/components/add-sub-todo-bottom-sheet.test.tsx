@@ -18,6 +18,7 @@ import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories
 import { SubTodoService } from '../apis/sub-todo.service';
 import { TodoService } from '../apis/todo.service';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import type { TodoListResult } from '../domains/todo.model';
 import { AddSubTodoBottomSheet } from './add-sub-todo-bottom-sheet';
 
 const submitButton = () => screen.getByTestId('sub-todo-submit');
@@ -139,5 +140,53 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     await waitFor(() => {
       expect(submitButton()).toBeEnabled();
     });
+  });
+});
+
+describe('AddSubTodoBottomSheet 추가 모드', () => {
+  it('여러 날 할 일에 다른 날짜에서 추가하면 보고 있는 날짜 목록에 바로 들어간다', async () => {
+    // Given
+    const viewingDate = '2026-03-09';
+    const httpClient = createMockHttpClient();
+    const pendingPost = createPendingResponse(ok(undefined));
+    httpClient.post.mockReturnValue(pendingPost.response);
+    const todo = createParentTodo({ startDate: '2026-03-08', endDate: '2026-03-10' });
+    const queryClient = createTestQueryClient({
+      defaultOptions: { queries: { staleTime: Infinity } },
+    });
+    const listKey = TODO_QUERY_KEYS.listByDate({ date: viewingDate });
+    queryClient.setQueryData(listKey, { todos: [todo], hasNext: false, nextCursor: null });
+    jest
+      .mocked(useLocalSearchParams)
+      .mockReturnValue({ todoId: String(todo.id), date: viewingDate });
+    await renderUi(
+      <LocalDateProvider>
+        <OverlayProvider>
+          <AddSubTodoBottomSheet mode="create" />
+        </OverlayProvider>
+      </LocalDateProvider>,
+      {
+        di: {
+          subTodoService: new SubTodoService(httpClient),
+          todoService: new TodoService(httpClient),
+          analytics: createMockAnalytics(),
+          errorReporter: createMockErrorReporter(),
+          speechRecognizer: createSpeechRecognizerStub(),
+        },
+        queryClient,
+      },
+    );
+
+    // When
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '첫 항목');
+    fireEvent.press(submitButton()).catch(() => undefined);
+
+    // Then
+    await waitFor(() => {
+      expect(queryClient.getQueryData<TodoListResult>(listKey)?.todos[0]?.subTodoStats.total).toBe(
+        1,
+      );
+    });
+    pendingPost.settle();
   });
 });

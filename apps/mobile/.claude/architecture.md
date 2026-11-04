@@ -829,6 +829,16 @@ export const useCreate{Feature}MutationOptions = () => {
 };
 ```
 
+#### 할 일 목록의 낙관적 갱신
+
+`features/todo/queries/todo-cache.ts` 한 곳의 규칙을 따른다.
+
+- 날짜는 할 일의 `startDate`가 아니라 보고 있는 목록의 `date`다. 여러 날 할 일은 여러 날짜 목록에 있다.
+- `onMutate`: `cancelTodoQueries`(달력까지 바꾸면 `cancelTodoCompletionQueries`)로 덮을 조회를 멈추고 `updateCachedTodo`로 목록·상세를 함께 고친다. 달력은 `syncDailyCompletionWithList`로 목록에서 다시 계산한다.
+- `onError`: 스냅샷을 통째로 덮지 않고 그 변경만 되돌린다. 함께 진행 중인 다른 변경을 지운다.
+- `onSettled`: `mutationKey`에 `TODO_MUTATION_KEYS`를 두고 `settleTodoListWrite`·`settleTodoCompletionWrite`만 부른다. 마지막 뮤테이션이 끝날 때만 다시 받아야 낙관적 값이 되돌아가지 않는다.
+- 임시 id는 음수다(`createOptimisticId`). 임시 행은 `TodoPolicy.isOptimisticTodo`·`SubTodoPolicy.isOptimisticSubTodo`로 막고, 응답이 오면 다시 받기 전에 서버 id로 바꾼다.
+
 ---
 
 **에러 코드별 분기가 필요한 경우**

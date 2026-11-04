@@ -15,6 +15,7 @@ const mockQueryClient = {
   cancelQueries: jest.fn(),
   getQueryData: jest.fn(),
   setQueryData: jest.fn(),
+  setQueriesData: jest.fn(),
   invalidateQueries: jest.fn(),
   isMutating: jest.fn(),
 };
@@ -62,7 +63,7 @@ const completeTodo = async (todoId: number, completed = true, date = TODAY) => {
   await result.current.onSuccess?.(
     createParentTodo({ id: todoId }),
     { todoId, body: { completed }, date },
-    { completed: !completed, date },
+    undefined,
     MUTATION_CONTEXT,
   );
 };
@@ -157,7 +158,7 @@ describe('useToggleTodoMutationOptions settle', () => {
       createParentTodo({ id: 42 }),
       null,
       { todoId: 42, body: { completed: true }, date },
-      { completed: false, date },
+      undefined,
       MUTATION_CONTEXT,
     );
   };

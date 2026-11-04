@@ -16,14 +16,17 @@ import { t } from '@src/shared/i18n';
 import { toDate } from '@src/shared/utils/date';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import type { TodoCategoriesResult } from '../domains/todo-category.model';
 import type { OptimisticTodo } from '../domains/todo.model';
 import {
   appendTodoToList,
-  cancelTodoListQuery,
+  cancelTodoCompletionQueries,
+  confirmTodoInList,
   createOptimisticId,
   removeTodoFromList,
+  settleTodoCompletionWrite,
+  syncDailyCompletionWithList,
 } from './todo-cache';
 
 export interface CreateTodoParams {
@@ -49,6 +52,7 @@ export const useCreateTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ input }: CreateTodoParams) => {
       const result = await todoService.createTodo(input);
       return unwrap(result);
@@ -56,7 +60,7 @@ export const useCreateTodoMutationOptions = () => {
     onMutate: async ({ input }) => {
       const startDate = input.startDate;
 
-      await cancelTodoListQuery(queryClient, { date: startDate });
+      await cancelTodoCompletionQueries(queryClient, { date: startDate });
 
       // 카테고리 캐시에서 카테고리 정보 조회
       const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
@@ -73,7 +77,7 @@ export const useCreateTodoMutationOptions = () => {
         id: createOptimisticId(),
         title: input.title,
         startDate: input.startDate,
-        endDate: null,
+        endDate: input.endDate ?? null,
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
         scheduledAtMs: input.scheduledTime
@@ -90,15 +94,15 @@ export const useCreateTodoMutationOptions = () => {
       };
 
       appendTodoToList(queryClient, { date: startDate }, optimisticTodo);
+      syncDailyCompletionWithList(queryClient, { date: startDate });
 
       return { startDate, optimisticId: optimisticTodo.id };
     },
-    onSuccess: (_data, { input, source }) => {
+    onSuccess: (saved, { input, source }, { startDate, optimisticId }) => {
+      if (optimisticId != null) {
+        confirmTodoInList(queryClient, { date: startDate, optimisticId }, saved);
+      }
       recordTodoCreatedForActivation({ queryClient, service: activationService });
-      queryClient.invalidateQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: input.startDate }),
-      });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
@@ -119,6 +123,7 @@ export const useCreateTodoMutationOptions = () => {
 
       if (context?.optimisticId != null) {
         removeTodoFromList(queryClient, { date: context.startDate, todoId: context.optimisticId });
+        syncDailyCompletionWithList(queryClient, { date: context.startDate });
       }
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0811)) {
@@ -131,6 +136,9 @@ export const useCreateTodoMutationOptions = () => {
         return;
       }
       toast.error(undefined, { fallback: t('todo:toast.addFailedRetry') });
+    },
+    onSettled: () => {
+      settleTodoCompletionWrite(queryClient);
     },
   });
 };

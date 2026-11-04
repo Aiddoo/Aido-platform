@@ -48,6 +48,7 @@ SubTodoList.Item = function Item({
   isSelected,
   onSelectedChange,
   onMorePress,
+  isDisabled,
   ...checkboxProps
 }: SubTodoListItemProps) {
   const { t } = useTranslation('todo');
@@ -62,25 +63,30 @@ SubTodoList.Item = function Item({
 
   return (
     <TodoRow
-      accessibilityActions={[
-        {
-          name: TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted,
-          label: t(isSelected ? 'actions.uncomplete' : 'actions.complete'),
-        },
-        { name: TODO_ROW_ACCESSIBILITY_ACTION.more, label: t('actions.more') },
-      ]}
+      accessibilityActions={
+        isDisabled
+          ? undefined
+          : [
+              {
+                name: TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted,
+                label: t(isSelected ? 'actions.uncomplete' : 'actions.complete'),
+              },
+              { name: TODO_ROW_ACCESSIBILITY_ACTION.more, label: t('actions.more') },
+            ]
+      }
       onAccessibilityAction={handleAccessibilityAction}
       left={
         <TodoCheckbox
           {...checkboxProps}
           isSelected={isSelected}
           onSelectedChange={onSelectedChange}
+          isDisabled={isDisabled}
         />
       }
       top={<TodoLabel isChecked={isSelected}>{label}</TodoLabel>}
       right={
         <PressableFeedback
-          onPress={onMorePress}
+          onPress={isDisabled ? undefined : onMorePress}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={t('actions.more')}
@@ -88,8 +94,9 @@ SubTodoList.Item = function Item({
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       }
-      onLongPress={drag}
+      onLongPress={isDisabled ? undefined : drag}
       isActive={isActive}
+      isDisabled={isDisabled}
     />
   );
 };

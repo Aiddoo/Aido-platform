@@ -3,12 +3,13 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
+import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
-  cancelTodoListQuery,
-  invalidateTodoInList,
-  restoreTodo,
+  cancelTodoQueries,
+  settleTodoListWrite,
   snapshotTodo,
-  updateTodoInList,
+  updateCachedTodo,
 } from './todo-cache';
 
 interface ReorderSubTodosParams {
@@ -25,33 +26,36 @@ export const useReorderSubTodosMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoIds }: ReorderSubTodosParams) => {
       const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoIds, date }) => {
-      await cancelTodoListQuery(queryClient, { date });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      updateTodoInList(queryClient, { date, todoId }, (todo) => ({
-        ...todo,
-        subTodos: subTodoIds
-          .map((id) => todo.subTodos.find((subTodo) => subTodo.id === id))
-          .filter((subTodo) => subTodo != null),
-      }));
+      await cancelTodoQueries(queryClient, { date, todoId });
+      const previousIds = snapshotTodo(queryClient, { date, todoId })?.todo.subTodos.map(
+        (subTodo) => subTodo.id,
+      );
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodosOrdered(todo, subTodoIds),
+      );
 
-      return { snapshot, date };
+      return { previousIds };
     },
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
     },
-    onError: (_err, _vars, context) => {
+    onError: (_err, { todoId, date }, context) => {
       haptics.notify('error');
-      if (context?.snapshot) {
-        restoreTodo(queryClient, context.snapshot);
+      const previousIds = context?.previousIds;
+      if (previousIds != null) {
+        updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+          SubTodoPolicy.withSubTodosOrdered(todo, previousIds),
+        );
       }
     },
-    onSettled: (_data, _error, { todoId, date }) => {
-      invalidateTodoInList(queryClient, { date, todoId });
+    onSettled: () => {
+      settleTodoListWrite(queryClient);
     },
   });
 };

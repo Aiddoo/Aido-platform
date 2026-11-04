@@ -164,4 +164,79 @@ describe('SubTodoPolicy', () => {
       expect(result).toBe(1);
     });
   });
+
+  describe('낙관적 갱신 되돌리기와 확정', () => {
+    const parent = (subTodos: ReturnType<typeof createSubTodo>[]) =>
+      createParentTodo({
+        subTodos,
+        subTodoStats: {
+          total: subTodos.length,
+          completed: subTodos.filter((subTodo) => subTodo.completed).length,
+        },
+      });
+
+    test('임시 항목은 응답의 같은 제목 새 항목으로 바뀌고 진행 중인 다른 체크는 남는다', () => {
+      // Given
+      const optimistic = createSubTodo({ id: -3, title: '새 항목' });
+      const checked = createSubTodo({ id: 5, title: '기존', completed: true });
+      const saved = {
+        subTodos: [
+          createSubTodo({ id: 5, title: '기존', completed: false }),
+          createSubTodo({ id: 9, title: '새 항목' }),
+        ],
+      };
+
+      // When
+      const result = SubTodoPolicy.withSubTodoConfirmed(parent([checked, optimistic]), -3, saved);
+
+      // Then
+      expect(result.subTodos).toEqual([checked, createSubTodo({ id: 9, title: '새 항목' })]);
+    });
+
+    test('임시 항목이 이미 없으면 응답으로 다시 넣지 않는다', () => {
+      // Given
+      const todo = parent([createSubTodo({ id: 9, title: '새 항목' })]);
+
+      // When
+      const result = SubTodoPolicy.withSubTodoConfirmed(todo, -3, {
+        subTodos: [createSubTodo({ id: 9, title: '새 항목' })],
+      });
+
+      // Then
+      expect(result).toBe(todo);
+    });
+
+    test('지운 항목은 원래 자리로 돌아오고 숫자도 다시 계산한다', () => {
+      // Given
+      const removed = createSubTodo({ id: 6, completed: true });
+      const todo = parent([createSubTodo({ id: 5 }), createSubTodo({ id: 7 })]);
+
+      // When
+      const result = SubTodoPolicy.withSubTodoRestored(todo, removed, 1);
+
+      // Then
+      expect(result.subTodos.map((subTodo) => subTodo.id)).toEqual([5, 6, 7]);
+      expect(result.subTodoStats).toEqual({ total: 3, completed: 1 });
+    });
+
+    test('순서를 정한 뒤 더한 항목은 사라지지 않고 뒤에 남는다', () => {
+      // Given
+      const todo = parent([
+        createSubTodo({ id: 5 }),
+        createSubTodo({ id: 6 }),
+        createSubTodo({ id: -1 }),
+      ]);
+
+      // When
+      const result = SubTodoPolicy.withSubTodosOrdered(todo, [6, 5]);
+
+      // Then
+      expect(result.subTodos.map((subTodo) => subTodo.id)).toEqual([6, 5, -1]);
+    });
+
+    test('임시 id는 음수다', () => {
+      expect(SubTodoPolicy.isOptimisticSubTodo(createSubTodo({ id: -1 }))).toBe(true);
+      expect(SubTodoPolicy.isOptimisticSubTodo(createSubTodo({ id: 1 }))).toBe(false);
+    });
+  });
 });

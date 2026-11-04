@@ -199,7 +199,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
-  const isOptimistic = 'optimistic' in todo && todo.optimistic === true;
+  const isOptimistic = TodoPolicy.isOptimisticTodo(todo);
 
   const handleRowPress = () => setIsExpanded((current) => !current);
 
@@ -297,7 +297,7 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
               />
             }
             count={todo.commentCount}
-            onPress={handleCommentsPress}
+            onPress={isOptimistic ? undefined : handleCommentsPress}
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
@@ -323,13 +323,19 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
         >
           <NestedReorderableList
             {...subTodoReorderableList}
+            dragEnabled={
+              subTodoReorderableList.dragEnabled &&
+              !todo.subTodos.some(SubTodoPolicy.isOptimisticSubTodo)
+            }
             shouldUpdateActiveItem
             scrollEnabled={false}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (
               <SubTodoList.Item
+                testID={`sub-todo-checkbox-${item.id}`}
                 label={item.title}
                 isSelected={item.completed}
+                isDisabled={SubTodoPolicy.isOptimisticSubTodo(item)}
                 onSelectedChange={(isCompleted) =>
                   toggleSubTodo.mutate({
                     todoId: todo.id,

@@ -7,20 +7,20 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
 import {
-  cancelTodoListQuery,
+  cancelTodoQueries,
   createOptimisticId,
-  invalidateTodoInList,
-  restoreTodo,
-  snapshotTodo,
-  updateTodoInList,
+  settleTodoListWrite,
+  updateCachedTodo,
 } from './todo-cache';
 
 interface AddSubTodoParams {
   todoId: number;
   title: string;
-  startDate: string;
+  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
+  date: string;
 }
 
 export const useAddSubTodoMutationOptions = () => {
@@ -31,28 +31,32 @@ export const useAddSubTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, title }: AddSubTodoParams) => {
       const result = await subTodoService.addSubTodo(todoId, { title });
       return unwrap(result);
     },
-    onMutate: async ({ todoId, title, startDate }) => {
-      await cancelTodoListQuery(queryClient, { date: startDate });
-      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) =>
+    onMutate: async ({ todoId, title, date }) => {
+      await cancelTodoQueries(queryClient, { date, todoId });
+      const optimisticId = createOptimisticId();
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoAdded(todo, {
-          id: createOptimisticId(),
+          id: optimisticId,
           title,
           completed: false,
           sortOrder: todo.subTodos.length,
         }),
       );
 
-      return { snapshot };
+      return { optimisticId };
     },
-    onSuccess: (_data, { todoId }) => {
+    onSuccess: (saved, { todoId, date }, { optimisticId }) => {
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoConfirmed(todo, optimisticId, saved),
+      );
       trackEvent('todo_item_added', { todo_id: todoId });
     },
-    onError: (error, _variables, context) => {
+    onError: (error, { todoId, date }, context) => {
       haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0821)) {
@@ -61,12 +65,14 @@ export const useAddSubTodoMutationOptions = () => {
         toast.error(undefined, { fallback: t('todo:toast.subTodoAddFailed') });
       }
 
-      if (context?.snapshot) {
-        restoreTodo(queryClient, context.snapshot);
+      if (context != null) {
+        updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+          SubTodoPolicy.withSubTodoRemoved(todo, context.optimisticId),
+        );
       }
     },
-    onSettled: (_data, _error, { todoId, startDate }) => {
-      invalidateTodoInList(queryClient, { date: startDate, todoId });
+    onSettled: () => {
+      settleTodoListWrite(queryClient);
     },
   });
 };

@@ -5,8 +5,8 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { invalidateWidgetSummary } from './todo-cache';
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
+import { invalidateWidgetSummary, settleTodoListWrite } from './todo-cache';
 
 interface ReorderTodoParams {
   id: number;
@@ -20,12 +20,12 @@ export const useReorderTodoMutationOptions = () => {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ id, input }: ReorderTodoParams) => {
       const result = await todoService.reorderTodo(id, input);
       return unwrap(result);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
       invalidateWidgetSummary(queryClient);
       trackEvent('todo_reordered', { source: 'feed' });
       const accountId = getCachedMe(queryClient)?.id;
@@ -35,7 +35,9 @@ export const useReorderTodoMutationOptions = () => {
     },
     onError: () => {
       haptics.notify('error');
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+    },
+    onSettled: () => {
+      settleTodoListWrite(queryClient);
     },
   });
 };

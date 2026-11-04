@@ -1,5 +1,5 @@
 import { createParentTodo } from '../__tests__/sub-todo.factories';
-import { TodoPolicy } from './todo.model';
+import { type DailyCompletionsResult, TodoPolicy } from './todo.model';
 
 describe('TodoPolicy.completesAll', () => {
   it('할 일이 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다', () => {
@@ -29,5 +29,101 @@ describe('TodoPolicy.completesAll', () => {
   it('끝낸 할 일이 그날 목록에 없거나 할 일이 없는 날은 다 끝낸 날이 아니다', () => {
     expect(TodoPolicy.completesAll([createParentTodo({ id: 1, completed: true })], 9)).toBe(false);
     expect(TodoPolicy.completesAll([], 1)).toBe(false);
+  });
+});
+
+describe('TodoPolicy.withDailyCompletionFromTodos', () => {
+  const DATE = '2026-11-05';
+  const RED = { id: 1, name: '빨강', color: '#FF0000' };
+  const BLUE = { id: 2, name: '파랑', color: '#0000FF' };
+  const createResult = (): DailyCompletionsResult => ({
+    completions: [
+      {
+        date: '2026-11-03',
+        totalTodos: 1,
+        completedTodos: 1,
+        isComplete: true,
+        completionRate: 100,
+        categoryColors: ['#FF0000'],
+      },
+      {
+        date: DATE,
+        totalTodos: 1,
+        completedTodos: 0,
+        isComplete: false,
+        completionRate: 0,
+        categoryColors: ['#FF0000'],
+      },
+    ],
+    totalCompleteDays: 1,
+    dateRange: { startDate: '2026-11-01', endDate: '2026-11-07' },
+  });
+
+  it('그날 할 일로 숫자·달성·완료율·색을 다시 계산하고 달성한 날 수를 맞춘다', () => {
+    // Given
+    const todos = [
+      createParentTodo({ id: 1, startDate: DATE, category: RED, completed: true }),
+      createParentTodo({ id: 2, startDate: DATE, category: RED, completed: true }),
+      createParentTodo({ id: 3, startDate: DATE, category: BLUE, completed: false }),
+    ];
+
+    // When
+    const result = TodoPolicy.withDailyCompletionFromTodos(createResult(), DATE, todos);
+
+    // Then
+    expect(result.completions[1]).toEqual({
+      date: DATE,
+      totalTodos: 3,
+      completedTodos: 2,
+      isComplete: false,
+      completionRate: 67,
+      categoryColors: ['#FF0000', '#0000FF'],
+    });
+    expect(result.totalCompleteDays).toBe(1);
+  });
+
+  it('마지막 할 일을 끝내면 달성한 날이 되고 지워서 없어지면 그날 요약이 사라진다', () => {
+    // Given
+    const done = [createParentTodo({ startDate: DATE, category: RED, completed: true })];
+
+    // When
+    const completed = TodoPolicy.withDailyCompletionFromTodos(createResult(), DATE, done);
+    const emptied = TodoPolicy.withDailyCompletionFromTodos(createResult(), DATE, []);
+
+    // Then
+    expect(completed.totalCompleteDays).toBe(2);
+    expect(emptied.completions.map((completion) => completion.date)).toEqual(['2026-11-03']);
+  });
+
+  it('요약이 없던 날에 첫 할 일이 생기면 날짜 순서대로 들어간다', () => {
+    // Given
+    const todos = [createParentTodo({ startDate: '2026-11-04', category: RED })];
+
+    // When
+    const result = TodoPolicy.withDailyCompletionFromTodos(createResult(), '2026-11-04', todos);
+
+    // Then
+    expect(result.completions.map((completion) => completion.date)).toEqual([
+      '2026-11-03',
+      '2026-11-04',
+      DATE,
+    ]);
+  });
+
+  it('조회 범위 밖 날짜는 바꾸지 않고 다른 날 시작한 여러 날 할 일은 세지 않는다', () => {
+    // Given
+    const given = createResult();
+    const multiDay = createParentTodo({ startDate: '2026-11-04', endDate: DATE, category: BLUE });
+
+    // When
+    const outside = TodoPolicy.withDailyCompletionFromTodos(given, '2026-11-20', [multiDay]);
+    const counted = TodoPolicy.withDailyCompletionFromTodos(given, DATE, [
+      multiDay,
+      createParentTodo({ id: 2, startDate: DATE, category: RED }),
+    ]);
+
+    // Then
+    expect(outside).toBe(given);
+    expect(counted.completions[1]?.totalTodos).toBe(1);
   });
 });

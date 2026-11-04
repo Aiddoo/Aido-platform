@@ -3,8 +3,10 @@ export const TODO_QUERY_KEYS = {
 
   // Daily Completion (캘린더 달성 표시)
   completions: () => [...TODO_QUERY_KEYS.all, 'completion'] as const,
+  // 위젯 요약·존재 여부와 데이터 모양이 달라 낙관적 갱신이 이 범위만 고르도록 따로 묶는다
+  completionRanges: () => [...TODO_QUERY_KEYS.completions(), 'range'] as const,
   completionsByRange: ({ startDate, endDate }: { startDate: string; endDate: string }) =>
-    [...TODO_QUERY_KEYS.completions(), { startDate, endDate }] as const,
+    [...TODO_QUERY_KEYS.completionRanges(), { startDate, endDate }] as const,
 
   // 홈 위젯 요약 — completions() 하위에 중첩해 토글/생성/삭제 뮤테이션의
   // 기존 completions() invalidation을 그대로 상속받는다 (추가 배선 불필요)

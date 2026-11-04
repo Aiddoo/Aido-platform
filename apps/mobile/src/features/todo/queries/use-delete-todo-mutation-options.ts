@@ -8,20 +8,23 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import type { TodoEditScope } from '../domains/todo-repeat.model';
 import {
-  cancelTodoListQuery,
+  cancelTodoCompletionQueries,
   invalidateTodos,
   removeTodoFromList,
   restoreTodo,
+  settleTodoCompletionWrite,
   snapshotTodo,
+  syncDailyCompletionWithList,
 } from './todo-cache';
 import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 interface DeleteTodoMutationParams {
   todoId: number;
-  startDate: string;
+  /** 지운 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
+  date: string;
   scope?: TodoEditScope;
 }
 
@@ -34,14 +37,16 @@ export const useDeleteTodoMutationOptions = () => {
   const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, scope }: DeleteTodoMutationParams) => {
       const result = await todoService.deleteTodo(todoId, scope);
       return unwrap(result);
     },
-    onMutate: async ({ todoId, startDate }) => {
-      await cancelTodoListQuery(queryClient, { date: startDate });
-      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
-      removeTodoFromList(queryClient, { date: startDate, todoId });
+    onMutate: async ({ todoId, date }) => {
+      await cancelTodoCompletionQueries(queryClient, { date, todoId });
+      const snapshot = snapshotTodo(queryClient, { date, todoId });
+      removeTodoFromList(queryClient, { date, todoId });
+      syncDailyCompletionWithList(queryClient, { date });
 
       return { snapshot };
     },
@@ -58,6 +63,7 @@ export const useDeleteTodoMutationOptions = () => {
 
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
+        syncDailyCompletionWithList(queryClient, { date: context.snapshot.date });
       }
 
       if (handleSeriesFailure(error)) {
@@ -70,11 +76,10 @@ export const useDeleteTodoMutationOptions = () => {
       }
       toast.error(undefined, { fallback: t('todo:toast.deleteFailedRetry') });
     },
-    onSettled: (_data, _error, { startDate }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       invalidateNudgeInteractions(queryClient);
+      settleTodoCompletionWrite(queryClient);
     },
   });
 };

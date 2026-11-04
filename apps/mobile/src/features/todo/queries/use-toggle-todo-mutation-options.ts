@@ -15,15 +15,13 @@ import { toDate } from '@src/shared/utils/date';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { TodoPolicy } from '../domains/todo.model';
 import {
-  cancelTodoListQuery,
+  cancelTodoCompletionQueries,
   getCachedTodosByDate,
-  invalidateTodoCompletions,
-  invalidateTodoDetails,
-  snapshotTodo,
-  updateTodoInList,
+  settleTodoCompletionWrite,
+  syncDailyCompletionWithList,
+  updateCachedTodo,
 } from './todo-cache';
 
 interface ToggleTodoMutationParams {
@@ -43,20 +41,18 @@ export const useToggleTodoMutationOptions = () => {
   const { recordActiveDay, requestReviewAt } = useStoreReviewMoment();
 
   return mutationOptions({
-    mutationKey: TODO_MUTATION_KEYS.toggle(),
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
     mutationFn: async ({ todoId, body }: ToggleTodoMutationParams) => {
       const result = await todoService.toggleTodoComplete(todoId, body);
       return unwrap(result);
     },
     onMutate: async ({ todoId, body, date }) => {
-      await cancelTodoListQuery(queryClient, { date });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      updateTodoInList(queryClient, { date, todoId }, (todo) => ({
+      await cancelTodoCompletionQueries(queryClient, { date, todoId });
+      updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
         ...todo,
         completed: body.completed,
       }));
-
-      return { completed: snapshot?.todo.completed, date };
+      syncDailyCompletionWithList(queryClient, { date });
     },
     onSuccess: (_data, variables) => {
       trackEvent('todo_completed', {
@@ -81,30 +77,21 @@ export const useToggleTodoMutationOptions = () => {
         requestReviewAt('all_todos_done');
       }
     },
-    onError: (_error, variables, context) => {
+    onError: (_error, { todoId, body, date }) => {
       haptics.notify('error');
-
-      const previousCompleted = context?.completed;
       // 완료 여부만 되돌려 같은 할 일의 서브투두 변경은 지키게 한다
-      if (context && previousCompleted != null) {
-        updateTodoInList(queryClient, { date: context.date, todoId: variables.todoId }, (todo) => ({
-          ...todo,
-          completed: previousCompleted,
-        }));
-      }
+      updateCachedTodo(queryClient, { date, todoId }, (todo) => ({
+        ...todo,
+        completed: !body.completed,
+      }));
+      syncDailyCompletionWithList(queryClient, { date });
     },
-    onSettled: (_data, _error, { date, todoId }) => {
-      invalidateTodoDetails(queryClient, { todoId });
+    onSettled: (_data, _error, { date }) => {
       if (date < todayKey) {
         invalidateWeeklyAchievements(queryClient, { year: toDate(date).getFullYear() });
       }
-      // 연달아 체크하면 앞선 응답의 재조회가 뒤 체크의 낙관적 값을 덮어 깜빡인다. 마지막 체크가 끝날 때만 맞춘다
-      if (queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.toggle() }) !== 1) {
-        return;
-      }
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
-      invalidateTodoCompletions(queryClient);
       invalidateNudgeInteractions(queryClient);
+      settleTodoCompletionWrite(queryClient);
     },
   });
 };

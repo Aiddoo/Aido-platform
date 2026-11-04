@@ -3,14 +3,9 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import {
-  cancelTodoListQuery,
-  invalidateTodoInList,
-  restoreTodo,
-  snapshotTodo,
-  updateTodoInList,
-} from './todo-cache';
+import { cancelTodoQueries, settleTodoListWrite, updateCachedTodo } from './todo-cache';
 
 interface ToggleSubTodoParams {
   todoId: number;
@@ -27,6 +22,7 @@ export const useToggleSubTodoMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId, subTodoId, isCompleted }: ToggleSubTodoParams) => {
       const result = await subTodoService.updateSubTodo(todoId, subTodoId, {
         completed: isCompleted,
@@ -34,13 +30,10 @@ export const useToggleSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, isCompleted, date }) => {
-      await cancelTodoListQuery(queryClient, { date });
-      const snapshot = snapshotTodo(queryClient, { date, todoId });
-      updateTodoInList(queryClient, { date, todoId }, (todo) =>
+      await cancelTodoQueries(queryClient, { date, todoId });
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
         SubTodoPolicy.withSubTodoToggled(todo, subTodoId, isCompleted),
       );
-
-      return { snapshot };
     },
     onSuccess: (_data, { todoId, subTodoId, isCompleted }) => {
       trackEvent('todo_item_completed', {
@@ -49,14 +42,14 @@ export const useToggleSubTodoMutationOptions = () => {
         is_completed: isCompleted,
       });
     },
-    onError: (_error, _variables, context) => {
+    onError: (_error, { todoId, subTodoId, isCompleted, date }) => {
       haptics.notify('error');
-      if (context?.snapshot) {
-        restoreTodo(queryClient, context.snapshot);
-      }
+      updateCachedTodo(queryClient, { date, todoId }, (todo) =>
+        SubTodoPolicy.withSubTodoToggled(todo, subTodoId, !isCompleted),
+      );
     },
-    onSettled: (_data, _error, { todoId, date }) => {
-      invalidateTodoInList(queryClient, { date, todoId });
+    onSettled: () => {
+      settleTodoListWrite(queryClient);
     },
   });
 };

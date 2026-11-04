@@ -133,10 +133,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
 
   const handleDelete = async () => {
     if (!TodoPolicy.isRecurring(todo)) {
-      deleteMutation.mutate(
-        { todoId: todo.id, startDate: todo.startDate },
-        { onSuccess: () => onClose() },
-      );
+      deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
       return;
     }
 
@@ -144,10 +141,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
     if (scope == null) {
       return;
     }
-    deleteMutation.mutate(
-      { todoId: todo.id, startDate: todo.startDate, scope },
-      { onSuccess: () => onClose() },
-    );
+    deleteMutation.mutate({ todoId: todo.id, date, scope }, { onSuccess: () => onClose() });
   };
 
   const handleStopRepeat = () =>

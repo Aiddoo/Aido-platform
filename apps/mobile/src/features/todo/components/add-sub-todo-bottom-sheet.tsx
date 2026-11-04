@@ -154,6 +154,7 @@ interface SubTodoFormProps {
 
 function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
   const { t } = useTranslation('todo');
+  const [date] = useTodoSheetDateParam();
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
@@ -180,12 +181,12 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
 
     const saved = await (
       subTodo == null
-        ? addSubTodo.mutateAsync({ todoId: todo.id, title, startDate: todo.startDate })
+        ? addSubTodo.mutateAsync({ todoId: todo.id, title, date })
         : updateSubTodo.mutateAsync({
             todoId: todo.id,
             subTodoId: subTodo.id,
             title,
-            startDate: todo.startDate,
+            date,
           })
     ).catch(() => null);
 
@@ -205,7 +206,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
     }
 
     const removed = await deleteSubTodo
-      .mutateAsync({ todoId: todo.id, subTodoId: target.id, startDate: todo.startDate })
+      .mutateAsync({ todoId: todo.id, subTodoId: target.id, date })
       .catch(() => null);
 
     if (removed != null) {

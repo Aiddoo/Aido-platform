@@ -1,8 +1,15 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
+import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { Todo, TodoListResult } from '../domains/todo.model';
+import {
+  type DailyCompletionsResult,
+  type Todo,
+  type TodoDetails,
+  type TodoListResult,
+  TodoPolicy,
+} from '../domains/todo.model';
 
 export interface TodoSnapshot {
   date: string;
@@ -17,8 +24,26 @@ export function createOptimisticId(): number {
   return nextOptimisticId--;
 }
 
-export function cancelTodoListQuery(queryClient: QueryClient, { date }: { date: string }) {
-  return queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }) });
+/** 낙관적 값을 쓰기 전에 그 값을 덮을 수 있는 그 날짜 목록·상세 조회를 멈춘다. */
+export function cancelTodoQueries(
+  queryClient: QueryClient,
+  { date, todoId }: { date: string; todoId?: number },
+) {
+  return Promise.all([
+    queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }) }),
+    todoId != null && queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) }),
+  ]);
+}
+
+/** 할 일 체크·추가·삭제가 함께 바꾸는 달력 요약 조회까지 멈춘다. */
+export function cancelTodoCompletionQueries(
+  queryClient: QueryClient,
+  target: { date: string; todoId?: number },
+) {
+  return Promise.all([
+    cancelTodoQueries(queryClient, target),
+    queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.completionRanges() }),
+  ]);
 }
 
 export function snapshotTodo(
@@ -44,7 +69,8 @@ export function getCachedTodosByDate(
   return queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }))?.todos;
 }
 
-export function updateTodoInList(
+/** 캐시에 있는 그 할 일(날짜 목록과 열린 상세)을 함께 고친다. */
+export function updateCachedTodo(
   queryClient: QueryClient,
   { date, todoId }: { date: string; todoId: number },
   update: (todo: Todo) => Todo,
@@ -53,6 +79,10 @@ export function updateTodoInList(
     TODO_QUERY_KEYS.listByDate({ date }),
     (old) =>
       old && { ...old, todos: old.todos.map((todo) => (todo.id === todoId ? update(todo) : todo)) },
+  );
+  queryClient.setQueryData<TodoDetails>(
+    TODO_QUERY_KEYS.details({ todoId }),
+    (old) => old && { ...old, todo: update(old.todo) },
   );
 }
 
@@ -73,7 +103,23 @@ export function removeTodoFromList(
   );
 }
 
-/** 실패한 mutation이 건드린 할 일 하나만 되돌린다. 같은 날짜의 다른 변경은 보존한다. */
+/** 임시 행을 응답으로 온 서버 행으로 바꾼다. 그 사이 다시 받아 임시 행이 없으면 그대로 둔다. */
+export function confirmTodoInList(
+  queryClient: QueryClient,
+  { date, optimisticId }: { date: string; optimisticId: number },
+  saved: Todo,
+) {
+  queryClient.setQueryData<TodoListResult>(
+    TODO_QUERY_KEYS.listByDate({ date }),
+    (old) =>
+      old && {
+        ...old,
+        todos: old.todos.map((todo) => (todo.id === optimisticId ? saved : todo)),
+      },
+  );
+}
+
+/** 삭제에 실패한 할 일 하나만 되돌린다. 같은 날짜의 다른 변경은 보존한다. */
 export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
   queryClient.setQueryData<TodoListResult>(
     TODO_QUERY_KEYS.listByDate({ date: snapshot.date }),
@@ -113,20 +159,41 @@ export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { to
   return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
 }
 
-/** 할 일 하나(또는 그 서브투두)가 바뀐 뒤 그 날짜 목록과 상세를 서버 값으로 맞춘다. */
-export function invalidateTodoInList(
-  queryClient: QueryClient,
-  { date, todoId }: { date: string; todoId: number },
-) {
-  return Promise.all([
-    queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date }) }),
-    invalidateTodoDetails(queryClient, { todoId }),
-  ]);
+/**
+ * 그날 목록으로 달력 요약을 맞춘다. 증감이 아니라 목록에서 계산해 낙관적 반영·되돌리기가 같은 함수로 끝난다.
+ * 목록이 잘려 있으면(서버 한도 초과) 셀 수 없으니 서버 값을 기다린다.
+ */
+export function syncDailyCompletionWithList(queryClient: QueryClient, { date }: { date: string }) {
+  const list = queryClient.getQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate({ date }));
+  if (list == null || list.hasNext) {
+    return;
+  }
+  queryClient.setQueriesData<DailyCompletionsResult>(
+    { queryKey: TODO_QUERY_KEYS.completionRanges() },
+    (old) => old && TodoPolicy.withDailyCompletionFromTodos(old, date, list.todos),
+  );
 }
 
-/** 완료 여부가 바뀌어 달력 점·진행률 같은 완료 기록도 다시 불러온다. */
-export function invalidateTodoCompletions(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+/**
+ * 목록을 고친 뮤테이션이 끝날 때 서버 값으로 맞춘다. 앞선 응답으로 다시 받으면 뒤따라 진행 중인 낙관적 값이
+ * 되돌아가므로 마지막 하나가 끝날 때만 받는다. 여러 날 할 일은 다른 날짜 목록에도 있어 날짜를 가리지 않는다
+ * (화면에 붙은 조회만 다시 받고 나머지는 낡음 표시만 남는다).
+ */
+export function settleTodoListWrite(queryClient: QueryClient) {
+  if (queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() }) !== 1) {
+    return;
+  }
+  queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+  queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.pages() });
+}
+
+/** 완료 기록까지 바꾼 뮤테이션이 끝날 때 달력·위젯·시작 체크리스트도 같은 규칙으로 맞춘다. */
+export function settleTodoCompletionWrite(queryClient: QueryClient) {
+  settleTodoListWrite(queryClient);
+  if (queryClient.isMutating({ mutationKey: TODO_MUTATION_KEYS.completionWrites() }) !== 1) {
+    return;
+  }
+  queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
 }
 
 /** 순서처럼 완료와 무관하게 홈 위젯 요약에 보이는 값이 바뀐 뒤 위젯 요약만 다시 불러온다. */

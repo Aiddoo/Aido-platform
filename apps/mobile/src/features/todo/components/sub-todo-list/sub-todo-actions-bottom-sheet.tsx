@@ -94,7 +94,7 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
     }
 
     const removed = await deleteSubTodo
-      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate })
+      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, date })
       .catch(() => null);
 
     if (removed != null) {
