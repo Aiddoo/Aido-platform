@@ -9,10 +9,8 @@ import { z } from 'zod';
 
 import {
   TODO_REPEAT_COUNT,
-  TODO_REPEAT_DEFAULT_UNTIL_DAYS,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_REPEAT_WEEKDAYS as WEEKDAYS,
-  TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
 
 export const TODO_EDIT_SCOPES = ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'] as const;
@@ -58,8 +56,6 @@ export const todoSeriesSchema = z.object({
 });
 export type TodoSeries = z.infer<typeof todoSeriesSchema>;
 
-const NEVER_END: TodoRepeatEnd = { type: 'NEVER' };
-
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
   return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
 }
@@ -75,10 +71,6 @@ export function getWeekdayOfDateKey(dateKey: string): DayOfWeek {
 
 export function getMonthDayOfDateKey(dateKey: string): number {
   return Number(dateKey.slice(8, 10));
-}
-
-export function getRepeatEndType(repeat: TodoRepeat): TodoRepeatEndType {
-  return repeat.end.type;
 }
 
 export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
@@ -103,50 +95,6 @@ export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
     .exhaustive();
 }
 
-function getKeptWeekdays(repeat: TodoRepeat | null, startDate: string): DayOfWeek[] {
-  return repeat?.frequency === 'WEEKLY' ? repeat.weekdays : [getWeekdayOfDateKey(startDate)];
-}
-
-export function withRepeatKind(
-  repeat: TodoRepeat | null,
-  kind: TodoRepeatKind,
-  startDate: string,
-): TodoRepeat {
-  const end = repeat?.end ?? NEVER_END;
-
-  return match(kind)
-    .returnType<TodoRepeat>()
-    .with('DAILY', () => ({ frequency: 'DAILY', end }))
-    .with('WEEKDAYS', () => ({
-      frequency: 'WEEKLY',
-      interval: 1,
-      weekdays: [...WEEKDAYS],
-      end,
-    }))
-    .with('WEEKLY', () => ({
-      frequency: 'WEEKLY',
-      interval: 1,
-      weekdays: getKeptWeekdays(repeat, startDate),
-      end,
-    }))
-    .with('BIWEEKLY', () => ({
-      frequency: 'WEEKLY',
-      interval: 2,
-      weekdays: getKeptWeekdays(repeat, startDate),
-      end,
-    }))
-    .with('MONTHLY', () => ({
-      frequency: 'MONTHLY',
-      monthDay: getMonthDayOfDateKey(startDate),
-      end,
-    }))
-    .exhaustive();
-}
-
-export function createRepeat(kind: TodoRepeatKind, startDate: string): TodoRepeat {
-  return withRepeatKind(null, kind, startDate);
-}
-
 export function createWeeklyUntilRepeat(
   weekdays: readonly DayOfWeek[],
   untilDate: string,
@@ -163,76 +111,6 @@ export function createWeeklyUntilRepeat(
 
 export function withRepeatEnd(repeat: TodoRepeat, end: TodoRepeatEnd): TodoRepeat {
   return { ...repeat, end };
-}
-
-export function withRepeatEndType(
-  repeat: TodoRepeat,
-  type: TodoRepeatEndType,
-  startDate: string,
-): TodoRepeat {
-  const end = match(type)
-    .returnType<TodoRepeatEnd>()
-    .with('NEVER', () => NEVER_END)
-    .with('UNTIL', () => ({
-      type: 'UNTIL',
-      date:
-        repeat.end.type === 'UNTIL'
-          ? repeat.end.date
-          : addDaysToDateKey(startDate, TODO_REPEAT_DEFAULT_UNTIL_DAYS),
-    }))
-    .with('COUNT', () => ({
-      type: 'COUNT',
-      count: repeat.end.type === 'COUNT' ? repeat.end.count : TODO_REPEAT_COUNT.DEFAULT,
-    }))
-    .exhaustive();
-
-  return withRepeatEnd(repeat, end);
-}
-
-export function withRepeatCount(repeat: TodoRepeat, count: number): TodoRepeat {
-  const clamped = Math.min(Math.max(count, TODO_REPEAT_COUNT.MIN), TODO_REPEAT_COUNT.MAX);
-  return withRepeatEnd(repeat, { type: 'COUNT', count: clamped });
-}
-
-export function withRepeatUntilDate(repeat: TodoRepeat, date: string): TodoRepeat {
-  return withRepeatEnd(repeat, { type: 'UNTIL', date });
-}
-
-export function withRepeatWeekdays(repeat: TodoRepeat, weekdays: readonly DayOfWeek[]): TodoRepeat {
-  if (repeat.frequency !== 'WEEKLY' || weekdays.length === 0) {
-    return repeat;
-  }
-  return { ...repeat, weekdays: sortWeekdays(weekdays) };
-}
-
-export function withRepeatWeekdayToggled(repeat: TodoRepeat, day: DayOfWeek): TodoRepeat {
-  if (repeat.frequency !== 'WEEKLY') {
-    return repeat;
-  }
-
-  const weekdays = repeat.weekdays.includes(day)
-    ? repeat.weekdays.filter((selected) => selected !== day)
-    : [...repeat.weekdays, day];
-  return withRepeatWeekdays(repeat, weekdays);
-}
-
-export function withRepeatWeekdayPreset(
-  repeat: TodoRepeat,
-  preset: 'ALL' | 'WEEKDAYS' | 'WEEKENDS',
-): TodoRepeat {
-  return withRepeatWeekdays(
-    repeat,
-    match(preset)
-      .returnType<readonly DayOfWeek[]>()
-      .with('ALL', () => DAYS_OF_WEEK)
-      .with('WEEKDAYS', () => WEEKDAYS)
-      .with('WEEKENDS', () => WEEKEND_DAYS)
-      .exhaustive(),
-  );
-}
-
-export function hasRepeatWeekdays(repeat: TodoRepeat, weekdays: readonly DayOfWeek[]): boolean {
-  return repeat.frequency === 'WEEKLY' && hasSameWeekdays(repeat.weekdays, weekdays);
 }
 
 export function isRepeatMonthDayClamped(repeat: TodoRepeat): boolean {
@@ -359,17 +237,8 @@ export function getLastRepeatOccurrenceDateKey(
 
 export const TodoRepeatPolicy = {
   getKind: getRepeatKind,
-  getEndType: getRepeatEndType,
-  create: createRepeat,
   createWeeklyUntil: createWeeklyUntilRepeat,
-  withKind: withRepeatKind,
-  withEndType: withRepeatEndType,
-  withCount: withRepeatCount,
-  withUntilDate: withRepeatUntilDate,
-  withWeekdayToggled: withRepeatWeekdayToggled,
-  withWeekdayPreset: withRepeatWeekdayPreset,
   withStartDate: withRepeatStartDate,
-  hasWeekdays: hasRepeatWeekdays,
   isMonthDayClamped: isRepeatMonthDayClamped,
   getOccurrenceDateKeys: getRepeatOccurrenceDateKeys,
   getFirstOccurrenceDateKey: getFirstRepeatOccurrenceDateKey,

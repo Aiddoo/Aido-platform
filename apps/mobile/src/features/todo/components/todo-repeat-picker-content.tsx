@@ -686,7 +686,7 @@ const RepeatDateCell = ({
         <Text
           size="b3"
           weight="medium"
-          tone={isDisabled ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
+          tone={isDisabled || isDimmed ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
           shade={isSelected ? undefined : isDimmed ? 5 : 7}
         >
           {dayOfMonth}

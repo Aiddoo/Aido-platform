@@ -19,7 +19,7 @@ function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
   return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
 }
 
-/** 시트를 열 때 값이 없으면 시작일의 요일 하나를 고른 상태 + 계속으로 시작한다. */
+/** 시트를 열 때 값이 없으면 시작일의 요일 하나를 고른 상태 + 날짜 종료(종료일 없음)로 시작한다. */
 export function toTodoRepeatFormValues(
   startDate: Date,
   repeat: TodoRepeat | null,
