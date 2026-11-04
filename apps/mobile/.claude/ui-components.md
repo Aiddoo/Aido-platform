@@ -1,44 +1,56 @@
 # UI 컴포넌트 사용 가이드
 
-**Version**: 1.0.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Mobile Team
+**Version**: 1.1.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
 
-> 컴포넌트 선택 우선순위: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native 기본.
+> 컴포넌트 선택 우선순위: HeroUI Native → Shared UI 래퍼 (`@src/shared/ui`) → React Native 기본.
 
 ## 컴포넌트 선택 우선순위
 
 UI를 구현할 때 다음 우선순위를 **반드시** 따릅니다:
 
-### 1순위: Shared UI 컴포넌트 (필수)
+### 1순위: HeroUI Native 원본
 
-`src/shared/ui`에 있는 컴포넌트는 **무조건** 여기서 import합니다.
-
-```tsx
-import { Box } from '@src/shared/ui/box/box';
-import { Button } from '@src/shared/ui/button/button';
-import { Flex } from '@src/shared/ui/flex/flex';
-import { HStack } from '@src/shared/ui/h-stack/h-stack';
-import { Spacing } from '@src/shared/ui/spacing/spacing';
-import { TextButton } from '@src/shared/ui/text-button/text-button';
-// 올바른 사용
-import { Text, H1, H2, H3, H4 } from '@src/shared/ui/text/text';
-import { VStack } from '@src/shared/ui/v-stack/v-stack';
-```
-
-### 2순위: HeroUI Native 컴포넌트
-
-Shared UI에 없는 컴포넌트는 **HeroUI Native**를 우선 사용합니다. (Button 등 기본 컴포넌트는 Shared UI 버전을 사용하세요)
+새 UI는 먼저 [HeroUI Native](https://github.com/heroui-inc/heroui-native)에서 찾는다(`Checkbox`, `Chip`, `Tabs`,
+`Popover`, `Dialog`, `PressableFeedback`, `Skeleton` …). 컴포넌트 이름·props는 `.claude/skills/heroui-native`를 본다.
 
 ```tsx
-import { Button, Card, TextField } from 'heroui-native';
+import { Checkbox, Chip, Popover, Tabs } from 'heroui-native';
 ```
+
+단, `shared/ui`에 같은 역할의 래퍼가 이미 있으면 그 래퍼를 쓴다. `Button`, `Text`, `Input`/`TextArea`,
+레이아웃 프리미티브(`Box`·`HStack`·`VStack`·`Flex`·`Spacing`)는 원본 대신 `@src/shared/ui`에서 import한다.
+
+```tsx
+import { Box, Button, HStack, Text, VStack } from '@src/shared/ui';
+```
+
+### 2순위: Shared UI 래퍼 (`Omit<ComponentProps<typeof X>, …>`)
+
+원본에 앱 고유 역할(단위 suffix·숫자 포맷·도메인 문구·디자인 토큰 조합)이 더해질 때만 `shared/ui`나 피처
+`components/`에 래퍼를 만든다. 원본 props를 `Omit<ComponentProps<typeof X>, …>`로 확장하고 바꾸는 prop만 다시
+선언한다. prop 이름은 원본 그대로다(`isOpen`/`onOpenChange`, `isSelected`/`onSelectedChange`, `value`/`onValueChange`).
+
+```tsx
+interface QuotaChipProps extends Omit<ComponentProps<typeof Chip>, 'children'> {
+  feature: EntitlementFeature;
+}
+```
+
+역할 없이 원본을 그대로 넘기기만 하는 래퍼는 만들지 않는다([Wrapper Props 계약](#wrapper-props-계약)).
 
 ### 3순위: React Native 기본 컴포넌트 (최후의 수단)
 
-Core UI와 HeroUI 모두에 없는 경우에만 React Native 컴포넌트를 사용합니다.
+HeroUI와 Shared UI 모두에 없는 경우에만 React Native 컴포넌트를 쓴다.
 
 ```tsx
-import { ScrollView, FlatList, Image } from 'react-native';
+import { FlatList, Image, ScrollView } from 'react-native';
 ```
+
+### 한도 안내는 `PremiumDialog` 하나
+
+AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDialog` 하나로 안내한다. 기능별 `LimitReachedDialog`나
+인라인 한도 배너를 새로 만들지 않고, 게이트가 기능별 `title`·`description`(리셋 날짜는 `premiumDialog.resetsOn`)과
+필요하면 대체 행동을 넘긴다.
 
 ---
 
@@ -81,7 +93,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `ActionChip`                                                         | 아이콘 + 라벨 선택 칩 (필터·옵션)                                           | `src/shared/ui/action-chip/action-chip.md`                       |
 | `ListRow`                                                            | 썸네일·텍스트가 있는 목록 행                                                | `src/shared/ui/list-row/list-row.md`                             |
 | `Overlay`, `useOverlay`                                              | 루트에 다이얼로그·시트를 띄우고 값을 Promise로 반환                         | `src/shared/ui/overlay/overlay.md`                               |
-| `PremiumDialog`                                                      | 프리미엄 안내 다이얼로그(UI만). 기능에서는 `usePremiumGate`로 띄움          | `src/shared/ui/premium-dialog/premium-dialog.md`                 |
+| `PremiumDialog`                                                      | 프리미엄·한도 안내의 유일한 다이얼로그(UI만). 기능에서는 게이트 훅으로 띄움 | `src/shared/ui/premium-dialog/premium-dialog.md`                 |
 | `OfflineBanner`                                                      | 오프라인 한 줄 안내 (앱 루트에 한 번, `onlineManager` 기준)                 | `src/shared/ui/offline-banner/offline-banner.md`                 |
 | `QueryErrorBoundary`                                                 | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                  | `src/shared/ui/query-error-boundary/query-error-boundary.md`     |
 | `ScrollProgressWidget`                                               | 스크롤 진행률 플로팅 위젯                                                   | `src/shared/ui/scroll-progress-widget/scroll-progress-widget.md` |
@@ -312,6 +324,28 @@ export const NewIcon = createStyledIcon(NewIconSvg);
 ```
 
 ---
+
+## 애니메이션과 Expo 공식 스킬
+
+Expo 공식 스킬(expo-animation·native-ui·data-fetching·router·ui)을 따른다.
+
+- **Reanimated 4**: shared value는 `.get()`/`.set()`으로 읽고 쓴다(`progress.value =` 금지). worklet에서 JS 함수를
+  부를 때는 `react-native-worklets`의 `scheduleOnRN`을 쓴다(`runOnJS` 금지).
+- **스레드**: 매 프레임 바뀌는 값은 UI 스레드(shared value·`useFrameCallback`)에 두고 `setState`로 그리지 않는다.
+  `useFrameCallback`은 쓰지 않을 때 `setActive(false)`로 끈다.
+- **누름**: HeroUI `PressableFeedback` 또는 Reanimated CSS transition(transform). scale 0.97, 120ms,
+  `cubicBezier(0.23, 1, 0.32, 1)`.
+- **등장·전환**: layout animation(`FadeIn`·`FadeOut`·`LinearTransition`), 스프링은 `{ duration, dampingRatio }`로 쓴다.
+- **모션 줄이기**: 애니메이션과 같은 PR에 넣는다. Reanimated는 `reduceMotion: ReduceMotion.System`, 반복·강조 모션은
+  `useReduceMotion()`이 켜져 있으면 생략하고 색·투명도만 바꾼다.
+- **햅틱**: DI의 `useHaptics()`로 행동 1회에 같은 프레임에서 한 번 울린다. `expo-haptics`를 직접 import하지 않는다.
+  worklet에서는 기준점을 넘을 때만 `scheduleOnRN`으로 부른다.
+- **오디오**: 녹음·재생은 `expo-audio`(`useAudioPlayer`·`useAudioPlayerStatus`)를 쓴다. `expo-av`는 쓰지 않는다.
+- **데이터 화면 4상태**: 로딩(스켈레톤)·오류(`QueryErrorBoundary`)·빈 상태(`.Empty`)·데이터를 모두 그린다. 저장 실패는
+  입력값을 지우지 않는다. 숫자 카운터는 `tabular-nums`로 폭이 흔들리지 않게 한다.
+- **키보드**: `react-native-keyboard-controller`를 쓴다.
+- **따르지 않는 것**: 할 일 추가 시트는 앱 디자인 시스템(`KeyboardBottomSheet`, rounded 32, 같은 칩)과 시트 안에서
+  모드가 바뀌는 흐름 때문에 `@expo/ui` BottomSheet로 바꾸지 않는다.
 
 ## 애니메이션 상수
 

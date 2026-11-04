@@ -398,3 +398,28 @@ test('테스트에서 new QueryClient를 직접 만들면 거부하고 공통 �
     },
   );
 });
+
+test('옮긴 클라이언트 모델이 요청·응답 계약을 import하면 거부하고 vocabulary·errors·mapper는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/voice/domains/voice-plan.model.ts': `
+        import { z } from 'zod';
+        import type { QuickPlanResponse } from '@aido/api';
+        import { quickPlanResponseSchema } from '@aido/api/contracts/voice';
+        import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
+        import { ErrorCode } from '@aido/api/errors';
+      `,
+      'apps/mobile/src/features/voice/apis/voice-plan.mapper.ts': `
+        import type { QuickPlanResponse } from '@aido/api';
+      `,
+      'apps/mobile/src/features/memo/domains/memo.model.ts': `
+        import { memoSchema } from '@aido/api';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 2);
+      assert.match(errors.join('\n'), /voice-plan\.model\.ts:3:/u);
+      assert.match(errors.join('\n'), /voice-plan\.model\.ts:4:/u);
+    },
+  );
+});

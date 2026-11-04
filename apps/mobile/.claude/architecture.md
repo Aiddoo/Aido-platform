@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 1.3.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
+**Version**: 1.4.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 새 기능 추가 시 이 문서의 패턴을 **반드시** 따릅니다.
@@ -208,8 +208,10 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
   폴더에 모은다. 폴더 `index.ts` re-export는 만들지 않고 정의 파일에서 직접 import한다.
 - HTTP transport 성공 데이터는 `unknown`이다. Service가 공유 응답 스키마 전체를 검증한 뒤
   mapper로 독립적인 client model을 만든다. 응답 타입을 generic HTTP 인자나 DTO Omit으로 단정하지 않는다.
-- form과 wire schema는 가능한 한 `@aido/api`를 단일 원본으로 사용한다. 모바일 전용 Date,
-  policy, 화면 view-model만 model/mapper에서 별도로 표현한다.
+- wire schema(요청·응답 검증)는 `@aido/api`(루트·`contracts/*`)가 단일 원본이고 Service와 Mapper만 쓴다. 화면·Policy가 쓰는
+  모델은 `domains/`가 자기 Zod 스키마로 정의하되 용어 튜플·상수는 `@aido/api/vocabulary`에서 가져온다([1. Models](#1-models--클라이언트-도메인-모델--policy)).
+- 데이터를 보여 주는 화면은 로딩·오류·빈 상태·데이터 4상태를 모두 그린다. 로딩은 `.Loading` 스켈레톤,
+  오류는 `QueryErrorBoundary` fallback, 빈 상태는 `.Empty`다. 저장 실패는 입력값(초안)을 지우지 않는다.
 - 페이지 단위 폼은 가장 가까운 session 부모가 `useForm`, Zod resolver, submit mutation을 소유하고
   지역 `FormProvider`로 field에 전달한다. `shared/ui/FormField`만 `Controller`를 소유하고 field는
   제어형 Input의 `value/onChange/onBlur`와 해당 fieldState를 소비한다. 액션은 `useFormState`/`useWatch`의
@@ -421,6 +423,24 @@ function useView() {
 - 당겨서 새로고침은 `useRefresh`(TanStack Query React Native 문서의 `useRefreshByUser` 패턴)로 사용자가 당긴 동안만
   표시한다. 배경 refetch까지 켜지는 `isRefetching`으로 대신하지 않는다.
 
+### 상수·날짜는 기존 도구 하나로
+
+같은 값이나 같은 계산을 두 곳에 두지 않는다. 새 상수 파일·날짜 유틸·`Intl` 포매터를 만들기 전에 아래에서 찾는다.
+
+| 종류                                 | 둘 곳                                                                                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 서버·앱이 함께 쓰는 업무 값          | `@aido/api/vocabulary`(용어 튜플·한도·플랜 숫자). 앱에서 숫자·이름을 다시 적지 않는다                                                       |
+| 앱 전용 UI 값                        | 피처 `constants/` 또는 `shared/constants/`의 기존 파일을 넓힌다(애니메이션 시간은 `animation.constants.ts`의 `ANIMATION`)                   |
+| 저장 키                              | 토큰은 `shared/constants/storage-keys.ts`, MMKV 기능 키는 그 repository의 기존 접두사 규칙(코치마크 `aido_coachmark_v1:{accountId}:{kind}`) |
+| 어댑터 옵션(음량 범위, 침묵 길이 등) | 어댑터 파일 위 이름 붙은 상수. 이유가 코드로 드러나지 않으면 한 줄로 남긴다                                                                 |
+
+- 매직 넘버를 쓰지 않는다. 같은 값을 두 번 정의하지 않는다.
+- 날짜는 [공통 날짜 규칙](../../../docs/conventions/dates.md)의 도구만 쓴다.
+  - 오늘·자정 전환: `LocalDateProvider` + `useToday`/`useTodayKey`, 분 단위 표시는 `useMinuteNow()`
+  - 날짜 key: `date-key.ts`(`toDeviceDateKey`, `addDaysToDateKey`), 주: `calendar-week.ts`
+  - 표시: `date-format.ts`(`formatDateKeyLabel`·`formatDateLabel`, 하루 길이 `DAY_MS`), 시각 `time.ts`, 시간대 `timezone.ts`
+  - render 중 `new Date()`를 기준 상태로 쓰지 않는다. 새 `Intl` 포매터나 날짜 유틸을 만들지 않는다.
+
 ### 1. Models — 클라이언트 도메인 모델 + Policy
 
 ```
@@ -432,26 +452,53 @@ features/{feature}/domains/
 **Domain Model**은 화면과 Policy가 의존하는 클라이언트 모델이다. 사용처는 항상 `domains/`의 이름만
 import하고, 서버 DTO 이름을 직접 쓰지 않는다. 서버 스펙이 바뀌면 Mapper가 흡수하고 소비처는 그대로 둔다.
 
-`@aido/api`는 서버와 공유하는 wire 계약의 단일 원본이다. 바퀴를 다시 만들지 않도록 다음 순서로 정의한다.
+**클라이언트 모델은 서버 응답 모양에 의존하지 않는다(1.15.0~).** `@aido/api`는 서버와 공유하는 계약의 단일 원본이지만
+모델의 원본은 아니다. 대신 서버와 같은 용어·숫자는 다시 적지 않고 공유한다.
 
-| 서버 응답과의 관계         | 클라이언트 모델 정의                                 |
-| -------------------------- | ---------------------------------------------------- |
-| 필드와 의미가 같다         | `@aido/api` 스키마 재사용 (필요 없는 필드는 `.omit`) |
-| 날짜 등 일부 타입만 다르다 | `sharedSchema.extend({ createdAt: z.date() })`       |
-| 모양·이름이 실제로 다르다  | 독자 스키마 + Mapper 변환                            |
+| `@aido/api` 진입점                        | 내용                                   | import할 수 있는 곳                          |
+| ----------------------------------------- | -------------------------------------- | -------------------------------------------- |
+| `@aido/api/vocabulary`                    | 용어 튜플·상수·한도(`DAYS_OF_WEEK` 등) | 어디서나(모델 스키마 `z.enum(DAYS_OF_WEEK)`) |
+| `@aido/api/errors`                        | `ErrorCode`                            | 어디서나                                     |
+| `@aido/api`(루트)·`@aido/api/contracts/*` | 요청·응답 스키마와 DTO 타입            | `apis/*.service.ts`·`apis/*.mapper.ts`만     |
+
+- 새로 만들거나 손대는 모델은 자기 Zod 4 스키마를 갖는다. Zod 4 문법을 쓴다:
+  `z.enum`, `z.int()`, `z.iso.time()`, `.brand<'X'>()`, `z.discriminatedUnion`, `z.partialRecord`.
+- 요청·응답 계약은 `apis/*.mapper.ts`(DTO 타입)와 Service(응답 스키마 검증)만 import한다. 서버 응답이 바뀌면 mapper만 고친다.
+- 용어·숫자는 다시 적지 않는다. 모델도 `z.enum(DAYS_OF_WEEK)`처럼 `@aido/api/vocabulary`의 튜플로 스키마를 만든다.
+- mapper는 계약 enum·유니온을 `satisfies Record<ContractEnum, …>`나 ts-pattern `exhaustive()`로 빠짐없이 매핑한다.
+  서버가 값을 더하면 mapper가 컴파일되지 않아 놓치지 않는다.
+- mapper 테스트 fixture는 계약 스키마로 검증해 만든다(`todoCommentThreadsResponseSchema.parse({ … })`). 계약과 어긋난
+  fixture로 통과하는 테스트를 막는다.
+- brand·enum은 Mapper가 `schema.parse`로 붙인다. `as`로 단정하지 않는다.
+- 옮긴 폴더·파일은 `scripts/check-mobile-conventions.mjs`의 `CLIENT_OWNED_MODEL_PATHS`에 올린다. 그 아래에서 `@aido/api` 루트나
+  `@aido/api/contracts/*`를 import하면 `check:conventions`가 막는다(vocabulary·errors는 허용). 아직 옮기지 않은 모델의
+  `@aido/api` 재사용·`extend`는 손댈 때 함께 옮긴다.
 
 ```typescript
-// preference.model.ts
-export const preferenceSchema = userPreferenceSchema.omit({ timezone: true });
-export type Preference = z.infer<typeof preferenceSchema>;
+// features/todo-comment/domains/todo-comment.model.ts
+export const todoCommentSchema = z.object({
+  id: z.string(),
+  threadCommentId: z.string().nullable(),
+  likeCount: z.int().nonnegative(),
+  createdAt: z.date(),
+  // …
+});
+
+// features/todo-comment/apis/todo-comment.mapper.ts — @aido/api는 여기서만
+export function toTodoComment(dto: TodoCommentV2): TodoComment { … }
 ```
 
 **Policy**는 비즈니스 규칙의 유일한 거처다. 규칙은 첫 인자로 클라이언트 모델을 받는 이름 있는 순수 함수로
 작성하고, `{Entity}Policy` 객체가 Facade로 묶는다. 계산식이 바뀌면 순수 함수 하나만 고치고, 소비처는
 `MemoPolicy.isCreatable(limit)`처럼 Policy만 호출한다.
 
+**이름은 동사로 시작한다.** 앱 관례대로 `get*`(값 읽기·파생), `calculate*`(계산), `is*`/`has*`/`can*`/`should*`(판정),
+`find*`(검색), `create*`(생성), `with*`(불변 갱신)를 쓴다. `displayStateOf`·`selectedActionsOf` 같은 `xxxOf`는 쓰지 않는다
+(`getDisplayState`, `getSelectedActions`). Facade 키는 export한 함수 이름을 그대로 쓴다. 별칭을 두지 않아야 검색 한 번에
+정의와 사용처가 함께 나온다. 이미 있는 `xxxOf`·별칭 키는 그 모델을 손댈 때 바꾼다.
+
 ```typescript
-// features/weather/domains/weather-report.model.ts
+// 패턴 예시 (features/weather/domains/weather-report.model.ts의 일부를 줄였다)
 const PM10_UPPER_BOUNDS = [30, 80, 150] as const;
 const PM25_UPPER_BOUNDS = [15, 35, 75] as const;
 
@@ -465,8 +512,8 @@ export function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Dat
 }
 
 export const WeatherReportPolicy = {
-  airQualityGrade: getAirQualityGrade,
-  isStale: isReportStale,
+  getAirQualityGrade,
+  isReportStale,
 } as const;
 ```
 
@@ -502,7 +549,7 @@ export const PushPermissionPolicy = {
   canRequestSystemDialog,
   isBlockedUntilSettings,
   isPromptSnoozed,
-  nextStep: getNextPushPermissionStep,
+  nextStep: getNextPushPermissionStep, // 1.14 이전 별칭. 이 모델을 손댈 때 키를 함수 이름으로 바꾼다
 } as const;
 ```
 

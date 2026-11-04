@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.4.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
+> **Version**: 1.5.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -13,7 +13,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 전체 아키텍처 / 레이어 패턴 (Model · Mapper · Service · Query) | [.claude/architecture.md](.claude/architecture.md)               |
 | Todo 댓글 한 화면·답글·작성 바·더블탭 하트                     | [.claude/todo-comments.md](.claude/todo-comments.md)             |
 | 테스트 작성 (Model · Service · 순수 util 중심)                 | [.claude/testing-guide.md](.claude/testing-guide.md)             |
-| UI 컴포넌트 선택 / 작성 (Shared UI > HeroUI Native > RN)       | [.claude/ui-components.md](.claude/ui-components.md)             |
+| UI 컴포넌트 선택 / 작성 (HeroUI Native > Shared UI 래퍼 > RN)  | [.claude/ui-components.md](.claude/ui-components.md)             |
 | 다국어 / 문자열 추가 (i18n, ko+en 카탈로그)                    | [.claude/i18n-guide.md](.claude/i18n-guide.md)                   |
 | 인증 상태 · 토큰 · 로그인 플로우                               | [docs/authentication_guide.md](docs/authentication_guide.md)     |
 | OAuth · 소셜 로그인 구현                                       | [.claude/oauth-client-guide.md](.claude/oauth-client-guide.md)   |
@@ -86,12 +86,15 @@ features/{feature}/   # 단수 kebab-case
   - 예측 불가 (5xx, 네트워크, Zod 파싱 실패) → `throw` → 조회는 QueryErrorBoundary fallback(다시 시도 + 문의하기), mutation은 기본 토스트
   - 한 오류는 토스트와 fallback 중 한 곳에서만 보인다
 - **Mapper·select**: 서버 스펙 변경은 Mapper(DTO → 클라이언트 모델, ISO 문자열 → `Date`)가 흡수하고 캐시에는 클라이언트 모델을 둔다. `select`는 화면별 필터·정렬·표시 모델만 만들며 참조가 안정적인 순수 함수를 쓴다.
-- **Model·Policy**: 클라이언트 모델은 `@aido/api` 스키마를 재사용·`extend`하고 모양이 다를 때만 독자 스키마를 둔다. 모델 파일 하나(`*.model.ts`)에 zod 모델·이름 있는 순수 함수(모델이 첫 인자)·`{Entity}Policy` Facade를 둔다. Policy는 비즈니스 규칙만 담고 문구·아이콘·레이아웃은 정하지 않는다. 예: `push-permission.model.ts`.
+- **Model·Policy**: 클라이언트 모델은 서버에 의존하지 않는다. 새로 만들거나 손대는 모델(`domains/*.model.ts`)은 자기 Zod 4 스키마를 갖는다. 요청·응답 계약(`@aido/api` 루트·`@aido/api/contracts/*`)은 `apis/*.service.ts`·`apis/*.mapper.ts`만 import하고(옮긴 폴더는 `check:conventions`가 검사), 용어 튜플·상수·한도(`@aido/api/vocabulary`)와 `ErrorCode`(`@aido/api/errors`)는 어디서나 써서 모델도 `z.enum(DAYS_OF_WEEK)`처럼 같은 튜플로 만든다. mapper는 `satisfies`·ts-pattern `exhaustive()`로 계약 enum·유니온을 빠짐없이 매핑해 서버 계약이 바뀌면 빌드가 깨지게 한다. 모델 파일 하나에 zod 모델·이름 있는 순수 함수(모델이 첫 인자)·`{Entity}Policy` Facade를 둔다. Policy는 비즈니스 규칙만 담고 문구·아이콘·레이아웃은 정하지 않는다. 예: `push-permission.model.ts`.
+- **함수 이름**: 동사로 시작한다. `get*`(값 읽기·파생)·`calculate*`(계산)·`is*`/`has*`/`can*`/`should*`(판정)·`find*`(검색)·`create*`(생성)·`with*`(불변 갱신). `xxxOf`는 쓰지 않는다. Policy Facade 키는 export한 함수 이름 그대로다(별칭 금지, `TodoCommentPolicy.getReplyFooter`).
 - **Port·Adapter·DI**: 외부 경계(OS·네트워크·저장소)는 `core/ports`의 포트와 `shared/infra`의 어댑터로 나누고 `di-provider.tsx`에서 조립한다. 테스트는 포트를 구현한 stub을 DI로 넣고, 어댑터 경계 테스트 밖에서는 `jest.mock`을 쓰지 않는다. Mapper는 순수 함수라 DI에 넣지 않는다.
+- **상수·날짜**: 서버·앱 공통 업무 값은 `@aido/api/vocabulary`, 앱 전용 UI 값은 피처 `constants/`·`shared/constants/`(기존 파일 확장), 저장 키는 `storage-keys.ts`·기존 repository 접두사. 매직 넘버·이중 정의 금지. 날짜는 `LocalDateProvider`·`useToday`/`useTodayKey`/`useMinuteNow`·`date-key.ts`·`date-format.ts`·`calendar-week.ts`·`time.ts`·`timezone.ts`만 쓰고 새 `Intl` 포매터·날짜 유틸을 만들지 않는다. 상세: [.claude/architecture.md#상수날짜는-기존-도구-하나로](.claude/architecture.md#상수날짜는-기존-도구-하나로)
 - **공통 규칙(서버·모바일)**: 날짜·시간대·표시 언어 [dates](../../docs/conventions/dates.md), 응답·오류 [errors](../../docs/conventions/errors.md), 하위 호환 [compatibility](../../docs/conventions/compatibility.md)
 - **의존성 방향**: `Model ← Service/Mapper/UI` (단방향). Model이 다른 레이어를 알면 안 됨.
-- **UI 컴포넌트 우선순위**: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native.
-- **DTO**: `@aido/api` 사용, 모바일 내부 중복 금지.
+- **UI 컴포넌트 우선순위**: HeroUI Native → `shared/ui` 래퍼(`Omit<ComponentProps<typeof X>, …>`, 원본 prop 이름 유지) → React Native. `shared/ui`에 같은 역할 래퍼가 이미 있으면(`Button`·`Text`·`Input`·레이아웃) 그것을 쓴다. 한도 안내는 `PremiumDialog` 하나만 쓴다.
+- **Expo 공식 스킬**: Reanimated 4 `.get()`/`.set()`·`scheduleOnRN`, 녹음·재생은 `expo-audio`(expo-av 아님), 데이터 화면은 4상태(로딩·오류·빈 상태·데이터), 모든 애니메이션은 모션 줄이기를 함께 지원한다. 상세: [.claude/ui-components.md#애니메이션과-expo-공식-스킬](.claude/ui-components.md#애니메이션과-expo-공식-스킬)
+- **DTO**: 서버 응답·요청 모양은 `@aido/api`를 쓰고 모바일에 다시 정의하지 않는다. DTO를 다루는 곳은 Service(스키마 검증)와 Mapper뿐이고, mapper 테스트 fixture는 계약 스키마(`…ResponseSchema.parse`)로 검증해 만든다.
 - **i18n**: 사용자 노출 문자열 하드코딩 금지 — ko/en 카탈로그(`src/shared/i18n/locales`) 동시 추가. 상세: [.claude/i18n-guide.md](.claude/i18n-guide.md)
 - **인증**: `useAuth()` 훅으로 인증 상태를 관리하고 토큰은 `expo-secure-store`에 저장한다.
 - **OAuth**: Google/Kakao/Naver는 백엔드 플로우, Apple은 네이티브 SDK를 사용한다. OAuth 클라이언트 ID는 API 서버에서 관리하며 모바일에는 두지 않는다.
