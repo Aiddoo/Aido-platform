@@ -228,6 +228,8 @@ export const ErrorCode = {
   AI_1316: "AI_1316",
   /** 이미 처리한 요청의 결과를 다시 보낼 수 없습니다 */
   AI_1317: "AI_1317",
+  /** 같은 Idempotency-Key로 다른 요청을 보냈습니다 */
+  AI_1318: "AI_1318",
 
   // 관리자 (ADMIN_1400-1499)
   /** 관리자 권한이 필요합니다 */
@@ -1230,7 +1232,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     code: "AI_1315",
     message: "저장할 계획이 올바르지 않습니다.",
     description:
-      "계획을 저장하지 않았습니다. details.reason이 CATEGORY_NOT_OWNED면 내 카테고리가 아닌 카테고리(details.categoryIds)가 들어 있는 것이고, IDEMPOTENCY_KEY_REUSED면 같은 Idempotency-Key로 다른 내용을 보낸 것이며, UNSUPPORTED_REPEAT면 아직 저장할 수 없는 반복 설정입니다.",
+      "계획을 저장하지 않았습니다. details.reason이 CATEGORY_NOT_OWNED면 내 카테고리가 아닌 카테고리(details.categoryIds)가 들어 있는 것이고, UNSUPPORTED_REPEAT면 아직 저장할 수 없는 반복 설정입니다.",
     httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
   [ErrorCode.AI_1316]: {
@@ -1245,6 +1247,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       "같은 Idempotency-Key 요청은 이미 처리해 차감했지만 서버는 정리 결과를 잠시만 메모리에 두므로 다시 보낼 결과가 없습니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다. 새로 정리하려면 새 키로 보냅니다.",
     httpStatus: HttpStatus.GONE,
+  },
+  [ErrorCode.AI_1318]: {
+    code: "AI_1318",
+    message: "같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+    description:
+      "Idempotency-Key는 사용자 행동 한 번을 가리킵니다. 내용이 달라졌으면 새 키로 보냅니다. 이 요청은 처리하지 않았고 횟수를 차감하지 않았습니다(details.charged=false).",
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
 
   // 관리자 (ADMIN_1400-1499)
