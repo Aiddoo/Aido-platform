@@ -61,6 +61,34 @@ describe('KeyPointList', () => {
     expect(onPressKeyPoint).toHaveBeenCalledWith(keyPoints[1]);
   });
 
+  it('들을 녹음이 없으면 시간 안내를 띄우지 않고 소비하지도 않는다', async () => {
+    // Given
+    const { keyPoints } = createVoiceNoteDigest();
+    const httpClient = createMockHttpClient();
+    httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const analytics = createMockAnalytics();
+    const coachmarkService = new CoachmarkService(
+      createCoachmarkRepository(createMemorySyncStorage()),
+    );
+
+    // When
+    await renderUi(<KeyPointList hasTimeCoachmark keyPoints={keyPoints} />, {
+      di: { analytics, coachmarkService, userService: new UserService(httpClient) },
+    });
+    await new Promise((resolve) => {
+      setTimeout(resolve, 600);
+    });
+
+    // Then
+    expect(analytics.trackEvent).not.toHaveBeenCalled();
+    expect(
+      coachmarkService.isPending({
+        accountId: createCurrentUserDto().userId,
+        kind: 'voice-key-point',
+      }),
+    ).toBe(true);
+  });
+
   it('재생 중인 포인트만 선택된 상태로 알린다', async () => {
     // Given
     const { keyPoints } = createVoiceNoteDigest();

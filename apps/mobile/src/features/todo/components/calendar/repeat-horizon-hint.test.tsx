@@ -21,7 +21,7 @@ import { FeedDateProvider } from '../providers/feed-date-provider';
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
 const accountId = createCurrentUserDto().userId;
-const INFO_TITLE = '멀리 있는 날짜는 아직 비어 있어요';
+const INFO_TITLE = '3개월 뒤 할 일은 아직 안 보여요';
 
 /** 말풍선은 자리를 잰 뒤에야 터치를 받는다. 테스트에는 레이아웃이 없어 직접 알린다 */
 async function layoutHint() {
@@ -142,7 +142,7 @@ describe('RepeatHorizonHint', () => {
     // Then
     expect(await screen.findByText(INFO_TITLE)).toBeTruthy();
     expect(
-      screen.getByText('날짜가 가까워지면 자동으로 이어서 보여요. 반복이 끝난 게 아니에요.'),
+      screen.getByText('반복이 끝난 건 아니에요. 날짜가 가까워지면 자동으로 생겨요.'),
     ).toBeTruthy();
   });
 });

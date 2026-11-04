@@ -15,7 +15,7 @@ interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'childre
   activeKeyPointId?: string;
   /** 포인트를 누르면 그 지점부터 재생하라고 알린다. 들을 녹음이 없으면 넘기지 않아 누를 수 없다 */
   onPressKeyPoint?: (keyPoint: VoiceNoteKeyPoint) => void;
-  /** 시각이 있는 첫 포인트의 시간 칩에 "시간을 누르면 들려요" 안내를 처음 한 번 붙인다 */
+  /** 들을 수 있으면 시각이 있는 첫 포인트의 시간 칩에 "시간을 누르면 들려요" 안내를 처음 한 번 붙인다 */
   hasTimeCoachmark?: boolean;
 }
 
@@ -27,9 +27,11 @@ export function KeyPointList({
   hasTimeCoachmark = false,
   ...stackProps
 }: KeyPointListProps) {
-  const coachmarkKeyPointId = hasTimeCoachmark
-    ? keyPoints.find(({ startMs }) => startMs != null)?.id
-    : undefined;
+  // 들을 녹음이 없으면 안내가 사실이 아니라 띄우지 않고 소비하지도 않는다
+  const coachmarkKeyPointId =
+    hasTimeCoachmark && onPressKeyPoint != null
+      ? keyPoints.find(({ startMs }) => startMs != null)?.id
+      : undefined;
 
   return (
     <VStack gap={4} {...stackProps}>
