@@ -179,6 +179,22 @@ describe('말로 메모 화면', () => {
     );
   });
 
+  test('너무 길어 정리하지 못하면 이유를 알리고 소용없는 다시 정리를 보이지 않는다', async () => {
+    // Given
+    const { httpClient } = await renderScreen({});
+    httpClient.post.mockResolvedValue(err(new ApiError('AI_1312', '너무 김', 422)));
+
+    // When
+    await fireEvent.press(await screen.findByText('정리하기'));
+
+    // Then
+    expect(await screen.findByTestId('voice-note-digest-failure')).toHaveTextContent(
+      /한 번에 정리하기엔 너무 길어요/,
+    );
+    expect(screen.queryByText('다시 정리')).toBeNull();
+    expect(screen.getByTestId('voice-note-delete')).toBeTruthy();
+  });
+
   test('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {
     // Given
     const { httpClient } = await renderScreen({});

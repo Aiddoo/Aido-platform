@@ -48,6 +48,7 @@
     "cost": "Uses 1 · {{amount}} left this month",
     "usedUp": "Used up this month",
     "notCharged": "This won't count",
+    "tooLong": "This is too long to summarize at once.",
     "kept": "Your text is still here."
   },
   "start": {

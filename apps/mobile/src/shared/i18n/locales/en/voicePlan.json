@@ -62,6 +62,10 @@
       "title": "The content changed",
       "description": "Tap again to save the current version."
     },
+    "memo-limit": {
+      "title": "Your memos are full",
+      "description": "Delete a memo you don't need, then save again."
+    },
     "source-memo-missing": {
       "title": "We couldn't find this memo",
       "description": "It was already deleted, so nothing was saved."

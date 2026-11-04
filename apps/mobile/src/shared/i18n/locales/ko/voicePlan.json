@@ -57,6 +57,10 @@
       "title": "내용이 바뀌었어요",
       "description": "한 번 더 누르면 지금 내용으로 저장해요."
     },
+    "memo-limit": {
+      "title": "메모가 가득 찼어요",
+      "description": "안 쓰는 메모를 지우면 다시 저장할 수 있어요."
+    },
     "source-memo-missing": {
       "title": "메모를 찾을 수 없어요",
       "description": "이미 지워진 메모라 저장하지 않았어요."

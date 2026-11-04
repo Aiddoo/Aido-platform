@@ -27,7 +27,10 @@ import {
   withPlanDraft,
 } from '@src/features/voice/domains/voice-note.model';
 import { isTodoAction, voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
-import { isPlanKeyConflictError } from '@src/features/voice/domains/voice.error';
+import {
+  canRetryPlanFailure,
+  isPlanKeyConflictError,
+} from '@src/features/voice/domains/voice.error';
 import { useVoiceNoteDigest } from '@src/features/voice/hooks/use-voice-note-digest';
 import {
   useVoiceNoteParams,
@@ -154,16 +157,19 @@ function VoiceNoteDigestScreen({ note }: { note: VoiceNote }) {
             {t(`voicePlan:failure.${failure.cause}.title`)}
           </Text>
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {failure.cause === 'too-long' ? `${t('voiceNote:digest.tooLong')} ` : ''}
             {t('voiceNote:digest.kept')}
             {failure.isNotCharged ? ` ${t('voiceNote:digest.notCharged')}` : ''}
           </Text>
         </VStack>
       )}
-      <VoiceNoteDigestButton
-        label={failure == null ? t('voiceNote:digest.action') : t('voiceNote:digest.retry')}
-        isDisabled={!VoiceNotePolicy.canDigest(note)}
-        onPress={() => digest()}
-      />
+      {(failure == null || canRetryPlanFailure(failure.cause)) && (
+        <VoiceNoteDigestButton
+          label={failure == null ? t('voiceNote:digest.action') : t('voiceNote:digest.retry')}
+          isDisabled={!VoiceNotePolicy.canDigest(note)}
+          onPress={() => digest()}
+        />
+      )}
       <DeleteVoiceNoteButton />
     </VStack>
   );

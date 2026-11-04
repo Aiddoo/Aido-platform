@@ -11,6 +11,7 @@ export type VoicePlanFailureCause =
   | 'rejected'
   | 'key-conflict'
   | 'source-memo-missing'
+  | 'memo-limit'
   | 'ai-unavailable'
   | 'unknown';
 
@@ -57,6 +58,9 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
   if (isSourceMemoMissingError(error)) {
     return 'source-memo-missing';
   }
+  if (error.hasCode(ErrorCode.MEMO_2003)) {
+    return 'memo-limit';
+  }
   if (
     error.hasCode(ErrorCode.AI_1301) ||
     error.hasCode(ErrorCode.AI_1302) ||
@@ -65,4 +69,9 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
     return 'ai-unavailable';
   }
   return 'unknown';
+}
+
+/** 같은 글자를 다시 보내도 소용없는 실패인지. 너무 긴 글은 서버가 다시 받아 주지 않는다 */
+export function canRetryPlanFailure(cause: VoicePlanFailureCause) {
+  return cause !== 'too-long';
 }
