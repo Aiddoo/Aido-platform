@@ -1,13 +1,9 @@
+import { memoResourceLimitResponseSchema, memoSchema } from '@aido/api';
 import { z } from 'zod';
 
-export const memoItemSchema = z.object({
-  id: z.number(),
-  content: z.string(),
-  isPinned: z.boolean(),
-  sortOrder: z.number(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
+export const memoItemSchema = memoSchema
+  .pick({ id: true, content: true, isPinned: true, sortOrder: true })
+  .extend({ createdAt: z.date(), updatedAt: z.date() });
 
 export type MemoItem = z.infer<typeof memoItemSchema>;
 
@@ -18,10 +14,7 @@ export const memoPageSchema = z.object({
 });
 export type MemoPage = z.infer<typeof memoPageSchema>;
 
-export const memoResourceLimitSchema = z.object({
-  currentCount: z.number(),
-  maxPerUser: z.number(),
-});
+export const memoResourceLimitSchema = memoResourceLimitResponseSchema;
 export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
 
 export function isMemoCreatable(limit: MemoResourceLimit): boolean {

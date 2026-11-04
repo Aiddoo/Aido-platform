@@ -1,11 +1,7 @@
+import { todoCategorySummarySchema } from '@aido/api';
 import { z } from 'zod';
 
-export const todoCategorySchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  color: z.string(),
-  sortOrder: z.number(),
-});
+export const todoCategorySchema = todoCategorySummarySchema;
 export type TodoCategory = z.infer<typeof todoCategorySchema>;
 
 export const todoCategoryWithCountSchema = todoCategorySchema.extend({
