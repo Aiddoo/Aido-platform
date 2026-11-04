@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
+import { isEqual } from "es-toolkit";
 
 import { addDaysToDateKey } from "#api/shared/domain/date/utils/arithmetic";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
@@ -240,9 +241,31 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     return changed;
   }
 
-  /** 다른 카테고리로 옮길 때 규칙도 함께 옮긴다. 이미 그 카테고리면 false다. */
-  recategorize(categoryId: number): boolean {
-    return this.applyDetails({ categoryId });
+  /** 시작일은 그대로 두고 규칙만 바꿔 처음부터 다시 센다. 이미 만든 날짜는 저장 때 건너뛴다. */
+  replaceRule(rule: RepeatRule): boolean {
+    if (rule.equals(this.props.rule)) {
+      return false;
+    }
+    const first = rule.firstOnOrAfter(this.props.startDate, this.props.startDate);
+    if (first == null) {
+      throw new DomainException(ErrorCode.TODO_0843, {
+        startDate: this.props.startDate,
+        repeat: rule.toSpec(),
+      });
+    }
+    this.props.rule = rule;
+    this.props.nextOccurrenceDate = first;
+    this.props.generatedCount = 0;
+    return true;
+  }
+
+  replaceChecklist(items: readonly ChecklistTemplateItem[]): boolean {
+    TodoSeries.#assertChecklist(items);
+    if (isEqual(items, this.props.checklistTemplate)) {
+      return false;
+    }
+    this.props.checklistTemplate = items.map((item) => ({ title: item.title }));
+    return true;
   }
 
   getId(): string {

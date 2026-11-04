@@ -109,7 +109,7 @@ export function localDateInTimezone(date: Date, tz: string = DEFAULT_TIMEZONE): 
 /**
  * UTC Date → 지정 타임존의 로컬 시간 문자열 (HH:mm)
  *
- * `createRecurring`처럼 로컬 시간 문자열이 필요한 곳에서 사용합니다.
+ * 단일 할 일을 반복으로 전환할 때처럼 로컬 시간 문자열이 필요한 곳에서 사용합니다.
  * `parseLocalDateTime`의 역변환입니다.
  *
  * @example toLocalTimeString(new Date('2026-01-15T05:00:00Z'), 'Asia/Seoul') // "14:00"

@@ -226,6 +226,46 @@ describe("TodoSeries — 반복 할 일", () => {
     });
   });
 
+  describe("규칙·체크리스트 교체", () => {
+    it("규칙을 바꾸면 처음부터 다시 세고 같은 규칙이면 false다", () => {
+      // Given
+      const series = start();
+      series.planOccurrences("2026-11-10");
+      const rule = RepeatRule.weekly(["FRI"], 1, { type: "NEVER" });
+      // When
+      const changed = series.replaceRule(rule);
+      const same = series.replaceRule(RepeatRule.weekly(["FRI"], 1, { type: "NEVER" }));
+      // Then
+      expect(changed).toBe(true);
+      expect(same).toBe(false);
+      expect(series.getGeneratedCount()).toBe(0);
+      expect(series.getNextOccurrenceDate()).toBe("2026-11-06");
+    });
+
+    it("맞는 날짜가 없는 규칙으로는 바꿀 수 없다", () => {
+      // Given
+      const series = start();
+      // When / Then
+      expect(() =>
+        series.replaceRule(RepeatRule.daily({ type: "UNTIL", date: "2026-11-01" })),
+      ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0843 }));
+      expect(series.getNextOccurrenceDate()).toBe("2026-11-05");
+    });
+
+    it("체크리스트는 같으면 false이고 상한을 넘으면 거부한다", () => {
+      // Given
+      const series = start({ checklistTemplate: [{ title: "항목" }] });
+      // When / Then
+      expect(series.replaceChecklist([{ title: "항목" }])).toBe(false);
+      expect(series.replaceChecklist([{ title: "새 항목" }])).toBe(true);
+      expect(() =>
+        series.replaceChecklist(
+          Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO + 1 }, () => ({ title: "x" })),
+        ),
+      ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
+    });
+  });
+
   describe("제자리 수정", () => {
     it("같은 값이면 false, 바뀌면 true를 돌려준다", () => {
       // Given

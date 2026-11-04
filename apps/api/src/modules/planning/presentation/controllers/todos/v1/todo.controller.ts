@@ -22,6 +22,7 @@ import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiBadRequestError,
+  ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
   ApiErrorCodesResponse,
@@ -35,6 +36,9 @@ import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
+import { StartSeriesFromTodo } from "../../../../application/use-cases/series/start-series-from-todo.use-case.js";
+import { StopTodoSeries } from "../../../../application/use-cases/series/stop-todo-series.use-case.js";
+import { UpdateFollowingTodos } from "../../../../application/use-cases/series/update-following-todos.use-case.js";
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../../application/use-cases/todos/change-todo-category.use-case.js";
 import { CreateTodo } from "../../../../application/use-cases/todos/create-todo.use-case.js";
@@ -60,6 +64,7 @@ import {
   CreateTodoDto,
   CreateTodoItemDto,
   CreateTodoResponseDto,
+  DeleteTodoQueryDto,
   DeleteTodoResponseDto,
   GetFriendTodosQueryDto,
   GetTodosQueryDto,
@@ -95,6 +100,9 @@ export class TodoController {
     private readonly getFriendTodosUseCase: GetFriendTodos,
     private readonly createTodoUseCase: CreateTodo,
     private readonly updateTodoUseCase: UpdateTodo,
+    private readonly updateFollowingTodosUseCase: UpdateFollowingTodos,
+    private readonly stopTodoSeriesUseCase: StopTodoSeries,
+    private readonly startSeriesFromTodoUseCase: StartSeriesFromTodo,
     private readonly toggleTodoCompleteUseCase: ToggleTodoComplete,
     private readonly updateTodoVisibilityUseCase: UpdateTodoVisibility,
     private readonly changeTodoCategoryUseCase: ChangeTodoCategory,
@@ -226,7 +234,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiCreatedResponse({ type: CreateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-  @ApiForbiddenError(ErrorCode.TODO_0811)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [
+    ErrorCode.TODO_0811,
+    ErrorCode.TODO_0813,
+    ErrorCode.TODO_0842,
+  ])
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.TODO_0843, ErrorCode.TODO_0845])
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
@@ -565,43 +578,117 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     operationId: "updateTodo",
     description: `할 일의 정보를 부분 수정합니다.
 
-**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed`,
+**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed
+
+**반복 할 일**
+- \`scope\`: 생략하거나 \`THIS_ONLY\`면 이 회차만 고칩니다. 옮겨도 원래 회차 날짜는 그대로라 다시 만들어지지 않습니다.
+- \`scope=THIS_AND_FOLLOWING\`: 이 회차와 이후 미완료 회차를 고칩니다. 완료한 회차는 그대로입니다. 첫 회차에서 고르면 전체를 고칩니다. 날짜·완료는 이 회차에만 적용합니다.
+- \`repeat\`: 생략은 변경 없음, \`null\`은 이 회차 뒤로 반복 끝내기, 값은 단일 할 일을 반복으로 전환하거나 \`scope=THIS_AND_FOLLOWING\`과 함께 규칙을 바꿉니다.
+- \`checklist\`: \`scope=THIS_AND_FOLLOWING\` 전용. 새로 만드는 회차에 복사합니다. 이미 만든 회차의 진행은 그대로입니다.`,
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_CATEGORY_0851])
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [
+    ErrorCode.TODO_0801,
+    ErrorCode.TODO_0841,
+    ErrorCode.TODO_CATEGORY_0851,
+  ])
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [
+    ErrorCode.TODO_0843,
+    ErrorCode.TODO_0844,
+    ErrorCode.TODO_0845,
+  ])
+  @ApiForbiddenError(ErrorCode.TODO_0842)
+  @ApiConflictError(ErrorCode.TODO_0846)
   async update(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
     @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
-    const todo = await this.updateTodoUseCase.execute({
-      id: params.id,
-      userId: user.userId,
-      timezone,
-      data: {
-        title: dto.title,
-        categoryId: dto.categoryId,
-        startDate: dto.startDate == null ? undefined : parseDateOnly(dto.startDate),
-        // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
-        endDate:
-          dto.endDate === undefined
-            ? undefined
-            : dto.endDate === null
-              ? null
-              : parseDateOnly(dto.endDate),
-        scheduledTime: dto.scheduledTime,
-        isAllDay: dto.isAllDay,
-        visibility: dto.visibility,
-        completed: dto.completed,
-      },
-    });
+    const todo = await this.#applyUpdate(params.id, user.userId, dto, timezone);
 
     return {
       message: "할 일이 수정되었습니다.",
       todo,
     };
+  }
+
+  /** 요청 모양으로 경로를 고른다. 범위·전환의 상태 판단은 각 UseCase가 한다. */
+  async #applyUpdate(id: number, userId: string, dto: UpdateTodoDto, timezone: string) {
+    const fields = {
+      title: dto.title,
+      categoryId: dto.categoryId,
+      startDate: dto.startDate == null ? undefined : parseDateOnly(dto.startDate),
+      // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
+      endDate:
+        dto.endDate === undefined
+          ? undefined
+          : dto.endDate === null
+            ? null
+            : parseDateOnly(dto.endDate),
+      scheduledTime: dto.scheduledTime,
+      isAllDay: dto.isAllDay,
+      visibility: dto.visibility,
+      completed: dto.completed,
+    };
+    if (dto.checklist != null && dto.scope !== "THIS_AND_FOLLOWING") {
+      throw new ApplicationException(ErrorCode.TODO_0845, { field: "checklist" });
+    }
+    // nullish-strict: repeat null은 반복 끝내기라 범위를 고른 수정이 아니다
+    if (dto.scope === "THIS_AND_FOLLOWING" && dto.repeat !== null) {
+      const updated = await this.updateFollowingTodosUseCase.execute({
+        id,
+        userId,
+        timezone,
+        title: dto.title,
+        categoryId: dto.categoryId,
+        visibility: dto.visibility,
+        scheduledTime: dto.scheduledTime,
+        isAllDay: dto.isAllDay,
+        repeat: dto.repeat,
+        checklist: dto.checklist,
+      });
+      // 날짜 이동·완료는 범위와 상관없이 이 회차에만 적용한다.
+      // nullish-strict: endDate null도 이 회차의 변경이다
+      if (dto.startDate == null && dto.endDate === undefined && dto.completed == null) {
+        return updated;
+      }
+      return this.updateTodoUseCase.execute({
+        id: updated.id,
+        userId,
+        timezone,
+        data: {
+          startDate: fields.startDate,
+          endDate: fields.endDate,
+          completed: fields.completed,
+        },
+      });
+    }
+    if (dto.repeat != null) {
+      if (dto.scope != null) {
+        throw new ApplicationException(ErrorCode.TODO_0845, { field: "scope" });
+      }
+      await this.updateTodoUseCase.execute({ id, userId, timezone, data: fields });
+      return this.startSeriesFromTodoUseCase.execute({
+        todoId: id,
+        userId,
+        repeat: dto.repeat,
+        timezone,
+      });
+    }
+    // nullish-strict: repeat null은 반복 끝내기, undefined는 변경 없음이다
+    if (dto.repeat === null) {
+      await this.stopTodoSeriesUseCase.execute({ todoId: id, userId });
+      return this.updateTodoUseCase.execute({ id, userId, timezone, data: fields });
+    }
+    return this.updateTodoUseCase.execute({
+      id,
+      userId,
+      timezone,
+      scope: dto.scope,
+      data: fields,
+    });
   }
 
   @Patch(":id/complete")
@@ -822,18 +909,26 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     operationId: "deleteTodo",
     description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
 
-할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).`,
+할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).
+
+**반복 할 일** (\`scope\`)
+- 생략하거나 \`THIS_ONLY\`: 이 회차만 지웁니다. 횟수 종료에서는 지운 날짜도 횟수에 셉니다.
+- \`THIS_AND_FOLLOWING\`: 이 회차와 이후 미완료 회차를 지우고 반복을 끝냅니다. 완료한 회차는 남습니다.
+- \`ALL\`: 완료한 회차까지 모두 지웁니다.`,
   })
   @ApiSuccessResponse({ type: DeleteTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0841])
+  @ApiBadRequestError(ErrorCode.TODO_0844)
   async delete(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Query({ schema: DeleteTodoQueryDto }) query: DeleteTodoQueryDto,
   ): Promise<DeleteTodoResponseDto> {
     await this.deleteTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
+      scope: query.scope,
     });
 
     return {

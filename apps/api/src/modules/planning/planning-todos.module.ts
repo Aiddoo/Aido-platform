@@ -31,6 +31,7 @@ import { DrizzleTodoReadRepository } from "./infrastructure/persistence/todos/dr
 import { DrizzleTodoRepository } from "./infrastructure/persistence/todos/drizzle-todo.repository.js";
 import { PlanningCategoriesModule } from "./planning-categories.module.js";
 import { TODO_PROVIDERS } from "./planning-todos.providers.js";
+import { TodoSeriesController } from "./presentation/controllers/series/v1/todo-series.controller.js";
 import { TodoController } from "./presentation/controllers/todos/v1/todo.controller.js";
 
 @Module({
@@ -41,7 +42,7 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     NotificationRemindersModule,
     IdentitySettingsModule,
   ],
-  controllers: [TodoController],
+  controllers: [TodoController, TodoSeriesController],
   providers: [
     DrizzleTodoRepository,
     DrizzleTodoReadRepository,

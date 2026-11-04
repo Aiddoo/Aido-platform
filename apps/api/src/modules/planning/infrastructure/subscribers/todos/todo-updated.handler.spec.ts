@@ -21,6 +21,7 @@ describe("TodoUpdatedHandler — 부분 수정 이벤트 핸들러", () => {
     todoReminder = {
       scheduleReminder: vi.fn(),
       scheduleReminders: vi.fn(),
+      cancelReminders: vi.fn(),
       cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
     };
 

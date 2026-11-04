@@ -339,6 +339,10 @@ export class Todo extends AggregateRoot<TodoProps> {
     return this.props.sortOrder;
   }
 
+  getItemTitles(): { title: string }[] {
+    return this.props.items.map((item) => ({ title: item.getTitle() }));
+  }
+
   getItemIds(): number[] {
     return this.props.items.map((item) => item.getId());
   }

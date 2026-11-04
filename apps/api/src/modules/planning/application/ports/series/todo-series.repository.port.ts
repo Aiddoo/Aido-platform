@@ -20,6 +20,8 @@ export interface TodoSeriesRepositoryPort {
 
   update(series: TodoSeries): Promise<void>;
 
+  delete(id: string): Promise<void>;
+
   countActiveByUserId(userId: string): Promise<number>;
 
   findDueBatch(query: DueTodoSeriesQuery): Promise<readonly string[]>;

@@ -136,6 +136,10 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     requireRecord(updated[0]);
   }
 
+  async delete(id: string): Promise<void> {
+    await this.db.delete(todoSeries).where(eq(todoSeries.id, id));
+  }
+
   countActiveByUserId(userId: string): Promise<number> {
     return this.db.$count(
       todoSeries,

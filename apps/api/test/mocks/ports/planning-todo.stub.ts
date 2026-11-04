@@ -1,6 +1,7 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
+import { isUndefined, omitBy } from "es-toolkit";
 
 import type {
   FindFriendTodosParams,
@@ -22,6 +23,10 @@ import type {
 } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
 import type {
   CreatedOccurrence,
+  OccurrencePatch,
+  OccurrenceRow,
+  OccurrenceTime,
+  TodoOccurrenceAttachment,
   TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
@@ -43,6 +48,7 @@ import type {
   MutationLockPort,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { ApplicationException } from "#api/shared/domain/index";
 import { TodoBuilder } from "#test/builders/index";
@@ -120,6 +126,82 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     return created;
   }
 
+  async findOccurrencesFrom(seriesId: string, fromDate: string): Promise<readonly OccurrenceRow[]> {
+    return [...this.records.values()]
+      .filter(
+        (record) =>
+          record.seriesId === seriesId &&
+          record.occurrenceDate !== null &&
+          toDateString(record.occurrenceDate) >= fromDate,
+      )
+      .map((record) => ({
+        todoId: record.id,
+        occurrenceDate: toDateString(record.occurrenceDate ?? record.startDate),
+        startDate: toDateString(record.startDate),
+        completed: record.completed,
+      }))
+      .sort((left, right) => left.occurrenceDate.localeCompare(right.occurrenceDate));
+  }
+  async updateFollowingOccurrences(
+    seriesId: string,
+    fromDate: string,
+    patch: OccurrencePatch,
+  ): Promise<void> {
+    for (const row of await this.findOccurrencesFrom(seriesId, fromDate)) {
+      if (!row.completed) {
+        Object.assign(this.#record(row.todoId), omitBy(patch, isUndefined));
+      }
+    }
+  }
+  async updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void> {
+    for (const { todoId, scheduledTime } of times) {
+      Object.assign(this.#record(todoId), { scheduledTime, isAllDay: scheduledTime === null });
+    }
+  }
+  async reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void> {
+    for (const todoId of todoIds) {
+      this.#record(todoId).seriesId = toSeriesId;
+    }
+  }
+  async moveOccurrence(
+    todoId: number,
+    occurrenceDate: string,
+    scheduledTime: Date | null,
+  ): Promise<void> {
+    const date = parseDateOnly(occurrenceDate);
+    Object.assign(this.#record(todoId), { occurrenceDate: date, startDate: date, scheduledTime });
+  }
+  async attachToSeries(
+    todoId: number,
+    seriesId: string,
+    occurrence: TodoOccurrenceAttachment,
+  ): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    Object.assign(this.#record(todoId), {
+      seriesId,
+      occurrenceDate: date,
+      startDate: date,
+      endDate: null,
+      scheduledTime: occurrence.scheduledTime,
+      isAllDay: occurrence.scheduledTime === null,
+    });
+  }
+  async deleteOccurrences(
+    seriesId: string,
+    options: { readonly fromDate?: string; readonly includeCompleted: boolean },
+  ): Promise<readonly number[]> {
+    const rows = await this.findOccurrencesFrom(seriesId, options.fromDate ?? "0000-01-01");
+    const ids = rows
+      .filter((row) => options.includeCompleted || !row.completed)
+      .map((row) => row.todoId);
+    await this.deleteMany(ids);
+    return ids;
+  }
+  async deleteMany(todoIds: readonly number[]): Promise<void> {
+    for (const todoId of todoIds) {
+      this.records.delete(todoId);
+    }
+  }
   async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
     for (const [sortOrder, item] of items.entries()) {
       await this.createItem(todoId, { ...item, sortOrder });
@@ -266,6 +348,9 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
   async update(series: TodoSeries): Promise<void> {
     this.store.set(series.getId(), this.#copy(series));
   }
+  async delete(id: string): Promise<void> {
+    this.store.delete(id);
+  }
   async countActiveByUserId(userId: string): Promise<number> {
     return [...this.store.values()].filter(
       (series) => series.getUserId() === userId && series.isActive(),
@@ -298,6 +383,9 @@ export class StubPlanningTodoReminder implements TodoReminderPort {
   }
   async scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
     this.scheduled.push(...reminders);
+  }
+  async cancelReminders(todoIds: readonly number[]): Promise<void> {
+    this.cancelled.push(...todoIds);
   }
   async cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
     this.cancelled.push(todoId);

@@ -1,5 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
@@ -31,6 +32,8 @@ export interface UpdateTodoInput {
   readonly userId: string;
   readonly data: UpdateTodoData;
   readonly timezone: string;
+  /** 명시했는데 반복이 아니면 TODO_0844다. 회차 하나만 고쳐도 원래 회차 날짜는 그대로다. */
+  readonly scope?: TodoUpdateScope;
 }
 
 interface UpdateTodoDependencies {
@@ -67,6 +70,10 @@ export class UpdateTodo {
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(id, userId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      }
+
+      if (input.scope != null && todo.getSeriesId() == null) {
+        throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope: input.scope });
       }
 
       const wasCompleted = todo.isCompleted();

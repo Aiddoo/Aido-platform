@@ -2,6 +2,7 @@ import type { Todo as TodoResponse } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
+import { TodoSeriesEditEffects } from "#api/modules/planning/application/services/series/todo-series-edit-effects.service";
 import type { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -38,18 +39,24 @@ export function createPlanningTodoFixture(
       categoryOwners.set(record.categoryId, record.userId);
     }
   }
+  const todoCache = new StubPlanningTodoCache();
+  const eventPublisher = new StubPlanningEventPublisher();
+  const logger = mock<ApplicationLogger>();
   const seriesStore = new Map<string, TodoSeries>();
   const todoRepository = new StubPlanningTodoRepository(records, seriesStore);
   const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);
   const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
   const todoReminder = new StubPlanningTodoReminder();
   const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository });
-  const todoCache = new StubPlanningTodoCache();
-  const eventPublisher = new StubPlanningEventPublisher();
+  const seriesEffects = new TodoSeriesEditEffects({
+    todoCache,
+    todoReminder,
+    eventPublisher,
+    logger,
+  });
   const mutationLock = new StubPlanningMutationLock();
   const categoryOwnership = createCategoryOwnershipStub(categories, categoryOwners);
   const unitOfWork = createUnitOfWorkMock();
-  const logger = mock<ApplicationLogger>();
   const paginationService = new PaginationService();
   const friendIds = new Set<string>();
   const friendPort = {
@@ -76,6 +83,8 @@ export function createPlanningTodoFixture(
     todoReadRepository,
     todoSeriesRepository,
     todoReminder,
+    seriesRepository: todoSeriesRepository,
+    seriesEffects,
     occurrenceMaterializer,
     todoCache,
     eventPublisher,

@@ -16,6 +16,10 @@ export type TodoRepeatEndType = (typeof TODO_REPEAT_END_TYPES)[number];
 export const TODO_EDIT_SCOPES = ["THIS_ONLY", "THIS_AND_FOLLOWING", "ALL"] as const;
 export type TodoEditScope = (typeof TODO_EDIT_SCOPES)[number];
 
+/** 수정은 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다. */
+export const TODO_UPDATE_SCOPES = ["THIS_ONLY", "THIS_AND_FOLLOWING"] as const;
+export type TodoUpdateScope = (typeof TODO_UPDATE_SCOPES)[number];
+
 export const DAY_OF_WEEK_MAP: Record<DayOfWeek, number> = {
   SUN: 0,
   MON: 1,

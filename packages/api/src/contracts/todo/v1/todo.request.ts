@@ -3,7 +3,13 @@ import { z } from "zod";
 import { dateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from "../../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
-import { dayOfWeekSchema, todoRepeatSchema, todoVisibilitySchema } from "./todo.common.js";
+import {
+  dayOfWeekSchema,
+  todoEditScopeSchema,
+  todoRepeatSchema,
+  todoUpdateScopeSchema,
+  todoVisibilitySchema,
+} from "./todo.common.js";
 
 export { todoVisibilitySchema } from "./todo.common.js";
 
@@ -96,6 +102,33 @@ export const updateTodoSchema = z
       .optional()
       .describe("공개 범위 (선택, PUBLIC: 전체 공개, PRIVATE: 비공개)"),
     completed: z.boolean().optional().describe("완료 상태 (선택)"),
+    scope: todoUpdateScopeSchema
+      .optional()
+      .describe("반복 회차의 수정 범위 (선택, 기본값: THIS_ONLY). 반복이 아니면 TODO_0844"),
+    repeat: todoRepeatSchema
+      .nullable()
+      .optional()
+      .describe(
+        "반복 규칙 (선택). 생략은 변경 없음, null은 이 회차 뒤로 끝내기, 값은 단일 할 일을 반복으로 전환하거나 scope=THIS_AND_FOLLOWING과 함께 규칙 변경",
+      ),
+    checklist: z
+      .array(
+        z.object({
+          title: z
+            .string()
+            .min(1, "제목을 입력해주세요")
+            .max(200, "제목은 200자 이하로 입력해주세요")
+            .describe("하위 항목 제목"),
+        }),
+      )
+      .max(
+        TODO_ITEM_LIMITS.MAX_PER_TODO,
+        `하위 항목은 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개까지 추가할 수 있습니다`,
+      )
+      .optional()
+      .describe(
+        "새로 만드는 회차에 복사할 체크리스트 (선택, scope=THIS_AND_FOLLOWING 전용). 이미 만든 회차의 진행은 그대로다",
+      ),
   })
   .refine(
     (data) => {
@@ -165,6 +198,22 @@ export const todoIdParamSchema = z.object({
 });
 
 export type TodoIdParam = z.infer<typeof todoIdParamSchema>;
+
+export const deleteTodoQuerySchema = z.object({
+  scope: todoEditScopeSchema
+    .optional()
+    .describe(
+      "반복 회차의 삭제 범위 (선택, 기본값: THIS_ONLY). ALL은 완료한 회차도 지운다. 반복이 아니면 TODO_0844",
+    ),
+});
+
+export type DeleteTodoQuery = z.infer<typeof deleteTodoQuerySchema>;
+
+export const todoSeriesIdParamSchema = z.object({
+  seriesId: z.string().min(1).max(36).describe("반복 할 일 ID"),
+});
+
+export type TodoSeriesIdParam = z.infer<typeof todoSeriesIdParamSchema>;
 
 export const toggleTodoCompleteSchema = z.object({
   completed: z.boolean().describe("완료 상태 (true: 완료, false: 미완료)"),

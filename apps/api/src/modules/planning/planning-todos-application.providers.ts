@@ -17,10 +17,15 @@ import { TODO_READ_REPOSITORY } from "./application/ports/todos/todo-read.reposi
 import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
 import { TodoOccurrenceMaterializer } from "./application/services/series/todo-occurrence-materializer.service.js";
+import { TodoSeriesEditEffects } from "./application/services/series/todo-series-edit-effects.service.js";
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
 import { TodoCreationWriter } from "./application/services/todos/todo-creation-writer.service.js";
+import { GetTodoSeries } from "./application/use-cases/series/get-todo-series.use-case.js";
 import { MaterializeDueTodoSeries } from "./application/use-cases/series/materialize-due-todo-series.use-case.js";
+import { StartSeriesFromTodo } from "./application/use-cases/series/start-series-from-todo.use-case.js";
+import { StopTodoSeries } from "./application/use-cases/series/stop-todo-series.use-case.js";
+import { UpdateFollowingTodos } from "./application/use-cases/series/update-following-todos.use-case.js";
 import { AddTodoItem } from "./application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "./application/use-cases/todos/change-todo-category.use-case.js";
 import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
@@ -243,9 +248,19 @@ export const createTodoProvider: FactoryProvider<CreateTodo> = {
 
 export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
   provide: DeleteTodo,
-  inject: [TODO_REPOSITORY, TODO_CACHE, UNIT_OF_WORK, MUTATION_LOCK, DOMAIN_EVENT_PUBLISHER],
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TodoSeriesEditEffects,
+    TODO_CACHE,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof DeleteTodo>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof DeleteTodo>[0]["seriesRepository"],
+    seriesEffects: ConstructorParameters<typeof DeleteTodo>[0]["seriesEffects"],
     todoCache: ConstructorParameters<typeof DeleteTodo>[0]["todoCache"],
     unitOfWork: ConstructorParameters<typeof DeleteTodo>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof DeleteTodo>[0]["mutationLock"],
@@ -253,11 +268,129 @@ export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {
   ) =>
     new DeleteTodo({
       todoRepository,
+      seriesRepository,
+      seriesEffects,
       todoCache,
       unitOfWork,
       mutationLock,
       eventPublisher,
       logger: new Logger(DeleteTodo.name),
+    }),
+};
+
+export const todoSeriesEditEffectsProvider: FactoryProvider<TodoSeriesEditEffects> = {
+  provide: TodoSeriesEditEffects,
+  inject: [TODO_CACHE, TODO_REMINDER, DOMAIN_EVENT_PUBLISHER],
+  useFactory: (
+    todoCache: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["todoCache"],
+    todoReminder: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["todoReminder"],
+    eventPublisher: ConstructorParameters<typeof TodoSeriesEditEffects>[0]["eventPublisher"],
+  ) =>
+    new TodoSeriesEditEffects({
+      todoCache,
+      todoReminder,
+      eventPublisher,
+      logger: new Logger(TodoSeriesEditEffects.name),
+    }),
+};
+
+export const getTodoSeriesProvider: FactoryProvider<GetTodoSeries> = {
+  provide: GetTodoSeries,
+  inject: [TODO_SERIES_REPOSITORY],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof GetTodoSeries>[0]["seriesRepository"],
+  ) => new GetTodoSeries({ seriesRepository }),
+};
+
+export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeries> = {
+  provide: StopTodoSeries,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TodoSeriesEditEffects,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof StopTodoSeries>[0]["todoRepository"],
+    seriesRepository: ConstructorParameters<typeof StopTodoSeries>[0]["seriesRepository"],
+    effects: ConstructorParameters<typeof StopTodoSeries>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof StopTodoSeries>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof StopTodoSeries>[0]["mutationLock"],
+  ) =>
+    new StopTodoSeries({
+      todoRepository,
+      seriesRepository,
+      effects,
+      unitOfWork,
+      mutationLock,
+      logger: new Logger(StopTodoSeries.name),
+    }),
+};
+
+export const startSeriesFromTodoProvider: FactoryProvider<StartSeriesFromTodo> = {
+  provide: StartSeriesFromTodo,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    TodoOccurrenceMaterializer,
+    TodoCreationEffects,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoReadRepository"],
+    seriesRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof StartSeriesFromTodo>[0]["materializer"],
+    effects: ConstructorParameters<typeof StartSeriesFromTodo>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof StartSeriesFromTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof StartSeriesFromTodo>[0]["mutationLock"],
+  ) =>
+    new StartSeriesFromTodo({
+      todoRepository,
+      todoReadRepository,
+      seriesRepository,
+      materializer,
+      effects,
+      unitOfWork,
+      mutationLock,
+    }),
+};
+
+export const updateFollowingTodosProvider: FactoryProvider<UpdateFollowingTodos> = {
+  provide: UpdateFollowingTodos,
+  inject: [
+    TODO_REPOSITORY,
+    TODO_READ_REPOSITORY,
+    TODO_SERIES_REPOSITORY,
+    CATEGORY_OWNERSHIP,
+    TodoOccurrenceMaterializer,
+    TodoSeriesEditEffects,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoRepository"],
+    todoReadRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["todoReadRepository"],
+    seriesRepository: ConstructorParameters<typeof UpdateFollowingTodos>[0]["seriesRepository"],
+    categoryOwnership: ConstructorParameters<typeof UpdateFollowingTodos>[0]["categoryOwnership"],
+    materializer: ConstructorParameters<typeof UpdateFollowingTodos>[0]["materializer"],
+    effects: ConstructorParameters<typeof UpdateFollowingTodos>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof UpdateFollowingTodos>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof UpdateFollowingTodos>[0]["mutationLock"],
+  ) =>
+    new UpdateFollowingTodos({
+      todoRepository,
+      todoReadRepository,
+      seriesRepository,
+      categoryOwnership,
+      materializer,
+      effects,
+      unitOfWork,
+      mutationLock,
+      logger: new Logger(UpdateFollowingTodos.name),
     }),
 };
 

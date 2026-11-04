@@ -26,6 +26,9 @@ export interface TodoReminderPort {
   /** 새로 만든 회차의 리마인더를 한 번에 등록한다. 이미 지난 시각은 등록하지 않는다. */
   scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void>;
 
+  /** 범위 수정·삭제로 바뀐 회차의 예약을 차례로 취소한다. */
+  cancelReminders(todoIds: readonly number[]): Promise<void>;
+
   /**
    * 리마인더 취소.
    *

@@ -14,6 +14,29 @@ export interface TodoOccurrencePlan extends TodoCreationPlan {
   readonly createdAt: Date;
 }
 
+export interface OccurrenceRow {
+  readonly todoId: number;
+  readonly occurrenceDate: string;
+  readonly startDate: string;
+  readonly completed: boolean;
+}
+
+export interface OccurrencePatch {
+  readonly title?: string;
+  readonly categoryId?: number;
+  readonly visibility?: TodoVisibility;
+}
+
+export interface OccurrenceTime {
+  readonly todoId: number;
+  readonly scheduledTime: Date | null;
+}
+
+export interface TodoOccurrenceAttachment {
+  readonly occurrenceDate: string;
+  readonly scheduledTime: Date | null;
+}
+
 export interface CreatedOccurrence {
   readonly todoId: number;
   readonly scheduledTime: Date | null;
@@ -77,6 +100,40 @@ export interface TodoRepositoryPort {
     seriesId: string,
     checklist: readonly { title: string }[],
   ): Promise<readonly CreatedOccurrence[]>;
+
+  /** fromDate 이후(포함) 회차. 옮긴 회차도 원래 회차 날짜로 찾는다. */
+  findOccurrencesFrom(seriesId: string, fromDate: string): Promise<readonly OccurrenceRow[]>;
+
+  /** fromDate 이후(포함) 미완료 회차의 내용을 함께 고친다. 완료한 회차는 기록이라 두지 않는다. */
+  updateFollowingOccurrences(
+    seriesId: string,
+    fromDate: string,
+    patch: OccurrencePatch,
+  ): Promise<void>;
+
+  /** 회차마다 값이 다른 시각을 한 문장으로 저장한다. */
+  updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void>;
+
+  /** 할 일 id를 유지한 채 다른 규칙으로 옮겨 댓글·진행을 보존한다. */
+  reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void>;
+
+  /** 새 규칙에 없는 날짜의 회차를 맞는 날짜로 옮긴다. */
+  moveOccurrence(todoId: number, occurrenceDate: string, scheduledTime: Date | null): Promise<void>;
+
+  /** 단일 할 일을 규칙의 첫 회차로 삼는다. */
+  attachToSeries(
+    todoId: number,
+    seriesId: string,
+    occurrence: TodoOccurrenceAttachment,
+  ): Promise<void>;
+
+  /** fromDate 이후 회차를 지우고 지운 id를 돌려준다. 완료 회차는 includeCompleted일 때만 지운다. */
+  deleteOccurrences(
+    seriesId: string,
+    options: { readonly fromDate?: string; readonly includeCompleted: boolean },
+  ): Promise<readonly number[]>;
+
+  deleteMany(todoIds: readonly number[]): Promise<void>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
   countCategoryUsage(userId: string, categoryId: number): Promise<number>;

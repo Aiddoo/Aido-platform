@@ -1,7 +1,7 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
 import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
@@ -10,10 +10,15 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import type {
   CreatedOccurrence,
+  OccurrencePatch,
+  OccurrenceRow,
+  OccurrenceTime,
+  TodoOccurrenceAttachment,
   TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
@@ -129,6 +134,133 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       );
     }
     return rows.map((row) => ({ todoId: row.id, scheduledTime: row.scheduledTime }));
+  }
+
+  async findOccurrencesFrom(seriesId: string, fromDate: string): Promise<readonly OccurrenceRow[]> {
+    const rows = await this.db
+      .select({
+        todoId: todo.id,
+        occurrenceDate: todo.occurrenceDate,
+        startDate: todo.startDate,
+        completed: todo.completed,
+      })
+      .from(todo)
+      .where(and(eq(todo.seriesId, seriesId), gte(todo.occurrenceDate, parseDateOnly(fromDate))))
+      .orderBy(asc(todo.occurrenceDate));
+    return rows.map((row) => ({
+      todoId: row.todoId,
+      occurrenceDate: toDateString(requireRecord(row.occurrenceDate)),
+      startDate: toDateString(row.startDate),
+      completed: row.completed,
+    }));
+  }
+
+  async updateFollowingOccurrences(
+    seriesId: string,
+    fromDate: string,
+    patch: OccurrencePatch,
+  ): Promise<void> {
+    const values = omitBy(patch, isUndefined);
+    if (isEmptyObject(values)) {
+      return;
+    }
+    await this.db
+      .update(todo)
+      .set(values)
+      .where(
+        and(
+          eq(todo.seriesId, seriesId),
+          gte(todo.occurrenceDate, parseDateOnly(fromDate)),
+          eq(todo.completed, false),
+        ),
+      );
+  }
+
+  async updateOccurrenceTimes(times: readonly OccurrenceTime[]): Promise<void> {
+    if (times.length === 0) {
+      return;
+    }
+    // 행마다 다른 값을 쓰므로 CASE 한 문장으로 갱신한다.
+    const cases = sql.join(
+      times.map(
+        ({ todoId, scheduledTime }) =>
+          sql`WHEN ${todoId}::integer THEN ${scheduledTime == null ? null : scheduledTime.toISOString()}::timestamptz`,
+      ),
+      sql` `,
+    );
+    await this.db
+      .update(todo)
+      .set({
+        scheduledTime: sql`CASE ${todo.id} ${cases} END`,
+        isAllDay: times.every(({ scheduledTime }) => scheduledTime == null),
+      })
+      .where(
+        inArray(
+          todo.id,
+          times.map(({ todoId }) => todoId),
+        ),
+      );
+  }
+
+  async reassignOccurrences(todoIds: readonly number[], toSeriesId: string): Promise<void> {
+    if (todoIds.length === 0) {
+      return;
+    }
+    await this.db
+      .update(todo)
+      .set({ seriesId: toSeriesId })
+      .where(inArray(todo.id, [...todoIds]));
+  }
+
+  async moveOccurrence(
+    todoId: number,
+    occurrenceDate: string,
+    scheduledTime: Date | null,
+  ): Promise<void> {
+    const date = parseDateOnly(occurrenceDate);
+    await this.updateTodoRow(todoId, { occurrenceDate: date, startDate: date, scheduledTime });
+  }
+
+  async attachToSeries(
+    todoId: number,
+    seriesId: string,
+    occurrence: TodoOccurrenceAttachment,
+  ): Promise<void> {
+    const date = parseDateOnly(occurrence.occurrenceDate);
+    await this.updateTodoRow(todoId, {
+      seriesId,
+      occurrenceDate: date,
+      startDate: date,
+      endDate: null,
+      scheduledTime: occurrence.scheduledTime,
+      isAllDay: occurrence.scheduledTime == null,
+    });
+  }
+
+  async deleteOccurrences(
+    seriesId: string,
+    options: { readonly fromDate?: string; readonly includeCompleted: boolean },
+  ): Promise<readonly number[]> {
+    const deleted = await this.db
+      .delete(todo)
+      .where(
+        and(
+          eq(todo.seriesId, seriesId),
+          options.fromDate == null
+            ? undefined
+            : gte(todo.occurrenceDate, parseDateOnly(options.fromDate)),
+          options.includeCompleted ? undefined : eq(todo.completed, false),
+        ),
+      )
+      .returning({ id: todo.id });
+    return deleted.map((row) => row.id);
+  }
+
+  async deleteMany(todoIds: readonly number[]): Promise<void> {
+    if (todoIds.length === 0) {
+      return;
+    }
+    await this.db.delete(todo).where(inArray(todo.id, [...todoIds]));
   }
 
   async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {

@@ -21,6 +21,7 @@ describe("TodoRescheduledHandler — 일정 변경 이벤트 핸들러", () => {
     todoReminder = {
       scheduleReminder: vi.fn().mockResolvedValue(undefined),
       scheduleReminders: vi.fn(),
+      cancelReminders: vi.fn(),
       cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
     };
 

@@ -7,6 +7,7 @@
 export const TODO_EVENTS = {
   CREATED: "todo.created",
   OCCURRENCES_CREATED: "todo.occurrences-created",
+  OCCURRENCES_CHANGED: "todo.occurrences-changed",
   UPDATED: "todo.updated",
   DELETED: "todo.deleted",
   TOGGLED: "todo.toggled",

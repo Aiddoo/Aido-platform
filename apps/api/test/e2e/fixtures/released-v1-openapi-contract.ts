@@ -299,8 +299,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: 반복 할 일. CreateTodoDto·ConvertMemoToTodoDto 계열에 optional repeat, CreateTodoResponseDto에 optional series, 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional repeat만 추가. 생략하면 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
 	preTodoRepeatSchemasFingerprint:
 		"d16b70c92e007e8a74af7072cb7563c6f1868ad27c3f447aec8991c49adf20e1",
-	schemasFingerprint:
+	/** 1.15.0: 반복 할 일 범위 수정. UpdateTodoDto에 optional scope·repeat·checklist만 추가. 생략하면 THIS_ONLY·변경 없음으로 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preTodoSeriesScopeSchemasFingerprint:
 		"09265fd250a568883c771f60696823e1dea865be4572785410714784fbd74fd6",
+	schemasFingerprint:
+		"3aac5ad1ccef735e82558836423631077517f9017ea1f62906ce6858f2d30544",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
@@ -328,6 +331,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.14.0: 날씨 v1을 Swagger에서 Deprecated(태그 `Weather v1 · Deprecated`, operation `deprecated: true`)로 표시했다. 태그·deprecated는 문서 표시용이라 fingerprint에서 description처럼 제외한다. 제외 전 값이 위 sourceCommit 문서와 같았으므로 같은 문서에서 다시 계산한 값이다. 경로·요청·응답·상태 코드는 같다. */
 	preDocumentationMetadataPathsFingerprint:
 		"5a0384f8da8af27e97e2607f372d505cae3bffb6be2dc66658af6886adace8a9",
-	pathsFingerprint:
+	/** 1.15.0: DELETE /todos/{id}에 선택 query scope(생략 시 THIS_ONLY), POST·PATCH·DELETE /todos 오류 응답 enum에 반복 코드(TODO_0813·0841~0846)만 추가. 생략한 요청의 동작·응답 shape는 같고, 구버전 앱은 모르는 코드를 서버 message로 보여 준다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	preTodoSeriesScopePathsFingerprint:
 		"acaf29b73c6284c5ee7122d51074301477f133fbf57fbfdcb7b532ce75b2ed0b",
+	pathsFingerprint:
+		"db0449039f7686849cdcbee5ed817a12c90001dcdd3db5bb32b66e2f84cf355d",
 } as const;

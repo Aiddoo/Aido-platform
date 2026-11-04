@@ -1,6 +1,5 @@
 export const PlanningTodoLogEvent = {
   CREATED: "planning.todo.created",
-  RECURRING_CREATED: "planning.todo.recurring.created",
   DELETED: "planning.todo.deleted",
   CATEGORY_CHANGED: "planning.todo.category.changed",
   UPDATED: "planning.todo.updated",

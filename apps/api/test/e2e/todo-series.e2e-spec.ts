@@ -1,4 +1,9 @@
-import { createTodoResponseSchema, todoSeriesResponseSchema } from "@aido/api";
+import {
+  createTodoResponseSchema,
+  deleteTodoResponseSchema,
+  todoSeriesResponseSchema,
+  updateTodoResponseSchema,
+} from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
@@ -171,6 +176,228 @@ describe("반복 할 일 생성 E2E", () => {
       // Then
       expect(response.status).toBe(403);
       expect(response.body.error.code).toBe(ErrorCode.TODO_0842);
+    });
+  });
+
+  describe("범위 수정·삭제·규칙 조회", () => {
+    async function createSeries() {
+      const response = await post("/v1/todos", {
+        title: "회차",
+        categoryId,
+        startDate: dateAfter(1),
+        repeat: { frequency: "DAILY", end: { type: "COUNT", count: 4 } },
+      }).expect(201);
+      const body = createTodoResponseSchema.parse(response.body.data);
+      const seriesId = body.series?.id ?? "";
+      const rows = await ctx.testDatabase.getClient().query.todo.findMany({
+        where: { seriesId },
+        orderBy: { occurrenceDate: "asc" },
+      });
+      return { seriesId, ids: rows.map((row) => row.id) };
+    }
+
+    function patch(id: number, body: object) {
+      return request(ctx.app.getHttpServer())
+        .patch(`/v1/todos/${id}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("X-Timezone", "Asia/Seoul")
+        .send(body);
+    }
+
+    function remove(id: number, query = "") {
+      return request(ctx.app.getHttpServer())
+        .delete(`/v1/todos/${id}${query}`)
+        .set("Authorization", `Bearer ${accessToken}`);
+    }
+
+    it("THIS_AND_FOLLOWING은 공유 응답으로 이후 회차를 고친다", async () => {
+      // Given
+      const { ids } = await createSeries();
+      // When
+      const response = await patch(ids[1] ?? 0, {
+        scope: "THIS_AND_FOLLOWING",
+        title: "이후 수정",
+      }).expect(200);
+      // Then
+      const body = updateTodoResponseSchema.parse(response.body.data);
+      expect(body.todo.title).toBe("이후 수정");
+      const rows = await ctx.testDatabase.getClient().query.todo.findMany({
+        where: { id: { in: ids } },
+        orderBy: { occurrenceDate: "asc" },
+      });
+      expect(rows.map((row) => row.title)).toEqual(["회차", "이후 수정", "이후 수정", "이후 수정"]);
+    });
+
+    it("scope와 날짜를 함께 보내면 날짜는 이 회차에만 적용한다", async () => {
+      // Given
+      const { ids } = await createSeries();
+      const moved = dateAfter(30);
+      // When
+      const response = await patch(ids[1] ?? 0, {
+        scope: "THIS_AND_FOLLOWING",
+        title: "함께",
+        startDate: moved,
+      }).expect(200);
+      // Then
+      expect(updateTodoResponseSchema.parse(response.body.data).todo.startDate).toBe(moved);
+      const other = await ctx.testDatabase.getClient().query.todo.findFirst({
+        where: { id: ids[2] },
+      });
+      expect(other?.title).toBe("함께");
+      expect(other?.startDate.toISOString().slice(0, 10)).not.toBe(moved);
+    });
+
+    it("단일 할 일에 repeat를 주면 반복으로 전환하고 null을 주면 끝낸다", async () => {
+      // Given
+      const created = await post("/v1/todos", {
+        title: "단일",
+        categoryId,
+        startDate: dateAfter(1),
+      }).expect(201);
+      const single = createTodoResponseSchema.parse(created.body.data).todo;
+      // When
+      const converted = await patch(single.id, {
+        repeat: { frequency: "DAILY", end: { type: "NEVER" } },
+      }).expect(200);
+      const stopped = await patch(single.id, { repeat: null }).expect(200);
+      const again = await patch(single.id, { repeat: null });
+      // Then
+      const seriesId = updateTodoResponseSchema.parse(converted.body.data).todo.recurrenceGroupId;
+      expect(seriesId).toEqual(expect.any(String));
+      updateTodoResponseSchema.parse(stopped.body.data);
+      expect(again.status).toBe(409);
+      expect(again.body.error.code).toBe(ErrorCode.TODO_0846);
+      const series = await request(ctx.app.getHttpServer())
+        .get(`/v1/todo-series/${seriesId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      expect(todoSeriesResponseSchema.parse(series.body.data)).toMatchObject({
+        isActive: false,
+        nextOccurrenceDate: null,
+      });
+    });
+
+    it.each([
+      {
+        name: "PATCH THIS_AND_FOLLOWING",
+        call: (id: number) => patch(id, { scope: "THIS_AND_FOLLOWING", title: "x" }),
+      },
+      {
+        name: "PATCH THIS_ONLY",
+        call: (id: number) => patch(id, { scope: "THIS_ONLY", title: "x" }),
+      },
+      { name: "PATCH repeat null", call: (id: number) => patch(id, { repeat: null }) },
+      { name: "DELETE ALL", call: (id: number) => remove(id, "?scope=ALL") },
+    ])("반복이 아닌 할 일에 $name이면 TODO_0844다", async ({ call }) => {
+      // Given
+      const created = await post("/v1/todos", {
+        title: "단일",
+        categoryId,
+        startDate: dateAfter(1),
+      }).expect(201);
+      const { todo } = createTodoResponseSchema.parse(created.body.data);
+      // When
+      const response = await call(todo.id);
+      // Then
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe(ErrorCode.TODO_0844);
+    });
+
+    it.each([
+      {
+        name: "범위 없이 규칙",
+        body: { repeat: { frequency: "DAILY", end: { type: "NEVER" } } },
+        field: "scope",
+      },
+      {
+        name: "이 할 일만에 체크리스트",
+        body: { scope: "THIS_ONLY", checklist: [{ title: "x" }] },
+        field: "checklist",
+      },
+    ])("회차에 $name이면 TODO_0845다", async ({ body }) => {
+      // Given
+      const { ids } = await createSeries();
+      // When
+      const response = await patch(ids[0] ?? 0, body);
+      // Then
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe(ErrorCode.TODO_0845);
+    });
+
+    it("잘못된 scope는 입력 검증에서 거부한다", async () => {
+      // Given
+      const { ids } = await createSeries();
+      // When
+      const patched = await patch(ids[0] ?? 0, { scope: "ALL" });
+      const removed = await remove(ids[0] ?? 0, "?scope=SOME");
+      // Then
+      expect(patched.status).toBe(400);
+      expect(patched.body.error.code).toBe(ErrorCode.SYS_0002);
+      expect(removed.status).toBe(400);
+    });
+
+    it("DELETE scope=ALL은 공유 응답으로 규칙과 회차를 지운다", async () => {
+      // Given
+      const { seriesId, ids } = await createSeries();
+      // When
+      const response = await remove(ids[1] ?? 0, "?scope=ALL").expect(200);
+      const series = await request(ctx.app.getHttpServer())
+        .get(`/v1/todo-series/${seriesId}`)
+        .set("Authorization", `Bearer ${accessToken}`);
+      // Then
+      deleteTodoResponseSchema.parse(response.body.data);
+      expect(series.status).toBe(404);
+      expect(series.body.error.code).toBe(ErrorCode.TODO_0841);
+    });
+
+    it("다른 사용자의 규칙은 조회할 수 없다", async () => {
+      // Given
+      const { seriesId } = await createSeries();
+      const other = await ctx.helpers.createVerifiedUser("series-other@example.com", "Test1234!");
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get(`/v1/todo-series/${seriesId}`)
+        .set("Authorization", `Bearer ${other.accessToken}`);
+      // Then
+      expect(response.status).toBe(404);
+      expect(response.body.error.code).toBe(ErrorCode.TODO_0841);
+    });
+
+    it("인증 없이는 규칙을 조회할 수 없다", async () => {
+      // When
+      const response = await request(ctx.app.getHttpServer()).get("/v1/todo-series/any");
+      // Then
+      expect(response.status).toBe(401);
+    });
+
+    it("출시 앱의 PATCH는 범위 없이 그 회차만 고친다", async () => {
+      // Given
+      const { ids } = await createSeries();
+      // When
+      const response = await patch(ids[1] ?? 0, { title: "이 회차만" }).expect(200);
+      // Then
+      expect(releasedCreateTodoResponseSchema.parse(response.body.data).todo.title).toBe(
+        "이 회차만",
+      );
+      const other = await ctx.testDatabase
+        .getClient()
+        .query.todo.findFirst({ where: { id: ids[2] } });
+      expect(other?.title).toBe("회차");
+    });
+
+    it("규칙을 지운 뒤 남은 출시 앱 묶음(규칙 없는 옛 행)도 범위 없이 수정·삭제된다", async () => {
+      // Given
+      const { seriesId, ids } = await createSeries();
+      await ctx.testDatabase.getClient().delete(todoSeries).where(eq(todoSeries.id, seriesId));
+      // When
+      const patched = await patch(ids[0] ?? 0, { title: "고아" });
+      const removed = await remove(ids[1] ?? 0);
+      const following = await patch(ids[2] ?? 0, { scope: "THIS_AND_FOLLOWING", title: "x" });
+      // Then
+      expect(patched.status).toBe(200);
+      expect(removed.status).toBe(200);
+      expect(following.status).toBe(404);
+      expect(following.body.error.code).toBe(ErrorCode.TODO_0841);
     });
   });
 

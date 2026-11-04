@@ -17322,6 +17322,410 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "TodoSeriesResponseDto": {
+      "example": {
+        "categoryId": 1,
+        "checklist": [],
+        "createdAt": "2026-11-02T00:00:00.000Z",
+        "id": "0193a5f0-7c1e-7000-8000-000000000001",
+        "isActive": true,
+        "nextOccurrenceDate": "2027-02-01",
+        "repeat": {
+          "end": {
+            "type": "NEVER",
+          },
+          "frequency": "WEEKLY",
+          "interval": 1,
+          "weekdays": [
+            "MON",
+            "WED",
+          ],
+        },
+        "scheduledTime": "09:00",
+        "startDate": "2026-11-02",
+        "timezone": "Asia/Seoul",
+        "title": "물 마시기",
+        "updatedAt": "2026-11-02T00:00:00.000Z",
+        "visibility": "PUBLIC",
+      },
+      "properties": {
+        "categoryId": {
+          "description": "새 회차에 쓸 카테고리 ID",
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        "checklist": {
+          "description": "새 회차에 복사할 하위 할 일",
+          "items": {
+            "properties": {
+              "title": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "title",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "createdAt": {
+          "description": "규칙을 만든 시각 (ISO 8601 UTC)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "id": {
+          "description": "반복 할 일 ID (할 일 응답의 recurrenceGroupId와 같은 값)",
+          "type": "string",
+        },
+        "isActive": {
+          "description": "더 만들 회차가 남았는지",
+          "type": "boolean",
+        },
+        "nextOccurrenceDate": {
+          "description": "다음에 만들 회차 날짜 (YYYY-MM-DD, 더 만들 회차가 없으면 null)",
+          "format": "date",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "repeat": {
+          "description": "반복 규칙",
+          "oneOf": [
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "DAILY",
+                  ],
+                  "type": "string",
+                },
+              },
+              "required": [
+                "frequency",
+                "end",
+              ],
+              "type": "object",
+            },
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "WEEKLY",
+                  ],
+                  "type": "string",
+                },
+                "interval": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        1,
+                      ],
+                      "type": "number",
+                    },
+                    {
+                      "enum": [
+                        2,
+                      ],
+                      "type": "number",
+                    },
+                  ],
+                  "description": "1 = 매주, 2 = 격주",
+                },
+                "weekdays": {
+                  "description": "반복할 요일",
+                  "items": {
+                    "enum": [
+                      "MON",
+                      "TUE",
+                      "WED",
+                      "THU",
+                      "FRI",
+                      "SAT",
+                      "SUN",
+                    ],
+                    "type": "string",
+                  },
+                  "maxItems": 7,
+                  "minItems": 1,
+                  "type": "array",
+                },
+              },
+              "required": [
+                "frequency",
+                "interval",
+                "weekdays",
+                "end",
+              ],
+              "type": "object",
+            },
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "MONTHLY",
+                  ],
+                  "type": "string",
+                },
+                "monthDay": {
+                  "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                  "maximum": 31,
+                  "minimum": 1,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "frequency",
+                "monthDay",
+                "end",
+              ],
+              "type": "object",
+            },
+          ],
+        },
+        "scheduledTime": {
+          "description": "규칙 시간대의 시각 (HH:mm, 종일 반복은 null)",
+          "nullable": true,
+          "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+          "type": "string",
+        },
+        "startDate": {
+          "description": "반복 시작일 (YYYY-MM-DD)",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "timezone": {
+          "description": "규칙을 만들 때의 시간대 (IANA). 여행 중에도 바뀌지 않는다",
+          "type": "string",
+        },
+        "title": {
+          "description": "새 회차에 쓸 제목",
+          "type": "string",
+        },
+        "updatedAt": {
+          "description": "규칙을 고친 시각 (ISO 8601 UTC)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "visibility": {
+          "description": "새 회차에 쓸 공개 범위",
+          "enum": [
+            "PUBLIC",
+            "PRIVATE",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "title",
+        "categoryId",
+        "visibility",
+        "scheduledTime",
+        "timezone",
+        "repeat",
+        "startDate",
+        "nextOccurrenceDate",
+        "isActive",
+        "checklist",
+        "createdAt",
+        "updatedAt",
+      ],
+      "type": "object",
+    },
     "TodoSummaryResponseDto": {
       "example": {
         "completedTodos": 3,
@@ -18027,6 +18431,25 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "minimum": 0,
           "type": "integer",
         },
+        "checklist": {
+          "description": "새로 만드는 회차에 복사할 체크리스트 (선택, scope=THIS_AND_FOLLOWING 전용). 이미 만든 회차의 진행은 그대로다",
+          "items": {
+            "properties": {
+              "title": {
+                "description": "하위 항목 제목",
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "title",
+            ],
+            "type": "object",
+          },
+          "maxItems": 20,
+          "type": "array",
+        },
         "completed": {
           "description": "완료 상태 (선택)",
           "type": "boolean",
@@ -18042,10 +18465,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "description": "종일 일정 여부 (선택)",
           "type": "boolean",
         },
+        "repeat": {
+          "description": "반복 규칙 (선택). 생략은 변경 없음, null은 이 회차 뒤로 끝내기, 값은 단일 할 일을 반복으로 전환하거나 scope=THIS_AND_FOLLOWING과 함께 규칙 변경",
+          "nullable": true,
+          "oneOf": [
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "DAILY",
+                  ],
+                  "type": "string",
+                },
+              },
+              "required": [
+                "frequency",
+                "end",
+              ],
+              "type": "object",
+            },
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "WEEKLY",
+                  ],
+                  "type": "string",
+                },
+                "interval": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        1,
+                      ],
+                      "type": "number",
+                    },
+                    {
+                      "enum": [
+                        2,
+                      ],
+                      "type": "number",
+                    },
+                  ],
+                  "description": "1 = 매주, 2 = 격주",
+                },
+                "weekdays": {
+                  "description": "반복할 요일",
+                  "items": {
+                    "enum": [
+                      "MON",
+                      "TUE",
+                      "WED",
+                      "THU",
+                      "FRI",
+                      "SAT",
+                      "SUN",
+                    ],
+                    "type": "string",
+                  },
+                  "maxItems": 7,
+                  "minItems": 1,
+                  "type": "array",
+                },
+              },
+              "required": [
+                "frequency",
+                "interval",
+                "weekdays",
+                "end",
+              ],
+              "type": "object",
+            },
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "MONTHLY",
+                  ],
+                  "type": "string",
+                },
+                "monthDay": {
+                  "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                  "maximum": 31,
+                  "minimum": 1,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "frequency",
+                "monthDay",
+                "end",
+              ],
+              "type": "object",
+            },
+          ],
+        },
         "scheduledTime": {
           "description": "예정 시간 (선택, HH:mm, 종일 일정은 null)",
           "nullable": true,
           "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+          "type": "string",
+        },
+        "scope": {
+          "description": "반복 회차의 수정 범위 (선택, 기본값: THIS_ONLY). 반복이 아니면 TODO_0844",
+          "enum": [
+            "THIS_ONLY",
+            "THIS_AND_FOLLOWING",
+          ],
           "type": "string",
         },
         "startDate": {
@@ -47589,6 +48304,221 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
       ],
     },
   },
+  "/v1/todo-series/{seriesId}": {
+    "get": {
+      "description": "편집 시트에서 반복 규칙을 불러올 때 씁니다. 할 일 응답의 \`recurrenceGroupId\`가 \`seriesId\`입니다.
+
+**응답 필드**
+- \`repeat\`: 반복 규칙
+- \`nextOccurrenceDate\`: 다음에 만들 회차 날짜, 더 만들 회차가 없으면 null
+- \`isActive\`: 더 만들 회차가 남았는지",
+      "operationId": "getTodoSeries",
+      "parameters": [
+        {
+          "description": "반복 할 일 ID",
+          "in": "path",
+          "name": "seriesId",
+          "required": true,
+          "schema": {
+            "description": "반복 할 일 ID",
+            "maxLength": 36,
+            "minLength": 1,
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoSeriesResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_0841",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "반복 할 일을 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "반복 할 일을 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "반복 할 일 규칙 조회",
+      "tags": [
+        "Todos",
+      ],
+    },
+  },
   "/v1/todos": {
     "get": {
       "description": "사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
@@ -47976,11 +48906,54 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0843": {
+                  "summary": "선택한 반복에 맞는 날짜가 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0843",
+                      "details": null,
+                      "message": "선택한 반복에 맞는 날짜가 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0845": {
+                  "summary": "반복 설정이 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0845",
+                      "details": null,
+                      "message": "반복 설정이 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "SYS_0002",
+                          "TODO_0843",
+                          "TODO_0845",
+                        ],
                         "example": "SYS_0002",
                         "type": "string",
                       },
@@ -48018,7 +48991,11 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
               },
             },
           },
-          "description": "잘못된 파라미터입니다.",
+          "description": "SYS_0002: 잘못된 파라미터입니다.
+
+TODO_0843: 선택한 반복에 맞는 날짜가 없습니다.
+
+TODO_0845: 반복 설정이 올바르지 않습니다.",
         },
         "401": {
           "content": {
@@ -48070,11 +49047,54 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0811": {
+                  "summary": "카테고리의 활성 할 일이 최대 한도에 도달했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0811",
+                      "details": null,
+                      "message": "카테고리의 활성 할 일이 최대 한도에 도달했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0813": {
+                  "summary": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0813",
+                      "details": null,
+                      "message": "반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0842": {
+                  "summary": "반복 할 일은 최대 30개까지 만들 수 있습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0842",
+                      "details": null,
+                      "message": "반복 할 일은 최대 30개까지 만들 수 있습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0811",
+                          "TODO_0813",
+                          "TODO_0842",
+                        ],
                         "example": "TODO_0811",
                         "type": "string",
                       },
@@ -48112,7 +49132,11 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
               },
             },
           },
-          "description": "카테고리의 활성 할 일이 최대 한도에 도달했습니다.",
+          "description": "TODO_0811: 카테고리의 활성 할 일이 최대 한도에 도달했습니다.
+
+TODO_0813: 반복 할 일을 생성하면 카테고리의 할 일 한도를 초과합니다.
+
+TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
         },
         "404": {
           "content": {
@@ -49148,7 +50172,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     "delete": {
       "description": "특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
 
-할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).",
+할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).
+
+**반복 할 일** (\`scope\`)
+- 생략하거나 \`THIS_ONLY\`: 이 회차만 지웁니다. 횟수 종료에서는 지운 날짜도 횟수에 셉니다.
+- \`THIS_AND_FOLLOWING\`: 이 회차와 이후 미완료 회차를 지우고 반복을 끝냅니다. 완료한 회차는 남습니다.
+- \`ALL\`: 완료한 회차까지 모두 지웁니다.",
       "operationId": "deleteTodo",
       "parameters": [
         {
@@ -49162,6 +50191,21 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
+          },
+        },
+        {
+          "description": "반복 회차의 삭제 범위 (선택, 기본값: THIS_ONLY). ALL은 완료한 회차도 지운다. 반복이 아니면 TODO_0844",
+          "in": "query",
+          "name": "scope",
+          "required": false,
+          "schema": {
+            "description": "반복 회차의 삭제 범위 (선택, 기본값: THIS_ONLY). ALL은 완료한 회차도 지운다. 반복이 아니면 TODO_0844",
+            "enum": [
+              "THIS_ONLY",
+              "THIS_AND_FOLLOWING",
+              "ALL",
+            ],
+            "type": "string",
           },
         },
       ],
@@ -49197,11 +50241,41 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0844": {
+                  "summary": "반복 할 일이 아니라서 범위를 고를 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0844",
+                      "details": null,
+                      "message": "반복 할 일이 아니라서 범위를 고를 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "SYS_0002",
+                          "TODO_0844",
+                        ],
                         "example": "SYS_0002",
                         "type": "string",
                       },
@@ -49239,7 +50313,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
               },
             },
           },
-          "description": "잘못된 파라미터입니다.",
+          "description": "SYS_0002: 잘못된 파라미터입니다.
+
+TODO_0844: 반복 할 일이 아니라서 범위를 고를 수 없습니다.",
         },
         "401": {
           "content": {
@@ -49291,11 +50367,41 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0841": {
+                  "summary": "반복 할 일을 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0841",
+                      "details": null,
+                      "message": "반복 할 일을 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_0841",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -49333,7 +50439,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
               },
             },
           },
-          "description": "Todo를 찾을 수 없습니다.",
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
+
+TODO_0841: 반복 할 일을 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -49570,7 +50678,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     "patch": {
       "description": "할 일의 정보를 부분 수정합니다.
 
-**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed",
+**수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed
+
+**반복 할 일**
+- \`scope\`: 생략하거나 \`THIS_ONLY\`면 이 회차만 고칩니다. 옮겨도 원래 회차 날짜는 그대로라 다시 만들어지지 않습니다.
+- \`scope=THIS_AND_FOLLOWING\`: 이 회차와 이후 미완료 회차를 고칩니다. 완료한 회차는 그대로입니다. 첫 회차에서 고르면 전체를 고칩니다. 날짜·완료는 이 회차에만 적용합니다.
+- \`repeat\`: 생략은 변경 없음, \`null\`은 이 회차 뒤로 반복 끝내기, 값은 단일 할 일을 반복으로 전환하거나 \`scope=THIS_AND_FOLLOWING\`과 함께 규칙을 바꿉니다.
+- \`checklist\`: \`scope=THIS_AND_FOLLOWING\` 전용. 새로 만드는 회차에 복사합니다. 이미 만든 회차의 진행은 그대로입니다.",
       "operationId": "updateTodo",
       "parameters": [
         {
@@ -49639,11 +50753,67 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0843": {
+                  "summary": "선택한 반복에 맞는 날짜가 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0843",
+                      "details": null,
+                      "message": "선택한 반복에 맞는 날짜가 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0844": {
+                  "summary": "반복 할 일이 아니라서 범위를 고를 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0844",
+                      "details": null,
+                      "message": "반복 할 일이 아니라서 범위를 고를 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0845": {
+                  "summary": "반복 설정이 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0845",
+                      "details": null,
+                      "message": "반복 설정이 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "SYS_0002",
+                          "TODO_0843",
+                          "TODO_0844",
+                          "TODO_0845",
+                        ],
                         "example": "SYS_0002",
                         "type": "string",
                       },
@@ -49681,7 +50851,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
               },
             },
           },
-          "description": "잘못된 파라미터입니다.",
+          "description": "SYS_0002: 잘못된 파라미터입니다.
+
+TODO_0843: 선택한 반복에 맞는 날짜가 없습니다.
+
+TODO_0844: 반복 할 일이 아니라서 범위를 고를 수 없습니다.
+
+TODO_0845: 반복 설정이 올바르지 않습니다.",
         },
         "401": {
           "content": {
@@ -49730,6 +50906,53 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           },
           "description": "인증이 필요합니다.",
         },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_0842",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "반복 할 일은 최대 30개까지 만들 수 있습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "반복 할 일은 최대 30개까지 만들 수 있습니다.",
+        },
         "404": {
           "content": {
             "application/json": {
@@ -49741,6 +50964,18 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
                       "code": "TODO_0801",
                       "details": null,
                       "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0841": {
+                  "summary": "반복 할 일을 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0841",
+                      "details": null,
+                      "message": "반복 할 일을 찾을 수 없습니다.",
                     },
                     "success": false,
                     "timestamp": 1700000000000,
@@ -49766,6 +51001,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
                       "code": {
                         "enum": [
                           "TODO_0801",
+                          "TODO_0841",
                           "TODO_CATEGORY_0851",
                         ],
                         "example": "TODO_0801",
@@ -49807,7 +51043,56 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           },
           "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
+TODO_0841: 반복 할 일을 찾을 수 없습니다.
+
 TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_0846",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이미 끝난 반복입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "이미 끝난 반복입니다.",
         },
         "500": {
           "content": {
