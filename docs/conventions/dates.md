@@ -18,13 +18,13 @@
 
 ## 2. "오늘"과 시간대의 출처
 
-- **서버**: 요청 헤더는 요청마다 한 번 `RequestClient`(`apps/api/src/platform/http/request-client`)로 정규화한다. `timezone`은 런타임이 지원하는 IANA 이름이거나 null이다. 헤더가 없거나 잘못됐을 때의 규칙은 `request-timezone.ts`의 두 함수뿐이고, 엔드포인트마다 아래 규칙 하나를 쓴다.
+- **서버**: 앱 헤더는 요청마다 한 번 `RequestClient`(`apps/api/src/platform/http/request-client`)로 정규화한다. Controller는 `@Headers("x-timezone")`로 직접 읽지 않고 `@Timezone()`·`@Locale()`·`@AppVersion()`·`@CurrentRequestClient()`를 쓴다([서버 코드 기준](../../apps/api/.claude/api-conventions.md#요청-헤더와-throttle)). `timezone`은 런타임이 지원하는 IANA 이름이거나 null이다. 헤더가 없거나 잘못됐을 때의 규칙은 `request-timezone.ts`의 두 함수뿐이고, 엔드포인트마다 아래 규칙 하나를 쓴다.
 
-  | 규칙                  | 함수·데코레이터                                                    | 헤더 없음·오류 | 쓰는 곳                                                                            |
-  | --------------------- | ------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------- |
-  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`          | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)    |
-  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`    | AI 파싱·제안·리포트(저장된 사용자 시간대로 대체), 푸시 토큰 등록(기존 저장값 유지) |
-  | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음  | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                    |
+  | 규칙                  | 함수·데코레이터                                                    | 헤더 없음·오류 | 쓰는 곳                                                                                      |
+  | --------------------- | ------------------------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
+  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`          | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
+  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`    | AI 파싱·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
+  | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음  | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
 
   응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 셋 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `localDateInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다. 한 instant의 사용자 달력 날짜(`YYYY-MM-DD`)는 `localDateInTimezone(date, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`, 도메인 현재 시각은 `now()`다.
 
