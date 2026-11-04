@@ -1,6 +1,5 @@
 import {
   type CreateTodoInput,
-  createRecurringTodoResponseSchema,
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
   type GetTodosQuery,
@@ -9,6 +8,7 @@ import {
   type ToggleTodoCompleteInput,
   todoDetailsResponseSchema,
   todoListResponseSchema,
+  todoSeriesResponseSchema,
   createTodoResponseSchema,
   todoSummaryResponseSchema,
   type UpdateTodoInput,
@@ -18,10 +18,10 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { err, ok, type Result } from '@src/shared/errors/result';
+import { ok, type Result } from '@src/shared/errors/result';
 
-import type { TodoEditScope, TodoSeries } from '../domains/todo-repeat.model';
-import { TodoSeriesUnavailableError } from '../domains/todo-series.error';
+import type { TodoEditScope, TodoSeries, TodoUpdateScope } from '../domains/todo-repeat.model';
+import { isTodoSeriesNotFoundError } from '../domains/todo-series.error';
 import type {
   DailyCompletionsResult,
   Todo,
@@ -31,16 +31,17 @@ import type {
   TodoListResult,
 } from '../domains/todo.model';
 import {
-  isLegacySeriesRequest,
   type RepeatingTodoDraft,
   type TodoSeriesEditOptions,
-  toLegacyRecurringRequest,
+  toCreateRepeatingTodoRequest,
+  toFollowingScheduleRequest,
+  toTodoSeries,
+  toUpdateTodoRequest,
 } from './todo-series.mapper';
 import {
   toDailyCompletionsResult,
   toTodo,
   toTodoDetails,
-  toTodos,
   toTodoListResult,
   toTodoSummary,
 } from './todo.mapper';
@@ -165,13 +166,12 @@ export class TodoService {
   updateTodo = async (
     todoId: number,
     input: UpdateTodoInput,
-    options: TodoSeriesEditOptions = { scope: 'THIS_ONLY' },
-  ): Promise<Result<Todo, ApiError | TodoSeriesUnavailableError>> => {
-    if (!isLegacySeriesRequest(options.scope, options.repeat)) {
-      return err(new TodoSeriesUnavailableError());
-    }
-
-    const result = await this.#httpClient.patch(`v1/todos/${todoId}`, input);
+    options: TodoSeriesEditOptions = {},
+  ): Promise<Result<Todo, ApiError>> => {
+    const result = await this.#httpClient.patch(
+      `v1/todos/${todoId}`,
+      toUpdateTodoRequest(input, options),
+    );
 
     if (!result.ok) {
       return result;
@@ -188,13 +188,12 @@ export class TodoService {
   updateTodoSchedule = async (
     todoId: number,
     input: UpdateTodoScheduleInput,
-    scope: TodoEditScope = 'THIS_ONLY',
-  ): Promise<Result<Todo, ApiError | TodoSeriesUnavailableError>> => {
-    if (!isLegacySeriesRequest(scope)) {
-      return err(new TodoSeriesUnavailableError());
-    }
-
-    const result = await this.#httpClient.patch(`v1/todos/${todoId}/schedule`, input);
+    scope?: TodoUpdateScope,
+  ): Promise<Result<Todo, ApiError>> => {
+    const result =
+      scope === 'THIS_AND_FOLLOWING'
+        ? await this.#httpClient.patch(`v1/todos/${todoId}`, toFollowingScheduleRequest(input))
+        : await this.#httpClient.patch(`v1/todos/${todoId}/schedule`, input);
 
     if (!result.ok) {
       return result;
@@ -210,15 +209,11 @@ export class TodoService {
     return ok(toTodo(parsed.data.todo));
   };
 
-  deleteTodo = async (
-    todoId: number,
-    scope: TodoEditScope = 'THIS_ONLY',
-  ): Promise<Result<void, ApiError | TodoSeriesUnavailableError>> => {
-    if (!isLegacySeriesRequest(scope)) {
-      return err(new TodoSeriesUnavailableError());
-    }
-
-    const result = await this.#httpClient.delete(`v1/todos/${todoId}`);
+  deleteTodo = async (todoId: number, scope?: TodoEditScope): Promise<Result<void, ApiError>> => {
+    const result =
+      scope == null
+        ? await this.#httpClient.delete(`v1/todos/${todoId}`)
+        : await this.#httpClient.delete(`v1/todos/${todoId}`, { params: { scope } });
 
     if (!result.ok) {
       return result;
@@ -303,39 +298,68 @@ export class TodoService {
     return ok(toTodoSummary(parsed.data));
   };
 
+  /** 반복 할 일을 만들면 서버가 첫 회차와 규칙을 돌려준다. 나머지 회차는 목록을 다시 읽어 본다 */
   createRepeatingTodo = async (
     draft: RepeatingTodoDraft,
-  ): Promise<Result<Todo[], ApiError | TodoSeriesUnavailableError>> => {
-    const request = toLegacyRecurringRequest(draft);
-    if (request == null) {
-      return err(new TodoSeriesUnavailableError());
-    }
-
-    const result = await this.#httpClient.post('v1/todos/recurring', request);
+  ): Promise<Result<{ todo: Todo; series: TodoSeries | null }, ApiError>> => {
+    const result = await this.#httpClient.post('v1/todos', toCreateRepeatingTodoRequest(draft));
 
     if (!result.ok) {
       return result;
     }
 
-    const parsed = createRecurringTodoResponseSchema.safeParse(result.value);
+    const parsed = createTodoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[TodoService] Invalid createRepeatingTodo response: ${parsed.error.message}`,
       );
     }
 
-    return ok(toTodos(parsed.data.todos));
+    return ok({
+      todo: toTodo(parsed.data.todo),
+      series: parsed.data.series == null ? null : toTodoSeries(parsed.data.series),
+    });
   };
 
+  /** 규칙이 없는 옛 묶음(TODO_0841)은 없는 규칙으로 본다. 그 회차는 이 할 일만 고칠 수 있다 */
   getTodoSeries = async (
-    _seriesId: string,
-    _signal?: AbortSignal,
-  ): Promise<Result<TodoSeries | null, ApiError>> => ok(null);
+    seriesId: string,
+    signal?: AbortSignal,
+  ): Promise<Result<TodoSeries | null, ApiError>> => {
+    const result = await this.#httpClient.get(`v1/todo-series/${seriesId}`, { signal });
 
-  stopTodoSeries = async (
-    _todoId: number,
-  ): Promise<Result<void, ApiError | TodoSeriesUnavailableError>> =>
-    err(new TodoSeriesUnavailableError());
+    if (!result.ok) {
+      return isTodoSeriesNotFoundError(result.error) ? ok(null) : result;
+    }
+
+    const parsed = todoSeriesResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[TodoService] Invalid getTodoSeries response: ${parsed.error.message}`);
+    }
+
+    return ok(toTodoSeries(parsed.data));
+  };
+
+  /** 이 회차 뒤로 반복을 끝낸다. 이미 끝났으면 서버가 TODO_0846으로 알린다 */
+  stopTodoSeries = async (todoId: number): Promise<Result<Todo, ApiError>> => {
+    const result = await this.#httpClient.patch(
+      `v1/todos/${todoId}`,
+      toUpdateTodoRequest({}, { repeat: null }),
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = updateTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(
+        `[TodoService] Invalid stopTodoSeries response: ${parsed.error.message}`,
+      );
+    }
+
+    return ok(toTodo(parsed.data.todo));
+  };
 
   reorderTodo = async (
     todoId: number,

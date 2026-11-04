@@ -12,13 +12,18 @@ import {
 const WEEKDAY_SEPARATOR = '·';
 const SUMMARY_SEPARATOR = ' · ';
 
-function formatFrequency(repeat: TodoRepeat): string {
+/** 주기만: "매일", "주중", "주말", "매주 월·목", "격주 화", "매월 15일". 목록 행은 끝나는 날을 보이지 않는다 */
+export function formatRepeatCadence(
+  repeat: TodoRepeat,
+  { weekdaySeparator = WEEKDAY_SEPARATOR }: { weekdaySeparator?: string } = {},
+): string {
   const days =
-    repeat.frequency === 'WEEKLY' ? formatDaysOfWeek(repeat.weekdays, WEEKDAY_SEPARATOR) : '';
+    repeat.frequency === 'WEEKLY' ? formatDaysOfWeek(repeat.weekdays, weekdaySeparator) : '';
 
   return match(TodoRepeatPolicy.getKind(repeat))
     .with('DAILY', () => t('todo:repeat.summary.DAILY'))
     .with('WEEKDAYS', () => t('todo:repeat.summary.WEEKDAYS'))
+    .with('WEEKENDS', () => t('todo:repeat.summary.WEEKENDS'))
     .with('WEEKLY', () => t('todo:repeat.summary.WEEKLY', { days }))
     .with('BIWEEKLY', () => t('todo:repeat.summary.BIWEEKLY', { days }))
     .with('MONTHLY', () =>
@@ -41,7 +46,7 @@ function formatEnd(end: TodoRepeatEnd, context: DateFormatContext): string | nul
 
 /** "매주 월·수·금", "매일 · 12월 31일까지", "매월 15일 · 10회" */
 export function formatRepeatSummary(repeat: TodoRepeat, context: DateFormatContext): string {
-  return [formatFrequency(repeat), formatEnd(repeat.end, context)]
+  return [formatRepeatCadence(repeat), formatEnd(repeat.end, context)]
     .filter((part) => part != null && part !== '')
     .join(SUMMARY_SEPARATOR);
 }

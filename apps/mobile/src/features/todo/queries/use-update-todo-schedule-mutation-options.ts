@@ -8,14 +8,14 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import type { TodoEditScope } from '../domains/todo-repeat.model';
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
+import type { TodoUpdateScope } from '../domains/todo-repeat.model';
 import { invalidateTodos } from './todo-cache';
+import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 export interface UpdateTodoScheduleMutationParams {
   todoId: number;
   input: UpdateTodoScheduleInput;
-  scope?: TodoEditScope;
+  scope?: TodoUpdateScope;
 }
 
 export const useUpdateTodoScheduleMutationOptions = () => {
@@ -23,6 +23,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const handleSeriesFailure = useTodoSeriesFailureHandler();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -41,8 +42,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
     onError: (error) => {
       haptics.notify('error');
 
-      if (isTodoSeriesUnavailableError(error)) {
-        toast.error(t('todo:toast.repeatUnavailable'));
+      if (handleSeriesFailure(error)) {
         return;
       }
 

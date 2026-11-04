@@ -9,8 +9,8 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { TodoSeriesEditOptions } from '../apis/todo-series.mapper';
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
+import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 interface UpdateTodoMutationParams {
   todoId: number;
@@ -24,6 +24,7 @@ export const useUpdateTodoMutationOptions = () => {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
     mutationFn: async ({ todoId, input, options }: UpdateTodoMutationParams) => {
@@ -36,15 +37,18 @@ export const useUpdateTodoMutationOptions = () => {
       toast.success(t('todo:toast.todoUpdated'));
       const field = Object.keys(variables.input).join(',');
       trackEvent('todo_edited', { todo_id: variables.todoId, field });
-      if (variables.options != null) {
+      if (variables.options?.scope != null) {
         trackEvent('todo_series_edited', { scope: variables.options.scope });
+      }
+      // nullish-strict: repeat null만 반복 끝내기다
+      if (variables.options?.repeat === null) {
+        trackEvent('todo_series_stopped');
       }
     },
     onError: (error) => {
       haptics.notify('error');
 
-      if (isTodoSeriesUnavailableError(error)) {
-        toast.error(t('todo:toast.repeatUnavailable'));
+      if (handleSeriesFailure(error)) {
         return;
       }
 

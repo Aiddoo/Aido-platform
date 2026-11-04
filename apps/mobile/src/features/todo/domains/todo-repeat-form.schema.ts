@@ -1,7 +1,5 @@
-import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
+import { DAYS_OF_WEEK, TODO_REPEAT_END_TYPES } from '@aido/api/vocabulary';
 import { z } from 'zod';
-
-import { TODO_REPEAT_END_TYPES } from './todo-repeat.model';
 
 export const todoRepeatFormSchema = z.object({
   startDate: z.date(),

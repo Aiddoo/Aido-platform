@@ -1,12 +1,19 @@
-import { type CreateRecurringTodoInput, DAYS_OF_WEEK } from '@aido/api';
-import { addDaysToDateKey } from '@src/shared/utils/date-key';
+import type {
+  ChangeTodoCategoryInput,
+  CreateTodoInput,
+  TodoRepeat as TodoRepeatDto,
+  TodoRepeatEnd as TodoRepeatEndDto,
+  TodoSeriesResponse,
+  UpdateTodoInput,
+  UpdateTodoScheduleInput,
+} from '@aido/api';
 import { match } from 'ts-pattern';
 
-import { TODO_REPEAT_DEFAULT_UNTIL_DAYS } from '../constants/todo-repeat.constants';
-import {
-  type TodoEditScope,
-  type TodoRepeat,
-  TodoRepeatPolicy,
+import type {
+  TodoRepeat,
+  TodoRepeatEnd,
+  TodoSeries,
+  TodoUpdateScope,
 } from '../domains/todo-repeat.model';
 
 export interface RepeatingTodoDraft {
@@ -20,71 +27,103 @@ export interface RepeatingTodoDraft {
 }
 
 export interface TodoSeriesEditOptions {
-  scope: TodoEditScope;
+  /** 반복 회차를 고칠 때만. 단일 할 일에 보내면 서버가 TODO_0844로 거절한다 */
+  scope?: TodoUpdateScope;
+  /** 생략은 유지, 값은 규칙 변경·반복 전환, null은 이 회차 뒤로 끝내기 */
   repeat?: TodoRepeat | null;
+  /** 앞으로 만들 회차에 복사할 체크리스트. 서버는 THIS_AND_FOLLOWING에서만 받는다 */
+  checklist?: readonly { title: string }[];
 }
 
-function getLegacyWeekdays(repeat: TodoRepeat): CreateRecurringTodoInput['daysOfWeek'] | null {
-  return match(repeat)
-    .returnType<CreateRecurringTodoInput['daysOfWeek'] | null>()
-    .with({ frequency: 'DAILY' }, () => [...DAYS_OF_WEEK])
-    .with({ frequency: 'WEEKLY', interval: 1 }, ({ weekdays }) => weekdays)
-    .with({ frequency: 'WEEKLY', interval: 2 }, () => null)
-    .with({ frequency: 'MONTHLY' }, () => null)
+const toRepeatEnd = (end: TodoRepeatEndDto): TodoRepeatEnd =>
+  match(end)
+    .returnType<TodoRepeatEnd>()
+    .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
+    .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
+    .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
     .exhaustive();
-}
 
-function getLegacyEndDate(repeat: TodoRepeat, startDate: string): string {
-  return match(repeat.end)
-    .with({ type: 'UNTIL' }, ({ date }) => date)
-    .with({ type: 'NEVER' }, () => addDaysToDateKey(startDate, TODO_REPEAT_DEFAULT_UNTIL_DAYS))
-    .with(
-      { type: 'COUNT' },
-      () => TodoRepeatPolicy.getLastOccurrenceDateKey(repeat, startDate) ?? startDate,
-    )
+export const toRepeat = (dto: TodoRepeatDto): TodoRepeat =>
+  match(dto)
+    .returnType<TodoRepeat>()
+    .with({ frequency: 'DAILY' }, ({ end }) => ({ frequency: 'DAILY', end: toRepeatEnd(end) }))
+    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays, end }) => ({
+      frequency: 'WEEKLY',
+      interval,
+      weekdays: [...weekdays],
+      end: toRepeatEnd(end),
+    }))
+    .with({ frequency: 'MONTHLY' }, ({ monthDay, end }) => ({
+      frequency: 'MONTHLY',
+      monthDay,
+      end: toRepeatEnd(end),
+    }))
     .exhaustive();
-}
 
-export interface LegacyRecurrence {
-  daysOfWeek: CreateRecurringTodoInput['daysOfWeek'];
-  endDate: string;
-}
+const toRepeatEndDto = (end: TodoRepeatEnd): TodoRepeatEndDto =>
+  match(end)
+    .returnType<TodoRepeatEndDto>()
+    .with({ type: 'NEVER' }, () => ({ type: 'NEVER' }))
+    .with({ type: 'UNTIL' }, ({ date }) => ({ type: 'UNTIL', date }))
+    .with({ type: 'COUNT' }, ({ count }) => ({ type: 'COUNT', count }))
+    .exhaustive();
 
-/**
- * 반복 규칙 서버 계약(7.3)이 들어오면 이 파일의 요청 변환만 새 계약으로 바꾼다.
- * 지금은 기존 매주 + 날짜 종료로 표현할 수 있는 규칙만 만든다.
- */
-export function toLegacyRecurrence(repeat: TodoRepeat, startDate: string): LegacyRecurrence | null {
-  const daysOfWeek = getLegacyWeekdays(repeat);
-  if (daysOfWeek == null) {
-    return null;
-  }
+export const toRepeatDto = (repeat: TodoRepeat): TodoRepeatDto =>
+  match(repeat)
+    .returnType<TodoRepeatDto>()
+    .with({ frequency: 'DAILY' }, ({ end }) => ({ frequency: 'DAILY', end: toRepeatEndDto(end) }))
+    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays, end }) => ({
+      frequency: 'WEEKLY',
+      interval,
+      weekdays: [...weekdays],
+      end: toRepeatEndDto(end),
+    }))
+    .with({ frequency: 'MONTHLY' }, ({ monthDay, end }) => ({
+      frequency: 'MONTHLY',
+      monthDay,
+      end: toRepeatEndDto(end),
+    }))
+    .exhaustive();
 
-  return { daysOfWeek, endDate: getLegacyEndDate(repeat, startDate) };
-}
+export const toTodoSeries = (dto: TodoSeriesResponse): TodoSeries => ({
+  id: dto.id,
+  repeat: toRepeat(dto.repeat),
+  startDate: dto.startDate,
+});
 
-export function toLegacyRecurringRequest(
-  draft: RepeatingTodoDraft,
-): CreateRecurringTodoInput | null {
-  const recurrence = toLegacyRecurrence(draft.repeat, draft.startDate);
-  if (recurrence == null) {
-    return null;
-  }
-
-  return {
+export const toCreateRepeatingTodoRequest = (draft: RepeatingTodoDraft) =>
+  ({
     title: draft.title,
     categoryId: draft.categoryId,
     startDate: draft.startDate,
-    endDate: recurrence.endDate,
-    daysOfWeek: recurrence.daysOfWeek,
     scheduledTime: draft.isAllDay ? undefined : draft.scheduledTime,
     isAllDay: draft.isAllDay,
     visibility: draft.visibility,
+    repeat: toRepeatDto(draft.repeat),
+  }) satisfies CreateTodoInput;
+
+export function toUpdateTodoRequest(
+  input: UpdateTodoInput,
+  { scope, repeat, checklist }: TodoSeriesEditOptions,
+): UpdateTodoInput {
+  return {
+    ...input,
+    ...(scope != null && { scope }),
+    // nullish-strict: 생략은 규칙 유지, null은 이 회차 뒤로 끝내기다
+    ...(repeat !== undefined && { repeat: repeat == null ? null : toRepeatDto(repeat) }),
+    ...(checklist != null && { checklist: checklist.map(({ title }) => ({ title })) }),
   };
 }
 
-/** 범위(7.5)·규칙 변경이 없는 요청만 기존 PATCH·DELETE로 보낼 수 있다. */
-export function isLegacySeriesRequest(scope: TodoEditScope, repeat?: TodoRepeat | null): boolean {
-  // nullish-strict: 생략은 규칙 유지, null은 반복 끝내기다
-  return scope === 'THIS_ONLY' && repeat === undefined;
-}
+/** `/schedule`은 범위를 받지 않는다. 이후 회차까지 고칠 때는 PATCH로 시간만 보낸다(날짜는 이 회차에만 적용된다) */
+export const toFollowingScheduleRequest = ({
+  scheduledTime,
+  isAllDay,
+}: UpdateTodoScheduleInput): UpdateTodoInput =>
+  ({ scheduledTime, isAllDay, scope: 'THIS_AND_FOLLOWING' }) satisfies UpdateTodoInput;
+
+/** `/category`는 범위를 받지 않는다. 이후 회차까지 옮길 때는 PATCH로 보낸다 */
+export const toFollowingCategoryRequest = ({
+  categoryId,
+}: ChangeTodoCategoryInput): UpdateTodoInput =>
+  ({ categoryId, scope: 'THIS_AND_FOLLOWING' }) satisfies UpdateTodoInput;

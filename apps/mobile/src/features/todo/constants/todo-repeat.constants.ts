@@ -1,12 +1,10 @@
-import type { DayOfWeek } from '@aido/api/vocabulary';
+import { type DayOfWeek, TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 
 export const TODO_REPEAT_COUNT = {
-  MIN: 2,
-  MAX: 365,
+  MIN: 1,
+  MAX: TODO_SERIES_LIMITS.MAX_COUNT,
   DEFAULT: 10,
 } as const;
-
-export const TODO_REPEAT_DEFAULT_UNTIL_DAYS = 28;
 
 export const TODO_REPEAT_MONTH_DAY_CLAMP_FROM = 29;
 

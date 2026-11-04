@@ -29,6 +29,18 @@ describe('toMemoConversionInput', () => {
     });
   });
 
+  it('격주·매월도 빠지지 않고 repeat로 보낸다', () => {
+    const input = toMemoConversionInput(
+      createFormData({ repeat: { frequency: 'MONTHLY', monthDay: 15, end: { type: 'NEVER' } } }),
+    );
+
+    expect(input.todos[0]?.repeat).toEqual({
+      frequency: 'MONTHLY',
+      monthDay: 15,
+      end: { type: 'NEVER' },
+    });
+  });
+
   it('반복 기간과 요일을 유지하고 종일 일정의 남은 시간을 보내지 않는다', () => {
     const input = toMemoConversionInput(
       createFormData({
@@ -44,8 +56,12 @@ describe('toMemoConversionInput', () => {
 
     expect(input.todos[0]).toMatchObject({
       isAllDay: true,
-      isRecurring: true,
-      recurrence: { daysOfWeek: ['MON', 'FRI'], endDate: '2026-10-30' },
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['MON', 'FRI'],
+        end: { type: 'UNTIL', date: '2026-10-30' },
+      },
     });
     expect(input.todos[0]?.scheduledTime).toBeUndefined();
   });

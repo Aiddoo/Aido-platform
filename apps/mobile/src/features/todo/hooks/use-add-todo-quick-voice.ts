@@ -24,7 +24,11 @@ interface UseAddTodoQuickVoiceOptions {
   onExit: () => void;
 }
 
-function toParsedTodoRepeat({ isRecurring, recurrence }: ParsedTodo): TodoRepeat | null {
+/** 서버가 준 규칙을 먼저 쓴다. `recurrence`는 끝이 없는 말에도 4주 종료를 넣는 출시 앱용 값이라 구 서버에서만 쓴다 */
+function toParsedTodoRepeat({ isRecurring, recurrence, repeat }: ParsedTodo): TodoRepeat | null {
+  if (repeat != null) {
+    return repeat;
+  }
   return isRecurring && recurrence != null
     ? TodoRepeatPolicy.createWeeklyUntil(recurrence.daysOfWeek, toDeviceDateKey(recurrence.endDate))
     : null;

@@ -1,5 +1,6 @@
 import type { ParseTodoResponse } from '@aido/api';
 import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
+import { toRepeat } from '@src/features/todo/apis/todo-series.mapper';
 import { toDate } from '@src/shared/utils/date';
 
 import type { ParsedTodoResult } from '../domains/parsed-todo.model';
@@ -19,6 +20,7 @@ export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => 
           endDate: toDate(dto.data.recurrence.endDate),
         }
       : null,
+    repeat: dto.data.repeat == null ? null : toRepeat(dto.data.repeat),
     ...(dto.data.categoryId != null && { categoryId: dto.data.categoryId }),
   },
   meta: dto.meta,

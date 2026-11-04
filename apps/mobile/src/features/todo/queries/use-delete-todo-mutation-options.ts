@@ -10,7 +10,6 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoEditScope } from '../domains/todo-repeat.model';
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
 import {
   cancelTodoListQuery,
   invalidateTodos,
@@ -18,6 +17,7 @@ import {
   restoreTodo,
   snapshotTodo,
 } from './todo-cache';
+import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 interface DeleteTodoMutationParams {
   todoId: number;
@@ -31,6 +31,7 @@ export const useDeleteTodoMutationOptions = () => {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
     mutationFn: async ({ todoId, scope }: DeleteTodoMutationParams) => {
@@ -59,8 +60,7 @@ export const useDeleteTodoMutationOptions = () => {
         restoreTodo(queryClient, context.snapshot);
       }
 
-      if (isTodoSeriesUnavailableError(error)) {
-        toast.error(t('todo:toast.repeatUnavailable'));
+      if (handleSeriesFailure(error)) {
         return;
       }
 

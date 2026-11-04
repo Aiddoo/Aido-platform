@@ -6,8 +6,8 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
 import { invalidateTodos } from './todo-cache';
+import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 interface StopTodoSeriesMutationParams {
   todoId: number;
@@ -19,6 +19,7 @@ export const useStopTodoSeriesMutationOptions = () => {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
     mutationFn: async ({ todoId }: StopTodoSeriesMutationParams) =>
@@ -31,8 +32,7 @@ export const useStopTodoSeriesMutationOptions = () => {
     onError: (error) => {
       haptics.notify('error');
 
-      if (isTodoSeriesUnavailableError(error)) {
-        toast.error(t('todo:toast.repeatUnavailable'));
+      if (handleSeriesFailure(error)) {
         return;
       }
 

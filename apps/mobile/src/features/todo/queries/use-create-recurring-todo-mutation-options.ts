@@ -14,8 +14,9 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { RepeatingTodoDraft } from '../apis/todo-series.mapper';
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { invalidateTodos } from './todo-cache';
+import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 export interface CreateRecurringTodoParams {
   input: RepeatingTodoDraft;
@@ -29,13 +30,17 @@ export const useCreateRecurringTodoMutationOptions = () => {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const handleSeriesFailure = useTodoSeriesFailureHandler();
 
   return mutationOptions({
     mutationFn: async ({ input }: CreateRecurringTodoParams) => {
       const result = await todoService.createRepeatingTodo(input);
       return unwrap(result);
     },
-    onSuccess: (_data, { input, source }) => {
+    onSuccess: ({ series }, { input, source }) => {
+      if (series != null) {
+        queryClient.setQueryData(TODO_QUERY_KEYS.series({ seriesId: series.id }), series);
+      }
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
@@ -57,8 +62,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
     onError: (error) => {
       haptics.notify('error');
 
-      if (isTodoSeriesUnavailableError(error)) {
-        toast.error(t('todo:toast.repeatUnavailable'));
+      if (handleSeriesFailure(error)) {
         return;
       }
 

@@ -35,10 +35,9 @@ import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { isEqual } from 'es-toolkit';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
@@ -46,8 +45,17 @@ import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
-import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import {
+  type AddTodoFormInput,
+  type AddTodoFormValues,
+  addTodoFormSchema,
+} from '../domains/add-todo-form.schema';
+import {
+  type TodoRepeat,
+  TodoRepeatPolicy,
+  type TodoUpdateScope,
+} from '../domains/todo-repeat.model';
+import { shouldReopenRepeatPicker } from '../domains/todo-series.error';
 import { TodoPolicy } from '../domains/todo.model';
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
 import { TodoScopeStep, useSelectTodoScope } from '../hooks/use-select-todo-scope';
@@ -57,6 +65,11 @@ import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutatio
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
+import {
+  hasOnlyDateChanges,
+  hasTodoUpdateChanges,
+  toTodoUpdateChanges,
+} from '../utils/to-todo-update-changes';
 import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
 import { TodoRepeatPickerContent } from './todo-repeat-picker-content';
@@ -105,9 +118,9 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetEditProps
   | AddTodoBottomSheetConvertMemoProps;
 
-function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
+function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormInput {
   return match(props)
-    .returnType<AddTodoFormValues>()
+    .returnType<AddTodoFormInput>()
     .with({ mode: 'edit' }, ({ todo, repeat }) => toTodoEditFormValues(todo, repeat))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -142,11 +155,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const { showBoundary } = useErrorBoundary();
   const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
 
-  const defaultValues = toDefaultFormValues(props);
+  // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
+  const [initialValues] = useState(() => toDefaultFormValues(props));
 
   const methods = useForm({
     resolver: zodResolver(addTodoFormSchema),
-    defaultValues,
+    defaultValues: initialValues,
   });
 
   const todoInputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -189,27 +203,40 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     try {
       await match(props)
         .with({ mode: 'edit' }, async ({ todo }) => {
-          const isSeries = TodoPolicy.isRecurring(todo);
-          const scope = isSeries ? await selectEditScope(todo.startDate) : 'THIS_ONLY';
-          if (scope == null) {
+          const changes = toTodoUpdateChanges(values, initialValues);
+          if (!hasTodoUpdateChanges(changes)) {
+            onClose();
+            return;
+          }
+          const scope = await match(
+            TodoRepeatPolicy.getEditScopeDecision({
+              isSeries: TodoPolicy.isRecurring(todo),
+              repeat: changes.repeat,
+              isDateOnly: hasOnlyDateChanges(changes),
+            }),
+          )
+            .returnType<Promise<TodoUpdateScope | null | undefined>>()
+            .with('not-repeating', async () => undefined)
+            .with('this-only', async () => 'THIS_ONLY')
+            .with('ask', () => selectEditScope(todo.startDate))
+            .with('ask-following-only', () =>
+              selectEditScope(todo.startDate, { isFollowingOnly: true }),
+            )
+            .exhaustive();
+          // nullish-strict: 생략은 범위가 없는 수정, null은 범위 선택에서 뒤로 간 취소다
+          if (scope === null) {
             focusTodoInput();
             return;
           }
-          const isRepeatChanged = !isEqual(values.repeat, defaultValues.repeat);
           await updateMutation.mutateAsync(
             {
               todoId: todo.id,
-              input: {
-                title: values.title,
-                startDate: formatDateKey(values.startDate, getDeviceTimezone()),
-                endDate: values.endDate ? formatDateKey(values.endDate, getDeviceTimezone()) : null,
-                scheduledTime: values.isAllDay ? null : (values.scheduledTime ?? null),
-                isAllDay: values.isAllDay,
-                visibility: values.visibility,
+              input: changes.input,
+              options: {
+                ...(scope != null && { scope }),
+                // nullish-strict: repeat null은 반복 끝내기라 보낸다
+                ...(changes.repeat !== undefined && { repeat: changes.repeat }),
               },
-              ...((isSeries || isRepeatChanged) && {
-                options: { scope, ...(isRepeatChanged && { repeat: values.repeat }) },
-              }),
             },
             { onSuccess: onClose },
           );
@@ -275,6 +302,10 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
+        return;
+      }
+      if (shouldReopenRepeatPicker(error)) {
+        handleRepeatChipPress();
       }
     }
   });
@@ -293,7 +324,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           exit();
           if (pickerResult) {
             const { startDate, repeat } = methods.getValues();
-            if (repeat != null) {
+            // 반복 회차의 날짜 이동은 이 회차에만 적용되므로 규칙은 그대로 둔다
+            const isSeriesOccurrence = props.mode === 'edit' && TodoPolicy.isRecurring(props.todo);
+            if (repeat != null && !isSeriesOccurrence) {
               methods.setValue(
                 'repeat',
                 TodoRepeatPolicy.withStartDate(

@@ -241,3 +241,52 @@ describe('TodoRepeatPolicy', () => {
     });
   });
 });
+
+describe('hasSameRepeat', () => {
+  test('7요일 매주와 매일, 요일 순서만 다른 매주는 같은 규칙이다', () => {
+    // Given
+    const allDays: TodoRepeat = {
+      frequency: 'WEEKLY',
+      interval: 1,
+      weekdays: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
+      end: { type: 'NEVER' },
+    };
+    const daily: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+
+    // When
+    const result = TodoRepeatPolicy.hasSameRepeat(allDays, daily);
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  test('없던 반복을 만들면 다른 규칙이다', () => {
+    // When
+    const result = TodoRepeatPolicy.hasSameRepeat(null, {
+      frequency: 'DAILY',
+      end: { type: 'NEVER' },
+    });
+
+    // Then
+    expect(result).toBe(false);
+  });
+});
+
+describe('getEditScopeDecision', () => {
+  const rule: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+
+  test.each([
+    [{ isSeries: false, isDateOnly: false }, 'not-repeating'],
+    [{ isSeries: false, repeat: rule, isDateOnly: false }, 'not-repeating'],
+    [{ isSeries: true, repeat: null, isDateOnly: false }, 'not-repeating'],
+    [{ isSeries: true, repeat: rule, isDateOnly: false }, 'ask-following-only'],
+    [{ isSeries: true, isDateOnly: true }, 'this-only'],
+    [{ isSeries: true, isDateOnly: false }, 'ask'],
+  ] as const)('%j → %s', (input, expected) => {
+    // When
+    const decision = TodoRepeatPolicy.getEditScopeDecision(input);
+
+    // Then
+    expect(decision).toBe(expected);
+  });
+});

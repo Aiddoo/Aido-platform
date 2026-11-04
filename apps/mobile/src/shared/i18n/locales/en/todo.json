@@ -22,8 +22,33 @@
     "deleteFailedRetry": "Try deleting again in a moment",
     "changeFailedRetry": "Try again in a moment",
     "retryLater": "Please try again in a moment",
-    "repeatUnavailable": "We're getting repeating to-dos ready. You'll be able to use this soon",
-    "seriesStopped": "Stopped repeating"
+    "seriesStopped": "Stopped repeating",
+    "series": {
+      "not-found": {
+        "title": "We couldn't find this repeating to-do",
+        "description": "We refreshed your list."
+      },
+      "limit": {
+        "title": "You can have up to {{limit}} repeating to-dos",
+        "description": "Stop or delete one you don't use, then try again."
+      },
+      "no-dates": {
+        "title": "No dates match this repeat setting",
+        "description": "Please choose the repeat again."
+      },
+      "not-repeating": {
+        "title": "This to-do doesn't repeat",
+        "description": "We refreshed your list."
+      },
+      "invalid": {
+        "title": "This repeat setting isn't valid",
+        "description": "Please choose the repeat again."
+      },
+      "ended": {
+        "title": "This repeat has already ended",
+        "description": "We refreshed your list."
+      }
+    }
   },
   "errors": {
     "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
@@ -69,6 +94,7 @@
     "summary": {
       "DAILY": "Daily",
       "WEEKDAYS": "Weekdays",
+      "WEEKENDS": "Weekends",
       "WEEKLY": "Weekly on {{days}}",
       "BIWEEKLY": "Every 2 weeks on {{days}}",
       "MONTHLY": "Monthly on day {{day}}",

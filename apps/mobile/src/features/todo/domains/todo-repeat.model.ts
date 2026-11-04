@@ -1,9 +1,17 @@
-import { DAY_OF_WEEK_MAP, DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
+import type { TODO_REPEAT_END_TYPES } from '@aido/api/vocabulary';
+import {
+  DAY_OF_WEEK_MAP,
+  DAYS_OF_WEEK,
+  type DayOfWeek,
+  TODO_EDIT_SCOPES,
+  TODO_UPDATE_SCOPES,
+} from '@aido/api/vocabulary';
 import {
   addDaysToDateKey,
   diffDateKeysInDays,
   getDayOfWeekOfDateKey,
 } from '@src/shared/utils/date-key';
+import { isEqual } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -11,16 +19,25 @@ import {
   TODO_REPEAT_COUNT,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_REPEAT_WEEKDAYS as WEEKDAYS,
+  TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
 
-export const TODO_EDIT_SCOPES = ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'] as const;
 export const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
+/** 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다 */
+export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
+export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
-export const TODO_REPEAT_KINDS = ['DAILY', 'WEEKDAYS', 'WEEKLY', 'BIWEEKLY', 'MONTHLY'] as const;
+export const TODO_REPEAT_KINDS = [
+  'DAILY',
+  'WEEKDAYS',
+  'WEEKENDS',
+  'WEEKLY',
+  'BIWEEKLY',
+  'MONTHLY',
+] as const;
 export type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
 
-export const TODO_REPEAT_END_TYPES = ['NEVER', 'UNTIL', 'COUNT'] as const;
 export type TodoRepeatEndType = (typeof TODO_REPEAT_END_TYPES)[number];
 
 export const todoRepeatEndSchema = z.discriminatedUnion('type', [
@@ -90,6 +107,10 @@ export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
           (days) => hasSameWeekdays(days, WEEKDAYS),
           () => 'WEEKDAYS',
         )
+        .when(
+          (days) => hasSameWeekdays(days, WEEKEND_DAYS),
+          () => 'WEEKENDS',
+        )
         .otherwise(() => 'WEEKLY'),
     )
     .exhaustive();
@@ -143,6 +164,48 @@ export function withRepeatStartDate(
   return adjusted.end.type === 'UNTIL' && adjusted.end.date < nextStartDate
     ? withRepeatEnd(adjusted, { type: 'UNTIL', date: nextStartDate })
     : adjusted;
+}
+
+/** 저장된 모양이 달라도(7요일 매주·요일 순서) 같은 규칙이면 true. 바뀌지 않은 규칙으로 회차를 나누지 않는다 */
+export function hasSameRepeat(a: TodoRepeat | null, b: TodoRepeat | null): boolean {
+  return isEqual(normalizeRepeat(a), normalizeRepeat(b));
+}
+
+function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
+  if (repeat?.frequency !== 'WEEKLY') {
+    return repeat;
+  }
+  return repeat.interval === 1 && repeat.weekdays.length === DAYS_OF_WEEK.length
+    ? { frequency: 'DAILY', end: repeat.end }
+    : { ...repeat, weekdays: sortWeekdays(repeat.weekdays) };
+}
+
+export type TodoEditScopeDecision = 'not-repeating' | 'this-only' | 'ask' | 'ask-following-only';
+
+interface TodoEditScopeInput {
+  isSeries: boolean;
+  /** 생략은 규칙 유지, null은 반복 끝내기 */
+  repeat?: TodoRepeat | null;
+  isDateOnly: boolean;
+}
+
+/**
+ * 수정할 때 범위를 어떻게 정할지. 서버는 반복 회차의 규칙 변경을 THIS_AND_FOLLOWING으로만 받고(그 밖은 TODO_0845)
+ * 반복 끝내기는 범위 없이 받으며, 날짜 이동은 범위와 상관없이 이 회차에만 적용한다.
+ */
+export function getTodoEditScopeDecision({
+  isSeries,
+  repeat,
+  isDateOnly,
+}: TodoEditScopeInput): TodoEditScopeDecision {
+  // nullish-strict: repeat null은 반복 끝내기, 생략은 규칙 유지다
+  if (!isSeries || repeat === null) {
+    return 'not-repeating';
+  }
+  if (repeat != null) {
+    return 'ask-following-only';
+  }
+  return isDateOnly ? 'this-only' : 'ask';
 }
 
 const DAYS_PER_WEEK = 7;
@@ -238,6 +301,8 @@ export function getLastRepeatOccurrenceDateKey(
 export const TodoRepeatPolicy = {
   getKind: getRepeatKind,
   createWeeklyUntil: createWeeklyUntilRepeat,
+  hasSameRepeat,
+  getEditScopeDecision: getTodoEditScopeDecision,
   withStartDate: withRepeatStartDate,
   isMonthDayClamped: isRepeatMonthDayClamped,
   getOccurrenceDateKeys: getRepeatOccurrenceDateKeys,

@@ -30,6 +30,26 @@ describe('TodoScopeSelectContent', () => {
     expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
   });
 
+  test('규칙을 바꾸면 이 할 일만은 고를 수 없어 이후 범위 한 줄만 보여준다', async () => {
+    // Given
+    const onChange = jest.fn();
+    await renderScope(
+      <TodoScopeSelectContent
+        action="edit"
+        date="2026-11-04"
+        isFollowingOnly
+        onChange={onChange}
+      />,
+    );
+
+    // When
+    await fireEvent.press(screen.getByLabelText('이 할 일과 이후 할 일'));
+
+    // Then
+    expect(screen.queryByLabelText('이 할 일만')).toBeNull();
+    expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
+  });
+
   test('삭제는 전체 삭제와 완료 기록 안내까지 한 행으로 보여준다', async () => {
     // Given
     const onChange = jest.fn();

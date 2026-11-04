@@ -27,6 +27,7 @@ import { Pressable } from 'react-native';
 
 import { TodoCategoryService } from '../apis/todo-category.service';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
 
 // AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
@@ -132,6 +133,35 @@ describe('useAddTodoQuickVoice', () => {
       }),
     );
     expect(screen.getByTestId('end-date')).toHaveTextContent('null');
+  });
+
+  it('서버가 규칙을 주면 격주·끝없는 반복도 그대로 폼에 넣는다', async () => {
+    // Given
+    const repeat: TodoRepeat = {
+      frequency: 'WEEKLY',
+      interval: 2,
+      weekdays: ['TUE'],
+      end: { type: 'NEVER' },
+    };
+    const speechRecognizer = await renderQuickVoice({
+      data: {
+        title: '운동',
+        startDate: '2026-11-10',
+        endDate: null,
+        scheduledTime: null,
+        isAllDay: true,
+        isRecurring: true,
+        recurrence: { daysOfWeek: ['TUE'], endDate: '2026-12-08' },
+        repeat,
+        categoryId: 1,
+      },
+    });
+
+    // When
+    await speak(speechRecognizer);
+
+    // Then
+    expect(await screen.findByTestId('repeat')).toHaveTextContent(JSON.stringify(repeat));
   });
 
   it('반복이 아니면 repeat은 비우고 해석된 endDate를 그대로 넣는다', async () => {

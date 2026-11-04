@@ -1,5 +1,6 @@
 import { parsedTodoDataSchema, parseTodoMetaSchema, todoRecurrenceSchema } from '@aido/api';
 import { featureQuotaSchema } from '@src/features/subscription/domains/entitlement.model';
+import { todoRepeatSchema } from '@src/features/todo/domains/todo-repeat.model';
 import { z } from 'zod';
 
 export const parsedTodoRecurrenceSchema = todoRecurrenceSchema.extend({ endDate: z.date() });
@@ -9,6 +10,8 @@ export const parsedTodoSchema = parsedTodoDataSchema.extend({
   startDate: z.date(),
   endDate: z.date().nullable(),
   recurrence: parsedTodoRecurrenceSchema.nullable(),
+  /** 1.15.0 서버가 준 반복 규칙. 이전 서버는 키가 없어 null이고 그때만 `recurrence`를 쓴다 */
+  repeat: todoRepeatSchema.nullable(),
 });
 export type ParsedTodo = z.infer<typeof parsedTodoSchema>;
 

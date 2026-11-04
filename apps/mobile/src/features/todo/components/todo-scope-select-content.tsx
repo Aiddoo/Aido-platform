@@ -67,6 +67,8 @@ interface TodoScopeSelectContentProps {
   action: TodoScopeAction;
   /** 범위를 정하는 할 일의 날짜(YYYY-MM-DD). 설명에 "n월 n일"로 보인다 */
   date: string;
+  /** 이 회차만 고를 수 없을 때(규칙 변경) 이후 범위 한 줄만 보인다 */
+  isFollowingOnly?: boolean;
   onChange: (scope: TodoEditScope) => void;
   /** 같은 시트 안의 한 단계로 보일 때, 누르면 앞 화면으로 돌아간다 */
   onBack?: () => void;
@@ -75,6 +77,7 @@ interface TodoScopeSelectContentProps {
 export function TodoScopeSelectContent({
   action,
   date,
+  isFollowingOnly = false,
   onChange,
   onBack,
 }: TodoScopeSelectContentProps) {
@@ -104,14 +107,17 @@ export function TodoScopeSelectContent({
         </Text>
         <Box className="flex-1" />
       </HStack>
-      <ScopeRow
-        icon={calendarIcon}
-        label={t('scope.thisOnly')}
-        description={t(action === 'edit' ? 'scope.editThisOnlyHint' : 'scope.deleteThisOnlyHint', {
-          date: dateLabel,
-        })}
-        onPress={() => onChange('THIS_ONLY')}
-      />
+      {!isFollowingOnly && (
+        <ScopeRow
+          icon={calendarIcon}
+          label={t('scope.thisOnly')}
+          description={t(
+            action === 'edit' ? 'scope.editThisOnlyHint' : 'scope.deleteThisOnlyHint',
+            { date: dateLabel },
+          )}
+          onPress={() => onChange('THIS_ONLY')}
+        />
+      )}
       <ScopeRow
         icon={repeatIcon}
         label={t('scope.thisAndFollowing')}

@@ -6,7 +6,6 @@ import {
   createTodoListResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo.factories';
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
 import type { RepeatingTodoDraft } from './todo-series.mapper';
 import { TodoService } from './todo.service';
 
@@ -285,12 +284,11 @@ describe('TodoService', () => {
       },
     };
 
-    test('정상 응답 → 기존 반복 경로로 보내고 Todo[] 반환', async () => {
+    test('정상 응답 → POST /v1/todos의 repeat로 보내고 첫 회차를 돌려준다', async () => {
       // Given
-      const todos = [createTodoDto({ id: 1 }), createTodoDto({ id: 2 })];
       httpClient.post.mockResolvedValue({
         ok: true,
-        value: { message: '반복 할 일이 2개 생성되었습니다.', todos, count: 2 },
+        value: { message: '할 일이 생성되었습니다.', todo: createTodoDto({ id: 1 }) },
       });
 
       // When
@@ -298,17 +296,19 @@ describe('TodoService', () => {
 
       // Then
       expect(httpClient.post).toHaveBeenCalledWith(
-        'v1/todos/recurring',
+        'v1/todos',
         expect.objectContaining({
           startDate: '2026-03-09',
-          endDate: '2026-06-30',
-          daysOfWeek: ['MON', 'WED', 'FRI'],
+          repeat: {
+            frequency: 'WEEKLY',
+            interval: 1,
+            weekdays: ['MON', 'WED', 'FRI'],
+            end: { type: 'UNTIL', date: '2026-06-30' },
+          },
         }),
       );
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value).toHaveLength(2);
-      }
+      expect(result.ok && result.value.todo.id).toBe(1);
+      expect(result.ok && result.value.series).toBeNull();
     });
 
     test('반복 제한 → TODO_0813 에러', async () => {
@@ -326,21 +326,6 @@ describe('TodoService', () => {
       expect(result).toEqual({ ok: false, error: apiError });
     });
 
-    test('기존 경로로 표현할 수 없는 규칙 → 요청 없이 사용 불가 오류', async () => {
-      // Given
-      const monthly: RepeatingTodoDraft = {
-        ...draft,
-        repeat: { frequency: 'MONTHLY', monthDay: 9, end: { type: 'NEVER' } },
-      };
-
-      // When
-      const result = await service.createRepeatingTodo(monthly);
-
-      // Then
-      expect(httpClient.post).not.toHaveBeenCalled();
-      expect(!result.ok && isTodoSeriesUnavailableError(result.error)).toBe(true);
-    });
-
     test('Zod 검증 실패 → ParseError throw', async () => {
       // Given
       httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
@@ -353,30 +338,136 @@ describe('TodoService', () => {
   });
 
   describe('범위가 있는 수정·삭제', () => {
-    test('이 할 일만 삭제하면 기존 삭제 경로를 쓴다', async () => {
+    test('범위를 고르지 않은 삭제는 쿼리 없이 보낸다', async () => {
       // Given
       httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제' } });
 
       // When
-      const result = await service.deleteTodo(1, 'THIS_ONLY');
+      const result = await service.deleteTodo(1);
 
       // Then
       expect(httpClient.delete).toHaveBeenCalledWith('v1/todos/1');
       expect(result.ok).toBe(true);
     });
 
-    test('이후 모두·전체 삭제는 서버 연결 전까지 요청 없이 사용 불가 오류를 돌려준다', async () => {
+    test.each(['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'] as const)(
+      '%s 삭제는 scope 쿼리로 보낸다',
+      async (scope) => {
+        // Given
+        httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제' } });
+
+        // When
+        await service.deleteTodo(1, scope);
+
+        // Then
+        expect(httpClient.delete).toHaveBeenCalledWith('v1/todos/1', { params: { scope } });
+      },
+    );
+
+    test('이후까지 시간을 바꾸면 PATCH로 범위와 시간만 보낸다', async () => {
       // Given
-      const scopes = ['THIS_AND_FOLLOWING', 'ALL'] as const;
+      httpClient.patch.mockResolvedValue({
+        ok: true,
+        value: { message: '수정', todo: createTodoDto() },
+      });
 
       // When
-      const results = await Promise.all(scopes.map((scope) => service.deleteTodo(1, scope)));
+      await service.updateTodoSchedule(
+        1,
+        { startDate: '2026-11-05', scheduledTime: '10:00', isAllDay: false },
+        'THIS_AND_FOLLOWING',
+      );
 
       // Then
-      expect(httpClient.delete).not.toHaveBeenCalled();
-      expect(
-        results.every((result) => !result.ok && isTodoSeriesUnavailableError(result.error)),
-      ).toBe(true);
+      expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1', {
+        scheduledTime: '10:00',
+        isAllDay: false,
+        scope: 'THIS_AND_FOLLOWING',
+      });
+    });
+
+    test('이 할 일만 시간을 바꾸면 기존 일정 경로를 쓴다', async () => {
+      // Given
+      httpClient.patch.mockResolvedValue({
+        ok: true,
+        value: { message: '수정', todo: createTodoDto() },
+      });
+      const input = { startDate: '2026-11-05', scheduledTime: '10:00', isAllDay: false };
+
+      // When
+      await service.updateTodoSchedule(1, input, 'THIS_ONLY');
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1/schedule', input);
+    });
+  });
+
+  describe('반복 규칙', () => {
+    test('규칙을 읽어 앱 모델로 바꾼다', async () => {
+      // Given
+      httpClient.get.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'series-1',
+          title: '물 마시기',
+          categoryId: 1,
+          visibility: 'PUBLIC',
+          scheduledTime: null,
+          timezone: 'Asia/Seoul',
+          repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
+          startDate: '2026-11-02',
+          nextOccurrenceDate: null,
+          isActive: false,
+          checklist: [],
+          createdAt: '2026-11-02T00:00:00.000Z',
+          updatedAt: '2026-11-02T00:00:00.000Z',
+        },
+      });
+
+      // When
+      const result = await service.getTodoSeries('series-1');
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledWith('v1/todo-series/series-1', {
+        signal: undefined,
+      });
+      expect(result).toEqual({
+        ok: true,
+        value: {
+          id: 'series-1',
+          repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
+          startDate: '2026-11-02',
+        },
+      });
+    });
+
+    test('규칙이 없는 옛 묶음(TODO_0841)은 null이다', async () => {
+      // Given
+      httpClient.get.mockResolvedValue({
+        ok: false,
+        error: createTodoApiError({ code: 'TODO_0841', message: '없음' }),
+      });
+
+      // When
+      const result = await service.getTodoSeries('series-1');
+
+      // Then
+      expect(result).toEqual({ ok: true, value: null });
+    });
+
+    test('반복 끝내기는 repeat null로 PATCH한다', async () => {
+      // Given
+      httpClient.patch.mockResolvedValue({
+        ok: true,
+        value: { message: '수정', todo: createTodoDto() },
+      });
+
+      // When
+      const result = await service.stopTodoSeries(1);
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/1', { repeat: null });
+      expect(result.ok).toBe(true);
     });
   });
 

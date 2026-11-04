@@ -7,14 +7,14 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import type { TodoEditScope } from '../domains/todo-repeat.model';
-import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
+import type { TodoUpdateScope } from '../domains/todo-repeat.model';
 import { invalidateTodos } from './todo-cache';
+import { useTodoSeriesFailureHandler } from './use-todo-series-failure-handler';
 
 interface ChangeTodoCategoryMutationParams {
   todoId: number;
   input: ChangeTodoCategoryInput;
-  scope?: TodoEditScope;
+  scope?: TodoUpdateScope;
 }
 
 export const useChangeTodoCategoryMutationOptions = () => {
@@ -22,6 +22,7 @@ export const useChangeTodoCategoryMutationOptions = () => {
   const todoCategoryService = useTodoCategoryService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const handleSeriesFailure = useTodoSeriesFailureHandler();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -40,8 +41,7 @@ export const useChangeTodoCategoryMutationOptions = () => {
     onError: (error) => {
       haptics.notify('error');
 
-      if (isTodoSeriesUnavailableError(error)) {
-        toast.error(t('todo:toast.repeatUnavailable'));
+      if (handleSeriesFailure(error)) {
         return;
       }
 
