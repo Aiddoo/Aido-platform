@@ -92,7 +92,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     });
     const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost);
     const entitlements = mock<EntitlementReaderPort>();
-    entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ isPremium: false }));
+    entitlements.getAccessSnapshot.mockResolvedValue(mock<AccessSnapshot>({ tier: "FREE" }));
     return new MaterializeDueTodoSeries({
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(

@@ -22,6 +22,7 @@ export {
 } from "./application/ports/entitlement/resource-bonus-granter.port.js";
 export {
   calculateRemainingLimit,
+  isExemptFromDormancy,
   isExemptFromUserSpendLimit,
 } from "./domain/policies/entitlement/entitlement.policy.js";
 export { AccessModule } from "./access.module.js";

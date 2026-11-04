@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   ENTITLEMENT_READER,
+  isExemptFromDormancy,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
 import {
@@ -27,7 +28,7 @@ export class TodoSeriesOwnerDormancyAdapter implements TodoSeriesOwnerDormancyPo
     if (owner == null || !isSeriesOwnerDormant(owner, now())) {
       return null;
     }
-    const { isPremium } = await this.entitlementReader.getAccessSnapshot(userId);
-    return isPremium ? null : toDateString(owner.lastActiveAt ?? owner.signedUpAt);
+    const { tier } = await this.entitlementReader.getAccessSnapshot(userId);
+    return isExemptFromDormancy(tier) ? null : toDateString(owner.lastActiveAt ?? owner.signedUpAt);
   }
 }

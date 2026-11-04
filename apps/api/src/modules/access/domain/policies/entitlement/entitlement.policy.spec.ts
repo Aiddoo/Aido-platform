@@ -2,6 +2,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import {
   calculateRemainingLimit,
+  isExemptFromDormancy,
   isExemptFromUserSpendLimit,
   NO_RESOURCE_BONUSES,
   resolveAccessContext,
@@ -13,6 +14,19 @@ import {
 } from "./entitlement.policy.js";
 
 const AT = new Date("2028-03-04T00:00:00.000Z");
+
+describe("isExemptFromDormancy", () => {
+  it.each([
+    { tier: "FREE", exempt: false },
+    { tier: "PREMIUM", exempt: true },
+    { tier: "ADMIN", exempt: true },
+  ] as const)("$tier 휴면 제외는 $exempt다", ({ tier, exempt }) => {
+    // When
+    const result = isExemptFromDormancy(tier);
+    // Then
+    expect(result).toBe(exempt);
+  });
+});
 
 describe("권한 정책 — 카탈로그와 접근 주체", () => {
   it.each([

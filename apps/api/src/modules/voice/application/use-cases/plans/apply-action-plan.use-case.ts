@@ -2,8 +2,6 @@ import type { ApplyActionPlanResponse, Memo, Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { ActionPlanSource } from "@aido/api/vocabulary";
 
-import type { PlanMemoWriterPort } from "#api/modules/notes/notes-memos.public";
-import type { TodoPlanReaderPort } from "#api/modules/planning/planning-todos.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   type AfterCommitTaskRegistryPort,
@@ -23,7 +21,9 @@ import type {
   PlanApplicationRecord,
   PlanApplicationRepositoryPort,
 } from "../../ports/plans/plan-application.repository.port.js";
+import type { PlanMemoWriterPort } from "../../ports/plans/plan-memo-writer.port.js";
 import type { PlanTodoCreatorPort } from "../../ports/plans/plan-todo-creator.port.js";
+import type { PlanTodoReaderPort } from "../../ports/plans/plan-todo-reader.port.js";
 import type { PlanningContextReaderPort } from "../../ports/plans/planning-context.reader.port.js";
 import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
@@ -45,7 +45,7 @@ interface ApplyActionPlanDependencies {
   readonly contextReader: Pick<PlanningContextReaderPort, "findOwnedCategoryIds">;
   readonly todoCreator: PlanTodoCreatorPort;
   readonly memoWriter: PlanMemoWriterPort;
-  readonly todoReader: Pick<TodoPlanReaderPort, "findManyByIds">;
+  readonly todoReader: PlanTodoReaderPort;
   readonly logger: Pick<ApplicationLogger, "log">;
 }
 

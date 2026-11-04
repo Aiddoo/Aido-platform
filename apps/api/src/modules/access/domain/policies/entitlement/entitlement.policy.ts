@@ -123,6 +123,11 @@ export function isExemptFromUserSpendLimit(tier: AccessTier): boolean {
   return tier === "ADMIN";
 }
 
+/** 유료·ADMIN은 앱을 열지 않아도 활성으로 다룬다. 휴면으로 멈추는 등급은 FREE뿐이다. */
+export function isExemptFromDormancy(tier: AccessTier): boolean {
+  return tier !== "FREE";
+}
+
 export function calculateRemainingLimit(limit: number | null, used: number): number | null {
   return limit == null ? null : Math.max(0, limit - used);
 }

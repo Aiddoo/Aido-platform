@@ -53,14 +53,14 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   let fixture: ReturnType<typeof createDatabaseTransactionFixture>;
   let runtime: FakeJobRuntime;
   let userId: string;
-  const paidUserIds = new Set<string>();
+  const premiumUserIds = new Set<string>();
   let categoryId: number;
 
   beforeAll(async () => {
     client = await database.start();
   });
   beforeEach(async () => {
-    paidUserIds.clear();
+    premiumUserIds.clear();
     await database.cleanup();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(RETURNED_AT);
@@ -130,7 +130,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   function entitlements() {
     const reader = mock<EntitlementReaderPort>();
     reader.getAccessSnapshot.mockImplementation(async (id) =>
-      mock<AccessSnapshot>({ isPremium: paidUserIds.has(id) }),
+      mock<AccessSnapshot>({ tier: premiumUserIds.has(id) ? "PREMIUM" : "FREE" }),
     );
     return reader;
   }
@@ -594,7 +594,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         lastActiveAt: new Date("2026-01-01T00:00:00.000Z"),
         timezone: "UTC",
       });
-      paidUserIds.add(owner.userId);
+      premiumUserIds.add(owner.userId);
       // When
       const dormantSince = await dormancy().findDormantSince(owner.userId);
       // Then

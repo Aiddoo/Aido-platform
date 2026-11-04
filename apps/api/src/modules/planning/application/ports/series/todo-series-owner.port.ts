@@ -8,6 +8,6 @@ export interface TodoSeriesOwnerPort {
     userIds: readonly string[],
   ): Promise<ReadonlyMap<string, SeriesOwnerActivity>>;
 
-  /** 유효한 스토어 구독이나 보상 기간이 있는지. 유료 사용자는 앱을 안 열어도 멈추지 않는다. */
-  hasPaidAccess(userId: string): Promise<boolean>;
+  /** 유료·ADMIN은 앱을 안 열어도 멈추지 않는다. 판단은 access 정책이 소유한다. */
+  isExemptFromDormancy(userId: string): Promise<boolean>;
 }

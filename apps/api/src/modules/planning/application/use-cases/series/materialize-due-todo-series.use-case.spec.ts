@@ -140,7 +140,7 @@ describe("회차 채우기", () => {
     expect(fixture.logger.log).toHaveBeenCalledWith(expect.objectContaining({ dormantCount: 1 }));
   });
 
-  it("휴면 기간이어도 유효한 유료 사용자의 규칙은 그대로 채운다", async () => {
+  it("휴면 기간이어도 휴면 제외 등급의 규칙은 그대로 채운다", async () => {
     // Given
     await seed("series-1");
     fixture.seriesOwner.activity = {
@@ -148,7 +148,7 @@ describe("회차 채우기", () => {
       signedUpAt: new Date("2026-01-01T00:00:00.000Z"),
       timezone: "Asia/Seoul",
     };
-    fixture.seriesOwner.paidUserIds.add(fixture.userId);
+    fixture.seriesOwner.exemptUserIds.add(fixture.userId);
     // When
     const result = await useCase().execute();
     // Then

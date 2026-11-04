@@ -6,6 +6,10 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import {
+  TODO_SERIES_OWNER_DORMANCY,
+  type TodoSeriesOwnerDormancyPort,
+} from "#api/modules/notification/application/ports/reminders/todo-series-owner-dormancy.port";
 import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import {
@@ -207,6 +211,38 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       expect(rows.map((row) => dateOf(row.occurrenceDate))).toEqual(["2026-11-02", "2026-11-04"]);
       expect((await seriesRow(seriesId))?.nextOccurrenceDate).toBeNull();
     });
+  });
+
+  describe("등급별 휴면 (실제 access 판단)", () => {
+    it.each([
+      { tier: "FREE", patch: {}, dormantCount: 1, dormantSince: "2026-11-02" },
+      {
+        tier: "PREMIUM",
+        patch: { subscriptionStatus: "ACTIVE" },
+        dormantCount: 0,
+        dormantSince: null,
+      },
+      { tier: "ADMIN", patch: { role: "ADMIN" }, dormantCount: 0, dormantSince: null },
+    ] as const)(
+      "$tier은 61일 넘게 안 열었을 때 휴면 $dormantCount건이다",
+      async ({ patch, dormantCount, dormantSince }) => {
+        // Given
+        await start();
+        await client
+          .update(userTable)
+          .set({ ...patch, lastActiveAt: AT })
+          .where(eq(userTable.id, userId));
+        vi.setSystemTime(new Date("2027-01-05T00:00:00.000Z"));
+        // When
+        const result = await context.module.get(MaterializeDueTodoSeries).execute();
+        const since = await context.module
+          .get<TodoSeriesOwnerDormancyPort>(TODO_SERIES_OWNER_DORMANCY, { strict: false })
+          .findDormantSince(userId);
+        // Then
+        expect(result.dormantCount).toBe(dormantCount);
+        expect(since).toBe(dormantSince);
+      },
+    );
   });
 
   describe("지난 시작일", () => {

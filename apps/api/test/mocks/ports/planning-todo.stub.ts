@@ -342,7 +342,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
 export class StubPlanningTodoSeriesOwner implements TodoSeriesOwnerPort {
   /** 비워 두면 소유자가 방금 활동한 것으로 읽는다. */
   activity: SeriesOwnerActivity | null = null;
-  readonly paidUserIds = new Set<string>();
+  readonly exemptUserIds = new Set<string>();
   /** 정지·탈퇴 대기 계정 */
   readonly suspendedUserIds = new Set<string>();
   async findOperatingOwners(
@@ -361,8 +361,8 @@ export class StubPlanningTodoSeriesOwner implements TodoSeriesOwnerPort {
         ]),
     );
   }
-  async hasPaidAccess(userId: string): Promise<boolean> {
-    return this.paidUserIds.has(userId);
+  async isExemptFromDormancy(userId: string): Promise<boolean> {
+    return this.exemptUserIds.has(userId);
   }
 }
 

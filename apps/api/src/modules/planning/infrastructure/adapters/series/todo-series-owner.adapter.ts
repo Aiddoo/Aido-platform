@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   ENTITLEMENT_READER,
+  isExemptFromDormancy,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
 import {
@@ -26,8 +27,8 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
     return new Map(accounts.map((account) => [account.userId, account]));
   }
 
-  async hasPaidAccess(userId: string): Promise<boolean> {
-    const snapshot = await this.entitlementReader.getAccessSnapshot(userId);
-    return snapshot.isPremium;
+  async isExemptFromDormancy(userId: string): Promise<boolean> {
+    const { tier } = await this.entitlementReader.getAccessSnapshot(userId);
+    return isExemptFromDormancy(tier);
   }
 }

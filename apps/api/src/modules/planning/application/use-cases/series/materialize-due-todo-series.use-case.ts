@@ -51,7 +51,7 @@ interface MaterializeDueTodoSeriesDependencies {
  * pg-boss는 at-least-once라 다시 돌아도 안전해야 한다: 규칙 행을 SKIP LOCKED로 잡고,
  * (seriesId, occurrenceDate) 유니크로 건너뛰며, 커서는 만든 만큼만 앞으로 간다.
  * 소유자가 휴면이면 규칙을 건너뛰고 커서를 그대로 둔다. 돌아오면 복귀 경로나 다음 실행이 이어받는다.
- * 유효한 유료 사용자는 앱을 안 열어도 휴면으로 보지 않는다. 정지·탈퇴 대기 계정은 복구될 때까지 건너뛴다.
+ * 유료·ADMIN은 앱을 안 열어도 휴면으로 보지 않는다. 정지·탈퇴 대기 계정은 복구될 때까지 건너뛴다.
  */
 export class MaterializeDueTodoSeries {
   readonly #dependencies: MaterializeDueTodoSeriesDependencies;
@@ -95,7 +95,10 @@ export class MaterializeDueTodoSeries {
         if (owner == null) {
           continue;
         }
-        if (isSeriesOwnerDormant(owner, now()) && !(await seriesOwner.hasPaidAccess(due.userId))) {
+        if (
+          isSeriesOwnerDormant(owner, now()) &&
+          !(await seriesOwner.isExemptFromDormancy(due.userId))
+        ) {
           dormantCount += 1;
           continue;
         }

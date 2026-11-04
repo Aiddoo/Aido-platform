@@ -6,7 +6,7 @@
 
 - 기준: `User.lastActiveAt`(없으면 가입일)의 날짜에서 사용자 시간대(`UserPreference.timezone`, 미상·UTC는 KST) 오늘까지 `TODO_SERIES_DORMANT_AFTER_DAYS`(60일)를 넘으면 휴면이다. 정확히 60일째는 아직 휴면이 아니다. 판단은 `isSeriesOwnerDormant` 하나다.
 - 활동 기록은 `LastActiveInterceptor`의 기존 값을 그대로 쓴다. 인증된 모든 요청을 세지만 앱에는 사용자가 열지 않은 상태에서 나가는 요청이 없다(아래). 리텐션·윈백·성장 지표가 같은 값을 쓰므로 의미를 바꾸지 않는다.
-- 유효한 유료 사용자(`AccessSnapshot.isPremium`, 스토어 구독·보상 기간)는 휴면으로 보지 않는다. 매일 약 먹기처럼 알림만 받고 앱을 열지 않아도 끊기지 않는다. 구독이 끝나면 그때부터 무료 기준으로 잰다. ADMIN role은 `isPremium`에 반영되지 않아 같은 기준을 탄다.
+- 유료(`PREMIUM`, 스토어 구독·보상 기간)와 `ADMIN` 등급은 휴면으로 보지 않는다(access의 `isExemptFromDormancy(tier)`, 소비자는 등급을 직접 비교하지 않는다). 매일 약 먹기처럼 알림만 받고 앱을 열지 않아도 끊기지 않는다. 구독이 끝나면 그때부터 무료 기준으로 잰다. `isPremium`의 의미는 그대로다.
 - 회차 채우기: 무료 휴면 소유자의 규칙은 건너뛰고 커서를 그대로 둔다. 실행 결과 로그 `planning.todo-series.materialized`의 `dormantCount`로 센다.
 - 알림: 이미 큐에 있는 `TODO_REMINDER`는 발송 시점에 확인한다. 반복 회차(`Todo.seriesId` 있음)이고 소유자가 무료 휴면이면 보내지 않고 `notification.todo-reminder.dormant-owner.skipped`(info, `todoId`·`userId`·`stage`)를 남긴다. 단일 할 일은 묻지도 않는다. 잡을 지우지 않고 기존 잡 payload도 그대로라 쌓여 있던 잡과 호환된다.
 - 멈춤 안내: 처음 건너뛸 때 `send-series-paused-notice` 작업을 등록해 "반복 할 일 알림을 잠시 멈췄어요 / 앱을 열면 다시 시작돼요"(en "Repeating to-do reminders paused / Open the app to start them again")를 보낸다. 칸을 더하지 않고 key `series-paused_{userId}_{마지막 활동일}`로 휴면 기간당 한 번만 보낸다. 멈춘 리마인더가 커서가 앞서 있던 만큼(90일 남짓) 계속 돌아오므로 끝난 행을 120일 남긴다. 종류·목적이 리마인더와 같아(`TODO_REMINDER`·`SCHEDULED_SERVICE`) 기존 알림 동의를 따르고, 탭하면 그 회차로 간다. 앱이 열리면 인증된 첫 요청이 `lastActiveAt`을 갱신해 복귀가 시작된다. 알림 도착만으로는 세지 않는다. 문구와 유료 제외 정책은 사용자 확인 전 기본안이다.
