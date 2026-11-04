@@ -1,7 +1,6 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
 import { toDate } from '@src/shared/utils/date';
-import { addDaysToDateKey, diffDateKeysInDays, toDeviceDateKey } from '@src/shared/utils/date-key';
-import { range } from 'es-toolkit';
+import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_COUNT } from '../constants/todo-repeat.constants';
@@ -31,7 +30,7 @@ export function toTodoRepeatFormValues(
     weekdays: startWeekday,
     interval: 1 as const,
     isMonthly: false,
-    endType: 'NEVER' as const,
+    endType: 'UNTIL' as const,
     untilDate: null,
     count: TODO_REPEAT_COUNT.DEFAULT,
   };
@@ -101,32 +100,12 @@ export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
   };
 }
 
-function hasWeekdayInRange(
-  weekdays: readonly DayOfWeek[],
-  startDate: Date,
-  endDate: Date,
-): boolean {
-  const startDateKey = toDeviceDateKey(startDate);
-  const days = Math.min(
-    diffDateKeysInDays(startDateKey, toDeviceDateKey(endDate)),
-    WEEK_LENGTH - 1,
-  );
-
-  return range(days + 1).some((offset) =>
-    weekdays.includes(getWeekdayOfDateKey(addDaysToDateKey(startDateKey, offset))),
-  );
-}
-
-/** 요일을 고르지 않았거나, 날짜 종료인데 종료일이 없거나 기간 안에 고른 요일이 없으면 확인할 수 없다. */
+/** 요일을 고르지 않았거나, 날짜 종료인데 종료일이 없거나 기간 안에 회차가 없으면 확인할 수 없다. */
 export function canConfirmTodoRepeatForm(values: TodoRepeatFormValues): boolean {
-  if (toTodoRepeat(values) == null) {
-    return false;
-  }
-
+  const repeat = toTodoRepeat(values);
   return (
-    values.isMonthly ||
-    values.untilDate == null ||
-    hasWeekdayInRange(values.weekdays, values.startDate, values.untilDate)
+    repeat != null &&
+    TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate)) != null
   );
 }
 

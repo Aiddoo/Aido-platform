@@ -1,5 +1,9 @@
 import '@src/shared/i18n/init';
-import { createErrorReporterStub, createMockAnalytics } from '@src/shared/__tests__';
+import {
+  createErrorReporterStub,
+  createHapticsStub,
+  createMockAnalytics,
+} from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { fireEvent, screen } from '@testing-library/react-native';
@@ -22,6 +26,7 @@ async function renderSheet({
 }: { repeat?: TodoRepeat | null; startDate?: Date } = {}) {
   const onChange = jest.fn();
   const onCancel = jest.fn();
+  const haptics = createHapticsStub();
 
   await renderUi(
     <LocalDateProvider>
@@ -31,10 +36,10 @@ async function renderSheet({
         onCancel={onCancel}
       />
     </LocalDateProvider>,
-    { di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub() } },
+    { di: { analytics: createMockAnalytics(), errorReporter: createErrorReporterStub(), haptics } },
   );
 
-  return { onChange, onCancel };
+  return { onChange, onCancel, haptics };
 }
 
 const press = (text: string) => fireEvent.press(screen.getByText(text));
@@ -51,7 +56,7 @@ describe('TodoRepeatPickerContent', () => {
     jest.useRealTimers();
   });
 
-  test('값이 없으면 시작일의 요일 하나를 고른 상태와 계속으로 시작한다', async () => {
+  test('값이 없으면 시작일의 요일 하나와 날짜 종료로 시작하고 기간을 고를 때까지 확인이 막힌다', async () => {
     // Given
     const { onChange } = await renderSheet();
 
@@ -60,7 +65,21 @@ describe('TodoRepeatPickerContent', () => {
 
     // Then
     expect(screen.getByText('* 매주 목 반복')).toBeTruthy();
-    expect(screen.getByText('11월 5일부터 계속 반복')).toBeTruthy();
+    expect(screen.getByText('기간을 선택해주세요')).toBeTruthy();
+    expect(chip('목')).toBeSelected();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test('계속을 고르면 기간 줄이 계속 반복으로 바뀌고 확인할 수 있다', async () => {
+    // Given
+    const { onChange } = await renderSheet();
+
+    // When
+    await press('계속');
+    await confirm();
+
+    // Then
+    expect(screen.getByText('11월 5일 - 계속 반복')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith({
       startDate: START_DATE,
       repeat: WEEKLY_THURSDAY_FOREVER,
@@ -115,6 +134,7 @@ describe('TodoRepeatPickerContent', () => {
     expect(chip('목')).toBeSelected();
 
     // When
+    await press('계속');
     await confirm();
 
     // Then
@@ -136,6 +156,7 @@ describe('TodoRepeatPickerContent', () => {
 
     // When
     await press('매월 5일');
+    await press('계속');
     await confirm();
 
     // Then
@@ -216,25 +237,58 @@ describe('TodoRepeatPickerContent', () => {
     expect(screen.queryByText('11월 5일 - 11월 12일')).toBeNull();
   });
 
-  test('날짜 종료 기간 안에 고른 요일이 없으면 확인이 막힌다', async () => {
+  test('날짜 종료 기간 안에 반복되는 날이 없으면 이유를 보여주고 확인이 막힌다', async () => {
     // Given
     const { onChange } = await renderSheet();
-    await pressDay('월');
-    await pressDay('목');
-    await press('날짜');
+    await press('주말');
 
     // When
     await press('6');
     await confirm();
 
     // Then
+    expect(screen.getByText('* 기간 안에 반복되는 날이 없어요')).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test('시작일이 반복 요일이 아니면 기간 줄과 저장은 첫 회차 날짜를 쓴다', async () => {
+    // Given
+    const { onChange } = await renderSheet();
+    await press('주말');
+
+    // When
+    await press('계속');
+    await confirm();
+
+    // Then
+    expect(screen.getByText('11월 7일 - 계속 반복')).toBeTruthy();
+    expect(onChange).toHaveBeenCalledWith({
+      startDate: START_DATE,
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['SAT', 'SUN'],
+        end: { type: 'NEVER' },
+      },
+    });
+  });
+
+  test('칩을 누르면 선택 햅틱을 준다', async () => {
+    // Given
+    const { haptics } = await renderSheet();
+
+    // When
+    await press('격주');
+
+    // Then
+    expect(haptics.selection).toHaveBeenCalledTimes(1);
   });
 
   test('계속이나 횟수에서 달력을 누르면 시작일이 바뀌고 매월 n일도 따라간다', async () => {
     // Given
     const { onChange } = await renderSheet();
     await press('매월 5일');
+    await press('계속');
 
     // When
     await press('12');

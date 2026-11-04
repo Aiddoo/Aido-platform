@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,6 +21,7 @@ import {
   isBeforeDay,
   isSameDay,
   isSameMonth,
+  toDate,
 } from '@src/shared/utils/date';
 import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { toDeviceDateKey } from '@src/shared/utils/date-key';
@@ -60,9 +62,14 @@ interface PresetChipProps {
 }
 
 function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
+  const haptics = useHaptics();
+
   return (
     <PressableFeedback
-      onPress={onPress}
+      onPress={() => {
+        haptics.selection();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
       className={cn(
@@ -90,9 +97,14 @@ interface DayOfWeekChipProps {
 }
 
 function DayOfWeekChip({ day, isSelected, onPress }: DayOfWeekChipProps) {
+  const haptics = useHaptics();
+
   return (
     <PressableFeedback
-      onPress={onPress}
+      onPress={() => {
+        haptics.selection();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
       className={cn(
@@ -198,12 +210,12 @@ function DayOfWeekSelector() {
 
 function RepeatSummary() {
   const { t } = useTranslation('todo');
-  const { control } = useFormContext<TodoRepeatFormValues>();
-  const [weekdays, interval, isMonthly, startDate] = useWatch({
-    control,
-    name: ['weekdays', 'interval', 'isMonthly', 'startDate'],
-  });
+  const { weekdays, interval, isMonthly, startDate, ...values } = useRepeatFormValues();
+  const repeat = toTodoRepeat({ weekdays, interval, isMonthly, startDate, ...values });
   const days = formatDaysOfWeek(weekdays);
+  const hasNoOccurrence =
+    repeat != null &&
+    TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(startDate)) == null;
   const summary = match({ weekdays, interval, isMonthly })
     .returnType<string | null>()
     .with({ isMonthly: true }, () =>
@@ -228,9 +240,17 @@ function RepeatSummary() {
     )
     .otherwise(() => t('picker.repeatWeekly', { days }));
 
-  return summary == null ? (
+  if (summary == null) {
+    return (
+      <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
+        * {t('picker.selectDays')}
+      </Text>
+    );
+  }
+
+  return hasNoOccurrence ? (
     <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
-      * {t('picker.selectDays')}
+      * {t('picker.noOccurrence')}
     </Text>
   ) : (
     <Text size="b3" tone="brand" align="right" className="px-4">
@@ -247,7 +267,7 @@ function CountStepper() {
     setValue('count', clamp(next, TODO_REPEAT_COUNT.MIN, TODO_REPEAT_COUNT.MAX));
 
   return (
-    <HStack gap={12} align="center" className="px-4">
+    <HStack gap={12} align="center">
       <PressableFeedback
         onPress={() => changeCount(count - 1)}
         isDisabled={count <= TODO_REPEAT_COUNT.MIN}
@@ -291,17 +311,17 @@ function RepeatEndSelector() {
   };
 
   return (
-    <VStack gap={12}>
-      <HStack gap={6} className="px-4">
-        <PresetChip
-          label={t('picker.endNever')}
-          isSelected={endType === 'NEVER'}
-          onPress={() => handleEndTypePress('NEVER')}
-        />
+    <HStack align="center" justify="between" className="px-4">
+      <HStack gap={6}>
         <PresetChip
           label={t('picker.endUntil')}
           isSelected={endType === 'UNTIL'}
           onPress={() => handleEndTypePress('UNTIL')}
+        />
+        <PresetChip
+          label={t('picker.endNever')}
+          isSelected={endType === 'NEVER'}
+          onPress={() => handleEndTypePress('NEVER')}
         />
         <PresetChip
           label={t('picker.endCount')}
@@ -310,7 +330,7 @@ function RepeatEndSelector() {
         />
       </HStack>
       {endType === 'COUNT' && <CountStepper />}
-    </VStack>
+    </HStack>
   );
 }
 
@@ -340,9 +360,9 @@ export const TodoRepeatPickerContent = ({
       <VStack gap={20}>
         <RepeatPickerHeader onChange={onChange} onCancel={onCancel} />
         <DayOfWeekSelector />
-        <RepeatEndSelector />
         <RepeatCalendarSection picker={picker} />
         <RepeatPeriodFooter value={value} onChange={onChange} />
+        <RepeatEndSelector />
       </VStack>
     </FormProvider>
   );
@@ -391,7 +411,30 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
     control,
     name: ['startDate', 'endType', 'untilDate'],
   });
+  const values = useRepeatFormValues();
   const today = useToday();
+  const startDateKey = toDeviceDateKey(startDate);
+  const repeat = toTodoRepeat(values);
+  const firstWeekDate = picker.weeks.at(0)?.at(0);
+  const lastWeekDate = picker.weeks.at(-1)?.at(-1);
+  const occurrenceKeys =
+    repeat == null || firstWeekDate == null || lastWeekDate == null
+      ? null
+      : new Set(
+          TodoRepeatPolicy.getOccurrenceDateKeys(repeat, startDateKey, {
+            from: toDeviceDateKey(firstWeekDate),
+            to: toDeviceDateKey(lastWeekDate),
+          }),
+        );
+  const lastOccurrenceKey =
+    endType === 'COUNT' && repeat != null
+      ? TodoRepeatPolicy.getLastOccurrenceDateKey(repeat, startDateKey)
+      : null;
+  const endDate = match(endType)
+    .with('UNTIL', () => untilDate)
+    .with('COUNT', () => (lastOccurrenceKey == null ? null : toDate(lastOccurrenceKey)))
+    .with('NEVER', () => null)
+    .exhaustive();
 
   const changeStartDate = (date: Date) => {
     const next = withTodoRepeatFormStartDate(getValues(), date);
@@ -428,7 +471,9 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
       picker={picker}
       today={today}
       startDate={startDate}
-      endDate={endType === 'UNTIL' ? untilDate : null}
+      endDate={endDate}
+      isOpenEnded={endType === 'NEVER' && repeat != null}
+      occurrenceKeys={occurrenceKeys}
       onDatePress={handleCalendarPress}
     />
   );
@@ -446,6 +491,12 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
   const formatMonthDay = (date: Date) =>
     formatDateKeyLabel(toDeviceDateKey(date), 'monthDay', dateFormatContext);
   const monthlyRepeat = values.isMonthly ? toTodoRepeat({ ...values, endType: 'NEVER' }) : null;
+  const repeat = toTodoRepeat(values);
+  const firstOccurrenceKey =
+    repeat == null
+      ? null
+      : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
+  const periodStart = firstOccurrenceKey == null ? values.startDate : toDate(firstOccurrenceKey);
 
   return (
     <VStack gap={4} className="border-t border-gray-2 px-4 pt-3">
@@ -460,21 +511,21 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
           {match(values.endType)
             .with('NEVER', () => (
               <Text size="b3" tone="brand">
-                {t('picker.periodNever', { date: formatMonthDay(values.startDate) })}
+                {t('picker.periodNever', { date: formatMonthDay(periodStart) })}
               </Text>
             ))
             .with('COUNT', () => (
               <Text size="b3" tone="brand">
                 {t('picker.periodCount', {
-                  date: formatMonthDay(values.startDate),
+                  date: formatMonthDay(periodStart),
                   count: values.count,
                 })}
               </Text>
             ))
             .with('UNTIL', () =>
-              values.untilDate != null && !isSameDay(values.startDate, values.untilDate) ? (
+              values.untilDate != null && !isSameDay(periodStart, values.untilDate) ? (
                 <Text size="b3" tone="brand">
-                  {formatMonthDay(values.startDate)} - {formatMonthDay(values.untilDate)}
+                  {formatMonthDay(periodStart)} - {formatMonthDay(values.untilDate)}
                 </Text>
               ) : (
                 <Text size="b3" tone="neutral" shade={5}>
@@ -510,6 +561,10 @@ interface RepeatCalendarProps {
   today: Date;
   startDate: Date;
   endDate: Date | null;
+  /** 끝이 없는 반복이라 띠가 시작일부터 달력 끝까지 이어진다 */
+  isOpenEnded: boolean;
+  /** 띠 안에서 실제로 반복되는 날(YYYY-MM-DD). null이면 흐리게 하지 않는다 */
+  occurrenceKeys: ReadonlySet<string> | null;
   onDatePress: (date: Date) => void;
 }
 
@@ -518,6 +573,8 @@ const RepeatCalendar = ({
   today,
   startDate,
   endDate,
+  isOpenEnded,
+  occurrenceKeys,
   onDatePress,
 }: RepeatCalendarProps) => {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
@@ -555,6 +612,8 @@ const RepeatCalendar = ({
                   today={today}
                   startDate={startDate}
                   endDate={endDate}
+                  isOpenEnded={isOpenEnded}
+                  occurrenceKeys={occurrenceKeys}
                   onPress={onDatePress}
                 />
               ) : (
@@ -573,10 +632,20 @@ interface RepeatDateCellProps {
   today: Date;
   startDate: Date;
   endDate: Date | null;
+  isOpenEnded: boolean;
+  occurrenceKeys: ReadonlySet<string> | null;
   onPress: (date: Date) => void;
 }
 
-const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDateCellProps) => {
+const RepeatDateCell = ({
+  date,
+  today,
+  startDate,
+  endDate,
+  isOpenEnded,
+  occurrenceKeys,
+  onPress,
+}: RepeatDateCellProps) => {
   const dayOfMonth = date.getDate();
   const isDisabled = isBeforeDay(date, today);
   const isStart = isSameDay(date, startDate);
@@ -585,10 +654,15 @@ const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDate
   const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
   const shouldHighlightToday = !isDisabled && isTodayHighlighted({ date, isSelected, today });
 
-  const hasDistinctRange = endDate != null && !isSameDay(startDate, endDate);
-  const isInRange = hasDistinctRange && isAfterDay(date, startDate) && isBeforeDay(date, endDate);
+  const hasDistinctRange = isOpenEnded || (endDate != null && !isSameDay(startDate, endDate));
+  const isInRange =
+    hasDistinctRange &&
+    isAfterDay(date, startDate) &&
+    (isOpenEnded || (endDate != null && isBeforeDay(date, endDate)));
   const isRangeStart = hasDistinctRange && isStart;
-  const isRangeEnd = hasDistinctRange && isEnd;
+  const isRangeEnd = !isOpenEnded && hasDistinctRange && isEnd;
+  const isDimmed =
+    occurrenceKeys != null && isInRange && !occurrenceKeys.has(toDeviceDateKey(date));
 
   return (
     <PressableFeedback
@@ -613,7 +687,7 @@ const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDate
           size="b3"
           weight="medium"
           tone={isDisabled ? 'neutral' : DAY_TYPE_TONE[dayStyle]}
-          shade={isSelected ? undefined : 7}
+          shade={isSelected ? undefined : isDimmed ? 5 : 7}
         >
           {dayOfMonth}
         </Text>

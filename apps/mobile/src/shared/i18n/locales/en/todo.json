@@ -47,7 +47,7 @@
     "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
     "repeatPeriod": "Repeat period",
     "selectPeriod": "Please choose a period",
-    "periodNever": "From {{date}}, repeats forever",
+    "periodNever": "{{date}} - repeats forever",
     "periodCount_one": "From {{date}}, {{count}} time",
     "periodCount_other": "From {{date}}, {{count}} times",
     "repeatDaily": "Repeats daily",
@@ -64,7 +64,8 @@
     "endNever": "Forever",
     "endUntil": "Until",
     "endCount": "Count",
-    "selectDays": "Please choose days"
+    "selectDays": "Please choose days",
+    "noOccurrence": "No repeating days in this period"
   },
   "repeat": {
     "end": {

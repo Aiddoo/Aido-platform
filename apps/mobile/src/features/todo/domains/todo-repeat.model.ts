@@ -1,5 +1,9 @@
 import { DAY_OF_WEEK_MAP, DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
-import { addDaysToDateKey, getDayOfWeekOfDateKey } from '@src/shared/utils/date-key';
+import {
+  addDaysToDateKey,
+  diffDateKeysInDays,
+  getDayOfWeekOfDateKey,
+} from '@src/shared/utils/date-key';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -263,6 +267,96 @@ export function withRepeatStartDate(
     : adjusted;
 }
 
+const DAYS_PER_WEEK = 7;
+
+function getMondayOfDateKey(dateKey: string): string {
+  return addDaysToDateKey(dateKey, -((getDayOfWeekOfDateKey(dateKey) + 6) % DAYS_PER_WEEK));
+}
+
+function getDaysInMonthOfDateKey(dateKey: string): number {
+  return new Date(
+    Date.UTC(Number(dateKey.slice(0, 4)), Number(dateKey.slice(5, 7)), 0),
+  ).getUTCDate();
+}
+
+/** 서버 RepeatRule과 같은 규칙: 격주는 시작일이 속한 월요일 시작 주 기준, 매월 n일은 없는 달이면 말일 */
+function isOccurrenceDateKey(repeat: TodoRepeat, startDate: string, dateKey: string): boolean {
+  return match(repeat)
+    .with({ frequency: 'DAILY' }, () => true)
+    .with({ frequency: 'WEEKLY' }, ({ interval, weekdays }) => {
+      const weeks =
+        diffDateKeysInDays(getMondayOfDateKey(startDate), getMondayOfDateKey(dateKey)) /
+        DAYS_PER_WEEK;
+      return weekdays.includes(getWeekdayOfDateKey(dateKey)) && weeks % interval === 0;
+    })
+    .with(
+      { frequency: 'MONTHLY' },
+      ({ monthDay }) =>
+        getMonthDayOfDateKey(dateKey) === Math.min(monthDay, getDaysInMonthOfDateKey(dateKey)),
+    )
+    .exhaustive();
+}
+
+/** 시작일부터 종료 조건(날짜·횟수)까지의 회차 날짜. 끝이 없으면 limit(YYYY-MM-DD)까지 */
+function* walkOccurrenceDateKeys(
+  repeat: TodoRepeat,
+  startDate: string,
+  limit: string,
+): Generator<string> {
+  const last = repeat.end.type === 'UNTIL' && repeat.end.date < limit ? repeat.end.date : limit;
+  const maxCount = repeat.end.type === 'COUNT' ? repeat.end.count : Number.POSITIVE_INFINITY;
+  let count = 0;
+  for (let date = startDate; date <= last && count < maxCount; date = addDaysToDateKey(date, 1)) {
+    if (isOccurrenceDateKey(repeat, startDate, date)) {
+      count += 1;
+      yield date;
+    }
+  }
+}
+
+/** 두 회차 사이 최대 간격(격주 2주, 매월 말일 보정 포함)보다 넉넉한 탐색 한도 */
+const OCCURRENCE_SEARCH_DAYS = 62;
+
+/** from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다 */
+export function getRepeatOccurrenceDateKeys(
+  repeat: TodoRepeat,
+  startDate: string,
+  { from, to }: { from: string; to: string },
+): string[] {
+  return [...walkOccurrenceDateKeys(repeat, startDate, to)].filter((date) => date >= from);
+}
+
+/** 시작일 이후 첫 회차(서버가 처음 만드는 할 일 날짜). 종료 조건 안에 회차가 없으면 null */
+export function getFirstRepeatOccurrenceDateKey(
+  repeat: TodoRepeat,
+  startDate: string,
+): string | null {
+  const [first] = walkOccurrenceDateKeys(
+    repeat,
+    startDate,
+    addDaysToDateKey(startDate, OCCURRENCE_SEARCH_DAYS),
+  );
+  return first ?? null;
+}
+
+/** 날짜·횟수로 끝나는 규칙의 마지막 회차. 끝이 없거나 회차가 없으면 null */
+export function getLastRepeatOccurrenceDateKey(
+  repeat: TodoRepeat,
+  startDate: string,
+): string | null {
+  const limit = match(repeat.end)
+    .with({ type: 'NEVER' }, () => null)
+    .with({ type: 'UNTIL' }, ({ date }) => date)
+    .with({ type: 'COUNT' }, ({ count }) =>
+      addDaysToDateKey(startDate, count * OCCURRENCE_SEARCH_DAYS),
+    )
+    .exhaustive();
+  if (limit == null) {
+    return null;
+  }
+  return [...walkOccurrenceDateKeys(repeat, startDate, limit)].at(-1) ?? null;
+}
+
 export const TodoRepeatPolicy = {
   getKind: getRepeatKind,
   getEndType: getRepeatEndType,
@@ -277,4 +371,7 @@ export const TodoRepeatPolicy = {
   withStartDate: withRepeatStartDate,
   hasWeekdays: hasRepeatWeekdays,
   isMonthDayClamped: isRepeatMonthDayClamped,
+  getOccurrenceDateKeys: getRepeatOccurrenceDateKeys,
+  getFirstOccurrenceDateKey: getFirstRepeatOccurrenceDateKey,
+  getLastOccurrenceDateKey: getLastRepeatOccurrenceDateKey,
 } as const;

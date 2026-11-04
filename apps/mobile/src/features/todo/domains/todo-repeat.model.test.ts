@@ -213,4 +213,136 @@ describe('TodoRepeatPolicy', () => {
       });
     });
   });
+
+  describe('getOccurrenceDateKeys', () => {
+    const NOVEMBER = { from: '2026-11-01', to: '2026-11-30' };
+
+    test('주말이면 시작일 이후의 토·일만 회차다', () => {
+      // Given
+      const repeat = createWeekly({ weekdays: ['SAT', 'SUN'] });
+
+      // When
+      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, WEDNESDAY, {
+        from: '2026-11-01',
+        to: '2026-11-15',
+      });
+
+      // Then
+      expect(dates).toEqual(['2026-11-07', '2026-11-08', '2026-11-14', '2026-11-15']);
+    });
+
+    test('매일은 시작일부터 범위 끝까지 전부 회차다', () => {
+      // Given
+      const repeat = todoRepeatSchema.parse({ frequency: 'DAILY', end: { type: 'NEVER' } });
+
+      // When
+      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, WEDNESDAY, {
+        from: '2026-11-01',
+        to: '2026-11-06',
+      });
+
+      // Then
+      expect(dates).toEqual(['2026-11-04', '2026-11-05', '2026-11-06']);
+    });
+
+    test('격주는 시작일이 속한 주를 기준으로 한 주씩 건너뛴다', () => {
+      // Given
+      const repeat = createWeekly({ interval: 2, weekdays: ['MON', 'FRI'] });
+
+      // When
+      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, WEDNESDAY, NOVEMBER);
+
+      // Then
+      expect(dates).toEqual(['2026-11-06', '2026-11-16', '2026-11-20', '2026-11-30']);
+    });
+
+    test('매월 n일은 그 날이 없는 달이면 말일이다', () => {
+      // Given
+      const repeat = todoRepeatSchema.parse({
+        frequency: 'MONTHLY',
+        monthDay: 31,
+        end: { type: 'NEVER' },
+      });
+
+      // When
+      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, '2026-10-31', {
+        from: '2026-10-01',
+        to: '2027-03-01',
+      });
+
+      // Then
+      expect(dates).toEqual(['2026-10-31', '2026-11-30', '2026-12-31', '2027-01-31', '2027-02-28']);
+    });
+
+    test('날짜 종료는 종료일을 포함하고 그 뒤는 회차가 아니다', () => {
+      // Given
+      const repeat = TodoRepeatPolicy.withUntilDate(
+        createWeekly({ weekdays: ['MON'] }),
+        '2026-11-16',
+      );
+
+      // When
+      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, MONDAY, NOVEMBER);
+
+      // Then
+      expect(dates).toEqual(['2026-11-02', '2026-11-09', '2026-11-16']);
+    });
+
+    test('횟수 종료는 그 횟수에서 멈추고 달을 넘겨도 이어 센다', () => {
+      // Given
+      const repeat = TodoRepeatPolicy.withCount(createWeekly({ weekdays: ['MON'] }), 3);
+
+      // When
+      const dates = TodoRepeatPolicy.getOccurrenceDateKeys(repeat, '2026-11-23', {
+        from: '2026-11-30',
+        to: '2026-12-31',
+      });
+
+      // Then
+      expect(dates).toEqual(['2026-11-30', '2026-12-07']);
+    });
+  });
+
+  describe('getFirstOccurrenceDateKey', () => {
+    test('시작일이 회차가 아니면 그 뒤 첫 회차다', () => {
+      // Given
+      const repeat = createWeekly({ weekdays: ['SAT', 'SUN'] });
+
+      // When
+      const first = TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, WEDNESDAY);
+
+      // Then
+      expect(first).toBe('2026-11-07');
+    });
+
+    test('종료일 안에 회차가 없으면 null이다', () => {
+      // Given
+      const repeat = TodoRepeatPolicy.withUntilDate(
+        createWeekly({ weekdays: ['SAT'] }),
+        '2026-11-06',
+      );
+
+      // When
+      const first = TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, WEDNESDAY);
+
+      // Then
+      expect(first).toBeNull();
+    });
+  });
+
+  describe('getLastOccurrenceDateKey', () => {
+    test('횟수 종료는 마지막 회차, 끝이 없으면 null이다', () => {
+      // Given
+      const counted = TodoRepeatPolicy.withCount(createWeekly({ weekdays: ['MON', 'WED'] }), 3);
+      const forever = createWeekly();
+
+      // When
+      const results = [counted, forever].map((repeat) =>
+        TodoRepeatPolicy.getLastOccurrenceDateKey(repeat, MONDAY),
+      );
+
+      // Then
+      expect(results).toEqual(['2026-11-09', null]);
+    });
+  });
 });

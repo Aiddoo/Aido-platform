@@ -1,9 +1,13 @@
-import { type CreateRecurringTodoInput, DAY_OF_WEEK_MAP, DAYS_OF_WEEK } from '@aido/api';
-import { addDaysToDateKey, getDayOfWeekOfDateKey } from '@src/shared/utils/date-key';
+import { type CreateRecurringTodoInput, DAYS_OF_WEEK } from '@aido/api';
+import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_DEFAULT_UNTIL_DAYS } from '../constants/todo-repeat.constants';
-import type { TodoEditScope, TodoRepeat } from '../domains/todo-repeat.model';
+import {
+  type TodoEditScope,
+  type TodoRepeat,
+  TodoRepeatPolicy,
+} from '../domains/todo-repeat.model';
 
 export interface RepeatingTodoDraft {
   title: string;
@@ -20,9 +24,6 @@ export interface TodoSeriesEditOptions {
   repeat?: TodoRepeat | null;
 }
 
-/** POST /v1/todos/recurring의 366일 범위 검증 */
-const LEGACY_MAX_DAYS_RANGE = 366;
-
 function getLegacyWeekdays(repeat: TodoRepeat): CreateRecurringTodoInput['daysOfWeek'] | null {
   return match(repeat)
     .returnType<CreateRecurringTodoInput['daysOfWeek'] | null>()
@@ -33,27 +34,14 @@ function getLegacyWeekdays(repeat: TodoRepeat): CreateRecurringTodoInput['daysOf
     .exhaustive();
 }
 
-function getLegacyEndDate(
-  repeat: TodoRepeat,
-  startDate: string,
-  weekdays: CreateRecurringTodoInput['daysOfWeek'],
-): string {
+function getLegacyEndDate(repeat: TodoRepeat, startDate: string): string {
   return match(repeat.end)
     .with({ type: 'UNTIL' }, ({ date }) => date)
     .with({ type: 'NEVER' }, () => addDaysToDateKey(startDate, TODO_REPEAT_DEFAULT_UNTIL_DAYS))
-    .with({ type: 'COUNT' }, ({ count }) => {
-      const jsWeekdays = new Set(weekdays.map((day) => DAY_OF_WEEK_MAP[day]));
-      let remaining = count;
-      let endDate = startDate;
-      for (let offset = 0; offset <= LEGACY_MAX_DAYS_RANGE && remaining > 0; offset += 1) {
-        const date = addDaysToDateKey(startDate, offset);
-        if (jsWeekdays.has(getDayOfWeekOfDateKey(date))) {
-          remaining -= 1;
-          endDate = date;
-        }
-      }
-      return endDate;
-    })
+    .with(
+      { type: 'COUNT' },
+      () => TodoRepeatPolicy.getLastOccurrenceDateKey(repeat, startDate) ?? startDate,
+    )
     .exhaustive();
 }
 
@@ -72,7 +60,7 @@ export function toLegacyRecurrence(repeat: TodoRepeat, startDate: string): Legac
     return null;
   }
 
-  return { daysOfWeek, endDate: getLegacyEndDate(repeat, startDate, daysOfWeek) };
+  return { daysOfWeek, endDate: getLegacyEndDate(repeat, startDate) };
 }
 
 export function toLegacyRecurringRequest(

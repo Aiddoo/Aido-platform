@@ -45,7 +45,7 @@
     "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요",
     "repeatPeriod": "반복 기간",
     "selectPeriod": "기간을 선택해주세요",
-    "periodNever": "{{date}}부터 계속 반복",
+    "periodNever": "{{date}} - 계속 반복",
     "periodCount": "{{date}}부터 {{count}}회",
     "repeatDaily": "매일 반복",
     "repeatWeekdays": "주중 반복",
@@ -61,7 +61,8 @@
     "endNever": "계속",
     "endUntil": "날짜",
     "endCount": "횟수",
-    "selectDays": "요일을 선택해주세요"
+    "selectDays": "요일을 선택해주세요",
+    "noOccurrence": "기간 안에 반복되는 날이 없어요"
   },
   "repeat": {
     "end": {
