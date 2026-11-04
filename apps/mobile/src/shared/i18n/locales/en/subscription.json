@@ -196,8 +196,6 @@
   "quota": {
     "remaining": "{{amount}} left",
     "usedUpMonth": "Used up this month",
-    "usedUpDay": "Used up today",
-    "remainingThisMonth": "{{amount}} left this month",
-    "remainingToday": "{{amount}} left today"
+    "usedUpDay": "Used up today"
   }
 }
