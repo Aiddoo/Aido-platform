@@ -10,9 +10,11 @@ import { match } from "ts-pattern";
 import { z } from "zod";
 
 import type { VerifiedProfile } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { readJson } from "#api/platform/http/read-json";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 export type { VerifiedProfile };
 
@@ -130,7 +132,10 @@ export class OAuthTokenVerifierService {
       if (expectedNonce) {
         const hashedNonce = createHash("sha256").update(expectedNonce).digest("hex");
         if (payload.nonce !== hashedNonce) {
-          this.#logger.warn("Apple nonce mismatch");
+          this.#logger.warn({
+            event: IdentityInfraLogEvent.OAUTH_NONCE_REJECTED,
+            provider: "APPLE",
+          });
           throw new ApplicationException(ErrorCode.SOCIAL_0202, {
             provider: "APPLE",
           });
@@ -139,15 +144,13 @@ export class OAuthTokenVerifierService {
 
       const emailVerified = payload.email_verified === true || payload.email_verified === "true";
 
-      this.#logger.debug(`Apple token verified for user: ${payload.sub}`);
-
       return {
         id: payload.sub,
         email: payload.email ?? null,
         emailVerified,
       };
     } catch (error) {
-      this.#logger.error(`Apple token verification failed: ${error}`);
+      this.#logVerifyFailed("APPLE", error);
 
       if (error instanceof errors.JWTExpired) {
         throw new ApplicationException(ErrorCode.SOCIAL_0203, {
@@ -185,8 +188,6 @@ export class OAuthTokenVerifierService {
         });
       }
 
-      this.#logger.debug(`Google token verified for user: ${payload.sub}`);
-
       return {
         id: payload.sub ?? "",
         email: payload.email ?? null,
@@ -198,12 +199,9 @@ export class OAuthTokenVerifierService {
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       const isExpired =
         errorMessage.includes("expired") || errorMessage.includes("token used too late");
-      const errorType = toErrorType(error);
 
       // Google v11 오류 문자열에는 decoded payload가 포함될 수 있어 원문을 로그하지 않는다.
-      this.#logger.error(
-        `Google token verification failed (${isExpired ? "expired" : "invalid"}): ${errorType}`,
-      );
+      this.#logVerifyFailed("GOOGLE", error, isExpired ? "expired" : "invalid");
 
       // Google Auth Library는 전용 만료 오류 타입 없이 일반 Error를 사용한다.
       // 실제 서명 검증 경로의 메시지는 "Token used too late"이므로 기존 expired 표현과 함께 처리한다.
@@ -256,8 +254,6 @@ export class OAuthTokenVerifierService {
       const data = parsed.data;
       const kakaoAccount = data.kakao_account;
 
-      this.#logger.debug(`Kakao token verified for user: ${data.id}`);
-
       return {
         id: String(data.id),
         email: kakaoAccount?.email ?? null,
@@ -266,7 +262,7 @@ export class OAuthTokenVerifierService {
         picture: kakaoAccount?.profile?.profile_image_url ?? undefined,
       };
     } catch (error) {
-      this.#logger.error(`Kakao token verification failed: ${error}`);
+      this.#logVerifyFailed("KAKAO", error);
 
       // ApplicationException은 그대로 전파
       if (error instanceof Error && error.name === "ApplicationException") {
@@ -321,8 +317,6 @@ export class OAuthTokenVerifierService {
 
       const naverUser = data.response;
 
-      this.#logger.debug(`Naver token verified for user: ${naverUser.id}`);
-
       // Naver는 이메일 인증 여부를 제공하지 않으므로 false 설정
       // 자동 계정 연동 불가 — 수동 연동 필요 (handleEmailConflict에서 처리)
       return {
@@ -333,7 +327,7 @@ export class OAuthTokenVerifierService {
         picture: naverUser.profile_image ?? undefined,
       };
     } catch (error) {
-      this.#logger.error(`Naver token verification failed: ${error}`);
+      this.#logVerifyFailed("NAVER", error);
 
       // ApplicationException은 그대로 전파
       if (error instanceof Error && error.name === "ApplicationException") {
@@ -344,5 +338,19 @@ export class OAuthTokenVerifierService {
         provider: "NAVER",
       });
     }
+  }
+
+  #logVerifyFailed(
+    provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+    error: unknown,
+    reason?: "expired" | "invalid",
+  ): void {
+    this.#logger.error({
+      event: IdentityInfraLogEvent.OAUTH_TOKEN_VERIFY_FAILED,
+      provider,
+      ...(reason != null && { reason }),
+      errorType: toErrorType(error),
+      ...(error instanceof ErrorCodedException && { errorCode: error.errorCode }),
+    });
   }
 }

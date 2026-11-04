@@ -11,8 +11,11 @@ import type {
   SocialLoginOptions,
   VerifiedProfile,
 } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { readJson } from "#api/platform/http/read-json";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+
+import { readOAuthProviderError } from "./oauth-provider-error.js";
 
 const GOOGLE_TOKEN_RESPONSE_SCHEMA = z.object({ id_token: z.string() });
 
@@ -97,14 +100,21 @@ export class GoogleOAuthProvider implements OAuthIdentityProvider {
     });
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      this.#logger.error(`Google token exchange failed: ${errorData}`);
+      this.#logger.error({
+        event: IdentityInfraLogEvent.OAUTH_TOKEN_EXCHANGE_FAILED,
+        provider: this.provider,
+        statusCode: tokenResponse.status,
+        providerError: await readOAuthProviderError(tokenResponse),
+      });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 
     const tokenData = await readJson(tokenResponse, GOOGLE_TOKEN_RESPONSE_SCHEMA);
     if (!tokenData.success) {
-      this.#logger.error("Google token exchange returned an unexpected body");
+      this.#logger.error({
+        event: IdentityInfraLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
+        provider: this.provider,
+      });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 

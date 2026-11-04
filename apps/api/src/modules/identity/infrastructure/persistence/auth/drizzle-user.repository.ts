@@ -9,6 +9,7 @@ import {
   type AuthUserProfileRecord,
   type AuthUserRepositoryPort,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userActivityDay, userProfile } from "#api/platform/database/schema/index";
@@ -136,7 +137,7 @@ export class DrizzleUserRepository
         return tag;
       }
 
-      this.#logger.warn(`User tag collision detected: ${tag}, retrying...`);
+      this.#logger.warn({ event: IdentityInfraLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
     }
 
     // 모든 재시도 실패 시 (극히 드문 경우)
