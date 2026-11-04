@@ -82,3 +82,40 @@ describe('QuickVoicePanel 90초 제안', () => {
     expect(screen.getByTestId('quick-voice-resume')).toBeTruthy();
   });
 });
+
+describe('QuickVoicePanel.Failed', () => {
+  const planningFailed = createCaptureState({
+    status: 'failed',
+    reason: 'planning-failed',
+    transcript: createTranscript({ sentences: ['말한 내용.'] }),
+  });
+
+  test('정리가 동의 때문에 막혔으면 들은 글자 안내 대신 동의가 필요하다고 보인다', async () => {
+    // When
+    await renderUi(
+      <QuickVoicePanel.Failed
+        state={planningFailed}
+        isConsentRequired
+        onResume={jest.fn()}
+        onRetryPlanning={jest.fn()}
+      />,
+    );
+
+    // Then
+    expect(screen.getByText(/AI 동의가 필요해요/)).toBeTruthy();
+  });
+
+  test('다른 이유로 실패했으면 들은 글자를 남겼다고 보인다', async () => {
+    // When
+    await renderUi(
+      <QuickVoicePanel.Failed
+        state={planningFailed}
+        onResume={jest.fn()}
+        onRetryPlanning={jest.fn()}
+      />,
+    );
+
+    // Then
+    expect(screen.getByText(/들은 데까지는 남겨뒀어요/)).toBeTruthy();
+  });
+});

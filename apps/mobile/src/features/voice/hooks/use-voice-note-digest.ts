@@ -51,7 +51,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     }
   };
 
-  const digest = async (): Promise<void> => {
+  const requestDigest = async (): Promise<void> => {
     const note = drafts.find(accountId, draftId);
     if (note == null) {
       return;
@@ -87,13 +87,19 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {
-          return digest();
+          return requestDigest();
         }
       }
       const cause = getVoicePlanFailureCause(error);
       // 한도는 안내 창이 맡는다
       setFailure(cause === 'limit' ? null : { cause, isNotCharged: isNotChargedError(error) });
     }
+  };
+
+  /** 누를 때마다 동의 안내를 한 번 볼 수 있다. 앞에서 나중에를 눌렀어도 다시 정리로 동의할 수 있어야 한다 */
+  const digest = () => {
+    hasAskedConsentRef.current = false;
+    return requestDigest();
   };
 
   return { digest, isPending: mutation.isPending, failure };

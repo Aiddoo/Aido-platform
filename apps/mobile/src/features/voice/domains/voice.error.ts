@@ -4,6 +4,7 @@ import { isApiError, isConnectivityError, isInfraError } from '@src/shared/error
 /** 계획을 만들거나 저장하지 못한 원인. 원인마다 문구와 다음 행동이 다르다 */
 export type VoicePlanFailureCause =
   | 'network'
+  | 'consent-required'
   | 'limit'
   | 'too-long'
   | 'in-progress'
@@ -34,6 +35,9 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
   }
   if (!isApiError(error)) {
     return isInfraError(error) ? 'ai-unavailable' : 'unknown';
+  }
+  if (error.hasCode(ErrorCode.AI_1311)) {
+    return 'consent-required';
   }
   if (error.hasCode(ErrorCode.AI_1303) || error.hasCode(ErrorCode.AI_1313)) {
     return 'limit';

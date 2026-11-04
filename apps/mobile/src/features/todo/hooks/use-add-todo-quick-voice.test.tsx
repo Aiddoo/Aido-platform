@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { PLAN_CATALOG } from '@aido/api/vocabulary';
+import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
 import { createConsent } from '@src/features/auth/__tests__/auth.factories';
 import { AuthService } from '@src/features/auth/apis/auth.service';
 import { AUTH_QUERY_KEYS } from '@src/features/auth/constants/auth-query-keys';
@@ -102,6 +102,7 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
         }}
       />
       <Text testID="status">{state.status}</Text>
+      <Text testID="consent-required">{String(quickVoice.isConsentRequired)}</Text>
       <Text testID="title">{title}</Text>
       <Text testID="plan">
         {state.status === 'review'
@@ -320,6 +321,54 @@ describe('useAddTodoQuickVoice', () => {
       // Then
       await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
+    });
+  });
+
+  describe('정리가 동의 때문에 막혔을 때', () => {
+    it('처음 안내에서 나중에를 눌렀어도 다시 정리하면 안내를 다시 띄우고 동의하면 이어서 정리한다', async () => {
+      // Given
+      const { httpClient, speechRecognizer } = await renderQuickVoice({
+        consent: {},
+        isCoachmarkSeen: false,
+      });
+      httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
+      await fireEvent.press(screen.getByTestId('start'));
+      await screen.findByTestId('ai-consent-sheet');
+      await fireEvent.press(screen.getByTestId('ai-consent-later'));
+      await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
+      await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+      await act(async () => speechRecognizer.emit({ type: 'start' }));
+      await act(async () =>
+        speechRecognizer.emit({
+          type: 'result',
+          transcript: '말한 내용',
+          isFinal: true,
+          segments: [],
+        }),
+      );
+      await fireEvent.press(screen.getByTestId('finish'));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+      await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
+      expect(screen.getByTestId('consent-required')).toHaveTextContent('true');
+      expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
+      httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
+      httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
+      httpClient.patch.mockResolvedValue(
+        ok({
+          aiDataSharingDecision: 'AGREED',
+          aiDataSharingAgreedAt: '2026-11-05T00:00:00.000Z',
+          aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+        }),
+      );
+
+      // When
+      await fireEvent.press(screen.getByTestId('retry'));
+      await screen.findByTestId('ai-consent-sheet');
+      await fireEvent.press(screen.getByTestId('ai-consent-agree'));
+
+      // Then
+      await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('review'));
+      expect(screen.getByTestId('consent-required')).toHaveTextContent('false');
     });
   });
 

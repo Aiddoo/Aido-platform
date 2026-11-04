@@ -22,7 +22,7 @@ import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 
@@ -48,6 +48,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const planMutation = useMutation(useCreateQuickPlanMutationOptions({ onSubscribe: onExit }));
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
   const hasAskedConsentRef = useRef(false);
+  const [isConsentRequired, setIsConsentRequired] = useState(false);
   const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
   const planAbortRef = useRef<AbortController | null>(null);
   const voiceNoteStorage = useVoiceNoteStorageService();
@@ -60,6 +61,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
       createIdempotencyKey: randomUUID,
     });
     planRequestRef.current = request;
+    setIsConsentRequired(false);
     const abortController = new AbortController();
     planAbortRef.current = abortController;
 
@@ -78,6 +80,9 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
           return onCaptured(text);
         }
       }
+      // 이번 시도는 끝났다. 앞에서 나중에를 눌렀어도 다시 정리하면 안내를 다시 본다
+      hasAskedConsentRef.current = false;
+      setIsConsentRequired(isAiDataSharingConsentRequiredError(error));
       throw error;
     }
   };
@@ -162,6 +167,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
 
   return {
     ...session,
+    isConsentRequired,
     locale,
     setLocale: changeLocale,
     start,

@@ -20,6 +20,10 @@
     "titleLabel": "할 일 제목"
   },
   "failure": {
+    "consent-required": {
+      "title": "정리하려면 AI 동의가 필요해요",
+      "description": "다시 정리를 누르면 안내를 볼 수 있어요."
+    },
     "network": {
       "title": "인터넷에 연결되지 않았어요",
       "description": "연결을 확인하고 다시 시도해주세요."

@@ -40,6 +40,7 @@
   },
   "failed": {
     "keptText": "We kept what we heard. Keep talking or fix it yourself.",
+    "consentRequired": "AI consent is needed to sort this out. Try again to see the notice.",
     "resume": "Keep talking",
     "retry": "Try again"
   },

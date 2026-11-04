@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { AuthService } from '@src/features/auth/apis/auth.service';
 import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
 import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
@@ -104,6 +105,12 @@ async function renderDigest() {
   return { httpClient, storage };
 }
 
+const AGREED_CONSENT_DTO = {
+  aiDataSharingDecision: 'AGREED',
+  aiDataSharingAgreedAt: '2026-11-05T00:00:00.000Z',
+  aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+};
+
 const idempotencyKeyOf = (httpClient: ReturnType<typeof createMockHttpClient>, callIndex: number) =>
   httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
@@ -121,6 +128,34 @@ describe('useVoiceNoteDigest', () => {
       expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digest?.summary).toBe('요약이에요'),
     );
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/voice-notes/digest');
+  });
+
+  test('동의 안내에서 나중에를 누르면 동의가 필요하다고 보이고 다시 정리하면 안내를 다시 띄워 이어 간다', async () => {
+    // Given
+    const { httpClient, storage } = await renderDigest();
+    httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
+    // 동의를 답할 때까지 끝나지 않는 핸들러라 기다리지 않는다
+    fireEvent.press(screen.getByTestId('digest')).catch(() => undefined);
+    await screen.findByTestId('ai-consent-sheet');
+    fireEvent.press(screen.getByTestId('ai-consent-later')).catch(() => undefined);
+    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+    expect(screen.getByTestId('failure')).toHaveTextContent('consent-required:false');
+    httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
+    httpClient.post.mockResolvedValueOnce(ok(createDigestDto()));
+    httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
+
+    // When
+    fireEvent.press(screen.getByTestId('digest')).catch(() => undefined);
+    await screen.findByTestId('ai-consent-sheet');
+    fireEvent.press(screen.getByTestId('ai-consent-agree')).catch(() => undefined);
+
+    // Then
+    await waitFor(() =>
+      expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.digest?.summary).toBe('요약이에요'),
+    );
+    expect(screen.getByTestId('failure', { includeHiddenElements: true })).toHaveTextContent(
+      'none',
+    );
   });
 
   test('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {

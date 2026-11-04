@@ -285,10 +285,13 @@ QuickVoicePanel.Review = function Review({
 
 QuickVoicePanel.Failed = function Failed({
   state,
+  isConsentRequired = false,
   onResume,
   onRetryPlanning,
 }: {
   state: VoiceCaptureState;
+  /** 정리가 AI 동의 때문에 막혔다. 다시 정리하면 동의 안내가 뜬다 */
+  isConsentRequired?: boolean;
   onResume: () => void;
   onRetryPlanning: () => void;
 }) {
@@ -308,7 +311,7 @@ QuickVoicePanel.Failed = function Failed({
       testID="quick-voice-failed"
     >
       <Text size="b4" shade={7} className="flex-1 shrink" lineBreakStrategyIOS="hangul-word">
-        {t('failed.keptText')}
+        {canRetryPlanning && isConsentRequired ? t('failed.consentRequired') : t('failed.keptText')}
       </Text>
       {canResume && (
         <TextButton size="small" onPress={onResume}>

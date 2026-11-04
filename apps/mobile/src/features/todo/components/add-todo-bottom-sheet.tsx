@@ -509,6 +509,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             <VStack gap={12} testID="todo-add-sheet">
               <QuickVoicePanel.Failed
                 state={voice.state}
+                isConsentRequired={voice.isConsentRequired}
                 onResume={voice.resume}
                 onRetryPlanning={voice.retryPlanning}
               />

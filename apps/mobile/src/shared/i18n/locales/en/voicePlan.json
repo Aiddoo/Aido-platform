@@ -25,6 +25,10 @@
     "titleLabel": "To-do title"
   },
   "failure": {
+    "consent-required": {
+      "title": "AI consent is needed to sort this out",
+      "description": "Try again to see the notice."
+    },
     "network": {
       "title": "You're offline",
       "description": "Check your connection and try again."
