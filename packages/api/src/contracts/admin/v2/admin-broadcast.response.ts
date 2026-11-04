@@ -5,6 +5,7 @@ import {
   BROADCAST_CAMPAIGN_STATUS,
   BROADCAST_TARGET_FILTER,
 } from "../../../vocabulary/admin.constants.js";
+import { PUSH_DISPATCH_SKIP_REASON } from "../../../vocabulary/notification.constants.js";
 
 const countSchema = z.number().int().nonnegative();
 
@@ -47,6 +48,9 @@ export const broadcastCampaignSchema = z
         processing: countSchema.describe("발송 중"),
         sent: countSchema.describe("공급자에 한 번 이상 수락됨"),
         skipped: countSchema.describe("수신 설정·빈도 제한·토큰 없음으로 건너뜀"),
+        skippedByReason: z
+          .partialRecord(z.enum(PUSH_DISPATCH_SKIP_REASON), countSchema)
+          .describe("건너뛴 사용자 수를 이유별로. 없는 이유는 키가 없다"),
         failed: countSchema.describe("모든 기기에서 공급자가 거절함"),
       })
       .describe("사용자별 발송 상태 집계"),

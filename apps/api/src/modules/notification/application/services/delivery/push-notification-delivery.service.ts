@@ -2,7 +2,13 @@ import { isSemanticVersionAtLeast } from "@aido/api";
 import { groupBy, uniq } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
+import {
+  noActiveTokenSkipReason,
+  type NoActiveTokenSkipReason,
+  PUSH_DEVICE_STALE_AFTER_DAYS,
+} from "../../../domain/policies/delivery/push-device.policy.js";
 import {
   FEATURE_DISCOVERY_CAMPAIGN_KEY,
   supportsFeatureDiscoveryMarketing,
@@ -16,6 +22,7 @@ import { NotificationDeliveryLogEvent } from "../../observability/delivery/notif
 import { type ActivePushTokenReaderPort } from "../../ports/delivery/active-push-token.reader.port.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
+import type { PushDeviceRepositoryPort } from "../../ports/delivery/push-device.repository.port.js";
 import {
   type PushPayload,
   type PushProvider,
@@ -77,6 +84,7 @@ interface PushNotificationDeliveryServiceDependencies {
     PushTokenRepositoryPort,
     "deactivateInvalidTokens" | "findActivePushTokensByUsers" | "findPushTokensByUser"
   >;
+  readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "findPermissionStatusesByUsers">;
   readonly pushProvider: Pick<PushProvider, "sendBatch">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId" | "findByUserIds">;
   readonly notificationCache: Pick<NotificationCachePort, "invalidatePushTokens">;
@@ -144,6 +152,7 @@ export class PushNotificationDeliveryService {
       dispatchId: number;
       reason: PushDispatchSkipReason;
     }> = [];
+    const noTokenUserIdByDispatch = new Map<number, string>();
 
     for (const payload of payloads) {
       const activeTokens = tokensByUser.get(payload.userId) ?? [];
@@ -152,10 +161,8 @@ export class PushNotificationDeliveryService {
       const requiresCapability = payload.requiresFeatureCapability || minAppVersion != null;
       const activeTokenCount = requiresCapability ? capabilityRecords.length : activeTokens.length;
       if (activeTokenCount === 0) {
-        skippedDispatches.push({
-          dispatchId: payload.dispatchId,
-          reason: "NO_ACTIVE_TOKEN",
-        });
+        noTokenUserIdByDispatch.set(payload.dispatchId, payload.userId);
+        skippedDispatches.push({ dispatchId: payload.dispatchId, reason: "NO_ACTIVE_TOKEN" });
         continue;
       }
 
@@ -187,6 +194,16 @@ export class PushNotificationDeliveryService {
           categoryId: payload.categoryId,
         });
         dispatchIds.push(payload.dispatchId);
+      }
+    }
+
+    const noTokenReasons = await this.#noActiveTokenReasons([
+      ...new Set(noTokenUserIdByDispatch.values()),
+    ]);
+    for (const skipped of skippedDispatches) {
+      const userId = noTokenUserIdByDispatch.get(skipped.dispatchId);
+      if (userId != null) {
+        skipped.reason = noTokenReasons.get(userId) ?? skipped.reason;
       }
     }
 
@@ -258,7 +275,7 @@ export class PushNotificationDeliveryService {
         activeOnly: true,
       });
       if (records.length === 0) {
-        return { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
+        return { status: "skipped", reason: await this.#noActiveTokenReason(data.userId) };
       }
 
       const tokens = records
@@ -276,6 +293,27 @@ export class PushNotificationDeliveryService {
     const tokens = await this.#dependencies.activePushTokenReader.findByUserId(data.userId);
     return tokens.length > 0
       ? { status: "resolved", tokens }
-      : { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
+      : { status: "skipped", reason: await this.#noActiveTokenReason(data.userId) };
+  }
+
+  async #noActiveTokenReason(userId: string): Promise<NoActiveTokenSkipReason> {
+    const reasons = await this.#noActiveTokenReasons([userId]);
+    return reasons.get(userId) ?? "NO_ACTIVE_TOKEN";
+  }
+
+  async #noActiveTokenReasons(
+    userIds: readonly string[],
+  ): Promise<ReadonlyMap<string, NoActiveTokenSkipReason>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+    const statusesByUser =
+      await this.#dependencies.pushDeviceRepository.findPermissionStatusesByUsers(
+        userIds,
+        subtractDays(PUSH_DEVICE_STALE_AFTER_DAYS),
+      );
+    return new Map(
+      userIds.map((userId) => [userId, noActiveTokenSkipReason(statusesByUser.get(userId) ?? [])]),
+    );
   }
 }

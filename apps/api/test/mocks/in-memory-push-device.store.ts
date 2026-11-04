@@ -1,3 +1,5 @@
+import type { PushPermissionStatus } from "@aido/api/vocabulary";
+
 import type { RegisterPushTokenData } from "#api/modules/notification/application/ports/delivery/notification-data";
 import type { PushDeviceRepositoryPort } from "#api/modules/notification/application/ports/delivery/push-device.repository.port";
 import {
@@ -107,6 +109,19 @@ export class InMemoryPushDeviceStore
       this.tokens.delete(keyOf(row.userId, row.deviceId));
     }
     return { count: owned.length };
+  }
+
+  async findPermissionStatusesByUsers(userIds: readonly string[], reportedSince: Date) {
+    const statusesByUser = new Map<string, PushPermissionStatus[]>();
+    for (const device of this.devices.values()) {
+      if (userIds.includes(device.userId) && device.reportedAt >= reportedSince) {
+        statusesByUser.set(device.userId, [
+          ...(statusesByUser.get(device.userId) ?? []),
+          device.permission.status,
+        ]);
+      }
+    }
+    return statusesByUser;
   }
 
   tokenOf(userId: string, deviceId: string): string | undefined {

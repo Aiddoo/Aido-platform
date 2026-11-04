@@ -970,12 +970,22 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "minimum": 0,
               "type": "integer",
             },
+            "skippedByReason": {
+              "additionalProperties": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "description": "건너뛴 사용자 수를 이유별로. 없는 이유는 키가 없다",
+              "type": "object",
+            },
           },
           "required": [
             "pending",
             "processing",
             "sent",
             "skipped",
+            "skippedByReason",
             "failed",
           ],
           "type": "object",
@@ -7418,6 +7428,74 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "PushDeviceResponseDto": {
+      "example": {
+        "deviceId": "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
+        "hasActiveToken": true,
+        "permission": {
+          "canAskAgain": false,
+          "status": "GRANTED",
+        },
+        "platform": "IOS",
+        "reportedAt": "2026-11-04T03:41:40.598Z",
+      },
+      "properties": {
+        "deviceId": {
+          "description": "기기 식별자",
+          "type": "string",
+        },
+        "hasActiveToken": {
+          "description": "이 기기로 푸시를 보낼 수 있는 토큰이 있는지",
+          "type": "boolean",
+        },
+        "permission": {
+          "description": "앱이 OS에서 읽은 알림 권한",
+          "properties": {
+            "canAskAgain": {
+              "description": "앱이 시스템 권한 창을 다시 띄울 수 있는지",
+              "type": "boolean",
+            },
+            "status": {
+              "description": "OS 알림 권한. iOS 임시 허용(provisional·ephemeral)은 PROVISIONAL",
+              "enum": [
+                "GRANTED",
+                "PROVISIONAL",
+                "DENIED",
+                "NOT_DETERMINED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "status",
+            "canAskAgain",
+          ],
+          "type": "object",
+        },
+        "platform": {
+          "description": "deviceId 접두어(ios_·android_)로 서버가 정한 플랫폼",
+          "enum": [
+            "IOS",
+            "ANDROID",
+          ],
+          "type": "string",
+        },
+        "reportedAt": {
+          "description": "마지막 보고 시각 (ISO 8601 UTC)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "deviceId",
+        "platform",
+        "permission",
+        "hasActiveToken",
+        "reportedAt",
+      ],
+      "type": "object",
+    },
     "ReceivedCheersResponseDto": {
       "example": {
         "cheers": [
@@ -8899,6 +8977,63 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "replyKind",
+      ],
+      "type": "object",
+    },
+    "ReportPushDeviceDto": {
+      "description": "기기 하나의 알림 권한과 토큰. 플랫폼은 deviceId 접두어, 앱 버전·시간대·언어는 요청 헤더에서 읽는다",
+      "example": {
+        "payloadVersion": 2,
+        "permission": {
+          "canAskAgain": false,
+          "status": "DENIED",
+        },
+        "token": null,
+      },
+      "properties": {
+        "payloadVersion": {
+          "description": "앱이 해석할 수 있는 푸시 payload 버전",
+          "maximum": 2,
+          "minimum": 1,
+          "type": "integer",
+        },
+        "permission": {
+          "description": "앱이 OS에서 읽은 알림 권한",
+          "properties": {
+            "canAskAgain": {
+              "description": "앱이 시스템 권한 창을 다시 띄울 수 있는지",
+              "type": "boolean",
+            },
+            "status": {
+              "description": "OS 알림 권한. iOS 임시 허용(provisional·ephemeral)은 PROVISIONAL",
+              "enum": [
+                "GRANTED",
+                "PROVISIONAL",
+                "DENIED",
+                "NOT_DETERMINED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "status",
+            "canAskAgain",
+          ],
+          "type": "object",
+        },
+        "token": {
+          "description": "권한이 허용되고 발급에 성공했을 때의 Expo 푸시 토큰. 아니면 null",
+          "maxLength": 200,
+          "minLength": 1,
+          "nullable": true,
+          "pattern": "^ExponentPushToken\\[.+\\]$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "permission",
+        "token",
+        "payloadVersion",
       ],
       "type": "object",
     },
@@ -37702,6 +37837,260 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
       ],
     },
   },
+  "/v1/notifications/push-devices/{deviceId}": {
+    "put": {
+      "description": "기기 하나의 알림 권한과 Expo 푸시 토큰을 보고합니다. 1.14.2 이상 앱이 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보냅니다.
+
+- 권한이 GRANTED·PROVISIONAL이고 \`token\`이 있으면 이 기기로 푸시를 보냅니다.
+- 권한이 없거나 \`token\`이 null이면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
+- 다른 계정이 쓰던 같은 기기·토큰은 이 사용자로 옮깁니다.
+- 플랫폼은 deviceId 접두어로, 시간대·언어는 헤더로 정합니다. 같은 값을 다시 보내도 결과는 같습니다.",
+      "operationId": "reportPushDevice",
+      "parameters": [
+        {
+          "description": "앱이 만든 기기 식별자. ios_ 또는 android_로 시작",
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "schema": {
+            "example": "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
+            "maxLength": 100,
+            "type": "string",
+          },
+        },
+        {
+          "description": "토큰과 함께 저장해 앱 버전별 푸시 형식을 고를 때 쓰는 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "example": "1.14.2",
+            "type": "string",
+          },
+        },
+        {
+          "description": "푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+        {
+          "description": "푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지",
+          "in": "header",
+          "name": "X-Timezone",
+          "required": false,
+          "schema": {
+            "example": "Asia/Seoul",
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ReportPushDeviceDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/PushDeviceResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "NOTIFICATION_1001": {
+                  "summary": "유효하지 않은 푸시 토큰입니다.",
+                  "value": {
+                    "error": {
+                      "code": "NOTIFICATION_1001",
+                      "details": null,
+                      "message": "유효하지 않은 푸시 토큰입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NOTIFICATION_1006": {
+                  "summary": "푸시를 받을 수 없는 기기입니다.",
+                  "value": {
+                    "error": {
+                      "code": "NOTIFICATION_1006",
+                      "details": null,
+                      "message": "푸시를 받을 수 없는 기기입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "NOTIFICATION_1001",
+                          "NOTIFICATION_1006",
+                          "SYS_0002",
+                        ],
+                        "example": "NOTIFICATION_1001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "유효하지 않은 푸시 토큰입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "NOTIFICATION_1001: 유효하지 않은 푸시 토큰입니다.
+
+NOTIFICATION_1006: 푸시를 받을 수 없는 기기입니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "푸시 기기 보고",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
   "/v1/notifications/read-all": {
     "patch": {
       "description": "모든 읽지 않은 알림을 읽음 상태로 변경합니다.",
@@ -37817,10 +38206,11 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
   },
   "/v1/notifications/token": {
     "delete": {
-      "description": "등록된 푸시 토큰을 해제합니다.
+      "description": "로그아웃한 기기를 푸시 대상에서 뺍니다. 기기의 토큰과 권한 기록을 함께 지웁니다.
 
 **쿼리 파라미터**
-- \`deviceId\` (선택): 특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제",
+- \`deviceId\` (선택): 이 기기만 해제. 없으면 사용자의 모든 기기를 해제
+- 등록되지 않은 기기여도 성공으로 응답합니다.",
       "operationId": "unregisterPushToken",
       "parameters": [
         {
@@ -37975,23 +38365,20 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           "bearer": [],
         },
       ],
-      "summary": "푸시 토큰 해제",
+      "summary": "푸시 기기 해제",
       "tags": [
         "Notifications",
       ],
     },
     "post": {
-      "description": "Expo 푸시 토큰을 서버에 등록합니다.
+      "deprecated": true,
+      "description": "1.14.1 이하 앱이 권한을 허용한 뒤 토큰을 등록합니다. 새 앱은 \`PUT /v1/notifications/push-devices/{deviceId}\`를 씁니다.
 
-**요청 필드**
-- \`token\` (필수): Expo 푸시 토큰
-- \`deviceId\` (선택): 기기 고유 ID
-
-동일 deviceId의 기존 토큰이 있으면 갱신됩니다.",
+권한은 허용(GRANTED)으로 저장하고, 플랫폼은 deviceId 접두어나 \`X-Device-Type\` 헤더로 정합니다. 둘 다 없으면 400 NOTIFICATION_1006입니다(출시된 앱은 항상 접두어를 보냅니다). 같은 deviceId의 토큰은 갱신됩니다. 최소 지원 버전이 1.14.2가 되면 제거합니다.",
       "operationId": "registerPushToken",
       "parameters": [
         {
-          "description": "푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko",
+          "description": "푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko",
           "in": "header",
           "name": "Accept-Language",
           "required": false,
@@ -38001,7 +38388,7 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           },
         },
         {
-          "description": "IANA 타임존 (e.g. "Asia/Seoul")",
+          "description": "푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -38192,7 +38579,7 @@ SYS_0002: 잘못된 파라미터입니다.",
           "bearer": [],
         },
       ],
-      "summary": "푸시 토큰 등록",
+      "summary": "푸시 토큰 등록 (1.14.1 이하 앱)",
       "tags": [
         "Notifications",
       ],

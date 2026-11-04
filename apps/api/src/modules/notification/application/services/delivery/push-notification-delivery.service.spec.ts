@@ -1,12 +1,15 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import {
   createActivePushTokenReaderMock,
   createPushTokenRepositoryMock,
 } from "#test/mocks/ports/notification.mock";
 
+import { PushDevice } from "../../../domain/aggregates/delivery/push-device.aggregate.js";
+import { PushPermission } from "../../../domain/value-objects/delivery/push-permission.vo.js";
 import { RetryablePushProviderTransportError } from "../../ports/delivery/push-provider.port.js";
 import type { PushTokenRecord } from "../../read-models/delivery/push-token.read-model.js";
 import { PushNotificationDeliveryService } from "./push-notification-delivery.service.js";
@@ -52,8 +55,26 @@ function batchPayload(input: {
   };
 }
 
+function reportedDevice(input: {
+  userId: string;
+  status: PushPermission["status"];
+  reportedAt?: Date;
+}): PushDevice {
+  return PushDevice.report({
+    userId: input.userId,
+    deviceId: `ios_${input.userId}`,
+    platform: "IOS",
+    permission: PushPermission.of({ status: input.status, canAskAgain: false }),
+    token: null,
+    deviceModel: null,
+    osVersion: null,
+    reportedAt: input.reportedAt ?? new Date(),
+  });
+}
+
 describe("PushNotificationDeliveryService", () => {
   let service: PushNotificationDeliveryService;
+  let deviceStore: InMemoryPushDeviceStore;
   let activeTokenReader: Mocked<
     ConstructorParameters<typeof PushNotificationDeliveryService>[0]["activePushTokenReader"]
   >;
@@ -68,6 +89,7 @@ describe("PushNotificationDeliveryService", () => {
   >;
 
   beforeEach(async () => {
+    deviceStore = new InMemoryPushDeviceStore();
     const pushNotificationDeliveryServiceDependencies = mockDeep<
       ConstructorParameters<typeof PushNotificationDeliveryService>[0]
     >({
@@ -75,7 +97,14 @@ describe("PushNotificationDeliveryService", () => {
       activePushTokenReader: createActivePushTokenReaderMock(),
       notificationCache: createNotificationCacheMock(),
     });
-    const unit = new PushNotificationDeliveryService(pushNotificationDeliveryServiceDependencies);
+    const unit = new PushNotificationDeliveryService({
+      pushTokenRepository: pushNotificationDeliveryServiceDependencies.pushTokenRepository,
+      pushDeviceRepository: deviceStore,
+      pushProvider: pushNotificationDeliveryServiceDependencies.pushProvider,
+      activePushTokenReader: pushNotificationDeliveryServiceDependencies.activePushTokenReader,
+      notificationCache: pushNotificationDeliveryServiceDependencies.notificationCache,
+      logger: pushNotificationDeliveryServiceDependencies.logger,
+    });
     service = unit;
     activeTokenReader = pushNotificationDeliveryServiceDependencies.activePushTokenReader;
     tokenRepository = pushNotificationDeliveryServiceDependencies.pushTokenRepository;
@@ -95,6 +124,46 @@ describe("PushNotificationDeliveryService", () => {
     expect(result).toEqual({ status: "skipped", reason: "NO_ACTIVE_TOKEN" });
     expect(activeTokenReader.findByUserId).toHaveBeenCalledWith("user-1");
     expect(pushProvider.sendBatch).not.toHaveBeenCalled();
+  });
+
+  it("활성 토큰이 없으면 최근 보고한 기기 권한으로 건너뜀 사유를 나눈다", async () => {
+    // Given user-1은 거절, user-2는 아직 묻지 않음, user-3은 90일 넘게 보고가 없다
+    await deviceStore.savePushDevice(reportedDevice({ userId: "user-1", status: "DENIED" }));
+    await deviceStore.savePushDevice(
+      reportedDevice({ userId: "user-2", status: "NOT_DETERMINED" }),
+    );
+    await deviceStore.savePushDevice(
+      reportedDevice({
+        userId: "user-3",
+        status: "DENIED",
+        reportedAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000),
+      }),
+    );
+
+    // When
+    const prepared = await service.prepareBatchDelivery([
+      batchPayload({ userId: "user-1", dispatchId: 1 }),
+      batchPayload({ userId: "user-2", dispatchId: 2 }),
+      batchPayload({ userId: "user-3", dispatchId: 3 }),
+    ]);
+
+    // Then
+    expect(prepared.skippedDispatches).toEqual([
+      { dispatchId: 1, reason: "PUSH_PERMISSION_DENIED" },
+      { dispatchId: 2, reason: "PUSH_PERMISSION_NOT_REQUESTED" },
+      { dispatchId: 3, reason: "NO_ACTIVE_TOKEN" },
+    ]);
+  });
+
+  it("단건도 거절한 기기만 있으면 PUSH_PERMISSION_DENIED로 건너뛴다", async () => {
+    await deviceStore.savePushDevice(reportedDevice({ userId: "user-1", status: "DENIED" }));
+
+    const result = await service.deliverSingle({
+      data: { userId: "user-1", type: "FOLLOW_NEW", title: "title", body: "body" },
+      payload: { title: "title", body: "body" },
+    });
+
+    expect(result).toEqual({ status: "skipped", reason: "PUSH_PERMISSION_DENIED" });
   });
 
   it("feature-discovery 단건은 활성 토큰과 지원 capability 부재를 구분한다", async () => {

@@ -124,11 +124,20 @@ export const pushDeliveryEligibilityServiceProvider: FactoryProvider<PushDeliver
 export const pushNotificationDeliveryServiceProvider: FactoryProvider<PushNotificationDeliveryService> =
   {
     provide: PushNotificationDeliveryService,
-    inject: [PUSH_TOKEN_REPOSITORY, PUSH_PROVIDER, ACTIVE_PUSH_TOKEN_READER, NOTIFICATION_CACHE],
+    inject: [
+      PUSH_TOKEN_REPOSITORY,
+      PUSH_DEVICE_REPOSITORY,
+      PUSH_PROVIDER,
+      ACTIVE_PUSH_TOKEN_READER,
+      NOTIFICATION_CACHE,
+    ],
     useFactory: (
       pushTokenRepository: ConstructorParameters<
         typeof PushNotificationDeliveryService
       >[0]["pushTokenRepository"],
+      pushDeviceRepository: ConstructorParameters<
+        typeof PushNotificationDeliveryService
+      >[0]["pushDeviceRepository"],
       pushProvider: ConstructorParameters<
         typeof PushNotificationDeliveryService
       >[0]["pushProvider"],
@@ -141,6 +150,7 @@ export const pushNotificationDeliveryServiceProvider: FactoryProvider<PushNotifi
     ) =>
       new PushNotificationDeliveryService({
         pushTokenRepository,
+        pushDeviceRepository,
         pushProvider,
         activePushTokenReader,
         notificationCache,

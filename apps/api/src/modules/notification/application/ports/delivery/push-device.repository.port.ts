@@ -1,3 +1,5 @@
+import type { PushPermissionStatus } from "@aido/api/vocabulary";
+
 import type { PushDevice } from "../../../domain/aggregates/delivery/push-device.aggregate.js";
 
 export const PUSH_DEVICE_REPOSITORY = Symbol("PUSH_DEVICE_REPOSITORY");
@@ -12,4 +14,9 @@ export interface PushDeviceRepositoryPort {
   savePushDevice(device: PushDevice): Promise<void>;
   deletePushDevice(userId: string, deviceId: string): Promise<void>;
   deleteAllPushDevicesByUser(userId: string): Promise<void>;
+  /** reportedSince 이후 보고한 기기의 권한. 그런 기기가 없는 사용자는 Map에 없다. */
+  findPermissionStatusesByUsers(
+    userIds: readonly string[],
+    reportedSince: Date,
+  ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>>;
 }

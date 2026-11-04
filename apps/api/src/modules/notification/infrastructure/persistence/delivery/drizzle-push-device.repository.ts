@@ -1,6 +1,8 @@
+import type { PushPermissionStatus } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, gte, inArray, ne } from "drizzle-orm";
+import { groupBy, mapValues } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushDevice } from "#api/platform/database/schema/index";
@@ -50,5 +52,25 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
 
   async deleteAllPushDevicesByUser(userId: string): Promise<void> {
     await this.db.delete(pushDevice).where(eq(pushDevice.userId, userId));
+  }
+
+  async findPermissionStatusesByUsers(
+    userIds: readonly string[],
+    reportedSince: Date,
+  ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.db
+      .select({ userId: pushDevice.userId, status: pushDevice.permissionStatus })
+      .from(pushDevice)
+      .where(
+        and(inArray(pushDevice.userId, [...userIds]), gte(pushDevice.reportedAt, reportedSince)),
+      );
+    const statusesByUser = mapValues(
+      groupBy(rows, (row) => row.userId),
+      (userRows) => userRows.map((row) => row.status),
+    );
+    return new Map(Object.entries(statusesByUser));
   }
 }
