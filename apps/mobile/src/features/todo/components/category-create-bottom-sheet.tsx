@@ -1,9 +1,7 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
-import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/queries/use-create-todo-category-mutation-options';
-import { isApiError } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -11,13 +9,12 @@ import {
   BottomSheetInput,
   Button,
   KeyboardBottomSheet,
-  PremiumDialog,
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { type ComponentProps, useState } from 'react';
+import type { ComponentProps } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
@@ -36,8 +33,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
 
   const { t } = useTranslation(['todo', 'common']);
   const createMutation = useMutation(useCreateTodoCategoryMutationOptions());
-  const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
-  const premiumGate = usePremiumGate('TODO_CATEGORY');
+  const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'category_create' });
 
   const formMethods = useForm({
     resolver: zodResolver(createTodoCategorySchema),
@@ -50,13 +46,8 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
     try {
       await createMutation.mutateAsync(values, {
         onSuccess: () => sheet.close(),
-        onError: (error) => {
-          if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
-            sheet.close();
-            premiumGate.trackShown();
-            setIsPremiumDialogOpen(true);
-          }
-        },
+        // 시트 route 안의 Overlay에 띄워 시트 위에 보인다. 구독하러 가면 시트를 바로 떠난다
+        onError: (error) => gate.handleError(error, { onSubscribe: sheet.exit }),
       });
     } catch (error) {
       if (!isBusinessError(error)) {
@@ -67,64 +58,41 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
 
   return (
     <FormProvider {...formMethods}>
-      <>
-        <KeyboardBottomSheet
-          {...props}
-          isOpen={sheet.isOpen}
-          onOpenChange={(open) => {
-            if (!open && isPremiumDialogOpen) {
-              return;
-            }
-            sheet.onOpenChange(open);
-          }}
-        >
-          <VStack gap={40} pb={12}>
-            <VStack gap={20}>
-              <FormField control={control} name="name">
-                {({ onChange, value }, { error }) => (
-                  <BottomSheetInput
-                    autoFocus
-                    label={t('category.nameLabel')}
-                    placeholder={t('category.namePlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'categoryName.required',
-                      byType: { too_big: 'categoryName.tooLong' },
-                    })}
-                    returnKeyType="done"
-                    onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
-                  />
-                )}
-              </FormField>
-              <FormField control={control} name="color">
-                {({ onChange, value }) => <CategoryColorInput value={value} onChange={onChange} />}
-              </FormField>
-            </VStack>
-
-            <Button
-              size="large"
-              onPress={() => handleSubmit(handleSubmitCategory)()}
-              isLoading={isSubmitting}
-            >
-              {t('common:actions.confirm')}
-            </Button>
+      <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+        <VStack gap={40} pb={12}>
+          <VStack gap={20}>
+            <FormField control={control} name="name">
+              {({ onChange, value }, { error }) => (
+                <BottomSheetInput
+                  autoFocus
+                  label={t('category.nameLabel')}
+                  placeholder={t('category.namePlaceholder')}
+                  value={value}
+                  onChange={onChange}
+                  isInvalid={!!error}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'categoryName.required',
+                    byType: { too_big: 'categoryName.tooLong' },
+                  })}
+                  returnKeyType="done"
+                  onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
+                />
+              )}
+            </FormField>
+            <FormField control={control} name="color">
+              {({ onChange, value }) => <CategoryColorInput value={value} onChange={onChange} />}
+            </FormField>
           </VStack>
-        </KeyboardBottomSheet>
 
-        <PremiumDialog
-          isOpen={isPremiumDialogOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setIsPremiumDialogOpen(false);
-              sheet.exit();
-            }
-          }}
-          onSubscribe={premiumGate.subscribe}
-          description={t('category.premiumMore')}
-        />
-      </>
+          <Button
+            size="large"
+            onPress={() => handleSubmit(handleSubmitCategory)()}
+            isLoading={isSubmitting}
+          >
+            {t('common:actions.confirm')}
+          </Button>
+        </VStack>
+      </KeyboardBottomSheet>
     </FormProvider>
   );
 }

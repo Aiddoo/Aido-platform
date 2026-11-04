@@ -42,10 +42,7 @@
     "title": "Premium Feature",
     "close": "Close",
     "subscribe": "Subscribe",
-    "subscribeUnlimited": "Go unlimited with Premium",
-    "resetsToday": "You can use it again later today",
-    "resetsTomorrow": "You can use it again tomorrow",
-    "resetsOn": "You can use it again on {{date}}"
+    "subscribeUnlimited": "Get more with Premium"
   },
   "errorBoundary": {
     "title": "Something went wrong",

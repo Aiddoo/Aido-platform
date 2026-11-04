@@ -8,12 +8,14 @@ import { ReceiptBenefitRow } from '@src/features/subscription/components/receipt
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
 import { SubscriptionResult } from '@src/features/subscription/components/subscription-result';
 import { SubscriptionStoreUnavailable } from '@src/features/subscription/components/subscription-store-unavailable';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
 import type { SubscriptionOffering } from '@src/features/subscription/domains/subscription.model';
 import { useOpenSubscriptionInquiry } from '@src/features/subscription/hooks/use-open-subscription-inquiry';
 import { useOpenSubscriptionManagement } from '@src/features/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
 import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-subscription-view-param';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
 import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
@@ -27,7 +29,6 @@ import {
   toSubscriptionLoadFailure,
 } from '@src/features/subscription/utils/view-models/subscription-failure.view-model';
 import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/view-models/subscription-receipt.view-model';
-import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { legalUrl } from '@src/shared/constants/legal-urls';
@@ -72,7 +73,7 @@ import { Image, type ImageSourcePropType, Platform, ScrollView } from 'react-nat
 import { match } from 'ts-pattern';
 
 function SubscriptionScreen() {
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const receipt = useSubscriptionReceipt();
   const [view] = useSubscriptionViewParam();
 
@@ -80,7 +81,7 @@ function SubscriptionScreen() {
   // 영수증은 서버의 내 정보로만 그려 스토어가 실패해도 이용 중인 사람은 영수증을 본다.
   // 스토어를 쓸 수 없으면 요금제 자리에서 안내한다.
   return match({
-    isPremium: UserPolicy.isPremiumUser(user),
+    isPremium: EntitlementPolicy.hasFullAccess(entitlements),
     canSubscribe: receipt.primaryAction === 'subscribe',
     view,
   })
@@ -216,7 +217,7 @@ function Paywall({ offering }: { offering: SubscriptionOffering }) {
   const [view] = useSubscriptionViewParam();
   const isOnline = useIsOnline();
   const { trackEvent } = useTrack();
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const [chosenPlanId, setChosenPlanId] = useState<string>();
   const defaultPlan =
     offering.plans.find((plan) => plan.planType === 'annual') ?? offering.plans[0];
@@ -266,14 +267,14 @@ function Paywall({ offering }: { offering: SubscriptionOffering }) {
                 <SubscriptionBenefitCard
                   title={t('benefits.aiParsing.title')}
                   description={t('benefits.aiParsing.description', {
-                    limit: UserPolicy.freeFeatureLimit(user, 'AI_PARSE'),
+                    limit: EntitlementPolicy.getFreeLimit(entitlements, 'AI_PARSE'),
                   })}
                   image={benefitAiParsingImage}
                 />
                 <SubscriptionBenefitCard
                   title={t('benefits.nudge.title')}
                   description={t('benefits.nudge.description', {
-                    limit: UserPolicy.freeFeatureLimit(user, 'NUDGE'),
+                    limit: EntitlementPolicy.getFreeLimit(entitlements, 'NUDGE'),
                   })}
                   image={benefitNudgeImage}
                 />
@@ -771,7 +772,7 @@ function AdditionalBenefit({ Icon, title, description }: AdditionalBenefitProps)
 
 function AdditionalSubscriptionBenefits() {
   const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
 
   return (
     <VStack gap={16}>
@@ -783,7 +784,7 @@ function AdditionalSubscriptionBenefits() {
         Icon={PersonIcon}
         title={t('benefits.friends.title')}
         description={t('benefits.friends.description', {
-          limit: UserPolicy.freeFeatureLimit(user, 'FRIEND'),
+          limit: EntitlementPolicy.getFreeLimit(entitlements, 'FRIEND'),
         })}
       />
       <Separator className="bg-gray-2 dark:bg-gray-3" />
@@ -791,7 +792,7 @@ function AdditionalSubscriptionBenefits() {
         Icon={ListIcon}
         title={t('benefits.categories.title', { premium: PREMIUM_FEATURES.TODO_CATEGORY.premium })}
         description={t('benefits.categories.description', {
-          free: UserPolicy.freeFeatureLimit(user, 'TODO_CATEGORY'),
+          free: EntitlementPolicy.getFreeLimit(entitlements, 'TODO_CATEGORY'),
           premium: PREMIUM_FEATURES.TODO_CATEGORY.premium,
         })}
       />

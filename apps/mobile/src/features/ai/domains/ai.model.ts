@@ -6,6 +6,7 @@ import {
   reportTypeSchema,
   suggestionActionSchema,
 } from '@aido/api';
+import { featureQuotaSchema } from '@src/features/subscription/domains/entitlement.model';
 import { z } from 'zod';
 
 export type ReportType = z.infer<typeof reportTypeSchema>;
@@ -45,6 +46,8 @@ export type AiSuggestionActionResult = z.infer<typeof aiSuggestionActionResultSc
 
 export const parsedMemoResultSchema = parsedMemoDataSchema.extend({
   omittedTodoCount: z.number().int().nonnegative(),
+  /** 이 요청을 반영한 AI 할 일 만들기 한도. 1.15.0 이전 서버는 보내지 않는다 */
+  featureQuota: featureQuotaSchema.nullable(),
 });
 export type ParsedMemoResult = z.infer<typeof parsedMemoResultSchema>;
 export type ParsedMemoTodo = ParsedMemoResult['todos'][number];

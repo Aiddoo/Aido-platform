@@ -1,3 +1,4 @@
+export { createErrorReporterStub } from './create-error-reporter-stub';
 export { createHapticsStub } from './create-haptics-stub';
 export { createMockAnalytics } from './create-mock-analytics';
 export { createMockDIContainer } from './create-mock-di-container';

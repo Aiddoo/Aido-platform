@@ -49,7 +49,10 @@ track(analytics, 'session_expired', { reason });
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `auth_signup`                      | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 가입 / 소셜 신규 가입(`isNewUser`)            |
 | `auth_login`                       | `method`: `email`·`google`·`apple`·`kakao`·`naver`                                                        | 이메일 로그인 / 소셜 기존 계정 로그인                |
-| `premium_gate_cta_tapped`          | `feature`(`PremiumFeature`)                                                                               | `usePremiumGate().subscribe`                         |
+| `premium_gate_shown`               | `feature` · `surface`(`EntitlementGateSurface`)                                                           | 한도·프리미엄 안내 다이얼로그(`useEntitlementGate`)  |
+| `premium_gate_cta_tapped`          | `feature` · `surface`                                                                                     | 그 다이얼로그에서 구독하기                           |
+| `limit_reached_shown`              | `feature` · `surface` · `trigger`: `precheck`·`server`                                                    | 횟수·개수 한도 안내(premium_gate_shown과 함께)       |
+| `limit_reached_cta_tapped`         | `feature` · `surface`                                                                                     | 한도 안내에서 구독하기                               |
 | `paywall_viewed`                   | `view`: `status`·`plans`                                                                                  | 요금제를 받아 페이월이 보였을 때                     |
 | `purchase_failed`                  | `reason`: `network`·`server`·`store_unavailable`·`store_error`                                            | 결제 실패를 문의로 안내할 때(취소·승인 대기 제외)    |
 | `ai_report_viewed`                 | `report_id` · `report_type`: `WEEKLY`·`MONTHLY`                                                           | 저장된 리포트 상세                                   |

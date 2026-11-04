@@ -8,9 +8,9 @@ import type { ReportType } from '@src/features/ai/domains/ai.model';
 import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
 import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
-import { UserPolicy } from '@src/features/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -42,8 +42,8 @@ function useReportType() {
 function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isPremium = UserPolicy.isPremiumUser(user);
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
+  const hasFullAccess = EntitlementPolicy.hasFullAccess(entitlements);
   const [reportType, setReportType] = useReportType();
   const [refreshing, onRefresh] = useRefresh(() => invalidateAiReports(queryClient));
 
@@ -56,7 +56,7 @@ function ReportsScreen() {
         <Spacing size={16} />
 
         <VStack gap={12}>
-          {isPremium && <AiConsentNotice>{t('consent.notice.reports')}</AiConsentNotice>}
+          {hasFullAccess && <AiConsentNotice>{t('consent.notice.reports')}</AiConsentNotice>}
 
           <ScallopedContainer>
             <Box className="items-center px-5 pt-4">
@@ -67,16 +67,18 @@ function ReportsScreen() {
               />
               <Spacing size={8} />
               <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-                {isPremium ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
+                {hasFullAccess ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
               </H4>
               <Text size="b4" shade={6} align="center">
-                {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
+                {hasFullAccess
+                  ? t('report.list.premiumDescription')
+                  : t('report.list.freeDescription')}
               </Text>
             </Box>
 
             <Spacing size={16} />
 
-            {isPremium && (
+            {hasFullAccess && (
               <Box className="px-4">
                 <QueryErrorBoundary>
                   <Suspense fallback={<ReportStatusBanner.Loading />}>
@@ -110,7 +112,7 @@ function ReportsScreen() {
             <Spacing size={8} />
 
             <Box className="px-4 pb-4">
-              {match(isPremium)
+              {match(hasFullAccess)
                 .with(true, () => (
                   <QueryErrorBoundary resetKeys={[reportType]}>
                     <Suspense fallback={<ReportCard.Loading />}>

@@ -3,8 +3,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
 import { userReportSheetHref } from '@src/features/moderation/utils/navigation/moderation-href';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
-import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -190,21 +189,18 @@ function useNotificationPress(notification: Notification) {
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const premiumGate = usePremiumGate('AI_REPORT');
+  const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
 
   return useCallback(() => {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
 
-    if (NotificationPolicy.isAiFeature(notification)) {
-      const user = getCachedMe(queryClient);
-      if (user && !UserPolicy.isPremiumUser(user)) {
-        premiumGate.open({
-          description: tGlobal('notification:list.premiumDescription'),
-        });
-        return;
-      }
+    if (
+      NotificationPolicy.isAiFeature(notification) &&
+      !gate.guard({ description: tGlobal('notification:list.premiumDescription') })
+    ) {
+      return;
     }
 
     const destination = resolveNotificationDestination(
@@ -228,7 +224,7 @@ function useNotificationPress(notification: Notification) {
     markAsRead,
     trackEvent,
     queryClient,
-    premiumGate,
+    gate,
     navigateToDestination,
     today,
     windowSizeClass,

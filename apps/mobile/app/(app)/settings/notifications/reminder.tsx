@@ -10,9 +10,9 @@ import {
 } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
-import { UserPolicy } from '@src/features/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
   CrownIcon,
@@ -106,13 +106,13 @@ function ReminderTimeInput({
   description: string;
   period: keyof typeof REMINDER_TIME;
 }) {
-  const { t } = useTranslation('notification');
-  const premiumGate = usePremiumGate('CUSTOM_REMINDER_TIME');
-  const [{ data: user }, { data: preference }] = useSuspenseQueries({
-    queries: [useGetMeQueryOptions(), useGetPreferenceQueryOptions()],
+  const gate = useEntitlementGate('CUSTOM_REMINDER_TIME', { surface: 'reminder_settings' });
+  const [{ data: entitlements }, { data: preference }] = useSuspenseQueries({
+    queries: [useGetEntitlementsQueryOptions(), useGetPreferenceQueryOptions()],
   });
   const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
-  const isPremium = UserPolicy.isPremiumUser(user);
+  const isLocked =
+    EntitlementPolicy.getAccessDecision(entitlements, 'CUSTOM_REMINDER_TIME') === 'locked';
   const time = REMINDER_TIME[period];
 
   return (
@@ -124,14 +124,8 @@ function ReminderTimeInput({
       {...time.range}
       timeFormat={preference.timeFormat}
       isDisabled={PreferencePolicy.isPushDisabled(preference) || updatePreference.isPending}
-      accessory={isPremium ? undefined : <CrownIcon width={14} height={14} />}
-      onBeforeOpen={() => {
-        if (isPremium) {
-          return true;
-        }
-        premiumGate.open({ description: t('settings.reminderPremium') });
-        return false;
-      }}
+      accessory={isLocked ? <CrownIcon width={14} height={14} /> : undefined}
+      onBeforeOpen={() => gate.guard()}
     />
   );
 }

@@ -1,5 +1,4 @@
 import type { UpdateProfileResponse } from '@aido/api';
-import { createPremiumEntitlementsDto } from '@src/features/subscription/__tests__/premium-entitlement.factories';
 import { ApiError } from '@src/shared/errors/api-error';
 
 import type { CurrentUserResponse } from '../apis/user.mapper';
@@ -25,7 +24,6 @@ const generateCurrentUserDto = (): CurrentUserResponse => ({
   bankedPremiumDays: 0,
   premiumGrantEndedAt: null,
   isPremium: false,
-  entitlements: createPremiumEntitlementsDto(),
 });
 
 export const createCurrentUserDto = (

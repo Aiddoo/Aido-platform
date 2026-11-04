@@ -1,8 +1,8 @@
 import { AiConsentNotice } from '@src/features/ai/components/ai-consent-notice';
 import { SuggestionsList } from '@src/features/ai/components/suggestions-list';
 import { invalidateAiSuggestions } from '@src/features/ai/queries/ai-cache';
-import { UserPolicy } from '@src/features/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
@@ -13,25 +13,25 @@ import { match } from 'ts-pattern';
 
 function SuggestionsScreen() {
   const { t } = useTranslation('ai');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
-  const isPremiumUser = UserPolicy.isPremiumUser(user);
+  const hasFullAccess = EntitlementPolicy.hasFullAccess(entitlements);
 
   return (
     <ScrollView
       className="flex-1 px-4"
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
       refreshControl={
-        isPremiumUser ? (
+        hasFullAccess ? (
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
         ) : undefined
       }
     >
       <StyledSafeAreaView edges={['left', 'right']} className="grow">
         <Spacing size={16} />
-        {match(isPremiumUser)
+        {match(hasFullAccess)
           .with(true, () => (
             <VStack gap={12}>
               <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>

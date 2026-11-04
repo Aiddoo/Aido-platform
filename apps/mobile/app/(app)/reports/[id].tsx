@@ -5,7 +5,7 @@ import {
   useReportScreenParams,
 } from '@src/features/ai/hooks/use-report-screen-params';
 import { useGetReportDetailQueryOptions } from '@src/features/ai/queries/get-report-detail-query-options';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useTrack } from '@src/shared/analytics';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,7 +27,7 @@ import { match } from 'ts-pattern';
 function ReportDetailScreen() {
   const { id: report } = useReportScreenParams();
   const { t } = useTranslation('ai');
-  const premiumGate = usePremiumGate('AI_REPORT');
+  const gate = useEntitlementGate('AI_REPORT', { surface: 'report_detail' });
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -47,14 +47,7 @@ function ReportDetailScreen() {
                   {t('report.lockedDetail.description')}
                 </Text>
                 <Spacing size={4} />
-                <Button
-                  size="medium"
-                  onPress={() => {
-                    premiumGate.open({
-                      description: t('report.lockedDetail.premiumDialogDescription'),
-                    });
-                  }}
-                >
+                <Button size="medium" onPress={() => gate.guard()}>
                   {t('report.lockedDetail.subscribe')}
                 </Button>
               </VStack>

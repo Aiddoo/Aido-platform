@@ -11,16 +11,16 @@ describe('invalidateAiSuggestions', () => {
     queryClient = createTestQueryClient();
   });
 
-  it('추천 목록만 다시 불러오고 AI 사용량은 그대로 둔다', async () => {
+  it('추천 목록만 다시 불러오고 리포트 상태는 그대로 둔다', async () => {
     // Given
     queryClient.setQueryData(AI_QUERY_KEYS.suggestions(), []);
-    queryClient.setQueryData(AI_QUERY_KEYS.usage(), { used: 1 });
+    queryClient.setQueryData(AI_QUERY_KEYS.status(), { status: 'READY' });
 
     // When
     await invalidateAiSuggestions(queryClient);
 
     // Then
     expect(queryClient.getQueryState(AI_QUERY_KEYS.suggestions())?.isInvalidated).toBe(true);
-    expect(queryClient.getQueryState(AI_QUERY_KEYS.usage())?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(AI_QUERY_KEYS.status())?.isInvalidated).toBe(false);
   });
 });

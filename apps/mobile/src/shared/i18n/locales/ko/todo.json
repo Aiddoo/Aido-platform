@@ -101,7 +101,6 @@
     "alreadyNudged": "이미 콕 찔렀어요"
   },
   "nudge": {
-    "limitTitle": "오늘 콕 찌르기를 다 했어요",
     "limitSpentTitle": "오늘 콕 찌르기를 다 썼어요",
     "subscribeUnlimited": "구독하면 무제한으로 찌를 수 있어요",
     "promptPrefix": "친구에게",
@@ -110,7 +109,7 @@
     "hintPrefix": "오늘을 함께하고 싶다면",
     "hintHighlight": "콕",
     "hintSuffix": "을 눌러 마음을 전해 보세요",
-    "remaining": "오늘 {{count}}회 남았어요 (구독하면 무제한)",
+    "remaining": "오늘 {{count}}번 남았어요 (구독하면 무제한)",
     "sheetTitle": "친구에게 콕 응원 보내기",
     "whenTodo": "이 할 일을 함께 응원해요: {{title}}",
     "placeholder": "(선택) 네 속도로 해도 괜찮아. 응원할게!",
@@ -125,16 +124,12 @@
   "category": {
     "nameLabel": "카테고리 이름",
     "namePlaceholder": "카테고리 이름을 입력해 주세요",
-    "premiumMore": "프리미엄 구독으로 더 많은 카테고리를 만들 수 있어요",
     "deleteTitle": "{{name}} 카테고리를 삭제할까요?",
     "deleteDescription": "삭제하면 되돌릴 수 없어요",
     "todoCount": "할 일 {{count}}개가 포함되어 있어요",
     "moveSelect": "이동할 카테고리를 선택해주세요",
     "select": "카테고리 선택",
     "fallback": "카테고리"
-  },
-  "premium": {
-    "unlimitedParse": "프리미엄 구독으로 무제한 AI 파싱을 사용할 수 있어요"
   },
   "calendar": {
     "week": "주",

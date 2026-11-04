@@ -171,6 +171,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get subscriptionService() {
       return dependency('subscriptionService');
     },
+    get entitlementService() {
+      return dependency('entitlementService');
+    },
     get weatherService() {
       return dependency('weatherService');
     },

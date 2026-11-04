@@ -1,5 +1,7 @@
 import { useHaptics, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { invalidateEntitlements } from '@src/features/subscription/queries/entitlement-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -16,6 +18,7 @@ export const useSendTodoNudgeMutationOptions = () => {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
+  const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
   return mutationOptions({
     mutationFn: async (input: SendTodoNudgeInput) => {
@@ -25,11 +28,16 @@ export const useSendTodoNudgeMutationOptions = () => {
     onSuccess: () => {
       haptics.notify('success');
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.limit() });
+      invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
     },
     onError: (error) => {
       haptics.notify('error');
+
+      if (gate.handleError(error)) {
+        return;
+      }
 
       if (isApiError(error) || isTodoNudgeError(error)) {
         toast.error(error.message);

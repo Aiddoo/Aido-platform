@@ -103,7 +103,6 @@
     "alreadyNudged": "Already nudged"
   },
   "nudge": {
-    "limitTitle": "You've used all your nudges for today",
     "limitSpentTitle": "You've used up today's nudges",
     "subscribeUnlimited": "Subscribe for unlimited nudges",
     "promptPrefix": "Send a friend a",
@@ -112,8 +111,8 @@
     "hintPrefix": "To share a little support, tap",
     "hintHighlight": "nudge",
     "hintSuffix": "and cheer them on",
-    "remaining_one": "{{count}} nudge left today (unlimited with Pro)",
-    "remaining_other": "{{count}} nudges left today (unlimited with Pro)",
+    "remaining_one": "{{count}} nudge left today (unlimited with Premium)",
+    "remaining_other": "{{count}} nudges left today (unlimited with Premium)",
     "sheetTitle": "A little encouragement for a friend",
     "whenTodo": "Cheering you on: {{title}}",
     "placeholder": "(Optional) Take it at your pace. I’m cheering for you!",
@@ -128,7 +127,6 @@
   "category": {
     "nameLabel": "Category name",
     "namePlaceholder": "Enter a category name",
-    "premiumMore": "Subscribe to create more categories",
     "deleteTitle": "Delete the {{name}} category?",
     "deleteDescription": "This can't be undone",
     "todoCount_one": "It contains {{count}} to-do",
@@ -136,9 +134,6 @@
     "moveSelect": "Please choose a category to move them to",
     "select": "Choose a category",
     "fallback": "Category"
-  },
-  "premium": {
-    "unlimitedParse": "Subscribe for unlimited AI parsing"
   },
   "calendar": {
     "week": "Week",

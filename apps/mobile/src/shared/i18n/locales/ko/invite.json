@@ -21,7 +21,7 @@
       "title": "가입하면 프리미엄 {{count}}일",
       "description": "AI 할 일 만들기와 친구 추가를 마음껏 누려보세요",
       "benefitFriend": "{{name}}님과 바로 친구가 돼요",
-      "benefitAi": "AI 할 일 만들기 무제한",
+      "benefitAi": "AI 할 일 만들기 넉넉하게",
       "benefitFriends": "친구 추가·콕 찌르기 무제한",
       "codeLabel": "초대 코드",
       "inviterReward": "내가 {{activeDays}}일 동안 할 일을 끝내면 {{name}}님도 프리미엄 {{days}}일을 받아요"

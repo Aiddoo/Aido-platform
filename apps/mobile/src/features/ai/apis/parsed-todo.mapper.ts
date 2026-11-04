@@ -1,4 +1,5 @@
 import type { ParseTodoResponse } from '@aido/api';
+import { toFeatureQuota } from '@src/features/subscription/apis/entitlement.mapper';
 import { toDate } from '@src/shared/utils/date';
 
 import type { ParsedTodoResult } from '../domains/parsed-todo.model';
@@ -21,4 +22,5 @@ export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => 
     ...(dto.data.categoryId != null && { categoryId: dto.data.categoryId }),
   },
   meta: dto.meta,
+  featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
 });

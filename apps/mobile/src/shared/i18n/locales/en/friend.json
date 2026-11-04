@@ -12,10 +12,6 @@
     "requestRejected": "Friend request declined",
     "requestFailed": "Couldn't send the friend request"
   },
-  "premium": {
-    "unlimitedFriends": "Subscribe to Premium to add unlimited friends",
-    "friendLimitTitle": "You've reached your friend limit"
-  },
   "deleteDialog": {
     "title": "Remove this friend?",
     "description": "You'll no longer see each other's to-dos"

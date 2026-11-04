@@ -1,5 +1,4 @@
 import { AI_PARSE_LIMITS } from '@aido/api';
-import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
@@ -11,9 +10,6 @@ import {
 } from '@src/features/memo/hooks/use-memo-screen-params';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toReviewedMemoConversionInput } from '@src/features/memo/utils/to-reviewed-memo-conversion-input';
-import { useQuotaResetMessage } from '@src/features/subscription/hooks/use-quota-reset-message';
-import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
-import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -145,38 +141,15 @@ AiReviewScreen.Loading = function Loading() {
 };
 
 AiReviewScreen.Error = function ErrorFallback({ error }: Pick<QueryErrorFallbackProps, 'error'>) {
-  const { t } = useTranslation(['memo', 'common']);
-  const replace = useSingleTap(router.replace);
+  const { t } = useTranslation('memo');
   const goBack = useSingleTap(router.back);
-  const queryClient = useQueryClient();
-  const toQuotaResetMessage = useQuotaResetMessage();
-
-  if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
-    const resetMessage = toQuotaResetMessage(getCachedMe(queryClient)?.entitlements?.AI_PARSE);
-    return (
-      <Result
-        title={t('memo:aiReview.limitTitle')}
-        description={
-          resetMessage == null
-            ? t('memo:aiDialog.subscribeUnlimited')
-            : `${t('memo:aiDialog.subscribeUnlimited')}\n${resetMessage}`
-        }
-        button={
-          <Result.Button onPress={() => replace(subscriptionHref())}>
-            {t('common:premiumDialog.subscribe')}
-          </Result.Button>
-        }
-      />
-    );
-  }
-
-  const message = isApiError(error) ? error.message : t('memo:aiReview.retryLater');
+  const message = isApiError(error) ? error.message : t('aiReview.retryLater');
 
   return (
     <Result
-      title={t('memo:aiReview.parseFailed')}
+      title={t('aiReview.parseFailed')}
       description={message}
-      button={<Result.Button onPress={() => goBack()}>{t('memo:aiReview.goBack')}</Result.Button>}
+      button={<Result.Button onPress={() => goBack()}>{t('aiReview.goBack')}</Result.Button>}
     />
   );
 };

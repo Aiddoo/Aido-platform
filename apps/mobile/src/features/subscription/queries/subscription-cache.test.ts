@@ -9,6 +9,7 @@ import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/render-ui';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
+import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import {
   isPremiumDependentQuery,
   syncMeUntilStorePremium,
@@ -17,7 +18,7 @@ import {
 
 const DEPENDENT_KEYS = [
   NUDGE_QUERY_KEYS.limit(),
-  AI_QUERY_KEYS.usage(),
+  ENTITLEMENT_QUERY_KEYS.snapshot(),
   AI_QUERY_KEYS.suggestions(),
   MEMO_QUERY_KEYS.resourceLimit(),
   PREFERENCE_QUERY_KEYS.current(),

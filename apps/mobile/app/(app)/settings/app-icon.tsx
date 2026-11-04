@@ -3,9 +3,9 @@ import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker
 import type { AppIconKey } from '@src/features/app-icon/domains/app-icon.model';
 import { useGetCurrentAppIconQueryOptions } from '@src/features/app-icon/queries/get-current-app-icon-query-options';
 import { useChangeAppIconMutationOptions } from '@src/features/app-icon/queries/use-change-app-icon-mutation-options';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
-import { UserPolicy } from '@src/features/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -37,20 +37,17 @@ function AppIconScreen() {
   const currentIcon = currentIconKey ?? 'default';
   const isSupported = appIconService.isSupported();
   const isLoading = isSupported && isCurrentIconPending;
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isPremium = UserPolicy.isPremiumUser(user);
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
+  const isIconLocked = EntitlementPolicy.getAccessDecision(entitlements, 'APP_ICON') === 'locked';
   const overlay = useOverlay();
-  const premiumGate = usePremiumGate('APP_ICON');
+  const gate = useEntitlementGate('APP_ICON', { surface: 'app_icon_settings' });
 
   const handleIconPress = (key: AppIconKey) => {
     if (isChanging || key === currentIcon) {
       return;
     }
 
-    if (!isPremium && key !== 'default') {
-      premiumGate.open({
-        description: t('screen.premiumRequired'),
-      });
+    if (key !== 'default' && !gate.guard()) {
       return;
     }
 
@@ -107,7 +104,7 @@ function AppIconScreen() {
                   value={currentIcon}
                   onChange={handleIconPress}
                   isDisabled={isChanging}
-                  isLocked={(key) => !isPremium && key !== 'default'}
+                  isLocked={(key) => isIconLocked && key !== 'default'}
                 />
               </Box>
             </StyledSafeAreaView>

@@ -5,7 +5,7 @@ import type {
 } from '@src/shared/observability/telemetry-keys';
 import { match } from 'ts-pattern';
 
-import { type User, UserPolicy } from '../domains/user.model';
+import type { User } from '../domains/user.model';
 
 type AnalyticsUser = Pick<User, 'role' | 'isPremium' | 'premiumAccess' | 'subscriptionStatus'>;
 
@@ -22,10 +22,13 @@ function toPremiumSourceProperty({ role, premiumAccess }: AnalyticsUser): Premiu
     .exhaustive();
 }
 
-/** 내 정보를 GA 사용자 속성으로 바꾼다. `is_premium`·`subscription_status`는 대시보드 연속성을 위해 유지한다 */
+/**
+ * 내 정보를 GA 사용자 속성으로 바꾼다. `is_premium`·`subscription_status`는 대시보드 연속성을 위해 유지한다.
+ * `is_premium`은 처음부터 ADMIN을 포함해 왔으므로 의미를 바꾸지 않는다(유료 전환은 premium_source로 센다)
+ */
 export function toUserAnalyticsProperties(user: AnalyticsUser): UserPropertyMap {
   return {
-    is_premium: UserPolicy.isPremiumUser(user),
+    is_premium: user.role === USER_ROLE.ADMIN || user.isPremium,
     subscription_status: user.subscriptionStatus,
     premium_source: toPremiumSourceProperty(user),
   };

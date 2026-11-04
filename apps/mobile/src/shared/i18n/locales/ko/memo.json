@@ -1,7 +1,7 @@
 {
   "titles": {
     "create": "새 메모",
-    "aiReview": "AI 파싱"
+    "aiReview": "메모를 할 일로 나누기"
   },
   "tab": {
     "addMemo": "메모 추가"
@@ -36,19 +36,15 @@
     "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용을 지웠어요"
   },
   "aiDialog": {
-    "limitTitle": "이번 달 AI 파싱 횟수를 모두 사용했어요",
-    "subscribeUnlimited": "구독하면 무제한으로 사용할 수 있어요",
-    "confirmTitle": "AI로 메모를 할 일로 만들게요",
-    "usageRemaining": "이번 달 {{remaining}}/{{limit}}회 사용할 수 있어요",
-    "warnWithDeduction": "파싱 중 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.",
-    "warnNoDeduction": "파싱 중 화면을 벗어나면 결과를 받을 수 없어요.",
+    "confirmTitle": "메모를 할 일로 나눠드릴게요",
+    "warnWithDeduction": "나누는 중에 화면을 벗어나면 결과를 받을 수 없고 횟수가 차감돼요.",
+    "warnNoDeduction": "나누는 중에 화면을 벗어나면 결과를 받을 수 없어요.",
     "start": "시작하기"
   },
   "aiReview": {
     "titleLabel": "할 일 제목",
     "analyzing": "메모를 분석하고 있어요...",
-    "limitTitle": "이번 달 AI 사용 횟수를 모두 사용했어요",
-    "parseFailed": "파싱에 실패했어요",
+    "parseFailed": "할 일로 나누지 못했어요",
     "retryLater": "잠시 후 다시 시도해 주세요",
     "goBack": "돌아가기",
     "noTodosTitle": "생성할 할 일이 없어요",

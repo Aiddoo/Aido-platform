@@ -7,7 +7,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError } from '@src/shared/errors';
@@ -32,7 +32,7 @@ export const useHandleSuggestionMutationOptions = () => {
   const logger = useLogger();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const premiumGate = usePremiumGate('AI_SUGGESTION');
+  const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
 
   return mutationOptions({
     mutationFn: async ({ suggestionId, input }: HandleSuggestionParams) => {
@@ -57,10 +57,7 @@ export const useHandleSuggestionMutationOptions = () => {
     onError: (error) => {
       haptics.notify('error');
 
-      if (isApiError(error) && error.hasCode(ErrorCode.AI_1309)) {
-        premiumGate.open({
-          description: t('ai:suggestions.toasts.premiumOnly'),
-        });
+      if (gate.handleError(error)) {
         return;
       }
 

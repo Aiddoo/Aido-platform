@@ -1,12 +1,8 @@
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
-import { useTranslation } from '@src/shared/i18n';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useOverlay } from '@src/shared/ui';
-import { useQuery } from '@tanstack/react-query';
 import type { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { TodoNudgePolicy } from '../domains/todo-nudge.model';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { NudgeBottomSheet, type NudgeReceiver, type NudgeTargetTodo } from './nudge-bottom-sheet';
 import { NudgePawButton } from './nudge-paw-button';
 
@@ -25,12 +21,8 @@ export function TodoNudgeButton({
   isDisabled,
   ...pressableProps
 }: TodoNudgeButtonProps) {
-  const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const premiumGate = usePremiumGate('NUDGE');
-  const limitQuery = useQuery(useGetTodoNudgeLimitQueryOptions());
-  const isLimitReached = limitQuery.data != null && TodoNudgePolicy.isLimitReached(limitQuery.data);
-  const isUnavailable = isDisabled || limitQuery.isPending;
+  const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
   const openNudgeSheet = () => {
     overlay
@@ -51,16 +43,12 @@ export function TodoNudgeButton({
   };
 
   const handlePress = () => {
-    if (isLimitReached) {
-      premiumGate.open({
-        title: t('nudge.limitTitle'),
-        description: t('nudge.subscribeUnlimited'),
-      });
+    if (!gate.guard()) {
       return;
     }
 
     openNudgeSheet();
   };
 
-  return <NudgePawButton {...pressableProps} onPress={handlePress} isDisabled={isUnavailable} />;
+  return <NudgePawButton {...pressableProps} onPress={handlePress} isDisabled={isDisabled} />;
 }

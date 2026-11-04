@@ -3,7 +3,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
-import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
@@ -370,7 +371,8 @@ function useAiParseAction() {
   const overlay = useOverlay();
   const queryClient = useQueryClient();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
-  const aiUsageQuery = useQuery(useGetAiUsageQueryOptions());
+  const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const hasCategory = categoriesQuery.data?.categories[0] != null;
   const aiConsent = useAiDataSharingConsentGate();
   const toast = useAppToast();
@@ -379,6 +381,9 @@ function useAiParseAction() {
   const handlePress = async () => {
     if (getParsedMemo(queryClient, { memoId })) {
       push(memoAiReviewHref(memoId));
+      return;
+    }
+    if (!gate.guard()) {
       return;
     }
     const consent = await aiConsent.ensureAgreed();
@@ -426,8 +431,8 @@ function useAiParseAction() {
 
   return {
     handlePress,
-    isDisabled: !hasCategory || aiUsageQuery.isLoading,
-    isLoading: aiUsageQuery.isLoading,
+    isDisabled: !hasCategory || entitlementsQuery.isLoading,
+    isLoading: entitlementsQuery.isLoading,
   };
 }
 

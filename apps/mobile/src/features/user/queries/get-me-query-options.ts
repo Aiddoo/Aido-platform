@@ -1,6 +1,6 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { UserService } from '@src/features/user/apis/user.service';
-import { type User, UserPolicy } from '@src/features/user/domains/user.model';
+import type { User } from '@src/features/user/domains/user.model';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
@@ -13,7 +13,6 @@ export function toMe(user: User, { defaultName }: { defaultName: string }) {
   return {
     ...user,
     name: user.name ?? defaultName,
-    tier: UserPolicy.tier(user),
   };
 }
 

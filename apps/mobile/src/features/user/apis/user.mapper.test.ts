@@ -1,5 +1,4 @@
 import { PREMIUM_ME_EXAMPLES } from '@src/features/subscription/__tests__/premium-access.factories';
-import { createPremiumEntitlementsDto } from '@src/features/subscription/__tests__/premium-entitlement.factories';
 
 import { createCurrentUserDto, createUpdateProfileDto } from '../__tests__/user.factories';
 import { toUpdateProfileResult, toUser } from './user.mapper';
@@ -84,32 +83,6 @@ describe('toUser', () => {
 
     // Then
     expect(result.premiumAccess).toEqual(expected);
-  });
-
-  test('기능별 권한의 초기화 시각을 Date로 바꾸고 모르는 기능 키는 버린다', () => {
-    // Given 새 서버가 앱이 모르는 기능을 더해 보냈다
-    const dto = createCurrentUserDto({
-      isPremium: false,
-      entitlements: {
-        ...createPremiumEntitlementsDto({
-          NUDGE: { allowed: true, limit: 3, used: 3, resetsAt: '2026-11-01T15:00:00.000Z' },
-        }),
-        FUTURE_FEATURE: { allowed: true, limit: null },
-      },
-    });
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.isPremium).toBe(false);
-    expect(result.entitlements.NUDGE).toEqual({
-      allowed: true,
-      limit: 3,
-      used: 3,
-      resetsAt: new Date('2026-11-01T15:00:00.000Z'),
-    });
-    expect(result.entitlements).not.toHaveProperty('FUTURE_FEATURE');
   });
 
   test('providers 배열 매핑', () => {

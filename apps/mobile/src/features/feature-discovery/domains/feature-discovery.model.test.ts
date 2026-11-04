@@ -1,4 +1,3 @@
-import { createPremiumEntitlements } from '@src/features/subscription/__tests__/premium-entitlement.factories';
 import type { User } from '@src/features/user/domains/user.model';
 
 import {
@@ -26,7 +25,6 @@ const createUser = (overrides: Partial<User> = {}): User => ({
     grantEndedAt: null,
   },
   isPremium: false,
-  entitlements: createPremiumEntitlements(),
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
   ...overrides,
 });

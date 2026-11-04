@@ -33,6 +33,7 @@ import { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import { PreferenceService } from '@src/features/preference/apis/preference.service';
 import { createStoreReviewRepository } from '@src/features/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/store-review/apis/store-review.service';
+import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
 import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
@@ -288,6 +289,7 @@ export function DIProvider({
       revenueCatPurchasesGateway,
       logger,
     );
+    const entitlementService = new EntitlementService(authHttpClient, logger);
 
     // Weather
     const weatherService = new WeatherService(authHttpClient);
@@ -341,6 +343,7 @@ export function DIProvider({
       userService,
       revenueCatSdkManager,
       subscriptionService,
+      entitlementService,
       weatherService,
       weatherIntroductionService: new WeatherIntroductionService(
         createWeatherIntroductionRepository(mmkvSyncStorage),

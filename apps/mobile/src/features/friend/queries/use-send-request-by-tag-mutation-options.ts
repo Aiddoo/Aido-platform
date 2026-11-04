@@ -1,10 +1,11 @@
-import { ErrorCode } from '@aido/api/errors';
 import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
 import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
 import { getCachedInviteAvailability } from '@src/features/invite/queries/invite-cache';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
-import { type User, UserPolicy } from '@src/features/user/domains/user.model';
+import { findLimitedFeature } from '@src/features/subscription/apis/entitlement.mapper';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import { getCachedEntitlements } from '@src/features/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -19,17 +20,13 @@ import { isFriendError } from '../domains/friend.error';
 import { FriendPolicy } from '../domains/friend.model';
 import { patchSearchedUser } from './friend-cache';
 
-function friendLimitOf(me: User | undefined) {
-  return me == null ? null : UserPolicy.featureLimit(me, 'FRIEND');
-}
-
 export const useSendRequestByTagMutationOptions = () => {
   const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const premiumGate = usePremiumGate('FRIEND');
+  const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
   const openMyInvite = useOpenMyInvite();
 
   return mutationOptions({
@@ -60,17 +57,20 @@ export const useSendRequestByTagMutationOptions = () => {
     onError: (err) => {
       haptics.notify('error');
 
-      if (isApiError(err) && err.hasCode(ErrorCode.FOLLOW_0909)) {
-        premiumGate.open(
+      if (findLimitedFeature(err) != null) {
+        const snapshot = getCachedEntitlements(queryClient);
+        const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+        const details = isApiError(err) ? err.details : undefined;
+        gate.handleError(
+          err,
           match(
             FriendPolicy.friendLimitDialog(
-              err.details,
+              details,
               getCachedInviteAvailability(queryClient),
-              friendLimitOf(getCachedMe(queryClient)),
+              knownLimit,
             ),
           )
             .with({ type: 'invite' }, ({ limit }) => ({
-              title: t('friend:premium.friendLimitTitle'),
               description: t('invite:entry.friendLimitDescription', {
                 limit,
                 activeDays: InvitedFriendPolicy.requiredActiveDays(),
@@ -80,9 +80,7 @@ export const useSendRequestByTagMutationOptions = () => {
                 onPress: () => openMyInvite('friend_limit_dialog'),
               },
             }))
-            .with({ type: 'subscribe' }, () => ({
-              description: t('friend:premium.unlimitedFriends'),
-            }))
+            .with({ type: 'subscribe' }, () => ({}))
             .exhaustive(),
         );
         return;

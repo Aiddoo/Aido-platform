@@ -1,7 +1,8 @@
+import { ErrorCode } from '@aido/api/errors';
 import type { Logger } from '@src/core/ports/logger';
 import { createMockHttpClient } from '@src/shared/__tests__';
+import { ApiError } from '@src/shared/errors/api-error';
 
-import { createAiApiError, createAiUsageResponseDto } from '../__tests__/ai-usage.factories';
 import { createParseTodoResponseDto } from '../__tests__/parsed-todo.factories';
 import { AiService } from './ai.service';
 
@@ -21,35 +22,6 @@ describe('AiService', () => {
     service = new AiService(httpClient, createLogger());
   });
 
-  describe('getAiUsage', () => {
-    test('정상 응답 → AiUsage 반환', async () => {
-      // Given
-      httpClient.get.mockResolvedValue({ ok: true, value: createAiUsageResponseDto() });
-
-      // When
-      const result = await service.getAiUsage();
-
-      // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/ai/usage', { signal: undefined });
-      expect(result).toEqual({
-        ok: true,
-        value: { used: 3, limit: 10, resetsAt: new Date('2026-03-09T00:00:00.000Z') },
-      });
-    });
-
-    test('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const apiError = createAiApiError();
-      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.getAiUsage();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-  });
-
   describe('parseTodo', () => {
     test('정상 응답 → ParsedTodoResult 반환', async () => {
       // Given
@@ -65,9 +37,9 @@ describe('AiService', () => {
       expect(result.ok && result.value.data.startDate).toBeInstanceOf(Date);
     });
 
-    test('AI 사용량 초과 → Result.err 반환', async () => {
+    test('AI 할 일 만들기 한도 초과 → Result.err 반환', async () => {
       // Given
-      const apiError = createAiApiError();
+      const apiError = new ApiError(ErrorCode.AI_1303, '이번 달 AI 할 일 만들기를 다 썼어요', 429);
       httpClient.post.mockResolvedValue({ ok: false, error: apiError });
 
       // When

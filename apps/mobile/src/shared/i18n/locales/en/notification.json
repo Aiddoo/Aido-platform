@@ -68,8 +68,7 @@
     "reminderMorningLabel": "Morning reminder",
     "reminderMorningDescription": "Get today's to-dos in the morning (00:00–11:59)",
     "reminderEveningLabel": "Evening reminder",
-    "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
-    "reminderPremium": "Changing reminder times is available to premium subscribers only."
+    "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)"
   },
   "permission": {
     "card": {

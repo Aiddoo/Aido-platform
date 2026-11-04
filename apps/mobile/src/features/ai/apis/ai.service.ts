@@ -1,7 +1,6 @@
 import {
   aiReportListResponseSchema,
   aiReportResponseSchema,
-  aiUsageResponseSchema,
   parseMemoResponseSchema,
   parseTodoResponseSchema,
   reportStatusResponseSchema,
@@ -15,7 +14,6 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import { AI_LOG_EVENT } from '../constants/ai-log-events';
-import type { AiUsage } from '../domains/ai-usage.model';
 import type {
   AiReport,
   AiSuggestion,
@@ -26,7 +24,6 @@ import type {
   ReportStatus,
 } from '../domains/ai.model';
 import type { ParsedTodoResult } from '../domains/parsed-todo.model';
-import { toAiUsage } from './ai-usage.mapper';
 import {
   toAiReport,
   toAiSuggestion,
@@ -44,21 +41,6 @@ export class AiService {
     this.#httpClient = httpClient;
     this.#logger = logger;
   }
-
-  getAiUsage = async (signal?: AbortSignal): Promise<Result<AiUsage, ApiError>> => {
-    const result = await this.#httpClient.get('v1/ai/usage', { signal });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = aiUsageResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[AiService] Invalid getAiUsage response: ${parsed.error.message}`);
-    }
-
-    return ok(toAiUsage(parsed.data));
-  };
 
   parseTodo = async (
     text: string,

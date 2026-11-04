@@ -1,6 +1,6 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -24,15 +24,7 @@ export function PokeBanner() {
   const bannerState = TodoNudgePolicy.getBannerState(limitInfo);
   const isLimitReached = bannerState.type === 'limitReached';
 
-  const premiumGate = usePremiumGate('NUDGE');
-  const handlePress = () => {
-    if (isLimitReached) {
-      premiumGate.open({
-        title: t('nudge.limitTitle'),
-        description: t('nudge.subscribeUnlimited'),
-      });
-    }
-  };
+  const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
 
   const defaultTitle = (
     <>
@@ -78,7 +70,7 @@ export function PokeBanner() {
     .exhaustive();
 
   return (
-    <Pressable onPress={handlePress} disabled={!isLimitReached}>
+    <Pressable onPress={() => gate.guard()} disabled={!isLimitReached}>
       <HStack mx={16} px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
         <Image
           source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}

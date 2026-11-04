@@ -27,7 +27,7 @@ describe('toUserAnalyticsProperties', () => {
     ).toEqual({ is_premium: true, subscription_status: 'FREE', premium_source: 'grant' });
   });
 
-  it('ADMIN은 결제 여부와 무관하게 admin이다', () => {
+  it('ADMIN은 결제 여부와 무관하게 admin이고 is_premium은 지금처럼 true다', () => {
     // Given 출처 없는 ADMIN / When 사용자 속성을 만들면 / Then admin이다
     expect(
       toUserAnalyticsProperties({
@@ -35,8 +35,8 @@ describe('toUserAnalyticsProperties', () => {
         isPremium: false,
         subscriptionStatus: 'FREE',
         premiumAccess: createPremiumAccess({ source: null }),
-      }).premium_source,
-    ).toBe('admin');
+      }),
+    ).toEqual({ is_premium: true, subscription_status: 'FREE', premium_source: 'admin' });
   });
 
   it('프리미엄 출처가 없는 일반 사용자는 none이다', () => {

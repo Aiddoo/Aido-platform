@@ -1,15 +1,13 @@
-import { ErrorCode } from '@aido/api/errors';
-import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
-import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
 import { memoAiReviewHref } from '@src/features/memo/utils/navigation/memo-href';
-import { useQuotaResetMessage } from '@src/features/subscription/hooks/use-quota-reset-message';
-import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
+import { findLimitedFeature } from '@src/features/subscription/apis/entitlement.mapper';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { isApiError } from '@src/shared/errors';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -20,6 +18,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
+import { formatCount } from '@src/shared/utils/format';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
@@ -31,12 +30,12 @@ interface AiParseConfirmDialogProps {
 
 export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseConfirmDialogProps) {
   const push = useSingleTap(router.push);
-  const replace = useSingleTap(router.replace);
 
-  const { t } = useTranslation(['memo', 'common']);
-  const [{ data: aiUsage }, { data: memo }, categoriesQuery] = useSuspenseQueries({
+  const { t } = useTranslation(['memo', 'common', 'subscription']);
+  const { locale } = useDateFormatContext();
+  const [{ data: entitlements }, { data: memo }, categoriesQuery] = useSuspenseQueries({
     queries: [
-      useGetAiUsageQueryOptions(),
+      useGetEntitlementsQueryOptions(),
       useGetMemoQueryOptions({ memoId }),
       useGetTodoCategoriesQueryOptions(),
     ],
@@ -45,7 +44,6 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
   const parseMutation = useMutation(useParseMemoMutationOptions());
   const defaultCategoryId = categoriesQuery.data.categories[0]?.id;
   const close = () => onOpenChange(false);
-  const toQuotaResetMessage = useQuotaResetMessage();
 
   if (defaultCategoryId == null) {
     return (
@@ -57,35 +55,10 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
     );
   }
 
-  const remaining = AiUsagePolicy.getRemainingCount(aiUsage);
-
-  if (remaining === 0) {
-    const resetMessage = toQuotaResetMessage(aiUsage);
-    return (
-      <ConfirmDialog
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        title={<ConfirmDialog.Title>{t('memo:aiDialog.limitTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            {resetMessage == null
-              ? t('memo:aiDialog.subscribeUnlimited')
-              : `${t('memo:aiDialog.subscribeUnlimited')}\n${resetMessage}`}
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onPress={close}>
-            {t('common:actions.close')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton onPress={() => replace(subscriptionHref())}>
-            {t('common:premiumDialog.subscribe')}
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
-    );
-  }
+  // 다 썼으면 이 창을 열기 전에 한도 게이트가 막는다. 프리미엄의 넉넉한 한도는 횟수를 보이지 않는다
+  const remaining = EntitlementPolicy.isFairUse(entitlements, 'AI_PARSE')
+    ? null
+    : EntitlementPolicy.getRemainingCount(entitlements, 'AI_PARSE');
 
   const warningText =
     remaining != null ? t('memo:aiDialog.warnWithDeduction') : t('memo:aiDialog.warnNoDeduction');
@@ -106,12 +79,9 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
           push(memoAiReviewHref(memoId));
         },
         onError: (error) => {
-          // 한도 소진 안내는 mutation 공통 프리미엄 다이얼로그가 맡고, 확인 창만 닫는다.
+          // 한도 안내는 mutation의 한도 게이트가 맡고, 확인 창만 닫는다.
           // 동의가 없으면 창을 닫고, 연 쪽이 동의 안내부터 다시 시작한다.
-          if (
-            isAiDataSharingConsentRequiredError(error) ||
-            (isApiError(error) && error.hasCode(ErrorCode.AI_1303))
-          ) {
+          if (isAiDataSharingConsentRequiredError(error) || findLimitedFeature(error) != null) {
             close();
           }
         },
@@ -128,11 +98,13 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
         <ConfirmDialog.Description>
           <VStack className="gap-1.5">
             {remaining != null && (
-              <Text size="b3" shade={7}>
-                {t('memo:aiDialog.usageRemaining', { remaining, limit: aiUsage.limit })}
+              <Text size="b3" shade={7} className="tabular-nums" lineBreakStrategyIOS="hangul-word">
+                {t('subscription:quota.remainingThisMonth', {
+                  amount: formatCount(remaining, locale),
+                })}
               </Text>
             )}
-            <Text size="e1" shade={6}>
+            <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word">
               {warningText}
             </Text>
           </VStack>

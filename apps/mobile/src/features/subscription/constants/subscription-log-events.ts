@@ -11,4 +11,5 @@ export const SUBSCRIPTION_LOG_EVENT = {
     'subscription.revenuecat-subscriber-attributes-sync.failed',
   REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED:
     'subscription.revenuecat-firebase-app-instance-id-sync.failed',
+  ENTITLEMENT_SNAPSHOT_MAPPING_FAILED: 'entitlement.snapshot.mapping-failed',
 } as const;

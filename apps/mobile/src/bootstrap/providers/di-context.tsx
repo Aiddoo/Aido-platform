@@ -32,6 +32,7 @@ import type { PushPromptService } from '@src/features/notification/apis/push-pro
 import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import type { PreferenceService } from '@src/features/preference/apis/preference.service';
 import type { StoreReviewService } from '@src/features/store-review/apis/store-review.service';
+import type { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
 import type { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import type { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import type { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
@@ -107,6 +108,7 @@ export interface DIContainer {
   userService: UserService;
   revenueCatSdkManager: RevenueCatSdkManager;
   subscriptionService: SubscriptionService;
+  entitlementService: EntitlementService;
   weatherService: WeatherService;
   weatherIntroductionService: WeatherIntroductionService;
   widgetSyncService: WidgetSyncService;
@@ -182,6 +184,7 @@ export const useStoreReviewService = () => useDI().storeReviewService;
 export const useUserService = () => useDI().userService;
 export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
+export const useEntitlementService = () => useDI().entitlementService;
 export const useWeatherIntroductionService = () => useDI().weatherIntroductionService;
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;

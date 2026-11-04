@@ -1,11 +1,12 @@
 import MagicIcon from '@assets/icons/ic_magic.svg';
+import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { subscriptionHref } from '@src/features/subscription/utils/navigation/subscription-href';
-import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ListRow, QueryErrorBoundary, type QueryErrorFallbackProps } from '@src/shared/ui';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -19,10 +20,11 @@ export function SuggestionEntry() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('todo');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isPremium = UserPolicy.isPremiumUser(user);
+  const [{ data: user }, { data: entitlements }] = useSuspenseQueries({
+    queries: [useGetMeQueryOptions(), useGetEntitlementsQueryOptions()],
+  });
 
-  if (!isPremium) {
+  if (!EntitlementPolicy.hasFullAccess(entitlements)) {
     return <InfoCard label={t('feed.routineSuggestion')} onPress={() => push('/suggestions')} />;
   }
 

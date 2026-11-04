@@ -68,8 +68,7 @@
     "reminderMorningLabel": "오전 리마인드",
     "reminderMorningDescription": "오전 시간대(00:00~11:59)에 오늘의 할 일을 알려줘요",
     "reminderEveningLabel": "오후 리마인드",
-    "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요",
-    "reminderPremium": "리마인드 시간 변경은 프리미엄 구독자만 이용할 수 있어요."
+    "reminderEveningDescription": "오후 시간대(12:00~23:59)에 남은 할 일을 알려줘요"
   },
   "permission": {
     "card": {

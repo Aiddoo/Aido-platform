@@ -81,7 +81,7 @@ interface OpenOptions {
   onDismiss?: () => void;
 }
 
-/** 명령형으로 마케팅 푸시 동의 다이얼로그를 여는 훅 (usePremiumGate 패턴) */
+/** 명령형으로 마케팅 푸시 동의 다이얼로그를 여는 훅 (useEntitlementGate 패턴) */
 export function useMarketingPushConsentSheet() {
   const overlay = useOverlay();
 

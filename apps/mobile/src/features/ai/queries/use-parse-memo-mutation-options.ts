@@ -1,7 +1,11 @@
-import { ErrorCode } from '@aido/api/errors';
 import { useAiService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
+import { isNotChargedError } from '@src/features/subscription/apis/entitlement.mapper';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
+import {
+  invalidateEntitlements,
+  setFeatureQuota,
+} from '@src/features/subscription/queries/entitlement-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -23,7 +27,7 @@ export const useParseMemoMutationOptions = () => {
   const aiService = useAiService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const premiumGate = usePremiumGate('AI_PARSE');
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const toast = useAppToast();
 
   return mutationOptions({
@@ -34,7 +38,12 @@ export const useParseMemoMutationOptions = () => {
     onSuccess: (data, { memoId }) => {
       trackEvent('ai_parse_used', { success: true });
       queryClient.setQueryData(AI_QUERY_KEYS.parseMemo({ memoId }), data);
-      queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.usage() });
+      // 1.15.0 이전 서버는 응답에 한도를 싣지 않아 다시 묻는다
+      if (data.featureQuota == null) {
+        invalidateEntitlements(queryClient);
+        return;
+      }
+      setFeatureQuota(queryClient, data.featureQuota);
     },
     onError: (error) => {
       // 동의 안내는 AI를 요청한 화면이 띄우고, 동의하면 같은 요청을 다시 보낸다
@@ -46,20 +55,17 @@ export const useParseMemoMutationOptions = () => {
       trackEvent('ai_parse_used', { success: false });
       haptics.notify('error');
 
-      if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
-        // 할 일 파싱과 같은 한도 소진 안내로 구독 경로를 보여준다.
-        premiumGate.open({
-          description: t('todo:premium.unlimitedParse'),
-        });
+      if (gate.handleError(error)) {
         return;
       }
 
+      const description = isNotChargedError(error) ? t('subscription:gate.notCharged') : undefined;
       if (isApiError(error)) {
-        toast.error(error.message);
+        toast.error(error.message, { description });
         return;
       }
 
-      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
+      toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater'), description });
     },
   });
 };

@@ -82,6 +82,7 @@ const QUERY_HOOK_NAMES = new Set([
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
 const CLIENT_OWNED_MODEL_PATHS = [
   'apps/mobile/src/features/subscription/domains/customer-info.model.ts',
+  'apps/mobile/src/features/subscription/domains/entitlement.model.ts',
   'apps/mobile/src/features/todo-comment/domains/todo-comment.model.ts',
   'apps/mobile/src/features/voice/domains/',
 ];

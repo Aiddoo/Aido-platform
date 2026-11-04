@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
-import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
-import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
+import { QuotaChip } from '@src/features/subscription/components/quota-chip';
+import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useDictation } from '@src/features/voice/hooks/use-dictation';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -42,7 +41,7 @@ import { cn } from '@src/shared/utils/cn';
 import { formatDaysOfWeek } from '@src/shared/utils/date';
 import { formatDateKey, formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
@@ -461,6 +460,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
           <HStack gap={8} align="center" justify="end">
             <AiFeatureTooltip />
+            <QuotaChip feature="AI_PARSE" />
             <AiParseButton onExit={onExit} />
             <PressableFeedback
               isDisabled={isSubmitDisabled}
@@ -693,14 +693,10 @@ interface AiParseButtonProps {
 }
 
 const AiParseButton = ({ onExit }: AiParseButtonProps) => {
-  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const methods = useFormContext<AddTodoFormValues>();
   const toast = useAppToast();
-  const premiumGate = usePremiumGate('AI_PARSE');
-
-  const { data: aiUsage } = useQuery(useGetAiUsageQueryOptions());
-  const isAiLimitReached = aiUsage != null && AiUsagePolicy.isLimitReached(aiUsage);
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   const parseMutation = useMutation(useParseTodoMutationOptions());
   const aiConsent = useAiDataSharingConsentGate();
@@ -768,11 +764,7 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
       return;
     }
 
-    if (isAiLimitReached) {
-      premiumGate.open({
-        description: t('premium.unlimitedParse'),
-        onSubscribe: onExit,
-      });
+    if (!gate.guard({ onSubscribe: onExit })) {
       return;
     }
 

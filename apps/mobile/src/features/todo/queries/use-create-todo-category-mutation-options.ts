@@ -1,6 +1,6 @@
 import type { CreateTodoCategoryInput } from '@aido/api';
-import { ErrorCode } from '@aido/api/errors';
 import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { findLimitedFeature } from '@src/features/subscription/apis/entitlement.mapper';
 import type {
   OptimisticTodoCategoryWithCount,
   TodoCategoriesResult,
@@ -66,8 +66,8 @@ export const useCreateTodoCategoryMutationOptions = () => {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      // 프리미엄 제한 에러는 컴포넌트에서 PremiumDialog로 처리
-      if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
+      // 카테고리 한도는 시트의 한도 게이트가 PremiumDialog로 안내한다
+      if (findLimitedFeature(error) != null) {
         return;
       }
 

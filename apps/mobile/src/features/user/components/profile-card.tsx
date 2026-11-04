@@ -1,15 +1,16 @@
+import type { AccessTier } from '@src/features/subscription/domains/entitlement.model';
+import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { setStringAsync } from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
 
-import type { UserTier } from '../domains/user.model';
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
@@ -18,7 +19,9 @@ export function ProfileCard() {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [{ data: user }, { data: entitlements }] = useSuspenseQueries({
+    queries: [useGetMeQueryOptions(), useGetEntitlementsQueryOptions()],
+  });
   const toast = useAppToast();
   const { t } = useTranslation('user');
 
@@ -47,7 +50,7 @@ export function ProfileCard() {
             <H4 numberOfLines={1} className="shrink">
               {user.name}
             </H4>
-            <UserTierChip tier={user.tier} />
+            <UserTierChip tier={entitlements.tier} />
           </HStack>
 
           <HStack align="center" gap={2}>
@@ -89,14 +92,14 @@ const USER_TIER_CONFIG = {
     color: 'accent',
     className: 'self-center shrink-0',
   },
-  BASIC: {
+  FREE: {
     labelKey: 'profile.badges.basic',
     color: 'default',
     className: 'self-center shrink-0 bg-gray-3',
   },
-} as const;
+} as const satisfies Record<AccessTier, unknown>;
 
-function UserTierChip({ tier }: { tier: UserTier }) {
+function UserTierChip({ tier }: { tier: AccessTier }) {
   const { t } = useTranslation('user');
   const { labelKey, color, className } = USER_TIER_CONFIG[tier];
   const label = t(labelKey);

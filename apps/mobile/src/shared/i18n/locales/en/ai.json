@@ -52,7 +52,6 @@
     "lockedDetail": {
       "title": "Get your personal report",
       "description": "Subscribe to Premium and we'll send you\nAI-powered reports every week and month",
-      "premiumDialogDescription": "AI reports are available to Premium subscribers only.",
       "subscribe": "Subscribe to Premium"
     },
     "unavailable": {
@@ -91,7 +90,6 @@
     "toasts": {
       "premiumOnly": "AI recurring suggestions are available to Premium subscribers only",
       "retryLater": "Please try again later",
-      "quotaExceeded": "You've used all your AI credits for this month",
       "accepted": "Suggestion accepted — your repeating to-do is ready.",
       "rejected": "Suggestion dismissed."
     }
