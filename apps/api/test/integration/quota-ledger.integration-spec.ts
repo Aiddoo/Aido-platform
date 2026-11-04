@@ -213,6 +213,36 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       );
     });
 
+    it("RESERVED를 찾는 정리 쿼리는 전체를 훑지 않고 부분 인덱스를 쓴다", async () => {
+      // Given
+      const cutoff = stale.toISOString();
+      await client.insert(quotaCharge).values(
+        Array.from({ length: 2000 }, (_, index) => ({
+          userId,
+          meter: "VOICE_NOTE" as const,
+          idempotencyKey: `settled-${index}`,
+          amount: 1,
+          attempt: 1,
+          periodKey: "2026-M10",
+          reason: "voice-note-digest",
+          status: "COMMITTED" as const,
+        })),
+      );
+      await client.execute(sql`ANALYZE "QuotaCharge"`);
+
+      // When
+      const plan = await client.execute<{ "QUERY PLAN": string }>(sql`
+        EXPLAIN SELECT * FROM "QuotaCharge"
+        WHERE "status" = 'RESERVED' AND "updatedAt" <= ${cutoff}
+        ORDER BY "updatedAt" ASC LIMIT 100
+      `);
+
+      // Then
+      expect(plan.rows.map((row) => row["QUERY PLAN"]).join("\n")).toContain(
+        "QuotaCharge_reserved_updatedAt_idx",
+      );
+    });
+
     describe("quota-abandoned-refund.v1 잡과 이어받기가 겹칠 때", () => {
       const key = "stale-key";
       const reserveAgain = () =>
