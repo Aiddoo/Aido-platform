@@ -376,6 +376,52 @@ describe('TodoRepeatPickerContent', () => {
     });
   });
 
+  test('매월 31일 규칙을 2월 28일 회차에서 열어 확인만 눌러도 31일을 유지한다', async () => {
+    // Given
+    const startDate = new Date(2027, 1, 28, 12);
+    const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } };
+    const { onChange } = await renderSheet({ startDate, repeat });
+
+    // When
+    await confirm();
+
+    // Then
+    expect(screen.getByText('매월 31일')).toBeTruthy();
+    expect(onChange).toHaveBeenCalledWith({ startDate, repeat });
+  });
+
+  test('매월 31일 규칙도 시작일을 직접 옮기면 옮긴 날을 따른다', async () => {
+    // Given
+    const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } };
+    const { onChange } = await renderSheet({ repeat, startDate: new Date(2026, 10, 30, 12) });
+
+    // When
+    await press('19');
+    await confirm();
+
+    // Then
+    expect(screen.getByText('매월 19일')).toBeTruthy();
+    expect(onChange).toHaveBeenLastCalledWith({
+      startDate: new Date(2026, 10, 19),
+      repeat: expect.objectContaining({ frequency: 'MONTHLY', monthDay: 19 }),
+    });
+  });
+
+  test('월요일만 고르고 목~토(5~7일)를 기간으로 잡으면 뒤집힌 띠 없이 고른 기간과 이유를 보여준다', async () => {
+    // Given
+    await renderSheet();
+    await pressDay('월');
+    await pressDay('목');
+
+    // When
+    await press('7');
+
+    // Then
+    expect(screen.getByText('* 기간 안에 반복되는 날이 없어요')).toBeTruthy();
+    expect(screen.getByText('11월 5일 - 11월 7일')).toBeTruthy();
+    expect(screen.getByText('6').props.className).toContain('text-gray-5');
+  });
+
   test('시작일이 29일 이후인 매월 반복은 말일 안내를 보여준다', async () => {
     // Given
     await renderSheet({ startDate: new Date(2026, 10, 29, 12) });

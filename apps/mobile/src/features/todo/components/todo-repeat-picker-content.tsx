@@ -28,17 +28,19 @@ import { match } from 'ts-pattern';
 import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
 import {
   getTodoRepeatFormIssue,
+  getTodoRepeatFormMonthDay,
   toTodoRepeat,
   todoRepeatFormSchema,
   type TodoRepeatFormValues,
 } from '../domains/todo-repeat-form.schema';
-import {
-  getMonthDayOfDateKey,
-  type TodoRepeat,
-  TodoRepeatPolicy,
-} from '../domains/todo-repeat.model';
+import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { useDatePicker } from '../hooks/use-date-picker';
-import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
+import {
+  DAY_TYPE_TONE,
+  getDatePickerDayStyle,
+  getWeekRangeBand,
+  isTodayHighlighted,
+} from '../utils/calendar-day';
 import {
   toTodoRepeatFormValues,
   withTodoRepeatFormStartDate,
@@ -124,11 +126,11 @@ const VALIDATE = { shouldValidate: true } as const;
 function DayOfWeekSelector() {
   const { t } = useTranslation('todo');
   const { control, getValues, setValue } = useFormContext<TodoRepeatFormValues>();
-  const [weekdays, interval, isMonthly, startDate] = useWatch({
+  const [weekdays, interval, isMonthly] = useWatch({
     control,
-    name: ['weekdays', 'interval', 'isMonthly', 'startDate'],
+    name: ['weekdays', 'interval', 'isMonthly'],
   });
-  const monthDay = getMonthDayOfDateKey(toDeviceDateKey(startDate));
+  const monthDay = useWatch({ control, compute: getTodoRepeatFormMonthDay });
   const isWeeklyEveryWeek = !isMonthly && interval === 1;
 
   const handlePresetPress = (days: readonly DayOfWeek[]) => {
@@ -210,17 +212,16 @@ function DayOfWeekSelector() {
 function RepeatSummary() {
   const { t } = useTranslation('todo');
   const { control } = useFormContext<TodoRepeatFormValues>();
-  const [weekdays, interval, isMonthly, startDate] = useWatch({
+  const [weekdays, interval, isMonthly] = useWatch({
     control,
-    name: ['weekdays', 'interval', 'isMonthly', 'startDate'],
+    name: ['weekdays', 'interval', 'isMonthly'],
   });
+  const monthDay = useWatch({ control, compute: getTodoRepeatFormMonthDay });
   const issue = useWatch({ control, compute: getTodoRepeatFormIssue });
   const days = formatDaysOfWeek(weekdays);
   const summary = match({ weekdays, interval, isMonthly })
     .returnType<string | null>()
-    .with({ isMonthly: true }, () =>
-      t('picker.repeatMonthly', { day: getMonthDayOfDateKey(toDeviceDateKey(startDate)) }),
-    )
+    .with({ isMonthly: true }, () => t('picker.repeatMonthly', { day: monthDay }))
     .when(
       ({ weekdays: selected }) => selected.length === 0,
       () => null,
@@ -360,12 +361,17 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
     .with('COUNT', () => (lastOccurrenceKey == null ? null : toDate(lastOccurrenceKey)))
     .with('NEVER', () => null)
     .exhaustive();
+  // 고른 기간 안에 회차가 없으면 첫 회차가 종료일보다 뒤다. 띠가 뒤집히지 않게 고른 기간을 그대로 그린다
+  const hasOccurrenceInPeriod =
+    firstOccurrenceKey != null &&
+    (endType !== 'UNTIL' || untilDate == null || firstOccurrenceKey <= toDeviceDateKey(untilDate));
   /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
-  const displayStartDate = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);
+  const displayStartDate = hasOccurrenceInPeriod ? toDate(firstOccurrenceKey) : startDate;
 
   const changeStartDate = (date: Date) => {
     const next = withTodoRepeatFormStartDate(getValues(), date);
     setValue('startDate', next.startDate, VALIDATE);
+    setValue('monthDay', next.monthDay, VALIDATE);
     setValue('weekdays', next.weekdays, VALIDATE);
     setValue('untilDate', next.untilDate, VALIDATE);
   };
@@ -565,40 +571,64 @@ const RepeatCalendar = ({
       <CalendarWeekdayHeader />
 
       <VStack>
-        {weeks.map((week, weekIndex) => (
-          // 주 순서는 고정되어 index가 안정적인 key다.
-          <HStack key={weekIndex} px={8}>
-            {week.map((date) => {
-              if (!isSameMonth(date, displayMonth)) {
-                return <Box key={date.toISOString()} className="h-[48px] flex-1" />;
-              }
-              const isStart = isSameDay(date, startDate);
-              const isEnd = endDate != null && isSameDay(date, endDate);
-              const isInRange =
+        {weeks.map((week, weekIndex) => {
+          const days = week.map((date) => {
+            const isVisible = isSameMonth(date, displayMonth);
+            const isStart = isSameDay(date, startDate);
+            const isEnd = endDate != null && isSameDay(date, endDate);
+            return {
+              date,
+              isVisible,
+              isStart,
+              isEnd,
+              isInRange:
+                isVisible &&
                 hasDistinctRange &&
                 isAfterDay(date, startDate) &&
-                (isOpenEnded || (endDate != null && isBeforeDay(date, endDate)));
-              return (
-                <RepeatDateCell
-                  key={date.toISOString()}
-                  date={date}
-                  today={today}
-                  isStart={isStart}
-                  isEnd={isEnd}
-                  isInRange={isInRange}
-                  isRangeStart={hasDistinctRange && isStart}
-                  isRangeEnd={!isOpenEnded && hasDistinctRange && isEnd}
-                  isDimmed={
-                    occurrenceKeys != null &&
-                    isInRange &&
-                    !occurrenceKeys.has(toDeviceDateKey(date))
-                  }
-                  onPress={onDatePress}
-                />
-              );
-            })}
-          </HStack>
-        ))}
+                (isOpenEnded || (endDate != null && isBeforeDay(date, endDate))),
+              isRangeStart: isVisible && hasDistinctRange && isStart,
+              isRangeEnd: isVisible && !isOpenEnded && hasDistinctRange && isEnd,
+            };
+          });
+          const band = getWeekRangeBand(days);
+
+          return (
+            // 주 순서는 고정되어 index가 안정적인 key다.
+            <Box key={weekIndex} px={8}>
+              <HStack className="relative">
+                {/* 칸마다 나눠 그리면 폭이 소수점인 칸 경계에 세로선이 생겨 한 주에 띠 하나로 그린다 */}
+                {band != null && (
+                  <Box
+                    className="absolute top-[8px] h-[32px] bg-main/8"
+                    style={{
+                      left: `${band.startRatio * 100}%`,
+                      right: `${(1 - band.endRatio) * 100}%`,
+                    }}
+                  />
+                )}
+                {days.map(({ date, isVisible, isStart, isEnd, isInRange }) =>
+                  isVisible ? (
+                    <RepeatDateCell
+                      key={date.toISOString()}
+                      date={date}
+                      today={today}
+                      isStart={isStart}
+                      isEnd={isEnd}
+                      isDimmed={
+                        occurrenceKeys != null &&
+                        isInRange &&
+                        !occurrenceKeys.has(toDeviceDateKey(date))
+                      }
+                      onPress={onDatePress}
+                    />
+                  ) : (
+                    <Box key={date.toISOString()} className="h-[48px] flex-1" />
+                  ),
+                )}
+              </HStack>
+            </Box>
+          );
+        })}
       </VStack>
     </VStack>
   );
@@ -609,9 +639,6 @@ interface RepeatDateCellProps {
   today: Date;
   isStart: boolean;
   isEnd: boolean;
-  isInRange: boolean;
-  isRangeStart: boolean;
-  isRangeEnd: boolean;
   isDimmed: boolean;
   onPress: (date: Date) => void;
 }
@@ -622,9 +649,6 @@ const RepeatDateCell = memo(function RepeatDateCell({
   today,
   isStart,
   isEnd,
-  isInRange,
-  isRangeStart,
-  isRangeEnd,
   isDimmed,
   onPress,
 }: RepeatDateCellProps) {
@@ -643,9 +667,6 @@ const RepeatDateCell = memo(function RepeatDateCell({
         isDisabled && 'opacity-30',
       )}
     >
-      {isRangeStart && <Box className="absolute right-0 top-[8px] h-[32px] w-1/2 bg-main/8" />}
-      {isRangeEnd && <Box className="absolute left-0 top-[8px] h-[32px] w-1/2 bg-main/8" />}
-      {isInRange && <Box className="absolute inset-x-0 top-[8px] h-[32px] bg-main/8" />}
       <Box
         className={cn(
           'z-10 size-8 items-center justify-center rounded-[16px]',

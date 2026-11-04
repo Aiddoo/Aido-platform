@@ -22,6 +22,7 @@ export function toTodoRepeatFormValues(
     weekdays: startWeekday,
     interval: 1 as const,
     isMonthly: false,
+    monthDay: null,
     endType: 'UNTIL' as const,
     untilDate: null,
     count: TODO_REPEAT_COUNT.DEFAULT,
@@ -46,16 +47,16 @@ export function toTodoRepeatFormValues(
       weekdays: [...weekdays],
       interval,
     }))
-    .with({ frequency: 'MONTHLY' }, () => ({ ...withEnd, isMonthly: true }))
+    .with({ frequency: 'MONTHLY' }, ({ monthDay }) => ({ ...withEnd, isMonthly: true, monthDay }))
     .exhaustive();
 }
 
-/** 시작일이 바뀌면 요일·종료일을 TodoRepeatPolicy로 보정한다 (매월 n일은 시작일에서 따라온다). */
+/** 시작일이 바뀌면 요일·종료일을 TodoRepeatPolicy로 보정한다 (매월 n일은 옮긴 시작일을 따른다). */
 export function withTodoRepeatFormStartDate(
   values: TodoRepeatFormValues,
   nextStartDate: Date,
 ): TodoRepeatFormValues {
-  const next = { ...values, startDate: nextStartDate };
+  const next = { ...values, startDate: nextStartDate, monthDay: null };
   const repeat = toTodoRepeat(values);
   if (repeat == null) {
     return next;

@@ -16,6 +16,8 @@ const todoRepeatFormShape = z.object({
   weekdays: z.array(z.enum(DAYS_OF_WEEK)),
   interval: z.union([z.literal(1), z.literal(2)]),
   isMonthly: z.boolean(),
+  /** 규칙이 가진 매월 며칠. 시작일을 옮기기 전까지 유지해 2월 28일 회차에서 열어도 31일 규칙이 그대로다. 없으면 시작일을 따른다 */
+  monthDay: z.int().min(1).max(31).nullable(),
   endType: z.enum(TODO_REPEAT_END_TYPES),
   untilDate: z.date().nullable(),
   count: z.int().min(TODO_REPEAT_COUNT.MIN).max(TODO_REPEAT_COUNT.MAX),
@@ -24,6 +26,13 @@ const todoRepeatFormShape = z.object({
 export type TodoRepeatFormValues = z.input<typeof todoRepeatFormShape>;
 
 const WEEK_LENGTH = 7;
+
+export function getTodoRepeatFormMonthDay({
+  monthDay,
+  startDate,
+}: Pick<TodoRepeatFormValues, 'monthDay' | 'startDate'>): number {
+  return monthDay ?? getMonthDayOfDateKey(toDeviceDateKey(startDate));
+}
 
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
   return DAYS_OF_WEEK.filter((day) => weekdays.includes(day));
@@ -50,7 +59,7 @@ export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
   if (values.isMonthly) {
     return {
       frequency: 'MONTHLY',
-      monthDay: getMonthDayOfDateKey(toDeviceDateKey(values.startDate)),
+      monthDay: getTodoRepeatFormMonthDay(values),
       end,
     };
   }

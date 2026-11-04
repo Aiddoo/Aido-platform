@@ -1,4 +1,9 @@
-import { getDatePickerDayStyle, getMonthViewDayStyle, isTodayHighlighted } from './calendar-day';
+import {
+  getDatePickerDayStyle,
+  getMonthViewDayStyle,
+  getWeekRangeBand,
+  isTodayHighlighted,
+} from './calendar-day';
 
 jest.mock('@src/shared/utils/date', () => ({
   isDateToday: jest.fn(),
@@ -282,5 +287,53 @@ describe('isTodayHighlighted', () => {
 
     // Then
     expect(result).toBe(false);
+  });
+});
+
+describe('getWeekRangeBand', () => {
+  const day = (overrides: Partial<Parameters<typeof getWeekRangeBand>[0][number]> = {}) => ({
+    isInRange: false,
+    isRangeStart: false,
+    isRangeEnd: false,
+    ...overrides,
+  });
+  const week = (overrides: Record<number, Parameters<typeof day>[0]>) =>
+    Array.from({ length: 7 }, (_, index) => day(overrides[index]));
+
+  test('시작 칸 가운데부터 끝 칸 가운데까지 한 덩어리로 칠한다', () => {
+    // Given
+    const days = week({
+      1: { isRangeStart: true },
+      2: { isInRange: true },
+      3: { isRangeEnd: true },
+    });
+
+    // When
+    const band = getWeekRangeBand(days);
+
+    // Then
+    expect(band).toEqual({ startRatio: 1.5 / 7, endRatio: 3.5 / 7 });
+  });
+
+  test('주 전체가 기간 안이면 양 끝까지 칠한다', () => {
+    // Given
+    const days = Array.from({ length: 7 }, () => day({ isInRange: true }));
+
+    // When
+    const band = getWeekRangeBand(days);
+
+    // Then
+    expect(band).toEqual({ startRatio: 0, endRatio: 1 });
+  });
+
+  test('기간에 걸리지 않는 주는 띠가 없다', () => {
+    // Given
+    const days = week({});
+
+    // When
+    const band = getWeekRangeBand(days);
+
+    // Then
+    expect(band).toBeNull();
   });
 });

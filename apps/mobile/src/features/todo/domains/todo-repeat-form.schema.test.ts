@@ -13,6 +13,7 @@ const createValues = (overrides: Partial<TodoRepeatFormValues> = {}): TodoRepeat
   weekdays: ['THU'],
   interval: 1,
   isMonthly: false,
+  monthDay: null,
   endType: 'NEVER',
   untilDate: null,
   count: 10,
