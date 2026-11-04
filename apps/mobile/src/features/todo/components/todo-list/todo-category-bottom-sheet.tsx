@@ -17,7 +17,7 @@ import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
+import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
@@ -59,7 +59,8 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
-  const { selectEditScope } = useSelectTodoScope();
+  const scopeSelector = useSelectTodoScope();
+  const { selectEditScope } = scopeSelector;
 
   useEffect(() => {
     if (todo == null) {
@@ -72,25 +73,31 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
   }
 
   return (
-    <CategorySelectInput
-      value={todo.category.id}
-      submitLabel={t('actions.changeSubmit')}
-      isLoading={changeCategory.isPending}
-      onChange={async (categoryId) => {
-        const scope = TodoPolicy.isRecurring(todo) ? await selectEditScope() : undefined;
-        // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
-        if (scope === null) {
-          return;
-        }
-        const changed = await changeCategory
-          .mutateAsync({ todoId: todo.id, input: { categoryId }, ...(scope != null && { scope }) })
-          .catch(() => null);
+    <TodoScopeStep step={scopeSelector}>
+      <CategorySelectInput
+        value={todo.category.id}
+        submitLabel={t('actions.changeSubmit')}
+        isLoading={changeCategory.isPending}
+        onChange={async (categoryId) => {
+          const scope = TodoPolicy.isRecurring(todo) ? await selectEditScope() : undefined;
+          // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
+          if (scope === null) {
+            return;
+          }
+          const changed = await changeCategory
+            .mutateAsync({
+              todoId: todo.id,
+              input: { categoryId },
+              ...(scope != null && { scope }),
+            })
+            .catch(() => null);
 
-        if (changed) {
-          onClose();
-        }
-      }}
-    />
+          if (changed) {
+            onClose();
+          }
+        }}
+      />
+    </TodoScopeStep>
   );
 };
 

@@ -1,0 +1,71 @@
+import '@src/shared/i18n/init';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { Text } from '@src/shared/ui';
+import { fireEvent, screen } from '@testing-library/react-native';
+import { useState } from 'react';
+import { Pressable, TextInput } from 'react-native';
+
+import type { TodoEditScope } from '../domains/todo-repeat.model';
+import { TodoScopeStep, useSelectTodoScope } from './use-select-todo-scope';
+
+function SheetProbe({ onSettled }: { onSettled: (scope: TodoEditScope | null) => void }) {
+  const scopeSelector = useSelectTodoScope();
+  const [title, setTitle] = useState('');
+
+  return (
+    <TodoScopeStep step={scopeSelector}>
+      <TextInput testID="title" value={title} onChangeText={setTitle} />
+      <Pressable
+        testID="save"
+        onPress={async () => onSettled(await scopeSelector.selectEditScope())}
+      />
+      <Text>폼</Text>
+    </TodoScopeStep>
+  );
+}
+
+async function renderSheet() {
+  const onSettled = jest.fn();
+  await renderUi(<SheetProbe onSettled={onSettled} />);
+  await fireEvent.changeText(screen.getByTestId('title'), '장보기');
+  // 범위를 고를 때까지 끝나지 않는 핸들러라 기다리지 않는다
+  fireEvent.press(screen.getByTestId('save')).catch(() => undefined);
+  await screen.findByTestId('todo-scope-select');
+  return { onSettled };
+}
+
+describe('useSelectTodoScope', () => {
+  test('범위를 묻는 동안 같은 자리에 범위 선택을 보이고 앞 화면의 입력값은 남긴다', async () => {
+    // Given
+    await renderSheet();
+
+    // Then
+    expect(screen.getByTestId('todo-scope-select')).toBeTruthy();
+    expect(screen.getByTestId('title', { includeHiddenElements: true }).props.value).toBe('장보기');
+  });
+
+  test('뒤로 가면 null로 끝나고 입력하던 화면이 그대로 돌아온다', async () => {
+    // Given
+    const { onSettled } = await renderSheet();
+
+    // When
+    await fireEvent.press(screen.getByLabelText('뒤로 가기'));
+
+    // Then
+    expect(onSettled).toHaveBeenCalledWith(null);
+    expect(screen.getByTestId('title').props.value).toBe('장보기');
+    expect(screen.queryByTestId('todo-scope-select')).toBeNull();
+  });
+
+  test('범위를 고르면 그 범위로 한 번만 끝난다', async () => {
+    // Given
+    const { onSettled } = await renderSheet();
+
+    // When
+    await fireEvent.press(screen.getByLabelText('이 할 일과 이후 할 일'));
+
+    // Then
+    expect(onSettled).toHaveBeenCalledTimes(1);
+    expect(onSettled).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
+  });
+});

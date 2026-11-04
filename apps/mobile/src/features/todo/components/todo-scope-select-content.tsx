@@ -1,5 +1,14 @@
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, ListRow, Text, TrashIcon, VStack } from '@src/shared/ui';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  Box,
+  HStack,
+  ListRow,
+  Text,
+  TrashIcon,
+  VStack,
+} from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
@@ -40,16 +49,33 @@ function ScopeRow({ label, isDanger = false, ...pressableProps }: ScopeRowProps)
 interface TodoScopeSelectContentProps {
   action: TodoScopeAction;
   onChange: (scope: TodoEditScope) => void;
+  /** 같은 시트 안의 한 단계로 보일 때, 누르면 앞 화면으로 돌아간다 */
+  onBack?: () => void;
 }
 
-export function TodoScopeSelectContent({ action, onChange }: TodoScopeSelectContentProps) {
-  const { t } = useTranslation('todo');
+export function TodoScopeSelectContent({ action, onChange, onBack }: TodoScopeSelectContentProps) {
+  const { t } = useTranslation(['todo', 'common']);
 
   return (
     <VStack gap={8} testID="todo-scope-select">
-      <Text size="b2" weight="semibold" tone="neutral" shade={8} align="center" className="py-2">
-        {action === 'edit' ? t('scope.editTitle') : t('scope.deleteTitle')}
-      </Text>
+      <HStack align="center" px={16} className="py-2">
+        <Box className="flex-1 items-start">
+          {onBack != null && (
+            <PressableFeedback
+              onPress={onBack}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t('common:actions.goBack')}
+            >
+              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-8" />
+            </PressableFeedback>
+          )}
+        </Box>
+        <Text size="b2" weight="semibold" tone="neutral" shade={8} align="center">
+          {action === 'edit' ? t('scope.editTitle') : t('scope.deleteTitle')}
+        </Text>
+        <Box className="flex-1" />
+      </HStack>
       {action === 'edit' ? (
         <>
           <ScopeRow label={t('scope.editTHIS_ONLY')} onPress={() => onChange('THIS_ONLY')} />

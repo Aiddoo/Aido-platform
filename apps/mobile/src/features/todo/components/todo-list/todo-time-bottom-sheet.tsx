@@ -19,7 +19,7 @@ import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
+import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
@@ -61,7 +61,8 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
-  const { selectEditScope } = useSelectTodoScope();
+  const scopeSelector = useSelectTodoScope();
+  const { selectEditScope } = scopeSelector;
 
   useEffect(() => {
     if (todo == null) {
@@ -76,34 +77,36 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
   const editValues = toTodoEditFormValues(todo);
 
   return (
-    <TodoTimePickerContent
-      date={editValues.startDate}
-      value={{
-        scheduledTime: editValues.scheduledTime ?? undefined,
-        isAllDay: todo.isAllDay,
-      }}
-      onCancel={onClose}
-      onChange={async ({ scheduledTime, isAllDay }) => {
-        const scope = TodoPolicy.isRecurring(todo) ? await selectEditScope() : undefined;
-        // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
-        if (scope === null) {
-          return;
-        }
-        updateSchedule.mutate({
-          todoId: todo.id,
-          ...(scope != null && { scope }),
-          input: {
-            startDate: formatDateKey(editValues.startDate, getDeviceTimezone()),
-            endDate: editValues.endDate
-              ? formatDateKey(editValues.endDate, getDeviceTimezone())
-              : null,
-            scheduledTime: isAllDay ? null : (scheduledTime ?? null),
-            isAllDay,
-          },
-        });
-        onClose();
-      }}
-    />
+    <TodoScopeStep step={scopeSelector}>
+      <TodoTimePickerContent
+        date={editValues.startDate}
+        value={{
+          scheduledTime: editValues.scheduledTime ?? undefined,
+          isAllDay: todo.isAllDay,
+        }}
+        onCancel={onClose}
+        onChange={async ({ scheduledTime, isAllDay }) => {
+          const scope = TodoPolicy.isRecurring(todo) ? await selectEditScope() : undefined;
+          // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
+          if (scope === null) {
+            return;
+          }
+          updateSchedule.mutate({
+            todoId: todo.id,
+            ...(scope != null && { scope }),
+            input: {
+              startDate: formatDateKey(editValues.startDate, getDeviceTimezone()),
+              endDate: editValues.endDate
+                ? formatDateKey(editValues.endDate, getDeviceTimezone())
+                : null,
+              scheduledTime: isAllDay ? null : (scheduledTime ?? null),
+              isAllDay,
+            },
+          });
+          onClose();
+        }}
+      />
+    </TodoScopeStep>
   );
 };
 

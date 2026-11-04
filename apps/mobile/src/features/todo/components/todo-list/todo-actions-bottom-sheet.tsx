@@ -37,7 +37,7 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
+import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useDeleteTodoMutationOptions } from '../../queries/use-delete-todo-mutation-options';
 import { useStopTodoSeriesMutationOptions } from '../../queries/use-stop-todo-series-mutation-options';
@@ -92,7 +92,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
-  const { selectDeleteScope } = useSelectTodoScope();
+  const scopeSelector = useSelectTodoScope();
+  const { selectDeleteScope } = scopeSelector;
 
   useEffect(() => {
     if (todo == null) {
@@ -152,178 +153,180 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
     stopSeriesMutation.mutate({ todoId: todo.id }, { onSuccess: () => onClose() });
 
   return (
-    <VStack gap={8}>
-      {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
-        <QueryErrorBoundary
-          resetKeys={[todo.id]}
-          fallback={(props) => (
-            <ThanksSummaryRow.Error {...props} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
-          )}
-        >
-          <Suspense fallback={<ThanksSummaryRow.Loading />}>
-            <ThanksSummaryRow
-              todoId={todo.id}
-              onThanksPress={() =>
-                onClose({ type: 'replace', href: todoThanksSheetHref({ todoId: todo.id }) })
-              }
-            />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
-      <PressableFeedback
-        onPress={() => openActionSheet('edit')}
-        isDisabled={deleteMutation.isPending}
-      >
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-              <EditIcon width={16} height={16} colorClassName="text-gray-7" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
-          }
-          right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-        />
-      </PressableFeedback>
-
-      <PressableFeedback
-        onPress={() => openActionSheet('date')}
-        isDisabled={deleteMutation.isPending}
-      >
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-              <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={t('actions.changeDate')}
-              topProps={{ size: 'b2' }}
-            />
-          }
-          right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-        />
-      </PressableFeedback>
-
-      <PressableFeedback
-        onPress={() => openActionSheet('time')}
-        isDisabled={deleteMutation.isPending}
-      >
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-              <ClockIcon width={16} height={16} colorClassName="text-gray-7" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={t('actions.changeTime')}
-              topProps={{ size: 'b2' }}
-            />
-          }
-          right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-        />
-      </PressableFeedback>
-
-      <PressableFeedback
-        onPress={() => openActionSheet('category')}
-        isDisabled={deleteMutation.isPending}
-      >
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-              <ListIcon width={16} height={16} colorClassName="text-gray-7" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={t('actions.changeCategory')}
-              topProps={{ size: 'b2' }}
-            />
-          }
-          right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-        />
-      </PressableFeedback>
-
-      <PressableFeedback onPress={handleScheduleToggle} isDisabled={deleteMutation.isPending}>
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-              {isTodoToday ? (
-                <MoveRightIcon width={16} height={16} colorClassName="text-gray-7" />
-              ) : (
-                <SunIcon width={16} height={16} colorClassName="text-gray-7" />
-              )}
-            </Box>
-          }
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
-              topProps={{ size: 'b2' }}
-            />
-          }
-        />
-      </PressableFeedback>
-
-      {TodoPolicy.isRecurring(todo) && (
+    <TodoScopeStep step={scopeSelector}>
+      <VStack gap={8}>
+        {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
+          <QueryErrorBoundary
+            resetKeys={[todo.id]}
+            fallback={(props) => (
+              <ThanksSummaryRow.Error {...props} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
+            )}
+          >
+            <Suspense fallback={<ThanksSummaryRow.Loading />}>
+              <ThanksSummaryRow
+                todoId={todo.id}
+                onThanksPress={() =>
+                  onClose({ type: 'replace', href: todoThanksSheetHref({ todoId: todo.id }) })
+                }
+              />
+            </Suspense>
+          </QueryErrorBoundary>
+        )}
         <PressableFeedback
-          onPress={handleStopRepeat}
-          isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}
+          onPress={() => openActionSheet('edit')}
+          isDisabled={deleteMutation.isPending}
         >
           <ListRow
             horizontalPadding="medium"
             verticalPadding="medium"
             left={
               <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />
+                <EditIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={
+              <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
+            }
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback
+          onPress={() => openActionSheet('date')}
+          isDisabled={deleteMutation.isPending}
+        >
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <CalendarIcon width={16} height={16} colorClassName="text-gray-7" />
               </Box>
             }
             contents={
               <ListRow.Texts
                 type="1RowTypeA"
-                top={t('actions.stopRepeat')}
+                top={t('actions.changeDate')}
+                topProps={{ size: 'b2' }}
+              />
+            }
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback
+          onPress={() => openActionSheet('time')}
+          isDisabled={deleteMutation.isPending}
+        >
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <ClockIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('actions.changeTime')}
+                topProps={{ size: 'b2' }}
+              />
+            }
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback
+          onPress={() => openActionSheet('category')}
+          isDisabled={deleteMutation.isPending}
+        >
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <ListIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('actions.changeCategory')}
+                topProps={{ size: 'b2' }}
+              />
+            }
+            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+          />
+        </PressableFeedback>
+
+        <PressableFeedback onPress={handleScheduleToggle} isDisabled={deleteMutation.isPending}>
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                {isTodoToday ? (
+                  <MoveRightIcon width={16} height={16} colorClassName="text-gray-7" />
+                ) : (
+                  <SunIcon width={16} height={16} colorClassName="text-gray-7" />
+                )}
+              </Box>
+            }
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
                 topProps={{ size: 'b2' }}
               />
             }
           />
         </PressableFeedback>
-      )}
 
-      <PressableFeedback onPress={handleDelete} isDisabled={deleteMutation.isPending}>
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={
-            <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
-              <TrashIcon width={16} height={16} colorClassName="text-error" />
-            </Box>
-          }
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
-              topProps={{ size: 'b2', tone: 'danger' }}
+        {TodoPolicy.isRecurring(todo) && (
+          <PressableFeedback
+            onPress={handleStopRepeat}
+            isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}
+          >
+            <ListRow
+              horizontalPadding="medium"
+              verticalPadding="medium"
+              left={
+                <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                  <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />
+                </Box>
+              }
+              contents={
+                <ListRow.Texts
+                  type="1RowTypeA"
+                  top={t('actions.stopRepeat')}
+                  topProps={{ size: 'b2' }}
+                />
+              }
             />
-          }
-        />
-      </PressableFeedback>
-    </VStack>
+          </PressableFeedback>
+        )}
+
+        <PressableFeedback onPress={handleDelete} isDisabled={deleteMutation.isPending}>
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
+                <TrashIcon width={16} height={16} colorClassName="text-error" />
+              </Box>
+            }
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
+                topProps={{ size: 'b2', tone: 'danger' }}
+              />
+            }
+          />
+        </PressableFeedback>
+      </VStack>
+    </TodoScopeStep>
   );
 };
 

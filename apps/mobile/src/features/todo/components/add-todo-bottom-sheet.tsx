@@ -50,7 +50,7 @@ import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-f
 import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { TodoPolicy } from '../domains/todo.model';
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
-import { useSelectTodoScope } from '../hooks/use-select-todo-scope';
+import { TodoScopeStep, useSelectTodoScope } from '../hooks/use-select-todo-scope';
 import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
@@ -154,7 +154,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const pendingFocusRef = useRef<number | null>(null);
 
   const overlay = useOverlay();
-  const { selectEditScope } = useSelectTodoScope();
+  const scopeSelector = useSelectTodoScope();
+  const { selectEditScope } = scopeSelector;
 
   useEffect(() => {
     if (isOpen) {
@@ -191,6 +192,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           const isSeries = TodoPolicy.isRecurring(todo);
           const scope = isSeries ? await selectEditScope() : 'THIS_ONLY';
           if (scope == null) {
+            focusTodoInput();
             return;
           }
           const isRepeatChanged = !isEqual(values.repeat, defaultValues.repeat);
@@ -430,102 +432,104 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           isClosingRef.current = true;
         }}
       >
-        {match(voice.state.status)
-          .with('listening', 'paused', 'finalizing', () => (
-            <QuickVoicePanel
-              state={voice.state}
-              level={voice.level}
-              isQuiet={voice.isQuiet}
-              locale={voice.locale}
-              onLocaleChange={voice.setLocale}
-              onFinish={voice.finish}
-              onCancel={voice.cancel}
-              onResume={voice.resume}
-            />
-          ))
-          .with('planning', () => <QuickVoicePanel.Planning state={voice.state} />)
-          .otherwise(() => (
-            <VStack gap={12} testID="todo-add-sheet">
-              <QuickVoicePanel.Failed
+        <TodoScopeStep step={scopeSelector}>
+          {match(voice.state.status)
+            .with('listening', 'paused', 'finalizing', () => (
+              <QuickVoicePanel
                 state={voice.state}
+                level={voice.level}
+                isQuiet={voice.isQuiet}
+                locale={voice.locale}
+                onLocaleChange={voice.setLocale}
+                onFinish={voice.finish}
+                onCancel={voice.cancel}
                 onResume={voice.resume}
-                onRetryPlanning={voice.retryPlanning}
               />
-              <FormField control={methods.control} name="title">
-                {({ onChange, value }) => (
-                  <BottomSheetInput
-                    ref={todoInputRef}
-                    autoFocus
-                    placeholder={t('add.placeholder')}
-                    value={value}
-                    onChange={onChange}
-                    maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
-                    size="medium"
-                    renderErrorMessage={false}
-                    returnKeyType="done"
-                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
-                  />
-                )}
-              </FormField>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                contentContainerClassName="gap-2"
-              >
-                <DateChip onPress={handleDateChipPress} />
-                <TimeChip onPress={handleTimeChipPress} />
-                <RepeatChip onPress={handleRepeatChipPress} />
-                <VisibilityChip />
-                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-                <QueryErrorBoundary fallback={() => null}>
-                  <Suspense fallback={null}>
-                    <CategoryChip onPress={handleCategoryChipPress} />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </ScrollView>
-
-              <Box className="h-px bg-gray-2" />
-
-              <HStack gap={8} align="center" justify="end">
-                {props.mode === 'create' && (
-                  <>
-                    <QuickVoiceInfo />
-                    <CoachmarkPopover
-                      kind="voice-quick-start"
-                      title={tVoice('coach.quickStart.title')}
-                      description={tVoice('coach.quickStart.description')}
-                    >
-                      <QuickVoiceButton onPress={voice.start} testID="todo-quick-voice-button" />
-                    </CoachmarkPopover>
-                  </>
-                )}
-                <PressableFeedback
-                  isDisabled={isSubmitDisabled}
-                  onPress={() => handleSubmitTodo()}
-                  style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-                  className={cn(
-                    'items-center justify-center rounded-4xl',
-                    isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
+            ))
+            .with('planning', () => <QuickVoicePanel.Planning state={voice.state} />)
+            .otherwise(() => (
+              <VStack gap={12} testID="todo-add-sheet">
+                <QuickVoicePanel.Failed
+                  state={voice.state}
+                  onResume={voice.resume}
+                  onRetryPlanning={voice.retryPlanning}
+                />
+                <FormField control={methods.control} name="title">
+                  {({ onChange, value }) => (
+                    <BottomSheetInput
+                      ref={todoInputRef}
+                      autoFocus
+                      placeholder={t('add.placeholder')}
+                      value={value}
+                      onChange={onChange}
+                      maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
+                      size="medium"
+                      renderErrorMessage={false}
+                      returnKeyType="done"
+                      onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+                    />
                   )}
+                </FormField>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyboardShouldPersistTaps="always"
+                  contentContainerClassName="gap-2"
                 >
-                  {isSubmitting ? (
-                    <Spinner
-                      size="sm"
-                      color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
-                    />
-                  ) : (
-                    <ArrowUpIcon
-                      width={fontScaledSize(18)}
-                      height={fontScaledSize(18)}
-                      colorClassName="text-white"
-                    />
+                  <DateChip onPress={handleDateChipPress} />
+                  <TimeChip onPress={handleTimeChipPress} />
+                  <RepeatChip onPress={handleRepeatChipPress} />
+                  <VisibilityChip />
+                  {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
+                  <QueryErrorBoundary fallback={() => null}>
+                    <Suspense fallback={null}>
+                      <CategoryChip onPress={handleCategoryChipPress} />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                </ScrollView>
+
+                <Box className="h-px bg-gray-2" />
+
+                <HStack gap={8} align="center" justify="end">
+                  {props.mode === 'create' && (
+                    <>
+                      <QuickVoiceInfo />
+                      <CoachmarkPopover
+                        kind="voice-quick-start"
+                        title={tVoice('coach.quickStart.title')}
+                        description={tVoice('coach.quickStart.description')}
+                      >
+                        <QuickVoiceButton onPress={voice.start} testID="todo-quick-voice-button" />
+                      </CoachmarkPopover>
+                    </>
                   )}
-                </PressableFeedback>
-              </HStack>
-            </VStack>
-          ))}
+                  <PressableFeedback
+                    isDisabled={isSubmitDisabled}
+                    onPress={() => handleSubmitTodo()}
+                    style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+                    className={cn(
+                      'items-center justify-center rounded-4xl',
+                      isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
+                    )}
+                  >
+                    {isSubmitting ? (
+                      <Spinner
+                        size="sm"
+                        color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+                      />
+                    ) : (
+                      <ArrowUpIcon
+                        width={fontScaledSize(18)}
+                        height={fontScaledSize(18)}
+                        colorClassName="text-white"
+                      />
+                    )}
+                  </PressableFeedback>
+                </HStack>
+              </VStack>
+            ))}
+        </TodoScopeStep>
       </KeyboardBottomSheet>
     </FormProvider>
   );
