@@ -134,7 +134,12 @@ export class HandleSuggestionAction {
         startDate: parseDateOnly(startDate),
         scheduledTime: suggestion.scheduledTime,
         timezone,
-        recurrence: { daysOfWeek: days.data, endDate },
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: days.data,
+          end: { type: "UNTIL", date: endDate },
+        },
       });
       this.#dependencies.afterCommit.register(staged.afterCommit);
       return {

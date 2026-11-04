@@ -437,7 +437,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     process.stdout.write(`NOTES_SQL_AFTER ${JSON.stringify(measures)}\n`);
   });
 
-  it("반복 부모 생성 후 item 저장이 실패하면 해당 항목만 rollback하고 이전 성공·메모를 보존한다", async () => {
+  it("반복 규칙 저장이 실패하면 해당 항목만 rollback하고 이전 성공·메모를 보존한다", async () => {
     // Given
     const seeded = await seedMemo();
     const [category] = await client
@@ -463,8 +463,12 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
               title: "실패 반복 항목",
               categoryId,
               startDate: AT,
-              isRecurring: true,
-              recurrence: { daysOfWeek: ["FRI", "SAT"], endDate: "2027-01-09" },
+              repeat: {
+                frequency: "WEEKLY",
+                interval: 1,
+                weekdays: ["FRI", "SAT"],
+                end: { type: "UNTIL", date: "2027-01-09" },
+              },
               items: [{ title: "저장 불가능\u0000item" }],
             },
           ],
@@ -476,8 +480,12 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(failure).toBeInstanceOf(Error);
-    expect(databaseSqlState(failure)).toBe("22021");
-    expect(writes.filter((statement) => statement.includes('insert into "Todo"'))).toHaveLength(2);
+    // 체크리스트 템플릿(jsonb)이 NUL을 거부해 회차 INSERT 전에 실패한다.
+    expect(databaseSqlState(failure)).toBe("22P05");
+    expect(writes.filter((statement) => statement.includes('insert into "Todo"'))).toHaveLength(1);
+    expect(
+      writes.filter((statement) => statement.includes('insert into "TodoSeries"')),
+    ).toHaveLength(1);
     const todos = await client.query.todo.findMany({
       columns: { id: true, title: true, seriesId: true },
       where: { userId },
@@ -491,8 +499,5 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
       .filter((event) => event instanceof TodoCreatedEvent);
     expect(events).toHaveLength(1);
     expect(events.at(0)?.todoId).toBe(todos.at(0)?.id);
-    process.stdout.write(
-      `NOTES_ROLLBACK_AFTER ${JSON.stringify({ sqlState: databaseSqlState(failure), parentInsertStatements: 2, committedTodoCount: todos.length, committedTodoCreatedEvents: events.length, failedRecurringParents: todos.filter((todo) => todo.seriesId !== null).length })}\n`,
-    );
   });
 });

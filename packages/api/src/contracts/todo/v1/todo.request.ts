@@ -3,7 +3,7 @@ import { z } from "zod";
 import { dateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { RECURRING_TODO_LIMITS, TODO_ITEM_LIMITS } from "../../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
-import { dayOfWeekSchema, todoVisibilitySchema } from "./todo.common.js";
+import { dayOfWeekSchema, todoRepeatSchema, todoVisibilitySchema } from "./todo.common.js";
 
 export { todoVisibilitySchema } from "./todo.common.js";
 
@@ -49,6 +49,9 @@ export const createTodoSchema = z
       )
       .optional()
       .describe("투두 생성 시 함께 만들 체크리스트 (선택, 최대 20개)"),
+    repeat: todoRepeatSchema
+      .optional()
+      .describe("반복 규칙 (선택). 있으면 endDate는 비워야 하고 startDate부터 회차를 만든다"),
   })
   .refine(
     (data) => {

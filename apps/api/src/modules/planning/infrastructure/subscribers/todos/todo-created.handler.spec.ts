@@ -20,6 +20,7 @@ describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
   beforeEach(async () => {
     todoReminder = {
       scheduleReminder: vi.fn().mockResolvedValue(undefined),
+      scheduleReminders: vi.fn(),
       cancelReminder: vi.fn(),
     };
 

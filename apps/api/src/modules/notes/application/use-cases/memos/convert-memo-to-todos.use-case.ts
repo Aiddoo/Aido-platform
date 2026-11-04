@@ -1,4 +1,4 @@
-import type { DayOfWeek, Todo } from "@aido/api";
+import type { Todo, TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
@@ -24,11 +24,7 @@ export interface ConvertMemoToSingleTodoData {
   readonly scheduledTime?: string | null;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
-  readonly isRecurring?: boolean;
-  readonly recurrence?: {
-    daysOfWeek: DayOfWeek[];
-    endDate: string;
-  };
+  readonly repeat?: TodoRepeat | null;
   readonly items?: { title: string }[];
 }
 
@@ -95,7 +91,7 @@ export class ConvertMemoToTodos {
               isAllDay: todoData.isAllDay ?? true,
               visibility: todoData.visibility ?? "PUBLIC",
               items: todoData.items,
-              recurrence: todoData.isRecurring === true ? todoData.recurrence : undefined,
+              repeat: todoData.repeat,
             }),
           );
           this.#dependencies.afterCommit.register(staged.afterCommit);

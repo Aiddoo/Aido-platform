@@ -1,3 +1,4 @@
+import type { TodoRepeat, TodoRepeatEnd } from "@aido/api";
 import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 import { range, uniq } from "es-toolkit";
@@ -6,6 +7,7 @@ import { match } from "ts-pattern";
 import type {
   DateRef,
   PartOfDay,
+  PlanRepeatRef,
   RepeatPattern,
   RepeatRef,
   ResolvedSchedule,
@@ -60,7 +62,10 @@ interface TimeResolution {
  * LLM이 읽은 일정 표현을 사용자 시간대 기준 날짜·시각·반복으로 결정적으로 바꾼다.
  * 같은 draft·now·timeZone이면 항상 같은 결과를 낸다.
  */
-export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock): ResolvedSchedule {
+export function resolveTodoSchedule(
+  draft: ScheduleDraft<RepeatRef | PlanRepeatRef>,
+  clock: ScheduleClock,
+): ResolvedSchedule {
   const local = dayjs(clock.now).tz(clock.timeZone);
   const today = dayjs.utc(local.format("YYYY-MM-DD"));
   const nowMinutes = local.hour() * 60 + local.minute();
@@ -140,8 +145,68 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
     isAllDay: scheduledTime == null,
     isRecurring: recurrence != null,
     recurrence,
+    repeat: resolveRepeat(draft.repeat, recurrenceBase, startDay, today),
     warnings,
   };
+}
+
+function resolveRepeat(
+  repeat: RepeatRef | PlanRepeatRef,
+  window: RecurrenceWindow | null,
+  start: CalendarDay,
+  today: CalendarDay,
+): TodoRepeat | null {
+  const end = resolveRepeatEnd(repeat, window, start, today);
+  return match(repeat.pattern)
+    .returnType<TodoRepeat | null>()
+    .with("NONE", "UNSUPPORTED", () => null)
+    .with("DAILY", () => ({ frequency: "DAILY", end }))
+    .with("MONTHLY_DAY", () => ({
+      frequency: "MONTHLY",
+      monthDay: readMonthDay(repeat, start),
+      end,
+    }))
+    .with("BIWEEKLY_DAYS", () => {
+      const days = sortDays(repeat.daysOfWeek ?? []);
+      return days.length === 0 ? null : { frequency: "WEEKLY", interval: 2, weekdays: days, end };
+    })
+    .with(
+      "WEEKLY_DAYS",
+      "WEEKDAYS",
+      "WEEKENDS",
+      "THIS_WEEK",
+      "NEXT_WEEK",
+      "WEEK_AFTER_NEXT",
+      "THIS_WEEKEND",
+      "NEXT_WEEKEND",
+      "THIS_WEEKDAYS",
+      () => {
+        const days = sortDays(window?.days ?? []);
+        return days.length === 0 ? null : { frequency: "WEEKLY", interval: 1, weekdays: days, end };
+      },
+    )
+    .exhaustive();
+}
+
+function readMonthDay(repeat: RepeatRef | PlanRepeatRef, start: CalendarDay): number {
+  const monthDay = "monthDay" in repeat ? repeat.monthDay : null;
+  return monthDay != null && monthDay >= 1 && monthDay <= 31 ? monthDay : start.date();
+}
+
+function resolveRepeatEnd(
+  repeat: RepeatRef,
+  window: RecurrenceWindow | null,
+  start: CalendarDay,
+  today: CalendarDay,
+): TodoRepeatEnd {
+  const hasSpokenEnd =
+    (repeat.until != null && repeat.until.kind !== "NONE") ||
+    (repeat.forDuration != null && repeat.forDuration.amount > 0);
+  const end = window?.end ?? (hasSpokenEnd ? resolveRecurrenceEnd(repeat, start, today) : null);
+  if (end == null) {
+    return { type: "NEVER" };
+  }
+  return { type: "UNTIL", date: formatDay(end.isBefore(start) ? start : end) };
 }
 
 function resolveDateRef(ref: DateRef, today: CalendarDay): DayResolution {

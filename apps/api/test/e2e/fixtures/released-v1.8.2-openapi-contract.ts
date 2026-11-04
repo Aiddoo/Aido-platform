@@ -60,8 +60,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: AI 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional featureQuota만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preAiFeatureQuotaSchemasFingerprint:
 		"b0f816b4d60b8b4e8e74d15fd9bc41a17e3b3d91ebfe9462961349aaee662fdf",
-	schemasFingerprint:
+	/** 1.15.0: 반복 할 일. CreateTodoDto·ConvertMemoToTodoDto 계열에 optional repeat, CreateTodoResponseDto에 optional series, 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional repeat만 추가. 생략하면 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	preTodoRepeatSchemasFingerprint:
 		"7c9e14a775840b14ccebbab573b36a6c4fb463b13d3e16dc00aa3ab0ad91b8c5",
+	schemasFingerprint:
+		"b06f5102f3b356b7c9049e6fd4515a6fed0ea53420a7dbd9843d6503759e1bbd",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",

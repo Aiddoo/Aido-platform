@@ -121,13 +121,18 @@ export class TodoSeries extends AggregateRoot<TodoSeriesProps> {
     }
   }
 
-  /** 다음 회차부터 through(포함)까지의 초안을 만들고 커서를 그 뒤로 옮긴다. */
-  planOccurrences(through: string): TodoOccurrenceDraft[] {
+  /**
+   * 다음 회차부터 through(포함)까지의 초안을 만들고 커서를 그 뒤로 옮긴다.
+   * limit을 넘는 회차는 커서에 남아 다음 실행이 이어서 만든다.
+   */
+  planOccurrences(through: string, limit = Number.POSITIVE_INFINITY): TodoOccurrenceDraft[] {
     const { nextOccurrenceDate, rule, startDate, generatedCount } = this.props;
     if (nextOccurrenceDate == null) {
       return [];
     }
-    const dates = rule.occurrencesBetween(startDate, nextOccurrenceDate, through, generatedCount);
+    const dates = rule
+      .occurrencesBetween(startDate, nextOccurrenceDate, through, generatedCount)
+      .slice(0, limit);
     const last = dates.at(-1);
     if (last == null) {
       return [];

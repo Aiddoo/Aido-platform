@@ -580,6 +580,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       await fixture.txHost.tx.insert(todo).values(row);
       return {
         todos: [createTodoResponseFixture(TodoBuilder.create(input.userId).withId(1).build())],
+        series: null,
         afterCommit: async () => undefined,
       };
     },

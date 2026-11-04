@@ -1,4 +1,4 @@
-import type { Todo } from "@aido/api";
+import type { Todo, TodoSeriesResponse } from "@aido/api";
 
 import type { AfterCommitTask } from "#api/shared/application/ports/index";
 
@@ -7,7 +7,10 @@ import type { CreateTodoData } from "../../models/todos/todo.types.js";
 export const STAGED_TODO_CREATOR = Symbol("STAGED_TODO_CREATOR");
 
 export interface StagedTodoCreation {
+  /** 만든 할 일. 반복이면 회차를 날짜순으로 담고 맨 앞이 첫 회차다. */
   readonly todos: readonly Todo[];
+  /** 반복으로 만들었을 때의 규칙. 단일 할 일은 null이다. */
+  readonly series: TodoSeriesResponse | null;
   readonly afterCommit: AfterCommitTask;
 }
 

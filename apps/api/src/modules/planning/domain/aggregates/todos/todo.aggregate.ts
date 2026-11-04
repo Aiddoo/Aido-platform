@@ -79,6 +79,7 @@ export interface TodoProps {
   schedule: TodoSchedule;
   visibility: TodoVisibility;
   seriesId: string | null;
+  occurrenceDate: Date | null;
   items: TodoItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -101,6 +102,7 @@ export class Todo extends AggregateRoot<TodoProps> {
       schedule: props.schedule,
       visibility: props.visibility,
       seriesId: props.seriesId,
+      occurrenceDate: props.occurrenceDate == null ? null : new Date(props.occurrenceDate),
       items: props.items.map((item) => item.clone()),
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
@@ -323,6 +325,14 @@ export class Todo extends AggregateRoot<TodoProps> {
 
   getUserId(): string {
     return this.props.userId;
+  }
+
+  getSeriesId(): string | null {
+    return this.props.seriesId;
+  }
+
+  getOccurrenceDate(): Date | null {
+    return this.props.occurrenceDate == null ? null : new Date(this.props.occurrenceDate);
   }
 
   getSortOrder(): number {

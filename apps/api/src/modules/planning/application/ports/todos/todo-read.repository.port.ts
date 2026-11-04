@@ -24,14 +24,15 @@ export interface TodoReadRepositoryPort {
   /** 소유자만 알면 되는 자리 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. */
   findOwnerId(id: number): Promise<string | null>;
 
-  /** 반복 그룹 전체 조회 (sortOrder asc — 생성 순서와 동일) */
+  /** 반복 할 일의 회차 전체 (sortOrder asc — 생성 순서와 동일) */
   findManyBySeriesId(userId: string, seriesId: string): Promise<TodoResponse[]>;
 
   findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
 
   findPublicTodosByUserId(params: FindFriendTodosParams): Promise<TodoResponse[]>;
 
-  countActiveByCategory(userId: string, categoryId: number): Promise<number>;
+  /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
+  countCategoryUsage(userId: string, categoryId: number): Promise<number>;
 
   countCompletedByUser(userId: string): Promise<number>;
 

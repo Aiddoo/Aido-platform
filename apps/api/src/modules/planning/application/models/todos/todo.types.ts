@@ -1,9 +1,5 @@
-import type { DayOfWeek, TodoVisibility } from "@aido/api/vocabulary";
-
-export interface TodoRecurrence {
-  readonly daysOfWeek: readonly DayOfWeek[];
-  readonly endDate: string;
-}
+import type { TodoRepeat } from "@aido/api";
+import type { TodoVisibility } from "@aido/api/vocabulary";
 
 /**
  * 할 일 생성 입력. 시각은 벽시계 HH:mm로 받아 timezone으로 해석한다.
@@ -20,7 +16,7 @@ export interface CreateTodoData {
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly items?: readonly { title: string }[];
-  readonly recurrence?: TodoRecurrence | null;
+  readonly repeat?: TodoRepeat | null;
 }
 
 export interface UpdateTodoData {

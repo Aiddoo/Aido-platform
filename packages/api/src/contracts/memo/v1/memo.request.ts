@@ -3,7 +3,11 @@ import { z } from "zod";
 import { MEMO_LIMITS } from "../../../vocabulary/memo.constants.js";
 import { TODO_ITEM_LIMITS } from "../../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
-import { dayOfWeekSchema, todoVisibilitySchema } from "../../todo/v1/todo.common.js";
+import {
+  dayOfWeekSchema,
+  todoRepeatSchema,
+  todoVisibilitySchema,
+} from "../../todo/v1/todo.common.js";
 
 export const createMemoSchema = z.object({
   content: z
@@ -152,6 +156,9 @@ const convertMemoSingleTodoSchema = z.object({
     })
     .optional()
     .describe("반복 설정 (비반복 일정은 생략)"),
+  repeat: todoRepeatSchema
+    .optional()
+    .describe("반복 규칙 (선택). 있으면 isRecurring·recurrence보다 우선한다"),
   items: z
     .array(convertMemoTodoItemSchema)
     .max(

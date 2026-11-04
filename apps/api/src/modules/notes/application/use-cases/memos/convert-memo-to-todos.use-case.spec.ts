@@ -1,3 +1,4 @@
+import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
@@ -10,6 +11,13 @@ import {
   ConvertMemoToTodos,
   type ConvertMemoToTodosInput,
 } from "./convert-memo-to-todos.use-case.js";
+
+const REPEAT = {
+  frequency: "WEEKLY",
+  interval: 1,
+  weekdays: ["MON", "WED"],
+  end: { type: "UNTIL", date: "2026-04-30" },
+} as const satisfies TodoRepeat;
 
 describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
   let fixture: ReturnType<typeof createNotesMemoFixture>;
@@ -100,8 +108,7 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
           scheduledTime,
           isAllDay: false,
           items: [{ title: "운동복" }],
-          isRecurring: true,
-          recurrence: { daysOfWeek: ["MON", "WED"], endDate: "2026-04-30" },
+          repeat: REPEAT,
         },
       ]),
     );
@@ -119,7 +126,7 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
         isAllDay: false,
         visibility: "PUBLIC",
         items: [{ title: "운동복" }],
-        recurrence: { daysOfWeek: ["MON", "WED"], endDate: "2026-04-30" },
+        repeat: REPEAT,
       },
     ]);
     expect(fixture.registeredTasks).toHaveLength(2);
@@ -141,8 +148,7 @@ describe("ConvertMemoToTodos — 메모 일괄 변환", () => {
           categoryId: 1,
           startDate: NOTES_TIME,
           scheduledTime: null,
-          isRecurring: true,
-          recurrence: { daysOfWeek: ["MON"], endDate: "2026-04-06" },
+          repeat: REPEAT,
         },
       ]),
     );

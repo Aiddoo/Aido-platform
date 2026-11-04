@@ -9,6 +9,16 @@ import type { TodoScheduleProps } from "../../../domain/value-objects/todos/todo
 
 export const TODO_REPOSITORY = Symbol("TODO_REPOSITORY");
 
+export interface TodoOccurrencePlan extends TodoCreationPlan {
+  readonly occurrenceDate: string;
+  readonly createdAt: Date;
+}
+
+export interface CreatedOccurrence {
+  readonly todoId: number;
+  readonly scheduledTime: Date | null;
+}
+
 /**
  * Todo 부분 수정 영속화 패치
  *
@@ -59,16 +69,17 @@ export interface TodoRepositoryPort {
   shiftSortOrders(userId: string, from: number, to: number | null, delta: number): Promise<void>;
 
   /**
-   * 반복 그룹 일괄 생성 — 생성된 애그리게잇을 sortOrder 순으로 반환.
-   * 다중 쓰기이므로 트랜잭션(UnitOfWork) 안에서 호출해야 합니다.
+   * 회차를 한 문장으로 만든다. 같은 (seriesId, occurrenceDate)는 건너뛰어(ON CONFLICT DO NOTHING)
+   * 재시도에 멱등이고, 실제로 만든 행만 돌려준다. 체크리스트도 만든 행에만 복사한다.
    */
-  createMany(
-    items: readonly TodoCreationPlan[],
+  insertOccurrences(
+    plans: readonly TodoOccurrencePlan[],
     seriesId: string,
-    inlineItems?: readonly { title: string }[],
-  ): Promise<Todo[]>;
+    checklist: readonly { title: string }[],
+  ): Promise<readonly CreatedOccurrence[]>;
 
-  countActiveByCategory(userId: string, categoryId: number): Promise<number>;
+  /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
+  countCategoryUsage(userId: string, categoryId: number): Promise<number>;
 
   getMaxSortOrder(userId: string): Promise<number>;
 

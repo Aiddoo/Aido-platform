@@ -21,6 +21,34 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
     adapter = new TodoReminderSchedulerAdapter(runtime);
   });
 
+  it("새 회차 리마인더는 취소 없이 한 번에 등록하고 지난 시각은 건너뛴다", async () => {
+    // Given
+    const reminders = [
+      { todoId: 1, scheduledTime: new Date(Date.now() + 2 * HOUR_MS), userId: USER_ID },
+      { todoId: 2, scheduledTime: new Date(Date.now() - HOUR_MS), userId: USER_ID },
+      { todoId: 3, scheduledTime: new Date(Date.now() + 3 * HOUR_MS), userId: USER_ID },
+    ];
+    // When
+    await adapter.scheduleReminders(reminders);
+    // Then
+    expect(runtime.enqueueCalls.map((call) => call.options.idempotencyKey)).toEqual([
+      "reminder_1_60min",
+      "reminder_1_10min",
+      "reminder_3_60min",
+      "reminder_3_10min",
+    ]);
+    expect(runtime.cancelCalls).toEqual([]);
+  });
+
+  it("지난 시각만 있으면 큐를 부르지 않는다", async () => {
+    // When
+    await adapter.scheduleReminders([
+      { todoId: 2, scheduledTime: new Date(Date.now() - HOUR_MS), userId: USER_ID },
+    ]);
+    // Then
+    expect(runtime.enqueueCalls).toEqual([]);
+  });
+
   it("2시간 뒤 마감은 60분·10분 작업을 고유 키로 등록한다", async () => {
     await adapter.scheduleReminder(1, new Date(Date.now() + 2 * HOUR_MS), USER_ID);
 

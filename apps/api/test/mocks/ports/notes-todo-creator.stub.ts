@@ -18,7 +18,7 @@ export class StubNotesTodoCreator implements StagedTodoCreatorPort {
   recurringResult: readonly Todo[] = [];
 
   async stage(data: CreateTodoData): Promise<StagedTodoCreation> {
-    if (data.recurrence != null) {
+    if (data.repeat != null) {
       this.recurringInputs.push(structuredClone(data));
       return this.#stage(this.recurringResult);
     }
@@ -47,6 +47,7 @@ export class StubNotesTodoCreator implements StagedTodoCreatorPort {
     }
     return {
       todos: staged,
+      series: null,
       afterCommit: async () => {
         this.settledTodoIds.push(...staged.map((todo) => todo.id));
       },

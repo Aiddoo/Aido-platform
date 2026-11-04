@@ -3,6 +3,7 @@ import { z } from "zod";
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { numberCursorPaginationInfoSchema } from "../../../common/pagination.js";
 import { todoCategorySummarySchema } from "../../todo-category/v1/todo-category.response.js";
+import { todoSeriesResponseSchema } from "./todo-series.response.js";
 import { todoVisibilitySchema } from "./todo.common.js";
 
 export const todoItemResponseSchema = z.object({
@@ -138,6 +139,9 @@ export const createTodoResponseSchema = z
   .object({
     message: z.string(),
     todo: todoSchema,
+    series: todoSeriesResponseSchema
+      .optional()
+      .describe("repeat로 만들면 반복 규칙, 이때 todo는 첫 회차. 단일 할 일은 없다"),
   })
   .meta({
     example: {

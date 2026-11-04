@@ -8,6 +8,7 @@ import {
 import type {
   TodoReminderCancellationResult,
   TodoReminderPort,
+  TodoReminderSchedule,
 } from "../../../application/ports/todos/todo-reminder.port.js";
 
 /**
@@ -22,6 +23,10 @@ export class TodoReminderAdapter implements TodoReminderPort {
 
   scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
     return this.reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
+  }
+
+  scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
+    return this.reminderScheduler.scheduleReminders(reminders);
   }
 
   cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {

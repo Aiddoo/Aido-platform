@@ -8,6 +8,7 @@ export {
   TODO_VIEW_CACHE_INVALIDATOR,
   type TodoViewCacheInvalidatorPort,
 } from "./application/ports/todos/todo-view-cache-invalidator.port.js";
+export { TodoOccurrencesCreatedEvent } from "./domain/events/series/todo-occurrences-created.event.js";
 export { TodoCategoryChangedEvent } from "./domain/events/todos/todo-category-changed.event.js";
 export { TodoCreatedEvent } from "./domain/events/todos/todo-created.event.js";
 export { TodoDeletedEvent } from "./domain/events/todos/todo-deleted.event.js";

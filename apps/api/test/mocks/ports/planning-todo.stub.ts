@@ -6,15 +6,27 @@ import type {
   FindFriendTodosParams,
   FindTodosParams,
 } from "#api/modules/planning/application/models/todos/todo.types";
+import type {
+  DueTodoSeriesQuery,
+  TodoSeriesRepositoryPort,
+} from "#api/modules/planning/application/ports/series/todo-series.repository.port";
 import type { TodoCachePort } from "#api/modules/planning/application/ports/todos/todo-cache.port";
 import type {
   TodoReadRepositoryPort,
   TodaySummaryTodoRow,
 } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
 import type {
+  TodoReminderCancellationResult,
+  TodoReminderPort,
+  TodoReminderSchedule,
+} from "#api/modules/planning/application/ports/todos/todo-reminder.port";
+import type {
+  CreatedOccurrence,
+  TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "#api/modules/planning/application/ports/todos/todo.repository.port";
+import { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import {
   Todo,
   type TodoCreationPlan,
@@ -31,6 +43,7 @@ import type {
   MutationLockPort,
 } from "#api/shared/application/ports/index";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { ApplicationException } from "#api/shared/domain/index";
 import { TodoBuilder } from "#test/builders/index";
 import {
@@ -39,7 +52,10 @@ import {
 } from "#test/fixtures/todo-response.fixture";
 
 export class StubPlanningTodoRepository implements TodoRepositoryPort {
-  constructor(readonly records: Map<number, PlanningTodoRecord>) {}
+  constructor(
+    readonly records: Map<number, PlanningTodoRecord>,
+    readonly seriesStore: Map<string, TodoSeries> = new Map(),
+  ) {}
 
   async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
     const saved = this.records.get(id);
@@ -58,6 +74,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       schedule: TodoSchedule.reconstitute(record),
       visibility: record.visibility,
       seriesId: record.seriesId,
+      occurrenceDate: record.occurrenceDate,
       items: record.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -78,24 +95,32 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     return todo;
   }
 
-  async createMany(
-    plans: readonly TodoCreationPlan[],
+  async insertOccurrences(
+    plans: readonly TodoOccurrencePlan[],
     seriesId: string,
-    inlineItems?: readonly { title: string }[],
-  ): Promise<Todo[]> {
-    const created: Todo[] = [];
+    checklist: readonly { title: string }[],
+  ): Promise<readonly CreatedOccurrence[]> {
+    const created: CreatedOccurrence[] = [];
     for (const plan of plans) {
-      const todo = await this.create(plan);
-      this.#record(todo.getId().getValue()).seriesId = seriesId;
-      if (inlineItems !== undefined) {
-        await this.createInlineItems(todo.getId().getValue(), [...inlineItems]);
+      const occurrenceDate = parseDateOnly(plan.occurrenceDate);
+      const exists = [...this.records.values()].some(
+        (record) =>
+          record.seriesId === seriesId &&
+          record.occurrenceDate?.getTime() === occurrenceDate.getTime(),
+      );
+      if (exists) {
+        continue;
       }
-      created.push(todo);
+      const todo = await this.create(plan);
+      const id = todo.getId().getValue();
+      Object.assign(this.#record(id), { seriesId, occurrenceDate });
+      await this.createInlineItems(id, checklist);
+      created.push({ todoId: id, scheduledTime: plan.scheduledTime });
     }
     return created;
   }
 
-  async createInlineItems(todoId: number, items: { title: string }[]): Promise<void> {
+  async createInlineItems(todoId: number, items: readonly { title: string }[]): Promise<void> {
     for (const [sortOrder, item] of items.entries()) {
       await this.createItem(todoId, { ...item, sortOrder });
     }
@@ -147,10 +172,21 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
       }
     }
   }
-  async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return [...this.records.values()].filter(
-      (record) => record.userId === userId && record.categoryId === categoryId && !record.completed,
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const activeSeries = [...this.seriesStore.values()].filter(
+      (series) =>
+        series.getUserId() === userId && series.getCategoryId() === categoryId && series.isActive(),
     ).length;
+    return (
+      activeSeries +
+      [...this.records.values()].filter(
+        (record) =>
+          record.userId === userId &&
+          record.categoryId === categoryId &&
+          !record.completed &&
+          record.seriesId === null,
+      ).length
+    );
   }
   async getMaxSortOrder(userId: string): Promise<number> {
     return Math.max(
@@ -213,6 +249,62 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
   }
 }
 
+/** 저장한 규칙을 메모리에 두고 복원해 돌려주는 Fake. 잠금은 흉내 내지 않는다. */
+export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPort {
+  constructor(readonly store: Map<string, TodoSeries> = new Map()) {}
+  async findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null> {
+    const series = this.store.get(id);
+    return series === undefined || series.getUserId() !== userId ? null : this.#copy(series);
+  }
+  async lockForUpdate(id: string): Promise<TodoSeries | null> {
+    const series = this.store.get(id);
+    return series === undefined ? null : this.#copy(series);
+  }
+  async insert(series: TodoSeries): Promise<void> {
+    this.store.set(series.getId(), this.#copy(series));
+  }
+  async update(series: TodoSeries): Promise<void> {
+    this.store.set(series.getId(), this.#copy(series));
+  }
+  async countActiveByUserId(userId: string): Promise<number> {
+    return [...this.store.values()].filter(
+      (series) => series.getUserId() === userId && series.isActive(),
+    ).length;
+  }
+  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly string[]> {
+    return [...this.store.values()]
+      .filter((series) => {
+        const next = series.getNextOccurrenceDate();
+        return (
+          next !== null &&
+          next <= query.through &&
+          (query.afterId === null || series.getId() > query.afterId)
+        );
+      })
+      .map((series) => series.getId())
+      .sort()
+      .slice(0, query.limit);
+  }
+  #copy(series: TodoSeries): TodoSeries {
+    return TodoSeries.reconstitute({ ...series.toPersistence() });
+  }
+}
+
+export class StubPlanningTodoReminder implements TodoReminderPort {
+  readonly scheduled: TodoReminderSchedule[] = [];
+  readonly cancelled: number[] = [];
+  async scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+    this.scheduled.push({ todoId, scheduledTime, userId });
+  }
+  async scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
+    this.scheduled.push(...reminders);
+  }
+  async cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
+    this.cancelled.push(todoId);
+    return { status: "cancelled" };
+  }
+}
+
 export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   queryResults: TodoResponse[] = [];
   dayStats = { total: 0, completed: 0 };
@@ -220,6 +312,7 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   constructor(
     readonly records: Map<number, PlanningTodoRecord>,
     readonly categories: Map<number, TodoResponse["category"]>,
+    readonly seriesStore: Map<string, TodoSeries> = new Map(),
   ) {}
   async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
     const saved = this.records.get(id);
@@ -253,10 +346,21 @@ export class StubPlanningTodoReadRepository implements TodoReadRepositoryPort {
   async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<TodoResponse[]> {
     return structuredClone(this.queryResults);
   }
-  async countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return [...this.records.values()].filter(
-      (record) => record.userId === userId && record.categoryId === categoryId && !record.completed,
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const activeSeries = [...this.seriesStore.values()].filter(
+      (series) =>
+        series.getUserId() === userId && series.getCategoryId() === categoryId && series.isActive(),
     ).length;
+    return (
+      activeSeries +
+      [...this.records.values()].filter(
+        (record) =>
+          record.userId === userId &&
+          record.categoryId === categoryId &&
+          !record.completed &&
+          record.seriesId === null,
+      ).length
+    );
   }
   async countCompletedByUser(userId: string): Promise<number> {
     return [...this.records.values()].filter(

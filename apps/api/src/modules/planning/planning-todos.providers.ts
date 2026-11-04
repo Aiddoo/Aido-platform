@@ -6,8 +6,8 @@ import { TodoUpdatedHandler } from "./infrastructure/subscribers/todos/todo-upda
 import {
   addTodoItemProvider,
   changeTodoCategoryProvider,
-  createRecurringTodosProvider,
   createTodoProvider,
+  todoOccurrenceMaterializerProvider,
   todoCreationWriterProvider,
   todoCreationEffectsProvider,
   stagedTodoCreatorProvider,
@@ -31,8 +31,8 @@ import {
 export const TODO_PROVIDERS = [
   addTodoItemProvider,
   changeTodoCategoryProvider,
-  createRecurringTodosProvider,
   createTodoProvider,
+  todoOccurrenceMaterializerProvider,
   todoCreationWriterProvider,
   todoCreationEffectsProvider,
   stagedTodoCreatorProvider,

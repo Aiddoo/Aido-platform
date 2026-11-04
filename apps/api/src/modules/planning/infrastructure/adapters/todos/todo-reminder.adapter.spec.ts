@@ -11,6 +11,7 @@ describe("TodoReminderAdapter — scheduler 경계 위임", () => {
   beforeEach(() => {
     scheduler = {
       scheduleReminder: vi.fn(),
+      scheduleReminders: vi.fn(),
       cancelReminder: vi.fn(),
     };
     adapter = new TodoReminderAdapter(scheduler);

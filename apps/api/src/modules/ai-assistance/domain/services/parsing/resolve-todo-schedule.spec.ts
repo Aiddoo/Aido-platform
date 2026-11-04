@@ -1,4 +1,8 @@
-import { scheduleDraftFixture, type ScheduleDraftInput } from "#test/fixtures/ai-response.fixture";
+import {
+  planRepeatRefFixture,
+  scheduleDraftFixture,
+  type ScheduleDraftInput,
+} from "#test/fixtures/ai-response.fixture";
 
 import type { ScheduleDraft } from "../../types/parsing/todo-draft.types.js";
 import { resolveTodoSchedule } from "./resolve-todo-schedule.js";
@@ -480,4 +484,113 @@ describe("resolveTodoSchedule — 반복 할 일 전용 표현", () => {
       });
     },
   );
+});
+
+describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => {
+  it.each([
+    {
+      name: "매일, 종료 언급 없음 → 계속 반복",
+      repeat: { pattern: "DAILY" },
+      expected: { frequency: "DAILY", end: { type: "NEVER" } },
+    },
+    {
+      name: "평일 → 매주 월~금",
+      repeat: { pattern: "WEEKDAYS" },
+      expected: {
+        frequency: "WEEKLY",
+        interval: 1,
+        weekdays: ["MON", "TUE", "WED", "THU", "FRI"],
+        end: { type: "NEVER" },
+      },
+    },
+    {
+      name: "주말 → 매주 토·일",
+      repeat: { pattern: "WEEKENDS" },
+      expected: {
+        frequency: "WEEKLY",
+        interval: 1,
+        weekdays: ["SAT", "SUN"],
+        end: { type: "NEVER" },
+      },
+    },
+    {
+      name: "요일 + 날짜까지",
+      repeat: {
+        pattern: "WEEKLY_DAYS",
+        daysOfWeek: ["WED", "MON"],
+        until: { kind: "CALENDAR_DATE", year: 2026, month: 12, day: 31 },
+      },
+      expected: {
+        frequency: "WEEKLY",
+        interval: 1,
+        weekdays: ["MON", "WED"],
+        end: { type: "UNTIL", date: "2026-12-31" },
+      },
+    },
+    {
+      name: "요일 + 2주 동안 → 그 기간 끝 날까지",
+      repeat: {
+        pattern: "WEEKLY_DAYS",
+        daysOfWeek: ["MON"],
+        forDuration: { unit: "WEEK", amount: 2 },
+      },
+      expected: {
+        frequency: "WEEKLY",
+        interval: 1,
+        weekdays: ["MON"],
+        end: { type: "UNTIL", date: "2026-11-10" },
+      },
+    },
+    {
+      name: "이번 주 → 짧은 매주 + 일요일까지",
+      repeat: { pattern: "THIS_WEEK" },
+      expected: {
+        frequency: "WEEKLY",
+        interval: 1,
+        weekdays: ["WED", "THU", "FRI", "SAT", "SUN"],
+        end: { type: "UNTIL", date: "2026-11-01" },
+      },
+    },
+    {
+      name: "격주",
+      repeat: { pattern: "BIWEEKLY_DAYS", daysOfWeek: ["TUE"] },
+      expected: { frequency: "WEEKLY", interval: 2, weekdays: ["TUE"], end: { type: "NEVER" } },
+    },
+    { name: "반복 아님", repeat: { pattern: "NONE" }, expected: null },
+    { name: "나타낼 수 없는 반복", repeat: { pattern: "UNSUPPORTED" }, expected: null },
+    { name: "요일 없는 매주", repeat: { pattern: "WEEKLY_DAYS" }, expected: null },
+  ] as const)("$name", ({ repeat, expected }) => {
+    // Given
+    const input = scheduleDraftFixture({ repeat: { ...repeat } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result.repeat).toEqual(expected);
+  });
+
+  it("매월 n일은 말한 날짜를 쓰고 없으면 시작일의 날짜를 쓴다", () => {
+    // Given
+    const said = {
+      ...draft(),
+      repeat: planRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 }),
+    };
+    const unsaid = { ...draft(), repeat: planRepeatRefFixture({ pattern: "MONTHLY_DAY" }) };
+    // When
+    const results = [said, unsaid].map((input) => resolveTodoSchedule(input, SEOUL).repeat);
+    // Then
+    expect(results).toEqual([
+      { frequency: "MONTHLY", monthDay: 15, end: { type: "NEVER" } },
+      { frequency: "MONTHLY", monthDay: 28, end: { type: "NEVER" } },
+    ]);
+  });
+
+  it("종료를 말하지 않아도 출시 앱용 recurrence는 기본 +4주를 유지한다", () => {
+    // Given
+    const input = draft({ repeat: { pattern: "DAILY" } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result.recurrence?.endDate).toBe("2026-11-25");
+    expect(result.repeat).toEqual({ frequency: "DAILY", end: { type: "NEVER" } });
+  });
 });

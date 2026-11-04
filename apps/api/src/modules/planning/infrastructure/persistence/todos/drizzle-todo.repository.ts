@@ -1,17 +1,20 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gte, inArray, lte, max, sql } from "drizzle-orm";
-import { groupBy, isEmptyObject, isUndefined, omitBy, sortBy } from "es-toolkit";
+import { and, eq, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
+import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
   DatabaseRecordNotFoundError,
   requireRecord,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoItem } from "#api/platform/database/schema/index";
+import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
+import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import type {
+  CreatedOccurrence,
+  TodoOccurrencePlan,
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "../../../application/ports/todos/todo.repository.port.js";
@@ -51,6 +54,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       }),
       visibility: row.visibility,
       seriesId: row.seriesId,
+      occurrenceDate: row.occurrenceDate,
       items: row.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -91,37 +95,40 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .values(items.map((item, sortOrder) => ({ todoId, title: item.title, sortOrder })));
   }
 
-  async createMany(
-    items: readonly TodoCreationPlan[],
+  async insertOccurrences(
+    plans: readonly TodoOccurrencePlan[],
     seriesId: string,
-    inlineItems: readonly { title: string }[] = [],
-  ): Promise<Todo[]> {
+    checklist: readonly { title: string }[],
+  ): Promise<readonly CreatedOccurrence[]> {
+    if (plans.length === 0) {
+      return [];
+    }
     const rows = await this.db
       .insert(todo)
-      .values(items.map((item) => ({ ...item, seriesId })))
-      .returning();
-    const itemRows =
-      inlineItems.length === 0
-        ? []
-        : await this.db
-            .insert(todoItem)
-            .values(
-              rows.flatMap((created) =>
-                inlineItems.map((item, sortOrder) => ({
-                  todoId: created.id,
-                  title: item.title,
-                  sortOrder,
-                })),
-              ),
-            )
-            .returning();
-    const itemsByTodoId = groupBy(itemRows, (item) => item.todoId);
-    return sortBy(rows, [(row) => row.sortOrder]).map((row) =>
-      DrizzleTodoRepository.toDomain({
-        ...row,
-        items: sortBy(itemsByTodoId[row.id] ?? [], [(item) => item.sortOrder]),
-      }),
-    );
+      .values(
+        plans.map((plan) => ({
+          ...plan,
+          seriesId,
+          occurrenceDate: parseDateOnly(plan.occurrenceDate),
+        })),
+      )
+      .onConflictDoNothing({
+        target: [todo.seriesId, todo.occurrenceDate],
+        where: isNotNull(todo.occurrenceDate),
+      })
+      .returning({ id: todo.id, scheduledTime: todo.scheduledTime });
+    if (rows.length > 0 && checklist.length > 0) {
+      await this.db.insert(todoItem).values(
+        rows.flatMap((created) =>
+          checklist.map((item, sortOrder) => ({
+            todoId: created.id,
+            title: item.title,
+            sortOrder,
+          })),
+        ),
+      );
+    }
+    return rows.map((row) => ({ todoId: row.id, scheduledTime: row.scheduledTime }));
   }
 
   async updateCompletion(id: number, completed: boolean, completedAt: Date | null): Promise<void> {
@@ -171,11 +178,25 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     requireRecord(deleted[0]);
   }
 
-  countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return this.db.$count(
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const todos = await this.db.$count(
       todo,
-      and(eq(todo.userId, userId), eq(todo.categoryId, categoryId), eq(todo.completed, false)),
+      and(
+        eq(todo.userId, userId),
+        eq(todo.categoryId, categoryId),
+        eq(todo.completed, false),
+        isNull(todo.seriesId),
+      ),
     );
+    const series = await this.db.$count(
+      todoSeries,
+      and(
+        eq(todoSeries.userId, userId),
+        eq(todoSeries.categoryId, categoryId),
+        isNotNull(todoSeries.nextOccurrenceDate),
+      ),
+    );
+    return todos + series;
   }
 
   async getMaxSortOrder(userId: string): Promise<number> {

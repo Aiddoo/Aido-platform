@@ -162,6 +162,7 @@ describe("HandleSuggestionAction", () => {
     repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
     creator.stage.mockResolvedValue({
       todos: Array.from({ length: 12 }, () => todoResponse),
+      series: null,
       afterCommit,
     });
 
@@ -186,7 +187,11 @@ describe("HandleSuggestionAction", () => {
         categoryId: 5,
         scheduledTime: "10:00",
         timezone: "Asia/Seoul",
-        recurrence: expect.objectContaining({ daysOfWeek: ["MON", "WED", "FRI"] }),
+        repeat: expect.objectContaining({
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: ["MON", "WED", "FRI"],
+        }),
       }),
     );
     expect(afterCommitRegistry.register).toHaveBeenCalledWith(afterCommit);
@@ -306,7 +311,7 @@ describe("HandleSuggestionAction", () => {
         createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
       );
       repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
+      creator.stage.mockResolvedValue({ todos: [todoResponse], series: null, afterCommit });
       // When
       await useCase.execute({
         userId: mockUserId,
@@ -320,7 +325,7 @@ describe("HandleSuggestionAction", () => {
         expect.objectContaining({
           startDate: parseDateOnly(startDate),
           timezone,
-          recurrence: expect.objectContaining({ endDate }),
+          repeat: expect.objectContaining({ end: { type: "UNTIL", date: endDate } }),
         }),
       );
       expect(localePreferenceReader.read).not.toHaveBeenCalled();
@@ -335,7 +340,7 @@ describe("HandleSuggestionAction", () => {
         createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
       );
       repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-      creator.stage.mockResolvedValue({ todos: [todoResponse], afterCommit });
+      creator.stage.mockResolvedValue({ todos: [todoResponse], series: null, afterCommit });
       // When
       await useCase.execute({
         userId: mockUserId,

@@ -1,12 +1,12 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 
 import type {
   FindFriendTodosParams,
@@ -150,10 +150,24 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
     return row == null ? null : TodoMapper.toResponse(row);
   }
 
-  countActiveByCategory(userId: string, categoryId: number): Promise<number> {
-    return this.db.$count(
+  async countCategoryUsage(userId: string, categoryId: number): Promise<number> {
+    const todos = await this.db.$count(
       todo,
-      and(eq(todo.userId, userId), eq(todo.categoryId, categoryId), eq(todo.completed, false)),
+      and(
+        eq(todo.userId, userId),
+        eq(todo.categoryId, categoryId),
+        eq(todo.completed, false),
+        isNull(todo.seriesId),
+      ),
     );
+    const series = await this.db.$count(
+      todoSeries,
+      and(
+        eq(todoSeries.userId, userId),
+        eq(todoSeries.categoryId, categoryId),
+        isNotNull(todoSeries.nextOccurrenceDate),
+      ),
+    );
+    return todos + series;
   }
 }

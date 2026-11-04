@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
-import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
+import { dayOfWeekSchema, todoRepeatSchema } from "../../todo/v1/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
 export const todoRecurrenceSchema = z.object({
@@ -28,7 +28,11 @@ export const parsedTodoDataSchema = z.object({
   recurrence: todoRecurrenceSchema
     .nullable()
     .default(null)
-    .describe("반복 설정 (비반복 일정은 null)"),
+    .describe("반복 설정 (비반복 일정은 null, 출시 앱용 요일+종료일)"),
+  repeat: todoRepeatSchema
+    .nullable()
+    .optional()
+    .describe("반복 규칙 (반복이 아니면 null). 1.15.0 이전 서버 응답에는 없다"),
   categoryId: z
     .number()
     .int()

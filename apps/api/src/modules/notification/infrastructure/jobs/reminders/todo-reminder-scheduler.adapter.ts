@@ -5,6 +5,7 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import type {
   IReminderScheduler,
   ReminderCancellationResult,
+  ReminderSchedule,
 } from "../../../application/ports/reminders/reminder-scheduler.port.js";
 import {
   allReminderLabels,
@@ -27,6 +28,26 @@ export class TodoReminderSchedulerAdapter implements IReminderScheduler {
 
   scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
     return this.#scheduleAsync(todoId, scheduledTime, userId);
+  }
+
+  async scheduleReminders(reminders: readonly ReminderSchedule[]): Promise<void> {
+    const nowMs = Date.now();
+    const jobs = reminders.flatMap(({ todoId, scheduledTime, userId }) =>
+      planReminderJobs(scheduledTime.getTime(), nowMs).map((job) => ({
+        data: {
+          name: TODO_REMINDER_JOB_NAME,
+          data: { todoId, userId, stageLabel: job.label },
+        },
+        options: {
+          ...TODO_REMINDER_JOB_POLICY,
+          idempotencyKey: todoReminderJobKey(todoId, job.label),
+          startAfter: new Date(nowMs + job.delay),
+        },
+      })),
+    );
+    if (jobs.length > 0) {
+      await this.runtime.enqueueMany(TODO_REMINDER_QUEUE, jobs);
+    }
   }
 
   cancelReminder(todoId: number): Promise<ReminderCancellationResult> {

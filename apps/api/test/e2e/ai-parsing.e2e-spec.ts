@@ -66,6 +66,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
       isAllDay: false,
       isRecurring: false,
       recurrence: null,
+      repeat: null,
     });
     expect(response.body.data.meta).toMatchObject({
       model: "fake:test-model",

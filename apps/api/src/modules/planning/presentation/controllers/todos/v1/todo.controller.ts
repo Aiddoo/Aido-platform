@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
+import { TODO_ITEM_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import {
   Body,
   Controller,
@@ -33,10 +33,10 @@ import {
 } from "#api/platform/http/swagger/index";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { ApplicationException } from "#api/shared/domain/index";
 
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../../application/use-cases/todos/change-todo-category.use-case.js";
-import { CreateRecurringTodos } from "../../../../application/use-cases/todos/create-recurring-todos.use-case.js";
 import { CreateTodo } from "../../../../application/use-cases/todos/create-todo.use-case.js";
 import { DeleteTodoItem } from "../../../../application/use-cases/todos/delete-todo-item.use-case.js";
 import { DeleteTodo } from "../../../../application/use-cases/todos/delete-todo.use-case.js";
@@ -94,7 +94,6 @@ export class TodoController {
     private readonly getTodoByIdUseCase: GetTodoById,
     private readonly getFriendTodosUseCase: GetFriendTodos,
     private readonly createTodoUseCase: CreateTodo,
-    private readonly createRecurringTodosUseCase: CreateRecurringTodos,
     private readonly updateTodoUseCase: UpdateTodo,
     private readonly toggleTodoCompleteUseCase: ToggleTodoComplete,
     private readonly updateTodoVisibilityUseCase: UpdateTodoVisibility,
@@ -195,6 +194,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`isAllDay\`: 종일 여부 (기본값: true)
 - \`visibility\`: 공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)
 - \`items\`: 하위 항목 배열 (선택, 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개). 투두와 함께 체크리스트를 일괄 생성합니다.
+- \`repeat\`: 반복 규칙 (선택). 있으면 \`endDate\`는 비워야 하고, 앞으로 ${TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS}일 치 회차를 만듭니다. 응답의 \`todo\`는 첫 회차, \`series\`는 규칙입니다. 체크리스트는 회차마다 복사합니다.
 
 ---
 
@@ -232,7 +232,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
     @Timezone() timezone: string,
   ): Promise<CreateTodoResponseDto> {
-    const todo = await this.createTodoUseCase.execute({
+    const { todos, series } = await this.createTodoUseCase.execute({
       userId: user.userId,
       title: dto.title,
       categoryId: dto.categoryId,
@@ -243,11 +243,17 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       isAllDay: dto.isAllDay,
       visibility: dto.visibility,
       items: dto.items,
+      repeat: dto.repeat,
     });
+    const todo = todos.at(0);
+    if (todo == null) {
+      throw new ApplicationException(ErrorCode.SYS_0001, { reason: "created todo missing" });
+    }
 
     return {
       message: "할 일이 생성되었습니다.",
       todo,
+      ...(series != null && { series }),
     };
   }
 
@@ -259,9 +265,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     example: "Asia/Seoul",
   })
   @ApiDoc({
-    summary: "반복 할 일 생성",
+    summary: "반복 할 일 생성 (출시 앱 호환)",
     operationId: "createRecurringTodo",
-    description: `날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
+    deprecated: true,
+    description: `지원하는 마지막 앱 버전: 1.14.x. 새 앱은 \`POST /todos\`의 \`repeat\`를 씁니다.
+
+날짜 범위와 요일 조합에 따라 반복 할 일을 만듭니다. 앞으로 ${TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS}일 치 회차를 만들고 나머지는 매일 작업이 채웁니다.
 
 **필수 필드**
 - \`title\`: 할 일 제목 (1-200자)
@@ -270,11 +279,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`endDate\`: 반복 종료 날짜 (YYYY-MM-DD)
 - \`daysOfWeek\`: 반복할 요일 배열 (MON/TUE/WED/THU/FRI/SAT/SUN)
 
-**예시**: 3월 1일~31일, 매주 월/수/금 → 약 13개의 독립 할 일 생성
+**예시**: 3월 1일~31일, 매주 월/수/금 → 약 13개의 할 일 생성
+
+**응답**
+- \`count\`: 이번에 만든 할 일 수
 
 **제한사항**
-- 한 번에 최대 100개까지 생성 가능
-- 활성(미완료) 할 일 한도를 초과하면 전체 요청 거부`,
+- 진행 중인 반복 할 일은 최대 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER}개
+- 카테고리 한도를 초과하면 전체 요청 거부`,
   })
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -286,24 +298,27 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
     @Timezone() timezone: string,
   ): Promise<CreateRecurringTodoResponseDto> {
-    const result = await this.createRecurringTodosUseCase.execute({
-      data: {
-        userId: user.userId,
-        title: dto.title,
-        categoryId: dto.categoryId,
-        startDate: parseDateOnly(dto.startDate),
-        scheduledTime: dto.scheduledTime,
-        timezone,
-        isAllDay: dto.isAllDay,
-        visibility: dto.visibility,
+    const { todos } = await this.createTodoUseCase.execute({
+      userId: user.userId,
+      title: dto.title,
+      categoryId: dto.categoryId,
+      startDate: parseDateOnly(dto.startDate),
+      scheduledTime: dto.scheduledTime,
+      timezone,
+      isAllDay: dto.isAllDay,
+      visibility: dto.visibility,
+      repeat: {
+        frequency: "WEEKLY",
+        interval: 1,
+        weekdays: dto.daysOfWeek,
+        end: { type: "UNTIL", date: dto.endDate },
       },
-      recurrence: { daysOfWeek: dto.daysOfWeek, endDate: dto.endDate },
     });
 
     return {
-      message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
-      todos: result.todos,
-      count: result.count,
+      message: `반복 할 일이 ${todos.length}개 생성되었습니다.`,
+      todos: [...todos],
+      count: todos.length,
     };
   }
 

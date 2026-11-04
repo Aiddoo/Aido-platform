@@ -43,6 +43,7 @@ describe("TodoToggledHandler — 완료 토글 이벤트 핸들러", () => {
   beforeEach(async () => {
     todoReminder = {
       scheduleReminder: vi.fn(),
+      scheduleReminders: vi.fn(),
       cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
     };
 

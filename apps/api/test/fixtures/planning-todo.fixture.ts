@@ -1,6 +1,8 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
+import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
+import type { TodoSeries } from "#api/modules/planning/domain/aggregates/series/todo-series.aggregate";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { TodoBuilder } from "#test/builders/index";
@@ -8,6 +10,8 @@ import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 import {
   StubPlanningTodoRepository,
   StubPlanningTodoReadRepository,
+  StubPlanningTodoReminder,
+  StubPlanningTodoSeriesRepository,
   StubPlanningTodoCache,
   StubPlanningEventPublisher,
   StubPlanningMutationLock,
@@ -34,8 +38,12 @@ export function createPlanningTodoFixture(
       categoryOwners.set(record.categoryId, record.userId);
     }
   }
-  const todoRepository = new StubPlanningTodoRepository(records);
-  const todoReadRepository = new StubPlanningTodoReadRepository(records, categories);
+  const seriesStore = new Map<string, TodoSeries>();
+  const todoRepository = new StubPlanningTodoRepository(records, seriesStore);
+  const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);
+  const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
+  const todoReminder = new StubPlanningTodoReminder();
+  const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository });
   const todoCache = new StubPlanningTodoCache();
   const eventPublisher = new StubPlanningEventPublisher();
   const mutationLock = new StubPlanningMutationLock();
@@ -63,8 +71,12 @@ export function createPlanningTodoFixture(
     records,
     categories,
     categoryOwners,
+    seriesStore,
     todoRepository,
     todoReadRepository,
+    todoSeriesRepository,
+    todoReminder,
+    occurrenceMaterializer,
     todoCache,
     eventPublisher,
     mutationLock,

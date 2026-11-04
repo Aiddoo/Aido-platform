@@ -354,14 +354,17 @@ export class MemoController {
           scheduledTime: todo.scheduledTime,
           isAllDay: todo.isAllDay,
           visibility: todo.visibility,
-          isRecurring: todo.isRecurring,
-          recurrence:
-            todo.recurrence != null
+          // 출시 앱(1.14.x까지)은 isRecurring + recurrence(요일 + 종료일)만 보낸다.
+          repeat:
+            todo.repeat ??
+            (todo.isRecurring && todo.recurrence != null
               ? {
-                  daysOfWeek: todo.recurrence.daysOfWeek,
-                  endDate: todo.recurrence.endDate,
+                  frequency: "WEEKLY",
+                  interval: 1,
+                  weekdays: todo.recurrence.daysOfWeek,
+                  end: { type: "UNTIL", date: todo.recurrence.endDate },
                 }
-              : undefined,
+              : undefined),
           items: todo.items,
         })),
       },

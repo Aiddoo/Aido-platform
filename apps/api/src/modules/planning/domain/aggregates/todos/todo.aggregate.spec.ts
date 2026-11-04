@@ -56,6 +56,7 @@ function buildProps(overrides: Partial<TodoProps> = {}): TodoProps {
     schedule: buildSchedule(),
     visibility: "PUBLIC",
     seriesId: null,
+    occurrenceDate: null,
     items: [],
     createdAt: new Date("2026-02-20T00:00:00.000Z"),
     updatedAt: new Date("2026-02-20T00:00:00.000Z"),

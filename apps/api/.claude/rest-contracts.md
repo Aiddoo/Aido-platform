@@ -37,7 +37,7 @@ Domain에 HTTP DTO나 transport serialization을 넣지 않는다. Application�
 
 API 필드를 제거하거나 의미를 바꾸는 작업은 요청 범위와 실제 소비자·배포 전략을 확인한다. 소비가 없는 내부 forwarding alias/helper는 유지 명분이 없으면 제거할 수 있으나, 배포된 구 앱 계약이나 queue/DB 운영 호환과 혼동하지 않는다.
 
-출시된 operation에는 상태 코드·파라미터·필드를 더하지 않는다(released app OpenAPI fixture가 막는다). 새 throttle 한도 같은 동작 변화는 description 문장으로 적는다. 고정된 released app fixture를 현재 schema로 재생성하지 않는다. snapshot 갱신으로 회귀를 감추지 않는다. 의도된 변경은 변경 내용을 검토하고 해당 계약·소비자 검증으로 확인한다.
+출시된 operation의 상태 코드·필수 입력·기존 필드는 바꾸지 않는다(released app OpenAPI fixture가 막는다). 필드·파라미터를 더해야 하면 생략 시 동작이 지금과 정확히 같은 optional만 더하고, fixture의 `pre…Fingerprint`에 이전 값과 사유 주석을 남겨 현재 지문을 갱신하며, 출시 앱 요청 모양으로 보낸 E2E로 동작을 증명한다. 새 throttle 한도 같은 동작 변화는 description 문장으로 적는다. 고정된 released app fixture를 현재 schema로 재생성하지 않는다. snapshot 갱신으로 회귀를 감추지 않는다. 의도된 변경은 변경 내용을 검토하고 해당 계약·소비자 검증으로 확인한다.
 
 ## 검증 선택
 

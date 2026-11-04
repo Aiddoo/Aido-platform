@@ -63,6 +63,7 @@ describe("ParseTodo", () => {
       isAllDay: false,
       isRecurring: false,
       recurrence: null,
+      repeat: null,
       categoryId: 7,
     });
     expect(result.meta.promptVersion).toBe("parse-todo@5");

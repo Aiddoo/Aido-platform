@@ -1,3 +1,4 @@
+import type { TodoRepeat } from "@aido/api";
 import type { DayOfWeek } from "@aido/api/vocabulary";
 
 /**
@@ -110,6 +111,9 @@ export interface ResolvedSchedule {
   readonly scheduledTime: string | null;
   readonly isAllDay: boolean;
   readonly isRecurring: boolean;
+  /** 출시 앱용 요일 + 종료일. 종료를 말하지 않으면 기본 기간으로 채운다. */
   readonly recurrence: { readonly daysOfWeek: DayOfWeek[]; readonly endDate: string } | null;
+  /** 반복 규칙. 종료를 말하지 않으면 계속 반복이다. */
+  readonly repeat: TodoRepeat | null;
   readonly warnings: readonly ScheduleWarning[];
 }

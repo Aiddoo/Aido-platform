@@ -1,76 +1,56 @@
 import { randomUUID } from "node:crypto";
 
 import { ErrorCode } from "@aido/api/errors";
-import { RECURRING_TODO_LIMITS, TODO_LIMITS } from "@aido/api/vocabulary";
+import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
+import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
+import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { Todo, type TodoCreationDraft } from "../../../domain/aggregates/todos/todo.aggregate.js";
-import { expandRecurringDates } from "../../../domain/policies/todos/expand-recurring-dates.policy.js";
-import type { CreateTodoData, TodoRecurrence } from "../../models/todos/todo.types.js";
+import {
+  RepeatRule,
+  type RepeatSpec,
+} from "../../../domain/value-objects/series/repeat-rule.vo.js";
+import type { CreateTodoData } from "../../models/todos/todo.types.js";
+import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
-import type { TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
+import type {
+  CreatedOccurrence,
+  TodoRepositoryPort,
+} from "../../ports/todos/todo.repository.port.js";
+import type { TodoOccurrenceMaterializer } from "../series/todo-occurrence-materializer.service.js";
 
-export interface RecurringTodoCreationPlan {
-  readonly userId: string;
-  readonly categoryId: number;
-  readonly drafts: readonly TodoCreationDraft[];
-  readonly items: readonly { title: string }[] | undefined;
-  readonly seriesId: string;
-}
-
-function planDraftOn(data: CreateTodoData, date: string, endDate: Date | null): TodoCreationDraft {
+export function planTodoCreation(data: CreateTodoData): TodoCreationDraft {
   return Todo.planCreation({
     userId: data.userId,
     categoryId: data.categoryId,
     title: data.title,
-    startDate: parseDateOnly(date),
-    endDate,
+    startDate: data.startDate,
+    endDate: data.endDate ?? null,
     scheduledTime:
       data.scheduledTime == null
         ? null
-        : parseLocalDateTime(date, data.scheduledTime, data.timezone),
+        : parseLocalDateTime(toDateString(data.startDate), data.scheduledTime, data.timezone),
     isAllDay: data.isAllDay,
     visibility: data.visibility,
   });
 }
 
-export function planTodoCreation(data: CreateTodoData): TodoCreationDraft {
-  return planDraftOn(data, toDateString(data.startDate), data.endDate ?? null);
-}
-
-export function planRecurringTodoCreation(
-  data: CreateTodoData,
-  recurrence: TodoRecurrence,
-): RecurringTodoCreationPlan {
-  const startDate = toDateString(data.startDate);
-  const dates = expandRecurringDates(startDate, recurrence.endDate, recurrence.daysOfWeek);
-  if (dates.length === 0) {
-    throw new ApplicationException(ErrorCode.TODO_0843, { startDate });
-  }
-  if (dates.length > RECURRING_TODO_LIMITS.MAX_INSTANCES) {
-    throw new ApplicationException(ErrorCode.TODO_0812, {
-      count: dates.length,
-      limit: RECURRING_TODO_LIMITS.MAX_INSTANCES,
-    });
-  }
-  return {
-    userId: data.userId,
-    categoryId: data.categoryId,
-    drafts: dates.map((date) => planDraftOn(data, date, null)),
-    items: data.items,
-    seriesId: randomUUID(),
-  };
+export interface StartedSeries {
+  readonly series: TodoSeries;
+  readonly occurrences: readonly CreatedOccurrence[];
 }
 
 interface TodoCreationWriterDependencies {
   readonly todoRepository: Pick<
     TodoRepositoryPort,
-    "countActiveByCategory" | "getMaxSortOrder" | "create" | "createInlineItems" | "createMany"
+    "countCategoryUsage" | "getMaxSortOrder" | "create" | "createInlineItems"
   >;
+  readonly todoSeriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
+  readonly occurrenceMaterializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
 }
 
@@ -81,9 +61,12 @@ export class TodoCreationWriter {
     this.#dependencies = dependencies;
   }
 
-  async create(draft: TodoCreationDraft, items?: readonly { title: string }[]): Promise<Todo> {
+  async createSingle(
+    draft: TodoCreationDraft,
+    items?: readonly { title: string }[],
+  ): Promise<Todo> {
     await this.#dependencies.categoryOwnership.validateOwnership(draft.categoryId, draft.userId);
-    const activeCount = await this.#dependencies.todoRepository.countActiveByCategory(
+    const activeCount = await this.#dependencies.todoRepository.countCategoryUsage(
       draft.userId,
       draft.categoryId,
     );
@@ -104,25 +87,49 @@ export class TodoCreationWriter {
     return created;
   }
 
-  async createRecurring(plan: RecurringTodoCreationPlan): Promise<Todo[]> {
-    const { userId, categoryId, drafts, items, seriesId } = plan;
+  /** 상한 확인 → 규칙 저장 → 회차를 한 번에 만든다. 활성 UoW와 생성 잠금 안에서 호출한다. */
+  async startSeries(data: CreateTodoData, repeat: RepeatSpec): Promise<StartedSeries> {
+    const { userId, categoryId } = data;
+    if (data.endDate != null) {
+      throw new ApplicationException(ErrorCode.TODO_0845, { field: "endDate" });
+    }
+    const at = now();
+    const series = TodoSeries.planCreation({
+      id: randomUUID(),
+      userId,
+      categoryId,
+      title: data.title,
+      visibility: data.visibility ?? "PUBLIC",
+      scheduledLocalTime: data.scheduledTime ?? null,
+      timezone: data.timezone,
+      rule: RepeatRule.from(repeat),
+      startDate: toDateString(data.startDate),
+      checklistTemplate: data.items ?? [],
+      sortOrder: await this.#dependencies.todoRepository.getMaxSortOrder(userId),
+      at,
+    });
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
-    const activeInCategory = await this.#dependencies.todoRepository.countActiveByCategory(
+    const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
+    if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
+      throw new ApplicationException(ErrorCode.TODO_0842, {
+        limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
+        activeCount,
+      });
+    }
+    const activeInCategory = await this.#dependencies.todoRepository.countCategoryUsage(
       userId,
       categoryId,
     );
-    if (activeInCategory + drafts.length > TODO_LIMITS.MAX_PER_CATEGORY) {
+    if (activeInCategory >= TODO_LIMITS.MAX_PER_CATEGORY) {
       throw new ApplicationException(ErrorCode.TODO_0813, {
         activeInCategory,
-        batchSize: drafts.length,
+        batchSize: 1,
         maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
       });
     }
-    const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(userId);
-    const plans = drafts.map((draft, index) => ({
-      ...draft,
-      sortOrder: maxSortOrder + 1 + index,
-    }));
-    return this.#dependencies.todoRepository.createMany(plans, seriesId, items);
+    const drafts = this.#dependencies.occurrenceMaterializer.planFirstRun(series, at);
+    await this.#dependencies.todoSeriesRepository.insert(series);
+    const occurrences = await this.#dependencies.occurrenceMaterializer.persist(series, drafts);
+    return { series, occurrences };
   }
 }

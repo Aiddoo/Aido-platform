@@ -2,22 +2,19 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/index";
 
-import type { CreateTodoData, TodoRecurrence } from "../../models/todos/todo.types.js";
+import type { CreateTodoData } from "../../models/todos/todo.types.js";
 import type {
   StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "../../ports/todos/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
+import { toTodoSeriesResponse } from "../../read-models/series/todo-series.read-model.js";
 import type { TodoCreationEffects } from "./todo-creation-effects.service.js";
-import {
-  planRecurringTodoCreation,
-  planTodoCreation,
-  type TodoCreationWriter,
-} from "./todo-creation-writer.service.js";
+import { planTodoCreation, type TodoCreationWriter } from "./todo-creation-writer.service.js";
 
 interface StagedTodoCreatorDependencies {
-  readonly writer: Pick<TodoCreationWriter, "create" | "createRecurring">;
-  readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishRecurring">;
+  readonly writer: Pick<TodoCreationWriter, "createSingle" | "startSeries">;
+  readonly effects: Pick<TodoCreationEffects, "publishSingle" | "publishSeriesStarted">;
   readonly todoReadRepository: Pick<
     TodoReadRepositoryPort,
     "findByIdAndUserId" | "findManyBySeriesId"
@@ -32,13 +29,14 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
   }
 
   stage(input: CreateTodoData): Promise<StagedTodoCreation> {
-    return input.recurrence == null
-      ? this.#stageSingle(input)
-      : this.#stageRecurring(input, input.recurrence);
+    return input.repeat == null ? this.#stageSingle(input) : this.#stageSeries(input, input.repeat);
   }
 
   async #stageSingle(input: CreateTodoData): Promise<StagedTodoCreation> {
-    const created = await this.#dependencies.writer.create(planTodoCreation(input), input.items);
+    const created = await this.#dependencies.writer.createSingle(
+      planTodoCreation(input),
+      input.items,
+    );
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
       created.getId().getValue(),
       input.userId,
@@ -48,24 +46,24 @@ export class StagedTodoCreator implements StagedTodoCreatorPort {
     }
     return {
       todos: [response],
+      series: null,
       afterCommit: () => this.#dependencies.effects.publishSingle(created, input.userId),
     };
   }
 
-  async #stageRecurring(
+  async #stageSeries(
     input: CreateTodoData,
-    recurrence: TodoRecurrence,
+    repeat: NonNullable<CreateTodoData["repeat"]>,
   ): Promise<StagedTodoCreation> {
-    const plan = planRecurringTodoCreation(input, recurrence);
-    const created = await this.#dependencies.writer.createRecurring(plan);
+    const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);
     const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       input.userId,
-      plan.seriesId,
+      series.getId(),
     );
     return {
       todos,
-      afterCommit: () =>
-        this.#dependencies.effects.publishRecurring(created, input.userId, plan.seriesId),
+      series: toTodoSeriesResponse(series),
+      afterCommit: () => this.#dependencies.effects.publishSeriesStarted(series, occurrences),
     };
   }
 }

@@ -11,6 +11,7 @@ import {
   type TodoCategoryChangedEvent,
   type TodoCreatedEvent,
   type TodoDeletedEvent,
+  type TodoOccurrencesCreatedEvent,
   type TodoRescheduledEvent,
   type TodoToggledEvent,
   type TodoUpdatedEvent,
@@ -26,6 +27,7 @@ import {
 
 type CompletionSourceChangedEvent =
   | TodoCreatedEvent
+  | TodoOccurrencesCreatedEvent
   | TodoDeletedEvent
   | TodoToggledEvent
   | TodoRescheduledEvent
@@ -47,6 +49,7 @@ export class DailyCompletionCacheInvalidator {
   // 주의: @OnEvent에 배열을 넘기면 EventEmitter2가 "다중 구독"이 아니라
   // 델리미터로 결합된 단일 이벤트명으로 해석한다. 이벤트별로 데코레이터를 쌓는다.
   @OnEvent(TODO_EVENTS.CREATED)
+  @OnEvent(TODO_EVENTS.OCCURRENCES_CREATED)
   @OnEvent(TODO_EVENTS.DELETED)
   @OnEvent(TODO_EVENTS.TOGGLED)
   @OnEvent(TODO_EVENTS.RESCHEDULED)

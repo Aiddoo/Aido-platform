@@ -13,7 +13,7 @@ export interface GetTodoResourceLimitInput {
 }
 
 interface GetTodoResourceLimitDependencies {
-  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "countActiveByCategory">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "countCategoryUsage">;
 }
 
 export class GetTodoResourceLimit {
@@ -25,7 +25,7 @@ export class GetTodoResourceLimit {
 
   async execute(input: GetTodoResourceLimitInput): Promise<TodoResourceLimitResult> {
     if (input.categoryId != null) {
-      const activeCount = await this.#dependencies.todoReadRepository.countActiveByCategory(
+      const activeCount = await this.#dependencies.todoReadRepository.countCategoryUsage(
         input.userId,
         input.categoryId,
       );
