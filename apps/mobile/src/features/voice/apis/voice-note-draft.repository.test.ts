@@ -1,0 +1,173 @@
+import { createMemorySyncStorage } from '@src/shared/__tests__';
+
+import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.factories';
+import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { withSentences } from '../domains/voice-note.model';
+import { createVoiceNoteDraftRepository } from './voice-note-draft.repository';
+
+const DEBOUNCE_MS = 800;
+
+function createRepository() {
+  const storage = createMemorySyncStorage();
+  const logger = { warn: jest.fn() };
+  const repository = createVoiceNoteDraftRepository({ storage, logger, debounceMs: DEBOUNCE_MS });
+
+  return { storage, logger, repository };
+}
+
+describe('VoiceNoteDraftRepository', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test('저장한 초안을 같은 계정에서 그대로 복원한다', () => {
+    // Given
+    const { repository } = createRepository();
+    const note = createVoiceNoteFixture();
+
+    // When
+    repository.save('user-1', note);
+
+    // Then
+    expect(repository.find('user-1', note.draftId)).toEqual(note);
+  });
+
+  test('다른 계정의 초안은 읽지도 목록에 넣지도 않는다', () => {
+    // Given
+    const { repository } = createRepository();
+    repository.save('user-1', createVoiceNoteFixture());
+
+    // When
+    const found = repository.find('user-2', 'draft-1');
+    const all = repository.findAll('user-2');
+
+    // Then
+    expect(found).toBeUndefined();
+    expect(all).toEqual([]);
+  });
+
+  test('계정 id가 다른 계정 id로 시작해도 초안이 섞이지 않는다', () => {
+    // Given
+    const { repository } = createRepository();
+    repository.save('1', createVoiceNoteFixture());
+    repository.save('10', createVoiceNoteFixture());
+
+    // When
+    const all = repository.findAll('1');
+
+    // Then
+    expect(all).toHaveLength(1);
+  });
+
+  test('문장이 이어서 들어오면 마지막 상태로 한 번만 쓴다', () => {
+    // Given
+    const { storage, repository } = createRepository();
+    const writes: string[] = [];
+    storage.subscribe(`aido_voice_note_draft_v1:user-1:draft-1`, () => writes.push('write'));
+    const note = createVoiceNoteFixture();
+
+    // When
+    repository.scheduleSave('user-1', note);
+    repository.scheduleSave('user-1', withSentences(note, [createVoiceNoteSentence()], 1_000));
+    repository.scheduleSave(
+      'user-1',
+      withSentences(note, [createVoiceNoteSentence(), createVoiceNoteSentence()], 2_000),
+    );
+    jest.advanceTimersByTime(DEBOUNCE_MS);
+
+    // Then
+    expect(writes).toHaveLength(1);
+    expect(repository.find('user-1', note.draftId)?.sentences).toHaveLength(2);
+  });
+
+  test('모아 둔 쓰기는 시간이 지나기 전에도 flush로 끝낼 수 있다', () => {
+    // Given
+    const { repository } = createRepository();
+    const note = createVoiceNoteFixture();
+    repository.scheduleSave('user-1', note);
+
+    // When
+    repository.flush('user-1', note.draftId);
+
+    // Then
+    expect(repository.find('user-1', note.draftId)).toEqual(note);
+  });
+
+  test('지운 초안은 모아 둔 쓰기가 뒤늦게 되살리지 않는다', () => {
+    // Given
+    const { repository } = createRepository();
+    const note = createVoiceNoteFixture();
+    repository.scheduleSave('user-1', note);
+
+    // When
+    repository.remove('user-1', note.draftId);
+    jest.advanceTimersByTime(DEBOUNCE_MS);
+
+    // Then
+    expect(repository.find('user-1', note.draftId)).toBeUndefined();
+  });
+
+  test('읽을 수 없는 초안은 복원 실패를 남기고 버린다', () => {
+    // Given
+    const { storage, logger, repository } = createRepository();
+    storage.set('aido_voice_note_draft_v1:user-1:draft-1', '{"draftId":');
+
+    // When
+    const found = repository.find('user-1', 'draft-1');
+
+    // Then
+    expect(found).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED,
+      expect.objectContaining({ reason: 'invalid-json' }),
+    );
+    expect(storage.getString('aido_voice_note_draft_v1:user-1:draft-1')).toBeUndefined();
+  });
+
+  test('형식이 맞지 않는 초안은 복원 실패를 남기고 버린다', () => {
+    // Given
+    const { storage, logger, repository } = createRepository();
+    storage.set('aido_voice_note_draft_v1:user-1:draft-1', JSON.stringify({ draftId: 'draft-1' }));
+
+    // When
+    const found = repository.find('user-1', 'draft-1');
+
+    // Then
+    expect(found).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
+      reason: 'schema-mismatch',
+    });
+  });
+
+  test('다른 계정의 초안만 지우고 현재 계정의 초안은 남긴다', () => {
+    // Given
+    const { repository } = createRepository();
+    repository.save('user-1', createVoiceNoteFixture());
+    repository.save('user-2', createVoiceNoteFixture());
+
+    // When
+    repository.removeAllExceptOwner('user-1');
+
+    // Then
+    expect(repository.findAll('user-1')).toHaveLength(1);
+    expect(repository.findAll('user-2')).toHaveLength(0);
+  });
+
+  test('초안이 아닌 다른 저장 값은 건드리지 않고 초안만 모두 지운다', () => {
+    // Given
+    const { storage, repository } = createRepository();
+    storage.set('aido_draft_v1:user-1:memo', 'keep');
+    repository.save('user-1', createVoiceNoteFixture());
+
+    // When
+    repository.removeAll();
+
+    // Then
+    expect(repository.findAll('user-1')).toEqual([]);
+    expect(storage.getString('aido_draft_v1:user-1:memo')).toBe('keep');
+  });
+});

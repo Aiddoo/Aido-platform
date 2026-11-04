@@ -1,0 +1,41 @@
+{
+  "timer": {
+    "limit": "{{time}}까지",
+    "a11y": "녹음 시간 {{elapsed}}, 최대 {{limit}}"
+  },
+  "waveform": {
+    "a11y": "녹음 파형"
+  },
+  "keyPoints": {
+    "title": "핵심 포인트",
+    "playFrom": "{{time}}부터 듣기",
+    "marked": "중요 표시"
+  },
+  "player": {
+    "play": "재생",
+    "pause": "일시정지",
+    "position": "재생 위치",
+    "positionValue": "{{position}} / {{duration}}",
+    "unavailable": "녹음 파일이 없어서 다시 들을 수 없어요"
+  },
+  "captions": {
+    "empty": "말씀하시면 여기에 글자로 나타나요",
+    "marked": "중요 표시한 문장",
+    "playFrom": "{{time}}부터 듣기"
+  },
+  "digest": {
+    "steps": {
+      "transcript": "글자 정리",
+      "keyPoints": "핵심 고르기",
+      "todos": "할 일 찾기"
+    },
+    "state": {
+      "done": "끝남",
+      "doing": "진행 중",
+      "waiting": "기다리는 중"
+    },
+    "characters": "{{amount}}자",
+    "marks": "깃발 {{count}}개",
+    "hint": "보통 10초 안에 끝나요. 화면을 닫아도 글자는 남아요."
+  }
+}

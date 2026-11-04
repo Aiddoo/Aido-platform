@@ -1,0 +1,122 @@
+import { createLocalFileSystemFake } from '@src/shared/__tests__';
+
+import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
+import { createVoiceRecordingRepository } from './voice-recording.repository';
+
+const NOW = new Date('2026-12-05T00:00:00.000Z');
+const OWNER_DIRECTORY = ['voice-notes', 'user-1'];
+
+function createRepository() {
+  const files = createLocalFileSystemFake();
+  const logger = { warn: jest.fn() };
+
+  return { files, logger, repository: createVoiceRecordingRepository(files, logger) };
+}
+
+describe('VoiceRecordingRepository', () => {
+  test('인식기가 쓴 파일을 초안 이름으로 옮겨 계정 폴더에 둔다', async () => {
+    // Given
+    const { files, repository } = createRepository();
+    const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav', { sizeBytes: 1_900_000 });
+
+    // When
+    const fileName = await repository.save({ accountId: 'user-1', draftId: 'draft-1', sourceUri });
+
+    // Then
+    expect(fileName).toBe('draft-1.wav');
+    expect(repository.findUri('user-1', 'draft-1.wav')).toBeDefined();
+    expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
+  });
+
+  test('옮기지 못하면 save-failed를 남기고 null을 돌려줘 글자만 남게 한다', async () => {
+    // Given
+    const { files, logger, repository } = createRepository();
+    const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav');
+    files.failNextMove(new Error('ENOSPC'));
+
+    // When
+    const fileName = await repository.save({ accountId: 'user-1', draftId: 'draft-1', sourceUri });
+
+    // Then
+    expect(fileName).toBeNull();
+    expect(logger.warn).toHaveBeenCalledWith(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
+      stage: 'move',
+      error: 'ENOSPC',
+    });
+  });
+
+  test('녹음 폴더를 만들지 못하면 save-failed를 남기고 null을 돌려준다', () => {
+    // Given
+    const { files, logger, repository } = createRepository();
+    files.failNextEnsureDirectory(new Error('EACCES'));
+
+    // When
+    const directory = repository.prepareDirectory('user-1');
+
+    // Then
+    expect(directory).toBeNull();
+    expect(logger.warn).toHaveBeenCalledWith(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
+      stage: 'prepare',
+      error: 'EACCES',
+    });
+  });
+
+  test('계정 폴더의 파일 크기를 모두 더한다', () => {
+    // Given
+    const { files, repository } = createRepository();
+    files.addFile(OWNER_DIRECTORY, 'a.wav', { sizeBytes: 1_000 });
+    files.addFile(OWNER_DIRECTORY, 'b.wav', { sizeBytes: 2_500 });
+    files.addFile(['voice-notes', 'user-2'], 'c.wav', { sizeBytes: 9_999 });
+
+    // When
+    const total = repository.getTotalSizeBytes('user-1');
+
+    // Then
+    expect(total).toBe(3_500);
+  });
+
+  test('초안이 가리키지 않고 30일이 지난 파일만 지운다', () => {
+    // Given
+    const { files, repository } = createRepository();
+    const old = new Date('2026-11-01T00:00:00.000Z');
+    files.addFile(OWNER_DIRECTORY, 'orphan-old.wav', { modifiedAt: old });
+    files.addFile(OWNER_DIRECTORY, 'referenced-old.wav', { modifiedAt: old });
+    files.addFile(OWNER_DIRECTORY, 'orphan-new.wav', {
+      modifiedAt: new Date('2026-12-04T00:00:00.000Z'),
+    });
+
+    // When
+    const removed = repository.removeExpired('user-1', NOW, new Set(['referenced-old.wav']));
+
+    // Then
+    expect(removed).toEqual(['orphan-old.wav']);
+    expect(files.hasFile(OWNER_DIRECTORY, 'referenced-old.wav')).toBe(true);
+    expect(files.hasFile(OWNER_DIRECTORY, 'orphan-new.wav')).toBe(true);
+  });
+
+  test('다른 계정의 녹음 폴더만 지우고 현재 계정은 남긴다', () => {
+    // Given
+    const { files, repository } = createRepository();
+    files.addFile(OWNER_DIRECTORY, 'a.wav');
+    files.addFile(['voice-notes', 'user-2'], 'b.wav');
+
+    // When
+    repository.removeAllExceptOwner('user-1');
+
+    // Then
+    expect(files.hasFile(OWNER_DIRECTORY, 'a.wav')).toBe(true);
+    expect(files.hasFile(['voice-notes', 'user-2'], 'b.wav')).toBe(false);
+  });
+
+  test('로그아웃하면 모든 계정의 녹음을 지운다', () => {
+    // Given
+    const { files, repository } = createRepository();
+    files.addFile(OWNER_DIRECTORY, 'a.wav');
+
+    // When
+    repository.removeAll();
+
+    // Then
+    expect(files.hasFile(OWNER_DIRECTORY, 'a.wav')).toBe(false);
+  });
+});

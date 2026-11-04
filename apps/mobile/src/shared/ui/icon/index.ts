@@ -47,6 +47,7 @@ export {
   PersonIcon,
   PinFilledIcon,
   PinIcon,
+  PlayIcon,
   PlusIcon,
   RefreshIcon,
   RepeatIcon,

@@ -4,6 +4,7 @@ import {
   useDraftService,
   useErrorReporter,
   useQueryCacheStorage,
+  useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toUserAnalyticsProperties } from '@src/features/user/utils/user-analytics-properties';
@@ -16,6 +17,7 @@ export const useUserIdentity = (): void => {
   const errorReporter = useErrorReporter();
   const draftService = useDraftService();
   const queryCacheStorage = useQueryCacheStorage();
+  const voiceNoteStorageService = useVoiceNoteStorageService();
   const isAuthenticated = status === 'authenticated';
 
   const { data: me } = useQuery({
@@ -39,6 +41,8 @@ export const useUserIdentity = (): void => {
     if (isAuthenticated && meId != null) {
       draftService.removeAllExceptOwner(meId);
       queryCacheStorage.setOwner(meId);
+      voiceNoteStorageService.removeAllExceptOwner(meId);
+      voiceNoteStorageService.removeExpired(meId);
     }
-  }, [isAuthenticated, meId, draftService, queryCacheStorage]);
+  }, [isAuthenticated, meId, draftService, queryCacheStorage, voiceNoteStorageService]);
 };

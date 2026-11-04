@@ -42,6 +42,7 @@ import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import type { UserService } from '@src/features/user/apis/user.service';
 import type { RecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import type { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import type { WidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
@@ -116,6 +117,8 @@ export interface DIContainer {
   weatherIntroductionService: WeatherIntroductionService;
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
+  /** 기기 안에만 있는 말로 메모하기 초안·녹음 파일(사용자 범위) */
+  voiceNoteStorageService: VoiceNoteStorageService;
 }
 
 export const DIContext = createContext<DIContainer | null>(null);
@@ -193,5 +196,6 @@ export const useWeatherIntroductionService = () => useDI().weatherIntroductionSe
 export const useWeatherService = () => useDI().weatherService;
 export const useWidgetSyncService = () => useDI().widgetSyncService;
 export const useWidgetNavigationRepository = () => useDI().widgetNavigationRepository;
+export const useVoiceNoteStorageService = () => useDI().voiceNoteStorageService;
 
 export const useAppIconService = () => useDI().appIconService;

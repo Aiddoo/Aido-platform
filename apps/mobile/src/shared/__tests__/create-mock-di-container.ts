@@ -1,6 +1,7 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 
 import { createHapticsStub } from './create-haptics-stub';
+import { createVoiceNoteStorageServiceFake } from './create-voice-note-storage-service-fake';
 
 /**
  * 테스트용 DI 컨테이너. 주입한 의존성만 노출하고,
@@ -21,6 +22,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     // 햅틱은 꾸밈이라 저장·실패 흐름 테스트마다 넣지 않아도 되게 아무것도 하지 않는 stub을 둔다
     haptics: createHapticsStub(),
+    // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
+    voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
   };
   const dependencies: Partial<DIContainer> = { ...defaults, ...overrides };
 
@@ -188,6 +191,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get widgetNavigationRepository() {
       return dependency('widgetNavigationRepository');
+    },
+    get voiceNoteStorageService() {
+      return dependency('voiceNoteStorageService');
     },
   };
 }

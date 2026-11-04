@@ -17,7 +17,7 @@ src/shared/i18n/
 └── locales/{ko,en}/   # 네임스페이스별 카탈로그 (ko = 원문)
 ```
 
-**네임스페이스**: feature 1:1 (`todo, todoComment, auth, memo, friend, invite, notification, user, subscription, ai, achievement, inquiry, weather, widget, appIcon, appVersion, featureDiscovery, storeReview`) + 횡단 4개 (`common, errors, validation, settings`). 정본은 `resources.ts`다.
+**네임스페이스**: feature 1:1 (`todo, todoComment, auth, memo, friend, invite, notification, user, subscription, ai, achievement, inquiry, weather, widget, appIcon, appVersion, featureDiscovery, storeReview, voiceNote`) + 횡단 4개 (`common, errors, validation, settings`). 정본은 `resources.ts`다.
 
 **언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). 설정 화면: `app/(app)/settings/language.tsx`.
 

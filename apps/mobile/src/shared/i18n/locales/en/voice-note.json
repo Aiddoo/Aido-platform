@@ -1,0 +1,43 @@
+{
+  "timer": {
+    "limit": "Up to {{time}}",
+    "a11y": "Recording time {{elapsed}} of {{limit}}"
+  },
+  "waveform": {
+    "a11y": "Recording waveform"
+  },
+  "keyPoints": {
+    "title": "Key points",
+    "playFrom": "Play from {{time}}",
+    "marked": "Marked"
+  },
+  "player": {
+    "play": "Play",
+    "pause": "Pause",
+    "position": "Playback position",
+    "positionValue": "{{position}} of {{duration}}",
+    "unavailable": "This recording is no longer on your phone"
+  },
+  "captions": {
+    "empty": "What you say shows up here",
+    "marked": "Marked sentence",
+    "playFrom": "Play from {{time}}"
+  },
+  "digest": {
+    "steps": {
+      "transcript": "Cleaning up text",
+      "keyPoints": "Picking key points",
+      "todos": "Finding to-dos"
+    },
+    "state": {
+      "done": "Done",
+      "doing": "In progress",
+      "waiting": "Waiting"
+    },
+    "characters_one": "{{amount}} character",
+    "characters_other": "{{amount}} characters",
+    "marks_one": "{{count}} mark",
+    "marks_other": "{{count}} marks",
+    "hint": "Usually done in 10 seconds. Your text is kept if you leave."
+  }
+}

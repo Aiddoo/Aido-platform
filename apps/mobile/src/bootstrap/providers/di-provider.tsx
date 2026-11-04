@@ -44,6 +44,9 @@ import { TodoCategoryService } from '@src/features/todo/apis/todo-category.servi
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
+import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
+import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
+import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
 import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
@@ -63,6 +66,7 @@ import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-i
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
+import { expoLocalFileSystemGateway } from '@src/shared/infra/file-system/expo-local-file-system.gateway';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics.gateway';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
@@ -295,6 +299,15 @@ export function DIProvider({
     // Weather
     const weatherService = new WeatherService(authHttpClient);
 
+    // Voice note — 녹음은 기기 밖으로 나가지 않는다. 초안은 암호화 초안 저장소, 녹음은 문서 폴더에 둔다
+    const voiceNoteStorageService = new VoiceNoteStorageService(
+      createVoiceNoteDraftRepository({
+        storage: encryptedStorageBootstrap.draftStorage,
+        logger,
+      }),
+      createVoiceRecordingRepository(expoLocalFileSystemGateway, logger),
+    );
+
     // Widget (홈 위젯 스냅샷 동기화 — 위젯은 순수 렌더러, 토큰/네트워크 접근 없음)
     const widgetBridge = createWidgetBridge();
     const widgetSyncService = new WidgetSyncService(widgetBridge, errorReporter);
@@ -357,6 +370,7 @@ export function DIProvider({
       networkStatus: expoNetworkStatusGateway,
       widgetSyncService,
       widgetNavigationRepository,
+      voiceNoteStorageService,
     };
   });
 
