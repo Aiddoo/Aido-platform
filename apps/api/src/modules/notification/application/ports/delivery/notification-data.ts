@@ -229,5 +229,5 @@ export interface RegisterPushTokenData {
   readonly platform: PushDevicePlatform;
   readonly sessionId: string | null;
   readonly payloadVersion: number;
-  readonly appVersion?: string;
+  readonly appVersion: string | null;
 }

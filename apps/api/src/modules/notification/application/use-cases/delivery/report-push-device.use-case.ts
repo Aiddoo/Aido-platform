@@ -29,11 +29,12 @@ export interface ReportPushDeviceCommand {
   readonly permission: { readonly status: PushPermissionStatus; readonly canAskAgain: boolean };
   readonly token: string | null;
   readonly payloadVersion: number;
-  readonly appVersion?: string;
-  readonly deviceModel?: string;
-  readonly osVersion?: string;
-  readonly timezone?: string;
-  readonly locale?: string;
+  readonly appVersion: string | null;
+  readonly deviceModel: string | null;
+  readonly osVersion: string | null;
+  /** 보낸 경우에만 저장한다. 없으면 기존 발송 시간대·언어를 유지한다. */
+  readonly timezone: string | null;
+  readonly locale: string | null;
 }
 
 export interface PushDeviceReport {
@@ -88,8 +89,8 @@ export class ReportPushDevice {
       platform: platformFromDeviceId(command.deviceId) ?? command.platformHint ?? null,
       permission: PushPermission.of(command.permission),
       token: command.token,
-      deviceModel: command.deviceModel ?? null,
-      osVersion: command.osVersion ?? null,
+      deviceModel: command.deviceModel,
+      osVersion: command.osVersion,
       reportedAt: new Date(),
     });
 

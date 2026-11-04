@@ -77,6 +77,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { NotificationBuilder, PushTokenBuilder, UserPreferenceBuilder } from "#test/builders/index";
+import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -435,14 +436,15 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       mockPushProvider.validateToken.mockReturnValue(true);
 
       // When
-      const registration = facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        deviceId: "ios_device-1",
-        token: mockPushToken,
-      });
+      const registration = facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          deviceId: "ios_device-1",
+          token: mockPushToken,
+        }),
+      );
 
       // Then
       await expect(registration).resolves.toMatchObject({ hasActiveToken: true });
@@ -456,26 +458,28 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("같은 사용자·기기가 다시 등록하면 한 행을 갱신한다", async () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
-      await facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        token: mockPushToken,
-        deviceId: "ios_device-1",
-        appVersion: "1.13.0",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+          appVersion: "1.13.0",
+        }),
+      );
 
       // When
-      await facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        token: mockPushToken,
-        deviceId: "ios_device-1",
-        appVersion: "1.14.0",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+          appVersion: "1.14.0",
+        }),
+      );
 
       // Then
       const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
@@ -491,24 +495,26 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("이전 사용자의 해제가 실패한 기기에 다른 사용자가 등록하면 토큰 소유가 새 사용자로 옮겨진다", async () => {
       // Given 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
       mockPushProvider.validateToken.mockReturnValue(true);
-      await facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        token: mockPushToken,
-        deviceId: "ios_device-1",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+        }),
+      );
 
       // When 같은 기기에서 사용자 B가 로그인해 같은 토큰을 등록한다
-      const registration = facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: "other-user",
-        token: mockPushToken,
-        deviceId: "ios_device-1",
-      });
+      const registration = facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: "other-user",
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+        }),
+      );
 
       // Then
       await expect(registration).resolves.toMatchObject({ hasActiveToken: true });
@@ -522,24 +528,26 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("같은 사용자의 deviceId가 바뀌어도 같은 토큰은 새 기기 행 하나만 남는다", async () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
-      await facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        token: mockPushToken,
-        deviceId: "ios_device-old",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-old",
+        }),
+      );
 
       // When
-      await facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        token: mockPushToken,
-        deviceId: "ios_device-new",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-new",
+        }),
+      );
 
       // Then
       const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
@@ -551,14 +559,15 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       mockPushProvider.validateToken.mockReturnValue(false);
 
       // When
-      const registration = facade.reportPushDevice({
-        permission: GRANTED_PERMISSION,
-        sessionId: null,
-        payloadVersion: 1,
-        userId: mockUserId,
-        deviceId: "ios_device-1",
-        token: "invalid-token",
-      });
+      const registration = facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          deviceId: "ios_device-1",
+          token: "invalid-token",
+        }),
+      );
 
       // Then
       await expect(registration).rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });

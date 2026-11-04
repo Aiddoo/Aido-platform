@@ -1,3 +1,4 @@
+import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
@@ -30,12 +31,14 @@ async function setup() {
     { userId: "user-b", sessionId: null, deviceId: "ios_legacy" },
   ];
   for (const device of devices) {
-    await report.execute({
-      ...device,
-      permission: { status: "GRANTED", canAskAgain: false },
-      token: `ExponentPushToken[${device.deviceId}]`,
-      payloadVersion: 2,
-    });
+    await report.execute(
+      PushDeviceReportFixture.command({
+        ...device,
+        permission: { status: "GRANTED", canAskAgain: false },
+        token: `ExponentPushToken[${device.deviceId}]`,
+        payloadVersion: 2,
+      }),
+    );
   }
   const useCase = new ReleaseSessionPushDevices({
     pushDeviceRepository: store,

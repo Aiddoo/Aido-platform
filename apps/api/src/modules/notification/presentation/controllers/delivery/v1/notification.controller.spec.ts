@@ -107,7 +107,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
         deviceId: "android_abc",
         platformHint: undefined,
         deviceModel: "SM-S931N",
-        osVersion: undefined,
+        osVersion: null,
         permission: { status: "GRANTED", canAskAgain: false },
         token: dto.token,
         payloadVersion: 2,
@@ -134,7 +134,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
         expect.objectContaining({
           deviceId: "default",
           platformHint: "ANDROID",
-          timezone: undefined,
+          timezone: null,
         }),
       );
     });

@@ -8,7 +8,7 @@ import {
 import { DrizzlePushDeviceRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
 import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
-import { SessionFixture, UserFixture } from "#test/fixtures/index";
+import { PushDeviceReportFixture, SessionFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -61,15 +61,12 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   }
 
   function command(overrides: Partial<ReportPushDeviceCommand>): ReportPushDeviceCommand {
-    return {
+    return PushDeviceReportFixture.command({
       userId: firstUserId,
-      sessionId: null,
       deviceId: "ios_first",
-      permission: { status: "GRANTED", canAskAgain: false },
       token: TOKEN,
-      payloadVersion: 2,
       ...overrides,
-    };
+    });
   }
 
   it("거절로 바뀐 기기는 토큰 행을 지우고 권한만 갱신한다", async () => {

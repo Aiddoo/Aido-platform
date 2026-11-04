@@ -3,6 +3,7 @@
  *
  * 타입 안전한 Notification 및 관련 엔티티 테스트 데이터 생성
  */
+import type { ReportPushDeviceCommand } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
 import type { Notification, NotificationType, PushToken } from "#test/types/database-rows";
 
 let notificationCounter = 0;
@@ -131,4 +132,22 @@ export const PushTokenFixture = {
   reset: (): void => {
     pushTokenCounter = 0;
   },
+};
+
+/** 헤더에서 오는 값은 보내지 않은 상태(null)가 기본이다. */
+export const PushDeviceReportFixture = {
+  command: (overrides: Partial<ReportPushDeviceCommand> = {}): ReportPushDeviceCommand => ({
+    userId: "user-a",
+    sessionId: null,
+    deviceId: "ios_device-a",
+    permission: { status: "GRANTED", canAskAgain: false },
+    token: "ExponentPushToken[device-a]",
+    payloadVersion: 2,
+    appVersion: null,
+    deviceModel: null,
+    osVersion: null,
+    timezone: null,
+    locale: null,
+    ...overrides,
+  }),
 };

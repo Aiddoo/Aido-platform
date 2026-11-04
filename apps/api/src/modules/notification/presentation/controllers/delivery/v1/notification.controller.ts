@@ -26,11 +26,7 @@ import {
   type CurrentUserPayload,
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
-import {
-  CurrentRequestClient,
-  type RequestClient,
-  requestTimezoneIfSent,
-} from "#api/platform/http/request-client/index";
+import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
   ApiCreatedResponse,
   ApiBadRequestError,
@@ -76,14 +72,18 @@ const LEGACY_DEFAULT_DEVICE_ID = "default";
 
 function pushDeviceContext(client: RequestClient) {
   return {
-    platformHint: match(client.platform)
-      .with(PUSH_DEVICE_PLATFORM.IOS, PUSH_DEVICE_PLATFORM.ANDROID, (platform) => platform)
-      .otherwise(() => undefined),
-    deviceModel: client.deviceName ?? undefined,
-    osVersion: client.osVersion ?? undefined,
-    timezone: requestTimezoneIfSent(client),
-    locale: client.locale ?? undefined,
+    deviceModel: client.deviceName,
+    osVersion: client.osVersion,
+    timezone: client.timezone,
+    locale: client.locale,
   };
+}
+
+/** 1.14.1 이하 앱은 deviceId 없이 등록할 수 있어 X-Device-Type으로만 플랫폼을 알 수 있다. */
+function legacyPlatformHint(client: RequestClient) {
+  return match(client.platform)
+    .with(PUSH_DEVICE_PLATFORM.IOS, PUSH_DEVICE_PLATFORM.ANDROID, (platform) => platform)
+    .otherwise(() => undefined);
 }
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
@@ -177,7 +177,7 @@ export class NotificationController {
       permission: dto.permission,
       token: dto.token,
       payloadVersion: dto.payloadVersion,
-      appVersion: client.appVersion ?? undefined,
+      appVersion: client.appVersion,
     });
     return PushDeviceMapper.toDto(report);
   }
@@ -216,10 +216,11 @@ export class NotificationController {
       userId: user.userId,
       sessionId: user.sessionId,
       deviceId: dto.deviceId ?? LEGACY_DEFAULT_DEVICE_ID,
+      platformHint: legacyPlatformHint(client),
       permission: { status: PUSH_PERMISSION_STATUS.GRANTED, canAskAgain: false },
       token: dto.token,
       payloadVersion: dto.payloadVersion,
-      appVersion: dto.appVersion ?? client.appVersion ?? undefined,
+      appVersion: dto.appVersion ?? client.appVersion,
     });
 
     return {

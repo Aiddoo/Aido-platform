@@ -4,6 +4,7 @@ import type {
   ApplicationLogger,
   ApplicationLogMessage,
 } from "#api/shared/application/ports/application-logger";
+import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 
@@ -58,15 +59,11 @@ class RecordingLogger implements Pick<ApplicationLogger, "log" | "warn"> {
 }
 
 function createCommand(overrides: Partial<ReportPushDeviceCommand> = {}): ReportPushDeviceCommand {
-  return {
-    userId: "user-a",
+  return PushDeviceReportFixture.command({
     sessionId: "session-a",
-    deviceId: "ios_device-a",
-    permission: { status: "GRANTED", canAskAgain: false },
     token: VALID_TOKEN,
-    payloadVersion: 2,
     ...overrides,
-  };
+  });
 }
 
 function setup() {

@@ -50,7 +50,10 @@ export const broadcastCampaignSchema = z
         skipped: countSchema.describe("수신 설정·빈도 제한·토큰 없음으로 건너뜀"),
         skippedByReason: z
           .partialRecord(z.enum(PUSH_DISPATCH_SKIP_REASON), countSchema)
-          .describe("건너뛴 사용자 수를 이유별로. 없는 이유는 키가 없다"),
+          .optional()
+          .describe(
+            "건너뛴 사용자 수를 이유별로. 없는 이유는 키가 없다. 1.14.1 이하 서버 응답에는 없다",
+          ),
         failed: countSchema.describe("모든 기기에서 공급자가 거절함"),
       })
       .describe("사용자별 발송 상태 집계"),

@@ -71,6 +71,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
+      appVersion: null,
     });
     const [notification] = await client
       .insert(notificationTable)
@@ -137,6 +138,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
+      appVersion: null,
     });
 
     // When
@@ -183,6 +185,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
+      appVersion: null,
     });
     const result = await f.tokens.deactivateInvalidTokens(invalid.map((item) => item.token));
 

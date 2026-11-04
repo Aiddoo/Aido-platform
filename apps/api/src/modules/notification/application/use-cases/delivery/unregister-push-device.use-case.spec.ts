@@ -1,3 +1,4 @@
+import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { InMemoryPushDeviceStore } from "#test/mocks/in-memory-push-device.store";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
@@ -25,14 +26,16 @@ async function setup() {
     logger,
   });
   for (const deviceId of ["ios_phone", "android_tablet"]) {
-    await report.execute({
-      userId: "user-a",
-      sessionId: null,
-      deviceId,
-      permission: { status: "GRANTED", canAskAgain: false },
-      token: `ExponentPushToken[${deviceId}]`,
-      payloadVersion: 2,
-    });
+    await report.execute(
+      PushDeviceReportFixture.command({
+        userId: "user-a",
+        sessionId: null,
+        deviceId,
+        permission: { status: "GRANTED", canAskAgain: false },
+        token: `ExponentPushToken[${deviceId}]`,
+        payloadVersion: 2,
+      }),
+    );
   }
   const useCase = new UnregisterPushDevice({
     pushDeviceRepository: store,
