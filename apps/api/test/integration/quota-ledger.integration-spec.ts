@@ -213,21 +213,86 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       );
     });
 
-    it("환불과 이어받기가 경쟁해도 순 차감이 어긋나지 않는다", async () => {
-      // Given
+    describe("quota-abandoned-refund.v1 잡과 이어받기가 겹칠 때", () => {
       const key = "stale-key";
-      await ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
-      vi.setSystemTime(stale);
+      const reserveAgain = () =>
+        ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
+      const sweep = () => service.refundAbandonedReservations();
 
-      // When
-      const swept = service.refundAbandonedReservations();
-      const retried = ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: key }));
-      const [, reservation] = await Promise.all([swept, retried]);
+      /** 사용자 행 잠금을 쥔 채 작업을 차례로 대기열에 세운 뒤 풀어 PostgreSQL이 그 순서로 처리하게 한다. */
+      async function queueInOrder<A, B>(first: () => Promise<A>, second: () => Promise<B>) {
+        const acquired = Promise.withResolvers<void>();
+        const released = Promise.withResolvers<void>();
+        const holding = client.transaction(async (transaction) => {
+          await transaction.execute(
+            sql`SELECT "id" FROM "User" WHERE "id"=${userId} FOR NO KEY UPDATE`,
+          );
+          acquired.resolve();
+          await released.promise;
+        });
+        await acquired.promise;
+        const waitForWaiters = (count: number) =>
+          vi.waitFor(
+            async () => {
+              const waiting = await client.execute<{ count: number }>(sql`
+                SELECT count(*)::int AS count FROM pg_stat_activity
+                WHERE datname=current_database() AND wait_event_type='Lock'
+                AND query ILIKE '%User%FOR NO KEY UPDATE%'
+              `);
+              expect(waiting.rows[0]?.count).toBe(count);
+            },
+            { timeout: 5000, interval: 10 },
+          );
+        const firstOutcome = first();
+        await waitForWaiters(1);
+        const secondOutcome = second();
+        await waitForWaiters(2);
+        released.resolve();
+        await holding;
+        return { first: await firstOutcome, second: await secondOutcome };
+      }
 
-      // Then
-      const [charge] = await storedCharges();
-      expect(charge).toMatchObject({ status: "RESERVED", attempt: reservation.attempt });
-      expect(await storedVoiceUsage()).toBe(1);
+      it("잡이 먼저면 돌려준 뒤 다시 차감해 순 차감이 한 번이고 이전 시도의 확정은 무시된다", async () => {
+        // Given
+        const abandoned = await reserveAgain();
+        vi.setSystemTime(stale);
+
+        // When
+        const { second: reservation } = await queueInOrder(sweep, reserveAgain);
+        const lateCommit = await ledger.commit(abandoned);
+        const committed = await ledger.commit(reservation);
+        await sweep();
+
+        // Then
+        expect(reservation).toMatchObject({ alreadyCommitted: false, attempt: 2 });
+        expect(lateCommit).toBe(false);
+        expect(committed).toBe(true);
+        expect(await storedCharges()).toEqual([
+          expect.objectContaining({ status: "COMMITTED", attempt: 2, refundReason: null }),
+        ]);
+        expect(await storedVoiceUsage()).toBe(1);
+      });
+
+      it("이어받기가 먼저면 잡은 새 예약을 돌려주지 않고 순 차감이 한 번이다", async () => {
+        // Given
+        const abandoned = await reserveAgain();
+        vi.setSystemTime(stale);
+
+        // When
+        const { first: reservation } = await queueInOrder(reserveAgain, sweep);
+        const stored = await storedCharges();
+        const lateCommit = await ledger.commit(abandoned);
+        const committed = await ledger.commit(reservation);
+
+        // Then
+        expect(reservation).toMatchObject({ alreadyCommitted: false, attempt: 2 });
+        expect(stored).toEqual([
+          expect.objectContaining({ status: "RESERVED", attempt: 2, refundReason: null }),
+        ]);
+        expect(lateCommit).toBe(false);
+        expect(committed).toBe(true);
+        expect(await storedVoiceUsage()).toBe(1);
+      });
     });
 
     it("정리한 뒤 늦게 온 확정은 무시되고 같은 키 재시도는 한 번만 다시 차감한다", async () => {
