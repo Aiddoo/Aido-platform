@@ -98,7 +98,8 @@ function buildProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
       weekdayLabel:
         (locale === 'ko'
           ? ['일', '월', '화', '수', '목', '금', '토']
-          : ['S', 'M', 'T', 'W', 'T', 'F', 'S'])[index] ?? '',
+          : ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+        )[index] ?? '',
       dayLabel: String(index + 1),
       isComplete: index === 1,
       hasTodos: index < 4,
