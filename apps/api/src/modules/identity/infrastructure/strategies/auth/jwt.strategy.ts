@@ -6,10 +6,11 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -138,7 +139,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     try {
       return await this.cacheService.getSession(sessionId);
     } catch (error) {
-      this.#logger.warn(`Session cache read failed — falling back to DB: ${toErrorMessage(error)}`);
+      this.#logger.warn({
+        event: IdentityInfraLogEvent.SESSION_CACHE_READ_FAILED,
+        errorType: toErrorType(error),
+      });
       return undefined;
     }
   }
@@ -150,7 +154,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     try {
       await this.cacheService.setSession(sessionId, session);
     } catch (error) {
-      this.#logger.warn(`Session cache write failed — skipping: ${toErrorMessage(error)}`);
+      this.#logger.warn({
+        event: IdentityInfraLogEvent.SESSION_CACHE_WRITE_FAILED,
+        errorType: toErrorType(error),
+      });
     }
   }
 

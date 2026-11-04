@@ -12,6 +12,7 @@ import { withTimeout } from "es-toolkit";
 import { Redis, type RedisOptions } from "ioredis";
 
 import { TypedConfigService } from "../config/services/config.service.js";
+import { PlatformLogEvent } from "../logging/platform-log.events.js";
 import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-client.factory.js";
 import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 
@@ -95,10 +96,10 @@ export class RedisModule implements OnApplicationShutdown {
     try {
       // Redis 다운 중 종료 시 quit이 오프라인 큐에 걸려 hang할 수 있다
       await withTimeout(() => client.quit(), QUIT_TIMEOUT_MS);
-      RedisModule.logger.log(`Redis[${name}] disconnected`);
+      RedisModule.logger.log({ event: PlatformLogEvent.REDIS_DISCONNECTED, client: name });
     } catch {
       client.disconnect();
-      RedisModule.logger.warn(`Redis[${name}] force-disconnected`);
+      RedisModule.logger.warn({ event: PlatformLogEvent.REDIS_FORCE_DISCONNECTED, client: name });
     }
   }
 
@@ -116,15 +117,21 @@ export class RedisModule implements OnApplicationShutdown {
     const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
 
     client.on("connect", () => {
-      RedisModule.logger.log(`Redis[${name}] connected`);
+      RedisModule.logger.log({ event: PlatformLogEvent.REDIS_CONNECTED, client: name });
     });
 
     client.on("error", (error) => {
-      RedisModule.logger.error(`Redis[${name}] error: ${error.message}`);
+      const code: unknown = Reflect.get(error, "code");
+      RedisModule.logger.error({
+        event: PlatformLogEvent.REDIS_ERRORED,
+        client: name,
+        errorType: error.name,
+        ...(typeof code === "string" && { networkCode: code }),
+      });
     });
 
     client.on("close", () => {
-      RedisModule.logger.warn(`Redis[${name}] connection closed`);
+      RedisModule.logger.warn({ event: PlatformLogEvent.REDIS_CLOSED, client: name });
     });
 
     return client;

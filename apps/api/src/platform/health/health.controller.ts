@@ -8,6 +8,7 @@ import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
 
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
 import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
@@ -118,12 +119,12 @@ curl https://api.aido.com/health
     },
   })
   async check(): Promise<HealthCheckResult & { instanceId: string }> {
-    this.#logger.debug("헬스 체크 요청");
+    this.#logger.debug({ event: PlatformLogEvent.HEALTH_CHECK_REQUESTED });
     const result = await this.health.check([
       () => this.databaseHealth.isHealthy("database"),
       () => this.jobRuntimeHealth.isHealthy("queues"),
     ]);
-    this.#logger.log(`헬스 체크 완료: ${result.status}`);
+    this.#logger.log({ event: PlatformLogEvent.HEALTH_CHECK_COMPLETED, status: result.status });
     return { ...result, instanceId: this.#instanceId };
   }
 }

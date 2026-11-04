@@ -10,6 +10,8 @@ import { SocialReportsAdminModule } from "#api/modules/social/social-reports.pub
 import type { EnvConfig } from "#api/platform/config/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { AppModule } from "./app.module.js";
 import { convertStandardSchema } from "./platform/http/swagger/standard-schema.converter.js";
@@ -214,10 +216,12 @@ async function bootstrap() {
   await app.listen(port);
 
   const logger = app.get(Logger);
-  logger.log(`🚀 Server running on http://localhost:${port}`);
-  logger.log(`📚 API Docs: http://localhost:${port}/api/docs`);
-  logger.log(`📚 Admin API Docs: http://localhost:${port}/api/admin/docs`);
-  logger.log(`💊 Health Check: http://localhost:${port}/health`);
+  logger.log({
+    event: PlatformLogEvent.SERVER_STARTED,
+    port,
+    docsPath: nodeEnv === "development" ? "/api/docs" : undefined,
+    healthPath: "/health",
+  });
 
   // Graceful shutdown: NestJS 모듈 종료 (작업 worker 포함) → Sentry flush
   let shutdownStarted = false;
@@ -226,12 +230,15 @@ async function bootstrap() {
       return;
     }
     shutdownStarted = true;
-    logger.log(`Received ${signal}, shutting down gracefully...`);
+    logger.log({ event: PlatformLogEvent.SERVER_SHUTDOWN_STARTED, signal });
     try {
       await app.close();
       process.exitCode = 0;
     } catch (error) {
-      logger.error(error, "Graceful shutdown failed");
+      logger.error({
+        event: PlatformLogEvent.SERVER_SHUTDOWN_FAILED,
+        errorType: toErrorType(error),
+      });
       process.exitCode = 1;
     } finally {
       await Sentry.close(2000);

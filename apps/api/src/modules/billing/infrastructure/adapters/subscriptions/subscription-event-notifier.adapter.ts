@@ -9,8 +9,10 @@ import {
 } from "#api/modules/operations/operations-notifications.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { SENTRY_DOMAIN, SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { maskUserId } from "#api/shared/domain/utils/mask.util";
 
+import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";
 import type {
   SubscriptionEventNotifierPort,
   WebhookFailureContext,
@@ -70,8 +72,12 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     });
 
     // 2. Discord 관리자 알림 (fire-and-forget)
-    this.#notifyWebhookError(error, context).catch((e) =>
-      this.#logger.warn(`Failed to send webhook error notification: ${e}`),
+    this.#notifyWebhookError(error, context).catch((alertError: unknown) =>
+      this.#logger.warn({
+        event: BillingLogEvent.WEBHOOK_ALERT_FAILED,
+        eventId: context.eventId,
+        errorType: toErrorType(alertError),
+      }),
     );
   }
 

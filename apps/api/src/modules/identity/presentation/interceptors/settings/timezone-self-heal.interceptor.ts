@@ -71,7 +71,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
         event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
         userId,
         timezone,
-        errorName: toErrorType(error),
+        errorType: toErrorType(error),
       });
     });
   }

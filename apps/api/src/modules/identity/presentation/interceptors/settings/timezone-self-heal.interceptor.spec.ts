@@ -114,7 +114,7 @@ describe("TimezoneSelfHealInterceptor", () => {
       event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
       userId: "u1",
       timezone: "Asia/Seoul",
-      errorName: "Error",
+      errorType: "Error",
     });
     expect(JSON.stringify(vi.mocked(Logger.prototype.error).mock.calls)).not.toContain(
       "민감한 요청 원문",

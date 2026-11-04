@@ -49,7 +49,12 @@ describe("runInBackground — 부팅 논블로킹 초기화", () => {
 
     // When / Then — 호출 자체가 throw하면 안 된다
     await expect(runInBackground(logger, "Scheduler registration", task)).resolves.toBeUndefined();
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("sync boom"));
+    expect(logger.error).toHaveBeenCalledWith({
+      event: "bootstrap.background-init.failed",
+      task: "Scheduler registration",
+      errorType: "Error",
+    });
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain("sync boom");
   });
 
   it("작업 실패 시 reject하지 않고 에러 로그만 남긴다 (unhandled rejection 방지)", async () => {
@@ -60,8 +65,7 @@ describe("runInBackground — 부팅 논블로킹 초기화", () => {
     // When / Then — reject되지 않아야 한다
     await expect(runInBackground(logger, "Scheduler registration", task)).resolves.toBeUndefined();
     expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining("Scheduler registration failed"),
+      expect.objectContaining({ task: "Scheduler registration", errorType: "Error" }),
     );
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Connection is closed."));
   });
 });

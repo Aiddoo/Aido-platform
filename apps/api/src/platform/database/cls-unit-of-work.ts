@@ -2,11 +2,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ClsService } from "nestjs-cls";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
 import type {
   AfterCommitTask,
   AfterCommitTaskRegistryPort,
   UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 const AFTER_COMMIT_TASK_SCOPE = Symbol("AFTER_COMMIT_TASK_SCOPE");
 
@@ -79,8 +81,9 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
   }
 
   private logTaskFailure(error: unknown): void {
-    this.logger.error(
-      `After-commit task failed (${error instanceof Error ? error.name : "UnknownError"})`,
-    );
+    this.logger.error({
+      event: PlatformLogEvent.AFTER_COMMIT_TASK_FAILED,
+      errorType: toErrorType(error),
+    });
   }
 }

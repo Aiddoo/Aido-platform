@@ -1,3 +1,4 @@
+import { isErrorCode } from "@aido/api/errors";
 import { REDEMPTION_STATUS, REWARD_TYPE, type RewardType } from "@aido/api/vocabulary";
 import { sumBy } from "es-toolkit";
 
@@ -165,7 +166,7 @@ export class GrantInviteRewards {
       redemptionId: grant.sourceId,
       rewardType: grant.rewardType,
       attempts,
-      errorCode,
+      ...(isErrorCode(errorCode) ? { errorCode } : { errorType: errorCode }),
     });
     try {
       this.#dependencies.alert.reportRetryExhausted({

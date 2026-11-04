@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
 import type {
   CacheStats,
@@ -52,7 +54,7 @@ export class RedisCacheAdapter implements ICacheService {
     this.#redis = redis;
     this.#defaultTtlMs = defaultTtlMs;
     this.#errorSampler = errorSampler ?? new RedisErrorLogSampler(this.#logger);
-    this.#logger.log("RedisCacheAdapter initialized");
+    this.#logger.log({ event: PlatformLogEvent.CACHE_INITIALIZED, provider: "redis" });
   }
 
   async get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
@@ -111,7 +113,7 @@ export class RedisCacheAdapter implements ICacheService {
       return count;
     }
 
-    this.#logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
+    this.#logger.debug({ event: PlatformLogEvent.CACHE_PATTERN_DELETED, pattern, count });
     return count;
   }
 
@@ -138,7 +140,7 @@ export class RedisCacheAdapter implements ICacheService {
         } while (cursor !== "0");
 
         this.#stats = { hits: 0, misses: 0 };
-        this.#logger.debug("RESET completed");
+        this.#logger.debug({ event: PlatformLogEvent.CACHE_RESET });
       },
       undefined,
     );
@@ -263,7 +265,7 @@ export class RedisCacheAdapter implements ICacheService {
     const parsed = schema.safeParse(JSON.parse(data));
     if (!parsed.success) {
       this.#stats.misses++;
-      this.#logger.debug(`INVALID ${key}`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_READ, key, result: "invalid" });
       return undefined;
     }
 

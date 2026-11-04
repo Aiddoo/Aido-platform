@@ -65,15 +65,15 @@ function noObjectErrorKind(error: NoObjectGeneratedError): AiProviderErrorKind {
 
 /** 오류 이름, 공급자 응답의 error.status, 네트워크 오류 code만 뽑는다. */
 function describeUpstreamCause(error: unknown): AiUpstreamCause {
-  const errorName = error instanceof Error ? error.name : typeof error;
+  const errorType = error instanceof Error ? error.name : typeof error;
   const providerStatus = APICallError.isInstance(error)
     ? readProviderStatus(error.responseBody)
     : undefined;
-  const errorCode = readErrorCode(error);
+  const networkCode = readNetworkCode(error);
   return {
-    errorName,
+    errorType,
     ...(providerStatus != null && { providerStatus }),
-    ...(errorCode != null && { errorCode }),
+    ...(networkCode != null && { networkCode }),
   };
 }
 
@@ -94,7 +94,7 @@ function readProviderStatus(responseBody: string | undefined): string | undefine
 }
 
 /** cause를 따라가며 찾은 Node·undici 네트워크 오류 code(예: ECONNRESET, UND_ERR_CONNECT_TIMEOUT) */
-function readErrorCode(error: unknown, depth = 0): string | undefined {
+function readNetworkCode(error: unknown, depth = 0): string | undefined {
   if (error == null || depth > 3) {
     return undefined;
   }
@@ -102,5 +102,5 @@ function readErrorCode(error: unknown, depth = 0): string | undefined {
   if (typeof code === "string" && SYMBOL_PATTERN.test(code)) {
     return code;
   }
-  return readErrorCode(Reflect.get(Object(error), "cause"), depth + 1);
+  return readNetworkCode(Reflect.get(Object(error), "cause"), depth + 1);
 }

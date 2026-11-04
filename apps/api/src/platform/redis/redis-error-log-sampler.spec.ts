@@ -35,8 +35,12 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
 
     // Then
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("Connection is closed."));
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("GET"));
+    expect(warn).toHaveBeenCalledWith({
+      event: "redis.operation.failed",
+      operation: "GET",
+      errorType: "Error",
+      suppressed: 0,
+    });
   });
 
   it("윈도우 내 반복 에러는 억제한다 (로그 1회만)", () => {
@@ -65,17 +69,25 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
 
     // Then
     expect(warn).toHaveBeenCalledTimes(2);
-    expect(warn).toHaveBeenLastCalledWith(expect.stringContaining("+4 suppressed"));
+    expect(warn).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operation: "SET", suppressed: 4 }),
+    );
   });
 
-  it("Error가 아닌 값도 메시지로 변환한다", () => {
+  it("오류 원문 대신 오류 종류와 네트워크 코드만 남긴다", () => {
     // Given
     const sampler = new RedisErrorLogSampler({ warn }, 30_000);
+    const refused = Object.assign(new Error("connect ECONNREFUSED 10.0.0.1:6379"), {
+      code: "ECONNREFUSED",
+    });
 
     // When
-    sampler.warn("DEL", "raw string error");
+    sampler.warn("DEL", refused);
 
     // Then
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("raw string error"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ errorType: "Error", networkCode: "ECONNREFUSED" }),
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("10.0.0.1");
   });
 });

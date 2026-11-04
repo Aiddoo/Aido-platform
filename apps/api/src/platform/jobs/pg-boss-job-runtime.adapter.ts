@@ -21,6 +21,7 @@ import {
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { Database } from "#api/platform/database/database.client";
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
 import type {
   DeadLetterQueue,
   EnqueueJobOptions,
@@ -37,6 +38,7 @@ import {
   resolveDeadLetterJobPolicy,
   resolveDeadLetterQueue,
 } from "#api/shared/application/ports/job-runtime.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
 
@@ -221,7 +223,11 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   ) {
     this.boss.on("error", (error) => {
       // 오류 종류만 기록한다. 작업 payload나 DB 연결 문자열은 로그에 남기지 않는다.
-      this.logger.error(`pg-boss runtime error (${error.name})`);
+      this.logger.error({
+        event: PlatformLogEvent.JOB_RUNTIME_ERRORED,
+        backend: "postgres",
+        errorType: error.name,
+      });
     });
   }
 
@@ -376,9 +382,11 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
         ),
       };
     } catch (error) {
-      this.logger.error(
-        `pg-boss health check failed (${error instanceof Error ? error.name : "UnknownError"})`,
-      );
+      this.logger.error({
+        event: PlatformLogEvent.JOB_HEALTH_CHECK_FAILED,
+        backend: "postgres",
+        errorType: toErrorType(error),
+      });
       return {
         backend: "postgres",
         degraded: true,

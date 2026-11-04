@@ -18,6 +18,7 @@ import { ApiHeader, ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 
+import { IdentityLogEvent } from "#api/modules/identity/application/observability/auth/identity-log.events";
 import {
   CompleteOAuthAuthorization,
   ExchangeOAuthCode,
@@ -46,6 +47,8 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import {
   AppleMobileCallbackDto,
@@ -78,9 +81,30 @@ export class OAuthController {
     try {
       const redirectUri = await this.getOAuthRedirectUriQuery.execute({ state });
       return redirectUri || defaultRedirectUri;
-    } catch {
+    } catch (error) {
+      this.#logger.warn({
+        event: IdentityLogEvent.OAUTH_ERROR_REDIRECT_FAILED,
+        errorType: toErrorType(error),
+      });
       return defaultRedirectUri;
     }
+  }
+
+  #logCallbackFailed(provider: "GOOGLE" | "KAKAO" | "NAVER", error: unknown): void {
+    if (error instanceof ErrorCodedException) {
+      this.#logger.warn({
+        event: IdentityLogEvent.OAUTH_CALLBACK_FAILED,
+        provider,
+        errorType: error.name,
+        errorCode: error.errorCode,
+      });
+      return;
+    }
+    this.#logger.error({
+      event: IdentityLogEvent.OAUTH_CALLBACK_FAILED,
+      provider,
+      errorType: toErrorType(error),
+    });
   }
 
   @Header("Vary", "Origin, X-App-Version")
@@ -384,10 +408,7 @@ export class OAuthController {
 
       res.redirect(`${redirectUri}?${params.toString()}`);
     } catch (error) {
-      this.#logger.error(
-        `Google OAuth callback error: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#logCallbackFailed("GOOGLE", error);
       const params = buildOAuthErrorParams(error, state);
       const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
 
@@ -579,6 +600,7 @@ export class OAuthController {
 
       res.redirect(`${redirectUri}?${params.toString()}`);
     } catch (error) {
+      this.#logCallbackFailed("KAKAO", error);
       const params = buildOAuthErrorParams(error, state);
       const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
 
@@ -772,6 +794,7 @@ export class OAuthController {
 
       res.redirect(`${redirectUri}?${params.toString()}`);
     } catch (error) {
+      this.#logCallbackFailed("NAVER", error);
       const params = buildOAuthErrorParams(error, state);
       const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
 

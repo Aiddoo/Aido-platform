@@ -30,7 +30,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
         event: IdentityLogEvent.ACCOUNT_PURGE_JOB_FAILED,
         jobId: job?.id,
         jobName: job?.name,
-        errorName: error.name,
+        errorType: error.name,
       },
       error.stack,
     );

@@ -158,7 +158,12 @@ export class WeatherReportReader implements WeatherReportReaderPort {
       return (await this.#dependencies.weatherReportProvider.localizesContent(cell, request))
         ? request.language
         : SHARED_WEATHER_REPORT_SCOPE;
-    } catch {
+    } catch (error) {
+      this.#dependencies.logger.warn({
+        event: WeatherLogEvent.REPORT_CACHE_SCOPE_FAILED,
+        cellKey: cell.key,
+        errorType: toErrorType(error),
+      });
       return SHARED_WEATHER_REPORT_SCOPE;
     }
   }

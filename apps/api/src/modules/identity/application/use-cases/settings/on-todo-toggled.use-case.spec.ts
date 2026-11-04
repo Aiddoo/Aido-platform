@@ -203,7 +203,7 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
     expect(fixture.logger.error).toHaveBeenCalledWith({
       event: IdentitySettingsLogEvent.STREAK_UPDATE_FAILED,
       userId: fixture.userId,
-      errorName: "Error",
+      errorType: "Error",
     });
     expect(JSON.stringify(fixture.logger.error.mock.calls)).not.toContain("민감한 요청 원문");
   });

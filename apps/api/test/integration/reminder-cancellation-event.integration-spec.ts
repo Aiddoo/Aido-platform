@@ -65,8 +65,7 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
   });
 
   it("handler rejection을 publisher가 한 번 관측하고 post-commit 성공은 유지한다", async () => {
-    // Given - runtime→scheduler에서 문맥화된 취소 실패
-    const context = "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
+    // Given - runtime→scheduler의 취소 실패
     cancel.mockRejectedValueOnce(new Error("postgres unavailable"));
     const errorLogger = vi.mocked(Logger.prototype.error);
     errorLogger.mockClear();
@@ -78,15 +77,15 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
     await expect(publication).resolves.toBeUndefined();
     expect(cancel).toHaveBeenCalledWith(TODO_REMINDER_QUEUE, "reminder_42_60min");
     expect(errorLogger).toHaveBeenCalledTimes(1);
-    expect(errorLogger).toHaveBeenCalledWith(
-      `Failed to publish domain event todo.deleted: Error: ${context}`,
-      expect.any(String),
-    );
+    expect(errorLogger).toHaveBeenCalledWith({
+      event: "events.domain-event.publish.failed",
+      eventName: "todo.deleted",
+      errorType: "Error",
+    });
   });
 
   it("non-null 재스케줄의 기존 작업 취소 실패도 publisher가 관측한다", async () => {
     // Given - scheduleReminder 내부 기존 작업 취소가 실패
-    const context = "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
     cancel.mockRejectedValueOnce(new Error("postgres unavailable"));
     const errorLogger = vi.mocked(Logger.prototype.error);
     errorLogger.mockClear();
@@ -101,9 +100,10 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
     expect(cancel).toHaveBeenCalledWith(TODO_REMINDER_QUEUE, "reminder_42_60min");
     expect(runtime.enqueueCalls).toHaveLength(0);
     expect(errorLogger).toHaveBeenCalledTimes(1);
-    expect(errorLogger).toHaveBeenCalledWith(
-      `Failed to publish domain event todo.rescheduled: Error: ${context}`,
-      expect.any(String),
-    );
+    expect(errorLogger).toHaveBeenCalledWith({
+      event: "events.domain-event.publish.failed",
+      eventName: "todo.rescheduled",
+      errorType: "Error",
+    });
   });
 });

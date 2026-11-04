@@ -1,6 +1,7 @@
 import type { Logger } from "@nestjs/common";
 
-import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 /**
  * 부팅을 블로킹하지 않는 초기화 실행 (fire-and-forget)
@@ -20,6 +21,10 @@ export async function runInBackground(
     // async 함수라 task()의 동기 throw도 catch로 흡수된다 (부트스트랩 크래시 방지)
     await task();
   } catch (error: unknown) {
-    logger.error(`${label} failed: ${toErrorMessage(error)}`);
+    logger.error({
+      event: PlatformLogEvent.BACKGROUND_INIT_FAILED,
+      task: label,
+      errorType: toErrorType(error),
+    });
   }
 }

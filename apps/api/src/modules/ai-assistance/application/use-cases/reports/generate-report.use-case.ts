@@ -336,7 +336,7 @@ export class GenerateReport {
       return { ...value, contentSource: "AI", promptVersion: definition.promptVersion };
     } catch (error) {
       const failure = providerFailure(error);
-      const retrying = !isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(failure.errorKind);
+      const retrying = !isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(failure.errorType);
       const failedLog = generationFailedLog({
         ...logBase,
         ...failure,

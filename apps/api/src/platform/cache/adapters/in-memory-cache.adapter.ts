@@ -1,5 +1,7 @@
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+
 import {
   type CacheStats,
   type CacheValueSchema,
@@ -61,14 +63,14 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 
     if (!entry) {
       this.#stats.misses++;
-      this.#logger.debug(`MISS ${key}`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_READ, key, result: "miss" });
       return undefined;
     }
 
     if (Date.now() > entry.expiresAt) {
       this.#cache.delete(key);
       this.#stats.misses++;
-      this.#logger.debug(`EXPIRED ${key}`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_READ, key, result: "expired" });
       return undefined;
     }
 
@@ -76,19 +78,19 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     if (!parsed.success) {
       this.#cache.delete(key);
       this.#stats.misses++;
-      this.#logger.debug(`INVALID ${key}`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_READ, key, result: "invalid" });
       return undefined;
     }
 
     this.#stats.hits++;
-    this.#logger.debug(`HIT ${key}`);
+    this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_READ, key, result: "hit" });
     return parsed.data;
   }
 
   async set<T>(key: string, value: T, ttl?: TtlValue): Promise<void> {
     // TTL이 0이면 즉시 만료 (저장하지 않음)
     if (ttl === 0) {
-      this.#logger.debug(`SET ${key} skipped (TTL: 0, immediate expiration)`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_SKIPPED, key, ttlMs: 0 });
       return;
     }
 
@@ -97,20 +99,24 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
       const oldestKey = this.#cache.keys().next().value;
       if (oldestKey) {
         this.#cache.delete(oldestKey);
-        this.#logger.debug(`EVICTED ${oldestKey} (max items reached)`);
+        this.#logger.debug({
+          event: PlatformLogEvent.CACHE_ENTRY_EVICTED,
+          key: oldestKey,
+          reason: "max-items",
+        });
       }
     }
 
     const ttlMs = ttl != null ? parseTtl(ttl) : this.#defaultTtlMs;
     const expiresAt = Date.now() + ttlMs;
     this.#cache.set(key, { value, expiresAt });
-    this.#logger.debug(`SET ${key} (TTL: ${ttlMs}ms)`);
+    this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_WRITTEN, key, ttlMs });
   }
 
   async del(key: string): Promise<void> {
     const deleted = this.#cache.delete(key);
     if (deleted) {
-      this.#logger.debug(`DEL ${key}`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_DELETED, key });
     }
   }
 
@@ -125,7 +131,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
       }
     }
 
-    this.#logger.debug(`DEL_PATTERN ${pattern} (${count} keys)`);
+    this.#logger.debug({ event: PlatformLogEvent.CACHE_PATTERN_DELETED, pattern, count });
     return count;
   }
 
@@ -133,7 +139,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     const size = this.#cache.size;
     this.#cache.clear();
     this.#stats = { hits: 0, misses: 0 };
-    this.#logger.debug(`RESET (${size} keys cleared)`);
+    this.#logger.debug({ event: PlatformLogEvent.CACHE_RESET, count: size });
   }
 
   getStats(): CacheStats {
@@ -241,7 +247,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     // TTL 갱신
     const ttlMs = parseTtl(ttl);
     entry.expiresAt = Date.now() + ttlMs;
-    this.#logger.debug(`TOUCH ${key} (TTL: ${ttlMs}ms)`);
+    this.#logger.debug({ event: PlatformLogEvent.CACHE_ENTRY_TOUCHED, key, ttlMs });
 
     return true;
   }
@@ -260,7 +266,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
     }
 
     if (cleaned > 0) {
-      this.#logger.debug(`CLEANUP ${cleaned} expired entries`);
+      this.#logger.debug({ event: PlatformLogEvent.CACHE_EXPIRED_CLEANED, count: cleaned });
     }
   }
 
