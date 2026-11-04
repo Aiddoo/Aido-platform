@@ -309,6 +309,43 @@ describe('TodoRepeatPickerContent', () => {
     expect(dimmedClassName('9')).not.toContain('text-gray-5');
   });
 
+  test('시작일이 반복 요일이 아니면 달력의 시작 원은 첫 회차 날짜에 그린다', async () => {
+    // Given
+    await renderSheet();
+
+    // When
+    await press('주말');
+
+    // Then
+    const isSelectedCircle = (day: string) =>
+      /(^|\s)bg-main(\s|$)/.test(screen.getByText(day).parent?.props.className ?? '');
+    expect(isSelectedCircle('7')).toBe(true);
+    expect(isSelectedCircle('5')).toBe(false);
+  });
+
+  test('첫 회차 원을 누르면 그날을 시작일로 고른 것으로 본다', async () => {
+    // Given
+    const { onChange } = await renderSheet();
+    await press('주말');
+    await press('계속 반복');
+
+    // When
+    await press('7');
+    await confirm();
+
+    // Then
+    expect(screen.getByText('11월 7일부터 계속')).toBeTruthy();
+    expect(onChange).toHaveBeenCalledWith({
+      startDate: new Date(2026, 10, 7),
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 1,
+        weekdays: ['SAT', 'SUN'],
+        end: { type: 'NEVER' },
+      },
+    });
+  });
+
   test('칩을 누르면 선택 햅틱을 준다', async () => {
     // Given
     const { haptics } = await renderSheet();

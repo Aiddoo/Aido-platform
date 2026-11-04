@@ -170,6 +170,14 @@ function DayOfWeekSelector() {
           isSelected={isWeeklyEveryWeek && isSameWeekdays(weekdays, TODO_REPEAT_WEEKEND_DAYS)}
           onPress={() => handlePresetPress(TODO_REPEAT_WEEKEND_DAYS)}
         />
+        {DAYS_OF_WEEK.map((day) => (
+          <DayOfWeekChip
+            key={day}
+            day={day}
+            isSelected={!isMonthly && weekdays.includes(day)}
+            onPress={() => handleDayPress(day)}
+          />
+        ))}
         <PresetChip
           label={t('picker.presetBiweekly')}
           isSelected={!isMonthly && interval === 2}
@@ -180,14 +188,6 @@ function DayOfWeekSelector() {
           isSelected={isMonthly}
           onPress={handleMonthlyPress}
         />
-        {DAYS_OF_WEEK.map((day) => (
-          <DayOfWeekChip
-            key={day}
-            day={day}
-            isSelected={!isMonthly && weekdays.includes(day)}
-            onPress={() => handleDayPress(day)}
-          />
-        ))}
       </ScrollView>
       <RepeatSummary />
     </VStack>
@@ -350,6 +350,15 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
     .with('NEVER', () => null)
     .exhaustive();
 
+  // 종료일을 아직 안 골랐어도 첫 회차는 알 수 있으므로 끝이 없는 규칙으로 계산한다
+  const startRepeat = repeat ?? toTodoRepeat({ ...values, endType: 'NEVER' });
+  const firstOccurrenceKey =
+    startRepeat == null
+      ? null
+      : TodoRepeatPolicy.getFirstOccurrenceDateKey(startRepeat, startDateKey);
+  /** 첫 할 일이 실제로 생기는 날. 달력의 시작 원과 띠는 폼의 시작일이 아니라 이 날부터 그린다 */
+  const displayStartDate = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);
+
   const changeStartDate = (date: Date) => {
     const next = withTodoRepeatFormStartDate(getValues(), date);
     setValue('startDate', next.startDate);
@@ -359,6 +368,12 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
 
   const handleCalendarPress = (date: Date) => {
     if (isBeforeDay(date, today)) {
+      return;
+    }
+
+    if (isSameDay(date, displayStartDate) && !isSameDay(date, startDate)) {
+      changeStartDate(date);
+      setValue('untilDate', null);
       return;
     }
 
@@ -380,7 +395,7 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
     <RepeatCalendar
       picker={picker}
       today={today}
-      startDate={startDate}
+      startDate={displayStartDate}
       endDate={endDate}
       isOpenEnded={endType === 'NEVER' && repeat != null}
       occurrenceKeys={occurrenceKeys}
