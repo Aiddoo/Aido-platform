@@ -219,7 +219,7 @@ async function bootstrap() {
   logger.log(`📚 Admin API Docs: http://localhost:${port}/api/admin/docs`);
   logger.log(`💊 Health Check: http://localhost:${port}/health`);
 
-  // Graceful shutdown: NestJS 모듈 종료 (BullMQ Worker 포함) → Sentry flush
+  // Graceful shutdown: NestJS 모듈 종료 (작업 worker 포함) → Sentry flush
   let shutdownStarted = false;
   const shutdown = async (signal: string) => {
     if (shutdownStarted) {

@@ -3,11 +3,9 @@ import { z } from "zod";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const AI_SUGGESTION_QUEUE = "ai-suggestion-analysis.v1";
-export const AI_SUGGESTION_LEGACY_QUEUE = "ai-suggestion-analysis";
 
 export const AiSuggestionSchedulerName = {
   DAILY: "daily-suggestion-scheduler",
-  LEGACY_WEEKLY: "weekly-suggestion-scheduler",
 } as const;
 
 export const AiSuggestionJobKey = {

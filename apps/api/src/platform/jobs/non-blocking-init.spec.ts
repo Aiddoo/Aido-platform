@@ -4,7 +4,7 @@ import { vi } from "vitest";
  * runInBackground 단위 테스트
  *
  * @description
- * BullMQ 스케줄러 등록 등 Redis 의존 부트 작업이 앱 기동을 블로킹하지
+ * 작업 스케줄러 등록 등 작업 저장소에 의존하는 부트 작업이 앱 기동을 블로킹하지
  * 않도록 하는 fire-and-forget 헬퍼를 검증합니다.
  *
  * 실행 명령:
@@ -16,7 +16,7 @@ import { runInBackground } from "./non-blocking-init.js";
 
 describe("runInBackground — 부팅 논블로킹 초기화", () => {
   it("작업이 pending이어도 즉시 프로미스를 반환한다 (블로킹 없음)", () => {
-    // Given — Redis 다운: 영원히 pending인 작업
+    // Given — 작업 저장소 장애: 영원히 pending인 작업
     const logger = { error: vi.fn() };
     const neverResolves = () => new Promise<void>(() => {});
 

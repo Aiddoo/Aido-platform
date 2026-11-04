@@ -64,7 +64,6 @@
     "ai-fallback": "catalog:",
     "argon2": "0.45.2",
     "bowser": "catalog:",
-    "bullmq": "catalog:",
     "countries-and-timezones": "catalog:",
     "dayjs": "catalog:",
     "drizzle-orm": "catalog:drizzle1",

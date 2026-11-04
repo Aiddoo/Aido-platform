@@ -6,7 +6,6 @@ import { toSupportedLocale } from "#api/shared/domain/locale";
 import { GenerateReport } from "../../../application/use-cases/reports/generate-report.use-case.js";
 import type { ReportDispatcher } from "../../jobs/reports/ai-report-queue.js";
 import {
-  AI_REPORT_LEGACY_QUEUE,
   AI_REPORT_QUEUE,
   AI_REPORT_WORKER_POLICY,
   AiReportJobName,
@@ -38,15 +37,6 @@ export class ReportGenerationProcessor implements OnModuleInit {
       async (jobs) => {
         for (const job of jobs) {
           await this.process(job.data, job.attempt);
-        }
-      },
-      AI_REPORT_WORKER_POLICY,
-    );
-    await this.runtime.work(
-      AI_REPORT_LEGACY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process({ name: job.name, data: job.data }, job.attempt);
         }
       },
       AI_REPORT_WORKER_POLICY,

@@ -12,12 +12,8 @@ import { withTimeout } from "es-toolkit";
 import { Redis, type RedisOptions } from "ioredis";
 
 import { TypedConfigService } from "../config/services/config.service.js";
-import {
-  buildBullRedisOptions,
-  buildCommandRedisOptions,
-  type RedisConnectionSettings,
-} from "./redis-client.factory.js";
-import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants.js";
+import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-client.factory.js";
+import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
 const QUIT_TIMEOUT_MS = 3_000;
@@ -37,10 +33,8 @@ export interface RedisLifecycleClient {
 /**
  * Redis 모듈
  *
- * 용도별로 분리된 두 ioredis 인스턴스를 제공하는 글로벌 모듈:
- * - `REDIS_CLIENT`: BullMQ 전용 (블로킹 명령 호환 — 오프라인 큐 유지)
- * - `REDIS_COMMAND_CLIENT`: 캐시/락/스로틀/dedup용 (fail-fast —
- *   Redis 단절 시 명령이 즉시 reject되어 어댑터의 fail-open이 작동)
+ * 캐시/락/스로틀/dedup용 ioredis 인스턴스(`REDIS_COMMAND_CLIENT`)를 제공하는 글로벌 모듈.
+ * fail-fast 설정이라 Redis 단절 시 명령이 즉시 reject되어 어댑터의 fail-open이 작동한다.
  *
  * @example
  * // app.module.ts
@@ -58,23 +52,11 @@ export class RedisModule implements OnApplicationShutdown {
 
   constructor(
     @Optional()
-    @Inject(REDIS_CLIENT)
-    private readonly bullClient: RedisLifecycleClient | null,
-    @Optional()
     @Inject(REDIS_COMMAND_CLIENT)
     private readonly commandClient: RedisLifecycleClient | null,
   ) {}
 
   static forRoot(): DynamicModule {
-    const bullProvider: Provider = {
-      provide: REDIS_CLIENT,
-      useFactory: (configService: TypedConfigService): Redis | null =>
-        configService.job.backend === "redis" || configService.job.redisDrainEnabled
-          ? RedisModule.createClient(configService, buildBullRedisOptions, "main")
-          : null,
-      inject: [TypedConfigService],
-    };
-
     const commandProvider: Provider = {
       provide: REDIS_COMMAND_CLIENT,
       useFactory: (configService: TypedConfigService): Redis | null =>
@@ -86,39 +68,23 @@ export class RedisModule implements OnApplicationShutdown {
 
     return {
       module: RedisModule,
-      providers: [TypedConfigService, bullProvider, commandProvider],
-      exports: [REDIS_CLIENT, REDIS_COMMAND_CLIENT],
+      providers: [TypedConfigService, commandProvider],
+      exports: [REDIS_COMMAND_CLIENT],
     };
   }
 
-  /**
-   * 테스트용 모듈 설정
-   *
-   * @param client BullMQ용 클라이언트
-   * @param commandClient 명령용 클라이언트 (생략 시 client 재사용)
-   */
-  static forTesting(client: Redis, commandClient: Redis = client): DynamicModule {
+  static forTesting(commandClient: Redis): DynamicModule {
     return {
       module: RedisModule,
-      providers: [
-        { provide: REDIS_CLIENT, useValue: client },
-        { provide: REDIS_COMMAND_CLIENT, useValue: commandClient },
-      ],
-      exports: [REDIS_CLIENT, REDIS_COMMAND_CLIENT],
+      providers: [{ provide: REDIS_COMMAND_CLIENT, useValue: commandClient }],
+      exports: [REDIS_COMMAND_CLIENT],
     };
   }
 
   /** beforeApplicationShutdown에서 worker drain을 마친 뒤 Redis 연결을 닫는다. */
   async onApplicationShutdown(): Promise<void> {
-    this.shutdownPromise ??= this.closeClients();
+    this.shutdownPromise ??= this.shutdownClient(this.commandClient, "command");
     await this.shutdownPromise;
-  }
-
-  private async closeClients(): Promise<void> {
-    await Promise.allSettled([
-      this.shutdownClient(this.commandClient, "command"),
-      this.shutdownClient(this.bullClient, "main"),
-    ]);
   }
 
   private async shutdownClient(client: RedisLifecycleClient | null, name: string): Promise<void> {

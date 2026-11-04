@@ -62,7 +62,7 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
           processingJobId,
           processingJobAttempt: jobAttempt,
           publications: data,
-          // JobRuntime은 pg-boss/BullMQ 모두 1-based attempt로 정규화한다.
+          // JobRuntime은 pg-boss의 attempt를 1-based로 정규화한다.
           isFinalAttempt: jobAttempt > PUSH_DELIVERY_JOB_POLICY.retryLimit,
         }),
       )

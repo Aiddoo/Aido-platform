@@ -2,9 +2,9 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { premiumAccessCondition } from "#api/modules/access/access-entitlement-sql.public";
-import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
+import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { now } from "#api/shared/domain/date/utils/core";
 import { DEFAULT_DELIVERY_TIMEZONE, resolveTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -57,7 +57,7 @@ export class ReportGenerationJob implements OnModuleInit {
     // Processor에 자신을 등록 (순환 참조 방지)
     this.processor.setReportJob(this);
 
-    // Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+    // 작업 저장소 장애 중에도 부팅은 진행한다
     this.schedulerRegistration = runInBackground(
       this.#logger,
       "Report generation scheduler registration",
@@ -88,10 +88,7 @@ export class ReportGenerationJob implements OnModuleInit {
    * 로컬 디스패치 창에 든 대상 사용자만 per-user 잡으로 등록한다.
    * 창 안에서 매시 다시 실행돼도 사용자 로컬 주기의 멱등 키가 중복 등록을 막는다.
    */
-  async dispatchReports(
-    type: ReportType,
-    dispatchJob?: { updateProgress(progress: object): Promise<unknown> },
-  ): Promise<void> {
+  async dispatchReports(type: ReportType): Promise<void> {
     this.#logger.log({
       event: AiJobLogEvent.DISPATCH_STARTED,
       queueName: AI_REPORT_QUEUE,
@@ -147,7 +144,6 @@ export class ReportGenerationJob implements OnModuleInit {
           })),
         );
         totalEnqueued += due.length;
-        await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
       },
     });
 

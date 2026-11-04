@@ -6,7 +6,6 @@ import { DispatchDailySignupSummary } from "../../../application/use-cases/notif
 import { SendAdminNotification } from "../../../application/use-cases/notifications/send-admin-notification.use-case.js";
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 import {
-  ADMIN_NOTIFICATION_LEGACY_QUEUE,
   ADMIN_NOTIFICATION_QUEUE,
   ADMIN_NOTIFICATION_WORKER_POLICY,
   AdminNotificationJobName,
@@ -72,15 +71,6 @@ export class AdminNotificationProcessor implements OnModuleInit {
       async (jobs) => {
         for (const job of jobs) {
           await this.process(job.data);
-        }
-      },
-      ADMIN_NOTIFICATION_WORKER_POLICY,
-    );
-    await this.runtime.work(
-      ADMIN_NOTIFICATION_LEGACY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process({ name: job.name, data: job.data });
         }
       },
       ADMIN_NOTIFICATION_WORKER_POLICY,

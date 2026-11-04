@@ -17,23 +17,6 @@ export interface RedisConnectionSettings {
 }
 
 /**
- * BullMQ 전용 클라이언트 옵션
- *
- * BullMQ는 블로킹 명령(BRPOPLPUSH 등)을 사용하므로:
- * - `maxRetriesPerRequest: null` 필수 (BullMQ 요구사항 — 절대 변경 금지)
- * - `commandTimeout`/`enableOfflineQueue: false`를 적용하면 안 됨
- *   (블로킹 대기가 타임아웃으로 끊기거나 재연결 중 잡이 유실됨)
- */
-export function buildBullRedisOptions(settings: RedisConnectionSettings): RedisOptions {
-  return {
-    ...baseHostOptions(settings),
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-    connectionName: "aido-main",
-  };
-}
-
-/**
  * 명령용(캐시/락/스로틀/dedup/헬스) 클라이언트 옵션 — fail-fast
  *
  * Redis 단절 시 명령이 오프라인 큐에서 무한 대기하지 않고 즉시 reject되어

@@ -1,5 +1,5 @@
 /**
- * Admin Notification BullMQ 큐 상수 및 잡 데이터 타입 정의
+ * Admin Notification 큐 상수 및 잡 데이터 타입 정의
  */
 
 import { z } from "zod";
@@ -13,7 +13,6 @@ import type { AdminNotification } from "../../../application/read-models/notific
 // =============================================================================
 
 export const ADMIN_NOTIFICATION_QUEUE = "admin-notification.v1";
-export const ADMIN_NOTIFICATION_LEGACY_QUEUE = "admin-notification";
 
 // =============================================================================
 // Job Names

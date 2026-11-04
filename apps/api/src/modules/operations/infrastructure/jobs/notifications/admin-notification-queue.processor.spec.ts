@@ -8,13 +8,10 @@ import { TestBed } from "@suites/unit";
  */
 import type { Mocked } from "vitest";
 
-import { createMockJob } from "#test/mocks/index";
-
 import { DispatchDailySignupSummary } from "../../../application/use-cases/notifications/dispatch-daily-signup-summary.use-case.js";
 import { SendAdminNotification } from "../../../application/use-cases/notifications/send-admin-notification.use-case.js";
 import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 import {
-  type AdminNotificationJobData,
   AdminNotificationJobName,
   type AdminNotificationSendData,
 } from "./admin-notification-queue.constants.js";
@@ -33,7 +30,7 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
   });
 
   function createSendJob(data: AdminNotificationSendData) {
-    return createMockJob<AdminNotificationJobData>(AdminNotificationJobName.SEND, data);
+    return { name: AdminNotificationJobName.SEND, data };
   }
 
   describe("SEND 라우팅", () => {
@@ -49,10 +46,7 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 
   describe("DISPATCH_SUMMARY 라우팅", () => {
     it("DISPATCH_SUMMARY 잡 → DispatchDailySignupSummaryUseCase를 호출한다", async () => {
-      const job = createMockJob<AdminNotificationJobData>(
-        AdminNotificationJobName.DISPATCH_SUMMARY,
-        {},
-      );
+      const job = { name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} };
 
       await processor.process(job);
 
@@ -85,7 +79,7 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
     // When
     processor.onError(error);
     processor.onFailed({ id: "internal-job-1", name: secret }, error);
-    await processor.process(createMockJob<AdminNotificationJobData>(secret, {}));
+    await processor.process({ name: secret, data: {} });
 
     // Then
     expect(errorLog).toHaveBeenCalledWith({
@@ -111,7 +105,7 @@ describe("AdminNotificationProcessor — 관리자 알림 프로세서", () => {
 
   describe("알 수 없는 job", () => {
     it("알 수 없는 잡 이름은 경고만 출력한다", async () => {
-      const job = createMockJob<AdminNotificationJobData>("unknown-job", {});
+      const job = { name: "unknown-job", data: {} };
 
       await expect(processor.process(job)).resolves.not.toThrow();
       expect(sendAdminNotification.execute).not.toHaveBeenCalled();

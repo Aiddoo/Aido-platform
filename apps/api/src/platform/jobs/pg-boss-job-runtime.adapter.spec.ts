@@ -51,21 +51,6 @@ function enqueueOptions(idempotencyKey = "document:42"): EnqueueJobOptions {
   };
 }
 
-function legacyEnqueueOptions(): EnqueueJobOptions {
-  return {
-    jobKey: "document_42",
-    startAfter: new Date("2026-07-22T12:00:00.000Z"),
-    retryLimit: 2,
-    retryDelaySeconds: 5,
-    retryBackoff: true,
-    expireInSeconds: 600,
-    retentionSeconds: 14 * 24 * 60 * 60,
-    deleteAfterSeconds: 7 * 24 * 60 * 60,
-    deadLetter: "document-generation-dead-letter",
-    timezone: "Asia/Seoul",
-  };
-}
-
 class FakePgBossClient implements PgBossClient {
   readonly createdQueues: string[] = [];
   readonly createQueueCalls: Array<{ readonly name: string; readonly options?: QueueOptions }> = [];
@@ -322,15 +307,12 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
     expect(boss.updateQueueCalls.filter(({ name }) => name === DEAD_LETTER_QUEUE)).toHaveLength(1);
   });
 
-  it("신규·deprecated identity 이름을 같은 pg-boss identity로 매핑한다", async () => {
+  it("idempotencyKey를 결정적 pg-boss id와 singletonKey로 매핑한다", async () => {
+    // When
     await runtime.enqueue(QUEUE, { documentId: 42 }, enqueueOptions("document_42"));
-    await runtime.enqueue(QUEUE, { documentId: 42 }, legacyEnqueueOptions());
 
+    // Then
     expect(boss.sendCalls[0]?.options).toMatchObject({
-      id: "01d4ac50-5c6a-5317-bd4e-b1cf809b8f59",
-      singletonKey: "document_42",
-    });
-    expect(boss.sendCalls[1]?.options).toMatchObject({
       id: "01d4ac50-5c6a-5317-bd4e-b1cf809b8f59",
       singletonKey: "document_42",
     });

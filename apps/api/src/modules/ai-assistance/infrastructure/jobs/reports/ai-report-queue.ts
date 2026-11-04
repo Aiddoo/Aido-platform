@@ -3,7 +3,6 @@ import { z } from "zod";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const AI_REPORT_QUEUE = "ai-report-generation.v1";
-export const AI_REPORT_LEGACY_QUEUE = "ai-report-generation";
 
 export const AiReportSchedulerName = {
   WEEKLY: "weekly-report-scheduler",

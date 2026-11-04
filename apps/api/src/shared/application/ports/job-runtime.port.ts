@@ -1,4 +1,4 @@
-export type JobBackend = "postgres" | "redis";
+export type JobBackend = "postgres";
 
 export type JobData = object;
 
@@ -25,7 +25,8 @@ export interface DeadLetterQueuePolicy {
 
 export type DeadLetterQueue = string | DeadLetterQueuePolicy;
 
-interface BaseEnqueueJobOptions extends JobRetryPolicy {
+export interface EnqueueJobOptions extends JobRetryPolicy {
+  readonly idempotencyKey?: string;
   readonly startAfter?: Date;
   /**
    * 문자열은 rolling 배포 중 기존 호출부와 payload를 위한 호환 계약입니다.
@@ -35,31 +36,9 @@ interface BaseEnqueueJobOptions extends JobRetryPolicy {
   readonly timezone?: string;
 }
 
-type JobIdempotencyOptions =
-  | {
-      readonly idempotencyKey: string;
-      readonly jobKey?: never;
-    }
-  | {
-      readonly idempotencyKey?: never;
-      /** @deprecated `idempotencyKey`를 사용하세요. */
-      readonly jobKey: string;
-    }
-  | {
-      readonly idempotencyKey?: undefined;
-      readonly jobKey?: undefined;
-    };
-
-export type EnqueueJobOptions = BaseEnqueueJobOptions & JobIdempotencyOptions;
-
 export interface EnqueueJobRequest<T extends JobData = JobData> {
   readonly data: T;
   readonly options: EnqueueJobOptions;
-}
-
-/** rolling 배포 중 신규·레거시 이름을 하나의 런타임 값으로 정규화합니다. */
-export function resolveJobIdempotencyKey(options: EnqueueJobOptions): string | undefined {
-  return options.idempotencyKey ?? options.jobKey;
 }
 
 export function resolveDeadLetterQueue(

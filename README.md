@@ -77,7 +77,7 @@ flowchart LR
 - Domain·Application은 Nest·ORM·vendor SDK에 의존하지 않는다. Nest Module이 Composition Root로서 UseCase와 Port 구현을 연결한다.
 - Controller는 UseCase를 직접 호출한다. 다른 Context는 `*.public.ts`로 공개한 capability만 사용한다.
 - 트랜잭션은 `UNIT_OF_WORK`와 CLS transaction(`@nestjs-cls/transactional`)으로 관리하고, 외부 발송은 커밋 이후에 실행한다.
-- 기본 job·push rate limit 저장소는 PostgreSQL(pg-boss)이다. Redis/BullMQ는 선택 backend와 기존 큐 drain 용도로 남아 있다.
+- job 저장소는 PostgreSQL(pg-boss)이다. push rate limit 기본 저장소도 PostgreSQL이고, Redis는 선택한 캐시·rate limit backend에만 쓴다.
 
 상세: [apps/api/.claude/architecture.md](./apps/api/.claude/architecture.md)
 

@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { type MockProxy, mock } from "vitest-mock-extended";
 
 export function mockOf<T extends object>(impl?: Partial<T>): MockProxy<T> {
@@ -6,4 +7,8 @@ export function mockOf<T extends object>(impl?: Partial<T>): MockProxy<T> {
 
 export function asDep<T extends object>(impl: Partial<T>): T {
   return Object.setPrototypeOf(mock<T>(), impl);
+}
+
+export function asMock<T extends (...args: never[]) => unknown>(fn: T) {
+  return vi.mocked(fn, { partial: true });
 }

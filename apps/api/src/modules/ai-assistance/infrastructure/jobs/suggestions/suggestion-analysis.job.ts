@@ -3,9 +3,9 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import dayjs from "dayjs";
 
 import { premiumAccessCondition } from "#api/modules/access/access-entitlement-sql.public";
-import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
+import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -15,7 +15,6 @@ import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
 import { AiSuggestionQueueMaintenanceService } from "./ai-suggestion-queue-maintenance.service.js";
 import {
-  AI_SUGGESTION_LEGACY_QUEUE,
   AI_SUGGESTION_QUEUE,
   type AiSuggestionAnalyzeData,
   AiSuggestionJobName,
@@ -47,16 +46,11 @@ export class SuggestionAnalysisJob implements OnModuleInit {
     // Processor에 자신을 등록 (순환 참조 방지)
     this.processor.setSuggestionJob(this);
 
-    // Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+    // 작업 저장소 장애 중에도 부팅은 진행한다
     this.schedulerRegistration = runInBackground(
       this.#logger,
       "Suggestion analysis scheduler registration",
       async () => {
-        // 구 weekly 스케줄러 제거 (마이그레이션)
-        await this.runtime.unschedule(
-          AiSuggestionSchedulerName.LEGACY_WEEKLY,
-          AI_SUGGESTION_LEGACY_QUEUE,
-        );
         await this.runtime.schedule(
           AiSuggestionSchedulerName.DAILY,
           "30 7 * * *",
@@ -72,9 +66,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
     );
   }
 
-  async dispatchAnalysis(dispatchJob?: {
-    updateProgress(progress: object): Promise<unknown>;
-  }): Promise<void> {
+  async dispatchAnalysis(): Promise<void> {
     this.#logger.log({ event: AiJobLogEvent.DISPATCH_STARTED, queueName: AI_SUGGESTION_QUEUE });
     await this.queueMaintenance.cleanExpiredFailures();
 
@@ -124,7 +116,6 @@ export class SuggestionAnalysisJob implements OnModuleInit {
           })),
         );
         totalEnqueued += batch.length;
-        await dispatchJob?.updateProgress({ enqueued: totalEnqueued });
       },
     });
 

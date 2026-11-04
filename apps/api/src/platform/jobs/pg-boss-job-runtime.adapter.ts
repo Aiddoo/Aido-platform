@@ -36,7 +36,6 @@ import type {
 import {
   resolveDeadLetterJobPolicy,
   resolveDeadLetterQueue,
-  resolveJobIdempotencyKey,
 } from "#api/shared/application/ports/job-runtime.port";
 
 import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
@@ -402,7 +401,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
   private toPgBossOptions(options: EnqueueJobOptions, db: Db): SendOptions {
     return {
       db,
-      singletonKey: resolveJobIdempotencyKey(options),
+      singletonKey: options.idempotencyKey,
       startAfter: options.startAfter,
       retryLimit: options.retryLimit,
       retryDelay: options.retryDelaySeconds,
@@ -480,7 +479,7 @@ function hasAffectedCount(result: unknown): result is { readonly affected: numbe
 
 /** enqueue와 enqueueMany가 같은 재시도·DLQ·결정적 id 옵션으로 작업을 쓰도록 한 곳에서 변환한다. */
 function toPgBossJobOptions(queue: string, options: EnqueueJobOptions): Omit<JobInsert, "data"> {
-  const idempotencyKey = resolveJobIdempotencyKey(options);
+  const { idempotencyKey } = options;
   return {
     singletonKey: idempotencyKey,
     startAfter: options.startAfter,

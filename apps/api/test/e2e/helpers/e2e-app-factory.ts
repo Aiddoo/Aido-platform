@@ -51,7 +51,7 @@ import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DRIZZLE } from "#api/platform/database/index";
 import { configureApplication } from "#api/platform/http/configure-application";
-import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
+import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
@@ -198,8 +198,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   let builder = Test.createTestingModule({
     imports: [AppModule],
   })
-    .overrideProvider(REDIS_CLIENT)
-    .useValue(redisMock)
     .overrideProvider(REDIS_COMMAND_CLIENT)
     .useValue(redisMock)
     .overrideProvider(JOB_RUNTIME)

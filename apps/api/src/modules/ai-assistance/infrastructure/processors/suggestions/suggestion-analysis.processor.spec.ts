@@ -11,13 +11,9 @@ import { createMockDrizzleTransactionHost } from "#test/mocks/drizzle.mock";
  * - 서비스 위임 검증
  * - 패턴 감지 여부에 따른 알림 발송 검증
  */
-import { createMockJob } from "#test/mocks/index";
 
 import { AnalyzeAndCreateSuggestions } from "../../../application/use-cases/suggestions/analyze-and-create-suggestions.use-case.js";
-import {
-  type AiSuggestionJobData,
-  AiSuggestionJobName,
-} from "../../jobs/suggestions/ai-suggestion-queue.js";
+import { AiSuggestionJobName } from "../../jobs/suggestions/ai-suggestion-queue.js";
 import { SuggestionAnalysisProcessor } from "./suggestion-analysis.processor.js";
 
 describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => {
@@ -50,13 +46,14 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
       analyzeAndCreateSuggestionsUseCase.execute.mockResolvedValue(0);
 
       // When -process를 호출하면
-      await processor.process(
-        createMockJob<AiSuggestionJobData>(AiSuggestionJobName.ANALYZE, {
+      await processor.process({
+        name: AiSuggestionJobName.ANALYZE,
+        data: {
           userId: "user-123",
           timezone: "Asia/Seoul",
           weatherGrid: null,
-        }),
-      );
+        },
+      });
 
       // Then -서비스에 올바른 파라미터를 전달해야 한다
       expect(analyzeAndCreateSuggestionsUseCase.execute).toHaveBeenCalledWith(
@@ -75,13 +72,14 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
       mockNotificationService.publish.mockResolvedValue(null);
 
       // When -process를 호출하면
-      await processor.process(
-        createMockJob<AiSuggestionJobData>(AiSuggestionJobName.ANALYZE, {
+      await processor.process({
+        name: AiSuggestionJobName.ANALYZE,
+        data: {
           userId: "user-123",
           timezone: "Asia/Seoul",
           weatherGrid: null,
-        }),
-      );
+        },
+      });
 
       // Then -알림이 발송되어야 한다
       expect(mockNotificationService.publish).toHaveBeenCalledWith(
@@ -99,13 +97,14 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
       analyzeAndCreateSuggestionsUseCase.execute.mockResolvedValue(0);
 
       // When -process를 호출하면
-      await processor.process(
-        createMockJob<AiSuggestionJobData>(AiSuggestionJobName.ANALYZE, {
+      await processor.process({
+        name: AiSuggestionJobName.ANALYZE,
+        data: {
           userId: "user-123",
           timezone: "Asia/Seoul",
           weatherGrid: null,
-        }),
-      );
+        },
+      });
 
       // Then -알림이 발송되지 않아야 한다
       expect(mockNotificationService.publish).not.toHaveBeenCalled();

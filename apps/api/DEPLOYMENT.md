@@ -48,23 +48,13 @@ migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴�
 
 ## Job 전환과 잔존 작업
 
-기본 `JOB_BACKEND=postgres`와 `PUSH_RATE_LIMIT_BACKEND=postgres`는 별도 선택이다. Redis/BullMQ는 선택 backend·기존 작업 drain을 위해 남아 있다. `JOB_REDIS_DRAIN_ENABLED=true`의 전환 runtime은 신규 enqueue를 PostgreSQL로 보내고 기존 Redis 작업을 처리하며 이전 scheduler를 정리한다.
+durable job은 PostgreSQL(pg-boss)만 쓴다. Redis/BullMQ job runtime과 `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED`는 1.14.2에서 제거했고, 배포 env에 남은 두 값은 무시된다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
 
 job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 
-기존 waiting/delayed/active/retry 작업의 payload·job name·queue alias·재시도 의미는 drain이 확인되기 전 유지한다. production BullMQ가 비었다는 확인 없이 legacy queue/key/worker를 일괄 삭제하지 않는다. 새 backend health만으로 과거 queue가 비었다고 판단하지 않는다. [`push-notifications.md`](./docs/push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다.
+[`push-notifications.md`](./docs/push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다.
 
-알림 Context의 legacy worker(`notification`·`retention`·`todo-reminder`·`timezone-reminder`)는 1.14.1에서 제거했다. 2026-07-22 pg-boss 전환 뒤 이 이름으로 enqueue하는 코드는 없다. 1.14.1 API를 올리기 전에 아래 두 값이 모두 0인지 확인하고, 0이 아니면 이전 API에서 `JOB_REDIS_DRAIN_ENABLED=true`로 먼저 비운다.
-
-```sql
--- pg-boss에 남은 이전 이름의 작업
-SELECT name, state, count(*) FROM pgboss.job
-WHERE name IN ('notification', 'retention', 'todo-reminder', 'timezone-reminder')
-  AND state IN ('created', 'retry', 'active')
-GROUP BY name, state;
-```
-
-Redis를 쓰던 배포라면 같은 이름의 BullMQ `wait`·`delayed`·`active` 크기도 확인한다(`LLEN bull:<queue>:wait`, `ZCARD bull:<queue>:delayed`, `LLEN bull:<queue>:active`).
+알림 Context의 legacy worker(`notification`·`retention`·`todo-reminder`·`timezone-reminder`)는 1.14.1에서, 계정 삭제·관리자 알림·AI 제안·AI 리포트의 이전 이름 queue worker(`.v1` 없는 이름)는 1.14.2에서 제거했다. 2026-07-22 pg-boss 전환 뒤 이 이름으로 enqueue하는 코드는 없다. 이전 이름의 worker는 Redis drain에서만 작업을 받았고, 1.14.1 배포 전 Redis job 미사용과 알림 이전 queue의 대기 작업 0건을 확인했다.
 
 리텐션 발송은 1.14.1부터 공용 push-delivery outbox를 쓴다. 1.14.2의 migration `drop_legacy_comment_path_and_retention_outbox`가 이전 `RetentionPushOutbox` 테이블과 `TodoComment.path`·`depth`·`rootId` 열을 지운다. 1.14.1 이하 API 이미지는 지운 열에 값을 쓰므로, 이 migration을 적용한 DB에서 이미지만 롤백하면 댓글 작성이 실패한다.
 
@@ -87,10 +77,9 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 | NODE_ENV / APP_ENV                                            | 런타임 / 배포 환경. Sentry는 production APP_ENV에서 발송                                                          |
 | PORT                                                          | host 기본 8080, API container 8080                                                                                |
 | JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY        | 시작 검증에 필요한 32자 이상 값                                                                                   |
-| JOB_BACKEND / JOB_SCHEMA                                      | postgres / pgboss                                                                                                 |
-| JOB_REDIS_DRAIN_ENABLED                                       | false; 잔존 Redis job 전환은 확인한 경우에만 사용                                                                 |
+| JOB_SCHEMA                                                    | pgboss                                                                                                            |
 | CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                          | memory / postgres; 서로 다른 capability                                                                           |
-| REDIS_*                                                       | Redis backend 또는 drain 연결 설정                                                                                |
+| REDIS_*                                                       | `CACHE_TYPE=redis` 또는 `PUSH_RATE_LIMIT_BACKEND=redis`일 때의 연결 설정                                          |
 | EXPO_ACCESS_TOKEN / RESEND_API_KEY                            | Expo / 이메일 공급자                                                                                              |
 | GOOGLE_GENERATIVE_AI_API_KEY                                  | 기존 Gemini 모델 공급자; 유료 호출은 별도 범위                                                                    |
 | AI_MODEL_<TASK> / AI_FALLBACK_MODEL                           | 선택. `google:<model>`, 기본 flash-lite·대체 없음                                                                 |

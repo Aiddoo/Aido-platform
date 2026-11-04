@@ -2,7 +2,7 @@
  * 관리자 알림 이벤트 페이로드 정의
  *
  * 회원가입 등 관리자 알림에 필요한 페이로드 타입을 정의합니다.
- * BullMQ AdminNotificationQueue에서 사용됩니다.
+ * AdminNotificationQueue에서 사용됩니다.
  */
 
 /**

@@ -75,7 +75,7 @@ export class TimezoneAwareReminderOrchestrator {
   schedulerRegistration: Promise<void> = Promise.resolve();
 
   onModuleInit(): void {
-    // Redis 다운 중에도 부팅은 진행 — 오프라인 큐가 재연결 시 등록을 완료한다
+    // 작업 저장소 장애 중에도 부팅은 진행한다
     this.schedulerRegistration = this.#registerSweepScheduler();
   }
 

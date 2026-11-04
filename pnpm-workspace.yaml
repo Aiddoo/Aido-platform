@@ -85,7 +85,6 @@ catalog:
   'ai': '7.0.162'
   ai-fallback: 3.0.0
   'bowser': '2.15.0'
-  'bullmq': '6.5.3'
   'countries-and-timezones': '3.11.0'
   d3-shape: 3.2.1
   'dayjs': '1.11.23'

@@ -1,7 +1,6 @@
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
 
 export const ACCOUNT_PURGE_QUEUE = "account-purge.v1";
-export const ACCOUNT_PURGE_LEGACY_QUEUE = "account-purge";
 export const ACCOUNT_PURGE_JOB_NAME = "purge-accounts";
 export type AccountPurgeJobData = Record<string, never>;
 
