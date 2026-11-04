@@ -60,16 +60,11 @@ export class GetNudgeThanksPreview {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
     }
-    const throughNudgeId =
+    const [throughNudgeId, thanksSummary] = await Promise.all([
       input.throughNudgeId ??
-      (await this.#dependencies.nudgeRepository.findLastReceivedNudgeId(
-        input.todoId,
-        input.userId,
-      ));
-    const thanksSummary = await this.#dependencies.nudgeRepository.findThanksSummary(
-      input.todoId,
-      input.userId,
-    );
+        this.#dependencies.nudgeRepository.findLastReceivedNudgeId(input.todoId, input.userId),
+      this.#dependencies.nudgeRepository.findThanksSummary(input.todoId, input.userId),
+    ]);
     if (throughNudgeId == null || todo.visibility !== "PUBLIC") {
       return {
         todoId: input.todoId,

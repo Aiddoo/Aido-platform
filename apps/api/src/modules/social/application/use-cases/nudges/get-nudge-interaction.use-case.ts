@@ -31,14 +31,13 @@ export class GetNudgeInteraction {
       throw new ApplicationException(ErrorCode.NUDGE_1105);
     }
 
-    const nudge = await this.#dependencies.nudgeRepository.findInteractionById(
-      input.nudgeId,
-      input.userId,
-    );
+    const [nudge, friendIds] = await Promise.all([
+      this.#dependencies.nudgeRepository.findInteractionById(input.nudgeId, input.userId),
+      this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId),
+    ]);
     if (nudge == null) {
       throw new ApplicationException(ErrorCode.NUDGE_1105);
     }
-    const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId);
     const friendId = nudge.receiverId === input.userId ? nudge.senderId : nudge.receiverId;
 
     return {
