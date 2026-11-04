@@ -1,5 +1,5 @@
-import { and, eq, gt, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { and, eq, exists, gt, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { subscription, type user } from "#api/platform/database/schema/index";
 import { storeRenewalCutoff } from "#api/shared/domain/store-renewal-grace";
@@ -35,13 +35,27 @@ export function validStoreEntitlementCondition(store: StoreEntitlementColumns, a
  * 아직 지나지 않았다. 판단 규칙을 바꾸면 entitlement-limits.policy와 함께 바꾼다.
  */
 export function activeSubscriptionCondition(target: PremiumUserColumns, at: Date): SQL {
-  const validStore = sql`exists (select 1 from ${subscription} where ${eq(subscription.userId, target.id)} and ${isNull(subscription.deletedAt)} and ${validStoreEntitlementCondition(subscription, at)})`;
-  return sql`(${eq(target.subscriptionStatus, "ACTIVE")} and (${isNull(target.subscriptionExpiresAt)} or ${gt(target.subscriptionExpiresAt, at)} or ${validStore}))`;
+  const validStore = exists(
+    new QueryBuilder()
+      .select({ one: sql`1` })
+      .from(subscription)
+      .where(
+        and(
+          eq(subscription.userId, target.id),
+          isNull(subscription.deletedAt),
+          validStoreEntitlementCondition(subscription, at),
+        ),
+      ),
+  );
+  return sql`(${and(
+    eq(target.subscriptionStatus, "ACTIVE"),
+    or(isNull(target.subscriptionExpiresAt), gt(target.subscriptionExpiresAt, at), validStore),
+  )})`;
 }
 
 /** EntitlementService의 프리미엄 등급 판단(resolveAccessTier)과 같다: ADMIN이거나 유효한 유료 구독이 있다. */
 export function premiumAccessCondition(target: PremiumUserColumns, at: Date): SQL {
-  return sql`(${eq(target.role, "ADMIN")} or ${activeSubscriptionCondition(target, at)})`;
+  return sql`(${or(eq(target.role, "ADMIN"), activeSubscriptionCondition(target, at))})`;
 }
 
 /** premiumAccessCondition의 반대. 두 조건은 NULL 없이 사용자를 정확히 둘로 나눈다. */

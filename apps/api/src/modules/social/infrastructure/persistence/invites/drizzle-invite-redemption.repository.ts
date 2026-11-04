@@ -48,7 +48,7 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
 
   private activeDayCount() {
     return (redemption: typeof inviteRedemption) =>
-      sql<number>`(SELECT count(*)::int FROM ${inviteActiveDay} WHERE ${inviteActiveDay.redemptionId} = ${redemption.id})`;
+      this.db.$count(inviteActiveDay, eq(inviteActiveDay.redemptionId, redemption.id));
   }
 
   async findInviteeIdentity(inviteeId: string): Promise<InviteeIdentity | null> {
