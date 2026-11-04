@@ -17,7 +17,11 @@ import {
   generationFailure,
 } from "../../observability/generation/ai-generation-log.events.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
-import { AiGenerationError } from "../../ports/generation/ai-generation.errors.js";
+import {
+  AiGenerationError,
+  isTransientAiFailure,
+  isWithheldAiFailure,
+} from "../../ports/generation/ai-generation.errors.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
 import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
@@ -110,28 +114,33 @@ export class AnalyzeAndCreateSuggestions {
       definition,
       definition.build(context, locale),
       { context, locale },
-      { agreedConsentVersion: consent.agreedVersion },
+      { agreedConsentVersion: consent.agreedVersion, userId },
     ).catch((error: unknown) => {
-      if (error instanceof AiGenerationError && error.kind === "UNAVAILABLE") {
-        return null;
+      if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
+        return { skipped: error.kind } as const;
       }
-      // 잡 재시도 의미는 유지하고, 원인 종류만 남긴다.
+      const failure = generationFailure(error);
+      const settled = error instanceof AiGenerationError && !isTransientAiFailure(error.kind);
       this.#dependencies.logger.warn(
         generationFailedLog({
           ...logBase,
-          outcome: "FAILED",
-          ...generationFailure(error),
+          outcome: settled ? "FAILED" : "RETRYING",
+          ...failure,
           latencyMs: Date.now() - startedAt,
         }),
       );
-      throw error;
+      // 일시 장애만 잡 재시도로 넘긴다. 출력 오류·차단·잘림은 다시 불러도 같은 비용으로 같게 실패한다.
+      if (!settled) {
+        throw error;
+      }
+      return { skipped: failure.errorType } as const;
     });
-    // 설정·동의 범위 안에 지금 보낼 수 있는 업체가 없으면 이번 분석을 건너뛴다.
-    if (generation == null) {
+    // 보낼 업체가 없거나 예산·킬 스위치로 멈췄거나 다시 시도해도 같은 실패면 이번 분석을 건너뛴다.
+    if ("skipped" in generation) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
-        reason: "provider-unavailable",
+        reason: generation.skipped === "UNAVAILABLE" ? "provider-unavailable" : "generation-failed",
       });
       return 0;
     }

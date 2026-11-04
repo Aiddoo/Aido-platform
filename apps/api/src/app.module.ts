@@ -57,8 +57,11 @@ import {
 import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
 import { LockModule } from "#api/platform/lock/index";
 import { LoggerModule } from "#api/platform/logging/index";
+import { MeteringModule } from "#api/platform/metering/index";
+import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { PaginationModule } from "#api/platform/pagination/pagination.module";
 import { RedisModule } from "#api/platform/redis/index";
+import { ResilienceModule } from "#api/platform/resilience/index";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
 import {
   THROTTLER_STORAGE,
@@ -98,6 +101,9 @@ import { AppService } from "./app.service.js";
     DedupModule.forRoot(),
     LockModule.forRoot(),
     JobRuntimeModule,
+    AlertingModule,
+    ResilienceModule,
+    MeteringModule,
     AccessModule,
     LoggerModule.forRootAsync(),
     SharedKernelModule,

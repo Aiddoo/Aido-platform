@@ -154,7 +154,7 @@ export class ParseTodo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           requestedCategoryId: categoryId,
         },
-        { agreedConsentVersion: agreedVersion },
+        { agreedConsentVersion: agreedVersion, userId },
       );
 
       const charge = value.intent === "TASK";

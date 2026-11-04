@@ -94,6 +94,13 @@ commit
 - locale별 사용자 copy·AI 지시문·response schema는 Application의 typed catalog나 Presentation이 소유한다. Domain 숫자 판단과 상태 규칙은 번역 문자열을 만들거나 파싱하지 않는다. 예: AI `application/prompts`, Notification `application/messages`, Email `application/services/email/email-message.factory.ts`·`application/templates/email`.
 - Provider의 wire JSON/SDK 타입은 Infrastructure에서 변환한다. Application의 이메일 HTML이나 관리자 채널 표시처럼 순수 렌더링을 둔 기존 흐름은 I/O 구현과 구분한다.
 
+## 외부 호출 정책·계량·운영 경보
+
+- 외부 호출은 `OutboundPolicyRegistry.get(spec)`의 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → Aggressive timeout). 정책 값은 소유 모듈 infrastructure의 spec 상수(`ai-outbound.policies.ts`, `weather-outbound.policies.ts`, `expo-outbound.policy.ts`)다. 재시도 층은 한 호출에 하나다: 요청 안에서는 전송 계층 내장(AI SDK `maxRetries`, Expo SDK), 비동기는 pg-boss이고 cockatiel `retry`는 쓰지 않는다. 회로 로그는 `outbound.circuit.{opened,half-open,closed}`, 대기열 초과는 `outbound.bulkhead.rejected`다.
+- 회로를 다는 기준: 호출마다 돈이 들거나, 요청 경로에서 대기 시간이 쌓이거나, 배치가 많은 호출로 퍼질 때. 상태는 프로세스 메모리(API 컨테이너 1대)다.
+- 누적 사용량은 `USAGE_METER`(`UsageMeterPort`: `add`·`tryReserve`·`release`·`read`·`prune`, `OutboundUsage` 원자적 upsert)로 센다. 기간은 `usagePeriod`의 UTC 일·월이고 기준선 경보는 `crossedThresholds`로 기간당 한 번이다. 90일 지난 행은 `UsageRetentionJob`이 지운다.
+- 사람이 확인할 상황은 `OPERATIONAL_ALERT`(`OperationalAlertPort.raise({ key, severity, message, tags, details })`, 절대 throw하지 않음) 하나로 올린다. 어댑터는 Sentry(fingerprint = key)이고 key 상수는 각 Context의 `application/observability/*-alerts.ts`다.
+
 ## 유료 기능과 권한
 
 권한 주체는 FREE·PREMIUM(유효한 스토어 구독 또는 보상 기간)·ADMIN(모든 기능 무제한) 셋이다. 플랜 숫자는 `@aido/api/vocabulary`의 `PLAN_CATALOG` 한 곳에만 두고(출시 앱이 읽는 `PREMIUM_FEATURES`는 그 부분집합), 무료·프리미엄 판단은 [paid-access.policy](../src/modules/access/domain/policies/entitlement/paid-access.policy.ts)의 `hasPaidAccess`, 한도 판단은 [entitlement.policy](../src/modules/access/domain/policies/entitlement/entitlement.policy.ts) 하나다. ADMIN은 정책이 처리한다. 무제한으로 보이는 프리미엄 quota에 `fairUse.premium`이 있으면 서버는 그 상한으로 막고(`resolveQuotaLimit`), 출시 앱 응답은 표시 한도(null)를 그대로 보여 준다.

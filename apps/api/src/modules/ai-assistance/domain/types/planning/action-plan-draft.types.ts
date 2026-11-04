@@ -1,4 +1,9 @@
-import type { DateRef, RepeatRef, ScheduleDraft, TimeRef } from "../parsing/todo-draft.types.js";
+import type {
+  DateRef,
+  PlanRepeatRef,
+  ScheduleDraft,
+  TimeRef,
+} from "../parsing/todo-draft.types.js";
 
 /**
  * 계획 프롬프트(quick-plan·voice-note-digest)가 내는 행동 표현.
@@ -11,7 +16,7 @@ export interface CreateTodoActionDraft {
   readonly date: DateRef;
   readonly endDate: DateRef | null;
   readonly time: TimeRef | null;
-  readonly repeat: RepeatRef;
+  readonly repeat: PlanRepeatRef;
   /** 말로 비공개를 요청했을 때만 PRIVATE. 언급이 없으면 null(기본 공개 범위) */
   readonly visibility: "PRIVATE" | null;
   readonly items: readonly string[];
@@ -47,7 +52,7 @@ export interface VoiceNoteDigestDraft extends QuickPlanDraft {
 export interface PlannedTodoDraft {
   readonly title: string;
   readonly categoryId: number | null;
-  readonly schedule: ScheduleDraft;
+  readonly schedule: ScheduleDraft<PlanRepeatRef>;
   readonly visibility: "PRIVATE" | null;
   readonly items: readonly string[];
   readonly duplicateOfTodoId: number | null;

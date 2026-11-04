@@ -90,6 +90,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       FORECAST: 10_800_000,
       LATEST_FORECAST: 86_400_000,
       CONDITIONS: 3_600_000,
+      FORECAST_FAILURE: 60_000,
     });
     expect(TODO_CACHE_TTL_MS.FRIEND_VIEW).toBe(60_000);
     expect(DAILY_COMPLETION_CACHE_TTL_MS).toBe(600_000);

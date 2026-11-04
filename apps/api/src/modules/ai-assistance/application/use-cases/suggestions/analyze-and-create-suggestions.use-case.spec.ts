@@ -10,6 +10,7 @@ import {
   withAiAssistanceTime,
 } from "#test/fixtures/ai-assistance.fixture";
 import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
+import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 const SEOUL_GRID = { gridX: 60, gridY: 127, lat: 37.5, lon: 127 };
 
@@ -81,6 +82,8 @@ describe("AnalyzeAndCreateSuggestions", () => {
       });
       expect(f.generator.getLastRequest()).toMatchObject({
         task: "suggestion",
+        taskClass: "background",
+        userId: f.userId,
         promptVersion: "suggestion@3",
       });
     }));
@@ -206,6 +209,53 @@ describe("AnalyzeAndCreateSuggestions", () => {
       expect(f.repository.writes).toEqual([]);
       expect(f.repository.rows.has(1)).toBe(true);
     }),
+  );
+
+  it.each(["INVALID_OUTPUT", "TRUNCATED", "BLOCKED", "BAD_REQUEST"] as const)(
+    "다시 불러도 같게 실패하는 %s는 잡 재시도로 던지지 않고 이번 분석을 건너뛴다",
+    (kind) =>
+      withAiAssistanceTime(async () => {
+        // Given
+        const f = createAiAssistanceFixture();
+        seedPendingSuggestion(f);
+        f.generator.setInvalidResponse(createAiGenerationError(kind));
+        // When
+        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        // Then
+        expect(count).toBe(0);
+        expect(f.repository.writes).toEqual([]);
+        expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+      }),
+  );
+
+  it.each(["HALTED", "USER_SPEND_LIMITED", "UNAVAILABLE"] as const)(
+    "%s로 업체를 부르지 않았으면 잡 재시도 없이 건너뛴다",
+    (kind) =>
+      withAiAssistanceTime(async () => {
+        // Given
+        const f = createAiAssistanceFixture();
+        f.generator.setInvalidResponse(createAiGenerationError(kind));
+        // When
+        const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+        // Then
+        expect(count).toBe(0);
+        expect(f.repository.writes).toEqual([]);
+      }),
+  );
+
+  it.each(["RATE_LIMITED", "OVERLOADED", "UPSTREAM", "TIMEOUT"] as const)(
+    "일시 장애 %s는 잡이 다시 시도하도록 던진다",
+    (kind) =>
+      withAiAssistanceTime(async () => {
+        // Given
+        const f = createAiAssistanceFixture();
+        f.generator.setInvalidResponse(createAiGenerationError(kind));
+        // When
+        const result = f.analyze.execute(f.userId, "Asia/Seoul");
+        // Then
+        await expect(result).rejects.toMatchObject({ kind });
+        expect(f.repository.writes).toEqual([]);
+      }),
   );
 
   it("실제 기록 후보에 없는 id만 고르면 아무것도 저장하지 않고 기존 pending을 지킨다", () =>

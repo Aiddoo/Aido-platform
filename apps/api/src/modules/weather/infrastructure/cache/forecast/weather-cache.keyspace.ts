@@ -4,6 +4,7 @@ export const WEATHER_CACHE_TTL_MS = {
   FORECAST: 3 * 60 * 60_000,
   LATEST_FORECAST: 24 * 60 * 60_000,
   CONDITIONS: 60 * 60_000,
+  FORECAST_FAILURE: 60_000,
 } as const;
 
 export const WeatherCacheKey = {
@@ -18,6 +19,8 @@ export const WeatherCacheKey = {
     cacheKey("weather", "forecast", String(gridX), String(gridY), baseDate, baseTime, targetDate),
   latestForecast: (gridX: number, gridY: number) =>
     cacheKey("weather", "forecast-latest", String(gridX), String(gridY)),
+  forecastFailure: (gridX: number, gridY: number) =>
+    cacheKey("weather", "forecast-failure", String(gridX), String(gridY)),
   conditions: (gridX: number, gridY: number, localDate: string) =>
     cacheKey("weather", "conditions", String(gridX), String(gridY), localDate),
   conditionsPattern: (gridX: number, gridY: number) =>

@@ -516,6 +516,31 @@ describe("GenerateReport", () => {
       expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
     }));
 
+  it.each(["HALTED", "USER_SPEND_LIMITED"] as const)(
+    "%s로 업체를 부르지 않았으면 첫 시도에서도 재시도 없이 폴백을 저장하고 error로 남기지 않는다",
+    (kind) =>
+      withAiAssistanceTime(async () => {
+        // Given
+        const f = useReportActivity(createAiAssistanceFixture());
+        f.generator.setInvalidResponse(createAiGenerationError(kind));
+        // When
+        const result = await f.generateReport.execute({
+          userId: f.userId,
+          timezone: "Asia/Seoul",
+          type: "WEEKLY",
+          isFinalAttempt: false,
+        });
+        // Then
+        expect(result).not.toBeNull();
+        expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
+        expect(f.logger.warn).toHaveBeenCalledWith({
+          event: "ai.report.provider.unavailable",
+          errorType: kind,
+        });
+        expect(f.logger.error).not.toHaveBeenCalled();
+      }),
+  );
+
   it("요약·팁이 비어 있는 출력은 저장하지 않고 폴백으로 바꾼다", () =>
     withAiAssistanceTime(async () => {
       // Given

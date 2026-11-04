@@ -13,6 +13,7 @@ import {
   type ScheduleClock,
 } from "#api/modules/ai-assistance/domain/services/parsing/resolve-todo-schedule";
 import type { NormalizedActionPlan } from "#api/modules/ai-assistance/domain/types/planning/action-plan-draft.types";
+import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-response.fixture";
 
 /** golden 묶음. mixed는 한국어·영어를 섞어 말한 입력이고 locale은 앱 언어다. */
 export const GOLDEN_VARIANTS = ["ko", "en", "mixed"] as const;
@@ -133,16 +134,13 @@ export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClo
       const { repeat } = todo.schedule;
       const repeats = repeat.pattern !== "NONE" && repeat.pattern !== "UNSUPPORTED";
       const resolved = resolveTodoSchedule(
-        { ...todo.schedule, repeat: { pattern: "NONE" } },
+        { ...todo.schedule, repeat: repeatRefFixture({ pattern: "NONE" }) },
         clock,
       );
       const until =
         repeat.until == null || repeat.until.kind === "NONE"
           ? null
-          : resolveTodoSchedule(
-              { date: repeat.until, time: null, repeat: { pattern: "NONE" } },
-              clock,
-            ).startDate;
+          : resolveTodoSchedule(scheduleDraftFixture({ date: repeat.until }), clock).startDate;
       return {
         title: todo.title,
         categoryId: todo.categoryId,
@@ -155,9 +153,9 @@ export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClo
               daysOfWeek: [...(repeat.daysOfWeek ?? [])].sort(
                 (left, right) => DAYS_OF_WEEK.indexOf(left) - DAYS_OF_WEEK.indexOf(right),
               ),
-              monthDay: repeat.monthDay ?? null,
+              monthDay: repeat.monthDay,
               until,
-              forDuration: repeat.forDuration ?? null,
+              forDuration: repeat.forDuration,
             }
           : null,
         visibility: todo.visibility,

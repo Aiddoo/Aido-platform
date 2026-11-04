@@ -1,11 +1,13 @@
 import { dayOfWeekSchema } from "@aido/api";
 import { z } from "zod";
 
+import { llmObject } from "../../kit/llm-object.js";
+
 /** LLM 출력 schema(관대). 후보 검증·요일·시각·신뢰도는 서버가 정한다. */
-export const suggestionDraftSchema = z.object({
+export const suggestionDraftSchema = llmObject({
   picks: z
     .array(
-      z.object({
+      llmObject({
         candidateId: z.string(),
         daysOfWeek: z.array(dayOfWeekSchema),
         useRecordedTime: z.boolean(),

@@ -10,8 +10,14 @@ export const AI_THINKING_LEVELS = ["minimal", "low", "medium"] as const;
 
 export type AiThinking = (typeof AI_THINKING_LEVELS)[number];
 
+/** 킬 스위치. interactive-only는 리포트·제안 같은 배경 생성만 멈춘다. 바꾸면 재시작해야 반영된다. */
+export const AI_GENERATION_MODES = ["on", "interactive-only", "off"] as const;
+
+export type AiGenerationMode = (typeof AI_GENERATION_MODES)[number];
+
 const thinkingLevel = (fallback: AiThinking) => z.enum(AI_THINKING_LEVELS).default(fallback);
 const milliseconds = (fallback: number) => z.coerce.number().int().positive().default(fallback);
+const usd = (fallback: number) => z.coerce.number().nonnegative().default(fallback);
 const modelId = (fallback: string) => z.string().trim().min(1).default(fallback);
 const secretApiKey = (name: string) =>
   z
@@ -36,7 +42,7 @@ function parseProviderOrder(value: string): AiProviderId[] | null {
  * AI 공급자 키·순서·모델과 작업별 운영 설정. 키가 있는 업체만 쓰고, 빈 문자열은 미설정이다.
  * thinking 기본값은 parse-todo만 minimal이고 나머지는 low다. 2026-10-26 live eval에서 parse-todo는
  * minimal이 low와 정확도가 같고 지연이 짧았지만, parse-memo는 minimal에서 남은 할 일 수를 잘못 셌다.
- * 업체 순서·모델 교체·제한 시간·회로 차단 시간을 배포 없이 env로만 바꿀 수 있게 한다.
+ * 업체 순서·모델 교체·제한 시간·회로 차단 시간·킬 스위치·비용 예산을 배포 없이 env로만 바꿀 수 있게 한다.
  */
 export const aiSchema = z.object({
   ANTHROPIC_API_KEY: secretApiKey("ANTHROPIC_API_KEY"),
@@ -75,6 +81,15 @@ export const aiSchema = z.object({
   AI_BREAKER_BILLING_COOLDOWN_MS: milliseconds(15 * 60_000),
   AI_BREAKER_HEALTH_THRESHOLD: z.coerce.number().int().positive().default(5),
   AI_BREAKER_HEALTH_COOLDOWN_MS: milliseconds(30_000),
+  AI_GENERATION_MODE: z.enum(AI_GENERATION_MODES).default("on"),
+  // 추정 비용(USD, UTC 일·월). 경고 → 배경 작업 중단 → 전체 중단 순서이고, 사용자 일 예산은 남용 방어선이다.
+  AI_BUDGET_DAILY_ALERT_USD: usd(1),
+  AI_BUDGET_MONTHLY_ALERT_USD: usd(10),
+  AI_BUDGET_DAILY_BACKGROUND_USD: usd(2),
+  AI_BUDGET_MONTHLY_BACKGROUND_USD: usd(20),
+  AI_BUDGET_DAILY_USD: usd(3),
+  AI_BUDGET_MONTHLY_USD: usd(30),
+  AI_BUDGET_USER_DAILY_USD: usd(0.25),
 });
 
 export type AiConfig = z.infer<typeof aiSchema>;
@@ -109,7 +124,26 @@ export interface AiSettings {
     healthThreshold: number;
     healthCooldownMs: number;
   }>;
+  /** 킬 스위치가 분류별로 생성을 켜 두었는지 */
+  readonly enabled: Readonly<{ interactive: boolean; background: boolean }>;
+  readonly budget: AiBudgetSettings;
 }
+
+export interface AiBudgetWindow {
+  readonly dailyMicroUsd: number;
+  readonly monthlyMicroUsd: number;
+}
+
+/** 추정 비용 기준선(micro-USD) */
+export interface AiBudgetSettings {
+  readonly alert: AiBudgetWindow;
+  readonly background: AiBudgetWindow;
+  readonly halt: AiBudgetWindow;
+  readonly userDailyMicroUsd: number;
+}
+
+const MICRO_USD_PER_USD = 1_000_000;
+const toMicroUsd = (value: number) => Math.round(value * MICRO_USD_PER_USD);
 
 const toApiKey = (value: string | undefined) => (value == null || value === "" ? null : value);
 
@@ -148,6 +182,25 @@ export function toAiSettings(env: AiConfig): AiSettings {
       billingCooldownMs: env.AI_BREAKER_BILLING_COOLDOWN_MS,
       healthThreshold: env.AI_BREAKER_HEALTH_THRESHOLD,
       healthCooldownMs: env.AI_BREAKER_HEALTH_COOLDOWN_MS,
+    },
+    enabled: {
+      interactive: env.AI_GENERATION_MODE !== "off",
+      background: env.AI_GENERATION_MODE === "on",
+    },
+    budget: {
+      alert: {
+        dailyMicroUsd: toMicroUsd(env.AI_BUDGET_DAILY_ALERT_USD),
+        monthlyMicroUsd: toMicroUsd(env.AI_BUDGET_MONTHLY_ALERT_USD),
+      },
+      background: {
+        dailyMicroUsd: toMicroUsd(env.AI_BUDGET_DAILY_BACKGROUND_USD),
+        monthlyMicroUsd: toMicroUsd(env.AI_BUDGET_MONTHLY_BACKGROUND_USD),
+      },
+      halt: {
+        dailyMicroUsd: toMicroUsd(env.AI_BUDGET_DAILY_USD),
+        monthlyMicroUsd: toMicroUsd(env.AI_BUDGET_MONTHLY_USD),
+      },
+      userDailyMicroUsd: toMicroUsd(env.AI_BUDGET_USER_DAILY_USD),
     },
   };
 }

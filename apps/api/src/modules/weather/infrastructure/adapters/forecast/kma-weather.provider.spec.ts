@@ -5,7 +5,9 @@ import { TestBed } from "@suites/unit";
 import type { Mocked, MockInstance } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
+import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { KmaWeatherProvider } from "./kma-weather.provider.js";
@@ -19,6 +21,8 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     const { unit, unitRef } = await TestBed.solitary(KmaWeatherProvider)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
+      .mock(OutboundPolicyRegistry)
+      .final(createWeatherOutbound().policies)
       .compile();
     provider = unit;
     config = unitRef.get(TypedConfigService);

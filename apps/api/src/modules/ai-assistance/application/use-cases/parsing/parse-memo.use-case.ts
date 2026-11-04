@@ -145,7 +145,7 @@ export class ParseMemo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           defaultCategoryId: categoryId,
         },
-        { agreedConsentVersion: agreedVersion },
+        { agreedConsentVersion: agreedVersion, userId },
       );
       const { data, omittedTodoCount } = value;
       const charge = !value.noAction;

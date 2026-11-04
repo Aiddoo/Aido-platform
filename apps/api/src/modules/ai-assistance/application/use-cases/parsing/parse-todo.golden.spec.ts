@@ -27,7 +27,7 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     });
     // Then
     expect(result.data).toEqual(golden.expected);
-    expect(result.meta.promptVersion).toBe("parse-todo@3");
+    expect(result.meta.promptVersion).toBe("parse-todo@4");
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(
       golden.draft.intent === "TASK" ? 1 : 0,
     );

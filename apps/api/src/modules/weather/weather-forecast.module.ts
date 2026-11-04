@@ -24,9 +24,9 @@ import { TzLookupTimezoneResolver } from "./infrastructure/adapters/forecast/tz-
 import { WeatherCacheAdapter } from "./infrastructure/adapters/forecast/weather-cache.adapter.js";
 import { WeatherReportCacheAdapter } from "./infrastructure/adapters/forecast/weather-report-cache.adapter.js";
 import { WeatherKitAttributionResolver } from "./infrastructure/adapters/forecast/weatherkit-attribution.resolver.js";
-import { WeatherKitOutageCircuit } from "./infrastructure/adapters/forecast/weatherkit-outage.circuit.js";
 import { WeatherKitReportProvider } from "./infrastructure/adapters/forecast/weatherkit-report.provider.js";
 import { WeatherKitTokenResolver } from "./infrastructure/adapters/forecast/weatherkit-token.resolver.js";
+import { WeatherKitUsageMeter } from "./infrastructure/adapters/forecast/weatherkit-usage.meter.js";
 import { DrizzleWeatherLocationRepository } from "./infrastructure/persistence/forecast/drizzle-weather-location.repository.js";
 import { WeatherController } from "./presentation/controllers/forecast/v1/weather.controller.js";
 import { WeatherV2Controller } from "./presentation/controllers/forecast/v2/weather.controller.js";
@@ -66,7 +66,7 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
     { provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
     WeatherKitTokenResolver,
     WeatherKitAttributionResolver,
-    WeatherKitOutageCircuit,
+    WeatherKitUsageMeter,
     { provide: WEATHER_REPORT_PROVIDER, useClass: WeatherKitReportProvider },
     { provide: WEATHER_REPORT_CACHE, useClass: WeatherReportCacheAdapter },
     { provide: TIMEZONE_RESOLVER, useClass: TzLookupTimezoneResolver },

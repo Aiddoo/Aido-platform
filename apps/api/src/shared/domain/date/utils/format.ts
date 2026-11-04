@@ -19,6 +19,14 @@ export function toDateString(date: Date): string {
 }
 
 /**
+ * Date → UTC 연월 문자열 (YYYY-MM)
+ * @example toYearMonthString(date) // "2024-01"
+ */
+export function toYearMonthString(date: Date): string {
+  return dayjs.utc(date).format(DATE_FORMAT.YEAR_MONTH);
+}
+
+/**
  * Date | null → ISO 문자열 | null
  * @example toISOStringOrNull(date) // "2024-01-15T09:30:00.000Z"
  * @example toISOStringOrNull(null) // null

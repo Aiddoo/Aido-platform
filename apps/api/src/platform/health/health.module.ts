@@ -4,10 +4,11 @@ import { TerminusModule } from "@nestjs/terminus";
 import { HealthController } from "./health.controller.js";
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
 import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
+import { OutboundHealthIndicator } from "./indicators/outbound.health.js";
 
 @Module({
   imports: [TerminusModule],
   controllers: [HealthController],
-  providers: [DatabaseHealthIndicator, JobRuntimeHealthIndicator],
+  providers: [DatabaseHealthIndicator, JobRuntimeHealthIndicator, OutboundHealthIndicator],
 })
 export class HealthModule {}

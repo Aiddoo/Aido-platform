@@ -10,7 +10,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
-import type { TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
+import type { ScheduleDraft, TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
 import { removeInvisibleCharacters } from "../../prompts/kit/untrusted-input.js";
 
 /** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
@@ -53,6 +53,22 @@ export function cleanTitle(value: string): string {
   );
 }
 
+/** 모델 대상 명령만 있는 입력의 일정: 오늘 하루(시각·반복 없음) */
+const NO_ACTION_SCHEDULE: ScheduleDraft = {
+  date: {
+    kind: "TODAY",
+    amount: null,
+    weekday: null,
+    weekOffset: null,
+    month: null,
+    day: null,
+    year: null,
+  },
+  endDate: null,
+  time: null,
+  repeat: { pattern: "NONE", daysOfWeek: null, until: null, forDuration: null },
+};
+
 interface NormalizedTodo {
   readonly todo: ParsedTodoData;
   readonly intent: TodoDraft["intent"];
@@ -65,10 +81,10 @@ export function normalizeTodoDraft(
   context: DraftNormalizeContext & { readonly fallbackTitle: string },
 ): NormalizedTodo {
   if (draft.intent === "NO_ACTION") {
-    const schedule = resolveTodoSchedule(
-      { date: { kind: "TODAY" }, time: null, repeat: { pattern: "NONE" } },
-      { now: context.now, timeZone: context.timezone },
-    );
+    const schedule = resolveTodoSchedule(NO_ACTION_SCHEDULE, {
+      now: context.now,
+      timeZone: context.timezone,
+    });
     return {
       todo: parsedTodoDataSchema.parse({
         title: NO_ACTION_TITLE[context.locale],
@@ -97,7 +113,7 @@ export function normalizeTodoDraft(
   const categoryId =
     draft.categoryId != null && context.ownedCategoryIds.has(draft.categoryId)
       ? draft.categoryId
-      : undefined;
+      : null;
   return {
     todo: parsedTodoDataSchema.parse({
       title,
@@ -119,7 +135,7 @@ export interface MemoDraftInput {
   readonly todos: readonly (TodoDraft & {
     readonly items: readonly { readonly title: string }[];
   })[];
-  readonly totalTaskCount?: number;
+  readonly totalTaskCount: number | null;
 }
 
 /**
@@ -176,13 +192,7 @@ export function normalizeMemoDraft(
 }
 
 function noActionDraft(): TodoDraft {
-  return {
-    intent: "NO_ACTION",
-    title: "",
-    date: { kind: "NONE" },
-    time: null,
-    repeat: { pattern: "NONE" },
-  };
+  return { intent: "NO_ACTION", title: "", categoryId: null, ...NO_ACTION_SCHEDULE };
 }
 
 /** 빈 항목·제목 반복을 빼고 입력 순서대로 앞의 5개만 둔다. */

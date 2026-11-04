@@ -1,5 +1,6 @@
 import { createOpenAI, type OpenAILanguageModelResponsesOptions } from "@ai-sdk/openai";
 import { Injectable } from "@nestjs/common";
+import { match } from "ts-pattern";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
@@ -33,12 +34,16 @@ export class OpenAiProviderAdapter implements AiProviderAdapter {
   getProviderOptions(policy: AiGenerationPolicy): AiProviderOptions {
     return {
       openai: {
-        reasoningEffort: policy.thinking,
+        // gpt-6-luna의 추론 강도는 none·low·medium…이다. minimal을 그대로 보내면 400이다.
+        reasoningEffort: match(policy.thinking)
+          .with("minimal", () => "none" as const)
+          .with("low", () => "low" as const)
+          .with("medium", () => "medium" as const)
+          .exhaustive(),
         // 사용자 글자를 OpenAI 응답 저장소에 남기지 않는다.
         store: false,
-        // 출력 스키마에 생략 가능한 필드가 있어 모든 필드를 필수로 요구하는 strict 모드를 쓰지 않는다.
-        // 출력은 서버 Zod 스키마가 다시 검증한다.
-        strictJsonSchema: false,
+        // 출력 schema는 업체 공통 규칙(모든 칸 required, 없을 수 있으면 null)을 따르므로 strict로 강제한다.
+        strictJsonSchema: true,
       } satisfies OpenAILanguageModelResponsesOptions,
     };
   }

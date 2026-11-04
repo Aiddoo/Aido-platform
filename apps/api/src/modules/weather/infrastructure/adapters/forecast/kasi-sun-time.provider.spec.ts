@@ -18,6 +18,8 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { KasiSunTimeProvider } from "./kasi-sun-time.provider.js";
@@ -31,6 +33,8 @@ describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
     const { unit, unitRef } = await TestBed.solitary(KasiSunTimeProvider)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
+      .mock(OutboundPolicyRegistry)
+      .final(createWeatherOutbound().policies)
       .compile();
 
     provider = unit;

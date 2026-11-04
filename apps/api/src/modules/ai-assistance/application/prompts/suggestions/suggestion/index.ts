@@ -81,6 +81,8 @@ export const suggestionPrompt: PromptDefinition<
 > = {
   id: "suggestion",
   version: "suggestion@3",
+  taskClass: "background",
+  maxInputChars: 16_000,
   schema: suggestionDraftSchema,
   build: (context, locale) => ({ system: SYSTEM[locale], prompt: buildSuggestionData(context) }),
   normalize: normalizeSuggestions,

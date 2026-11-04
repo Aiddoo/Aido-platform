@@ -3,10 +3,12 @@ import { z } from "zod";
 
 import type {
   DateRef,
+  PlanRepeatRef,
   RepeatPattern,
   RepeatRef,
   TimeRef,
 } from "../../../../domain/types/parsing/todo-draft.types.js";
+import { llmInteger, llmObject, nullableLlmObject } from "../../kit/llm-object.js";
 
 /**
  * 일정 표현 LLM schema(관대). 모델은 날짜를 계산하지 않고 표현 종류와 말한 숫자만 낸다.
@@ -15,7 +17,7 @@ import type {
  */
 const dayCode = z.enum(DAYS_OF_WEEK);
 
-export const dateRefSchema = z.object({
+const dateRefShape = {
   kind: z
     .enum([
       "NONE",
@@ -31,41 +33,40 @@ export const dateRefSchema = z.object({
       "YEAR_END",
     ])
     .describe("Kind of date expression in the input. NONE when no date is mentioned."),
-  amount: z
-    .number()
-    .int()
-    .optional()
-    .describe("OFFSET_*: N (tomorrow = 1). MONTH_*/YEAR_*: 0 = this, 1 = next."),
-  weekday: dayCode.optional().describe("WEEKDAY only."),
-  weekOffset: z
-    .number()
-    .int()
-    .optional()
+  amount: llmInteger()
+    .nullable()
+    .describe("OFFSET_*: N (tomorrow = 1). MONTH_*/YEAR_*: 0 = this, 1 = next. Otherwise null."),
+  weekday: dayCode.nullable().describe("WEEKDAY only. Otherwise null."),
+  weekOffset: llmInteger()
+    .nullable()
     .describe(
-      "WEEKDAY only: 0 = this week, 1 = next week, 2 = the week after next. Omit for a bare weekday.",
+      "WEEKDAY only: 0 = this week, 1 = next week, 2 = the week after next. null for a bare weekday.",
     ),
-  month: z.number().int().optional().describe("CALENDAR_DATE: 1-12. Omit when not stated."),
-  day: z.number().int().optional().describe("CALENDAR_DATE: 1-31."),
-  year: z.number().int().optional().describe("CALENDAR_DATE: only when the year is stated."),
-}) satisfies z.ZodType<DateRef>;
+  month: llmInteger().nullable().describe("CALENDAR_DATE: 1-12. null when not stated."),
+  day: llmInteger().nullable().describe("CALENDAR_DATE: 1-31. Otherwise null."),
+  year: llmInteger().nullable().describe("CALENDAR_DATE: only when the year is stated, or null."),
+};
 
-export const timeRefSchema = z.object({
-  hour: z
-    .number()
-    .int()
-    .optional()
-    .describe("Hour exactly as said (0-23). Omit when only a part of day is said."),
-  minute: z.number().int().optional(),
-  meridiem: z.enum(["AM", "PM", "NONE"]).optional().describe("NONE when AM/PM is not stated."),
+export const dateRefSchema = llmObject(dateRefShape) satisfies z.ZodType<DateRef>;
+
+/** date처럼 끝이 있을 때만 쓰는 표현. 없으면 null이다. */
+export const nullableDateRefSchema = nullableLlmObject(
+  dateRefShape,
+) satisfies z.ZodType<DateRef | null>;
+
+export const nullableTimeRefSchema = nullableLlmObject({
+  hour: llmInteger()
+    .nullable()
+    .describe("Hour exactly as said (0-23). null when only a part of day is said."),
+  minute: llmInteger().nullable(),
+  meridiem: z.enum(["AM", "PM", "NONE"]).nullable().describe("NONE when AM/PM is not stated."),
   partOfDay: z
     .enum(["DAWN", "MORNING", "NOON", "AFTERNOON", "EVENING", "NIGHT", "MIDNIGHT"])
-    .optional(),
-  relativeMinutes: z
-    .number()
-    .int()
-    .optional()
-    .describe("Only for time from now, 1 or more ('in 2 hours' = 120). Omit otherwise."),
-}) satisfies z.ZodType<TimeRef>;
+    .nullable(),
+  relativeMinutes: llmInteger()
+    .nullable()
+    .describe("Only for time from now, 1 or more ('in 2 hours' = 120). null otherwise."),
+}).describe("null when no time is mentioned (all-day).") satisfies z.ZodType<TimeRef | null>;
 
 /** 출시 parse 응답(요일 + 종료일)이 나타낼 수 있는 반복. 격주·매월은 UNSUPPORTED로 받는다. */
 export const PARSE_REPEAT_PATTERNS = [
@@ -91,24 +92,27 @@ export const PLAN_REPEAT_PATTERNS = [
 ] as const satisfies readonly RepeatPattern[];
 
 const repeatEnd = {
-  until: dateRefSchema
-    .optional()
-    .describe("Only when an end of the repetition is stated ('until the end of next month')."),
-  forDuration: z
-    .object({ unit: z.enum(["DAY", "WEEK", "MONTH"]), amount: z.number().int() })
-    .optional()
-    .describe("Only when a length is stated ('for a month' = MONTH 1)."),
+  until: nullableDateRefSchema.describe(
+    "Only when an end of the repetition is stated ('until the end of next month'), or null.",
+  ),
+  forDuration: nullableLlmObject({
+    unit: z.enum(["DAY", "WEEK", "MONTH"]),
+    amount: llmInteger(),
+  }).describe("Only when a length is stated ('for a month' = MONTH 1), or null."),
 };
 
-export const repeatRefSchema = z.object({
+export const repeatRefSchema = llmObject({
   pattern: z.enum(PARSE_REPEAT_PATTERNS),
-  daysOfWeek: z.array(dayCode).optional().describe("WEEKLY_DAYS only."),
+  daysOfWeek: z.array(dayCode).nullable().describe("WEEKLY_DAYS only. Otherwise null."),
   ...repeatEnd,
 }) satisfies z.ZodType<RepeatRef>;
 
-export const planRepeatRefSchema = z.object({
+export const planRepeatRefSchema = llmObject({
   pattern: z.enum(PLAN_REPEAT_PATTERNS),
-  daysOfWeek: z.array(dayCode).optional().describe("WEEKLY_DAYS and BIWEEKLY_DAYS only."),
-  monthDay: z.number().int().optional().describe("MONTHLY_DAY only: day of the month, 1-31."),
+  daysOfWeek: z
+    .array(dayCode)
+    .nullable()
+    .describe("WEEKLY_DAYS and BIWEEKLY_DAYS only. Otherwise null."),
+  monthDay: llmInteger().nullable().describe("MONTHLY_DAY only: day of the month, 1-31, or null."),
   ...repeatEnd,
-}) satisfies z.ZodType<RepeatRef>;
+}) satisfies z.ZodType<PlanRepeatRef>;

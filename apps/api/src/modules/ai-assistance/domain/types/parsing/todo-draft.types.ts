@@ -3,6 +3,7 @@ import type { DayOfWeek } from "@aido/api/vocabulary";
 /**
  * LLM이 문장에서 읽은 일정 표현의 중간 표현(IR).
  * 날짜·요일·시각 계산은 담지 않고, 표현의 종류와 말한 숫자만 담는다.
+ * 말하지 않은 칸은 모델 출력부터 끝까지 null이다(업체 공통 구조화 출력 규칙).
  */
 export type DateRefKind =
   | "NONE"
@@ -19,12 +20,12 @@ export type DateRefKind =
 
 export interface DateRef {
   readonly kind: DateRefKind;
-  readonly amount?: number;
-  readonly weekday?: DayOfWeek;
-  readonly weekOffset?: number;
-  readonly month?: number;
-  readonly day?: number;
-  readonly year?: number;
+  readonly amount: number | null;
+  readonly weekday: DayOfWeek | null;
+  readonly weekOffset: number | null;
+  readonly month: number | null;
+  readonly day: number | null;
+  readonly year: number | null;
 }
 
 export type PartOfDay =
@@ -37,11 +38,11 @@ export type PartOfDay =
   | "MIDNIGHT";
 
 export interface TimeRef {
-  readonly hour?: number;
-  readonly minute?: number;
-  readonly meridiem?: "AM" | "PM" | "NONE";
-  readonly partOfDay?: PartOfDay;
-  readonly relativeMinutes?: number;
+  readonly hour: number | null;
+  readonly minute: number | null;
+  readonly meridiem: "AM" | "PM" | "NONE" | null;
+  readonly partOfDay: PartOfDay | null;
+  readonly relativeMinutes: number | null;
 }
 
 /**
@@ -66,18 +67,25 @@ export type RepeatPattern =
 
 export interface RepeatRef {
   readonly pattern: RepeatPattern;
-  readonly daysOfWeek?: readonly DayOfWeek[];
-  /** MONTHLY_DAY의 날짜(1~31) */
-  readonly monthDay?: number;
-  readonly until?: DateRef;
-  readonly forDuration?: { readonly unit: "DAY" | "WEEK" | "MONTH"; readonly amount: number };
+  readonly daysOfWeek: readonly DayOfWeek[] | null;
+  readonly until: DateRef | null;
+  readonly forDuration: {
+    readonly unit: "DAY" | "WEEK" | "MONTH";
+    readonly amount: number;
+  } | null;
 }
 
-export interface ScheduleDraft {
+/** 계획 프롬프트의 반복 표현. 출시 parse 응답에 없는 매월 날짜를 더한다. */
+export interface PlanRepeatRef extends RepeatRef {
+  /** MONTHLY_DAY의 날짜(1~31) */
+  readonly monthDay: number | null;
+}
+
+export interface ScheduleDraft<R extends RepeatRef = RepeatRef> {
   readonly date: DateRef;
-  readonly endDate?: DateRef;
+  readonly endDate: DateRef | null;
   readonly time: TimeRef | null;
-  readonly repeat: RepeatRef;
+  readonly repeat: R;
 }
 
 export type TodoDraftIntent = "TASK" | "NO_ACTION";
@@ -85,7 +93,7 @@ export type TodoDraftIntent = "TASK" | "NO_ACTION";
 export interface TodoDraft extends ScheduleDraft {
   readonly intent: TodoDraftIntent;
   readonly title: string;
-  readonly categoryId?: number;
+  readonly categoryId: number | null;
 }
 
 export type ScheduleWarning =

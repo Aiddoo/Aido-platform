@@ -105,6 +105,40 @@ export class WeatherCacheAdapter implements WeatherCachePort {
     ]);
   }
 
+  getOrLoadForecast(
+    gridX: number,
+    gridY: number,
+    timing: KmaForecastTiming,
+    load: () => Promise<WeatherForecast>,
+  ): Promise<WeatherForecast> {
+    return this.cacheService.wrap(
+      forecastKey(gridX, gridY, timing),
+      WEATHER_FORECAST_SCHEMA,
+      async () => {
+        const forecast = await load();
+        await this.cacheService.set(
+          WeatherCacheKey.latestForecast(gridX, gridY),
+          forecast,
+          WEATHER_CACHE_TTL_MS.LATEST_FORECAST,
+        );
+        return forecast;
+      },
+      WEATHER_CACHE_TTL_MS.FORECAST,
+    );
+  }
+
+  hasRecentForecastFailure(gridX: number, gridY: number): Promise<boolean> {
+    return this.cacheService.has(WeatherCacheKey.forecastFailure(gridX, gridY));
+  }
+
+  markForecastFailure(gridX: number, gridY: number): Promise<void> {
+    return this.cacheService.set(
+      WeatherCacheKey.forecastFailure(gridX, gridY),
+      true,
+      WEATHER_CACHE_TTL_MS.FORECAST_FAILURE,
+    );
+  }
+
   getLatestForecast(gridX: number, gridY: number): Promise<WeatherForecast | undefined> {
     return this.cacheService.get(
       WeatherCacheKey.latestForecast(gridX, gridY),

@@ -48,3 +48,29 @@ export async function requestVendorJson(
 function isSuccessStatus(status: number): boolean {
   return status >= 200 && status < 300;
 }
+
+/** 회로가 실패로 세는 응답: 공급자 쪽 장애(5xx). 4xx는 그 요청의 문제다. */
+export function isServerFailureOutcome(result: unknown): boolean {
+  return (
+    typeof result === "object" &&
+    result != null &&
+    "kind" in result &&
+    result.kind === "http_failure" &&
+    "statusCode" in result &&
+    typeof result.statusCode === "number" &&
+    result.statusCode >= 500
+  );
+}
+
+/** 회로를 연 벤더 실패를 로그·경보용 고정 기호로 줄인다. */
+export function describeVendorFailure(failure: unknown): Readonly<Record<string, string>> {
+  if (
+    typeof failure === "object" &&
+    failure != null &&
+    "statusCode" in failure &&
+    typeof failure.statusCode === "number"
+  ) {
+    return { statusCode: String(failure.statusCode) };
+  }
+  return failure instanceof Error ? { errorType: failure.name } : {};
+}

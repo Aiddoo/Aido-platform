@@ -35,7 +35,7 @@ function readReportData(prompt: string) {
   return readPromptBlock(prompt, "report_data");
 }
 
-const options = { agreedConsentVersion: null } as const;
+const options = { agreedConsentVersion: null, userId: null } as const;
 
 describe("리포트 프롬프트", () => {
   it("system은 ko/en이 같은 블록을 쓰고 ko 예시는 보조 용언을 붙여 쓴다", () => {

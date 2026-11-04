@@ -78,7 +78,7 @@ function normalizeTodo(
     categoryId,
     schedule: {
       date: action.date,
-      ...(!repeats && action.endDate != null && { endDate: action.endDate }),
+      endDate: repeats ? null : action.endDate,
       time: action.time,
       repeat: action.repeat,
     },

@@ -14,10 +14,11 @@ import type {
 import { classifyAiSdkError, type ProviderErrorBody } from "./ai-sdk-failure.js";
 
 /**
- * 이보다 짧은 지시문은 Claude 최소 캐시 길이(토큰)에 못 미쳐 캐시되지 않으므로 표시하지 않는다.
- * 글자 수는 토큰 수보다 크거나 비슷하므로 글자 수로 먼저 거른다.
+ * Claude Haiku 5.5의 최소 캐시 길이는 512토큰이다. 토큰 수는 호출 전에 알 수 없고 글자 수는 토큰 수보다
+ * 크거나 비슷하므로, 이보다 짧은 지시문은 표시하지 않는다. 표시한 지시문이 최소 길이에 못 미쳐도 업체는
+ * 오류나 추가 비용 없이 캐시만 하지 않는다.
  */
-const MIN_CACHEABLE_SYSTEM_CHARACTERS = 4096;
+const MIN_CACHEABLE_SYSTEM_CHARACTERS = 512;
 
 /** Claude. 1순위. 크레딧 소진은 HTTP 402 billing_error, 과부하는 529 overloaded_error로 온다. */
 @Injectable()
@@ -40,10 +41,15 @@ export class AnthropicProviderAdapter implements AiProviderAdapter {
   getProviderOptions(policy: AiGenerationPolicy): AiProviderOptions {
     return {
       anthropic: {
+        // 네이티브 구조화 출력은 null 허용 칸을 16개까지만 받는다(parse-todo는 29개라 400, 실측).
+        // SDK의 JSON 도구 방식으로 받고 출력은 서버 Zod schema가 다시 검증한다.
+        structuredOutputMode: "jsonTool",
         effort: match(policy.thinking)
           .with("minimal", "low", () => "low" as const)
           .with("medium", () => "medium" as const)
           .exhaustive(),
+        // 가장 가벼운 단계는 추론을 꺼 출력 토큰을 줄인다(Haiku 5.5는 effort high 이하에서 끌 수 있다).
+        ...(policy.thinking === "minimal" && { thinking: { type: "disabled" as const } }),
       } satisfies AnthropicLanguageModelOptions,
     };
   }

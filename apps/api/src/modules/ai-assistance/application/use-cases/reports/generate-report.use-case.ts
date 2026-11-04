@@ -25,6 +25,7 @@ import { AiReportLogEvent } from "../../observability/reports/ai-report-log.even
 import {
   AiGenerationError,
   isTransientAiFailure,
+  isWithheldAiFailure,
 } from "../../ports/generation/ai-generation.errors.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
@@ -309,15 +310,18 @@ export class GenerateReport {
         definition,
         definition.build(input, locale),
         { input, locale },
-        { agreedConsentVersion: consent.agreedVersion },
+        { agreedConsentVersion: consent.agreedVersion, userId },
       );
       this.#dependencies.logger.log(
         generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
       );
       return { ...value, contentSource: "AI", promptVersion: definition.version };
     } catch (error) {
-      if (error instanceof AiGenerationError && error.kind === "UNAVAILABLE") {
-        this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
+      if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
+        this.#dependencies.logger.warn({
+          event: AiReportLogEvent.PROVIDER_UNAVAILABLE,
+          errorType: error.kind,
+        });
         return buildFallbackContent(input, locale);
       }
       const failure = generationFailure(error);

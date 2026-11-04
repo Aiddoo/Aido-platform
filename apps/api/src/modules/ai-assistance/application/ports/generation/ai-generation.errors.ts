@@ -14,11 +14,15 @@ export const AI_FAILURE_KINDS = [
   "TRUNCATED",
   "INVALID_OUTPUT",
   "UNAVAILABLE",
+  "HALTED",
+  "USER_SPEND_LIMITED",
 ] as const;
 
 /**
  * 생성 실패를 폴백·회로·응답 코드 판단에 필요한 종류로만 나눈다.
  * UNAVAILABLE은 설정·동의·회로 때문에 시도할 업체가 없다는 뜻이다.
+ * HALTED는 킬 스위치나 전역 비용 예산으로, USER_SPEND_LIMITED는 사용자 일 비용 예산으로
+ * 업체를 부르지 않고 멈췄다는 뜻이다.
  */
 export type AiFailureKind = (typeof AI_FAILURE_KINDS)[number];
 
@@ -77,7 +81,22 @@ export function resolveAiFailureRule(kind: AiFailureKind): AiFailureRule {
       errorCode: ErrorCode.AI_1302,
     }))
     .with("UNAVAILABLE", () => ({ fallback: true, retrySameProvider: false, ...unavailable }))
+    .with("HALTED", () => ({ fallback: false, retrySameProvider: false, ...unavailable }))
+    .with("USER_SPEND_LIMITED", () => ({
+      fallback: false,
+      retrySameProvider: false,
+      breaker: null,
+      errorCode: ErrorCode.AI_1310,
+    }))
     .exhaustive();
+}
+
+/**
+ * 업체를 부르지 않고 멈춘 실패(보낼 업체 없음·킬 스위치·예산). 잡은 다시 시도하지 않고
+ * 리포트는 템플릿으로 저장하며 제안은 건너뛴다.
+ */
+export function isWithheldAiFailure(kind: AiFailureKind): boolean {
+  return kind === "UNAVAILABLE" || kind === "HALTED" || kind === "USER_SPEND_LIMITED";
 }
 
 /** 잡이 나중에 다시 시도하면 회복될 수 있는 실패(요청 과다·일시 장애) */
@@ -101,7 +120,7 @@ interface AiGenerationErrorOptions extends ErrorOptions {
   readonly attempts: number;
   readonly fallbackFrom: AiProviderId | null;
   readonly estimatedCostMicroUsd: number | null;
-  readonly upstream?: AiUpstreamCause;
+  readonly upstream: AiUpstreamCause | null;
 }
 
 /** 생성이 끝내 실패했을 때 던진다. kind는 마지막 시도의 실패 종류다. 원문 message는 담지 않는다. */
@@ -110,7 +129,7 @@ export class AiGenerationError extends Error {
   readonly attempts: number;
   readonly fallbackFrom: AiProviderId | null;
   readonly estimatedCostMicroUsd: number | null;
-  readonly upstream: AiUpstreamCause | undefined;
+  readonly upstream: AiUpstreamCause | null;
 
   constructor(
     readonly kind: AiFailureKind,

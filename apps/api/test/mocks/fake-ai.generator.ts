@@ -8,10 +8,10 @@ import type {
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import type { TodoDraft } from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
-import { createTodoDraftResponse } from "#test/fixtures/ai-response.fixture";
+import { createTodoDraftResponse, type TodoDraftInput } from "#test/fixtures/ai-response.fixture";
 
 export interface FakeAiGeneratorOptions {
-  defaultResponse?: Partial<TodoDraft>;
+  defaultResponse?: TodoDraftInput;
   defaultAvailable?: boolean;
   defaultDelayMs?: number;
 }
@@ -38,6 +38,7 @@ export function createAiGenerationError(kind: AiFailureKind): AiGenerationError 
     attempts: kind === "UNAVAILABLE" ? 0 : 1,
     fallbackFrom: null,
     estimatedCostMicroUsd: 0,
+    upstream: null,
   });
 }
 
@@ -56,7 +57,10 @@ export class FakeAiGenerator implements AiGeneratorPort {
 
   constructor(options?: FakeAiGeneratorOptions) {
     if (options?.defaultResponse) {
-      this._defaultResponse = { ...this._defaultResponse, ...options.defaultResponse };
+      this._defaultResponse = createTodoDraftResponse({
+        ...this._defaultResponse,
+        ...options.defaultResponse,
+      });
     }
     if (options?.defaultAvailable !== undefined) {
       this._isAvailable = options.defaultAvailable;
@@ -94,6 +98,8 @@ export class FakeAiGenerator implements AiGeneratorPort {
       fallbackFrom: null,
       latencyMs: 0,
       inputTokens: this._tokenUsage.input,
+      cachedInputTokens: 0,
+      cacheWriteInputTokens: 0,
       outputTokens: this._tokenUsage.output,
       reasoningTokens: this._tokenUsage.reasoning,
       estimatedCostMicroUsd: 0,
@@ -102,20 +108,20 @@ export class FakeAiGenerator implements AiGeneratorPort {
   }
 
   /** 다음 parse-todo 응답(일정 표현). 다른 작업의 출력은 setRawResponse로 넣는다. */
-  setResponse(response: Partial<TodoDraft>): this {
+  setResponse(response: TodoDraftInput): this {
     this._responses.push(createTodoDraftResponse({ ...this._defaultResponse, ...response }));
     return this;
   }
 
-  setResponses(responses: Partial<TodoDraft>[]): this {
+  setResponses(responses: TodoDraftInput[]): this {
     for (const response of responses) {
       this.setResponse(response);
     }
     return this;
   }
 
-  setDefaultResponse(response: Partial<TodoDraft>): this {
-    this._defaultResponse = { ...this._defaultResponse, ...response };
+  setDefaultResponse(response: TodoDraftInput): this {
+    this._defaultResponse = createTodoDraftResponse({ ...this._defaultResponse, ...response });
     return this;
   }
 

@@ -8,11 +8,11 @@ import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cac
 import { CacheService } from "#api/platform/cache/cache.service";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
 import {
+  createWeatherOutbound,
   StubWeatherKitAttributionResolver,
   StubWeatherKitTokenResolver,
 } from "#test/mocks/ports/weather.stub";
 
-import { WeatherKitOutageCircuit } from "./weatherkit-outage.circuit.js";
 import { WeatherKitReportProvider, WeatherKitRequestError } from "./weatherkit-report.provider.js";
 import { WeatherKitNotConfiguredError } from "./weatherkit-token.resolver.js";
 
@@ -97,14 +97,16 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
   function createProvider(responses: readonly StubResponse[]) {
     const stub = createStubFetch(responses);
     const http = new HttpClient({ retry: false, throwOnHttpError: false, fetch: stub.fetch });
+    const outbound = createWeatherOutbound();
     const provider = new WeatherKitReportProvider(
       http,
       tokenResolver,
       cacheService,
       new StubWeatherKitAttributionResolver(),
-      new WeatherKitOutageCircuit(cacheService),
+      outbound.policies,
+      outbound.usage,
     );
-    return { provider, requests: stub.requests };
+    return { provider, requests: stub.requests, ...outbound };
   }
 
   it("칸 중심 좌표로 가용성을 묻고 제공되는 dataset만 한 번에 요청한다", async () => {
@@ -446,13 +448,21 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
     expect(await cacheService.has(WeatherReportCacheKey.providerFailure(cell.key))).toBe(false);
   });
 
-  describe("공급자 전체 장애 차단", () => {
+  describe("공급자 전체 장애 차단 (공용 weatherkit 회로)", () => {
     const cells = Array.from({ length: 6 }, (_, index) =>
       GeoCell.fromCoordinate(Coordinate.of(37.5665 + index * 0.1, 126.978)),
     );
 
+    /** 장애 중에는 가용성 조회와 리포트 호출이 함께 실패한다. */
     function failingCell(response: StubResponse): StubResponse[] {
-      return [jsonResponse(WeatherKitReportFixture.availability()), response];
+      return [response, response];
+    }
+
+    function healthyCell(): StubResponse[] {
+      return [
+        jsonResponse(WeatherKitReportFixture.availability()),
+        jsonResponse(WeatherKitReportFixture.seoulRain()),
+      ];
     }
 
     async function readCells(provider: WeatherKitReportProvider, targets: readonly GeoCell[]) {
@@ -461,37 +471,43 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
       }
     }
 
-    it("서로 다른 칸이 5xx·네트워크 오류로 세 번 연달아 실패하면 차단을 열고 경고를 한 번만 남긴다", async () => {
+    function circuitEvents(spy: ReturnType<typeof vi.spyOn>, event: string) {
+      return spy.mock.calls.filter(
+        ([entry]: unknown[]) =>
+          typeof entry === "object" && entry != null && "event" in entry && entry.event === event,
+      );
+    }
+
+    it("5xx·네트워크 오류가 칸을 넘어 세 번 연달아 나면 회로를 열고 경고를 한 번만 남긴다", async () => {
       // Given
-      const { provider } = createProvider([
+      const { provider, requests } = createProvider([
         ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(networkFailure),
-        ...failingCell(jsonResponse({}, 500)),
+        networkFailure,
       ]);
       // When
       await readCells(provider, cells.slice(0, 3));
       // Then
-      expect(await cacheService.has(WeatherReportCacheKey.providerOutage())).toBe(true);
-      const opened = warnSpy.mock.calls.filter(
-        ([entry]: unknown[]) =>
-          typeof entry === "object" &&
-          entry != null &&
-          "event" in entry &&
-          entry.event === "weather.weatherkit.outage_opened",
-      );
-      expect(opened).toEqual([
-        [{ event: "weather.weatherkit.outage_opened", count: 3, cooldownMs: 60_000 }],
+      expect(requests).toHaveLength(3);
+      expect(circuitEvents(warnSpy, "outbound.circuit.opened")).toEqual([
+        [
+          {
+            event: "outbound.circuit.opened",
+            policy: "weatherkit",
+            breaker: "health",
+            cooldownMs: 60_000,
+            errorType: "HttpNetworkError",
+          },
+        ],
       ]);
     });
 
-    it("차단 중에는 공급자를 부르지 않고 칸별 실패와 같은 오류로 바로 실패한다", async () => {
+    it("회로가 열린 동안에는 공급자를 부르지 않고 칸별 실패와 같은 오류로 바로 실패한다", async () => {
       // Given
       const { provider, requests } = createProvider([
         ...failingCell(jsonResponse({}, 503)),
         ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
       ]);
-      await readCells(provider, cells.slice(0, 3));
+      await readCells(provider, cells.slice(0, 2));
       const requestCount = requests.length;
       // When
       const results = await Promise.all(
@@ -501,6 +517,7 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
       );
       const localizes = await provider.localizesContent(cells[3] ?? cell, REQUEST);
       // Then
+      expect(requestCount).toBe(3);
       expect(requests).toHaveLength(requestCount);
       for (const result of results) {
         expect(result).toBeInstanceOf(WeatherKitRequestError);
@@ -510,60 +527,63 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
       expect(
         await cacheService.has(WeatherReportCacheKey.availabilityFailure(cells[3]?.key ?? "")),
       ).toBe(false);
+      expect(
+        await cacheService.has(WeatherReportCacheKey.providerFailure(cells[3]?.key ?? "")),
+      ).toBe(false);
     });
 
-    it("차단 시간이 지나면 다시 부르고, 성공하면 복구를 한 번 기록하고 연속 실패를 지운다", async () => {
+    it("차단 시간이 지나면 시험 호출로 다시 부르고 성공하면 회로를 닫는다", async () => {
       // Given
       const { provider, requests } = createProvider([
         ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse(WeatherKitReportFixture.seoulRain())),
-        ...failingCell(jsonResponse({}, 503)),
+        jsonResponse({}, 503),
+        ...healthyCell(),
       ]);
-      await readCells(provider, cells.slice(0, 3));
+      await readCells(provider, cells.slice(0, 2));
       vi.setSystemTime(new Date("2026-11-02T06:21:01Z"));
       // When
       const recovered = await provider.getReport(cells[3] ?? cell, REQUEST);
-      await readCells(provider, cells.slice(4, 5));
       // Then
       expect(recovered.current.condition).toBe("RAIN");
-      expect(logSpy).toHaveBeenCalledWith({ event: "weather.weatherkit.outage_closed", count: 3 });
-      expect(await cacheService.has(WeatherReportCacheKey.providerOutage())).toBe(false);
-      expect(requests).toHaveLength(10);
+      expect(circuitEvents(logSpy, "outbound.circuit.closed")).toEqual([
+        [{ event: "outbound.circuit.closed", policy: "weatherkit", breaker: "health" }],
+      ]);
+      expect(requests).toHaveLength(5);
     });
 
-    it("차단이 풀린 뒤 첫 요청도 실패하면 장애 기간으로 보고 바로 다시 막는다", async () => {
+    it("시험 호출도 실패하면 바로 다시 막는다", async () => {
       // Given
       const { provider, requests } = createProvider([
         ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 502)),
+        jsonResponse({}, 503),
+        jsonResponse({}, 502),
       ]);
-      await readCells(provider, cells.slice(0, 3));
+      await readCells(provider, cells.slice(0, 2));
       vi.setSystemTime(new Date("2026-11-02T06:21:01Z"));
       // When
       await readCells(provider, cells.slice(3, 4));
       const next = provider.getReport(cells[4] ?? cell, REQUEST);
       // Then
       await expect(next).rejects.toMatchObject({ reason: "provider_outage" });
-      expect(requests).toHaveLength(8);
+      expect(requests).toHaveLength(4);
     });
 
     it("성공이 끼면 연속 실패를 처음부터 다시 센다", async () => {
       // Given
       const { provider } = createProvider([
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse(WeatherKitReportFixture.seoulRain())),
-        ...failingCell(jsonResponse({}, 503)),
-        ...failingCell(jsonResponse({}, 503)),
+        jsonResponse({}, 503),
+        jsonResponse({}, 503),
+        ...healthyCell(),
+        jsonResponse({}, 503),
+        jsonResponse({}, 503),
+        ...healthyCell(),
       ]);
       // When
-      await readCells(provider, cells.slice(0, 5));
+      await readCells(provider, cells.slice(0, 3));
+      const report = await provider.getReport(cells[3] ?? cell, REQUEST);
       // Then
-      expect(await cacheService.has(WeatherReportCacheKey.providerOutage())).toBe(false);
+      expect(report.current.condition).toBe("RAIN");
+      expect(circuitEvents(warnSpy, "outbound.circuit.opened")).toEqual([]);
     });
 
     it("400·404 같은 요청 오류는 몇 번이 나도 전체 장애로 세지 않는다", async () => {
@@ -572,7 +592,7 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
         ...failingCell(jsonResponse({}, 400)),
         ...failingCell(jsonResponse({}, 404)),
         ...failingCell(jsonResponse({}, 400)),
-        ...failingCell(jsonResponse(WeatherKitReportFixture.seoulRain())),
+        ...healthyCell(),
       ]);
       await readCells(provider, cells.slice(0, 3));
       // When
@@ -580,7 +600,46 @@ describe("WeatherKitReportProvider — 가용성·REST 요청과 실패 분류",
       // Then
       expect(report.current.condition).toBe("RAIN");
       expect(requests).toHaveLength(8);
-      expect(await cacheService.has(WeatherReportCacheKey.providerOutage())).toBe(false);
+      expect(circuitEvents(warnSpy, "outbound.circuit.opened")).toEqual([]);
+    });
+  });
+
+  describe("WeatherKit 월 호출 계량", () => {
+    it("실제로 보낸 가용성·리포트 호출을 이번 달 weatherkit.call에 센다", async () => {
+      // Given
+      const { provider, meter } = createProvider([
+        jsonResponse(WeatherKitReportFixture.availability()),
+        jsonResponse(WeatherKitReportFixture.seoulRain()),
+      ]);
+      // When
+      await provider.getReport(cell, REQUEST);
+      // Then
+      expect(
+        await meter.read([{ meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }]),
+      ).toEqual([2]);
+    });
+
+    it("무료 한도 60%(30만 회)에 닿은 호출 하나만 운영 경보를 올린다", async () => {
+      // Given
+      const { provider, meter, alert } = createProvider([
+        jsonResponse(WeatherKitReportFixture.availability()),
+        jsonResponse(WeatherKitReportFixture.seoulRain()),
+      ]);
+      await meter.add([
+        { key: { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }, amount: 299_999 },
+      ]);
+      // When
+      await provider.getReport(cell, REQUEST);
+      // Then
+      expect(alert.alerts).toEqual([
+        {
+          key: "weather.weatherkit.monthly-calls",
+          severity: "warning",
+          message: "WeatherKit 이번 달 호출이 300000회에 닿았습니다",
+          tags: { period: "2026-11" },
+          details: { threshold: 300_000, total: 300_000 },
+        },
+      ]);
     });
   });
 });

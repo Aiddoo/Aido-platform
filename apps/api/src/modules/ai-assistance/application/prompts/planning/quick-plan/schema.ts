@@ -5,27 +5,27 @@ import type {
   PlannedActionDraft,
   QuickPlanDraft,
 } from "../../../../domain/types/planning/action-plan-draft.types.js";
+import { llmInteger, llmObject } from "../../kit/llm-object.js";
 import {
   dateRefSchema,
+  nullableDateRefSchema,
+  nullableTimeRefSchema,
   planRepeatRefSchema,
-  timeRefSchema,
 } from "../../parsing/schedule/schedule-expression.schema.js";
 
 /**
  * 계획 행동 LLM schema(관대). 행동 종류는 이 유니온만 허용하고, 개수·길이·id는 서버 정규화가
  * 다시 맞춘다. 설명은 ko/en 프롬프트에 함께 전달되므로 로케일 중립 영어로 쓴다.
  */
-const createTodoActionSchema = z.object({
-  type: z.literal("CREATE_TODO"),
+const createTodoActionSchema = llmObject({
+  type: z.enum(["CREATE_TODO"]),
   title: z.string().describe("Core action only, in the language the user spoke."),
-  categoryId: z.number().int().nullable().describe("One id from context.categories, or null."),
+  categoryId: llmInteger().nullable().describe("One id from context.categories, or null."),
   date: dateRefSchema,
-  endDate: dateRefSchema
-    .nullable()
-    .describe(
-      "Only for a stated span ('until X', 'from A to B', 'all next week'). null otherwise.",
-    ),
-  time: timeRefSchema.nullable().describe("null when no time is mentioned (all-day)."),
+  endDate: nullableDateRefSchema.describe(
+    "Only for a stated span ('until X', 'from A to B', 'all next week'). null otherwise.",
+  ),
+  time: nullableTimeRefSchema,
   repeat: planRepeatRefSchema,
   visibility: z
     .enum(TODO_VISIBILITIES)
@@ -35,25 +35,24 @@ const createTodoActionSchema = z.object({
   items: z
     .array(z.string())
     .describe(`Sub-items the user listed, in order, at most ${TODO_ITEM_LIMITS.MAX_PER_TODO}.`),
-  duplicateOfTodoId: z
-    .number()
-    .int()
+  duplicateOfTodoId: llmInteger()
     .nullable()
     .describe("id from context.upcomingTodos when this is the same to-do, or null."),
 });
 
-const createMemoActionSchema = z.object({
-  type: z.literal("CREATE_MEMO"),
+const createMemoActionSchema = llmObject({
+  type: z.enum(["CREATE_MEMO"]),
   title: z.string().describe("Short memo title in the spoken language."),
   content: z.string().describe("What the user asked to note, in the spoken language."),
 });
 
-export const plannedActionDraftSchema = z.discriminatedUnion("type", [
+/** 판별 유니온은 JSON Schema에서 oneOf·const가 되므로 업체 공통 규칙대로 anyOf·enum 유니온으로 둔다. */
+export const plannedActionDraftSchema = z.union([
   createTodoActionSchema,
   createMemoActionSchema,
 ]) satisfies z.ZodType<PlannedActionDraft>;
 
-export const quickPlanDraftSchema = z.object({
+export const quickPlanDraftSchema = llmObject({
   actions: z
     .array(plannedActionDraftSchema)
     .describe(

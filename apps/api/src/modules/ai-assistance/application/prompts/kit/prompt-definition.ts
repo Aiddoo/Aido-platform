@@ -6,6 +6,7 @@ import type {
   AiGenerationMeta,
   AiGenerationRequest,
   AiGeneratorPort,
+  AiTaskClass,
   AiTaskId,
 } from "../../ports/generation/ai-generator.port.js";
 
@@ -25,6 +26,9 @@ export type PromptVersion = `${AiTaskId}@${number}`;
 export interface PromptDefinition<I, O, R, C = I> {
   readonly id: AiTaskId;
   readonly version: PromptVersion;
+  readonly taskClass: AiTaskClass;
+  /** build가 만드는 user 턴의 글자 상한(계약 길이·맥락 상한 최대치에 여유를 둔 값). 비용 방어선이다. */
+  readonly maxInputChars: number;
   readonly schema: z.ZodType<O>;
   build(input: I, locale: SupportedLocale): BuiltPrompt;
   normalize(raw: O, context: C): R;
@@ -37,10 +41,10 @@ export interface PromptGeneration<R> {
 
 export type PromptGenerationOptions = Pick<
   AiGenerationRequest<unknown>,
-  "agreedConsentVersion" | "signal"
+  "agreedConsentVersion" | "signal" | "userId"
 >;
 
-/** 정의의 작업 id·버전·schema로 생성기를 부르고 출력을 정규화한다. */
+/** 정의의 작업 id·버전·분류·입력 상한·schema로 생성기를 부르고 출력을 정규화한다. */
 export async function generateWithPrompt<I, O, R, C>(
   generator: Pick<AiGeneratorPort, "generate">,
   definition: PromptDefinition<I, O, R, C>,
@@ -50,6 +54,8 @@ export async function generateWithPrompt<I, O, R, C>(
 ): Promise<PromptGeneration<R>> {
   const { output, ...meta } = await generator.generate({
     task: definition.id,
+    taskClass: definition.taskClass,
+    maxInputChars: definition.maxInputChars,
     promptVersion: definition.version,
     system: built.system,
     prompt: built.prompt,

@@ -7,13 +7,11 @@ import {
   aiProviderErrorResponse,
   captureProviderError,
   createAiTestConfig,
-  RecordingAiProviderAlert,
+  createAiSdkGenerator,
 } from "#test/mocks/ai-provider-http.stub";
 
 import { AiGenerationError } from "../../../../application/ports/generation/ai-generation.errors.js";
 import type { AiGenerationRequest } from "../../../../application/ports/generation/ai-generator.port.js";
-import { AiProviderCircuitRegistry } from "../ai-provider-circuit.registry.js";
-import { AiSdkGenerator } from "../ai-sdk.generator.js";
 import { describeUpstreamCause } from "./ai-sdk-failure.js";
 import { GoogleProviderAdapter } from "./google.provider-adapter.js";
 
@@ -35,11 +33,7 @@ function modelResponse(text: string, withUsage = true): Response {
 
 function createGenerator(env: Record<string, string> = {}) {
   const config = createAiTestConfig({ AI_PROVIDER_ORDER: "google", ...env });
-  return new AiSdkGenerator(
-    config,
-    [new GoogleProviderAdapter(config)],
-    new AiProviderCircuitRegistry(config, new RecordingAiProviderAlert()),
-  );
+  return createAiSdkGenerator(config, [new GoogleProviderAdapter(config)]).generator;
 }
 
 function request<T>(
@@ -47,6 +41,9 @@ function request<T>(
 ): AiGenerationRequest<T> {
   return {
     task: "parse-todo",
+    taskClass: "interactive",
+    userId: null,
+    maxInputChars: 5_000,
     promptVersion: "parse-todo@test",
     system: "",
     prompt: "독서",
@@ -64,6 +61,24 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("구조화 출력을 켜고 추론 단계와 안전 설정을 함께 보낸다", () => {
+    // Given
+    const adapter = new GoogleProviderAdapter(createAiTestConfig());
+    // When
+    const options = adapter.getProviderOptions({
+      thinking: "minimal",
+      maxOutputTokens: 1024,
+      deadlineMs: 1000,
+      lastProviderMaxRetries: 1,
+      maxModelCalls: 4,
+    });
+    // Then
+    expect(options["google"]).toMatchObject({
+      structuredOutputs: true,
+      thinkingConfig: { thinkingLevel: "minimal" },
+    });
   });
 
   it.each([

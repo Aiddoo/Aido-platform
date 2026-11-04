@@ -1043,7 +1043,7 @@ describe("AI E2E", () => {
         expect(fakeAiGenerator.getLastPrompt()).toContain(JSON.stringify(item.input[locale]));
         expect(fakeAiGenerator.getLastSystem()).toContain(JSON.stringify(item.title[locale]));
         expect(fakeAiGenerator.getLastSystem()).toContain(
-          '"time":{"hour":9,"minute":0,"meridiem":"AM"}',
+          '"time":{"hour":9,"minute":0,"meridiem":"AM","partOfDay":null,"relativeMinutes":null}',
         );
         const usage = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")

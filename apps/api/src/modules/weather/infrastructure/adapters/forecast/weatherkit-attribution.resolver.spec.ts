@@ -3,6 +3,7 @@ import { HttpClient } from "@nestjs/http-client";
 
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
+import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { WeatherKitLogEvent } from "../../observability/forecast/weatherkit-log.events.js";
 import { WeatherKitAttributionResolver } from "./weatherkit-attribution.resolver.js";
@@ -35,7 +36,11 @@ function createResolver(responses: readonly (() => Response)[]) {
   const cacheService = new CacheService(
     new InMemoryCacheAdapter({ defaultTtlMs: 60_000, maxItems: 100 }),
   );
-  return { resolver: new WeatherKitAttributionResolver(http, cacheService), requests };
+  const { policies, usage } = createWeatherOutbound();
+  return {
+    resolver: new WeatherKitAttributionResolver(http, cacheService, policies, usage),
+    requests,
+  };
 }
 
 const json =

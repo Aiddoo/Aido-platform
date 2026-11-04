@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import type {
@@ -15,6 +17,8 @@ import {
   WeatherReportCacheKey,
 } from "../../cache/forecast/weather-report.keyspace.js";
 import { WeatherKitLogEvent } from "../../observability/forecast/weatherkit-log.events.js";
+import { WEATHERKIT_POLICY } from "./weather-outbound.policies.js";
+import { WeatherKitUsageMeter } from "./weatherkit-usage.meter.js";
 
 const WEATHERKIT_ORIGIN = "https://weatherkit.apple.com";
 const ATTRIBUTION_TIMEOUT_MS = 3_000;
@@ -58,12 +62,17 @@ export class WeatherKitAttributionRequestError extends Error {
 @Injectable()
 export class WeatherKitAttributionResolver {
   readonly #logger = new Logger(WeatherKitAttributionResolver.name);
+  readonly #policy: OutboundPolicy;
 
   constructor(
     @InjectHttpClient("weather") private readonly http: HttpClient,
     @Inject(CacheService)
     private readonly cacheService: Pick<CacheService, "wrap" | "has" | "set">,
-  ) {}
+    policies: OutboundPolicyRegistry,
+    @Inject(WeatherKitUsageMeter) private readonly usage: Pick<WeatherKitUsageMeter, "recordCall">,
+  ) {
+    this.#policy = policies.get(WEATHERKIT_POLICY);
+  }
 
   async resolve(language: string): Promise<WeatherReportAttribution> {
     return {
@@ -84,12 +93,15 @@ export class WeatherKitAttributionResolver {
         WeatherReportCacheKey.attribution(language),
         attributionLogoSchema,
         async () => {
-          const outcome = await requestVendorJson(
-            this.http,
-            `${WEATHERKIT_ORIGIN}/attribution/${encodeURIComponent(language)}`,
-            {},
-            { timeoutMs: ATTRIBUTION_TIMEOUT_MS },
-          );
+          const outcome = await this.#policy.execute(async (signal) => {
+            await this.usage.recordCall();
+            return requestVendorJson(
+              this.http,
+              `${WEATHERKIT_ORIGIN}/attribution/${encodeURIComponent(language)}`,
+              {},
+              { signal, timeoutMs: ATTRIBUTION_TIMEOUT_MS },
+            );
+          });
           if (outcome.kind === "http_failure") {
             throw new WeatherKitAttributionRequestError(outcome.statusCode);
           }

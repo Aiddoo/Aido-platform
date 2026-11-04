@@ -36,4 +36,11 @@ export const PlatformLogEvent = {
   LOCK_EXPIRED_CLEANED: "lock.expired.cleaned",
   DEDUP_SINGLE_INSTANCE: "dedup.provider.single-instance",
   DEDUP_EXPIRED_CLEANED: "dedup.expired.cleaned",
+  OPERATIONAL_ALERT_FAILED: "observability.alert.failed",
+  OUTBOUND_CIRCUIT_OPENED: "outbound.circuit.opened",
+  OUTBOUND_CIRCUIT_HALF_OPEN: "outbound.circuit.half-open",
+  OUTBOUND_CIRCUIT_CLOSED: "outbound.circuit.closed",
+  OUTBOUND_BULKHEAD_REJECTED: "outbound.bulkhead.rejected",
+  METERING_USAGE_PRUNED: "metering.usage.pruned",
+  METERING_PRUNE_FAILED: "metering.prune.failed",
 } as const;

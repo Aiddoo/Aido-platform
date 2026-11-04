@@ -272,7 +272,7 @@ function resolveTime(
 function resolveAmbiguousHour(
   hour: number,
   minute: number,
-  partOfDay: PartOfDay | undefined,
+  partOfDay: PartOfDay | null,
   targetDay: CalendarDay,
   nowMinutes: number,
   today: CalendarDay,

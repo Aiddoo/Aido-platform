@@ -32,11 +32,15 @@ import type { KmaForecastTiming } from "#api/modules/weather/domain/policies/for
 import type { Coordinate } from "#api/modules/weather/domain/value-objects/forecast/coordinate.vo";
 import type { GeoCell } from "#api/modules/weather/domain/value-objects/forecast/geo-cell.vo";
 import { GridCoordinate } from "#api/modules/weather/domain/value-objects/forecast/grid-coordinate.vo";
+import { WeatherKitUsageMeter } from "#api/modules/weather/infrastructure/adapters/forecast/weatherkit-usage.meter";
+import { InMemoryUsageMeterAdapter } from "#api/platform/metering/adapters/in-memory-usage-meter.adapter";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import {
   weatherAttributionFixture,
   weatherForecastFixture,
   weatherReportFixture,
 } from "#test/fixtures/weather.fixture";
+import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
 export class StubWeatherLocationRepository implements WeatherLocationRepositoryPort {
   readonly records = new Map<string, UserLocation>();
@@ -268,4 +272,18 @@ export class StubWeatherKitAttributionResolver {
     this.languages.push(language);
     return weatherAttributionFixture(language);
   }
+}
+
+/**
+ * 날씨 공급자 어댑터가 쓰는 공용 회로·계량을 메모리로 만든다. 테스트마다 새로 만들어 회로를 나누지 않는다.
+ */
+export function createWeatherOutbound() {
+  const alert = new RecordingOperationalAlert();
+  const meter = new InMemoryUsageMeterAdapter();
+  return {
+    alert,
+    meter,
+    policies: new OutboundPolicyRegistry(alert),
+    usage: new WeatherKitUsageMeter(meter, alert),
+  };
 }

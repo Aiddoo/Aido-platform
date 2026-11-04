@@ -5,11 +5,9 @@ import {
   aiProviderErrorResponse,
   captureProviderError,
   createAiTestConfig,
-  RecordingAiProviderAlert,
+  createAiSdkGenerator,
 } from "#test/mocks/ai-provider-http.stub";
 
-import { AiProviderCircuitRegistry } from "../ai-provider-circuit.registry.js";
-import { AiSdkGenerator } from "../ai-sdk.generator.js";
 import { OpenAiProviderAdapter } from "./openai.provider-adapter.js";
 
 const schema = z.object({ title: z.string() });
@@ -70,18 +68,43 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     expect(adapter.classifyError(error)).toBe(kind);
   });
 
+  it.each([
+    { thinking: "minimal", effort: "none" },
+    { thinking: "low", effort: "low" },
+    { thinking: "medium", effort: "medium" },
+  ] as const)(
+    "추론 단계 $thinking은 gpt-6-luna가 받는 $effort로 보낸다",
+    ({ thinking, effort }) => {
+      // Given
+      const adapter = new OpenAiProviderAdapter(createAiTestConfig());
+      // When
+      const options = adapter.getProviderOptions({
+        thinking,
+        maxOutputTokens: 1024,
+        deadlineMs: 1000,
+        lastProviderMaxRetries: 1,
+        maxModelCalls: 4,
+      });
+      // Then
+      expect(options["openai"]).toMatchObject({
+        reasoningEffort: effort,
+        strictJsonSchema: true,
+        store: false,
+      });
+    },
+  );
+
   it("reasoning low·저장 안 함·구조화 출력을 Responses API로 보내고 사고 토큰과 비용을 돌려준다", async () => {
     // Given
     fetchSpy.mockResolvedValue(responsesResponse(JSON.stringify({ title: "독서" })));
     const config = createAiTestConfig({ AI_PROVIDER_ORDER: "openai" });
-    const generator = new AiSdkGenerator(
-      config,
-      [new OpenAiProviderAdapter(config)],
-      new AiProviderCircuitRegistry(config, new RecordingAiProviderAlert()),
-    );
+    const generator = createAiSdkGenerator(config, [new OpenAiProviderAdapter(config)]).generator;
     // When
     const result = await generator.generate({
       task: "report",
+      taskClass: "background",
+      userId: null,
+      maxInputChars: 16_000,
       promptVersion: "report@test",
       system: "규칙",
       prompt: "독서",
@@ -105,7 +128,7 @@ describe("OpenAiProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
       store: false,
       max_output_tokens: 2048,
       reasoning: { effort: "low" },
-      text: { format: { type: "json_schema", strict: false } },
+      text: { format: { type: "json_schema", strict: true } },
     });
   });
 });

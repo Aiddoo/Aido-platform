@@ -5,6 +5,9 @@ import { z } from "zod";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
+import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
+import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { TIME_UNIT } from "#api/shared/domain/date/constants/date.constant";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -24,13 +27,14 @@ import {
   WeatherReportCacheKey,
 } from "../../cache/forecast/weather-report.keyspace.js";
 import { WeatherKitLogEvent } from "../../observability/forecast/weatherkit-log.events.js";
+import { WEATHERKIT_POLICY } from "./weather-outbound.policies.js";
 import { WeatherKitAttributionResolver } from "./weatherkit-attribution.resolver.js";
-import { isWeatherKitOutageFailure, WeatherKitOutageCircuit } from "./weatherkit-outage.circuit.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
 import {
   WeatherKitNotConfiguredError,
   WeatherKitTokenResolver,
 } from "./weatherkit-token.resolver.js";
+import { WeatherKitUsageMeter } from "./weatherkit-usage.meter.js";
 import { type WeatherKitWeather, weatherKitWeatherSchema } from "./weatherkit.schema.js";
 
 const WEATHERKIT_API_URL = "https://weatherkit.apple.com/api/v1";
@@ -71,7 +75,8 @@ type WeatherKitFailureReason =
   | "invalid_structure"
   | "missing_current"
   | "recent_failure"
-  | "provider_outage";
+  | "provider_outage"
+  | "provider_busy";
 
 /** 429·5xx·인증 거절·형식 오류 모두 호출자에게는 같은 공급자 실패이며 폴백 대상이다. */
 export class WeatherKitRequestError extends Error {
@@ -92,6 +97,20 @@ function failureTypeOf(error: unknown): string {
   return error instanceof WeatherKitRequestError ? error.reason : toErrorType(error);
 }
 
+/** 회로가 열렸거나 동시 호출이 가득 차 부르지 않은 실패. 칸 문제가 아니라 칸별 차단을 걸지 않는다. */
+function toRejection(error: OutboundRejectedError): WeatherKitRequestError {
+  return new WeatherKitRequestError(
+    error.reason === "circuit-open" ? "provider_outage" : "provider_busy",
+  );
+}
+
+function isRejection(error: unknown): boolean {
+  return (
+    error instanceof WeatherKitRequestError &&
+    (error.reason === "provider_outage" || error.reason === "provider_busy")
+  );
+}
+
 function statusOf(error: unknown): number | null {
   return error instanceof WeatherKitRequestError ? error.status : null;
 }
@@ -99,6 +118,7 @@ function statusOf(error: unknown): number | null {
 @Injectable()
 export class WeatherKitReportProvider implements WeatherReportProviderPort {
   readonly #logger = new Logger(WeatherKitReportProvider.name);
+  readonly #policy: OutboundPolicy;
 
   constructor(
     @InjectHttpClient("weather") private readonly http: HttpClient,
@@ -108,16 +128,15 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
     private readonly cacheService: Pick<CacheService, "wrap" | "has" | "set">,
     @Inject(WeatherKitAttributionResolver)
     private readonly attributionResolver: Pick<WeatherKitAttributionResolver, "resolve">,
-    @Inject(WeatherKitOutageCircuit)
-    private readonly outageCircuit: Pick<
-      WeatherKitOutageCircuit,
-      "isOpen" | "recordFailure" | "recordSuccess"
-    >,
-  ) {}
+    policies: OutboundPolicyRegistry,
+    @Inject(WeatherKitUsageMeter) private readonly usage: Pick<WeatherKitUsageMeter, "recordCall">,
+  ) {
+    this.#policy = policies.get(WEATHERKIT_POLICY);
+  }
 
   async getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport> {
     // 공급자 전체 장애 중에는 칸마다 시간 초과를 기다리지 않고 같은 실패로 바로 폴백한다.
-    if (await this.outageCircuit.isOpen()) {
+    if (this.#policy.isOpen()) {
       this.#logger.debug({
         event: WeatherKitLogEvent.REQUEST_SKIPPED,
         cellKey: cell.key,
@@ -151,7 +170,6 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
         throw new WeatherKitRequestError("missing_current", 200);
       }
 
-      await this.outageCircuit.recordSuccess();
       this.#logger.log({
         event: WeatherKitLogEvent.REQUEST_COMPLETED,
         cellKey: cell.key,
@@ -160,7 +178,8 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
         dataSets: received,
       });
       return toWeatherReport({ ...weather, currentWeather }, request.timezone, requestedAt);
-    } catch (error) {
+    } catch (cause) {
+      const error = cause instanceof OutboundRejectedError ? toRejection(cause) : cause;
       this.#logger.warn({
         event: WeatherKitLogEvent.REQUEST_FAILED,
         cellKey: cell.key,
@@ -168,11 +187,8 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
         latencyMs: Math.round(performance.now() - startedAtMs),
         errorType: failureTypeOf(error),
       });
-      if (!(error instanceof WeatherKitNotConfiguredError)) {
+      if (!(error instanceof WeatherKitNotConfiguredError) && !isRejection(error)) {
         await this.cacheService.set(failureKey, true, WEATHER_REPORT_CACHE_TTL_MS.PROVIDER_FAILURE);
-      }
-      if (isWeatherKitOutageFailure(error, statusOf(error))) {
-        await this.outageCircuit.recordFailure();
       }
       throw error;
     }
@@ -196,24 +212,26 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
     requestedAt: Date,
   ): Promise<WeatherKitWeather> {
     const hourlyStart = new Date(Math.floor(requestedAt.getTime() / MS_PER_HOUR) * MS_PER_HOUR);
-    const send = async () =>
-      requestVendorJson(
-        this.http,
-        this.#cellUrl("weather", cell, request.language),
-        {
-          dataSets: dataSets.join(","),
-          timezone: request.timezone,
-          countryCode: request.countryCode,
-          hourlyStart: hourlyStart.toISOString(),
-          hourlyEnd: new Date(hourlyStart.getTime() + HOURLY_RANGE_MS).toISOString(),
-          dailyEnd: new Date(requestedAt.getTime() + DAILY_RANGE_MS).toISOString(),
-        },
-        {
-          headers: { authorization: `Bearer ${await this.tokenResolver.resolve()}` },
-          signal: request.signal,
-          timeoutMs: WEATHER_TIMEOUT_MS,
-        },
+    const send = async () => {
+      const authorization = `Bearer ${await this.tokenResolver.resolve()}`;
+      return this.#call(
+        (signal) =>
+          requestVendorJson(
+            this.http,
+            this.#cellUrl("weather", cell, request.language),
+            {
+              dataSets: dataSets.join(","),
+              timezone: request.timezone,
+              countryCode: request.countryCode,
+              hourlyStart: hourlyStart.toISOString(),
+              hourlyEnd: new Date(hourlyStart.getTime() + HOURLY_RANGE_MS).toISOString(),
+              dailyEnd: new Date(requestedAt.getTime() + DAILY_RANGE_MS).toISOString(),
+            },
+            { headers: { authorization }, signal, timeoutMs: WEATHER_TIMEOUT_MS },
+          ),
+        request.signal,
       );
+    };
 
     let outcome = await send();
     if (outcome.kind === "http_failure" && AUTH_REJECTED_STATUSES.includes(outcome.statusCode)) {
@@ -237,7 +255,7 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
   /**
    * 지역마다 제공 dataset이 다르고(한국은 분 단위 예보·특보 없음) 없는 dataset을 요청하면 실패하므로
    * 칸별 가용성을 7일 캐시한다. 조회가 실패하면 기본 dataset으로 진행하고, Apple 장애 동안 요청마다
-   * 3초를 기다리지 않도록 그 칸의 가용성 조회를 1분 멈춘다. 공급자 전체 장애 중에는 캐시에 없는 칸만 기본 dataset으로 둔다.
+   * 3초를 기다리지 않도록 그 칸의 가용성 조회를 1분 멈춘다. 회로가 열린 동안에는 캐시에 없는 칸만 기본 dataset으로 둔다.
    */
   async #availableDataSets(
     cell: GeoCell,
@@ -252,18 +270,16 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
         WeatherReportCacheKey.availability(cell.key),
         cachedAvailabilitySchema,
         async () => {
-          if (await this.outageCircuit.isOpen()) {
-            throw new WeatherKitRequestError("provider_outage");
-          }
-          const outcome = await requestVendorJson(
-            this.http,
-            this.#cellUrl("availability", cell),
-            { country: request.countryCode },
-            {
-              headers: { authorization: `Bearer ${await this.tokenResolver.resolve()}` },
-              signal: request.signal,
-              timeoutMs: AVAILABILITY_TIMEOUT_MS,
-            },
+          const authorization = `Bearer ${await this.tokenResolver.resolve()}`;
+          const outcome = await this.#call(
+            (signal) =>
+              requestVendorJson(
+                this.http,
+                this.#cellUrl("availability", cell),
+                { country: request.countryCode },
+                { headers: { authorization }, signal, timeoutMs: AVAILABILITY_TIMEOUT_MS },
+              ),
+            request.signal,
           );
           if (outcome.kind === "http_failure") {
             throw new WeatherKitRequestError("http_failure", outcome.statusCode);
@@ -280,7 +296,7 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
       if (error instanceof WeatherKitNotConfiguredError) {
         throw error;
       }
-      if (error instanceof WeatherKitRequestError && error.reason === "provider_outage") {
+      if (error instanceof OutboundRejectedError) {
         return BASE_DATA_SETS;
       }
       this.#logger.warn({
@@ -296,6 +312,14 @@ export class WeatherKitReportProvider implements WeatherReportProviderPort {
       );
       return BASE_DATA_SETS;
     }
+  }
+
+  /** 공용 회로·동시성 정책 안에서 한 번 부르고 실제로 보낸 호출을 월 사용량에 센다. */
+  #call<T>(send: (signal: AbortSignal) => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+    return this.#policy.execute(async (inner) => {
+      await this.usage.recordCall();
+      return send(inner);
+    }, signal);
   }
 
   /** 사용자 좌표 대신 칸 중심만 공급자에 보낸다. */

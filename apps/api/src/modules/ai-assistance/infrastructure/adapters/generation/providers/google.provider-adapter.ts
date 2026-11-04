@@ -51,6 +51,7 @@ export class GoogleProviderAdapter implements AiProviderAdapter {
   getProviderOptions(policy: AiGenerationPolicy): AiProviderOptions {
     return {
       google: {
+        structuredOutputs: true,
         thinkingConfig: { thinkingLevel: policy.thinking },
         safetySettings: SAFETY_SETTINGS,
       } satisfies GoogleLanguageModelOptions,

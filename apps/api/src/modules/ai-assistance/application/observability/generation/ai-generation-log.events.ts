@@ -37,6 +37,8 @@ export function generationCompletedLog(
     fallbackFrom: meta.fallbackFrom,
     latencyMs: meta.latencyMs,
     inputTokens: meta.inputTokens,
+    cachedInputTokens: meta.cachedInputTokens,
+    cacheWriteInputTokens: meta.cacheWriteInputTokens,
     outputTokens: meta.outputTokens,
     reasoningTokens: meta.reasoningTokens,
     estimatedCostMicroUsd: meta.estimatedCostMicroUsd,
@@ -53,7 +55,7 @@ export interface GenerationFailure {
   readonly attempts: number;
   readonly fallbackFrom: AiProviderId | null;
   readonly estimatedCostMicroUsd: number | null;
-  readonly upstream: AiUpstreamCause | undefined;
+  readonly upstream: AiUpstreamCause | null;
 }
 
 /** 실패 로그의 원인 필드. 생성 오류가 아니면 서버 정규화·검증이 거절한 출력으로 본다. */
@@ -74,7 +76,7 @@ export function generationFailure(error: unknown): GenerationFailure {
     attempts: 0,
     fallbackFrom: null,
     estimatedCostMicroUsd: null,
-    upstream: undefined,
+    upstream: null,
   };
 }
 

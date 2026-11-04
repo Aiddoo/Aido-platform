@@ -140,3 +140,44 @@ describe("toAiSettings — 업체·작업별 AI 설정", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("toAiSettings — 킬 스위치·비용 예산", () => {
+  it.each([
+    { mode: "on", expected: { interactive: true, background: true } },
+    { mode: "interactive-only", expected: { interactive: true, background: false } },
+    { mode: "off", expected: { interactive: false, background: false } },
+  ])("AI_GENERATION_MODE=$mode이면 분류별 생성 허용이 $expected이다", ({ mode, expected }) => {
+    // Given
+    const env = aiSchema.parse({ AI_GENERATION_MODE: mode });
+
+    // When
+    const settings = toAiSettings(env);
+
+    // Then
+    expect(settings.enabled).toEqual(expected);
+  });
+
+  it("예산 USD를 micro-USD로 바꾸고 기본값은 경고 1/10·배경 2/20·전체 3/30·사용자 0.25다", () => {
+    // Given
+    const env = aiSchema.parse({ AI_BUDGET_USER_DAILY_USD: "0.5" });
+
+    // When
+    const { budget } = toAiSettings(env);
+
+    // Then
+    expect(budget).toEqual({
+      alert: { dailyMicroUsd: 1_000_000, monthlyMicroUsd: 10_000_000 },
+      background: { dailyMicroUsd: 2_000_000, monthlyMicroUsd: 20_000_000 },
+      halt: { dailyMicroUsd: 3_000_000, monthlyMicroUsd: 30_000_000 },
+      userDailyMicroUsd: 500_000,
+    });
+  });
+
+  it("모르는 킬 스위치 값은 거부한다", () => {
+    // When
+    const result = aiSchema.safeParse({ AI_GENERATION_MODE: "paused" });
+
+    // Then
+    expect(result.success).toBe(false);
+  });
+});

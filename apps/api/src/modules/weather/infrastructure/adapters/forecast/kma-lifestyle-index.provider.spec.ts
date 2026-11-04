@@ -17,6 +17,8 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { createWeatherOutbound } from "#test/mocks/ports/weather.stub";
 
 import { KmaLifestyleIndexProvider } from "./kma-lifestyle-index.provider.js";
 
@@ -29,6 +31,8 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
     const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexProvider)
       .mock(getHttpClientToken("weather"))
       .final(new HttpClient({ retry: false, throwOnHttpError: false }))
+      .mock(OutboundPolicyRegistry)
+      .final(createWeatherOutbound().policies)
       .compile();
 
     provider = unit;

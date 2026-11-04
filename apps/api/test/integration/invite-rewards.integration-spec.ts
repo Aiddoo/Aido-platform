@@ -154,8 +154,8 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       },
       notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
       alert: {
-        reportRetryExhausted: (failure) => {
-          overrides.exhausted?.push(failure.grantId);
+        raise: (alert) => {
+          overrides.exhausted?.push(String(alert.details?.grantId));
         },
       },
       inviteConfig: { isEnabled: overrides.isEnabled ?? true },
@@ -305,7 +305,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         },
       },
       notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
-      alert: { reportRetryExhausted: () => {} },
+      alert: { raise: () => {} },
       inviteConfig: { isEnabled: true },
       unitOfWork: context.module.get<UnitOfWorkPort>(UNIT_OF_WORK),
       logger: new Logger("GrantInviteRewardsTest"),

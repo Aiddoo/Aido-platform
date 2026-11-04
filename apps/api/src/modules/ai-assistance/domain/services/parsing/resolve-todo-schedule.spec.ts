@@ -1,3 +1,5 @@
+import { scheduleDraftFixture, type ScheduleDraftInput } from "#test/fixtures/ai-response.fixture";
+
 import type { ScheduleDraft } from "../../types/parsing/todo-draft.types.js";
 import { resolveTodoSchedule } from "./resolve-todo-schedule.js";
 
@@ -7,14 +9,21 @@ const SEOUL = { now: NOW, timeZone: "Asia/Seoul" };
 const LOS_ANGELES = { now: NOW, timeZone: "America/Los_Angeles" };
 
 const none = { pattern: "NONE" } as const;
-const draft = (overrides: Partial<ScheduleDraft>): ScheduleDraft => ({
-  date: { kind: "NONE" },
-  time: null,
-  repeat: none,
-  ...overrides,
-});
+const draft = (overrides: ScheduleDraftInput = {}): ScheduleDraft =>
+  scheduleDraftFixture({ repeat: none, ...overrides });
 
 describe("resolveTodoSchedule — ko golden (서울 수 10:00)", () => {
+  it("격주 화요일을 UNSUPPORTED로 받아도 말한 요일이 date에 있어야 다음 화요일이고, NONE이면 오늘로 어긋난다(ko-16)", () => {
+    // Given
+    const repeat = { pattern: "UNSUPPORTED" } as const;
+    const withWeekday = draft({ date: { kind: "WEEKDAY", weekday: "TUE" }, repeat });
+    const withoutDate = draft({ repeat });
+    // When
+    const results = [withWeekday, withoutDate].map((input) => resolveTodoSchedule(input, SEOUL));
+    // Then
+    expect(results.map(({ startDate }) => startDate)).toEqual(["2026-11-03", "2026-10-28"]);
+  });
+
   it.each([
     {
       id: "ko-01 내일 오후 3시 팀 미팅",

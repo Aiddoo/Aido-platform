@@ -2,6 +2,13 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 import type { AiProviderId } from "@aido/api/vocabulary";
 import type { z } from "zod";
 
+import type { AiTaskClass } from "../../../domain/policies/generation/ai-spend.policy.js";
+
+export {
+  AI_TASK_CLASSES,
+  type AiTaskClass,
+} from "../../../domain/policies/generation/ai-spend.policy.js";
+
 export const AI_TASK_IDS = [
   "parse-todo",
   "parse-memo",
@@ -16,6 +23,11 @@ export type AiTaskId = (typeof AI_TASK_IDS)[number];
 
 export interface AiGenerationRequest<T> {
   readonly task: AiTaskId;
+  readonly taskClass: AiTaskClass;
+  /** 비용을 사용자별 일 예산에 더할 사용자. 시스템 호출이면 null */
+  readonly userId: string | null;
+  /** user 턴(prompt) 글자 상한. 넘으면 업체를 부르지 않고 BAD_REQUEST로 끝낸다. */
+  readonly maxInputChars: number;
   readonly promptVersion: string;
   readonly system: string;
   readonly prompt: string;
@@ -36,7 +48,12 @@ export interface AiGenerationResult<T> {
   /** 첫 업체가 실패해 다른 업체가 응답했으면 첫 업체 */
   readonly fallbackFrom: AiProviderId | null;
   readonly latencyMs: number;
+  /** 입력 토큰 전체(캐시 읽기·쓰기 포함) */
   readonly inputTokens: number;
+  /** 입력 토큰 중 프롬프트 캐시에서 읽은 수 */
+  readonly cachedInputTokens: number;
+  /** 입력 토큰 중 프롬프트 캐시에 새로 쓴 수 */
+  readonly cacheWriteInputTokens: number;
   readonly outputTokens: number;
   readonly reasoningTokens: number;
   /** 모든 시도의 토큰 × 모델 단가. 단가를 모르는 모델을 썼으면 null */
@@ -46,7 +63,10 @@ export interface AiGenerationResult<T> {
 
 export type AiGenerationMeta = Omit<AiGenerationResult<unknown>, "output">;
 
-/** 설정 순서·동의 범위·회로 상태로 고른 업체를 차례로 시도해 스키마에 맞는 출력을 만든다. */
+/**
+ * 킬 스위치·예산·입력 상한을 먼저 확인하고, 설정 순서·동의 범위·회로 상태로 고른 업체를 차례로
+ * 시도해 스키마에 맞는 출력을 만든다.
+ */
 export interface AiGeneratorPort {
   generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>>;
 }

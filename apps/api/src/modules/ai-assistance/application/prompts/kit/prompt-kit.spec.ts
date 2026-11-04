@@ -78,12 +78,14 @@ describe("프롬프트 kit", () => {
     expect(ko.startsWith("<language_policy>\n")).toBe(true);
   });
 
-  it("generateWithPrompt는 정의의 작업 id·버전·schema로 생성하고 정규화한 값을 돌려준다", async () => {
+  it("generateWithPrompt는 정의의 작업 id·버전·분류·입력 상한·schema와 사용자로 생성하고 정규화한 값을 돌려준다", async () => {
     // Given
     const generator = new FakeAiGenerator().setRawResponse({ value: " 원문 " });
     const definition = {
       id: "quick-plan",
-      version: "quick-plan@1",
+      version: "quick-plan@2",
+      taskClass: "interactive",
+      maxInputChars: 100,
       schema: z.object({ value: z.string() }),
       build: () => ({ system: "S", prompt: "P" }),
       normalize: (raw: { value: string }, context: { suffix: string }) =>
@@ -95,14 +97,17 @@ describe("프롬프트 kit", () => {
       definition,
       definition.build(),
       { suffix: "!" },
-      { agreedConsentVersion: null },
+      { agreedConsentVersion: null, userId: "user-1" },
     );
     // Then
     expect(value).toBe("원문!");
     expect(meta.model).toBe("fake:test-model");
     expect(generator.getLastRequest()).toMatchObject({
       task: "quick-plan",
-      promptVersion: "quick-plan@1",
+      taskClass: "interactive",
+      maxInputChars: 100,
+      userId: "user-1",
+      promptVersion: "quick-plan@2",
       system: "S",
       prompt: "P",
       agreedConsentVersion: null,

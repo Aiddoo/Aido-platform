@@ -90,6 +90,8 @@ export const reportPrompt: PromptDefinition<
 > = {
   id: "report",
   version: "report@3",
+  taskClass: "background",
+  maxInputChars: 16_000,
   schema: reportDraftSchema,
   build: (input, locale) => ({
     system: SYSTEM[locale],

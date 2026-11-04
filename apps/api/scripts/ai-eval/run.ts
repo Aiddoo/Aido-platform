@@ -32,14 +32,17 @@ import { parseTodoPrompt } from "../../src/modules/ai-assistance/application/pro
 import { quickPlanPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/quick-plan/index.js";
 import { voiceNoteDigestPrompt } from "../../src/modules/ai-assistance/application/prompts/planning/voice-note-digest/index.js";
 import type { NormalizedActionPlan } from "../../src/modules/ai-assistance/domain/types/planning/action-plan-draft.types.js";
-import { AiProviderCircuitRegistry } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-provider-circuit.registry.js";
 import { AiSdkGenerator } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-sdk.generator.js";
+import { AiSpendGuard } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/ai-spend.guard.js";
 import type { AiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/ai-provider-adapter.js";
 import { AnthropicProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/anthropic.provider-adapter.js";
 import { GoogleProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/google.provider-adapter.js";
 import { OpenAiProviderAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/generation/providers/openai.provider-adapter.js";
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
 import { TypedConfigService } from "../../src/platform/config/services/config.service.js";
+import { InMemoryUsageMeterAdapter } from "../../src/platform/metering/adapters/in-memory-usage-meter.adapter.js";
+import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
+import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
 import {
   GOLDEN_TASKS,
   GOLDEN_VARIANTS,
@@ -73,8 +76,14 @@ interface CaseResult extends CaseScore {
   readonly id: string;
   readonly error: string | null;
   readonly latencyMs: number | null;
-  readonly usage: { input: number; output: number; reasoning: number } | null;
-  /** 이 case가 쓴 추정 비용(micro-USD). 단가를 모르는 모델이면 null */
+  readonly usage: {
+    input: number;
+    cached: number;
+    cacheWrite: number;
+    output: number;
+    reasoning: number;
+  } | null;
+  /** 이 case가 쓴 추정 비용(micro-USD, 캐시 단가 반영). 단가를 모르는 모델이면 null */
   readonly costMicroUsd: number | null;
 }
 
@@ -91,7 +100,7 @@ const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.st
 const titleKey = (title: string) => title.toLowerCase().replace(/[\s\p{P}]/gu, "");
 const titleMatches = (expected: string, actual: string) =>
   titleKey(actual).includes(titleKey(expected)) || titleKey(expected).includes(titleKey(actual));
-const options = { agreedConsentVersion: AI_DATA_SHARING_CONSENT.VERSION } as const;
+const options = { agreedConsentVersion: AI_DATA_SHARING_CONSENT.VERSION, userId: null } as const;
 
 function planContext(golden: Pick<QuickPlanGoldenCase, "context">) {
   return {
@@ -294,14 +303,19 @@ function createGenerator(task: GoldenTask, provider: string | undefined) {
     new GoogleProviderAdapter(config),
     new OpenAiProviderAdapter(config),
   ];
-  const circuits = new AiProviderCircuitRegistry(config, {
-    reportBillingCircuitOpened: (event) => console.warn(`circuit opened ${JSON.stringify(event)}`),
-  });
+  const alert: OperationalAlertPort = {
+    raise: (raised) => console.warn(`alert ${raised.key} ${JSON.stringify(raised.tags ?? {})}`),
+  };
   const available = config.ai.providerOrder.some(
     (id) => adapters.find((adapter) => adapter.id === id)?.getModel(task) != null,
   );
   return {
-    generator: new AiSdkGenerator(config, adapters, circuits),
+    generator: new AiSdkGenerator(
+      config,
+      adapters,
+      new OutboundPolicyRegistry(alert),
+      new AiSpendGuard(config, new InMemoryUsageMeterAdapter(), alert),
+    ),
     available,
     thinking: config.ai.tasks[task].thinking,
   };
@@ -370,6 +384,8 @@ async function main(): Promise<number> {
         latencyMs: meta.latencyMs,
         usage: {
           input: meta.inputTokens,
+          cached: meta.cachedInputTokens,
+          cacheWrite: meta.cacheWriteInputTokens,
           output: meta.outputTokens,
           reasoning: meta.reasoningTokens,
         },
@@ -390,7 +406,8 @@ async function main(): Promise<number> {
       const failed = Object.entries(last.metrics).flatMap(([name, ok]) => (ok ? [] : [name]));
       console.log(
         `${last.error == null && failed.length === 0 ? "PASS" : "FAIL"} ${last.id} ${last.latencyMs ?? "-"}ms ` +
-          `in=${last.usage?.input ?? "-"} out=${last.usage?.output ?? "-"} ` +
+          `in=${last.usage?.input ?? "-"} cached=${last.usage?.cached ?? "-"} ` +
+          `cacheWrite=${last.usage?.cacheWrite ?? "-"} out=${last.usage?.output ?? "-"} ` +
           `think=${last.usage?.reasoning ?? "-"} ${last.error ?? failed.join(",")}`,
       );
     }
@@ -432,9 +449,12 @@ async function main(): Promise<number> {
     },
     tokens: {
       input: sum((usage) => usage.input),
+      cached: sum((usage) => usage.cached),
+      cacheWrite: sum((usage) => usage.cacheWrite),
       output: sum((usage) => usage.output),
       reasoning: sum((usage) => usage.reasoning),
     },
+    // 캐시 읽기·쓰기 단가를 반영한 값이다. tokens.cached·cacheWrite로 적중을 함께 본다.
     estimatedCostMicroUsd: results.reduce((total, result) => total + (result.costMicroUsd ?? 0), 0),
     failures: results
       .filter((result) => result.error != null || Object.values(result.metrics).includes(false))

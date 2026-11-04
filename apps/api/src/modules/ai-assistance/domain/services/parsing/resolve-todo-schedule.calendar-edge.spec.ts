@@ -1,3 +1,5 @@
+import { scheduleDraftFixture, type ScheduleDraftInput } from "#test/fixtures/ai-response.fixture";
+
 import type { ScheduleDraft } from "../../types/parsing/todo-draft.types.js";
 import { resolveTodoSchedule } from "./resolve-todo-schedule.js";
 
@@ -5,12 +7,8 @@ const SEOUL = "Asia/Seoul";
 const LOS_ANGELES = "America/Los_Angeles";
 
 const none = { pattern: "NONE" } as const;
-const draft = (overrides: Partial<ScheduleDraft>): ScheduleDraft => ({
-  date: { kind: "NONE" },
-  time: null,
-  repeat: none,
-  ...overrides,
-});
+const draft = (overrides: ScheduleDraftInput = {}): ScheduleDraft =>
+  scheduleDraftFixture({ repeat: none, ...overrides });
 const resolveAt = (iso: string, timeZone: string, input: ScheduleDraft) =>
   resolveTodoSchedule(input, { now: new Date(iso), timeZone });
 

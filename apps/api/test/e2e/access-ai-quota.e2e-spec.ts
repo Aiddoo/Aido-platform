@@ -1,5 +1,6 @@
 import {
   entitlementSnapshotSchema,
+  notChargedErrorDetailsSchema,
   parseTodoResponseSchema,
   quotaErrorDetailsSchema,
 } from "@aido/api";
@@ -236,6 +237,29 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       limit: FREE_AI_LIMIT,
     });
   });
+
+  it.each([
+    { kind: "HALTED", status: 503, code: ErrorCode.AI_1301 },
+    { kind: "USER_SPEND_LIMITED", status: 429, code: ErrorCode.AI_1310 },
+  ] as const)(
+    "킬 스위치·비용 예산으로 멈춘 생성($kind)은 $status $code와 차감 없음 상세를 주고 예약을 되돌린다",
+    async ({ kind, status, code }) => {
+      // Given
+      await setQuota({ count: 2, resetAt: oldMonthAt });
+      provider.setInvalidResponse(createAiGenerationError(kind));
+
+      // When
+      const response = await parseTodo();
+
+      // Then
+      expect(response.status).toBe(status);
+      expect(response.body.error.code).toBe(code);
+      expect(notChargedErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+        charged: false,
+      });
+      expect((await storedQuota())?.aiUsageCount).toBe(2);
+    },
+  );
 
   it("KST 월초 조회는 지난달 사용량을 0으로 보여주고 다음 달 1일의 리셋 시각을 반환한다", async () => {
     // Given
