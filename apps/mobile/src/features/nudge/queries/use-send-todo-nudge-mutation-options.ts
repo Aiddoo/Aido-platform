@@ -1,17 +1,17 @@
-import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { isTodoNudgeError } from '../domains/todo-nudge.error';
 import type { SendTodoNudgeInput } from '../domains/todo-nudge.model';
 
 export const useSendTodoNudgeMutationOptions = () => {
+  const haptics = useHaptics();
   const todoNudgeService = useTodoNudgeService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -23,13 +23,13 @@ export const useSendTodoNudgeMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      notifySuccess();
+      haptics.notify('success');
       queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.limit() });
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) || isTodoNudgeError(error)) {
         toast.error(error.message);

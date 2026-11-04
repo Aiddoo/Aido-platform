@@ -1,10 +1,11 @@
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTranslation } from '@src/shared/i18n';
 import { NATIVE_TAB_ICON_SOURCES } from '@src/shared/ui';
-import { selectionFeedback } from '@src/shared/utils/haptics';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { useResolveClassNames } from 'uniwind';
 
 export default function TabsLayout() {
+  const haptics = useHaptics();
   const activeStyle = useResolveClassNames('text-main');
   const backgroundStyle = useResolveClassNames('bg-white');
   const inactiveStyle = useResolveClassNames('text-gray-6');
@@ -22,7 +23,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: ({ data }) => {
             if (!data.isPrevented) {
-              selectionFeedback();
+              haptics.selection();
             }
           },
         }}
@@ -35,7 +36,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: ({ data }) => {
             if (!data.isPrevented) {
-              selectionFeedback();
+              haptics.selection();
             }
           },
         }}
@@ -48,7 +49,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: ({ data }) => {
             if (!data.isPrevented) {
-              selectionFeedback();
+              haptics.selection();
             }
           },
         }}

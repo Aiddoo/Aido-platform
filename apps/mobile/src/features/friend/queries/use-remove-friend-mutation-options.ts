@@ -1,15 +1,15 @@
-import { useFriendService } from '@src/bootstrap/providers/di-context';
+import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import type { FriendUser } from '@src/features/friend/domains/friend.model';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.types';
-import { notifyError } from '@src/shared/utils/haptics';
 import type { InfiniteData } from '@tanstack/react-query';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 
 export const useRemoveFriendMutationOptions = () => {
+  const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export const useRemoveFriendMutationOptions = () => {
       return { previousData };
     },
     onError: (_error, _userId, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (context?.previousData) {
         queryClient.setQueryData(friendsQueryKey, context.previousData);

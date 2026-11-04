@@ -84,8 +84,11 @@ export interface HttpClient {
 | `ErrorReporter`           | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
 | `NetworkStatusGateway`    | `expoNetworkStatusGateway`(expo-network)                  | `shared/infra/network/`                      |
 | `PushNotificationGateway` | `expoPushNotificationGateway`(expo-notifications)         | `shared/infra/notification/`                 |
+| `SpeechRecognizer`        | `expoSpeechRecognizerGateway`(expo-speech-recognition)    | `shared/infra/speech/`                       |
+| `PurchasesGateway`        | `revenueCatPurchasesGateway`(react-native-purchases)      | `shared/infra/purchases/`                    |
+| `HapticsGateway`          | `expoHapticsGateway`(expo-haptics)                        | `shared/infra/haptics/`                      |
 
-> 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
+> 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`·`expo-speech-recognition`·`react-native-purchases`·`expo-haptics`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 > 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
 
 | 클라이언트                  | 용도                                 |
@@ -923,7 +926,8 @@ core/ports (인터페이스) ← shared/infra (어댑터) ← di-provider (조�
 - **조립**: `bootstrap/providers/di-provider.tsx`(composition root)가 어댑터와 서비스를 만들고, `di-context.tsx`의
   `DIContainer`와 `use{X}Service` 훅으로 내보낸다. 사용처는 훅으로만 서비스를 받는다.
 - **Mapper는 DI에 넣지 않는다.** DTO·OS 값을 모델로 바꾸는 순수 함수라 서비스가 직접 import한다.
-- **테스트**: 포트를 구현한 stub을 DI로 주입한다. `jest.mock`은 어댑터 경계 테스트에만 쓴다([testing-guide](./testing-guide.md)).
+- **테스트**: 포트를 구현한 stub을 DI로 주입한다(`createSpeechRecognizerStub`·`createPurchasesGatewayStub`·`createHapticsStub`).
+  SDK `jest.mock`은 어댑터 경계 테스트(`shared/infra/**/*.test.ts`)에만 쓴다([testing-guide](./testing-guide.md)).
 
 예: `PushNotificationGateway`(포트) → `expoPushNotificationGateway`(어댑터) → `PushDeviceService`.
 
@@ -947,6 +951,14 @@ const pushDeviceService = new PushDeviceService(
 // di-context.tsx
 export const usePushDeviceService = () => useDI().pushDeviceService;
 ```
+
+- **음성 인식**: 화면은 `SpeechRecognizer`의 `mode`(`dictation`·`quick`·`note`)만 고른다. 연속 인식·기기 안 인식·문장부호·
+  `iosTaskHint`·Android intent·음량(0..1로 정규화)·녹음 파일(16kHz Int16) 옵션은 어댑터가 `mode`에 따라 정한다.
+  인식 이벤트는 앱 전체에 하나라 `subscribe`한 쪽이 자기가 시작한 세션의 이벤트만 쓰고, 언마운트 때 구독을 풀고 `abort()`한다.
+- **결제**: `PurchasesGateway`는 RevenueCat 타입 대신 plain DTO와 `PurchasesGatewayError(kind, storeErrorCode)`만 넘긴다.
+  `customer-info.model.ts`는 자기 Zod 스키마를 갖고 `subscription.mapper.ts`가 DTO를 모델로 바꾼다.
+- **햅틱**: `useHaptics()`의 `selection`·`impact('light' | 'medium')`·`notify('success' | 'error' | 'warning')`만 쓴다.
+  테스트 DI 컨테이너는 아무것도 하지 않는 햅틱 stub을 기본으로 넣는다.
 
 서비스는 게이트웨이가 준 OS 원본(`PushPermissionResponse`)을 `push-permission.mapper.ts`로 모델(`PushPermission`)에 바꾼 뒤에만 Policy에 넘긴다.
 동작 흐름은 [push-notifications](../docs/push-notifications.md)를 본다.

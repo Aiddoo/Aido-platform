@@ -13,6 +13,7 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({
 }));
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
+  useHaptics: () => ({ selection: jest.fn(), impact: jest.fn(), notify: jest.fn() }),
   useAuthService: () => ({ exchangeCode: jest.fn() }),
   usePushDeviceService: () => ({ requestPermission: mockRequestPushPermission }),
   useLogger: () => ({ warn: jest.fn() }),
@@ -29,8 +30,6 @@ jest.mock('@src/shared/hooks/use-app-toast', () => ({
 jest.mock('@src/shared/i18n', () => ({
   t: (key: string) => key,
 }));
-
-jest.mock('@src/shared/utils/haptics');
 
 const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
 

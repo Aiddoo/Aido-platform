@@ -1,14 +1,14 @@
-import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useInviteService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { replaceMyInvite } from './invite-cache';
 
 export function useRotateInviteCodeMutationOptions() {
+  const haptics = useHaptics();
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const { success, error } = useAppToast();
@@ -17,7 +17,7 @@ export function useRotateInviteCodeMutationOptions() {
     mutationFn: async () => unwrap(await inviteService.rotateInviteCode()),
     onSuccess: (myInvite) => {
       replaceMyInvite(queryClient, myInvite);
-      notifySuccess();
+      haptics.notify('success');
       success(t('invite:toast.rotated'));
     },
     onError: (rotateError) => {

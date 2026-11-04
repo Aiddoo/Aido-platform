@@ -1,9 +1,12 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import type { HapticsGateway } from '@src/core/ports/haptics';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status';
+import type { PurchasesGateway } from '@src/core/ports/purchases';
+import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { Storage } from '@src/core/ports/storage';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionManager } from '@src/core/session/session-manager';
@@ -57,6 +60,10 @@ export interface DIContainer {
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
+  haptics: HapticsGateway;
+  speechRecognizer: SpeechRecognizer;
+  /** 스토어 결제 SDK. 화면은 SubscriptionService로만 쓴다 */
+  purchasesGateway: PurchasesGateway;
   /** 토큰 키를 아는 유일한 곳 */
   tokenStore: TokenStore;
   /** 세션 종료(토큰 삭제 + 만료 이벤트)의 유일한 소유자 */
@@ -139,6 +146,9 @@ export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;
 export const useErrorReporter = () => useDI().errorReporter;
+export const useHaptics = () => useDI().haptics;
+export const useSpeechRecognizer = () => useDI().speechRecognizer;
+export const usePurchasesGateway = () => useDI().purchasesGateway;
 export const useDraftService = () => useDI().draftService;
 export const useQueryCacheStorage = () => useDI().queryCacheStorage;
 

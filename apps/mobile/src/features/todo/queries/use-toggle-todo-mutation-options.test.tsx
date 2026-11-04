@@ -20,6 +20,7 @@ const mockQueryClient = {
 };
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
+  useHaptics: () => ({ selection: jest.fn(), impact: jest.fn(), notify: jest.fn() }),
   useTodoService: () => ({ toggleTodoComplete: jest.fn() }),
   useActivationService: () => ({ recordTodoCompletion: jest.fn() }),
 }));
@@ -42,8 +43,6 @@ jest.mock('@tanstack/react-query', () => ({
   mutationOptions: (options: unknown) => options,
   useQueryClient: () => mockQueryClient,
 }));
-
-jest.mock('@src/shared/utils/haptics');
 
 jest.mock('@src/features/store-review/hooks/use-store-review-moment', () => ({
   useStoreReviewMoment: () => ({

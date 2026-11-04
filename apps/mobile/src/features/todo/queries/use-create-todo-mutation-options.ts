@@ -1,6 +1,10 @@
 import type { CreateTodoInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
+import {
+  useActivationService,
+  useHaptics,
+  useTodoService,
+} from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
@@ -10,7 +14,6 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { toDate } from '@src/shared/utils/date';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -38,6 +41,7 @@ function parseScheduledTime(time: string, dateStr: string): Date {
 }
 
 export const useCreateTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const activationService = useActivationService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -110,7 +114,7 @@ export const useCreateTodoMutationOptions = () => {
       }
     },
     onError: (error, _variables, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (context?.optimisticId != null) {
         removeTodoFromList(queryClient, { date: context.startDate, todoId: context.optimisticId });

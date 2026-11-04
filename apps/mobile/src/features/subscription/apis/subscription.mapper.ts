@@ -1,72 +1,52 @@
-import {
-  PACKAGE_TYPE,
-  type PurchasesOfferings,
-  type PurchasesPackage,
-} from 'react-native-purchases';
+import type {
+  PurchaseCustomerInfo,
+  PurchaseOffering,
+  PurchasePackage,
+  PurchasePackageType,
+} from '@src/core/ports/purchases';
+import { match } from 'ts-pattern';
 
+import { type CustomerInfo, customerInfoSchema } from '../domains/customer-info.model';
 import type {
   PlanType,
   SubscriptionOffering,
   SubscriptionPlan,
 } from '../domains/subscription.model';
 
-export const toPlanType = (packageType: PACKAGE_TYPE): PlanType | null => {
-  if (packageType === PACKAGE_TYPE.MONTHLY) {
-    return 'monthly';
-  }
+export function toPlanType(packageType: PurchasePackageType): PlanType | null {
+  return match(packageType)
+    .returnType<PlanType | null>()
+    .with('MONTHLY', () => 'monthly')
+    .with('ANNUAL', () => 'annual')
+    .with('OTHER', () => null)
+    .exhaustive();
+}
 
-  if (packageType === PACKAGE_TYPE.ANNUAL) {
-    return 'annual';
-  }
+export function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | null {
+  const planType = toPlanType(storePackage.packageType);
 
-  return null;
-};
-
-export const toSubscriptionPlan = (pkg: PurchasesPackage): SubscriptionPlan | null => {
-  const planType = toPlanType(pkg.packageType);
-
-  if (!planType) {
+  if (planType == null) {
     return null;
   }
 
   return {
-    identifier: pkg.identifier,
+    identifier: storePackage.identifier,
     planType,
-    priceString: pkg.product.priceString,
-    price: pkg.product.price,
-    currencyCode: pkg.product.currencyCode,
-    title: pkg.product.title,
-    description: pkg.product.description ?? null,
+    priceString: storePackage.product.priceString,
+    price: storePackage.product.price,
+    currencyCode: storePackage.product.currencyCode,
+    title: storePackage.product.title,
+    description: storePackage.product.description,
   };
-};
+}
 
-export const toSubscriptionOffering = (
-  offerings: PurchasesOfferings,
-): SubscriptionOffering | null => {
-  const result = toSubscriptionOfferingWithPackages(offerings);
-  return result?.offering ?? null;
-};
+export function toSubscriptionOffering(offering: PurchaseOffering): SubscriptionOffering {
+  return {
+    identifier: offering.identifier,
+    plans: offering.packages.flatMap((storePackage) => toSubscriptionPlan(storePackage) ?? []),
+  };
+}
 
-/** offering + packageMap을 한번의 순회로 동시 생성. null-safe. */
-export const toSubscriptionOfferingWithPackages = (
-  offerings: PurchasesOfferings,
-): { offering: SubscriptionOffering; packageMap: Map<string, PurchasesPackage> } | null => {
-  const current = offerings.current;
-
-  if (!current) {
-    return null;
-  }
-
-  const plans: SubscriptionPlan[] = [];
-  const packageMap = new Map<string, PurchasesPackage>();
-
-  for (const pkg of current.availablePackages) {
-    const plan = toSubscriptionPlan(pkg);
-    if (plan) {
-      plans.push(plan);
-      packageMap.set(pkg.identifier, pkg);
-    }
-  }
-
-  return { offering: { identifier: current.identifier, plans }, packageMap };
-};
+export function toCustomerInfo(dto: PurchaseCustomerInfo): CustomerInfo {
+  return customerInfoSchema.parse(dto);
+}

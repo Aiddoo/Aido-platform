@@ -1,12 +1,11 @@
 import type { UpdateMemoInput } from '@aido/api';
-import { useMemoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useMemoService } from '@src/bootstrap/providers/di-context';
 import { clearParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
@@ -17,6 +16,7 @@ interface UpdateMemoMutationParams {
 }
 
 export const useUpdateMemoMutationOptions = () => {
+  const haptics = useHaptics();
   const service = useMemoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -34,7 +34,7 @@ export const useUpdateMemoMutationOptions = () => {
       clearParsedMemo(queryClient, { memoId });
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error)) {
         toast.error(error.message);

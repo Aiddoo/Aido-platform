@@ -1,6 +1,5 @@
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useReduceMotion } from '@src/shared/hooks/use-reduce-motion';
-import { impactFeedback } from '@src/shared/utils/haptics';
-import { ImpactFeedbackStyle } from 'expo-haptics';
 import {
   useExclusiveGestures,
   useLongPressGesture,
@@ -17,10 +16,6 @@ import {
 
 const DOUBLE_TAP_MAX_DELAY_MS = 300;
 const LONG_PRESS_MIN_DURATION_MS = 450;
-
-function lightImpact() {
-  impactFeedback(ImpactFeedbackStyle.Light);
-}
 
 interface CommentDoubleTapOptions {
   burst: TodoCommentHeartBurstValues;
@@ -41,7 +36,9 @@ export function useCommentDoubleTap({
   onDoubleTap,
   onLongPress,
 }: CommentDoubleTapOptions) {
+  const haptics = useHaptics();
   const isReducedMotion = useReduceMotion();
+  const lightImpact = () => haptics.impact('light');
 
   const doubleTap = useTapGesture({
     numberOfTaps: 2,

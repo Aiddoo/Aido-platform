@@ -4,6 +4,7 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useAnalytics,
   useAuthService,
+  useHaptics,
   useLogger,
   usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
@@ -12,12 +13,12 @@ import { errorMessageOf, isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 
 export const useDeleteAccountMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
@@ -43,13 +44,13 @@ export const useDeleteAccountMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      notifySuccess();
+      haptics.notify('success');
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       analytics.resetData();
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
         toast.error(t('auth:toasts.passwordMismatch'));

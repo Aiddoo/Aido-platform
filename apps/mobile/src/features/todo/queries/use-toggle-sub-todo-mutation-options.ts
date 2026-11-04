@@ -1,7 +1,6 @@
-import { useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -22,6 +21,7 @@ interface ToggleSubTodoParams {
 }
 
 export const useToggleSubTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export const useToggleSubTodoMutationOptions = () => {
       });
     },
     onError: (_error, _variables, context) => {
-      notifyError();
+      haptics.notify('error');
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
       }

@@ -1,12 +1,11 @@
 import { INVITE_FRIENDSHIP } from '@aido/api';
-import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useInviteService } from '@src/bootstrap/providers/di-context';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
@@ -23,6 +22,7 @@ import { inviteWelcomeSheetHref, myInviteHref } from '../utils/navigation/invite
 import { invalidateAfterRedeem, storeRedemptionResult } from './invite-cache';
 
 export function useRedeemInviteMutationOptions() {
+  const haptics = useHaptics();
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const { toast, error: showError } = useAppToast();
@@ -40,7 +40,7 @@ export function useRedeemInviteMutationOptions() {
       });
       storeRedemptionResult(queryClient, result);
       await invalidateAfterRedeem(queryClient, { inviteCode }).catch(noop);
-      notifySuccess();
+      haptics.notify('success');
 
       // 이미 받은 초대를 다시 수락했으면 보상을 새로 받은 것처럼 환영 시트를 띄우지 않는다
       if (InviteRedemptionPolicy.isAlreadyAccepted(result)) {
@@ -77,7 +77,7 @@ export function useRedeemInviteMutationOptions() {
 
       const reason = toRedeemFailureReason(redeemError);
       trackEvent('invite_redeem_failed', { reason });
-      notifyError();
+      haptics.notify('error');
       showError(redeemError.message);
 
       if (isTerminalRedeemFailure(reason)) {

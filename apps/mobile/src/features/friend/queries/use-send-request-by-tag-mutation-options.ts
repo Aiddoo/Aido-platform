@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useFriendService } from '@src/bootstrap/providers/di-context';
+import { useFriendService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
 import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
 import { getCachedInviteAvailability } from '@src/features/invite/queries/invite-cache';
@@ -11,7 +11,6 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -25,6 +24,7 @@ function friendLimitOf(me: User | undefined) {
 }
 
 export const useSendRequestByTagMutationOptions = () => {
+  const haptics = useHaptics();
   const friendService = useFriendService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
@@ -58,7 +58,7 @@ export const useSendRequestByTagMutationOptions = () => {
       toast.success(t('friend:toast.requestSent'));
     },
     onError: (err) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(err) && err.hasCode(ErrorCode.FOLLOW_0909)) {
         premiumGate.open(

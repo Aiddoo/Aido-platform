@@ -1,16 +1,16 @@
 import type { UpdateProfileInput } from '@aido/api';
-import { useUserService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useUserService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/domains/user.model';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 
 export const useUpdateProfileMutationOptions = () => {
+  const haptics = useHaptics();
   const userService = useUserService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -54,7 +54,7 @@ export const useUpdateProfileMutationOptions = () => {
       });
     },
     onError: (error, _input, context) => {
-      notifyError();
+      haptics.notify('error');
       toast.error(error, { fallback: t('user:profile.updateFailed') });
 
       if (context?.previousData) {

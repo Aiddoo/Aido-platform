@@ -49,6 +49,7 @@ import { createWidgetNavigationRepository } from '@src/features/widget/apis/widg
 import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+import { DEVICE_MODEL_NAME } from '@src/shared/config/device';
 import { ENV } from '@src/shared/config/env';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
@@ -60,6 +61,7 @@ import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-i
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
+import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics.gateway';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
@@ -80,7 +82,9 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
+import { revenueCatPurchasesGateway } from '@src/shared/infra/purchases/revenuecat-purchases.gateway';
 import { rnSystemShareGateway } from '@src/shared/infra/share/rn-system-share.gateway';
+import { expoSpeechRecognizerGateway } from '@src/shared/infra/speech/expo-speech-recognizer.gateway';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
@@ -269,8 +273,21 @@ export function DIProvider({
     const userService = new UserService(authHttpClient);
 
     // Subscription
-    const revenueCatSdkManager = new RevenueCatSdkManager(logger, analytics);
-    const subscriptionService = new SubscriptionService(revenueCatSdkManager, logger);
+    const revenueCatSdkManager = new RevenueCatSdkManager({
+      purchases: revenueCatPurchasesGateway,
+      logger,
+      analytics,
+      subscriberAttributes: {
+        appVersion: installation?.currentVersion ?? null,
+        deviceModel: DEVICE_MODEL_NAME,
+      },
+      isDebugLogEnabled: __DEV__,
+    });
+    const subscriptionService = new SubscriptionService(
+      revenueCatSdkManager,
+      revenueCatPurchasesGateway,
+      logger,
+    );
 
     // Weather
     const weatherService = new WeatherService(authHttpClient);
@@ -285,6 +302,9 @@ export function DIProvider({
       logger,
       analytics,
       errorReporter,
+      haptics: expoHapticsGateway,
+      speechRecognizer: expoSpeechRecognizerGateway,
+      purchasesGateway: revenueCatPurchasesGateway,
       tokenStore,
       sessionManager,
       tokenRefresher,

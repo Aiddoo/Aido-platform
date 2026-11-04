@@ -1,6 +1,10 @@
 import type { CreateRecurringTodoInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
+import {
+  useActivationService,
+  useHaptics,
+  useTodoService,
+} from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -8,7 +12,6 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { invalidateTodos } from './todo-cache';
@@ -19,6 +22,7 @@ export interface CreateRecurringTodoParams {
 }
 
 export const useCreateRecurringTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const activationService = useActivationService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -48,7 +52,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
       }
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
         toast.error(t('todo:toast.recurringCategoryLimit'));

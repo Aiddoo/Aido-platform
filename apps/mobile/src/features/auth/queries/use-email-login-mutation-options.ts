@@ -1,17 +1,17 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 export const useEmailLoginMutationOptions = () => {
+  const haptics = useHaptics();
   const push = useSingleTap(router.push);
 
   const authService = useAuthService();
@@ -36,7 +36,7 @@ export const useEmailLoginMutationOptions = () => {
         return;
       }
 
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
         push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });

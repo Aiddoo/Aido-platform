@@ -1,5 +1,9 @@
 import type { ToggleTodoCompleteInput } from '@aido/api';
-import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
+import {
+  useActivationService,
+  useHaptics,
+  useTodoService,
+} from '@src/bootstrap/providers/di-context';
 import { invalidateWeeklyAchievements } from '@src/features/achievement/queries/achievement-cache';
 import { recordTodoCompletionForActivation } from '@src/features/activation/queries/activation-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
@@ -8,7 +12,6 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { toDate } from '@src/shared/utils/date';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_MUTATION_KEYS } from '../constants/todo-mutation-keys';
@@ -31,6 +34,7 @@ interface ToggleTodoMutationParams {
 }
 
 export const useToggleTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const activationService = useActivationService();
   const { trackEvent } = useTrack();
@@ -78,7 +82,7 @@ export const useToggleTodoMutationOptions = () => {
       }
     },
     onError: (_error, variables, context) => {
-      notifyError();
+      haptics.notify('error');
 
       const previousCompleted = context?.completed;
       // 완료 여부만 되돌려 같은 할 일의 서브투두 변경은 지키게 한다

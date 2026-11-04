@@ -1,5 +1,7 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 
+import { createHapticsStub } from './create-haptics-stub';
+
 /**
  * 테스트용 DI 컨테이너. 주입한 의존성만 노출하고,
  * 주입하지 않은 의존성에 접근하면 즉시 실패시켜 누락을 드러낸다.
@@ -17,6 +19,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
       record: jest.fn(),
       consume: jest.fn().mockReturnValue(null),
     },
+    // 햅틱은 꾸밈이라 저장·실패 흐름 테스트마다 넣지 않아도 되게 아무것도 하지 않는 stub을 둔다
+    haptics: createHapticsStub(),
   };
   const dependencies: Partial<DIContainer> = { ...defaults, ...overrides };
 
@@ -49,6 +53,15 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get errorReporter() {
       return dependency('errorReporter');
+    },
+    get haptics() {
+      return dependency('haptics');
+    },
+    get speechRecognizer() {
+      return dependency('speechRecognizer');
+    },
+    get purchasesGateway() {
+      return dependency('purchasesGateway');
     },
     get tokenStore() {
       return dependency('tokenStore');

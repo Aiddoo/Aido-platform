@@ -1,9 +1,8 @@
 import type { ReorderTodoInput } from '@aido/api';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -15,6 +14,7 @@ interface ReorderTodoParams {
 }
 
 export const useReorderTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -34,7 +34,7 @@ export const useReorderTodoMutationOptions = () => {
       }
     },
     onError: () => {
-      notifyError();
+      haptics.notify('error');
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },
   });

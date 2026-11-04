@@ -1,7 +1,6 @@
-import { useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -20,6 +19,7 @@ interface ReorderSubTodosParams {
 }
 
 export const useReorderSubTodosMutationOptions = () => {
+  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -45,7 +45,7 @@ export const useReorderSubTodosMutationOptions = () => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
     },
     onError: (_err, _vars, context) => {
-      notifyError();
+      haptics.notify('error');
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
       }

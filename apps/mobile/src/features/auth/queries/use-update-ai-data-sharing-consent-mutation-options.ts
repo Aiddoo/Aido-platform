@@ -1,11 +1,10 @@
 import { AI_DATA_SHARING_CONSENT, type UpdateAiDataSharingConsentInput } from '@aido/api';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
@@ -13,6 +12,7 @@ import type { Consent } from '../domains/auth.model';
 
 /** 앱이 보여 주는 안내는 하나뿐이라 답한 버전은 항상 현재 안내 버전이다 */
 export const useUpdateAiDataSharingConsentMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -52,7 +52,7 @@ export const useUpdateAiDataSharingConsentMutationOptions = () => {
     },
 
     onError: (error, _input, context) => {
-      notifyError();
+      haptics.notify('error');
       if (context?.previousData != null) {
         queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);
       }

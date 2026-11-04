@@ -1,4 +1,4 @@
-import { ImpactFeedbackStyle } from 'expo-haptics';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useEffect, useRef, useState } from 'react';
 import {
   type ReorderableListDragEndEvent,
@@ -7,7 +7,6 @@ import {
 } from 'react-native-reorderable-list';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { impactFeedback, selectionFeedback } from '../utils/haptics';
 import { getReorderInstruction, type ReorderInstruction } from '../utils/reorder-instruction';
 
 export interface ReorderedList<TItem, TId> {
@@ -34,6 +33,7 @@ export function useReorderableList<TItem, TId>({
   getItemId,
   onReorder,
 }: UseReorderableListParams<TItem, TId>) {
+  const haptics = useHaptics();
   const [data, setData] = useState(items);
   const isDraggingRef = useRef(false);
   const syncedAtRef = useRef(updatedAt);
@@ -55,7 +55,7 @@ export function useReorderableList<TItem, TId>({
 
   const handleDragStart = () => {
     isDraggingRef.current = true;
-    impactFeedback(ImpactFeedbackStyle.Medium);
+    haptics.impact('medium');
   };
 
   const handleDragEnd = ({ from, to }: ReorderableListDragEndEvent) => {
@@ -63,6 +63,10 @@ export function useReorderableList<TItem, TId>({
     if (from === to) {
       syncServerItems();
     }
+  };
+
+  const handleIndexChange = () => {
+    haptics.selection();
   };
 
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
@@ -86,7 +90,7 @@ export function useReorderableList<TItem, TId>({
     },
     onIndexChange: () => {
       'worklet';
-      scheduleOnRN(selectionFeedback);
+      scheduleOnRN(handleIndexChange);
     },
     onDragEnd: (event: ReorderableListDragEndEvent) => {
       'worklet';

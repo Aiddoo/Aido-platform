@@ -1,4 +1,4 @@
-import { useInviteService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useInviteService } from '@src/bootstrap/providers/di-context';
 import { useStoreReviewMoment } from '@src/features/store-review/hooks/use-store-review-moment';
 import {
   type PremiumAccess,
@@ -23,7 +23,6 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/format';
-import { notifySuccess } from '@src/shared/utils/haptics';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
@@ -79,6 +78,7 @@ const MIN_CONNECTOR_LENGTH = 12;
  * 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
  */
 export function InvitePawPrintBoard({ className, ...props }: ComponentProps<typeof VStack>) {
+  const haptics = useHaptics();
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
   const inviteService = useInviteService();
@@ -112,7 +112,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
 
     inviteService.markPawPrintsCelebrated(userId, myInvite.qualifiedCount);
     if (hasNewPawPrint) {
-      notifySuccess();
+      haptics.notify('success');
       // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
       requestReviewAt('paw_print_celebration');
     }

@@ -1,3 +1,4 @@
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -16,7 +17,6 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatRelativeTimeLabel } from '@src/shared/utils/date';
-import { notifySuccess } from '@src/shared/utils/haptics';
 import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
@@ -193,6 +193,7 @@ ThanksSummaryRow.Error = function ErrorState({ reset, onInquiry }: ThanksSummary
 };
 
 function useThanksCelebration(thankedRecipientCount: number) {
+  const haptics = useHaptics();
   const isReducedMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const previousCount = useRef(thankedRecipientCount);
@@ -203,7 +204,7 @@ function useThanksCelebration(thankedRecipientCount: number) {
       return;
     }
     previousCount.current = thankedRecipientCount;
-    notifySuccess();
+    haptics.notify('success');
     if (isReducedMotion) {
       return;
     }

@@ -5,10 +5,9 @@ import {
   useSubTodoScreenParams,
   useTodoSheetDateParam,
 } from '@src/features/todo/hooks/use-todo-sheet-params';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDictation } from '@src/features/voice/hooks/use-dictation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
-import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowUpIcon,
@@ -346,16 +345,10 @@ interface SpeechButtonProps {
 
 function SpeechButton({ onResult }: SpeechButtonProps) {
   const fontScaledSize = useFontScaledSize();
-  const toast = useAppToast();
-
-  const { isRecognizing, start, stop } = useSpeechRecognition({
-    onResult,
-    onEnd: () => {},
-    onError: toast.error,
-  });
+  const { isListening, start, stop } = useDictation({ onResult });
 
   const handlePress = () => {
-    if (isRecognizing) {
+    if (isListening) {
       stop();
       return;
     }
@@ -369,7 +362,7 @@ function SpeechButton({ onResult }: SpeechButtonProps) {
       style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
       className="items-center justify-center rounded-full bg-main/10"
     >
-      {isRecognizing ? (
+      {isListening ? (
         <PauseIcon
           width={fontScaledSize(20)}
           height={fontScaledSize(20)}

@@ -1,10 +1,13 @@
-import { useErrorReporter, useSubscriptionService } from '@src/bootstrap/providers/di-context';
+import {
+  useErrorReporter,
+  useHaptics,
+  useSubscriptionService,
+} from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -14,6 +17,7 @@ import { toSubscriptionActionFailure } from '../utils/view-models/subscription-f
 import { syncMeUntilStorePremium } from './subscription-cache';
 
 export const useRestoreMutationOptions = () => {
+  const haptics = useHaptics();
   const subscriptionService = useSubscriptionService();
   const errorReporter = useErrorReporter();
   const { trackEvent } = useTrack();
@@ -34,7 +38,7 @@ export const useRestoreMutationOptions = () => {
     onSuccess: ({ hasRestoredStorePurchase, isReflected }) => {
       if (hasRestoredStorePurchase) {
         trackEvent('subscription_restored');
-        notifySuccess();
+        haptics.notify('success');
         if (!isReflected) {
           toast.toast(t('subscription:toast.purchaseSyncPending'));
           return;
@@ -53,7 +57,7 @@ export const useRestoreMutationOptions = () => {
         .with({ type: 'cancelled' }, { type: 'paymentPending' }, () => undefined)
         // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
-          notifyError();
+          haptics.notify('error');
           errorReporter.captureMessage('subscription_restore_failed', {
             feature: 'subscription',
             severity: 'warning',

@@ -1,11 +1,10 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -25,6 +24,7 @@ interface AddSubTodoParams {
 }
 
 export const useAddSubTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -53,7 +53,7 @@ export const useAddSubTodoMutationOptions = () => {
       trackEvent('todo_item_added', { todo_id: todoId });
     },
     onError: (error, _variables, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0821)) {
         toast.error(error.message);

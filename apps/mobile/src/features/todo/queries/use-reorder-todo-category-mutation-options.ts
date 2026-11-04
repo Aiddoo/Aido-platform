@@ -1,9 +1,8 @@
 import type { ReorderTodoCategoryInput } from '@aido/api';
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
@@ -15,6 +14,7 @@ interface ReorderTodoCategoryParams {
 }
 
 export const useReorderTodoCategoryMutationOptions = () => {
+  const haptics = useHaptics();
   const todoCategoryService = useTodoCategoryService();
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -34,7 +34,7 @@ export const useReorderTodoCategoryMutationOptions = () => {
       }
     },
     onError: () => {
-      notifyError();
+      haptics.notify('error');
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
     },
   });

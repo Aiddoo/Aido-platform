@@ -1,10 +1,9 @@
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
@@ -13,6 +12,7 @@ import { isAuthError, isCancelledError } from '../domains/auth.error';
 import { type OAuthProviderSlug, toOAuthProvider } from '../domains/oauth.model';
 
 export const useLinkAccountMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -33,7 +33,7 @@ export const useLinkAccountMutationOptions = () => {
       trackEvent('auth_social_linked', { provider });
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isCancelledError(error)) {
         return;

@@ -1,6 +1,7 @@
 import { AI_PARSE_LIMITS } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { MemoTodoEditor } from '@src/features/memo/components/memo-todo-editor';
 import { memoReviewFormSchema } from '@src/features/memo/domains/memo-review-form.schema';
@@ -25,9 +26,7 @@ import {
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect, useState } from 'react';
 import { FormProvider, useFieldArray, useForm, useFormState } from 'react-hook-form';
@@ -38,6 +37,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 const FOCUSED_TITLE_GAP = 16;
 
 function AiReviewScreen() {
+  const haptics = useHaptics();
   const { t } = useTranslation('memo');
   const goBack = useSingleTap(router.back);
   const { memoId } = useMemoScreenParams();
@@ -65,7 +65,7 @@ function AiReviewScreen() {
   }, [parsedResult, goBack]);
 
   const handleRemoveTodo = (index: number) => {
-    impactFeedback(ImpactFeedbackStyle.Light);
+    haptics.impact('light');
     remove(index);
   };
 

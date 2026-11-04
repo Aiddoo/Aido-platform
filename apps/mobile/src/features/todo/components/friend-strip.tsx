@@ -1,5 +1,5 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import { useFriendStripHintService } from '@src/bootstrap/providers/di-context';
+import { useFriendStripHintService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/utils/view-models/friend-user.view-model';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
@@ -26,7 +26,6 @@ import {
 } from '@src/shared/ui';
 import { TEXT_SIZE_CLASSES } from '@src/shared/ui/text/text.variants';
 import { cn } from '@src/shared/utils/cn';
-import { selectionFeedback } from '@src/shared/utils/haptics';
 import {
   usePrefetchInfiniteQuery,
   useSuspenseInfiniteQuery,
@@ -164,11 +163,12 @@ FriendStrip.Item = memo(function Item({
   profileImage,
   width,
 }: FriendStripItemProps) {
+  const haptics = useHaptics();
   const { t } = useTranslation('todo');
   const [selectedFriendId, setSelectedFriendId] = useFeedFriendIdParam();
   const isSelected = selectedFriendId === friendId;
   const selectFriend = useSingleTap((nextFriendId: string | undefined) => {
-    selectionFeedback();
+    haptics.selection();
     setSelectedFriendId(nextFriendId);
   });
 

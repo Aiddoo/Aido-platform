@@ -1,9 +1,8 @@
-import { useInviteShareService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useInviteShareService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { InviteShareChannel, InviteShareContent } from '../domains/invite-share.model';
@@ -14,6 +13,7 @@ interface ShareInviteVariables {
 }
 
 export function useShareInviteMutationOptions() {
+  const haptics = useHaptics();
   const inviteShareService = useInviteShareService();
   const { success, error } = useAppToast();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -34,13 +34,13 @@ export function useShareInviteMutationOptions() {
       }
 
       if (outcome === 'copied') {
-        notifySuccess();
+        haptics.notify('success');
         success(t('invite:toast.linkCopied'));
       }
     },
     // 복사까지 실패하면 다시 시도하게만 알린다(공유는 화면 상태를 바꾸지 않는다)
     onError: () => {
-      notifyError();
+      haptics.notify('error');
       error(t('invite:toast.shareFailed'));
     },
   });

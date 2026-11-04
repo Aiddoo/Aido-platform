@@ -1,5 +1,10 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useActivationService, useAiService, useLogger } from '@src/bootstrap/providers/di-context';
+import {
+  useActivationService,
+  useAiService,
+  useHaptics,
+  useLogger,
+} from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
 import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
@@ -9,7 +14,6 @@ import { isApiError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { AI_LOG_EVENT } from '../constants/ai-log-events';
@@ -21,6 +25,7 @@ interface HandleSuggestionParams {
 }
 
 export const useHandleSuggestionMutationOptions = () => {
+  const haptics = useHaptics();
   const aiService = useAiService();
   const activationService = useActivationService();
   const { trackEvent } = useTrack();
@@ -50,7 +55,7 @@ export const useHandleSuggestionMutationOptions = () => {
       );
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1309)) {
         premiumGate.open({

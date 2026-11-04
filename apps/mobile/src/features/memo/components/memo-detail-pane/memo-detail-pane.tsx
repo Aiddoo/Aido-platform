@@ -1,5 +1,6 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
@@ -30,9 +31,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
-import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
@@ -96,6 +95,7 @@ MemoDetailPane.Empty = function Empty() {
 };
 
 function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
+  const haptics = useHaptics();
   const { showBoundary } = useErrorBoundary();
   const goBack = useSingleTap(router.back);
   const navigate = useSingleTap(router.navigate);
@@ -182,7 +182,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   };
 
   const handleTogglePin = () => {
-    impactFeedback(ImpactFeedbackStyle.Light);
+    haptics.impact('light');
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 

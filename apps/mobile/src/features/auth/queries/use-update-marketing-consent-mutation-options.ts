@@ -1,13 +1,13 @@
 import type { UpdateMarketingConsentInput } from '@aido/api';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
 import type { Consent } from '../domains/auth.model';
 
 export const useUpdateMarketingConsentMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const queryClient = useQueryClient();
 
@@ -48,7 +48,7 @@ export const useUpdateMarketingConsentMutationOptions = () => {
     },
 
     onError: (_error, _input, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (context?.previousData) {
         queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);

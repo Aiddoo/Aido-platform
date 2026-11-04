@@ -1,11 +1,14 @@
-import { useErrorReporter, useSubscriptionService } from '@src/bootstrap/providers/di-context';
+import {
+  useErrorReporter,
+  useHaptics,
+  useSubscriptionService,
+} from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -17,6 +20,7 @@ import { toSubscriptionActionFailure } from '../utils/view-models/subscription-f
 import { syncMeUntilStorePremium } from './subscription-cache';
 
 export const usePurchaseMutationOptions = () => {
+  const haptics = useHaptics();
   const subscriptionService = useSubscriptionService();
   const errorReporter = useErrorReporter();
   const { trackEvent } = useTrack();
@@ -37,7 +41,7 @@ export const usePurchaseMutationOptions = () => {
     },
     onSuccess: (isReflected, identifier, context) => {
       trackEvent('subscription_started', { product_id: identifier });
-      notifySuccess();
+      haptics.notify('success');
       if (!isReflected) {
         toast.toast(t('subscription:toast.purchaseSyncPending'));
         return;
@@ -57,7 +61,7 @@ export const usePurchaseMutationOptions = () => {
         )
         // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
         .with({ type: 'contactSupport' }, async (failure) => {
-          notifyError();
+          haptics.notify('error');
           const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.causeOf(error));
           if (reason != null) {
             trackEvent('purchase_failed', { reason });

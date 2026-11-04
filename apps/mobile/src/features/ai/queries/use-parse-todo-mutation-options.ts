@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { useAiService } from '@src/bootstrap/providers/di-context';
+import { useAiService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
 import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import { useTrack } from '@src/shared/analytics';
@@ -7,13 +7,13 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
 import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
 
 export const useParseTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const aiService = useAiService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
@@ -37,7 +37,7 @@ export const useParseTodoMutationOptions = () => {
       }
 
       trackEvent('ai_parse_used', { success: false });
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
         premiumGate.open({

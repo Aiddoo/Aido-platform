@@ -1,12 +1,11 @@
 import type { UpdateTodoInput } from '@aido/api';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { invalidateTodos } from './todo-cache';
@@ -17,6 +16,7 @@ interface UpdateTodoMutationParams {
 }
 
 export const useUpdateTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -35,7 +35,7 @@ export const useUpdateTodoMutationOptions = () => {
       trackEvent('todo_edited', { todo_id: variables.todoId, field });
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error)) {
         toast.error(error.message);

@@ -1,7 +1,6 @@
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { errorMessageOf } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -12,6 +11,7 @@ import {
 } from './notification-cache';
 
 export const useMarkAllAsReadMutationOptions = () => {
+  const haptics = useHaptics();
   const notificationService = useNotificationService();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -45,7 +45,7 @@ export const useMarkAllAsReadMutationOptions = () => {
         .catch((error) =>
           logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: errorMessageOf(error) }),
         );
-      notifyError();
+      haptics.notify('error');
     },
   });
 };

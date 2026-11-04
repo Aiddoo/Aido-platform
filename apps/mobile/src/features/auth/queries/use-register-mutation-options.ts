@@ -1,17 +1,17 @@
 import type { RegisterInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 export const useRegisterMutationOptions = () => {
+  const haptics = useHaptics();
   const replace = useSingleTap(router.replace);
 
   const authService = useAuthService();
@@ -27,7 +27,7 @@ export const useRegisterMutationOptions = () => {
       trackEvent('auth_signup', { method: 'email' });
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0501)) {
         toast.error(t('auth:toasts.alreadyRegistered'), {

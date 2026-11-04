@@ -1,5 +1,9 @@
 import type { ConvertMemoToTodosInput } from '@aido/api';
-import { useActivationService, useMemoService } from '@src/bootstrap/providers/di-context';
+import {
+  useActivationService,
+  useHaptics,
+  useMemoService,
+} from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
@@ -8,7 +12,6 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
@@ -20,6 +23,7 @@ interface ConvertMemoToTodosMutationParams {
 }
 
 export const useConvertMemoToTodosMutationOptions = () => {
+  const haptics = useHaptics();
   const service = useMemoService();
   const activationService = useActivationService();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
@@ -50,7 +54,7 @@ export const useConvertMemoToTodosMutationOptions = () => {
       }
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error)) {
         toast.error(error.message);

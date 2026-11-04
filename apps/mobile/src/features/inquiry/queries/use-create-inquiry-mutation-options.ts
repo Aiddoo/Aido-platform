@@ -1,14 +1,14 @@
 import type { CreateInquiryInput } from '@aido/api';
-import { useInquiryService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useInquiryService } from '@src/bootstrap/providers/di-context';
 import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 export const useCreateInquiryMutationOptions = () => {
+  const haptics = useHaptics();
   const goBack = useSingleTap(router.back);
 
   const inquiryService = useInquiryService();
@@ -21,7 +21,7 @@ export const useCreateInquiryMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      notifySuccess();
+      haptics.notify('success');
 
       toast.success(t('inquiry:toasts.submitted'));
 
@@ -32,7 +32,7 @@ export const useCreateInquiryMutationOptions = () => {
         return;
       }
 
-      notifyError();
+      haptics.notify('error');
 
       toast.error(error, { fallback: t('inquiry:toasts.submitFailed') });
     },

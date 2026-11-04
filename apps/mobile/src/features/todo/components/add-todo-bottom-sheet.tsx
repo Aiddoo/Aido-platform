@@ -8,11 +8,11 @@ import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import { usePremiumGate } from '@src/features/subscription/hooks/use-premium-gate';
 import type { Todo } from '@src/features/todo/domains/todo.model';
+import { useDictation } from '@src/features/voice/hooks/use-dictation';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -755,16 +755,15 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
     parseTitle(currentTitle.trim(), methods.getValues('categoryId'));
   };
 
-  const { isRecognizing, start, stop } = useSpeechRecognition({
+  const { isListening, start, stop } = useDictation({
     onResult: (text) => {
       methods.setValue('title', text);
     },
     onEnd: handleRecognitionEnd,
-    onError: toast.error,
   });
 
   const handlePress = async () => {
-    if (isRecognizing) {
+    if (isListening) {
       stop();
       return;
     }
@@ -794,7 +793,7 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
       style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
       className="items-center justify-center rounded-full bg-main/10"
     >
-      {isRecognizing ? (
+      {isListening ? (
         <PauseIcon
           width={fontScaledSize(20)}
           height={fontScaledSize(20)}

@@ -1,13 +1,13 @@
 import type { VerifyEmailInput } from '@aido/api';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 
 export const useVerifyEmailMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const { setStatus } = useAuth();
   const toast = useAppToast();
@@ -21,7 +21,7 @@ export const useVerifyEmailMutationOptions = () => {
       setStatus('authenticated');
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       toast.error(error, { fallback: t('auth:toasts.codeInvalid') });
     },

@@ -2,16 +2,17 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useAnalytics,
   useAuthService,
+  useHaptics,
   useLogger,
   usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, onlineManager } from '@tanstack/react-query';
 
 import { logOutDevice } from '../utils/log-out-device';
 
 export const useLogoutMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
@@ -31,7 +32,7 @@ export const useLogoutMutationOptions = () => {
         logger,
       }),
     onError: () => {
-      notifyError();
+      haptics.notify('error');
     },
     // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.
     onSettled: () => {

@@ -1,6 +1,6 @@
 import type { CreateTodoCategoryInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import type {
   OptimisticTodoCategoryWithCount,
   TodoCategoriesResult,
@@ -10,13 +10,13 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { createOptimisticId, invalidateTodos } from './todo-cache';
 
 export const useCreateTodoCategoryMutationOptions = () => {
+  const haptics = useHaptics();
   const todoCategoryService = useTodoCategoryService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -60,7 +60,7 @@ export const useCreateTodoCategoryMutationOptions = () => {
       trackEvent('category_created', { color: variables.color });
     },
     onError: (error, _variables, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (context?.previousData != null) {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);

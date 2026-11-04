@@ -1,12 +1,11 @@
 import type { UpdatePreferenceInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { usePreferenceService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, usePreferenceService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
@@ -18,6 +17,7 @@ type UpdatePreferenceArgs = UpdatePreferenceInput & {
 };
 
 export const useUpdatePreferenceMutationOptions = () => {
+  const haptics = useHaptics();
   const preferenceService = usePreferenceService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -57,7 +57,7 @@ export const useUpdatePreferenceMutationOptions = () => {
       queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
     },
     onError: (error, _input, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (context?.previousData) {
         queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), context.previousData);

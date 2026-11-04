@@ -1,11 +1,10 @@
 import type { UpdateTodoScheduleInput } from '@aido/api';
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { invalidateTodos } from './todo-cache';
@@ -16,6 +15,7 @@ export interface UpdateTodoScheduleMutationParams {
 }
 
 export const useUpdateTodoScheduleMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -31,7 +31,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
       toast.success(t('todo:toast.scheduleChanged'));
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error)) {
         toast.error(error.message);

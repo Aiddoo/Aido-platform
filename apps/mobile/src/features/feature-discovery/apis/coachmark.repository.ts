@@ -1,7 +1,13 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { match } from 'ts-pattern';
 
-export type CoachmarkKind = 'todo-reorder' | 'category-reorder' | 'comment-double-tap';
+export type CoachmarkKind =
+  | 'todo-reorder'
+  | 'category-reorder'
+  | 'comment-double-tap'
+  | 'voice-quick-start'
+  | 'voice-note-start'
+  | 'voice-key-point';
 
 export interface CoachmarkInput {
   accountId: string;
@@ -21,7 +27,13 @@ export function coachmarkStorageKey({ accountId, kind }: CoachmarkInput): string
   return match(kind)
     .with('todo-reorder', () => `${LEGACY_REORDER_KEY_PREFIX}:${accountId}:todo`)
     .with('category-reorder', () => `${LEGACY_REORDER_KEY_PREFIX}:${accountId}:category`)
-    .with('comment-double-tap', () => `${KEY_PREFIX}:${accountId}:${kind}`)
+    .with(
+      'comment-double-tap',
+      'voice-quick-start',
+      'voice-note-start',
+      'voice-key-point',
+      () => `${KEY_PREFIX}:${accountId}:${kind}`,
+    )
     .exhaustive();
 }
 

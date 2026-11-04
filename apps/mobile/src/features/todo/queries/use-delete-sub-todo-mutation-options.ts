@@ -1,9 +1,8 @@
-import { useSubTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -22,6 +21,7 @@ interface DeleteSubTodoParams {
 }
 
 export const useDeleteSubTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const subTodoService = useSubTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -45,7 +45,7 @@ export const useDeleteSubTodoMutationOptions = () => {
       trackEvent('todo_item_deleted', { todo_id: todoId, item_id: subTodoId });
     },
     onError: (_error, _variables, context) => {
-      notifyError();
+      haptics.notify('error');
       toast.error(undefined, { fallback: t('todo:toast.subTodoDeleteFailed') });
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);

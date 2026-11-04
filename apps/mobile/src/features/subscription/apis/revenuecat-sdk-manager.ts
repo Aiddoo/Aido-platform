@@ -1,11 +1,23 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
+import type { PurchasesGateway } from '@src/core/ports/purchases';
 import { errorMessageOf } from '@src/shared/errors';
-import * as Application from 'expo-application';
-import * as Device from 'expo-device';
-import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
+
+/** 운영 알림에서 구독 이벤트의 기기·앱 버전을 보도록 붙이는 값. 개인 정보가 아니다 */
+export interface SubscriberAttributes {
+  appVersion: string | null;
+  deviceModel: string | null;
+}
+
+interface RevenueCatSdkManagerDependencies {
+  purchases: PurchasesGateway;
+  logger: Logger;
+  analytics: Analytics;
+  subscriberAttributes: SubscriberAttributes;
+  isDebugLogEnabled: boolean;
+}
 
 /**
  * RevenueCat SDK 라이프사이클 관리
@@ -14,13 +26,25 @@ import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
  * RevenueCatProvider에서만 사용한다.
  */
 export class RevenueCatSdkManager {
+  readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;
   readonly #analytics: Analytics;
+  readonly #subscriberAttributes: SubscriberAttributes;
+  readonly #isDebugLogEnabled: boolean;
   #configured = false;
 
-  constructor(logger: Logger, analytics: Analytics) {
+  constructor({
+    purchases,
+    logger,
+    analytics,
+    subscriberAttributes,
+    isDebugLogEnabled,
+  }: RevenueCatSdkManagerDependencies) {
+    this.#purchases = purchases;
     this.#logger = logger;
     this.#analytics = analytics;
+    this.#subscriberAttributes = subscriberAttributes;
+    this.#isDebugLogEnabled = isDebugLogEnabled;
   }
 
   configure = (apiKey: string): void => {
@@ -30,10 +54,7 @@ export class RevenueCatSdkManager {
     }
 
     try {
-      if (__DEV__) {
-        Purchases.setLogLevel(LOG_LEVEL.WARN);
-      }
-      Purchases.configure({ apiKey });
+      this.#purchases.configure(apiKey, { isDebugLogEnabled: this.#isDebugLogEnabled });
       this.#configured = true;
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_FAILED, {
@@ -52,7 +73,7 @@ export class RevenueCatSdkManager {
     }
 
     try {
-      await Purchases.logIn(userId);
+      await this.#purchases.logIn(userId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGIN_FAILED, {
         error: errorMessageOf(error),
@@ -69,12 +90,12 @@ export class RevenueCatSdkManager {
     }
 
     try {
-      const isAnonymous = await Purchases.isAnonymous();
+      const isAnonymous = await this.#purchases.isAnonymous();
       if (isAnonymous) {
         return;
       }
 
-      await Purchases.logOut();
+      await this.#purchases.logOut();
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGOUT_FAILED, {
         error: errorMessageOf(error),
@@ -86,13 +107,10 @@ export class RevenueCatSdkManager {
     return this.#configured;
   };
 
-  // 운영 알림에서 구독 이벤트의 기기·앱 버전을 보도록 붙인다. 개인 정보가 아니며 바뀐 사용자에게도 다시 설정한다.
+  // 바뀐 사용자에게도 다시 설정한다
   #syncSubscriberAttributes = async (): Promise<void> => {
     try {
-      await Purchases.setAttributes({
-        appVersion: Application.nativeApplicationVersion,
-        deviceModel: Device.modelName,
-      });
+      await this.#purchases.setAttributes({ ...this.#subscriberAttributes });
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED, {
         error: errorMessageOf(error),
@@ -108,7 +126,7 @@ export class RevenueCatSdkManager {
         return;
       }
 
-      await Purchases.setFirebaseAppInstanceID(appInstanceId);
+      await this.#purchases.setFirebaseAppInstanceId(appInstanceId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED, {
         error: errorMessageOf(error),

@@ -1,16 +1,16 @@
 import type { ResetPasswordInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
-import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 export const useResetPasswordMutationOptions = () => {
+  const haptics = useHaptics();
   const replace = useSingleTap(router.replace);
 
   const authService = useAuthService();
@@ -22,12 +22,12 @@ export const useResetPasswordMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      notifySuccess();
+      haptics.notify('success');
       toast.success(t('auth:toasts.passwordResetDone'));
       replace('/(auth)/email-login');
     },
     onError: (error) => {
-      notifyError();
+      haptics.notify('error');
 
       if (isApiError(error)) {
         if (error.hasCode(ErrorCode.VERIFY_0751)) {

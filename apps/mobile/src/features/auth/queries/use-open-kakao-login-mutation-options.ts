@@ -1,9 +1,9 @@
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { useAuthService, useHaptics } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 
 export const useOpenKakaoLoginMutationOptions = () => {
+  const haptics = useHaptics();
   const authService = useAuthService();
 
   return mutationOptions({
@@ -12,7 +12,7 @@ export const useOpenKakaoLoginMutationOptions = () => {
       return unwrap(result);
     },
     onError: () => {
-      notifyError();
+      haptics.notify('error');
     },
   });
 };

@@ -16,6 +16,7 @@ import { useUpdateMemoMutationOptions } from './use-update-memo-mutation-options
 let mockMemoService: MemoService;
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
+  useHaptics: () => ({ selection: jest.fn(), impact: jest.fn(), notify: jest.fn() }),
   useMemoService: () => mockMemoService,
 }));
 jest.mock('@src/shared/analytics', () => ({ useTrack: () => ({ trackEvent: jest.fn() }) }));

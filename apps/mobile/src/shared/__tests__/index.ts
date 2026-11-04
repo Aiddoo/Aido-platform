@@ -1,3 +1,4 @@
+export { createHapticsStub } from './create-haptics-stub';
 export { createMockAnalytics } from './create-mock-analytics';
 export { createMockDIContainer } from './create-mock-di-container';
 export { createMockHttpClient } from './create-mock-http-client';
@@ -6,5 +7,7 @@ export { createMockSyncStorage } from './create-mock-sync-storage';
 export { createMockTokenStore } from './create-mock-token-store';
 export { createPendingResponse } from './create-pending-response';
 export { createMemorySyncStorage } from './create-memory-sync-storage';
+export { createPurchasesGatewayStub } from './create-purchases-gateway-stub';
+export { createSpeechRecognizerStub } from './create-speech-recognizer-stub';
 export { mockWindowDimensions } from './mock-window-dimensions';
 export { runKyAfterResponseHook } from './run-ky-after-response-hook';

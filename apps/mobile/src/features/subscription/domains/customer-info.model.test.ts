@@ -1,12 +1,18 @@
-import { CustomerInfoPolicy } from './customer-info.model';
+import { type CustomerInfo, CustomerInfoPolicy } from './customer-info.model';
+
+const createCustomerInfo = (
+  activeEntitlements: CustomerInfo['activeEntitlements'] = [],
+): CustomerInfo => ({ activeEntitlements });
 
 describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
   it('스토어에서 결제한 엔타이틀먼트가 있으면 true를 반환한다', () => {
     // Given
-    const entitlements = { active: { premium: { store: 'APP_STORE' as const } } };
+    const customerInfo = createCustomerInfo([
+      { store: 'APP_STORE', productIdentifier: 'premium_monthly' },
+    ]);
 
     // When
-    const result = CustomerInfoPolicy.hasStoreEntitlement(entitlements);
+    const result = CustomerInfoPolicy.hasStoreEntitlement(customerInfo);
 
     // Then
     expect(result).toBe(true);
@@ -14,10 +20,12 @@ describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
 
   it('보상으로 받은 엔타이틀먼트만 있으면 복원할 구매가 없다고 본다', () => {
     // Given
-    const entitlements = { active: { premium: { store: 'PROMOTIONAL' as const } } };
+    const customerInfo = createCustomerInfo([
+      { store: 'PROMOTIONAL', productIdentifier: 'rc_promo_premium' },
+    ]);
 
     // When
-    const result = CustomerInfoPolicy.hasStoreEntitlement(entitlements);
+    const result = CustomerInfoPolicy.hasStoreEntitlement(customerInfo);
 
     // Then
     expect(result).toBe(false);
@@ -25,7 +33,7 @@ describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
 
   it('활성 엔타이틀먼트가 없으면 false를 반환한다', () => {
     // When
-    const result = CustomerInfoPolicy.hasStoreEntitlement({ active: {} });
+    const result = CustomerInfoPolicy.hasStoreEntitlement(createCustomerInfo());
 
     // Then
     expect(result).toBe(false);
@@ -34,16 +42,19 @@ describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
 
 describe('CustomerInfoPolicy.findStoreProductId', () => {
   it('그 스토어에서 결제한 활성 구독의 상품 id를 찾고, 없으면 null이다', () => {
-    const entitlements = {
-      active: {
-        promo: { store: 'PROMOTIONAL' as const, productIdentifier: 'rc_promo_premium' },
-        premium: { store: 'PLAY_STORE' as const, productIdentifier: 'premium_monthly' },
-      },
-    };
+    // Given
+    const customerInfo = createCustomerInfo([
+      { store: 'PROMOTIONAL', productIdentifier: 'rc_promo_premium' },
+      { store: 'PLAY_STORE', productIdentifier: 'premium_monthly' },
+    ]);
 
-    expect(CustomerInfoPolicy.findStoreProductId(entitlements, 'PLAY_STORE')).toBe(
-      'premium_monthly',
-    );
-    expect(CustomerInfoPolicy.findStoreProductId(entitlements, 'APP_STORE')).toBeNull();
+    // When
+    const productIds = [
+      CustomerInfoPolicy.findStoreProductId(customerInfo, 'PLAY_STORE'),
+      CustomerInfoPolicy.findStoreProductId(customerInfo, 'APP_STORE'),
+    ];
+
+    // Then
+    expect(productIds).toEqual(['premium_monthly', null]);
   });
 });

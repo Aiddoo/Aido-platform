@@ -1,4 +1,4 @@
-import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoService } from '@src/bootstrap/providers/di-context';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { useTrack } from '@src/shared/analytics';
@@ -6,7 +6,6 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
-import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
@@ -18,6 +17,7 @@ interface DeleteTodoMutationParams {
 }
 
 export const useDeleteTodoMutationOptions = () => {
+  const haptics = useHaptics();
   const todoService = useTodoService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -40,7 +40,7 @@ export const useDeleteTodoMutationOptions = () => {
       trackEvent('todo_deleted', { todo_id: todoId });
     },
     onError: (error, _variables, context) => {
-      notifyError();
+      haptics.notify('error');
 
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
