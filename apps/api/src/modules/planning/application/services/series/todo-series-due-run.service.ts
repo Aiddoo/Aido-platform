@@ -54,7 +54,7 @@ export class TodoSeriesDueRun {
     if (materialized == null || materialized.occurrences.length === 0) {
       return 0;
     }
-    // 회차는 이미 커밋됐다. 알림·캐시가 실패하면 호출자가 이 규칙만 실패로 센다.
+    // 회차와 리마인더는 이미 커밋됐다. 캐시·이벤트가 실패하면 호출자가 이 규칙만 실패로 센다.
     await effects.publishOccurrences(materialized.series, materialized.occurrences);
     return materialized.occurrences.length;
   }

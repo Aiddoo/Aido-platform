@@ -84,77 +84,68 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
   });
 
   it("재스케줄 전 기존 작업 취소 실패를 호출자에게 전파한다", async () => {
-    // Given - non-null 일정으로 재스케줄링 중 첫 기존 작업 취소 실패
+    // Given
     const infrastructureError = new Error("postgres unavailable");
     vi.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
-
-    // When & Then - fire-and-forget으로 삼키지 않고 문맥과 원인을 보존
-    await expect(
-      adapter.scheduleReminder(42, new Date(Date.now() + 2 * HOUR_MS), USER_ID),
-    ).rejects.toMatchObject({
-      message: "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
+    // When
+    const scheduling = adapter.scheduleReminder(42, new Date(Date.now() + 2 * HOUR_MS), USER_ID);
+    // Then
+    await expect(scheduling).rejects.toMatchObject({
+      message: "Reminder cancellation failed: todoCount=1, runtime=job-runtime",
       cause: infrastructureError,
     });
     expect(runtime.enqueueCalls).toHaveLength(0);
   });
 
   it("새 리마인더 enqueue 실패를 호출자에게 전파한다", async () => {
-    // Given - 기존 작업 취소 후 새 작업 등록 실패
+    // Given
     const infrastructureError = new Error("queue unavailable");
-    vi.spyOn(runtime, "enqueue").mockRejectedValueOnce(infrastructureError);
-
-    // When & Then - schedule 실패를 관찰 가능한 rejection으로 보존
-    await expect(
-      adapter.scheduleReminder(42, new Date(Date.now() + 2 * HOUR_MS), USER_ID),
-    ).rejects.toBe(infrastructureError);
+    vi.spyOn(runtime, "enqueueMany").mockRejectedValueOnce(infrastructureError);
+    // When
+    const scheduling = adapter.scheduleReminder(42, new Date(Date.now() + 2 * HOUR_MS), USER_ID);
+    // Then
+    await expect(scheduling).rejects.toBe(infrastructureError);
   });
 
-  it("취소는 모든 단계의 결정적 키를 제거한다", async () => {
-    await expect(adapter.cancelReminder(42)).resolves.toEqual({
-      status: "cancelled",
-    });
-
-    expect(runtime.cancelCalls).toEqual(
-      [...REMINDER_STAGES.map(({ label }) => label), REMINDER_IMMEDIATE_LABEL].map((label) => ({
-        queue: TODO_REMINDER_QUEUE,
-        idempotencyKey: `reminder_42_${label}`,
-      })),
+  it("같은 할 일을 다시 예약하면 새 시각의 작업이 기록된다", async () => {
+    // Given
+    await adapter.scheduleReminder(42, new Date(Date.now() + 2 * HOUR_MS), USER_ID);
+    runtime.enqueueCalls.length = 0;
+    const moved = Date.now() + 5 * HOUR_MS;
+    // When
+    await adapter.scheduleReminder(42, new Date(moved), USER_ID);
+    // Then
+    expect(runtime.enqueueCalls).toHaveLength(REMINDER_STAGES.length);
+    expect(runtime.enqueueCalls[0]?.options.startAfter?.getTime()).toBeGreaterThan(
+      moved - 2 * HOUR_MS,
     );
   });
 
-  it("모든 단계 작업이 없으면 missing을 반환한다", async () => {
-    // Given - 모든 stage job이 이미 없음
-    vi.spyOn(runtime, "cancel").mockResolvedValue({ status: "missing" });
-
-    // When & Then - missing을 정상 결과로 보존
-    await expect(adapter.cancelReminder(42)).resolves.toEqual({
-      status: "missing",
-    });
+  it("취소는 여러 할 일의 모든 단계 키를 한 번에 지운다", async () => {
+    // Given
+    const cancel = vi.spyOn(runtime, "cancel");
+    // When
+    await adapter.cancelReminders([42, 43]);
+    // Then
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(runtime.cancelCalls.map(({ idempotencyKey }) => idempotencyKey)).toEqual(
+      [42, 43].flatMap((todoId) =>
+        [...REMINDER_STAGES.map(({ label }) => label), REMINDER_IMMEDIATE_LABEL].map(
+          (label) => `reminder_${todoId}_${label}`,
+        ),
+      ),
+    );
   });
 
-  it("일부 단계만 취소돼도 cancelled를 반환한다", async () => {
-    // Given - 첫 stage만 존재하고 나머지는 없음
-    vi.spyOn(runtime, "cancel")
-      .mockResolvedValue({ status: "missing" })
-      .mockResolvedValueOnce({ status: "cancelled" });
-
-    // When & Then - 하나라도 제거되면 cancelled
-    await expect(adapter.cancelReminder(42)).resolves.toEqual({
-      status: "cancelled",
-    });
-  });
-
-  it("인프라 오류는 todoId·stage·runtime 문맥과 cause를 보존해 reject한다", async () => {
-    // Given - 첫 stage 취소 중 Redis/PostgreSQL runtime 실패
+  it("취소 인프라 오류는 todoCount·runtime 문맥과 cause를 보존해 reject한다", async () => {
+    // Given
     const infrastructureError = new Error("runtime unavailable");
     vi.spyOn(runtime, "cancel").mockRejectedValueOnce(infrastructureError);
-
     // When
-    const cancellation = adapter.cancelReminder(42);
-
-    // Then - missing으로 변환하지 않고 안정적인 문맥과 원인을 보존
+    const cancellation = adapter.cancelReminders([42]);
+    // Then
     await expect(cancellation).rejects.toMatchObject({
-      message: "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime",
+      message: "Reminder cancellation failed: todoCount=1, runtime=job-runtime",
       cause: infrastructureError,
     });
   });

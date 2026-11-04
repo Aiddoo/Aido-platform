@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { mock } from "vitest-mock-extended";
 
+import type { TodoReminderPort } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
 import { TodoOccurrenceMaterializer } from "#api/modules/planning/application/services/series/todo-occurrence-materializer.service";
 import { TodoSeriesDueRun } from "#api/modules/planning/application/services/series/todo-series-due-run.service";
 import type { TodoCreationEffects } from "#api/modules/planning/application/services/todos/todo-creation-effects.service";
@@ -68,7 +69,13 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     return { userId: user.id, categoryId: category.id };
   }
 
-  function useCase(overrides: { batchSize?: number } = {}) {
+  function useCase(
+    overrides: {
+      batchSize?: number;
+      scheduleReminders?: TodoReminderPort["scheduleReminders"];
+    } = {},
+  ) {
+    const { scheduleReminders = async () => undefined, ...budget } = overrides;
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
     const effects = mock<Pick<TodoCreationEffects, "publishOccurrences">>();
     effects.publishOccurrences.mockImplementation(async (series, occurrences) => {
@@ -82,14 +89,17 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       seriesRepository,
       dueRun: new TodoSeriesDueRun({
         seriesRepository,
-        materializer: new TodoOccurrenceMaterializer({ todoRepository }),
+        materializer: new TodoOccurrenceMaterializer({
+          todoRepository,
+          todoReminder: { scheduleReminders },
+        }),
         effects,
         unitOfWork: fixture.uow,
         mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
       }),
       alert: mock<OperationalAlertPort>(),
       logger: new Logger("SeriesJobIntegration"),
-      ...overrides,
+      ...budget,
     });
   }
 
@@ -137,6 +147,30 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     expect(await countOccurrences(id)).toBe(HORIZON_ROWS);
     expect(await nextOccurrenceOf(id)).toBe("2027-02-04");
     expect(await client.$count(todoSeries, eq(todoSeries.generatedCount, HORIZON_ROWS))).toBe(1);
+  });
+
+  it("리마인더 등록이 실패하면 회차와 커서가 함께 되돌아가 다음 실행이 다시 만든다", async () => {
+    // Given
+    const id = createEntityId();
+    await seedSeries(id);
+    const scheduled: number[] = [];
+    // When
+    const failed = await useCase({
+      scheduleReminders: async () => {
+        throw new Error("queue unavailable");
+      },
+    }).execute();
+    const retried = await useCase({
+      scheduleReminders: async (reminders) => {
+        scheduled.push(...reminders.map(({ todoId }) => todoId));
+      },
+    }).execute();
+    // Then
+    expect(failed.failedCount).toBe(1);
+    expect(failed.createdCount).toBe(0);
+    expect(retried.createdCount).toBe(HORIZON_ROWS);
+    expect(scheduled).toHaveLength(HORIZON_ROWS);
+    expect(await countOccurrences(id)).toBe(HORIZON_ROWS);
   });
 
   it("다음 날 실행은 하루 치만 더 만든다", async () => {

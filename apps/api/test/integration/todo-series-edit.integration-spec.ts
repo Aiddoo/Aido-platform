@@ -552,6 +552,41 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       expect(response.id).toBe(todos[0]?.id);
     });
 
+    it("첫 회차가 옮겨지면 옛 시각의 예약을 지우고 새 날짜로 다시 잡는다", async () => {
+      // Given
+      const { todos } = await context.module.get(CreateTodo).execute({
+        userId,
+        categoryId,
+        title: "전환",
+        startDate: AT,
+        scheduledTime: "09:00",
+        timezone: "UTC",
+      });
+      const todoId = todos[0]?.id ?? 0;
+      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
+      runtime.clear();
+      // When
+      await context.module.get(StartSeriesFromTodo).execute({
+        todoId,
+        userId,
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: ["FRI"],
+          end: { type: "COUNT", count: 1 },
+        },
+        timezone: "UTC",
+      });
+      // Then
+      expect(runtime.cancelCalls.map((call) => call.idempotencyKey)).toContain(
+        `reminder_${todoId}_60min`,
+      );
+      const job = runtime.enqueueCalls.find(
+        (call) => call.options.idempotencyKey === `reminder_${todoId}_60min`,
+      );
+      expect(job?.options.startAfter?.toISOString()).toBe("2026-11-06T08:00:00.000Z");
+    });
+
     it("이미 반복인 회차에 범위 없이 규칙을 주면 TODO_0845다", async () => {
       // Given
       const { todos } = await start();

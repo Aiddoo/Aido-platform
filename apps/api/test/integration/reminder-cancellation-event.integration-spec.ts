@@ -14,10 +14,7 @@ import { TodoDeletedHandler } from "#api/modules/planning/infrastructure/subscri
 import { TodoRescheduledHandler } from "#api/modules/planning/infrastructure/subscribers/todos/todo-rescheduled.handler";
 import { EventEmitterDomainEventPublisher } from "#api/platform/events/event-emitter-domain-event.publisher";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
-import {
-  JOB_RUNTIME,
-  type JobCancellationResult,
-} from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 
 import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { suppressLogger } from "../setup/suppress-logger.js";
@@ -26,9 +23,7 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
   let module: TestingModule;
   let publisher: DomainEventPublisherPort;
   let runtime: FakeJobRuntime;
-  let cancel: MockInstance<
-    (queue: string, idempotencyKey: string) => Promise<JobCancellationResult>
-  >;
+  let cancel: MockInstance<(queue: string, idempotencyKeys: readonly string[]) => Promise<void>>;
 
   beforeAll(async () => {
     runtime = new FakeJobRuntime();
@@ -57,7 +52,7 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
     cancel = vi.spyOn(runtime, "cancel");
     runtime.clear();
     cancel.mockReset();
-    cancel.mockResolvedValue({ status: "cancelled" });
+    cancel.mockResolvedValue(undefined);
   });
 
   afterAll(async () => {
@@ -75,7 +70,10 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
 
     // Then - async 실패를 기다려 한 번 기록하되 caller는 실패시키지 않음
     await expect(publication).resolves.toBeUndefined();
-    expect(cancel).toHaveBeenCalledWith(TODO_REMINDER_QUEUE, "reminder_42_60min");
+    expect(cancel).toHaveBeenCalledWith(
+      TODO_REMINDER_QUEUE,
+      expect.arrayContaining(["reminder_42_60min"]),
+    );
     expect(errorLogger).toHaveBeenCalledTimes(1);
     expect(errorLogger).toHaveBeenCalledWith({
       event: "events.domain-event.publish.failed",
@@ -97,7 +95,10 @@ describe("리마인더 취소 이벤트 경계 통합 테스트 (Fake runtime)",
 
     // Then - HTTP/post-commit 성공을 유지하면서 실패를 한 번 관측
     await expect(publication).resolves.toBeUndefined();
-    expect(cancel).toHaveBeenCalledWith(TODO_REMINDER_QUEUE, "reminder_42_60min");
+    expect(cancel).toHaveBeenCalledWith(
+      TODO_REMINDER_QUEUE,
+      expect.arrayContaining(["reminder_42_60min"]),
+    );
     expect(runtime.enqueueCalls).toHaveLength(0);
     expect(errorLogger).toHaveBeenCalledTimes(1);
     expect(errorLogger).toHaveBeenCalledWith({

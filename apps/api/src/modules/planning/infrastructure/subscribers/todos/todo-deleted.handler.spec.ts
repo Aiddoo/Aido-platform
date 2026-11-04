@@ -21,8 +21,7 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
     todoReminder = {
       scheduleReminder: vi.fn(),
       scheduleReminders: vi.fn(),
-      cancelReminders: vi.fn(),
-      cancelReminder: vi.fn().mockResolvedValue({ status: "cancelled" }),
+      cancelReminders: vi.fn().mockResolvedValue(undefined),
     };
 
     const { unit } = await TestBed.solitary(TodoDeletedHandler)
@@ -38,17 +37,7 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
     await handler.handle(new TodoDeletedEvent(1, "user-123"));
 
     // Then
-    expect(todoReminder.cancelReminder).toHaveBeenCalledWith(1);
-  });
-
-  it("취소할 작업이 이미 없으면 missing을 정상 처리한다", async () => {
-    // Given - 잡이 이미 처리됨
-    vi.mocked(todoReminder.cancelReminder).mockResolvedValue({
-      status: "missing",
-    });
-
-    // When & Then - 명시적 missing만 정상 처리
-    await expect(handler.handle(new TodoDeletedEvent(1, "user-123"))).resolves.toBeUndefined();
+    expect(todoReminder.cancelReminders).toHaveBeenCalledWith([1]);
   });
 
   it("리마인더 인프라 실패를 전파한다", async () => {
@@ -56,9 +45,9 @@ describe("TodoDeletedHandler — 삭제 이벤트 핸들러", () => {
     const error = new Error("scheduler down");
     const rejected = Promise.reject(error);
     void rejected.catch(() => undefined);
-    vi.mocked(todoReminder.cancelReminder).mockReturnValue(rejected);
+    vi.mocked(todoReminder.cancelReminders).mockReturnValue(rejected);
 
-    // When & Then - 성공/missing으로 삼키지 않음
+    // When & Then - 성공으로 삼키지 않음
     await expect(handler.handle(new TodoDeletedEvent(1, "user-123"))).rejects.toBe(error);
   });
 });

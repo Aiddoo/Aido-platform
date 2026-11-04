@@ -1,7 +1,6 @@
 import type {
   EnqueueJobOptions,
   EnqueueJobRequest,
-  JobCancellationResult,
   JobData,
   JobEnvelope,
   JobRuntimeHealth,
@@ -29,6 +28,8 @@ export class FakeJobRuntime implements JobRuntimePort {
   readonly cancelCalls: Array<{ queue: string; idempotencyKey: string }> = [];
   readonly workCalls: Array<{ queue: string; options: WorkJobOptions }> = [];
   private readonly handlers = new Map<string, StoredHandler>();
+  /** 실제 런타임처럼 지우기 전에는 같은 key를 다시 받지 않는다. */
+  private readonly storedKeys = new Set<string>();
   private sequence = 0;
 
   async start(): Promise<void> {}
@@ -39,7 +40,14 @@ export class FakeJobRuntime implements JobRuntimePort {
     queue: string,
     data: T,
     options: EnqueueJobOptions,
-  ): Promise<string> {
+  ): Promise<string | null> {
+    const storedKey = options.idempotencyKey == null ? null : `${queue}:${options.idempotencyKey}`;
+    if (storedKey != null) {
+      if (this.storedKeys.has(storedKey)) {
+        return null;
+      }
+      this.storedKeys.add(storedKey);
+    }
     this.enqueueCalls.push({ queue, data, options });
     this.sequence += 1;
     return `fake-job-${this.sequence}`;
@@ -68,9 +76,11 @@ export class FakeJobRuntime implements JobRuntimePort {
     this.unscheduleCalls.push({ scheduleKey, queue });
   }
 
-  async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
-    this.cancelCalls.push({ queue, idempotencyKey });
-    return { status: "cancelled" };
+  async cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void> {
+    for (const idempotencyKey of idempotencyKeys) {
+      this.storedKeys.delete(`${queue}:${idempotencyKey}`);
+      this.cancelCalls.push({ queue, idempotencyKey });
+    }
   }
 
   async work(
@@ -122,6 +132,7 @@ export class FakeJobRuntime implements JobRuntimePort {
     this.unscheduleCalls.length = 0;
     this.cancelCalls.length = 0;
     this.workCalls.length = 0;
+    this.storedKeys.clear();
     this.sequence = 0;
   }
 }

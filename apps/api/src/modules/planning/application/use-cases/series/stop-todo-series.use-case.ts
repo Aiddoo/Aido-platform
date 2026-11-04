@@ -12,6 +12,7 @@ import { ApplicationException } from "#api/shared/domain/index";
 
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
+import type { TodoReminderPort } from "../../ports/todos/todo-reminder.port.js";
 import type { TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import type { TodoSeriesEditEffects } from "../../services/series/todo-series-edit-effects.service.js";
 
@@ -23,6 +24,7 @@ export interface StopTodoSeriesInput {
 interface StopTodoSeriesDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "deleteOccurrences">;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update">;
+  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
   readonly effects: Pick<TodoSeriesEditEffects, "publish">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -39,7 +41,8 @@ export class StopTodoSeries {
 
   async execute(input: StopTodoSeriesInput): Promise<void> {
     const { todoId, userId } = input;
-    const { todoRepository, seriesRepository, unitOfWork, mutationLock } = this.#dependencies;
+    const { todoRepository, seriesRepository, todoReminder, unitOfWork, mutationLock } =
+      this.#dependencies;
     const stopped = await unitOfWork.run(async () => {
       // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
       await mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
@@ -64,25 +67,24 @@ export class StopTodoSeries {
         throw new ApplicationException(ErrorCode.TODO_0846, { seriesId });
       }
       await seriesRepository.update(series);
-      const cancelledTodoIds = await todoRepository.deleteOccurrences(seriesId, {
+      const deletedTodoIds = await todoRepository.deleteOccurrences(seriesId, {
         fromDate: addDaysToDateKey(lastDate, 1),
         includeCompleted: false,
       });
-      return { series, cancelledTodoIds };
+      await todoReminder.cancelReminders(deletedTodoIds);
+      return { series, deletedTodoIds };
     });
 
     await this.#dependencies.effects.publish({
       seriesId: stopped.series.getId(),
       userId,
-      cancelledTodoIds: stopped.cancelledTodoIds,
-      reminders: [],
       events: stopped.series.pullDomainEvents(),
     });
     this.#dependencies.logger.log({
       event: PlanningTodoSeriesLogEvent.STOPPED,
       seriesId: stopped.series.getId(),
       userId,
-      deletedCount: stopped.cancelledTodoIds.length,
+      deletedCount: stopped.deletedTodoIds.length,
     });
   }
 }

@@ -28,6 +28,6 @@ export class TodoRescheduledHandler {
       return;
     }
 
-    await this.todoReminder.cancelReminder(event.todoId);
+    await this.todoReminder.cancelReminders([event.todoId]);
   }
 }

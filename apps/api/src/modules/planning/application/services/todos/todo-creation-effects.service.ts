@@ -7,12 +7,10 @@ import { TodoOccurrencesCreatedEvent } from "../../../domain/events/series/todo-
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
 import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import type { TodoCachePort } from "../../ports/todos/todo-cache.port.js";
-import type { TodoReminderPort } from "../../ports/todos/todo-reminder.port.js";
 import type { CreatedOccurrence } from "../../ports/todos/todo.repository.port.js";
 
 interface TodoCreationEffectsDependencies {
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
-  readonly todoReminder: Pick<TodoReminderPort, "scheduleReminders">;
   readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
@@ -48,18 +46,13 @@ export class TodoCreationEffects {
     await this.publishOccurrences(series, occurrences);
   }
 
-  /** 커밋 뒤 실행한다. 회차 리마인더는 일괄 등록하고 이벤트는 규칙당 하나만 낸다. */
+  /** 커밋 뒤 실행한다. 리마인더는 회차와 함께 커밋됐고 이벤트는 규칙당 하나만 낸다. */
   async publishOccurrences(
     series: TodoSeries,
     occurrences: readonly CreatedOccurrence[],
   ): Promise<void> {
     const userId = series.getUserId();
     await this.#invalidateCaches(userId);
-    await this.#dependencies.todoReminder.scheduleReminders(
-      occurrences.flatMap(({ todoId, scheduledTime }) =>
-        scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
-      ),
-    );
     await this.#dependencies.eventPublisher.publishAll([
       ...series.pullDomainEvents(),
       new TodoOccurrencesCreatedEvent(series.getId(), userId, occurrences.length),

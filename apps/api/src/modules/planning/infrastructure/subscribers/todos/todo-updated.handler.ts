@@ -29,6 +29,6 @@ export class TodoUpdatedHandler {
       return;
     }
 
-    await this.todoReminder.cancelReminder(event.todoId);
+    await this.todoReminder.cancelReminders([event.todoId]);
   }
 }

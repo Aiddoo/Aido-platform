@@ -18,7 +18,6 @@ import type {
   TodaySummaryTodoRow,
 } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
 import type {
-  TodoReminderCancellationResult,
   TodoReminderPort,
   TodoReminderSchedule,
 } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
@@ -406,10 +405,6 @@ export class StubPlanningTodoReminder implements TodoReminderPort {
   }
   async cancelReminders(todoIds: readonly number[]): Promise<void> {
     this.cancelled.push(...todoIds);
-  }
-  async cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
-    this.cancelled.push(todoId);
-    return { status: "cancelled" };
   }
 }
 

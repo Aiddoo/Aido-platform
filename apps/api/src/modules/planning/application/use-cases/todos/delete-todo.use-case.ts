@@ -16,6 +16,7 @@ import { ApplicationException } from "#api/shared/domain/index";
 import { PlanningTodoLogEvent } from "../../observability/todos/planning-todo-log.events.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
+import type { TodoReminderPort } from "../../ports/todos/todo-reminder.port.js";
 import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import type { TodoSeriesEditEffects } from "../../services/series/todo-series-edit-effects.service.js";
 
@@ -33,6 +34,7 @@ interface DeleteTodoDependencies {
   >;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update" | "delete">;
   readonly seriesEffects: Pick<TodoSeriesEditEffects, "publish">;
+  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders">;
   readonly todoCache: Pick<TodoCachePort, "invalidateTodoCategories" | "invalidateFriendTodos">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -86,7 +88,8 @@ export class DeleteTodo {
     scope: Exclude<TodoEditScope, "THIS_ONLY">,
   ): Promise<void> {
     const { id, userId } = input;
-    const { todoRepository, seriesRepository, unitOfWork, mutationLock } = this.#dependencies;
+    const { todoRepository, seriesRepository, todoReminder, unitOfWork, mutationLock } =
+      this.#dependencies;
     const deleted = await unitOfWork.run(async () => {
       // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
       await mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
@@ -104,7 +107,7 @@ export class DeleteTodo {
         throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
       }
       const pivot = toDateString(occurrenceDate);
-      const cancelledTodoIds = await match(scope)
+      const deletedTodoIds = await match(scope)
         .with("ALL", async () => {
           const ids = await todoRepository.deleteOccurrences(seriesId, { includeCompleted: true });
           // 회차가 하나도 남지 않으므로 규칙도 함께 없앤다.
@@ -122,14 +125,13 @@ export class DeleteTodo {
           return ids;
         })
         .exhaustive();
-      return { seriesId, cancelledTodoIds, events: series?.pullDomainEvents() ?? [] };
+      await todoReminder.cancelReminders(deletedTodoIds);
+      return { seriesId, deletedTodoIds, events: series?.pullDomainEvents() ?? [] };
     });
 
     await this.#dependencies.seriesEffects.publish({
       seriesId: deleted.seriesId,
       userId,
-      cancelledTodoIds: deleted.cancelledTodoIds,
-      reminders: [],
       events: deleted.events,
     });
     this.#dependencies.logger.log({
@@ -137,7 +139,7 @@ export class DeleteTodo {
       todoId: id,
       userId,
       scope,
-      deletedCount: deleted.cancelledTodoIds.length,
+      deletedCount: deleted.deletedTodoIds.length,
     });
   }
 }

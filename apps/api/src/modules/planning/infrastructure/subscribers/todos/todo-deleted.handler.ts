@@ -23,6 +23,6 @@ export class TodoDeletedHandler {
 
   @OnEvent(TODO_EVENTS.DELETED, { suppressErrors: false })
   async handle(event: TodoDeletedEvent): Promise<void> {
-    await this.todoReminder.cancelReminder(event.todoId);
+    await this.todoReminder.cancelReminders([event.todoId]);
   }
 }

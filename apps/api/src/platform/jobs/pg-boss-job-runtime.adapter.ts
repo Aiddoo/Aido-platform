@@ -6,7 +6,6 @@ import { uniqBy } from "es-toolkit";
 import {
   PgBoss,
   type Db,
-  type FindJobsOptions,
   type InsertOptions,
   type JobInsert,
   type JobWithMetadata,
@@ -26,7 +25,6 @@ import type {
   DeadLetterQueue,
   EnqueueJobOptions,
   EnqueueJobRequest,
-  JobCancellationResult,
   JobData,
   JobEnvelope,
   JobRetryPolicy,
@@ -54,8 +52,7 @@ export interface PgBossClient {
   insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null>;
   schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
   unschedule(name: string, key?: string): Promise<void>;
-  findJobs(name: string, options?: FindJobsOptions): Promise<JobWithMetadata<JobData>[]>;
-  cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown>;
+  deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown>;
   work(
     name: string,
     options: WorkOptions & { includeMetadata: true },
@@ -122,12 +119,8 @@ export class LazyPgBossClient implements PgBossClient {
     await (await this.ensureStarted()).unschedule(name, key);
   }
 
-  async findJobs(name: string, options?: FindJobsOptions): Promise<JobWithMetadata<JobData>[]> {
-    return (await this.ensureStarted()).findJobs(name, options);
-  }
-
-  async cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
-    return (await this.ensureStarted()).cancel(name, ids, options);
+  async deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
+    return (await this.ensureStarted()).deleteJob(name, ids, options);
   }
 
   async work(
@@ -311,26 +304,18 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     await this.boss.unschedule(queue, scheduleKey);
   }
 
-  async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
-    const db = transactionJobDatabase(this.txHost.tx);
-    const jobs = await this.boss.findJobs(queue, {
-      key: idempotencyKey,
-      queued: true,
-      db,
-    });
-    if (jobs.length === 0) {
-      return { status: "missing" };
+  async cancel(queue: string, idempotencyKeys: readonly string[]): Promise<void> {
+    if (idempotencyKeys.length === 0) {
+      return;
     }
-
-    const result = await this.boss.cancel(
+    await this.ensureQueue(queue);
+    // pg-boss cancel은 행을 cancelled로 남겨 같은 결정적 id의 재등록이 ON CONFLICT로 무시된다.
+    // 지우면 상태와 상관없이 id가 비어 재예약이 산다. 끝난 행은 보존 기록일 뿐이라 잃어도 된다.
+    await this.boss.deleteJob(
       queue,
-      jobs.map(({ id }) => id),
+      idempotencyKeys.map((key) => deterministicJobId(queue, key)),
       { db: transactionJobDatabase(this.txHost.tx) },
     );
-    if (!hasAffectedCount(result)) {
-      throw new Error("Invalid pg-boss cancellation response");
-    }
-    return result.affected > 0 ? { status: "cancelled" } : { status: "missing" };
   }
 
   async work(
@@ -474,15 +459,6 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       deleteAfterSeconds: policy.deleteAfterSeconds,
     };
   }
-}
-
-function hasAffectedCount(result: unknown): result is { readonly affected: number } {
-  return (
-    typeof result === "object" &&
-    result != null &&
-    "affected" in result &&
-    typeof result.affected === "number"
-  );
 }
 
 /** enqueue와 enqueueMany가 같은 재시도·DLQ·결정적 id 옵션으로 작업을 쓰도록 한 곳에서 변환한다. */

@@ -3,6 +3,7 @@ import type {
   TodoOccurrenceDraft,
 } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import { occurrenceHorizon } from "../../../domain/policies/series/occurrence-horizon.policy.js";
+import type { TodoReminderPort } from "../../ports/todos/todo-reminder.port.js";
 import type {
   CreatedOccurrence,
   TodoRepositoryPort,
@@ -16,9 +17,13 @@ export const MAX_OCCURRENCES_PER_RUN = 400;
 
 interface TodoOccurrenceMaterializerDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "getMaxSortOrder" | "insertOccurrences">;
+  readonly todoReminder: Pick<TodoReminderPort, "scheduleReminders">;
 }
 
-/** 규칙의 커서부터 미리 만드는 기간까지 회차를 실제 행으로 만든다. 저장은 활성 UoW 안에서 한다. */
+/**
+ * 규칙의 커서부터 미리 만드는 기간까지 회차를 실제 행으로 만든다. 저장은 활성 UoW 안에서 한다.
+ * 커서가 앞으로 가면 다음 실행은 같은 회차를 다시 만들지 않으므로 리마인더 작업도 행과 함께 커밋한다.
+ */
 export class TodoOccurrenceMaterializer {
   readonly #dependencies: TodoOccurrenceMaterializerDependencies;
 
@@ -52,10 +57,17 @@ export class TodoOccurrenceMaterializer {
     const maxSortOrder = await this.#dependencies.todoRepository.getMaxSortOrder(
       series.getUserId(),
     );
-    return this.#dependencies.todoRepository.insertOccurrences(
+    const created = await this.#dependencies.todoRepository.insertOccurrences(
       drafts.map((draft, index) => ({ ...draft, sortOrder: maxSortOrder + 1 + index })),
       series.getId(),
       series.getChecklistTemplate(),
     );
+    const userId = series.getUserId();
+    await this.#dependencies.todoReminder.scheduleReminders(
+      created.flatMap(({ todoId, scheduledTime }) =>
+        scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
+      ),
+    );
+    return created;
   }
 }

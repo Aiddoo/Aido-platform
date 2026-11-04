@@ -23,7 +23,10 @@ import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
 import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
-import type { TodoReminderSchedule } from "../../ports/todos/todo-reminder.port.js";
+import type {
+  TodoReminderPort,
+  TodoReminderSchedule,
+} from "../../ports/todos/todo-reminder.port.js";
 import type { OccurrenceTime, TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import type { TodoOccurrenceMaterializer } from "../../services/series/todo-occurrence-materializer.service.js";
 import type { TodoSeriesEditEffects } from "../../services/series/todo-series-edit-effects.service.js";
@@ -61,6 +64,7 @@ interface UpdateFollowingTodosDependencies {
   >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly materializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
+  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
   readonly effects: Pick<TodoSeriesEditEffects, "publish">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -117,8 +121,6 @@ export class UpdateFollowingTodos {
     await this.#dependencies.effects.publish({
       seriesId: edited.target.getId(),
       userId,
-      cancelledTodoIds: edited.cancelledTodoIds,
-      reminders: edited.reminders,
       events: [...edited.source.pullDomainEvents(), ...edited.target.pullDomainEvents()],
     });
     if (edited.split) {
@@ -141,7 +143,7 @@ export class UpdateFollowingTodos {
   }
 
   async #apply(input: UpdateFollowingTodosInput, series: TodoSeries, pivot: string) {
-    const { todoRepository, seriesRepository, materializer } = this.#dependencies;
+    const { todoRepository, seriesRepository, materializer, todoReminder } = this.#dependencies;
     const at = now();
     const rule = input.repeat == null ? null : RepeatRule.from(input.repeat);
     const ruleChanged = rule != null && !rule.equals(series.getRule());
@@ -211,14 +213,12 @@ export class UpdateFollowingTodos {
     if (split) {
       await seriesRepository.insert(target);
     }
-    const created = await materializer.persist(target, drafts);
-    reminders.push(
-      ...created.flatMap(({ todoId, scheduledTime }) =>
-        scheduledTime == null ? [] : [{ todoId, scheduledTime, userId: series.getUserId() }],
-      ),
-    );
+    await materializer.persist(target, drafts);
+    // 지운 회차와 시각이 바뀐 회차의 예약을 지우고 새 시각으로 다시 잡는다. 행과 함께 커밋한다.
+    await todoReminder.cancelReminders(cancelledTodoIds);
+    await todoReminder.scheduleReminders(reminders);
 
-    return { source: series, target, split, cancelledTodoIds, reminders, responseTodoId };
+    return { source: series, target, split, responseTodoId };
   }
 
   /**

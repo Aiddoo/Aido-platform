@@ -1,9 +1,5 @@
 export const REMINDER_SCHEDULER = Symbol("REMINDER_SCHEDULER");
 
-export type ReminderCancellationResult =
-  | { readonly status: "cancelled" }
-  | { readonly status: "missing" };
-
 export interface ReminderSchedule {
   readonly todoId: number;
   readonly scheduledTime: Date;
@@ -29,10 +25,6 @@ export interface IReminderScheduler {
    */
   scheduleReminders(reminders: readonly ReminderSchedule[]): Promise<void>;
 
-  /**
-   * 리마인더 타이머 취소
-   *
-   * @param todoId 대상 투두 ID
-   */
-  cancelReminder(todoId: number): Promise<ReminderCancellationResult>;
+  /** 투두들의 리마인더 작업을 한 쿼리로 지운다. 활성 트랜잭션이 있으면 함께 커밋된다. */
+  cancelReminders(todoIds: readonly number[]): Promise<void>;
 }

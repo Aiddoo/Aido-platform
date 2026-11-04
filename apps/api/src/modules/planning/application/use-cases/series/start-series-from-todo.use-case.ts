@@ -18,6 +18,7 @@ import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggreg
 import { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
 import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
 import type { TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
+import type { TodoReminderPort } from "../../ports/todos/todo-reminder.port.js";
 import type { TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
 import type { TodoOccurrenceMaterializer } from "../../services/series/todo-occurrence-materializer.service.js";
 import type { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
@@ -37,6 +38,7 @@ interface StartSeriesFromTodoDependencies {
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
   readonly materializer: Pick<TodoOccurrenceMaterializer, "planFirstRun" | "persist">;
+  readonly todoReminder: Pick<TodoReminderPort, "cancelReminders" | "scheduleReminders">;
   readonly effects: Pick<TodoCreationEffects, "publishSeriesStarted">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -52,8 +54,9 @@ export class StartSeriesFromTodo {
 
   async execute(input: StartSeriesFromTodoInput): Promise<TodoResponse> {
     const { todoId, userId, repeat, timezone } = input;
-    const { todoRepository, seriesRepository, materializer, unitOfWork, mutationLock } =
+    const { todoRepository, seriesRepository, materializer, todoReminder, unitOfWork } =
       this.#dependencies;
+    const { mutationLock } = this.#dependencies;
     const started = await unitOfWork.run(async () => {
       await mutationLock.acquire([
         MutationLockKeys.todoCategory(userId),
@@ -101,13 +104,19 @@ export class StartSeriesFromTodo {
       }
       await seriesRepository.insert(series);
       // 시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮겨 그 할 일을 첫 회차로 쓴다.
+      const firstTime =
+        scheduledLocalTime == null
+          ? null
+          : parseLocalDateTime(first.occurrenceDate, scheduledLocalTime, timezone);
       await todoRepository.attachToSeries(todoId, series.getId(), {
         occurrenceDate: first.occurrenceDate,
-        scheduledTime:
-          scheduledLocalTime == null
-            ? null
-            : parseLocalDateTime(first.occurrenceDate, scheduledLocalTime, timezone),
+        scheduledTime: firstTime,
       });
+      // 첫 회차 날짜가 옮겨졌을 수 있어 옛 시각의 예약을 지우고 새 시각으로 다시 잡는다.
+      await todoReminder.cancelReminders([todoId]);
+      if (firstTime != null && !snapshot.completed) {
+        await todoReminder.scheduleReminders([{ todoId, scheduledTime: firstTime, userId }]);
+      }
       const occurrences = await materializer.persist(series, following);
       return { series, occurrences };
     });

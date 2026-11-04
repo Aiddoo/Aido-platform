@@ -102,13 +102,15 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
     return new TodoSeriesDueRun({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
-      materializer: new TodoOccurrenceMaterializer({ todoRepository }),
+      materializer: new TodoOccurrenceMaterializer({
+        todoRepository,
+        todoReminder: new TodoReminderSchedulerAdapter(runtime),
+      }),
       effects: new TodoCreationEffects({
         todoCache: {
           invalidateTodoCategories: async () => undefined,
           invalidateFriendTodos: async () => undefined,
         },
-        todoReminder: new TodoReminderSchedulerAdapter(runtime),
         eventPublisher: { publishAll: async () => undefined },
         logger: new Logger("DormancyIntegration"),
       }),

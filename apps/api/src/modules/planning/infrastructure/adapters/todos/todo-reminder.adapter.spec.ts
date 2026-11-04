@@ -12,7 +12,7 @@ describe("TodoReminderAdapter — scheduler 경계 위임", () => {
     scheduler = {
       scheduleReminder: vi.fn(),
       scheduleReminders: vi.fn(),
-      cancelReminder: vi.fn(),
+      cancelReminders: vi.fn(),
     };
     adapter = new TodoReminderAdapter(scheduler);
   });
@@ -37,34 +37,12 @@ describe("TodoReminderAdapter — scheduler 경계 위임", () => {
     await expect(adapter.scheduleReminder(42, new Date(), "user-123")).rejects.toBe(error);
   });
 
-  it("scheduler의 cancelled 결과를 그대로 반환한다", async () => {
-    // Given - scheduler가 작업을 취소함
-    vi.mocked(scheduler.cancelReminder).mockResolvedValue({ status: "cancelled" });
-
-    // When & Then - Todo 경계가 결과를 보존
-    await expect(adapter.cancelReminder(42)).resolves.toEqual({
-      status: "cancelled",
-    });
-  });
-
-  it("scheduler의 missing 결과를 그대로 반환한다", async () => {
-    // Given - 취소할 작업이 이미 없음
-    vi.mocked(scheduler.cancelReminder).mockResolvedValue({
-      status: "missing",
-    });
-
-    // When & Then - 정상적인 missing 결과
-    await expect(adapter.cancelReminder(42)).resolves.toEqual({
-      status: "missing",
-    });
-  });
-
-  it("scheduler 인프라 오류를 성공이나 missing으로 바꾸지 않는다", async () => {
+  it("scheduler 인프라 오류를 성공으로 바꾸지 않는다", async () => {
     // Given - scheduler 취소 실패
     const error = new Error("runtime unavailable");
-    vi.mocked(scheduler.cancelReminder).mockRejectedValue(error);
+    vi.mocked(scheduler.cancelReminders).mockRejectedValue(error);
 
     // When & Then - 같은 오류 reject
-    await expect(adapter.cancelReminder(42)).rejects.toBe(error);
+    await expect(adapter.cancelReminders([42])).rejects.toBe(error);
   });
 });

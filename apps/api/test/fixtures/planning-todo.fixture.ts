@@ -47,10 +47,9 @@ export function createPlanningTodoFixture(
   const todoReadRepository = new StubPlanningTodoReadRepository(records, categories, seriesStore);
   const todoSeriesRepository = new StubPlanningTodoSeriesRepository(seriesStore);
   const todoReminder = new StubPlanningTodoReminder();
-  const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository });
+  const occurrenceMaterializer = new TodoOccurrenceMaterializer({ todoRepository, todoReminder });
   const seriesEffects = new TodoSeriesEditEffects({
     todoCache,
-    todoReminder,
     eventPublisher,
     logger,
   });

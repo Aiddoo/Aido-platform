@@ -24,7 +24,7 @@ class FlakyJobRuntime extends FakeJobRuntime {
     queue: string,
     data: T,
     options: EnqueueJobOptions,
-  ): Promise<string> {
+  ): Promise<string | null> {
     if (this.failuresLeft > 0) {
       this.failuresLeft -= 1;
       throw this.failure;
@@ -58,7 +58,6 @@ describe("NotificationQueueService — 알림 이벤트 등록", () => {
 
     // Then
     expect(runtime.enqueueCalls.map(({ options }) => options.idempotencyKey)).toEqual([
-      "nudge-7",
       "nudge-7",
       "nudge-8",
     ]);
