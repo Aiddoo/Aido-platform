@@ -26,10 +26,10 @@ export class SubscriptionController {
   constructor(private readonly handleWebhookEventUseCase: HandleWebhookEvent) {}
 
   @Post("revenuecat")
+  @HttpCode(HttpStatus.OK)
   @Public()
   @ApiExcludeEndpoint()
   @UseGuards(WebhookSignatureGuard)
-  @HttpCode(HttpStatus.OK)
   handleRevenueCatWebhook(@Req() request: Request): Promise<{ received: true }> {
     return this.handleWebhookEventUseCase.execute({ body: request.body });
   }

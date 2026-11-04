@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -15,7 +15,6 @@ import {
 } from "#api/platform/http/swagger/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { InsightsLogEvent } from "../../../../application/observability/insights-log.events.js";
 import { GetWeeklyAchievement } from "../../../../application/use-cases/weekly-achievements/get-weekly-achievement.use-case.js";
 import { GetWeeklyAchievements } from "../../../../application/use-cases/weekly-achievements/get-weekly-achievements.use-case.js";
 import {
@@ -29,8 +28,6 @@ import {
 @ApiBearerAuth()
 @Controller("weekly-achievements")
 export class WeeklyAchievementController {
-  readonly #logger = new Logger(WeeklyAchievementController.name);
-
   constructor(
     private readonly readWeeklyAchievements: GetWeeklyAchievements,
     private readonly readWeeklyAchievement: GetWeeklyAchievement,
@@ -56,6 +53,12 @@ export class WeeklyAchievementController {
     description: "페이지 크기 (1-200)",
     schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
     example: 20,
+  })
+  @ApiHeader({
+    name: "Accept-Language",
+    description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
+    required: false,
+    example: "ko",
   })
   @ApiDoc({
     summary: "주간 달성 현황 목록 조회",
@@ -87,23 +90,11 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
   })
   @ApiSuccessResponse({ type: WeeklyAchievementListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiHeader({
-    name: "Accept-Language",
-    description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
-    required: false,
-    example: "ko",
-  })
   async getWeeklyAchievements(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementListResponseDto> {
-    this.#logger.debug({
-      event: InsightsLogEvent.WEEKLY_ACHIEVEMENTS_READ,
-      userId: user.userId,
-      year: query.year,
-    });
-
     return this.readWeeklyAchievements.execute({
       userId: user.userId,
       year: query.year,
@@ -124,6 +115,12 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
     description: "ISO 주차 (1-53)",
     example: 10,
   })
+  @ApiHeader({
+    name: "Accept-Language",
+    description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
+    required: false,
+    example: "ko",
+  })
   @ApiDoc({
     summary: "주간 달성 현황 상세 조회",
     operationId: "getWeeklyAchievement",
@@ -143,24 +140,11 @@ GET /weekly-achievements/2026/10
   })
   @ApiSuccessResponse({ type: WeeklyAchievementDetailResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiHeader({
-    name: "Accept-Language",
-    description: '응답 텍스트 언어 ("ko" | "en", 미전송 시 ko)',
-    required: false,
-    example: "ko",
-  })
   async getWeeklyAchievement(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementDetailResponseDto> {
-    this.#logger.debug({
-      event: InsightsLogEvent.WEEKLY_ACHIEVEMENT_READ,
-      userId: user.userId,
-      year: params.year,
-      week: params.week,
-    });
-
     return this.readWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,

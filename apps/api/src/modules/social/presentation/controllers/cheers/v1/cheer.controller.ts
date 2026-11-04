@@ -113,13 +113,13 @@ export class CheerController {
     };
   }
 
+  @Get("received")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("received")
   @ApiDoc({
     summary: "받은 응원 목록 조회",
     operationId: "getReceivedCheers",
@@ -151,13 +151,13 @@ export class CheerController {
     };
   }
 
+  @Get("sent")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("sent")
   @ApiDoc({
     summary: "보낸 응원 목록 조회",
     operationId: "getSentCheers",
