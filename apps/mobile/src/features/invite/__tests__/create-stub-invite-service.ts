@@ -29,5 +29,6 @@ export function createStubInviteService({
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
     installationIdGateway: { get: async () => null },
     allDoneBannerRepository: createAllDoneBannerRepository(storage),
+    logger: { warn: jest.fn() },
   });
 }

@@ -16,23 +16,38 @@ import { InviteService } from './invite.service';
 import { createPawPrintCelebrationRepository } from './paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from './pending-redemption.repository';
 
-function createService({ referrer = null }: { referrer?: string | null } = {}) {
+function createService({
+  referrer = null,
+  readInstallationId = () => Promise.resolve('6F9619FF-8B86-D011-B42D-00C04FC964FF'),
+}: {
+  referrer?: string | null;
+  readInstallationId?: () => Promise<string | null>;
+} = {}) {
   const publicHttpClient = createMockHttpClient();
   const authHttpClient = createMockHttpClient();
   const storage = createMemorySyncStorage();
   const readReferrer = jest.fn().mockResolvedValue(referrer);
   const pendingRedemptionRepository = createPendingRedemptionRepository(storage);
+  const logger = { warn: jest.fn() };
   const service = new InviteService({
     publicHttpClient,
     authHttpClient,
     pendingRedemptionRepository,
     installReferrerRepository: createInstallReferrerRepository(storage, { read: readReferrer }),
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
-    installationIdGateway: { get: () => Promise.resolve('6F9619FF-8B86-D011-B42D-00C04FC964FF') },
+    installationIdGateway: { get: readInstallationId },
     allDoneBannerRepository: createAllDoneBannerRepository(storage),
+    logger,
   });
 
-  return { service, publicHttpClient, authHttpClient, pendingRedemptionRepository, readReferrer };
+  return {
+    service,
+    publicHttpClient,
+    authHttpClient,
+    pendingRedemptionRepository,
+    readReferrer,
+    logger,
+  };
 }
 
 describe('InviteService', () => {
@@ -180,6 +195,26 @@ describe('InviteService', () => {
         { rewardType: 'PREMIUM_DAYS', quantity: 7 },
         { rewardType: 'UNKNOWN', quantity: 0 },
       ]);
+    });
+
+    it('설치 식별자를 읽지 못하면 경고를 남기고 식별자 없이 수락한다', async () => {
+      // Given
+      const { service, authHttpClient, logger } = createService({
+        readInstallationId: () => Promise.reject(new Error('keychain locked')),
+      });
+      authHttpClient.post.mockResolvedValue({
+        ok: false,
+        error: createInviteApiError({ code: 'INVITE_2103', status: 400 }),
+      });
+
+      // When
+      await service.redeem('K7M2QX');
+
+      // Then
+      expect(authHttpClient.post).toHaveBeenCalledWith('v1/invites/K7M2QX/redeem', {});
+      expect(logger.warn).toHaveBeenCalledWith('invite.installation-id-read.failed', {
+        error: 'keychain locked',
+      });
     });
 
     it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {

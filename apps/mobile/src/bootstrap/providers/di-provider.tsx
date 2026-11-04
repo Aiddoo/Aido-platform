@@ -204,6 +204,7 @@ export function DIProvider({
       pawPrintCelebrationRepository: createPawPrintCelebrationRepository(mmkvSyncStorage),
       installationIdGateway: expoInstallationIdGateway,
       allDoneBannerRepository: createAllDoneBannerRepository(mmkvSyncStorage),
+      logger,
     });
     const inviteShareService = new InviteShareService({
       kakaoShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),
