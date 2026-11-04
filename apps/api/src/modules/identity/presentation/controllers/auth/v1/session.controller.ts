@@ -9,6 +9,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/presentation/decorators/auth/index";
+import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiNotFoundError,
@@ -117,8 +118,9 @@ export class SessionController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: RevokeSessionDto }) params: RevokeSessionDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     const result = await this.revokeSessionUseCase.execute({
       userId: user.userId,
       sessionId: params.sessionId,

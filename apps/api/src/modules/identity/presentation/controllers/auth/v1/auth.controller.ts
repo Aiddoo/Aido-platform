@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   HttpCode,
@@ -37,6 +36,11 @@ import {
   Public,
 } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/v1/auth.mapper";
+import {
+  AppVersion,
+  CurrentRequestClient,
+  type RequestClient,
+} from "#api/platform/http/request-client/index";
 import {
   ApiCreatedResponse,
   ApiDoc,
@@ -110,8 +114,15 @@ export class AuthController {
   })
   @ApiCreatedResponse({ type: MessageResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
-  async register(@Body({ schema: RegisterDto }) dto: RegisterDto, @Req() req: Request) {
-    const result = await this.registerUseCase.execute({ ...dto, metadata: extractMetadata(req) });
+  async register(
+    @Body({ schema: RegisterDto }) dto: RegisterDto,
+    @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
+  ) {
+    const result = await this.registerUseCase.execute({
+      ...dto,
+      metadata: extractMetadata(req, client),
+    });
     return AuthMapper.toRegisterResponse(result);
   }
 
@@ -157,9 +168,10 @@ export class AuthController {
   async verifyEmail(
     @Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto,
     @Req() req: Request,
-    @Headers("x-app-version") appVersion?: string,
+    @CurrentRequestClient() client: RequestClient,
+    @AppVersion() appVersion?: string,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     const result = await this.verifyEmailUseCase.execute({ ...dto, metadata });
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -248,9 +260,10 @@ export class AuthController {
   async login(
     @Body({ schema: LoginDto }) dto: LoginDto,
     @Req() req: Request,
-    @Headers("x-app-version") appVersion?: string,
+    @CurrentRequestClient() client: RequestClient,
+    @AppVersion() appVersion?: string,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     const result = await this.loginWithPasswordUseCase.execute({ ...dto, metadata });
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -281,8 +294,12 @@ export class AuthController {
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
-    const metadata = extractMetadata(req);
+  async logout(
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
+  ) {
+    const metadata = extractMetadata(req, client);
     await this.logoutUseCase.execute({ userId: user.userId, sessionId: user.sessionId, metadata });
     return AuthMapper.toMessageResponse("로그아웃되었습니다.");
   }
@@ -314,8 +331,15 @@ export class AuthController {
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  async logoutAll(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
-    await this.logoutAllUseCase.execute({ userId: user.userId, metadata: extractMetadata(req) });
+  async logoutAll(
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
+  ) {
+    await this.logoutAllUseCase.execute({
+      userId: user.userId,
+      metadata: extractMetadata(req, client),
+    });
     return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
   }
 
@@ -348,7 +372,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   })
   @ApiSuccessResponse({ type: RefreshTokensDto })
   @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0104, ErrorCode.SESSION_0704])
-  async refresh(@Req() req: Request) {
+  async refresh(@Req() req: Request, @CurrentRequestClient() client: RequestClient) {
     const parsedUser = refreshTokenUserSchema.safeParse(req.user);
     if (!parsedUser.success) {
       throw new ApplicationException(ErrorCode.AUTH_0104);
@@ -362,7 +386,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
         sessionId: payload.sessionId,
         role: payload.role,
       },
-      metadata: extractMetadata(req),
+      metadata: extractMetadata(req, client),
     });
     return AuthMapper.toRefreshTokensResponse(result);
   }
@@ -396,10 +420,11 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   async forgotPassword(
     @Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
     const result = await this.requestPasswordResetUseCase.execute({
       email: dto.email,
-      metadata: extractMetadata(req),
+      metadata: extractMetadata(req, client),
     });
     return result;
   }
@@ -531,8 +556,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: SetPasswordDto }) dto: SetPasswordDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.setPasswordUseCase.execute({
       userId: user.userId,
       code: dto.code,
@@ -579,8 +605,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ChangePasswordDto }) dto: ChangePasswordDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     const result = await this.changePasswordUseCase.execute({
       userId: user.userId,
       currentPassword: dto.currentPassword,

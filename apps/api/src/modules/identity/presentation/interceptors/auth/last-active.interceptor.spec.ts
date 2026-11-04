@@ -5,8 +5,16 @@ import { vi, type MockInstance } from "vitest";
 
 import type { AuthUserActivityWriterPort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import { createMockExecutionContext } from "#test/mocks/index";
+import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
 import { LastActiveInterceptor } from "./last-active.interceptor.js";
+
+function requestOf(options: { user: CurrentUserPayload; headers?: Record<string, string> }) {
+  return {
+    context: createMockExecutionContext({ user: options.user }).context,
+    headers: options.headers ?? {},
+  };
+}
 
 describe("LastActiveInterceptor — 사용자 활동 기록", () => {
   let activityWriter: AuthUserActivityWriterPort;
@@ -18,8 +26,13 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     activityWriter = {
       updateLastActiveAt: vi.fn().mockResolvedValue(undefined),
     };
-    interceptor = new LastActiveInterceptor(activityWriter);
+    interceptor = new LastActiveInterceptor(activityWriter, createRequestClientReader());
   });
+
+  const intercept = (request: ReturnType<typeof requestOf>) =>
+    runWithRequestHeaders(request.headers, () =>
+      interceptor.intercept(request.context, { handle: () => of("ok") }),
+    );
 
   afterEach(() => {
     interceptor.onModuleDestroy();
@@ -28,7 +41,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
   it("X-Timezone을 정규 IANA 타임존으로 변환해 활동 writer에 전달한다", () => {
     // Given - 인증 사용자와 IANA 별칭 헤더
-    const { context } = createMockExecutionContext({
+    const request = requestOf({
       user: {
         userId: "user-1",
         email: "user@example.com",
@@ -39,7 +52,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     });
 
     // When - 인증 요청이 인터셉터를 통과하면
-    interceptor.intercept(context, { handle: () => of("ok") });
+    intercept(request);
 
     // Then - 런타임이 정규화한 타임존과 사용자 ID가 기록 경계로 전달된다
     expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith(
@@ -51,7 +64,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
   it("기존 클라이언트가 X-Timezone을 보내지 않으면 UTC로 기록한다", () => {
     // Given - 타임존 헤더가 없는 인증 사용자
-    const { context } = createMockExecutionContext({
+    const request = requestOf({
       user: {
         userId: "user-legacy",
         email: "legacy@example.com",
@@ -61,7 +74,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     });
 
     // When - 요청이 인터셉터를 통과하면
-    interceptor.intercept(context, { handle: () => of("ok") });
+    intercept(request);
 
     // Then - 기존 기본 날짜 경계 계약인 UTC를 사용한다
     expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-legacy", "UTC", undefined);
@@ -75,18 +88,18 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       sessionId: "session-throttled",
       role: "USER",
     };
-    const first = createMockExecutionContext({
+    const first = requestOf({
       user,
       headers: { "x-timezone": "Asia/Seoul" },
     });
-    const second = createMockExecutionContext({
+    const second = requestOf({
       user,
       headers: { "x-timezone": "Asia/Seoul" },
     });
 
     // When - 한 시간 이내 두 요청이 통과하면
-    interceptor.intercept(first.context, { handle: () => of("first") });
-    interceptor.intercept(second.context, { handle: () => of("second") });
+    intercept(first);
+    intercept(second);
 
     // Then - 첫 기록만 fire-and-forget writer로 전달한다
     expect(activityWriter.updateLastActiveAt).toHaveBeenCalledTimes(1);
@@ -105,17 +118,16 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       sessionId: "session-upgraded",
       role: "USER",
     };
-    const requests = ["1.12.1", "1.12.1", "1.13.0", "dev-build"].map(
-      (appVersion) =>
-        createMockExecutionContext({
-          user,
-          headers: { "x-timezone": "Asia/Seoul", "x-app-version": appVersion },
-        }).context,
+    const requests = ["1.12.1", "1.12.1", "1.13.0", "dev-build"].map((appVersion) =>
+      requestOf({
+        user,
+        headers: { "x-timezone": "Asia/Seoul", "x-app-version": appVersion },
+      }),
     );
 
     // When
-    for (const context of requests) {
-      interceptor.intercept(context, { handle: () => of("ok") });
+    for (const request of requests) {
+      intercept(request);
     }
 
     // Then - 같은 버전은 throttle하고, 형식이 틀린 버전은 버전 없이 기록한다
@@ -134,11 +146,11 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       sessionId: "session-midnight",
       role: "USER",
     };
-    const beforeMidnight = createMockExecutionContext({
+    const beforeMidnight = requestOf({
       user,
       headers: { "x-timezone": "Asia/Seoul" },
     });
-    const afterMidnight = createMockExecutionContext({
+    const afterMidnight = requestOf({
       user,
       headers: { "x-timezone": "Asia/Seoul" },
     });
@@ -147,13 +159,9 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     try {
       // When - 현지 자정을 사이에 둔 두 요청이 통과하면
       dateNow.mockReturnValue(new Date("2026-07-26T14:59:00.000Z").getTime());
-      interceptor.intercept(beforeMidnight.context, {
-        handle: () => of("before"),
-      });
+      intercept(beforeMidnight);
       dateNow.mockReturnValue(new Date("2026-07-26T15:01:00.000Z").getTime());
-      interceptor.intercept(afterMidnight.context, {
-        handle: () => of("after"),
-      });
+      intercept(afterMidnight);
 
       // Then - 시간 throttle보다 새 현지 날짜 기록이 우선한다
       expect(activityWriter.updateLastActiveAt).toHaveBeenCalledTimes(2);
@@ -173,20 +181,20 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       sessionId: "session-retry",
       role: "USER",
     };
-    const first = createMockExecutionContext({
+    const first = requestOf({
       user,
       headers: { "x-timezone": "Asia/Seoul" },
     });
-    const retry = createMockExecutionContext({
+    const retry = requestOf({
       user,
       headers: { "x-timezone": "Asia/Seoul" },
     });
 
     // When - 첫 fire-and-forget 저장 실패가 처리된 뒤 다시 요청하면
-    interceptor.intercept(first.context, { handle: () => of("first") });
+    intercept(first);
     await Promise.resolve();
     await Promise.resolve();
-    interceptor.intercept(retry.context, { handle: () => of("retry") });
+    intercept(retry);
 
     // Then - 실패한 throttle 슬롯을 비워 즉시 재시도한다
     expect(activityWriter.updateLastActiveAt).toHaveBeenCalledTimes(2);
@@ -208,7 +216,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
       role: "USER",
     };
     const request = () =>
-      createMockExecutionContext({
+      requestOf({
         user,
         headers: { "x-timezone": "Asia/Seoul" },
       });
@@ -217,16 +225,14 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     try {
       // When - 다음 날짜가 기록된 뒤 이전 날짜의 요청만 실패하면
       dateNow.mockReturnValue(new Date("2026-07-26T14:59:00.000Z").getTime());
-      interceptor.intercept(request().context, { handle: () => of("old") });
+      intercept(request());
       dateNow.mockReturnValue(new Date("2026-07-26T15:01:00.000Z").getTime());
-      interceptor.intercept(request().context, { handle: () => of("new") });
+      intercept(request());
       rejectFirst?.(new Error("late failure"));
       await Promise.resolve();
       await Promise.resolve();
       dateNow.mockReturnValue(new Date("2026-07-26T15:02:00.000Z").getTime());
-      interceptor.intercept(request().context, {
-        handle: () => of("new-again"),
-      });
+      intercept(request());
 
       // Then - 새 날짜의 성공한 throttle 슬롯은 그대로 유지된다
       expect(activityWriter.updateLastActiveAt).toHaveBeenCalledTimes(2);

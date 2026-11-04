@@ -14,9 +14,9 @@ import {
   AUTH_USER_ACTIVITY_WRITER,
   type AuthUserActivityWriterPort,
 } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
-import { normalizeAppVersion } from "#api/modules/identity/presentation/controllers/auth/v1/request-device.utils";
+import { RequestClientReader, requestTimezoneOrUtc } from "#api/platform/http/request-client/index";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
-import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 /**
  * 인증된 API 요청 시 User.lastActiveAt과 요청한 앱 버전(X-App-Version)을 갱신하는 인터셉터
@@ -41,6 +41,7 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
   constructor(
     @Inject(AUTH_USER_ACTIVITY_WRITER)
     private readonly userActivityWriter: AuthUserActivityWriterPort,
+    private readonly requestClientReader: RequestClientReader,
   ) {
     this.#cleanupInterval = setInterval(() => this.#cleanup(), LastActiveInterceptor.THROTTLE_MS);
   }
@@ -54,11 +55,8 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
     const userId = readRequestUserId(request);
 
     if (userId) {
-      this.#touchLastActive(
-        userId,
-        resolveTimezone(request.headers?.["x-timezone"]),
-        normalizeAppVersion(request.headers?.["x-app-version"]),
-      );
+      const client = this.requestClientReader.current();
+      this.#touchLastActive(userId, requestTimezoneOrUtc(client), client.appVersion ?? undefined);
     }
 
     return next.handle();

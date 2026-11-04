@@ -1,5 +1,7 @@
 import type { Request } from "express";
 
+import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 import { mockOf } from "#test/mocks/typed-mock";
 
 import { extractMetadata } from "./auth-controller.utils.js";
@@ -16,7 +18,7 @@ describe("extractMetadata", () => {
     });
 
     // When
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, parseRequestClient(req.headers, TEST_REQUEST_ID));
 
     // Then
     expect(metadata).toEqual({
@@ -36,7 +38,10 @@ describe("extractMetadata", () => {
     });
 
     // When
-    const metadata = extractMetadata(req, { deviceType: "ios", deviceName: "iPhone 15" });
+    const metadata = extractMetadata(req, parseRequestClient(req.headers, TEST_REQUEST_ID), {
+      deviceType: "ios",
+      deviceName: "iPhone 15",
+    });
 
     // Then
     expect(metadata.device).toEqual({ devicePlatform: "IOS", deviceModel: "iPhone 15" });
@@ -58,7 +63,7 @@ describe("extractMetadata", () => {
     });
 
     // When
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, parseRequestClient(req.headers, TEST_REQUEST_ID));
 
     // Then
     expect(metadata.device).toEqual({

@@ -37011,14 +37011,6 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
             "type": "string",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -37178,14 +37170,6 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
             "type": "string",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -37304,14 +37288,6 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           "in": "header",
           "name": "X-App-Version",
           "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
           "schema": {
             "type": "string",
           },
@@ -39201,14 +39177,6 @@ SYS_0002: 잘못된 파라미터입니다.",
             "type": "string",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -40578,14 +40546,6 @@ SYS_0002: 잘못된 파라미터입니다.",
             "type": "integer",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -41223,14 +41183,6 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
             "type": "integer",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -41660,14 +41612,6 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
-          },
-        },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
           },
         },
       ],

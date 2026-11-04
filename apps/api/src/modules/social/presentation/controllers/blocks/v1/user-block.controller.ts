@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Header,
-  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -18,6 +17,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiBadRequestError,
   ApiDoc,
@@ -134,7 +134,7 @@ export class UserBlockController {
   async getBlockedUsers(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetBlockedUsersQueryDto }) query: GetBlockedUsersQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<BlockedUsersResponseDto> {
     const result = await this.getBlockedUsersUseCase.execute({
       blockerId: user.userId,

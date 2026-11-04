@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Get,
@@ -20,6 +19,7 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiConflictError,
   ApiCreatedResponse,
@@ -142,7 +142,7 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<ReceivedNudgesResponseDto> {
     const result = await this.getReceivedNudgesUseCase.execute({
       userId: user.userId,
@@ -180,7 +180,7 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<SentNudgesResponseDto> {
     const result = await this.getSentNudgesUseCase.execute({
       userId: user.userId,

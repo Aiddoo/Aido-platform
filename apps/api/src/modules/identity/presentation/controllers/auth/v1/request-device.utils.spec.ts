@@ -1,4 +1,16 @@
-import { resolveRequestDevice } from "./request-device.utils.js";
+import type { IncomingHttpHeaders } from "node:http";
+
+import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { TEST_REQUEST_ID } from "#test/mocks/request-client";
+
+import { type RequestDeviceSource, resolveRequestDevice } from "./request-device.utils.js";
+
+function resolve(
+  source: Omit<RequestDeviceSource, "client"> & { readonly headers?: IncomingHttpHeaders } = {},
+) {
+  const { headers = {}, ...rest } = source;
+  return resolveRequestDevice({ client: parseRequestClient(headers, TEST_REQUEST_ID), ...rest });
+}
 
 const IPAD_DESKTOP_MODE =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15";
@@ -21,7 +33,7 @@ describe("resolveRequestDevice", () => {
       // Given
 
       // When
-      const result = resolveRequestDevice({ deviceType });
+      const result = resolve({ deviceType });
 
       // Then
       expect(result).toEqual({ devicePlatform: platform });
@@ -32,7 +44,7 @@ describe("resolveRequestDevice", () => {
       const source = { deviceType: "TOASTER", userAgent: "okhttp/4.12.0" };
 
       // When
-      const result = resolveRequestDevice(source);
+      const result = resolve(source);
 
       // Then
       expect(result).toEqual({ devicePlatform: "ANDROID" });
@@ -43,21 +55,51 @@ describe("resolveRequestDevice", () => {
       const source = { deviceType: "IOS", userAgent: ANDROID_CHROME };
 
       // When
-      const result = resolveRequestDevice(source);
+      const result = resolve(source);
 
       // Then
       expect(result).toEqual({ devicePlatform: "IOS" });
     });
 
-    it("중복 헤더(배열)는 모호하므로 무시한다", () => {
+    it("본문에 기기 타입·이름이 있으면 헤더 값보다 우선한다", () => {
       // Given
-      const source = { deviceType: ["IOS", "ANDROID"], deviceName: ["a", "b"] };
+      const source = {
+        headers: { "x-device-type": "ANDROID", "x-device-name": "Header Phone" },
+        deviceType: "ios",
+        deviceName: "iPhone 15",
+      };
 
       // When
-      const result = resolveRequestDevice(source);
+      const result = resolve(source);
 
       // Then
-      expect(result).toEqual({});
+      expect(result).toEqual({ devicePlatform: "IOS", deviceModel: "iPhone 15" });
+    });
+
+    it("본문 기기 타입이 알 수 없는 값이면 헤더가 아닌 User-Agent로 판별한다", () => {
+      // Given
+      const source = {
+        headers: { "x-device-type": "IOS" },
+        deviceType: "TOASTER",
+        userAgent: "okhttp/4.12.0",
+      };
+
+      // When
+      const result = resolve(source);
+
+      // Then
+      expect(result).toEqual({ devicePlatform: "ANDROID" });
+    });
+
+    it("본문이 없으면 헤더의 기기 타입·이름을 쓴다", () => {
+      // Given
+      const source = { headers: { "x-device-type": "WEB", "x-device-name": "Chrome" } };
+
+      // When
+      const result = resolve(source);
+
+      // Then
+      expect(result).toEqual({ devicePlatform: "WEB", deviceModel: "Chrome" });
     });
   });
 
@@ -72,7 +114,7 @@ describe("resolveRequestDevice", () => {
       // Given
 
       // When
-      const result = resolveRequestDevice({ userAgent });
+      const result = resolve({ userAgent });
 
       // Then
       expect(result).toEqual({ devicePlatform: platform });
@@ -90,7 +132,7 @@ describe("resolveRequestDevice", () => {
       // Given
 
       // When
-      const result = resolveRequestDevice({ userAgent });
+      const result = resolve({ userAgent });
 
       // Then
       expect(result).toEqual({});
@@ -100,7 +142,7 @@ describe("resolveRequestDevice", () => {
       // Given
 
       // When
-      const result = resolveRequestDevice({});
+      const result = resolve({});
 
       // Then
       expect(result).toEqual({});
@@ -111,7 +153,7 @@ describe("resolveRequestDevice", () => {
       const userAgent = `${"x".repeat(100_000)} Android`;
 
       // When
-      const result = resolveRequestDevice({ userAgent });
+      const result = resolve({ userAgent });
 
       // Then
       expect(result).toEqual({});
@@ -124,7 +166,7 @@ describe("resolveRequestDevice", () => {
       const deviceName = "  iPhone\n\t15‮ Pro\u0000  ";
 
       // When
-      const result = resolveRequestDevice({ deviceName });
+      const result = resolve({ deviceName });
 
       // Then
       expect(result).toEqual({ deviceModel: "iPhone 15 Pro" });
@@ -135,7 +177,7 @@ describe("resolveRequestDevice", () => {
       const deviceName = "갤럭시 S24";
 
       // When
-      const result = resolveRequestDevice({ deviceName });
+      const result = resolve({ deviceName });
 
       // Then
       expect(result).toEqual({ deviceModel: "갤럭시 S24" });
@@ -146,7 +188,7 @@ describe("resolveRequestDevice", () => {
       const deviceName = "😀".repeat(60);
 
       // When
-      const result = resolveRequestDevice({ deviceName });
+      const result = resolve({ deviceName });
 
       // Then
       expect(result).toEqual({ deviceModel: "😀".repeat(40) });
@@ -157,7 +199,7 @@ describe("resolveRequestDevice", () => {
       const deviceName = "\n\t\u0000";
 
       // When
-      const result = resolveRequestDevice({ deviceName });
+      const result = resolve({ deviceName });
 
       // Then
       expect(result).toEqual({});
@@ -165,18 +207,20 @@ describe("resolveRequestDevice", () => {
   });
 
   describe("앱·OS 정보", () => {
-    it("앱 버전·빌드·OS 버전·언어·시간대를 정규화해 남긴다", () => {
+    it("RequestClient가 정규화한 앱 버전·빌드·OS 버전·시간대와 첫 언어 태그를 남긴다", () => {
       // Given
       const source = {
-        osVersion: " 18.1 ",
-        appVersion: "1.14.0",
-        appBuild: "123",
+        headers: {
+          "x-os-version": " 18.1 ",
+          "x-app-version": "1.14.0",
+          "x-app-build": "123",
+          "x-timezone": "Asia/Seoul",
+        },
         acceptLanguage: "en-US,en;q=0.9",
-        timezone: "Asia/Seoul",
       };
 
       // When
-      const result = resolveRequestDevice(source);
+      const result = resolve(source);
 
       // Then
       expect(result).toEqual({
@@ -189,19 +233,13 @@ describe("resolveRequestDevice", () => {
     });
 
     it.each([
-      ["SemVer가 아닌 앱 버전", { appVersion: "latest" }],
-      ["너무 긴 앱 버전", { appVersion: `1.0.0-${"a".repeat(40)}` }],
-      ["허용하지 않는 문자가 섞인 OS 버전", { osVersion: "18.1<script>" }],
-      ["너무 긴 OS 버전", { osVersion: "1".repeat(21) }],
-      ["공백이 섞인 빌드 번호", { appBuild: "12 3" }],
-      ["언어 태그가 아닌 Accept-Language", { acceptLanguage: "*" }],
-      ["IANA가 아닌 시간대", { timezone: "Mars/Olympus" }],
-      ["중복 헤더(배열)", { appVersion: ["1.14.0", "1.13.1"] }],
-    ])("%s는 버린다", (_name, source) => {
+      ["언어 태그가 아닌 Accept-Language", "*"],
+      ["중복 헤더(배열)", ["en-US", "ko"]],
+    ])("%s는 언어를 비워 둔다", (_name, acceptLanguage) => {
       // Given
 
       // When
-      const result = resolveRequestDevice(source);
+      const result = resolve({ acceptLanguage });
 
       // Then
       expect(result).toEqual({});

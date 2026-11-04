@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Get,
@@ -20,6 +19,7 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiBadRequestError,
   ApiConflictError,
@@ -135,7 +135,7 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<ReceivedCheersResponseDto> {
     const result = await this.getReceivedCheersUseCase.execute({
       userId: user.userId,
@@ -173,7 +173,7 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<SentCheersResponseDto> {
     const result = await this.getSentCheersUseCase.execute({
       userId: user.userId,

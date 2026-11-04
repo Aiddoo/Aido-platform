@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Delete,
@@ -31,6 +30,11 @@ import {
 } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/v1/auth.mapper";
 import { Timezone } from "#api/platform/http/decorators/index";
+import {
+  AppVersion,
+  CurrentRequestClient,
+  type RequestClient,
+} from "#api/platform/http/request-client/index";
 import {
   ApiBadRequestError,
   ApiDoc,
@@ -96,7 +100,7 @@ export class AccountController {
   async getMe(
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() timezone: string,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.getCurrentUserQuery.execute({
       userId: user.userId,
@@ -135,7 +139,7 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateProfileDto }) dto: UpdateProfileDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.updateProfileUseCase.execute({ ...dto, userId: user.userId });
     return AuthMapper.toUpdateProfileResponse(result, appVersion);
@@ -217,8 +221,9 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UnlinkAccountDto }) params: UnlinkAccountDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.unlinkOAuthAccountUseCase.execute({
       userId: user.userId,
       provider: params.provider,
@@ -266,8 +271,9 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.deleteAccountUseCase.execute({
       userId: user.userId,
       password: dto.password,

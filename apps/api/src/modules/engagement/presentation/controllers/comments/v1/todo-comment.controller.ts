@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Delete,
@@ -20,6 +19,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiConflictError,
   ApiCreatedResponse,
@@ -103,7 +103,7 @@ export class TodoCommentController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoDetailsResponseDto> {
     const result = await this.getTodoDetails.execute({
       todoId: params.todoId,
@@ -133,7 +133,7 @@ export class TodoCommentController {
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
     @Query({ schema: GetTodoCommentOverviewQueryDto }) query: GetTodoCommentOverviewQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoCommentOverviewResponseDto> {
     const result = await this.getTodoCommentThreads.execute({
       todoId: params.todoId,
@@ -166,7 +166,7 @@ export class TodoCommentController {
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
     @Query({ schema: GetTodoConversationQueryDto }) query: GetTodoConversationQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoConversationResponseDto> {
     const result = await this.getTodoConversation.execute({
       todoId: params.todoId,
@@ -206,7 +206,7 @@ export class TodoCommentController {
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
     @Body({ schema: WriteTodoCommentChainDto }) body: WriteTodoCommentChainDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoCommentChainResponseDto> {
     const result = await this.writeTodoCommentChain.execute({
       todoId: params.todoId,
@@ -238,7 +238,7 @@ export class TodoCommentController {
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
     @Body({ schema: UpdateTodoCommentDto }) body: UpdateTodoCommentDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoCommentMutationResponseDto> {
     const result = await this.updateTodoComment.execute({
       todoId: params.todoId,

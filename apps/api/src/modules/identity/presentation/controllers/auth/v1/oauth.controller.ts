@@ -3,7 +3,6 @@ import { randomBytes } from "node:crypto";
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Get,
@@ -34,6 +33,11 @@ import {
   Public,
 } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/v1/auth.mapper";
+import {
+  AppVersion,
+  CurrentRequestClient,
+  type RequestClient,
+} from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiErrorCodesResponse,
@@ -123,7 +127,7 @@ export class OAuthController {
   async exchangeCode(
     @Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<AuthTokensDto> {
     const result = await this.exchangeOAuthCodeUseCase.execute({ code: dto.code });
     return AuthMapper.toExchangeCodeResponse(result, appVersion);
@@ -182,14 +186,15 @@ export class OAuthController {
   async appleCallback(
     @Body({ schema: AppleMobileCallbackDto }) dto: AppleMobileCallbackDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "APPLE",
       token: dto.idToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, dto),
+      metadata: extractMetadata(req, client, dto),
       nonce: dto.nonce,
     });
 
@@ -244,14 +249,15 @@ export class OAuthController {
   async googleCallback(
     @Body({ schema: GoogleMobileCallbackDto }) dto: GoogleMobileCallbackDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "GOOGLE",
       token: dto.idToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, dto),
+      metadata: extractMetadata(req, client, dto),
     });
 
     return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
@@ -355,12 +361,13 @@ export class OAuthController {
     @Query("code") code: string,
     @Query("state") state: string,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
     @Res() res: Response,
   ): Promise<void> {
     const defaultRedirectUri = "aido://auth/callback";
 
     try {
-      const metadata = extractMetadata(req);
+      const metadata = extractMetadata(req, client);
 
       const result = await this.completeOAuthAuthorizationUseCase.execute({
         provider: "GOOGLE",
@@ -439,14 +446,15 @@ export class OAuthController {
   async kakaoCallback(
     @Body({ schema: KakaoMobileCallbackDto }) dto: KakaoMobileCallbackDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "KAKAO",
       token: dto.accessToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, dto),
+      metadata: extractMetadata(req, client, dto),
     });
 
     return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
@@ -548,12 +556,13 @@ export class OAuthController {
     @Query("code") code: string,
     @Query("state") state: string,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
     @Res() res: Response,
   ): Promise<void> {
     const defaultRedirectUri = "aido://auth/callback";
 
     try {
-      const metadata = extractMetadata(req);
+      const metadata = extractMetadata(req, client);
 
       const result = await this.completeOAuthAuthorizationUseCase.execute({
         provider: "KAKAO",
@@ -628,14 +637,15 @@ export class OAuthController {
   async naverCallback(
     @Body({ schema: NaverMobileCallbackDto }) dto: NaverMobileCallbackDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.loginWithOAuthTokenUseCase.execute({
       provider: "NAVER",
       token: dto.accessToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, dto),
+      metadata: extractMetadata(req, client, dto),
     });
 
     return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
@@ -739,12 +749,13 @@ export class OAuthController {
     @Query("code") code: string,
     @Query("state") state: string,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
     @Res() res: Response,
   ): Promise<void> {
     const defaultRedirectUri = "aido://auth/callback";
 
     try {
-      const metadata = extractMetadata(req);
+      const metadata = extractMetadata(req, client);
 
       const result = await this.completeOAuthAuthorizationUseCase.execute({
         provider: "NAVER",
@@ -829,8 +840,9 @@ provider에 따라 필수 토큰이 다릅니다:
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: LinkSocialAccountDto }) dto: LinkSocialAccountDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.linkOAuthAccountUseCase.execute({ ...dto, userId: user.userId, metadata });
   }
 
@@ -888,8 +900,9 @@ provider에 따라 필수 토큰이 다릅니다:
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.linkOAuthAccountWithCodeUseCase.execute({
       userId: user.userId,
       code: dto.code,

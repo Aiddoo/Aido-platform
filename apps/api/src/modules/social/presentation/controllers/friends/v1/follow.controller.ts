@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Delete,
@@ -20,6 +19,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiBadRequestError,
   ApiCreatedResponse,
@@ -156,7 +156,7 @@ export class FollowController {
   async acceptRequest(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<AcceptFriendRequestResponseDto> {
     const result = await this.acceptFriendRequestUseCase.execute({
       userId: user.userId,
@@ -256,7 +256,7 @@ export class FollowController {
     @CurrentUser() user: CurrentUserPayload,
     @Param("followId") followId: string,
     @Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<ReorderFriendResponseDto> {
     const result = await this.reorderFriendUseCase.execute({
       followId,
@@ -315,7 +315,7 @@ export class FollowController {
   async getFriends(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetFriendsQueryDto }) query: GetFriendsQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<FriendsListResponseDto> {
     const result = await this.getFriendsUseCase.execute({
       userId: user.userId,
@@ -357,7 +357,7 @@ export class FollowController {
   async searchUsers(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: SearchUsersQueryDto }) query: SearchUsersQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<SearchUsersResponseDto> {
     const result = await this.searchUsersUseCase.execute({
       viewerId: user.userId,
@@ -395,7 +395,7 @@ export class FollowController {
   async getReceivedRequests(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<ReceivedRequestsResponseDto> {
     const result = await this.getReceivedFriendRequestsUseCase.execute({
       userId: user.userId,
@@ -431,7 +431,7 @@ export class FollowController {
   async getSentRequests(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<SentRequestsResponseDto> {
     const result = await this.getSentFriendRequestsUseCase.execute({
       userId: user.userId,

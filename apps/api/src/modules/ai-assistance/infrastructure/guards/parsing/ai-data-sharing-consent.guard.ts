@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 
+import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
@@ -24,6 +25,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
   constructor(
     @Inject(AI_DATA_SHARING_CONSENT_DECISION_READER)
     private readonly consentReader: AiDataSharingConsentDecisionReaderPort,
+    private readonly requestClientReader: RequestClientReader,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -33,8 +35,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
       throw new ApplicationException(ErrorCode.AUTH_0107);
     }
 
-    const appVersionHeader = request.headers["x-app-version"];
-    const appVersion = typeof appVersionHeader === "string" ? appVersionHeader : undefined;
+    const { appVersion } = this.requestClientReader.current();
     const decision = await this.consentReader.findAiDataSharingDecision(user.userId);
     if (!canShareWithAi(decision, appVersion)) {
       throw new ApplicationException(ErrorCode.AI_1311, { decision });

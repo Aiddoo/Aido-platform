@@ -1,41 +1,35 @@
 import type { Request } from "express";
 
 import type { RequestMetadata } from "#api/modules/identity/application/types/auth/auth.types";
+import type { RequestClient } from "#api/platform/http/request-client/index";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { resolveRequestDevice } from "./request-device.utils.js";
 
 /**
- * 요청에서 메타데이터 추출
+ * 요청에서 감사·관리자 알림용 메타데이터를 만든다. 구 앱은 기기 이름·타입을 본문으로 보내므로
+ * 본문 값이 RequestClient의 헤더 값보다 우선한다.
  */
 export function extractMetadata(
   req: Request,
+  client: RequestClient,
   body?: { deviceName?: string; deviceType?: string },
 ): RequestMetadata {
   const userAgent = req.headers["user-agent"];
-  const deviceName = body?.deviceName ?? singleHeaderValue(req.headers["x-device-name"]);
-  const deviceType = body?.deviceType ?? singleHeaderValue(req.headers["x-device-type"]);
 
   return {
     ip: req.ip || undefined,
     userAgent,
-    deviceName,
-    deviceType,
+    deviceName: body?.deviceName ?? client.deviceName ?? undefined,
+    deviceType: body?.deviceType ?? client.platform ?? undefined,
     device: resolveRequestDevice({
+      client,
       userAgent,
-      deviceName,
-      deviceType,
-      osVersion: req.headers["x-os-version"],
-      appVersion: req.headers["x-app-version"],
-      appBuild: req.headers["x-app-build"],
       acceptLanguage: req.headers["accept-language"],
-      timezone: req.headers["x-timezone"],
+      deviceName: body?.deviceName,
+      deviceType: body?.deviceType,
     }),
   };
-}
-
-function singleHeaderValue(value: string | string[] | undefined): string | undefined {
-  return typeof value === "string" ? value : undefined;
 }
 
 /**

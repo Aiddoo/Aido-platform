@@ -35,6 +35,8 @@ log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 �
 
 [logger.options.ts](../src/platform/logging/logger.options.ts)는 공식 nestjs-pino `pinoHttp` 옵션을 사용한다. query를 제외한 path/method/status/event와 요청 ID를 유지하고 req/res 원문 serializer를 비활성화한다. `quietReqLogger`·`quietResLogger`와 redaction 설정을 유지하며 4xx/5xx 자동 로그는 `customLogLevel`의 silent로 생략해 filter와 중복하지 않는다.
 
+요청 ID(`reqId`)는 `genReqId`의 [assignRequestId](../src/platform/http/request-client/request-id.ts)가 정한다. 앱이 보낸 `X-Request-Id`가 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 `X-Request-Id`로 돌려준다. 같은 값이 `RequestClient.requestId`와 Sentry `request_id` 태그가 되므로 앱 breadcrumb·서버 로그·Sentry 이벤트를 한 ID로 찾는다.
+
 level 우선순위는 명시적인 module 옵션 → LOG_LEVEL → 환경 기본값이다. 현재 기본값은 test silent, production info, 나머지 debug다. 기본 pretty print는 production/test 밖에서 사용한다. 업무 코드가 개별 logger 설정으로 이 정책을 다시 만들지 않는다.
 
 ## 확인할 증거

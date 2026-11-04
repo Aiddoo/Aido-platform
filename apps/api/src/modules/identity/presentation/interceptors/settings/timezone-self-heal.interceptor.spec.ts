@@ -10,7 +10,9 @@ import { of } from "rxjs";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";
 
+import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { createMockExecutionContext } from "#test/mocks/execution-context.mock";
+import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
 
 import { IdentitySettingsLogEvent } from "../../../application/observability/settings/identity-settings-log.events.js";
 import { RefreshPushTimezone } from "../../../application/use-cases/settings/refresh-push-timezone.use-case.js";
@@ -18,11 +20,16 @@ import { TimezoneSelfHealInterceptor } from "./timezone-self-heal.interceptor.js
 
 const nextHandler: CallHandler = { handle: () => of("ok") };
 
+interface InterceptedRequest {
+  readonly context: ExecutionContext;
+  readonly headers: Record<string, string>;
+}
+
 function contextFor(
   user: { userId: string } | undefined,
   headers: Record<string, string>,
-): ExecutionContext {
-  return createMockExecutionContext({ user, headers }).context;
+): InterceptedRequest {
+  return { context: createMockExecutionContext({ user }).context, headers };
 }
 
 describe("TimezoneSelfHealInterceptor", () => {
@@ -33,7 +40,10 @@ describe("TimezoneSelfHealInterceptor", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-16T09:00:00.000Z"));
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
-    const { unit, unitRef } = await TestBed.solitary(TimezoneSelfHealInterceptor).compile();
+    const { unit, unitRef } = await TestBed.solitary(TimezoneSelfHealInterceptor)
+      .mock(RequestClientReader)
+      .final(createRequestClientReader())
+      .compile();
     interceptor = unit;
     refreshPushTimezoneUseCase = unitRef.get(RefreshPushTimezone);
     refreshPushTimezoneUseCase.execute.mockResolvedValue(undefined);
@@ -44,11 +54,13 @@ describe("TimezoneSelfHealInterceptor", () => {
     vi.useRealTimers();
   });
 
-  it("인증 유저 + 유효한 X-Timezone이면 자가치유를 호출한다", () => {
-    interceptor.intercept(
-      contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" }),
-      nextHandler,
+  const intercept = (request: InterceptedRequest) =>
+    runWithRequestHeaders(request.headers, () =>
+      interceptor.intercept(request.context, nextHandler),
     );
+
+  it("인증 유저 + 유효한 X-Timezone이면 자가치유를 호출한다", () => {
+    intercept(contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" }));
 
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledWith({
       userId: "u1",
@@ -57,17 +69,14 @@ describe("TimezoneSelfHealInterceptor", () => {
   });
 
   it("미인증(user 없음)이면 호출하지 않는다", () => {
-    interceptor.intercept(contextFor(undefined, { "x-timezone": "Asia/Seoul" }), nextHandler);
+    intercept(contextFor(undefined, { "x-timezone": "Asia/Seoul" }));
 
     expect(refreshPushTimezoneUseCase.execute).not.toHaveBeenCalled();
   });
 
   it("무효/누락 타임존 헤더면 호출하지 않는다", () => {
-    interceptor.intercept(contextFor({ userId: "u1" }, {}), nextHandler);
-    interceptor.intercept(
-      contextFor({ userId: "u1" }, { "x-timezone": "Mars/Olympus" }),
-      nextHandler,
-    );
+    intercept(contextFor({ userId: "u1" }, {}));
+    intercept(contextFor({ userId: "u1" }, { "x-timezone": "Mars/Olympus" }));
 
     expect(refreshPushTimezoneUseCase.execute).not.toHaveBeenCalled();
   });
@@ -75,21 +84,15 @@ describe("TimezoneSelfHealInterceptor", () => {
   it("같은 tz는 스로틀 창 안에서 한 번만 호출한다", () => {
     const ctx = contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" });
 
-    interceptor.intercept(ctx, nextHandler);
-    interceptor.intercept(ctx, nextHandler);
+    intercept(ctx);
+    intercept(ctx);
 
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
   it("tz가 바뀌면 즉시 다시 호출한다 (여행 등)", () => {
-    interceptor.intercept(
-      contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" }),
-      nextHandler,
-    );
-    interceptor.intercept(
-      contextFor({ userId: "u1" }, { "x-timezone": "America/New_York" }),
-      nextHandler,
-    );
+    intercept(contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" }));
+    intercept(contextFor({ userId: "u1" }, { "x-timezone": "America/New_York" }));
 
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenLastCalledWith({
@@ -102,9 +105,9 @@ describe("TimezoneSelfHealInterceptor", () => {
     const context = contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" });
     refreshPushTimezoneUseCase.execute.mockRejectedValueOnce(new Error("민감한 요청 원문"));
     // When
-    interceptor.intercept(context, nextHandler);
+    intercept(context);
     await Promise.resolve();
-    interceptor.intercept(context, nextHandler);
+    intercept(context);
     // Then
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
     expect(Logger.prototype.error).toHaveBeenCalledWith({
@@ -124,14 +127,11 @@ describe("TimezoneSelfHealInterceptor", () => {
     refreshPushTimezoneUseCase.execute.mockReturnValueOnce(pendingSeoul.promise);
     const tokyo = contextFor({ userId: "u1" }, { "x-timezone": "Asia/Tokyo" });
     // When
-    interceptor.intercept(
-      contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" }),
-      nextHandler,
-    );
-    interceptor.intercept(tokyo, nextHandler);
+    intercept(contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" }));
+    intercept(tokyo);
     pendingSeoul.reject(new Error("이전 요청의 저장 실패"));
     await Promise.resolve();
-    interceptor.intercept(tokyo, nextHandler);
+    intercept(tokyo);
     // Then
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
   });
@@ -139,13 +139,13 @@ describe("TimezoneSelfHealInterceptor", () => {
   it("같은 타임존은 스로틀 만료 직전까지 생략하고 정확한 만료 시점에 다시 반영한다", () => {
     // Given
     const context = contextFor({ userId: "u1" }, { "x-timezone": "Asia/Seoul" });
-    interceptor.intercept(context, nextHandler);
+    intercept(context);
     // When
     vi.advanceTimersByTime(TimezoneSelfHealInterceptor.THROTTLE_MS - 1);
-    interceptor.intercept(context, nextHandler);
+    intercept(context);
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(1);
-    interceptor.intercept(context, nextHandler);
+    intercept(context);
     // Then
     expect(refreshPushTimezoneUseCase.execute).toHaveBeenCalledTimes(2);
   });
@@ -154,7 +154,7 @@ describe("TimezoneSelfHealInterceptor", () => {
     // Given
     const context = contextFor({ userId: "" }, { "x-timezone": "Asia/Seoul" });
     // When
-    interceptor.intercept(context, nextHandler);
+    intercept(context);
     // Then
     expect(refreshPushTimezoneUseCase.execute).not.toHaveBeenCalled();
   });

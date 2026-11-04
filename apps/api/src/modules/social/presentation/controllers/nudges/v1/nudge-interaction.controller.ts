@@ -1,21 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
-import {
-  Body,
-  Controller,
-  Get,
-  Header,
-  Headers,
-  Param,
-  Put,
-  Query,
-  HttpStatus,
-} from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Put, Query, HttpStatus } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiConflictError,
   ApiDoc,
@@ -83,7 +74,7 @@ export class NudgeInteractionController {
   async getInteractions(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgeInteractionsQueryDto }) query: GetNudgeInteractionsQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<NudgeInteractionsResponseDto> {
     const page = await this.getNudgeInteractionsUseCase.execute({
       userId: user.userId,
@@ -108,7 +99,7 @@ export class NudgeInteractionController {
   async getInteraction(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<NudgeInteractionResponseDto> {
     const nudge = await this.getNudgeInteractionUseCase.execute({
       userId: user.userId,
@@ -133,7 +124,7 @@ export class NudgeInteractionController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
     @Body({ schema: ReplyToNudgeDto }) body: ReplyToNudgeDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<NudgeInteractionResponseDto> {
     const nudge = await this.replyToNudgeUseCase.execute({
       userId: user.userId,
@@ -154,7 +145,7 @@ export class NudgeInteractionController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,
     @Query({ schema: GetNudgeThanksPreviewQueryDto }) query: GetNudgeThanksPreviewQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<NudgeThanksPreviewResponseDto> {
     const preview = await this.getNudgeThanksPreviewUseCase.execute({
       userId: user.userId,

@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import type { Params } from "nestjs-pino";
 
+import { assignRequestId } from "#api/platform/http/request-client/request-id";
+
 import { LOGGER_REDACT_PATHS } from "./constants/logger.constant.js";
 import { HttpLogEvent, httpRequestPath } from "./http-log.js";
 import type { LoggerModuleOptions } from "./interfaces/logger.interface.js";
@@ -40,6 +42,7 @@ export function createLoggerOptions(
         : undefined,
       level,
       autoLogging,
+      genReqId: assignRequestId,
       customLogLevel: (_req, res) => (res.statusCode >= 400 ? "silent" : "info"),
       quietReqLogger: true,
       quietResLogger: true,
