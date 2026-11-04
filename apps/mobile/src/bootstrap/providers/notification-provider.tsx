@@ -23,7 +23,7 @@ import {
 import { AppState, Platform } from 'react-native';
 
 import { useAuth } from './auth-provider';
-import { useLogger, useNotificationService } from './di-context';
+import { useLogger, useNotificationService, usePushDeviceService } from './di-context';
 
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
@@ -303,7 +303,7 @@ function usePushLocaleSync({
   isAuthenticated: boolean;
   canRegisterPushAutomatically: boolean;
 }) {
-  const notificationService = useNotificationService();
+  const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
 
   useEffect(() => {
@@ -312,16 +312,14 @@ function usePushLocaleSync({
     }
 
     const handleLanguageChanged = () => {
-      notificationService
-        .setupPushNotifications()
-        .catch((error) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_REREGISTRATION_SKIPPED, { error }),
-        );
+      pushDeviceService
+        .report({ force: true })
+        .catch((error) => logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, { error }));
     };
 
     i18n.on('languageChanged', handleLanguageChanged);
     return () => i18n.off('languageChanged', handleLanguageChanged);
-  }, [canRegisterPushAutomatically, isAuthenticated, logger, notificationService]);
+  }, [canRegisterPushAutomatically, isAuthenticated, logger, pushDeviceService]);
 }
 
 function useNotificationBadgeSync(isAuthenticated: boolean) {

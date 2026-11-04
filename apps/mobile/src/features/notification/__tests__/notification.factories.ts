@@ -2,7 +2,6 @@ import type {
   MarkReadResponse,
   NotificationListResponse,
   PushDeviceResponse,
-  RegisterTokenResponse,
   UnreadCountResponse,
 } from '@aido/api';
 import type {
@@ -49,14 +48,6 @@ export const createNotificationListResponseDto = (
   overrides?: Partial<NotificationListResponse>,
 ): NotificationListResponse => ({
   ...generateNotificationListResponseDto(),
-  ...overrides,
-});
-
-export const createRegisterTokenResponseDto = (
-  overrides?: Partial<RegisterTokenResponse>,
-): RegisterTokenResponse => ({
-  message: '푸시 토큰이 등록되었습니다.',
-  registered: true,
   ...overrides,
 });
 

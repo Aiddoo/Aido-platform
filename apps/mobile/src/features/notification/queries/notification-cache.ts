@@ -103,3 +103,7 @@ export function restoreNotificationCache(
 export function invalidateNotifications(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
 }
+
+export function invalidatePushPermission(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.permission() });
+}

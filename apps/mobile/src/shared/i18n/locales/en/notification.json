@@ -70,10 +70,5 @@
     "reminderEveningLabel": "Evening reminder",
     "reminderEveningDescription": "Get your remaining to-dos in the evening (12:00–23:59)",
     "reminderPremium": "Changing reminder times is available to premium subscribers only."
-  },
-  "errors": {
-    "permissionDenied": "Notification permission was denied. Please allow notifications in Settings.",
-    "notPhysicalDevice": "Push notifications only work on a physical device.",
-    "validationFailed": "Failed to validate notification data"
   }
 }

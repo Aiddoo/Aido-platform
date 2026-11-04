@@ -5,7 +5,7 @@ import {
   useAnalytics,
   useAuthService,
   useLogger,
-  useNotificationService,
+  usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { errorMessageOf, isApiError } from '@src/shared/errors';
@@ -21,7 +21,7 @@ export const useDeleteAccountMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
-  const notificationService = useNotificationService();
+  const pushDeviceService = usePushDeviceService();
   const toast = useAppToast();
   const logger = useLogger();
   const { setStatus } = useAuth();
@@ -29,7 +29,7 @@ export const useDeleteAccountMutationOptions = () => {
   return mutationOptions({
     mutationFn: async (input: DeleteAccountInput) => {
       try {
-        const unregisterResult = await notificationService.unregisterPushToken();
+        const unregisterResult = await pushDeviceService.unregister();
         if (!unregisterResult.ok) {
           logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
             error: errorMessageOf(unregisterResult.error),

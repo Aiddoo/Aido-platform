@@ -5,7 +5,7 @@ import { createAuthTokens } from '../__tests__/auth.factories';
 import { useExchangeCodeMutationOptions } from './use-exchange-code-mutation-options';
 
 const mockSetStatus = jest.fn();
-const mockSetupPushNotifications = jest.fn();
+const mockRequestPushPermission = jest.fn();
 const mockTrackEvent = jest.fn();
 
 jest.mock('@src/bootstrap/providers/auth-provider', () => ({
@@ -14,7 +14,7 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
   useAuthService: () => ({ exchangeCode: jest.fn() }),
-  useNotificationService: () => ({ setupPushNotifications: mockSetupPushNotifications }),
+  usePushDeviceService: () => ({ requestPermission: mockRequestPushPermission }),
   useLogger: () => ({ warn: jest.fn() }),
 }));
 
@@ -37,7 +37,6 @@ const MUTATION_CONTEXT = { client: createTestQueryClient(), meta: undefined };
 describe('useExchangeCodeMutationOptions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSetupPushNotifications.mockResolvedValue({ ok: true, value: { registered: true } });
   });
 
   it('OAuth 성공은 인증만 완료하고 푸시 결정은 공용 게이트에 맡긴다', async () => {
@@ -54,7 +53,7 @@ describe('useExchangeCodeMutationOptions', () => {
 
     // Then
     expect(mockSetStatus).toHaveBeenCalledWith('authenticated');
-    expect(mockSetupPushNotifications).not.toHaveBeenCalled();
+    expect(mockRequestPushPermission).not.toHaveBeenCalled();
   });
 
   it('기존 계정 로그인은 auth_login만 보낸다', async () => {

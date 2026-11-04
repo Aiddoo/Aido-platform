@@ -128,6 +128,15 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get notificationService() {
       return dependency('notificationService');
     },
+    get pushDeviceService() {
+      return dependency('pushDeviceService');
+    },
+    get pushPromptService() {
+      return dependency('pushPromptService');
+    },
+    get marketingPushPromptService() {
+      return dependency('marketingPushPromptService');
+    },
     get todoNudgeService() {
       return dependency('todoNudgeService');
     },

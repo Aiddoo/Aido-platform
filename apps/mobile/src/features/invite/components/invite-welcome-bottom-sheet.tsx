@@ -1,6 +1,7 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { useGetNotificationPermissionQueryOptions } from '@src/features/notification/queries/get-notification-permission-query-options';
-import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
+import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
+import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/get-push-permission-query-options';
+import { useRequestPushPermissionMutationOptions } from '@src/features/notification/queries/use-request-push-permission-mutation-options';
 import { createFeedAddTodoHref, createFeedHref } from '@src/features/todo/utils/feed-route';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
@@ -226,14 +227,21 @@ InviteWelcomeBottomSheet.Actions = function Actions({
 /** 친구 소식을 받으려면 알림이 필요하다는 맥락을 이 순간에 한 번 알린다. 이미 켰으면 보여 주지 않는다 */
 function WelcomeNotificationPrompt() {
   const { t } = useTranslation('invite');
-  const registerPush = useMutation(useRegisterPushTokenMutationOptions());
-  const { data: hasPermission } = useQuery({
-    ...useGetNotificationPermissionQueryOptions(),
+  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
+  const { data: permission } = useQuery({
+    ...useGetPushPermissionQueryOptions(),
     throwOnError: false,
   });
+  const isTurnedOn =
+    requestPermission.data != null &&
+    PushPermissionPolicy.isDeliveryAllowed(requestPermission.data);
 
-  // 권한을 확인하기 전에는 그리지 않아 이미 켠 사용자에게 잠깐 보였다 사라지지 않게 한다
-  if (hasPermission !== false) {
+  // 권한을 확인하기 전에는 그리지 않아 이미 켠 사용자에게 잠깐 보였다 사라지지 않게 한다.
+  // 시스템 창을 다시 띄울 수 없으면 버튼이 아무 일도 하지 않으므로 보여 주지 않는다
+  if (
+    !isTurnedOn &&
+    (permission == null || !PushPermissionPolicy.canRequestSystemDialog(permission))
+  ) {
     return null;
   }
 
@@ -247,13 +255,13 @@ function WelcomeNotificationPrompt() {
         lineBreakStrategyIOS="hangul-word"
         textBreakStrategy="highQuality"
       >
-        {registerPush.isSuccess ? t('welcome.notificationOn') : t('welcome.notificationContext')}
+        {isTurnedOn ? t('welcome.notificationOn') : t('welcome.notificationContext')}
       </Text>
-      {!registerPush.isSuccess && (
+      {!isTurnedOn && (
         <TextButton
           size="small"
-          onPress={() => registerPush.mutate()}
-          isDisabled={registerPush.isPending}
+          onPress={() => requestPermission.mutate()}
+          isDisabled={requestPermission.isPending}
         >
           {t('welcome.notificationButton')}
         </TextButton>

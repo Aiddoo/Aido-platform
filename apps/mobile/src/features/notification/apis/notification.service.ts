@@ -4,105 +4,31 @@ import {
   markReadResponseSchema,
   notificationInboxResponseSchema,
   notificationOpenedResponseSchema,
-  type RegisterTokenResponse,
-  registerTokenResponseSchema,
   unreadCountResponseSchema,
 } from '@aido/api';
-import type { HttpClient, RequestConfig } from '@src/core/ports/http';
-import type { Logger } from '@src/core/ports/logger';
+import type { HttpClient } from '@src/core/ports/http';
+import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
-import * as Application from 'expo-application';
-import * as Notifications from 'expo-notifications';
 
-import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import type { NotificationError } from '../domains/notification.error';
 import type { GetNotificationsQuery, NotificationListResult } from '../domains/notification.model';
-import type { DeviceIdService } from './device-id.service';
 import { toNotificationListResult } from './notification.mapper';
-import type { PushTokenService } from './push-token.service';
-
-export type NotificationServiceError = ApiError | NotificationError;
 
 export class NotificationService {
   readonly #httpClient: HttpClient;
-  readonly #deviceIdService: DeviceIdService;
-  readonly #pushTokenService: PushTokenService;
-  readonly #logger: Logger;
+  readonly #badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>;
   readonly #publicHttpClient: HttpClient;
 
   constructor(
     httpClient: HttpClient,
-    deviceIdService: DeviceIdService,
-    pushTokenService: PushTokenService,
-    logger: Logger,
+    badgeGateway: Pick<PushNotificationGateway, 'setBadgeCount'>,
     publicHttpClient: HttpClient = httpClient,
   ) {
     this.#httpClient = httpClient;
-    this.#deviceIdService = deviceIdService;
-    this.#pushTokenService = pushTokenService;
-    this.#logger = logger;
+    this.#badgeGateway = badgeGateway;
     this.#publicHttpClient = publicHttpClient;
   }
-
-  setupPushNotifications = async (
-    options: { requestPermission?: boolean } = {},
-  ): Promise<Result<RegisterTokenResponse, NotificationServiceError>> => {
-    const [tokenResult, deviceId] = await Promise.all([
-      this.#pushTokenService.getExpoPushToken({
-        requestPermission: options.requestPermission ?? true,
-      }),
-      this.#deviceIdService.get(),
-    ]);
-
-    if (!tokenResult.ok) {
-      return tokenResult;
-    }
-
-    this.#logger.debug(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_REGISTERING, { payloadVersion: 2 });
-
-    const result = await this.#httpClient.post('v1/notifications/token', {
-      token: tokenResult.value,
-      deviceId,
-      payloadVersion: 2,
-      appVersion: Application.nativeApplicationVersion ?? undefined,
-    });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = registerTokenResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[NotificationService] Invalid registerToken response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(parsed.data);
-  };
-
-  unregisterPushToken = async (
-    config?: Pick<RequestConfig, 'timeout'>,
-  ): Promise<Result<void, ApiError>> => {
-    const deviceId = await this.#deviceIdService.get();
-    const result = await this.#httpClient.delete('v1/notifications/token', {
-      ...config,
-      ...(deviceId && { params: { deviceId } }),
-    });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    return ok(undefined);
-  };
-
-  isSupported = (): boolean => this.#pushTokenService.isPhysicalDevice();
-
-  /** 권한 창을 띄우지 않고 이미 알림을 허용했는지만 본다 */
-  hasPermission = (): Promise<boolean> => this.#pushTokenService.requestPermission(false);
 
   getNotifications = async (
     query?: GetNotificationsQuery,
@@ -213,13 +139,9 @@ export class NotificationService {
     return ok(parsed.data.optedOut);
   };
 
-  setBadgeCount = async (count: number): Promise<void> => {
-    await Notifications.setBadgeCountAsync(count);
-  };
+  setBadgeCount = (count: number): Promise<void> => this.#badgeGateway.setBadgeCount(count);
 
-  clearBadge = async (): Promise<void> => {
-    await Notifications.setBadgeCountAsync(0);
-  };
+  clearBadge = (): Promise<void> => this.#badgeGateway.setBadgeCount(0);
 
   syncBadgeCount = async (): Promise<void> => {
     const result = await this.getUnreadCount();

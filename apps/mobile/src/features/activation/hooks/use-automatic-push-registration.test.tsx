@@ -4,7 +4,8 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { ActivationProgress, ActivationUser } from '../domains/activation.model';
 import { useAutomaticPushRegistration } from './use-automatic-push-registration';
 
-const mockSetupPushNotifications = jest.fn();
+const mockReport = jest.fn();
+const mockRequestPermission = jest.fn();
 const mockWarn = jest.fn();
 
 let mockActivationState: {
@@ -37,7 +38,7 @@ let mockActivationState: {
 };
 
 jest.mock('@src/bootstrap/providers/di-context', () => ({
-  useNotificationService: () => ({ setupPushNotifications: mockSetupPushNotifications }),
+  usePushDeviceService: () => ({ report: mockReport, requestPermission: mockRequestPermission }),
   useLogger: () => ({ warn: mockWarn }),
 }));
 
@@ -63,7 +64,8 @@ describe('useAutomaticPushRegistration', () => {
       isAuthenticated: true,
       hasUserError: false,
     };
-    mockSetupPushNotifications.mockResolvedValue({ ok: true, value: { registered: true } });
+    mockReport.mockResolvedValue({ ok: true, value: null });
+    mockRequestPermission.mockResolvedValue({ status: 'GRANTED', canAskAgain: false });
   });
 
   it('기존 사용자는 컨텍스트와 무관하게 허용된 토큰을 즉시 재등록하고 기존 권한 흐름도 유지한다', async () => {
@@ -72,8 +74,8 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith({ requestPermission: false });
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
+      expect(mockReport).toHaveBeenCalledWith({ force: true });
+      expect(mockRequestPermission).toHaveBeenCalled();
     });
   });
 
@@ -92,8 +94,8 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledTimes(1);
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith({ requestPermission: false });
+      expect(mockRequestPermission).not.toHaveBeenCalled();
+      expect(mockReport).toHaveBeenCalledWith({ force: true });
     });
   });
 
@@ -120,7 +122,7 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
+      expect(mockRequestPermission).toHaveBeenCalled();
     });
   });
 
@@ -128,7 +130,7 @@ describe('useAutomaticPushRegistration', () => {
     // Given
     const { rerender } = await renderHook(() => useAutomaticPushRegistration());
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
+      expect(mockRequestPermission).toHaveBeenCalled();
     });
 
     // When
@@ -139,9 +141,7 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(
-        mockSetupPushNotifications.mock.calls.filter((args) => args.length === 0),
-      ).toHaveLength(2);
+      expect(mockRequestPermission).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -161,7 +161,7 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
+      expect(mockRequestPermission).toHaveBeenCalled();
     });
   });
 
@@ -179,8 +179,8 @@ describe('useAutomaticPushRegistration', () => {
 
     // Then
     await waitFor(() => {
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith({ requestPermission: false });
-      expect(mockSetupPushNotifications).toHaveBeenCalledWith();
+      expect(mockReport).toHaveBeenCalledWith({ force: true });
+      expect(mockRequestPermission).toHaveBeenCalled();
     });
   });
 });

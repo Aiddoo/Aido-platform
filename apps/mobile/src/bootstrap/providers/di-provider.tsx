@@ -23,8 +23,12 @@ import { MemoService } from '@src/features/memo/apis/memo.service';
 import { ModerationService } from '@src/features/moderation/apis/moderation.service';
 import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
+import { createMarketingPushPromptRepository } from '@src/features/notification/apis/marketing-push-prompt.repository';
+import { MarketingPushPromptService } from '@src/features/notification/apis/marketing-push-prompt.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
-import { PushTokenService } from '@src/features/notification/apis/push-token.service';
+import { PushDeviceService } from '@src/features/notification/apis/push-device.service';
+import { createPushPromptRepository } from '@src/features/notification/apis/push-prompt.repository';
+import { PushPromptService } from '@src/features/notification/apis/push-prompt.service';
 import { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import { PreferenceService } from '@src/features/preference/apis/preference.service';
 import { createStoreReviewRepository } from '@src/features/store-review/apis/store-review.repository';
@@ -71,6 +75,7 @@ import {
   setGlobalLogger,
 } from '@src/shared/infra/logger';
 import { expoNetworkStatusGateway } from '@src/shared/infra/network/expo-network-status.gateway';
+import { expoPushNotificationGateway } from '@src/shared/infra/notification/expo-push-notification.gateway';
 import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
@@ -231,13 +236,20 @@ export function DIProvider({
     // Notification
     const deviceIdRepository = new DeviceIdRepository();
     const deviceIdService = new DeviceIdService(deviceIdRepository);
-    const pushTokenService = new PushTokenService();
     const notificationService = new NotificationService(
       authHttpClient,
-      deviceIdService,
-      pushTokenService,
-      logger,
+      expoPushNotificationGateway,
       publicHttpClient,
+    );
+    const pushDeviceService = new PushDeviceService(
+      expoPushNotificationGateway,
+      deviceIdService,
+      authHttpClient,
+      logger,
+    );
+    const pushPromptService = new PushPromptService(createPushPromptRepository(mmkvSyncStorage));
+    const marketingPushPromptService = new MarketingPushPromptService(
+      createMarketingPushPromptRepository(mmkvSyncStorage),
     );
 
     // Todo Nudge
@@ -299,6 +311,9 @@ export function DIProvider({
       todoCommentService,
       todoCategoryService,
       notificationService,
+      pushDeviceService,
+      pushPromptService,
+      marketingPushPromptService,
       todoNudgeService,
       coachmarkService,
       friendStripHintService,

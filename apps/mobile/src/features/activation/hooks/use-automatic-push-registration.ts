@@ -1,4 +1,4 @@
-import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { useLogger, usePushDeviceService } from '@src/bootstrap/providers/di-context';
 import { errorMessageOf } from '@src/shared/errors';
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -7,7 +7,7 @@ import { ActivationPolicy } from '../domains/activation.model';
 import { useActivationProgress } from './use-activation-progress';
 
 export function useAutomaticPushRegistration(): boolean {
-  const notificationService = useNotificationService();
+  const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
   const activation = useActivationProgress();
   const attemptedKeyRef = useRef<string | null>(null);
@@ -43,12 +43,12 @@ export function useAutomaticPushRegistration(): boolean {
     }
 
     preflightAttemptedRef.current = true;
-    notificationService.setupPushNotifications({ requestPermission: false }).catch((error) =>
+    pushDeviceService.report({ force: true }).catch((error) =>
       logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_PREFLIGHT_SKIPPED, {
         error: errorMessageOf(error),
       }),
     );
-  }, [activation.isAuthenticated, logger, notificationService]);
+  }, [activation.isAuthenticated, logger, pushDeviceService]);
 
   useEffect(() => {
     if (!registrationKey) {
@@ -60,12 +60,12 @@ export function useAutomaticPushRegistration(): boolean {
     }
 
     attemptedKeyRef.current = registrationKey;
-    notificationService.setupPushNotifications().catch((error) => {
+    pushDeviceService.requestPermission().catch((error) => {
       logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_REGISTRATION_SKIPPED, {
         error: errorMessageOf(error),
       });
     });
-  }, [logger, notificationService, registrationKey]);
+  }, [logger, pushDeviceService, registrationKey]);
 
   return canRegister;
 }
