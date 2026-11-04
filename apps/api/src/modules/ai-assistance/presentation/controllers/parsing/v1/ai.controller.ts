@@ -137,7 +137,7 @@ export class AiController {
 | \`processingTimeMs\` | number | 처리 시간 (ms) |
 | \`tokenUsage.input\` | number | 입력 토큰 수 |
 | \`tokenUsage.output\` | number | 출력 토큰 수 |
-| \`promptVersion\` | string (선택) | 응답을 만든 프롬프트 버전 (예: \`parse-todo@v2\`). 구 서버 응답에는 없을 수 있습니다. |
+| \`promptVersion\` | string (선택) | 응답을 만든 프롬프트 버전 (예: \`parse-todo@3\`). 구 서버 응답에는 없을 수 있습니다. |
 
 ## ⏰ 날짜·시간 해석 규칙
 AI는 문장에서 날짜·시각 표현의 종류만 읽고, 실제 날짜·요일·시각은 서버가 사용자 시간대(\`X-Timezone\`, 없으면 저장된 사용자 시간대) 기준으로 계산합니다.
@@ -286,7 +286,7 @@ if (confirmed) {
    *     "model": "google:gemini-3.1-flash-lite",
    *     "processingTimeMs": 350,
    *     "tokenUsage": { "input": 450, "output": 280 },
-   *     "promptVersion": "parse-memo@v2.1",
+   *     "promptVersion": "parse-memo@3",
    *     "omittedTodoCount": 0
    *   }
    * }
@@ -341,7 +341,7 @@ if (confirmed) {
 | \`items\` | array | 서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개) |
 
 ## 📊 메타데이터 (\`meta\`)
-\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`), \`omittedTodoCount\`(${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개를 넘어 만들지 않은 할 일 수)를 반환합니다.
+\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@3\`), \`omittedTodoCount\`(${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개를 넘어 만들지 않은 할 일 수)를 반환합니다.
 
 ## 🧠 AI 파싱 규칙
 - **별개 맥락/주제** → 별도 Todo로 분리합니다. 할 일은 합치지 않고 입력 순서대로 앞의 ${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개까지 만들며, 나머지 수는 \`meta.omittedTodoCount\`로 알립니다. 메모 원문은 그대로 남습니다

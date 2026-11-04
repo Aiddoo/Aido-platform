@@ -7,14 +7,14 @@ import {
 import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
-import { removeInvisibleCharacters } from "#api/shared/domain/prompt/sanitize";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
 import type { TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
+import { removeInvisibleCharacters } from "../../prompts/kit/untrusted-input.js";
 
-/** 공개 계약의 제목 상한 */
-const TITLE_MAX_LENGTH = 200;
+/** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
+export const TITLE_MAX_LENGTH = 200;
 
 /**
  * 모델이 센 메모 전체 할 일 수의 상한. 입력에 심은 지시로 터무니없는 수("나머지 99999개")를
@@ -45,7 +45,8 @@ export interface DraftNormalizeContext {
   readonly ownedCategoryIds: ReadonlySet<number>;
 }
 
-function cleanTitle(value: string): string {
+/** 보이지 않는 문자·연속 공백을 정리하고 제목 상한으로 자른다. */
+export function cleanTitle(value: string): string {
   return truncateGraphemes(
     removeInvisibleCharacters(value).replace(/\s+/g, " ").trim(),
     TITLE_MAX_LENGTH,

@@ -11,12 +11,12 @@ import {
   generationFailedLog,
 } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
+import type { AiGenerationMeta } from "../../ports/generation/ai-generator.port.js";
 import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
-import { parseTodoPrompts } from "../../prompts/parsing/parse-todo/index.js";
-import type { GenerationMeta } from "../../prompts/structured-output.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { parseTodoPrompt } from "../../prompts/parsing/parse-todo/index.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 
@@ -80,7 +80,6 @@ interface ParseTodoDependencies {
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -127,36 +126,26 @@ export class ParseTodo {
     startTime: number,
   ): Promise<ChargedResult<Omit<ParseTodoResult, "featureQuota">>> {
     const { text, userId, timezone, categoryId, locale } = input;
-    const definition = parseTodoPrompts[this.#dependencies.settings.promptVersion][locale];
+    const definition = parseTodoPrompt;
     const at = now();
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
     const userCategories =
       categoryId == null ? await this.#dependencies.categoryReader.findByUserId(userId) : [];
-    const { system, prompt } = definition.build({
-      text,
-      timezone,
-      now: at,
-      categories: userCategories.map(({ id, name }) => ({ id, name })),
-    });
+    const built = definition.build({ text, timezone, now: at, categories: userCategories }, locale);
     const logBase = {
-      task: "parse-todo",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
     } as const;
 
     const { agreedVersion } =
       await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
     try {
-      const { value, meta } = await definition.output.generate(
+      const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
-        {
-          task: "parse-todo",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          agreedConsentVersion: agreedVersion,
-        },
+        definition,
+        built,
         {
           text,
           timezone,
@@ -165,6 +154,7 @@ export class ParseTodo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           requestedCategoryId: categoryId,
         },
+        { agreedConsentVersion: agreedVersion },
       );
 
       const charge = value.intent === "TASK";
@@ -178,7 +168,7 @@ export class ParseTodo {
       return {
         result: {
           data: value.data,
-          meta: toParseMeta(meta, definition.promptVersion, Date.now() - startTime),
+          meta: toParseMeta(meta, definition.version, Date.now() - startTime),
         },
         charge,
       };
@@ -200,7 +190,7 @@ export class ParseTodo {
 }
 
 export function toParseMeta(
-  meta: GenerationMeta,
+  meta: AiGenerationMeta,
   promptVersion: string,
   processingTimeMs: number,
 ): ParseTodoMeta {

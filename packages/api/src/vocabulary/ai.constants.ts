@@ -7,6 +7,29 @@ export const AI_PARSE_LIMITS = {
   MEMO_MAX_ITEMS: 5,
 } as const;
 
+/**
+ * 말·글로 만드는 실행 계획(빠른 계획·녹음 정리) 상한. 요청 검증·프롬프트·정규화가 같은 값을 쓴다.
+ * 할 일 하위 항목·제목·메모 길이는 손으로 만든 할 일·메모와 같은 상한(TODO_ITEM_LIMITS·MEMO_LIMITS)을 쓴다.
+ */
+export const ACTION_PLAN_LIMITS = {
+  /** 빠른 계획 입력 최대 길이 */
+  QUICK_PLAN_TEXT_MAX_LENGTH: 1000,
+  /** 계획 하나의 할 일 최대 수 */
+  MAX_TODOS: 10,
+  /** 계획 하나의 메모 최대 수 */
+  MAX_MEMOS: 1,
+  /** 녹음 정리에 보내는 문장(segments) 최대 수 */
+  DIGEST_MAX_SEGMENTS: 600,
+  /** 녹음 정리 핵심 포인트 최대 수 */
+  DIGEST_MAX_KEY_POINTS: 5,
+  /** 녹음 정리 제목 최대 길이 */
+  DIGEST_TITLE_MAX_LENGTH: 100,
+  /** 녹음 정리 요약 최대 길이 */
+  DIGEST_SUMMARY_MAX_LENGTH: 1000,
+  /** 핵심 포인트 하나의 최대 길이 */
+  DIGEST_KEY_POINT_MAX_LENGTH: 200,
+} as const;
+
 // TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤 사용하지 않는 AI_REPORT_LIMITS를 제거한다
 /**
  * @deprecated 어디에서도 쓰지 않고 실제 디스패치(매시, 사용자 로컬 월요일·1일)와도 다르다.

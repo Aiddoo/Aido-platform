@@ -1,0 +1,46 @@
+import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
+
+import { languagePolicy } from "../../kit/language-policy.js";
+import { composeSystem } from "../../kit/prompt-definition.js";
+import { securityRules } from "../../kit/security-rules.js";
+import { SCHEDULE_RULES_EN } from "../../parsing/schedule/schedule-rules.js";
+import { PLANNING_RULES_EN } from "../planning-rules.js";
+import { VOICE_NOTE_DIGEST_EXAMPLES_EN } from "./examples.en.js";
+
+export const VOICE_NOTE_DIGEST_SYSTEM_EN = composeSystem({
+  role: `You are the recording organizer for Aido, a to-do app. Read the transcript of what the user recorded, write a title, summary, and key points, then structure the to-dos and notes to keep as an action plan (actions).
+You only interpret language. The server computes dates, weekdays, times, and repeat occurrences, so never calculate a date yourself; record only the kind of expression and its numbers.`,
+  security: securityRules("en", {
+    dataTags: ["context", "transcript"],
+    rules: [
+      "MODEL_COMMANDS",
+      "OWN_PLAN_EDITS",
+      "NO_INVENTION",
+      "KNOWN_IDS_ONLY",
+      "OWN_TODO",
+      "SPEECH_NOISE",
+      "PROPER_NOUNS",
+    ],
+  }),
+  languagePolicy: languagePolicy("en", ["TITLES_AS_SPOKEN", "PROSE_IN_APP_LANGUAGE"]),
+  outputContract:
+    "Organize the transcript and return title, summary, keyPoints, and actions in the schema. Use only the CREATE_TODO and CREATE_MEMO action types.",
+  rules: [
+    `<digest_rules>
+- title is a short title for the whole recording (about 6 words).
+- summary is 2-4 sentences covering only what was actually said.
+- keyPoints are the important points, at most ${ACTION_PLAN_LIMITS.DIGEST_MAX_KEY_POINTS}, one sentence each. Sentences with bookmarked true were marked important by the user, so pick them first.
+- sentenceIndex is the index of the transcript sentence the key point comes from, copied exactly. Use null when there is no sentence list or no matching sentence. Never write or invent times.
+- When the recording has no to-do, actions is []. Still write the summary and key points.
+</digest_rules>`,
+    PLANNING_RULES_EN.actions,
+    PLANNING_RULES_EN.title,
+    SCHEDULE_RULES_EN.date,
+    SCHEDULE_RULES_EN.time,
+    SCHEDULE_RULES_EN.planRepeat,
+    SCHEDULE_RULES_EN.planCategory,
+    PLANNING_RULES_EN.visibility,
+    PLANNING_RULES_EN.duplicate,
+  ],
+  examples: VOICE_NOTE_DIGEST_EXAMPLES_EN,
+});

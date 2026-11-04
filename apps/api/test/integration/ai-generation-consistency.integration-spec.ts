@@ -38,11 +38,8 @@ import {
   todoCategory,
   user as userTable,
 } from "#api/platform/database/schema/index";
-import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai-response.fixture";
-import {
-  TEST_AI_TASK_SETTINGS,
-  TEST_AI_TASK_SETTINGS_V1,
-} from "#test/fixtures/ai-task-settings.fixture";
+import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
+import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -157,7 +154,6 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
-      settings: TEST_AI_TASK_SETTINGS_V1,
     });
     const report = new GenerateReport({
       aiReportRepository: reports,
@@ -169,7 +165,6 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
-      settings: TEST_AI_TASK_SETTINGS,
     });
     const notifications: { userId: string }[] = [];
     const reportProcessor = new ReportGenerationProcessor(report);
@@ -195,7 +190,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         data: { userId, timezone: "Asia/Seoul", reportType: "WEEKLY", locale: "ko" },
       });
     } else {
-      provider.setRawResponse({ patterns: [createDetectedPattern()] });
+      provider.setRawResponse({ picks: [createSuggestionPick()] });
       await flow.suggestionProcessor.process({
         name: AiSuggestionJobName.ANALYZE,
         data: { userId, timezone: "Asia/Seoul", weatherGrid: null },
@@ -464,7 +459,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       orderBy: { id: "asc" },
     });
     const provider = new FakeAiGenerator();
-    provider.setRawResponse({ patterns: [createDetectedPattern()] });
+    provider.setRawResponse({ picks: [createSuggestionPick()] });
     const flow = generation(provider, new FailingSuggestionRepository(fixture.txHost));
 
     // When
@@ -497,7 +492,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   it("유료 해제 transaction이 사용자 잠금을 잡고 있으면 저장은 commit 뒤 새 권한을 읽는다", async () => {
     // Given
     const provider = new FakeAiGenerator();
-    provider.setRawResponse({ patterns: [createDetectedPattern()] });
+    provider.setRawResponse({ picks: [createSuggestionPick()] });
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
     const changing = client.transaction(async (tx) => {

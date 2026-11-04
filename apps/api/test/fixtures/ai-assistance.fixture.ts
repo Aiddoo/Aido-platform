@@ -9,12 +9,9 @@ import type {
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
+import type { SuggestionPick } from "#api/modules/ai-assistance/domain/services/suggestions/suggestion-candidates";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import {
-  TEST_AI_TASK_SETTINGS,
-  TEST_AI_TASK_SETTINGS_V1,
-} from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
@@ -28,7 +25,7 @@ import {
   StubAiWeeklyReportReader,
 } from "#test/mocks/ports/ai-assistance.stub";
 
-import { createDetectedPattern, createReportAiResponse } from "./ai-response.fixture.js";
+import { createReportAiResponse } from "./ai-response.fixture.js";
 
 export const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
 
@@ -104,20 +101,6 @@ export function createAiAssistanceFixture() {
     logger,
     entitlementReader: access,
     userMutationLock: access,
-    // 기존 제안 시나리오는 v1 응답 모양이라 v1 롤백 경로로 검증한다.
-    settings: TEST_AI_TASK_SETTINGS_V1,
-  });
-  const analyzeV2 = new AnalyzeAndCreateSuggestions({
-    repository,
-    generator,
-    aiDataSharingConsent,
-    clientAppVersion,
-    unitOfWork,
-    contextBuilder,
-    logger,
-    entitlementReader: access,
-    userMutationLock: access,
-    settings: TEST_AI_TASK_SETTINGS,
   });
   const generateReport = new GenerateReport({
     aiReportRepository: reportRepository,
@@ -129,7 +112,6 @@ export function createAiAssistanceFixture() {
     entitlementReader: access,
     unitOfWork,
     userMutationLock: access,
-    settings: TEST_AI_TASK_SETTINGS,
   });
   return {
     userId,
@@ -146,16 +128,26 @@ export function createAiAssistanceFixture() {
     logger,
     contextBuilder,
     analyze,
-    analyzeV2,
     generateReport,
   };
 }
 
-export function usePatternResponse(
+/** 모델이 고른 제안 후보. 기본 기록의 후보 a1은 "책 읽기 10분"(월요일 3회 완료)이다. */
+export function createSuggestionPick(overrides: Partial<SuggestionPick> = {}): SuggestionPick {
+  return {
+    candidateId: "a1",
+    daysOfWeek: ["MON"],
+    useRecordedTime: false,
+    reason: "",
+    ...overrides,
+  };
+}
+
+export function usePickResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
-  patterns = [createDetectedPattern()],
+  picks: readonly SuggestionPick[] = [createSuggestionPick()],
 ) {
-  fixture.generator.setRawResponse({ patterns });
+  fixture.generator.setRawResponse({ picks });
   return fixture;
 }
 

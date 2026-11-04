@@ -12,7 +12,6 @@ import { PlanningCategoriesModule } from "../planning/planning-categories.public
 import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AI_PARSING_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";
-import { AI_TASK_SETTINGS } from "./application/ports/parsing/ai-task-settings.port.js";
 import { AI_CLIENT_APP_VERSION_READER } from "./application/ports/parsing/client-app-version.reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "./application/ports/parsing/user-locale-preference.reader.port.js";
@@ -47,7 +46,6 @@ import { AiController } from "./presentation/controllers/parsing/v1/ai.controlle
   ],
   exports: [
     USER_LOCALE_PREFERENCE_READER,
-    AI_TASK_SETTINGS,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
     AI_CLIENT_APP_VERSION_READER,
     AiDataSharingConsentGuard,

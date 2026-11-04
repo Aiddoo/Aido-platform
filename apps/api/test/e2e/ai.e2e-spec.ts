@@ -6,7 +6,6 @@ import request from "supertest";
 import { assert } from "vitest";
 
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { AI_TASK_SETTINGS } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 /**
  * AI 모듈 E2E 테스트
  *
@@ -22,16 +21,35 @@ import { AI_TASK_SETTINGS } from "#api/modules/ai-assistance/ai-assistance-parsi
  */
 import { user } from "#api/platform/database/schema/index";
 import {
-  createParsedMemoResponse,
-  createParsedTodoResponse,
+  createMemoDraftResponse,
+  createTodoDraftResponse,
   parsingIntentCases,
 } from "#test/fixtures/ai-response.fixture";
-import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
+
+/** 연도까지 말한 날짜 표현. 서버가 계산한 날짜가 실행 시각과 무관하게 정해진다. */
+function onDate(year: number, month: number, day: number) {
+  return { kind: "CALENDAR_DATE", year, month, day } as const;
+}
+
+/** 오전·오후 없이 24시간제로 말한 시각 표현 */
+function at(hour: number, minute = 0) {
+  return { hour, minute, meridiem: "NONE" } as const;
+}
+
+/** parse-memo 모델 출력의 할 일 하나 */
+function memoTodo(title: string, overrides: Record<string, unknown> = {}) {
+  return {
+    ...createTodoDraftResponse({ title }),
+    categoryId: 999999,
+    items: [],
+    ...overrides,
+  };
+}
 
 describe("AI E2E", () => {
   let ctx: E2eTestContext;
@@ -91,11 +109,7 @@ describe("AI E2E", () => {
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder
-          .overrideProvider(AI_GENERATOR)
-          .useValue(fakeAiGenerator)
-          .overrideProvider(AI_TASK_SETTINGS)
-          .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
@@ -118,9 +132,8 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
-          startDate: "2025-01-26",
-          scheduledTime: "15:00",
-          isAllDay: false,
+          date: onDate(2025, 1, 26),
+          time: at(15),
         });
 
         // When
@@ -157,9 +170,8 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
-          startDate: "2025-01-26",
-          scheduledTime: "15:00",
-          isAllDay: false,
+          date: onDate(2025, 1, 26),
+          time: at(15),
         });
 
         // When
@@ -178,9 +190,8 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "팀 미팅",
-          startDate: "2025-01-26",
-          scheduledTime: "15:00",
-          isAllDay: false,
+          date: onDate(2025, 1, 26),
+          time: at(15),
         });
 
         // When
@@ -199,10 +210,9 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "출장",
-          startDate: "2025-01-27",
-          endDate: "2025-01-31",
-          scheduledTime: null,
-          isAllDay: true,
+          date: onDate(2025, 1, 27),
+          endDate: onDate(2025, 1, 31),
+          time: null,
         });
 
         // When
@@ -223,8 +233,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setDefaultResponse({
           title: "테스트",
-          startDate: "2025-01-26",
-          isAllDay: true,
+          date: onDate(2025, 1, 26),
         });
 
         // When
@@ -252,9 +261,8 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({
           title: "테스트",
-          startDate: "2025-01-25",
-          scheduledTime: null,
-          isAllDay: true,
+          date: onDate(2025, 1, 25),
+          time: null,
         });
 
         // When
@@ -275,35 +283,27 @@ describe("AI E2E", () => {
         const testCases = [
           {
             input: "아침 9시에 운동",
-            expected: {
-              title: "운동",
-              startDate: "2025-01-26",
-              scheduledTime: "09:00",
-              isAllDay: false,
-            },
+            draft: { title: "운동", time: { hour: 9, minute: 0, meridiem: "AM" } },
+            expected: { title: "운동", scheduledTime: "09:00" },
           },
           {
             input: "저녁에 친구 만남",
-            expected: {
-              title: "친구 만남",
-              startDate: "2025-01-26",
-              scheduledTime: "19:00",
-              isAllDay: false,
-            },
+            draft: { title: "친구 만남", time: { partOfDay: "EVENING" } },
+            expected: { title: "친구 만남", scheduledTime: "19:00" },
           },
           {
             input: "모레 점심 약속",
-            expected: {
+            draft: {
               title: "점심 약속",
-              startDate: "2025-01-27",
-              scheduledTime: "12:00",
-              isAllDay: false,
+              date: { kind: "OFFSET_DAYS", amount: 2 },
+              time: { partOfDay: "NOON" },
             },
+            expected: { title: "점심 약속", scheduledTime: "12:00" },
           },
-        ];
+        ] as const;
 
         for (const testCase of testCases) {
-          fakeAiGenerator.setResponse(testCase.expected);
+          fakeAiGenerator.setResponse(testCase.draft);
 
           // When
           const response = await request(ctx.app.getHttpServer())
@@ -346,8 +346,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setDefaultResponse({
           title: "테스트",
-          startDate: "2026-05-01",
-          isAllDay: true,
+          date: onDate(2026, 5, 1),
         });
         const now = new Date();
         const previousMonthFirstDay = new Date(
@@ -397,8 +396,7 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setDefaultResponse({
           title: "테스트",
-          startDate: "2025-01-26",
-          isAllDay: true,
+          date: onDate(2025, 1, 26),
         });
 
         // When
@@ -547,8 +545,7 @@ describe("AI E2E", () => {
         fakeAiGenerator.setTokenUsage({ input: 200, output: 80 });
         fakeAiGenerator.setResponse({
           title: "테스트",
-          startDate: "2025-01-26",
-          isAllDay: true,
+          date: onDate(2025, 1, 26),
         });
 
         // When
@@ -671,8 +668,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setResponse({
         title: "테스트",
-        startDate: "2025-01-26",
-        isAllDay: true,
+        date: onDate(2025, 1, 26),
       });
 
       // When
@@ -686,16 +682,15 @@ describe("AI E2E", () => {
       // Then
       const prompt = fakeAiGenerator.getLastPrompt();
       expect(prompt).toContain("테스트");
-      const system = fakeAiGenerator.getLastSystem();
-      expect(system).toContain("한국어 자연어 입력을 구조화된 할 일");
+      expect(prompt).toContain('"timezone": "Asia/Seoul"');
+      expect(fakeAiGenerator.getLastSystem()).not.toContain("Asia/Seoul");
     });
 
     it("X-Timezone 헤더 없이도 정상 동작한다 (UTC 폴백)", async () => {
       // Given
       fakeAiGenerator.setResponse({
         title: "테스트",
-        startDate: "2025-01-26",
-        isAllDay: true,
+        date: onDate(2025, 1, 26),
       });
 
       // When
@@ -715,8 +710,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setDefaultResponse({
         title: "테스트",
-        startDate: "2025-01-26",
-        isAllDay: true,
+        date: onDate(2025, 1, 26),
       });
 
       // When
@@ -756,8 +750,7 @@ describe("AI E2E", () => {
       // Given
       fakeAiGenerator.setDefaultResponse({
         title: "테스트",
-        startDate: "2025-01-26",
-        isAllDay: true,
+        date: onDate(2025, 1, 26),
       });
       await setUsage(testUserId, FREE_AI_LIMIT);
 
@@ -791,28 +784,12 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setRawResponse({
           todos: [
-            {
-              title: "버그 수정",
-              categoryId: 999999,
-              startDate: "2026-04-12",
-              endDate: null,
-              scheduledTime: "14:00",
-              isAllDay: false,
-              isRecurring: false,
-              recurrence: null,
+            memoTodo("버그 수정", {
+              date: onDate(2026, 4, 12),
+              time: at(14),
               items: [{ title: "로그 확인" }],
-            },
-            {
-              title: "자료 올리기",
-              categoryId: 999999,
-              startDate: "2026-04-11",
-              endDate: null,
-              scheduledTime: null,
-              isAllDay: true,
-              isRecurring: false,
-              recurrence: null,
-              items: [],
-            },
+            }),
+            memoTodo("자료 올리기", { date: onDate(2026, 4, 11) }),
           ],
         });
 
@@ -841,21 +818,7 @@ describe("AI E2E", () => {
 
       it("소유하지 않은 추론 categoryId는 요청 categoryId로 대체한다", async () => {
         // Given
-        fakeAiGenerator.setRawResponse({
-          todos: [
-            {
-              title: "할 일",
-              categoryId: 999999,
-              startDate: "2026-04-11",
-              endDate: null,
-              scheduledTime: null,
-              isAllDay: true,
-              isRecurring: false,
-              recurrence: null,
-              items: [],
-            },
-          ],
-        });
+        fakeAiGenerator.setRawResponse({ todos: [memoTodo("할 일")] });
 
         // When
         const response = await request(ctx.app.getHttpServer())
@@ -871,21 +834,7 @@ describe("AI E2E", () => {
 
       it("파싱 후 사용량이 1 증가", async () => {
         // Given
-        fakeAiGenerator.setRawResponse({
-          todos: [
-            {
-              title: "테스트",
-              categoryId: 999999,
-              startDate: "2026-04-11",
-              endDate: null,
-              scheduledTime: null,
-              isAllDay: true,
-              isRecurring: false,
-              recurrence: null,
-              items: [],
-            },
-          ],
-        });
+        fakeAiGenerator.setRawResponse({ todos: [memoTodo("테스트")] });
         await resetUsage(testUserId);
 
         // When
@@ -949,14 +898,11 @@ describe("AI E2E", () => {
     });
   });
 
-  it.each([
-    { itemCount: 5, status: 200, used: 1 },
-    { itemCount: 6, status: 422, used: 0 },
-  ])(
-    "메모 하위 항목 $itemCount개는 HTTP $status와 사용량 $used회를 반환한다",
-    async ({ itemCount, status, used }) => {
+  it.each([5, 6])(
+    "메모 하위 항목 %i개는 합치지 않고 앞의 5개만 두며 사용량 한 회를 쓴다",
+    async (itemCount) => {
       // Given
-      const memo = createParsedMemoResponse();
+      const memo = createMemoDraftResponse();
       const [firstTodo] = memo.todos;
       assert.exists(firstTodo);
       firstTodo.items = Array.from({ length: itemCount }, (_, index) => ({
@@ -974,16 +920,12 @@ describe("AI E2E", () => {
         .set("Authorization", `Bearer ${accessToken}`);
 
       // Then
-      expect(response.status).toBe(status);
+      expect(response.status).toBe(200);
       expect(usage.status).toBe(200);
-      expect(usage.body.data.data.used).toBe(used);
+      expect(usage.body.data.data.used).toBe(1);
       expect(fakeAiGenerator.getCallCount()).toBe(1);
-      if (status === 200) {
-        expect(response.body.data.success).toBe(true);
-        expect(response.body.data.data.todos[0].items).toEqual(firstTodo.items);
-      } else {
-        expect(response.body.error.code).toBe("AI_1302");
-      }
+      expect(response.body.data.success).toBe(true);
+      expect(response.body.data.data.todos[0].items).toEqual(firstTodo.items.slice(0, 5));
     },
   );
 
@@ -992,7 +934,7 @@ describe("AI E2E", () => {
     async (locale) => {
       // Given
       const title = locale === "ko" ? "책 읽기" : "Read a book";
-      fakeAiGenerator.setRawResponse(createParsedTodoResponse({ title }));
+      fakeAiGenerator.setResponse({ title });
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -1004,7 +946,7 @@ describe("AI E2E", () => {
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.title).toBe(title);
-      expect(fakeAiGenerator.getLastSystem()).toContain(locale === "en" ? "You are" : "당신은");
+      expect(fakeAiGenerator.getLastSystem()).toContain(locale === "en" ? "You are" : "너는");
       const usage = await request(ctx.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
@@ -1016,7 +958,7 @@ describe("AI E2E", () => {
     "%s Memo의 다중 결과도 실제 quota는 한 회만 증가한다",
     async (locale) => {
       // Given
-      const raw = createParsedMemoResponse(1);
+      const raw = createMemoDraftResponse(1);
       const [firstTodo] = raw.todos;
       assert.exists(firstTodo);
       raw.todos.push({
@@ -1058,15 +1000,16 @@ describe("AI E2E", () => {
         throw new Error("혼합 지시 회귀 fixture가 필요합니다");
       }
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
-      const todo = createParsedTodoResponse({
+      const draft = createTodoDraftResponse({
         title: item.title[locale],
-        startDate: "2026-03-08",
-        scheduledTime: "09:00",
-        isAllDay: false,
+        date: { kind: "OFFSET_DAYS", amount: 1 },
+        time: { hour: 9, minute: 0, meridiem: "AM" },
       });
-      fakeAiGenerator.setRawResponse(
-        route === "parse-todo" ? todo : { todos: [{ ...todo, categoryId: 999999, items: [] }] },
-      );
+      if (route === "parse-todo") {
+        fakeAiGenerator.setResponse(draft);
+      } else {
+        fakeAiGenerator.setRawResponse({ todos: [{ ...draft, categoryId: 999999, items: [] }] });
+      }
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
       try {
@@ -1086,14 +1029,22 @@ describe("AI E2E", () => {
         expect(response.status).toBe(200);
         const data = response.body.data.data;
         const parsed = route === "parse-todo" ? data : data.todos[0];
-        expect(parsed).toMatchObject({ ...todo, categoryId });
+        expect(parsed).toMatchObject({
+          title: item.title[locale],
+          startDate: "2026-03-08",
+          scheduledTime: "09:00",
+          isAllDay: false,
+          categoryId,
+        });
         if (route === "parse-memo") {
           expect(data.todos).toHaveLength(1);
           expect(parsed.items).toEqual([]);
         }
         expect(fakeAiGenerator.getLastPrompt()).toContain(JSON.stringify(item.input[locale]));
         expect(fakeAiGenerator.getLastSystem()).toContain(JSON.stringify(item.title[locale]));
-        expect(fakeAiGenerator.getLastSystem()).toContain('"scheduledTime":"09:00"');
+        expect(fakeAiGenerator.getLastSystem()).toContain(
+          '"time":{"hour":9,"minute":0,"meridiem":"AM"}',
+        );
         const usage = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
@@ -1114,19 +1065,7 @@ describe("AI E2E", () => {
       // Given
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
       const dailyDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-      fakeAiGenerator.setRawResponse(
-        createParsedTodoResponse({
-          title,
-          startDate: "2026-03-07",
-          scheduledTime: null,
-          isAllDay: true,
-          isRecurring: true,
-          recurrence: {
-            daysOfWeek: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
-            endDate: "2026-04-04",
-          },
-        }),
-      );
+      fakeAiGenerator.setResponse({ title, repeat: { pattern: "DAILY" } });
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
       try {
@@ -1145,7 +1084,7 @@ describe("AI E2E", () => {
           scheduledTime: null,
           isAllDay: true,
           isRecurring: true,
-          recurrence: { daysOfWeek: dailyDays },
+          recurrence: { daysOfWeek: dailyDays, endDate: "2026-04-04" },
           categoryId,
         });
         expect(fakeAiGenerator.getLastPrompt()).toContain(JSON.stringify(input));

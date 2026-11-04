@@ -9,8 +9,6 @@ import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 import request from "supertest";
 
 import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
-import { AI_TASK_SETTINGS } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import {
@@ -29,11 +27,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
     fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder
-          .overrideProvider(AI_GENERATOR)
-          .useValue(fakeAiGenerator)
-          .overrideProvider(AI_TASK_SETTINGS)
-          .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
@@ -47,9 +41,8 @@ describe("AI 데이터 처리 동의 E2E", () => {
     user = await ctx.helpers.createVerifiedUser("ai-consent@example.com", "Test1234!");
     fakeAiGenerator.setResponse({
       title: "팀 미팅",
-      startDate: "2025-01-26",
-      scheduledTime: "15:00",
-      isAllDay: false,
+      date: { kind: "OFFSET_DAYS", amount: 1 },
+      time: { hour: 3, minute: 0, meridiem: "PM" },
     });
   });
 

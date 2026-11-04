@@ -6,6 +6,7 @@ import { match } from "ts-pattern";
 import type {
   DateRef,
   PartOfDay,
+  RepeatPattern,
   RepeatRef,
   ResolvedSchedule,
   ScheduleDraft,
@@ -31,6 +32,13 @@ const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, numbe
   EVENING: 19 * 60,
   NIGHT: 21 * 60,
 };
+
+/** 요일 + 종료일 recurrence로 나타낼 수 없는 반복 */
+const LEGACY_UNSUPPORTED_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
+  "UNSUPPORTED",
+  "BIWEEKLY_DAYS",
+  "MONTHLY_DAY",
+]);
 
 const WEEKDAYS: readonly DayOfWeek[] = ["MON", "TUE", "WED", "THU", "FRI"];
 const WEEKEND: readonly DayOfWeek[] = ["SAT", "SUN"];
@@ -109,7 +117,7 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
   }
 
   let recurrence: ResolvedSchedule["recurrence"] = null;
-  if (draft.repeat.pattern === "UNSUPPORTED") {
+  if (LEGACY_UNSUPPORTED_PATTERNS.has(draft.repeat.pattern)) {
     warnings.push("UNSUPPORTED_RECURRENCE");
   }
   if (recurrenceBase != null) {
@@ -325,7 +333,7 @@ function resolveRecurrenceWindow(
   const sunday = monday.add(6, "day");
   const everyDay = [...DAY_OF_WEEK_ORDER];
   return match(repeat.pattern)
-    .with("NONE", "UNSUPPORTED", () => null)
+    .with("NONE", "UNSUPPORTED", "BIWEEKLY_DAYS", "MONTHLY_DAY", () => null)
     .with("WEEKLY_DAYS", () => ({
       start: resolvedDay,
       end: null,

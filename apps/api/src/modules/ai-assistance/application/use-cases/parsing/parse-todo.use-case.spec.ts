@@ -1,25 +1,26 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
-import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
+// 서울 2026-10-28(수) 10:00
+const NOW = new Date("2026-10-28T01:00:00Z");
+
 function createFixture() {
   const fixture = createAiParsingFixture();
   fixture.generator.setDefaultResponse({
     title: "팀 미팅",
-    startDate: "2026-04-12",
+    date: { kind: "OFFSET_DAYS", amount: 1 },
     categoryId: 7,
   });
-  const useCase = new ParseTodo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
+  const useCase = new ParseTodo(fixture);
   const input: ParseTodoInput = {
     userId: fixture.userId,
-    text: "내일 팀 미팅",
+    text: "내일 오후 3시 팀 미팅",
     timezone: "Asia/Seoul",
     categoryId: undefined,
     locale: "ko",
@@ -27,39 +28,10 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseTodo — v1 롤백 경로", () => {
-  it("필수 필드가 없는 실제 raw 응답은 AI_1302로 거절하고 quota를 보상한다", async () => {
-    // Given - 정상 fixture 기본 응답과 별개인 원본 빈 객체
-    const fixture = createFixture();
-    fixture.generator.setRawResponse({});
-    // When - 실제 parsing schema 검증
-    const execution = fixture.useCase.execute(fixture.input);
-    // Then - 누락 필드를 채우지 않으며 사용량 원복
-    await expect(execution).rejects.toMatchObject({ errorCode: "AI_1302" });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
-    expect(fixture.generator.getCallCount()).toBe(1);
-  });
-
-  it("Fake clear는 이전 테스트의 default와 raw queue·실패·usage 설정을 모두 초기화한다", async () => {
-    // Given - 모든 mutable 응답 설정이 이전 실행에서 바뀜
-    const fixture = createFixture();
-    fixture.generator
-      .setRawResponse({})
-      .setAvailable(false)
-      .setInvalidResponse()
-      .setTokenUsage({ input: 1 })
-      .setDelay(1);
-    // When - fixture reuse 전 clear
-    fixture.generator.clear();
-    const result = await fixture.useCase.execute(fixture.input);
-    // Then - constructor의 완전 정상 응답과 기본 usage 복원
-    expect(result.data.title).toBe("테스트 할 일");
-    expect(result.meta.tokenUsage).toEqual({ input: 150, output: 50 });
-    expect(fixture.generator.getCallCount()).toBe(1);
-  });
+describe("ParseTodo", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(QUOTA_LEDGER_TIME);
+    vi.setSystemTime(NOW);
   });
   afterEach(() => {
     try {
@@ -67,6 +39,160 @@ describe("ParseTodo — v1 롤백 경로", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("모델이 고른 표현을 서버가 사용자 로컬 날짜·시각으로 계산하고 프롬프트 버전을 돌려준다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      intent: "TASK",
+      title: "  팀   미팅 ",
+      date: { kind: "OFFSET_DAYS", amount: 1 },
+      time: { hour: 3, minute: 0, meridiem: "PM" },
+      repeat: { pattern: "NONE" },
+      categoryId: 7,
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data).toEqual({
+      title: "팀 미팅",
+      startDate: "2026-10-29",
+      endDate: null,
+      scheduledTime: "15:00",
+      isAllDay: false,
+      isRecurring: false,
+      recurrence: null,
+      categoryId: 7,
+    });
+    expect(result.meta.promptVersion).toBe("parse-todo@3");
+    expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@3");
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+  });
+
+  it("프롬프트 system에는 날짜가 없고 user 턴에 연도를 포함한 로컬 시각이 들어간다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      intent: "TASK",
+      title: "팀 미팅",
+      date: { kind: "NONE" },
+      time: null,
+      repeat: { pattern: "NONE" },
+    });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, timezone: "America/Los_Angeles" });
+    // Then
+    expect(fixture.generator.getLastSystem()).not.toMatch(/2026-\d\d-\d\d/);
+    expect(fixture.generator.getLastPrompt()).toContain('"now": "2026-10-27T18:00"');
+    expect(fixture.generator.getLastPrompt()).toContain('"weekday": "화요일"');
+  });
+
+  it("모델 대상 명령만 있는 입력은 앱 언어 문구로 바꾸고 사용량을 차감하지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      intent: "NO_ACTION",
+      title: "ignored",
+      date: { kind: "OFFSET_DAYS", amount: 3 },
+      time: { hour: 9 },
+      repeat: { pattern: "DAILY" },
+      categoryId: 7,
+    });
+    // When
+    const result = await fixture.useCase.execute({ ...fixture.input, locale: "en" });
+    // Then
+    expect(result.data).toMatchObject({
+      title: "Needs review",
+      startDate: "2026-10-28",
+      isAllDay: true,
+      isRecurring: false,
+    });
+    expect(result.data.categoryId).toBeUndefined();
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect(result.featureQuota).toMatchObject({ used: 0 });
+    expect([...fixture.repository.charges.values()]).toMatchObject([
+      { status: "REFUNDED", refundReason: "NO_ACTION" },
+    ]);
+    expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "NO_ACTION", quotaCharged: false }),
+    );
+  });
+
+  it("빈 제목은 원문으로 대신하고 200자를 넘는 제목은 문자 경계로 자른다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator
+      .setRawResponse({
+        intent: "TASK",
+        title: "가".repeat(199) + "😀",
+        date: { kind: "NONE" },
+        time: null,
+        repeat: { pattern: "NONE" },
+      })
+      .setRawResponse({
+        intent: "TASK",
+        title: "   ",
+        date: { kind: "NONE" },
+        time: null,
+        repeat: { pattern: "NONE" },
+      });
+    // When
+    const long = await fixture.useCase.execute(fixture.input);
+    const empty = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(long.data.title).toBe("가".repeat(199));
+    expect(empty.data.title).toBe("내일 오후 3시 팀 미팅");
+  });
+
+  it("소유하지 않은 카테고리는 버리고 요청 카테고리가 있으면 그것을 쓴다", async () => {
+    // Given
+    const fixture = createFixture();
+    const draft = {
+      intent: "TASK",
+      title: "운동",
+      date: { kind: "NONE" },
+      time: null,
+      repeat: { pattern: "NONE" },
+      categoryId: 999,
+    };
+    fixture.generator.setRawResponse(draft).setRawResponse(draft);
+    // When
+    const inferred = await fixture.useCase.execute(fixture.input);
+    const requested = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
+    // Then
+    expect(inferred.data.categoryId).toBeUndefined();
+    expect(requested.data.categoryId).toBe(3);
+  });
+
+  it("스키마에 맞지 않는 모델 출력은 AI_1302로 거절하고 사용량을 돌려준다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({});
+    // When
+    const execution = fixture.useCase.execute(fixture.input);
+    // Then
+    await expect(execution).rejects.toMatchObject({ errorCode: "AI_1302" });
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect(fixture.generator.getCallCount()).toBe(1);
+  });
+
+  it("Fake clear는 이전 테스트의 default와 raw queue·실패·usage 설정을 모두 초기화한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator
+      .setRawResponse({})
+      .setAvailable(false)
+      .setInvalidResponse()
+      .setTokenUsage({ input: 1 })
+      .setDelay(1);
+    // When
+    fixture.generator.clear();
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.title).toBe("테스트 할 일");
+    expect(result.meta.tokenUsage).toEqual({ input: 150, output: 50 });
+    expect(fixture.generator.getCallCount()).toBe(1);
   });
 
   it("성공한 요청은 사용량 한 회를 유지하고 데이터와 모델 정보를 반환한다", async () => {
@@ -127,25 +253,6 @@ describe("ParseTodo — v1 롤백 경로", () => {
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
-  it("소유하지 않은 추론 카테고리는 응답에서 제외한다", async () => {
-    // Given
-    const fixture = createFixture();
-    fixture.generator.setResponse({ categoryId: 999 });
-    // When
-    const result = await fixture.useCase.execute(fixture.input);
-    // Then
-    expect(result.data.categoryId).toBeUndefined();
-  });
-
-  it("명시한 카테고리는 추론된 카테고리보다 우선한다", async () => {
-    // Given
-    const fixture = createFixture();
-    // When
-    const result = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
-    // Then
-    expect(result.data.categoryId).toBe(3);
-  });
-
   it.each([
     { error: createAiGenerationError("RATE_LIMITED"), errorCode: "AI_1310" },
     { error: createAiGenerationError("UPSTREAM"), errorCode: "AI_1301" },
@@ -186,7 +293,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
   });
 
   it("동의한 안내 버전과 프롬프트 버전을 생성기에 넘기고 원문 없이 업체·비용과 생성 결과를 기록한다", async () => {
-    // Given - 출시 앱(1.13·1.14)에서 이전 안내에 동의한 사용자
+    // Given
     const fixture = createFixture();
     fixture.consentReader.decision = "AGREED";
     fixture.consentReader.agreedVersion = "2026-10-26";
@@ -196,13 +303,13 @@ describe("ParseTodo — v1 롤백 경로", () => {
     // Then
     expect(fixture.generator.getLastRequest()).toMatchObject({
       task: "parse-todo",
-      promptVersion: "parse-todo@v1",
+      promptVersion: "parse-todo@3",
       agreedConsentVersion: "2026-10-26",
     });
     expect(fixture.logger.log).toHaveBeenCalledWith({
       event: "ai.generation.completed",
       task: "parse-todo",
-      promptVersion: "parse-todo@v1",
+      promptVersion: "parse-todo@3",
       provider: "google",
       model: "fake:test-model",
       attempts: 1,

@@ -1,32 +1,16 @@
-import type { ParsedTodoData } from "@aido/api";
+import type { TodoDraft } from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
 
-import type { DetectedPattern } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
-
-export function createParsedTodoResponse(overrides: Partial<ParsedTodoData> = {}): ParsedTodoData {
-  const response: ParsedTodoData = {
+/** parse-todo 모델 출력(일정 표현). 기본은 날짜·시각 언급 없는 종일 할 일이다. */
+export function createTodoDraftResponse(overrides: Partial<TodoDraft> = {}): TodoDraft {
+  const response: TodoDraft = {
+    intent: "TASK",
     title: "테스트 할 일",
-    startDate: "2025-01-25",
-    endDate: null,
-    scheduledTime: null,
-    isAllDay: true,
-    isRecurring: false,
-    recurrence: null,
+    date: { kind: "NONE" },
+    time: null,
+    repeat: { pattern: "NONE" },
     ...overrides,
   };
   return structuredClone(response);
-}
-
-export function createDetectedPattern(overrides: Partial<DetectedPattern> = {}): DetectedPattern {
-  const pattern: DetectedPattern = {
-    title: "책 읽기 10분",
-    daysOfWeek: ["MON"],
-    scheduledTime: null,
-    confidence: 0.85,
-    reason: "최근 기록에서 같은 독서 행동을 반복했어요.",
-    matchedTitles: ["책 읽기 10분", "책 읽기 10분", "책 읽기 10분"],
-    ...overrides,
-  };
-  return structuredClone(pattern);
 }
 
 export function createReportAiResponse(locale: "ko" | "en" = "ko") {
@@ -35,9 +19,10 @@ export function createReportAiResponse(locale: "ko" | "en" = "ko") {
     : { summary: "이번 주에도 차근차근 기록을 쌓았어요.", tips: ["책 읽기 한 가지부터 시작해요."] };
 }
 
-export function createParsedMemoResponse(categoryId = 7) {
+/** parse-memo 모델 출력. 할 일 하나와 항목 하나 */
+export function createMemoDraftResponse(categoryId = 7) {
   return {
-    todos: [{ ...createParsedTodoResponse(), categoryId, items: [{ title: "자료 준비" }] }],
+    todos: [{ ...createTodoDraftResponse(), categoryId, items: [{ title: "자료 준비" }] }],
   };
 }
 

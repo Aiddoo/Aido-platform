@@ -19,9 +19,9 @@ import {
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
 import { AiGenerationError } from "../../ports/generation/ai-generation.errors.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
-import { suggestionPrompts } from "../../prompts/suggestions/suggestion/index.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { suggestionPrompt } from "../../prompts/suggestions/suggestion/index.js";
 import {
   findScheduledAiConsent,
   type ScheduledAiConsentReaders,
@@ -48,7 +48,6 @@ interface AnalyzeAndCreateSuggestionsDependencies {
   readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
-  readonly settings: AiTaskSettings;
 }
 
 export class AnalyzeAndCreateSuggestions {
@@ -98,42 +97,35 @@ export class AnalyzeAndCreateSuggestions {
     }
 
     // 2. AI 제안 생성 — 비용과 채우기용 제안을 줄이기 위해 항상 1회만 호출
-    const definition = suggestionPrompts[this.#dependencies.settings.promptVersion][locale];
-    const { system, prompt } = definition.build({ context });
+    const definition = suggestionPrompt;
     const logBase = {
-      task: "suggestion",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
       quotaCharged: false,
     } as const;
     const startedAt = Date.now();
-    const generation = await definition.output
-      .generate(
-        this.#dependencies.generator,
-        {
-          task: "suggestion",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          agreedConsentVersion: consent.agreedVersion,
-        },
-        { context },
-      )
-      .catch((error: unknown) => {
-        if (error instanceof AiGenerationError && error.kind === "UNAVAILABLE") {
-          return null;
-        }
-        // 잡 재시도 의미는 유지하고, 원인 종류만 남긴다.
-        this.#dependencies.logger.warn(
-          generationFailedLog({
-            ...logBase,
-            outcome: "FAILED",
-            ...generationFailure(error),
-            latencyMs: Date.now() - startedAt,
-          }),
-        );
-        throw error;
-      });
+    const generation = await generateWithPrompt(
+      this.#dependencies.generator,
+      definition,
+      definition.build(context, locale),
+      { context, locale },
+      { agreedConsentVersion: consent.agreedVersion },
+    ).catch((error: unknown) => {
+      if (error instanceof AiGenerationError && error.kind === "UNAVAILABLE") {
+        return null;
+      }
+      // 잡 재시도 의미는 유지하고, 원인 종류만 남긴다.
+      this.#dependencies.logger.warn(
+        generationFailedLog({
+          ...logBase,
+          outcome: "FAILED",
+          ...generationFailure(error),
+          latencyMs: Date.now() - startedAt,
+        }),
+      );
+      throw error;
+    });
     // 설정·동의 범위 안에 지금 보낼 수 있는 업체가 없으면 이번 분석을 건너뛴다.
     if (generation == null) {
       this.#dependencies.logger.debug({

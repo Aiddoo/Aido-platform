@@ -1,11 +1,71 @@
-import { parseMemoPromptV1 } from "./v1/index.js";
-import { parseMemoPromptV2 } from "./v2/index.js";
+import type { ParsedMemoData } from "@aido/api";
+import { MEMO_LIMITS } from "@aido/api/vocabulary";
 
-export type * from "./types.js";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
-/** 버전 폴더별 parse-memo 프롬프트 정의. env AI_PROMPT_VERSION_<TASK>로 고른다(기본 v2). */
-export const parseMemoPrompts = {
-  // TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
-  v1: parseMemoPromptV1,
-  v2: parseMemoPromptV2,
-} as const;
+import { normalizeMemoDraft } from "../../../services/parsing/todo-draft.normalizer.js";
+import { composeUserTurn, type PromptDefinition } from "../../kit/prompt-definition.js";
+import { sanitizeTextForPrompt, wrapUntrusted } from "../../kit/untrusted-input.js";
+import {
+  type PromptCategory,
+  promptCategories,
+  scheduleContext,
+} from "../schedule/schedule-context.js";
+import { PARSE_MEMO_SYSTEM_EN } from "./prompt.en.js";
+import { PARSE_MEMO_SYSTEM_KO } from "./prompt.ko.js";
+import { type MemoDraft, memoDraftSchema } from "./schema.js";
+
+export interface ParseMemoPromptInput {
+  readonly content: string;
+  readonly timezone: string;
+  readonly now: Date;
+  readonly categories: readonly PromptCategory[];
+}
+
+export interface ParseMemoNormalizeContext {
+  readonly content: string;
+  readonly timezone: string;
+  readonly now: Date;
+  readonly locale: SupportedLocale;
+  readonly ownedCategoryIds: ReadonlySet<number>;
+  readonly defaultCategoryId: number;
+}
+
+export interface ParseMemoOutcome {
+  readonly data: ParsedMemoData;
+  /** 메모 전체에 실행할 행동이 없었는지. 이 경우 사용량을 차감하지 않는다. */
+  readonly noAction: boolean;
+  /** 할 일 상한을 넘어 만들지 않은 할 일 수. 메모 원문은 그대로 남는다. */
+  readonly omittedTodoCount: number;
+  readonly warnings: readonly string[];
+}
+
+const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+  ko: PARSE_MEMO_SYSTEM_KO,
+  en: PARSE_MEMO_SYSTEM_EN,
+};
+
+export const parseMemoPrompt: PromptDefinition<
+  ParseMemoPromptInput,
+  MemoDraft,
+  ParseMemoOutcome,
+  ParseMemoNormalizeContext
+> = {
+  id: "parse-memo",
+  version: "parse-memo@3",
+  schema: memoDraftSchema,
+  build: (input, locale) => ({
+    system: SYSTEM[locale],
+    prompt: composeUserTurn({
+      context: wrapUntrusted("context", {
+        ...scheduleContext({ now: input.now, timezone: input.timezone, locale }),
+        categories: promptCategories(input.categories),
+      }),
+      input: wrapUntrusted("user_input", {
+        memo: sanitizeTextForPrompt(input.content, MEMO_LIMITS.MAX_CONTENT_LENGTH),
+      }),
+    }),
+  }),
+  normalize: (draft, context) =>
+    normalizeMemoDraft(draft, { ...context, fallbackTitle: context.content }),
+};

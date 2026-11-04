@@ -1,7 +1,6 @@
 import { mock } from "vitest-mock-extended";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { TEST_AI_TASK_SETTINGS } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import { StubAiDataSharingConsent } from "#test/mocks/ports/ai-assistance.stub";
 import {
@@ -25,6 +24,5 @@ export function createAiParsingFixture(input: Partial<InMemoryQuotaUser> = {}) {
     generator: new FakeAiGenerator(),
     consentReader: new StubAiDataSharingConsent(),
     localePreferenceReader: new StubUserLocalePreferenceReader(),
-    settings: TEST_AI_TASK_SETTINGS,
   };
 }

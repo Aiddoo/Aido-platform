@@ -10,8 +10,6 @@ export const AI_THINKING_LEVELS = ["minimal", "low", "medium"] as const;
 
 export type AiThinking = (typeof AI_THINKING_LEVELS)[number];
 
-// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
-const promptVersion = z.enum(["v1", "v2"]).default("v2");
 const thinkingLevel = (fallback: AiThinking) => z.enum(AI_THINKING_LEVELS).default(fallback);
 const milliseconds = (fallback: number) => z.coerce.number().int().positive().default(fallback);
 const modelId = (fallback: string) => z.string().trim().min(1).default(fallback);
@@ -38,7 +36,7 @@ function parseProviderOrder(value: string): AiProviderId[] | null {
  * AI 공급자 키·순서·모델과 작업별 운영 설정. 키가 있는 업체만 쓰고, 빈 문자열은 미설정이다.
  * thinking 기본값은 parse-todo만 minimal이고 나머지는 low다. 2026-10-26 live eval에서 parse-todo는
  * minimal이 low와 정확도가 같고 지연이 짧았지만, parse-memo는 minimal에서 남은 할 일 수를 잘못 셌다.
- * 업체 순서·모델 교체·제한 시간·회로 차단 시간과 프롬프트 롤백을 배포 없이 env로만 바꿀 수 있게 한다.
+ * 업체 순서·모델 교체·제한 시간·회로 차단 시간을 배포 없이 env로만 바꿀 수 있게 한다.
  */
 export const aiSchema = z.object({
   ANTHROPIC_API_KEY: secretApiKey("ANTHROPIC_API_KEY"),
@@ -60,10 +58,6 @@ export const aiSchema = z.object({
   AI_MODEL_ANTHROPIC: modelId("claude-haiku-5-5"),
   AI_MODEL_GOOGLE: modelId("gemini-3.1-flash-lite"),
   AI_MODEL_OPENAI: modelId("gpt-6-luna"),
-  AI_PROMPT_VERSION_PARSE_TODO: promptVersion,
-  AI_PROMPT_VERSION_PARSE_MEMO: promptVersion,
-  AI_PROMPT_VERSION_REPORT: promptVersion,
-  AI_PROMPT_VERSION_SUGGESTION: promptVersion,
   AI_THINKING_PARSE_TODO: thinkingLevel("minimal"),
   AI_THINKING_PARSE_MEMO: thinkingLevel("low"),
   AI_THINKING_REPORT: thinkingLevel("low"),
@@ -110,13 +104,6 @@ export interface AiSettings {
     "quick-plan": AiTaskSettings;
     "voice-note-digest": AiTaskSettings;
   }>;
-  // TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
-  readonly promptVersions: Readonly<{
-    "parse-todo": "v1" | "v2";
-    "parse-memo": "v1" | "v2";
-    report: "v1" | "v2";
-    suggestion: "v1" | "v2";
-  }>;
   readonly breaker: Readonly<{
     billingCooldownMs: number;
     healthThreshold: number;
@@ -156,12 +143,6 @@ export function toAiSettings(env: AiConfig): AiSettings {
         thinking: env.AI_THINKING_VOICE_NOTE_DIGEST,
         deadlineMs: env.AI_DEADLINE_VOICE_NOTE_DIGEST_MS,
       },
-    },
-    promptVersions: {
-      "parse-todo": env.AI_PROMPT_VERSION_PARSE_TODO,
-      "parse-memo": env.AI_PROMPT_VERSION_PARSE_MEMO,
-      report: env.AI_PROMPT_VERSION_REPORT,
-      suggestion: env.AI_PROMPT_VERSION_SUGGESTION,
     },
     breaker: {
       billingCooldownMs: env.AI_BREAKER_BILLING_COOLDOWN_MS,

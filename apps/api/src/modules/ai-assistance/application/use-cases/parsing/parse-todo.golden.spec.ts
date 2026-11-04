@@ -1,19 +1,13 @@
-import { loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
+import { GOLDEN_VARIANTS, loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { ParseTodo } from "./parse-todo.use-case.js";
 
-const cases = [...loadParseTodoGoldenCases("ko"), ...loadParseTodoGoldenCases("en")];
+const cases = GOLDEN_VARIANTS.flatMap((variant) => loadParseTodoGoldenCases(variant));
 
 describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  it("golden은 ko 19건·en 11건이다", () => {
-    // Given / When / Then
-    expect(cases.filter((golden) => golden.locale === "ko")).toHaveLength(19);
-    expect(cases.filter((golden) => golden.locale === "en")).toHaveLength(11);
   });
 
   it.each(cases)("$id $input", async (golden) => {
@@ -33,7 +27,7 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     });
     // Then
     expect(result.data).toEqual(golden.expected);
-    expect(result.meta.promptVersion).toBe("parse-todo@v2.1");
+    expect(result.meta.promptVersion).toBe("parse-todo@3");
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(
       golden.draft.intent === "TASK" ? 1 : 0,
     );

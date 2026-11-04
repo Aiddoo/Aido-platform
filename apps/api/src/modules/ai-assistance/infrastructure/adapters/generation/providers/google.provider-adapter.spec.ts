@@ -1,4 +1,4 @@
-import { llmParsedMemoResultSchema } from "@aido/api";
+import { parsedMemoDataSchema } from "@aido/api";
 import { Logger } from "@nestjs/common";
 import type { MockInstance } from "vitest";
 import { z } from "zod";
@@ -168,7 +168,7 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
     fetchSpy.mockResolvedValue(modelResponse(JSON.stringify(memo)));
     // When
     const result = await createGenerator().generate(
-      request({ schema: llmParsedMemoResultSchema, task: "parse-memo" }),
+      request({ schema: parsedMemoDataSchema, task: "parse-memo" }),
     );
     // Then
     expect(result.output).toEqual(memo);

@@ -5,8 +5,6 @@ import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generatio
 import {
   AI_CLIENT_APP_VERSION_READER,
   AI_DATA_SHARING_CONSENT_DECISION_READER,
-  AI_TASK_SETTINGS,
-  type AiTaskSettingsMap,
   USER_LOCALE_PREFERENCE_READER,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
@@ -30,7 +28,6 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
     ENTITLEMENT_READER,
     USER_MUTATION_LOCK,
     UNIT_OF_WORK,
-    AI_TASK_SETTINGS,
   ],
   useFactory: (
     aiReportRepository: ConstructorParameters<typeof GenerateReport>[0]["aiReportRepository"],
@@ -41,7 +38,6 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
     entitlementReader: ConstructorParameters<typeof GenerateReport>[0]["entitlementReader"],
     userMutationLock: ConstructorParameters<typeof GenerateReport>[0]["userMutationLock"],
     unitOfWork: ConstructorParameters<typeof GenerateReport>[0]["unitOfWork"],
-    settings: AiTaskSettingsMap,
   ) =>
     new GenerateReport({
       aiReportRepository,
@@ -52,7 +48,6 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
       entitlementReader,
       userMutationLock,
       unitOfWork,
-      settings: settings.report,
       logger: new Logger(GenerateReport.name),
     }),
 };

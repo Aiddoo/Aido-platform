@@ -1,5 +1,3 @@
-import type { ParsedTodoData } from "@aido/api";
-
 import {
   AiGenerationError,
   type AiFailureKind,
@@ -9,10 +7,11 @@ import type {
   AiGenerationResult,
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
-import { createParsedTodoResponse } from "#test/fixtures/ai-response.fixture";
+import type { TodoDraft } from "#api/modules/ai-assistance/domain/types/parsing/todo-draft.types";
+import { createTodoDraftResponse } from "#test/fixtures/ai-response.fixture";
 
 export interface FakeAiGeneratorOptions {
-  defaultResponse?: Partial<ParsedTodoData>;
+  defaultResponse?: Partial<TodoDraft>;
   defaultAvailable?: boolean;
   defaultDelayMs?: number;
 }
@@ -44,9 +43,9 @@ export function createAiGenerationError(kind: AiFailureKind): AiGenerationError 
 
 /** 업체 체인 없이 정해 둔 응답을 스키마로 검증해 돌려주는 생성기. */
 export class FakeAiGenerator implements AiGeneratorPort {
-  private _responses: Record<string, unknown>[] = [];
-  private _defaultResponse: ParsedTodoData = createParsedTodoResponse();
-  private readonly _initialResponse: ParsedTodoData;
+  private _responses: unknown[] = [];
+  private _defaultResponse: TodoDraft = createTodoDraftResponse();
+  private readonly _initialResponse: TodoDraft;
   private readonly _initialAvailable: boolean;
   private readonly _initialDelayMs: number;
   private _callHistory: CallRecord[] = [];
@@ -102,19 +101,20 @@ export class FakeAiGenerator implements AiGeneratorPort {
     };
   }
 
-  setResponse(response: Partial<ParsedTodoData>): this {
-    this._responses.push(createParsedTodoResponse({ ...this._defaultResponse, ...response }));
+  /** 다음 parse-todo 응답(일정 표현). 다른 작업의 출력은 setRawResponse로 넣는다. */
+  setResponse(response: Partial<TodoDraft>): this {
+    this._responses.push(createTodoDraftResponse({ ...this._defaultResponse, ...response }));
     return this;
   }
 
-  setResponses(responses: Partial<ParsedTodoData>[]): this {
+  setResponses(responses: Partial<TodoDraft>[]): this {
     for (const response of responses) {
       this.setResponse(response);
     }
     return this;
   }
 
-  setDefaultResponse(response: Partial<ParsedTodoData>): this {
+  setDefaultResponse(response: Partial<TodoDraft>): this {
     this._defaultResponse = { ...this._defaultResponse, ...response };
     return this;
   }

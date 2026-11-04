@@ -2,35 +2,33 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
-import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
-function createTodo(title: string, categoryId: number) {
+// 서울 2026-10-28(수) 10:00
+const NOW = new Date("2026-10-28T01:00:00Z");
+
+function draftTodo(title: string, overrides: Record<string, unknown> = {}) {
   return {
+    intent: "TASK",
     title,
-    categoryId,
-    startDate: "2026-04-12",
-    endDate: null,
-    scheduledTime: null,
-    isAllDay: true,
-    isRecurring: false,
-    recurrence: null,
+    date: { kind: "NONE" },
+    time: null,
+    repeat: { pattern: "NONE" },
     items: [],
+    ...overrides,
   };
 }
 
 function createFixture() {
   const fixture = createAiParsingFixture();
-  fixture.generator.setRawResponse({ todos: [createTodo("팀 미팅", 7)] });
-  const useCase = new ParseMemo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
+  const useCase = new ParseMemo(fixture);
   const input: ParseMemoInput = {
     userId: fixture.userId,
-    content: "내일 팀 미팅",
+    content: "메모 원문",
     timezone: "Asia/Seoul",
     categoryId: 1,
     locale: "ko",
@@ -38,10 +36,10 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseMemo — v1 롤백 경로", () => {
+describe("ParseMemo", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(QUOTA_LEDGER_TIME);
+    vi.setSystemTime(NOW);
   });
   afterEach(() => {
     try {
@@ -54,6 +52,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
   it("성공한 요청은 사용량 한 회를 유지하고 데이터와 모델 정보를 반환한다", async () => {
     // Given
     const fixture = createFixture();
+    fixture.generator.setRawResponse({ todos: [draftTodo("팀 미팅", { categoryId: 7 })] });
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
@@ -61,11 +60,13 @@ describe("ParseMemo — v1 롤백 경로", () => {
       used: 1,
       limit: FREE_AI_LIMIT,
     });
+    expect(result.featureQuota).toMatchObject({ feature: "AI_PARSE", used: 1 });
     expect(result.data.todos).toMatchObject([{ title: "팀 미팅", categoryId: 7 }]);
     expect(result.meta).toMatchObject({
       model: "fake:test-model",
       processingTimeMs: 0,
       tokenUsage: { input: 150, output: 50 },
+      promptVersion: "parse-memo@3",
     });
   });
 
@@ -101,32 +102,6 @@ describe("ParseMemo — v1 롤백 경로", () => {
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
-  it("소유 카테고리는 유지하고 미지 카테고리는 요청 기본값으로 대체한다", async () => {
-    // Given
-    const fixture = createFixture();
-    fixture.generator
-      .clearResponses()
-      .setRawResponse({ todos: [createTodo("업무", 7), createTodo("미지", 999)] });
-    // When
-    const result = await fixture.useCase.execute(fixture.input);
-    // Then
-    expect(result.data.todos.map((todo) => todo.categoryId)).toEqual([7, 1]);
-  });
-
-  it("구조화 계약을 초과한 여덟 투두는 성공 로그 없이 거절하고 사용량을 반환한다", async () => {
-    // Given: Fake도 production 구조화 schema로 원본 응답을 검증한다.
-    const fixture = createFixture();
-    fixture.generator.clearResponses().setRawResponse({
-      todos: Array.from({ length: 8 }, (_, index) => createTodo(`작업 ${index}`, 7)),
-    });
-    // When
-    const execution = fixture.useCase.execute(fixture.input);
-    // Then
-    await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
-    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
-    expect(fixture.logger.log).not.toHaveBeenCalled();
-  });
-
   it.each([
     { error: createAiGenerationError("RATE_LIMITED"), errorCode: "AI_1310" },
     { error: createAiGenerationError("UPSTREAM"), errorCode: "AI_1301" },
@@ -145,10 +120,22 @@ describe("ParseMemo — v1 롤백 경로", () => {
       // When
       const execution = fixture.useCase.execute(fixture.input);
       // Then
-      await expect(execution).rejects.toMatchObject({ errorCode });
+      await expect(execution).rejects.toMatchObject({ errorCode, details: { charged: false } });
       expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     },
   );
+
+  it("스키마에 맞지 않는 모델 출력은 AI_1302로 거절하고 사용량을 돌려준다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({ todos: [{ title: "날짜 표현 없음" }] });
+    // When
+    const execution = fixture.useCase.execute(fixture.input);
+    // Then
+    await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect(fixture.logger.log).not.toHaveBeenCalled();
+  });
 
   it("카테고리 조회 실패는 원래 오류를 유지하며 예약 사용량을 보상한다", async () => {
     // Given
@@ -174,29 +161,17 @@ describe("ParseMemo — v1 롤백 경로", () => {
     expect(fixture.generator.getCallCount()).toBe(0);
   });
 
-  it("provider가 반환한 여섯 항목은 최종 검증에서 거절하고 성공 로그 없이 사용량을 반환한다", async () => {
-    // Given: provider 반환 성공 뒤에 검사할 공개 응답 상한 초과 데이터.
+  it("공개 계약 검증에 실패하면 원문 없이 위치만 기록하고 AI_1302로 사용량을 돌려준다", async () => {
+    // Given
     const fixture = createFixture();
-    const todo = {
-      ...createTodo("PRIVATE_TODO_TITLE", 7),
-      items: Array.from({ length: 6 }, () => ({ title: "PRIVATE_ITEM_TITLE" })),
-    };
-    vi.spyOn(fixture.generator, "generate").mockResolvedValueOnce({
-      output: { todos: [todo] },
-      provider: "google",
-      model: "fixture:model",
-      attempts: 1,
-      fallbackFrom: null,
-      finishReason: "stop",
-      latencyMs: 0,
-      inputTokens: 150,
-      outputTokens: 50,
-      reasoningTokens: 0,
-      estimatedCostMicroUsd: 0,
-    });
+    fixture.generator.setRawResponse({ todos: [draftTodo("PRIVATE_TODO_TITLE")] });
     // When
-    const execution = fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO" });
-    // Then: 내용을 임의로 자르지 않고 실패·보상하며 안전한 issue 위치만 기록한다.
+    const execution = fixture.useCase.execute({
+      ...fixture.input,
+      content: "PRIVATE_MEMO",
+      categoryId: 0,
+    });
+    // Then
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
@@ -208,24 +183,23 @@ describe("ParseMemo — v1 롤백 경로", () => {
         errorType: "INVALID_OUTPUT",
         errorCode: ErrorCode.AI_1302,
         quotaCharged: false,
-        validationIssues: [{ path: ["todos", 0, "items"], code: "too_big" }],
+        validationIssues: [{ path: ["todos", 0, "categoryId"], code: "too_small" }],
       }),
     );
     const logged = JSON.stringify(fixture.logger.error.mock.calls);
     expect(logged).not.toContain("PRIVATE_");
     expect(logged).not.toContain("message");
-    expect(todo.items).toHaveLength(6);
   });
 
   it("다섯 항목의 유효한 응답은 검증된 개수를 성공 로그에 남긴다", async () => {
-    // Given: 응답 계약의 항목 상한을 정확히 만족한다.
+    // Given
     const fixture = createFixture();
-    fixture.generator.clearResponses().setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [
-        {
-          ...createTodo("프로젝트 준비", 7),
-          items: Array.from({ length: 5 }, (_, i) => ({ title: `단계 ${i + 1}` })),
-        },
+        draftTodo("프로젝트 준비", {
+          categoryId: 7,
+          items: Array.from({ length: 5 }, (_, index) => ({ title: `단계 ${index + 1}` })),
+        }),
       ],
     });
     // When
@@ -245,7 +219,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     expect(fixture.logger.error).not.toHaveBeenCalled();
   });
 
-  it("재시도가 소진된 요청 과다는 파싱 실패가 아닌 AI_1310으로 반환하고 사용량을 반환한다", async () => {
+  it("재시도가 소진된 요청 과다는 파싱 실패가 아닌 AI_1310으로 반환하고 실패 종류를 기록한다", async () => {
     // Given
     const fixture = createFixture();
     fixture.generator.setInvalidResponse(createAiGenerationError("RATE_LIMITED"));
@@ -258,5 +232,254 @@ describe("ParseMemo — v1 롤백 경로", () => {
     expect(fixture.logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ event: "ai.generation.failed", errorType: "RATE_LIMITED" }),
     );
+  });
+
+  it.each([
+    { draftCount: 5, keptCount: 5, omittedTodoCount: 0 },
+    { draftCount: 6, keptCount: 5, omittedTodoCount: 1 },
+    { draftCount: 12, keptCount: 5, omittedTodoCount: 7 },
+  ])(
+    "할 일 $draftCount개는 합치지 않고 입력 순서대로 $keptCount개만 만들며 남은 $omittedTodoCount개를 알린다",
+    async ({ draftCount, keptCount, omittedTodoCount }) => {
+      // Given
+      const fixture = createFixture();
+      const titles = Array.from({ length: draftCount }, (_, index) => `할 일 ${index + 1}`);
+      fixture.generator.setRawResponse({ todos: titles.map((title) => draftTodo(title)) });
+      // When
+      const result = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(result.data.todos.map((todo) => todo.title)).toEqual(titles.slice(0, keptCount));
+      expect(result.meta.omittedTodoCount).toBe(omittedTodoCount);
+      expect(fixture.logger.log).toHaveBeenCalledWith(
+        expect.objectContaining({ todoCount: keptCount, omittedTodoCount }),
+      );
+    },
+  );
+
+  it("12개 할 일 메모에서 모델이 앞의 8개와 전체 수 12를 주면 5개만 만들고 남은 7개를 알린다", async () => {
+    // Given
+    const fixture = createFixture();
+    const titles = Array.from({ length: 12 }, (_, index) => `할 일 ${index + 1}`);
+    fixture.generator.setRawResponse({
+      totalTaskCount: 12,
+      todos: titles.slice(0, 8).map((title) => draftTodo(title)),
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(titles.slice(0, 5));
+    expect(result.meta.omittedTodoCount).toBe(7);
+    expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ todoCount: 5, omittedTodoCount: 7 }),
+    );
+  });
+
+  it.each([
+    { case: "빠뜨리면", totalTaskCount: undefined },
+    { case: "실제로 쓴 것보다 적게 세면", totalTaskCount: 3 },
+    { case: "음수로 주면", totalTaskCount: -1 },
+  ])(
+    "모델이 전체 할 일 수를 $case 받은 할 일 수로 남은 개수를 계산한다",
+    async ({ totalTaskCount }) => {
+      // Given
+      const fixture = createFixture();
+      fixture.generator.setRawResponse({
+        ...(totalTaskCount != null && { totalTaskCount }),
+        todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+      });
+      // When
+      const result = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(result.data.todos).toHaveLength(5);
+      expect(result.meta.omittedTodoCount).toBe(3);
+    },
+  );
+
+  it("실제 할 일이 없으면 모델이 센 전체 수와 관계없이 남은 할 일은 0개다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      totalTaskCount: 4,
+      todos: [draftTodo("ignored", { intent: "NO_ACTION" })],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(["입력 확인 필요"]);
+    expect(result.meta.omittedTodoCount).toBe(0);
+  });
+
+  it("할 일 0개면 안내 할 일 하나만 돌려주고 남은 할 일은 0개다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({ todos: [] });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(["입력 확인 필요"]);
+    expect(result.meta.omittedTodoCount).toBe(0);
+  });
+
+  it("모델 대상 명령은 남은 할 일 수에 세지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [
+        draftTodo("ignored", { intent: "NO_ACTION" }),
+        ...Array.from({ length: 6 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+      ],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos[0]?.title).toBe("할 일 1");
+    expect(result.meta.omittedTodoCount).toBe(1);
+  });
+
+  it("7개 항목은 합치지 않고 앞의 5개만 두며 제목 반복·빈 항목은 뺀다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [
+        draftTodo("발표 준비", {
+          items: [
+            { title: "발표 준비" },
+            { title: " " },
+            ...Array.from({ length: 7 }, (_, index) => ({ title: `단계 ${index + 1}` })),
+          ],
+        }),
+      ],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos[0]?.items.map((item) => item.title)).toEqual([
+      "단계 1",
+      "단계 2",
+      "단계 3",
+      "단계 4",
+      "단계 5",
+    ]);
+    expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ warnings: ["ITEMS_TRUNCATED"] }),
+    );
+  });
+
+  it("201자 제목은 200자로 자르고 미소유 카테고리는 요청 기본값으로 바꾼다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [
+        draftTodo("가".repeat(201), { categoryId: 999 }),
+        draftTodo("업무 정리", { categoryId: 7 }),
+      ],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos[0]?.title).toHaveLength(200);
+    expect(result.data.todos.map((todo) => todo.categoryId)).toEqual([1, 7]);
+  });
+
+  it("메모 앞머리 날짜와 시각은 서버가 계산한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [
+        draftTodo("은행", {
+          date: { kind: "OFFSET_DAYS", amount: 1 },
+          time: { hour: 3, minute: 0, meridiem: "NONE" },
+        }),
+      ],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos[0]).toMatchObject({
+      startDate: "2026-10-29",
+      scheduledTime: "15:00",
+      isAllDay: false,
+    });
+    expect(result.meta.promptVersion).toBe("parse-memo@3");
+  });
+
+  it("모든 할 일이 모델 대상 명령이면 안내 할 일 하나만 돌려주고 사용량을 차감하지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [draftTodo("ignored", { intent: "NO_ACTION" })],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos).toEqual([
+      expect.objectContaining({ title: "입력 확인 필요", categoryId: 1, items: [] }),
+    ]);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect(result.featureQuota).toMatchObject({ used: 0 });
+    expect([...fixture.repository.charges.values()]).toMatchObject([
+      { status: "REFUNDED", refundReason: "NO_ACTION", reason: "parse-memo" },
+    ]);
+  });
+
+  it("NO_ACTION과 실제 할 일이 섞이면 실제 할 일만 남기고 사용량을 차감한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      todos: [draftTodo("ignored", { intent: "NO_ACTION" }), draftTodo("전기요금 납부")],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(["전기요금 납부"]);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+  });
+
+  it("모델이 전체 할 일 수를 터무니없이 크게 주면 상한 100개 기준으로 남은 수를 알린다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      totalTaskCount: 99_999_999,
+      todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.meta.omittedTodoCount).toBe(95);
+  });
+
+  it("모델 출력의 스키마 밖 필드는 버리고 제목·항목의 보이지 않는 문자는 지운다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({
+      userId: "other-user",
+      todos: [
+        draftTodo("우유\u200B 사기\u202E\u{E0041}", {
+          categoryId: 999_999,
+          ownerId: "other-user",
+          items: [{ title: "\u2066마트\u2069", url: "https://evil.example" }],
+        }),
+      ],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos).toEqual([
+      expect.objectContaining({ title: "우유 사기", categoryId: 1, items: [{ title: "마트" }] }),
+    ]);
+    expect(JSON.stringify(result)).not.toContain("other-user");
+    expect(JSON.stringify(result)).not.toContain("evil.example");
+  });
+
+  it("성공 로그에는 메모 원문과 모델이 만든 제목을 남기지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.generator.setRawResponse({ todos: [draftTodo("PRIVATE_TITLE")] });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO_TEXT" });
+    // Then
+    const logged = JSON.stringify([fixture.logger.log.mock.calls, fixture.logger.warn.mock.calls]);
+    expect(logged).not.toContain("PRIVATE_MEMO_TEXT");
+    expect(logged).not.toContain("PRIVATE_TITLE");
   });
 });

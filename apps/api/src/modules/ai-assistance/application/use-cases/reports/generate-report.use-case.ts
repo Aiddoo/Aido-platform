@@ -27,10 +27,10 @@ import {
   isTransientAiFailure,
 } from "../../ports/generation/ai-generation.errors.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../../ports/reports/todo-stats.reader.port.js";
-import { reportPrompts, type ReportPromptInput } from "../../prompts/reports/report/index.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { reportPrompt, type ReportPromptInput } from "../../prompts/reports/report/index.js";
 import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 import { computePeriodLabel } from "../../read-models/reports/report-period-label.js";
 import {
@@ -71,7 +71,6 @@ interface GenerateReportDependencies {
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly settings: AiTaskSettings;
 }
 
 export class GenerateReport {
@@ -296,31 +295,26 @@ export class GenerateReport {
       return buildNoAiConsentContent(input, locale);
     }
 
-    const definition = reportPrompts[this.#dependencies.settings.promptVersion][locale];
+    const definition = reportPrompt;
     const logBase = {
-      task: "report",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
       quotaCharged: false,
     } as const;
     const startedAt = Date.now();
     try {
-      const { system, prompt } = definition.build(input);
-      const { value, meta } = await definition.output.generate(
+      const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
-        {
-          task: "report",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          agreedConsentVersion: consent.agreedVersion,
-        },
-        input,
+        definition,
+        definition.build(input, locale),
+        { input, locale },
+        { agreedConsentVersion: consent.agreedVersion },
       );
       this.#dependencies.logger.log(
         generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
       );
-      return { ...value, contentSource: "AI", promptVersion: definition.promptVersion };
+      return { ...value, contentSource: "AI", promptVersion: definition.version };
     } catch (error) {
       if (error instanceof AiGenerationError && error.kind === "UNAVAILABLE") {
         this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });

@@ -90,12 +90,6 @@ describe("toAiSettings — 업체·작업별 AI 설정", () => {
       "quick-plan": { thinking: "low", deadlineMs: 15_000 },
       "voice-note-digest": { thinking: "low", deadlineMs: 45_000 },
     });
-    expect(settings.promptVersions).toEqual({
-      "parse-todo": "v2",
-      "parse-memo": "v2",
-      report: "v2",
-      suggestion: "v2",
-    });
     expect(settings.breaker).toEqual({
       billingCooldownMs: 900_000,
       healthThreshold: 5,
@@ -103,12 +97,11 @@ describe("toAiSettings — 업체·작업별 AI 설정", () => {
     });
   });
 
-  it("작업별 env는 그 작업의 thinking·제한 시간·프롬프트 버전만 바꾼다", () => {
+  it("작업별 env는 그 작업의 thinking·제한 시간만 바꾼다", () => {
     // Given
     const env = {
       AI_THINKING_PARSE_TODO: "low",
       AI_DEADLINE_VOICE_NOTE_DIGEST_MS: "50000",
-      AI_PROMPT_VERSION_PARSE_MEMO: "v1",
     };
     // When
     const settings = toAiSettings(aiSchema.parse(env));
@@ -116,7 +109,6 @@ describe("toAiSettings — 업체·작업별 AI 설정", () => {
     expect(settings.tasks["parse-todo"]).toEqual({ thinking: "low", deadlineMs: 12_000 });
     expect(settings.tasks["voice-note-digest"]).toEqual({ thinking: "low", deadlineMs: 50_000 });
     expect(settings.tasks["parse-memo"].thinking).toBe("low");
-    expect(settings.promptVersions).toMatchObject({ "parse-memo": "v1", "parse-todo": "v2" });
   });
 
   it("빈 문자열 키는 미설정이고 순서 env의 공백은 무시한다", () => {

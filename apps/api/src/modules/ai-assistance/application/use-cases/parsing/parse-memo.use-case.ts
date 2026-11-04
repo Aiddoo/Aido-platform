@@ -14,10 +14,10 @@ import {
 } from "../../observability/generation/ai-generation-log.events.js";
 import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
-import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
-import { parseMemoPrompts } from "../../prompts/parsing/parse-memo/index.js";
+import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
+import { parseMemoPrompt } from "../../prompts/parsing/parse-memo/index.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
@@ -66,7 +66,6 @@ interface ParseMemoDependencies {
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
-  readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -117,34 +116,27 @@ export class ParseMemo {
     startTime: number,
   ): Promise<{ readonly result: Omit<ParseMemoResult, "featureQuota">; readonly charge: boolean }> {
     const { content, userId, timezone, categoryId, locale } = input;
-    const definition = parseMemoPrompts[this.#dependencies.settings.promptVersion][locale];
+    const definition = parseMemoPrompt;
     const at = now();
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const { system, prompt } = definition.build({
-      content,
-      timezone,
-      now: at,
-      categories: userCategories.map(({ id, name }) => ({ id, name })),
-    });
+    const built = definition.build(
+      { content, timezone, now: at, categories: userCategories },
+      locale,
+    );
     const logBase = {
-      task: "parse-memo",
-      promptVersion: definition.promptVersion,
+      task: definition.id,
+      promptVersion: definition.version,
       userId,
     } as const;
 
     const { agreedVersion } =
       await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
     try {
-      const { value, meta } = await definition.output.generate(
+      const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
-        {
-          task: "parse-memo",
-          promptVersion: definition.promptVersion,
-          system,
-          prompt,
-          agreedConsentVersion: agreedVersion,
-        },
+        definition,
+        built,
         {
           content,
           timezone,
@@ -153,6 +145,7 @@ export class ParseMemo {
           ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
           defaultCategoryId: categoryId,
         },
+        { agreedConsentVersion: agreedVersion },
       );
       const { data, omittedTodoCount } = value;
       const charge = !value.noAction;
@@ -171,7 +164,7 @@ export class ParseMemo {
         result: {
           data,
           meta: {
-            ...toParseMeta(meta, definition.promptVersion, Date.now() - startTime),
+            ...toParseMeta(meta, definition.version, Date.now() - startTime),
             omittedTodoCount,
           },
         },

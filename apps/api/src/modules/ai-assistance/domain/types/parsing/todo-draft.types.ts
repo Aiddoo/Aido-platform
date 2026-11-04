@@ -44,9 +44,15 @@ export interface TimeRef {
   readonly relativeMinutes?: number;
 }
 
+/**
+ * 반복 표현 종류. BIWEEKLY_DAYS·MONTHLY_DAY는 반복 할 일(TodoSeries)이 생기면서 계획 프롬프트가 먼저 쓰고,
+ * 출시 parse 응답의 recurrence(요일 + 종료일)로는 나타낼 수 없어 그 경로에서는 UNSUPPORTED와 같게 다룬다.
+ */
 export type RepeatPattern =
   | "NONE"
   | "WEEKLY_DAYS"
+  | "BIWEEKLY_DAYS"
+  | "MONTHLY_DAY"
   | "DAILY"
   | "WEEKDAYS"
   | "WEEKENDS"
@@ -61,6 +67,8 @@ export type RepeatPattern =
 export interface RepeatRef {
   readonly pattern: RepeatPattern;
   readonly daysOfWeek?: readonly DayOfWeek[];
+  /** MONTHLY_DAY의 날짜(1~31) */
+  readonly monthDay?: number;
   readonly until?: DateRef;
   readonly forDuration?: { readonly unit: "DAY" | "WEEK" | "MONTH"; readonly amount: number };
 }

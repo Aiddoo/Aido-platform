@@ -450,3 +450,25 @@ describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가
     expect(result).toMatchObject({ startDate: "2026-10-28", scheduledTime: "09:00" });
   });
 });
+
+describe("resolveTodoSchedule — 반복 할 일 전용 표현", () => {
+  it.each([
+    { pattern: "BIWEEKLY_DAYS", daysOfWeek: ["TUE"] },
+    { pattern: "MONTHLY_DAY", monthDay: 15 },
+  ] as const)(
+    "$pattern은 출시 parse 응답의 요일 반복으로 바꾸지 않고 지원하지 않는 반복으로 알린다",
+    (repeat) => {
+      // Given
+      const input = draft({ date: { kind: "OFFSET_DAYS", amount: 1 }, repeat });
+      // When
+      const result = resolveTodoSchedule(input, SEOUL);
+      // Then
+      expect(result).toMatchObject({
+        startDate: "2026-10-29",
+        isRecurring: false,
+        recurrence: null,
+        warnings: ["UNSUPPORTED_RECURRENCE"],
+      });
+    },
+  );
+});
