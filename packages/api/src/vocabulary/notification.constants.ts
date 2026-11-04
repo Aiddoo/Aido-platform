@@ -109,6 +109,44 @@ export const NOTIFICATION_LIMITS = {
 
 export const EXPO_PUSH_TOKEN_REGEX = /^ExponentPushToken\[.+\]$/;
 
+export const PUSH_DEVICE_ID_MAX_LENGTH = 100;
+
+/** 앱이 OS에서 읽은 알림 권한. iOS 임시 허용(provisional·ephemeral)은 PROVISIONAL이다. */
+export const PUSH_PERMISSION_STATUS = {
+  GRANTED: "GRANTED",
+  PROVISIONAL: "PROVISIONAL",
+  DENIED: "DENIED",
+  NOT_DETERMINED: "NOT_DETERMINED",
+} as const;
+
+export type PushPermissionStatus =
+  (typeof PUSH_PERMISSION_STATUS)[keyof typeof PUSH_PERMISSION_STATUS];
+
+export const PUSH_DEVICE_PLATFORM = {
+  IOS: "IOS",
+  ANDROID: "ANDROID",
+} as const;
+
+export type PushDevicePlatform = (typeof PUSH_DEVICE_PLATFORM)[keyof typeof PUSH_DEVICE_PLATFORM];
+
+/** 발송 단계에서 사용자에게 푸시를 보내지 않은 이유. 관리자 캠페인 집계가 이 키로 센다. */
+export const PUSH_DISPATCH_SKIP_REASON = {
+  PUSH_SETTINGS_MISSING: "PUSH_SETTINGS_MISSING",
+  PUSH_DISABLED: "PUSH_DISABLED",
+  MARKETING_CONSENT_REQUIRED: "MARKETING_CONSENT_REQUIRED",
+  MARKETING_QUIET_HOURS: "MARKETING_QUIET_HOURS",
+  NIGHT_PUSH_DISABLED: "NIGHT_PUSH_DISABLED",
+  RATE_LIMITED: "RATE_LIMITED",
+  ENGAGEMENT_RATE_LIMITED: "ENGAGEMENT_RATE_LIMITED",
+  PUSH_PERMISSION_DENIED: "PUSH_PERMISSION_DENIED",
+  PUSH_PERMISSION_NOT_REQUESTED: "PUSH_PERMISSION_NOT_REQUESTED",
+  NO_ACTIVE_TOKEN: "NO_ACTIVE_TOKEN",
+  UNSUPPORTED_APP_CAPABILITY: "UNSUPPORTED_APP_CAPABILITY",
+} as const;
+
+export type PushDispatchSkipReason =
+  (typeof PUSH_DISPATCH_SKIP_REASON)[keyof typeof PUSH_DISPATCH_SKIP_REASON];
+
 // =========================================================================
 // 알림 카테고리
 // =========================================================================

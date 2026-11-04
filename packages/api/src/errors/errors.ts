@@ -203,6 +203,7 @@ export const ErrorCode = {
   NOTIFICATION_1003: "NOTIFICATION_1003",
   NOTIFICATION_1004: "NOTIFICATION_1004",
   NOTIFICATION_1005: "NOTIFICATION_1005",
+  NOTIFICATION_1006: "NOTIFICATION_1006",
 
   // =========================================================================
   // 콕 찌르기 (NUDGE_1100-1199)
@@ -1067,6 +1068,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "알림에 대한 접근 권한이 없습니다.",
     description: "해당 알림은 다른 사용자의 알림입니다.",
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.NOTIFICATION_1006]: {
+    code: "NOTIFICATION_1006",
+    message: "푸시를 받을 수 없는 기기입니다.",
+    description: "deviceId가 ios_ 또는 android_로 시작하지 않아 기기 플랫폼을 알 수 없습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 
   // =========================================================================
