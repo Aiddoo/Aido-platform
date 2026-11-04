@@ -122,6 +122,9 @@ describe('녹음 화면', () => {
 
     // When
     await fireEvent.press(screen.getByTestId('voice-note-finish'));
+    await act(async () =>
+      speechRecognizer.emit({ type: 'recording-saved', uri: 'file:///recording_a.wav' }),
+    );
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then

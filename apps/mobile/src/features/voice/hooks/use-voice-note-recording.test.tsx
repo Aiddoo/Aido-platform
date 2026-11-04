@@ -185,6 +185,45 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences).toHaveLength(1);
   });
 
+  test('일시정지 직후 끝내도 녹음 파일이 올 때까지 기다렸다가 조각을 남긴다', async () => {
+    // Given
+    const { speechRecognizer, storage, onFinished } = await renderRecording();
+    await start(speechRecognizer);
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('pause'));
+
+    // When
+    await fireEvent.press(screen.getByTestId('finish'));
+
+    // Then
+    expect(onFinished).not.toHaveBeenCalled();
+
+    // When
+    const uri = storage.recordings.prepareDirectory(ACCOUNT_ID);
+    await act(async () =>
+      speechRecognizer.emit({ type: 'recording-saved', uri: `${uri}/recording_a.wav` }),
+    );
+
+    // Then
+    const draftId = screen.getByTestId('draft-id').props.children;
+    await waitFor(() => expect(onFinished).toHaveBeenCalledWith(draftId));
+  });
+
+  test('녹음 파일이 끝내 오지 않아도 글자는 넘긴다', async () => {
+    // Given
+    const { speechRecognizer, onFinished } = await renderRecording();
+    await start(speechRecognizer);
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('pause'));
+    await fireEvent.press(screen.getByTestId('finish'));
+
+    // When
+    await act(async () => jest.advanceTimersByTime(3_100));
+
+    // Then
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
+  });
+
   test('한 번의 길이 한도에 닿으면 멈추고 알린다', async () => {
     // Given
     const { speechRecognizer, onLimitReached } = await renderRecording({ maxSeconds: 3 });

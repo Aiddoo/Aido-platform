@@ -1,5 +1,6 @@
 import {
   useErrorReporter,
+  useHaptics,
   useSpeechRecognizer,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
@@ -13,6 +14,7 @@ import { randomUUID } from 'expo-crypto';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { VOICE_RECORDING_SAVE_WAIT_MS } from '../constants/voice-note.constants';
 import {
   applyCaptionResult,
   commitProvisional,
@@ -60,6 +62,7 @@ export function useVoiceNoteRecording({
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
   const errorReporter = useErrorReporter();
+  const haptics = useHaptics();
   const { trackEvent } = useTrack();
 
   const [baseNote] = useState<VoiceNote>(() =>
@@ -74,10 +77,28 @@ export function useVoiceNoteRecording({
   const currentSegmentStartRef = useRef(0);
   const partCountRef = useRef(0);
   const hasBegunRef = useRef(false);
+  const savesRecordingRef = useRef(false);
+  const notifyRecordingsArrivedRef = useRef<(() => void) | null>(null);
   /** 정리 화면으로 넘겼다. 이제 초안의 주인은 그 화면이라 녹음 조각만 더한다 */
   const hasHandedOffRef = useRef(false);
 
+  /** 일시정지·한도 직후에 끝내면 파일이 아직 안 왔을 수 있다. 화면을 떠나면 파일 이벤트를 못 받아 잠깐 기다린다 */
+  const waitForRecordings = () =>
+    new Promise<void>((resolve) => {
+      if (!savesRecordingRef.current || segmentStartsRef.current.length === 0) {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(resolve, VOICE_RECORDING_SAVE_WAIT_MS);
+      notifyRecordingsArrivedRef.current = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+    });
+
   const onCaptured = async () => {
+    await waitForRecordings();
+    notifyRecordingsArrivedRef.current = null;
     await Promise.allSettled(pendingSavesRef.current);
     persist('now');
     hasHandedOffRef.current = true;
@@ -166,6 +187,9 @@ export function useVoiceNoteRecording({
         const [startMs = 0, ...rest] = segmentStartsRef.current;
         segmentStartsRef.current = rest;
         pendingSavesRef.current = [...pendingSavesRef.current, saveRecording(uri, startMs)];
+        if (rest.length === 0) {
+          notifyRecordingsArrivedRef.current?.();
+        }
       })
       .with({ type: 'volume' }, { type: 'error' }, noop)
       .exhaustive();
@@ -195,7 +219,9 @@ export function useVoiceNoteRecording({
 
   /** Android에 이 언어 모델이 없으면 받을지 묻는다. 거절해도 네트워크 인식으로 이어 간다 */
   const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
-    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(startLocale);
+    const { canDownloadOnDeviceModel, canSaveRecording } =
+      await speechRecognizer.getCapabilities(startLocale);
+    savesRecordingRef.current = canSaveRecording;
     if (!canDownloadOnDeviceModel) {
       return;
     }
@@ -238,6 +264,7 @@ export function useVoiceNoteRecording({
   };
 
   const mark = () => {
+    haptics.selection();
     updateCaptions(withBookmark(captionsRef.current, session.getElapsedMs()));
   };
 
