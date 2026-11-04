@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { quotaErrorDetailsSchema } from "../contracts/entitlement/v1/quota-error.details.js";
 import { ErrorCode, type ErrorCodeType } from "./errors.js";
 
 /** 친구 한도 초과(FOLLOW_0909)일 때 앱이 한도 안내에 쓰는 값 */
@@ -16,9 +17,25 @@ export const friendLimitErrorDetailsSchema = z
 
 export type FriendLimitErrorDetails = z.infer<typeof friendLimitErrorDetailsSchema>;
 
+/**
+ * FOLLOW_0909 운영 응답 상세. 출시 앱이 읽는 current·limit을 그대로 두고 다른 한도 오류와 같은
+ * charged·featureQuota를 더한다.
+ */
+export const friendQuotaErrorDetailsSchema = quotaErrorDetailsSchema
+  .extend(friendLimitErrorDetailsSchema.shape)
+  .describe("친구 한도 초과 상세 (current·limit + 차감 없음 + 현재 한도)");
+
+export type FriendQuotaErrorDetails = z.infer<typeof friendQuotaErrorDetailsSchema>;
+
 // 운영 응답에는 여기 등록한 코드의 검증된 필드만 싣고 나머지 details는 숨긴다
 const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
-  [ErrorCode.FOLLOW_0909]: friendLimitErrorDetailsSchema,
+  [ErrorCode.TODO_CATEGORY_0857]: quotaErrorDetailsSchema,
+  [ErrorCode.FOLLOW_0909]: friendQuotaErrorDetailsSchema,
+  [ErrorCode.NUDGE_1101]: quotaErrorDetailsSchema,
+  [ErrorCode.CHEER_1201]: quotaErrorDetailsSchema,
+  [ErrorCode.AI_1303]: quotaErrorDetailsSchema,
+  [ErrorCode.AI_1313]: quotaErrorDetailsSchema,
+  [ErrorCode.AI_1314]: quotaErrorDetailsSchema,
 };
 
 /** 공개 상세가 정해진 코드면 그 스키마로 거른 값을, 아니면 undefined를 반환한다. */

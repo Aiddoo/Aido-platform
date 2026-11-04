@@ -1,0 +1,358 @@
+import type { EntitlementSnapshot } from "@aido/api";
+import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
+import {
+  PLAN_CATALOG,
+  type MeteredFeatureKey,
+  type PlanFeature,
+  type QuotaMeter,
+} from "@aido/api/vocabulary";
+import { mapValues } from "es-toolkit";
+import { match } from "ts-pattern";
+
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { now } from "#api/shared/domain/date/utils/core";
+import { toISOString } from "#api/shared/domain/date/utils/format";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+
+import { QuotaCharge } from "../../../domain/aggregates/quotas/quota-charge.aggregate.js";
+import { QUOTA_CHARGE_AMOUNT } from "../../../domain/constants/quotas/quota.constants.js";
+import {
+  NO_RESOURCE_BONUSES,
+  resolveAccessContext,
+  resolveFeatureQuota,
+  resolveQuotaLimit,
+  type AccessState,
+  type AccessTier,
+  type FeatureQuotaState,
+  type QuotaUsageReading,
+} from "../../../domain/policies/entitlement/entitlement.policy.js";
+import { QuotaWindow } from "../../../domain/value-objects/quotas/quota-window.vo.js";
+import { AccessQuotaLogEvent } from "../../observability/quotas/access-quota-log.events.js";
+import type { EntitlementDatabasePort } from "../../ports/entitlement/entitlement-state.port.js";
+import type {
+  MeteredFeatureQuota,
+  QuotaLedgerPort,
+  QuotaRefundReason,
+  QuotaReservation,
+  QuotaReserveInput,
+  UnmeteredQuotaFeatureKey,
+} from "../../ports/quotas/quota-ledger.port.js";
+import type { QuotaLedgerRepositoryPort } from "../../ports/quotas/quota-ledger.repository.port.js";
+import type { QuotaUserMutationLockPort } from "../../ports/quotas/quota-user-mutation-lock.port.js";
+import { toFeatureQuota } from "../../read-models/entitlement/feature-quota.read-model.js";
+
+interface QuotaLedgerServiceDependencies {
+  readonly repository: QuotaLedgerRepositoryPort;
+  readonly userMutationLock: QuotaUserMutationLockPort;
+  readonly resourceBonuses: Pick<EntitlementDatabasePort, "findResourceBonuses">;
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
+}
+
+/** 기능별 한도 초과 코드. 출시 앱은 AI_PARSE의 AI_1303을 안다. */
+const QUOTA_EXHAUSTED_ERROR: Readonly<Record<MeteredFeatureKey, ErrorCodeType>> = {
+  AI_PARSE: ErrorCode.AI_1303,
+  VOICE_NOTE: ErrorCode.AI_1313,
+};
+
+function meterOf(feature: MeteredFeatureKey): QuotaMeter {
+  return PLAN_CATALOG[feature].meter;
+}
+
+/** 원장 판단 한 번에 쓰는 최신 권한과 기간 */
+interface QuotaDecisionContext {
+  readonly userId: string;
+  readonly feature: MeteredFeatureKey;
+  readonly tier: AccessTier;
+  readonly window: QuotaWindow;
+  readonly at: Date;
+}
+
+export class QuotaLedgerService implements QuotaLedgerPort {
+  readonly #dependencies: QuotaLedgerServiceDependencies;
+
+  constructor(dependencies: QuotaLedgerServiceDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async reserve(input: QuotaReserveInput): Promise<QuotaReservation> {
+    const { repository, userMutationLock, unitOfWork } = this.#dependencies;
+    return unitOfWork.run(async () => {
+      if (!(await userMutationLock.lockById(input.userId))) {
+        throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
+      }
+      const context = this.#decisionContext(input, await this.#findAccessState(input.userId));
+      const meter = meterOf(input.feature);
+      const existing =
+        input.idempotencyKey == null
+          ? null
+          : await repository.findChargeByKey(input.userId, meter, input.idempotencyKey);
+      if (existing == null) {
+        await this.#addUsage(context);
+        const charge = await repository.insertCharge(
+          QuotaCharge.planReservation({
+            userId: input.userId,
+            meter,
+            idempotencyKey: input.idempotencyKey,
+            reason: input.reason,
+            periodKey: context.window.periodKey,
+            at: context.at,
+          }),
+        );
+        return this.#reserved(context, charge, false);
+      }
+      return this.#replay(context, existing, input.reason);
+    });
+  }
+
+  async commit(reservation: QuotaReservation): Promise<boolean> {
+    if (reservation.alreadyCommitted) {
+      return false;
+    }
+    const meter = meterOf(reservation.feature);
+    try {
+      const { repository } = this.#dependencies;
+      const charge = await repository.findCharge(reservation.chargeId);
+      if (charge == null) {
+        return false;
+      }
+      const expected = { status: charge.status, attempt: charge.attempt };
+      if (!charge.commit(reservation.attempt, now())) {
+        return false;
+      }
+      if (!(await repository.updateCharge(charge, expected))) {
+        return false;
+      }
+      this.#dependencies.logger.log({
+        event: AccessQuotaLogEvent.COMMITTED,
+        chargeId: charge.id,
+        meter,
+        reason: charge.reason,
+      });
+      return true;
+    } catch (error) {
+      this.#dependencies.logger.error({
+        event: AccessQuotaLogEvent.COMMIT_FAILED,
+        chargeId: reservation.chargeId,
+        meter,
+        errorType: toErrorType(error),
+      });
+      return false;
+    }
+  }
+
+  async refund(reservation: QuotaReservation, reason: QuotaRefundReason): Promise<boolean> {
+    if (reservation.alreadyCommitted) {
+      return false;
+    }
+    const meter = meterOf(reservation.feature);
+    try {
+      const refunded = await this.#dependencies.unitOfWork.run(async () => {
+        const { repository, userMutationLock } = this.#dependencies;
+        if (!(await userMutationLock.lockById(reservation.userId))) {
+          return false;
+        }
+        const charge = await repository.findCharge(reservation.chargeId);
+        if (charge == null) {
+          return false;
+        }
+        const expected = { status: charge.status, attempt: charge.attempt };
+        if (!charge.refund({ attempt: reservation.attempt, reason, at: now() })) {
+          return false;
+        }
+        if (!(await repository.updateCharge(charge, expected))) {
+          return false;
+        }
+        await repository.subtractUsage(reservation.userId, meter, {
+          periodKey: charge.periodKey,
+          amount: charge.amount,
+        });
+        return true;
+      });
+      if (refunded) {
+        this.#dependencies.logger.log({
+          event: AccessQuotaLogEvent.REFUNDED,
+          chargeId: reservation.chargeId,
+          meter,
+          reason,
+        });
+      }
+      return refunded;
+    } catch (error) {
+      this.#dependencies.logger.error({
+        event: AccessQuotaLogEvent.REFUND_FAILED,
+        chargeId: reservation.chargeId,
+        meter,
+        errorType: toErrorType(error),
+      });
+      return false;
+    }
+  }
+
+  async read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota> {
+    const context = this.#decisionContext({ userId, feature }, await this.#findAccessState(userId));
+    const usage = await this.#readUsage(userId, feature, context.window);
+    const state = resolveFeatureQuota({
+      tier: context.tier,
+      feature,
+      resourceBonuses: NO_RESOURCE_BONUSES,
+      usage,
+    });
+    return { ...toFeatureQuota(state), used: usage.used, resetsAt: toISOString(usage.resetsAt) };
+  }
+
+  async readSnapshot(
+    userId: string,
+    dailyUsage: Readonly<Record<UnmeteredQuotaFeatureKey, QuotaUsageReading>>,
+  ): Promise<EntitlementSnapshot> {
+    const [state, resourceBonuses] = await Promise.all([
+      this.#findAccessState(userId),
+      this.#dependencies.resourceBonuses.findResourceBonuses(userId),
+    ]);
+    const at = now();
+    const { tier, isPremium } = resolveAccessContext(state, at);
+    const window = QuotaWindow.monthAt(at);
+    const [aiParse, voiceNote] = await Promise.all([
+      this.#readUsage(userId, "AI_PARSE", window),
+      this.#readUsage(userId, "VOICE_NOTE", window),
+    ]);
+    const usage: Readonly<Partial<Record<PlanFeature, QuotaUsageReading>>> = {
+      ...dailyUsage,
+      AI_PARSE: aiParse,
+      VOICE_NOTE: voiceNote,
+    };
+    return {
+      isPremium,
+      tier,
+      features: mapValues(PLAN_CATALOG, (_definition, feature) =>
+        toFeatureQuota(
+          resolveFeatureQuota({ tier, feature, resourceBonuses, usage: usage[feature] ?? null }),
+        ),
+      ),
+    };
+  }
+
+  async #replay(
+    context: QuotaDecisionContext,
+    charge: QuotaCharge,
+    reason: string,
+  ): Promise<QuotaReservation> {
+    const { repository } = this.#dependencies;
+    const expected = { status: charge.status, attempt: charge.attempt };
+    return match(charge.replayAt(context.at))
+      .with("COMMITTED", () => this.#reserved(context, charge, true))
+      .with("IN_FLIGHT", () => this.#rejectInFlight(context, charge))
+      .with("TAKE_OVER", async () => {
+        charge.takeOver(context.at);
+        if (!(await repository.updateCharge(charge, expected))) {
+          return this.#rejectInFlight(context, charge);
+        }
+        return this.#reserved(context, charge, false);
+      })
+      .with("RETRY", async () => {
+        await this.#addUsage(context);
+        charge.reserveAgain({ reason, periodKey: context.window.periodKey, at: context.at });
+        if (!(await repository.updateCharge(charge, expected))) {
+          return this.#rejectInFlight(context, charge);
+        }
+        return this.#reserved(context, charge, false);
+      })
+      .exhaustive();
+  }
+
+  async #rejectInFlight(context: QuotaDecisionContext, charge: QuotaCharge): Promise<never> {
+    this.#dependencies.logger.warn({
+      event: AccessQuotaLogEvent.IN_FLIGHT,
+      chargeId: charge.id,
+      meter: charge.meter,
+    });
+    throw new ApplicationException(ErrorCode.AI_1314, {
+      charged: false,
+      featureQuota: toFeatureQuota(await this.#featureQuota(context)),
+    });
+  }
+
+  async #addUsage(context: QuotaDecisionContext): Promise<void> {
+    const { repository, logger } = this.#dependencies;
+    const meter = meterOf(context.feature);
+    const { limit } = resolveQuotaLimit(context.tier, context.feature);
+    const added = await repository.addUsage(context.userId, meter, {
+      window: context.window,
+      at: context.at,
+      amount: QUOTA_CHARGE_AMOUNT,
+      limit,
+    });
+    if (added) {
+      return;
+    }
+    logger.warn({ event: AccessQuotaLogEvent.EXHAUSTED, meter, tier: context.tier });
+    throw new ApplicationException(QUOTA_EXHAUSTED_ERROR[context.feature], {
+      charged: false,
+      featureQuota: toFeatureQuota(await this.#featureQuota(context)),
+    });
+  }
+
+  #reserved(
+    context: QuotaDecisionContext,
+    charge: QuotaCharge,
+    alreadyCommitted: boolean,
+  ): QuotaReservation {
+    if (!alreadyCommitted) {
+      this.#dependencies.logger.log({
+        event: AccessQuotaLogEvent.RESERVED,
+        chargeId: charge.id,
+        meter: charge.meter,
+        reason: charge.reason,
+      });
+    }
+    return Object.freeze({
+      chargeId: charge.id,
+      userId: context.userId,
+      feature: context.feature,
+      attempt: charge.attempt,
+      alreadyCommitted,
+    });
+  }
+
+  async #featureQuota(context: QuotaDecisionContext): Promise<FeatureQuotaState> {
+    return resolveFeatureQuota({
+      tier: context.tier,
+      feature: context.feature,
+      resourceBonuses: NO_RESOURCE_BONUSES,
+      usage: await this.#readUsage(context.userId, context.feature, context.window),
+    });
+  }
+
+  async #readUsage(
+    userId: string,
+    feature: MeteredFeatureKey,
+    window: QuotaWindow,
+  ): Promise<QuotaUsageReading> {
+    const used = await this.#dependencies.repository.readUsed(userId, meterOf(feature), window);
+    return { used, resetsAt: window.resetsAt };
+  }
+
+  #decisionContext(
+    input: { readonly userId: string; readonly feature: MeteredFeatureKey },
+    state: AccessState,
+  ): QuotaDecisionContext {
+    const at = now();
+    return {
+      userId: input.userId,
+      feature: input.feature,
+      tier: resolveAccessContext(state, at).tier,
+      window: QuotaWindow.monthAt(at),
+      at,
+    };
+  }
+
+  async #findAccessState(userId: string): Promise<AccessState> {
+    const state = await this.#dependencies.repository.findAccessState(userId);
+    if (state == null) {
+      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+    }
+    return state;
+  }
+}

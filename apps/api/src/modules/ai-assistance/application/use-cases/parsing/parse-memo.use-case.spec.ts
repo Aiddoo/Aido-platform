@@ -1,8 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
 
 import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
@@ -24,7 +25,7 @@ function createTodo(title: string, categoryId: number) {
 }
 
 function createFixture() {
-  const fixture = createAiQuotaFixture();
+  const fixture = createAiParsingFixture();
   fixture.aiProvider.setRawResponse({ todos: [createTodo("팀 미팅", 7)] });
   const useCase = new ParseMemo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
   const input: ParseMemoInput = {
@@ -40,7 +41,7 @@ function createFixture() {
 describe("ParseMemo — v1 롤백 경로", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AI_QUOTA_TIME);
+    vi.setSystemTime(QUOTA_LEDGER_TIME);
   });
   afterEach(() => {
     try {
@@ -56,7 +57,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(await fixture.quota.read(fixture.userId)).toMatchObject({
+    expect(await fixture.quota.read(fixture.userId, "AI_PARSE")).toMatchObject({
       used: 1,
       limit: FREE_AI_LIMIT,
     });
@@ -76,7 +77,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: "AI_1301" });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
@@ -84,7 +85,12 @@ describe("ParseMemo — v1 롤백 경로", () => {
     // Given
     const fixture = createFixture();
     for (let index = 0; index < FREE_AI_LIMIT; index += 1) {
-      await fixture.quota.reserve(fixture.userId);
+      await fixture.quota.reserve({
+        userId: fixture.userId,
+        feature: "AI_PARSE",
+        idempotencyKey: null,
+        reason: "parse-todo",
+      });
     }
     // When
     const execution = fixture.useCase.execute(fixture.input);
@@ -115,7 +121,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
   });
 
@@ -138,7 +144,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
       const execution = fixture.useCase.execute(fixture.input);
       // Then
       await expect(execution).rejects.toMatchObject({ errorCode });
-      expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+      expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     },
   );
 
@@ -151,7 +157,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toBe(failure);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
@@ -162,7 +168,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, timezone: "Invalid/Timezone" });
     // Then
     await expect(execution).rejects.toBeInstanceOf(RangeError);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
@@ -184,7 +190,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO" });
     // Then: 내용을 임의로 자르지 않고 실패·보상하며 안전한 issue 위치만 기록한다.
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -218,7 +224,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const result = await fixture.useCase.execute(fixture.input);
     // Then
     expect(result.data.todos[0]?.items).toHaveLength(5);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
     expect(fixture.logger.log).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "ai.generation.completed",
@@ -239,7 +245,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1310 });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ event: "ai.generation.failed", errorType: "RATE_LIMITED" }),

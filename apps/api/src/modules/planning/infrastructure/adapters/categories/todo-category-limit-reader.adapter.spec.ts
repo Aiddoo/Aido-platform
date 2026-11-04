@@ -18,4 +18,19 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     expect(result).toBe(3);
     expect(entitlementReader.limitOfInTx).toHaveBeenCalledWith("user-123", "TODO_CATEGORY");
   });
+
+  it("한도 오류 featureQuota는 현재 개수를 resource 사용량으로 넘겨 계산한다", async () => {
+    // Given
+    const entitlementReader = mock<EntitlementReaderPort>();
+    const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
+
+    // When
+    await adapter.readQuotaInTx("user-123", 3);
+
+    // Then
+    expect(entitlementReader.featureQuotaInTx).toHaveBeenCalledWith("user-123", "TODO_CATEGORY", {
+      used: 3,
+      resetsAt: null,
+    });
+  });
 });

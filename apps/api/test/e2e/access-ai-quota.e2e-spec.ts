@@ -1,3 +1,8 @@
+import {
+  entitlementSnapshotSchema,
+  parseTodoResponseSchema,
+  quotaErrorDetailsSchema,
+} from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
@@ -169,6 +174,60 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     expect((await readUsage().expect(200)).body.data.data).toMatchObject({
       used: FREE_AI_LIMIT,
       limit: FREE_AI_LIMIT,
+    });
+  });
+
+  it("한도 초과 429 응답은 차감하지 않았다는 표시와 서버가 계산한 featureQuota를 준다", async () => {
+    // Given
+    await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
+
+    // When
+    const response = await parseTodo();
+
+    // Then
+    expect(response.status).toBe(429);
+    expect(response.body.error.code).toBe(ErrorCode.AI_1303);
+    expect(quotaErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+      charged: false,
+      featureQuota: {
+        feature: "AI_PARSE",
+        allowed: true,
+        limit: FREE_AI_LIMIT,
+        used: FREE_AI_LIMIT,
+        remaining: 0,
+        period: "month",
+        resetsAt: "2026-04-30T15:00:00.000Z",
+        isFairUse: false,
+        perUse: null,
+      },
+    });
+    expect(provider.getCallCount()).toBe(0);
+  });
+
+  it("성공 응답의 featureQuota는 이번 차감을 반영하고 GET /v1/entitlements와 같다", async () => {
+    // Given
+    await setQuota({ count: 2, resetAt: oldMonthAt });
+
+    // When
+    const response = await parseTodo().expect(200);
+    const parsed = parseTodoResponseSchema.parse(response.body.data);
+    const snapshot = await request(context.app.getHttpServer())
+      .get("/v1/entitlements")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
+
+    // Then
+    expect(parsed.featureQuota).toMatchObject({
+      used: 3,
+      remaining: FREE_AI_LIMIT - 3,
+    });
+    expect(entitlementSnapshotSchema.parse(snapshot.body.data).features.AI_PARSE).toEqual(
+      parsed.featureQuota,
+    );
+    expect((await readUsage().expect(200)).body.data.data).toEqual({
+      used: 3,
+      limit: FREE_AI_LIMIT,
+      resetsAt: "2026-04-30T15:00:00.000Z",
     });
   });
 

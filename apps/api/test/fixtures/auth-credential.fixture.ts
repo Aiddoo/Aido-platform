@@ -1,11 +1,10 @@
-import type { AiUsageData } from "@aido/api";
 import { mock } from "vitest-mock-extended";
 
 import type {
   AccessSnapshot,
   EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import type { AiQuotaPort } from "#api/modules/access/access-quota.public";
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import {
   type AccessTier,
   NO_RESOURCE_BONUSES,
@@ -137,7 +136,7 @@ export function createAuthCredentialFixture(
     restoreAccount,
     premiumAccessReader: new StubPremiumAccessReader(),
     entitlementReader: new StubCurrentUserAccess(),
-    aiQuota: new StubCurrentUserAiQuota(),
+    quotaLedger: new StubCurrentUserQuotaLedger(),
     cheerUsageReader: new StubDailySendUsage(),
     nudgeUsageReader: new StubDailySendUsage(),
   };
@@ -158,12 +157,22 @@ export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getAc
   }
 }
 
-export class StubCurrentUserAiQuota implements Pick<AiQuotaPort, "read"> {
+export class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
-  async read(_userId: string): Promise<AiUsageData> {
-    return { used: this.used, limit: null, resetsAt: this.resetsAt };
+  async read(_userId: string): Promise<MeteredFeatureQuota> {
+    return {
+      feature: "AI_PARSE",
+      allowed: true,
+      limit: null,
+      used: this.used,
+      remaining: null,
+      period: "month",
+      resetsAt: this.resetsAt,
+      isFairUse: false,
+      perUse: null,
+    };
   }
 }
 

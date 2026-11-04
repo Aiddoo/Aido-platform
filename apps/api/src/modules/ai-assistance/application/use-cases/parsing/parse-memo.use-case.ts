@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { sumBy } from "es-toolkit";
 import { ZodError } from "zod";
 
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -14,7 +15,6 @@ import {
 } from "../../observability/parsing/ai-generation-log.events.js";
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
 import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
-import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
@@ -33,6 +33,8 @@ export interface ParseMemoMeta extends ParseTodoMeta {
 export interface ParseMemoResult {
   data: ParsedMemoData;
   meta: ParseMemoMeta;
+  /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량 */
+  featureQuota: MeteredFeatureQuota;
 }
 
 /**
@@ -63,7 +65,7 @@ type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
 interface ParseMemoDependencies {
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
-  readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
+  readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
@@ -90,25 +92,36 @@ export class ParseMemo {
       userId,
       input,
     );
-    const reservation = await this.#dependencies.quota.reserve(userId);
-    let parsed: { readonly result: ParseMemoResult; readonly charge: boolean };
+    const { quota } = this.#dependencies;
+    const reservation = await quota.reserve({
+      userId,
+      feature: "AI_PARSE",
+      idempotencyKey: null,
+      reason: "parse-memo",
+    });
+    let parsed: {
+      readonly result: Omit<ParseMemoResult, "featureQuota">;
+      readonly charge: boolean;
+    };
     try {
       parsed = await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
-      await this.#dependencies.quota.release(reservation);
+      await quota.refund(reservation, "FAILED");
       throw error;
     }
     // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
-    if (!parsed.charge) {
-      await this.#dependencies.quota.release(reservation);
+    if (parsed.charge) {
+      await quota.commit(reservation);
+    } else {
+      await quota.refund(reservation, "NO_ACTION");
     }
-    return parsed.result;
+    return { ...parsed.result, featureQuota: await quota.read(userId, "AI_PARSE") };
   }
 
   async #parse(
     input: ResolvedParseMemoInput,
     startTime: number,
-  ): Promise<{ readonly result: ParseMemoResult; readonly charge: boolean }> {
+  ): Promise<{ readonly result: Omit<ParseMemoResult, "featureQuota">; readonly charge: boolean }> {
     const { content, userId, timezone, categoryId, locale } = input;
     const definition = parseMemoPrompts[this.#dependencies.settings.promptVersion][locale];
     const at = now();

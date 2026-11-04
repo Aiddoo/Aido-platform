@@ -208,6 +208,10 @@ export const ErrorCode = {
   AI_1310: "AI_1310",
   /** AI 데이터 처리 동의가 필요합니다 */
   AI_1311: "AI_1311",
+  /** 이번 달 말로 메모하기를 다 썼습니다 */
+  AI_1313: "AI_1313",
+  /** 같은 요청을 아직 처리하고 있습니다 */
+  AI_1314: "AI_1314",
 
   // 관리자 (ADMIN_1400-1499)
   /** 관리자 권한이 필요합니다 */
@@ -870,8 +874,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.TODO_CATEGORY_0857]: {
     code: "TODO_CATEGORY_0857",
     message: "카테고리 개수가 최대 한도에 도달했습니다.",
-    description:
-      "무료 사용자의 카테고리 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.",
+    description: `카테고리는 무료 ${PLAN_CATALOG.TODO_CATEGORY.free}개, 프리미엄 ${PLAN_CATALOG.TODO_CATEGORY.premium}개까지 만들 수 있습니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도와 개수가 있습니다.`,
     httpStatus: HttpStatus.FORBIDDEN,
   },
 
@@ -927,8 +930,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.FOLLOW_0909]: {
     code: "FOLLOW_0909",
     message: "친구 수가 최대 한도에 도달했습니다.",
-    description:
-      "무료 사용자의 친구 수가 최대 한도를 초과했습니다. 프리미엄 구독 시 무제한으로 이용할 수 있습니다.",
+    description: `친구는 무료 ${PLAN_CATALOG.FRIEND.free}명(초대 보상 자리 포함)까지, 프리미엄은 무제한입니다. details.current·limit(출시 앱)과 details.featureQuota에 현재 한도가 있고 차감은 없습니다(details.charged=false).`,
     httpStatus: HttpStatus.FORBIDDEN,
   },
   [ErrorCode.FOLLOW_0910]: {
@@ -991,8 +993,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // 콕 찌르기 (NUDGE_1100-1199)
   [ErrorCode.NUDGE_1101]: {
     code: "NUDGE_1101",
-    message: "일일 콕 찌르기 횟수를 초과했습니다.",
-    description: "FREE 사용자는 하루 3회까지만 콕 찌를 수 있습니다.",
+    message: "오늘 콕 찌르기를 다 썼습니다.",
+    description: `콕 찌르기는 무료 하루 ${PLAN_CATALOG.NUDGE.free}회, 프리미엄은 무제한이고 요청 X-Timezone 자정에 다시 채워집니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다.`,
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.NUDGE_1102]: {
@@ -1053,8 +1055,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // 응원 (CHEER_1200-1299)
   [ErrorCode.CHEER_1201]: {
     code: "CHEER_1201",
-    message: "일일 응원 횟수를 초과했습니다.",
-    description: "FREE 사용자는 하루 3회까지만 응원을 보낼 수 있습니다.",
+    message: "오늘 응원을 다 썼습니다.",
+    description: `응원은 무료 하루 ${PLAN_CATALOG.CHEER.free}회, 프리미엄은 무제한이고 요청 X-Timezone 자정에 다시 채워집니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다.`,
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.CHEER_1202]: {
@@ -1149,6 +1151,19 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       "1.13.0 이상 앱에서 현재 안내 버전의 AI 데이터 처리(Google Gemini 전송)에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다.",
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.AI_1313]: {
+    code: "AI_1313",
+    message: "이번 달 말로 메모하기를 다 썼습니다.",
+    description: `말로 메모하기는 무료 월 ${PLAN_CATALOG.VOICE_NOTE.free}회, 프리미엄은 넉넉하게(월 ${PLAN_CATALOG.VOICE_NOTE.fairUse.premium}회까지) 쓸 수 있고 KST 매월 1일 00:00에 다시 채워집니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다.`,
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.AI_1314]: {
+    code: "AI_1314",
+    message: "같은 요청을 아직 처리하고 있습니다.",
+    description:
+      "같은 Idempotency-Key 요청이 아직 처리 중입니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다. 잠시 뒤 같은 키로 다시 보내면 처리 결과를 받습니다.",
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // 관리자 (ADMIN_1400-1499)

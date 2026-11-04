@@ -1,6 +1,7 @@
 import type { ParsedTodoData } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -12,7 +13,6 @@ import {
 } from "../../observability/parsing/ai-generation-log.events.js";
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
 import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
-import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
@@ -46,6 +46,8 @@ interface ChargedResult<T> {
 export interface ParseTodoResult {
   data: ParsedTodoData;
   meta: ParseTodoMeta;
+  /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량 */
+  featureQuota: MeteredFeatureQuota;
 }
 
 /**
@@ -77,7 +79,7 @@ type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
 interface ParseTodoDependencies {
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
-  readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
+  readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
@@ -104,24 +106,32 @@ export class ParseTodo {
       userId,
       input,
     );
-    const reservation = await this.#dependencies.quota.reserve(userId);
-    let parsed: ChargedResult<ParseTodoResult>;
+    const { quota } = this.#dependencies;
+    const reservation = await quota.reserve({
+      userId,
+      feature: "AI_PARSE",
+      idempotencyKey: null,
+      reason: "parse-todo",
+    });
+    let parsed: ChargedResult<Omit<ParseTodoResult, "featureQuota">>;
     try {
       parsed = await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
-      await this.#dependencies.quota.release(reservation);
+      await quota.refund(reservation, "FAILED");
       throw error;
     }
-    if (!parsed.charge) {
-      await this.#dependencies.quota.release(reservation);
+    if (parsed.charge) {
+      await quota.commit(reservation);
+    } else {
+      await quota.refund(reservation, "NO_ACTION");
     }
-    return parsed.result;
+    return { ...parsed.result, featureQuota: await quota.read(userId, "AI_PARSE") };
   }
 
   async #parse(
     input: ResolvedParseTodoInput,
     startTime: number,
-  ): Promise<ChargedResult<ParseTodoResult>> {
+  ): Promise<ChargedResult<Omit<ParseTodoResult, "featureQuota">>> {
     const { text, userId, timezone, categoryId, locale } = input;
     const definition = parseTodoPrompts[this.#dependencies.settings.promptVersion][locale];
     const at = now();

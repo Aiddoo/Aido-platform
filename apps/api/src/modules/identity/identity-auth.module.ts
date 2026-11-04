@@ -53,6 +53,7 @@ import {
   deleteAccountProvider,
   exchangeOAuthCodeProvider,
   getCurrentUserProvider,
+  getEntitlementSnapshotProvider,
   getOAuthRedirectUriProvider,
   issueLoginProvider,
   linkOAuthAccountProvider,
@@ -110,6 +111,7 @@ import { JwtRefreshStrategy, JwtStrategy } from "./infrastructure/strategies/aut
 import {
   AccountController,
   AuthController,
+  EntitlementController,
   OAuthController,
   SessionController,
 } from "./presentation/controllers/auth/v1/index.js";
@@ -148,7 +150,13 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     SocialCheersModule,
     SocialNudgesModule,
   ],
-  controllers: [AuthController, OAuthController, SessionController, AccountController],
+  controllers: [
+    AuthController,
+    OAuthController,
+    SessionController,
+    AccountController,
+    EntitlementController,
+  ],
   providers: [
     DrizzleUserRepository,
     DrizzleAccountRepository,
@@ -230,6 +238,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     setPasswordProvider,
     changePasswordProvider,
     getCurrentUserProvider,
+    getEntitlementSnapshotProvider,
     updateProfileProvider,
     deleteAccountProvider,
     listLinkedAccountsProvider,

@@ -1,4 +1,10 @@
+/** 원장 이벤트. 필드는 chargeId·meter·reason(·tier)만 남기고 사용자 내용은 남기지 않는다. */
 export const AccessQuotaLogEvent = {
-  RESERVATION_RELEASED: "access.ai-quota.reservation.released",
-  RESERVATION_RELEASE_FAILED: "access.ai-quota.reservation.release.failed",
+  RESERVED: "access.quota.reserved",
+  COMMITTED: "access.quota.committed",
+  REFUNDED: "access.quota.refunded",
+  EXHAUSTED: "access.quota.exhausted",
+  IN_FLIGHT: "access.quota.in-flight",
+  COMMIT_FAILED: "access.quota.commit-failed",
+  REFUND_FAILED: "access.quota.refund-failed",
 } as const;

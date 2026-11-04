@@ -177,3 +177,16 @@ export function dayWindowInTimezone(
 export function firstOfMonthInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
   return dayjs(date).tz(resolveTimezone(tz)).startOf("month").utc().toDate();
 }
+
+/**
+ * 지정 타임존의 다음 달 1일 00:00을 실제 UTC timestamp로 반환. 월간 사용량이 다시 0이 되는 시각이다.
+ *
+ * @example firstOfNextMonthInTimezone(new Date('2026-04-30T15:00:00Z'), 'Asia/Seoul')
+ *   // KST 2026-05-01 00:00 → KST 2026-06-01 00:00 → 2026-05-31T15:00:00.000Z
+ */
+export function firstOfNextMonthInTimezone(
+  date: Date = now(),
+  tz: string = DEFAULT_TIMEZONE,
+): Date {
+  return dayjs(date).tz(resolveTimezone(tz)).startOf("month").add(1, "month").utc().toDate();
+}

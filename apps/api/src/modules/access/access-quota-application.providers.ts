@@ -2,22 +2,27 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
-import { AI_QUOTA_USER_MUTATION_LOCK } from "./application/ports/quotas/ai-quota-user-mutation-lock.port.js";
-import { AI_QUOTA_REPOSITORY } from "./application/ports/quotas/ai-quota.repository.port.js";
-import { AiQuotaService } from "./application/services/quotas/ai-quota.service.js";
+import { ENTITLEMENT_DATABASE } from "./application/ports/entitlement/entitlement-state.port.js";
+import { QUOTA_LEDGER_REPOSITORY } from "./application/ports/quotas/quota-ledger.repository.port.js";
+import { QUOTA_USER_MUTATION_LOCK } from "./application/ports/quotas/quota-user-mutation-lock.port.js";
+import { QuotaLedgerService } from "./application/services/quotas/quota-ledger.service.js";
 
-export const aiQuotaServiceProvider: FactoryProvider<AiQuotaService> = {
-  provide: AiQuotaService,
-  inject: [AI_QUOTA_REPOSITORY, AI_QUOTA_USER_MUTATION_LOCK, UNIT_OF_WORK],
+type QuotaLedgerDependencies = ConstructorParameters<typeof QuotaLedgerService>[0];
+
+export const quotaLedgerServiceProvider: FactoryProvider<QuotaLedgerService> = {
+  provide: QuotaLedgerService,
+  inject: [QUOTA_LEDGER_REPOSITORY, QUOTA_USER_MUTATION_LOCK, ENTITLEMENT_DATABASE, UNIT_OF_WORK],
   useFactory: (
-    repository: ConstructorParameters<typeof AiQuotaService>[0]["repository"],
-    userMutationLock: ConstructorParameters<typeof AiQuotaService>[0]["userMutationLock"],
-    unitOfWork: ConstructorParameters<typeof AiQuotaService>[0]["unitOfWork"],
+    repository: QuotaLedgerDependencies["repository"],
+    userMutationLock: QuotaLedgerDependencies["userMutationLock"],
+    resourceBonuses: QuotaLedgerDependencies["resourceBonuses"],
+    unitOfWork: QuotaLedgerDependencies["unitOfWork"],
   ) =>
-    new AiQuotaService({
+    new QuotaLedgerService({
       repository,
       userMutationLock,
+      resourceBonuses,
       unitOfWork,
-      logger: new Logger(AiQuotaService.name),
+      logger: new Logger(QuotaLedgerService.name),
     }),
 };

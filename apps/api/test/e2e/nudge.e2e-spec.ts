@@ -12,8 +12,11 @@
  * 4. 읽음 처리
  */
 
+import { PLAN_CATALOG, quotaErrorDetailsSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
+
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -86,6 +89,55 @@ describe("찔러보기 E2E", () => {
         // Then - 쿨다운 에러 검증
         expect(cooldownResponse.body.success).toBe(false);
         expect(cooldownResponse.body.error.code).toBe("NUDGE_1102");
+      });
+
+      it("하루 한도를 다 쓰면 429 NUDGE_1101과 차감 없음·X-Timezone 자정 기준 featureQuota를 준다", async () => {
+        // Given
+        const sender = await ctx.helpers.createVerifiedUser(
+          "nudge-limit-sender@test.com",
+          password,
+        );
+        const receiver = await ctx.helpers.createVerifiedUser(
+          "nudge-limit-receiver@test.com",
+          password,
+        );
+        await ctx.helpers.createFriendship(sender, receiver);
+        for (let index = 0; index < PLAN_CATALOG.NUDGE.free; index += 1) {
+          const todoId = await createReceiverTodo(receiver.accessToken);
+          await request(ctx.app.getHttpServer())
+            .post("/v1/nudges")
+            .set("Authorization", `Bearer ${sender.accessToken}`)
+            .set("X-Timezone", "Asia/Seoul")
+            .send({ receiverId: receiver.userId, todoId })
+            .expect(201);
+        }
+
+        const lastTodoId = await createReceiverTodo(receiver.accessToken);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/nudges")
+          .set("Authorization", `Bearer ${sender.accessToken}`)
+          .set("X-Timezone", "Asia/Seoul")
+          .send({ receiverId: receiver.userId, todoId: lastTodoId })
+          .expect(429);
+
+        // Then
+        expect(response.body.error.code).toBe(ErrorCode.NUDGE_1101);
+        expect(quotaErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+          charged: false,
+          featureQuota: {
+            feature: "NUDGE",
+            allowed: true,
+            limit: PLAN_CATALOG.NUDGE.free,
+            used: PLAN_CATALOG.NUDGE.free,
+            remaining: 0,
+            period: "day",
+            resetsAt: dayWindowInTimezone(new Date(), "Asia/Seoul").endsAt.toISOString(),
+            isFairUse: false,
+            perUse: null,
+          },
+        });
       });
 
       it("친구가 아닌 사용자에게 콕 찌르기 시 403 에러 반환", async () => {

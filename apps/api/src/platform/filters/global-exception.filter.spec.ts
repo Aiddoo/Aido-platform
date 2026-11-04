@@ -329,12 +329,25 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.details).toBe("unexpected error");
     });
 
-    it("production 환경에서도 친구 한도 초과는 공개 상세(current·limit)만 싣는다", () => {
+    it("production 환경에서도 친구 한도 초과는 공개 상세(current·limit·charged·featureQuota)만 싣는다", () => {
       // Given
       filter = createFilter(false);
+      const featureQuota = {
+        feature: "FRIEND",
+        allowed: true,
+        limit: 6,
+        used: 6,
+        remaining: 0,
+        period: null,
+        resetsAt: null,
+        isFairUse: false,
+        perUse: null,
+      };
       const exception = new ApplicationException(ErrorCode.FOLLOW_0909, {
         current: 6,
         limit: 6,
+        charged: false,
+        featureQuota,
         userId: "user-123",
       });
 
@@ -343,7 +356,12 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
       // Then
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
-      expect(jsonArg?.error.details).toEqual({ current: 6, limit: 6 });
+      expect(jsonArg?.error.details).toEqual({
+        current: 6,
+        limit: 6,
+        charged: false,
+        featureQuota,
+      });
     });
 
     it("production 환경에서 공개 상세가 없는 업무 오류의 details는 싣지 않는다", () => {

@@ -3,6 +3,7 @@ import {
   changePasswordResponseSchema,
   currentUserSchema,
   deleteAccountResponseSchema,
+  entitlementSnapshotSchema,
   forgotPasswordResponseSchema,
   linkedAccountsResponseSchema,
   logoutResponseSchema,
@@ -69,3 +70,7 @@ export const DeleteAccountResponseDto = deleteAccountResponseSchema.meta({
   id: "DeleteAccountResponseDto",
 });
 export type DeleteAccountResponseDto = z.infer<typeof DeleteAccountResponseDto>;
+export const EntitlementSnapshotDto = entitlementSnapshotSchema.meta({
+  id: "EntitlementSnapshotDto",
+});
+export type EntitlementSnapshotDto = z.infer<typeof EntitlementSnapshotDto>;

@@ -1,3 +1,5 @@
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+
 import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
 import { SendFriendRequest } from "./send-friend-request.use-case.js";
@@ -74,7 +76,7 @@ describe("친구 요청 보내기", () => {
     // Given
     const fixture = createSocialFriendFixture();
     fixture.addUser("me");
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < PLAN_CATALOG.FRIEND.free; index += 1) {
       const friendId = `friend-${index}`;
       fixture.addUser(friendId);
       fixture.addMutual("me", friendId, index);
@@ -83,7 +85,22 @@ describe("친구 요청 보내기", () => {
     // When / Then
     await expect(
       new SendFriendRequest(fixture).execute({ userId: "me", targetUserId: "missing" }),
-    ).rejects.toMatchObject({ errorCode: "FOLLOW_0909", details: { current: 5, limit: 5 } });
+    ).rejects.toMatchObject({
+      errorCode: "FOLLOW_0909",
+      details: {
+        current: PLAN_CATALOG.FRIEND.free,
+        limit: PLAN_CATALOG.FRIEND.free,
+        charged: false,
+        featureQuota: {
+          feature: "FRIEND",
+          limit: PLAN_CATALOG.FRIEND.free,
+          used: PLAN_CATALOG.FRIEND.free,
+          remaining: 0,
+          period: null,
+          resetsAt: null,
+        },
+      },
+    });
     expect([...fixture.followRepository.follows.values()]).toEqual(before);
   });
 

@@ -1,16 +1,20 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   integer,
+  smallint,
   text,
   timestamp,
   varchar,
   index,
   foreignKey,
+  primaryKey,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { createEntityId } from "../entity-id.js";
-import { resourceType } from "./enums.schema.js";
+import { quotaChargeStatus, quotaMeter, resourceType } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
 export const resourceBonus = pgTable(
@@ -37,5 +41,77 @@ export const resourceBonus = pgTable(
       table.resource.asc().nullsLast(),
     ),
     unique("ResourceBonus_sourceKey_key").on(table.sourceKey),
+  ],
+);
+
+/** 계량기별 기간 사용량 카운터. AI_PLAN은 아직 User.aiUsageCount·aiUsageResetAt을 쓴다. */
+export const quotaUsage = pgTable(
+  "QuotaUsage",
+  {
+    meter: quotaMeter().notNull(),
+    periodKey: varchar({ length: 16 }).notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    used: integer().notNull(),
+    userId: text().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.userId, table.meter, table.periodKey],
+      name: "QuotaUsage_pkey",
+    }),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "QuotaUsage_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+  ],
+);
+
+/** 차감 한 건의 원장. 고객 문의 때 모든 차감·환불을 설명한다. */
+export const quotaCharge = pgTable(
+  "QuotaCharge",
+  {
+    amount: smallint().notNull(),
+    attempt: smallint().notNull(),
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    idempotencyKey: varchar({ length: 128 }),
+    meter: quotaMeter().notNull(),
+    periodKey: varchar({ length: 16 }).notNull(),
+    reason: varchar({ length: 64 }).notNull(),
+    refundReason: varchar({ length: 64 }),
+    status: quotaChargeStatus().notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "QuotaCharge_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("QuotaCharge_userId_createdAt_idx").using(
+      "btree",
+      table.userId.asc().nullsLast(),
+      table.createdAt.asc().nullsLast(),
+    ),
+    uniqueIndex("QuotaCharge_userId_meter_idempotencyKey_key")
+      .using(
+        "btree",
+        table.userId.asc().nullsLast(),
+        table.meter.asc().nullsLast(),
+        table.idempotencyKey.asc().nullsLast(),
+      )
+      .where(sql`("idempotencyKey" IS NOT NULL)`),
   ],
 );

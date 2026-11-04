@@ -45,7 +45,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 오류·사용량
 
-공급자 오류는 어댑터가 `AiProviderError` 종류로 분류한다(`RetryError`의 마지막 원인 포함). 파싱 응답 코드는 `RATE_LIMITED` → AI_1310, `UNAVAILABLE`·`UPSTREAM`·`TIMEOUT` → AI_1301, `BLOCKED`·`TRUNCATED`·`INVALID_OUTPUT` → AI_1302다. 실패와 모델 대상 명령만 있는 입력(NO_ACTION)은 사용량을 차감하지 않는다. 리포트는 일시 오류를 마지막 잡 시도 전까지 다시 던지고, 이후에만 폴백을 `contentSource = FALLBACK`으로 저장한다.
+공급자 오류는 어댑터가 `AiProviderError` 종류로 분류한다(`RetryError`의 마지막 원인 포함). 파싱 응답 코드는 `RATE_LIMITED` → AI_1310, `UNAVAILABLE`·`UPSTREAM`·`TIMEOUT` → AI_1301, `BLOCKED`·`TRUNCATED`·`INVALID_OUTPUT` → AI_1302다. 실패와 모델 대상 명령만 있는 입력(NO_ACTION)은 사용량을 차감하지 않는다. 사용량은 Access의 `QuotaLedger`가 센다: 공급자 호출 전에 `reserve`(한도 초과 AI_1303, 녹음 정리 AI_1313, 같은 키 처리 중 AI_1314 — 모두 `details: { charged: false, featureQuota }`), 결과를 주면 `commit`, 실패는 `refund(FAILED)`, NO_ACTION은 `refund(NO_ACTION)`이고 환불은 정확히 한 번이다. 요청마다 `QuotaCharge` 한 줄이 남아 고객 문의 때 차감·환불을 설명한다. 성공 응답은 갱신된 `featureQuota`를 함께 준다. 리포트는 일시 오류를 마지막 잡 시도 전까지 다시 던지고, 이후에만 폴백을 `contentSource = FALLBACK`으로 저장한다.
 
 ## 관측
 
@@ -60,7 +60,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 - 출력은 AI SDK `Output.object`(zod)로 받는다. zod object는 스키마 밖 필드를 버린다. 서버가 id·날짜·개수를 다시 정한다: 카테고리는 소유한 id만, 제안은 서버 후보 id와 기록된 요일만, 할 일 5개·항목 5개·팁 3개·길이 상한, 메모 `totalTaskCount`는 100개 상한. 제목·리포트 문장·제안 사유의 보이지 않는 문자도 지운다. 푸시 문구는 고정 copy라 모델 출력이 들어가지 않고, 앱은 모델 출력을 일반 텍스트로만 그린다(링크·Markdown 없음).
 - 도구 호출(function calling)은 쓰지 않는다. 모델은 구조화 출력만 낸다.
 - Gemini `safetySettings`는 괴롭힘·혐오·성적·위험 4종을 `BLOCK_ONLY_HIGH`로 둔다. 응답 후보가 safety로 막히면(`finishReason: content-filter`) `BLOCKED`(AI_1302)로 분류한다.
-- 남용 방지: 파싱 endpoint는 사용자 기준 분당 parse-todo 20회·parse-memo 10회(`@ThrottleByUser`), 무료 월 한도(`AiUsageGuard` + 원자적 quota 예약)를 공급자 호출 전에 적용한다. 작업별 `maxOutputTokens`·전체 timeout·`maxRetries`는 `ai-generation-policy.ts`가 정한다.
+- 남용 방지: 파싱 endpoint는 사용자 기준 분당 parse-todo 20회·parse-memo 10회(`@ThrottleByUser`), 무료 월 한도·프리미엄 공정 사용 상한(`AiUsageGuard` + `QuotaLedger` 원자적 예약)을 공급자 호출 전에 적용한다. 작업별 `maxOutputTokens`·전체 timeout·`maxRetries`는 `ai-generation-policy.ts`가 정한다.
 - 개인정보: 로그는 위 관측 필드만 남긴다. `/ai/` 요청은 5xx Sentry 이벤트에 요청 본문을 붙이지 않는다(`httpIntegration`의 `ignoreRequestBody`).
 
 ## 버전과 호환

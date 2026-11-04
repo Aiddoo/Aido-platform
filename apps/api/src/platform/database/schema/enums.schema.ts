@@ -1,4 +1,4 @@
-import { PUSH_PERMISSION_STATUS } from "@aido/api/vocabulary";
+import { PUSH_PERMISSION_STATUS, QUOTA_CHARGE_STATUSES, QUOTA_METERS } from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const accountProvider = pgEnum("AccountProvider", [
@@ -78,6 +78,8 @@ export const pushDispatchStatus = pgEnum("PushDispatchStatus", [
   "HOLDOUT",
 ]);
 export const pushRateLimitPhase = pgEnum("PushRateLimitPhase", ["GENERAL", "ENGAGEMENT"]);
+export const quotaChargeStatus = pgEnum("QuotaChargeStatus", QUOTA_CHARGE_STATUSES);
+export const quotaMeter = pgEnum("QuotaMeter", QUOTA_METERS);
 export const reportType = pgEnum("ReportType", ["WEEKLY", "MONTHLY"]);
 export const retentionExperimentStageName = pgEnum("RetentionExperimentStageName", [
   "D0",

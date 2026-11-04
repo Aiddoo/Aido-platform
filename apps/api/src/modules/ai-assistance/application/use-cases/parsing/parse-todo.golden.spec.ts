@@ -1,5 +1,5 @@
 import { loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
-import { createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { ParseTodo } from "./parse-todo.use-case.js";
 
@@ -20,7 +20,7 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     // Given
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(golden.now));
-    const fixture = createAiQuotaFixture();
+    const fixture = createAiParsingFixture();
     fixture.aiProvider.setRawResponse(golden.draft);
     const useCase = new ParseTodo(fixture);
     // When
@@ -34,7 +34,7 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     // Then
     expect(result.data).toEqual(golden.expected);
     expect(result.meta.promptVersion).toBe("parse-todo@v2.1");
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(
       golden.draft.intent === "TASK" ? 1 : 0,
     );
   });

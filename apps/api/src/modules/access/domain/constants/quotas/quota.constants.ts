@@ -1,0 +1,11 @@
+/** 월간 quota 기간은 출시 앱 AI 사용량(/v1/ai/usage)과 같은 KST 달력 월이다. 계약이라 바꾸지 않는다. */
+export const QUOTA_TIMEZONE = "Asia/Seoul";
+
+/** 사용자 행동 한 번이 쓰는 횟수 */
+export const QUOTA_CHARGE_AMOUNT = 1;
+
+/**
+ * 같은 키의 RESERVED가 이 시간보다 오래되면 처리하던 요청이 끝내 응답하지 못한 것으로 보고 이어받는다.
+ * 가장 긴 AI 작업 제한 시간(수십 초)보다 넉넉하게 둔다.
+ */
+export const QUOTA_RESERVATION_TAKEOVER_AFTER_MS = 120_000;

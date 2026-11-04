@@ -147,6 +147,95 @@ describe("EntitlementService", () => {
     expect(await fixture.service.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
   });
 
+  describe("한도 오류 featureQuota", () => {
+    const RESETS_AT = new Date("2028-03-04T15:00:00.000Z");
+
+    it.each(["CHEER", "NUDGE"] as const)(
+      "무료 %s 일간 한도를 다 쓰면 남은 횟수 0과 다음 자정을 돌려준다",
+      async (feature) => {
+        // Given
+        const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
+        const used = PLAN_CATALOG[feature].free;
+
+        // When
+        const quota = await fixture.service.featureQuotaInTx(fixture.userId, feature, {
+          used,
+          resetsAt: RESETS_AT,
+        });
+
+        // Then
+        expect(quota).toEqual({
+          feature,
+          allowed: true,
+          limit: used,
+          used,
+          remaining: 0,
+          period: "day",
+          resetsAt: RESETS_AT.toISOString(),
+          isFairUse: false,
+          perUse: null,
+        });
+      },
+    );
+
+    it("친구 한도는 초대 보상 자리를 더하고 resource라 resetsAt이 null이다", async () => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
+      fixture.database.resourceBonuses.set(fixture.userId, { FRIEND: 2 });
+      const limit = PLAN_CATALOG.FRIEND.free + 2;
+
+      // When
+      const quota = await fixture.service.featureQuotaInTx(fixture.userId, "FRIEND", {
+        used: limit,
+        resetsAt: null,
+      });
+
+      // Then
+      expect(quota).toMatchObject({
+        feature: "FRIEND",
+        limit,
+        used: limit,
+        remaining: 0,
+        period: null,
+        resetsAt: null,
+      });
+    });
+
+    it.each([
+      { role: "USER", status: "FREE", limit: PLAN_CATALOG.TODO_CATEGORY.free },
+      { role: "USER", status: "ACTIVE", limit: PLAN_CATALOG.TODO_CATEGORY.premium },
+      { role: "ADMIN", status: "FREE", limit: null },
+    ])("$role·$status 카테고리 한도는 $limit이다", async ({ role, status, limit }) => {
+      // Given
+      const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
+
+      // When
+      const quota = await fixture.service.featureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
+        used: 3,
+        resetsAt: null,
+      });
+
+      // Then
+      expect(quota).toMatchObject({ limit, used: 3 });
+    });
+
+    it("유료 캐시가 남아 있어도 최신 무료 상태로 계산한다", async () => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+      await fixture.service.limitOf(fixture.userId, "CHEER");
+      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
+
+      // When
+      const quota = await fixture.service.featureQuotaInTx(fixture.userId, "CHEER", {
+        used: PLAN_CATALOG.CHEER.free,
+        resetsAt: RESETS_AT,
+      });
+
+      // Then
+      expect(quota).toMatchObject({ limit: PLAN_CATALOG.CHEER.free, remaining: 0 });
+    });
+  });
+
   describe("보상 기간 종료 경계", () => {
     const ENDS_AT = new Date("2028-03-04T00:00:00.000Z");
     afterEach(() => vi.useRealTimers());

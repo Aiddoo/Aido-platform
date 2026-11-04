@@ -1,7 +1,8 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
 
 import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
@@ -9,7 +10,7 @@ import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 function createFixture() {
-  const fixture = createAiQuotaFixture();
+  const fixture = createAiParsingFixture();
   fixture.aiProvider.setDefaultResponse({
     title: "팀 미팅",
     startDate: "2026-04-12",
@@ -35,7 +36,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then - 누락 필드를 채우지 않으며 사용량 원복
     await expect(execution).rejects.toMatchObject({ errorCode: "AI_1302" });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(1);
   });
 
@@ -58,7 +59,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
   });
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AI_QUOTA_TIME);
+    vi.setSystemTime(QUOTA_LEDGER_TIME);
   });
   afterEach(() => {
     try {
@@ -74,10 +75,18 @@ describe("ParseTodo — v1 롤백 경로", () => {
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(await fixture.quota.read(fixture.userId)).toMatchObject({
+    expect(await fixture.quota.read(fixture.userId, "AI_PARSE")).toMatchObject({
       used: 1,
       limit: FREE_AI_LIMIT,
     });
+    expect(result.featureQuota).toMatchObject({
+      feature: "AI_PARSE",
+      used: 1,
+      remaining: FREE_AI_LIMIT - 1,
+    });
+    expect([...fixture.repository.charges.values()]).toMatchObject([
+      { status: "COMMITTED", reason: "parse-todo", idempotencyKey: null },
+    ]);
     expect(result.data).toMatchObject({ title: "팀 미팅", categoryId: 7 });
     expect(result.meta).toMatchObject({
       model: "fake:test-model",
@@ -94,7 +103,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode: "AI_1301" });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
@@ -102,7 +111,12 @@ describe("ParseTodo — v1 롤백 경로", () => {
     // Given
     const fixture = createFixture();
     for (let index = 0; index < FREE_AI_LIMIT; index += 1) {
-      await fixture.quota.reserve(fixture.userId);
+      await fixture.quota.reserve({
+        userId: fixture.userId,
+        feature: "AI_PARSE",
+        idempotencyKey: null,
+        reason: "parse-todo",
+      });
     }
     // When
     const execution = fixture.useCase.execute(fixture.input);
@@ -149,7 +163,10 @@ describe("ParseTodo — v1 롤백 경로", () => {
       const execution = fixture.useCase.execute(fixture.input);
       // Then
       await expect(execution).rejects.toMatchObject({ errorCode });
-      expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+      expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+      expect([...fixture.repository.charges.values()]).toMatchObject([
+        { status: "REFUNDED", refundReason: "FAILED" },
+      ]);
     },
   );
 
@@ -162,7 +179,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toBe(failure);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
@@ -231,7 +248,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, locale: undefined });
     // Then
     await expect(execution).rejects.toBe(failure);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
@@ -242,7 +259,7 @@ describe("ParseTodo — v1 롤백 경로", () => {
     const execution = fixture.useCase.execute({ ...fixture.input, timezone: "Invalid/Timezone" });
     // Then
     await expect(execution).rejects.toBeInstanceOf(RangeError);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 });

@@ -6,6 +6,8 @@ import {
   resolveAccessContext,
   resolveAllFeatureAccess,
   resolveFeatureAccess,
+  resolveFeatureQuota,
+  resolvePerUseLimit,
   resolveQuotaLimit,
 } from "./entitlement.policy.js";
 
@@ -112,5 +114,129 @@ describe("권한 정책 — 카탈로그와 접근 주체", () => {
 
     // Then
     expect(remaining).toEqual([null, 0]);
+  });
+
+  it.each([
+    {
+      tier: "FREE",
+      used: PLAN_CATALOG.VOICE_NOTE.free + 1,
+      expected: {
+        limit: PLAN_CATALOG.VOICE_NOTE.free,
+        remaining: 0,
+        isFairUse: false,
+        perUse: {
+          maxSeconds: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.free,
+          maxCharacters: PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.free,
+        },
+      },
+    },
+    {
+      tier: "PREMIUM",
+      used: 3,
+      expected: {
+        limit: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+        remaining: PLAN_CATALOG.VOICE_NOTE.fairUse.premium - 3,
+        isFairUse: true,
+        perUse: {
+          maxSeconds: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium,
+          maxCharacters: PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium,
+        },
+      },
+    },
+    {
+      tier: "ADMIN",
+      used: 3,
+      expected: {
+        limit: null,
+        remaining: null,
+        isFairUse: false,
+        perUse: {
+          maxSeconds: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium,
+          maxCharacters: PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium,
+        },
+      },
+    },
+  ] as const)(
+    "$tier 녹음 정리 featureQuota는 집행 한도·남은 횟수·길이 상한을 서버가 계산한다",
+    ({ tier, used, expected }) => {
+      // Given
+      const resetsAt = new Date("2028-03-31T15:00:00.000Z");
+
+      // When
+      const quota = resolveFeatureQuota({
+        tier,
+        feature: "VOICE_NOTE",
+        resourceBonuses: NO_RESOURCE_BONUSES,
+        usage: { used, resetsAt },
+      });
+
+      // Then
+      expect(quota).toEqual({
+        feature: "VOICE_NOTE",
+        allowed: true,
+        used,
+        period: "month",
+        resetsAt,
+        ...expected,
+      });
+    },
+  );
+
+  it("사용량을 세지 않는 resource·flag는 used·period·resetsAt이 null이고 보너스를 더한 한도를 쓴다", () => {
+    // When
+    const friend = resolveFeatureQuota({
+      tier: "FREE",
+      feature: "FRIEND",
+      resourceBonuses: { FRIEND: 2 },
+      usage: null,
+    });
+    const report = resolveFeatureQuota({
+      tier: "FREE",
+      feature: "AI_REPORT",
+      resourceBonuses: NO_RESOURCE_BONUSES,
+      usage: null,
+    });
+
+    // Then
+    expect(friend).toMatchObject({
+      allowed: true,
+      limit: PLAN_CATALOG.FRIEND.free + 2,
+      used: null,
+      remaining: null,
+      period: null,
+      resetsAt: null,
+      perUse: null,
+    });
+    expect(report).toMatchObject({ allowed: false, limit: null, used: null, period: null });
+  });
+
+  it("한도 오류에서 센 resource 개수는 used·remaining에 싣고 다시 채워지지 않아 resetsAt은 null이다", () => {
+    // Given
+    const limit = PLAN_CATALOG.FRIEND.free + 1;
+
+    // When
+    const friend = resolveFeatureQuota({
+      tier: "FREE",
+      feature: "FRIEND",
+      resourceBonuses: { FRIEND: 1 },
+      usage: { used: limit, resetsAt: null },
+    });
+
+    // Then
+    expect(friend).toMatchObject({
+      limit,
+      used: limit,
+      remaining: 0,
+      period: null,
+      resetsAt: null,
+    });
+  });
+
+  it("길이 상한이 없는 기능은 perUse가 null이다", () => {
+    // When
+    const perUse = resolvePerUseLimit("PREMIUM", "AI_PARSE");
+
+    // Then
+    expect(perUse).toBeNull();
   });
 });

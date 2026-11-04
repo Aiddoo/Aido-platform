@@ -27,6 +27,7 @@ import { ParseMemo } from "../../../../application/use-cases/parsing/parse-memo.
 import { ParseTodo } from "../../../../application/use-cases/parsing/parse-todo.use-case.js";
 import { AiDataSharingConsentGuard } from "../../../../infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "../../../../infrastructure/guards/parsing/ai-usage.guard.js";
+import { toAiUsageData } from "../../../mappers/parsing/v1/ai-usage.mapper.js";
 import {
   AiUsageResponseDto,
   ParseMemoRequestDto,
@@ -230,6 +231,7 @@ if (confirmed) {
       success: true,
       data: result.data,
       meta: result.meta,
+      featureQuota: result.featureQuota,
     };
   }
 
@@ -392,6 +394,7 @@ ${AI_PARSE_QUOTA_DOC}`,
       success: true,
       data: result.data,
       meta: result.meta,
+      featureQuota: result.featureQuota,
     };
   }
 
@@ -458,7 +461,7 @@ if (limit !== null && used >= limit) {
 
     return {
       success: true,
-      data: usage,
+      data: toAiUsageData(usage),
     };
   }
 }

@@ -21,10 +21,14 @@ export function createSocialInteractionFixture() {
   const cheerLimitReader: CheerLimitReaderPort = {
     getDailyLimitInTx: async (userId) =>
       await fixture.entitlementReader.limitOfInTx(userId, "CHEER"),
+    readDailyQuotaInTx: async (userId, usage) =>
+      await fixture.entitlementReader.featureQuotaInTx(userId, "CHEER", usage),
   };
   const nudgeLimitReader: NudgeLimitReaderPort = {
     getDailyLimitInTx: async (userId) =>
       await fixture.entitlementReader.limitOfInTx(userId, "NUDGE"),
+    readDailyQuotaInTx: async (userId, usage) =>
+      await fixture.entitlementReader.featureQuotaInTx(userId, "NUDGE", usage),
   };
   const nudgeInteractionConfig = { isEnabled: true };
   function addTodo(

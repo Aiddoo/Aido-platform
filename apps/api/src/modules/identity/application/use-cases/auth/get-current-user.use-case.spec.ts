@@ -23,7 +23,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       cacheService: fixture.cacheService,
       premiumAccessReader: fixture.premiumAccessReader,
       entitlementReader: fixture.entitlementReader,
-      aiQuota: fixture.aiQuota,
+      quotaLedger: fixture.quotaLedger,
       cheerUsageReader: fixture.cheerUsageReader,
       nudgeUsageReader: fixture.nudgeUsageReader,
     });
@@ -143,7 +143,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
   it("권한은 프로필 캐시와 별개로 매번 계산하고 횟수 기능에는 사용량과 초기화 시각을 붙인다", async () => {
     // Given
     const fixture = given();
-    fixture.aiQuota.used = 2;
+    fixture.quotaLedger.used = 2;
     fixture.cheerUsageReader.used = 1;
     fixture.nudgeUsageReader.used = 3;
     const input = {

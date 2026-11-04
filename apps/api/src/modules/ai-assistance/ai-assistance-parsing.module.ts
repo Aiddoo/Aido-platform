@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessModule, AI_QUOTA as ACCESS_AI_QUOTA } from "#api/modules/access/access-quota.public";
+import { AccessModule } from "#api/modules/access/access-quota.public";
 import {
   AI_DATA_SHARING_CONSENT_READER,
   IdentitySettingsModule,
@@ -12,7 +12,6 @@ import { PlanningCategoriesModule } from "../planning/planning-categories.public
 import { AI_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";
 import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
-import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
 import { AI_TASK_SETTINGS } from "./application/ports/parsing/ai-task-settings.port.js";
 import { AI_CLIENT_APP_VERSION_READER } from "./application/ports/parsing/client-app-version.reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
@@ -44,7 +43,6 @@ import { AiController } from "./presentation/controllers/parsing/v1/ai.controlle
     },
     { provide: AI_CLIENT_APP_VERSION_READER, useClass: LatestClientAppVersionAdapter },
     { provide: AI_PROVIDER, useClass: AiSdkAdapter },
-    { provide: AI_QUOTA, useExisting: ACCESS_AI_QUOTA },
     { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
     { provide: USER_LOCALE_PREFERENCE_READER, useClass: UserLocalePreferenceReader },
     aiTaskSettingsProvider,

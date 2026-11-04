@@ -14,6 +14,7 @@ import { vi } from "vitest";
 import {
   DEFAULT_DELIVERY_TIMEZONE,
   firstOfMonthInTimezone,
+  firstOfNextMonthInTimezone,
   localDateInTimezone,
   normalizeIanaTimezone,
   parseLocalDateTime,
@@ -246,6 +247,25 @@ describe("timezone", () => {
       expect(firstOfMonthInTimezone(undefined, "Asia/Seoul")).toEqual(
         new Date("2026-02-28T15:00:00.000Z"),
       );
+    });
+  });
+
+  describe("firstOfNextMonthInTimezone", () => {
+    it.each([
+      { at: "2026-04-30T14:59:59.999Z", next: "2026-04-30T15:00:00.000Z" },
+      { at: "2026-04-30T15:00:00.000Z", next: "2026-05-31T15:00:00.000Z" },
+      { at: "2026-01-31T15:00:00.000Z", next: "2026-02-28T15:00:00.000Z" },
+      { at: "2028-02-29T15:00:00.000Z", next: "2028-03-31T15:00:00.000Z" },
+      { at: "2026-12-31T15:00:00.000Z", next: "2027-01-31T15:00:00.000Z" },
+    ])("KST $at 의 다음 달 1일 00:00은 $next 이다", ({ at, next }) => {
+      // Given
+      const date = new Date(at);
+
+      // When
+      const result = firstOfNextMonthInTimezone(date, "Asia/Seoul");
+
+      // Then
+      expect(result.toISOString()).toBe(next);
     });
   });
 });

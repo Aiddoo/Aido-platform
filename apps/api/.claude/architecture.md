@@ -103,13 +103,16 @@ commit
 | 이 기능을 쓸 수 있나·한도는  | `ENTITLEMENT_READER`의 `can`/`limitOf`(잠금 뒤 재확인은 `canInTx`/`limitOfInTx`), 거부는 `assertEntitled`/`assertEntitledInTx`(기능별 기존 ErrorCode) |
 | 여러 사용자를 SQL로 고를 때  | `access-entitlement-sql.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                        |
 | 프리미엄 출처·기간 표시(/me) | `PREMIUM_ACCESS_READER`(Billing). 권한 판단에는 쓰지 않는다                                                                                           |
+| 돈이 드는 횟수(AI·녹음 정리) | `QUOTA_LEDGER`(`access-quota.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`·`readSnapshot`이 주는 `featureQuota`                               |
+
+사용 횟수 원장(`QuotaLedger`): AI 호출 전에 사용자 행 잠금 UoW 안에서 최신 권한으로 집행 한도(`resolveQuotaLimit`)를 다시 읽고 카운터를 올린 뒤 `QuotaCharge`(RESERVED)를 남긴다. 결과를 주면 COMMITTED, 실패·빈 결과면 REFUNDED로 조건부 전이해 환불은 정확히 한 번이다. `Idempotency-Key`가 같으면 COMMITTED는 `alreadyCommitted`(차감 없음), 처리 중이면 AI_1314, 환불된 키는 같은 행에서 다시 차감한다. 기간은 KST 달력 월(`QuotaWindow`)이고, AI_PLAN은 출시 앱과 같은 `User.aiUsageCount`·`aiUsageResetAt`, 나머지 계량기는 `QuotaUsage`(조건부 upsert)를 센다. 한도 오류는 `details: { charged: false, featureQuota }`다. 소유 Context가 세는 한도(응원·콕 찌르기 일간, 친구·카테고리 개수)도 한도 오류에 같은 상세를 싣고, `featureQuota`는 `ENTITLEMENT_READER.featureQuotaInTx`(센 사용량을 넘김)로 만든다.
 
 유료 기능 추가 방법:
 
 1. `@aido/api/vocabulary`의 `PLAN_CATALOG`(plan-catalog.constants.ts)에 kind(quota·resource·flag)와 free/premium 값을 추가한다. 출시 앱 /me가 아는 기능만 `PREMIUM_FEATURES`에 두고, 새 기능은 `PLAN_CATALOG`에만 더해 `GET /v1/entitlements`로 내보낸다. 앱만 막는 기능은 `clientOnly`.
 2. 서버가 막는 flag면 [entitlement-guard](../src/modules/access/application/services/entitlement/entitlement-guard.ts)에 기존 ErrorCode를 연결하고 UseCase에서 `assertEntitled`를 호출한다. quota·resource는 `limitOf`로 한도를 읽고 사용량은 소유 Context가 센다.
 3. `/me.entitlements` 계약(`premiumEntitlementsSchema`)에 키를 추가한다. 이전 앱은 모르는 키를 무시한다.
-4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다.
+4. 사용량이 있는 quota는 `GetCurrentUser`에 `used`·`resetsAt`을 붙인다. 돈이 드는 횟수는 `QUOTA_METERS`에 계량기를 더하고 `QuotaLedger`로 센다.
 
 다운그레이드는 데이터를 지우지 않는다. 한도를 넘긴 카테고리·친구는 그대로 두고 새로 만들기만 막는다(`CreateTodoCategory`·`SendFriendRequest`의 `count >= limit`). 사용량은 창(일·월) 단위로 계속 세고 한도만 바뀌므로, 이번 달 20회를 쓴 뒤 만료되면 다음 초기화까지 AI 파싱이 막힌다. 창 중간에 구독하면 바로 무제한이다.
 

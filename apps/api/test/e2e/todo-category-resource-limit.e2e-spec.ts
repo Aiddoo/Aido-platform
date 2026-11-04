@@ -1,4 +1,4 @@
-import { PLAN_CATALOG } from "@aido/api";
+import { PLAN_CATALOG, quotaErrorDetailsSchema } from "@aido/api";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -59,6 +59,20 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
       // Then - 403 에러와 TODO_CATEGORY_0857 코드 반환
       expect(overResponse.body.success).toBe(false);
       expect(overResponse.body.error.code).toBe("TODO_CATEGORY_0857");
+      expect(quotaErrorDetailsSchema.parse(overResponse.body.error.details)).toEqual({
+        charged: false,
+        featureQuota: {
+          feature: "TODO_CATEGORY",
+          allowed: true,
+          limit: FREE_LIMIT,
+          used: FREE_LIMIT,
+          remaining: 0,
+          period: null,
+          resetsAt: null,
+          isFairUse: false,
+          perUse: null,
+        },
+      });
 
       // When - 리소스 제한 조회
       const limitResponse = await request(ctx.app.getHttpServer())

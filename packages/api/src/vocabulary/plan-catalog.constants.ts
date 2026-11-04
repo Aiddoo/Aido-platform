@@ -1,10 +1,25 @@
 /** 한도를 다시 채우는 주기. day·month 경계는 기능별 서버 규칙(사용자 시간대·KST)을 따른다. */
-export type PlanQuotaPeriod = "day" | "month";
+export const PLAN_QUOTA_PERIODS = ["day", "month"] as const;
+
+export type PlanQuotaPeriod = (typeof PLAN_QUOTA_PERIODS)[number];
+
+/** 권한 주체. ADMIN은 서버 정책이 모든 기능을 무제한으로 연다. */
+export const ACCESS_TIERS = ["FREE", "PREMIUM", "ADMIN"] as const;
+
+export type AccessTier = (typeof ACCESS_TIERS)[number];
 
 /** 서버가 원장(QuotaUsage·QuotaCharge)으로 세는 사용량 계량기 */
 export const QUOTA_METERS = ["AI_PLAN", "VOICE_NOTE"] as const;
 
 export type QuotaMeter = (typeof QUOTA_METERS)[number];
+
+/**
+ * 차감 한 건(QuotaCharge)의 상태. AI 호출 전 RESERVED로 잡고, 결과를 주면 COMMITTED,
+ * 실패·빈 결과면 REFUNDED(정확히 한 번)로 바꾼다.
+ */
+export const QUOTA_CHARGE_STATUSES = ["RESERVED", "COMMITTED", "REFUNDED"] as const;
+
+export type QuotaChargeStatus = (typeof QUOTA_CHARGE_STATUSES)[number];
 
 /** 등급별 값. 무료와 프리미엄 둘이고 ADMIN은 서버 정책이 무제한으로 연다. */
 export interface PlanTierValues<T> {

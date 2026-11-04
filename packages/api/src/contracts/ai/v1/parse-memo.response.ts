@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { dateSchema, nullableDateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { AI_PARSE_LIMITS } from "../../../vocabulary/ai.constants.js";
+import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
@@ -80,6 +81,9 @@ export const parseMemoResponseSchema = z.object({
   success: z.literal(true).describe("파싱 성공 여부 (항상 true)"),
   data: parsedMemoDataSchema.describe("파싱된 할 일 데이터"),
   meta: parseMemoMetaSchema.describe("AI 처리 메타데이터"),
+  featureQuota: featureQuotaSchema
+    .optional()
+    .describe("이 요청을 반영한 AI_PARSE 한도·사용량. 1.15.0 이전 서버 응답에는 없다"),
 });
 
 export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;

@@ -1,7 +1,8 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
+
 import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
-import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
 import {
   AI_TASK_SETTINGS,
   type AiTaskSettingsMap,
@@ -14,7 +15,7 @@ import { ParseTodo } from "./application/use-cases/parsing/parse-todo.use-case.j
 
 export const getAiUsageProvider: FactoryProvider<GetAiUsage> = {
   provide: GetAiUsage,
-  inject: [AI_QUOTA],
+  inject: [QUOTA_LEDGER],
   useFactory: (quota: ConstructorParameters<typeof GetAiUsage>[0]["quota"]) =>
     new GetAiUsage({ quota }),
 };
@@ -24,7 +25,7 @@ export const parseMemoProvider: FactoryProvider<ParseMemo> = {
   inject: [
     AI_PROVIDER,
     USER_CATEGORY_READER,
-    AI_QUOTA,
+    QUOTA_LEDGER,
     USER_LOCALE_PREFERENCE_READER,
     AI_TASK_SETTINGS,
   ],
@@ -50,7 +51,7 @@ export const parseTodoProvider: FactoryProvider<ParseTodo> = {
   inject: [
     AI_PROVIDER,
     USER_CATEGORY_READER,
-    AI_QUOTA,
+    QUOTA_LEDGER,
     USER_LOCALE_PREFERENCE_READER,
     AI_TASK_SETTINGS,
   ],

@@ -1,3 +1,4 @@
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { assert } from "vitest";
 
 import { MutationLockKeys } from "#api/shared/application/ports/index";
@@ -57,8 +58,22 @@ describe("친구의 할 일에 콕 보내기", () => {
     expect(fixture.nudgeNotifier.notifications).toEqual([]);
   });
   it.each([
-    { name: "일일 한도", code: "NUDGE_1101" },
-    { name: "동일 할 일 쿨다운", code: "NUDGE_1102" },
+    {
+      name: "일일 한도",
+      code: "NUDGE_1101",
+      details: {
+        charged: false,
+        featureQuota: {
+          feature: "NUDGE",
+          limit: PLAN_CATALOG.NUDGE.free,
+          used: PLAN_CATALOG.NUDGE.free,
+          remaining: 0,
+          period: "day",
+          resetsAt: "2026-07-27T00:00:00.000Z",
+        },
+      },
+    },
+    { name: "동일 할 일 쿨다운", code: "NUDGE_1102", details: {} },
   ])("$name 동안은 추가 저장 없이 $code 오류로 거부한다", async (input) => {
     // Given
     const fixture = createSocialInteractionFixture();
@@ -82,7 +97,7 @@ describe("친구의 할 일에 콕 보내기", () => {
         notifier: fixture.nudgeNotifier,
         limitReader: fixture.nudgeLimitReader,
       }).execute({ senderId: "sender", receiverId: "receiver", todoId: todo.id, timezone: "UTC" }),
-    ).rejects.toMatchObject({ errorCode: input.code });
+    ).rejects.toMatchObject({ errorCode: input.code, details: input.details });
     expect(fixture.nudgeRepository.records.size).toBe(before);
     expect(fixture.nudgeNotifier.notifications).toEqual([]);
   });

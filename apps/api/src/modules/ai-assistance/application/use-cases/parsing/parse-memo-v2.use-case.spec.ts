@@ -1,4 +1,4 @@
-import { createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
 
@@ -18,7 +18,7 @@ function draftTodo(title: string, overrides: Record<string, unknown> = {}) {
 }
 
 function createFixture() {
-  const fixture = createAiQuotaFixture();
+  const fixture = createAiParsingFixture();
   const useCase = new ParseMemo(fixture);
   const input: ParseMemoInput = {
     userId: fixture.userId,
@@ -220,7 +220,11 @@ describe("ParseMemo — v2 정규화", () => {
     expect(result.data.todos).toEqual([
       expect.objectContaining({ title: "입력 확인 필요", categoryId: 1, items: [] }),
     ]);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect(result.featureQuota).toMatchObject({ used: 0 });
+    expect([...fixture.repository.charges.values()]).toMatchObject([
+      { status: "REFUNDED", refundReason: "NO_ACTION", reason: "parse-memo" },
+    ]);
   });
 
   it("NO_ACTION과 실제 할 일이 섞이면 실제 할 일만 남기고 사용량을 차감한다", async () => {
@@ -233,7 +237,7 @@ describe("ParseMemo — v2 정규화", () => {
     const result = await fixture.useCase.execute(fixture.input);
     // Then
     expect(result.data.todos.map((todo) => todo.title)).toEqual(["전기요금 납부"]);
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
   });
 
   it("모델이 전체 할 일 수를 터무니없이 크게 주면 상한 100개 기준으로 남은 수를 알린다", async () => {

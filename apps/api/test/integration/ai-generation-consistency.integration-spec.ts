@@ -46,7 +46,7 @@ import {
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-quota.stub";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";

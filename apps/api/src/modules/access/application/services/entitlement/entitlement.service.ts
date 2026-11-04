@@ -1,3 +1,4 @@
+import type { FeatureQuota } from "@aido/api";
 import type { PlanFeature, PlanLimitFeatureKey } from "@aido/api/vocabulary";
 
 import { now } from "#api/shared/domain/date/utils/core";
@@ -7,15 +8,19 @@ import {
   resolveAccessContext,
   resolveAllFeatureAccess,
   resolveFeatureAccess,
+  resolveFeatureQuota,
   type AccessContext,
+  type FeatureUsageReading,
   type ResourceBonuses,
 } from "../../../domain/policies/entitlement/entitlement.policy.js";
 import type { EntitlementCachePort } from "../../ports/entitlement/entitlement-cache.port.js";
 import type {
   AccessSnapshot,
   EntitlementReaderPort,
+  UnmeteredLimitFeatureKey,
 } from "../../ports/entitlement/entitlement-reader.port.js";
 import type { EntitlementDatabasePort } from "../../ports/entitlement/entitlement-state.port.js";
+import { toFeatureQuota } from "../../read-models/entitlement/feature-quota.read-model.js";
 
 interface EntitlementServiceDependencies {
   readonly cacheService: EntitlementCachePort;
@@ -49,6 +54,17 @@ export class EntitlementService implements EntitlementReaderPort {
 
   async limitOfInTx(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
     return this.#featureAccess(await this.#freshAccess(userId), feature).limit;
+  }
+
+  async featureQuotaInTx(
+    userId: string,
+    feature: UnmeteredLimitFeatureKey,
+    usage: FeatureUsageReading,
+  ): Promise<FeatureQuota> {
+    const { context, resourceBonuses } = await this.#freshAccess(userId);
+    return toFeatureQuota(
+      resolveFeatureQuota({ tier: context.tier, feature, resourceBonuses, usage }),
+    );
   }
 
   async getAccessSnapshot(userId: string): Promise<AccessSnapshot> {

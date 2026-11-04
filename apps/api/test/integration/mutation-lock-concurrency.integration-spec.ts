@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
+import type { FeatureQuota } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
@@ -27,6 +28,7 @@ import { type CheerLimitReaderPort } from "#api/modules/social/application/ports
 import type { CheerNotifierPort } from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
 import type { NudgeLimitReaderPort } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
 import type { NudgeNotifierPort } from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+import type { DailySendUsage } from "#api/modules/social/application/ports/quotas/daily-send-usage-reader.port";
 import { GetCheerLimit } from "#api/modules/social/application/use-cases/cheers/get-cheer-limit.use-case";
 import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
 import { GetNudgeLimit } from "#api/modules/social/application/use-cases/nudges/get-nudge-limit.use-case";
@@ -577,12 +579,37 @@ function createNudgeNotifier(): NudgeNotifierPort {
   };
 }
 
+/** 고정 일일 한도의 한도 오류 featureQuota. 실제 계산은 EntitlementService 단위 테스트가 검증한다. */
+function fixedDailyQuota(
+  feature: "CHEER" | "NUDGE",
+  limit: number | null,
+  usage: DailySendUsage,
+): FeatureQuota {
+  return {
+    feature,
+    allowed: true,
+    limit,
+    used: usage.used,
+    remaining: limit == null ? null : Math.max(0, limit - usage.used),
+    period: "day",
+    resetsAt: usage.resetsAt.toISOString(),
+    isFairUse: false,
+    perUse: null,
+  };
+}
+
 function createCheerLimitReader(limit: number | null): CheerLimitReaderPort {
-  return { getDailyLimitInTx: async () => limit };
+  return {
+    getDailyLimitInTx: async () => limit,
+    readDailyQuotaInTx: async (_userId, usage) => fixedDailyQuota("CHEER", limit, usage),
+  };
 }
 
 function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
-  return { getDailyLimitInTx: async () => limit };
+  return {
+    getDailyLimitInTx: async () => limit,
+    readDailyQuotaInTx: async (_userId, usage) => fixedDailyQuota("NUDGE", limit, usage),
+  };
 }
 
 function createReaderEntitlement(dailyLimit: number): Pick<EntitlementReaderPort, "limitOf"> {

@@ -4,7 +4,7 @@ import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import type { AiQuotaPort } from "#api/modules/access/access-quota.public";
+import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
 import type { CurrentUserResult } from "#api/modules/identity/application/types/auth/index";
 import type { DailySendUsageReaderPort } from "#api/modules/social/social-cheers.public";
@@ -26,7 +26,7 @@ interface GetCurrentUserDependencies {
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "getAccessSnapshot">;
-  readonly aiQuota: Pick<AiQuotaPort, "read">;
+  readonly quotaLedger: Pick<QuotaLedgerPort, "read">;
   readonly cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
 }
@@ -108,10 +108,11 @@ export class GetCurrentUser {
     userId: string,
     timezone: string,
   ): Promise<{ isPremium: boolean; entitlements: PremiumEntitlements }> {
-    const { entitlementReader, aiQuota, cheerUsageReader, nudgeUsageReader } = this.#dependencies;
+    const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
+      this.#dependencies;
     const [snapshot, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
       entitlementReader.getAccessSnapshot(userId),
-      aiQuota.read(userId),
+      quotaLedger.read(userId, "AI_PARSE"),
       cheerUsageReader.readDailyUsage(userId, timezone),
       nudgeUsageReader.readDailyUsage(userId, timezone),
     ]);

@@ -1,7 +1,7 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { AI_QUOTA } from "#api/modules/access/access-quota.public";
+import { QUOTA_LEDGER } from "#api/modules/access/access-quota.public";
 import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { CHEER_USAGE_READER } from "#api/modules/social/social-cheers.public";
@@ -43,6 +43,7 @@ import { CompleteOAuthAuthorization } from "./application/use-cases/auth/complet
 import { DeleteAccount } from "./application/use-cases/auth/delete-account.use-case.js";
 import { ExchangeOAuthCode } from "./application/use-cases/auth/exchange-oauth-code.use-case.js";
 import { GetCurrentUser } from "./application/use-cases/auth/get-current-user.use-case.js";
+import { GetEntitlementSnapshot } from "./application/use-cases/auth/get-entitlement-snapshot.use-case.js";
 import { GetOAuthRedirectUri } from "./application/use-cases/auth/get-oauth-redirect-uri.use-case.js";
 import { IssueLogin } from "./application/use-cases/auth/issue-login.use-case.js";
 import { LinkOAuthAccountWithCode } from "./application/use-cases/auth/link-oauth-account-with-code.use-case.js";
@@ -76,7 +77,7 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
     AUTH_CACHE,
     PREMIUM_ACCESS_READER,
     ENTITLEMENT_READER,
-    AI_QUOTA,
+    QUOTA_LEDGER,
     CHEER_USAGE_READER,
     NUDGE_USAGE_READER,
   ],
@@ -85,7 +86,7 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
     cacheService: ConstructorParameters<typeof GetCurrentUser>[0]["cacheService"],
     premiumAccessReader: ConstructorParameters<typeof GetCurrentUser>[0]["premiumAccessReader"],
     entitlementReader: ConstructorParameters<typeof GetCurrentUser>[0]["entitlementReader"],
-    aiQuota: ConstructorParameters<typeof GetCurrentUser>[0]["aiQuota"],
+    quotaLedger: ConstructorParameters<typeof GetCurrentUser>[0]["quotaLedger"],
     cheerUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["cheerUsageReader"],
     nudgeUsageReader: ConstructorParameters<typeof GetCurrentUser>[0]["nudgeUsageReader"],
   ) =>
@@ -94,10 +95,20 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
       cacheService,
       premiumAccessReader,
       entitlementReader,
-      aiQuota,
+      quotaLedger,
       cheerUsageReader,
       nudgeUsageReader,
     }),
+};
+
+export const getEntitlementSnapshotProvider: FactoryProvider<GetEntitlementSnapshot> = {
+  provide: GetEntitlementSnapshot,
+  inject: [QUOTA_LEDGER, CHEER_USAGE_READER, NUDGE_USAGE_READER],
+  useFactory: (
+    quotaLedger: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["quotaLedger"],
+    cheerUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["cheerUsageReader"],
+    nudgeUsageReader: ConstructorParameters<typeof GetEntitlementSnapshot>[0]["nudgeUsageReader"],
+  ) => new GetEntitlementSnapshot({ quotaLedger, cheerUsageReader, nudgeUsageReader }),
 };
 
 export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUri> = {

@@ -6,6 +6,7 @@ export * from "./contracts/app-config/index.js";
 export * from "./contracts/auth/index.js";
 export * from "./contracts/cheer/index.js";
 export * from "./contracts/daily-completion/index.js";
+export * from "./contracts/entitlement/index.js";
 export * from "./contracts/follow/index.js";
 export * from "./contracts/inquiry/index.js";
 export * from "./contracts/invite/index.js";

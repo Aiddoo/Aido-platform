@@ -57,8 +57,8 @@ export class CreateTodoCategory {
       const categoryCount = await this.#dependencies.repository.countByUserId(userId);
       if (maxCount != null && categoryCount >= maxCount) {
         throw new ApplicationException(ErrorCode.TODO_CATEGORY_0857, {
-          current: categoryCount,
-          limit: maxCount,
+          charged: false,
+          featureQuota: await this.#dependencies.limitReader.readQuotaInTx(userId, categoryCount),
         });
       }
 

@@ -1,0 +1,629 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "cee9718f-98aa-4601-b08e-35d47da8393a",
+  "prevIds": [
+    "aec5e317-8220-46ae-80fa-bb4c3301ae76"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "QuotaChargeStatus"
+      ],
+      "writes": [
+        "s|enum|public.QuotaChargeStatus",
+        "n|enum|public.QuotaChargeStatus",
+        "e|enum|public.QuotaChargeStatus",
+        "n|type|public.QuotaChargeStatus"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "QuotaMeter"
+      ],
+      "writes": [
+        "s|enum|public.QuotaMeter",
+        "n|enum|public.QuotaMeter",
+        "e|enum|public.QuotaMeter",
+        "n|type|public.QuotaMeter"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "QuotaCharge"
+      ],
+      "writes": [
+        "s|tbl|public.QuotaCharge",
+        "n|tbl|public.QuotaCharge",
+        "e|tbl|public.QuotaCharge",
+        "n|rel|public.QuotaCharge",
+        "n|type|public.QuotaCharge",
+        "n|rel|public.QuotaCharge_pkey"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.QuotaMeter",
+        "n|enum|public.QuotaChargeStatus"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "QuotaUsage"
+      ],
+      "writes": [
+        "s|tbl|public.QuotaUsage",
+        "n|tbl|public.QuotaUsage",
+        "e|tbl|public.QuotaUsage",
+        "n|rel|public.QuotaUsage",
+        "n|type|public.QuotaUsage",
+        "n|rel|public.QuotaUsage_pkey"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.QuotaMeter"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "QuotaCharge",
+        "QuotaCharge_userId_createdAt_idx"
+      ],
+      "writes": [
+        "s|idx|public.QuotaCharge_userId_createdAt_idx",
+        "n|idx|public.QuotaCharge_userId_createdAt_idx",
+        "e|idx|public.QuotaCharge_userId_createdAt_idx",
+        "n|rel|public.QuotaCharge_userId_createdAt_idx"
+      ],
+      "reads": [
+        "n|tbl|public.QuotaCharge",
+        "n|sch|public",
+        "n|col|public.QuotaCharge.userId",
+        "n|col|public.QuotaCharge.createdAt"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "QuotaCharge",
+        "QuotaCharge_userId_meter_idempotencyKey_key"
+      ],
+      "writes": [
+        "s|idx|public.QuotaCharge_userId_meter_idempotencyKey_key",
+        "n|idx|public.QuotaCharge_userId_meter_idempotencyKey_key",
+        "e|idx|public.QuotaCharge_userId_meter_idempotencyKey_key",
+        "n|rel|public.QuotaCharge_userId_meter_idempotencyKey_key"
+      ],
+      "reads": [
+        "n|tbl|public.QuotaCharge",
+        "n|sch|public",
+        "n|col|public.QuotaCharge.userId",
+        "n|col|public.QuotaCharge.meter",
+        "n|col|public.QuotaCharge.idempotencyKey"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "QuotaCharge"
+      ],
+      "writes": [
+        "s|fk|public.QuotaCharge.QuotaCharge_userId_fkey",
+        "n|fk|public.QuotaCharge.QuotaCharge_userId_fkey",
+        "e|fk|public.QuotaCharge.QuotaCharge_userId_fkey",
+        "n|con|public.QuotaCharge.QuotaCharge_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.QuotaCharge",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.QuotaCharge.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "QuotaUsage"
+      ],
+      "writes": [
+        "s|fk|public.QuotaUsage.QuotaUsage_userId_fkey",
+        "n|fk|public.QuotaUsage.QuotaUsage_userId_fkey",
+        "e|fk|public.QuotaUsage.QuotaUsage_userId_fkey",
+        "n|con|public.QuotaUsage.QuotaUsage_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.QuotaUsage",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.QuotaUsage.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "QuotaCharge",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "QuotaUsage",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "QuotaChargeStatus",
+        "values": [
+          "RESERVED",
+          "COMMITTED",
+          "REFUNDED"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "QuotaMeter",
+        "values": [
+          "AI_PLAN",
+          "VOICE_NOTE"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "amount",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "attempt",
+        "type": "smallint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "createdAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "idempotencyKey",
+        "type": "varchar(128)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "meter",
+        "type": "QuotaMeter",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "periodKey",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "reason",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "refundReason",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "status",
+        "type": "QuotaChargeStatus",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "updatedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "meter",
+        "type": "QuotaMeter",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "periodKey",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "updatedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "used",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "QuotaCharge_userId_createdAt_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "userId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "createdAt",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "QuotaCharge_userId_meter_idempotencyKey_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "userId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "meter",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "idempotencyKey",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "(\"idempotencyKey\" IS NOT NULL)",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "QuotaCharge_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "QuotaUsage_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaUsage",
+        "name": "QuotaUsage_pkey",
+        "columns": [
+          "userId",
+          "meter",
+          "periodKey"
+        ],
+        "nameExplicit": true,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "QuotaCharge",
+        "name": "QuotaCharge_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

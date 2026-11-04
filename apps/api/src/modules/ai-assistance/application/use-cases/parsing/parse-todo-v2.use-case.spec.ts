@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
@@ -9,7 +9,7 @@ import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 const NOW = new Date("2026-10-28T01:00:00Z");
 
 function createFixture() {
-  const fixture = createAiQuotaFixture();
+  const fixture = createAiParsingFixture();
   const useCase = new ParseTodo(fixture);
   const input: ParseTodoInput = {
     userId: fixture.userId,
@@ -56,7 +56,7 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
     });
     expect(result.meta.promptVersion).toBe("parse-todo@v2.1");
     expect(fixture.aiProvider.getLastOptions()?.promptVersion).toBe("parse-todo@v2.1");
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
   });
 
   it("프롬프트 system에는 날짜가 없고 user 턴에 연도를 포함한 로컬 시각이 들어간다", async () => {
@@ -98,7 +98,11 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
       isRecurring: false,
     });
     expect(result.data.categoryId).toBeUndefined();
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
+    expect(result.featureQuota).toMatchObject({ used: 0 });
+    expect([...fixture.repository.charges.values()]).toMatchObject([
+      { status: "REFUNDED", refundReason: "NO_ACTION" },
+    ]);
     expect(fixture.logger.log).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: "NO_ACTION", quotaCharged: false }),
     );
@@ -162,6 +166,6 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
     const execution = fixture.useCase.execute(fixture.input);
     // Then
     await expect(execution).rejects.toMatchObject({ errorCode });
-    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(0);
   });
 });
