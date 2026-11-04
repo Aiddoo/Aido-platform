@@ -29,7 +29,6 @@ import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events';
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment.constants';
 import {
-  type TodoCommentComposerForm,
   todoCommentComposerFormSchema,
   TodoCommentComposer,
 } from '../../domains/todo-comment-composer.model';
@@ -64,7 +63,7 @@ interface TodoDetailPaneProps {
  * 작성기(새 댓글·답글·수정)는 이 화면이 가진 폼 하나가 소유하고, 하위는 필요한 필드만 구독한다.
  */
 export function TodoDetailPane({ presentation }: TodoDetailPaneProps) {
-  const composer = useForm<TodoCommentComposerForm>({
+  const composer = useForm({
     resolver: zodResolver(todoCommentComposerFormSchema),
     defaultValues: TodoCommentComposer.new(),
     mode: 'onChange',

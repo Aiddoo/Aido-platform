@@ -53,9 +53,8 @@ import type { TextInput } from 'react-native';
 import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
-import type { z } from 'zod';
 
-import { type AddTodoFormInput, addTodoFormSchema } from '../domains/add-todo-form.schema';
+import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
 import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
@@ -110,10 +109,10 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetCreateProps
   | AddTodoBottomSheetEditProps
   | AddTodoBottomSheetConvertMemoProps;
-type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
 function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
   return match(props)
+    .returnType<AddTodoFormValues>()
     .with({ mode: 'edit' }, ({ todo }) => toTodoEditFormValues(todo))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -122,11 +121,11 @@ function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues 
       scheduledTime: initialValues?.scheduledTime ?? undefined,
       isAllDay: initialValues?.isAllDay ?? true,
       categoryId,
-      visibility: 'PUBLIC' as const,
+      visibility: 'PUBLIC',
       isRecurring: false,
       repeatEndDate: null,
       daysOfWeek: [],
-      source: 'manual' as const,
+      source: 'manual',
     }))
     .with({ mode: 'convert-memo' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -135,11 +134,11 @@ function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues 
       scheduledTime: undefined,
       isAllDay: true,
       categoryId,
-      visibility: 'PUBLIC' as const,
+      visibility: 'PUBLIC',
       isRecurring: false,
       repeatEndDate: null,
       daysOfWeek: [],
-      source: 'manual' as const,
+      source: 'manual',
     }))
     .exhaustive();
 }
@@ -191,7 +190,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   const { isSubmitting } = useFormState({ control: methods.control });
 
-  const handleSubmitTodo = methods.handleSubmit(async (values: AddTodoFormInput) => {
+  const handleSubmitTodo = methods.handleSubmit(async (values) => {
     try {
       await match(props)
         .with({ mode: 'edit' }, async ({ todo }) => {
@@ -431,7 +430,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 placeholder={t('add.placeholder')}
                 value={value}
                 onChange={onChange}
-                maxLength={200}
+                maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
                 size="medium"
                 renderErrorMessage={false}
                 returnKeyType="done"
@@ -696,7 +695,7 @@ interface AiParseButtonProps {
 const AiParseButton = ({ onExit }: AiParseButtonProps) => {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
-  const methods = useFormContext<AddTodoFormInput>();
+  const methods = useFormContext<AddTodoFormValues>();
   const toast = useAppToast();
   const premiumGate = usePremiumGate('AI_PARSE');
 

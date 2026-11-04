@@ -1,3 +1,4 @@
+import type { ResetPasswordInput } from '@aido/api';
 import { PasswordInput } from '@src/features/auth/components/password-input';
 import { PasswordStrengthIndicator } from '@src/features/auth/components/password-strength-indicator';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
@@ -17,10 +18,7 @@ import { match } from 'ts-pattern';
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
 type NewPasswordSubStep = (typeof NEW_PASSWORD_SUB_STEPS)[number];
 
-interface NewPasswordFields {
-  newPassword: string;
-  newPasswordConfirm: string;
-}
+type NewPasswordFields = Pick<ResetPasswordInput, 'newPassword' | 'newPasswordConfirm'>;
 
 interface NewPasswordStepProps {
   /** 부모 폼의 handleSubmit으로 만든 제출 함수. 폼과 mutation은 화면 부모가 소유한다. */
