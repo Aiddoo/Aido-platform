@@ -36,4 +36,16 @@ describe('KeyPointList', () => {
     expect(screen.getByLabelText('0:41부터 듣기')).toBeSelected();
     expect(screen.getByLabelText('0:12부터 듣기')).not.toBeSelected();
   });
+
+  it('들을 녹음이 없으면 포인트를 눌러 재생할 수 없다', async () => {
+    // Given
+    const { keyPoints } = createVoiceNoteDigest();
+
+    // When
+    await renderUi(<KeyPointList keyPoints={keyPoints} />);
+
+    // Then
+    expect(screen.queryByLabelText('0:41부터 듣기')).toBeNull();
+    expect(screen.getByText('디자인 시안 2개')).toBeTruthy();
+  });
 });

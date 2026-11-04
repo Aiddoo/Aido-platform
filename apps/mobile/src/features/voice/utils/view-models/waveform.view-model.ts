@@ -25,12 +25,17 @@ export function createSpeechLevels(
   sentences: readonly VoiceNoteSentence[],
   durationMs: number,
 ): number[] {
-  return Array.from({ length: getBarCount(durationMs) }, (_, index) => {
-    const timeMs = index * WAVEFORM_BAR.intervalMs;
-    const isSpeech = sentences.some(
-      (sentence) => sentence.startMs <= timeMs && timeMs < sentence.endMs,
-    );
-    if (!isSpeech) {
+  const barCount = getBarCount(durationMs);
+  const speechBars = new Set<number>();
+  for (const { startMs, endMs } of sentences) {
+    const lastBar = Math.min(barCount, Math.ceil(endMs / WAVEFORM_BAR.intervalMs));
+    for (let bar = Math.ceil(startMs / WAVEFORM_BAR.intervalMs); bar < lastBar; bar += 1) {
+      speechBars.add(bar);
+    }
+  }
+
+  return Array.from({ length: barCount }, (_, index) => {
+    if (!speechBars.has(index)) {
       return QUIET_LEVEL;
     }
     const ripple = Math.abs(

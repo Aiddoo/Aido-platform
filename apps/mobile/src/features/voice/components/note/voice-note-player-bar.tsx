@@ -10,7 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useSkiaColor } from '../../hooks/use-skia-color';
-import type { VoiceNotePlayer } from '../../hooks/use-voice-note-player';
+import { useVoiceNotePlayback, type VoiceNotePlayer } from '../../hooks/use-voice-note-player';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { resampleLevels } from '../../utils/view-models/waveform.view-model';
 
@@ -37,9 +37,10 @@ export function VoiceNotePlayerBar({
   ...stackProps
 }: VoiceNotePlayerBarProps) {
   const { t } = useTranslation('voiceNote');
+  const playback = useVoiceNotePlayback(player, (current) => current);
   const [dragRatio, setDragRatio] = useState<number | null>(null);
-  const positionRatio = player.durationMs > 0 ? player.positionMs / player.durationMs : 0;
-  const shownMs = dragRatio == null ? player.positionMs : dragRatio * player.durationMs;
+  const positionRatio = playback.durationMs > 0 ? playback.positionMs / playback.durationMs : 0;
+  const shownMs = dragRatio == null ? playback.positionMs : dragRatio * playback.durationMs;
 
   if (!isRecordingAvailable) {
     return (
@@ -59,12 +60,12 @@ export function VoiceNotePlayerBar({
     >
       <PressableFeedback
         accessibilityRole="button"
-        accessibilityLabel={player.isPlaying ? t('player.pause') : t('player.play')}
-        isDisabled={!player.isLoaded}
+        accessibilityLabel={playback.isPlaying ? t('player.pause') : t('player.play')}
+        isDisabled={!playback.isLoaded}
         onPress={player.togglePlay}
         className="size-[34px] items-center justify-center rounded-full bg-main"
       >
-        {player.isPlaying ? (
+        {playback.isPlaying ? (
           <PauseIcon colorClassName="accent-white" width={14} height={14} />
         ) : (
           <PlayIcon colorClassName="accent-white" width={14} height={14} />
@@ -78,15 +79,15 @@ export function VoiceNotePlayerBar({
         accessibilityValue={{
           text: t('player.positionValue', {
             position: formatMediaTime(shownMs),
-            duration: formatMediaTime(player.durationMs),
+            duration: formatMediaTime(playback.durationMs),
           }),
         }}
         onDrag={setDragRatio}
-        onSeek={(ratio) => player.seekTo(ratio * player.durationMs)}
+        onSeek={(ratio) => player.seekTo(ratio * playback.durationMs)}
         className="flex-1"
       />
       <Text size="e1" shade={7} maxLines={1} className="tabular-nums">
-        {formatMediaTime(shownMs)} / {formatMediaTime(player.durationMs)}
+        {formatMediaTime(shownMs)} / {formatMediaTime(playback.durationMs)}
       </Text>
     </HStack>
   );

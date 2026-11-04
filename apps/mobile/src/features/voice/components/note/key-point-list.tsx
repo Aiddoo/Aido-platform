@@ -11,8 +11,8 @@ interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'childre
   keyPoints: readonly VoiceNoteKeyPoint[];
   /** 지금 재생 위치가 속한 포인트. 모르면 강조하지 않는다 */
   activeKeyPointId?: string;
-  /** 포인트를 누르면 그 지점부터 재생하라고 알린다 */
-  onPressKeyPoint: (keyPoint: VoiceNoteKeyPoint) => void;
+  /** 포인트를 누르면 그 지점부터 재생하라고 알린다. 들을 녹음이 없으면 넘기지 않아 누를 수 없다 */
+  onPressKeyPoint?: (keyPoint: VoiceNoteKeyPoint) => void;
 }
 
 /** 핵심 포인트 목록. 누르면 그 시각부터 들려주고, 재생 중인 포인트는 배경으로 강조한다 */
@@ -29,7 +29,8 @@ export function KeyPointList({
           key={keyPoint.id}
           keyPoint={keyPoint}
           isActive={keyPoint.id === activeKeyPointId}
-          onPress={() => onPressKeyPoint(keyPoint)}
+          isPlayable={onPressKeyPoint != null}
+          onPress={() => onPressKeyPoint?.(keyPoint)}
         />
       ))}
     </VStack>
@@ -42,18 +43,26 @@ interface KeyPointItemProps extends Omit<
 > {
   keyPoint: VoiceNoteKeyPoint;
   isActive: boolean;
+  isPlayable: boolean;
 }
 
-function KeyPointItem({ keyPoint, isActive, className, ...pressableProps }: KeyPointItemProps) {
+function KeyPointItem({
+  keyPoint,
+  isActive,
+  isPlayable,
+  className,
+  ...pressableProps
+}: KeyPointItemProps) {
   const { t } = useTranslation('voiceNote');
   const time = keyPoint.startMs == null ? null : formatMediaTime(keyPoint.startMs);
+  const canPlay = isPlayable && time != null;
 
   return (
     <PressableFeedback
-      accessibilityRole={time == null ? undefined : 'button'}
-      accessibilityLabel={time == null ? undefined : t('keyPoints.playFrom', { time })}
+      accessibilityRole={canPlay ? 'button' : undefined}
+      accessibilityLabel={canPlay ? t('keyPoints.playFrom', { time }) : undefined}
       accessibilityState={{ selected: isActive }}
-      isDisabled={time == null}
+      isDisabled={!canPlay}
       className={cn('rounded-xl p-2.5', isActive && 'bg-main/10', className)}
       {...pressableProps}
     >

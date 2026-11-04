@@ -45,21 +45,6 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
 }));
 
-// expo-audio는 네이티브 플레이어라 계획대로 재생 훅 경계에서 대체한다
-jest.mock('@src/features/voice/hooks/use-voice-note-player', () => ({
-  useVoiceNotePlayer: () => ({
-    isLoaded: true,
-    isPlaying: false,
-    positionMs: 0,
-    durationMs: 178_000,
-    play: () => undefined,
-    pause: () => undefined,
-    togglePlay: () => Promise.resolve(),
-    seekTo: () => Promise.resolve(),
-    playFrom: () => Promise.resolve(),
-  }),
-}));
-
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };

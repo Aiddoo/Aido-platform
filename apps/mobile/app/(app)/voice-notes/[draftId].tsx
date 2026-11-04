@@ -31,7 +31,11 @@ import {
   voiceNoteParamsSchema,
   voiceNoteTabSchema,
 } from '@src/features/voice/hooks/use-voice-note-params';
-import { useVoiceNotePlayer } from '@src/features/voice/hooks/use-voice-note-player';
+import {
+  useVoiceNotePlayback,
+  useVoiceNotePlayer,
+  type VoiceNotePlayer,
+} from '@src/features/voice/hooks/use-voice-note-player';
 import { useVoiceNote } from '@src/features/voice/hooks/use-voice-notes';
 import { useApplyActionPlanMutationOptions } from '@src/features/voice/queries/use-apply-action-plan-mutation-options';
 import { getDurationBucket } from '@src/features/voice/utils/analytics/duration-bucket';
@@ -164,7 +168,6 @@ function VoiceNoteDigestScreen({ note }: { note: VoiceNote }) {
 
 function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
-  const { trackEvent } = useTrack();
   const { accountId } = useCurrentVoiceNote();
   const { tab } = useVoiceNoteParams();
   const { recordings } = useVoiceNoteStorageService();
@@ -177,12 +180,8 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
     }),
   );
   const player = useVoiceNotePlayer({ parts, durationMs: note.durationMs });
-  const activeKeyPointId = player.isPlaying
-    ? VoiceNotePolicy.findKeyPointAt(note, player.positionMs)?.id
-    : undefined;
-  const activeSentenceIndex = player.isPlaying
-    ? note.sentences.findLastIndex(({ startMs }) => startMs <= player.positionMs)
-    : undefined;
+  // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
+  const [levels] = useState(() => createSpeechLevels(note.sentences, note.durationMs));
   const markCount = note.sentences.filter(({ isBookmarked }) => isBookmarked).length;
   const date = formatDateLabel(note.createdAt, 'monthDay', dateFormatContext);
   const duration = formatMediaTime(note.durationMs);
@@ -213,33 +212,12 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
             {t('keyPoints.title')}
           </Text>
         </CoachmarkPopover>
-        <KeyPointList
-          keyPoints={note.digest?.keyPoints ?? []}
-          activeKeyPointId={activeKeyPointId}
-          onPressKeyPoint={({ startMs }) => {
-            if (startMs == null) {
-              return;
-            }
-            trackEvent('voice_note_key_point_played', {
-              position_bucket: getDurationBucket(startMs),
-            });
-            player.playFrom(startMs).catch(noop);
-          }}
-        />
+        <ResultKeyPoints note={note} player={player} canPlay={parts.length > 0} />
       </VStack>
       <DeleteVoiceNoteButton />
     </ScrollView>
   );
-  const transcript = (
-    <SentenceCaptionList
-      sentences={note.sentences}
-      activeSentenceIndex={activeSentenceIndex}
-      onPressSentence={
-        parts.length === 0 ? undefined : ({ startMs }) => player.playFrom(startMs).catch(noop)
-      }
-      className="min-h-24 flex-1"
-    />
-  );
+  const transcript = <ResultTranscript note={note} player={player} canPlay={parts.length > 0} />;
   const todos = (
     <QueryErrorBoundary>
       <Suspense fallback={<ActivityIndicator className="flex-1" />}>
@@ -264,7 +242,7 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
       </VStack>
       <VoiceNotePlayerBar
         player={player}
-        levels={createSpeechLevels(note.sentences, note.durationMs)}
+        levels={levels}
         flagIndexes={getFlagBarIndexes(note.sentences)}
         isRecordingAvailable={parts.length > 0}
       />
@@ -305,6 +283,57 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
         {!isCompact && <Box flex={1}>{todos}</Box>}
       </HStack>
     </VStack>
+  );
+}
+
+interface ResultPlaybackProps {
+  note: VoiceNote;
+  player: VoiceNotePlayer;
+  /** 들을 녹음 파일이 기기에 있다 */
+  canPlay: boolean;
+}
+
+/** 재생 중인 포인트가 바뀔 때만 다시 그린다 */
+function ResultKeyPoints({ note, player, canPlay }: ResultPlaybackProps) {
+  const { trackEvent } = useTrack();
+  const activeKeyPointId = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
+    isPlaying ? VoiceNotePolicy.findKeyPointAt(note, positionMs)?.id : undefined,
+  );
+
+  return (
+    <KeyPointList
+      keyPoints={note.digest?.keyPoints ?? []}
+      activeKeyPointId={activeKeyPointId}
+      onPressKeyPoint={
+        canPlay
+          ? ({ startMs }) => {
+              if (startMs == null) {
+                return;
+              }
+              trackEvent('voice_note_key_point_played', {
+                position_bucket: getDurationBucket(startMs),
+              });
+              player.playFrom(startMs).catch(noop);
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+/** 재생 중인 문장이 바뀔 때만 다시 그린다 */
+function ResultTranscript({ note, player, canPlay }: ResultPlaybackProps) {
+  const activeSentenceIndex = useVoiceNotePlayback(player, ({ isPlaying, positionMs }) =>
+    isPlaying ? note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs) : undefined,
+  );
+
+  return (
+    <SentenceCaptionList
+      sentences={note.sentences}
+      activeSentenceIndex={activeSentenceIndex}
+      onPressSentence={canPlay ? ({ startMs }) => player.playFrom(startMs).catch(noop) : undefined}
+      className="min-h-24 flex-1"
+    />
   );
 }
 

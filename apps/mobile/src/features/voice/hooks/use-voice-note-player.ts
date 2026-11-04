@@ -1,7 +1,14 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import type { Logger } from '@src/core/ports/logger';
 import { errorMessageOf } from '@src/shared/errors/to-error';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { useEffect, useRef, useState } from 'react';
+import { clamp, noop } from 'es-toolkit';
+import {
+  type AudioPlaylist,
+  type AudioPlaylistStatus,
+  setAudioModeAsync,
+  useAudioPlaylist,
+} from 'expo-audio';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
@@ -16,42 +23,193 @@ export interface VoiceNotePlayerPart {
 }
 
 interface UseVoiceNotePlayerOptions {
-  /** 시간 순서의 녹음 조각. 없으면 재생할 수 없는 상태로 둔다 */
+  /** 시간 순서의 녹음 조각. 없으면 재생할 수 없는 상태로 둔다. 플레이어가 살아 있는 동안 바꾸지 않는다 */
   parts: readonly VoiceNotePlayerPart[];
   /** 파일 길이를 읽기 전에 쓸 노트의 길이 */
   durationMs: number;
 }
 
-export interface VoiceNotePlayer {
+/** 지금 재생 상태. 재생 중에는 자주 바뀌니 `useVoiceNotePlayback`으로 필요한 값만 구독한다 */
+export interface VoiceNotePlayback {
   isLoaded: boolean;
   isPlaying: boolean;
   positionMs: number;
   durationMs: number;
-  play: () => void;
-  pause: () => void;
+}
+
+export interface VoiceNotePlayer {
+  subscribe: (listener: () => void) => () => void;
+  getPlayback: () => VoiceNotePlayback;
   togglePlay: () => Promise<void>;
   seekTo: (positionMs: number) => Promise<void>;
   /** 그 지점부터 바로 들려준다(핵심 포인트 누르기) */
   playFrom: (positionMs: number) => Promise<void>;
 }
 
+interface PendingStart {
+  index: number;
+  offsetSeconds: number;
+  shouldPlay: boolean;
+}
+
+interface CreatePlayerInput extends UseVoiceNotePlayerOptions {
+  playlist: AudioPlaylist;
+  logger: Pick<Logger, 'warn'>;
+}
+
+function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePlayerInput) {
+  const listeners = new Set<() => void>();
+  const lastIndex = parts.length - 1;
+  let status: AudioPlaylistStatus = playlist.currentStatus;
+  /** 마지막 조각까지 다 들었다. iOS는 이때 현재 항목이 사라져 시간·길이가 0이 되므로 따로 기억한다 */
+  let hasFinished = false;
+  let resolvedDurationMs = durationMs;
+  /** 다른 조각으로 갈 때 새 조각이 열리면 적용할 위치 */
+  let pendingStart: PendingStart | null = null;
+
+  const createPlayback = (): VoiceNotePlayback => {
+    if (status.currentIndex === lastIndex) {
+      const lastStartMs = parts[lastIndex]?.startMs ?? 0;
+      resolvedDurationMs = Math.max(
+        resolvedDurationMs,
+        lastStartMs + Math.round(status.duration * SECOND_MS),
+      );
+    }
+    const partStartMs = parts[status.currentIndex]?.startMs ?? 0;
+
+    return {
+      isLoaded: hasFinished || status.isLoaded,
+      isPlaying: !hasFinished && status.playing,
+      positionMs: hasFinished
+        ? resolvedDurationMs
+        : Math.min(partStartMs + Math.round(status.currentTime * SECOND_MS), resolvedDurationMs),
+      durationMs: resolvedDurationMs,
+    };
+  };
+  let playback = createPlayback();
+
+  const seekInCurrentPart = async (offsetSeconds: number) => {
+    try {
+      await playlist.seekTo(offsetSeconds);
+    } catch (error) {
+      logger.warn(VOICE_NOTE_LOG_EVENT.PLAYER_SEEK_FAILED, { error: errorMessageOf(error) });
+    }
+  };
+
+  /**
+   * iOS는 항목이 준비되기 전에 위치를 옮기면 무시되거나 예외가 난다. 이벤트는 교체 전 값일 수 있어
+   * 플레이어의 현재 값(`playlist.isLoaded`)까지 확인한 뒤에 적용한다.
+   */
+  const applyPendingStart = () => {
+    const pending = pendingStart;
+    if (
+      pending == null ||
+      status.currentIndex !== pending.index ||
+      !status.isLoaded ||
+      !playlist.isLoaded
+    ) {
+      return;
+    }
+    pendingStart = null;
+    seekInCurrentPart(pending.offsetSeconds)
+      .then(() => {
+        if (pending.shouldPlay) {
+          playlist.play();
+        }
+      })
+      .catch(noop);
+  };
+
+  const moveTo = async (target: number, shouldPlay: boolean) => {
+    const index = VoiceNotePolicy.findRecordingIndexAt(parts, target);
+    const part = parts[index];
+    if (part == null) {
+      return;
+    }
+    const clamped = clamp(target, 0, resolvedDurationMs);
+    const offsetSeconds = Math.max(0, clamped - part.startMs) / SECOND_MS;
+    if (index === status.currentIndex && !hasFinished && playlist.isLoaded) {
+      await seekInCurrentPart(offsetSeconds);
+      if (shouldPlay) {
+        playlist.play();
+      }
+      return;
+    }
+    hasFinished = false;
+    pendingStart = { index, offsetSeconds, shouldPlay };
+    playlist.pause();
+    playlist.skipTo(index);
+  };
+
+  const notify = () => {
+    playback = createPlayback();
+    listeners.forEach((listener) => listener());
+  };
+
+  const handleStatus = (next: AudioPlaylistStatus) => {
+    status = next;
+    // 종료 표시는 이벤트 하나에만 실린다. 렌더에 묶이면 놓치므로 이벤트에서 바로 읽는다
+    if (next.didJustFinish) {
+      hasFinished = true;
+    }
+    applyPendingStart();
+    notify();
+  };
+
+  const isAtEnd = () =>
+    status.currentIndex === lastIndex &&
+    status.duration > 0 &&
+    status.currentTime >= status.duration;
+
+  return {
+    /** 재생 이벤트를 받기 시작한다. 돌려준 함수로 끝낸다 */
+    attach: () => {
+      const subscription = playlist.addListener('playlistStatusUpdate', handleStatus);
+      return () => subscription.remove();
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    getPlayback: () => playback,
+    togglePlay: async () => {
+      if (status.playing) {
+        playlist.pause();
+        return;
+      }
+      if (hasFinished || isAtEnd()) {
+        await moveTo(0, true);
+        return;
+      }
+      playlist.play();
+    },
+    seekTo: (target: number) => moveTo(target, false),
+    playFrom: (target: number) => moveTo(target, true),
+  };
+}
+
 /**
- * `expo-audio` 플레이어와 상태 구독을 하나로 감싼다. 플레이어는 이 훅을 쓰는 화면이 소유해
- * 화면이 사라지면 `useAudioPlayer`가 해제하고 위치 구독도 함께 끝난다.
- * 멈췄다 이어 들은 녹음은 파일이 여러 개라 조각을 차례로 이어 하나처럼 재생한다.
+ * 멈췄다 이어 들은 녹음은 파일이 여러 개라 `expo-audio`의 `AudioPlaylist`로 조각을 이어 하나처럼 재생한다.
+ * 다음 조각으로 넘어가는 일은 네이티브 큐가 맡아 JS가 늦어도 멈추지 않는다. 플레이어는 이 훅을 쓰는 화면이 소유해
+ * 화면이 사라지면 `useAudioPlaylist`가 해제한다. 재생 위치는 여기서 구독하지 않아 화면 전체가 다시 그려지지 않는다.
  */
 export function useVoiceNotePlayer({
   parts,
   durationMs,
 }: UseVoiceNotePlayerOptions): VoiceNotePlayer {
   const logger = useLogger();
-  const firstUri = parts[0]?.uri;
-  const player = useAudioPlayer(firstUri == null ? null : { uri: firstUri }, {
+  const playlist = useAudioPlaylist({
+    sources: parts.map(({ uri }) => ({ uri })),
     updateInterval: VOICE_NOTE_POSITION_INTERVAL_MS,
   });
-  const status = useAudioPlayerStatus(player);
-  const [partIndex, setPartIndex] = useState(0);
-  const pendingStartRef = useRef<{ offsetSeconds: number; shouldPlay: boolean } | null>(null);
+  const player = useMemo(
+    () => createVoiceNotePlayer({ playlist, parts, durationMs, logger }),
+    [playlist, parts, durationMs, logger],
+  );
+
+  useEffect(() => player.attach(), [player]);
 
   useEffect(() => {
     // 인식 중에 켜진 녹음 모드가 남아 있으면 무음 모드에서 소리가 안 난다
@@ -64,103 +222,13 @@ export function useVoiceNotePlayer({
     );
   }, [logger]);
 
-  const seekInCurrentPart = async (offsetSeconds: number) => {
-    try {
-      await player.seekTo(offsetSeconds);
-    } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.PLAYER_SEEK_FAILED, { error: errorMessageOf(error) });
-    }
-  };
+  return player;
+}
 
-  /** 다른 조각으로 갈 때는 파일이 열린 뒤에 위치를 옮긴다 */
-  const loadPart = (index: number, offsetSeconds: number, shouldPlay: boolean) => {
-    const part = parts[index];
-    if (part == null) {
-      return;
-    }
-    pendingStartRef.current = { offsetSeconds, shouldPlay };
-    player.replace({ uri: part.uri });
-    setPartIndex(index);
-  };
-
-  const applyPendingStart = async () => {
-    const pending = pendingStartRef.current;
-    if (pending == null) {
-      return;
-    }
-    pendingStartRef.current = null;
-    await seekInCurrentPart(pending.offsetSeconds);
-    if (pending.shouldPlay) {
-      player.play();
-    }
-  };
-
-  const { isLoaded, didJustFinish } = status;
-  useEffect(() => {
-    if (isLoaded) {
-      applyPendingStart().catch(() => undefined);
-    }
-    // 파일이 열렸을 때만 옮긴다
-  }, [isLoaded, partIndex]);
-
-  const hasNextPart = partIndex < parts.length - 1;
-  useEffect(() => {
-    if (didJustFinish && hasNextPart) {
-      loadPart(partIndex + 1, 0, true);
-    }
-    // 조각 하나가 끝났을 때만 다음으로 넘어간다
-  }, [didJustFinish, hasNextPart]);
-
-  const partStartMs = parts[partIndex]?.startMs ?? 0;
-  const lastPart = parts.at(-1);
-  const loadedDurationMs =
-    partIndex === parts.length - 1 && lastPart != null
-      ? lastPart.startMs + Math.round(status.duration * SECOND_MS)
-      : 0;
-  const resolvedDurationMs = Math.max(loadedDurationMs, durationMs);
-  const positionMs = Math.min(
-    partStartMs + Math.round(status.currentTime * SECOND_MS),
-    resolvedDurationMs,
-  );
-
-  const moveTo = async (target: number, shouldPlay: boolean) => {
-    const clamped = Math.min(Math.max(0, target), resolvedDurationMs);
-    const index = VoiceNotePolicy.findRecordingIndexAt(parts, clamped);
-    const offsetSeconds = Math.max(0, clamped - (parts[index]?.startMs ?? 0)) / SECOND_MS;
-    if (index !== partIndex) {
-      loadPart(index, offsetSeconds, shouldPlay);
-      return;
-    }
-    await seekInCurrentPart(offsetSeconds);
-    if (shouldPlay) {
-      player.play();
-    }
-  };
-
-  const seekTo = (target: number) => moveTo(target, false);
-  const playFrom = (target: number) => moveTo(target, true);
-
-  const togglePlay = async () => {
-    if (status.playing) {
-      player.pause();
-      return;
-    }
-    if (status.didJustFinish && !hasNextPart) {
-      await playFrom(0);
-      return;
-    }
-    player.play();
-  };
-
-  return {
-    isLoaded: status.isLoaded,
-    isPlaying: status.playing,
-    positionMs,
-    durationMs: resolvedDurationMs,
-    play: () => player.play(),
-    pause: () => player.pause(),
-    togglePlay,
-    seekTo,
-    playFrom,
-  };
+/** 재생 상태에서 고른 값만 구독한다. 고른 값이 그대로면 다시 그리지 않는다 */
+export function useVoiceNotePlayback<TSelected>(
+  player: VoiceNotePlayer,
+  select: (playback: VoiceNotePlayback) => TSelected,
+): TSelected {
+  return useSyncExternalStore(player.subscribe, () => select(player.getPlayback()));
 }
