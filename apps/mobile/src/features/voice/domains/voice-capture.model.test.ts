@@ -4,6 +4,7 @@ import {
   reduceVoiceCapture,
   VoiceCapturePolicy,
 } from './voice-capture.model';
+import { voicePlanSchema } from './voice-plan.model';
 
 const NOW = 100_000;
 
@@ -214,7 +215,7 @@ describe('reduceVoiceCapture', () => {
     });
 
     // When
-    const planned = reduceVoiceCapture(planning, { type: 'planned' });
+    const planned = reduceVoiceCapture(planning, { type: 'planned', result: null });
     const cancelled = reduceVoiceCapture(planning, { type: 'cancel' });
 
     // Then
@@ -311,5 +312,44 @@ describe('VoiceCapturePolicy', () => {
     // Then
     expect([at29s, at30s]).toEqual([false, true]);
     expect(remaining).toBe(20);
+  });
+
+  describe('계획 받기', () => {
+    const plan = voicePlanSchema.parse({
+      planId: 'plan-1',
+      source: 'quick-voice',
+      sourceMemoId: null,
+      actions: [],
+      omittedTodoCount: 0,
+    });
+
+    it('계획이 오면 들은 글자를 든 채 고르는 단계로 넘어간다', () => {
+      // Given
+      const transcript = createTranscript({ sentences: ['내일 장보기'] });
+      const planning = createCaptureState({ status: 'planning', transcript });
+
+      // When
+      const next = reduceVoiceCapture(planning, {
+        type: 'planned',
+        result: { plan, isCharged: false },
+      });
+
+      // Then
+      expect(next).toMatchObject({ status: 'review', plan, isCharged: false, transcript });
+    });
+
+    it('고르는 단계는 듣는 중이 아니라 닫을 때 인식기를 끊지 않는다', () => {
+      // Given
+      const planning = createCaptureState({ status: 'planning' });
+
+      // When
+      const next = reduceVoiceCapture(planning, {
+        type: 'planned',
+        result: { plan, isCharged: true },
+      });
+
+      // Then
+      expect(VoiceCapturePolicy.isActive(next)).toBe(false);
+    });
   });
 });

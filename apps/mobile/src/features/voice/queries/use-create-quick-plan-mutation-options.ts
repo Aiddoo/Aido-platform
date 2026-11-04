@@ -9,22 +9,36 @@ import {
   summarizePlanForAnalytics,
   toAnalyticsSource,
 } from '../utils/analytics/voice-plan-analytics';
+import { planInProgressRetryOptions } from './plan-in-progress-retry';
 import { usePlanFailureHandler } from './use-plan-failure-handler';
 import { reflectFeatureQuota } from './voice-plan-cache';
 
-/**
- * 말하거나 적은 글을 계획으로 나눈다. 요청마다 `preparePlanRequest`로 만든 멱등 키를 함께 보낸다.
- * AI_1317(결과 캐시 만료)은 새 키로 다시 보내면 한 번 더 차감되므로 자동으로 다시 보내지 않는다.
- */
-export const useCreateQuickPlanMutationOptions = () => {
+interface CreateQuickPlanVariables extends PreparedPlanRequest<CreateQuickPlanInput> {
+  /** 시트를 닫으면 끊는다. 끊어도 키가 같으면 다시 보낼 때 두 번 차감되지 않는다 */
+  signal?: AbortSignal;
+}
+
+interface UseCreateQuickPlanMutationOptionsParams {
+  /** 한도 안내에서 구독 화면으로 가기 직전에 부른다(열린 시트 닫기) */
+  onSubscribe?: () => void;
+}
+
+/** 말하거나 적은 글을 계획으로 나눈다. 요청마다 `preparePlanRequest`로 만든 멱등 키를 함께 보낸다 */
+export const useCreateQuickPlanMutationOptions = ({
+  onSubscribe,
+}: UseCreateQuickPlanMutationOptionsParams = {}) => {
   const voiceService = useVoiceService();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const handleFailure = usePlanFailureHandler('AI_PARSE', { surface: 'add_todo_sheet' });
+  const handleFailure = usePlanFailureHandler('AI_PARSE', {
+    surface: 'add_todo_sheet',
+    onSubscribe,
+  });
 
   return mutationOptions({
-    mutationFn: async ({ input, idempotencyKey }: PreparedPlanRequest<CreateQuickPlanInput>) =>
-      unwrap(await voiceService.createQuickPlan(input, idempotencyKey)),
+    ...planInProgressRetryOptions,
+    mutationFn: async ({ input, idempotencyKey, signal }: CreateQuickPlanVariables) =>
+      unwrap(await voiceService.createQuickPlan(input, idempotencyKey, signal)),
     onSuccess: ({ plan, featureQuota, charged }) => {
       reflectFeatureQuota(queryClient, featureQuota);
       trackEvent('voice_plan_generated', {
@@ -33,7 +47,11 @@ export const useCreateQuickPlanMutationOptions = () => {
         charged,
       });
     },
-    onError: (error, { input }) =>
-      handleFailure(error, input.source === 'voice' ? 'quick-voice' : 'quick-text'),
+    onError: (error, { input, signal }) => {
+      if (signal?.aborted === true) {
+        return;
+      }
+      handleFailure(error, input.source === 'voice' ? 'quick-voice' : 'quick-text');
+    },
   });
 };

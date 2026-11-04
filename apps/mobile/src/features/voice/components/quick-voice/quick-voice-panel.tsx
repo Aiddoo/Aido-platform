@@ -1,9 +1,11 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, CloseIcon, HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import { Box, Button, CloseIcon, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -20,9 +22,19 @@ import {
   AUTO_FINISH_SILENCE_MS,
   LISTENING_PANEL_HEIGHT_RATIO,
 } from '../../constants/voice.constants';
-import { VoiceCapturePolicy, type VoiceCaptureState } from '../../domains/voice-capture.model';
+import {
+  createPlanReviewFormValues,
+  type PlanReviewFormValues,
+  planReviewFormSchema,
+} from '../../domains/plan-review-form.schema';
+import {
+  type CapturedPlan,
+  VoiceCapturePolicy,
+  type VoiceCaptureState,
+} from '../../domains/voice-capture.model';
 import { getTranscriptText } from '../../domains/voice-transcript.model';
 import { formatMediaTime } from '../../utils/format-media-time';
+import { PlanReview } from '../plan/plan-review';
 import { SheetEdgeGlow } from '../visualizers/sheet-edge-glow';
 import { VoiceOrb } from '../visualizers/voice-orb';
 import { Waveform } from '../visualizers/waveform';
@@ -161,12 +173,76 @@ QuickVoicePanel.Planning = function Planning({ state }: { state: VoiceCaptureSta
             {t('planning.title')}
           </Text>
         </HStack>
-        <VStack gap={8}>
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-12 w-full rounded-xl" />
-        </VStack>
+        <QuickVoicePanel.CardsLoading />
       </VStack>
+    </Animated.View>
+  );
+};
+
+QuickVoicePanel.CardsLoading = function CardsLoading() {
+  return (
+    <VStack gap={8}>
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+    </VStack>
+  );
+};
+
+interface ReviewProps extends CapturedPlan {
+  /** 카테고리를 고르지 못한 카드가 들어갈 시트의 현재 카테고리 */
+  fallbackCategoryId: number;
+  onApplied: () => void;
+  onRestart: () => void;
+  onTypeInstead: () => void;
+}
+
+/** 계획을 고르는 단계. 이 단계가 떠 있는 동안 폼이 살아 있어 카드 시트를 오가거나 저장에 실패해도 고친 값이 남는다 */
+QuickVoicePanel.Review = function Review({
+  plan,
+  isCharged,
+  fallbackCategoryId,
+  onApplied,
+  onRestart,
+  onTypeInstead,
+}: ReviewProps) {
+  const { t } = useTranslation('voice');
+  const form = useForm<PlanReviewFormValues>({
+    resolver: zodResolver(planReviewFormSchema),
+    defaultValues: createPlanReviewFormValues(plan),
+    mode: 'onChange',
+  });
+  const restartButton = (
+    <Box className="flex-1">
+      <Button variant="weak" color="dark" onPress={onRestart} testID="quick-voice-restart">
+        {t('review.restart')}
+      </Button>
+    </Box>
+  );
+
+  return (
+    <Animated.View entering={FadeIn.duration(200)} testID="quick-voice-review">
+      <PlanReview
+        form={form}
+        plan={plan}
+        fallbackCategoryId={fallbackCategoryId}
+        isCharged={isCharged}
+        secondaryAction={
+          plan.actions.length === 0 ? (
+            <HStack gap={8}>
+              {restartButton}
+              <Box className="flex-1">
+                <Button onPress={onTypeInstead} testID="quick-voice-type-instead">
+                  {t('review.typeInstead')}
+                </Button>
+              </Box>
+            </HStack>
+          ) : (
+            restartButton
+          )
+        }
+        onApplied={onApplied}
+      />
     </Animated.View>
   );
 };

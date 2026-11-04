@@ -9,11 +9,16 @@ import { Text } from '@src/shared/ui';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import type { CapturedPlan } from '../domains/voice-capture.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
-function SessionProbe({ onCaptured }: { onCaptured: (transcript: string) => Promise<void> }) {
+function SessionProbe({
+  onCaptured,
+}: {
+  onCaptured: (transcript: string) => Promise<CapturedPlan | null>;
+}) {
   const session = useVoiceCaptureSession({ entry: 'add_todo_sheet', onCaptured });
 
   return (
@@ -32,7 +37,7 @@ function SessionProbe({ onCaptured }: { onCaptured: (transcript: string) => Prom
 async function renderSession() {
   const speechRecognizer = createSpeechRecognizerStub();
   const analytics = createMockAnalytics();
-  const onCaptured = jest.fn().mockResolvedValue(undefined);
+  const onCaptured = jest.fn().mockResolvedValue(null);
   await renderUi(<SessionProbe onCaptured={onCaptured} />, {
     di: { speechRecognizer, analytics, logger, errorReporter: createErrorReporterStub() },
   });

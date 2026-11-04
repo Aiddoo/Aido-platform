@@ -1,22 +1,26 @@
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
-import type { ParsedTodo } from '@src/features/ai/domains/parsed-todo.model';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
-import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import type { CreateQuickPlanInput } from '@src/features/voice/apis/voice.service';
+import {
+  PlanRequestPolicy,
+  type PreparedPlanRequest,
+} from '@src/features/voice/domains/plan-request.model';
+import type { CapturedPlan } from '@src/features/voice/domains/voice-capture.model';
 import { getTranscriptText } from '@src/features/voice/domains/voice-transcript.model';
 import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
-import { toDeviceDateKey } from '@src/shared/utils/date-key';
+import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
-import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 
 interface UseAddTodoQuickVoiceOptions {
   methods: UseFormReturn<AddTodoFormValues>;
@@ -24,20 +28,10 @@ interface UseAddTodoQuickVoiceOptions {
   onExit: () => void;
 }
 
-/** 서버가 준 규칙을 먼저 쓴다. `recurrence`는 끝이 없는 말에도 4주 종료를 넣는 출시 앱용 값이라 구 서버에서만 쓴다 */
-function toParsedTodoRepeat({ isRecurring, recurrence, repeat }: ParsedTodo): TodoRepeat | null {
-  if (repeat != null) {
-    return repeat;
-  }
-  return isRecurring && recurrence != null
-    ? TodoRepeatPolicy.createWeeklyUntil(recurrence.daysOfWeek, toDeviceDateKey(recurrence.endDate))
-    : null;
-}
-
 /**
  * 할 일 추가 시트의 말로 할 일 만들기. 한도 확인 → AI 동의 → 마이크 권한 → 듣기 순서로 시작하고,
- * 듣기가 끝나면 글자를 기존 parse-todo로 보내 폼을 채운다.
- * 글자를 할 일로 바꾸는 쪽은 아래 `onCaptured` 한 곳이라 계획 카드로 바꿀 때 여기만 갈아 끼운다.
+ * 듣기가 끝나면 글자를 계획 API로 보내 같은 시트 안에서 고르는 단계(`review`)로 넘어간다.
+ * 실패하면 들은 글자를 입력 칸에 남기고, 다시 정리할 때 같은 키를 써서 두 번 차감되지 않는다.
  */
 export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOptions) {
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
@@ -45,37 +39,31 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const ensureMicrophonePermission = useMicrophonePermission();
   const getSpeechContext = useSpeechContext();
   const [locale, setLocale] = useRecognitionLanguage();
-  const parseMutation = useMutation(useParseTodoMutationOptions());
+  const planMutation = useMutation(useCreateQuickPlanMutationOptions({ onSubscribe: onExit }));
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
   const hasAskedConsentRef = useRef(false);
+  const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
+  const planAbortRef = useRef<AbortController | null>(null);
 
-  const applyParsedTodo = (
-    parsedTodo: Awaited<ReturnType<typeof parseMutation.mutateAsync>>['data'],
-  ) => {
-    const parsedTodoRepeat = toParsedTodoRepeat(parsedTodo);
-    methods.reset(
-      (previous) => ({
-        ...previous,
-        title: parsedTodo.title,
-        startDate: parsedTodo.startDate,
-        endDate: parsedTodoRepeat == null ? parsedTodo.endDate : null,
-        scheduledTime: parsedTodo.scheduledTime,
-        isAllDay: parsedTodo.scheduledTime ? false : parsedTodo.isAllDay,
-        repeat: parsedTodoRepeat,
-        source: 'ai',
-      }),
-      { keepDirtyValues: true },
-    );
-  };
+  const onCaptured = async (text: string): Promise<CapturedPlan> => {
+    const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
+      previous: planRequestRef.current,
+      input: { text, source: 'voice' },
+      createIdempotencyKey: randomUUID,
+    });
+    planRequestRef.current = request;
+    const abortController = new AbortController();
+    planAbortRef.current = abortController;
 
-  const onCaptured = async (text: string): Promise<void> => {
     try {
-      const result = await parseMutation.mutateAsync({
-        text,
-        categoryId: methods.getValues('categoryId'),
+      const { plan, charged } = await planMutation.mutateAsync({
+        ...request,
+        signal: abortController.signal,
       });
-      applyParsedTodo(result.data);
+      planRequestRef.current = null;
+      return { plan, isCharged: charged };
     } catch (error) {
+      planRequestRef.current = PlanRequestPolicy.getAfterFailure(request, error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {
@@ -87,6 +75,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   };
 
   const session = useVoiceCaptureSession({ entry: 'add_todo_sheet', onCaptured });
+
+  useEffect(() => () => planAbortRef.current?.abort(), []);
 
   const failedStatus = session.state.status === 'failed';
   useEffect(() => {
@@ -108,5 +98,19 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     await session.begin({ locale, contextualStrings: getSpeechContext() });
   };
 
-  return { ...session, locale, setLocale, start };
+  /** 고른 카드를 버리고 처음부터 다시 듣는다 */
+  const restart = async () => {
+    planRequestRef.current = null;
+    session.cancel();
+    await start();
+  };
+
+  /** 계획에 할 일이 없을 때 들은 글자를 입력 칸에 옮겨 직접 고치게 한다 */
+  const typeInstead = () => {
+    methods.setValue('title', getTranscriptText(session.state.transcript), { shouldDirty: true });
+    planRequestRef.current = null;
+    session.cancel();
+  };
+
+  return { ...session, locale, setLocale, start, restart, typeInstead };
 }

@@ -58,6 +58,7 @@ export const useApplyActionPlanMutationOptions = () => {
         ),
       ),
     onSuccess: ({ todoCount, hasMemo }, { source, sourceMemoId, skippedCount }) => {
+      haptics.notify('success');
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {

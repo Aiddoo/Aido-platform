@@ -34,6 +34,10 @@
   "planning": {
     "title": "할 일로 나누는 중…"
   },
+  "review": {
+    "restart": "다시 말하기",
+    "typeInstead": "직접 입력"
+  },
   "failed": {
     "keptText": "들은 데까지는 남겨뒀어요. 이어서 말하거나 직접 고쳐주세요.",
     "resume": "이어서 말하기",

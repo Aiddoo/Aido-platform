@@ -73,7 +73,7 @@ interface PlanReviewProps {
   fallbackCategoryId: number;
   /** 계획을 만들 때 횟수를 썼는지. false면 빈 결과에서 "횟수는 차감되지 않았어요"를 보여 준다 */
   isCharged?: boolean;
-  /** 추가 버튼 왼쪽에 둘 보조 동작(예: 다시 말하기) */
+  /** 추가 버튼 왼쪽에 둘 보조 동작(예: 다시 말하기). 카드가 없으면 안내 아래에 둔다 */
   secondaryAction?: ReactNode;
   /** 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
   onApplied: () => void;
@@ -160,6 +160,7 @@ export function PlanReview({
       <Result
         title={t('voicePlan:plan.empty')}
         description={isCharged ? undefined : t('subscription:gate.notCharged')}
+        button={secondaryAction}
       />
     );
   }

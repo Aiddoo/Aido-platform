@@ -34,6 +34,10 @@
   "planning": {
     "title": "Splitting into to-dos…"
   },
+  "review": {
+    "restart": "Say it again",
+    "typeInstead": "Type it"
+  },
   "failed": {
     "keptText": "We kept what we heard. Keep talking or fix it yourself.",
     "resume": "Keep talking",

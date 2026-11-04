@@ -26,6 +26,7 @@ import {
   SPEAKING_VOLUME_THRESHOLD,
 } from '../constants/voice.constants';
 import {
+  type CapturedPlan,
   createVoiceCaptureState,
   reduceVoiceCapture,
   type VoiceCaptureEvent,
@@ -59,10 +60,10 @@ const PAUSE_CAUSE_PARAMS = {
 interface UseVoiceCaptureSessionOptions {
   entry: VoiceCaptureEntry;
   /**
-   * 캡처가 끝나 글자가 모였을 때 부른다. 이 경계 하나가 글자를 받아 할 일로 바꾸는 쪽(지금은 parse-todo)이다.
+   * 캡처가 끝나 글자가 모였을 때 부른다. 계획을 돌려주면 고르는 단계로, null이면 처음으로 돌아간다.
    * 거절하면 들은 글자를 남긴 채 실패 상태가 된다.
    */
-  onCaptured: (transcript: string) => Promise<void>;
+  onCaptured: (transcript: string) => Promise<CapturedPlan | null>;
 }
 
 export interface BeginOptions {
@@ -311,9 +312,9 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     const text = getTranscriptText(stateRef.current.transcript);
     addBreadcrumb('plan.requested', { mode: 'quick' });
     runCaptured(text)
-      .then(() => {
+      .then((result) => {
         if (isCurrent) {
-          dispatch({ type: 'planned' });
+          dispatch({ type: 'planned', result });
         }
       })
       .catch(() => {
@@ -402,7 +403,7 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     if (VoiceCapturePolicy.isActive(previous)) {
       speechRecognizer.abort();
     }
-    if (previous.status !== 'idle') {
+    if (previous.status !== 'idle' && previous.status !== 'review') {
       trackFinished(isTranscriptEmpty(previous.transcript) ? 'empty' : 'cancelled', previous);
     }
   };

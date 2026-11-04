@@ -14,6 +14,17 @@ if (isFetch(originalFetch)) {
 
 // Reanimated 4.7 requires its web resolver for CSS initialization in Jest.
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
+// 네이티브 모듈이 없으면 randomUUID가 undefined를 준다. 멱등 키처럼 호출마다 달라야 하는 값을 테스트한다.
+jest.mock('expo-crypto', () => {
+  let count = 0;
+  return {
+    ...jest.requireActual('expo-crypto'),
+    randomUUID: () => {
+      count += 1;
+      return `test-uuid-${count}`;
+    },
+  };
+});
 // 이 mock은 CommonJS라 __esModule 표시가 없다. 그대로 두면 default import가
 // 모듈 객체 전체로 잡혀 "Element type is invalid: got object"로 죽는다.
 jest.mock('@gorhom/bottom-sheet', () => ({

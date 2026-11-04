@@ -24,7 +24,7 @@ import { toAnalyticsSource } from '../utils/analytics/voice-plan-analytics';
  */
 export function usePlanFailureHandler(
   feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>,
-  { surface }: { surface: EntitlementGateSurface },
+  { surface, onSubscribe }: { surface: EntitlementGateSurface; onSubscribe?: () => void },
 ) {
   const haptics = useHaptics();
   const queryClient = useQueryClient();
@@ -43,7 +43,7 @@ export function usePlanFailureHandler(
     trackEvent('voice_plan_failed', { source: toAnalyticsSource(source), cause });
     haptics.notify('error');
 
-    if (gate.handleError(error)) {
+    if (gate.handleError(error, { onSubscribe })) {
       return;
     }
 

@@ -3,6 +3,7 @@ import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
 import { AUTO_FINISH_SILENCE_MS, QUICK_CAPTURE_MAX_SECONDS } from '../constants/voice.constants';
+import { voicePlanSchema } from './voice-plan.model';
 import {
   applyResult,
   createVoiceTranscript,
@@ -27,10 +28,15 @@ const captureBaseSchema = z.object({
   pauseCount: z.int().nonnegative(),
 });
 
-/**
- * 빠른 말하기 한 번의 진행 상태. 어느 상태에서도 들은 글자(transcript)는 지우지 않는다.
- * 계획 카드(review)는 계획 API가 생기는 층에서 이어 붙인다.
- */
+/** 계획을 받아 고르는 단계로 넘어갈 때 함께 드는 값 */
+export const capturedPlanSchema = z.object({
+  plan: voicePlanSchema,
+  /** 이 요청으로 횟수를 썼는지. false면 "횟수는 차감되지 않아요"를 보여 준다 */
+  isCharged: z.boolean(),
+});
+export type CapturedPlan = z.infer<typeof capturedPlanSchema>;
+
+/** 말하기 한 번의 진행 상태. 어느 상태에서도 들은 글자(transcript)는 지우지 않는다 */
 export const voiceCaptureStateSchema = z.discriminatedUnion('status', [
   captureBaseSchema.extend({ status: z.literal('idle') }),
   captureBaseSchema.extend({ status: z.literal('preparing') }),
@@ -38,6 +44,7 @@ export const voiceCaptureStateSchema = z.discriminatedUnion('status', [
   captureBaseSchema.extend({ status: z.literal('paused'), cause: voicePauseCauseSchema }),
   captureBaseSchema.extend({ status: z.literal('finalizing') }),
   captureBaseSchema.extend({ status: z.literal('planning') }),
+  captureBaseSchema.extend(capturedPlanSchema.shape).extend({ status: z.literal('review') }),
   captureBaseSchema.extend({
     status: z.literal('failed'),
     reason: voiceCaptureFailureReasonSchema,
@@ -54,7 +61,8 @@ export type VoiceCaptureEvent =
   | { type: 'finish'; at: number }
   | { type: 'end' }
   | { type: 'error'; code: SpeechErrorCode; at: number }
-  | { type: 'planned' }
+  /** 글자를 넘겨받은 쪽이 일을 마쳤다. 고를 계획이 있으면 review로, 없으면 처음으로 돌아간다 */
+  | { type: 'planned'; result: CapturedPlan | null }
   | { type: 'plan-failed' }
   | { type: 'retry-plan' }
   | { type: 'cancel' };
@@ -160,7 +168,9 @@ export function reduceVoiceCapture(
           )
           .otherwise(() => toFailed(current, code, at)),
     )
-    .with([{ status: 'planning' }, { type: 'planned' }], () => createVoiceCaptureState())
+    .with([{ status: 'planning' }, { type: 'planned' }], ([current, { result }]) =>
+      result == null ? createVoiceCaptureState() : { ...current, ...result, status: 'review' },
+    )
     .with([{ status: 'planning' }, { type: 'plan-failed' }], ([current]) => ({
       ...current,
       status: 'failed',

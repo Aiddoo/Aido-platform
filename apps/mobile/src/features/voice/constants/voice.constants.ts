@@ -22,6 +22,9 @@ export const SPEECH_CONTEXT_MAX_STRINGS = 100;
 /** 인식기에 알려 줄 최근 할 일 제목의 최대 개수 */
 export const SPEECH_CONTEXT_RECENT_TODO_LIMIT = 60;
 
+/** 서버가 아직 처리 중(AI_1314)이면 같은 키로 잠시 뒤 다시 묻는다. 차감은 한 번뿐이다 */
+export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
+
 /** 듣는 중 패널이 차지하는 화면 높이 비율 */
 export const LISTENING_PANEL_HEIGHT_RATIO = 0.56;
 

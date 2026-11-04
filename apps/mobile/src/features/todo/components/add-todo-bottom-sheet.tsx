@@ -36,13 +36,13 @@ import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
-import type { ComponentRef } from 'react';
+import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import {
@@ -465,8 +465,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         }}
       >
         <TodoScopeStep step={scopeSelector}>
-          {match(voice.state.status)
-            .with('listening', 'paused', 'finalizing', () => (
+          {match(voice.state)
+            .with({ status: P.union('listening', 'paused', 'finalizing') }, () => (
               <QuickVoicePanel
                 state={voice.state}
                 level={voice.level}
@@ -478,7 +478,21 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 onResume={voice.resume}
               />
             ))
-            .with('planning', () => <QuickVoicePanel.Planning state={voice.state} />)
+            .with({ status: 'planning' }, () => <QuickVoicePanel.Planning state={voice.state} />)
+            .with({ status: 'review' }, ({ plan, isCharged }) => (
+              <AddTodoVoiceReview
+                plan={plan}
+                isCharged={isCharged}
+                onApplied={() => {
+                  onClose();
+                  if (props.mode === 'create') {
+                    props.onSuccess?.();
+                  }
+                }}
+                onRestart={voice.restart}
+                onTypeInstead={voice.typeInstead}
+              />
+            ))
             .otherwise(() => (
               <VStack gap={12} testID="todo-add-sheet">
                 <QuickVoicePanel.Failed
@@ -702,3 +716,22 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
     />
   );
 };
+
+type AddTodoVoiceReviewProps = Omit<
+  ComponentProps<typeof QuickVoicePanel.Review>,
+  'fallbackCategoryId'
+>;
+
+/** 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다 */
+function AddTodoVoiceReview(props: AddTodoVoiceReviewProps) {
+  const { control } = useFormContext<AddTodoFormValues>();
+  const categoryId = useWatch({ control, name: 'categoryId' });
+
+  return (
+    <QueryErrorBoundary>
+      <Suspense fallback={<QuickVoicePanel.CardsLoading />}>
+        <QuickVoicePanel.Review {...props} fallbackCategoryId={categoryId} />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
+}

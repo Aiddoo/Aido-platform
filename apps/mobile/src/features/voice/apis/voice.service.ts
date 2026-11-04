@@ -43,11 +43,16 @@ export class VoiceService {
   createQuickPlan = async (
     { text, source }: CreateQuickPlanInput,
     idempotencyKey: string,
+    signal?: AbortSignal,
   ): Promise<Result<QuickPlanResult, ApiError>> => {
     const result = await this.#httpClient.post(
       'v1/quick-plans',
       { text, source: source === 'voice' ? 'VOICE' : 'TEXT' },
-      { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: QUICK_PLAN_TIMEOUT_MS },
+      {
+        headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+        timeout: QUICK_PLAN_TIMEOUT_MS,
+        signal,
+      },
     );
     if (!result.ok) {
       return result;
