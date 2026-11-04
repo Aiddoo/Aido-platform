@@ -36,6 +36,9 @@ export const useUpdateTodoMutationOptions = () => {
       toast.success(t('todo:toast.todoUpdated'));
       const field = Object.keys(variables.input).join(',');
       trackEvent('todo_edited', { todo_id: variables.todoId, field });
+      if (variables.options != null) {
+        trackEvent('todo_series_edited', { scope: variables.options.scope });
+      }
     },
     onError: (error) => {
       haptics.notify('error');

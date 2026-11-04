@@ -12,8 +12,10 @@ import {
   useSheetRoute,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Suspense, useEffect } from 'react';
+import { type ComponentProps, Suspense, useEffect } from 'react';
 
+import { type Todo, TodoPolicy } from '../domains/todo.model';
+import { useGetTodoSeriesQueryOptions } from '../queries/get-todo-series-query-options';
 import { useGetTodosByDateQueryOptions } from '../queries/get-todos-by-date-query-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '../utils/view-models/todo-sheet-target.view-model';
@@ -47,14 +49,39 @@ TodoEditBottomSheet.Form = function Form() {
     return null;
   }
 
+  const sheetProps = {
+    isOpen: sheet.isOpen,
+    onOpenChange: sheet.onOpenChange,
+    onClose: () => sheet.close(),
+    onExit: () => sheet.exit(),
+  };
+
+  return TodoPolicy.isRecurring(todo) && todo.recurrenceGroupId != null ? (
+    <TodoEditBottomSheet.SeriesForm todo={todo} seriesId={todo.recurrenceGroupId} {...sheetProps} />
+  ) : (
+    <AddTodoBottomSheet mode="edit" todo={todo} {...sheetProps} />
+  );
+};
+
+type SeriesFormProps = Omit<ComponentProps<typeof AddTodoBottomSheet>, 'mode' | 'repeat'> & {
+  todo: Todo;
+  seriesId: string;
+};
+
+/** 편집 폼의 기본값이 규칙이라, 반복 할 일은 규칙을 읽은 뒤에 시트를 띄운다. */
+TodoEditBottomSheet.SeriesForm = function SeriesForm({
+  todo,
+  seriesId,
+  ...sheetProps
+}: SeriesFormProps) {
+  const { data: series } = useSuspenseQuery(useGetTodoSeriesQueryOptions({ seriesId }));
+
   return (
     <AddTodoBottomSheet
+      {...sheetProps}
       mode="edit"
       todo={todo}
-      isOpen={sheet.isOpen}
-      onOpenChange={sheet.onOpenChange}
-      onClose={() => sheet.close()}
-      onExit={() => sheet.exit()}
+      repeat={series == null ? null : series.repeat}
     />
   );
 };

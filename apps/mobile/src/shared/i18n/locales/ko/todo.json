@@ -22,7 +22,8 @@
     "deleteFailedRetry": "잠시 후 다시 삭제해 보세요",
     "changeFailedRetry": "잠시 후 다시 변경해 보세요",
     "retryLater": "잠시 후 다시 시도해 주세요",
-    "repeatUnavailable": "반복 할 일 기능을 준비하고 있어요. 곧 사용할 수 있어요"
+    "repeatUnavailable": "반복 할 일 기능을 준비하고 있어요. 곧 사용할 수 있어요",
+    "seriesStopped": "반복을 끝냈어요"
   },
   "errors": {
     "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
@@ -77,6 +78,17 @@
     "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
     "horizonHint": "반복 할 일은 3개월 앞까지 미리 보여요"
   },
+  "scope": {
+    "editTitle": "반복 할 일 수정",
+    "deleteTitle": "반복 할 일 삭제",
+    "editTHIS_ONLY": "이 할 일만",
+    "editTHIS_AND_FOLLOWING": "이 할 일과 이후 할 일",
+    "deleteTHIS_ONLY": "이 할 일만 삭제",
+    "deleteTHIS_AND_FOLLOWING": "이 할 일과 이후 할 일 삭제",
+    "deleteALL": "모든 반복 할 일 삭제",
+    "deleteAllHint": "완료한 기록도 함께 지워져요",
+    "repeatLabel": "반복 할 일"
+  },
   "chip": {
     "repeat": "반복",
     "allDay": "종일",
@@ -110,7 +122,8 @@
     "changeSubmit": "변경하기",
     "more": "더보기",
     "complete": "완료하기",
-    "uncomplete": "완료 취소"
+    "uncomplete": "완료 취소",
+    "stopRepeat": "반복 끝내기"
   },
   "list": {
     "loadError": "할 일을 불러오지 못했어요."

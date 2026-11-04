@@ -22,7 +22,8 @@
     "deleteFailedRetry": "Try deleting again in a moment",
     "changeFailedRetry": "Try again in a moment",
     "retryLater": "Please try again in a moment",
-    "repeatUnavailable": "We're getting repeating to-dos ready. You'll be able to use this soon"
+    "repeatUnavailable": "We're getting repeating to-dos ready. You'll be able to use this soon",
+    "seriesStopped": "Stopped repeating"
   },
   "errors": {
     "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
@@ -81,6 +82,17 @@
     "monthEndHint": "In shorter months, it repeats on the last day",
     "horizonHint": "Repeating to-dos appear up to 3 months ahead"
   },
+  "scope": {
+    "editTitle": "Edit repeating to-do",
+    "deleteTitle": "Delete repeating to-do",
+    "editTHIS_ONLY": "This to-do only",
+    "editTHIS_AND_FOLLOWING": "This and following",
+    "deleteTHIS_ONLY": "Delete this only",
+    "deleteTHIS_AND_FOLLOWING": "Delete this and following",
+    "deleteALL": "Delete all",
+    "deleteAllHint": "Completed ones are deleted too",
+    "repeatLabel": "Repeating to-do"
+  },
   "chip": {
     "repeat": "Repeat",
     "allDay": "All day",
@@ -114,7 +126,8 @@
     "changeSubmit": "Save",
     "more": "More options",
     "complete": "Mark as done",
-    "uncomplete": "Mark as not done"
+    "uncomplete": "Mark as not done",
+    "stopRepeat": "Stop repeating"
   },
   "list": {
     "loadError": "Something went wrong while loading your to-dos."

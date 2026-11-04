@@ -56,6 +56,8 @@ import { useResolveClassNames } from 'uniwind';
 
 import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
 import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
+import { TodoPolicy } from '../domains/todo.model';
+import { useSelectTodoScope } from '../hooks/use-select-todo-scope';
 import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
@@ -91,6 +93,7 @@ interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
 interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
   mode: 'edit';
   todo: Todo;
+  repeat?: TodoRepeat | null;
 }
 
 interface AddTodoBottomSheetConvertMemoProps extends AddTodoBottomSheetBaseProps {
@@ -118,7 +121,7 @@ function toParsedTodoRepeat({ isRecurring, recurrence }: ParsedTodo): TodoRepeat
 function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
   return match(props)
     .returnType<AddTodoFormValues>()
-    .with({ mode: 'edit' }, ({ todo }) => toTodoEditFormValues(todo))
+    .with({ mode: 'edit' }, ({ todo, repeat }) => toTodoEditFormValues(todo, repeat))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
       startDate: selectedDate,
@@ -163,6 +166,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const pendingFocusRef = useRef<number | null>(null);
 
   const overlay = useOverlay();
+  const { selectEditScope } = useSelectTodoScope();
 
   useEffect(() => {
     if (isOpen) {
@@ -195,6 +199,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     try {
       await match(props)
         .with({ mode: 'edit' }, async ({ todo }) => {
+          const isSeries = TodoPolicy.isRecurring(todo);
+          const scope = isSeries ? await selectEditScope() : 'THIS_ONLY';
+          if (scope == null) {
+            return;
+          }
+          const isRepeatChanged = !isEqual(values.repeat, defaultValues.repeat);
           await updateMutation.mutateAsync(
             {
               todoId: todo.id,
@@ -206,10 +216,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 isAllDay: values.isAllDay,
                 visibility: values.visibility,
               },
-              options: {
-                scope: 'THIS_ONLY',
-                ...(!isEqual(values.repeat, defaultValues.repeat) && { repeat: values.repeat }),
-              },
+              ...((isSeries || isRepeatChanged) && {
+                options: { scope, ...(isRepeatChanged && { repeat: values.repeat }) },
+              }),
             },
             { onSuccess: onClose },
           );

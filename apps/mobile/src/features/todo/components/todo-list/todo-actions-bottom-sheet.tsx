@@ -17,6 +17,7 @@ import {
   ListIcon,
   ListRow,
   MoveRightIcon,
+  RepeatIcon,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -35,8 +36,11 @@ import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
+import { TodoPolicy } from '../../domains/todo.model';
+import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useDeleteTodoMutationOptions } from '../../queries/use-delete-todo-mutation-options';
+import { useStopTodoSeriesMutationOptions } from '../../queries/use-stop-todo-series-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
@@ -87,6 +91,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
+  const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
+  const { selectDeleteScope } = useSelectTodoScope();
 
   useEffect(() => {
     if (todo == null) {
@@ -123,12 +129,27 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!TodoPolicy.isRecurring(todo)) {
+      deleteMutation.mutate(
+        { todoId: todo.id, startDate: todo.startDate },
+        { onSuccess: () => onClose() },
+      );
+      return;
+    }
+
+    const scope = await selectDeleteScope();
+    if (scope == null) {
+      return;
+    }
     deleteMutation.mutate(
-      { todoId: todo.id, startDate: todo.startDate },
+      { todoId: todo.id, startDate: todo.startDate, scope },
       { onSuccess: () => onClose() },
     );
   };
+
+  const handleStopRepeat = () =>
+    stopSeriesMutation.mutate({ todoId: todo.id }, { onSuccess: () => onClose() });
 
   return (
     <VStack gap={8}>
@@ -259,6 +280,30 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
           }
         />
       </PressableFeedback>
+
+      {TodoPolicy.isRecurring(todo) && (
+        <PressableFeedback
+          onPress={handleStopRepeat}
+          isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}
+        >
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            left={
+              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+                <RepeatIcon width={16} height={16} colorClassName="text-gray-7" />
+              </Box>
+            }
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('actions.stopRepeat')}
+                topProps={{ size: 'b2' }}
+              />
+            }
+          />
+        </PressableFeedback>
+      )}
 
       <PressableFeedback onPress={handleDelete} isDisabled={deleteMutation.isPending}>
         <ListRow

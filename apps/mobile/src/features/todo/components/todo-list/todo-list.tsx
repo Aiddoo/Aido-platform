@@ -15,6 +15,7 @@ import {
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   LockIcon,
+  RepeatIcon,
   MoreIcon,
   PlusIcon,
   QueryErrorActions,
@@ -268,6 +269,14 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
       top={
         <HStack gap={4} align="center">
           <TodoLabel isChecked={todo.completed}>{todo.title}</TodoLabel>
+          {TodoPolicy.isRecurring(todo) && (
+            <RepeatIcon
+              width={14}
+              height={14}
+              colorClassName="text-gray-5"
+              accessibilityLabel={t('scope.repeatLabel')}
+            />
+          )}
           {todo.visibility === 'PRIVATE' && (
             <LockIcon width={14} height={14} colorClassName="text-gray-5" />
           )}

@@ -143,6 +143,9 @@ export interface TodoEventMap {
   todo_completed: { todo_id: number; is_completed: boolean };
   todo_deleted: { todo_id: number };
   todo_edited: { todo_id: number; field: string };
+  todo_series_edited: { scope: 'THIS_ONLY' | 'THIS_AND_FOLLOWING' | 'ALL' };
+  todo_series_deleted: { scope: 'THIS_ONLY' | 'THIS_AND_FOLLOWING' | 'ALL' };
+  todo_series_stopped: undefined;
   todo_item_added: { todo_id: number };
   todo_item_completed: { todo_id: number; item_id: number; is_completed: boolean };
   todo_item_updated: { todo_id: number; item_id: number };

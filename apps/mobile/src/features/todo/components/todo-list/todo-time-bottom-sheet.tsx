@@ -18,6 +18,8 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
+import { TodoPolicy } from '../../domains/todo.model';
+import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
@@ -59,6 +61,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
+  const { selectEditScope } = useSelectTodoScope();
 
   useEffect(() => {
     if (todo == null) {
@@ -80,9 +83,15 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
         isAllDay: todo.isAllDay,
       }}
       onCancel={onClose}
-      onChange={({ scheduledTime, isAllDay }) => {
+      onChange={async ({ scheduledTime, isAllDay }) => {
+        const scope = TodoPolicy.isRecurring(todo) ? await selectEditScope() : undefined;
+        // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다
+        if (scope === null) {
+          return;
+        }
         updateSchedule.mutate({
           todoId: todo.id,
+          ...(scope != null && { scope }),
           input: {
             startDate: formatDateKey(editValues.startDate, getDeviceTimezone()),
             endDate: editValues.endDate

@@ -9,11 +9,20 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { cancelTodoListQuery, removeTodoFromList, restoreTodo, snapshotTodo } from './todo-cache';
+import type { TodoEditScope } from '../domains/todo-repeat.model';
+import { isTodoSeriesUnavailableError } from '../domains/todo-series.error';
+import {
+  cancelTodoListQuery,
+  invalidateTodos,
+  removeTodoFromList,
+  restoreTodo,
+  snapshotTodo,
+} from './todo-cache';
 
 interface DeleteTodoMutationParams {
   todoId: number;
   startDate: string;
+  scope?: TodoEditScope;
 }
 
 export const useDeleteTodoMutationOptions = () => {
@@ -24,8 +33,8 @@ export const useDeleteTodoMutationOptions = () => {
   const toast = useAppToast();
 
   return mutationOptions({
-    mutationFn: async ({ todoId }: DeleteTodoMutationParams) => {
-      const result = await todoService.deleteTodo(todoId);
+    mutationFn: async ({ todoId, scope }: DeleteTodoMutationParams) => {
+      const result = await todoService.deleteTodo(todoId, scope);
       return unwrap(result);
     },
     onMutate: async ({ todoId, startDate }) => {
@@ -35,15 +44,24 @@ export const useDeleteTodoMutationOptions = () => {
 
       return { snapshot };
     },
-    onSuccess: (_, { todoId }) => {
+    onSuccess: (_, { todoId, scope }) => {
       toast.success(t('todo:toast.todoDeleted'));
       trackEvent('todo_deleted', { todo_id: todoId });
+      if (scope != null) {
+        trackEvent('todo_series_deleted', { scope });
+        invalidateTodos(queryClient);
+      }
     },
     onError: (error, _variables, context) => {
       haptics.notify('error');
 
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
+      }
+
+      if (isTodoSeriesUnavailableError(error)) {
+        toast.error(t('todo:toast.repeatUnavailable'));
+        return;
       }
 
       if (isApiError(error)) {
