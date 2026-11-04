@@ -75,6 +75,7 @@ import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
+import { sessionPushDeviceReleaserTestProvider } from "./helpers/session-push-device-releaser.provider.js";
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
@@ -171,6 +172,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         DefaultTodoCategorySeeder,
         provisioningSeederTestProvider,
         retentionEnrollerTestProvider,
+        sessionPushDeviceReleaserTestProvider,
         {
           provide: DRIZZLE,
           useValue: client,

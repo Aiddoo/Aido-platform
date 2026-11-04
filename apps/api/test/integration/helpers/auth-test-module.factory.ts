@@ -80,6 +80,7 @@ import {
 import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./retention-enroller.provider.js";
+import { sessionPushDeviceReleaserTestProvider } from "./session-push-device-releaser.provider.js";
 
 export async function createAuthTestModule(
   client: TestDatabaseClient,
@@ -174,6 +175,7 @@ export async function createAuthTestModule(
       DefaultTodoCategorySeeder,
       provisioningSeederTestProvider,
       retentionEnrollerTestProvider,
+      sessionPushDeviceReleaserTestProvider,
       {
         provide: DRIZZLE,
         useValue: client,
