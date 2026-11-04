@@ -22,7 +22,7 @@ import {
 } from '../../constants/voice.constants';
 import { VoiceCapturePolicy, type VoiceCaptureState } from '../../domains/voice-capture.model';
 import { getTranscriptText } from '../../domains/voice-transcript.model';
-import { formatClock } from '../../utils/format-clock';
+import { formatMediaTime } from '../../utils/format-media-time';
 import { SheetEdgeGlow } from '../visualizers/sheet-edge-glow';
 import { VoiceOrb } from '../visualizers/voice-orb';
 import { Waveform } from '../visualizers/waveform';
@@ -228,7 +228,7 @@ function ListeningClock({ state }: { state: VoiceCaptureState }) {
     <HStack gap={6} align="center">
       <Box className="size-2 rounded-full bg-main" />
       <Text size="b4" weight="semibold" shade={7} className="tabular-nums">
-        {formatClock(VoiceCapturePolicy.getElapsedMs(state, now))}
+        {formatMediaTime(VoiceCapturePolicy.getElapsedMs(state, now))}
       </Text>
     </HStack>
   );
