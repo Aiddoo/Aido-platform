@@ -8,6 +8,7 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning-todo.fixture";
 
+import { TodoRescheduledEvent } from "../../../domain/events/todos/todo-rescheduled.event.js";
 import { TodoUpdatedEvent } from "../../../domain/events/todos/todo-updated.event.js";
 import { UpdateTodo } from "./update-todo.use-case.js";
 
@@ -60,6 +61,34 @@ describe("할 일 부분 수정", () => {
     });
     expect(fixture.records.get(1)?.scheduledTime).toEqual(new Date("2026-05-15T03:30:00Z"));
   });
+  it("시간을 바꾸면 리마인더를 다시 잡도록 재예약 이벤트를 낸다", async () => {
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { scheduledTime: "12:30" },
+    });
+    // Then
+    expect(fixture.eventPublisher.events).toContainEqual(
+      new TodoRescheduledEvent(1, fixture.userId, new Date("2026-05-15T03:30:00.000Z")),
+    );
+  });
+
+  it("시각이 그대로면 재예약 이벤트를 내지 않는다", async () => {
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      data: { title: "제목만" },
+    });
+    // Then
+    expect(
+      fixture.eventPublisher.events.filter((event) => event instanceof TodoRescheduledEvent),
+    ).toEqual([]);
+  });
+
   it("명시한 null은 시간을 지워 종일로 맞추고 생략한 endDate와 false 값은 보존한다", async () => {
     // Given
     const saved = fixture.records.get(1);

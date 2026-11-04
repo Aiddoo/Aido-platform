@@ -33,6 +33,7 @@ import { ChangeTodoCategory } from "./application/use-cases/todos/change-todo-ca
 import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
 import { DeleteTodoItem } from "./application/use-cases/todos/delete-todo-item.use-case.js";
 import { DeleteTodo } from "./application/use-cases/todos/delete-todo.use-case.js";
+import { EditTodo } from "./application/use-cases/todos/edit-todo.use-case.js";
 import { GetFriendTodos } from "./application/use-cases/todos/get-friend-todos.use-case.js";
 import { GetTodoById } from "./application/use-cases/todos/get-todo-by-id.use-case.js";
 import { GetTodoResourceLimit } from "./application/use-cases/todos/get-todo-resource-limit.use-case.js";
@@ -333,7 +334,6 @@ export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeries> = {
     TODO_SERIES_REPOSITORY,
     TODO_REMINDER,
     TodoSeriesEditEffects,
-    UNIT_OF_WORK,
     MUTATION_LOCK,
   ],
   useFactory: (
@@ -341,7 +341,6 @@ export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeries> = {
     seriesRepository: ConstructorParameters<typeof StopTodoSeries>[0]["seriesRepository"],
     todoReminder: ConstructorParameters<typeof StopTodoSeries>[0]["todoReminder"],
     effects: ConstructorParameters<typeof StopTodoSeries>[0]["effects"],
-    unitOfWork: ConstructorParameters<typeof StopTodoSeries>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof StopTodoSeries>[0]["mutationLock"],
   ) =>
     new StopTodoSeries({
@@ -349,7 +348,6 @@ export const stopTodoSeriesProvider: FactoryProvider<StopTodoSeries> = {
       seriesRepository,
       todoReminder,
       effects,
-      unitOfWork,
       mutationLock,
       logger: new Logger(StopTodoSeries.name),
     }),
@@ -359,32 +357,26 @@ export const startSeriesFromTodoProvider: FactoryProvider<StartSeriesFromTodo> =
   provide: StartSeriesFromTodo,
   inject: [
     TODO_REPOSITORY,
-    TODO_READ_REPOSITORY,
     TODO_SERIES_REPOSITORY,
     TodoOccurrenceMaterializer,
     TODO_REMINDER,
     TodoCreationEffects,
-    UNIT_OF_WORK,
     MUTATION_LOCK,
   ],
   useFactory: (
     todoRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoRepository"],
-    todoReadRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoReadRepository"],
     seriesRepository: ConstructorParameters<typeof StartSeriesFromTodo>[0]["seriesRepository"],
     materializer: ConstructorParameters<typeof StartSeriesFromTodo>[0]["materializer"],
     todoReminder: ConstructorParameters<typeof StartSeriesFromTodo>[0]["todoReminder"],
     effects: ConstructorParameters<typeof StartSeriesFromTodo>[0]["effects"],
-    unitOfWork: ConstructorParameters<typeof StartSeriesFromTodo>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof StartSeriesFromTodo>[0]["mutationLock"],
   ) =>
     new StartSeriesFromTodo({
       todoRepository,
-      todoReadRepository,
       seriesRepository,
       materializer,
       todoReminder,
       effects,
-      unitOfWork,
       mutationLock,
     }),
 };
@@ -513,6 +505,37 @@ export const toggleTodoCompleteProvider: FactoryProvider<ToggleTodoComplete> = {
       todoCache,
       eventPublisher,
       logger: new Logger(ToggleTodoComplete.name),
+    }),
+};
+
+export const editTodoProvider: FactoryProvider<EditTodo> = {
+  provide: EditTodo,
+  inject: [
+    UpdateTodo,
+    UpdateFollowingTodos,
+    StartSeriesFromTodo,
+    StopTodoSeries,
+    TODO_READ_REPOSITORY,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+  ],
+  useFactory: (
+    updateTodo: ConstructorParameters<typeof EditTodo>[0]["updateTodo"],
+    updateFollowingTodos: ConstructorParameters<typeof EditTodo>[0]["updateFollowingTodos"],
+    startSeriesFromTodo: ConstructorParameters<typeof EditTodo>[0]["startSeriesFromTodo"],
+    stopTodoSeries: ConstructorParameters<typeof EditTodo>[0]["stopTodoSeries"],
+    todoReadRepository: ConstructorParameters<typeof EditTodo>[0]["todoReadRepository"],
+    unitOfWork: ConstructorParameters<typeof EditTodo>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof EditTodo>[0]["mutationLock"],
+  ) =>
+    new EditTodo({
+      updateTodo,
+      updateFollowingTodos,
+      startSeriesFromTodo,
+      stopTodoSeries,
+      todoReadRepository,
+      unitOfWork,
+      mutationLock,
     }),
 };
 

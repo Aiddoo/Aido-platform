@@ -34,7 +34,6 @@ import type { TodoSeriesEditEffects } from "../../services/series/todo-series-ed
 export interface UpdateFollowingTodosInput {
   readonly id: number;
   readonly userId: string;
-  readonly timezone: string;
   readonly title?: string;
   readonly categoryId?: number;
   readonly visibility?: TodoVisibility;
@@ -43,6 +42,14 @@ export interface UpdateFollowingTodosInput {
   readonly isAllDay?: boolean;
   readonly repeat?: TodoRepeat;
   readonly checklist?: readonly { readonly title: string }[];
+}
+
+/** UoW 안에서 저장을 끝낸 결과. responseTodoId는 기준 회차가 다른 행으로 바뀌었을 때 그 행이다. */
+export interface AppliedFollowingEdit {
+  readonly source: TodoSeries;
+  readonly target: TodoSeries;
+  readonly split: boolean;
+  readonly responseTodoId: number;
 }
 
 interface UpdateFollowingTodosDependencies {
@@ -84,40 +91,56 @@ export class UpdateFollowingTodos {
   }
 
   async execute(input: UpdateFollowingTodosInput): Promise<TodoResponse> {
-    const { id, userId } = input;
-    const { todoRepository, seriesRepository, unitOfWork, mutationLock } = this.#dependencies;
-    const edited = await unitOfWork.run(async () => {
-      // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
-      await mutationLock.acquire([
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todoSortOrder(userId),
-        MutationLockKeys.todo(id),
-      ]);
-      const todo = await todoRepository.findByIdAndUserId(id, userId);
-      if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-      }
-      const seriesId = todo.getSeriesId();
-      if (seriesId == null) {
-        throw new ApplicationException(ErrorCode.TODO_0844, {
-          todoId: id,
-          scope: "THIS_AND_FOLLOWING",
-        });
-      }
-      const series = await seriesRepository.lockForUpdate(seriesId);
-      if (series == null || series.getUserId() !== userId) {
-        throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
-      }
-      if (input.categoryId != null) {
-        await this.#dependencies.categoryOwnership.validateOwnership(input.categoryId, userId);
-      }
-      const occurrenceDate = todo.getOccurrenceDate();
-      if (occurrenceDate == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-      }
-      return this.#apply(input, series, toDateString(occurrenceDate));
-    });
+    const { userId } = input;
+    const edited = await this.#dependencies.unitOfWork.run(() => this.apply(input));
+    await this.publish(edited, userId);
 
+    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
+      edited.responseTodoId,
+      userId,
+    );
+    if (response == null) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: edited.responseTodoId });
+    }
+    return response;
+  }
+
+  /** 활성 UoW 안에서 호출한다. 이 회차의 날짜·완료 변경과 한 트랜잭션으로 묶을 때 EditTodo가 부른다. */
+  async apply(input: UpdateFollowingTodosInput): Promise<AppliedFollowingEdit> {
+    const { id, userId } = input;
+    const { todoRepository, seriesRepository, mutationLock } = this.#dependencies;
+    // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
+    await mutationLock.acquire([
+      MutationLockKeys.todoCategory(userId),
+      MutationLockKeys.todoSortOrder(userId),
+      MutationLockKeys.todo(id),
+    ]);
+    const todo = await todoRepository.findByIdAndUserId(id, userId);
+    if (todo == null) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+    }
+    const seriesId = todo.getSeriesId();
+    if (seriesId == null) {
+      throw new ApplicationException(ErrorCode.TODO_0844, {
+        todoId: id,
+        scope: "THIS_AND_FOLLOWING",
+      });
+    }
+    const series = await seriesRepository.lockForUpdate(seriesId);
+    if (series == null || series.getUserId() !== userId) {
+      throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
+    }
+    if (input.categoryId != null) {
+      await this.#dependencies.categoryOwnership.validateOwnership(input.categoryId, userId);
+    }
+    const occurrenceDate = todo.getOccurrenceDate();
+    if (occurrenceDate == null) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+    }
+    return this.#applyTo(input, series, toDateString(occurrenceDate));
+  }
+
+  async publish(edited: AppliedFollowingEdit, userId: string): Promise<void> {
     await this.#dependencies.effects.publish({
       seriesId: edited.target.getId(),
       userId,
@@ -131,18 +154,13 @@ export class UpdateFollowingTodos {
         userId,
       });
     }
-
-    const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
-      edited.responseTodoId,
-      userId,
-    );
-    if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: edited.responseTodoId });
-    }
-    return response;
   }
 
-  async #apply(input: UpdateFollowingTodosInput, series: TodoSeries, pivot: string) {
+  async #applyTo(
+    input: UpdateFollowingTodosInput,
+    series: TodoSeries,
+    pivot: string,
+  ): Promise<AppliedFollowingEdit> {
     const { todoRepository, seriesRepository, materializer, todoReminder } = this.#dependencies;
     const at = now();
     const rule = input.repeat == null ? null : RepeatRule.from(input.repeat);

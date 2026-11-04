@@ -34,6 +34,7 @@ import {
   updateTodoItemProvider,
   updateTodoScheduleProvider,
   updateTodoTitleProvider,
+  editTodoProvider,
   updateTodoProvider,
   updateTodoVisibilityProvider,
 } from "./planning-todos-application.providers.js";
@@ -59,6 +60,7 @@ export const TODO_PROVIDERS = [
   reorderTodoProvider,
   reorderTodoItemsProvider,
   toggleTodoCompleteProvider,
+  editTodoProvider,
   updateTodoProvider,
   updateTodoItemProvider,
   updateTodoScheduleProvider,

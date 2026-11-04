@@ -36,14 +36,12 @@ import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import { StartSeriesFromTodo } from "../../../../application/use-cases/series/start-series-from-todo.use-case.js";
-import { StopTodoSeries } from "../../../../application/use-cases/series/stop-todo-series.use-case.js";
-import { UpdateFollowingTodos } from "../../../../application/use-cases/series/update-following-todos.use-case.js";
 import { AddTodoItem } from "../../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../../application/use-cases/todos/change-todo-category.use-case.js";
 import { CreateTodo } from "../../../../application/use-cases/todos/create-todo.use-case.js";
 import { DeleteTodoItem } from "../../../../application/use-cases/todos/delete-todo-item.use-case.js";
 import { DeleteTodo } from "../../../../application/use-cases/todos/delete-todo.use-case.js";
+import { EditTodo } from "../../../../application/use-cases/todos/edit-todo.use-case.js";
 import { GetFriendTodos } from "../../../../application/use-cases/todos/get-friend-todos.use-case.js";
 import { GetTodoById } from "../../../../application/use-cases/todos/get-todo-by-id.use-case.js";
 import { GetTodoResourceLimit } from "../../../../application/use-cases/todos/get-todo-resource-limit.use-case.js";
@@ -56,7 +54,6 @@ import { UpdateTodoItem } from "../../../../application/use-cases/todos/update-t
 import { UpdateTodoSchedule } from "../../../../application/use-cases/todos/update-todo-schedule.use-case.js";
 import { UpdateTodoTitle } from "../../../../application/use-cases/todos/update-todo-title.use-case.js";
 import { UpdateTodoVisibility } from "../../../../application/use-cases/todos/update-todo-visibility.use-case.js";
-import { UpdateTodo } from "../../../../application/use-cases/todos/update-todo.use-case.js";
 import {
   ChangeTodoCategoryDto,
   CreateRecurringTodoDto,
@@ -100,10 +97,7 @@ export class TodoController {
     private readonly getTodoByIdUseCase: GetTodoById,
     private readonly getFriendTodosUseCase: GetFriendTodos,
     private readonly createTodoUseCase: CreateTodo,
-    private readonly updateTodoUseCase: UpdateTodo,
-    private readonly updateFollowingTodosUseCase: UpdateFollowingTodos,
-    private readonly stopTodoSeriesUseCase: StopTodoSeries,
-    private readonly startSeriesFromTodoUseCase: StartSeriesFromTodo,
+    private readonly editTodoUseCase: EditTodo,
     private readonly toggleTodoCompleteUseCase: ToggleTodoComplete,
     private readonly updateTodoVisibilityUseCase: UpdateTodoVisibility,
     private readonly changeTodoCategoryUseCase: ChangeTodoCategory,
@@ -607,89 +601,35 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
     @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
-    const todo = await this.#applyUpdate(params.id, user.userId, dto, timezone);
+    const todo = await this.editTodoUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      timezone,
+      scope: dto.scope,
+      repeat: dto.repeat,
+      checklist: dto.checklist,
+      data: {
+        title: dto.title,
+        categoryId: dto.categoryId,
+        startDate: dto.startDate == null ? undefined : parseDateOnly(dto.startDate),
+        // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
+        endDate:
+          dto.endDate === undefined
+            ? undefined
+            : dto.endDate === null
+              ? null
+              : parseDateOnly(dto.endDate),
+        scheduledTime: dto.scheduledTime,
+        isAllDay: dto.isAllDay,
+        visibility: dto.visibility,
+        completed: dto.completed,
+      },
+    });
 
     return {
       message: "할 일이 수정되었습니다.",
       todo,
     };
-  }
-
-  /** 요청 모양으로 경로를 고른다. 범위·전환의 상태 판단은 각 UseCase가 한다. */
-  async #applyUpdate(id: number, userId: string, dto: UpdateTodoDto, timezone: string) {
-    const fields = {
-      title: dto.title,
-      categoryId: dto.categoryId,
-      startDate: dto.startDate == null ? undefined : parseDateOnly(dto.startDate),
-      // nullish-strict: PATCH라 undefined는 유지, null은 종료일 지우기다
-      endDate:
-        dto.endDate === undefined
-          ? undefined
-          : dto.endDate === null
-            ? null
-            : parseDateOnly(dto.endDate),
-      scheduledTime: dto.scheduledTime,
-      isAllDay: dto.isAllDay,
-      visibility: dto.visibility,
-      completed: dto.completed,
-    };
-    if (dto.checklist != null && dto.scope !== "THIS_AND_FOLLOWING") {
-      throw new ApplicationException(ErrorCode.TODO_0845, { field: "checklist" });
-    }
-    // nullish-strict: repeat null은 반복 끝내기라 범위를 고른 수정이 아니다
-    if (dto.scope === "THIS_AND_FOLLOWING" && dto.repeat !== null) {
-      const updated = await this.updateFollowingTodosUseCase.execute({
-        id,
-        userId,
-        timezone,
-        title: dto.title,
-        categoryId: dto.categoryId,
-        visibility: dto.visibility,
-        scheduledTime: dto.scheduledTime,
-        isAllDay: dto.isAllDay,
-        repeat: dto.repeat,
-        checklist: dto.checklist,
-      });
-      // 날짜 이동·완료는 범위와 상관없이 이 회차에만 적용한다.
-      // nullish-strict: endDate null도 이 회차의 변경이다
-      if (dto.startDate == null && dto.endDate === undefined && dto.completed == null) {
-        return updated;
-      }
-      return this.updateTodoUseCase.execute({
-        id: updated.id,
-        userId,
-        timezone,
-        data: {
-          startDate: fields.startDate,
-          endDate: fields.endDate,
-          completed: fields.completed,
-        },
-      });
-    }
-    if (dto.repeat != null) {
-      if (dto.scope != null) {
-        throw new ApplicationException(ErrorCode.TODO_0845, { field: "scope" });
-      }
-      await this.updateTodoUseCase.execute({ id, userId, timezone, data: fields });
-      return this.startSeriesFromTodoUseCase.execute({
-        todoId: id,
-        userId,
-        repeat: dto.repeat,
-        timezone,
-      });
-    }
-    // nullish-strict: repeat null은 반복 끝내기, undefined는 변경 없음이다
-    if (dto.repeat === null) {
-      await this.stopTodoSeriesUseCase.execute({ todoId: id, userId });
-      return this.updateTodoUseCase.execute({ id, userId, timezone, data: fields });
-    }
-    return this.updateTodoUseCase.execute({
-      id,
-      userId,
-      timezone,
-      scope: dto.scope,
-      data: fields,
-    });
   }
 
   @Patch(":id/complete")

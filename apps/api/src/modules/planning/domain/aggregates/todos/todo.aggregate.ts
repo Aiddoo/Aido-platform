@@ -178,6 +178,7 @@ export class Todo extends AggregateRoot<TodoProps> {
     }
     const nextSchedule =
       Object.keys(schedulePatch).length > 0 ? this.props.schedule.patch(schedulePatch) : null;
+    const previousTimeMs = this.props.schedule.getScheduledTime()?.getTime();
 
     if (patch.title != null) {
       this.props.title = patch.title;
@@ -196,6 +197,16 @@ export class Todo extends AggregateRoot<TodoProps> {
     this.raise(
       new TodoUpdatedEvent(this.props.id.getValue(), this.props.userId, this.props.completed),
     );
+    if (nextSchedule != null && nextSchedule.getScheduledTime()?.getTime() !== previousTimeMs) {
+      // 수정 화면의 일반 PATCH로 시각을 바꿔도 옛 시각의 예약이 남지 않게 한다.
+      this.raise(
+        new TodoRescheduledEvent(
+          this.props.id.getValue(),
+          this.props.userId,
+          nextSchedule.getScheduledTime(),
+        ),
+      );
+    }
   }
 
   private applyCompletionPatch(requestedCompletion: boolean | undefined): void {

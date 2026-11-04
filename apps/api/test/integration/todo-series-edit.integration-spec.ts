@@ -2,19 +2,22 @@ import { randomUUID } from "node:crypto";
 
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
-import { StartSeriesFromTodo } from "#api/modules/planning/application/use-cases/series/start-series-from-todo.use-case";
-import { StopTodoSeries } from "#api/modules/planning/application/use-cases/series/stop-todo-series.use-case";
 import {
   UpdateFollowingTodos,
   type UpdateFollowingTodosInput,
 } from "#api/modules/planning/application/use-cases/series/update-following-todos.use-case";
 import { CreateTodo } from "#api/modules/planning/application/use-cases/todos/create-todo.use-case";
 import { DeleteTodo } from "#api/modules/planning/application/use-cases/todos/delete-todo.use-case";
+import {
+  EditTodo,
+  type EditTodoInput,
+} from "#api/modules/planning/application/use-cases/todos/edit-todo.use-case";
 import { UpdateTodo } from "#api/modules/planning/application/use-cases/todos/update-todo.use-case";
 import { createEntityId } from "#api/platform/database/entity-id";
 import {
@@ -108,10 +111,24 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     return client.query.todoSeries.findFirst({ where: { id: seriesId } });
   }
 
-  function following(input: Omit<UpdateFollowingTodosInput, "userId" | "timezone">) {
+  function following(input: Omit<UpdateFollowingTodosInput, "userId">) {
+    return context.module.get(UpdateFollowingTodos).execute({ userId, ...input });
+  }
+
+  function edit(
+    id: number,
+    change: Omit<EditTodoInput, "id" | "userId" | "timezone" | "data"> & {
+      readonly data?: EditTodoInput["data"];
+      readonly timezone?: string;
+    },
+  ) {
     return context.module
-      .get(UpdateFollowingTodos)
-      .execute({ userId, timezone: "America/New_York", ...input });
+      .get(EditTodo)
+      .execute({ id, userId, timezone: "UTC", data: {}, ...change });
+  }
+
+  function stop(todoId: number) {
+    return edit(todoId, { repeat: null });
   }
 
   function dateOf(value: Date | null | undefined) {
@@ -377,10 +394,9 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       // Given
       const { seriesId, todos } = await start();
       await complete(todos[3]?.id ?? 0);
-      const stop = context.module.get(StopTodoSeries);
       // When
-      await stop.execute({ todoId: todos[1]?.id ?? 0, userId });
-      const second = stop.execute({ todoId: todos[1]?.id ?? 0, userId });
+      await stop(todos[1]?.id ?? 0);
+      const second = stop(todos[1]?.id ?? 0);
       // Then
       await expect(second).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0846 });
       const rows = await rowsOf(seriesId);
@@ -392,7 +408,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     it("끝낸 뒤에는 회차 채우기가 더 만들지 않고 사용량에서도 빠진다", async () => {
       // Given
       const { seriesId, todos } = await start();
-      await context.module.get(StopTodoSeries).execute({ todoId: todos[0]?.id ?? 0, userId });
+      await stop(todos[0]?.id ?? 0);
       const before = await rowsOf(seriesId);
       // When
       vi.setSystemTime(new Date("2026-11-10T00:00:00.000Z"));
@@ -411,9 +427,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       // When
-      const outcome = context.module
-        .get(StopTodoSeries)
-        .execute({ todoId: todos[0]?.id ?? 0, userId });
+      const outcome = stop(todos[0]?.id ?? 0);
       // Then
       await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0844 });
     });
@@ -504,9 +518,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         requestFingerprint: "series-edit",
       });
       // When
-      const response = await context.module.get(StartSeriesFromTodo).execute({
-        todoId: single?.id ?? 0,
-        userId,
+      const response = await edit(single?.id ?? 0, {
         repeat: { frequency: "DAILY", end: { type: "COUNT", count: 3 } },
         timezone: "Asia/Seoul",
       });
@@ -536,9 +548,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         timezone: "UTC",
       });
       // When
-      const response = await context.module.get(StartSeriesFromTodo).execute({
-        todoId: todos[0]?.id ?? 0,
-        userId,
+      const response = await edit(todos[0]?.id ?? 0, {
         repeat: {
           frequency: "WEEKLY",
           interval: 1,
@@ -566,9 +576,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
       runtime.clear();
       // When
-      await context.module.get(StartSeriesFromTodo).execute({
-        todoId,
-        userId,
+      await edit(todoId, {
         repeat: {
           frequency: "WEEKLY",
           interval: 1,
@@ -587,13 +595,97 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       expect(job?.options.startAfter?.toISOString()).toBe("2026-11-06T08:00:00.000Z");
     });
 
+    it("전환과 함께 시간을 바꿔도 옮겨진 첫 회차의 예약이 옛 시각으로 덮이지 않는다", async () => {
+      // Given
+      const { todos } = await context.module.get(CreateTodo).execute({
+        userId,
+        categoryId,
+        title: "전환",
+        startDate: AT,
+        scheduledTime: "09:00",
+        timezone: "UTC",
+      });
+      const todoId = todos[0]?.id ?? 0;
+      const runtime = context.module.get<FakeJobRuntime>(JOB_RUNTIME);
+      runtime.clear();
+      // When
+      await edit(todoId, {
+        data: { scheduledTime: "10:00" },
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 1,
+          weekdays: ["FRI"],
+          end: { type: "COUNT", count: 1 },
+        },
+      });
+      // Then
+      const jobs = runtime.enqueueCalls.filter(
+        (call) => call.options.idempotencyKey === `reminder_${todoId}_60min`,
+      );
+      expect(jobs.map((job) => job.options.startAfter?.toISOString())).toEqual([
+        "2026-11-06T09:00:00.000Z",
+      ]);
+    });
+
+    it("규칙 상한에 걸리면 함께 보낸 제목도 저장되지 않는다", async () => {
+      // Given
+      const { todos } = await context.module.get(CreateTodo).execute({
+        userId,
+        categoryId,
+        title: "원래 제목",
+        startDate: AT,
+        timezone: "UTC",
+      });
+      const todoId = todos[0]?.id ?? 0;
+      await client.insert(todoSeries).values(
+        Array.from({ length: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER }, () => ({
+          id: randomUUID(),
+          userId,
+          categoryId,
+          title: "규칙",
+          timezone: "UTC",
+          repeatFrequency: "DAILY" as const,
+          startDate: AT,
+          nextOccurrenceDate: AT,
+          sortOrder: 0,
+        })),
+      );
+      // When
+      const outcome = edit(todoId, { data: { title: "새 제목" }, repeat: DAILY_NEVER });
+      // Then
+      await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0842 });
+      const row = await client.query.todo.findFirst({ where: { id: todoId } });
+      expect(row?.title).toBe("원래 제목");
+    });
+
+    it("이미 반복인 회차에 범위 없이 규칙을 주면 함께 보낸 제목도 저장되지 않는다", async () => {
+      // Given
+      const { todos } = await start();
+      const todoId = todos[0]?.id ?? 0;
+      // When
+      const outcome = edit(todoId, { data: { title: "새 제목" }, repeat: DAILY_NEVER });
+      // Then
+      await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0845 });
+      const row = await client.query.todo.findFirst({ where: { id: todoId } });
+      expect(row?.title).toBe("원래 제목");
+    });
+
+    it("반복 끝내기와 함께 온 수정이 실패하면 규칙도 끝나지 않는다", async () => {
+      // Given
+      const { seriesId, todos } = await start();
+      // When
+      const outcome = edit(todos[1]?.id ?? 0, { data: { categoryId: 999_999 }, repeat: null });
+      // Then
+      await expect(outcome).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
+      expect((await seriesRow(seriesId))?.nextOccurrenceDate).not.toBeNull();
+      expect(await rowsOf(seriesId)).toHaveLength(todos.length);
+    });
+
     it("이미 반복인 회차에 범위 없이 규칙을 주면 TODO_0845다", async () => {
       // Given
       const { todos } = await start();
       // When
-      const outcome = context.module.get(StartSeriesFromTodo).execute({
-        todoId: todos[0]?.id ?? 0,
-        userId,
+      const outcome = edit(todos[0]?.id ?? 0, {
         repeat: DAILY_NEVER,
         timezone: "UTC",
       });
@@ -680,8 +772,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         },
         {
           name: "반복 끝내기",
-          contender: (todoId: number) =>
-            context.module.get(StopTodoSeries).execute({ todoId, userId }),
+          contender: (todoId: number) => stop(todoId),
         },
         {
           name: "이후 삭제",
