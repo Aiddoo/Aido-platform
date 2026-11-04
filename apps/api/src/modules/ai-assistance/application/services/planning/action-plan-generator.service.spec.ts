@@ -96,7 +96,7 @@ describe("ActionPlanGenerator", () => {
     { kind: "USER_SPEND_LIMITED", errorCode: ErrorCode.AI_1310 },
     { kind: "BLOCKED", errorCode: ErrorCode.AI_1302 },
   ] as const)(
-    "$kind 실패는 $errorCode이고 차감 여부는 호출자가 정하도록 담지 않는다",
+    "$kind 실패는 $errorCode이고 호출부가 환불할 실패임을 charged:false로 담는다",
     async ({ kind, errorCode }) => {
       // Given
       const { aiGenerator, generator } = setup();
@@ -104,7 +104,7 @@ describe("ActionPlanGenerator", () => {
       // When
       const failure = generator.generateQuickPlan({ ...planningInput, text: "회의" });
       // Then
-      await expect(failure).rejects.toMatchObject({ errorCode, details: undefined });
+      await expect(failure).rejects.toMatchObject({ errorCode, details: { charged: false } });
     },
   );
 

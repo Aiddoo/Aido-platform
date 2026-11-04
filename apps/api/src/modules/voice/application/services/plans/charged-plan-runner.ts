@@ -3,12 +3,14 @@ import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
+import type { AiTaskId } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import {
+  readFeatureQuotaOrNull,
+  withoutChargedClaim,
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
-import { VoiceLogEvent } from "../../observability/plans/voice-log.events.js";
 import type { PlanResultReplayPort } from "../../ports/plans/plan-result-replay.port.js";
 
 /**
@@ -26,7 +28,7 @@ export interface ChargedPlanRequest<T> {
   readonly userId: string;
   readonly feature: MeteredFeatureKey;
   /** 차감한 작업 id. 원장에 남고, 같은 키의 다른 작업을 가린다 */
-  readonly reason: string;
+  readonly reason: AiTaskId;
   readonly idempotencyKey: string;
   readonly requestHash: string;
   readonly replay: PlanResultReplayPort<T>;
@@ -44,13 +46,6 @@ export interface ChargedPlanResult<T> {
 interface ChargedPlanRunnerDependencies {
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly logger: Pick<ApplicationLogger, "warn">;
-}
-
-/** 환불을 마친 실패만 "차감하지 않았다"고 알린다. 환불에 실패했으면 차감 여부를 말하지 않는다. */
-function afterRefund(error: unknown, refunded: boolean): unknown {
-  return refunded && error instanceof ErrorCodedException
-    ? new ApplicationException(error.errorCode, { charged: false })
-    : error;
 }
 
 /** 돈이 드는 계획 생성의 사용량 흐름: 호출 전 예약 → 결과에 따라 확정·환불. 같은 키는 한 번만 차감한다. */
@@ -79,30 +74,32 @@ export class ChargedPlanRunner {
     try {
       generated = await request.generate();
     } catch (error) {
-      throw afterRefund(error, await quota.refund(reservation, "FAILED"));
+      const refunded = await quota.refund(reservation, "FAILED");
+      throw refunded ? error : withoutChargedClaim(error);
     }
     const { result, outcome } = generated;
     return match(outcome)
       .with("EMPTY", async () => {
         const refunded = await quota.refund(reservation, "NO_ACTION");
-        throw afterRefund(new ApplicationException(ErrorCode.AI_1302), refunded);
+        const empty = new ApplicationException(ErrorCode.AI_1302, { charged: false });
+        throw refunded ? empty : withoutChargedClaim(empty);
       })
       .with("NO_ACTION", async () => {
         const refunded = await quota.refund(reservation, "NO_ACTION");
-        return { result, charged: !refunded, featureQuota: await this.#readQuota(userId, feature) };
+        return { result, charged: !refunded, featureQuota: await this.#readQuota(request) };
       })
       .with("CHARGE", async () => {
         // 확정보다 먼저 기억한다. 사이에 온 재요청은 처리 중(AI_1314)이라 결과 없음(AI_1317)을 보지 않는다.
         await replay.remember(userId, idempotencyKey, result);
         await quota.commit(reservation);
-        return { result, charged: true, featureQuota: await this.#readQuota(userId, feature) };
+        return { result, charged: true, featureQuota: await this.#readQuota(request) };
       })
       .exhaustive();
   }
 
   async #replay<T>(request: ChargedPlanRequest<T>): Promise<ChargedPlanResult<T>> {
-    const { userId, feature, idempotencyKey, replay } = request;
-    const featureQuota = await this.#readQuota(userId, feature);
+    const { userId, idempotencyKey, replay } = request;
+    const featureQuota = await this.#readQuota(request);
     const result = await replay.recall(userId, idempotencyKey);
     if (result == null) {
       throw new ApplicationException(ErrorCode.AI_1317, { charged: false, featureQuota });
@@ -110,19 +107,8 @@ export class ChargedPlanRunner {
     return { result, charged: true, featureQuota };
   }
 
-  async #readQuota(
-    userId: string,
-    feature: MeteredFeatureKey,
-  ): Promise<MeteredFeatureQuota | null> {
-    try {
-      return await this.#dependencies.quota.read(userId, feature);
-    } catch (error) {
-      this.#dependencies.logger.warn({
-        event: VoiceLogEvent.QUOTA_READ_FAILED,
-        feature,
-        errorType: toErrorType(error),
-      });
-      return null;
-    }
+  #readQuota<T>(request: ChargedPlanRequest<T>): Promise<MeteredFeatureQuota | null> {
+    const { userId, feature, reason } = request;
+    return readFeatureQuotaOrNull(this.#dependencies, { userId, feature, task: reason });
   }
 }

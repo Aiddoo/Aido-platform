@@ -114,6 +114,7 @@ export class ParseMemo {
     }
     const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
       userId,
+      feature: "AI_PARSE",
       task: parseMemoPrompt.id,
     });
     return { ...parsed.result, featureQuota };

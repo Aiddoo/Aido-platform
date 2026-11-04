@@ -1,4 +1,5 @@
 import type { ErrorCodeType } from "@aido/api/errors";
+import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -34,13 +35,18 @@ export async function readFeatureQuotaOrNull(
     readonly quota: Pick<QuotaLedgerPort, "read">;
     readonly logger: Pick<ApplicationLogger, "warn">;
   },
-  input: { readonly userId: string; readonly task: AiTaskId },
+  input: {
+    readonly userId: string;
+    readonly feature: MeteredFeatureKey;
+    readonly task: AiTaskId;
+  },
 ): Promise<MeteredFeatureQuota | null> {
   try {
-    return await dependencies.quota.read(input.userId, "AI_PARSE");
+    return await dependencies.quota.read(input.userId, input.feature);
   } catch (error) {
     dependencies.logger.warn({
       event: AiGenerationLogEvent.QUOTA_READ_FAILED,
+      feature: input.feature,
       task: input.task,
       errorType: toErrorType(error),
     });

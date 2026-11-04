@@ -95,6 +95,7 @@ describe("ParseMemo", () => {
     expect([...fixture.repository.charges.values()][0]).toMatchObject({ status: "COMMITTED" });
     expect(fixture.logger.warn).toHaveBeenCalledWith({
       event: "ai.generation.quota-read-failed",
+      feature: "AI_PARSE",
       task: "parse-memo",
       errorType: "TypeError",
     });

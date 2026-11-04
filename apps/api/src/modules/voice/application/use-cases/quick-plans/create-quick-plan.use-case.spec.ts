@@ -154,7 +154,7 @@ describe("CreateQuickPlan", () => {
     expect(response.featureQuota).toBeNull();
     expect(response.plan.actions).toHaveLength(1);
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "voice.quota-read.failed" }),
+      expect.objectContaining({ event: "ai.generation.quota-read-failed", feature: "AI_PARSE" }),
     );
     quota.read = async () => {
       throw new Error("db down");

@@ -124,6 +124,7 @@ export class ParseTodo {
     }
     const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
       userId,
+      feature: "AI_PARSE",
       task: parseTodoPrompt.id,
     });
     return { ...parsed.result, featureQuota };

@@ -3,6 +3,10 @@ export {
   USER_LOCALE_PREFERENCE_READER,
   type UserLocalePreferenceReaderPort,
 } from "./application/ports/parsing/user-locale-preference.reader.port.js";
+export {
+  readFeatureQuotaOrNull,
+  withoutChargedClaim,
+} from "./application/services/parsing/ai-parsing-error-code.js";
 export { resolveRequestLocale } from "./application/services/parsing/resolve-request-locale.js";
 export {
   AI_DATA_SHARING_CONSENT_DECISION_READER,

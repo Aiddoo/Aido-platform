@@ -9,5 +9,4 @@ export const VoiceLogEvent = {
   PLAN_APPLICATION_PURGED: "voice.plan-application.purged",
   PLAN_APPLICATION_PURGE_FAILED: "voice.plan-application.purge-failed",
   PLAN_CLEANUP_SCHEDULER_REGISTERED: "voice.plan-application.scheduler-registered",
-  QUOTA_READ_FAILED: "voice.quota-read.failed",
 } as const;
