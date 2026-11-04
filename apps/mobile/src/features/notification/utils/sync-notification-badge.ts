@@ -3,9 +3,10 @@ import { errorMessageOf, isConnectivityError, toError } from '@src/shared/errors
 
 import type { NotificationService } from '../apis/notification.service';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import type { NotificationAuthStatus } from './navigation/notification-response-disposition';
 
 interface SyncNotificationBadgeParams {
-  isAuthenticated: boolean;
+  authStatus: NotificationAuthStatus;
   isOnline: boolean;
   notificationService: Pick<NotificationService, 'syncBadgeCount' | 'clearBadge'>;
   logger: Logger;
@@ -13,12 +14,17 @@ interface SyncNotificationBadgeParams {
 
 /** 앱 아이콘 배지를 읽지 않은 알림 수에 맞춘다. 화면 뒤 작업이라 사용자에게 오류를 보이지 않는다 */
 export const syncNotificationBadge = async ({
-  isAuthenticated,
+  authStatus,
   isOnline,
   notificationService,
   logger,
 }: SyncNotificationBadgeParams): Promise<void> => {
-  if (!isAuthenticated) {
+  // 콜드 스타트의 인증 확인 중(loading·locked)은 로그아웃이 아니다. 지우면 읽지 않은 알림이 있어도 배지가 사라진다
+  if (authStatus === 'loading' || authStatus === 'locked') {
+    return;
+  }
+
+  if (authStatus === 'unauthenticated') {
     await notificationService
       .clearBadge()
       .catch((error) => logger.error(NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED, toError(error)));

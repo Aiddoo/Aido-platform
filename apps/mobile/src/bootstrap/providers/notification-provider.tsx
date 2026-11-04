@@ -3,7 +3,10 @@ import { useAutomaticPushRegistration } from '@src/features/activation/hooks/use
 import { NOTIFICATION_LOG_EVENT } from '@src/features/notification/constants/notification-log-events';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
-import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
+import {
+  getNotificationResponseDisposition,
+  type NotificationAuthStatus,
+} from '@src/features/notification/utils/navigation/notification-response-disposition';
 import { syncNotificationBadge } from '@src/features/notification/utils/sync-notification-badge';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
@@ -63,7 +66,7 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
     isAuthenticated,
     canRegisterPushAutomatically,
   });
-  useNotificationBadgeSync(isAuthenticated);
+  useNotificationBadgeSync(status);
 
   return children;
 }
@@ -322,14 +325,14 @@ function usePushLocaleSync({
   }, [canRegisterPushAutomatically, isAuthenticated, logger, pushDeviceService]);
 }
 
-function useNotificationBadgeSync(isAuthenticated: boolean) {
+function useNotificationBadgeSync(authStatus: NotificationAuthStatus) {
   const notificationService = useNotificationService();
   const logger = useLogger();
   const isOnline = useIsOnline();
 
   useEffect(() => {
-    syncNotificationBadge({ isAuthenticated, isOnline, notificationService, logger });
-  }, [isAuthenticated, isOnline, logger, notificationService]);
+    syncNotificationBadge({ authStatus, isOnline, notificationService, logger });
+  }, [authStatus, isOnline, logger, notificationService]);
 }
 
 function WebNotificationProvider({ children }: PropsWithChildren) {
