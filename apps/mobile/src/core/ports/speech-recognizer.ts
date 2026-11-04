@@ -54,6 +54,8 @@ export interface SpeechCapabilities {
   isAvailable: boolean;
   /** 이 언어를 기기 안에서 인식할 수 있다(Android는 언어 모델이 설치돼 있어야 한다) */
   canRecognizeOnDevice: boolean;
+  /** 기기 인식을 지원하지만 이 언어 모델이 없어 받을 수 있다(Android) */
+  canDownloadOnDeviceModel: boolean;
   canSaveRecording: boolean;
   /** 말 사이 침묵에도 끊기지 않는 연속 인식(Android 13+) */
   canContinue: boolean;

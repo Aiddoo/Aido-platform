@@ -12,6 +12,8 @@ import { isRecordingFileExpired } from '../domains/voice-note.model';
 interface SaveRecordingInput {
   accountId: string;
   draftId: string;
+  /** 초안의 몇 번째 조각인지. 멈췄다 이어 들으면 파일이 조각마다 하나다 */
+  partIndex: number;
   /** 인식기가 `recording-saved`로 알려 준 파일 */
   sourceUri: string;
 }
@@ -70,8 +72,8 @@ export function createVoiceRecordingRepository(
       }
     },
 
-    save: async ({ accountId, draftId, sourceUri }) => {
-      const fileName = `${encodeURIComponent(draftId)}.${getExtension(sourceUri)}`;
+    save: async ({ accountId, draftId, partIndex, sourceUri }) => {
+      const fileName = `${encodeURIComponent(draftId)}-${partIndex}.${getExtension(sourceUri)}`;
       try {
         files.ensureDirectory(ownerDirectory(accountId));
         await files.moveFile(sourceUri, ownerDirectory(accountId), fileName);

@@ -137,6 +137,8 @@ export const expoSpeechRecognizerGateway: SpeechRecognizer = {
     return {
       isAvailable: ExpoSpeechRecognitionModule.isRecognitionAvailable(),
       canRecognizeOnDevice,
+      canDownloadOnDeviceModel:
+        Platform.OS === 'android' && supportsOnDevice && !canRecognizeOnDevice,
       canSaveRecording: ExpoSpeechRecognitionModule.supportsRecording(),
       canContinue: supportsContinuousRecognition(),
     };

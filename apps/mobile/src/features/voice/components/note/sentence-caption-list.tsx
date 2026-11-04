@@ -20,6 +20,8 @@ interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'chi
   sentences: readonly VoiceNoteSentence[];
   /** 아직 인식 중인 꼬리. 확정되기 전이라 회색으로 그린다 */
   interimText?: string;
+  /** 녹음 중이면 아래부터 쌓이며 따라 내려가고, 사용자가 위로 올리면 멈춘다 */
+  isLive?: boolean;
   /** 재생 위치가 속한 문장 */
   activeSentenceIndex?: number;
   /** 주면 문장을 눌러 그 시각부터 들을 수 있다 */
@@ -30,6 +32,7 @@ interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'chi
 export function SentenceCaptionList({
   sentences,
   interimText,
+  isLive = false,
   activeSentenceIndex,
   onPressSentence,
   ...boxProps
@@ -53,10 +56,11 @@ export function SentenceCaptionList({
             .exhaustive()
         }
         getItemType={(item) => item.type}
-        maintainVisibleContentPosition={{
-          autoscrollToBottomThreshold: AUTOSCROLL_THRESHOLD,
-          startRenderingFromBottom: true,
-        }}
+        maintainVisibleContentPosition={
+          isLive
+            ? { autoscrollToBottomThreshold: AUTOSCROLL_THRESHOLD, startRenderingFromBottom: true }
+            : undefined
+        }
         ItemSeparatorComponent={() => <Box className="h-2" />}
         ListEmptyComponent={
           <Text size="b3" shade={5} align="center" lineBreakStrategyIOS="hangul-word">

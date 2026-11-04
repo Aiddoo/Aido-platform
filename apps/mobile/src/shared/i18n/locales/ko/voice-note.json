@@ -1,7 +1,8 @@
 {
   "timer": {
-    "limit": "{{time}}까지",
-    "a11y": "녹음 시간 {{elapsed}}, 최대 {{limit}}"
+    "remaining": "{{time}} 남음",
+    "a11y": "녹음 시간 {{elapsed}}, 남은 시간 {{remaining}}",
+    "a11yNoLimit": "녹음 시간 {{elapsed}}"
   },
   "waveform": {
     "a11y": "녹음 파형"
@@ -36,6 +37,92 @@
     },
     "characters": "{{amount}}자",
     "marks": "깃발 {{count}}개",
-    "hint": "보통 10초 안에 끝나요. 화면을 닫아도 글자는 남아요."
+    "hint": "보통 10초 안에 끝나요. 화면을 닫아도 글자는 남아요.",
+    "title": "정리하고 있어요",
+    "readyTitle": "들은 내용",
+    "action": "정리하기",
+    "retry": "다시 정리",
+    "cost": "1번 사용 · 이번 달 {{amount}}번 남음",
+    "usedUp": "이번 달 다 씀",
+    "notCharged": "횟수는 차감되지 않아요",
+    "kept": "글자는 그대로 남아 있어요."
+  },
+  "start": {
+    "label": "말로 메모하기"
+  },
+  "coach": {
+    "noteStart": {
+      "title": "말로 메모해보세요",
+      "description": "회의·강의를 들려주면 요약하고 할 일을 찾아드려요. 녹음 파일은 Aido 서버로 보내지 않아요."
+    },
+    "keyPoint": {
+      "title": "시간을 누르면 그때부터 들려요",
+      "description": "깃발은 녹음할 때 \"중요해요\"로 표시한 순간이에요."
+    }
+  },
+  "record": {
+    "title": "말로 메모하기",
+    "close": "닫기",
+    "pause": "일시정지",
+    "finish": "끝내기",
+    "mark": "중요해요",
+    "privacy": "녹음 파일은 Aido 서버로 보내지 않아요",
+    "pausedLabel": "잠시 멈춤",
+    "pausedTitle": "잠깐 멈췄어요",
+    "pausedDescription": {
+      "app-background": "다른 앱으로 가서 멈췄어요. 들은 내용은 모두 남아 있어요.",
+      "interrupted": "전화나 다른 소리 때문에 멈췄어요. 들은 내용은 모두 남아 있어요.",
+      "user": "들은 내용은 모두 남아 있어요.",
+      "limit": "한 번에 들을 수 있는 시간을 다 썼어요. 들은 내용은 모두 남아 있어요."
+    },
+    "resume": "이어서 듣기",
+    "summarize": "여기까지 정리",
+    "failedTitle": "듣기가 멈췄어요",
+    "failedDescription": "들은 내용은 모두 남아 있어요. 이어서 듣거나 여기까지 정리할 수 있어요.",
+    "failedPermission": "마이크나 음성 인식을 쓸 수 없어요. 설정에서 권한을 확인해주세요.",
+    "leaveTitle": "녹음을 끝낼까요?",
+    "leaveDescription": "들은 내용은 메모 탭에 남겨둬요.",
+    "leaveConfirm": "끝내기",
+    "leaveCancel": "계속 듣기",
+    "empty": "말이 들리지 않았어요"
+  },
+  "limit": {
+    "title": "무료는 {{minutes}}분까지 들어요",
+    "description": "지금까지 들은 내용은 정리해드릴게요. 프리미엄은 {{premiumMinutes}}분까지 이어서 들어요.",
+    "summarize": "여기까지 정리하기",
+    "premium": "한 번에 {{minutes}}분까지 들어요. 여기까지 남겨둘게요."
+  },
+  "offlineModel": {
+    "title": "기기 음성 인식을 받을까요?",
+    "description": "받아두면 말을 기기 안에서 글자로 바꿔요. 받지 않으면 인터넷으로 인식해요.",
+    "confirm": "받기",
+    "cancel": "나중에",
+    "scheduled": "받는 동안은 인터넷으로 인식해요"
+  },
+  "result": {
+    "defaultTitle": "말로 남긴 메모",
+    "meta": "{{date}} · {{duration}}",
+    "metaMarks": "{{date}} · {{duration}} · 중요 {{amount}}개",
+    "tabs": {
+      "summary": "요약",
+      "todos": "할 일 {{amount}}",
+      "transcript": "전체 글"
+    },
+    "noTodos": "할 일로 나눌 내용은 없었어요. 요약을 남겨뒀어요",
+    "applied": "할 일을 추가했어요",
+    "saveMemo": "메모로 저장",
+    "memoSaved": "메모로 저장했어요",
+    "delete": "이 메모 지우기",
+    "deleteTitle": "이 메모를 지울까요?",
+    "deleteDescription": "글자와 녹음 파일을 기기에서 지워요. 되돌릴 수 없어요.",
+    "deleteConfirm": "지우기",
+    "deleteCancel": "취소",
+    "notFound": "메모를 찾을 수 없어요",
+    "close": "닫기"
+  },
+  "drafts": {
+    "title": "말로 남긴 메모",
+    "notDigested": "정리 전",
+    "digested": "정리함"
   }
 }

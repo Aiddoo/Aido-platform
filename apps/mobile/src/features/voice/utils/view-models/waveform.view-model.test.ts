@@ -1,5 +1,7 @@
 import { createVoiceNoteSentence } from '../../__tests__/voice-note.factories';
 import {
+  appendLevelSample,
+  createLevelSampler,
   createSpeechLevels,
   getFlagBarIndexes,
   getTimelineWindow,
@@ -72,5 +74,18 @@ describe('resampleLevels', () => {
 
     // Then
     expect(result).toEqual([0.4, 0.4, 0.8, 0.8]);
+  });
+});
+
+describe('appendLevelSample', () => {
+  test('음량 두 번을 파형 한 칸으로 모으고 큰 값을 남긴다', () => {
+    // Given
+    const sampler = createLevelSampler();
+
+    // When
+    const next = appendLevelSample(appendLevelSample(sampler, 0.2), 0.7);
+
+    // Then
+    expect(next.levels).toEqual([0.7]);
   });
 });

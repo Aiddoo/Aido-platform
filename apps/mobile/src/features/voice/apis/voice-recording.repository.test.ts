@@ -20,11 +20,16 @@ describe('VoiceRecordingRepository', () => {
     const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav', { sizeBytes: 1_900_000 });
 
     // When
-    const fileName = await repository.save({ accountId: 'user-1', draftId: 'draft-1', sourceUri });
+    const fileName = await repository.save({
+      accountId: 'user-1',
+      draftId: 'draft-1',
+      partIndex: 0,
+      sourceUri,
+    });
 
     // Then
-    expect(fileName).toBe('draft-1.wav');
-    expect(repository.findUri('user-1', 'draft-1.wav')).toBeDefined();
+    expect(fileName).toBe('draft-1-0.wav');
+    expect(repository.findUri('user-1', 'draft-1-0.wav')).toBeDefined();
     expect(files.hasFile(OWNER_DIRECTORY, 'recording_abc.wav')).toBe(false);
   });
 
@@ -35,7 +40,12 @@ describe('VoiceRecordingRepository', () => {
     files.failNextMove(new Error('ENOSPC'));
 
     // When
-    const fileName = await repository.save({ accountId: 'user-1', draftId: 'draft-1', sourceUri });
+    const fileName = await repository.save({
+      accountId: 'user-1',
+      draftId: 'draft-1',
+      partIndex: 0,
+      sourceUri,
+    });
 
     // Then
     expect(fileName).toBeNull();
@@ -75,14 +85,14 @@ describe('VoiceRecordingRepository', () => {
     expect(total).toBe(3_500);
   });
 
-  test('초안이 가리키지 않고 30일이 지난 파일만 지운다', () => {
+  test('초안이 가리키지 않고 하루가 지난 파일만 지운다', () => {
     // Given
     const { files, repository } = createRepository();
     const old = new Date('2026-11-01T00:00:00.000Z');
     files.addFile(OWNER_DIRECTORY, 'orphan-old.wav', { modifiedAt: old });
     files.addFile(OWNER_DIRECTORY, 'referenced-old.wav', { modifiedAt: old });
     files.addFile(OWNER_DIRECTORY, 'orphan-new.wav', {
-      modifiedAt: new Date('2026-12-04T00:00:00.000Z'),
+      modifiedAt: new Date(NOW.getTime() - 60 * 60 * 1_000),
     });
 
     // When

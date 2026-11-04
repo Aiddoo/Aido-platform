@@ -8,12 +8,14 @@ module.exports = {
   // d3-shape·d3-path는 ESM 전용(.mjs)으로 배포된다. preset의 [jt]sx? 변환에 .mjs만 더한다
   transform: { '^.+\\.mjs$': 'babel-jest' },
   transformIgnorePatterns: [
-    'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation|@revenuecat|d3-shape|d3-path))',
+    'node_modules/(?!(.pnpm/[^/]+/node_modules/)?(react-native|@react-native|expo|@expo|heroui-native|uniwind|tailwind-variants|tailwind-merge|@gorhom|react-native-reanimated|react-native-gesture-handler|react-native-svg|react-native-worklets|ky|standard-navigation|@revenuecat|@shopify\/flash-list|d3-shape|d3-path))',
   ],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     // .svg는 별칭보다 먼저 잡아야 한다 — @assets/... 규칙이 먼저 걸리면 에셋으로 새어 나간다
     '\\.svg$': '<rootDir>/src/shared/__tests__/mocks/svg.tsx',
+
+    '^@shopify/react-native-skia$': '<rootDir>/src/shared/__tests__/mocks/react-native-skia.tsx',
 
     // Path aliases
     '^@src/(.*)$': '<rootDir>/src/$1',

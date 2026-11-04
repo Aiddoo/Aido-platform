@@ -24,7 +24,7 @@ describe('VoiceNoteStorageService', () => {
   test('초안을 버리면 그 녹음 파일도 함께 지운다', () => {
     // Given
     const { files, service } = createService();
-    files.addFile(OWNER_DIRECTORY, 'draft-1.wav');
+    files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav');
     service.drafts.save('user-1', createVoiceNoteFixture());
 
     // When
@@ -32,16 +32,16 @@ describe('VoiceNoteStorageService', () => {
 
     // Then
     expect(service.drafts.find('user-1', 'draft-1')).toBeUndefined();
-    expect(files.hasFile(OWNER_DIRECTORY, 'draft-1.wav')).toBe(false);
+    expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
   });
 
   test('30일이 지난 초안은 녹음과 함께 지우고 최근 초안은 남긴다', () => {
     // Given
     const { files, service } = createService();
-    files.addFile(OWNER_DIRECTORY, 'draft-1.wav', {
+    files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', {
       modifiedAt: new Date('2026-11-01T00:00:00.000Z'),
     });
-    files.addFile(OWNER_DIRECTORY, 'draft-2.wav', {
+    files.addFile(OWNER_DIRECTORY, 'draft-2-0.wav', {
       modifiedAt: new Date('2026-12-01T00:00:00.000Z'),
     });
     service.drafts.save('user-1', createVoiceNoteFixture());
@@ -57,10 +57,8 @@ describe('VoiceNoteStorageService', () => {
     service.removeExpired('user-1');
 
     // Then
-    expect(service.drafts.findAll('user-1').map((note) => note.recordingFileName)).toEqual([
-      'draft-2.wav',
-    ]);
-    expect(files.hasFile(OWNER_DIRECTORY, 'draft-1.wav')).toBe(false);
-    expect(files.hasFile(OWNER_DIRECTORY, 'draft-2.wav')).toBe(true);
+    expect(service.drafts.findAll('user-1').map((note) => note.draftId)).toEqual(['draft-2']);
+    expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
+    expect(files.hasFile(OWNER_DIRECTORY, 'draft-2-0.wav')).toBe(true);
   });
 });

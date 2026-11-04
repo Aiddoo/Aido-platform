@@ -9,6 +9,7 @@ const GRANTED: PermissionSnapshot = { isGranted: true, canAskAgain: true };
 const FULL_CAPABILITIES: SpeechCapabilities = {
   isAvailable: true,
   canRecognizeOnDevice: true,
+  canDownloadOnDeviceModel: false,
   canSaveRecording: true,
   canContinue: true,
 };

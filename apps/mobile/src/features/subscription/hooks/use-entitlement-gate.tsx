@@ -118,6 +118,10 @@ export function useEntitlementGate(
           })
           .exhaustive();
       },
+      /** 스냅샷으로 알 수 없는 한도(녹음 길이)에 닿았을 때 같은 안내를 띄운다 */
+      showLimit: (options?: EntitlementGateDialogOptions) => {
+        open(feature, 'limit-reached', 'precheck', options);
+      },
       /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다. 그 밖의 오류는 부른 쪽이 처리한다 */
       handleError: (error: unknown, options?: EntitlementGateDialogOptions): boolean => {
         const limited = findLimitedFeature(error);

@@ -36,7 +36,7 @@ export class VoiceNoteStorageService {
     expired.forEach((note) => this.#remove(accountId, note));
 
     const referencedFileNames = new Set(
-      alive.flatMap((note) => (note.recordingFileName == null ? [] : [note.recordingFileName])),
+      alive.flatMap((note) => note.recordings.map((recording) => recording.fileName)),
     );
     this.recordings.removeExpired(accountId, now, referencedFileNames);
   };
@@ -53,9 +53,7 @@ export class VoiceNoteStorageService {
   };
 
   #remove(accountId: string, note: VoiceNote): void {
-    if (note.recordingFileName != null) {
-      this.recordings.remove(accountId, note.recordingFileName);
-    }
+    note.recordings.forEach((recording) => this.recordings.remove(accountId, recording.fileName));
     this.drafts.remove(accountId, note.draftId);
   }
 }

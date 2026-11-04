@@ -24,7 +24,16 @@ import { toAnalyticsSource } from '../utils/analytics/voice-plan-analytics';
  */
 export function usePlanFailureHandler(
   feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>,
-  { surface, onSubscribe }: { surface: EntitlementGateSurface; onSubscribe?: () => void },
+  {
+    surface,
+    onSubscribe,
+    showsFailureInline = false,
+  }: {
+    surface: EntitlementGateSurface;
+    onSubscribe?: () => void;
+    /** 화면이 실패를 직접 보여 주면 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다 */
+    showsFailureInline?: boolean;
+  },
 ) {
   const haptics = useHaptics();
   const queryClient = useQueryClient();
@@ -50,6 +59,10 @@ export function usePlanFailureHandler(
     const featureQuota = findErrorFeatureQuota(error);
     if (featureQuota != null) {
       setFeatureQuota(queryClient, featureQuota);
+    }
+
+    if (showsFailureInline) {
+      return;
     }
 
     // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다

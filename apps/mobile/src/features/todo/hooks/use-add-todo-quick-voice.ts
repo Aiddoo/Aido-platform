@@ -1,3 +1,4 @@
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
@@ -15,6 +16,7 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
@@ -112,5 +114,10 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     session.cancel();
   };
 
-  return { ...session, locale, setLocale, start, restart, typeInstead };
+  const changeLocale = (nextLocale: SpeechLocale) => {
+    setLocale(nextLocale);
+    session.changeLocale(nextLocale).catch(noop);
+  };
+
+  return { ...session, locale, setLocale: changeLocale, start, restart, typeInstead };
 }

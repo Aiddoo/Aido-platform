@@ -1,4 +1,4 @@
-import { applyActionPlanResponseSchema, type VoiceNoteDigestRequest } from '@aido/api';
+import { applyActionPlanResponseSchema } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
@@ -6,6 +6,7 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
+import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import type {
   AppliedPlanResult,
   PlannedAction,
@@ -17,6 +18,7 @@ import {
   quickPlanEnvelopeSchema,
   toApplyActionPlanRequest,
   toQuickPlanResult,
+  toVoiceNoteDigestRequest,
   toVoiceNoteDigestResult,
   voiceNoteDigestEnvelopeSchema,
 } from './voice-plan.mapper';
@@ -69,13 +71,19 @@ export class VoiceService {
   };
 
   createVoiceNoteDigest = async (
-    input: VoiceNoteDigestRequest,
+    input: VoiceNoteDigestInput,
     idempotencyKey: string,
+    signal?: AbortSignal,
   ): Promise<Result<VoiceNoteDigestResult, ApiError>> => {
-    const result = await this.#httpClient.post('v1/voice-notes/digest', input, {
-      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
-      timeout: DIGEST_TIMEOUT_MS,
-    });
+    const result = await this.#httpClient.post(
+      'v1/voice-notes/digest',
+      toVoiceNoteDigestRequest(input),
+      {
+        headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+        timeout: DIGEST_TIMEOUT_MS,
+        signal,
+      },
+    );
     if (!result.ok) {
       return result;
     }

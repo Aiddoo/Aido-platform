@@ -1,5 +1,8 @@
 export const VOICE_NOTE_RETENTION_DAYS = 30;
 
+/** 초안이 가리키지 않는 녹음 파일(지운 초안의 뒤늦은 파일)을 남겨 두는 날 수 */
+export const VOICE_RECORDING_ORPHAN_RETENTION_DAYS = 1;
+
 /** 확정 문장이 이어서 들어올 때 초안 쓰기를 모으는 시간 */
 export const VOICE_NOTE_DRAFT_SAVE_DEBOUNCE_MS = 800;
 
@@ -21,3 +24,6 @@ export const WAVEFORM_BAR = {
 
 /** 이 값 이상이면 말한 구간으로 본다 */
 export const SPEECH_LEVEL_THRESHOLD = 0.2;
+
+/** 자막 한 카드의 최대 글자 수. 문장부호가 없어도 카드가 끝없이 길어지지 않게 끊는다 */
+export const VOICE_NOTE_SENTENCE_MAX_LENGTH = 120;

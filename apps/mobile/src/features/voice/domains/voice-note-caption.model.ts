@@ -1,0 +1,226 @@
+import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
+
+import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
+import type { VoiceNoteSentence } from './voice-note.model';
+
+/** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
+interface ProvisionalSentence {
+  text: string;
+  startMs: number;
+}
+
+/**
+ * 녹음 중 자막. 인식기가 플랫폼마다 다른 모양으로 주는 글자를 문장 카드 하나로 모은다.
+ * - Android: 문장마다 final이 오고 이후 결과는 새 문장이다.
+ * - iOS: interim이 지금까지 한 말 전체로 쌓이다가 끝에 final 하나만 오므로, 꼬리도 문장으로 나눠 저장해 앱이 꺼져도 남긴다.
+ */
+export interface VoiceNoteCaptions {
+  sentences: readonly VoiceNoteSentence[];
+  provisional: readonly ProvisionalSentence[];
+  /** "중요해요"를 누른 시각(노트 시계) */
+  bookmarksMs: readonly number[];
+}
+
+interface SpeechResultInput {
+  transcript: string;
+  isFinal: boolean;
+  segments: readonly SpeechSegment[];
+}
+
+interface CaptionClock {
+  /** 지금 시각(노트 시계) */
+  nowMs: number;
+  /** 지금 인식 구간이 시작된 시각. `segments`의 시각은 구간 기준이라 더한다 */
+  segmentStartMs: number;
+}
+
+export function createVoiceNoteCaptions(): VoiceNoteCaptions {
+  return { sentences: [], provisional: [], bookmarksMs: [] };
+}
+
+/** 문장부호에서 나누고, 부호가 없는 긴 말(문장부호를 못 넣는 인식기)은 띄어쓰기에서 끊는다 */
+export function splitIntoSentences(
+  text: string,
+  maxLength: number = VOICE_NOTE_SENTENCE_MAX_LENGTH,
+): string[] {
+  const parts = text
+    .split(/(?<=[.!?。！？])\s+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+
+  return parts.flatMap((part) => {
+    const pieces: string[] = [];
+    let rest = part;
+    while (rest.length > maxLength) {
+      const lastSpace = rest.lastIndexOf(' ', maxLength);
+      const cut = lastSpace > 0 ? lastSpace : maxLength;
+      pieces.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    return rest.length > 0 ? [...pieces, rest] : pieces;
+  });
+}
+
+const removeSpaces = (text: string) => text.replace(/\s/g, '');
+
+/** 글자 위치(공백 제외)가 어느 단어 구간에 있는지로 문장의 시작 시각을 찾는다 */
+function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number): number | null {
+  let consumed = 0;
+  for (const segment of segments) {
+    consumed += removeSpaces(segment.text).length;
+    if (offset < consumed) {
+      return segment.startMs;
+    }
+  }
+  return segments.at(-1)?.startMs ?? null;
+}
+
+function toTimedSentences(
+  pieces: readonly string[],
+  {
+    fromMs,
+    toMs,
+    segments,
+    segmentStartMs,
+  }: {
+    fromMs: number;
+    toMs: number;
+    segments: readonly SpeechSegment[];
+    segmentStartMs: number;
+  },
+): VoiceNoteSentence[] {
+  const total = pieces.reduce((sum, piece) => sum + removeSpaces(piece).length, 0);
+  let offset = 0;
+
+  const starts = pieces.map((piece) => {
+    const segmentStart = findSegmentStartMs(segments, offset);
+    const startMs =
+      segmentStart == null
+        ? fromMs + Math.round(((toMs - fromMs) * offset) / Math.max(total, 1))
+        : segmentStartMs + segmentStart;
+    offset += removeSpaces(piece).length;
+    return startMs;
+  });
+
+  return pieces.map((text, index) => {
+    const startMs = Math.max(0, Math.min(starts[index] ?? fromMs, toMs));
+    return {
+      text,
+      startMs,
+      endMs: Math.max(startMs, starts[index + 1] ?? toMs),
+      isBookmarked: false,
+    };
+  });
+}
+
+/** 지금 꼬리를 문장으로 확정한다(인식 구간이 끝남·결과가 처음부터 다시 쌓임) */
+export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+  if (captions.provisional.length === 0) {
+    return captions;
+  }
+  const committed = captions.provisional.map(({ text, startMs }, index) => ({
+    text,
+    startMs,
+    endMs: Math.max(startMs, captions.provisional[index + 1]?.startMs ?? nowMs),
+    isBookmarked: false,
+  }));
+
+  return { ...captions, sentences: [...captions.sentences, ...committed], provisional: [] };
+}
+
+/** iOS는 긴 침묵 뒤에 interim을 처음부터 다시 쌓기도 한다. 이때 앞 글자를 잃지 않게 먼저 확정한다 */
+function hasRestartedInterim(previous: readonly ProvisionalSentence[], next: string) {
+  const previousText = previous.map(({ text }) => text).join(' ');
+  return (
+    previousText.length > 0 &&
+    next.length < previousText.length / 2 &&
+    !previousText.startsWith(next.slice(0, 8))
+  );
+}
+
+function applyInterim(
+  captions: VoiceNoteCaptions,
+  transcript: string,
+  nowMs: number,
+): VoiceNoteCaptions {
+  const base = hasRestartedInterim(captions.provisional, transcript)
+    ? commitProvisional(captions, nowMs)
+    : captions;
+
+  return {
+    ...base,
+    provisional: splitIntoSentences(transcript).map((text, index) => ({
+      text,
+      startMs: base.provisional[index]?.startMs ?? nowMs,
+    })),
+  };
+}
+
+function applyFinal(
+  captions: VoiceNoteCaptions,
+  { transcript, segments }: SpeechResultInput,
+  { nowMs, segmentStartMs }: CaptionClock,
+): VoiceNoteCaptions {
+  const pieces = splitIntoSentences(transcript);
+  const lastCommitted = captions.sentences.at(-1)?.text;
+  // 끝난 뒤 같은 문장을 한 번 더 주는 기기가 있다
+  const fresh = pieces[0] === lastCommitted ? pieces.slice(1) : pieces;
+
+  return {
+    ...captions,
+    provisional: [],
+    sentences: [
+      ...captions.sentences,
+      ...toTimedSentences(fresh, {
+        fromMs: captions.provisional[0]?.startMs ?? nowMs,
+        toMs: nowMs,
+        segments,
+        segmentStartMs,
+      }),
+    ],
+  };
+}
+
+export function applyCaptionResult(
+  captions: VoiceNoteCaptions,
+  result: SpeechResultInput,
+  clock: CaptionClock,
+): VoiceNoteCaptions {
+  return result.isFinal
+    ? applyFinal(captions, result, clock)
+    : applyInterim(captions, result.transcript, clock.nowMs);
+}
+
+export function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+  return { ...captions, bookmarksMs: [...captions.bookmarksMs, nowMs] };
+}
+
+/** 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다 */
+export function getCaptionSentences(
+  captions: VoiceNoteCaptions,
+  nowMs: number,
+): VoiceNoteSentence[] {
+  const { sentences } = commitProvisional(captions, nowMs);
+
+  return sentences.map((sentence, index) => {
+    const previousEnd = index === 0 ? Number.NEGATIVE_INFINITY : sentence.startMs;
+    const nextStart = sentences[index + 1]?.startMs ?? Number.POSITIVE_INFINITY;
+    return {
+      ...sentence,
+      isBookmarked: captions.bookmarksMs.some((ms) => previousEnd <= ms && ms < nextStart),
+    };
+  });
+}
+
+/** 아직 바뀔 수 있는 마지막 문장. 화면에서 회색으로 그린다 */
+export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
+  return captions.provisional.at(-1)?.text ?? '';
+}
+
+export const VoiceNoteCaptionPolicy = {
+  applyCaptionResult,
+  commitProvisional,
+  withBookmark,
+  getCaptionSentences,
+  getCaptionInterimText,
+} as const;

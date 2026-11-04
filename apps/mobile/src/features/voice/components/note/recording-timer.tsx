@@ -14,14 +14,17 @@ const DEGREES = 360;
 
 interface RecordingTimerProps extends Omit<ComponentProps<typeof Box>, 'children'> {
   elapsedMs: number;
-  /** 한 번에 녹음할 수 있는 최대 길이. 서버 `featureQuota.perUse.maxSeconds`에서 온 값이다 */
-  limitMs: number;
+  /** 한 번에 녹음할 수 있는 최대 길이. 서버 `featureQuota.perUse.maxSeconds`에서 온 값이고, 끝이 없으면 null이다 */
+  limitMs: number | null;
+  /** 잠시 멈춘 때처럼 남은 시간 대신 보일 글자 */
+  label?: string;
 }
 
 /** 큰 타이머 둘레에 한 번에 녹음할 수 있는 시간이 얼마나 찼는지 보여주는 링 */
 export function RecordingTimer({
   elapsedMs,
   limitMs,
+  label,
   className,
   ...boxProps
 }: RecordingTimerProps) {
@@ -35,7 +38,9 @@ export function RecordingTimer({
     RING.size - RING.strokeWidth,
     RING.size - RING.strokeWidth,
   );
-  const progress = limitMs > 0 ? clamp(elapsedMs / limitMs, 0, 1) : 0;
+  const progress = limitMs != null && limitMs > 0 ? clamp(elapsedMs / limitMs, 0, 1) : 0;
+  const remainingMs = limitMs == null ? null : Math.max(0, limitMs - elapsedMs);
+  const remainingTime = remainingMs == null ? null : formatMediaTime(remainingMs);
 
   const track = Skia.PathBuilder.Make().addArc(bounds, RING.startAngle, RING.fullSweep).build();
   const arc = Skia.PathBuilder.Make()
@@ -45,10 +50,11 @@ export function RecordingTimer({
   return (
     <Box
       accessible
-      accessibilityLabel={t('timer.a11y', {
-        elapsed: formatMediaTime(elapsedMs),
-        limit: formatMediaTime(limitMs),
-      })}
+      accessibilityLabel={
+        remainingTime == null
+          ? t('timer.a11yNoLimit', { elapsed: formatMediaTime(elapsedMs) })
+          : t('timer.a11y', { elapsed: formatMediaTime(elapsedMs), remaining: remainingTime })
+      }
       className={cn('items-center justify-center', className)}
       style={{ width: RING.size, height: RING.size }}
       {...boxProps}
@@ -68,9 +74,11 @@ export function RecordingTimer({
       <Text size="h1" weight="bold" align="center" className="tabular-nums">
         {formatMediaTime(elapsedMs)}
       </Text>
-      <Text size="b4" shade={6} align="center" maxLines={1} className="tabular-nums">
-        {t('timer.limit', { time: formatMediaTime(limitMs) })}
-      </Text>
+      {(label != null || remainingTime != null) && (
+        <Text size="b4" shade={6} align="center" maxLines={1} className="tabular-nums">
+          {label ?? t('timer.remaining', { time: remainingTime })}
+        </Text>
+      )}
     </Box>
   );
 }

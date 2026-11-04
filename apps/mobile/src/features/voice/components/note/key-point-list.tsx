@@ -46,25 +46,28 @@ interface KeyPointItemProps extends Omit<
 
 function KeyPointItem({ keyPoint, isActive, className, ...pressableProps }: KeyPointItemProps) {
   const { t } = useTranslation('voiceNote');
-  const time = formatMediaTime(keyPoint.startMs);
+  const time = keyPoint.startMs == null ? null : formatMediaTime(keyPoint.startMs);
 
   return (
     <PressableFeedback
-      accessibilityRole="button"
-      accessibilityLabel={t('keyPoints.playFrom', { time })}
+      accessibilityRole={time == null ? undefined : 'button'}
+      accessibilityLabel={time == null ? undefined : t('keyPoints.playFrom', { time })}
       accessibilityState={{ selected: isActive }}
+      isDisabled={time == null}
       className={cn('rounded-xl p-2.5', isActive && 'bg-main/10', className)}
       {...pressableProps}
     >
       <HStack gap={10} className="items-start">
-        <Text
-          size="e1"
-          weight="bold"
-          tone="brand"
-          className="mt-px rounded-full bg-main/10 px-2 py-0.5 tabular-nums"
-        >
-          {time}
-        </Text>
+        {time != null && (
+          <Text
+            size="e1"
+            weight="bold"
+            tone="brand"
+            className="mt-px rounded-full bg-main/10 px-2 py-0.5 tabular-nums"
+          >
+            {time}
+          </Text>
+        )}
         <Text size="b3" lineBreakStrategyIOS="hangul-word" className="shrink flex-1">
           {keyPoint.text}
         </Text>

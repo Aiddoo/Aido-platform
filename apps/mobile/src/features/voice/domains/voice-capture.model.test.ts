@@ -352,4 +352,38 @@ describe('VoiceCapturePolicy', () => {
       expect(VoiceCapturePolicy.isActive(next)).toBe(false);
     });
   });
+
+  describe('인식 실패 뒤 끝내기', () => {
+    it('들은 글자가 있으면 실패 상태에서도 여기까지 정리로 넘어간다', () => {
+      // Given
+      const failed = createCaptureState({
+        status: 'failed',
+        reason: 'network',
+        transcript: createTranscript({ sentences: ['들은 말'] }),
+      });
+
+      // When
+      const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
+
+      // Then
+      expect(next.status).toBe('planning');
+      expect(VoiceCapturePolicy.canFinish(failed)).toBe(true);
+    });
+
+    it('계획 실패는 끝내기가 아니라 다시 정리로만 이어진다', () => {
+      // Given
+      const failed = createCaptureState({
+        status: 'failed',
+        reason: 'planning-failed',
+        transcript: createTranscript({ sentences: ['들은 말'] }),
+      });
+
+      // When
+      const next = reduceVoiceCapture(failed, { type: 'finish', at: 0 });
+
+      // Then
+      expect(next).toBe(failed);
+      expect(VoiceCapturePolicy.canFinish(failed)).toBe(false);
+    });
+  });
 });

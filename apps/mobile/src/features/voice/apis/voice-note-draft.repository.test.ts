@@ -170,4 +170,24 @@ describe('VoiceNoteDraftRepository', () => {
     expect(repository.findAll('user-1')).toEqual([]);
     expect(storage.getString('aido_draft_v1:user-1:memo')).toBe('keep');
   });
+
+  test('바뀌기 전까지 같은 목록을 돌려주고 바뀌면 구독자에게 알린다', () => {
+    // Given
+    const repository = createVoiceNoteDraftRepository({
+      storage: createMemorySyncStorage(),
+      logger: { warn: jest.fn() },
+    });
+    const listener = jest.fn();
+    repository.subscribe(listener);
+    const before = repository.getSnapshot('user-1');
+
+    // When
+    const unchanged = repository.getSnapshot('user-1');
+    repository.save('user-1', createVoiceNoteFixture());
+
+    // Then
+    expect(unchanged).toBe(before);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(repository.getSnapshot('user-1')).toHaveLength(1);
+  });
 });

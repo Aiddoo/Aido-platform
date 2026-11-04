@@ -4,6 +4,7 @@ import {
   actionPlanSchema,
   type ParseMemoResponse,
   type ParsedMemoTodo,
+  type VoiceNoteDigestRequest,
   PLANNED_ACTION_TYPES,
   plannedActionSchema,
   quickPlanResponseSchema,
@@ -18,6 +19,7 @@ import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import {
   type PlannedAction,
   type QuickPlanResult,
@@ -195,6 +197,20 @@ export function toApplyActionPlanRequest(
     actions: actions.map((action) => toApplyAction(action, fallbackCategoryId)),
   };
 }
+
+export const toVoiceNoteDigestRequest = ({
+  text,
+  durationSeconds,
+  segments,
+}: VoiceNoteDigestInput): VoiceNoteDigestRequest => ({
+  text,
+  durationSeconds,
+  segments: segments.map(({ startMs, text: segmentText, isBookmarked }) => ({
+    startMs,
+    text: segmentText,
+    isBookmarked,
+  })),
+});
 
 export function toVoiceNoteDigestResult(
   dto: z.infer<typeof voiceNoteDigestEnvelopeSchema>,

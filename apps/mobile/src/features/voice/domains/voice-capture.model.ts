@@ -17,7 +17,7 @@ export const VOICE_CAPTURE_FAILURE_REASONS = [...SPEECH_ERROR_CODES, 'planning-f
 export const voiceCaptureFailureReasonSchema = z.enum(VOICE_CAPTURE_FAILURE_REASONS);
 export type VoiceCaptureFailureReason = z.infer<typeof voiceCaptureFailureReasonSchema>;
 
-export const VOICE_PAUSE_CAUSES = ['app-background', 'interrupted'] as const;
+export const VOICE_PAUSE_CAUSES = ['app-background', 'interrupted', 'user', 'limit'] as const;
 export const voicePauseCauseSchema = z.enum(VOICE_PAUSE_CAUSES);
 export type VoicePauseCause = z.infer<typeof voicePauseCauseSchema>;
 
@@ -149,6 +149,10 @@ export function reduceVoiceCapture(
       status: 'finalizing',
     }))
     .with([{ status: 'paused' }, { type: 'finish' }], ([current]) => toFinalized(current))
+    .with(
+      [{ status: 'failed', reason: P.not('planning-failed') }, { type: 'finish' }],
+      ([current]) => toFinalized(current),
+    )
     .with([{ status: 'finalizing' }, { type: 'end' }], ([current]) => toFinalized(current))
     .with(
       [{ status: P.union('preparing', 'listening', 'finalizing') }, { type: 'error' }],
@@ -204,10 +208,9 @@ export function isActive(state: VoiceCaptureState): boolean {
 }
 
 export function canFinish(state: VoiceCaptureState): boolean {
-  return (
-    (state.status === 'listening' || state.status === 'paused') &&
-    !isTranscriptEmpty(state.transcript)
-  );
+  const isStopped =
+    state.status === 'paused' || (state.status === 'failed' && state.reason !== 'planning-failed');
+  return (state.status === 'listening' || isStopped) && !isTranscriptEmpty(state.transcript);
 }
 
 export function canResume(state: VoiceCaptureState): boolean {

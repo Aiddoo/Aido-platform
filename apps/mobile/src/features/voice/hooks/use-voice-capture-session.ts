@@ -8,6 +8,7 @@ import type {
   SpeechErrorCode,
   SpeechEvent,
   SpeechLocale,
+  SpeechMode,
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
@@ -55,10 +56,18 @@ const FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
 const PAUSE_CAUSE_PARAMS = {
   'app-background': 'app_background',
   interrupted: 'interrupted',
+  user: 'user',
+  limit: 'limit',
 } as const satisfies Record<VoicePauseCause, string>;
 
 interface UseVoiceCaptureSessionOptions {
   entry: VoiceCaptureEntry;
+  /** `quick`은 말이 멈추면 알아서 끝내고, `note`는 사용자가 끝낼 때까지 듣는다 */
+  mode?: Extract<SpeechMode, 'quick' | 'note'>;
+  /** 한 번에 들을 수 있는 길이(초). null이면 끝이 없다 */
+  maxSeconds?: number | null;
+  /** 길이 한도에 닿았을 때. 없으면 바로 끝낸다 */
+  onLimitReached?: () => void;
   /**
    * 캡처가 끝나 글자가 모였을 때 부른다. 계획을 돌려주면 고르는 단계로, null이면 처음으로 돌아간다.
    * 거절하면 들은 글자를 남긴 채 실패 상태가 된다.
@@ -69,13 +78,21 @@ interface UseVoiceCaptureSessionOptions {
 export interface BeginOptions {
   locale: SpeechLocale;
   contextualStrings: readonly string[];
+  /** `note`에서 녹음 파일을 남길 폴더 */
+  recordingDirectory?: string | null;
 }
 
 /**
- * 빠른 말하기 인식 세션. 화면이 아니라 이 훅을 쓴 시트가 세션을 소유하므로 회전·레이아웃 변화로 끊기지 않는다.
+ * 말하기 인식 세션. 화면이 아니라 이 훅을 쓴 시트가 세션을 소유하므로 회전·레이아웃 변화로 끊기지 않는다.
  * 앱이 백그라운드로 가면 지금까지의 글자를 확정하고 멈춰서 돌아왔을 때 이어 들을 수 있게 둔다.
  */
-export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSessionOptions) {
+export function useVoiceCaptureSession({
+  entry,
+  mode = 'quick',
+  maxSeconds = QUICK_CAPTURE_MAX_SECONDS,
+  onLimitReached,
+  onCaptured,
+}: UseVoiceCaptureSessionOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const haptics = useHaptics();
   const logger = useLogger();
@@ -131,12 +148,12 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
   const trackFinished = (outcome: 'completed' | 'cancelled' | 'empty', at: VoiceCaptureState) => {
     const durationBucket = getDurationBucket(VoiceCapturePolicy.getElapsedMs(at, Date.now()));
     trackEvent('voice_capture_finished', {
-      mode: 'quick',
+      mode,
       outcome,
       duration_bucket: durationBucket,
       pause_count: at.pauseCount,
     });
-    addBreadcrumb('capture.finished', { mode: 'quick', duration_bucket: durationBucket });
+    addBreadcrumb('capture.finished', { mode, duration_bucket: durationBucket });
   };
 
   const handleFinalized = () => {
@@ -148,7 +165,7 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     trackFinished(next.status === 'planning' ? 'completed' : 'empty', next);
   };
 
-  const finish = () => {
+  function finish() {
     clearQuiet();
     const { previous, next } = dispatch({ type: 'finish', at: Date.now() });
     if (previous === next) {
@@ -163,14 +180,14 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
       return;
     }
     trackFinished(next.status === 'planning' ? 'completed' : 'empty', next);
-  };
+  }
 
   const markSpeaking = () => {
     clearQuiet();
   };
 
   const markSilence = () => {
-    if (isQuietRef.current || !VoiceCapturePolicy.canFinish(stateRef.current)) {
+    if (mode !== 'quick' || isQuietRef.current || !VoiceCapturePolicy.canFinish(stateRef.current)) {
       return;
     }
     isQuietRef.current = true;
@@ -197,12 +214,12 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     if (next.status === 'failed') {
       clearTimers();
       haptics.notify('error');
-      trackEvent('voice_capture_failed', { mode: 'quick', reason: next.reason });
+      trackEvent('voice_capture_failed', { mode, reason: next.reason });
       return;
     }
     if (next.status === 'paused' && previous.status !== 'paused') {
       clearTimers();
-      addBreadcrumb('capture.paused', { mode: 'quick', cause: 'interrupted' });
+      addBreadcrumb('capture.paused', { mode, cause: 'interrupted' });
     }
   };
 
@@ -257,19 +274,17 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
       .exhaustive();
   });
 
-  const pauseForBackground = useEffectEvent(() => {
-    const { previous, next } = dispatch({
-      type: 'pause',
-      cause: 'app-background',
-      at: Date.now(),
-    });
+  const pause = (cause: VoicePauseCause) => {
+    const { previous, next } = dispatch({ type: 'pause', cause, at: Date.now() });
     if (previous === next) {
       return;
     }
     clearTimers();
     speechRecognizer.stop();
-    addBreadcrumb('capture.paused', { mode: 'quick', cause: 'app-background' });
-  });
+    addBreadcrumb('capture.paused', { mode, cause });
+  };
+
+  const pauseForBackground = useEffectEvent(() => pause('app-background'));
 
   useEffect(() => {
     const unsubscribe = speechRecognizer.subscribe(handleEvent);
@@ -289,18 +304,29 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     };
   }, [speechRecognizer]);
 
+  const handleLimitReached = useEffectEvent(() => {
+    if (onLimitReached == null) {
+      finish();
+      return;
+    }
+    pause('limit');
+    onLimitReached();
+  });
+
   const isListening = state.status === 'listening';
   useEffect(() => {
     if (!isListening) {
       return;
     }
+    if (maxSeconds == null) {
+      return;
+    }
     const remainingMs =
-      QUICK_CAPTURE_MAX_SECONDS * 1_000 -
-      VoiceCapturePolicy.getElapsedMs(stateRef.current, Date.now());
-    const timer = setTimeout(() => finish(), Math.max(0, remainingMs));
+      maxSeconds * 1_000 - VoiceCapturePolicy.getElapsedMs(stateRef.current, Date.now());
+    const timer = setTimeout(() => handleLimitReached(), Math.max(0, remainingMs));
 
     return () => clearTimeout(timer);
-  }, [isListening]);
+  }, [isListening, maxSeconds]);
 
   const runCaptured = useEffectEvent((transcript: string) => onCaptured(transcript));
   const isPlanning = state.status === 'planning';
@@ -310,7 +336,7 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     }
     let isCurrent = true;
     const text = getTranscriptText(stateRef.current.transcript);
-    addBreadcrumb('plan.requested', { mode: 'quick' });
+    addBreadcrumb('plan.requested', { mode });
     runCaptured(text)
       .then((result) => {
         if (isCurrent) {
@@ -339,7 +365,11 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
   );
 
   /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
-  const begin = async ({ locale, contextualStrings }: BeginOptions): Promise<boolean> => {
+  const begin = async ({
+    locale,
+    contextualStrings,
+    recordingDirectory = null,
+  }: BeginOptions): Promise<boolean> => {
     if (getStatus() !== 'idle') {
       return false;
     }
@@ -356,19 +386,19 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
       const isOnDevice = capabilities.canRecognizeOnDevice;
       startRecognizer({
         locale,
-        mode: 'quick',
+        mode,
         contextualStrings,
         isOnDevice,
-        recordingDirectory: null,
+        recordingDirectory,
       });
       haptics.impact('light');
       trackEvent('voice_capture_started', {
-        mode: 'quick',
+        mode,
         entry,
         locale,
         on_device: isOnDevice,
       });
-      addBreadcrumb('capture.started', { mode: 'quick', locale, on_device: isOnDevice });
+      addBreadcrumb('capture.started', { mode, locale, on_device: isOnDevice });
       return true;
     } catch (error) {
       logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(errorMessageOf(error)), {
@@ -389,10 +419,10 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     startRecognizer(startOptions);
     if (previous.status === 'paused') {
       trackEvent('voice_capture_resumed', {
-        mode: 'quick',
+        mode,
         cause: PAUSE_CAUSE_PARAMS[previous.cause],
       });
-      addBreadcrumb('capture.resumed', { mode: 'quick' });
+      addBreadcrumb('capture.resumed', { mode });
     }
   };
 
@@ -412,14 +442,33 @@ export function useVoiceCaptureSession({ entry, onCaptured }: UseVoiceCaptureSes
     dispatch({ type: 'retry-plan' });
   };
 
+  /** 듣는 중에 언어를 바꾸면 지금 구간을 닫고 새 언어로 이어 듣는다. 이미 들은 글자는 그대로다 */
+  const changeLocale = async (locale: SpeechLocale) => {
+    const startOptions = startOptionsRef.current;
+    if (startOptions == null || startOptions.locale === locale) {
+      return;
+    }
+    const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale);
+    startOptionsRef.current = { ...startOptions, locale, isOnDevice: canRecognizeOnDevice };
+    if (getStatus() === 'listening') {
+      speechRecognizer.stop();
+    }
+  };
+
+  const getElapsedMs = () => VoiceCapturePolicy.getElapsedMs(stateRef.current, Date.now());
+
   return {
     state,
     level,
     isQuiet,
     begin,
     finish,
+    /** 사용자가 잠시 멈춘다 */
+    pause: () => pause('user'),
     resume,
     cancel,
     retryPlanning,
+    changeLocale,
+    getElapsedMs,
   };
 }

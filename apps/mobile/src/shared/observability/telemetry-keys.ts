@@ -364,7 +364,17 @@ export interface VoiceEventMap {
     pause_count: number;
   };
   voice_capture_failed: { mode: VoiceCaptureMode; reason: VoiceCaptureFailureReason };
-  voice_capture_resumed: { mode: VoiceCaptureMode; cause: 'app_background' | 'interrupted' };
+  voice_capture_resumed: {
+    mode: VoiceCaptureMode;
+    cause: 'app_background' | 'interrupted' | 'user' | 'limit';
+  };
+  /** Android 기기 인식 언어 모델 받기를 물었다. 거절이면 declined다 */
+  voice_offline_model_requested: {
+    locale: SpeechLocale;
+    result: 'downloaded' | 'scheduled' | 'dialog-opened' | 'unavailable' | 'declined';
+  };
+  /** 핵심 포인트를 눌러 그 지점부터 들었다. 위치는 구간으로만 남긴다 */
+  voice_note_key_point_played: { position_bucket: VoiceDurationBucket };
 }
 
 export interface CoachmarkEventMap {

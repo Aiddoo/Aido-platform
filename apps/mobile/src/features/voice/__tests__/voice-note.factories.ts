@@ -52,6 +52,6 @@ export const createVoiceNoteFixture = ({
   }),
   durationMs: 178_000,
   sentences: [createVoiceNoteSentence()],
-  recordingFileName: `${draftId}.wav`,
+  recordings: [{ fileName: `${draftId}-0.wav`, startMs: 0 }],
   ...overrides,
 });

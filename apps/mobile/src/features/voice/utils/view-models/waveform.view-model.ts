@@ -40,6 +40,28 @@ export function createSpeechLevels(
   });
 }
 
+/** 녹음 중 음량을 파형 칸으로 모은다. 이벤트 간격의 절반 칸이라 두 번에 한 칸을 만든다 */
+const SAMPLES_PER_BAR = 2;
+
+export interface LevelSampler {
+  levels: readonly number[];
+  /** 아직 칸이 되지 않은 음량 중 가장 큰 값과 개수 */
+  pendingMax: number;
+  pendingCount: number;
+}
+
+export function createLevelSampler(): LevelSampler {
+  return { levels: [], pendingMax: 0, pendingCount: 0 };
+}
+
+export function appendLevelSample(sampler: LevelSampler, level: number): LevelSampler {
+  const pendingMax = Math.max(sampler.pendingMax, level);
+  const pendingCount = sampler.pendingCount + 1;
+  return pendingCount >= SAMPLES_PER_BAR
+    ? { levels: [...sampler.levels, pendingMax], pendingMax: 0, pendingCount: 0 }
+    : { ...sampler, pendingMax, pendingCount };
+}
+
 export function getFlagBarIndexes(sentences: readonly VoiceNoteSentence[]): number[] {
   return sentences
     .filter((sentence) => sentence.isBookmarked)

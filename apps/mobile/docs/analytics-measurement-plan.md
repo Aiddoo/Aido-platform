@@ -112,6 +112,12 @@
 | `memo_converted_to_todo`                     | `memo_id`                                                               | 수동 1건 변환                                                                                                 |
 | `memo_converted_to_todos`                    | `memo_id` · `todo_count`(int) · `source`: `ai`(string 타입 ⚠)           | AI 다건 변환(1.15.0부터 메모 AI 검토 저장 시 `voice_plan_applied`와 함께 보낸다. 대시보드를 옮길 때까지 유지) |
 | `voice_plan_applied`                         | `source` · `todo_count`(int) · `memo_count`(int) · `skipped_count`(int) | 계획 카드 저장(말한 내용·제목은 보내지 않음)                                                                  |
+| `voice_capture_started`                      | `mode` · `entry` · `locale` · `on_device`(bool)                         | 인식 시작. `mode`는 `quick`·`note`, `on_device`로 기기 인식 비율을 본다                                       |
+| `voice_capture_finished`                     | `mode` · `outcome` · `duration_bucket` · `pause_count`(int)             | 끝내기·취소. 길이는 구간으로만 보낸다                                                                         |
+| `voice_capture_failed`                       | `mode` · `reason`                                                       | 복구할 수 없는 인식 오류                                                                                      |
+| `voice_capture_resumed`                      | `mode` · `cause`: `app_background`·`interrupted`·`user`·`limit`         | 이어 듣기                                                                                                     |
+| `voice_offline_model_requested`              | `locale` · `result`                                                     | Android 기기 인식 언어 모델 받기. 거절하면 `declined`                                                         |
+| `voice_note_key_point_played`                | `position_bucket`                                                       | 핵심 포인트를 눌러 그 지점부터 듣기                                                                           |
 
 **알림 / 배지 / 설정 / 생명주기**
 
