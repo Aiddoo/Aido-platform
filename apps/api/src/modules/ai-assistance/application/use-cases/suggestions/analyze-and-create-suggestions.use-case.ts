@@ -3,11 +3,6 @@ import dayjs from "dayjs";
 import { orderBy } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
-import {
-  type AiProvider,
-  canRunScheduledAi,
-  type ScheduledAiConsentReaders,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { GridInput } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -19,13 +14,18 @@ import { resolveSuggestedCategoryId } from "../../../domain/services/suggestions
 import {
   generationCompletedLog,
   generationFailedLog,
-  providerFailure,
-} from "../../observability/parsing/ai-generation-log.events.js";
+  generationFailure,
+} from "../../observability/generation/ai-generation-log.events.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
+import { AiGenerationError } from "../../ports/generation/ai-generation.errors.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
 import { suggestionPrompts } from "../../prompts/suggestions/suggestion/index.js";
-import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
+import {
+  findScheduledAiConsent,
+  type ScheduledAiConsentReaders,
+} from "../../services/parsing/scheduled-ai-consent.js";
 import type { SuggestionContextBuilder } from "../../services/suggestions/suggestion-context.builder.js";
 
 /**
@@ -40,7 +40,7 @@ interface AnalyzeAndCreateSuggestionsDependencies {
     AiSuggestionRepositoryPort,
     "deletePending" | "deleteExpired" | "createMany"
   >;
-  readonly aiProvider: Pick<AiProvider, "generateStructured" | "isAvailable">;
+  readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
   readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
@@ -72,15 +72,8 @@ export class AnalyzeAndCreateSuggestions {
       });
       return 0;
     }
-    if (!this.#dependencies.aiProvider.isAvailable("suggestion")) {
-      this.#dependencies.logger.debug({
-        event: AiSuggestionLogEvent.SKIPPED,
-        userId,
-        reason: "provider-unavailable",
-      });
-      return 0;
-    }
-    if (!(await canRunScheduledAi(this.#dependencies, userId))) {
+    const consent = await findScheduledAiConsent(this.#dependencies, userId);
+    if (!consent.allowed) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
@@ -116,28 +109,40 @@ export class AnalyzeAndCreateSuggestions {
     const startedAt = Date.now();
     const generation = await definition.output
       .generate(
-        this.#dependencies.aiProvider,
+        this.#dependencies.generator,
         {
           task: "suggestion",
           promptVersion: definition.promptVersion,
           system,
           prompt,
-          policy: resolveGenerationPolicy("suggestion", this.#dependencies.settings),
+          agreedConsentVersion: consent.agreedVersion,
         },
         { context },
       )
       .catch((error: unknown) => {
+        if (error instanceof AiGenerationError && error.kind === "UNAVAILABLE") {
+          return null;
+        }
         // 잡 재시도 의미는 유지하고, 원인 종류만 남긴다.
         this.#dependencies.logger.warn(
           generationFailedLog({
             ...logBase,
             outcome: "FAILED",
-            ...providerFailure(error),
+            ...generationFailure(error),
             latencyMs: Date.now() - startedAt,
           }),
         );
         throw error;
       });
+    // 설정·동의 범위 안에 지금 보낼 수 있는 업체가 없으면 이번 분석을 건너뛴다.
+    if (generation == null) {
+      this.#dependencies.logger.debug({
+        event: AiSuggestionLogEvent.SKIPPED,
+        userId,
+        reason: "provider-unavailable",
+      });
+      return 0;
+    }
     this.#dependencies.logger.log(
       generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
     );

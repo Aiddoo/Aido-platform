@@ -1,7 +1,7 @@
 import request from "supertest";
 
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -11,14 +11,15 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
  */
 describe("AI 파싱 v2 E2E", () => {
   let ctx: E2eTestContext;
-  let fakeAiProvider: FakeAiProvider;
+  let fakeAiGenerator: FakeAiGenerator;
   let accessToken: string;
 
   beforeAll(async () => {
-    fakeAiProvider = new FakeAiProvider();
+    fakeAiGenerator = new FakeAiGenerator();
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
-      additionalResetters: [() => fakeAiProvider.clear()],
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+      additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
 
@@ -41,7 +42,7 @@ describe("AI 파싱 v2 E2E", () => {
 
   it("draft의 날짜·시각 표현을 서버가 계산해 공개 계약 그대로 응답하고 promptVersion을 남긴다", async () => {
     // Given - 연도를 말한 날짜와 오후 3시
-    fakeAiProvider.setRawResponse({
+    fakeAiGenerator.setRawResponse({
       intent: "TASK",
       title: "팀 미팅",
       date: { kind: "CALENDAR_DATE", year: 2030, month: 3, day: 5 },
@@ -78,7 +79,7 @@ describe("AI 파싱 v2 E2E", () => {
 
   it("모델 대상 명령만 있는 입력은 안내 할 일로 응답하고 사용량을 차감하지 않는다", async () => {
     // Given
-    fakeAiProvider.setRawResponse({
+    fakeAiGenerator.setRawResponse({
       intent: "NO_ACTION",
       title: "",
       date: { kind: "NONE" },
@@ -110,7 +111,7 @@ describe("AI 파싱 v2 E2E", () => {
       categoryId: 999999,
       items: items.map((item) => ({ title: item })),
     });
-    fakeAiProvider.setRawResponse({
+    fakeAiGenerator.setRawResponse({
       todos: [
         draft("발표 준비", ["a", "b", "c", "d", "e", "f"]),
         ...["2", "3", "4", "5", "6"].map((index) => draft(`할 일 ${index}`)),

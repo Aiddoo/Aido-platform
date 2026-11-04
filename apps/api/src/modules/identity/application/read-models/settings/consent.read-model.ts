@@ -4,12 +4,11 @@ import type {
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
 } from "@aido/api";
-import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { UserConsentRecord } from "../../../domain/records/settings/user-consent.record.js";
-import { resolveAiDataSharingDecision } from "../../../domain/services/settings/ai-data-sharing-consent-policy.js";
+import { resolveAiDataSharingConsent } from "../../../domain/services/settings/ai-data-sharing-consent-policy.js";
 
 /** 약관 동의 응답 뷰. 기록이 없으면 전부 null(기존 사용자 호환). */
 export function buildConsentView(consent: UserConsentRecord | null): ConsentResponse {
@@ -32,7 +31,7 @@ export function buildConsentView(consent: UserConsentRecord | null): ConsentResp
     agreedTermsVersion: consent.agreedTermsVersion,
     marketingAgreedAt: toISOStringOrNull(consent.marketingAgreedAt),
     marketingPushAgreedAt: toISOStringOrNull(consent.marketingPushAgreedAt),
-    aiDataSharingDecision: resolveAiDataSharingDecision(consent, AI_DATA_SHARING_CONSENT.VERSION),
+    aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
     aiDataSharingAgreedAt: toISOStringOrNull(consent.aiDataSharingAgreedAt),
     aiDataSharingConsentVersion: consent.aiDataSharingVersion,
   };
@@ -44,7 +43,7 @@ export function buildAiDataSharingConsentView(
   answeredVersion: string,
 ): UpdateAiDataSharingConsentResponse {
   return {
-    aiDataSharingDecision: resolveAiDataSharingDecision(consent, AI_DATA_SHARING_CONSENT.VERSION),
+    aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
     aiDataSharingAgreedAt: toISOStringOrNull(consent.aiDataSharingAgreedAt),
     aiDataSharingConsentVersion: answeredVersion,
   };

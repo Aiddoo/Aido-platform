@@ -9,7 +9,7 @@ import {
 export const aiDataSharingDecisionSchema = z
   .enum(AI_DATA_SHARING_DECISIONS)
   .describe(
-    "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 안내 버전이 바뀜)",
+    "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 지원하지 않는 안내 버전). 이전 안내 버전 동의도 AGREED이며 그 버전의 처리 업체만 쓴다",
   );
 
 const aiDataSharingConsentFields = {
@@ -21,7 +21,9 @@ const aiDataSharingConsentFields = {
     .string()
     .nullable()
     .optional()
-    .describe("마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+)"),
+    .describe(
+      "마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+). 현재 버전보다 오래되면 앱이 새 안내를 보여 줄 수 있다",
+    ),
 };
 
 export const userConsentSchema = z

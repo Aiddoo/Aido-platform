@@ -18,7 +18,7 @@ import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
 
 import { AppModule } from "#api/app.module";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import { ReportGenerationJob } from "#api/modules/ai-assistance/infrastructure/jobs/reports/report-generation.job";
 import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/suggestion-analysis.job";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
@@ -56,7 +56,7 @@ import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/por
 import { StubWeatherReportProvider } from "#test/mocks/ports/weather.stub";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
-import { FakeAiProvider } from "../../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
 import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
 import { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { FakeJobRuntime } from "../../mocks/fake-job-runtime.js";
@@ -133,7 +133,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeAdminNotifier = new FakeAdminNotifier();
   const fakePaymentNotifier = new FakeAdminNotifier();
   const fakePushProvider = new FakePushProvider();
-  const fakeAiProvider = new FakeAiProvider();
+  const fakeAiGenerator = new FakeAiGenerator();
   const fakeWeatherProvider = new FakeWeatherProvider();
   const stubWeatherReportProvider = new StubWeatherReportProvider();
   const fakeAirQualityProvider = new FakeAirQualityProvider();
@@ -230,8 +230,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(fakePaymentNotifier)
     .overrideProvider(PUSH_PROVIDER)
     .useValue(fakePushProvider)
-    .overrideProvider(AI_PROVIDER)
-    .useValue(fakeAiProvider)
+    .overrideProvider(AI_GENERATOR)
+    .useValue(fakeAiGenerator)
     .overrideProvider(WEATHER_PROVIDER)
     .useValue(fakeWeatherProvider)
     .overrideProvider(WEATHER_REPORT_PROVIDER)
@@ -303,7 +303,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeAdminNotifier.clear(),
         () => fakePaymentNotifier.clear(),
         () => fakePushProvider.clear(),
-        () => fakeAiProvider.clear(),
+        () => fakeAiGenerator.clear(),
         () => fakeWeatherProvider.clear(),
         () => stubWeatherReportProvider.clear(),
         () => fakeAirQualityProvider.clear(),

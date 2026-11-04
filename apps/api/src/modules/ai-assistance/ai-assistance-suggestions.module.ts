@@ -6,6 +6,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-ac
 import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
 import { PlanningTodosModule } from "../planning/planning-todos.public.js";
 import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
+import { AiAssistanceGenerationModule } from "./ai-assistance-generation.module.js";
 import { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
 import { AiAssistanceReportsModule } from "./ai-assistance-reports.module.js";
 import {
@@ -36,7 +37,8 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
  * - 매일 KST 07:30 크론 → per-user 패턴 분석(pg-boss) → 새 제안 생성 + 알림
  *
  * ### 크로스모듈(전부 포트/어댑터로 역전)
- * - AiAssistanceParsingModule: AI_PROVIDER(Gemini)로 제안 생성
+ * - AiAssistanceGenerationModule: AI_GENERATOR(동의 범위 안의 업체 폴백)로 제안 생성
+ * - AiAssistanceParsingModule: AI 데이터 처리 동의·앱 버전 reader
  * - PlanningTodosModule: 수락 시 RECURRING_TODO_CREATOR가 반복 생성 UseCase에 위임
  * - AiAssistanceReportsModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
  * - WeatherForecastModule: 날씨 기반 제안을 위한 격자 예보 조회
@@ -46,6 +48,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
   imports: [
     AccessModule,
     IdentityUserAccessModule,
+    AiAssistanceGenerationModule,
     AiAssistanceParsingModule,
     AiAssistanceReportsModule,
     NotificationDeliveryModule,

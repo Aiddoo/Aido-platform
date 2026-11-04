@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 429,
+    "message": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing.",
+    "status": "RESOURCE_EXHAUSTED"
+  }
+}

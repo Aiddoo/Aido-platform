@@ -1,19 +1,18 @@
+import { notChargedErrorDetailsSchema } from "@aido/api";
 import { ErrorCode, Errors } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
 
-import {
-  AI_PROVIDER,
-  AI_TASK_SETTINGS,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_TASK_SETTINGS } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 /**
  * AI 모듈 E2E 테스트
  *
  * @description
  * AI 자연어 투두 파싱 API의 전체 플로우 테스트.
- * FakeAiProvider를 사용하여 실제 Gemini API 호출을 모킹합니다.
+ * FakeAiGenerator를 사용하여 실제 Gemini API 호출을 모킹합니다.
  *
  * ### 테스트 범위
  * - POST /ai/parse-todo: 자연어 파싱
@@ -29,14 +28,14 @@ import {
 } from "#test/fixtures/ai-response.fixture";
 import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 describe("AI E2E", () => {
   let ctx: E2eTestContext;
-  let fakeAiProvider: FakeAiProvider;
+  let fakeAiGenerator: FakeAiGenerator;
   let accessToken: string;
   let testUserId: string;
 
@@ -88,16 +87,16 @@ describe("AI E2E", () => {
   }
 
   beforeAll(async () => {
-    fakeAiProvider = new FakeAiProvider();
+    fakeAiGenerator = new FakeAiGenerator();
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(AI_PROVIDER)
-          .useValue(fakeAiProvider)
+          .overrideProvider(AI_GENERATOR)
+          .useValue(fakeAiGenerator)
           .overrideProvider(AI_TASK_SETTINGS)
           .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
-      additionalResetters: [() => fakeAiProvider.clear()],
+      additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
 
@@ -117,7 +116,7 @@ describe("AI E2E", () => {
     describe("성공 케이스", () => {
       it("인증된 사용자가 자연어를 성공적으로 파싱", async () => {
         // Given
-        fakeAiProvider.setResponse({
+        fakeAiGenerator.setResponse({
           title: "팀 미팅",
           startDate: "2025-01-26",
           scheduledTime: "15:00",
@@ -151,12 +150,12 @@ describe("AI E2E", () => {
           output: 50,
         });
 
-        expect(fakeAiProvider.getCallCount()).toBe(1);
+        expect(fakeAiGenerator.getCallCount()).toBe(1);
       });
 
       it("categoryId가 포함된 요청 시 응답에 categoryId가 반환됨", async () => {
         // Given
-        fakeAiProvider.setResponse({
+        fakeAiGenerator.setResponse({
           title: "팀 미팅",
           startDate: "2025-01-26",
           scheduledTime: "15:00",
@@ -177,7 +176,7 @@ describe("AI E2E", () => {
 
       it("categoryId 없이 요청 시 응답에 categoryId가 없음", async () => {
         // Given
-        fakeAiProvider.setResponse({
+        fakeAiGenerator.setResponse({
           title: "팀 미팅",
           startDate: "2025-01-26",
           scheduledTime: "15:00",
@@ -198,7 +197,7 @@ describe("AI E2E", () => {
 
       it("종일 일정을 올바르게 파싱", async () => {
         // Given
-        fakeAiProvider.setResponse({
+        fakeAiGenerator.setResponse({
           title: "출장",
           startDate: "2025-01-27",
           endDate: "2025-01-31",
@@ -222,7 +221,7 @@ describe("AI E2E", () => {
 
       it("연속 요청 시 사용량이 증가", async () => {
         // Given
-        fakeAiProvider.setDefaultResponse({
+        fakeAiGenerator.setDefaultResponse({
           title: "테스트",
           startDate: "2025-01-26",
           isAllDay: true,
@@ -246,12 +245,12 @@ describe("AI E2E", () => {
 
         expect(usageResponse.body.data.data.used).toBe(3);
         expect(usageResponse.body.data.data.limit).toBe(FREE_AI_LIMIT);
-        expect(fakeAiProvider.getCallCount()).toBe(3);
+        expect(fakeAiGenerator.getCallCount()).toBe(3);
       });
 
       it("허용되지 않은 필드는 무시되고 정상 처리", async () => {
         // Given
-        fakeAiProvider.setResponse({
+        fakeAiGenerator.setResponse({
           title: "테스트",
           startDate: "2025-01-25",
           scheduledTime: null,
@@ -268,7 +267,7 @@ describe("AI E2E", () => {
 
         // Then
         expect(response.body.data.data.title).toBe("테스트");
-        expect(fakeAiProvider.getCallCount()).toBe(1);
+        expect(fakeAiGenerator.getCallCount()).toBe(1);
       });
 
       it("다양한 한국어 자연어 입력을 파싱", async () => {
@@ -304,7 +303,7 @@ describe("AI E2E", () => {
         ];
 
         for (const testCase of testCases) {
-          fakeAiProvider.setResponse(testCase.expected);
+          fakeAiGenerator.setResponse(testCase.expected);
 
           // When
           const response = await request(ctx.app.getHttpServer())
@@ -319,7 +318,7 @@ describe("AI E2E", () => {
           expect(response.body.data.data.scheduledTime).toBe(testCase.expected.scheduledTime);
         }
 
-        expect(fakeAiProvider.getCallCount()).toBe(3);
+        expect(fakeAiGenerator.getCallCount()).toBe(3);
       });
     });
 
@@ -340,12 +339,12 @@ describe("AI E2E", () => {
         expect(response.body.error.code).toBe("AI_1303");
         expect(response.body.error.message).toBe(Errors[ErrorCode.AI_1303].message);
 
-        expect(fakeAiProvider.getCallCount()).toBe(0);
+        expect(fakeAiGenerator.getCallCount()).toBe(0);
       });
 
       it("지난 달 resetsAt을 가진 사용자는 이번 달 첫 요청 시 사용량이 1로 리셋된다", async () => {
         // Given
-        fakeAiProvider.setDefaultResponse({
+        fakeAiGenerator.setDefaultResponse({
           title: "테스트",
           startDate: "2026-05-01",
           isAllDay: true,
@@ -396,7 +395,7 @@ describe("AI E2E", () => {
 
       it("무료 한도까지는 성공하고 그다음 요청은 429 에러", async () => {
         // Given
-        fakeAiProvider.setDefaultResponse({
+        fakeAiGenerator.setDefaultResponse({
           title: "테스트",
           startDate: "2025-01-26",
           isAllDay: true,
@@ -421,7 +420,7 @@ describe("AI E2E", () => {
 
         expect(response.status).toBe(429);
         expect(response.body.error.code).toBe("AI_1303");
-        expect(fakeAiProvider.getCallCount()).toBe(FREE_AI_LIMIT);
+        expect(fakeAiGenerator.getCallCount()).toBe(FREE_AI_LIMIT);
       });
     });
 
@@ -436,7 +435,7 @@ describe("AI E2E", () => {
 
         // Then
         expect(response.status).toBe(401);
-        expect(fakeAiProvider.getCallCount()).toBe(0);
+        expect(fakeAiGenerator.getCallCount()).toBe(0);
       });
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
@@ -450,7 +449,7 @@ describe("AI E2E", () => {
 
         // Then
         expect(response.status).toBe(401);
-        expect(fakeAiProvider.getCallCount()).toBe(0);
+        expect(fakeAiGenerator.getCallCount()).toBe(0);
       });
     });
 
@@ -467,7 +466,7 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(fakeAiProvider.getCallCount()).toBe(0);
+        expect(fakeAiGenerator.getCallCount()).toBe(0);
       });
 
       it("text 필드 누락 시 400 에러", async () => {
@@ -482,7 +481,7 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(fakeAiProvider.getCallCount()).toBe(0);
+        expect(fakeAiGenerator.getCallCount()).toBe(0);
       });
 
       it("500자 초과 텍스트 요청 시 400 에러", async () => {
@@ -498,14 +497,14 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(fakeAiProvider.getCallCount()).toBe(0);
+        expect(fakeAiGenerator.getCallCount()).toBe(0);
       });
     });
 
     describe("AI 서비스 에러", () => {
-      it("AI 서비스 불가 시 503 에러 (AI_1301)", async () => {
+      it("보낼 수 있는 AI 업체가 없으면 503 AI_1301과 차감 없음 상세를 준다", async () => {
         // Given
-        fakeAiProvider.setAvailable(false);
+        fakeAiGenerator.setAvailable(false);
 
         // When
         const response = await request(ctx.app.getHttpServer())
@@ -517,11 +516,14 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(503);
         expect(response.body.error.code).toBe("AI_1301");
+        expect(notChargedErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+          charged: false,
+        });
       });
 
-      it("AI 파싱 실패 시 422 에러 (AI_1302)", async () => {
+      it("할 일을 만들지 못하면 422 AI_1302와 차감 없음 상세를 준다", async () => {
         // Given
-        fakeAiProvider.setInvalidResponse(new Error("파싱 실패"));
+        fakeAiGenerator.setInvalidResponse(new Error("파싱 실패"));
 
         // When
         const response = await request(ctx.app.getHttpServer())
@@ -533,14 +535,17 @@ describe("AI E2E", () => {
         // Then
         expect(response.status).toBe(422);
         expect(response.body.error.code).toBe("AI_1302");
+        expect(notChargedErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+          charged: false,
+        });
       });
     });
 
     describe("토큰 사용량 추적", () => {
       it("응답에 토큰 사용량이 포함됨", async () => {
         // Given
-        fakeAiProvider.setTokenUsage({ input: 200, output: 80 });
-        fakeAiProvider.setResponse({
+        fakeAiGenerator.setTokenUsage({ input: 200, output: 80 });
+        fakeAiGenerator.setResponse({
           title: "테스트",
           startDate: "2025-01-26",
           isAllDay: true,
@@ -664,7 +669,7 @@ describe("AI E2E", () => {
   describe("타임존 처리", () => {
     it("X-Timezone 헤더가 프롬프트에 반영된다", async () => {
       // Given
-      fakeAiProvider.setResponse({
+      fakeAiGenerator.setResponse({
         title: "테스트",
         startDate: "2025-01-26",
         isAllDay: true,
@@ -679,15 +684,15 @@ describe("AI E2E", () => {
         .expect(200);
 
       // Then
-      const prompt = fakeAiProvider.getLastPrompt();
+      const prompt = fakeAiGenerator.getLastPrompt();
       expect(prompt).toContain("테스트");
-      const system = fakeAiProvider.getLastSystem();
+      const system = fakeAiGenerator.getLastSystem();
       expect(system).toContain("한국어 자연어 입력을 구조화된 할 일");
     });
 
     it("X-Timezone 헤더 없이도 정상 동작한다 (UTC 폴백)", async () => {
       // Given
-      fakeAiProvider.setResponse({
+      fakeAiGenerator.setResponse({
         title: "테스트",
         startDate: "2025-01-26",
         isAllDay: true,
@@ -708,7 +713,7 @@ describe("AI E2E", () => {
   describe("통합 시나리오", () => {
     it("파싱 요청 후 사용량이 정확히 반영됨", async () => {
       // Given
-      fakeAiProvider.setDefaultResponse({
+      fakeAiGenerator.setDefaultResponse({
         title: "테스트",
         startDate: "2025-01-26",
         isAllDay: true,
@@ -749,7 +754,7 @@ describe("AI E2E", () => {
 
     it("사용량 제한 후 리셋되면 다시 사용 가능", async () => {
       // Given
-      fakeAiProvider.setDefaultResponse({
+      fakeAiGenerator.setDefaultResponse({
         title: "테스트",
         startDate: "2025-01-26",
         isAllDay: true,
@@ -784,7 +789,7 @@ describe("AI E2E", () => {
     describe("성공 케이스", () => {
       it("메모를 다중 Todo+SubTodo로 파싱", async () => {
         // Given
-        fakeAiProvider.setRawResponse({
+        fakeAiGenerator.setRawResponse({
           todos: [
             {
               title: "버그 수정",
@@ -836,7 +841,7 @@ describe("AI E2E", () => {
 
       it("소유하지 않은 추론 categoryId는 요청 categoryId로 대체한다", async () => {
         // Given
-        fakeAiProvider.setRawResponse({
+        fakeAiGenerator.setRawResponse({
           todos: [
             {
               title: "할 일",
@@ -866,7 +871,7 @@ describe("AI E2E", () => {
 
       it("파싱 후 사용량이 1 증가", async () => {
         // Given
-        fakeAiProvider.setRawResponse({
+        fakeAiGenerator.setRawResponse({
           todos: [
             {
               title: "테스트",
@@ -957,7 +962,7 @@ describe("AI E2E", () => {
       firstTodo.items = Array.from({ length: itemCount }, (_, index) => ({
         title: `발표 준비 단계 ${index + 1}`,
       }));
-      fakeAiProvider.setRawResponse(memo);
+      fakeAiGenerator.setRawResponse(memo);
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -972,7 +977,7 @@ describe("AI E2E", () => {
       expect(response.status).toBe(status);
       expect(usage.status).toBe(200);
       expect(usage.body.data.data.used).toBe(used);
-      expect(fakeAiProvider.getCallCount()).toBe(1);
+      expect(fakeAiGenerator.getCallCount()).toBe(1);
       if (status === 200) {
         expect(response.body.data.success).toBe(true);
         expect(response.body.data.data.todos[0].items).toEqual(firstTodo.items);
@@ -987,7 +992,7 @@ describe("AI E2E", () => {
     async (locale) => {
       // Given
       const title = locale === "ko" ? "책 읽기" : "Read a book";
-      fakeAiProvider.setRawResponse(createParsedTodoResponse({ title }));
+      fakeAiGenerator.setRawResponse(createParsedTodoResponse({ title }));
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -999,7 +1004,7 @@ describe("AI E2E", () => {
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.title).toBe(title);
-      expect(fakeAiProvider.getLastSystem()).toContain(locale === "en" ? "You are" : "당신은");
+      expect(fakeAiGenerator.getLastSystem()).toContain(locale === "en" ? "You are" : "당신은");
       const usage = await request(ctx.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
@@ -1019,7 +1024,7 @@ describe("AI E2E", () => {
         title: locale === "en" ? "Prepare notes" : "자료 준비",
         items: [],
       });
-      fakeAiProvider.setRawResponse(raw);
+      fakeAiGenerator.setRawResponse(raw);
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -1031,7 +1036,7 @@ describe("AI E2E", () => {
       // Then
       expect(response.status).toBe(200);
       expect(response.body.data.data.todos).toHaveLength(2);
-      expect(fakeAiProvider.getCallCount()).toBe(1);
+      expect(fakeAiGenerator.getCallCount()).toBe(1);
       const usage = await request(ctx.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
@@ -1059,7 +1064,7 @@ describe("AI E2E", () => {
         scheduledTime: "09:00",
         isAllDay: false,
       });
-      fakeAiProvider.setRawResponse(
+      fakeAiGenerator.setRawResponse(
         route === "parse-todo" ? todo : { todos: [{ ...todo, categoryId: 999999, items: [] }] },
       );
       vi.useFakeTimers({ toFake: ["Date"] });
@@ -1086,14 +1091,14 @@ describe("AI E2E", () => {
           expect(data.todos).toHaveLength(1);
           expect(parsed.items).toEqual([]);
         }
-        expect(fakeAiProvider.getLastPrompt()).toContain(JSON.stringify(item.input[locale]));
-        expect(fakeAiProvider.getLastSystem()).toContain(JSON.stringify(item.title[locale]));
-        expect(fakeAiProvider.getLastSystem()).toContain('"scheduledTime":"09:00"');
+        expect(fakeAiGenerator.getLastPrompt()).toContain(JSON.stringify(item.input[locale]));
+        expect(fakeAiGenerator.getLastSystem()).toContain(JSON.stringify(item.title[locale]));
+        expect(fakeAiGenerator.getLastSystem()).toContain('"scheduledTime":"09:00"');
         const usage = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
         expect(usage.body.data.data.used).toBe(1);
-        expect(fakeAiProvider.getCallCount()).toBe(1);
+        expect(fakeAiGenerator.getCallCount()).toBe(1);
       } finally {
         vi.useRealTimers();
       }
@@ -1109,7 +1114,7 @@ describe("AI E2E", () => {
       // Given
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
       const dailyDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-      fakeAiProvider.setRawResponse(
+      fakeAiGenerator.setRawResponse(
         createParsedTodoResponse({
           title,
           startDate: "2026-03-07",
@@ -1143,13 +1148,13 @@ describe("AI E2E", () => {
           recurrence: { daysOfWeek: dailyDays },
           categoryId,
         });
-        expect(fakeAiProvider.getLastPrompt()).toContain(JSON.stringify(input));
+        expect(fakeAiGenerator.getLastPrompt()).toContain(JSON.stringify(input));
         const usage = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
         expect(usage.body.data.data.used).toBe(1);
-        expect(fakeAiProvider.getCallCount()).toBe(1);
+        expect(fakeAiGenerator.getCallCount()).toBe(1);
       } finally {
         vi.useRealTimers();
       }
@@ -1160,7 +1165,7 @@ describe("AI E2E", () => {
     "%s의 필수 필드 누락 raw 출력은 실제 AI_1302와 quota 보상을 반환한다",
     async (route) => {
       // Given
-      fakeAiProvider.setRawResponse({});
+      fakeAiGenerator.setRawResponse({});
 
       // When
       const response = await request(ctx.app.getHttpServer())
@@ -1171,7 +1176,7 @@ describe("AI E2E", () => {
       // Then
       expect(response.status).toBe(422);
       expect(response.body.error.code).toBe("AI_1302");
-      expect(fakeAiProvider.getCallCount()).toBe(1);
+      expect(fakeAiGenerator.getCallCount()).toBe(1);
       const usage = await request(ctx.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);

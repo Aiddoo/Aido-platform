@@ -1,4 +1,4 @@
-import { aiSchema } from "./ai.schema.js";
+import { aiSchema, toAiSettings } from "./ai.schema.js";
 
 const LEGACY_KEY = `AIza${"a".repeat(35)}`;
 const NEW_FORMAT_KEY = `AQ.${"Ab1_-".repeat(10)}`;
@@ -68,5 +68,83 @@ describe("aiSchema — GOOGLE_GENERATIVE_AI_API_KEY", () => {
 
     // Then
     expect(config.GOOGLE_GENERATIVE_AI_API_KEY).toBe(key);
+  });
+});
+
+describe("toAiSettings — 업체·작업별 AI 설정", () => {
+  it("env가 없으면 Claude→Gemini→OpenAI 순서·기본 모델·작업별 thinking과 제한 시간을 쓴다", () => {
+    // When
+    const settings = toAiSettings(aiSchema.parse({}));
+    // Then
+    expect(settings.providerOrder).toEqual(["anthropic", "google", "openai"]);
+    expect(settings.providers).toEqual({
+      anthropic: { apiKey: null, model: "claude-haiku-5-5" },
+      google: { apiKey: null, model: "gemini-3.1-flash-lite" },
+      openai: { apiKey: null, model: "gpt-6-luna" },
+    });
+    expect(settings.tasks).toEqual({
+      "parse-todo": { thinking: "minimal", deadlineMs: 12_000 },
+      "parse-memo": { thinking: "low", deadlineMs: 25_000 },
+      report: { thinking: "low", deadlineMs: 60_000 },
+      suggestion: { thinking: "low", deadlineMs: 60_000 },
+      "quick-plan": { thinking: "low", deadlineMs: 15_000 },
+      "voice-note-digest": { thinking: "low", deadlineMs: 45_000 },
+    });
+    expect(settings.promptVersions).toEqual({
+      "parse-todo": "v2",
+      "parse-memo": "v2",
+      report: "v2",
+      suggestion: "v2",
+    });
+    expect(settings.breaker).toEqual({
+      billingCooldownMs: 900_000,
+      healthThreshold: 5,
+      healthCooldownMs: 30_000,
+    });
+  });
+
+  it("작업별 env는 그 작업의 thinking·제한 시간·프롬프트 버전만 바꾼다", () => {
+    // Given
+    const env = {
+      AI_THINKING_PARSE_TODO: "low",
+      AI_DEADLINE_VOICE_NOTE_DIGEST_MS: "50000",
+      AI_PROMPT_VERSION_PARSE_MEMO: "v1",
+    };
+    // When
+    const settings = toAiSettings(aiSchema.parse(env));
+    // Then
+    expect(settings.tasks["parse-todo"]).toEqual({ thinking: "low", deadlineMs: 12_000 });
+    expect(settings.tasks["voice-note-digest"]).toEqual({ thinking: "low", deadlineMs: 50_000 });
+    expect(settings.tasks["parse-memo"].thinking).toBe("low");
+    expect(settings.promptVersions).toMatchObject({ "parse-memo": "v1", "parse-todo": "v2" });
+  });
+
+  it("빈 문자열 키는 미설정이고 순서 env의 공백은 무시한다", () => {
+    // Given
+    const env = {
+      ANTHROPIC_API_KEY: "",
+      OPENAI_API_KEY: `sk-proj-${"o".repeat(30)}`,
+      AI_PROVIDER_ORDER: " google , openai ",
+    };
+    // When
+    const settings = toAiSettings(aiSchema.parse(env));
+    // Then
+    expect(settings.providers.anthropic.apiKey).toBeNull();
+    expect(settings.providers.openai.apiKey).toBe(env.OPENAI_API_KEY);
+    expect(settings.providerOrder).toEqual(["google", "openai"]);
+  });
+
+  it.each([
+    ["모르는 업체", { AI_PROVIDER_ORDER: "anthropic,mistral" }],
+    ["같은 업체 두 번", { AI_PROVIDER_ORDER: "google,google" }],
+    ["빈 순서", { AI_PROVIDER_ORDER: "" }],
+    ["지원하지 않는 thinking", { AI_THINKING_PARSE_TODO: "high" }],
+    ["공백이 섞인 Claude 키", { ANTHROPIC_API_KEY: `sk-ant ${"a".repeat(30)}` }],
+    ["0 이하 제한 시간", { AI_DEADLINE_QUICK_PLAN_MS: "0" }],
+  ])("%s는 부팅 단계에서 거절한다", (_case, env) => {
+    // When
+    const result = aiSchema.safeParse(env);
+    // Then
+    expect(result.success).toBe(false);
   });
 });

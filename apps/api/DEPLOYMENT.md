@@ -68,22 +68,23 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 
 설정 정본은 `src/platform/config/schemas`와 `.env*.example`이다. env 원문·secret·backup은 로그나 Git에 넣지 않는다. 운영은 OAuth 최소 1개, Resend key, WeatherKit 자격 네 값이 필요하다.
 
-| 설정                                                          | 기본/용도                                                                                                         |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| DATABASE_URL / PGBOSS_DATABASE_URL                            | API DB / 별도 미설정 시 같은 pg-boss DB                                                                           |
-| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS | 10 / 비우면 pg 기본값(유휴 10초, 연결 대기 무제한)                                                                |
-| NODE_ENV / APP_ENV                                            | 런타임 / 배포 환경. Sentry는 production APP_ENV에서 발송                                                          |
-| PORT                                                          | host 기본 8080, API container 8080                                                                                |
-| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY        | 시작 검증에 필요한 32자 이상 값                                                                                   |
-| JOB_SCHEMA                                                    | pgboss                                                                                                            |
-| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                          | memory / postgres; 서로 다른 capability                                                                           |
-| REDIS_*                                                       | `CACHE_TYPE=redis` 또는 `PUSH_RATE_LIMIT_BACKEND=redis`일 때의 연결 설정                                          |
-| EXPO_ACCESS_TOKEN / RESEND_API_KEY                            | Expo / 이메일 공급자                                                                                              |
-| GOOGLE_GENERATIVE_AI_API_KEY                                  | 기존 Gemini 모델 공급자; 유료 호출은 별도 범위                                                                    |
-| AI_MODEL_<TASK> / AI_FALLBACK_MODEL                           | 선택. `google:<model>`, 기본 flash-lite·대체 없음                                                                 |
-| WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY     | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
-| RETENTION_ONBOARDING_V2_ENABLED                               | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
-| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL      | 운영 가입/결제 채널                                                                                               |
+| 설정                                                              | 기본/용도                                                                                                         |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| DATABASE_URL / PGBOSS_DATABASE_URL                                | API DB / 별도 미설정 시 같은 pg-boss DB                                                                           |
+| DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS     | 10 / 비우면 pg 기본값(유휴 10초, 연결 대기 무제한)                                                                |
+| NODE_ENV / APP_ENV                                                | 런타임 / 배포 환경. Sentry는 production APP_ENV에서 발송                                                          |
+| PORT                                                              | host 기본 8080, API container 8080                                                                                |
+| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY            | 시작 검증에 필요한 32자 이상 값                                                                                   |
+| JOB_SCHEMA                                                        | pgboss                                                                                                            |
+| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                              | memory / postgres; 서로 다른 capability                                                                           |
+| REDIS_*                                                           | `CACHE_TYPE=redis` 또는 `PUSH_RATE_LIMIT_BACKEND=redis`일 때의 연결 설정                                          |
+| EXPO_ACCESS_TOKEN / RESEND_API_KEY                                | Expo / 이메일 공급자                                                                                              |
+| ANTHROPIC_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY / OPENAI_API_KEY | AI 업체 키(있는 업체만 사용). 1.13·1.14 동의 사용자는 Gemini만 쓰므로 Google 키는 계속 필요                       |
+| AI_PROVIDER_ORDER / AI_MODEL_{ANTHROPIC,GOOGLE,OPENAI}            | 선택. 기본 `anthropic,google,openai` / claude-haiku-5-5·gemini-3.1-flash-lite·gpt-6-luna                          |
+| AI_DEADLINE_<TASK>_MS / AI_BREAKER_*                              | 선택. 업체 체인 제한 시간·회로 차단 시간(docs/server/ai.md)                                                       |
+| WEATHERKIT_TEAM_ID / _KEY_ID / _SERVICE_ID / _PRIVATE_KEY         | 날씨 v2. 모두 있거나 모두 없음, 운영 필수. SERVICE_ID는 앱 번들 ID가 아닌 Services ID, 키는 `\n`을 넣은 한 줄 PEM |
+| RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
+| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                               |
 
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 

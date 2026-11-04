@@ -64,7 +64,9 @@ packageExtensions:
       '@expo/config-plugins': ~58.0.9
 
 catalog:
+  '@ai-sdk/anthropic': '4.0.96'
   '@ai-sdk/google': '4.0.111'
+  '@ai-sdk/openai': '4.0.108'
   '@changesets/cli': '3.0.3'
   '@photostructure/tz-lookup': '11.7.0'
   '@react-native-kakao/core': '2.4.11'
@@ -83,8 +85,8 @@ catalog:
   '@types/pg': '8.23.1'
   '@vitest/coverage-v8': '5.1.0'
   'ai': '7.0.162'
-  ai-fallback: 3.0.0
   'bowser': '2.15.0'
+  'cockatiel': '4.0.0'
   'countries-and-timezones': '3.11.0'
   d3-shape: 3.2.1
   'dayjs': '1.11.23'

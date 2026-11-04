@@ -1,19 +1,19 @@
 import type { z } from "zod";
 
 import type {
-  AiProvider,
-  GenerateStructuredOptions,
-  GenerateStructuredResult,
-} from "../ports/parsing/ai-provider.port.js";
+  AiGenerationMeta,
+  AiGenerationRequest,
+  AiGeneratorPort,
+} from "../ports/generation/ai-generator.port.js";
 
 export interface BuiltPrompt {
   readonly system: string;
   readonly prompt: string;
 }
 
-export type StructuredRequest = Omit<GenerateStructuredOptions<unknown>, "schema">;
+export type StructuredRequest = Omit<AiGenerationRequest<unknown>, "schema">;
 
-export type GenerationMeta = Omit<GenerateStructuredResult<unknown>, "output">;
+export type GenerationMeta = AiGenerationMeta;
 
 export interface StructuredGeneration<R> {
   readonly value: R;
@@ -26,7 +26,7 @@ export interface StructuredGeneration<R> {
  */
 export interface StructuredOutput<R, C> {
   generate(
-    provider: Pick<AiProvider, "generateStructured">,
+    generator: Pick<AiGeneratorPort, "generate">,
     request: StructuredRequest,
     context: C,
   ): Promise<StructuredGeneration<R>>;
@@ -37,8 +37,8 @@ export function structuredOutput<T, R, C>(
   normalize: (output: T, context: C) => R,
 ): StructuredOutput<R, C> {
   return {
-    async generate(provider, request, context) {
-      const { output, ...meta } = await provider.generateStructured({ ...request, schema });
+    async generate(generator, request, context) {
+      const { output, ...meta } = await generator.generate({ ...request, schema });
       return { value: normalize(output, context), meta };
     },
   };

@@ -1,12 +1,12 @@
 import type { ErrorCodeType } from "@aido/api/errors";
+import type { AiProviderId } from "@aido/api/vocabulary";
 
 import {
-  AiProviderError,
-  type AiProviderErrorKind,
-  type AiTaskId,
+  AiGenerationError,
+  type AiFailureKind,
   type AiUpstreamCause,
-} from "../../ports/parsing/ai-provider.port.js";
-import type { GenerationMeta } from "../../prompts/structured-output.js";
+} from "../../ports/generation/ai-generation.errors.js";
+import type { AiGenerationMeta, AiTaskId } from "../../ports/generation/ai-generator.port.js";
 
 /** 모든 AI 작업이 같은 필드로 남기는 생성 결과 이벤트. 사용자 원문·제목·카테고리 이름은 남기지 않는다. */
 export const AiGenerationLogEvent = {
@@ -25,17 +25,21 @@ interface GenerationLogBase {
 
 export function generationCompletedLog(
   base: GenerationLogBase & { readonly outcome: AiGenerationOutcome },
-  meta: GenerationMeta,
+  meta: AiGenerationMeta,
 ) {
   return {
     event: AiGenerationLogEvent.COMPLETED,
     task: base.task,
     promptVersion: base.promptVersion,
+    provider: meta.provider,
     model: meta.model,
+    attempts: meta.attempts,
+    fallbackFrom: meta.fallbackFrom,
     latencyMs: meta.latencyMs,
-    inputTokens: meta.usage.input,
-    outputTokens: meta.usage.output,
-    reasoningTokens: meta.usage.reasoning,
+    inputTokens: meta.inputTokens,
+    outputTokens: meta.outputTokens,
+    reasoningTokens: meta.reasoningTokens,
+    estimatedCostMicroUsd: meta.estimatedCostMicroUsd,
     finishReason: meta.finishReason,
     outcome: base.outcome,
     quotaCharged: base.quotaCharged,
@@ -43,23 +47,40 @@ export function generationCompletedLog(
   };
 }
 
-interface ProviderFailure {
-  readonly errorType: AiProviderErrorKind;
-  readonly statusCode: number | undefined;
+export interface GenerationFailure {
+  readonly errorType: AiFailureKind;
+  readonly provider: AiProviderId | null;
+  readonly attempts: number;
+  readonly fallbackFrom: AiProviderId | null;
+  readonly estimatedCostMicroUsd: number | null;
   readonly upstream: AiUpstreamCause | undefined;
 }
 
-/** 실패 로그의 원인 필드. 공급자 오류가 아니면 서버 정규화·검증이 거절한 출력으로 본다. */
-export function providerFailure(error: unknown): ProviderFailure {
-  if (error instanceof AiProviderError) {
-    return { errorType: error.kind, statusCode: error.statusCode, upstream: error.upstream };
+/** 실패 로그의 원인 필드. 생성 오류가 아니면 서버 정규화·검증이 거절한 출력으로 본다. */
+export function generationFailure(error: unknown): GenerationFailure {
+  if (error instanceof AiGenerationError) {
+    return {
+      errorType: error.kind,
+      provider: error.provider,
+      attempts: error.attempts,
+      fallbackFrom: error.fallbackFrom,
+      estimatedCostMicroUsd: error.estimatedCostMicroUsd,
+      upstream: error.upstream,
+    };
   }
-  return { errorType: "INVALID_OUTPUT", statusCode: undefined, upstream: undefined };
+  return {
+    errorType: "INVALID_OUTPUT",
+    provider: null,
+    attempts: 0,
+    fallbackFrom: null,
+    estimatedCostMicroUsd: null,
+    upstream: undefined,
+  };
 }
 
 export function generationFailedLog(
   base: GenerationLogBase &
-    ProviderFailure & {
+    GenerationFailure & {
       readonly outcome: AiGenerationOutcome;
       readonly latencyMs: number;
       readonly errorCode?: ErrorCodeType;
@@ -69,10 +90,13 @@ export function generationFailedLog(
     event: AiGenerationLogEvent.FAILED,
     task: base.task,
     promptVersion: base.promptVersion,
+    provider: base.provider,
+    attempts: base.attempts,
+    fallbackFrom: base.fallbackFrom,
+    estimatedCostMicroUsd: base.estimatedCostMicroUsd,
     latencyMs: base.latencyMs,
     outcome: base.outcome,
     errorType: base.errorType,
-    statusCode: base.statusCode,
     ...(base.upstream != null && { upstream: base.upstream }),
     ...(base.errorCode != null && { errorCode: base.errorCode }),
     quotaCharged: base.quotaCharged,

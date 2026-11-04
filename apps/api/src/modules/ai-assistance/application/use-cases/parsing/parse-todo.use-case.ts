@@ -1,5 +1,4 @@
 import type { ParsedTodoData } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 
 import type { MeteredFeatureQuota, QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -10,15 +9,14 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import {
   generationCompletedLog,
   generationFailedLog,
-} from "../../observability/parsing/ai-generation-log.events.js";
-import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
+} from "../../observability/generation/ai-generation-log.events.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
+import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { parseTodoPrompts } from "../../prompts/parsing/parse-todo/index.js";
 import type { GenerationMeta } from "../../prompts/structured-output.js";
-import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 
@@ -72,12 +70,13 @@ type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
 /**
  * 자연어 → 단건 투두 파싱 use-case.
  *
- * 가용성 확인 → 사용량 원자적 차감 → 프롬프트 조립 → AI 생성 → 정규화.
- * AI 호출 실패 시 사용량을 보상 감소하고, 공급자 오류 종류에 따라
- * 요청 과다(AI_1310)/호출 실패(AI_1301)/파싱 실패(AI_1302)를 구분해 던진다.
+ * 사용량 원자적 예약 → 프롬프트 조립 → 동의 범위 안의 업체로 AI 생성 → 정규화.
+ * 생성 실패 시 예약을 한 번 환불하고, 실패 종류에 따라 요청 과다(AI_1310)/호출 실패(AI_1301)/
+ * 할 일 만들기 실패(AI_1302)를 details.charged=false와 함께 던진다.
  */
 interface ParseTodoDependencies {
-  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly generator: Pick<AiGeneratorPort, "generate">;
+  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
@@ -95,11 +94,6 @@ export class ParseTodo {
   async execute(input: ParseTodoInput): Promise<ParseTodoResult> {
     const { userId } = input;
     const startTime = Date.now();
-
-    if (!this.#dependencies.aiProvider.isAvailable("parse-todo")) {
-      this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
-      throw new ApplicationException(ErrorCode.AI_1301);
-    }
 
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
@@ -151,15 +145,17 @@ export class ParseTodo {
       userId,
     } as const;
 
+    const { agreedVersion } =
+      await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
     try {
       const { value, meta } = await definition.output.generate(
-        this.#dependencies.aiProvider,
+        this.#dependencies.generator,
         {
           task: "parse-todo",
           promptVersion: definition.promptVersion,
           system,
           prompt,
-          policy: resolveGenerationPolicy("parse-todo", this.#dependencies.settings),
+          agreedConsentVersion: agreedVersion,
         },
         {
           text,
@@ -197,7 +193,8 @@ export class ParseTodo {
           quotaCharged: false,
         }),
       );
-      throw new ApplicationException(failure.errorCode);
+      // 실패한 요청은 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다.
+      throw new ApplicationException(failure.errorCode, { charged: false });
     }
   }
 }
@@ -210,7 +207,7 @@ export function toParseMeta(
   return {
     model: meta.model,
     processingTimeMs,
-    tokenUsage: { input: meta.usage.input, output: meta.usage.output },
+    tokenUsage: { input: meta.inputTokens, output: meta.outputTokens },
     promptVersion,
   };
 }

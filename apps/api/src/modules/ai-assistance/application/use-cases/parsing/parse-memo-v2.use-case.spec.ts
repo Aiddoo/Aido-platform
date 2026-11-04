@@ -49,7 +49,7 @@ describe("ParseMemo — v2 정규화", () => {
       // Given
       const fixture = createFixture();
       const titles = Array.from({ length: draftCount }, (_, index) => `할 일 ${index + 1}`);
-      fixture.aiProvider.setRawResponse({ todos: titles.map((title) => draftTodo(title)) });
+      fixture.generator.setRawResponse({ todos: titles.map((title) => draftTodo(title)) });
       // When
       const result = await fixture.useCase.execute(fixture.input);
       // Then
@@ -65,7 +65,7 @@ describe("ParseMemo — v2 정규화", () => {
     // Given
     const fixture = createFixture();
     const titles = Array.from({ length: 12 }, (_, index) => `할 일 ${index + 1}`);
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       totalTaskCount: 12,
       todos: titles.slice(0, 8).map((title) => draftTodo(title)),
     });
@@ -88,7 +88,7 @@ describe("ParseMemo — v2 정규화", () => {
     async ({ totalTaskCount }) => {
       // Given
       const fixture = createFixture();
-      fixture.aiProvider.setRawResponse({
+      fixture.generator.setRawResponse({
         ...(totalTaskCount != null && { totalTaskCount }),
         todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
       });
@@ -103,7 +103,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("실제 할 일이 없으면 모델이 센 전체 수와 관계없이 남은 할 일은 0개다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       totalTaskCount: 4,
       todos: [draftTodo("ignored", { intent: "NO_ACTION" })],
     });
@@ -117,7 +117,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("할 일 0개면 안내 할 일 하나만 돌려주고 남은 할 일은 0개다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({ todos: [] });
+    fixture.generator.setRawResponse({ todos: [] });
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
@@ -128,7 +128,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("모델 대상 명령은 남은 할 일 수에 세지 않는다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [
         draftTodo("ignored", { intent: "NO_ACTION" }),
         ...Array.from({ length: 6 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
@@ -144,7 +144,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("7개 항목은 합치지 않고 앞의 5개만 두며 제목 반복·빈 항목은 뺀다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [
         draftTodo("발표 준비", {
           items: [
@@ -173,7 +173,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("201자 제목은 200자로 자르고 미소유 카테고리는 요청 기본값으로 바꾼다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [
         draftTodo("가".repeat(201), { categoryId: 999 }),
         draftTodo("업무 정리", { categoryId: 7 }),
@@ -189,7 +189,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("메모 앞머리 날짜와 시각은 서버가 계산한다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [
         draftTodo("은행", {
           date: { kind: "OFFSET_DAYS", amount: 1 },
@@ -211,7 +211,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("모든 할 일이 모델 대상 명령이면 안내 할 일 하나만 돌려주고 사용량을 차감하지 않는다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [draftTodo("ignored", { intent: "NO_ACTION" })],
     });
     // When
@@ -230,7 +230,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("NO_ACTION과 실제 할 일이 섞이면 실제 할 일만 남기고 사용량을 차감한다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       todos: [draftTodo("ignored", { intent: "NO_ACTION" }), draftTodo("전기요금 납부")],
     });
     // When
@@ -243,7 +243,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("모델이 전체 할 일 수를 터무니없이 크게 주면 상한 100개 기준으로 남은 수를 알린다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       totalTaskCount: 99_999_999,
       todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
     });
@@ -256,7 +256,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("모델 출력의 스키마 밖 필드는 버리고 제목·항목의 보이지 않는 문자는 지운다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       userId: "other-user",
       todos: [
         draftTodo("우유\u200B 사기\u202E\u{E0041}", {
@@ -279,7 +279,7 @@ describe("ParseMemo — v2 정규화", () => {
   it("성공 로그에는 메모 원문과 모델이 만든 제목을 남기지 않는다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({ todos: [draftTodo("PRIVATE_TITLE")] });
+    fixture.generator.setRawResponse({ todos: [draftTodo("PRIVATE_TITLE")] });
     // When
     await fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO_TEXT" });
     // Then

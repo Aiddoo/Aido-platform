@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { quotaErrorDetailsSchema } from "../contracts/entitlement/v1/quota-error.details.js";
+import {
+  notChargedErrorDetailsSchema,
+  quotaErrorDetailsSchema,
+} from "../contracts/entitlement/v1/quota-error.details.js";
 import { ErrorCode, type ErrorCodeType } from "./errors.js";
 
 /** 친구 한도 초과(FOLLOW_0909)일 때 앱이 한도 안내에 쓰는 값 */
@@ -33,6 +36,10 @@ const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
   [ErrorCode.FOLLOW_0909]: friendQuotaErrorDetailsSchema,
   [ErrorCode.NUDGE_1101]: quotaErrorDetailsSchema,
   [ErrorCode.CHEER_1201]: quotaErrorDetailsSchema,
+  // AI 생성이 끝내 실패해 예약을 환불한 요청
+  [ErrorCode.AI_1301]: notChargedErrorDetailsSchema,
+  [ErrorCode.AI_1302]: notChargedErrorDetailsSchema,
+  [ErrorCode.AI_1310]: notChargedErrorDetailsSchema,
   [ErrorCode.AI_1303]: quotaErrorDetailsSchema,
   [ErrorCode.AI_1313]: quotaErrorDetailsSchema,
   [ErrorCode.AI_1314]: quotaErrorDetailsSchema,

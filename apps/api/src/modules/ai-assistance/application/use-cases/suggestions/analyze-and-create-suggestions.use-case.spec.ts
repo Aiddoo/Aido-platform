@@ -47,7 +47,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
         expect(f.repository.rows.has(1)).toBe(false);
         expect(f.repository.rows.get(2)?.status).toBe("ACCEPTED");
         expect(f.repository.rows.has(3)).toBe(false);
-        expect(f.aiProvider.getCallCount()).toBe(1);
+        expect(f.generator.getCallCount()).toBe(1);
         expect(f.access.reads).toEqual([
           { inUnitOfWork: false, eligible: true },
           { inUnitOfWork: true, eligible: true },
@@ -66,7 +66,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
       const count = await f.analyze.execute(f.userId, "Asia/Seoul");
       // Then
       expect(count).toBe(0);
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.repository.writes).toEqual([]);
       expect(f.repository.rows.get(1)?.status).toBe("PENDING");
     }));
@@ -84,8 +84,8 @@ describe("AnalyzeAndCreateSuggestions", () => {
       await agreed.analyze.execute(agreed.userId, "Asia/Seoul");
       // Then
       expect(skipped).toBe(0);
-      expect(undecided.aiProvider.getCallCount()).toBe(0);
-      expect(agreed.aiProvider.getCallCount()).toBe(1);
+      expect(undecided.generator.getCallCount()).toBe(0);
+      expect(agreed.generator.getCallCount()).toBe(1);
     }));
 
   it("기록이 없으면 기존 pending을 보존하고 AI와 쓰기를 모두 생략한다", () =>
@@ -97,7 +97,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
       // When - 분석
       expect(await f.analyze.execute(f.userId, "Asia/Seoul")).toBe(0);
       // Then - 비용과 상태 그대로
-      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.generator.getCallCount()).toBe(0);
       expect(f.repository.writes).toEqual([]);
       expect(f.repository.rows.get(1)?.status).toBe("PENDING");
     }));
@@ -118,7 +118,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
         // When - 실행 순간 최신 capability 조회
         expect(await f.analyze.execute(f.userId, "Asia/Seoul")).toBe(0);
         // Then - 호출·쓰기 0, 이전 pending 유지
-        expect(f.aiProvider.getCallCount()).toBe(0);
+        expect(f.generator.getCallCount()).toBe(0);
         expect(f.repository.writes).toEqual([]);
         expect(f.repository.rows.has(1)).toBe(true);
       }),
@@ -131,7 +131,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
         // Given - 유료 상태에서 AI 응답이 대기 중
         const f = usePatternResponse(createAiAssistanceFixture());
         seedPendingSuggestion(f);
-        const gate = pauseAiResponse(f.aiProvider);
+        const gate = pauseAiResponse(f.generator);
         const pending = f.analyze.execute(f.userId, "Asia/Seoul");
         try {
           await gate.entered;
@@ -149,7 +149,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
         }
         // Then - 이미 시작한 AI는 1회, 교체·삭제·저장 모두 0
         expect(await pending).toBe(0);
-        expect(f.aiProvider.getCallCount()).toBe(1);
+        expect(f.generator.getCallCount()).toBe(1);
         expect(f.repository.writes).toEqual([]);
         expect(f.repository.rows.has(1)).toBe(true);
         expect(f.access.locks).toEqual([true]);
@@ -163,7 +163,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
         // Given - 필수 patterns 누락 또는 범위 밖 confidence
         const f = createAiAssistanceFixture();
         seedPendingSuggestion(f);
-        f.aiProvider.setRawResponse(raw);
+        f.generator.setRawResponse(raw);
         // When - 원본 그대로 생산 schema 검증
         await expect(f.analyze.execute(f.userId, "Asia/Seoul")).rejects.toThrow();
         // Then - 저장 전 실패, 기존 pending 유지
@@ -249,7 +249,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
         expect(f.repository.saved[0]?.reason).toContain(
           locale === "ko" ? "최근 기록이 1개" : "1 recent record",
         );
-        expect(f.aiProvider.getCallCount()).toBe(1);
+        expect(f.generator.getCallCount()).toBe(1);
       }),
   );
 
@@ -282,14 +282,14 @@ describe("AnalyzeAndCreateSuggestions", () => {
           confidence: 0.9 - n * 0.01,
         }),
       );
-      f.aiProvider.setRawResponse({ patterns: [...patterns, patterns[0]] });
+      f.generator.setRawResponse({ patterns: [...patterns, patterns[0]] });
       // When - 분석 결과 정렬·중복 제거·상한 적용
       expect(await f.analyze.execute(f.userId, "Asia/Seoul")).toBe(5);
       // Then - 가장 강한 실제 행동 다섯 개
       expect(f.repository.saved.map((row) => row.title)).toEqual(
         patterns.slice(0, 5).map((row) => row.title),
       );
-      expect(f.aiProvider.getCallCount()).toBe(1);
+      expect(f.generator.getCallCount()).toBe(1);
     }));
 
   it("시즌·밸런스 제안은 두 개로 제한하고 카테고리명에 맞는 제안을 분류한다", () =>
@@ -316,7 +316,7 @@ describe("AnalyzeAndCreateSuggestions", () => {
       f.repository.todos = ["책 읽기", "스트레칭"].flatMap((title) =>
         ["2026-03-09", "2026-03-16"].map((startDate) => createAnalysisTodo({ title, startDate })),
       );
-      f.aiProvider.setRawResponse({
+      f.generator.setRawResponse({
         patterns: [
           createDetectedPattern({
             title: "책 읽기",

@@ -1,10 +1,10 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import {
   AI_CLIENT_APP_VERSION_READER,
   AI_DATA_SHARING_CONSENT_DECISION_READER,
-  AI_PROVIDER,
   AI_TASK_SETTINGS,
   type AiTaskSettingsMap,
   USER_LOCALE_PREFERENCE_READER,
@@ -43,7 +43,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
   provide: AnalyzeAndCreateSuggestions,
   inject: [
     AI_SUGGESTION_REPOSITORY,
-    AI_PROVIDER,
+    AI_GENERATOR,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
     AI_CLIENT_APP_VERSION_READER,
     UNIT_OF_WORK,
@@ -54,7 +54,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
   ],
   useFactory: (
     repository: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["repository"],
-    aiProvider: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["aiProvider"],
+    generator: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["generator"],
     aiDataSharingConsent: ConstructorParameters<
       typeof AnalyzeAndCreateSuggestions
     >[0]["aiDataSharingConsent"],
@@ -73,7 +73,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
   ) =>
     new AnalyzeAndCreateSuggestions({
       repository,
-      aiProvider,
+      generator,
       aiDataSharingConsent,
       clientAppVersion,
       unitOfWork,

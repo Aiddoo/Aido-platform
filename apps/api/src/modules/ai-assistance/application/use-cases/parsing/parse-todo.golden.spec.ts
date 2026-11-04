@@ -21,7 +21,7 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(golden.now));
     const fixture = createAiParsingFixture();
-    fixture.aiProvider.setRawResponse(golden.draft);
+    fixture.generator.setRawResponse(golden.draft);
     const useCase = new ParseTodo(fixture);
     // When
     const result = await useCase.execute({

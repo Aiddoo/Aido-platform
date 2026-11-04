@@ -2,10 +2,10 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import type {
-  AiProvider,
-  GenerateStructuredOptions,
-  GenerateStructuredResult,
-} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
+  AiGenerationRequest,
+  AiGenerationResult,
+  AiGeneratorPort,
+} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
@@ -15,7 +15,7 @@ import {
   TEST_AI_TASK_SETTINGS,
   TEST_AI_TASK_SETTINGS_V1,
 } from "#test/fixtures/ai-task-settings.fixture";
-import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
   StubAiClientAppVersion,
@@ -46,19 +46,17 @@ export function createAnalysisTodo(
   };
 }
 
-class GatedFakeAiProvider extends FakeAiProvider implements AiProvider {
+class GatedFakeAiGenerator extends FakeAiGenerator implements AiGeneratorPort {
   beforeResult: (() => Promise<void>) | undefined;
-  override async generateStructured<T>(
-    options: GenerateStructuredOptions<T>,
-  ): Promise<GenerateStructuredResult<T>> {
-    const result = await super.generateStructured(options);
+  override async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
+    const result = await super.generate(request);
     await this.beforeResult?.();
     return result;
   }
 }
 
 /** 실제 응답 대기 시점의 상태 변경을 Promise barrier로 고정한다. */
-export function pauseAiResponse(provider: GatedFakeAiProvider) {
+export function pauseAiResponse(provider: GatedFakeAiGenerator) {
   let markEntered!: () => void;
   let release!: () => void;
   const entered = new Promise<void>((resolve) => {
@@ -86,7 +84,7 @@ export function createAiAssistanceFixture() {
   const todoStatsReader = new StubAiTodoStatsReader();
   const weatherForecastReader = new StubAiWeatherForecastReader();
   const reportReader = new StubAiWeeklyReportReader();
-  const aiProvider = new GatedFakeAiProvider();
+  const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
   const logger = mock<ApplicationLogger>();
@@ -98,7 +96,7 @@ export function createAiAssistanceFixture() {
   });
   const analyze = new AnalyzeAndCreateSuggestions({
     repository,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     unitOfWork,
@@ -111,7 +109,7 @@ export function createAiAssistanceFixture() {
   });
   const analyzeV2 = new AnalyzeAndCreateSuggestions({
     repository,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     unitOfWork,
@@ -124,7 +122,7 @@ export function createAiAssistanceFixture() {
   const generateReport = new GenerateReport({
     aiReportRepository: reportRepository,
     todoStatsReader,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     logger,
@@ -142,7 +140,7 @@ export function createAiAssistanceFixture() {
     todoStatsReader,
     weatherForecastReader,
     reportReader,
-    aiProvider,
+    generator,
     aiDataSharingConsent,
     clientAppVersion,
     logger,
@@ -157,7 +155,7 @@ export function usePatternResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   patterns = [createDetectedPattern()],
 ) {
-  fixture.aiProvider.setRawResponse({ patterns });
+  fixture.generator.setRawResponse({ patterns });
   return fixture;
 }
 
@@ -176,7 +174,7 @@ export function useReportResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   locale: "ko" | "en" = "ko",
 ) {
-  fixture.aiProvider.setRawResponse(createReportAiResponse(locale));
+  fixture.generator.setRawResponse(createReportAiResponse(locale));
   return useReportActivity(fixture);
 }
 

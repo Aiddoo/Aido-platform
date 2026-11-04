@@ -1087,14 +1087,16 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // AI 서비스 (AI_1300-1399)
   [ErrorCode.AI_1301]: {
     code: "AI_1301",
-    message: "AI 서비스를 사용할 수 없습니다.",
-    description: "AI 서비스가 일시적으로 사용 불가능하거나 API 키가 설정되지 않았습니다.",
+    message: "지금은 AI 기능을 쓸 수 없습니다.",
+    description:
+      "동의한 범위의 AI 업체가 모두 일시 장애·결제·인증 문제로 응답하지 못했거나 설정되지 않았습니다. 잠시 후 다시 시도해 주세요. 사용자 요청이면 횟수를 차감하지 않았습니다(details.charged=false).",
     httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
   },
   [ErrorCode.AI_1302]: {
     code: "AI_1302",
-    message: "자연어 파싱에 실패했습니다.",
-    description: "AI가 입력 텍스트를 투두 데이터로 변환하지 못했습니다.",
+    message: "입력한 내용으로 할 일을 만들지 못했습니다.",
+    description:
+      "AI 결과가 안전 정책으로 막혔거나, 길이 제한으로 잘렸거나, 형식이 맞지 않았습니다. 내용을 바꿔 다시 시도해 주세요. 사용자 요청이면 횟수를 차감하지 않았습니다(details.charged=false).",
     httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
   [ErrorCode.AI_1303]: {
@@ -1141,15 +1143,16 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   },
   [ErrorCode.AI_1310]: {
     code: "AI_1310",
-    message: "AI 요청이 너무 많습니다.",
-    description: "잠시 후 다시 시도해 주세요.",
+    message: "지금 AI 요청이 너무 많습니다.",
+    description:
+      "AI 업체의 요청 한도에 걸렸습니다. 잠시 후 다시 시도해 주세요. 사용자 요청이면 횟수를 차감하지 않았습니다(details.charged=false).",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
   [ErrorCode.AI_1311]: {
     code: "AI_1311",
     message: "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
     description:
-      "1.13.0 이상 앱에서 현재 안내 버전의 AI 데이터 처리(Google Gemini 전송)에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다.",
+      "1.13.0 이상 앱에서 지원하는 안내 버전의 AI 데이터 처리에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다. 동의한 안내 버전이 허용한 업체에만 글자를 보냅니다(2026-10-26: Google Gemini, 2026-11-04: Anthropic Claude·Google Gemini·OpenAI).",
     httpStatus: HttpStatus.FORBIDDEN,
   },
   [ErrorCode.AI_1313]: {

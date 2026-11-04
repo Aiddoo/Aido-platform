@@ -6,9 +6,9 @@ import { EntitlementService } from "#api/modules/access/application/services/ent
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
 import { DrizzleEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/drizzle-entitlement.reader";
 import type {
-  GenerateStructuredOptions,
-  GenerateStructuredResult,
-} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
+  AiGenerationRequest,
+  AiGenerationResult,
+} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import type { CreateSuggestionInput } from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
 import type { RecurringTodoCreatorPort } from "#api/modules/ai-assistance/application/ports/suggestions/recurring-todo-creator.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
@@ -45,7 +45,7 @@ import {
 } from "#test/fixtures/ai-task-settings.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
-import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -54,14 +54,12 @@ import type { User } from "#test/types/database-rows";
 
 const CURRENT_TIME = new Date("2026-10-08T02:00:00Z");
 
-class GatedAiProvider extends FakeAiProvider {
+class GatedAiGenerator extends FakeAiGenerator {
   readonly entered = Promise.withResolvers<void>();
   readonly released = Promise.withResolvers<void>();
 
-  override async generateStructured<T>(
-    input: GenerateStructuredOptions<T>,
-  ): Promise<GenerateStructuredResult<T>> {
-    const result = await super.generateStructured(input);
+  override async generate<T>(input: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
+    const result = await super.generate(input);
     this.entered.resolve();
     await this.released.promise;
     return result;
@@ -138,7 +136,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     },
   };
 
-  function generation(provider: FakeAiProvider, repository = suggestions) {
+  function generation(provider: FakeAiGenerator, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
     const consentReader = new AiDataSharingConsentReader({
       consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
@@ -151,7 +149,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const analyze = new AnalyzeAndCreateSuggestions({
       repository,
-      aiProvider: provider,
+      generator: provider,
       aiDataSharingConsent: consentReader,
       clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
       contextBuilder,
@@ -164,7 +162,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const report = new GenerateReport({
       aiReportRepository: reports,
       todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost),
-      aiProvider: provider,
+      generator: provider,
       aiDataSharingConsent: consentReader,
       clientAppVersion: new DrizzleClientAppVersionReader(fixture.txHost),
       entitlementReader: entitlement,
@@ -188,7 +186,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     return { analyze, report, reportProcessor, suggestionProcessor, notifications };
   }
 
-  async function executeWorker(kind: "report" | "suggestion", provider: FakeAiProvider) {
+  async function executeWorker(kind: "report" | "suggestion", provider: FakeAiGenerator) {
     const flow = generation(provider);
     if (kind === "report") {
       provider.setRawResponse(createReportAiResponse());
@@ -306,7 +304,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     "유효 ACTIVE 사용자에게 %s worker가 결과를 한 번 저장한다",
     async (kind) => {
       // Given
-      const provider = new FakeAiProvider();
+      const provider = new FakeAiGenerator();
 
       // When
       const flow = await executeWorker(kind, provider);
@@ -332,7 +330,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       const grantEndsAt = new Date(CURRENT_TIME.getTime() + 60_000);
       await patchUser({ subscriptionStatus: "ACTIVE", subscriptionExpiresAt: grantEndsAt });
       vi.setSystemTime(new Date(grantEndsAt.getTime() + offsetMs));
-      const provider = new FakeAiProvider();
+      const provider = new FakeAiGenerator();
 
       // When
       await executeWorker(kind, provider);
@@ -363,7 +361,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           return row;
         }),
       );
-      const provider = new FakeAiProvider();
+      const provider = new FakeAiGenerator();
       provider.setRawResponse(createReportAiResponse());
 
       // When
@@ -396,7 +394,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
       // When
       for (const kind of ["report", "suggestion"] as const) {
-        const provider = new FakeAiProvider();
+        const provider = new FakeAiGenerator();
         const flow = await executeWorker(kind, provider);
 
         // Then
@@ -411,7 +409,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     "%s AI 응답 대기 중 FREE로 바뀌면 결과·알림을 저장하지 않는다",
     async (kind) => {
       // Given
-      const provider = new GatedAiProvider();
+      const provider = new GatedAiGenerator();
       const work = executeWorker(kind, provider);
       await Promise.race([
         provider.entered.promise,
@@ -465,7 +463,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       where: { userId },
       orderBy: { id: "asc" },
     });
-    const provider = new FakeAiProvider();
+    const provider = new FakeAiGenerator();
     provider.setRawResponse({ patterns: [createDetectedPattern()] });
     const flow = generation(provider, new FailingSuggestionRepository(fixture.txHost));
 
@@ -498,7 +496,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   it("유료 해제 transaction이 사용자 잠금을 잡고 있으면 저장은 commit 뒤 새 권한을 읽는다", async () => {
     // Given
-    const provider = new FakeAiProvider();
+    const provider = new FakeAiGenerator();
     provider.setRawResponse({ patterns: [createDetectedPattern()] });
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();

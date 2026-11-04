@@ -1,10 +1,10 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import {
   AI_CLIENT_APP_VERSION_READER,
   AI_DATA_SHARING_CONSENT_DECISION_READER,
-  AI_PROVIDER,
   AI_TASK_SETTINGS,
   type AiTaskSettingsMap,
   USER_LOCALE_PREFERENCE_READER,
@@ -24,7 +24,7 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
   inject: [
     AI_REPORT_REPOSITORY,
     TODO_STATS_READER,
-    AI_PROVIDER,
+    AI_GENERATOR,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
     AI_CLIENT_APP_VERSION_READER,
     ENTITLEMENT_READER,
@@ -35,7 +35,7 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
   useFactory: (
     aiReportRepository: ConstructorParameters<typeof GenerateReport>[0]["aiReportRepository"],
     todoStatsReader: ConstructorParameters<typeof GenerateReport>[0]["todoStatsReader"],
-    aiProvider: ConstructorParameters<typeof GenerateReport>[0]["aiProvider"],
+    generator: ConstructorParameters<typeof GenerateReport>[0]["generator"],
     aiDataSharingConsent: ConstructorParameters<typeof GenerateReport>[0]["aiDataSharingConsent"],
     clientAppVersion: ConstructorParameters<typeof GenerateReport>[0]["clientAppVersion"],
     entitlementReader: ConstructorParameters<typeof GenerateReport>[0]["entitlementReader"],
@@ -46,7 +46,7 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
     new GenerateReport({
       aiReportRepository,
       todoStatsReader,
-      aiProvider,
+      generator,
       aiDataSharingConsent,
       clientAppVersion,
       entitlementReader,

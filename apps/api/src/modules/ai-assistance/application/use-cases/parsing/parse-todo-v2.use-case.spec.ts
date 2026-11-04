@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
+import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
-import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 
 // 서울 2026-10-28(수) 10:00
@@ -33,7 +33,7 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
   it("모델이 고른 표현을 서버가 사용자 로컬 날짜·시각으로 계산하고 프롬프트 버전을 돌려준다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       intent: "TASK",
       title: "  팀   미팅 ",
       date: { kind: "OFFSET_DAYS", amount: 1 },
@@ -55,14 +55,14 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
       categoryId: 7,
     });
     expect(result.meta.promptVersion).toBe("parse-todo@v2.1");
-    expect(fixture.aiProvider.getLastOptions()?.promptVersion).toBe("parse-todo@v2.1");
+    expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@v2.1");
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
   });
 
   it("프롬프트 system에는 날짜가 없고 user 턴에 연도를 포함한 로컬 시각이 들어간다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       intent: "TASK",
       title: "팀 미팅",
       date: { kind: "NONE" },
@@ -72,15 +72,15 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
     // When
     await fixture.useCase.execute({ ...fixture.input, timezone: "America/Los_Angeles" });
     // Then
-    expect(fixture.aiProvider.getLastSystem()).not.toMatch(/2026-\d\d-\d\d/);
-    expect(fixture.aiProvider.getLastPrompt()).toContain('"now": "2026-10-27T18:00"');
-    expect(fixture.aiProvider.getLastPrompt()).toContain('"weekday": "화요일"');
+    expect(fixture.generator.getLastSystem()).not.toMatch(/2026-\d\d-\d\d/);
+    expect(fixture.generator.getLastPrompt()).toContain('"now": "2026-10-27T18:00"');
+    expect(fixture.generator.getLastPrompt()).toContain('"weekday": "화요일"');
   });
 
   it("모델 대상 명령만 있는 입력은 앱 언어 문구로 바꾸고 사용량을 차감하지 않는다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setRawResponse({
+    fixture.generator.setRawResponse({
       intent: "NO_ACTION",
       title: "ignored",
       date: { kind: "OFFSET_DAYS", amount: 3 },
@@ -111,7 +111,7 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
   it("빈 제목은 원문으로 대신하고 200자를 넘는 제목은 문자 경계로 자른다", async () => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider
+    fixture.generator
       .setRawResponse({
         intent: "TASK",
         title: "가".repeat(199) + "😀",
@@ -145,7 +145,7 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
       repeat: { pattern: "NONE" },
       categoryId: 999,
     };
-    fixture.aiProvider.setRawResponse(draft).setRawResponse(draft);
+    fixture.generator.setRawResponse(draft).setRawResponse(draft);
     // When
     const inferred = await fixture.useCase.execute(fixture.input);
     const requested = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
@@ -161,7 +161,7 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
   ])("$kind 실패는 $errorCode로 응답하고 사용량을 돌려준다", async ({ kind, errorCode }) => {
     // Given
     const fixture = createFixture();
-    fixture.aiProvider.setInvalidResponse(new AiProviderError(kind, undefined));
+    fixture.generator.setInvalidResponse(createAiGenerationError(kind));
     // When
     const execution = fixture.useCase.execute(fixture.input);
     // Then

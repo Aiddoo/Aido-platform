@@ -12,19 +12,16 @@ import {
   ENTITLEMENT_READER,
   type EntitlementReaderPort,
 } from "#api/modules/access/access-entitlement.public";
-import {
-  AI_PROVIDER,
-  AI_TASK_SETTINGS,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import {
-  AiProviderError,
-  type GenerateStructuredOptions,
-  type GenerateStructuredResult,
-} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
+import { AI_TASK_SETTINGS } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import type {
+  AiGenerationRequest,
+  AiGenerationResult,
+} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
-import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -34,7 +31,7 @@ const oldMonthAt = new Date("2026-04-30T14:59:59.000Z");
 const newMonthAt = new Date("2026-04-30T15:00:01.000Z");
 const nextResetAt = "2026-05-31T15:00:00.000Z";
 
-class DeferredAiProvider extends FakeAiProvider {
+class DeferredAiGenerator extends FakeAiGenerator {
   readonly #pending: Array<{
     entered: ReturnType<typeof Promise.withResolvers<void>>;
     continued: ReturnType<typeof Promise.withResolvers<void>>;
@@ -48,11 +45,9 @@ class DeferredAiProvider extends FakeAiProvider {
     return { entered: entered.promise, release: () => continued.resolve() };
   }
 
-  override async generateStructured<T>(
-    options: GenerateStructuredOptions<T>,
-  ): Promise<GenerateStructuredResult<T>> {
+  override async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
     const deferred = this.#pending.shift();
-    const result = await super.generateStructured(options);
+    const result = await super.generate(request);
     if (deferred === undefined) {
       return result;
     }
@@ -75,16 +70,16 @@ class DeferredAiProvider extends FakeAiProvider {
 
 describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
-  let provider: DeferredAiProvider;
+  let provider: DeferredAiGenerator;
   let user: { userId: string; accessToken: string };
 
   beforeAll(async () => {
-    provider = new DeferredAiProvider();
+    provider = new DeferredAiGenerator();
     context = await createE2eApp({
       // 이 파일의 응답 fixture는 v1 모양이라 파싱 v1 롤백 경로를 검증한다. v2는 ai-parsing-v2.e2e-spec이 맡는다.
       customizeBuilder: (builder) =>
         builder
-          .overrideProvider(AI_PROVIDER)
+          .overrideProvider(AI_GENERATOR)
           .useValue(provider)
           .overrideProvider(AI_TASK_SETTINGS)
           .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
@@ -234,7 +229,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   it("AI 공급자 호출 실패는 기존 503 오류를 반환하고 예약한 사용량만 되돌린다", async () => {
     // Given
     await setQuota({ count: 2, resetAt: oldMonthAt });
-    provider.setInvalidResponse(new AiProviderError("UPSTREAM", 503));
+    provider.setInvalidResponse(createAiGenerationError("UPSTREAM"));
 
     // When
     const response = await parseTodo();
@@ -271,7 +266,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
 
   it("이전 달 AI 응답이 새달 성공 요청 뒤에 실패해도 새달 사용량을 차감하지 않는다", async () => {
     // Given
-    const deferred = provider.deferNext(new AiProviderError("UPSTREAM", 503));
+    const deferred = provider.deferNext(createAiGenerationError("UPSTREAM"));
     const previousRequest = parseTodo().then();
     try {
       await Promise.race([

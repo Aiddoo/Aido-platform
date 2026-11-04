@@ -1,14 +1,17 @@
 import type { ParsedTodoData } from "@aido/api";
 
+import {
+  AiGenerationError,
+  type AiFailureKind,
+} from "#api/modules/ai-assistance/application/ports/generation/ai-generation.errors";
 import type {
-  AiProvider,
-  GenerateStructuredOptions,
-  GenerateStructuredResult,
-  TokenUsage,
-} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
+  AiGenerationRequest,
+  AiGenerationResult,
+  AiGeneratorPort,
+} from "#api/modules/ai-assistance/application/ports/generation/ai-generator.port";
 import { createParsedTodoResponse } from "#test/fixtures/ai-response.fixture";
 
-export interface FakeAiProviderOptions {
+export interface FakeAiGeneratorOptions {
   defaultResponse?: Partial<ParsedTodoData>;
   defaultAvailable?: boolean;
   defaultDelayMs?: number;
@@ -17,11 +20,30 @@ export interface FakeAiProviderOptions {
 export interface CallRecord {
   system?: string;
   prompt: string;
-  options: GenerateStructuredOptions<unknown>;
+  request: AiGenerationRequest<unknown>;
   timestamp: Date;
 }
 
-export class FakeAiProvider implements AiProvider {
+interface FakeTokenUsage {
+  readonly input: number;
+  readonly output: number;
+  readonly reasoning: number;
+}
+
+const DEFAULT_TOKEN_USAGE: FakeTokenUsage = { input: 150, output: 50, reasoning: 0 };
+
+/** 생성기가 끝내 실패했을 때 던지는 오류(업체 체인 정보 없이 종류만). */
+export function createAiGenerationError(kind: AiFailureKind): AiGenerationError {
+  return new AiGenerationError(kind, {
+    provider: kind === "UNAVAILABLE" ? null : "google",
+    attempts: kind === "UNAVAILABLE" ? 0 : 1,
+    fallbackFrom: null,
+    estimatedCostMicroUsd: 0,
+  });
+}
+
+/** 업체 체인 없이 정해 둔 응답을 스키마로 검증해 돌려주는 생성기. */
+export class FakeAiGenerator implements AiGeneratorPort {
   private _responses: Record<string, unknown>[] = [];
   private _defaultResponse: ParsedTodoData = createParsedTodoResponse();
   private readonly _initialResponse: ParsedTodoData;
@@ -29,17 +51,13 @@ export class FakeAiProvider implements AiProvider {
   private readonly _initialDelayMs: number;
   private _callHistory: CallRecord[] = [];
   private _isAvailable = true;
-  private _shouldFail = false;
-  private _failureError: Error | null = null;
+  private _failureError: Error | null | undefined = undefined;
   private _delayMs = 0;
-  private _tokenUsage: TokenUsage = { input: 150, output: 50, reasoning: 0 };
+  private _tokenUsage: FakeTokenUsage = DEFAULT_TOKEN_USAGE;
 
-  constructor(options?: FakeAiProviderOptions) {
+  constructor(options?: FakeAiGeneratorOptions) {
     if (options?.defaultResponse) {
-      this._defaultResponse = {
-        ...this._defaultResponse,
-        ...options.defaultResponse,
-      };
+      this._defaultResponse = { ...this._defaultResponse, ...options.defaultResponse };
     }
     if (options?.defaultAvailable !== undefined) {
       this._isAvailable = options.defaultAvailable;
@@ -52,34 +70,36 @@ export class FakeAiProvider implements AiProvider {
     this._initialDelayMs = this._delayMs;
   }
 
-  async generateStructured<T>(
-    options: GenerateStructuredOptions<T>,
-  ): Promise<GenerateStructuredResult<T>> {
+  async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
     this._callHistory.push({
-      system: options.system,
-      prompt: options.prompt,
-      options,
+      system: request.system,
+      prompt: request.prompt,
+      request,
       timestamp: new Date(),
     });
     if (this._delayMs > 0) {
-      await this.delay(this._delayMs);
+      await new Promise((resolve) => setTimeout(resolve, this._delayMs));
     }
-    if (this._shouldFail) {
+    if (!this._isAvailable) {
+      throw createAiGenerationError("UNAVAILABLE");
+    }
+    if (this._failureError !== undefined) {
       throw this._failureError ?? new Error("AI parsing failed");
     }
     const response = this._responses.shift() ?? structuredClone(this._defaultResponse);
-
     return {
-      output: options.schema.parse(response),
+      output: request.schema.parse(response),
+      provider: "google",
       model: "fake:test-model",
-      finishReason: "stop",
+      attempts: 1,
+      fallbackFrom: null,
       latencyMs: 0,
-      usage: { ...this._tokenUsage },
+      inputTokens: this._tokenUsage.input,
+      outputTokens: this._tokenUsage.output,
+      reasoningTokens: this._tokenUsage.reasoning,
+      estimatedCostMicroUsd: 0,
+      finishReason: "stop",
     };
-  }
-
-  isAvailable(): boolean {
-    return this._isAvailable;
   }
 
   setResponse(response: Partial<ParsedTodoData>): this {
@@ -99,13 +119,14 @@ export class FakeAiProvider implements AiProvider {
     return this;
   }
 
+  /** false면 보낼 수 있는 업체가 없는 것처럼 UNAVAILABLE을 던진다. */
   setAvailable(available: boolean): this {
     this._isAvailable = available;
     return this;
   }
 
+  /** 다음 호출부터 이 오류(없으면 출력 검증 실패와 같은 일반 오류)를 던진다. */
   setInvalidResponse(error?: Error): this {
-    this._shouldFail = true;
     this._failureError = error ?? null;
     return this;
   }
@@ -115,7 +136,7 @@ export class FakeAiProvider implements AiProvider {
     return this;
   }
 
-  setTokenUsage(usage: Partial<TokenUsage>): this {
+  setTokenUsage(usage: Partial<FakeTokenUsage>): this {
     this._tokenUsage = { ...this._tokenUsage, ...usage };
     return this;
   }
@@ -125,15 +146,15 @@ export class FakeAiProvider implements AiProvider {
   }
 
   getLastPrompt(): string | undefined {
-    return this._callHistory[this._callHistory.length - 1]?.prompt;
+    return this._callHistory.at(-1)?.prompt;
   }
 
   getLastSystem(): string | undefined {
-    return this._callHistory[this._callHistory.length - 1]?.system;
+    return this._callHistory.at(-1)?.system;
   }
 
-  getLastOptions(): GenerateStructuredOptions<unknown> | undefined {
-    return this._callHistory[this._callHistory.length - 1]?.options;
+  getLastRequest(): AiGenerationRequest<unknown> | undefined {
+    return this._callHistory.at(-1)?.request;
   }
 
   getCallHistory(): CallRecord[] {
@@ -154,10 +175,9 @@ export class FakeAiProvider implements AiProvider {
     this._callHistory = [];
     this._defaultResponse = structuredClone(this._initialResponse);
     this._isAvailable = this._initialAvailable;
-    this._shouldFail = false;
-    this._failureError = null;
+    this._failureError = undefined;
     this._delayMs = this._initialDelayMs;
-    this._tokenUsage = { input: 150, output: 50, reasoning: 0 };
+    this._tokenUsage = DEFAULT_TOKEN_USAGE;
     return this;
   }
 
@@ -170,12 +190,4 @@ export class FakeAiProvider implements AiProvider {
     this._responses = [];
     return this;
   }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-}
-
-export function createFakeAiProvider(options?: FakeAiProviderOptions): FakeAiProvider {
-  return new FakeAiProvider(options);
 }

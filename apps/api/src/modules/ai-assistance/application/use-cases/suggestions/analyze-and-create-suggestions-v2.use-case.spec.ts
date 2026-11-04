@@ -11,7 +11,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.aiProvider.setRawResponse({
+      f.generator.setRawResponse({
         picks: [
           {
             candidateId: "a1",
@@ -34,7 +34,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
         matchedTodos: ["책 읽기 10분", "책 읽기 10분", "책 읽기 10분"],
         suggestedCategoryId: 7,
       });
-      expect(f.aiProvider.getLastOptions()).toMatchObject({
+      expect(f.generator.getLastRequest()).toMatchObject({
         task: "suggestion",
         promptVersion: "suggestion@v2.1",
       });
@@ -45,7 +45,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
       // Given - 날씨를 조회할 수 있는 사용자
       const f = createAiAssistanceFixture();
       f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
-      f.aiProvider.setRawResponse({ picks: [] });
+      f.generator.setRawResponse({ picks: [] });
       // When
       await f.analyzeV2.execute(f.userId, "Asia/Seoul", {
         gridX: 60,
@@ -54,7 +54,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
         lon: 127,
       });
       // Then
-      const prompt = f.aiProvider.getLastPrompt() ?? "";
+      const prompt = f.generator.getLastPrompt() ?? "";
       expect(prompt).toContain('"candidates"');
       expect(prompt).not.toContain('"todos"');
       expect(prompt).not.toContain('"weather"');
@@ -64,7 +64,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.aiProvider.setRawResponse({
+      f.generator.setRawResponse({
         picks: [
           { candidateId: "a9", daysOfWeek: ["MON"], useRecordedTime: false, reason: "없음" },
           {
@@ -89,7 +89,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
       // Given
       const f = createAiAssistanceFixture();
       f.repository.history = [{ title: "책 읽기 10분", status: "DISMISSED" }];
-      f.aiProvider.setRawResponse({
+      f.generator.setRawResponse({
         picks: [{ candidateId: "a1", daysOfWeek: ["MON"], useRecordedTime: false, reason: "" }],
       });
       // When
@@ -107,7 +107,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
         createAnalysisTodo({ title: "산책", startDate: "2026-03-17" }),
         createAnalysisTodo({ title: "스트레칭", startDate: "2026-03-18" }),
       ];
-      f.aiProvider.setRawResponse({
+      f.generator.setRawResponse({
         picks: ["a1", "a2"].map((candidateId) => ({
           candidateId,
           daysOfWeek: ["TUE", "WED"],
@@ -122,16 +122,15 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
       expect(f.repository.saved.every((row) => row.matchedTodos.length === 0)).toBe(true);
     }));
 
-  it("공급자를 쓸 수 없으면 기록을 읽거나 AI를 부르지 않는다", () =>
+  it("보낼 수 있는 AI 업체가 없으면 제안을 저장하지 않고 건너뛴다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = createAiAssistanceFixture();
-      f.aiProvider.setAvailable(false);
+      f.generator.setAvailable(false);
       // When
       const count = await f.analyzeV2.execute(f.userId, "Asia/Seoul");
       // Then
       expect(count).toBe(0);
-      expect(f.aiProvider.getCallCount()).toBe(0);
       expect(f.repository.writes).toEqual([]);
     }));
 });

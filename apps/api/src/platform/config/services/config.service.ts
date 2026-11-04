@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService as NestConfigService } from "@nestjs/config";
 
-import { AI_CONFIG_KEYS, type AiConfig, aiSchema } from "../schemas/ai.schema.js";
+import { AI_CONFIG_KEYS, aiSchema, type AiSettings, toAiSettings } from "../schemas/ai.schema.js";
 import type { EnvConfig } from "../schemas/index.js";
 
 /**
@@ -12,7 +12,7 @@ import type { EnvConfig } from "../schemas/index.js";
  */
 @Injectable()
 export class TypedConfigService {
-  #ai: Readonly<AiConfig> | undefined;
+  #ai: AiSettings | undefined;
 
   constructor(private configService: NestConfigService<EnvConfig, true>) {}
 
@@ -243,10 +243,12 @@ export class TypedConfigService {
 
   // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (sentryRelease getter)
 
-  /** AI 공급자 키와 작업별 설정. 처음 읽을 때 한 번 파싱해 고정한다. */
-  get ai(): Readonly<AiConfig> {
+  /** AI 업체 키·순서·모델과 작업별 설정. 처음 읽을 때 한 번 파싱해 고정한다. */
+  get ai(): AiSettings {
     this.#ai ??= Object.freeze(
-      aiSchema.parse(Object.fromEntries(AI_CONFIG_KEYS.map((key) => [key, this.get(key)]))),
+      toAiSettings(
+        aiSchema.parse(Object.fromEntries(AI_CONFIG_KEYS.map((key) => [key, this.get(key)]))),
+      ),
     );
     return this.#ai;
   }

@@ -1306,7 +1306,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       "example": {
         "agreedTermsVersion": "1.0.0",
         "aiDataSharingAgreedAt": "2026-10-26T09:00:00.000Z",
-        "aiDataSharingConsentVersion": "2026-10-26",
+        "aiDataSharingConsentVersion": "2026-11-04",
         "aiDataSharingDecision": "AGREED",
         "marketingAgreedAt": null,
         "marketingPushAgreedAt": null,
@@ -1329,14 +1329,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "string",
         },
         "aiDataSharingConsentVersion": {
-          "description": "마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+)",
+          "description": "마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+). 현재 버전보다 오래되면 앱이 새 안내를 보여 줄 수 있다",
           "type": [
             "string",
             "null",
           ],
         },
         "aiDataSharingDecision": {
-          "description": "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 안내 버전이 바뀜)",
+          "description": "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 지원하지 않는 안내 버전). 이전 안내 버전 동의도 AGREED이며 그 버전의 처리 업체만 쓴다",
           "enum": [
             "AGREED",
             "DECLINED",
@@ -15944,17 +15944,18 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     "UpdateAiDataSharingConsentDto": {
       "example": {
         "agreed": true,
-        "version": "2026-10-26",
+        "version": "2026-11-04",
       },
       "properties": {
         "agreed": {
-          "description": "AI 데이터 처리(Google Gemini 전송) 동의 여부 (true: 동의, false: 거부·철회)",
+          "description": "AI 데이터 처리(안내 버전의 AI 처리 업체로 글자 전송) 동의 여부 (true: 동의, false: 거부·철회)",
           "type": "boolean",
         },
         "version": {
-          "description": "사용자에게 보여 준 안내 버전 (현재: 2026-10-26)",
+          "description": "사용자에게 보여 준 안내 버전 (현재: 2026-11-04, 2026-10-26: Google Gemini만 · 1.13·1.14 앱)",
           "enum": [
             "2026-10-26",
+            "2026-11-04",
           ],
           "type": "string",
         },
@@ -15968,7 +15969,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     "UpdateAiDataSharingConsentResponseDto": {
       "example": {
         "aiDataSharingAgreedAt": "2026-10-26T09:00:00.000Z",
-        "aiDataSharingConsentVersion": "2026-10-26",
+        "aiDataSharingConsentVersion": "2026-11-04",
         "aiDataSharingDecision": "AGREED",
       },
       "properties": {
@@ -15984,7 +15985,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "string",
         },
         "aiDataSharingDecision": {
-          "description": "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 안내 버전이 바뀜)",
+          "description": "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 지원하지 않는 안내 버전). 이전 안내 버전 동의도 AGREED이며 그 버전의 처리 업체만 쓴다",
           "enum": [
             "AGREED",
             "DECLINED",
@@ -20092,7 +20093,7 @@ AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
                         "type": "object",
                       },
                       "message": {
-                        "example": "자연어 파싱에 실패했습니다.",
+                        "example": "입력한 내용으로 할 일을 만들지 못했습니다.",
                         "type": "string",
                       },
                     },
@@ -20120,7 +20121,7 @@ AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
               },
             },
           },
-          "description": "자연어 파싱에 실패했습니다.",
+          "description": "입력한 내용으로 할 일을 만들지 못했습니다.",
         },
         "429": {
           "content": {
@@ -20139,12 +20140,12 @@ AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
                   },
                 },
                 "AI_1310": {
-                  "summary": "AI 요청이 너무 많습니다.",
+                  "summary": "지금 AI 요청이 너무 많습니다.",
                   "value": {
                     "error": {
                       "code": "AI_1310",
                       "details": null,
-                      "message": "AI 요청이 너무 많습니다.",
+                      "message": "지금 AI 요청이 너무 많습니다.",
                     },
                     "success": false,
                     "timestamp": 1700000000000,
@@ -20199,7 +20200,7 @@ AI 할 일 만들기는 글·말·메모로 만든 횟수를 함께 셉니다.
           },
           "description": "AI_1303: 이번 달 AI 할 일 만들기를 다 썼습니다.
 
-AI_1310: AI 요청이 너무 많습니다.",
+AI_1310: 지금 AI 요청이 너무 많습니다.",
         },
         "500": {
           "content": {
@@ -20228,7 +20229,7 @@ AI_1310: AI 요청이 너무 많습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "AI 서비스를 사용할 수 없습니다.",
+                        "example": "지금은 AI 기능을 쓸 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -20256,7 +20257,7 @@ AI_1310: AI 요청이 너무 많습니다.",
               },
             },
           },
-          "description": "AI 서비스를 사용할 수 없습니다.",
+          "description": "지금은 AI 기능을 쓸 수 없습니다.",
         },
       },
       "security": [
@@ -20601,7 +20602,7 @@ if (confirmed) {
                         "type": "object",
                       },
                       "message": {
-                        "example": "자연어 파싱에 실패했습니다.",
+                        "example": "입력한 내용으로 할 일을 만들지 못했습니다.",
                         "type": "string",
                       },
                     },
@@ -20629,7 +20630,7 @@ if (confirmed) {
               },
             },
           },
-          "description": "자연어 파싱에 실패했습니다.",
+          "description": "입력한 내용으로 할 일을 만들지 못했습니다.",
         },
         "429": {
           "content": {
@@ -20648,12 +20649,12 @@ if (confirmed) {
                   },
                 },
                 "AI_1310": {
-                  "summary": "AI 요청이 너무 많습니다.",
+                  "summary": "지금 AI 요청이 너무 많습니다.",
                   "value": {
                     "error": {
                       "code": "AI_1310",
                       "details": null,
-                      "message": "AI 요청이 너무 많습니다.",
+                      "message": "지금 AI 요청이 너무 많습니다.",
                     },
                     "success": false,
                     "timestamp": 1700000000000,
@@ -20708,7 +20709,7 @@ if (confirmed) {
           },
           "description": "AI_1303: 이번 달 AI 할 일 만들기를 다 썼습니다.
 
-AI_1310: AI 요청이 너무 많습니다.",
+AI_1310: 지금 AI 요청이 너무 많습니다.",
         },
         "500": {
           "content": {
@@ -20737,7 +20738,7 @@ AI_1310: AI 요청이 너무 많습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "AI 서비스를 사용할 수 없습니다.",
+                        "example": "지금은 AI 기능을 쓸 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -20765,7 +20766,7 @@ AI_1310: AI 요청이 너무 많습니다.",
               },
             },
           },
-          "description": "AI 서비스를 사용할 수 없습니다.",
+          "description": "지금은 AI 기능을 쓸 수 없습니다.",
         },
       },
       "security": [

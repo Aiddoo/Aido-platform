@@ -9,6 +9,8 @@ export const SENTRY_TAG = {
   REQUEST_ID: "request_id",
   WEBHOOK_EVENT_TYPE: "webhook.event_type",
   WEBHOOK_STORE: "webhook.store",
+  AI_PROVIDER: "ai_provider",
+  AI_TASK: "ai_task",
 } as const;
 
 export const SENTRY_DOMAIN = {
@@ -17,6 +19,7 @@ export const SENTRY_DOMAIN = {
 
 export const SENTRY_FEATURE = {
   INVITE: "invite",
+  AI_GENERATION: "ai-generation",
 } as const;
 
 export const SENTRY_EXTRA = {
@@ -24,6 +27,8 @@ export const SENTRY_EXTRA = {
   INVITE_REDEMPTION_ID: "invite.redemption_id",
   INVITE_REWARD_TYPE: "invite.reward_type",
   INVITE_ATTEMPTS: "invite.attempts",
+  AI_FAILURE_KIND: "ai.failure_kind",
+  AI_COOLDOWN_MS: "ai.cooldown_ms",
   ERROR_RESPONSE: "errorResponse",
   WEBHOOK_APP_USER_ID: "webhook.app_user_id",
   WEBHOOK_PRODUCT_ID: "webhook.product_id",

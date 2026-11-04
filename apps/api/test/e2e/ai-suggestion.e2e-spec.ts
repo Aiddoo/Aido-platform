@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AI_GENERATOR } from "#api/modules/ai-assistance/ai-assistance-generation.public";
 import {
   RECURRING_TODO_CREATOR,
   type RecurringTodoCreatorPort,
@@ -12,7 +12,7 @@ import {
  *
  * @description
  * AI 반복 제안 API의 전체 HTTP 요청/응답 플로우 테스트.
- * FakeAiProvider를 사용하여 실제 Gemini API 호출을 모킹합니다.
+ * FakeAiGenerator를 사용하여 실제 Gemini API 호출을 모킹합니다.
  *
  * ### 테스트 범위
  * - GET /ai/suggestions: 대기 중인 제안 목록 조회
@@ -22,19 +22,20 @@ import {
 import { CacheService } from "#api/platform/cache/cache.service";
 import { recurringSuggestion, user as userTable } from "#api/platform/database/schema/index";
 
-import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
+import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("AI 제안 E2E", () => {
   let ctx: E2eTestContext;
-  let fakeAiProvider: FakeAiProvider;
+  let fakeAiGenerator: FakeAiGenerator;
 
   beforeAll(async () => {
-    fakeAiProvider = new FakeAiProvider();
+    fakeAiGenerator = new FakeAiGenerator();
 
     ctx = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(fakeAiProvider),
-      additionalResetters: [() => fakeAiProvider.clear()],
+      customizeBuilder: (builder) =>
+        builder.overrideProvider(AI_GENERATOR).useValue(fakeAiGenerator),
+      additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60000);
 

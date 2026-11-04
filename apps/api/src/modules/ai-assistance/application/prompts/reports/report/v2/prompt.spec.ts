@@ -1,4 +1,4 @@
-import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import type { AggregatedReportData } from "../../../../../domain/types/reports/ai-report.types.js";
 import type { ReportPromptInput } from "../types.js";
@@ -82,7 +82,7 @@ describe("리포트 프롬프트 v2", () => {
       tips: ["  ", "첫 팁", "둘째 팁", "가".repeat(130), "넷째 팁"],
     };
     expect(reportDraftSchema.safeParse(raw).success).toBe(true);
-    const provider = new FakeAiProvider().setRawResponse(raw);
+    const provider = new FakeAiGenerator().setRawResponse(raw);
     // When
     const { value } = await reportPromptV2.ko.output.generate(
       provider,
@@ -91,7 +91,7 @@ describe("리포트 프롬프트 v2", () => {
         promptVersion: "report@v2",
         system: "",
         prompt: "",
-        policy: { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 },
+        agreedConsentVersion: null,
       },
       input,
     );
@@ -115,7 +115,7 @@ describe("리포트 프롬프트 v2", () => {
     "$locale 모델이 persona 말투를 문장 뒤에 덧붙여도 저장 전에 자연스러운 문장으로 고친다",
     async ({ locale, raw, expected }) => {
       // Given
-      const provider = new FakeAiProvider().setRawResponse(raw);
+      const provider = new FakeAiGenerator().setRawResponse(raw);
       // When
       const { value } = await reportPromptV2[locale].output.generate(
         provider,
@@ -124,7 +124,7 @@ describe("리포트 프롬프트 v2", () => {
           promptVersion: "report@v2.1",
           system: "",
           prompt: "",
-          policy: { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 },
+          agreedConsentVersion: null,
         },
         input,
       );
@@ -133,18 +133,17 @@ describe("리포트 프롬프트 v2", () => {
     },
   );
 
-  const policy = { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 } as const;
   const request = {
     task: "report",
     promptVersion: "report@v2.1",
     system: "",
     prompt: "",
-    policy,
+    agreedConsentVersion: null,
   } as const;
 
   it("summary와 팁에서 데이터에 없는 숫자를 쓴 문장만 빼고 저장한다", async () => {
     // Given - 데이터: 20개 중 15개, 75%, 연속 4일. "2개"와 "30%"는 데이터에 없다
-    const provider = new FakeAiProvider().setRawResponse({
+    const provider = new FakeAiGenerator().setRawResponse({
       summary:
         "20개 중 15개를 끝내 달성률 75%였어요. 다음 주에는 30% 더 해봐요. 4일 연속으로 기록했어요.",
       tips: ["가장 중요한 2개를 먼저 등록해보세요.", "운동은 하루만 골라 등록해보세요."],
@@ -160,7 +159,7 @@ describe("리포트 프롬프트 v2", () => {
 
   it("남는 팁이 없으면 저장하지 않고 폴백으로 넘긴다", async () => {
     // Given
-    const provider = new FakeAiProvider().setRawResponse({
+    const provider = new FakeAiGenerator().setRawResponse({
       summary: "You finished 15 of 20 to-dos.",
       tips: ["Select the 2 most important items first."],
     });
@@ -172,7 +171,7 @@ describe("리포트 프롬프트 v2", () => {
 
   it("저장할 summary·팁의 보이지 않는 문자와 방향 제어 문자를 지운다", async () => {
     // Given
-    const provider = new FakeAiProvider().setRawResponse({
+    const provider = new FakeAiGenerator().setRawResponse({
       summary: "20개 중 15개를\u200B 끝냈어요.\u202E",
       tips: ["운동은\u{E0041} 하루만 골라 등록해보세요."],
     });

@@ -1,6 +1,4 @@
 export { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
-export { AI_PROVIDER, AiProviderError } from "./application/ports/parsing/ai-provider.port.js";
-export type { AiProvider } from "./application/ports/parsing/ai-provider.port.js";
 export {
   AI_TASK_SETTINGS,
   type AiTaskSettingsMap,
@@ -17,8 +15,4 @@ export {
   AI_CLIENT_APP_VERSION_READER,
   type AiClientAppVersionReaderPort,
 } from "./application/ports/parsing/client-app-version.reader.port.js";
-export {
-  canRunScheduledAi,
-  type ScheduledAiConsentReaders,
-} from "./application/services/parsing/scheduled-ai-consent.js";
 export { AiDataSharingConsentGuard } from "./infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";

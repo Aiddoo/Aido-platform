@@ -1,5 +1,4 @@
 import type { ParsedMemoData } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import { sumBy } from "es-toolkit";
 import { ZodError } from "zod";
 
@@ -12,14 +11,13 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import {
   generationCompletedLog,
   generationFailedLog,
-} from "../../observability/parsing/ai-generation-log.events.js";
-import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
+} from "../../observability/generation/ai-generation-log.events.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
+import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { parseMemoPrompts } from "../../prompts/parsing/parse-memo/index.js";
-import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
@@ -59,11 +57,12 @@ type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
 /**
  * 메모 → 다중 투두 파싱 use-case.
  *
- * parse-todo와 동일한 가용성/사용량/에러 규약을 따르되, 할 일은 합치지 않고 앞의 5개만 만들며
+ * parse-todo와 동일한 사용량/에러 규약을 따르되, 할 일은 합치지 않고 앞의 5개만 만들며
  * 나머지 수를 meta.omittedTodoCount로 알린다. 미지 카테고리는 요청 기본 categoryId로 대체한다.
  */
 interface ParseMemoDependencies {
-  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly generator: Pick<AiGeneratorPort, "generate">;
+  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
@@ -81,11 +80,6 @@ export class ParseMemo {
   async execute(input: ParseMemoInput): Promise<ParseMemoResult> {
     const { userId } = input;
     const startTime = Date.now();
-
-    if (!this.#dependencies.aiProvider.isAvailable("parse-memo")) {
-      this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
-      throw new ApplicationException(ErrorCode.AI_1301);
-    }
 
     const { timezone, locale } = await resolveRequestLocale(
       this.#dependencies.localePreferenceReader,
@@ -139,15 +133,17 @@ export class ParseMemo {
       userId,
     } as const;
 
+    const { agreedVersion } =
+      await this.#dependencies.consentReader.findAiDataSharingConsent(userId);
     try {
       const { value, meta } = await definition.output.generate(
-        this.#dependencies.aiProvider,
+        this.#dependencies.generator,
         {
           task: "parse-memo",
           promptVersion: definition.promptVersion,
           system,
           prompt,
-          policy: resolveGenerationPolicy("parse-memo", this.#dependencies.settings),
+          agreedConsentVersion: agreedVersion,
         },
         {
           content,
@@ -195,7 +191,8 @@ export class ParseMemo {
           validationIssues: error.issues.map(({ path, code }) => ({ path, code })),
         }),
       });
-      throw new ApplicationException(failure.errorCode);
+      // 실패한 요청은 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를 보여 줄 수 있다.
+      throw new ApplicationException(failure.errorCode, { charged: false });
     }
   }
 }
