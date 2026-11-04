@@ -8,7 +8,6 @@ import type {
   LimitReachedTrigger,
 } from '@src/shared/observability/telemetry-keys';
 import { PremiumDialog, type PremiumDialogProps, useOverlay } from '@src/shared/ui';
-import { formatDateLabel } from '@src/shared/utils/date-format';
 import { formatCount } from '@src/shared/utils/format';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -26,6 +25,7 @@ import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-quer
 import { getPremiumGateAnalyticsFeature } from '../utils/analytics/premium-gate-feature';
 import { subscriptionHref } from '../utils/navigation/subscription-href';
 import { toPremiumBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
+import { useRefillSentence } from './use-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';
 
@@ -145,6 +145,7 @@ function getBlockedDecision({ feature, featureQuota }: LimitedFeature): BlockedD
 function useEntitlementGateCopy() {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
+  const getRefill = useRefillSentence();
 
   return useCallback(
     (
@@ -154,32 +155,7 @@ function useEntitlementGateCopy() {
       const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
       const premium = toPremiumBenefitAmounts();
 
-      const getRefillSentence = () => {
-        if (snapshot == null) {
-          return null;
-        }
-        const limit = EntitlementPolicy.getLimit(snapshot, feature);
-        const notice = EntitlementPolicy.getResetNotice(
-          snapshot,
-          feature,
-          new Date(),
-          dateFormatContext.timeZone,
-        );
-        if (limit == null || notice == null) {
-          return null;
-        }
-        const amount = formatAmount(limit);
-        return match(notice)
-          .with({ type: 'today' }, () => t('gate.refillToday', { amount }))
-          .with({ type: 'tomorrow' }, () => t('gate.refillTomorrow', { amount }))
-          .with({ type: 'date' }, ({ date }) =>
-            t('gate.refillOn', {
-              amount,
-              date: formatDateLabel(date, 'monthDay', dateFormatContext),
-            }),
-          )
-          .exhaustive();
-      };
+      const getRefillSentence = () => getRefill(snapshot, feature);
 
       const withRefill = (premiumBenefit: string) => {
         const refill = getRefillSentence();
@@ -249,6 +225,6 @@ function useEntitlementGateCopy() {
         }))
         .exhaustive();
     },
-    [t, dateFormatContext],
+    [t, dateFormatContext, getRefill],
   );
 }

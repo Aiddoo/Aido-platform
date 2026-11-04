@@ -15,7 +15,7 @@ export function navigateToFeatureDiscoveryCard(
 ): void {
   const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
   const card = campaign?.cards.find((item) => item.id === cardId);
-  if (card) {
+  if (card?.route != null) {
     navigator.push(card.route);
   }
 }

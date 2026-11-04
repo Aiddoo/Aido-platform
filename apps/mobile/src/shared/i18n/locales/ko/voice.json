@@ -1,0 +1,42 @@
+{
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  },
+  "button": {
+    "label": "말로 할 일 만들기"
+  },
+  "dictation": {
+    "start": "음성으로 입력",
+    "stop": "음성 입력 멈추기"
+  },
+  "info": {
+    "label": "AI로 할 일 만들기",
+    "title": "길게 말하면 AI가 할 일로 나눠요",
+    "description": "마이크를 누르고 하고 싶은 일을 말해보세요. 날짜·시간·반복까지 알아서 채워드려요.",
+    "examples": "\"매일\", \"월수금\", \"다음 주 내내\", \"나만 보게\"도 알아들어요.",
+    "remaining": "이번 달 {{amount}}번 남았어요",
+    "notCharged": "잘 안 되면 횟수는 차감되지 않아요"
+  },
+  "coach": {
+    "quickStart": {
+      "title": "이제 말로 해도 돼요",
+      "description": "하고 싶은 일을 길게 말해보세요. AI가 날짜·시간·반복까지 알아서 채워드려요."
+    }
+  },
+  "listening": {
+    "cancel": "취소",
+    "done": "다 말했어요",
+    "resume": "이어서 듣기",
+    "pausedHint": "잠시 멈췄어요. 이어서 들을까요?",
+    "autoFinishHint": "말이 멈추면 알아서 정리할게요"
+  },
+  "planning": {
+    "title": "할 일로 나누는 중…"
+  },
+  "failed": {
+    "keptText": "들은 데까지는 남겨뒀어요. 이어서 말하거나 직접 고쳐주세요.",
+    "resume": "이어서 말하기",
+    "retry": "다시 정리하기"
+  }
+}

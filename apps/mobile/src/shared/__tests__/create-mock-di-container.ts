@@ -81,6 +81,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get queryCacheStorage() {
       return dependency('queryCacheStorage');
     },
+    get recognitionLanguageRepository() {
+      return dependency('recognitionLanguageRepository');
+    },
     get achievementService() {
       return dependency('achievementService');
     },

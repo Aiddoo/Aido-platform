@@ -102,10 +102,7 @@
   },
   "add": {
     "placeholder": "What do you want to get done?",
-    "submit": "Select",
-    "aiFeature": "Create a to-do with AI",
-    "voiceAddTitle": "Add to-dos by voice",
-    "voiceAddHint": "Say something like \"Dinner at 7 PM this Friday\"\nand we'll fill in the date and time"
+    "submit": "Select"
   },
   "subTodo": {
     "addItem": "Add item",

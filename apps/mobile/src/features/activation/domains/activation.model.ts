@@ -5,6 +5,7 @@ import {
 import {
   FEATURE_DISCOVERY_CAMPAIGN_ID,
   LEGACY_FEATURE_DISCOVERY_CAMPAIGN_ID,
+  PREVIOUS_FEATURE_DISCOVERY_CAMPAIGN_ID,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import type { TodoExistence } from '@src/features/todo/domains/todo.model';
 import { userSchema } from '@src/features/user/domains/user.model';
@@ -14,6 +15,7 @@ import { z } from 'zod';
 // 신규 사용자 코호트는 서버 설정의 캠페인을 따른다. 소개 카드를 새 캠페인으로 바꿔도 이전 캠페인의 체크리스트가 이어진다
 const ACTIVATION_CAMPAIGN_IDS: ReadonlySet<string> = new Set([
   LEGACY_FEATURE_DISCOVERY_CAMPAIGN_ID,
+  PREVIOUS_FEATURE_DISCOVERY_CAMPAIGN_ID,
   FEATURE_DISCOVERY_CAMPAIGN_ID,
 ]);
 // 1.9.0(2026-08 캠페인)부터 새 가입자의 푸시 등록을 첫 활성화 뒤로 미뤘다. 캠페인이 바뀌어도 기준은 유지한다

@@ -1,13 +1,13 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
-import type { SpeechErrorCode, SpeechEvent, SpeechLocale } from '@src/core/ports/speech-recognizer';
+import type { SpeechErrorCode, SpeechEvent } from '@src/core/ports/speech-recognizer';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { tDynamic } from '@src/shared/i18n';
-import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { APP_LANGUAGE_SPEECH_LOCALE } from '../constants/voice.constants';
 import { useMicrophonePermission } from './use-microphone-permission';
 
 interface UseDictationOptions {
@@ -16,11 +16,6 @@ interface UseDictationOptions {
   /** 오류 없이 듣기가 끝났을 때만 부른다 */
   onEnd?: () => void;
 }
-
-const SPEECH_LOCALE = {
-  ko: 'ko-KR',
-  en: 'en-US',
-} as const satisfies Record<ResolvedLanguage, SpeechLocale>;
 
 function getSpeechErrorMessage(code: SpeechErrorCode) {
   return tDynamic('common', `speechErrors.${code}`, tDynamic('common', 'speechErrors.unknown'));
@@ -94,7 +89,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
       }
       isSessionOwnerRef.current = true;
       speechRecognizer.start({
-        locale: SPEECH_LOCALE[resolvedLanguage],
+        locale: APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage],
         mode: 'dictation',
         contextualStrings: [],
         isOnDevice: false,

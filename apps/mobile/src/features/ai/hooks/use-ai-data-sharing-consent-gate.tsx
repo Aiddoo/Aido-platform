@@ -1,3 +1,4 @@
+import { useCoachmarkService } from '@src/bootstrap/providers/di-context';
 import { ConsentPolicy } from '@src/features/auth/domains/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useOverlay } from '@src/shared/ui';
@@ -17,6 +18,7 @@ export interface AiConsentCheck {
 export function useAiDataSharingConsentGate() {
   const overlay = useOverlay();
   const queryClient = useQueryClient();
+  const coachmarkService = useCoachmarkService();
   const consentQueryOptions = useGetConsentQueryOptions();
 
   /** 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다 */
@@ -47,11 +49,26 @@ export function useAiDataSharingConsentGate() {
     return { isAgreed: await requestAgreement(), wasAsked: true };
   };
 
+  /**
+   * 계정마다 한 번만 동의 안내를 띄운다. 이미 한 번 봤거나 [나중에]를 눌렀다면 다시 묻지 않고 isAgreed는 false다.
+   * 거절해도 동의를 철회하지 않으므로 호출한 쪽은 기존 동작을 이어 가고, 서버가 AI_1311로 막을 때만 다시 안내한다.
+   */
+  const ensureAgreedOnce = async (accountId: string): Promise<AiConsentCheck> => {
+    const consent = await queryClient.ensureQueryData(consentQueryOptions).catch(() => null);
+    if (consent == null || ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
+      return { isAgreed: true, wasAsked: false };
+    }
+    if (!coachmarkService.claim({ accountId, kind: 'ai-consent-notice' })) {
+      return { isAgreed: false, wasAsked: false };
+    }
+    return { isAgreed: await requestAgreement(), wasAsked: true };
+  };
+
   /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */
   const isAgreementRequired = (): boolean => {
     const consent = queryClient.getQueryData(consentQueryOptions.queryKey);
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);
   };
 
-  return { ensureAgreed, requestAgreement, isAgreementRequired };
+  return { ensureAgreed, ensureAgreedOnce, requestAgreement, isAgreementRequired };
 }

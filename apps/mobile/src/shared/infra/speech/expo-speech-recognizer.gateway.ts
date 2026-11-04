@@ -38,7 +38,7 @@ function toPermissionSnapshot({
 /** iOS 기기 안 인식은 음성이 Apple 서버로 가지 않아 마이크 권한만 있으면 된다 */
 function usesMicrophoneOnlyPermission(mode: SpeechMode) {
   return (
-    mode === 'note' &&
+    mode !== 'dictation' &&
     Platform.OS === 'ios' &&
     ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()
   );

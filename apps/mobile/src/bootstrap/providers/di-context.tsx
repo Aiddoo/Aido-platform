@@ -41,6 +41,7 @@ import type { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import type { UserService } from '@src/features/user/apis/user.service';
+import type { RecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import type { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import type { WeatherService } from '@src/features/weather/apis/weather.service';
 import type { WidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
@@ -76,6 +77,8 @@ export interface DIContainer {
   draftService: DraftService;
   /** 오프라인 조회 캐시(사용자 범위 로컬 상태) */
   queryCacheStorage: QueryCacheStorage;
+  /** 빠른 말하기 인식 언어(사용자 범위 로컬 상태) */
+  recognitionLanguageRepository: RecognitionLanguageRepository;
 
   // Services
   achievementService: AchievementService;
@@ -153,6 +156,7 @@ export const useSpeechRecognizer = () => useDI().speechRecognizer;
 export const usePurchasesGateway = () => useDI().purchasesGateway;
 export const useDraftService = () => useDI().draftService;
 export const useQueryCacheStorage = () => useDI().queryCacheStorage;
+export const useRecognitionLanguageRepository = () => useDI().recognitionLanguageRepository;
 
 // Service Hooks
 export const useAchievementService = () => useDI().achievementService;

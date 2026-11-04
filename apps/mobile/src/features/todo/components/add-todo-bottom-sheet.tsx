@@ -1,16 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
-import type { ParsedTodo } from '@src/features/ai/domains/parsed-todo.model';
-import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
-import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
+import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
-import { QuotaChip } from '@src/features/subscription/components/quota-chip';
-import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import type { Todo } from '@src/features/todo/domains/todo.model';
-import { useDictation } from '@src/features/voice/hooks/use-dictation';
+import { QuickVoiceButton } from '@src/features/voice/components/quick-voice/quick-voice-button';
+import { QuickVoiceInfo } from '@src/features/voice/components/quick-voice/quick-voice-info';
+import { QuickVoicePanel } from '@src/features/voice/components/quick-voice/quick-voice-panel';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -26,14 +22,10 @@ import {
   EyeIcon,
   EyeOffIcon,
   HStack,
-  InfoIcon,
   KeyboardBottomSheet,
-  MicIcon,
   ModalBottomSheet,
-  PauseIcon,
   QueryErrorBoundary,
   RepeatIcon,
-  Text,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -44,9 +36,9 @@ import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { isEqual } from 'es-toolkit';
-import { Popover, PressableFeedback, Spinner } from 'heroui-native';
+import { PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
@@ -57,6 +49,7 @@ import { useResolveClassNames } from 'uniwind';
 import { type AddTodoFormValues, addTodoFormSchema } from '../domains/add-todo-form.schema';
 import { type TodoRepeat, TodoRepeatPolicy } from '../domains/todo-repeat.model';
 import { TodoPolicy } from '../domains/todo.model';
+import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
 import { useSelectTodoScope } from '../hooks/use-select-todo-scope';
 import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
@@ -112,12 +105,6 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetEditProps
   | AddTodoBottomSheetConvertMemoProps;
 
-function toParsedTodoRepeat({ isRecurring, recurrence }: ParsedTodo): TodoRepeat | null {
-  return isRecurring && recurrence != null
-    ? TodoRepeatPolicy.createWeeklyUntil(recurrence.daysOfWeek, toDeviceDateKey(recurrence.endDate))
-    : null;
-}
-
 function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
   return match(props)
     .returnType<AddTodoFormValues>()
@@ -149,6 +136,7 @@ function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues 
 
 export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const { t } = useTranslation('todo');
+  const { t: tVoice } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
   const { showBoundary } = useErrorBoundary();
@@ -194,6 +182,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const convertMemoMutation = useMutation(useConvertMemoToTodosMutationOptions());
 
   const { isSubmitting } = useFormState({ control: methods.control });
+  const voice = useAddTodoQuickVoice({ methods, onExit });
 
   const handleSubmitTodo = methods.handleSubmit(async (values) => {
     try {
@@ -436,72 +425,102 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           isClosingRef.current = true;
         }}
       >
-        <VStack gap={12} testID="todo-add-sheet">
-          <FormField control={methods.control} name="title">
-            {({ onChange, value }) => (
-              <BottomSheetInput
-                ref={todoInputRef}
-                autoFocus
-                placeholder={t('add.placeholder')}
-                value={value}
-                onChange={onChange}
-                maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
-                size="medium"
-                renderErrorMessage={false}
-                returnKeyType="done"
-                onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+        {match(voice.state.status)
+          .with('listening', 'paused', 'finalizing', () => (
+            <QuickVoicePanel
+              state={voice.state}
+              level={voice.level}
+              isQuiet={voice.isQuiet}
+              locale={voice.locale}
+              onLocaleChange={voice.setLocale}
+              onFinish={voice.finish}
+              onCancel={voice.cancel}
+              onResume={voice.resume}
+            />
+          ))
+          .with('planning', () => <QuickVoicePanel.Planning state={voice.state} />)
+          .otherwise(() => (
+            <VStack gap={12} testID="todo-add-sheet">
+              <QuickVoicePanel.Failed
+                state={voice.state}
+                onResume={voice.resume}
+                onRetryPlanning={voice.retryPlanning}
               />
-            )}
-          </FormField>
+              <FormField control={methods.control} name="title">
+                {({ onChange, value }) => (
+                  <BottomSheetInput
+                    ref={todoInputRef}
+                    autoFocus
+                    placeholder={t('add.placeholder')}
+                    value={value}
+                    onChange={onChange}
+                    maxLength={addTodoFormSchema.shape.title.maxLength ?? undefined}
+                    size="medium"
+                    renderErrorMessage={false}
+                    returnKeyType="done"
+                    onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
+                  />
+                )}
+              </FormField>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="always"
-            contentContainerClassName="gap-2"
-          >
-            <DateChip onPress={handleDateChipPress} />
-            <TimeChip onPress={handleTimeChipPress} />
-            <RepeatChip onPress={handleRepeatChipPress} />
-            <VisibilityChip />
-            {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-            <QueryErrorBoundary fallback={() => null}>
-              <Suspense fallback={null}>
-                <CategoryChip onPress={handleCategoryChipPress} />
-              </Suspense>
-            </QueryErrorBoundary>
-          </ScrollView>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                contentContainerClassName="gap-2"
+              >
+                <DateChip onPress={handleDateChipPress} />
+                <TimeChip onPress={handleTimeChipPress} />
+                <RepeatChip onPress={handleRepeatChipPress} />
+                <VisibilityChip />
+                {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
+                <QueryErrorBoundary fallback={() => null}>
+                  <Suspense fallback={null}>
+                    <CategoryChip onPress={handleCategoryChipPress} />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </ScrollView>
 
-          <Box className="h-px bg-gray-2" />
+              <Box className="h-px bg-gray-2" />
 
-          <HStack gap={8} align="center" justify="end">
-            <AiFeatureTooltip />
-            <QuotaChip feature="AI_PARSE" />
-            <AiParseButton onExit={onExit} />
-            <PressableFeedback
-              isDisabled={isSubmitDisabled}
-              onPress={() => handleSubmitTodo()}
-              style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-              className={cn(
-                'items-center justify-center rounded-4xl',
-                isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
-              )}
-            >
-              {isSubmitting ? (
-                <Spinner
-                  size="sm"
-                  color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
-                />
-              ) : (
-                <ArrowUpIcon
-                  width={fontScaledSize(18)}
-                  height={fontScaledSize(18)}
-                  colorClassName="text-white"
-                />
-              )}
-            </PressableFeedback>
-          </HStack>
-        </VStack>
+              <HStack gap={8} align="center" justify="end">
+                {props.mode === 'create' && (
+                  <>
+                    <QuickVoiceInfo />
+                    <CoachmarkPopover
+                      kind="voice-quick-start"
+                      title={tVoice('coach.quickStart.title')}
+                      description={tVoice('coach.quickStart.description')}
+                    >
+                      <QuickVoiceButton onPress={voice.start} testID="todo-quick-voice-button" />
+                    </CoachmarkPopover>
+                  </>
+                )}
+                <PressableFeedback
+                  isDisabled={isSubmitDisabled}
+                  onPress={() => handleSubmitTodo()}
+                  style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+                  className={cn(
+                    'items-center justify-center rounded-4xl',
+                    isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
+                  )}
+                >
+                  {isSubmitting ? (
+                    <Spinner
+                      size="sm"
+                      color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+                    />
+                  ) : (
+                    <ArrowUpIcon
+                      width={fontScaledSize(18)}
+                      height={fontScaledSize(18)}
+                      colorClassName="text-white"
+                    />
+                  )}
+                </PressableFeedback>
+              </HStack>
+            </VStack>
+          ))}
       </KeyboardBottomSheet>
     </FormProvider>
   );
@@ -640,174 +659,5 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
       label={category?.name ?? t('chip.category')}
       onPress={onPress}
     />
-  );
-};
-
-const AiFeatureTooltip = () => {
-  const fontScaledSize = useFontScaledSize();
-  const { t } = useTranslation('todo');
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-
-  return (
-    <Popover isOpen={isTooltipOpen} onOpenChange={setIsTooltipOpen}>
-      <Popover.Trigger asChild>
-        <PressableFeedback
-          onPress={() => setIsTooltipOpen(true)}
-          className="items-center justify-center"
-          testID="todo-ai-feature-tooltip"
-        >
-          <HStack gap={4} align="center">
-            <Text size="e2" weight="medium" shade={6}>
-              {t('add.aiFeature')}
-            </Text>
-            <InfoIcon
-              width={fontScaledSize(16)}
-              height={fontScaledSize(16)}
-              colorClassName="text-gray-6"
-            />
-          </HStack>
-        </PressableFeedback>
-      </Popover.Trigger>
-      <Popover.Portal disableFullWindowOverlay={false}>
-        <Popover.Overlay />
-        <Popover.Content
-          presentation="popover"
-          placement="top"
-          align="end"
-          avoidCollisions={false}
-          className="rounded-2xl border border-border px-4 py-3"
-        >
-          <Popover.Arrow />
-          <VStack gap={4}>
-            <HStack gap={4} align="center">
-              <MicIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-main"
-              />
-              <Text size="b3" weight="semibold">
-                {t('add.voiceAddTitle')}
-              </Text>
-            </HStack>
-            <Text size="b3" shade={6}>
-              {t('add.voiceAddHint')}
-            </Text>
-          </VStack>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover>
-  );
-};
-
-interface AiParseButtonProps {
-  onExit: () => void;
-}
-
-const AiParseButton = ({ onExit }: AiParseButtonProps) => {
-  const fontScaledSize = useFontScaledSize();
-  const methods = useFormContext<AddTodoFormValues>();
-  const toast = useAppToast();
-  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
-
-  const parseMutation = useMutation(useParseTodoMutationOptions());
-  const aiConsent = useAiDataSharingConsentGate();
-  // 이번 녹음에서 동의 안내를 이미 띄웠는지. 한 번의 시도에서 안내를 두 번 띄우지 않는다
-  const hasAskedConsentRef = useRef(false);
-
-  const parseTitle = (text: string, categoryId?: number) => {
-    parseMutation.mutate(
-      { text, categoryId },
-      {
-        // 서버에 동의가 없으면(다른 기기에서 철회 등) 한 번만 다시 묻고, 동의하면 받아 적은 문장 그대로 정리한다
-        onError: async (error) => {
-          if (!isAiDataSharingConsentRequiredError(error)) {
-            return;
-          }
-          if (hasAskedConsentRef.current) {
-            toast.error(error.message);
-            return;
-          }
-          hasAskedConsentRef.current = true;
-          if (await aiConsent.requestAgreement()) {
-            parseTitle(text, categoryId);
-          }
-        },
-        onSuccess: (result) => {
-          const { data: parsedTodo } = result;
-          const parsedTodoRepeat = toParsedTodoRepeat(parsedTodo);
-          methods.reset(
-            (prev) => ({
-              ...prev,
-              title: parsedTodo.title,
-              startDate: parsedTodo.startDate,
-              endDate: parsedTodoRepeat == null ? parsedTodo.endDate : null,
-              scheduledTime: parsedTodo.scheduledTime,
-              isAllDay: parsedTodo.scheduledTime ? false : parsedTodo.isAllDay,
-              repeat: parsedTodoRepeat,
-              source: 'ai',
-            }),
-            { keepDirtyValues: true },
-          );
-        },
-      },
-    );
-  };
-
-  const handleRecognitionEnd = () => {
-    const currentTitle = methods.getValues('title');
-    if (!currentTitle?.trim()) {
-      return;
-    }
-    parseTitle(currentTitle.trim(), methods.getValues('categoryId'));
-  };
-
-  const { isListening, start, stop } = useDictation({
-    onResult: (text) => {
-      methods.setValue('title', text);
-    },
-    onEnd: handleRecognitionEnd,
-  });
-
-  const handlePress = async () => {
-    if (isListening) {
-      stop();
-      return;
-    }
-
-    if (!gate.guard({ onSubscribe: onExit })) {
-      return;
-    }
-
-    // 동의 시트가 키보드에 가리지 않게 먼저 내린다. 동의하지 않으면 직접 입력을 이어간다
-    Keyboard.dismiss();
-    const consent = await aiConsent.ensureAgreed();
-    hasAskedConsentRef.current = consent.wasAsked;
-    if (!consent.isAgreed) {
-      return;
-    }
-    start();
-  };
-
-  return (
-    <PressableFeedback
-      onPress={handlePress}
-      isDisabled={parseMutation.isPending}
-      style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-      className="items-center justify-center rounded-full bg-main/10"
-    >
-      {isListening ? (
-        <PauseIcon
-          width={fontScaledSize(20)}
-          height={fontScaledSize(20)}
-          colorClassName="text-error"
-        />
-      ) : (
-        <MicIcon
-          width={fontScaledSize(20)}
-          height={fontScaledSize(20)}
-          colorClassName="text-main"
-        />
-      )}
-    </PressableFeedback>
   );
 };

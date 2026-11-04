@@ -1,3 +1,4 @@
+import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import type {
   FeatureDiscoveryCampaign,
   FeatureDiscoveryCard,
@@ -8,6 +9,7 @@ import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Button, H3, HStack, ModalBottomSheet, Text, TextButton, VStack } from '@src/shared/ui';
+import type { ParseKeys } from 'i18next';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,19 +24,33 @@ const NON_LIST_HEIGHT_BY_FONT_SCALE = {
   xlarge: 272,
 } as const;
 
-// 보상 일수·조건은 계약 상수에서 읽어 문구와 서버 규칙이 어긋나지 않게 한다
+// 보상 일수·조건·무료 횟수는 계약 상수에서 읽어 문구와 서버 규칙이 어긋나지 않게 한다
 const CARD_DESCRIPTION_VALUES = {
   friend_invite: {
     inviteeDays: InviteRewardPolicy.welcomePremiumDays(),
     inviterDays: InviteRewardPolicy.inviterPremiumDays(),
     activeDays: InvitedFriendPolicy.requiredActiveDays(),
   },
+  voice_say: {},
+  voice_plan: {},
+  voice_facts: { freeCount: PLAN_CATALOG.AI_PARSE.free },
 } as const satisfies Record<FeatureDiscoveryCardId, Record<string, number>>;
 
 // E2E(Maestro)가 카드 CTA를 찾는 testID
 const CARD_CTA_TEST_IDS = {
   friend_invite: 'feature-discovery-invite-cta',
+  voice_say: 'feature-discovery-voice-say-cta',
+  voice_plan: 'feature-discovery-voice-plan-cta',
+  voice_facts: 'feature-discovery-voice-cta',
 } as const satisfies Record<FeatureDiscoveryCardId, string>;
+
+interface CardCopy {
+  title: ParseKeys<'featureDiscovery'>;
+  description: ParseKeys<'featureDiscovery'>;
+  /** 버튼이 있는 카드(route가 있는 카드)만 둔다 */
+  cta?: ParseKeys<'featureDiscovery'>;
+  ctaLabel?: ParseKeys<'featureDiscovery'>;
+}
 
 const CARD_COPY = {
   friend_invite: {
@@ -43,15 +59,21 @@ const CARD_COPY = {
     cta: 'cards.friendInvite.cta',
     ctaLabel: 'cards.friendInvite.ctaLabel',
   },
-} as const satisfies Record<
-  FeatureDiscoveryCardId,
-  {
-    title: string;
-    description: string;
-    cta: string;
-    ctaLabel: string;
-  }
->;
+  voice_say: {
+    title: 'cards.voiceSay.title',
+    description: 'cards.voiceSay.description',
+  },
+  voice_plan: {
+    title: 'cards.voicePlan.title',
+    description: 'cards.voicePlan.description',
+  },
+  voice_facts: {
+    title: 'cards.voiceFacts.title',
+    description: 'cards.voiceFacts.description',
+    cta: 'cards.voiceFacts.cta',
+    ctaLabel: 'cards.voiceFacts.ctaLabel',
+  },
+} as const satisfies Record<FeatureDiscoveryCardId, CardCopy>;
 
 interface FeatureDiscoveryBottomSheetProps {
   isOpen: boolean;
@@ -128,17 +150,19 @@ function FeatureCard({ card, onCta }: { card: FeatureDiscoveryCard; onCta: () =>
           {t(copy.description, CARD_DESCRIPTION_VALUES[card.id])}
         </Text>
       </VStack>
-      <Button
-        size="medium"
-        display="block"
-        variant="weak"
-        testID={CARD_CTA_TEST_IDS[card.id]}
-        onPress={onCta}
-        accessibilityRole="button"
-        accessibilityLabel={t(copy.ctaLabel)}
-      >
-        {t(copy.cta)}
-      </Button>
+      {card.route != null && 'cta' in copy && (
+        <Button
+          size="medium"
+          display="block"
+          variant="weak"
+          testID={CARD_CTA_TEST_IDS[card.id]}
+          onPress={onCta}
+          accessibilityRole="button"
+          accessibilityLabel={t(copy.ctaLabel)}
+        >
+          {t(copy.cta)}
+        </Button>
+      )}
     </VStack>
   );
 }

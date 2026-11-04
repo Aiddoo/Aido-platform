@@ -120,11 +120,11 @@
     "items": {
       "sentData": {
         "title": "보내는 내용",
-        "description": "입력한 문장이나 메모 내용, 카테고리 이름, 오늘 날짜와 시간대. 리포트·제안은 그 기간의 할 일 제목과 완료 기록이에요. 이름·이메일·친구 정보는 보내지 않아요."
+        "description": "입력한 문장이나 메모 내용, 말한 내용을 기기에서 글자로 바꾼 것, 카테고리 이름, 오늘 날짜와 시간대. 녹음 파일은 Aido 서버로 보내지 않아요. 리포트·제안은 그 기간의 할 일 제목과 완료 기록이에요. 이름·이메일·친구 정보는 보내지 않아요."
       },
       "processor": {
         "title": "받는 곳",
-        "description": "Google Gemini(Google LLC)가 할 일 형태로 정리해요."
+        "description": "Anthropic(Claude)·Google(Gemini)·OpenAI가 글자만 받아 할 일 형태로 정리해요. 기기에서 바로 인식할 수 없으면 Apple·Google 음성 인식 서비스가 말을 글자로 바꿀 수 있어요."
       },
       "usage": {
         "title": "쓰는 곳",

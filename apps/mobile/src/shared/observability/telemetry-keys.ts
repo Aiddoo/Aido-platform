@@ -7,9 +7,11 @@ import type {
   UserReportTargetType,
   WeatherAlertSeverity,
 } from '@aido/api';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { ReportType } from '@src/features/ai/domains/ai.model';
 import type { OAuthProviderSlug } from '@src/features/auth/domains/oauth.model';
+import type { CoachmarkKind } from '@src/features/feature-discovery/apis/coachmark.repository';
 import type { InviteLinkSource } from '@src/features/invite/domains/invite-redemption.model';
 import type { InviteShareChannel } from '@src/features/invite/domains/invite-share.model';
 import type { RedeemFailureReason } from '@src/features/invite/domains/invite.error';
@@ -17,6 +19,7 @@ import type { SubscriptionView } from '@src/features/subscription/hooks/use-subs
 import type { PremiumGateAnalyticsFeature } from '@src/features/subscription/utils/analytics/premium-gate-feature';
 import type { PurchaseFailedReason } from '@src/features/subscription/utils/analytics/purchase-failed-reason';
 import type { SubscriptionStatus } from '@src/features/user/domains/user.model';
+import type { VoiceCaptureFailureReason } from '@src/features/voice/domains/voice-capture.model';
 import type {
   WeatherBriefingKind,
   WeatherLocationRegisteredResult,
@@ -42,6 +45,7 @@ export const SENTRY_FEATURES = [
   'subscription',
   'todo_comment',
   'todo_nudge',
+  'voice',
   'weather_location',
   'widget',
 ] as const;
@@ -73,6 +77,7 @@ export const BREADCRUMB_CATEGORIES = [
   'widget',
   'invite',
   'network',
+  'voice',
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
 
@@ -198,6 +203,7 @@ export const FEATURE_KEYS = [
   'category_reorder',
   'todo_creation',
   'friend_invite',
+  'voice_quick',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -336,6 +342,34 @@ export interface EntitlementEventMap {
   };
 }
 
+export type VoiceCaptureMode = 'quick' | 'note';
+export type VoiceCaptureEntry = 'add_todo_sheet' | 'memo_tab' | 'quick_voice_upgrade';
+export type VoiceCaptureOutcome = 'completed' | 'cancelled' | 'empty';
+export type VoiceDurationBucket = 'lt_30s' | '30s_3m' | '3m_10m' | '10m_30m';
+
+/** 말한 내용·전사 글자는 어떤 이벤트에도 싣지 않는다. 길이는 구간으로만 남긴다 */
+export interface VoiceEventMap {
+  voice_capture_started: {
+    mode: VoiceCaptureMode;
+    entry: VoiceCaptureEntry;
+    locale: SpeechLocale;
+    on_device: boolean;
+  };
+  voice_capture_finished: {
+    mode: VoiceCaptureMode;
+    outcome: VoiceCaptureOutcome;
+    duration_bucket: VoiceDurationBucket;
+    pause_count: number;
+  };
+  voice_capture_failed: { mode: VoiceCaptureMode; reason: VoiceCaptureFailureReason };
+  voice_capture_resumed: { mode: VoiceCaptureMode; cause: 'app_background' | 'interrupted' };
+}
+
+export interface CoachmarkEventMap {
+  coachmark_shown: { kind: CoachmarkKind };
+  coachmark_dismissed: { kind: CoachmarkKind };
+}
+
 export interface AiEventMap {
   ai_parse_used: { success: boolean };
   ai_suggestion_acted: { action: 'accept' | 'dismiss' };
@@ -432,6 +466,8 @@ export type AppEventMap = AuthEventMap &
   LifecycleEventMap &
   SubscriptionEventMap &
   EntitlementEventMap &
+  VoiceEventMap &
+  CoachmarkEventMap &
   AiEventMap &
   UserEventMap &
   NotificationEventMap &

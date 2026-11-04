@@ -43,6 +43,7 @@ import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
+import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import { createWeatherIntroductionRepository } from '@src/features/weather/apis/weather-introduction.repository';
 import { WeatherIntroductionService } from '@src/features/weather/apis/weather-introduction.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
@@ -313,6 +314,9 @@ export function DIProvider({
       featureAttribution,
       draftService,
       queryCacheStorage,
+      recognitionLanguageRepository: createRecognitionLanguageRepository(
+        encryptedStorageBootstrap.draftStorage,
+      ),
       achievementService,
       aiService,
       authService,

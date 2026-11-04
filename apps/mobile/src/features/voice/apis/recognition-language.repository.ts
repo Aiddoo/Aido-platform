@@ -1,0 +1,52 @@
+import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
+import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { z } from 'zod';
+
+const KEY_PREFIX = 'aido_recognition_language_v1';
+const speechLocaleSchema = z.enum(SPEECH_LOCALES);
+
+export interface RecognitionLanguageRepository {
+  find(userId: string): SpeechLocale | undefined;
+  save(userId: string, locale: SpeechLocale): void;
+  subscribe(listener: () => void): () => void;
+}
+
+export const recognitionLanguageStorageKey = (userId: string) =>
+  `${KEY_PREFIX}:${encodeURIComponent(userId)}`;
+
+/**
+ * 사용자별 인식 언어. 사용자 범위 로컬 저장소(초안 저장소)에 두므로 로그아웃으로 그 저장소를 비울 때 함께 지워진다.
+ * 값을 읽지 못하거나 모르는 값이면 저장하지 않은 것으로 본다.
+ */
+export function createRecognitionLanguageRepository(
+  storage: SyncStorage,
+): RecognitionLanguageRepository {
+  const listeners = new Set<() => void>();
+
+  return {
+    find(userId) {
+      try {
+        const parsed = speechLocaleSchema.safeParse(
+          storage.getString(recognitionLanguageStorageKey(userId)),
+        );
+        return parsed.success ? parsed.data : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    save(userId, locale) {
+      try {
+        storage.set(recognitionLanguageStorageKey(userId), locale);
+      } catch {
+        return;
+      }
+      listeners.forEach((listener) => listener());
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}

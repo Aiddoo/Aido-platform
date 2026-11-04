@@ -1,7 +1,7 @@
 {
   "hub": {
     "title": "새로 생겼어요",
-    "description": "친구와 함께 쓰는 새 기능을 소개해요.",
+    "description": "아이두에 새로 생긴 기능을 소개해요.",
     "sheetLabel": "아이두 기능 가이드",
     "closeLabel": "기능 가이드 닫기"
   },
@@ -18,6 +18,60 @@
       "description": "카카오톡으로 링크를 보내보세요. 친구는 가입하면 바로 프리미엄 {{inviteeDays}}일, 나는 친구가 서로 다른 {{activeDays}}일 동안 할 일을 끝내면 프리미엄 {{inviterDays}}일을 받고 친구를 1명 더 추가할 수 있어요",
       "cta": "초대하러 가기",
       "ctaLabel": "친구 초대 화면으로 이동"
+    },
+    "voiceSay": {
+      "title": "하고 싶은 일을\n길게 말해보세요",
+      "description": "타이핑 없이 말만 하면 돼요. 여러 개를 한 번에 말해도 괜찮아요."
+    },
+    "voicePlan": {
+      "title": "AI가 날짜와 반복까지\n채워드려요",
+      "description": "매일·요일 반복, 기간, 시간, 하위 할 일, 나만 보기까지 알아듣고 할 일 정보를 채워요."
+    },
+    "voiceFacts": {
+      "title": "녹음 파일은\n서버로 보내지 않아요",
+      "description": "무료로 한 달에 {{freeCount}}번 써볼 수 있어요. 잘 안 되면 횟수는 차감되지 않아요.",
+      "cta": "지금 말해볼게요",
+      "ctaLabel": "할 일 추가 화면에서 말로 할 일 만들기"
+    }
+  },
+  "previews": {
+    "listening": "듣고 있어요",
+    "example": "“<vitamins>매일 아침 8시에 영양제</vitamins> 먹고, <gym>월수금 저녁 7시엔 헬스</gym>, <trip>다음 주 월요일부터 수요일까지 출장</trip>이고, <groceries>장보기 우유 계란 두부</groceries>, <meeting>팀 회의 준비는 나만 보게 금요일 3시</meeting>”",
+    "rows": {
+      "vitamins": {
+        "title": "영양제 먹기",
+        "detail": "오전 8:00 · 매일"
+      },
+      "gym": {
+        "title": "헬스",
+        "detail": "오후 7:00 · 월·수·금"
+      },
+      "trip": {
+        "title": "출장",
+        "detail": "기간 · 3일"
+      },
+      "groceries": {
+        "title": "장보기",
+        "detail": "하위 할 일 3개 · 우유, 계란, 두부"
+      },
+      "meeting": {
+        "title": "팀 회의 준비",
+        "detail": "금요일 오후 3:00 · 나만 보기"
+      }
+    },
+    "facts": {
+      "privacy": {
+        "title": "녹음 파일은 Aido 서버로 보내지 않아요",
+        "description": "정리에는 글자만 써요. 기기에서 바로 인식할 수 없으면 Apple·Google 음성 인식을 쓸 수 있어요."
+      },
+      "free": {
+        "title": "무료로 써볼 수 있어요",
+        "description": "잘 안 되면 횟수는 차감되지 않아요. 남은 횟수는 마이크 옆에 보여요."
+      },
+      "same": {
+        "title": "손으로 만든 할 일과 똑같아요",
+        "description": "알림·반복·하위 할 일이 그대로 동작해요."
+      }
     }
   }
 }

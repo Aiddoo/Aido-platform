@@ -1,4 +1,5 @@
-export type SpeechLocale = 'ko-KR' | 'en-US';
+export const SPEECH_LOCALES = ['ko-KR', 'en-US'] as const;
+export type SpeechLocale = (typeof SPEECH_LOCALES)[number];
 
 /**
  * - `dictation`: 한 번 말하면 끝나는 받아쓰기(할 일·하위 할 일 입력)
@@ -7,21 +8,24 @@ export type SpeechLocale = 'ko-KR' | 'en-US';
  */
 export type SpeechMode = 'dictation' | 'quick' | 'note';
 
-export type SpeechErrorCode =
-  | 'aborted'
-  | 'audio-capture'
-  | 'interrupted'
-  | 'bad-grammar'
-  | 'language-not-supported'
-  | 'network'
-  | 'no-speech'
-  | 'not-allowed'
-  | 'service-not-allowed'
-  | 'busy'
-  | 'client'
-  | 'speech-timeout'
-  | 'too-many-requests'
-  | 'unknown';
+export const SPEECH_ERROR_CODES = [
+  'aborted',
+  'audio-capture',
+  'interrupted',
+  'bad-grammar',
+  'language-not-supported',
+  'network',
+  'no-speech',
+  'not-allowed',
+  'service-not-allowed',
+  'busy',
+  'client',
+  'speech-timeout',
+  'too-many-requests',
+  'unknown',
+] as const;
+
+export type SpeechErrorCode = (typeof SPEECH_ERROR_CODES)[number];
 
 /** 인식기가 준 단어 구간. iOS·Android 14+ 기기 안 인식에서만 온다 */
 export interface SpeechSegment {

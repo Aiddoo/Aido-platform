@@ -7,6 +7,9 @@ import type { FeatureDiscoveryCardId } from '../../domains/feature-discovery.reg
 
 const CARD_FEATURE_KEYS = {
   friend_invite: 'friend_invite',
+  voice_say: 'voice_quick',
+  voice_plan: 'voice_quick',
+  voice_facts: 'voice_quick',
 } as const satisfies Record<FeatureDiscoveryCardId, FeatureKey>;
 
 interface FeatureDiscoveryHubEventInput {

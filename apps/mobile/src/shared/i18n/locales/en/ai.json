@@ -125,11 +125,11 @@
     "items": {
       "sentData": {
         "title": "What we send",
-        "description": "The sentence or memo you entered, category names, and today's date and time zone. For reports and suggestions, to-do titles and completion history for that period. We never send your name, email, or friends."
+        "description": "The sentence or memo you entered, what you said turned into text on your device, category names, and today's date and time zone. Audio files are never sent to Aido servers. For reports and suggestions, to-do titles and completion history for that period. We never send your name, email, or friends."
       },
       "processor": {
         "title": "Who processes it",
-        "description": "Google Gemini (Google LLC) organizes it into to-dos."
+        "description": "Anthropic (Claude), Google (Gemini), and OpenAI receive only the text and organize it into to-dos. If your device can't recognize speech on its own, Apple or Google speech recognition may turn your voice into text."
       },
       "usage": {
         "title": "How it's used",

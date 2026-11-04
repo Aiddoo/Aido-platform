@@ -6,7 +6,7 @@ import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
-import { FEATURE_DISCOVERY_CAMPAIGN_ID } from '../domains/feature-discovery.registry';
+import { PREVIOUS_FEATURE_DISCOVERY_CAMPAIGN_ID } from '../domains/feature-discovery.registry';
 import { FeatureDiscoveryBottomSheet } from './feature-discovery-bottom-sheet';
 
 let mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -72,7 +72,7 @@ jest.mock('@src/shared/ui', () => {
   };
 });
 
-const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
+const campaign = getBundledFeatureDiscoveryCampaign(PREVIOUS_FEATURE_DISCOVERY_CAMPAIGN_ID);
 
 describe('FeatureDiscoveryBottomSheet', () => {
   afterEach(async () => {

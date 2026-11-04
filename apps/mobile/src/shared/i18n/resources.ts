@@ -18,6 +18,7 @@ import enTodoComment from './locales/en/todo-comment.json';
 import enTodo from './locales/en/todo.json';
 import enUser from './locales/en/user.json';
 import enValidation from './locales/en/validation.json';
+import enVoice from './locales/en/voice.json';
 import enWeather from './locales/en/weather.json';
 import enWidget from './locales/en/widget.json';
 import koAchievement from './locales/ko/achievement.json';
@@ -40,6 +41,7 @@ import koTodoComment from './locales/ko/todo-comment.json';
 import koTodo from './locales/ko/todo.json';
 import koUser from './locales/ko/user.json';
 import koValidation from './locales/ko/validation.json';
+import koVoice from './locales/ko/voice.json';
 import koWeather from './locales/ko/weather.json';
 import koWidget from './locales/ko/widget.json';
 
@@ -68,6 +70,7 @@ export const resources = {
     appVersion: koAppVersion,
     widget: koWidget,
     featureDiscovery: koFeatureDiscovery,
+    voice: koVoice,
   },
   en: {
     common: enCommon,
@@ -92,6 +95,7 @@ export const resources = {
     appVersion: enAppVersion,
     widget: enWidget,
     featureDiscovery: enFeatureDiscovery,
+    voice: enVoice,
   },
 } as const;
 

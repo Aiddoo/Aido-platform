@@ -5,7 +5,7 @@ import {
   useSubTodoScreenParams,
   useTodoSheetDateParam,
 } from '@src/features/todo/hooks/use-todo-sheet-params';
-import { useDictation } from '@src/features/voice/hooks/use-dictation';
+import { DictationButton } from '@src/features/voice/components/dictation-button';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
@@ -18,7 +18,6 @@ import {
   INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
   MicIcon,
-  PauseIcon,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -36,7 +35,6 @@ import type { ComponentProps, ComponentRef } from 'react';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
@@ -255,7 +253,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
         <Box className="flex-1" />
 
         <SpeechTooltip />
-        <SpeechButton onResult={(text) => setValue('title', text)} />
+        <DictationButton value={draftTitle} onChange={(text) => setValue('title', text)} />
         <PressableFeedback
           testID="sub-todo-submit"
           isDisabled={isSubmitDisabled}
@@ -336,45 +334,5 @@ function SpeechTooltip() {
         </Popover.Content>
       </Popover.Portal>
     </Popover>
-  );
-}
-
-interface SpeechButtonProps {
-  onResult: (text: string) => void;
-}
-
-function SpeechButton({ onResult }: SpeechButtonProps) {
-  const fontScaledSize = useFontScaledSize();
-  const { isListening, start, stop } = useDictation({ onResult });
-
-  const handlePress = () => {
-    if (isListening) {
-      stop();
-      return;
-    }
-    Keyboard.dismiss();
-    start();
-  };
-
-  return (
-    <PressableFeedback
-      onPress={handlePress}
-      style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-      className="items-center justify-center rounded-full bg-main/10"
-    >
-      {isListening ? (
-        <PauseIcon
-          width={fontScaledSize(20)}
-          height={fontScaledSize(20)}
-          colorClassName="text-error"
-        />
-      ) : (
-        <MicIcon
-          width={fontScaledSize(20)}
-          height={fontScaledSize(20)}
-          colorClassName="text-main"
-        />
-      )}
-    </PressableFeedback>
   );
 }
