@@ -1,6 +1,5 @@
-import type { CurrentUser } from '@aido/api';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
-import { toUser } from '@src/features/user/apis/user.mapper';
+import { type CurrentUserResponse, toUser } from '@src/features/user/apis/user.mapper';
 
 import { PREMIUM_ME_EXAMPLES } from '../../__tests__/premium-access.factories';
 import { toSubscriptionReceiptViewModel } from './subscription-receipt.view-model';
@@ -15,7 +14,10 @@ interface ReceiptOptions {
 }
 
 /** 서버 /me 응답 모양 그대로 받아 앱 mapper를 거친 사용자로 영수증을 만든다 */
-function receiptOf(me: CurrentUser, { isStoreConfigured = true, now = NOW }: ReceiptOptions = {}) {
+function receiptOf(
+  me: CurrentUserResponse,
+  { isStoreConfigured = true, now = NOW }: ReceiptOptions = {},
+) {
   return toSubscriptionReceiptViewModel(toUser(me), { isStoreConfigured, now, timeZone: SEOUL });
 }
 
@@ -120,7 +122,7 @@ describe('toSubscriptionReceiptViewModel', () => {
       });
     });
 
-    it('구버전 서버라 출처가 없으면 날짜 행 없이 구독 관리만 보인다', () => {
+    it('구독 상태만 ACTIVE이고 프리미엄 출처가 없으면 날짜 행 없이 구독 관리만 보인다', () => {
       // When
       const result = receiptOf(createCurrentUserDto());
 

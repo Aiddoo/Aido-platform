@@ -1,11 +1,11 @@
-import { currentUserSchema, type UpdateProfileInput, updateProfileResponseSchema } from '@aido/api';
+import { type UpdateProfileInput, updateProfileResponseSchema } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import type { UpdateProfileResult, User } from '../domains/user.model';
-import { toUpdateProfileResult, toUser } from './user.mapper';
+import { CurrentUserSchema, toUpdateProfileResult, toUser } from './user.mapper';
 
 export class UserService {
   readonly #httpClient: HttpClient;
@@ -21,7 +21,7 @@ export class UserService {
       return result;
     }
 
-    const parsed = currentUserSchema.safeParse(result.value);
+    const parsed = CurrentUserSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
         `[UserService] Invalid getCurrentUser response: ${parsed.error.message}`,

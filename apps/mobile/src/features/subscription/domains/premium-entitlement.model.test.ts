@@ -10,29 +10,10 @@ describe('PremiumEntitlementPolicy', () => {
       // Given 초대로 친구 자리가 하나 늘었다
       const subject = {
         entitlements: createPremiumEntitlements({ FRIEND: { allowed: true, limit: 6 } }),
-        isPremium: false,
       };
 
       // When / Then
       expect(PremiumEntitlementPolicy.limit(subject, 'FRIEND')).toBe(6);
-    });
-
-    it.each([
-      [false, 3],
-      [true, 30],
-    ] as const)('구버전 서버면 프리미엄 %s에 맞는 카탈로그 한도를 쓴다', (isPremium, expected) => {
-      // Given
-      const subject = { entitlements: null, isPremium };
-
-      // When / Then
-      expect(PremiumEntitlementPolicy.limit(subject, 'TODO_CATEGORY')).toBe(expected);
-    });
-
-    it('구버전 서버의 프리미엄 무제한 기능은 null이다', () => {
-      // Given / When / Then
-      expect(PremiumEntitlementPolicy.limit({ entitlements: null, isPremium: true }, 'NUDGE')).toBe(
-        null,
-      );
     });
   });
 

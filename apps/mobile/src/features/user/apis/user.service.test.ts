@@ -76,6 +76,15 @@ describe('UserService', () => {
       // When & Then
       await expect(service.getCurrentUser()).rejects.toThrow('Invalid getCurrentUser response');
     });
+
+    test('프리미엄 효력·권한이 빠진 응답 → ParseError throw', async () => {
+      // Given
+      const { isPremium: _isPremium, entitlements: _entitlements, ...dto } = createCurrentUserDto();
+      httpClient.get.mockResolvedValue({ ok: true, value: dto });
+
+      // When & Then
+      await expect(service.getCurrentUser()).rejects.toThrow('Invalid getCurrentUser response');
+    });
   });
 
   // ── updateProfile ──────────────────────────

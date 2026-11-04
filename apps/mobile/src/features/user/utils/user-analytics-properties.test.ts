@@ -8,7 +8,7 @@ describe('toUserAnalyticsProperties', () => {
     expect(
       toUserAnalyticsProperties({
         role: 'USER',
-        isPremium: null,
+        isPremium: true,
         subscriptionStatus: 'ACTIVE',
         premiumAccess: createPremiumAccess({ source: 'STORE' }),
       }),
@@ -20,7 +20,7 @@ describe('toUserAnalyticsProperties', () => {
     expect(
       toUserAnalyticsProperties({
         role: 'USER',
-        isPremium: null,
+        isPremium: true,
         subscriptionStatus: 'FREE',
         premiumAccess: createPremiumAccess({ source: 'GRANT' }),
       }),
@@ -32,7 +32,7 @@ describe('toUserAnalyticsProperties', () => {
     expect(
       toUserAnalyticsProperties({
         role: 'ADMIN',
-        isPremium: null,
+        isPremium: false,
         subscriptionStatus: 'FREE',
         premiumAccess: createPremiumAccess({ source: null }),
       }).premium_source,
@@ -44,7 +44,7 @@ describe('toUserAnalyticsProperties', () => {
     expect(
       toUserAnalyticsProperties({
         role: 'USER',
-        isPremium: null,
+        isPremium: false,
         subscriptionStatus: 'EXPIRED',
         premiumAccess: createPremiumAccess({ source: null }),
       }),

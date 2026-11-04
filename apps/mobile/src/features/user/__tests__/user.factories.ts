@@ -1,7 +1,10 @@
-import type { CurrentUser, UpdateProfileResponse } from '@aido/api';
+import type { UpdateProfileResponse } from '@aido/api';
+import { createPremiumEntitlementsDto } from '@src/features/subscription/__tests__/premium-entitlement.factories';
 import { ApiError } from '@src/shared/errors/api-error';
 
-const generateCurrentUserDto = (): CurrentUser => ({
+import type { CurrentUserResponse } from '../apis/user.mapper';
+
+const generateCurrentUserDto = (): CurrentUserResponse => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
   email: 'test@example.com',
   sessionId: 'clz7x5p8k0002qz0z8z8z8z8z',
@@ -15,9 +18,19 @@ const generateCurrentUserDto = (): CurrentUser => ({
   profileImage: null,
   createdAt: '2026-01-01T09:00:00.000Z',
   providers: ['CREDENTIAL'],
+  premiumSource: null,
+  premiumEndsAt: null,
+  premiumPeriodEndsAt: null,
+  willRenew: false,
+  bankedPremiumDays: 0,
+  premiumGrantEndedAt: null,
+  isPremium: false,
+  entitlements: createPremiumEntitlementsDto(),
 });
 
-export const createCurrentUserDto = (overrides?: Partial<CurrentUser>): CurrentUser => ({
+export const createCurrentUserDto = (
+  overrides?: Partial<CurrentUserResponse>,
+): CurrentUserResponse => ({
   ...generateCurrentUserDto(),
   ...overrides,
 });
