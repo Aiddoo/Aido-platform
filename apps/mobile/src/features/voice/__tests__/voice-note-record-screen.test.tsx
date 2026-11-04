@@ -31,10 +31,6 @@ import { createRecognitionLanguageRepository } from '../apis/recognition-languag
 
 // AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
 jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
-jest.mock('expo-router', () => ({
-  router: { back: jest.fn(), replace: jest.fn(), navigate: jest.fn(), canGoBack: () => true },
-  useLocalSearchParams: jest.fn(() => ({})),
-}));
 
 const ACCOUNT_ID = 'user-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -131,6 +127,7 @@ describe('녹음 화면', () => {
     // Then
     await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
     expect(storage.drafts.findAll(ACCOUNT_ID)).toHaveLength(1);
+    expect(router.back).not.toHaveBeenCalled();
   });
 
   afterEach(() => {

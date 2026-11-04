@@ -140,8 +140,7 @@ export function WaveformTimeline({
     layout.set({ width: nativeEvent.layout.width, height: nativeEvent.layout.height });
   };
 
-  // `usePathValue` 콜백 안의 shared value는 입력으로 잡히지 않아 값이 바뀌어도 다시 그리지 않는다.
-  // 그래서 값을 직접 읽는 `useDerivedValue`로 경로를 만든다
+  // Reanimated 매퍼는 넘겨받은 콜백 안의 shared value를 입력으로 찾지 않아(`usePathValue`) 값을 직접 읽는 `useDerivedValue`로 만든다
   const speechPath = useDerivedValue(() => {
     const target = Skia.PathBuilder.Make();
     addLevelBars(target, layout.get(), bars.get(), true);

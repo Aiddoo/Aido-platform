@@ -97,7 +97,7 @@ export function SentenceCaptionList({
                 />
               ))
               .with({ type: 'interim' }, ({ text }) => (
-                <Box className="rounded-xl bg-gray-1 px-3 py-2.5">
+                <Box className="rounded-xl bg-gray-1 px-3 py-3">
                   <Text size="b3" shade={5} lineBreakStrategyIOS="hangul-word">
                     {text}
                   </Text>
@@ -136,15 +136,15 @@ function SentenceCard({
       isDisabled={onPress == null}
       onPress={onPress}
       className={cn(
-        'rounded-xl bg-gray-1 px-3 py-2.5',
-        sentence.isBookmarked && 'border-l-[3px] border-main',
+        'rounded-xl bg-gray-1 px-3 py-3',
+        sentence.isBookmarked && 'border-l-2 border-main',
         isActive && 'bg-main/10',
         className,
       )}
       {...pressableProps}
     >
-      <HStack gap={6} className="items-start">
-        <Text size="e1" shade={6} className="mt-0.5 tabular-nums">
+      <HStack gap={8} className="items-start">
+        <Text size="e1" shade={6} className="tabular-nums">
           {time}
         </Text>
         <Text size="b3" lineBreakStrategyIOS="hangul-word" className="shrink flex-1">

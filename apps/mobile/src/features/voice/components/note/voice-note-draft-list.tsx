@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import type { VoiceNote } from '../../domains/voice-note.model';
+import { type VoiceNote, VoiceNotePolicy } from '../../domains/voice-note.model';
 import { useVoiceNotes } from '../../hooks/use-voice-notes';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { voiceNoteHref } from '../../utils/navigation/voice-note-href';
@@ -42,19 +42,18 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
   const dateFormatContext = useDateFormatContext();
   const push = useSingleTap(router.push);
-  const title =
-    note.digest == null || note.digest.title === '' ? t('result.defaultTitle') : note.digest.title;
+  const title = VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle');
 
   return (
     <PressableFeedback
       onPress={() => push(voiceNoteHref(note.draftId))}
       accessibilityRole="button"
-      className="rounded-2xl bg-gray-1 px-3 py-2.5"
+      className="rounded-2xl bg-gray-1 px-3 py-3"
       testID="voice-note-draft"
     >
-      <HStack gap={10} align="center">
+      <HStack gap={12} align="center">
         <MicIcon width={20} height={20} colorClassName="text-gray-6" />
-        <VStack flex={1} gap={2}>
+        <VStack flex={1} gap={4}>
           <Text size="b3" weight="medium" maxLines={1}>
             {title}
           </Text>

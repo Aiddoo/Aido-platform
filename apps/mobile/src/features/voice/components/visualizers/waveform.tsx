@@ -42,7 +42,7 @@ export function Waveform({ level, isActive, style, ...canvasProps }: WaveformPro
     samples.set(next);
   }, isMoving);
 
-  // `usePathValue` 콜백 안의 shared value는 입력으로 잡히지 않아 값을 직접 읽는 `useDerivedValue`로 만든다
+  // Reanimated 매퍼는 넘겨받은 콜백 안의 shared value를 입력으로 찾지 않아(`usePathValue`) 값을 직접 읽는 `useDerivedValue`로 만든다
   const path = useDerivedValue(() => {
     const target = Skia.PathBuilder.Make();
     const values = samples.get();

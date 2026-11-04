@@ -23,7 +23,7 @@ export function KeyPointList({
   ...stackProps
 }: KeyPointListProps) {
   return (
-    <VStack gap={2} {...stackProps}>
+    <VStack gap={4} {...stackProps}>
       {keyPoints.map((keyPoint) => (
         <KeyPointList.Item
           key={keyPoint.id}
@@ -63,16 +63,16 @@ function KeyPointItem({
       accessibilityLabel={canPlay ? t('keyPoints.playFrom', { time }) : undefined}
       accessibilityState={{ selected: isActive }}
       isDisabled={!canPlay}
-      className={cn('rounded-xl p-2.5', isActive && 'bg-main/10', className)}
+      className={cn('rounded-xl p-3', isActive && 'bg-main/10', className)}
       {...pressableProps}
     >
-      <HStack gap={10} className="items-start">
+      <HStack gap={12} className="items-start">
         {time != null && (
           <Text
             size="e1"
             weight="bold"
             tone="brand"
-            className="mt-px rounded-full bg-main/10 px-2 py-0.5 tabular-nums"
+            className="rounded-full bg-main/10 px-2 py-1 tabular-nums"
           >
             {time}
           </Text>

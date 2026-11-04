@@ -3,6 +3,7 @@ import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, CloseIcon, HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -107,7 +108,7 @@ QuickVoicePanel.Listening = function Listening({
 
         {isOverLimit ? (
           <VStack gap={8} testID="quick-voice-limit">
-            <VStack gap={2}>
+            <VStack gap={4}>
               <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
                 {t('limit.title')}
               </Text>
@@ -121,21 +122,26 @@ QuickVoicePanel.Listening = function Listening({
                 label={t('listening.cancel')}
                 iconSize={fontScaledSize(18)}
               />
-              <PillButton
-                label={t('limit.finish')}
-                onPress={onFinish}
-                isDisabled={!canFinish}
-                testID="quick-voice-finish"
-              />
+              <Box flex={1}>
+                <Button
+                  size="large"
+                  isDisabled={!canFinish}
+                  onPress={onFinish}
+                  testID="quick-voice-finish"
+                >
+                  {t('limit.finish')}
+                </Button>
+              </Box>
             </HStack>
-            <HStack>
-              <PillButton
-                label={t('limit.continueAsNote')}
-                onPress={onContinueAsVoiceNote}
-                isSecondary
-                testID="quick-voice-continue-as-note"
-              />
-            </HStack>
+            <Button
+              size="large"
+              variant="weak"
+              color="dark"
+              onPress={onContinueAsVoiceNote}
+              testID="quick-voice-continue-as-note"
+            >
+              {t('limit.continueAsNote')}
+            </Button>
           </VStack>
         ) : isPaused ? (
           <VStack gap={8}>
@@ -148,18 +154,23 @@ QuickVoicePanel.Listening = function Listening({
                 label={t('listening.cancel')}
                 iconSize={fontScaledSize(18)}
               />
-              <PillButton
-                label={t('listening.resume')}
-                onPress={onResume}
-                testID="quick-voice-resume"
-              />
+              <Box flex={1}>
+                <Button size="large" onPress={onResume} testID="quick-voice-resume">
+                  {t('listening.resume')}
+                </Button>
+              </Box>
               {canFinish && (
-                <PillButton
-                  label={t('listening.done')}
-                  onPress={onFinish}
-                  isSecondary
-                  testID="quick-voice-finish"
-                />
+                <Box flex={1}>
+                  <Button
+                    size="large"
+                    variant="weak"
+                    color="dark"
+                    onPress={onFinish}
+                    testID="quick-voice-finish"
+                  >
+                    {t('listening.done')}
+                  </Button>
+                </Box>
               )}
             </HStack>
           </VStack>
@@ -171,13 +182,25 @@ QuickVoicePanel.Listening = function Listening({
                 label={t('listening.cancel')}
                 iconSize={fontScaledSize(18)}
               />
-              <PillButton
-                label={t('listening.done')}
-                onPress={onFinish}
-                isDisabled={!canFinish}
-                fill={<SilenceFill isQuiet={isQuiet && canFinish} />}
-                testID="quick-voice-finish"
-              />
+              <Box flex={1}>
+                <Button
+                  size="large"
+                  className="overflow-hidden"
+                  isDisabled={!canFinish}
+                  onPress={onFinish}
+                  testID="quick-voice-finish"
+                >
+                  <SilenceFill isQuiet={isQuiet && canFinish} />
+                  <Text
+                    size="b4"
+                    weight="semibold"
+                    maxLines={1}
+                    className={cn('text-white dark:text-gray-9', !canFinish && 'opacity-40')}
+                  >
+                    {t('listening.done')}
+                  </Text>
+                </Button>
+              </Box>
             </HStack>
             <Text size="e1" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
               {t('listening.autoFinishHint')}
@@ -211,7 +234,7 @@ QuickVoicePanel.Planning = function Planning({
         <Text size="t3" weight="semibold" lineBreakStrategyIOS="hangul-word">
           {`“${text}”`}
         </Text>
-        <HStack gap={10} align="center">
+        <HStack gap={12} align="center">
           <VoiceOrb level={orbLevel} size={32} isActive={false} />
           <Text size="b3" shade={6}>
             {t('planning.title')}
@@ -323,7 +346,7 @@ QuickVoicePanel.Failed = function Failed({
     <HStack
       gap={8}
       align="center"
-      className="rounded-xl bg-gray-2 px-3 py-2.5"
+      className="rounded-xl bg-gray-2 px-3 py-3"
       testID="quick-voice-failed"
     >
       <Text size="b4" shade={7} className="flex-1 shrink" lineBreakStrategyIOS="hangul-word">
@@ -356,7 +379,7 @@ function ListeningClock({ state }: { state: VoiceCaptureState }) {
   }, [isListening]);
 
   return (
-    <HStack gap={6} align="center">
+    <HStack gap={8} align="center">
       <Box className="size-2 rounded-full bg-main" />
       <Text size="b4" weight="semibold" shade={7} className="tabular-nums">
         {formatMediaTime(VoiceCapturePolicy.getElapsedMs(state, now))}
@@ -383,36 +406,6 @@ function CancelButton({
       testID="quick-voice-cancel"
     >
       <CloseIcon width={iconSize} height={iconSize} colorClassName="text-gray-7" />
-    </PressableFeedback>
-  );
-}
-
-interface PillButtonProps {
-  label: string;
-  onPress: () => void;
-  isDisabled?: boolean;
-  isSecondary?: boolean;
-  fill?: React.ReactNode;
-  testID?: string;
-}
-
-function PillButton({ label, onPress, isDisabled, isSecondary, fill, testID }: PillButtonProps) {
-  return (
-    <PressableFeedback
-      onPress={onPress}
-      isDisabled={isDisabled}
-      accessibilityRole="button"
-      testID={testID}
-      className={
-        isSecondary
-          ? 'h-12 flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gray-2'
-          : `h-12 flex-1 items-center justify-center overflow-hidden rounded-2xl ${isDisabled ? 'bg-gray-3' : 'bg-main'}`
-      }
-    >
-      {fill}
-      <Text size="b3" weight="semibold" tone={isSecondary ? 'neutral' : 'white'} maxLines={1}>
-        {label}
-      </Text>
     </PressableFeedback>
   );
 }

@@ -33,8 +33,7 @@
     },
     "state": {
       "done": "Done",
-      "doing": "In progress",
-      "waiting": "Waiting"
+      "doing": "In progress"
     },
     "characters_one": "{{amount}} character",
     "characters_other": "{{amount}} characters",

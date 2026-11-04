@@ -370,7 +370,7 @@ PlanReview.TodoRow = function PlanTodoRow({
             <LockIcon width={14} height={14} colorClassName="text-gray-5" />
           )}
           {isDuplicate && (
-            <Box className="rounded-md bg-gray-2 px-1.5 py-0.5">
+            <Box className="rounded-md bg-gray-2 px-2 py-1">
               <Text size="e1" shade={6} maxLines={1}>
                 {t('plan.duplicate')}
               </Text>

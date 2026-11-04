@@ -33,8 +33,7 @@
     },
     "state": {
       "done": "끝남",
-      "doing": "진행 중",
-      "waiting": "기다리는 중"
+      "doing": "진행 중"
     },
     "characters": "{{amount}}자",
     "marks": "깃발 {{count}}개",

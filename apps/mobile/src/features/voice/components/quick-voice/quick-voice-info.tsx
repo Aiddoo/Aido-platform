@@ -91,7 +91,7 @@ QuickVoiceInfo.Contents = function Contents() {
           {t('info.examples')}
         </Text>
       </VStack>
-      <VStack gap={2} className="border-t border-border pt-2">
+      <VStack gap={4} className="border-t border-border pt-2">
         {remaining != null && (
           <Text size="b4" shade={7} className="tabular-nums" lineBreakStrategyIOS="hangul-word">
             {t('info.remaining', { amount: formatCount(remaining, locale) })}

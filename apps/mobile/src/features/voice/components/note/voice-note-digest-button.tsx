@@ -28,7 +28,7 @@ export function VoiceNoteDigestButton({ label, ...buttonProps }: VoiceNoteDigest
     .exhaustive();
 
   return (
-    <VStack gap={6}>
+    <VStack gap={8}>
       <Button {...buttonProps} testID="voice-note-digest">
         {label}
       </Button>

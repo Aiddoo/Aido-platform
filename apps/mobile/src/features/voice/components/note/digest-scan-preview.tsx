@@ -49,7 +49,7 @@ export function DigestScanPreview({ paragraphs, className, ...boxProps }: Digest
 
   return (
     <Box
-      className={cn('overflow-hidden rounded-2xl bg-gray-1 p-3.5', className)}
+      className={cn('overflow-hidden rounded-2xl bg-gray-1 p-4', className)}
       onLayout={handleLayout}
       {...boxProps}
     >

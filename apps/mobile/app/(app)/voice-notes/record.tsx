@@ -179,7 +179,7 @@ function VoiceNoteRecordScreen() {
   const footer = match(state)
     .with({ status: P.union('paused', 'failed') }, (stopped) => (
       <VStack gap={12}>
-        <VStack gap={4} className="rounded-2xl bg-gray-1 px-3.5 py-3">
+        <VStack gap={4} className="rounded-2xl bg-gray-1 px-4 py-3">
           <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
             {stopped.status === 'paused' ? t('record.pausedTitle') : t('record.failedTitle')}
           </Text>
@@ -367,7 +367,7 @@ function RecordControl({
   const size = fontScaledSize(isPrimary ? 64 : 52);
 
   return (
-    <VStack align="center" gap={6}>
+    <VStack align="center" gap={8}>
       <PressableFeedback
         accessibilityRole="button"
         accessibilityLabel={label}

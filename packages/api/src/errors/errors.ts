@@ -226,7 +226,6 @@ export const ErrorCode = {
   AI_1315: "AI_1315",
   /** Idempotency-Key 헤더가 필요합니다 */
   AI_1316: "AI_1316",
-  /** 이미 처리한 요청의 결과를 다시 보낼 수 없습니다 */
   /** 같은 Idempotency-Key로 다른 요청을 보냈습니다 */
   AI_1318: "AI_1318",
 

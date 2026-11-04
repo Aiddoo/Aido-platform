@@ -222,6 +222,20 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
   });
 
+  test('녹음 파일을 쓰지 않은 구간(Android 12 이하)은 기다리지 않고 글자를 넘긴다', async () => {
+    // Given
+    const { speechRecognizer, onFinished } = await renderRecording();
+    await start(speechRecognizer);
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('pause'));
+
+    // When
+    await fireEvent.press(screen.getByTestId('finish'));
+
+    // Then
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
+  });
+
   test('녹음 파일이 끝내 오지 않아도 글자는 넘긴다', async () => {
     // Given
     const { speechRecognizer, onFinished } = await renderRecording();

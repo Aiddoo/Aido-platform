@@ -44,7 +44,7 @@ export function VoiceNotePlayerBar({
 
   if (!isRecordingAvailable) {
     return (
-      <HStack className={cn('rounded-2xl bg-gray-1 px-3 py-2.5', className)} {...stackProps}>
+      <HStack className={cn('rounded-2xl bg-gray-1 px-3 py-3', className)} {...stackProps}>
         <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
           {t('player.unavailable')}
         </Text>
@@ -54,16 +54,17 @@ export function VoiceNotePlayerBar({
 
   return (
     <HStack
-      gap={10}
-      className={cn('items-center rounded-2xl bg-gray-1 px-3 py-2.5', className)}
+      gap={12}
+      className={cn('items-center rounded-2xl bg-gray-1 px-3 py-3', className)}
       {...stackProps}
     >
       <PressableFeedback
         accessibilityRole="button"
         accessibilityLabel={playback.isPlaying ? t('player.pause') : t('player.play')}
         isDisabled={!playback.isLoaded}
+        hitSlop={4}
         onPress={player.togglePlay}
-        className="size-[34px] items-center justify-center rounded-full bg-main"
+        className="size-9 items-center justify-center rounded-full bg-main"
       >
         {playback.isPlaying ? (
           <PauseIcon colorClassName="accent-white" width={14} height={14} />
@@ -166,7 +167,7 @@ function Scrubber({
     <GestureDetector gesture={gesture}>
       <Box
         accessibilityRole="adjustable"
-        className={cn('h-[30px]', className)}
+        className={cn('h-8', className)}
         onLayout={handleLayout}
         {...boxProps}
       >

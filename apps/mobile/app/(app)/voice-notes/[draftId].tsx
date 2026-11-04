@@ -132,7 +132,6 @@ function VoiceNoteDigestScreen({ note }: { note: VoiceNote }) {
           className="max-h-[50%]"
         />
         <DigestProgress
-          progress="key-points"
           characterCount={note.sentences.reduce((sum, { text }) => sum + text.length, 0)}
           markCount={note.sentences.filter(({ isBookmarked }) => isBookmarked).length}
         />
@@ -150,7 +149,7 @@ function VoiceNoteDigestScreen({ note }: { note: VoiceNote }) {
       {failure != null && (
         <VStack
           gap={4}
-          className="rounded-2xl bg-gray-1 px-3.5 py-3"
+          className="rounded-2xl bg-gray-1 px-4 py-3"
           testID="voice-note-digest-failure"
         >
           <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
@@ -194,8 +193,7 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
   const markCount = note.sentences.filter(({ isBookmarked }) => isBookmarked).length;
   const date = formatDateLabel(note.createdAt, 'monthDay', dateFormatContext);
   const duration = formatMediaTime(note.durationMs);
-  const title =
-    note.digest == null || note.digest.title === '' ? t('result.defaultTitle') : note.digest.title;
+  const title = VoiceNotePolicy.getDigestTitle(note) ?? t('result.defaultTitle');
   const todoCount = note.planDraft?.form.actions.filter(isTodoAction).length ?? 0;
   // 넓은 화면은 할 일 칸이 늘 보여 거기서 알린다
   const noTodosNotice = isCompact && VoiceNotePolicy.hasNoPlannedTodos(note) && (
@@ -239,7 +237,7 @@ function VoiceNoteResultScreen({ note }: { note: VoiceNote }) {
   return (
     <VStack flex={1} gap={12} className="px-4 pt-2">
       <VoiceNoteHeader onClose={closeScreen} right={<SaveAsMemoButton note={note} />} />
-      <VStack gap={2}>
+      <VStack gap={4}>
         <Text size="t3" weight="bold" lineBreakStrategyIOS="hangul-word">
           {title}
         </Text>

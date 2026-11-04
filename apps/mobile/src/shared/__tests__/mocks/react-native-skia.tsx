@@ -21,6 +21,7 @@ export const Rect = NothingToDraw;
 export const RoundedRect = NothingToDraw;
 export const BlurMask = NothingToDraw;
 export const SweepGradient = NothingToDraw;
+export const usePathValue = () => ({});
 export const vec = (x: number, y: number) => ({ x, y });
 export const Skia = {
   PathBuilder: { Make: createPathBuilder },
