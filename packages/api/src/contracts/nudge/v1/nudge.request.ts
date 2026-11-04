@@ -99,7 +99,7 @@ export const getNudgeThanksPreviewQuerySchema = z
   .refine(
     (query) => query.cursor == null || (query.limit != null && query.throughNudgeId != null),
     {
-      message: "다음 페이지 조회에는 페이지 크기와 미리보기 시점의 콕 ID가 필요합니다",
+      error: "다음 페이지 조회에는 페이지 크기와 미리보기 시점의 콕 ID가 필요합니다",
       path: ["cursor"],
     },
   );

@@ -58,7 +58,7 @@ export const createTodoSchema = z
       return true;
     },
     {
-      message: "종료 날짜는 시작 날짜 이후여야 합니다",
+      error: "종료 날짜는 시작 날짜 이후여야 합니다",
       path: ["endDate"],
     },
   );
@@ -102,7 +102,7 @@ export const updateTodoSchema = z
       return true;
     },
     {
-      message: "종료 날짜는 시작 날짜 이후여야 합니다",
+      error: "종료 날짜는 시작 날짜 이후여야 합니다",
       path: ["endDate"],
     },
   );
@@ -212,7 +212,7 @@ export const updateTodoScheduleSchema = z
       return true;
     },
     {
-      message: "종료 날짜는 시작 날짜 이후여야 합니다",
+      error: "종료 날짜는 시작 날짜 이후여야 합니다",
       path: ["endDate"],
     },
   );
@@ -271,7 +271,7 @@ export const createRecurringTodoSchema = z
       .describe("공개 범위 (PUBLIC/PRIVATE, 기본값: PUBLIC)"),
   })
   .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
-    message: "종료 날짜는 시작 날짜 이후여야 합니다",
+    error: "종료 날짜는 시작 날짜 이후여야 합니다",
     path: ["endDate"],
   })
   .refine(
@@ -283,7 +283,7 @@ export const createRecurringTodoSchema = z
       return diffDays <= RECURRING_TODO_LIMITS.MAX_DAYS_RANGE;
     },
     {
-      message: `날짜 범위는 최대 ${RECURRING_TODO_LIMITS.MAX_DAYS_RANGE}일입니다`,
+      error: `날짜 범위는 최대 ${RECURRING_TODO_LIMITS.MAX_DAYS_RANGE}일입니다`,
       path: ["endDate"],
     },
   );
@@ -334,7 +334,7 @@ export const updateTodoItemSchema = z
     completed: z.boolean().optional().describe("완료 상태 (선택)"),
   })
   .refine((data) => data.title != null || data.completed != null, {
-    message: "제목 또는 완료 상태 중 하나는 입력해야 합니다",
+    error: "제목 또는 완료 상태 중 하나는 입력해야 합니다",
   });
 
 export type UpdateTodoItemInput = z.infer<typeof updateTodoItemSchema>;

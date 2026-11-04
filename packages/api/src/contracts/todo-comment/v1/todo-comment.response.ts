@@ -127,7 +127,7 @@ export const todoConversationIncomingBranchSchema = z
     toDepth: z.number().int().positive().describe("현재 댓글 아바타의 시각 depth"),
   })
   .refine(({ fromDepth, toDepth }) => toDepth === fromDepth + 1, {
-    message: "답글 branch는 직계 부모 depth에서 현재 depth로 이어져야 합니다.",
+    error: "답글 branch는 직계 부모 depth에서 현재 depth로 이어져야 합니다.",
   })
   .describe("부모 연결선에서 현재 댓글 아바타로 휘어지는 branch");
 

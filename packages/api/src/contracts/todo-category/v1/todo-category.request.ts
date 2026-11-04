@@ -32,7 +32,7 @@ export const updateTodoCategorySchema = z
       .describe("카테고리 색상 (선택, HEX 7자, 예: #FF5733)"),
   })
   .refine((data) => data.name != null || data.color != null, {
-    message: "카테고리명 또는 색상 중 하나는 입력해야 합니다",
+    error: "카테고리명 또는 색상 중 하나는 입력해야 합니다",
   });
 
 export type UpdateTodoCategoryInput = z.infer<typeof updateTodoCategorySchema>;

@@ -19,7 +19,7 @@ export const externalSchema = z.object({
     .string()
     .optional()
     .refine((val) => !val || val.startsWith("redis"), {
-      message: "REDIS_URL must be a valid Redis URL (redis:// or rediss://)",
+      error: "REDIS_URL must be a valid Redis URL (redis:// or rediss://)",
     }),
 
   // Sentry 에러 모니터링 (선택) - 빈 문자열 허용
@@ -27,7 +27,7 @@ export const externalSchema = z.object({
     .string()
     .optional()
     .refine((val) => !val || val.startsWith("https://"), {
-      message: "SENTRY_DSN must be a valid HTTPS URL",
+      error: "SENTRY_DSN must be a valid HTTPS URL",
     }),
 
   // Sentry 트레이스 샘플링 비율 (0.0 ~ 1.0, 기본값: production=0.2, 나머지=1.0)

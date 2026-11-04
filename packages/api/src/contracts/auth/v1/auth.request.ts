@@ -39,12 +39,12 @@ export const registerSchema = z
       .describe("사용자 이름 (선택, 최대 20자, 예: 홍길동)"),
     termsAgreed: z
       .literal(true, {
-        message: "서비스 이용약관에 동의해주세요",
+        error: "서비스 이용약관에 동의해주세요",
       })
       .describe("서비스 이용약관 동의 (필수, true만 허용)"),
     privacyAgreed: z
       .literal(true, {
-        message: "개인정보처리방침에 동의해주세요",
+        error: "개인정보처리방침에 동의해주세요",
       })
       .describe("개인정보처리방침 동의 (필수, true만 허용)"),
     marketingAgreed: z
@@ -57,7 +57,7 @@ export const registerSchema = z
       .describe("광고성 앱 푸시 수신 동의 (선택, 기본값: false)"),
   })
   .refine((data) => data.password === data.passwordConfirm, {
-    message: "비밀번호가 일치하지 않습니다",
+    error: "비밀번호가 일치하지 않습니다",
     path: ["passwordConfirm"],
   })
   .describe("회원가입 요청");
@@ -121,7 +121,7 @@ export const resetPasswordSchema = z
     newPasswordConfirm: z.string().describe("새 비밀번호 확인 (newPassword와 동일해야 함)"),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
-    message: "비밀번호가 일치하지 않습니다",
+    error: "비밀번호가 일치하지 않습니다",
     path: ["newPasswordConfirm"],
   })
   .describe("비밀번호 재설정 요청");
@@ -137,11 +137,11 @@ export const changePasswordSchema = z
     newPasswordConfirm: z.string().describe("새 비밀번호 확인 (newPassword와 동일해야 함)"),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
-    message: "비밀번호가 일치하지 않습니다",
+    error: "비밀번호가 일치하지 않습니다",
     path: ["newPasswordConfirm"],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "새 비밀번호는 현재 비밀번호와 달라야 합니다",
+    error: "새 비밀번호는 현재 비밀번호와 달라야 합니다",
     path: ["newPassword"],
   })
   .describe("비밀번호 변경 요청");
@@ -161,7 +161,7 @@ export const setPasswordSchema = z
     newPasswordConfirm: z.string().describe("새 비밀번호 확인 (newPassword와 동일해야 함)"),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
-    message: "비밀번호가 일치하지 않습니다",
+    error: "비밀번호가 일치하지 않습니다",
     path: ["newPasswordConfirm"],
   })
   .describe("비밀번호 설정 요청 (소셜 전용 사용자)");
@@ -206,7 +206,7 @@ export const updateProfileSchema = z
   })
   // nullish-strict: profileImage null(삭제)도 수정 입력이다
   .refine((data) => data.name != null || data.profileImage !== undefined, {
-    message: "최소 하나의 필드를 입력해주세요",
+    error: "최소 하나의 필드를 입력해주세요",
   })
   .describe("프로필 수정 요청");
 
@@ -353,7 +353,7 @@ export const linkSocialAccountSchema = z
       return true;
     },
     {
-      message: "Apple/Google은 idToken, Kakao/Naver는 accessToken이 필요합니다",
+      error: "Apple/Google은 idToken, Kakao/Naver는 accessToken이 필요합니다",
       path: ["idToken"],
     },
   )
