@@ -1,7 +1,8 @@
-import type {
-  TodoComment as TodoCommentV1Dto,
-  TodoCommentThreadsResponse,
-  TodoCommentV2,
+import {
+  type TodoCommentV2,
+  todoCommentSchema as todoCommentV1Schema,
+  todoCommentThreadsResponseSchema,
+  todoCommentV2Schema,
 } from '@aido/api';
 
 import { toTodoCommentFromV1, toTodoCommentThreadPage } from './todo-comment.mapper';
@@ -9,8 +10,9 @@ import { toTodoCommentFromV1, toTodoCommentThreadPage } from './todo-comment.map
 const HEAD_ID = 'cm12345678901234567890123';
 const REPLY_ID = 'cm22345678901234567890123';
 
+/** 계약 스키마로 검증해 서버가 실제로 보낼 수 있는 모양만 fixture로 쓴다 */
 function createV2Dto(overrides: Partial<TodoCommentV2> = {}): TodoCommentV2 {
-  return {
+  return todoCommentV2Schema.parse({
     id: HEAD_ID,
     todoId: 42,
     threadCommentId: null,
@@ -39,13 +41,13 @@ function createV2Dto(overrides: Partial<TodoCommentV2> = {}): TodoCommentV2 {
     createdAt: '2026-08-26T00:00:00.000Z',
     editedAt: null,
     ...overrides,
-  };
+  });
 }
 
 describe('todo comment mapper', () => {
   test('묶음 페이지의 날짜만 Date로 바꾸고 서버 집계·anchor는 그대로 둔다', () => {
     // Given
-    const dto: TodoCommentThreadsResponse = {
+    const dto = todoCommentThreadsResponseSchema.parse({
       items: [
         {
           comment: createV2Dto(),
@@ -66,7 +68,7 @@ describe('todo comment mapper', () => {
         size: 30,
       },
       anchor: { threadCommentId: HEAD_ID, replyId: REPLY_ID },
-    };
+    });
 
     // When
     const page = toTodoCommentThreadPage(dto);
@@ -80,7 +82,7 @@ describe('todo comment mapper', () => {
 
   test('v1 쓰기 응답의 parentId를 묶음 머리로, 빠진 1.13.0 필드는 할 수 없음으로 읽는다', () => {
     // Given
-    const dto: TodoCommentV1Dto = {
+    const dto = todoCommentV1Schema.parse({
       id: REPLY_ID,
       threadId: HEAD_ID,
       parentId: HEAD_ID,
@@ -100,7 +102,7 @@ describe('todo comment mapper', () => {
       viewer: { isLiked: false, canEdit: true, canDelete: true, canReply: true },
       createdAt: '2026-08-26T00:00:00.000Z',
       editedAt: null,
-    };
+    });
 
     // When
     const comment = toTodoCommentFromV1(42, dto);

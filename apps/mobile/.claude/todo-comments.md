@@ -43,13 +43,15 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾼다(
 
 `domains/todo-comment.model.ts` 한 파일이 댓글 도메인을 소유한다.
 
-- zod: `todoCommentSchema`(v2 스키마 `extend`, 날짜만 `Date`), `todoCommentThreadSchema`, 페이지 스키마
-- 이름 있는 순수 함수와 `TodoCommentPolicy` Facade
-  - 표시: `displayState(active | deleted | blockedAuthor)`, `isReply`, `isByTodoOwner`, `userTagLabel`, `mentionName`
-  - 권한: `canLike`, `canReply`, `isEditable`, `canDelete`, `isDeletingOthers`, `canCopy`, `canReport`, `canBlockAuthor`, `hasActions`
-  - 묶음: `hiddenReplyCount`, `flattenThreads`, `flattenReplies`, `anchorOf`
+- zod: 모델이 자기 Zod 4 스키마를 갖는다(`todoCommentSchema`·`todoCommentThreadSchema`·페이지·`threadExpansionSchema`).
+  `@aido/api`는 `apis/todo-comment.mapper.ts`와 Service만 import한다(`check:conventions`가 검사).
+- 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
+  - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`, `isByTodoOwner`, `getUserTagLabel`, `getMentionName`
+  - 권한: `canLikeComment`, `canReplyToComment`, `isEditableComment`, `canDeleteComment`, `isDeletingOthersComment`,
+    `canCopyComment`, `canReportComment`, `canBlockCommentAuthor`, `hasCommentActions`
+  - 묶음: `getHiddenReplyCount`, `expandThread`, `getReplyFooter`, `flattenThreads`, `flattenReplies`, `getAnchor`
   - 캐시 변환: `withLikeToggled`, `withLikeResult`, `withContentEdited`, `withReplyAdded`, `withCommentRemoved`
-- 화면 분기는 `displayState`를 ts-pattern으로만 나눈다. 개수와 숨김을 화면에서 다시 세지 않는다.
+- 화면 분기는 `getDisplayState`·`getReplyFooter`를 ts-pattern으로만 나눈다. 개수와 숨김을 화면에서 다시 세지 않는다.
 
 `domains/todo-comment-composer.model.ts`는 작성 세션만 맡는다. 모드 union, 폼 스키마(`todoCommentContentSchema`,
 `TODO_COMMENT_LIMITS` 재사용), 전이(`new`·`reply`·`edit`), 제출 준비(멱등 키 재사용), 초안 키 대상이 있다.
@@ -84,7 +86,13 @@ export function TodoDetailPane({ presentation }) {
 
 - `ThreadRow` = 댓글 행 + `TodoCommentReplies`.
 - 접힘: 서버의 대표 답글 1개와 "답글 N개 더 보기"(대표 답글이 없으면 "답글 N개 보기").
-- 펼침: 답글 첫 페이지(10개)를 그 자리에 붙이고, 남으면 "답글 N개 더 보기", 끝이면 "답글 숨기기".
+- 펼침: 답글 첫 페이지(10개)를 그 자리에 붙이고, 아래 줄은 `getReplyFooter`가 정한다.
+  - 다음 페이지에 남은 답글이 있으면 "답글 N개 더 보기"(`viewMore`)
+  - 사용자가 펼쳤고(`source: 'user'`) 2개 이상 불러왔으면 "답글 숨기기"(`hide`)
+  - 답글을 올려 앱이 펼쳤거나(`source: 'auto'`) 답글이 하나뿐이면 줄 없음(`none`). 이때 마지막 답글이 `isLast`라 선이 닫힌다.
+- 펼침 상태는 화면의 `TodoCommentExpansionProvider`가 `Map<threadCommentId, ThreadExpansion>`으로 든다. 사용자가 누르면
+  `source: 'user'`, 작성 바가 답글을 올리면 `TodoCommentPolicy.expandThread(current, 'auto')`로 저장해 사용자가 직접 연
+  묶음은 그대로 둔다. 알림으로 연 답글 묶음은 사용자가 고른 것이라 `user`로 시작한다.
   로딩 중에는 같은 높이의 답글 skeleton 1행을 둔다. 위 행은 움직이지 않는다.
 - 개수는 `formatCompactCount`로 줄여 쓴다("답글 1.2천개 보기"). 좋아요는 `IconCountButton countDisplay="compact"`라
   숫자가 바뀌어도 옆 "답글 달기"가 움직이지 않는다.

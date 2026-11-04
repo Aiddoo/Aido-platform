@@ -1,8 +1,13 @@
 import { createContext, type PropsWithChildren, use, useCallback, useMemo, useState } from 'react';
 
+import { type ThreadExpansion, TodoCommentPolicy } from '../domains/todo-comment.model';
+
 interface TodoCommentExpansionValue {
-  expandedByThread: ReadonlyMap<string, boolean>;
-  setExpanded: (threadCommentId: string, isExpanded: boolean) => void;
+  expansionByThread: ReadonlyMap<string, ThreadExpansion>;
+  updateExpansion: (
+    threadCommentId: string,
+    update: (current: ThreadExpansion | undefined) => ThreadExpansion,
+  ) => void;
 }
 
 const TodoCommentExpansionContext = createContext<TodoCommentExpansionValue | null>(null);
@@ -12,15 +17,23 @@ const TodoCommentExpansionContext = createContext<TodoCommentExpansionValue | nu
  * 알림으로 연 묶음처럼 처음부터 펼칠 묶음은 사용처가 기본값으로 정하고, 사용자가 바꾸면 그 값을 따른다.
  */
 export function TodoCommentExpansionProvider({ children }: PropsWithChildren) {
-  const [expandedByThread, setExpandedByThread] = useState<ReadonlyMap<string, boolean>>(
+  const [expansionByThread, setExpansionByThread] = useState<ReadonlyMap<string, ThreadExpansion>>(
     () => new Map(),
   );
 
-  const setExpanded = useCallback((threadCommentId: string, isExpanded: boolean) => {
-    setExpandedByThread((previous) => new Map(previous).set(threadCommentId, isExpanded));
-  }, []);
+  const updateExpansion = useCallback<TodoCommentExpansionValue['updateExpansion']>(
+    (threadCommentId, update) => {
+      setExpansionByThread((previous) =>
+        new Map(previous).set(threadCommentId, update(previous.get(threadCommentId))),
+      );
+    },
+    [],
+  );
 
-  const value = useMemo(() => ({ expandedByThread, setExpanded }), [expandedByThread, setExpanded]);
+  const value = useMemo(
+    () => ({ expansionByThread, updateExpansion }),
+    [expansionByThread, updateExpansion],
+  );
 
   return <TodoCommentExpansionContext value={value}>{children}</TodoCommentExpansionContext>;
 }
@@ -33,21 +46,25 @@ function useTodoCommentExpansion() {
   return value;
 }
 
-export function useThreadExpansion(threadCommentId: string, isExpandedByDefault: boolean) {
-  const { expandedByThread, setExpanded } = useTodoCommentExpansion();
-  const isExpanded = expandedByThread.get(threadCommentId) ?? isExpandedByDefault;
-  const setIsExpanded = useCallback(
-    (next: boolean) => setExpanded(threadCommentId, next),
-    [setExpanded, threadCommentId],
+export function useThreadExpansion(threadCommentId: string, defaultExpansion: ThreadExpansion) {
+  const { expansionByThread, updateExpansion } = useTodoCommentExpansion();
+  const expansion = expansionByThread.get(threadCommentId) ?? defaultExpansion;
+  const setExpansion = useCallback(
+    (next: ThreadExpansion) => updateExpansion(threadCommentId, () => next),
+    [updateExpansion, threadCommentId],
   );
 
-  return [isExpanded, setIsExpanded] as const;
+  return [expansion, setExpansion] as const;
 }
 
+/** 답글을 올리면 그 묶음을 펼친다. 사용자가 직접 펼친 묶음은 그 상태를 지킨다 */
 export function useExpandThread() {
-  const { setExpanded } = useTodoCommentExpansion();
+  const { updateExpansion } = useTodoCommentExpansion();
   return useCallback(
-    (threadCommentId: string) => setExpanded(threadCommentId, true),
-    [setExpanded],
+    (threadCommentId: string) =>
+      updateExpansion(threadCommentId, (current) =>
+        TodoCommentPolicy.expandThread(current, 'auto'),
+      ),
+    [updateExpansion],
   );
 }

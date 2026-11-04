@@ -257,6 +257,20 @@ test('댓글 컴포넌트와 hook의 테스트 파일을 거부한다', () => {
   );
 });
 
+test('공용 renderUi로 그리는 댓글 컴포넌트 테스트는 허용한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo-comment/components/todo-comment-replies.test.tsx': `
+        import { renderUi } from '@src/shared/__tests__/render-ui';
+        test('답글을 올려도 숨기기를 보이지 않는다', async () => {});
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
 test('댓글 model, service, pure navigation, util과 view-model 테스트는 허용한다', () => {
   withFixture(
     {

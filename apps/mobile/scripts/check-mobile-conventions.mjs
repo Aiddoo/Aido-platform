@@ -36,6 +36,9 @@ const TODO_COMMENT_TEST_ROOTS = [
   `${TODO_COMMENT_ROOT}/utils/`,
   `${TODO_COMMENT_ROOT}/utils/view-models/`,
 ];
+// 화면 동작 회귀(답글 아래 줄처럼 여러 Provider가 함께 정하는 것)만 공용 renderUi + 포트 stub으로 컴포넌트 옆에서 확인한다.
+const TODO_COMMENT_COMPONENT_TEST_ROOT = `${TODO_COMMENT_ROOT}/components/`;
+const RENDER_UI_MODULE = '@src/shared/__tests__/render-ui';
 const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
   '@src/shared/ui',
@@ -77,7 +80,10 @@ const QUERY_HOOK_NAMES = new Set([
 // 1.15부터 손댄 모델은 자기 Zod 스키마를 갖고, 요청·응답 계약(@aido/api 루트·contracts)은 apis의 service·mapper만 안다.
 // 용어 튜플·상수(vocabulary)와 ErrorCode(errors)는 서버와 같은 값을 쓰도록 모델에서도 import한다.
 // 한꺼번에 옮기면 리뷰할 수 없어 옮긴 폴더·파일부터 이 목록에 올린다.
-const CLIENT_OWNED_MODEL_PATHS = ['apps/mobile/src/features/voice/domains/'];
+const CLIENT_OWNED_MODEL_PATHS = [
+  'apps/mobile/src/features/todo-comment/domains/todo-comment.model.ts',
+  'apps/mobile/src/features/voice/domains/',
+];
 const SHARED_CONTRACT_MODULE = '@aido/api';
 const SHARED_CONTRACT_CONTRACTS_PREFIX = `${SHARED_CONTRACT_MODULE}/contracts/`;
 
@@ -294,17 +300,32 @@ function checkTodoCheckboxProps(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
-function checkTodoCommentTestLocation(file, repositoryRoot, errors) {
-  const relativePath = relative(repositoryRoot, file).replaceAll('\\', '/');
+function importsModule(sourceFile, moduleName) {
+  return sourceFile.statements.some(
+    (statement) =>
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === moduleName,
+  );
+}
+
+function checkTodoCommentTestLocation(sourceFile, repositoryRoot, errors) {
+  const relativePath = relative(repositoryRoot, sourceFile.fileName).replaceAll('\\', '/');
   if (!/\.(?:spec|test)\.[cm]?[jt]sx?$/u.test(relativePath)) {
     return;
   }
   if (TODO_COMMENT_TEST_ROOTS.some((root) => relativePath.startsWith(root))) {
     return;
   }
+  if (
+    relativePath.startsWith(TODO_COMMENT_COMPONENT_TEST_ROOT) &&
+    importsModule(sourceFile, RENDER_UI_MODULE)
+  ) {
+    return;
+  }
 
   errors.push(
-    `${relativePath} 댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.`,
+    `${relativePath} 댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트 동작은 공용 renderUi로만 확인하고, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.`,
   );
 }
 
@@ -613,9 +634,6 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   const componentRoot = resolve(repositoryRoot, TODO_COMMENT_COMPONENT_ROOT);
   const routeRoot = resolve(repositoryRoot, TODO_ROUTE_ROOT);
   for (const file of featureFiles) {
-    if (file.startsWith(resolve(repositoryRoot, TODO_COMMENT_ROOT))) {
-      checkTodoCommentTestLocation(file, repositoryRoot, errors);
-    }
     const sourceFile = ts.createSourceFile(
       file,
       readFileSync(file, 'utf8'),
@@ -623,6 +641,9 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
       true,
       file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
+    if (file.startsWith(resolve(repositoryRoot, TODO_COMMENT_ROOT))) {
+      checkTodoCommentTestLocation(sourceFile, repositoryRoot, errors);
+    }
     checkTodoCommentTestPurity(sourceFile, repositoryRoot, errors);
     checkFeatureSource(sourceFile, repositoryRoot, errors);
     if (file.startsWith(componentRoot) || file.startsWith(routeRoot)) {

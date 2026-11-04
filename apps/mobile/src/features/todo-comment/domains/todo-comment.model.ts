@@ -1,40 +1,77 @@
-import {
-  todoCommentCursorPaginationSchema,
-  todoCommentThreadAnchorSchema,
-  todoCommentThreadSchema as todoCommentThreadContractSchema,
-  type todoCommentV2AuthorSchema,
-  todoCommentV2Schema,
-} from '@aido/api';
 import { uniqBy } from 'es-toolkit';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
-export type TodoCommentAuthor = z.infer<typeof todoCommentV2AuthorSchema>;
+export const todoCommentAuthorSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  userTag: z.string().nullable(),
+  profileImage: z.string().nullable(),
+  isTodoOwner: z.boolean(),
+});
+export type TodoCommentAuthor = z.infer<typeof todoCommentAuthorSchema>;
 
-export const todoCommentSchema = todoCommentV2Schema.extend({
+export const todoCommentSchema = z.object({
+  id: z.string(),
+  todoId: z.int().positive(),
+  threadCommentId: z.string().nullable(),
+  replyTo: z.object({ commentId: z.string(), authorName: z.string().nullable() }).nullable(),
+  author: todoCommentAuthorSchema.nullable(),
+  content: z.string().nullable(),
+  likeCount: z.int().nonnegative(),
+  replyCount: z.int().nonnegative(),
+  isDeleted: z.boolean(),
+  isAuthorBlocked: z.boolean(),
+  isEdited: z.boolean(),
+  viewer: z.object({
+    isLiked: z.boolean(),
+    canEdit: z.boolean(),
+    canDelete: z.boolean(),
+    canReply: z.boolean(),
+    canReport: z.boolean(),
+    canBlock: z.boolean(),
+  }),
   createdAt: z.date(),
   editedAt: z.date().nullable(),
 });
 export type TodoComment = z.infer<typeof todoCommentSchema>;
 
-export const todoCommentThreadSchema = todoCommentThreadContractSchema.extend({
+export const todoCommentThreadSchema = z.object({
   comment: todoCommentSchema,
   previewReply: todoCommentSchema.nullable(),
+  replySummary: z.object({
+    totalCount: z.int().nonnegative(),
+    hiddenCount: z.int().nonnegative(),
+    participantAuthors: z.array(todoCommentAuthorSchema),
+  }),
 });
 export type TodoCommentThread = z.infer<typeof todoCommentThreadSchema>;
 
+export const todoCommentThreadAnchorSchema = z.object({
+  threadCommentId: z.string(),
+  replyId: z.string().nullable(),
+});
 export type TodoCommentThreadAnchor = z.infer<typeof todoCommentThreadAnchorSchema>;
+
+export const todoCommentPaginationSchema = z.object({
+  previousCursor: z.string().nullable(),
+  nextCursor: z.string().nullable(),
+  hasPrevious: z.boolean(),
+  hasNext: z.boolean(),
+  size: z.int().positive(),
+});
+export type TodoCommentPagination = z.infer<typeof todoCommentPaginationSchema>;
 
 export const todoCommentThreadPageSchema = z.object({
   items: z.array(todoCommentThreadSchema),
-  pagination: todoCommentCursorPaginationSchema,
+  pagination: todoCommentPaginationSchema,
   anchor: todoCommentThreadAnchorSchema.nullable(),
 });
 export type TodoCommentThreadPage = z.infer<typeof todoCommentThreadPageSchema>;
 
 export const todoCommentReplyPageSchema = z.object({
   items: z.array(todoCommentSchema),
-  pagination: todoCommentCursorPaginationSchema,
+  pagination: todoCommentPaginationSchema,
 });
 export type TodoCommentReplyPage = z.infer<typeof todoCommentReplyPageSchema>;
 
@@ -44,13 +81,25 @@ export type TodoCommentChain = z.infer<typeof todoCommentChainSchema>;
 export const todoCommentLikeResultSchema = z.object({
   commentId: z.string(),
   isLiked: z.boolean(),
-  likeCount: z.number(),
+  likeCount: z.int().nonnegative(),
 });
 export type TodoCommentLikeResult = z.infer<typeof todoCommentLikeResultSchema>;
 
+/** 사용자가 직접 펼쳤는지(user), 답글을 올려 앱이 펼쳤는지(auto) */
+export const threadExpansionSchema = z.object({
+  isExpanded: z.boolean(),
+  source: z.enum(['user', 'auto']),
+});
+export type ThreadExpansion = z.infer<typeof threadExpansionSchema>;
+
+export type ReplyFooter = 'viewMore' | 'hide' | 'none';
+
+/** 접힌 묶음도 대표 답글 하나는 보이므로 그 이하로 불러온 묶음은 숨길 것이 없다 */
+const COLLAPSED_VISIBLE_REPLY_COUNT = 1;
+
 export type TodoCommentDisplayState = 'active' | 'deleted' | 'blockedAuthor';
 
-export function displayStateOf(comment: TodoComment): TodoCommentDisplayState {
+export function getDisplayState(comment: TodoComment): TodoCommentDisplayState {
   return match(comment)
     .returnType<TodoCommentDisplayState>()
     .with({ isAuthorBlocked: true }, () => 'blockedAuthor')
@@ -59,7 +108,7 @@ export function displayStateOf(comment: TodoComment): TodoCommentDisplayState {
 }
 
 export function isActiveComment(comment: TodoComment) {
-  return displayStateOf(comment) === 'active';
+  return getDisplayState(comment) === 'active';
 }
 
 export function isReply(comment: TodoComment) {
@@ -70,12 +119,12 @@ export function isByTodoOwner(comment: TodoComment) {
   return comment.author?.isTodoOwner === true;
 }
 
-export function userTagLabelOf(comment: TodoComment) {
+export function getUserTagLabel(comment: TodoComment) {
   return comment.author?.userTag == null ? null : `#${comment.author.userTag}`;
 }
 
 /** 대상이 탈퇴·차단으로 이름을 잃으면 서버가 null을 준다. 그때는 @멘션 없이 본문만 보인다 */
-export function mentionNameOf(comment: TodoComment) {
+export function getMentionName(comment: TodoComment) {
   return comment.replyTo?.authorName ?? null;
 }
 
@@ -127,8 +176,44 @@ export function leavesTombstoneOnDelete(comment: TodoComment) {
   return !isReply(comment) && comment.replyCount > 0;
 }
 
-export function hiddenReplyCountOf(thread: TodoCommentThread, loadedCount: number) {
+export function getHiddenReplyCount(thread: TodoCommentThread, loadedCount: number) {
   return Math.max(0, thread.replySummary.totalCount - loadedCount);
+}
+
+/** 사용자가 직접 펼친 묶음은 답글을 올려도 그 상태를 지킨다. 그래야 사용자가 연 "답글 숨기기"가 사라지지 않는다 */
+export function expandThread(
+  current: ThreadExpansion | undefined,
+  source: ThreadExpansion['source'],
+): ThreadExpansion {
+  if (current?.isExpanded === true && current.source === 'user') {
+    return current;
+  }
+  return { isExpanded: true, source };
+}
+
+/**
+ * 펼친 묶음 아래 줄. 더 받을 답글이 있으면 "더 보기", 사용자가 펼쳤고 숨길 답글이 있으면 "숨기기", 그 밖에는 없다.
+ * 답글을 올려 앱이 펼친 묶음은 사용자가 숨기기를 누를 이유가 없어 줄을 그리지 않는다.
+ */
+export function getReplyFooter(
+  thread: TodoCommentThread,
+  {
+    loadedCount,
+    hasNextPage,
+    expansion,
+  }: { loadedCount: number; hasNextPage: boolean; expansion: ThreadExpansion },
+): ReplyFooter {
+  return match({
+    hasNextPage,
+    hiddenCount: getHiddenReplyCount(thread, loadedCount),
+    source: expansion.source,
+    loadedCount,
+  })
+    .returnType<ReplyFooter>()
+    .with({ hasNextPage: true, hiddenCount: P.number.gt(0) }, () => 'viewMore')
+    .with({ source: 'auto' }, () => 'none')
+    .with({ loadedCount: P.number.lte(COLLAPSED_VISIBLE_REPLY_COUNT) }, () => 'none')
+    .otherwise(() => 'hide');
 }
 
 export function hasRepliesToShow(thread: TodoCommentThread) {
@@ -147,7 +232,7 @@ export function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
   return uniqBy(pages.flatMap((page) => page.items).toReversed(), (reply) => reply.id).toReversed();
 }
 
-export function anchorOf(pages: readonly TodoCommentThreadPage[]) {
+export function getAnchor(pages: readonly TodoCommentThreadPage[]) {
   return pages[0]?.anchor ?? null;
 }
 
@@ -255,26 +340,28 @@ export function findCommentInThread(thread: TodoCommentThread, commentId: string
 }
 
 export const TodoCommentPolicy = {
-  displayState: displayStateOf,
+  getDisplayState,
   isReply,
   isByTodoOwner,
-  userTagLabel: userTagLabelOf,
-  mentionName: mentionNameOf,
-  canLike: canLikeComment,
-  canReply: canReplyToComment,
-  isEditable: isEditableComment,
-  canDelete: canDeleteComment,
-  isDeletingOthers: isDeletingOthersComment,
-  canCopy: canCopyComment,
-  canReport: canReportComment,
-  canBlockAuthor: canBlockCommentAuthor,
-  hasActions: hasCommentActions,
+  getUserTagLabel,
+  getMentionName,
+  canLikeComment,
+  canReplyToComment,
+  isEditableComment,
+  canDeleteComment,
+  isDeletingOthersComment,
+  canCopyComment,
+  canReportComment,
+  canBlockCommentAuthor,
+  hasCommentActions,
   leavesTombstoneOnDelete,
-  hiddenReplyCount: hiddenReplyCountOf,
+  getHiddenReplyCount,
+  expandThread,
+  getReplyFooter,
   hasRepliesToShow,
   flattenThreads,
   flattenReplies,
-  anchorOf,
+  getAnchor,
   withLikeToggled,
   withLikeResult,
   withContentEdited,

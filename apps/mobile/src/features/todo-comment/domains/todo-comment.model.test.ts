@@ -12,7 +12,7 @@ describe('TodoCommentPolicy', () => {
     const deleted = createTodoComment({ isDeleted: true, content: null, author: null });
 
     // When
-    const states = [blocked, deleted, createTodoComment()].map(TodoCommentPolicy.displayState);
+    const states = [blocked, deleted, createTodoComment()].map(TodoCommentPolicy.getDisplayState);
 
     // Then
     expect(states).toEqual(['blockedAuthor', 'deleted', 'active']);
@@ -24,11 +24,11 @@ describe('TodoCommentPolicy', () => {
 
     // When
     const actions = [
-      TodoCommentPolicy.canLike(deleted),
-      TodoCommentPolicy.canReply(deleted),
-      TodoCommentPolicy.isEditable(deleted),
-      TodoCommentPolicy.canCopy(deleted),
-      TodoCommentPolicy.hasActions(deleted),
+      TodoCommentPolicy.canLikeComment(deleted),
+      TodoCommentPolicy.canReplyToComment(deleted),
+      TodoCommentPolicy.isEditableComment(deleted),
+      TodoCommentPolicy.canCopyComment(deleted),
+      TodoCommentPolicy.hasCommentActions(deleted),
     ];
 
     // Then
@@ -43,7 +43,7 @@ describe('TodoCommentPolicy', () => {
     });
 
     // When
-    const mention = TodoCommentPolicy.mentionName(reply);
+    const mention = TodoCommentPolicy.getMentionName(reply);
 
     // Then
     expect(mention).toBeNull();
@@ -56,7 +56,7 @@ describe('TodoCommentPolicy', () => {
     });
 
     // When
-    const labels = [createTodoComment(), withoutTag].map(TodoCommentPolicy.userTagLabel);
+    const labels = [createTodoComment(), withoutTag].map(TodoCommentPolicy.getUserTagLabel);
 
     // Then
     expect(labels).toEqual(['#WNTQJEEE', null]);
@@ -77,8 +77,8 @@ describe('TodoCommentPolicy', () => {
 
     // When
     const result = [
-      TodoCommentPolicy.isDeletingOthers(others),
-      TodoCommentPolicy.isDeletingOthers(createTodoComment()),
+      TodoCommentPolicy.isDeletingOthersComment(others),
+      TodoCommentPolicy.isDeletingOthersComment(createTodoComment()),
     ];
 
     // Then
@@ -123,7 +123,9 @@ describe('TodoCommentPolicy', () => {
     const thread = createTodoCommentThread({ comment: createTodoComment({ replyCount: 12 }) });
 
     // When
-    const counts = [10, 12, 15].map((loaded) => TodoCommentPolicy.hiddenReplyCount(thread, loaded));
+    const counts = [10, 12, 15].map((loaded) =>
+      TodoCommentPolicy.getHiddenReplyCount(thread, loaded),
+    );
 
     // Then
     expect(counts).toEqual([2, 0, 0]);
@@ -245,5 +247,100 @@ describe('TodoCommentPolicy', () => {
 
     // Then
     expect(replies.map((reply) => reply.id)).toEqual(['first', 'older', 'posted']);
+  });
+
+  describe('답글 아래 줄', () => {
+    const threadWithReplies = (count: number) =>
+      createTodoCommentThread({ comment: createTodoComment({ replyCount: count }) });
+
+    it('답글을 올려 펼친 묶음은 모두 불러와도 숨기기를 보이지 않는다', () => {
+      // Given
+      const thread = threadWithReplies(3);
+
+      // When
+      const footer = TodoCommentPolicy.getReplyFooter(thread, {
+        loadedCount: 3,
+        hasNextPage: false,
+        expansion: { isExpanded: true, source: 'auto' },
+      });
+
+      // Then
+      expect(footer).toBe('none');
+    });
+
+    it('사용자가 펼친 묶음은 모두 불러오면 숨기기를 보인다', () => {
+      // Given
+      const thread = threadWithReplies(3);
+
+      // When
+      const footer = TodoCommentPolicy.getReplyFooter(thread, {
+        loadedCount: 3,
+        hasNextPage: false,
+        expansion: { isExpanded: true, source: 'user' },
+      });
+
+      // Then
+      expect(footer).toBe('hide');
+    });
+
+    it('답글이 하나뿐이면 접어도 같은 모습이라 숨기기를 보이지 않는다', () => {
+      // Given
+      const thread = threadWithReplies(1);
+
+      // When
+      const footer = TodoCommentPolicy.getReplyFooter(thread, {
+        loadedCount: 1,
+        hasNextPage: false,
+        expansion: { isExpanded: true, source: 'user' },
+      });
+
+      // Then
+      expect(footer).toBe('none');
+    });
+
+    it('다음 페이지에 남은 답글이 있으면 펼친 방식과 관계없이 더 보기를 보인다', () => {
+      // Given
+      const thread = threadWithReplies(12);
+
+      // When
+      const footers = (['user', 'auto'] as const).map((source) =>
+        TodoCommentPolicy.getReplyFooter(thread, {
+          loadedCount: 10,
+          hasNextPage: true,
+          expansion: { isExpanded: true, source },
+        }),
+      );
+
+      // Then
+      expect(footers).toEqual(['viewMore', 'viewMore']);
+    });
+
+    it('사용자가 펼친 묶음은 답글을 올려도 사용자 펼침으로 남는다', () => {
+      // Given
+      const expandedByUser = { isExpanded: true, source: 'user' } as const;
+
+      // When
+      const expansion = TodoCommentPolicy.expandThread(expandedByUser, 'auto');
+
+      // Then
+      expect(expansion).toBe(expandedByUser);
+    });
+
+    it('접혀 있거나 처음 보는 묶음은 답글을 올리면 자동 펼침이 된다', () => {
+      // Given
+      const collapsedByUser = { isExpanded: false, source: 'user' } as const;
+
+      // When
+      const expansions = [
+        TodoCommentPolicy.expandThread(collapsedByUser, 'auto'),
+        TodoCommentPolicy.expandThread(undefined, 'auto'),
+      ];
+
+      // Then
+      expect(expansions).toEqual([
+        { isExpanded: true, source: 'auto' },
+        { isExpanded: true, source: 'auto' },
+      ]);
+    });
   });
 });

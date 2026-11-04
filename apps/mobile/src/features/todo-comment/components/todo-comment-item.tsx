@@ -89,7 +89,7 @@ export function TodoCommentItem({ comment }: TodoCommentItemProps) {
   const rowRef = useRef<ComponentRef<typeof View>>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const likeButtonScale = useSharedValue(1);
-  const displayState = TodoCommentPolicy.displayState(comment);
+  const displayState = TodoCommentPolicy.getDisplayState(comment);
 
   return (
     <View ref={rowRef} collapsable={false}>
@@ -166,7 +166,7 @@ function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }
   const { fontScale } = useFontScale();
   const fontScaledSize = useFontScaledSize();
   const timeLabel = useCommentTimeLabel(comment);
-  const tagLabel = TodoCommentPolicy.userTagLabel(comment);
+  const tagLabel = TodoCommentPolicy.getUserTagLabel(comment);
   const name = comment.author?.name ?? t('list.unknownUser');
   const [lineWidth, setLineWidth] = useState<number | null>(null);
   const isNarrow = lineWidth != null && lineWidth < fontScaledSize(SINGLE_AUTHOR_LINE_MIN_WIDTH);
@@ -237,11 +237,11 @@ function Body({
     useSetTodoCommentLikeMutationOptions({ todoId, commentId: comment.id }),
   );
   const completeDoubleTapHint = useCompleteDoubleTapHint();
-  const mention = TodoCommentPolicy.mentionName(comment);
+  const mention = TodoCommentPolicy.getMentionName(comment);
   const gesture = useCommentDoubleTap({
     burst,
     likeButtonScale,
-    canLike: TodoCommentPolicy.canLike(comment),
+    canLike: TodoCommentPolicy.canLikeComment(comment),
     onDoubleTap: () => {
       completeDoubleTapHint();
       // 이미 좋아요면 하트만 다시 보이고 요청은 보내지 않는다
@@ -250,7 +250,7 @@ function Body({
       }
     },
     onLongPress: () => {
-      if (TodoCommentPolicy.hasActions(comment)) {
+      if (TodoCommentPolicy.hasCommentActions(comment)) {
         onLongPress();
       }
     },
@@ -339,7 +339,7 @@ function LikeButton({ comment, scale }: { comment: TodoComment; scale: SharedVal
       }
       count={comment.likeCount}
       countDisplay="compact"
-      isDisabled={!TodoCommentPolicy.canLike(comment)}
+      isDisabled={!TodoCommentPolicy.canLikeComment(comment)}
       accessibilityLabel={
         isLiked
           ? t('actions.unlikeWithCount', { count: comment.likeCount })
@@ -369,7 +369,7 @@ function ReplyButton({
   const { reset } = useFormContext<TodoCommentComposerForm>();
   const { reveal } = useTodoCommentReveal();
 
-  if (!TodoCommentPolicy.canReply(comment)) {
+  if (!TodoCommentPolicy.canReplyToComment(comment)) {
     return null;
   }
 
@@ -419,13 +419,13 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
   const author = comment.author;
   const authorName = author?.name ?? t('moderation:fallbackName');
   const hasPrimaryActions =
-    TodoCommentPolicy.isEditable(comment) || TodoCommentPolicy.canCopy(comment);
+    TodoCommentPolicy.isEditableComment(comment) || TodoCommentPolicy.canCopyComment(comment);
   const hasSecondaryActions =
-    TodoCommentPolicy.canDelete(comment) ||
-    TodoCommentPolicy.canReport(comment) ||
-    TodoCommentPolicy.canBlockAuthor(comment);
+    TodoCommentPolicy.canDeleteComment(comment) ||
+    TodoCommentPolicy.canReportComment(comment) ||
+    TodoCommentPolicy.canBlockCommentAuthor(comment);
 
-  if (!TodoCommentPolicy.hasActions(comment)) {
+  if (!TodoCommentPolicy.hasCommentActions(comment)) {
     return null;
   }
 
@@ -443,7 +443,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
     const isConfirmed = await confirmDialog.open({
       title: t('deleteConfirm.title'),
       description: match(comment)
-        .when(TodoCommentPolicy.isDeletingOthers, () => t('deleteConfirm.othersDescription'))
+        .when(TodoCommentPolicy.isDeletingOthersComment, () => t('deleteConfirm.othersDescription'))
         .when(TodoCommentPolicy.leavesTombstoneOnDelete, () =>
           t('deleteConfirm.tombstoneDescription'),
         )
@@ -481,7 +481,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
           width={MENU_WIDTH}
           className="rounded-2xl border border-gray-2 bg-gray-1"
         >
-          {TodoCommentPolicy.isEditable(comment) && (
+          {TodoCommentPolicy.isEditableComment(comment) && (
             <Menu.Item
               testID="todo-comment-edit"
               onPress={() => {
@@ -497,7 +497,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
               <Menu.ItemTitle>{t('actions.edit')}</Menu.ItemTitle>
             </Menu.Item>
           )}
-          {TodoCommentPolicy.canCopy(comment) && (
+          {TodoCommentPolicy.canCopyComment(comment) && (
             <Menu.Item testID="todo-comment-copy" onPress={copyContent}>
               <CopyIcon
                 width={MENU_ICON_SIZE}
@@ -508,7 +508,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
             </Menu.Item>
           )}
           {hasPrimaryActions && hasSecondaryActions && <Separator className="my-1" />}
-          {TodoCommentPolicy.canDelete(comment) && (
+          {TodoCommentPolicy.canDeleteComment(comment) && (
             <Menu.Item variant="danger" testID="todo-comment-delete" onPress={confirmDelete}>
               <TrashIcon
                 width={MENU_ICON_SIZE}
@@ -518,7 +518,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
               <Menu.ItemTitle>{t('actions.delete')}</Menu.ItemTitle>
             </Menu.Item>
           )}
-          {TodoCommentPolicy.canReport(comment) && (
+          {TodoCommentPolicy.canReportComment(comment) && (
             <Menu.Item
               testID="todo-comment-report"
               onPress={() => push(commentReportSheetHref({ todoId, commentId: comment.id }))}
@@ -531,7 +531,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
               <Menu.ItemTitle>{t('actions.report')}</Menu.ItemTitle>
             </Menu.Item>
           )}
-          {author != null && TodoCommentPolicy.canBlockAuthor(comment) && (
+          {author != null && TodoCommentPolicy.canBlockCommentAuthor(comment) && (
             <Menu.Item
               variant="danger"
               testID="todo-comment-block"

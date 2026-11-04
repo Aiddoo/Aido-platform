@@ -33,10 +33,12 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
   const { todoId } = useTodoScreenParams();
   const { trackEvent } = useTrack();
   const anchoredReplyId = anchor?.threadCommentId === thread.comment.id ? anchor.replyId : null;
-  const [isExpanded, setIsExpanded] = useThreadExpansion(
-    thread.comment.id,
-    anchoredReplyId != null,
-  );
+  // 알림으로 연 답글은 사용자가 보려고 고른 것이라 직접 펼친 것으로 본다
+  const [expansion, setExpansion] = useThreadExpansion(thread.comment.id, {
+    isExpanded: anchoredReplyId != null,
+    source: 'user',
+  });
+  const { isExpanded } = expansion;
   const queryClient = useQueryClient();
   const repliesOptions = useGetTodoCommentRepliesInfiniteQueryOptions({
     todoId,
@@ -64,7 +66,7 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
           <TodoCommentReplies.Toggle
             label={{ kind: preview == null ? 'view' : 'viewMore', count: hiddenCount }}
             onPress={() => {
-              setIsExpanded(true);
+              setExpansion({ isExpanded: true, source: 'user' });
               queryClient
                 .ensureInfiniteQueryData(repliesOptions)
                 .then((data) =>
@@ -94,7 +96,13 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
     ))
     .otherwise(({ data, hasNextPage, hasPreviousPage, isFetchingNextPage }) => {
       const replies = data ?? [];
-      const remaining = TodoCommentPolicy.hiddenReplyCount(thread, replies.length);
+      const remaining = TodoCommentPolicy.getHiddenReplyCount(thread, replies.length);
+      const footer = TodoCommentPolicy.getReplyFooter(thread, {
+        loadedCount: replies.length,
+        hasNextPage,
+        expansion,
+      });
+      const lastReplyId = footer === 'none' && !isFetchingNextPage ? replies.at(-1)?.id : null;
 
       return (
         <VStack>
@@ -111,7 +119,7 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
             <ReplyRow
               key={reply.id}
               reply={reply}
-              isLast={false}
+              isLast={reply.id === lastReplyId}
               isHighlighted={reply.id === anchoredReplyId}
             />
           ))}
@@ -120,23 +128,26 @@ export function TodoCommentReplies({ thread, anchor }: TodoCommentRepliesProps) 
               <TodoCommentItem.Loading isReply />
             </TodoCommentRailRow>
           ) : (
-            <TodoCommentReplies.Toggle
-              label={
-                hasNextPage && remaining > 0
-                  ? { kind: 'viewMore', count: remaining }
-                  : { kind: 'hide' }
-              }
-              onPress={() => {
-                if (hasNextPage) {
-                  repliesQuery
-                    .fetchNextPage()
-                    .then((result) => trackLoadedCount(result.data?.length ?? replies.length))
-                    .catch(noop);
-                  return;
-                }
-                setIsExpanded(false);
-              }}
-            />
+            match(footer)
+              .with('viewMore', () => (
+                <TodoCommentReplies.Toggle
+                  label={{ kind: 'viewMore', count: remaining }}
+                  onPress={() => {
+                    repliesQuery
+                      .fetchNextPage()
+                      .then((result) => trackLoadedCount(result.data?.length ?? replies.length))
+                      .catch(noop);
+                  }}
+                />
+              ))
+              .with('hide', () => (
+                <TodoCommentReplies.Toggle
+                  label={{ kind: 'hide' }}
+                  onPress={() => setExpansion({ isExpanded: false, source: 'user' })}
+                />
+              ))
+              .with('none', () => null)
+              .exhaustive()
           )}
         </VStack>
       );
