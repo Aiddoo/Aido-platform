@@ -3,4 +3,5 @@ ALTER TABLE "TodoSeries" ADD COLUMN "originSeriesId" varchar(36);--> statement-b
 UPDATE "TodoSeries" SET "originSeriesId" = "id";--> statement-breakpoint
 ALTER TABLE "TodoSeries" ALTER COLUMN "originSeriesId" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "TodoSeries" DROP COLUMN "sortOrder";--> statement-breakpoint
+CREATE INDEX "QuotaCharge_requestHash_createdAt_idx" ON "QuotaCharge" ("createdAt") WHERE ("requestHash" IS NOT NULL);--> statement-breakpoint
 CREATE INDEX "TodoSeries_userId_originSeriesId_idx" ON "TodoSeries" ("userId","originSeriesId");

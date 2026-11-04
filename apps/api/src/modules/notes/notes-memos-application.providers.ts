@@ -179,6 +179,10 @@ export const planMemoWriterProvider: FactoryProvider<PlanMemoWriterPort> = {
       const memo = await repository.findByIdAndUserId(memoId, userId);
       return memo == null ? null : toMemoView(memo);
     },
-    delete: (memoId) => repository.delete(memoId),
+    delete: async (memoId, userId) => {
+      if ((await repository.findByIdAndUserId(memoId, userId)) != null) {
+        await repository.delete(memoId);
+      }
+    },
   }),
 };

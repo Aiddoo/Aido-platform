@@ -340,6 +340,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: 친구의 할 일 목록(GET /todos/friends/{userId})의 응답 schema 이름만 TodoListResponseDto에서 FriendTodoListResponseDto로 나눴다. 소유자 응답에만 repeat·occurrenceDate를 더하려고 분리했고, 친구 응답의 필드·타입·상태 코드는 이전과 같다. */
 	preTodoListRepeatPathsFingerprint:
 		"db0449039f7686849cdcbee5ed817a12c90001dcdd3db5bb32b66e2f84cf355d",
-	pathsFingerprint:
+	/** 1.15.0: POST /todos/recurring의 Swagger에 이미 낼 수 있던 403 TODO_0842를 적었다. 응답 shape·기존 코드는 같고, 이 경로의 날짜 없음은 출시 때의 SYS_0002로 되돌렸다. */
+	preRecurringSeriesLimitPathsFingerprint:
 		"9809c76e5f1d18f098fed794b83597baac7323d09bd2cf6cc0ec9bd2f52b7e60",
+	pathsFingerprint:
+		"e1bfa88af562c695a02436bd562768320c8e88695870c4673ad85c0ca929caa7",
 } as const;

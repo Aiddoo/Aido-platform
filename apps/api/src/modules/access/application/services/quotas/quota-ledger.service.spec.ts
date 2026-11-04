@@ -6,6 +6,7 @@ import { QUOTA_LEDGER_TIME, createQuotaLedgerFixture } from "#test/fixtures/quot
 import {
   QUOTA_ABANDONED_REFUND_BATCH_SIZE,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
+  QUOTA_STALE_RESERVATION_ALERT_AFTER_MS,
 } from "../../../domain/constants/quotas/quota.constants.js";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
@@ -452,7 +453,29 @@ describe("QuotaLedgerService", () => {
         candidateCount: 1,
         refundedCount: 1,
         failedCount: 0,
+        staleCount: 0,
+        clearedHashCount: 0,
       });
+      expect(fixture.alert.raise).not.toHaveBeenCalled();
+    });
+
+    it("30분 넘게 남은 예약이 있으면 사람에게 알린다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserve(fixture);
+      vi.setSystemTime(QUOTA_LEDGER_TIME.getTime() + QUOTA_STALE_RESERVATION_ALERT_AFTER_MS);
+      vi.spyOn(fixture.repository, "findAbandonedReservations").mockResolvedValue([]);
+
+      // When
+      await fixture.ledger.refundAbandonedReservations();
+
+      // Then
+      expect(fixture.alert.raise).toHaveBeenCalledWith(
+        expect.objectContaining({
+          key: "access.quota.stale-reservation",
+          details: { failedCount: 0, staleCount: 1 },
+        }),
+      );
     });
 
     it("다시 돌아도 한 번만 돌려주고 늦게 온 확정·환불은 아무것도 바꾸지 않는다", async () => {

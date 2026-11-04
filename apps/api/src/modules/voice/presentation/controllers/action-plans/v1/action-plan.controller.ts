@@ -11,10 +11,10 @@ import { IdempotencyKey, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiNotFoundError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
-  ApiUnprocessableError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 import { ThrottleByUser } from "#api/platform/throttle/index";
@@ -52,7 +52,7 @@ export class ActionPlanController {
   @ApiBadRequestError(ErrorCode.AI_1316)
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiUnprocessableError(ErrorCode.AI_1315)
+  @ApiErrorCodesResponse(HttpStatus.UNPROCESSABLE_ENTITY, [ErrorCode.AI_1315, ErrorCode.AI_1318])
   apply(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ApplyActionPlanRequestDto }) dto: ApplyActionPlanRequestDto,

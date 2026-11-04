@@ -1245,7 +1245,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     code: "AI_1317",
     message: "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
     description:
-      "같은 Idempotency-Key 요청은 이미 처리해 차감했지만 서버는 정리 결과를 잠시만 메모리에 두므로 다시 보낼 결과가 없습니다. 이 요청은 횟수를 차감하지 않았고(details.charged=false) details.featureQuota에 현재 한도가 있습니다. 새로 정리하려면 새 키로 보냅니다.",
+      "서버는 더 이상 이 코드를 내지 않습니다. 결과를 잃은 같은 Idempotency-Key 요청은 추가 차감 없이 다시 만들어 200으로 답합니다.",
     httpStatus: HttpStatus.GONE,
   },
   [ErrorCode.AI_1318]: {

@@ -16,7 +16,6 @@ import {
   ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
-  ApiGoneError,
   ApiServiceUnavailableError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
@@ -53,14 +52,13 @@ export class QuickPlanController {
 AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARSE.free}회, 프리미엄 넉넉하게(월 ${PLAN_CATALOG.AI_PARSE.fairUse.premium.toLocaleString("ko-KR")}회까지). 할 일을 찾지 못하거나 실패하면 차감하지 않습니다(\`charged\`).
 
 ## 🔁 재시도
-같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 다시 보낼 수 없으면 AI_1317, 내용이 다르면 AI_1318입니다.`,
+같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 잃었으면 추가 차감 없이 다시 만들고, 내용이 다르면 AI_1318입니다.`,
   })
   @ApiSuccessResponse({ type: QuickPlanResponseDto })
   @ApiBadRequestError(ErrorCode.AI_1316)
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiConflictError(ErrorCode.AI_1314)
-  @ApiGoneError(ErrorCode.AI_1317)
   @ApiErrorCodesResponse(HttpStatus.UNPROCESSABLE_ENTITY, [ErrorCode.AI_1302, ErrorCode.AI_1318])
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
   @ApiServiceUnavailableError(ErrorCode.AI_1301)

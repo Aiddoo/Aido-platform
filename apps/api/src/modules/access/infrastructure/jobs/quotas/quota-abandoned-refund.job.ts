@@ -42,16 +42,17 @@ export class QuotaAbandonedRefundJob implements OnModuleInit {
     @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
   ) {}
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
+    // 다른 잡처럼 worker 등록 실패는 기동을 멈춘다. 조용히 죽으면 RESERVED가 환불되지 않는다.
+    await this.runtime.work(QUOTA_ABANDONED_REFUND_QUEUE, async () => this.refund(), {
+      teamSize: 1,
+      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+      queuePolicy: QUOTA_ABANDONED_REFUND_JOB_OPTIONS,
+    });
     this.schedulerRegistration = runInBackground(
       this.#logger,
       "Quota abandoned refund scheduler registration",
       async () => {
-        await this.runtime.work(QUOTA_ABANDONED_REFUND_QUEUE, async () => this.refund(), {
-          teamSize: 1,
-          pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-          queuePolicy: QUOTA_ABANDONED_REFUND_JOB_OPTIONS,
-        });
         await this.runtime.schedule(
           QUOTA_ABANDONED_REFUND_SCHEDULE.id,
           QUOTA_ABANDONED_REFUND_SCHEDULE.cron,

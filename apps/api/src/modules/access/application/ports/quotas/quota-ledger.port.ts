@@ -39,7 +39,8 @@ export interface QuotaReservation {
   readonly attempt: number;
   /**
    * 같은 키 요청이 이미 결과를 받아 확정된 차감이다. 이번 요청은 차감하지 않았고 AI를 다시 부르지 않는다.
-   * 원장은 결과를 저장하지 않으므로 돌려줄 결과는 호출 Context가 소유한다. commit·refund는 아무것도 바꾸지 않는다.
+   * 원장은 결과를 저장하지 않으므로 돌려줄 결과는 호출 Context가 소유한다. commit·refund는 아무것도 바꾸지 않고,
+   * 결과를 잃었으면 reopen으로 같은 행에서 다시 만든다.
    */
   readonly alreadyCommitted: boolean;
 }
@@ -55,6 +56,11 @@ export interface QuotaLedgerPort {
    * 같은 키로 작업이나 내용이 다른 요청이면 AI_1318(`{ charged: false }`)이다.
    */
   reserve(input: QuotaReserveInput): Promise<QuotaReservation>;
+  /**
+   * alreadyCommitted인데 돌려줄 결과를 잃었을 때 같은 행을 다시 예약한다. 추가로 차감하지 않는다.
+   * 이후는 평소처럼 commit·refund한다. 다른 재요청이 먼저 다시 열었으면 AI_1314다.
+   */
+  reopen(reservation: QuotaReservation): Promise<QuotaReservation>;
   /** 바뀌었으면 true. 이미 확정·환불된 예약이나 이전 시도면 false다. 저장 오류는 기록하고 삼킨다. */
   commit(reservation: QuotaReservation): Promise<boolean>;
   /**

@@ -18,11 +18,8 @@ import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-r
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
 import { parseMemoPrompt } from "../../prompts/parsing/parse-memo/index.js";
-import {
-  describeParsingFailure,
-  readFeatureQuotaOrNull,
-  withoutChargedClaim,
-} from "../../services/parsing/ai-parsing-error-code.js";
+import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import { settleChargedGeneration } from "../../services/parsing/charged-generation.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
@@ -96,28 +93,18 @@ export class ParseMemo {
       idempotencyKey: null,
       reason: "parse-memo",
     });
-    let parsed: {
-      readonly result: Omit<ParseMemoResult, "featureQuota">;
-      readonly charge: boolean;
-    };
-    try {
-      parsed = await this.#parse({ ...input, timezone, locale }, startTime);
-    } catch (error) {
-      const refunded = await quota.refund(reservation, "FAILED");
-      throw refunded ? error : withoutChargedClaim(error);
-    }
-    // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
-    if (parsed.charge) {
-      await quota.commit(reservation);
-    } else {
-      await quota.refund(reservation, "NO_ACTION");
-    }
-    const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
+    const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
+      reservation,
       userId,
       feature: "AI_PARSE",
       task: parseMemoPrompt.id,
+      generate: async () => {
+        const parsed = await this.#parse({ ...input, timezone, locale }, startTime);
+        // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
+        return { result: parsed.result, outcome: parsed.charge ? "CHARGE" : "NO_ACTION" };
+      },
     });
-    return { ...parsed.result, featureQuota };
+    return { ...result, featureQuota };
   }
 
   async #parse(

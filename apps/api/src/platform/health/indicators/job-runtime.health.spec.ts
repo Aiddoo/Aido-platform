@@ -56,6 +56,7 @@ describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () =>
       "operations.broadcast-fan-out.v1",
       "operations.broadcast-fan-out-dead-letter.v1",
       "todo-series-materialization.v1",
+      "quota-abandoned-refund.v1",
     ]);
   });
 

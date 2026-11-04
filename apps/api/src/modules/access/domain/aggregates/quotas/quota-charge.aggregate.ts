@@ -164,6 +164,20 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
     return true;
   }
 
+  /**
+   * 확정했지만 돌려줄 결과를 잃은 요청을 같은 행에서 다시 만든다. 사용량은 이미 잡혀 있어 더하지 않는다.
+   * RESERVED가 되므로 동시에 온 재요청은 처리 중으로 답하고, 다시 실패하면 평소처럼 환불한다.
+   */
+  reopen(at: Date): boolean {
+    if (this.props.status !== "COMMITTED") {
+      return false;
+    }
+    this.props.status = "RESERVED";
+    this.props.attempt += 1;
+    this.props.updatedAt = new Date(at);
+    return true;
+  }
+
   commit(attempt: number, at: Date): boolean {
     if (this.props.status !== "RESERVED" || this.props.attempt !== attempt) {
       return false;

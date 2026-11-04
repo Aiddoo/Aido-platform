@@ -1,7 +1,7 @@
 import type { QuotaChargeStatus, QuotaMeter } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import { match } from "ts-pattern";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -175,6 +175,27 @@ export class DrizzleQuotaLedgerRepository implements QuotaLedgerRepositoryPort {
       .orderBy(asc(quotaCharge.updatedAt))
       .limit(limit);
     return rows.map(toQuotaCharge);
+  }
+
+  countReservationsBefore(cutoff: Date): Promise<number> {
+    return this.txHost.tx.$count(
+      quotaCharge,
+      and(eq(quotaCharge.status, "RESERVED"), lte(quotaCharge.updatedAt, cutoff)),
+    );
+  }
+
+  async clearRequestHashesBefore(cutoff: Date, limit: number): Promise<number> {
+    const candidates = this.txHost.tx
+      .select({ id: quotaCharge.id })
+      .from(quotaCharge)
+      .where(and(isNotNull(quotaCharge.requestHash), lte(quotaCharge.createdAt, cutoff)))
+      .limit(limit);
+    const cleared = await this.txHost.tx
+      .update(quotaCharge)
+      .set({ requestHash: null })
+      .where(inArray(quotaCharge.id, candidates))
+      .returning({ id: quotaCharge.id });
+    return cleared.length;
   }
 
   async findChargeByKey(

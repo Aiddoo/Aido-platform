@@ -147,21 +147,53 @@ describe("DigestVoiceNote", () => {
       expect(await used()).toBe(1);
     });
 
-    it("기억한 결과가 없는 재요청은 AI_1317이고 이번 요청은 차감하지 않지만 앞선 1회는 남는다", async () => {
+    it("기억한 결과를 잃은 재요청은 추가 차감 없이 같은 행에서 다시 만든다", async () => {
+      // Given
+      const { aiGenerator, execute, replay, used, repository } = setup();
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      await execute();
+      replay.results.clear();
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      // When
+      const second = await execute();
+      // Then
+      expect(second.charged).toBe(true);
+      expect(aiGenerator.getCallCount()).toBe(2);
+      expect(await used()).toBe(1);
+      expect([...repository.charges.values()]).toEqual([
+        expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
+      ]);
+    });
+
+    it("다시 만든 정리도 이미 차감된 요청이라 charged:true다", async () => {
       // Given
       const { aiGenerator, execute, replay, used } = setup();
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
       await execute();
       replay.results.clear();
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      // When
+      const second = await execute();
+      // Then
+      expect(second.charged).toBe(true);
+      expect(await used()).toBe(1);
+    });
+
+    it("다시 만들기가 실패하면 환불하고 차감하지 않았다고 답한다", async () => {
+      // Given
+      const { aiGenerator, execute, replay, used } = setup();
+      aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+      await execute();
+      replay.results.clear();
+      aiGenerator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
       // When
       const failure = execute();
       // Then
       await expect(failure).rejects.toMatchObject({
-        errorCode: ErrorCode.AI_1317,
-        details: { charged: false, featureQuota: expect.objectContaining({ used: 1 }) },
+        errorCode: ErrorCode.AI_1301,
+        details: { charged: false },
       });
-      expect(aiGenerator.getCallCount()).toBe(1);
-      expect(await used()).toBe(1);
+      expect(await used()).toBe(0);
     });
 
     it.each([
@@ -179,6 +211,42 @@ describe("DigestVoiceNote", () => {
       expect(response.featureQuota).toMatchObject({ limit, used: 1 });
       expect(await used()).toBe(1);
     });
+  });
+
+  it("빈 결과(AI_1302)로 환불된 키를 다시 보내면 만들어지고 순 차감은 한 번이다", async () => {
+    // Given
+    const { aiGenerator, execute, used, repository } = setup();
+    aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
+    await expect(execute()).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1302,
+      details: { charged: false },
+    });
+    aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+    // When
+    const second = await execute();
+    // Then
+    expect(second.charged).toBe(true);
+    expect(await used()).toBe(1);
+    expect([...repository.charges.values()]).toEqual([
+      expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
+    ]);
+  });
+
+  it("같은 키가 계속 빈 결과면 매번 환불되어 차감이 쌓이지 않는다", async () => {
+    // Given
+    const { aiGenerator, execute, used } = setup();
+    // When
+    for (const _attempt of [1, 2, 3]) {
+      aiGenerator.setRawResponse(
+        digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }),
+      );
+      await expect(execute()).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1302,
+        details: { charged: false },
+      });
+    }
+    // Then
+    expect(await used()).toBe(0);
   });
 
   it("돌려줄 내용이 전혀 없으면 환불하고 AI_1302다", async () => {

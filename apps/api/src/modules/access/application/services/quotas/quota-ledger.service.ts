@@ -11,6 +11,7 @@ import { match } from "ts-pattern";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
@@ -20,7 +21,9 @@ import { QuotaCharge } from "../../../domain/aggregates/quotas/quota-charge.aggr
 import {
   QUOTA_ABANDONED_REFUND_BATCH_SIZE,
   QUOTA_CHARGE_AMOUNT,
+  QUOTA_REQUEST_HASH_RETENTION_MS,
   QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
+  QUOTA_STALE_RESERVATION_ALERT_AFTER_MS,
 } from "../../../domain/constants/quotas/quota.constants.js";
 import {
   NO_RESOURCE_BONUSES,
@@ -52,6 +55,7 @@ interface QuotaLedgerServiceDependencies {
   readonly userMutationLock: QuotaUserMutationLockPort;
   readonly resourceBonuses: Pick<EntitlementDatabasePort, "findResourceBonuses">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly alert: OperationalAlertPort;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -73,6 +77,8 @@ interface QuotaDecisionContext {
   readonly window: QuotaWindow;
   readonly at: Date;
 }
+
+export const QUOTA_STALE_RESERVATION_ALERT_KEY = "access.quota.stale-reservation";
 
 export class QuotaLedgerService implements QuotaLedgerPort {
   readonly #dependencies: QuotaLedgerServiceDependencies;
@@ -118,6 +124,38 @@ export class QuotaLedgerService implements QuotaLedgerPort {
         throw new ApplicationException(ErrorCode.AI_1318, { charged: false });
       }
       return this.#replay(context, existing, input.reason);
+    });
+  }
+
+  async reopen(reservation: QuotaReservation): Promise<QuotaReservation> {
+    const { repository, userMutationLock, unitOfWork } = this.#dependencies;
+    const { userId, feature, chargeId } = reservation;
+    return unitOfWork.run(async () => {
+      if (!(await userMutationLock.lockById(userId))) {
+        throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      }
+      const context = this.#decisionContext(
+        { userId, feature },
+        await this.#findAccessState(userId),
+      );
+      const charge = await repository.findCharge(chargeId);
+      if (charge == null) {
+        throw new ApplicationException(ErrorCode.AI_1314, {
+          charged: false,
+          featureQuota: toFeatureQuota(await this.#featureQuota(context)),
+        });
+      }
+      const expected = { status: charge.status, attempt: charge.attempt };
+      if (!charge.reopen(context.at) || !(await repository.updateCharge(charge, expected))) {
+        return this.#rejectInFlight(context, charge);
+      }
+      this.#dependencies.logger.log({
+        event: AccessQuotaLogEvent.REOPENED,
+        chargeId,
+        meter: charge.meter,
+        reason: charge.reason,
+      });
+      return this.#reserved(context, charge, false);
     });
   }
 
@@ -217,12 +255,30 @@ export class QuotaLedgerService implements QuotaLedgerPort {
         });
       }
     }
+    const staleCount = await repository.countReservationsBefore(
+      new Date(now().getTime() - QUOTA_STALE_RESERVATION_ALERT_AFTER_MS),
+    );
+    const clearedHashCount = await repository.clearRequestHashesBefore(
+      new Date(now().getTime() - QUOTA_REQUEST_HASH_RETENTION_MS),
+      QUOTA_ABANDONED_REFUND_BATCH_SIZE,
+    );
     logger.log({
       event: AccessQuotaLogEvent.ABANDONED_REFUND_COMPLETED,
       candidateCount: candidates.length,
       refundedCount,
       failedCount,
+      staleCount,
+      clearedHashCount,
     });
+    if (failedCount > 0 || staleCount > 0) {
+      // 돌려주지 못한 예약은 그 사용자의 한도를 월말까지 깎는다.
+      this.#dependencies.alert.raise({
+        key: QUOTA_STALE_RESERVATION_ALERT_KEY,
+        severity: "error",
+        message: "횟수 예약을 돌려주지 못하고 있습니다.",
+        details: { failedCount, staleCount },
+      });
+    }
   }
 
   async read(userId: string, feature: MeteredFeatureKey): Promise<MeteredFeatureQuota> {

@@ -77,6 +77,7 @@ export function createPlanFlowFixture(
     reserve: ledgerFixture.ledger.reserve.bind(ledgerFixture.ledger),
     commit: ledgerFixture.ledger.commit.bind(ledgerFixture.ledger),
     refund: ledgerFixture.ledger.refund.bind(ledgerFixture.ledger),
+    reopen: ledgerFixture.ledger.reopen.bind(ledgerFixture.ledger),
     read: ledgerFixture.ledger.read.bind(ledgerFixture.ledger),
   };
   const generator = new ActionPlanGenerator({

@@ -16,7 +16,6 @@ import {
   ApiDoc,
   ApiErrorCodesResponse,
   ApiForbiddenError,
-  ApiGoneError,
   ApiServiceUnavailableError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
@@ -65,14 +64,13 @@ export class VoiceNoteController {
 말로 메모하기: 무료 월 ${PLAN_CATALOG.VOICE_NOTE.free}회, 프리미엄 넉넉하게(월 ${PLAN_CATALOG.VOICE_NOTE.fairUse.premium}회까지, 넘으면 AI_1313). 요약이나 핵심 내용을 돌려주면 할 일이 0개여도 1회를 씁니다. 실패하거나 돌려줄 내용이 전혀 없으면 차감하지 않습니다(\`charged\`). 분당 ${VOICE_NOTE_THROTTLE.MINUTE.default.limit}회, 하루 ${VOICE_NOTE_THROTTLE.DAY_LIMIT}회까지 보낼 수 있습니다.
 
 ## 🔁 재시도
-같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 다시 보낼 수 없으면 AI_1317, 내용이 다르면 AI_1318입니다.`,
+같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 잃었으면 추가 차감 없이 다시 만들고, 내용이 다르면 AI_1318입니다.`,
   })
   @ApiSuccessResponse({ type: VoiceNoteDigestResponseDto })
   @ApiBadRequestError(ErrorCode.AI_1316)
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiConflictError(ErrorCode.AI_1314)
-  @ApiGoneError(ErrorCode.AI_1317)
   @ApiErrorCodesResponse(HttpStatus.UNPROCESSABLE_ENTITY, [
     ErrorCode.AI_1302,
     ErrorCode.AI_1312,

@@ -10,4 +10,5 @@ export const AccessQuotaLogEvent = {
   REFUND_FAILED: "access.quota.refund-failed",
   ABANDONED_REFUND_COMPLETED: "access.quota.abandoned-refund.completed",
   ABANDONED_REFUND_FAILED: "access.quota.abandoned-refund.failed",
+  REOPENED: "access.quota.reopened",
 } as const;

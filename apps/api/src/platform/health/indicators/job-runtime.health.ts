@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
 import { withTimeout } from "es-toolkit";
 
+import { QUOTA_ABANDONED_REFUND_QUEUE } from "#api/modules/access/access-quota-jobs.public";
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import {
@@ -36,6 +37,7 @@ const MONITORED_QUEUES = [
   BROADCAST_FAN_OUT_QUEUE,
   BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
   TODO_SERIES_MATERIALIZATION_QUEUE,
+  QUOTA_ABANDONED_REFUND_QUEUE,
 ] as const;
 
 /**

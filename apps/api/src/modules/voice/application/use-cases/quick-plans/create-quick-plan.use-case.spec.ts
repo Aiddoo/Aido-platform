@@ -177,21 +177,95 @@ describe("CreateQuickPlan", () => {
       expect(await used()).toBe(1);
     });
 
-    it("기억한 결과가 없으면 AI를 부르지 않고 AI_1317로 답한다", async () => {
+    it("기억한 결과를 잃은 재요청은 추가 차감 없이 같은 행에서 다시 만든다", async () => {
+      // Given
+      const { aiGenerator, execute, replay, used, repository } = setup();
+      aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+      await execute();
+      replay.results.clear();
+      aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+      // When
+      const second = await execute();
+      // Then
+      expect(second.charged).toBe(true);
+      expect(aiGenerator.getCallCount()).toBe(2);
+      expect(await used()).toBe(1);
+      expect([...repository.charges.values()]).toEqual([
+        expect.objectContaining({ status: "COMMITTED", attempt: 2 }),
+      ]);
+    });
+
+    it("다시 만든 결과에 할 일이 없으면 환불하고 charged:false다", async () => {
       // Given
       const { aiGenerator, execute, replay, used } = setup();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       await execute();
       replay.results.clear();
+      aiGenerator.setRawResponse({ todos: [], memo: memoActionDraft() });
+      // When
+      const second = await execute();
+      // Then
+      expect(second.charged).toBe(false);
+      expect(await used()).toBe(0);
+    });
+
+    it("할 일 0개(NO_ACTION)로 환불된 키를 다시 보내면 만들어지고 순 차감은 한 번이다", async () => {
+      // Given
+      const { aiGenerator, execute, used } = setup();
+      aiGenerator.setRawResponse({ todos: [], memo: memoActionDraft() });
+      const first = await execute();
+      aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+      // When
+      const second = await execute();
+      // Then
+      expect(first.charged).toBe(false);
+      expect(second.charged).toBe(true);
+      expect(await used()).toBe(1);
+    });
+
+    it("같은 키가 계속 할 일 0개면 매번 환불되어 차감이 쌓이지 않는다", async () => {
+      // Given
+      const { aiGenerator, execute, used } = setup();
+      // When
+      for (const _attempt of [1, 2, 3]) {
+        aiGenerator.setRawResponse({ todos: [], memo: null });
+        expect((await execute()).charged).toBe(false);
+      }
+      // Then
+      expect(await used()).toBe(0);
+    });
+
+    it("환불된 키를 다시 보낼 때 그 사이 한도가 찼으면 차감 없이 AI_1303이다", async () => {
+      // Given
+      const { aiGenerator, execute, repository, used } = setup();
+      aiGenerator.setRawResponse({ todos: [], memo: null });
+      await execute();
+      vi.spyOn(repository, "addUsage").mockResolvedValueOnce(false);
+      // When
+      const second = execute();
+      // Then
+      await expect(second).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1303,
+        details: { charged: false },
+      });
+      expect(await used()).toBe(0);
+    });
+
+    it("다시 만들기가 실패하면 환불하고 차감하지 않았다고 답한다", async () => {
+      // Given
+      const { aiGenerator, execute, replay, used } = setup();
+      aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+      await execute();
+      replay.results.clear();
+      aiGenerator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
       // When
       const failure = execute();
       // Then
       await expect(failure).rejects.toMatchObject({
-        errorCode: ErrorCode.AI_1317,
-        details: { charged: false, featureQuota: expect.objectContaining({ used: 1 }) },
+        errorCode: ErrorCode.AI_1301,
+        details: { charged: false },
       });
-      expect(aiGenerator.getCallCount()).toBe(1);
-      expect(await used()).toBe(1);
+      expect(await used()).toBe(0);
     });
 
     it("내용이 다르면 AI_1318로 거절하고 차감하지 않는다", async () => {

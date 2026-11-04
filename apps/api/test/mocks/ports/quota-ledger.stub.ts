@@ -105,6 +105,22 @@ export class InMemoryQuotaLedgerRepository implements QuotaLedgerRepositoryPort 
       .map((charge) => QuotaCharge.reconstitute(charge));
   }
 
+  async countReservationsBefore(cutoff: Date): Promise<number> {
+    return [...this.charges.values()].filter(
+      (charge) => charge.status === "RESERVED" && charge.updatedAt <= cutoff,
+    ).length;
+  }
+
+  async clearRequestHashesBefore(cutoff: Date, limit: number): Promise<number> {
+    const stale = [...this.charges.values()]
+      .filter((charge) => charge.requestHash != null && charge.createdAt <= cutoff)
+      .slice(0, limit);
+    for (const charge of stale) {
+      this.charges.set(charge.id, { ...charge, requestHash: null });
+    }
+    return stale.length;
+  }
+
   async findChargeByKey(
     userId: string,
     meter: QuotaMeter,

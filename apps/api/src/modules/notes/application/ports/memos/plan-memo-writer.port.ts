@@ -9,5 +9,5 @@ export const PLAN_MEMO_WRITER = Symbol("PLAN_MEMO_WRITER");
 export interface PlanMemoWriterPort {
   create(input: { readonly userId: string; readonly content: string }): Promise<Memo>;
   findById(memoId: number, userId: string): Promise<Memo | null>;
-  delete(memoId: number): Promise<void>;
+  delete(memoId: number, userId: string): Promise<void>;
 }

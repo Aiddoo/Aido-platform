@@ -33,6 +33,9 @@ export interface QuotaLedgerRepositoryPort {
   findCharge(chargeId: string): Promise<QuotaCharge | null>;
   /** cutoff 이전에 마지막으로 바뀐 RESERVED 차감을 오래된 순서로 돌려준다. */
   findAbandonedReservations(cutoff: Date, limit: number): Promise<readonly QuotaCharge[]>;
+  countReservationsBefore(cutoff: Date): Promise<number>;
+  /** cutoff 이전에 만든 차감의 requestHash를 지운다. limit개씩만 지워 잠금을 짧게 둔다. */
+  clearRequestHashesBefore(cutoff: Date, limit: number): Promise<number>;
   findChargeByKey(
     userId: string,
     meter: QuotaMeter,

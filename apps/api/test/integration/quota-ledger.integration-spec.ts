@@ -16,7 +16,10 @@ import {
   type QuotaLedgerRepositoryPort,
 } from "#api/modules/access/application/ports/quotas/quota-ledger.repository.port";
 import { QuotaLedgerService } from "#api/modules/access/application/services/quotas/quota-ledger.service";
-import { QUOTA_RESERVATION_TAKEOVER_AFTER_MS } from "#api/modules/access/domain/constants/quotas/quota.constants";
+import {
+  QUOTA_REQUEST_HASH_RETENTION_MS,
+  QUOTA_RESERVATION_TAKEOVER_AFTER_MS,
+} from "#api/modules/access/domain/constants/quotas/quota.constants";
 import { QuotaWindow } from "#api/modules/access/domain/value-objects/quotas/quota-window.vo";
 import {
   PREMIUM_GRANTER,
@@ -211,6 +214,34 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           expect.objectContaining({ status: "REFUNDED", refundReason: "ABANDONED", attempt: 1 }),
         ]),
       );
+    });
+
+    it("7일 지난 차감의 요청 해시를 지우고 최근 차감은 둔다", async () => {
+      // Given
+      await ledger.commit(
+        await ledger.reserve(
+          input({ feature: "VOICE_NOTE", idempotencyKey: "old", requestHash: "old-hash" }),
+        ),
+      );
+      await ledger.commit(
+        await ledger.reserve(
+          input({ feature: "VOICE_NOTE", idempotencyKey: "recent", requestHash: "recent-hash" }),
+        ),
+      );
+      await client
+        .update(quotaCharge)
+        .set({ createdAt: new Date(newMonthAt.getTime() - QUOTA_REQUEST_HASH_RETENTION_MS - 1) })
+        .where(eq(quotaCharge.idempotencyKey, "old"));
+      await client
+        .update(quotaCharge)
+        .set({ createdAt: newMonthAt })
+        .where(eq(quotaCharge.idempotencyKey, "recent"));
+      // When
+      await service.refundAbandonedReservations();
+      // Then
+      const rows = await client.query.quotaCharge.findMany({ where: { userId } });
+      expect(rows.find((row) => row.idempotencyKey === "old")?.requestHash).toBeNull();
+      expect(rows.find((row) => row.idempotencyKey === "recent")?.requestHash).toBe("recent-hash");
     });
 
     it("RESERVED를 찾는 정리 쿼리는 전체를 훑지 않고 부분 인덱스를 쓴다", async () => {
@@ -540,6 +571,43 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       });
       expect(await storedVoiceUsage()).toBe(1);
       expect(await storedCharges()).toHaveLength(1);
+    });
+
+    it("결과를 잃어 다시 열면 같은 행을 재사용하고 추가 차감이 없으며 동시 재열기는 하나만 된다", async () => {
+      // Given
+      const key = input({ feature: "VOICE_NOTE", idempotencyKey: "reopen-key" });
+      await ledger.commit(await ledger.reserve(key));
+      const committed = await ledger.reserve(key);
+      // When
+      const outcomes = await Promise.allSettled([
+        ledger.reopen(committed),
+        ledger.reopen(committed),
+      ]);
+      // Then
+      const reopened = outcomes.flatMap((outcome) =>
+        outcome.status === "fulfilled" ? [outcome.value] : [],
+      );
+      expect(reopened).toEqual([expect.objectContaining({ attempt: 2, alreadyCommitted: false })]);
+      expect(outcomes.filter(({ status }) => status === "rejected")).toEqual([
+        expect.objectContaining({
+          reason: expect.objectContaining({ errorCode: ErrorCode.AI_1314 }),
+        }),
+      ]);
+      const [winner] = reopened;
+      expect(winner != null && (await ledger.commit(winner))).toBe(true);
+      expect((await ledger.read(userId, "VOICE_NOTE")).used).toBe(1);
+    });
+
+    it("다시 연 예약을 환불하면 앞선 차감까지 돌아간다", async () => {
+      // Given
+      const key = input({ feature: "VOICE_NOTE", idempotencyKey: "reopen-refund" });
+      await ledger.commit(await ledger.reserve(key));
+      const committed = await ledger.reserve(key);
+      // When
+      const refunded = await ledger.refund(await ledger.reopen(committed), "FAILED");
+      // Then
+      expect(refunded).toBe(true);
+      expect((await ledger.read(userId, "VOICE_NOTE")).used).toBe(0);
     });
 
     it("환불된 키는 같은 행에서 다시 차감해 순 차감이 한 번이다", async () => {

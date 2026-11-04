@@ -130,7 +130,7 @@ export class ApplyActionPlan {
     }
     // 새 메모보다 먼저 지워 원본 메모가 개수 상한을 채우고 있어도 저장할 수 있게 한다.
     if (sourceMemoId != null) {
-      await memoWriter.delete(sourceMemoId);
+      await memoWriter.delete(sourceMemoId, userId);
     }
     const { memoContent } = plan;
     const memo =

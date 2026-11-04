@@ -12,6 +12,7 @@ import type { AiGenerationMeta, AiTaskId } from "../../ports/generation/ai-gener
 export const AiGenerationLogEvent = {
   COMPLETED: "ai.generation.completed",
   FAILED: "ai.generation.failed",
+  COMMIT_MISSED: "ai.generation.commit-missed",
   QUOTA_READ_FAILED: "ai.generation.quota-read-failed",
 } as const;
 

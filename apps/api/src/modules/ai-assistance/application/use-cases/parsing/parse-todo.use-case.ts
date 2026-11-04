@@ -17,11 +17,8 @@ import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-r
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { generateWithPrompt } from "../../prompts/kit/prompt-definition.js";
 import { parseTodoPrompt } from "../../prompts/parsing/parse-todo/index.js";
-import {
-  describeParsingFailure,
-  readFeatureQuotaOrNull,
-  withoutChargedClaim,
-} from "../../services/parsing/ai-parsing-error-code.js";
+import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import { settleChargedGeneration } from "../../services/parsing/charged-generation.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 
 /** 공개 응답의 토큰 사용량 (사고 토큰은 로그에만 남긴다). */
@@ -110,24 +107,17 @@ export class ParseTodo {
       idempotencyKey: null,
       reason: "parse-todo",
     });
-    let parsed: ChargedResult<Omit<ParseTodoResult, "featureQuota">>;
-    try {
-      parsed = await this.#parse({ ...input, timezone, locale }, startTime);
-    } catch (error) {
-      const refunded = await quota.refund(reservation, "FAILED");
-      throw refunded ? error : withoutChargedClaim(error);
-    }
-    if (parsed.charge) {
-      await quota.commit(reservation);
-    } else {
-      await quota.refund(reservation, "NO_ACTION");
-    }
-    const featureQuota = await readFeatureQuotaOrNull(this.#dependencies, {
+    const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
+      reservation,
       userId,
       feature: "AI_PARSE",
       task: parseTodoPrompt.id,
+      generate: async () => {
+        const parsed = await this.#parse({ ...input, timezone, locale }, startTime);
+        return { result: parsed.result, outcome: parsed.charge ? "CHARGE" : "NO_ACTION" };
+      },
     });
-    return { ...parsed.result, featureQuota };
+    return { ...result, featureQuota };
   }
 
   async #parse(

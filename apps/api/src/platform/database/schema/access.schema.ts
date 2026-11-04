@@ -108,6 +108,9 @@ export const quotaCharge = pgTable(
       table.createdAt.asc().nullsLast(),
     ),
     // 멈춘 예약 정리 잡이 10분마다 RESERVED만 오래된 순으로 찾는다. 확정·환불 행은 쌓이기만 하므로 인덱스에서 뺀다.
+    index("QuotaCharge_requestHash_createdAt_idx")
+      .using("btree", table.createdAt.asc().nullsLast())
+      .where(sql`("requestHash" IS NOT NULL)`),
     index("QuotaCharge_reserved_updatedAt_idx")
       .using("btree", table.updatedAt.asc().nullsLast())
       .where(sql`("status" = 'RESERVED')`),

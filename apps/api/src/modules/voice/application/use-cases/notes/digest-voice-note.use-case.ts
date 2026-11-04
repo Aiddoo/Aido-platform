@@ -4,6 +4,8 @@ import { ErrorCode } from "@aido/api/errors";
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import {
   resolveRequestLocale,
+  type ChargedGeneration,
+  type ChargeOutcome,
   type UserLocalePreferenceReaderPort,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type {
@@ -28,11 +30,7 @@ import {
   toActionPlanMeta,
   toActionPlanView,
 } from "../../read-models/plans/action-plan.read-model.js";
-import type {
-  ChargedPlanRunner,
-  GeneratedPlan,
-  PlanChargeOutcome,
-} from "../../services/plans/charged-plan-runner.js";
+import type { ChargedPlanRunner } from "../../services/plans/charged-plan-runner.js";
 import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
 export type VoiceNoteDigestResult = Omit<VoiceNoteDigestResponse, "featureQuota" | "charged">;
@@ -60,7 +58,7 @@ interface DigestVoiceNoteDependencies {
 }
 
 /** 요약·핵심 내용도 결과이므로 할 일이 0개여도 횟수를 쓴다. 돌려줄 내용이 전혀 없을 때만 환불한다. */
-function resolveChargeOutcome(digest: VoiceNoteDigestGeneration): PlanChargeOutcome {
+function resolveChargeOutcome(digest: VoiceNoteDigestGeneration): ChargeOutcome {
   return digest.isEmpty ? "EMPTY" : "CHARGE";
 }
 
@@ -143,7 +141,7 @@ export class DigestVoiceNote {
       readonly locale: SupportedLocale;
       readonly startedAt: number;
     },
-  ): Promise<GeneratedPlan<VoiceNoteDigestResult>> {
+  ): Promise<ChargedGeneration<VoiceNoteDigestResult>> {
     const { contextReader, generator } = this.#dependencies;
     const { userId, timezone, locale, startedAt } = request;
     const context = await contextReader.read(userId, timezone);

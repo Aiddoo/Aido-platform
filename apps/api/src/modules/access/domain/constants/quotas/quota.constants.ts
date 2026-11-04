@@ -10,6 +10,12 @@ export const QUOTA_CHARGE_AMOUNT = 1;
  */
 export const QUOTA_RESERVATION_TAKEOVER_AFTER_MS = 120_000;
 
+/** RESERVED가 이 시간을 넘게 남아 있으면 정리 잡이 돌지 못한 것이라 사람에게 알린다. 잡 주기는 10분이다. */
+export const QUOTA_STALE_RESERVATION_ALERT_AFTER_MS = 30 * 60 * 1000;
+
+/** 같은 키가 같은 요청인지 가리는 해시를 지울 때까지. 재시도는 그 전에 끝나고, 사용자 글자에서 나온 값이라 오래 두지 않는다. */
+export const QUOTA_REQUEST_HASH_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
 /** 처리하던 요청이 끝내 응답하지 못해 정리 작업이 돌려준 예약의 환불 사유 */
 export const QUOTA_ABANDONED_REFUND_REASON = "ABANDONED";
 
