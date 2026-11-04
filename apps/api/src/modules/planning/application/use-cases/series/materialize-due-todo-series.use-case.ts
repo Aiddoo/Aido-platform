@@ -13,7 +13,10 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import { PlanningTodoSeriesLogEvent } from "../../observability/series/planning-todo-series-log.events.js";
-import type { TodoSeriesRepositoryPort } from "../../ports/series/todo-series.repository.port.js";
+import type {
+  DueTodoSeries,
+  TodoSeriesRepositoryPort,
+} from "../../ports/series/todo-series.repository.port.js";
 import type { TodoOccurrenceMaterializer } from "../../services/series/todo-occurrence-materializer.service.js";
 import type { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
 
@@ -79,30 +82,30 @@ export class MaterializeDueTodoSeries {
     let timedOut = false;
 
     while (!timedOut) {
-      const seriesIds: readonly string[] = await seriesRepository.findDueBatch({
+      const dueBatch: readonly DueTodoSeries[] = await seriesRepository.findDueBatch({
         through,
         afterId,
         limit: batchSize,
       });
-      for (const seriesId of seriesIds) {
+      for (const due of dueBatch) {
         if (Date.now() - startedAt >= deadlineMs) {
           timedOut = true;
           break;
         }
         processedCount += 1;
         try {
-          createdCount += await this.#materializeOne(seriesId);
+          createdCount += await this.#materializeOne(due);
         } catch (error) {
           failedCount += 1;
           logger.warn({
             event: PlanningTodoSeriesLogEvent.MATERIALIZE_FAILED,
-            seriesId,
+            seriesId: due.id,
             errorType: toErrorType(error),
           });
         }
       }
-      afterId = seriesIds.at(-1) ?? null;
-      if (seriesIds.length < batchSize) {
+      afterId = dueBatch.at(-1)?.id ?? null;
+      if (dueBatch.length < batchSize) {
         break;
       }
     }
@@ -127,16 +130,17 @@ export class MaterializeDueTodoSeries {
     return { processedCount, createdCount, failedCount, timedOut };
   }
 
-  async #materializeOne(seriesId: string): Promise<number> {
+  async #materializeOne(due: DueTodoSeries): Promise<number> {
     const { unitOfWork, seriesRepository, mutationLock, materializer, effects } =
       this.#dependencies;
     const materialized = await unitOfWork.run(async () => {
-      // 사용자 수정이나 다른 실행이 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
-      const series = await seriesRepository.lockForUpdate(seriesId, { skipLocked: true });
+      // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
+      await mutationLock.acquire([MutationLockKeys.todoSortOrder(due.userId)]);
+      // 사용자 수정이나 다른 실행이 규칙 행을 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
+      const series = await seriesRepository.lockForUpdate(due.id, { skipLocked: true });
       if (series == null) {
         return null;
       }
-      await mutationLock.acquire([MutationLockKeys.todoSortOrder(series.getUserId())]);
       const drafts = materializer.planDueRun(series, now());
       if (drafts.length === 0) {
         return null;

@@ -83,32 +83,31 @@ export class UpdateFollowingTodos {
     const { id, userId } = input;
     const { todoRepository, seriesRepository, unitOfWork, mutationLock } = this.#dependencies;
     const edited = await unitOfWork.run(async () => {
-      const found = await todoRepository.findByIdAndUserId(id, userId);
-      if (found == null) {
+      // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
+      await mutationLock.acquire([
+        MutationLockKeys.todoCategory(userId),
+        MutationLockKeys.todoSortOrder(userId),
+        MutationLockKeys.todo(id),
+      ]);
+      const todo = await todoRepository.findByIdAndUserId(id, userId);
+      if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }
-      const seriesId = found.getSeriesId();
+      const seriesId = todo.getSeriesId();
       if (seriesId == null) {
         throw new ApplicationException(ErrorCode.TODO_0844, {
           todoId: id,
           scope: "THIS_AND_FOLLOWING",
         });
       }
-      // 회차 채우기와 같은 순서(규칙 행 → 사용자 잠금)로 잡아 교착을 막는다.
       const series = await seriesRepository.lockForUpdate(seriesId);
       if (series == null || series.getUserId() !== userId) {
         throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
       }
-      await mutationLock.acquire([
-        MutationLockKeys.todoCategory(userId),
-        MutationLockKeys.todoSortOrder(userId),
-        MutationLockKeys.todo(id),
-      ]);
       if (input.categoryId != null) {
         await this.#dependencies.categoryOwnership.validateOwnership(input.categoryId, userId);
       }
-      const todo = await todoRepository.findByIdAndUserId(id, userId);
-      const occurrenceDate = todo?.getOccurrenceDate();
+      const occurrenceDate = todo.getOccurrenceDate();
       if (occurrenceDate == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
       }

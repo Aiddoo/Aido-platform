@@ -8,6 +8,7 @@ import type {
   FindTodosParams,
 } from "#api/modules/planning/application/models/todos/todo.types";
 import type {
+  DueTodoSeries,
   DueTodoSeriesQuery,
   TodoSeriesRepositoryPort,
 } from "#api/modules/planning/application/ports/series/todo-series.repository.port";
@@ -356,7 +357,7 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
       (series) => series.getUserId() === userId && series.isActive(),
     ).length;
   }
-  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly string[]> {
+  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly DueTodoSeries[]> {
     return [...this.store.values()]
       .filter((series) => {
         const next = series.getNextOccurrenceDate();
@@ -366,8 +367,8 @@ export class StubPlanningTodoSeriesRepository implements TodoSeriesRepositoryPor
           (query.afterId === null || series.getId() > query.afterId)
         );
       })
-      .map((series) => series.getId())
-      .sort()
+      .map((series) => ({ id: series.getId(), userId: series.getUserId() }))
+      .sort((left, right) => left.id.localeCompare(right.id))
       .slice(0, query.limit);
   }
   #copy(series: TodoSeries): TodoSeries {

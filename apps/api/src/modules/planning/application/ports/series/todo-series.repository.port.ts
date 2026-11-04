@@ -10,6 +10,12 @@ export interface DueTodoSeriesQuery {
   readonly limit: number;
 }
 
+/** 규칙 행을 잡기 전에 사용자 잠금을 잡을 수 있게 소유자를 함께 읽는다. */
+export interface DueTodoSeries {
+  readonly id: string;
+  readonly userId: string;
+}
+
 export interface TodoSeriesRepositoryPort {
   findByIdAndUserId(id: string, userId: string): Promise<TodoSeries | null>;
 
@@ -24,5 +30,5 @@ export interface TodoSeriesRepositoryPort {
 
   countActiveByUserId(userId: string): Promise<number>;
 
-  findDueBatch(query: DueTodoSeriesQuery): Promise<readonly string[]>;
+  findDueBatch(query: DueTodoSeriesQuery): Promise<readonly DueTodoSeries[]>;
 }

@@ -345,12 +345,12 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       });
       const second = await repository().findDueBatch({
         through: "2026-12-01",
-        afterId: first.at(-1) ?? null,
+        afterId: first.at(-1)?.id ?? null,
         limit: 2,
       });
       // Then
-      expect(first).toEqual(ids.slice(0, 2));
-      expect(second).toEqual(ids.slice(2));
+      expect(first.map((due) => due.id)).toEqual(ids.slice(0, 2));
+      expect(second.map((due) => due.id)).toEqual(ids.slice(2));
     });
 
     it("다른 트랜잭션이 잡고 있으면 SKIP LOCKED는 건너뛴다", async () => {

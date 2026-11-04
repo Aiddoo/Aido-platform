@@ -11,6 +11,7 @@ import { toDateString, toDateStringOrNull } from "#api/shared/domain/date/utils/
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import type {
+  DueTodoSeries,
   DueTodoSeriesQuery,
   TodoSeriesRepositoryPort,
 } from "../../../application/ports/series/todo-series.repository.port.js";
@@ -147,10 +148,10 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     );
   }
 
-  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly string[]> {
+  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly DueTodoSeries[]> {
     // 정지·탈퇴 대기 계정은 건너뛴다. 커서가 그대로라 복구되면 빠진 회차를 이어서 만든다.
-    const rows = await this.db
-      .select({ id: todoSeries.id })
+    return this.db
+      .select({ id: todoSeries.id, userId: todoSeries.userId })
       .from(todoSeries)
       .innerJoin(user, eq(user.id, todoSeries.userId))
       .where(
@@ -164,6 +165,5 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       )
       .orderBy(asc(todoSeries.id))
       .limit(query.limit);
-    return rows.map((row) => row.id);
   }
 }

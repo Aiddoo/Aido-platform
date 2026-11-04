@@ -5,6 +5,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
 import { MaterializeDueTodoSeries } from "#api/modules/planning/application/use-cases/series/materialize-due-todo-series.use-case";
 import { StartSeriesFromTodo } from "#api/modules/planning/application/use-cases/series/start-series-from-todo.use-case";
 import { StopTodoSeries } from "#api/modules/planning/application/use-cases/series/stop-todo-series.use-case";
@@ -23,6 +24,7 @@ import {
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { MutationLockKeys } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
 import type { FakeJobRuntime } from "#test/mocks/fake-job-runtime";
@@ -595,6 +597,93 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       expect(skipped.createdCount).toBe(0);
       expect(resumed.createdCount).toBe(1);
       expect(await rowsOf(seriesId)).toHaveLength(before.length + 1);
+    });
+
+    describe("카테고리 삭제와 규칙 작업이 겹칠 때", () => {
+      /** 정렬 잠금을 쥔 채 작업을 차례로 대기열에 세워, 카테고리 삭제가 먼저 잠금을 받는 순서를 만든다. */
+      async function queueBehindCategoryDelete(
+        moveToCategoryId: number,
+        contender: () => Promise<unknown>,
+      ) {
+        const held = Promise.withResolvers<void>();
+        const release = Promise.withResolvers<void>();
+        const holder = client.transaction(async (tx) => {
+          await tx.execute(
+            sql`SELECT pg_advisory_xact_lock(hashtextextended(${MutationLockKeys.todoSortOrder(userId)}, 0))`,
+          );
+          held.resolve();
+          await release.promise;
+        });
+        await held.promise;
+        const waitForWaiters = (count: number) =>
+          vi.waitFor(
+            async () => {
+              const waiting = await client.execute<{ count: number }>(sql`
+                SELECT count(*)::int AS count FROM pg_locks
+                WHERE locktype = 'advisory' AND NOT granted
+                AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
+              `);
+              expect(waiting.rows[0]?.count).toBe(count);
+            },
+            { timeout: 5000, interval: 10 },
+          );
+        const deleting = context.module
+          .get(DeleteTodoCategory, { strict: false })
+          .execute({ userId, categoryId, moveToCategoryId });
+        await waitForWaiters(1);
+        const contending = contender();
+        await waitForWaiters(2);
+        release.resolve();
+        await holder;
+        return Promise.allSettled([deleting, contending]);
+      }
+
+      it.each([
+        {
+          name: "이후 회차 수정",
+          contender: (todoId: number) => following({ id: todoId, title: "새 제목" }),
+        },
+        {
+          name: "반복 끝내기",
+          contender: (todoId: number) =>
+            context.module.get(StopTodoSeries).execute({ todoId, userId }),
+        },
+        {
+          name: "이후 삭제",
+          contender: (todoId: number) =>
+            context.module
+              .get(DeleteTodo)
+              .execute({ id: todoId, userId, scope: "THIS_AND_FOLLOWING" }),
+        },
+        {
+          name: "회차 채우기",
+          contender: async () => {
+            const result = await context.module.get(MaterializeDueTodoSeries).execute();
+            expect(result).toMatchObject({ failedCount: 0, createdCount: 1 });
+          },
+        },
+      ])(
+        "$name: 같은 잠금 순서라 교착 없이 차례로 끝나고 규칙은 새 카테고리로 옮겨진다",
+        async ({ contender }) => {
+          // Given
+          const { seriesId, todos } = await start();
+          const [target] = await client
+            .insert(todoCategory)
+            .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+            .returning();
+          if (target == null) {
+            throw new Error("이동할 카테고리 fixture 누락");
+          }
+          vi.setSystemTime(new Date("2026-11-03T00:00:00.000Z"));
+          // When
+          const outcomes = await queueBehindCategoryDelete(target.id, () =>
+            contender(todos[1]?.id ?? 0),
+          );
+          // Then
+          expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
+          expect((await seriesRow(seriesId))?.categoryId).toBe(target.id);
+        },
+      );
     });
 
     it("수정 두 번이 동시에 와도 잠금으로 차례대로 처리해 규칙이 하나로 끝난다", async () => {

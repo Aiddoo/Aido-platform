@@ -41,6 +41,8 @@ export class StopTodoSeries {
     const { todoId, userId } = input;
     const { todoRepository, seriesRepository, unitOfWork, mutationLock } = this.#dependencies;
     const stopped = await unitOfWork.run(async () => {
+      // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다.
+      await mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
       const todo = await todoRepository.findByIdAndUserId(todoId, userId);
       if (todo == null) {
         throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
@@ -53,12 +55,10 @@ export class StopTodoSeries {
           scope: "THIS_AND_FOLLOWING",
         });
       }
-      // 회차 채우기와 같은 순서(규칙 행 → 사용자 잠금)로 잡아 교착을 막는다.
       const series = await seriesRepository.lockForUpdate(seriesId);
       if (series == null || series.getUserId() !== userId) {
         throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
       }
-      await mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
       const lastDate = toDateString(occurrenceDate);
       if (!series.stopAfter(lastDate)) {
         throw new ApplicationException(ErrorCode.TODO_0846, { seriesId });
