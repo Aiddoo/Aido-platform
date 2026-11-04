@@ -45,7 +45,7 @@
     "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받아요",
     "aiDataSharing": {
       "label": "AI 기능 데이터 제공",
-      "description": "입력한 글자와 말을 글자로 바꾼 내용을 Anthropic·Google·OpenAI로 보내 할 일로 정리해요. 기기에서 바로 인식할 수 없으면 Apple·Google 음성 인식이 말을 글자로 바꿀 수 있어요. 녹음 파일은 Aido 서버로 보내지 않아요.",
+      "description": "입력한 글자와 말을 글자로 바꾼 내용을 Anthropic·Google·OpenAI로 보내 할 일로 정리해요. 기기에서 바로 인식할 수 없으면 Apple·Google 음성 인식이 말을 글자로 바꿀 수 있어요. 녹음 파일은 아이두 서버로 보내지 않아요.",
       "descriptionGoogleOnly": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",
       "agreedOn": "{{date}} 동의",
       "withdrawTitle": "동의를 철회할까요?",
@@ -64,7 +64,7 @@
   },
   "voiceStorage": {
     "totalLabel": "기기에 저장된 녹음",
-    "description": "녹음 파일은 Aido 서버로 보내지 않아요. 메모는 30일이 지나면 녹음과 함께 자동으로 정리돼요.",
+    "description": "녹음 파일은 아이두 서버로 보내지 않아요. 메모는 30일이 지나면 녹음과 함께 자동으로 정리돼요.",
     "empty": "저장된 녹음이 없어요",
     "removeOneTitle": "이 녹음을 지울까요?",
     "removeAllTitle": "녹음을 모두 지울까요?",

@@ -54,7 +54,7 @@
   "coach": {
     "noteStart": {
       "title": "말로 메모해보세요",
-      "description": "회의·강의를 들려주면 요약하고 할 일을 찾아드려요. 녹음 파일은 Aido 서버로 보내지 않아요."
+      "description": "회의·강의를 들려주면 요약하고 할 일을 찾아드려요. 녹음 파일은 아이두 서버로 보내지 않아요."
     },
     "keyPoint": {
       "title": "시간을 누르면 그때부터 들려요",
@@ -67,7 +67,7 @@
     "pause": "일시정지",
     "finish": "끝내기",
     "mark": "중요해요",
-    "privacy": "녹음 파일은 Aido 서버로 보내지 않아요",
+    "privacy": "녹음 파일은 아이두 서버로 보내지 않아요",
     "pausedLabel": "잠시 멈춤",
     "pausedTitle": "잠깐 멈췄어요",
     "pausedDescription": {
