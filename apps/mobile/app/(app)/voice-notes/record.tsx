@@ -1,5 +1,5 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
-import type { SpeechEvent } from '@src/core/ports/speech-recognizer';
+import type { SpeechEvent, SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { EntitlementPolicy } from '@src/features/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
@@ -14,6 +14,7 @@ import {
   VoiceCapturePolicy,
   type VoiceCaptureState,
 } from '@src/features/voice/domains/voice-capture.model';
+import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
@@ -69,6 +70,7 @@ function VoiceNoteRecordScreen() {
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const getSpeechContext = useSpeechContext();
   const [locale, setLocale] = useRecognitionLanguage();
+  const ensureMicrophonePermission = useMicrophonePermission();
   const maxSeconds =
     snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
   const limitMs = maxSeconds == null ? null : maxSeconds * 1_000;
@@ -133,6 +135,14 @@ function VoiceNoteRecordScreen() {
     });
     if (shouldFinish) {
       recording.finish();
+    }
+  };
+
+  /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+  const handleLocaleChange = async (next: SpeechLocale) => {
+    if (await ensureMicrophonePermission('note', next)) {
+      setLocale(next);
+      await recording.changeLocale(next);
     }
   };
 
@@ -252,8 +262,7 @@ function VoiceNoteRecordScreen() {
           <RecognitionLanguageToggle
             value={locale}
             onValueChange={(next) => {
-              setLocale(next);
-              recording.changeLocale(next).catch(() => undefined);
+              handleLocaleChange(next).catch(() => undefined);
             }}
           />
         }

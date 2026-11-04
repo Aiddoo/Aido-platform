@@ -82,14 +82,15 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const start = async () => {
     hasFailedRef.current = false;
     try {
-      const isGranted = await ensureMicrophonePermission('dictation');
+      const locale = APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
+      const isGranted = await ensureMicrophonePermission('dictation', locale);
       // 권한을 묻는 사이 화면이 내려갔으면 시작하지 않는다
       if (!isGranted || !isMountedRef.current) {
         return;
       }
       isSessionOwnerRef.current = true;
       speechRecognizer.start({
-        locale: APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage],
+        locale,
         mode: 'dictation',
         contextualStrings: [],
         isOnDevice: false,

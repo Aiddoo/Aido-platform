@@ -1,5 +1,6 @@
 import type { SpeechEvent, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { Platform } from 'react-native';
 
 import { expoSpeechRecognizerGateway } from './expo-speech-recognizer.gateway';
 
@@ -12,6 +13,19 @@ jest.mock('expo-speech-recognition', () => ({
   ExpoSpeechRecognitionModule: {
     start: jest.fn(),
     supportsRecording: jest.fn(() => true),
+    supportsOnDeviceRecognition: jest.fn(() => true),
+    isRecognitionAvailable: jest.fn(() => true),
+    getSupportedLocales: jest.fn(() =>
+      Promise.resolve({ locales: ['ko-KR', 'en-US'], installedLocales: ['ko-KR', 'en-US'] }),
+    ),
+    getPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true, canAskAgain: true })),
+    requestPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true, canAskAgain: true })),
+    getMicrophonePermissionsAsync: jest.fn(() =>
+      Promise.resolve({ granted: true, canAskAgain: true }),
+    ),
+    requestMicrophonePermissionsAsync: jest.fn(() =>
+      Promise.resolve({ granted: true, canAskAgain: true }),
+    ),
     addListener: jest.fn((eventName: string, listener: NativeListener) => {
       mockNativeListeners.set(eventName, listener);
       return { remove: mockRemove };
@@ -36,6 +50,8 @@ function emitNative(eventName: string, event: unknown) {
 describe('expoSpeechRecognizerGateway', () => {
   afterEach(() => {
     mockNativeListeners.clear();
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   test('받아쓰기는 지금처럼 한 번 말하면 끝나고 음량·녹음 옵션을 켜지 않는다', () => {
@@ -141,5 +157,82 @@ describe('expoSpeechRecognizerGateway', () => {
 
     // Then
     expect(mockRemove).toHaveBeenCalledTimes(attachedCount);
+  });
+
+  test('네트워크 인식이면 내 카테고리·할 일 이름을 인식 서비스로 보내지 않는다', () => {
+    // When
+    expoSpeechRecognizerGateway.start({
+      ...START_OPTIONS,
+      mode: 'quick',
+      contextualStrings: ['기획팀'],
+      isOnDevice: false,
+    });
+
+    // Then
+    const [options] = nativeModule.start.mock.calls.at(-1) ?? [];
+    expect(options?.contextualStrings).toBeUndefined();
+    expect(options?.requiresOnDeviceRecognition).toBe(false);
+  });
+
+  test('녹음 파일을 쓰기 시작하면 파일 주소를 알린다', () => {
+    // Given
+    const events: SpeechEvent[] = [];
+    expoSpeechRecognizerGateway.subscribe((event) => events.push(event));
+
+    // When
+    emitNative('audiostart', { uri: 'file:///recording_a.wav', timestamp: 1 });
+    emitNative('audiostart', { uri: null, timestamp: 2 });
+
+    // Then
+    expect(events).toEqual([{ type: 'recording-started', uri: 'file:///recording_a.wav' }]);
+  });
+
+  describe('iOS 언어별 기능 확인', () => {
+    test('기기 기본 언어는 기기 인식으로 보고 마이크 권한만 묻는다', async () => {
+      // When
+      const capabilities = await expoSpeechRecognizerGateway.getCapabilities('ko-KR');
+      await expoSpeechRecognizerGateway.requestPermission('note', 'ko-KR');
+
+      // Then
+      expect(capabilities.canRecognizeOnDevice).toBe(true);
+      expect(nativeModule.requestMicrophonePermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(nativeModule.requestPermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    test('기기 기본 언어가 아니면 네트워크 인식으로 보고 음성 인식 권한까지 묻는다', async () => {
+      // When
+      const capabilities = await expoSpeechRecognizerGateway.getCapabilities('en-US');
+      await expoSpeechRecognizerGateway.requestPermission('note', 'en-US');
+
+      // Then
+      expect(capabilities.canRecognizeOnDevice).toBe(false);
+      expect(capabilities.canDownloadOnDeviceModel).toBe(false);
+      expect(nativeModule.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(nativeModule.requestMicrophonePermissionsAsync).not.toHaveBeenCalled();
+    });
+
+    test('받아쓰기는 언어와 상관없이 음성 인식 권한까지 묻는다', async () => {
+      // When
+      await expoSpeechRecognizerGateway.getPermission('dictation', 'ko-KR');
+
+      // Then
+      expect(nativeModule.getPermissionsAsync).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test('Android는 설치된 언어 모델로 기기 인식을 판단하고 없으면 받기를 제안한다', async () => {
+    // Given
+    jest.replaceProperty(Platform, 'OS', 'android');
+    nativeModule.getSupportedLocales.mockResolvedValueOnce({
+      locales: ['ko-KR', 'en-US'],
+      installedLocales: ['en-US'],
+    });
+
+    // When
+    const capabilities = await expoSpeechRecognizerGateway.getCapabilities('ko-KR');
+
+    // Then
+    expect(capabilities.canRecognizeOnDevice).toBe(false);
+    expect(capabilities.canDownloadOnDeviceModel).toBe(true);
   });
 });

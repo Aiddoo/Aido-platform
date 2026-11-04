@@ -8,6 +8,7 @@ import type {
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
 import { clamp } from 'es-toolkit';
+import { getLocales } from 'expo-localization';
 import {
   type ExpoSpeechRecognitionOptions,
   ExpoSpeechRecognitionModule,
@@ -35,15 +36,6 @@ function toPermissionSnapshot({
   return { isGranted: granted, canAskAgain };
 }
 
-/** iOS 기기 안 인식은 음성이 Apple 서버로 가지 않아 마이크 권한만 있으면 된다 */
-function usesMicrophoneOnlyPermission(mode: SpeechMode) {
-  return (
-    mode !== 'dictation' &&
-    Platform.OS === 'ios' &&
-    ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()
-  );
-}
-
 function supportsContinuousRecognition() {
   return (
     Platform.OS !== 'android' ||
@@ -59,6 +51,26 @@ async function getInstalledOnDeviceLocales() {
     // Android 12 이하나 인식 서비스가 없는 기기는 목록을 주지 못한다. 기기 안 인식을 쓰지 않는다
     return [];
   }
+}
+
+/**
+ * 이 언어를 기기 안에서 인식할 수 있는지. iOS SDK의 `supportsOnDeviceRecognition`은 기기 기본 언어만 보고
+ * `installedLocales`는 지원 언어 전체라 다른 언어는 알 수 없다. 그 언어를 기기 인식으로 시작하면 SDK가 조용히
+ * 네트워크로 넘어가 권한 오류(1700)가 나므로, 확인되지 않은 언어는 네트워크 인식으로 본다.
+ */
+async function canRecognizeOnDevice(locale: SpeechLocale) {
+  if (!ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()) {
+    return false;
+  }
+  if (!(await getInstalledOnDeviceLocales()).includes(locale)) {
+    return false;
+  }
+  return Platform.OS !== 'ios' || getLocales()[0]?.languageTag === locale;
+}
+
+/** iOS 기기 안 인식은 음성이 Apple 서버로 가지 않아 마이크 권한만 있으면 된다 */
+async function usesMicrophoneOnlyPermission(mode: SpeechMode, locale: SpeechLocale) {
+  return mode !== 'dictation' && Platform.OS === 'ios' && (await canRecognizeOnDevice(locale));
 }
 
 function normalizeVolume(value: number) {
@@ -77,7 +89,11 @@ function toRecognitionOptions({
     interimResults: true,
     maxAlternatives: 1,
     requiresOnDeviceRecognition: isOnDevice,
-    ...(contextualStrings.length > 0 && { contextualStrings: [...contextualStrings] }),
+    // 고유명사 힌트는 내 카테고리·할 일 이름이라 음성 인식 서비스로 나가는 네트워크 인식에는 보내지 않는다
+    ...(isOnDevice &&
+      contextualStrings.length > 0 && {
+        contextualStrings: [...contextualStrings],
+      }),
   };
   const volumeChangeEventOptions = { enabled: true, intervalMillis: VOLUME_INTERVAL_MS };
 
@@ -114,31 +130,30 @@ function toRecognitionOptions({
 }
 
 export const expoSpeechRecognizerGateway: SpeechRecognizer = {
-  getPermission: async (mode) =>
+  getPermission: async (mode, locale) =>
     toPermissionSnapshot(
-      usesMicrophoneOnlyPermission(mode)
+      (await usesMicrophoneOnlyPermission(mode, locale))
         ? await ExpoSpeechRecognitionModule.getMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.getPermissionsAsync(),
     ),
 
-  requestPermission: async (mode) =>
+  requestPermission: async (mode, locale) =>
     toPermissionSnapshot(
-      usesMicrophoneOnlyPermission(mode)
+      (await usesMicrophoneOnlyPermission(mode, locale))
         ? await ExpoSpeechRecognitionModule.requestMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.requestPermissionsAsync(),
     ),
 
   getCapabilities: async (locale) => {
-    const supportsOnDevice = ExpoSpeechRecognitionModule.supportsOnDeviceRecognition();
-    const canRecognizeOnDevice =
-      supportsOnDevice &&
-      (Platform.OS !== 'android' || (await getInstalledOnDeviceLocales()).includes(locale));
+    const isOnDevice = await canRecognizeOnDevice(locale);
 
     return {
       isAvailable: ExpoSpeechRecognitionModule.isRecognitionAvailable(),
-      canRecognizeOnDevice,
+      canRecognizeOnDevice: isOnDevice,
       canDownloadOnDeviceModel:
-        Platform.OS === 'android' && supportsOnDevice && !canRecognizeOnDevice,
+        Platform.OS === 'android' &&
+        ExpoSpeechRecognitionModule.supportsOnDeviceRecognition() &&
+        !isOnDevice,
       canSaveRecording: ExpoSpeechRecognitionModule.supportsRecording(),
       canContinue: supportsContinuousRecognition(),
     };

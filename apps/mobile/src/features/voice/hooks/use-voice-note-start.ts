@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 
 import { voiceNoteRecordHref } from '../utils/navigation/voice-note-href';
 import { useMicrophonePermission } from './use-microphone-permission';
+import { useRecognitionLanguage } from './use-recognition-language';
 
 interface StartVoiceNoteOptions {
   /** 한도 안내에서 구독 화면으로 가기 직전에 부른다(열린 시트 닫기) */
@@ -18,6 +19,7 @@ export function useVoiceNoteStart() {
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const aiConsent = useAiDataSharingConsentGate();
   const ensureMicrophonePermission = useMicrophonePermission();
+  const [locale] = useRecognitionLanguage();
   const push = useSingleTap(router.push);
 
   return async ({ onSubscribe, getRecordHref }: StartVoiceNoteOptions = {}) => {
@@ -25,7 +27,7 @@ export function useVoiceNoteStart() {
       return;
     }
     await aiConsent.ensureAgreedOnce();
-    if (await ensureMicrophonePermission('note')) {
+    if (await ensureMicrophonePermission('note', locale)) {
       push(getRecordHref?.() ?? voiceNoteRecordHref());
     }
   };

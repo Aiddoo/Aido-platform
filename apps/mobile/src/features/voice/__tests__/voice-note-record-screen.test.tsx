@@ -220,4 +220,21 @@ describe('녹음 화면', () => {
     expect(screen.getByTestId('voice-note-summarize')).toBeTruthy();
     jest.useRealTimers();
   });
+
+  test('언어를 바꿀 때 그 언어에 필요한 권한을 거절하면 듣던 언어로 이어 간다', async () => {
+    // Given
+    const { speechRecognizer } = await renderRecordScreen();
+    speechRecognizer.getPermission.mockResolvedValue({ isGranted: false, canAskAgain: true });
+    speechRecognizer.requestPermission.mockResolvedValue({ isGranted: false, canAskAgain: true });
+
+    // When
+    await fireEvent.press(screen.getByText('English'));
+
+    // Then
+    await waitFor(() =>
+      expect(speechRecognizer.requestPermission).toHaveBeenCalledWith('note', 'en-US'),
+    );
+    expect(speechRecognizer.stop).not.toHaveBeenCalled();
+    expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+  });
 });

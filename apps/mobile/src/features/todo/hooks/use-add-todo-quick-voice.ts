@@ -113,7 +113,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     Keyboard.dismiss();
     const consent = await aiConsent.ensureAgreedOnce();
     hasAskedConsentRef.current = consent.wasAsked;
-    if (!(await ensureMicrophonePermission('quick'))) {
+    if (!(await ensureMicrophonePermission('quick', locale))) {
       return;
     }
     // 실패한 세션에서 다시 누르면 처음부터 듣는다. 들은 글자는 이미 입력 칸에 옮겨 뒀다
@@ -183,9 +183,16 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     });
   };
 
+  /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */
+  const applyLocale = async (nextLocale: SpeechLocale) => {
+    if (await ensureMicrophonePermission('quick', nextLocale)) {
+      setLocale(nextLocale);
+      await session.changeLocale(nextLocale);
+    }
+  };
+
   const changeLocale = (nextLocale: SpeechLocale) => {
-    setLocale(nextLocale);
-    session.changeLocale(nextLocale).catch(noop);
+    applyLocale(nextLocale).catch(noop);
   };
 
   return {
