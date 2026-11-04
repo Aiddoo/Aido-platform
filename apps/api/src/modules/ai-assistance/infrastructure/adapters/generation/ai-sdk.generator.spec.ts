@@ -277,7 +277,7 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     expect(chain.google.callCount).toBe(0);
   });
 
-  it("앞 업체가 응답하지 않으면 체인 제한 시간의 절반에서 끊고 다음 업체로 넘긴다", async () => {
+  it("앞 업체가 응답하지 않으면 자기 몫에서 끊고 다음 업체로 넘긴다", async () => {
     // Given
     const chain = createChain({
       anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
@@ -293,20 +293,82 @@ describe("AiSdkGenerator — 업체 체인·폴백·제한 시간", () => {
     );
   });
 
-  it("앞 업체가 시간을 쓴 뒤 남은 시간만 받은 업체의 TIMEOUT은 장애 회로에 쌓지 않는다", async () => {
+  it.each([
+    { order: "anthropic,google,openai", providers: ["anthropic", "google", "openai"] },
+    { order: "openai,anthropic,google", providers: ["openai", "anthropic", "google"] },
+    { order: "google,openai,anthropic", providers: ["google", "openai", "anthropic"] },
+  ] as const)(
+    "$order 순서에서 앞 두 업체가 모두 멈춰도 세 번째 업체가 불려 답한다",
+    async ({ order, providers }) => {
+      // Given
+      const [first, second, third] = providers;
+      const adapters = {
+        anthropic: new StubProviderAdapter(
+          "anthropic",
+          [third === "anthropic" ? ok() : { type: "hang" }],
+          "claude-haiku-5-5",
+        ),
+        google: new StubProviderAdapter(
+          "google",
+          [third === "google" ? ok() : { type: "hang" }],
+          "gemini-3.1-flash-lite",
+        ),
+        openai: new StubProviderAdapter(
+          "openai",
+          [third === "openai" ? ok() : { type: "hang" }],
+          "gpt-6-luna",
+        ),
+      };
+      const chain = createChain({
+        ...adapters,
+        env: { AI_DEADLINE_PARSE_TODO_MS: "400", AI_PROVIDER_ORDER: order },
+      });
+      // When
+      const result = await generate(chain.generator);
+      // Then
+      expect(result).toMatchObject({ provider: third, fallbackFrom: first, attempts: 3 });
+      expect([adapters[first].callCount, adapters[second].callCount]).toEqual([1, 1]);
+      expect(result.latencyMs).toBeLessThan(400);
+    },
+  );
+
+  it("앞 업체가 멈춰도 자기 몫을 받은 뒤 업체의 TIMEOUT은 장애 회로에 쌓는다", async () => {
     // Given
     const chain = createChain({
       anthropic: new StubProviderAdapter("anthropic", [{ type: "hang" }], "claude-haiku-5-5"),
       google: new StubProviderAdapter("google", [{ type: "hang" }], "gemini-3.1-flash-lite"),
-      env: { AI_DEADLINE_PARSE_TODO_MS: "40", AI_BREAKER_HEALTH_THRESHOLD: "2" },
+      env: { AI_DEADLINE_PARSE_TODO_MS: "400", AI_BREAKER_HEALTH_THRESHOLD: "2" },
     });
     // When
     for (const prompt of ["첫 요청", "둘째 요청"]) {
-      await chain.generator.generate(request({ prompt })).catch((cause: unknown) => cause);
+      await chain.generator.generate(request({ prompt }));
     }
     // Then
     expect(chain.google.callCount).toBe(2);
-    expect(chain.registry.states()["ai:anthropic"]?.openBreakers).toEqual(["health"]);
+    expect(chain.openai.callCount).toBe(2);
+    expect(chain.registry.states()["ai:google"]?.openBreakers).toEqual(["health"]);
+  });
+
+  it("앞 업체의 재질문에 시간을 뺏겨 몫보다 적게 받은 업체의 TIMEOUT은 장애 회로에 쌓지 않는다", async () => {
+    // Given
+    const chain = createChain({
+      anthropic: new StubProviderAdapter(
+        "anthropic",
+        [{ type: "ok", text: "not json", delayMs: 160 }, { type: "hang" }],
+        "claude-haiku-5-5",
+      ),
+      google: new StubProviderAdapter("google", [{ type: "hang" }], "gemini-3.1-flash-lite"),
+      env: {
+        AI_PROVIDER_ORDER: "anthropic,google",
+        AI_DEADLINE_PARSE_TODO_MS: "400",
+        AI_BREAKER_HEALTH_THRESHOLD: "1",
+      },
+    });
+    // When
+    const failure = await generate(chain.generator).catch((cause: unknown) => cause);
+    // Then
+    expect(failure).toMatchObject({ kind: "TIMEOUT", provider: "google" });
+    expect(chain.google.callCount).toBe(1);
     expect(chain.registry.states()["ai:google"]?.openBreakers).toEqual([]);
   });
 

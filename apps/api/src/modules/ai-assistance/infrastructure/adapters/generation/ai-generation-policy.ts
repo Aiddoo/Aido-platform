@@ -41,9 +41,6 @@ const CLASS_LIMITS: Readonly<
   background: { lastProviderMaxRetries: 2, maxModelCalls: 3 },
 };
 
-/** 마지막이 아닌 업체 한 번에 쓰는 체인 제한 시간의 최대 비율. 남은 업체가 응답할 시간을 남긴다. */
-export const FRONT_PROVIDER_DEADLINE_SHARE = 0.5;
-
 export function resolveGenerationPolicy(
   task: AiTaskId,
   taskClass: AiTaskClass,

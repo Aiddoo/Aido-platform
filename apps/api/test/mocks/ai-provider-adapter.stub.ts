@@ -1,3 +1,5 @@
+import { setTimeout } from "node:timers/promises";
+
 import type { AiProviderId } from "@aido/api/vocabulary";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
@@ -11,7 +13,7 @@ import { classifyAiSdkError } from "#api/modules/ai-assistance/infrastructure/ad
 
 /** 한 번의 모델 호출 결과. status는 그 HTTP 상태의 업체 오류다. */
 export type StubModelStep =
-  | { readonly type: "ok"; readonly text: string }
+  | { readonly type: "ok"; readonly text: string; readonly delayMs?: number }
   | { readonly type: "status"; readonly status: number; readonly retryable: boolean }
   | { readonly type: "finish"; readonly reason: "length" | "content-filter"; readonly text: string }
   | { readonly type: "hang" };
@@ -67,6 +69,9 @@ export class StubProviderAdapter implements AiProviderAdapter {
               reject(options.abortSignal?.reason),
             );
           });
+        }
+        if (step.type === "ok" && step.delayMs != null) {
+          await setTimeout(step.delayMs);
         }
         return {
           content: [{ type: "text", text: step.text }],

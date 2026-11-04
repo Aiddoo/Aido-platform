@@ -21,16 +21,15 @@ import type {
   AiGeneratorPort,
   AiTaskClass,
 } from "../../../application/ports/generation/ai-generator.port.js";
-import { planAiRoute } from "../../../domain/policies/generation/ai-route.policy.js";
+import {
+  planAiRoute,
+  resolveAttemptTime,
+} from "../../../domain/policies/generation/ai-route.policy.js";
 import {
   AiGuardLogEvent,
   AiProviderLogEvent,
 } from "../../observability/generation/ai-provider-log.events.js";
-import {
-  type AiGenerationPolicy,
-  FRONT_PROVIDER_DEADLINE_SHARE,
-  resolveGenerationPolicy,
-} from "./ai-generation-policy.js";
+import { type AiGenerationPolicy, resolveGenerationPolicy } from "./ai-generation-policy.js";
 import { estimateCostMicroUsd, estimateSpendMicroUsd } from "./ai-model-pricing.js";
 import {
   AI_TASK_CLASS_POLICIES,
@@ -98,8 +97,8 @@ interface ChainContext {
 
 /**
  * 입력 상한 → 킬 스위치·비용 예산 → 같은 요청 합치기 → 작업 분류 bulkhead → 업체 체인 순서로 생성한다.
- * 업체는 설정 순서 → 동의 범위 → 열린 회로 제외로 고르고, 앞 업체는 SDK 재시도 없이 체인 제한 시간의
- * 절반 안에서만 기다린 뒤 넘긴다. 끝나면 이번 요청의 추정 비용을 예산에 한 번 더한다.
+ * 업체는 설정 순서 → 동의 범위 → 열린 회로 제외로 고르고, 앞 업체는 SDK 재시도 없이 남은 시간 중 자기 몫만
+ * 기다린 뒤 넘긴다. 끝나면 이번 요청의 추정 비용을 예산에 한 번 더한다.
  */
 @Injectable()
 export class AiSdkGenerator implements AiGeneratorPort {
@@ -247,7 +246,11 @@ export class AiSdkGenerator implements AiGeneratorPort {
         }
         const isLast = index === route.length - 1 || attempts + 1 >= policy.maxModelCalls;
         attempts++;
-        const attempt = await this.#attempt(adapter, model, request, { ...context, isLast });
+        const attempt = await this.#attempt(adapter, model, request, {
+          ...context,
+          route,
+          isLast,
+        });
         if (attempt.type === "succeeded") {
           return {
             ...attempt.result,
@@ -301,23 +304,27 @@ export class AiSdkGenerator implements AiGeneratorPort {
     throw this.#failed(last, { attempts, route, cost });
   }
 
-  /** 한 업체를 한 번 부른다. 마지막이 아닌 업체는 체인 제한 시간의 일부만 기다린다. */
+  /** 한 업체를 한 번 부른다. 마지막이 아닌 업체는 남은 시간 중 자기 몫만 기다린다. */
   async #attempt<T>(
     adapter: AiProviderAdapter,
     model: AiProviderModel,
     request: AiGenerationRequest<T>,
-    context: ChainContext & { readonly isLast: boolean },
+    context: ChainContext & {
+      readonly route: readonly AiProviderId[];
+      readonly isLast: boolean;
+    },
   ): Promise<Attempt<T>> {
-    const { policy, signal, cost, startedAt, isLast } = context;
-    const remainingMs = Math.max(
-      Math.floor(policy.deadlineMs - (performance.now() - startedAt)),
-      1,
-    );
-    const frontShareMs = Math.floor(policy.deadlineMs * FRONT_PROVIDER_DEADLINE_SHARE);
+    const { policy, signal, cost, startedAt, route, isLast } = context;
+    const { budgetMs, hadFullShare } = resolveAttemptTime({
+      route,
+      provider: adapter.id,
+      isLast,
+      deadlineMs: policy.deadlineMs,
+      remainingMs: Math.max(Math.floor(policy.deadlineMs - (performance.now() - startedAt)), 1),
+    });
     const attemptSignal = isLast
       ? signal
-      : AbortSignal.any([signal, AbortSignal.timeout(Math.min(remainingMs, frontShareMs))]);
-    const hadFullShare = remainingMs >= frontShareMs;
+      : AbortSignal.any([signal, AbortSignal.timeout(Math.max(budgetMs, 1))]);
     const inputChars = request.system.length + request.prompt.length;
     const providerPolicy = this.#providerPolicies.get(adapter.id);
     if (providerPolicy == null) {
