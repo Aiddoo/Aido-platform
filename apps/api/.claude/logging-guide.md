@@ -11,6 +11,14 @@
 
 `event`는 안정된 영어 key다. 식별자·channel·허용된 reason code·count·errorCode/errorType처럼 조회할 수 있는 필드를 구조화한다. 원문 message에 업무 상태를 의존시키지 않는다.
 
+### 이벤트 키와 필드 (서버·앱 공통)
+
+- 형식 `<context>.<subject>[.<detail>].<outcome>` — 소문자, 단어는 하이픈, 마디는 점(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`). 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`, [platform-log.events.ts](../src/platform/logging/platform-log.events.ts)), 마지막은 결과(`failed`·`completed`·`skipped` …)다.
+- Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability.md](../../mobile/.claude/observability.md)와 같은 축).
+- `errorType` = 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode` = 공유 `ErrorCode` 값만. 공급자 기호는 `providerError`(OAuth `invalid_grant`·`KOE320`), 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`로 둔다. `errorName`·`errorKind`를 새로 쓰지 않는다.
+- 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남긴다.
+- 기존 snake_case 키(`weather.*`·`ai.job.*`·`social.*`·`notification.*` 일부)는 저장된 조회 호환으로 유지하고 새 키만 이 형식을 따른다.
+
 [ReconcilePushReceipts](../src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.ts)의 실제 로그 발췌:
 
 ```ts
@@ -25,11 +33,11 @@ log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 �
 
 ## 원문과 오류 계약
 
-이메일·token·인증 code·OAuth state·authorization header·할 일 제목·AI 입력/출력·이메일 본문·전체 webhook payload를 기록하지 않는다. 외부 error.message/stack/문자열도 같은 값을 포함할 수 있으므로 그대로 logger에 전달하지 않는다. 알려진 errorType/code와 필요한 내부 식별자만 남긴다. 무설정 mock 발송도 본문·code를 출력하지 않는다.
+이메일·token·인증 code·OAuth state·authorization header·공급자 사용자 ID·user tag·할 일 제목·AI 입력/출력·이메일 본문·전체 webhook payload·공급자 오류 본문을 기록하지 않는다. 공급자 실패는 공급자 이름·HTTP 상태·짧은 오류 코드만 남긴다. 외부 error.message/stack/문자열도 같은 값을 포함할 수 있으므로 그대로 logger에 전달하지 않는다. 알려진 errorType/code와 필요한 내부 식별자만 남긴다. 무설정 mock 발송도 본문·code를 출력하지 않는다.
 
 로그 정리와 caller의 오류 계약은 구분한다. 기존 sender result.error, queue throw identity, retry 여부를 log 비노출만을 위해 임의로 바꾸지 않는다. 반대로 호출자가 실패를 격리해야 하는 흐름에 logging 변경 때문에 예외를 새로 전파하지 않는다.
 
-전역 filter는 공개 오류 응답을 유지하면서 query와 예외 message 원문을 합치지 않는다. 기존 sanitized frame·errorCode/type 처리와 5xx Sentry 캡처를 확인한다. 이 범위의 검증을 Sentry 전체 데이터 정제 완료로 확대하지 않는다. 모듈별 발송·문의 로그의 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에 남긴다.
+전역 filter는 공개 오류 응답을 유지하면서 query와 예외 message 원문을 합치지 않는다. 기존 sanitized frame·errorCode/type 처리와 5xx Sentry 캡처를 확인한다. Sentry에는 사용자 ID만 싣고 IP(`ip_address`·`x-forwarded-for`·`x-real-ip`)는 보내지 않는다. 이 범위의 검증을 Sentry 전체 데이터 정제 완료로 확대하지 않는다. 모듈별 발송·문의 로그의 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에 남긴다.
 
 ## HTTP와 설정
 
