@@ -133,6 +133,10 @@ describe('녹음 화면', () => {
     expect(storage.drafts.findAll(ACCOUNT_ID)).toHaveLength(1);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('글자가 없을 때 닫으면 초안 없이 바로 나간다', async () => {
     // Given
     const { storage } = await renderRecordScreen();
@@ -158,5 +162,62 @@ describe('녹음 화면', () => {
     // Then
     expect(await screen.findByText('녹음을 끝낼까요?')).toBeTruthy();
     expect(router.back).not.toHaveBeenCalled();
+  });
+
+  test('이어 듣기를 누른 직후 닫아도 글자가 있으면 지우지 않고 묻는다', async () => {
+    // Given
+    const { speechRecognizer, storage } = await renderRecordScreen();
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('voice-note-pause'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await fireEvent.press(screen.getByTestId('voice-note-resume'));
+
+    // When
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('voice-note-close')).catch(jest.fn());
+    });
+
+    // Then
+    expect(await screen.findByText('녹음을 끝낼까요?')).toBeTruthy();
+    expect(router.back).not.toHaveBeenCalled();
+    expect(storage.drafts.findAll(ACCOUNT_ID)).toHaveLength(1);
+  });
+
+  test('듣기 시작 전에 끝내기를 확인해도 글자를 들고 정리 화면으로 넘어간다', async () => {
+    // Given
+    const { speechRecognizer } = await renderRecordScreen();
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('voice-note-pause'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await fireEvent.press(screen.getByTestId('voice-note-resume'));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('voice-note-close')).catch(jest.fn());
+    });
+
+    // When
+    await screen.findByText('녹음을 끝낼까요?');
+    await fireEvent.press(screen.getAllByText('끝내기').at(-1) ?? screen.getByText('계속 듣기'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  test('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
+    // Given
+    jest.useFakeTimers({ advanceTimers: true });
+    const { speechRecognizer } = await renderRecordScreen();
+    await say(speechRecognizer, '첫 문장.');
+    await fireEvent.press(screen.getByTestId('voice-note-pause'));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await fireEvent.press(screen.getByTestId('voice-note-resume'));
+
+    // When
+    await act(async () => jest.advanceTimersByTime(11_000));
+
+    // Then
+    expect(screen.getByTestId('voice-note-summarize')).toBeTruthy();
+    jest.useRealTimers();
   });
 });

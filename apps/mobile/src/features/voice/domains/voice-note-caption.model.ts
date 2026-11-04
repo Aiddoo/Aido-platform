@@ -238,6 +238,11 @@ export function getCaptionSentences(
   });
 }
 
+/** 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다 */
+export function hasCaptionText(captions: VoiceNoteCaptions): boolean {
+  return captions.sentences.length > 0 || captions.provisional.length > 0;
+}
+
 /** 아직 바뀔 수 있는 마지막 문장. 화면에서 회색으로 그린다 */
 export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
   return captions.provisional.at(-1)?.text ?? '';

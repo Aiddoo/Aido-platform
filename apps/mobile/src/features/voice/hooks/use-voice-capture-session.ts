@@ -28,6 +28,7 @@ import {
   AUTO_FINISH_SILENCE_MS,
   QUICK_CAPTURE_MAX_SECONDS,
   SPEAKING_VOLUME_THRESHOLD,
+  VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
 import {
   type CapturedPlan,
@@ -42,7 +43,7 @@ import {
 import { getTranscriptText, isTranscriptEmpty } from '../domains/voice-transcript.model';
 import { getDurationBucket } from '../utils/analytics/duration-bucket';
 
-/** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간 */
+/** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기가 함께 쓴다 */
 const FINALIZE_TIMEOUT_MS = 1_500;
 /** 이 안에 end가 이만큼 연달아 오면 다시 열어도 소용없는 세션이다 */
 const RESTART_LOOP_WINDOW_MS = 400;
@@ -112,6 +113,9 @@ export function useVoiceCaptureSession({
   const startOptionsRef = useRef<SpeechStartOptions | null>(null);
   const quietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deferredStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
+  const isRecognizerRunningRef = useRef(false);
   const isQuietRef = useRef(false);
   const lastStartedAtRef = useRef(0);
   const quickEndCountRef = useRef(0);
@@ -143,8 +147,16 @@ export function useVoiceCaptureSession({
     }
   };
 
+  const clearDeferredStart = () => {
+    if (deferredStartTimerRef.current != null) {
+      clearTimeout(deferredStartTimerRef.current);
+      deferredStartTimerRef.current = null;
+    }
+  };
+
   const clearTimers = () => {
     clearQuiet();
+    clearDeferredStart();
     if (finalizeTimerRef.current != null) {
       clearTimeout(finalizeTimerRef.current);
       finalizeTimerRef.current = null;
@@ -173,6 +185,7 @@ export function useVoiceCaptureSession({
 
   function finish() {
     clearQuiet();
+    clearDeferredStart();
     const { previous, next } = dispatch({ type: 'finish', at: Date.now() });
     if (previous === next) {
       return;
@@ -242,10 +255,35 @@ export function useVoiceCaptureSession({
       return;
     }
     lastStartedAtRef.current = now;
+    isRecognizerRunningRef.current = true;
     speechRecognizer.start(startOptions);
   };
 
+  /** 앞 구간이 끝나지 않았는데 다시 열면 Android가 파일을 마무리하지 않고 버린다. `end`까지 미룬다 */
+  const startAfterRecognizerEnds = () => {
+    if (!isRecognizerRunningRef.current) {
+      startPrepared();
+      return;
+    }
+    deferredStartTimerRef.current = setTimeout(startPrepared, FINALIZE_TIMEOUT_MS);
+  };
+
+  function startPrepared() {
+    clearDeferredStart();
+    const startOptions = startOptionsRef.current;
+    if (startOptions == null || getStatus() !== 'preparing') {
+      return;
+    }
+    lastStartedAtRef.current = Date.now();
+    quickEndCountRef.current = 0;
+    isRecognizerRunningRef.current = true;
+    speechRecognizer.start(startOptions);
+  }
+
   const handleEvent = useEffectEvent((event: SpeechEvent) => {
+    if (event.type === 'end') {
+      isRecognizerRunningRef.current = false;
+    }
     if (!VoiceCapturePolicy.isActive(stateRef.current)) {
       return;
     }
@@ -270,13 +308,16 @@ export function useVoiceCaptureSession({
       .with({ type: 'error' }, ({ code }) => handleError(code))
       .with({ type: 'end' }, () => {
         const current = stateRef.current;
-        if (VoiceCapturePolicy.shouldRestartSegment(current)) {
+        if (deferredStartTimerRef.current != null) {
+          startPrepared();
+        } else if (VoiceCapturePolicy.shouldRestartSegment(current)) {
+          dispatch({ type: 'end' });
           restartSegment();
         } else if (current.status === 'finalizing') {
           handleFinalized();
         }
       })
-      .with({ type: 'recording-saved' }, noop)
+      .with({ type: 'recording-started' }, { type: 'recording-saved' }, noop)
       .exhaustive();
   });
 
@@ -360,15 +401,22 @@ export function useVoiceCaptureSession({
     };
   }, [isPlanning, dispatch]);
 
-  const startRecognizer = useCallback(
-    (options: SpeechStartOptions) => {
-      startOptionsRef.current = options;
-      lastStartedAtRef.current = Date.now();
-      quickEndCountRef.current = 0;
-      speechRecognizer.start(options);
-    },
-    [speechRecognizer],
-  );
+  const failPreparing = useEffectEvent(() => {
+    speechRecognizer.abort();
+    isRecognizerRunningRef.current = false;
+    handleError('client');
+  });
+
+  // 시작 신호가 오지 않으면 듣는 중처럼 멈춰 있지 않고 글자를 든 실패 상태로 간다
+  const isPreparing = state.status === 'preparing';
+  useEffect(() => {
+    if (!isPreparing) {
+      return;
+    }
+    const timer = setTimeout(() => failPreparing(), VOICE_PREPARING_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [isPreparing]);
 
   /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
   const begin = async ({
@@ -391,13 +439,14 @@ export function useVoiceCaptureSession({
         return false;
       }
       const isOnDevice = capabilities.canRecognizeOnDevice;
-      startRecognizer({
+      startOptionsRef.current = {
         locale,
         mode,
         contextualStrings,
         isOnDevice,
         recordingDirectory,
-      });
+      };
+      startAfterRecognizerEnds();
       haptics.impact('light');
       trackEvent('voice_capture_started', {
         mode,
@@ -418,12 +467,11 @@ export function useVoiceCaptureSession({
 
   /** 멈춘 세션(앱 이탈·끼어들기·네트워크 오류)을 이어서 듣는다 */
   const resume = () => {
-    const startOptions = startOptionsRef.current;
     const { previous, next } = dispatch({ type: 'resume' });
-    if (previous === next || startOptions == null) {
+    if (previous === next || startOptionsRef.current == null) {
       return;
     }
-    startRecognizer(startOptions);
+    startAfterRecognizerEnds();
     if (previous.status === 'paused') {
       trackEvent('voice_capture_resumed', {
         mode,
@@ -439,6 +487,8 @@ export function useVoiceCaptureSession({
     dispatch({ type: 'cancel' });
     if (VoiceCapturePolicy.isActive(previous)) {
       speechRecognizer.abort();
+      // abort는 바로 끝난 것으로 본다. 다음 시작은 어댑터가 abort 뒤에 차례로 처리한다
+      isRecognizerRunningRef.current = false;
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
       trackFinished(isTranscriptEmpty(previous.transcript) ? 'empty' : outcome, previous);

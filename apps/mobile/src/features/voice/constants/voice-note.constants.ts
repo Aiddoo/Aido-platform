@@ -28,5 +28,8 @@ export const SPEECH_LEVEL_THRESHOLD = 0.2;
 /** 자막 한 카드의 최대 글자 수. 문장부호가 없어도 카드가 끝없이 길어지지 않게 끊는다 */
 export const VOICE_NOTE_SENTENCE_MAX_LENGTH = 120;
 
-/** 끝낸 뒤 인식기가 녹음 파일을 다 쓸 때까지 기다리는 시간. 넘기면 글자만 먼저 넘기고 파일은 도착하면 더한다 */
+/** 끝낸 뒤 인식기가 녹음 파일을 다 쓸 때까지 화면이 기다리는 시간. 넘기면 글자만 먼저 넘긴다 */
 export const VOICE_RECORDING_SAVE_WAIT_MS = 3_000;
+
+/** 화면이 내려간 뒤에도 늦은 녹음 파일을 받아 초안에 더하는 시간 */
+export const VOICE_RECORDING_LATE_WAIT_MS = 30_000;

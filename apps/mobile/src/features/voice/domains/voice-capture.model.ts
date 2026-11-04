@@ -119,86 +119,96 @@ export function reduceVoiceCapture(
   state: VoiceCaptureState,
   event: VoiceCaptureEvent,
 ): VoiceCaptureState {
-  return match([state, event] as const)
-    .returnType<VoiceCaptureState>()
-    .with([{ status: 'idle' }, { type: 'prepare' }], ([current, { seed }]) => ({
-      ...current,
-      ...seed,
-      status: 'preparing',
-    }))
-    .with([{ status: P.union('paused', 'failed') }, { type: 'resume' }], ([current]) => ({
-      transcript: withInterimFinalized(current.transcript),
-      elapsedMs: current.elapsedMs,
-      pauseCount: current.pauseCount,
-      status: 'preparing',
-    }))
-    .with([{ status: 'preparing' }, { type: 'start' }], ([current, { at }]) => ({
-      transcript: current.transcript,
-      elapsedMs: current.elapsedMs,
-      pauseCount: current.pauseCount,
-      status: 'listening',
-      listeningSince: at,
-    }))
-    .with(
-      [{ status: P.union('listening', 'paused', 'finalizing') }, { type: 'result' }],
-      ([current, { result }]) => ({
+  return (
+    match([state, event] as const)
+      .returnType<VoiceCaptureState>()
+      .with([{ status: 'idle' }, { type: 'prepare' }], ([current, { seed }]) => ({
         ...current,
-        transcript: applyResult(current.transcript, result),
-      }),
-    )
-    .with([{ status: 'listening' }, { type: 'pause' }], ([current, { cause, at }]) => ({
-      ...toFinishedSegment(current, at),
-      pauseCount: current.pauseCount + 1,
-      status: 'paused',
-      cause,
-    }))
-    .with([{ status: 'listening' }, { type: 'finish' }], ([current, { at }]) => ({
-      ...toFinishedSegment(current, at),
-      status: 'finalizing',
-    }))
-    .with([{ status: 'paused' }, { type: 'finish' }], ([current]) => toFinalized(current))
-    .with(
-      [{ status: 'failed', reason: P.not('planning-failed') }, { type: 'finish' }],
-      ([current]) => toFinalized(current),
-    )
-    .with([{ status: 'finalizing' }, { type: 'end' }], ([current]) => toFinalized(current))
-    .with(
-      [{ status: P.union('preparing', 'listening', 'finalizing') }, { type: 'error' }],
-      ([current, { code, at }]) =>
-        match(code)
-          .returnType<VoiceCaptureState>()
-          .with('no-speech', 'speech-timeout', 'aborted', () => current)
-          .with('interrupted', () =>
-            current.status === 'listening'
-              ? {
-                  ...toFinishedSegment(current, at),
-                  pauseCount: current.pauseCount + 1,
-                  status: 'paused',
-                  cause: 'interrupted',
-                }
-              : toFailed(current, code, at),
-          )
-          .otherwise(() => toFailed(current, code, at)),
-    )
-    .with([{ status: 'planning' }, { type: 'planned' }], ([current, { result }]) =>
-      result == null ? createVoiceCaptureState() : { ...current, ...result, status: 'review' },
-    )
-    .with([{ status: 'planning' }, { type: 'plan-failed' }], ([current]) => ({
-      ...current,
-      status: 'failed',
-      reason: 'planning-failed',
-    }))
-    .with(
-      [{ status: 'failed', reason: 'planning-failed' }, { type: 'retry-plan' }],
-      ([current]) => ({
+        ...seed,
+        status: 'preparing',
+      }))
+      .with([{ status: P.union('paused', 'failed') }, { type: 'resume' }], ([current]) => ({
+        transcript: withInterimFinalized(current.transcript),
+        elapsedMs: current.elapsedMs,
+        pauseCount: current.pauseCount,
+        status: 'preparing',
+      }))
+      .with([{ status: 'preparing' }, { type: 'start' }], ([current, { at }]) => ({
         transcript: current.transcript,
         elapsedMs: current.elapsedMs,
         pauseCount: current.pauseCount,
-        status: 'planning',
-      }),
-    )
-    .with([P._, { type: 'cancel' }], () => createVoiceCaptureState())
-    .otherwise(([current]) => current);
+        status: 'listening',
+        listeningSince: at,
+      }))
+      .with(
+        [{ status: P.union('listening', 'paused', 'finalizing') }, { type: 'result' }],
+        ([current, { result }]) => ({
+          ...current,
+          transcript: applyResult(current.transcript, result),
+        }),
+      )
+      .with([{ status: 'listening' }, { type: 'pause' }], ([current, { cause, at }]) => ({
+        ...toFinishedSegment(current, at),
+        pauseCount: current.pauseCount + 1,
+        status: 'paused',
+        cause,
+      }))
+      .with(
+        [{ status: P.union('preparing', 'listening') }, { type: 'finish' }],
+        ([current, { at }]) => ({
+          ...toFinishedSegment(current, at),
+          status: 'finalizing',
+        }),
+      )
+      // final 없이 구간이 끝나면 다음 구간의 글자가 덮지 않게 듣던 글자를 먼저 확정한다
+      .with([{ status: 'listening' }, { type: 'end' }], ([current]) => ({
+        ...current,
+        transcript: withInterimFinalized(current.transcript),
+      }))
+      .with([{ status: 'paused' }, { type: 'finish' }], ([current]) => toFinalized(current))
+      .with(
+        [{ status: 'failed', reason: P.not('planning-failed') }, { type: 'finish' }],
+        ([current]) => toFinalized(current),
+      )
+      .with([{ status: 'finalizing' }, { type: 'end' }], ([current]) => toFinalized(current))
+      .with(
+        [{ status: P.union('preparing', 'listening', 'finalizing') }, { type: 'error' }],
+        ([current, { code, at }]) =>
+          match(code)
+            .returnType<VoiceCaptureState>()
+            .with('no-speech', 'speech-timeout', 'aborted', () => current)
+            .with('interrupted', () =>
+              current.status === 'listening'
+                ? {
+                    ...toFinishedSegment(current, at),
+                    pauseCount: current.pauseCount + 1,
+                    status: 'paused',
+                    cause: 'interrupted',
+                  }
+                : toFailed(current, code, at),
+            )
+            .otherwise(() => toFailed(current, code, at)),
+      )
+      .with([{ status: 'planning' }, { type: 'planned' }], ([current, { result }]) =>
+        result == null ? createVoiceCaptureState() : { ...current, ...result, status: 'review' },
+      )
+      .with([{ status: 'planning' }, { type: 'plan-failed' }], ([current]) => ({
+        ...current,
+        status: 'failed',
+        reason: 'planning-failed',
+      }))
+      .with(
+        [{ status: 'failed', reason: 'planning-failed' }, { type: 'retry-plan' }],
+        ([current]) => ({
+          transcript: current.transcript,
+          elapsedMs: current.elapsedMs,
+          pauseCount: current.pauseCount,
+          status: 'planning',
+        }),
+      )
+      .with([P._, { type: 'cancel' }], () => createVoiceCaptureState())
+      .otherwise(([current]) => current)
+  );
 }
 
 /** 듣기가 끝났는데 사용자가 끝내지 않았다면(침묵·인식기 제한 시간) 같은 세션을 다시 연다 */

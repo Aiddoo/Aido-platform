@@ -10,12 +10,15 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
 import { useConfirmDialog } from '@src/shared/ui';
-import { noop } from 'es-toolkit';
+import { noop, sortBy } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { VOICE_RECORDING_SAVE_WAIT_MS } from '../constants/voice-note.constants';
+import {
+  VOICE_RECORDING_LATE_WAIT_MS,
+  VOICE_RECORDING_SAVE_WAIT_MS,
+} from '../constants/voice-note.constants';
 import {
   applyCaptionResult,
   commitProvisional,
@@ -23,6 +26,7 @@ import {
   createVoiceNoteCaptions,
   getCaptionInterimText,
   getCaptionSentences,
+  hasCaptionText,
   type VoiceNoteCaptions,
   withBookmark,
 } from '../domains/voice-note-caption.model';
@@ -85,20 +89,21 @@ export function useVoiceNoteRecording({
   const captionsRef = useRef(captions);
   const recordingsRef = useRef<VoiceNoteRecording[]>([]);
   const pendingSavesRef = useRef<Promise<void>[]>([]);
-  /** 아직 파일을 받지 못한 인식 구간의 시작 시각. 파일은 구간 순서대로 온다 */
-  const segmentStartsRef = useRef<number[]>([]);
+  /** 아직 다 쓰지 않은 녹음 파일과 그 구간이 시작한 시각(노트 시계). 파일과 시각은 uri로 짝짓는다 */
+  const segmentStartsRef = useRef(new Map<string, number>());
   const currentSegmentStartRef = useRef(0);
   const partCountRef = useRef(0);
   const hasBegunRef = useRef(false);
-  const savesRecordingRef = useRef(false);
   const notifyRecordingsArrivedRef = useRef<(() => void) | null>(null);
   /** 정리 화면으로 넘겼다. 이제 초안의 주인은 그 화면이라 녹음 조각만 더한다 */
   const hasHandedOffRef = useRef(false);
+  /** 사용자가 초안을 지웠다. 뒤늦은 글자·파일이 초안을 되살리지 않게 막는다 */
+  const hasDiscardedRef = useRef(false);
 
-  /** 일시정지·한도 직후에 끝내면 파일이 아직 안 왔을 수 있다. 화면을 떠나면 파일 이벤트를 못 받아 잠깐 기다린다 */
+  /** 일시정지·한도 직후에 끝내면 파일이 아직 안 왔을 수 있어 잠깐 기다린다 */
   const waitForRecordings = () =>
     new Promise<void>((resolve) => {
-      if (!savesRecordingRef.current || segmentStartsRef.current.length === 0) {
+      if (segmentStartsRef.current.size === 0) {
         resolve();
         return;
       }
@@ -115,6 +120,7 @@ export function useVoiceNoteRecording({
     await Promise.allSettled(pendingSavesRef.current);
     persist('now');
     hasHandedOffRef.current = true;
+    hasBegunRef.current = false;
     onFinished(baseNote.draftId);
     return null;
   };
@@ -136,7 +142,7 @@ export function useVoiceNoteRecording({
   };
 
   function persist(timing: 'later' | 'now') {
-    if (hasHandedOffRef.current) {
+    if (hasHandedOffRef.current || hasDiscardedRef.current) {
       return;
     }
     const note = toNote();
@@ -160,30 +166,73 @@ export function useVoiceNoteRecording({
   };
 
   const saveRecording = async (sourceUri: string, startMs: number) => {
+    const partIndex = partCountRef.current;
+    partCountRef.current += 1;
     const fileName = await storage.recordings.save({
       accountId,
       draftId: baseNote.draftId,
-      partIndex: partCountRef.current,
+      partIndex,
       sourceUri,
     });
-    partCountRef.current += 1;
-    if (fileName != null) {
-      recordingsRef.current = [...recordingsRef.current, { fileName, startMs }];
-      persist('later');
-      const handedOff = hasHandedOffRef.current
-        ? storage.drafts.find(accountId, baseNote.draftId)
-        : undefined;
-      if (handedOff != null) {
-        storage.drafts.save(accountId, withRecordings(handedOff, recordingsRef.current));
-      }
+    if (fileName == null) {
+      return;
     }
+    if (hasDiscardedRef.current) {
+      storage.recordings.remove(accountId, fileName);
+      return;
+    }
+    recordingsRef.current = sortBy(
+      [...recordingsRef.current, { fileName, startMs }],
+      [({ startMs: partStartMs }) => partStartMs],
+    );
+    persist('later');
+    const handedOff = hasHandedOffRef.current
+      ? storage.drafts.find(accountId, baseNote.draftId)
+      : undefined;
+    if (handedOff != null) {
+      storage.drafts.save(accountId, withRecordings(handedOff, recordingsRef.current));
+    }
+  };
+
+  const receiveRecording = (uri: string) => {
+    const startMs = segmentStartsRef.current.get(uri) ?? currentSegmentStartRef.current;
+    segmentStartsRef.current.delete(uri);
+    if (!hasDiscardedRef.current) {
+      pendingSavesRef.current = [...pendingSavesRef.current, saveRecording(uri, startMs)];
+    }
+    if (segmentStartsRef.current.size === 0) {
+      notifyRecordingsArrivedRef.current?.();
+    }
+  };
+
+  /** 기다리는 시간을 넘겨 화면이 내려간 뒤에 온 파일도 초안에 더한다. 받으면 끝내고, 오지 않아도 잠시 뒤 끝낸다 */
+  const keepListeningForLateRecordings = () => {
+    if (!hasHandedOffRef.current || segmentStartsRef.current.size === 0) {
+      return;
+    }
+    const stop = () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+    const unsubscribe = speechRecognizer.subscribe((event) => {
+      if (event.type !== 'recording-saved') {
+        return;
+      }
+      receiveRecording(event.uri);
+      if (segmentStartsRef.current.size === 0) {
+        stop();
+      }
+    });
+    const timer = setTimeout(stop, VOICE_RECORDING_LATE_WAIT_MS);
   };
 
   const handleSpeechEvent = useEffectEvent((event: SpeechEvent) => {
     match(event)
       .with({ type: 'start' }, () => {
         currentSegmentStartRef.current = session.getElapsedMs();
-        segmentStartsRef.current = [...segmentStartsRef.current, currentSegmentStartRef.current];
+      })
+      .with({ type: 'recording-started' }, ({ uri }) => {
+        segmentStartsRef.current.set(uri, session.getElapsedMs());
       })
       .with({ type: 'result' }, (result) => {
         updateCaptions(
@@ -196,19 +245,20 @@ export function useVoiceNoteRecording({
       .with({ type: 'end' }, () => {
         updateCaptions(commitProvisional(captionsRef.current, session.getElapsedMs()));
       })
-      .with({ type: 'recording-saved' }, ({ uri }) => {
-        const [startMs = 0, ...rest] = segmentStartsRef.current;
-        segmentStartsRef.current = rest;
-        pendingSavesRef.current = [...pendingSavesRef.current, saveRecording(uri, startMs)];
-        if (rest.length === 0) {
-          notifyRecordingsArrivedRef.current?.();
-        }
-      })
+      .with({ type: 'recording-saved' }, ({ uri }) => receiveRecording(uri))
       .with({ type: 'volume' }, { type: 'error' }, noop)
       .exhaustive();
   });
 
-  useEffect(() => speechRecognizer.subscribe(handleSpeechEvent), [speechRecognizer]);
+  useEffect(() => {
+    const unsubscribe = speechRecognizer.subscribe(handleSpeechEvent);
+
+    return () => {
+      unsubscribe();
+      keepListeningForLateRecordings();
+    };
+    // 파일 받기는 ref만 읽어 화면이 내려간 뒤에도 그대로 동작한다
+  }, [speechRecognizer]);
 
   const { status } = session.state;
   const flushDraft = useEffectEvent(() => {
@@ -232,9 +282,7 @@ export function useVoiceNoteRecording({
 
   /** Android에 이 언어 모델이 없으면 받을지 묻는다. 거절해도 네트워크 인식으로 이어 간다 */
   const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
-    const { canDownloadOnDeviceModel, canSaveRecording } =
-      await speechRecognizer.getCapabilities(startLocale);
-    savesRecordingRef.current = canSaveRecording;
+    const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(startLocale);
     if (!canDownloadOnDeviceModel) {
       return;
     }
@@ -290,10 +338,12 @@ export function useVoiceNoteRecording({
     updateCaptions(withBookmark(captionsRef.current, session.getElapsedMs()));
   };
 
-  /** 초안을 지우고 나간다(들은 글자가 없을 때) */
+  /** 초안을 지우고 나간다(들은 글자가 없을 때). 뒤늦은 파일·글자는 더 받지 않는다 */
   const discard = () => {
+    hasDiscardedRef.current = true;
     hasBegunRef.current = false;
     session.cancel();
+    recordingsRef.current.forEach(({ fileName }) => storage.recordings.remove(accountId, fileName));
     storage.discard(accountId, baseNote.draftId);
   };
 
@@ -306,6 +356,8 @@ export function useVoiceNoteRecording({
       0,
     ),
     interimText: getCaptionInterimText(captions),
+    /** 이어 받은 글자까지 포함해 들은 글자가 있다. 있으면 묻지 않고 지우면 안 된다 */
+    hasText: hasCaptionText(captions),
     bookmarksMs: captions.bookmarksMs,
     start,
     mark,

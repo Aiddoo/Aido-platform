@@ -36,6 +36,21 @@ describe('VoiceNoteStorageService', () => {
     expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
   });
 
+  test('아직 쓰지 않은 대기 쓰기만 있는 초안을 버려도 나중에 되살아나지 않는다', () => {
+    // Given
+    jest.useFakeTimers();
+    const { service } = createService();
+    service.drafts.scheduleSave('user-1', createVoiceNoteFixture());
+
+    // When
+    service.discard('user-1', 'draft-1');
+    jest.advanceTimersByTime(10_000);
+
+    // Then
+    expect(service.drafts.find('user-1', 'draft-1')).toBeUndefined();
+    jest.useRealTimers();
+  });
+
   test('30일이 지난 초안은 녹음과 함께 지우고 최근 초안은 남긴다', () => {
     // Given
     const { files, service } = createService();

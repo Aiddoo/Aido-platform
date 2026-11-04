@@ -200,6 +200,11 @@ export const expoSpeechRecognizerGateway: SpeechRecognizer = {
       ExpoSpeechRecognitionModule.addListener('volumechange', ({ value }) =>
         listener({ type: 'volume', level: normalizeVolume(value) }),
       ),
+      ExpoSpeechRecognitionModule.addListener('audiostart', ({ uri }) => {
+        if (uri != null) {
+          listener({ type: 'recording-started', uri });
+        }
+      }),
       ExpoSpeechRecognitionModule.addListener('audioend', ({ uri }) => {
         if (uri != null) {
           listener({ type: 'recording-saved', uri });

@@ -10,6 +10,9 @@ export const APP_LANGUAGE_SPEECH_LOCALE = {
 /** 빠른 말하기 한 번에 들을 수 있는 최대 길이. 넘기면 말로 메모하기를 권한다 */
 export const QUICK_CAPTURE_MAX_SECONDS = 90;
 
+/** 듣기를 시작하라고 한 뒤 인식기가 이 안에 시작을 알리지 않으면 실패로 보고 글자를 들고 멈춘다 */
+export const VOICE_PREPARING_TIMEOUT_MS = 10_000;
+
 /** 말이 이만큼 멈추면 자동으로 마무리한다 */
 export const AUTO_FINISH_SILENCE_MS = 2_500;
 

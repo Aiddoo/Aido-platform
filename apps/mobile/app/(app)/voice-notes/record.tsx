@@ -115,8 +115,13 @@ function VoiceNoteRecordScreen() {
     if (state.status === 'finalizing' || state.status === 'planning') {
       return;
     }
-    if (!VoiceCapturePolicy.canFinish(state)) {
+    if (!recording.hasText) {
       recording.discard();
+      router.back();
+      return;
+    }
+    // 듣기를 시작하기 전이면 끝낼 것이 없다. 넘겨받은 글자는 메모 탭의 초안에 그대로 있다
+    if (state.status === 'idle') {
       router.back();
       return;
     }

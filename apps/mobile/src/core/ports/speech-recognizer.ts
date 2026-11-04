@@ -41,6 +41,8 @@ export type SpeechEvent =
   | { type: 'result'; transcript: string; isFinal: boolean; segments: readonly SpeechSegment[] }
   /** 0(조용함)..1(큼) */
   | { type: 'volume'; level: number }
+  /** 이 구간의 녹음 파일을 쓰기 시작했다. 같은 `uri`로 `recording-saved`가 온다 */
+  | { type: 'recording-started'; uri: string }
   /** 녹음 파일이 다 쓰여 재생해도 되는 시점 */
   | { type: 'recording-saved'; uri: string }
   | { type: 'error'; code: SpeechErrorCode };

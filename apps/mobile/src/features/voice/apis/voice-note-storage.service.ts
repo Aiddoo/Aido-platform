@@ -26,11 +26,12 @@ export class VoiceNoteStorageService {
     this.#now = now;
   }
 
+  /** 아직 쓰지 않은 대기 쓰기도 함께 취소해 지운 초안이 되살아나지 않게 한다 */
   discard = (accountId: string, draftId: string): void => {
-    const note = this.drafts.find(accountId, draftId);
-    if (note != null) {
-      this.#remove(accountId, note);
-    }
+    this.drafts
+      .find(accountId, draftId)
+      ?.recordings.forEach(({ fileName }) => this.recordings.remove(accountId, fileName));
+    this.drafts.remove(accountId, draftId);
   };
 
   getRecordingUsage = (accountId: string): VoiceNoteRecordingUsage => {

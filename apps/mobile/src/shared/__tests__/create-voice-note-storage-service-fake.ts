@@ -2,14 +2,19 @@ import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-n
 import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import { createVoiceRecordingRepository } from '@src/features/voice/apis/voice-recording.repository';
 
-import { createLocalFileSystemFake } from './create-local-file-system-fake';
+import {
+  createLocalFileSystemFake,
+  type LocalFileSystemFake,
+} from './create-local-file-system-fake';
 import { createMemorySyncStorage } from './create-memory-sync-storage';
 
-export const createVoiceNoteStorageServiceFake = (): VoiceNoteStorageService => {
+export const createVoiceNoteStorageServiceFake = (
+  files: LocalFileSystemFake = createLocalFileSystemFake(),
+): VoiceNoteStorageService => {
   const logger = { warn: jest.fn() };
 
   return new VoiceNoteStorageService(
     createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
-    createVoiceRecordingRepository(createLocalFileSystemFake(), logger),
+    createVoiceRecordingRepository(files, logger),
   );
 };
