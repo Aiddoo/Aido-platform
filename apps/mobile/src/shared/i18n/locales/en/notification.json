@@ -77,7 +77,7 @@
       "askDescription": "We'll let you know about reminders and cheers from friends on time",
       "deniedTitle": "Notifications are off",
       "requestDescription": "Allow them again to get reminders",
-      "settingsDescription": "Turn on notifications in device settings to get reminders",
+      "settingsDescription": "Turn them on in Settings to get reminders",
       "appOffTitle": "Push notifications are off",
       "appOffDescription": "Turn on push notifications in notification settings",
       "allow": "Allow",

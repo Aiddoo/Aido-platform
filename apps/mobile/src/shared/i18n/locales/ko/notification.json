@@ -77,7 +77,7 @@
       "askDescription": "리마인더와 친구의 응원을 제때 알려드려요",
       "deniedTitle": "알림이 꺼져 있어요",
       "requestDescription": "다시 허용하면 리마인더를 받을 수 있어요",
-      "settingsDescription": "기기 설정에서 알림을 켜면 리마인더를 받을 수 있어요",
+      "settingsDescription": "설정에서 켜면 리마인더를 받을 수 있어요",
       "appOffTitle": "푸시 알림이 꺼져 있어요",
       "appOffDescription": "알림 설정에서 푸시 알림을 켜 주세요",
       "allow": "허용하기",

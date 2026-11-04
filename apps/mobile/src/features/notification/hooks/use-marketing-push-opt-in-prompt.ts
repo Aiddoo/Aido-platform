@@ -1,12 +1,13 @@
 import { useMarketingPushPromptService } from '@src/bootstrap/providers/di-context';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
-import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
 import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet';
 
@@ -29,17 +30,21 @@ export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
   const marketingPushPromptService = useMarketingPushPromptService();
   const { trackEvent } = useTrack();
   const consentSheet = useMarketingPushConsentSheet();
-  const [{ data: consent }, { data: permission }] = useSuspenseQueries({
-    queries: [useGetConsentQueryOptions(), useGetPushPermissionQueryOptions()],
+  const [{ data: consent }, { data: permission }, { data: preference }] = useSuspenseQueries({
+    queries: [
+      useGetConsentQueryOptions(),
+      useGetPushPermissionQueryOptions(),
+      useGetPreferenceQueryOptions(),
+    ],
   });
   const [promptState] = useState(() => marketingPushPromptService.getState());
   const [dismissed, setDismissed] = useState(false);
   const today = useToday();
 
-  // 기기 알림이 꺼져 있으면 알림 권한 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
+  // 기기 권한이나 앱 푸시 설정이 꺼져 있으면 알림 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
   const isVisible =
     !dismissed &&
-    PushPermissionPolicy.isDeliveryAllowed(permission) &&
+    PushPermissionPolicy.nextStep(permission, preference) === PUSH_PERMISSION_STEP.NONE &&
     MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
 
   const dismiss = () => {
