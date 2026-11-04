@@ -1,4 +1,4 @@
-import type { Todo } from "@aido/api";
+import type { FriendTodo } from "@aido/api";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
@@ -14,7 +14,7 @@ export type TodoDetailsRow = typeof todo.$inferSelect & {
   items: (typeof todoItem.$inferSelect)[];
 };
 
-export function toTodoResponse(row: TodoDetailsRow): Todo {
+export function toTodoResponse(row: TodoDetailsRow): FriendTodo {
   const items = row.items.map((item) => ({
     id: item.id,
     title: item.title,

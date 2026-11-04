@@ -6,7 +6,7 @@ import { toISOString } from "#api/shared/domain/date/utils/format";
 import type { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
 import type { RepeatRule } from "../../../domain/value-objects/series/repeat-rule.vo.js";
 
-function toTodoRepeat(rule: RepeatRule): TodoRepeat {
+export function toTodoRepeat(rule: RepeatRule): TodoRepeat {
   return match(rule.toSpec())
     .returnType<TodoRepeat>()
     .with({ frequency: "DAILY" }, (spec) => spec)

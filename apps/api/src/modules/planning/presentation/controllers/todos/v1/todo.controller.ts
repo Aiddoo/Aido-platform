@@ -66,6 +66,7 @@ import {
   CreateTodoResponseDto,
   DeleteTodoQueryDto,
   DeleteTodoResponseDto,
+  FriendTodoListResponseDto,
   GetFriendTodosQueryDto,
   GetTodosQueryDto,
   ReorderTodoDto,
@@ -541,14 +542,14 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
 | 잘못된 날짜 형식 | \`400 Bad Request\` (SYS_0002) |`,
   })
-  @ApiSuccessResponse({ type: TodoListResponseDto })
+  @ApiSuccessResponse({ type: FriendTodoListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.FOLLOW_0906)
   async findFriendTodos(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @Query({ schema: GetFriendTodosQueryDto }) query: GetFriendTodosQueryDto,
-  ): Promise<TodoListResponseDto> {
+  ): Promise<FriendTodoListResponseDto> {
     const result = await this.getFriendTodosUseCase.execute({
       userId: user.userId,
       friendUserId: params.userId,

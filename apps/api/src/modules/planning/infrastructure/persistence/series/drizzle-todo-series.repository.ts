@@ -1,4 +1,3 @@
-import { DAYS_OF_WEEK, type DayOfWeek, type TodoRepeatInterval } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, eq, gt, isNotNull, isNull, lte, ne } from "drizzle-orm";
@@ -16,27 +15,9 @@ import type {
   TodoSeriesRepositoryPort,
 } from "../../../application/ports/series/todo-series.repository.port.js";
 import { TodoSeries } from "../../../domain/aggregates/series/todo-series.aggregate.js";
-import { RepeatRule, type RepeatEnd } from "../../../domain/value-objects/series/repeat-rule.vo.js";
+import { toRepeatRule } from "./repeat-rule-row.mapper.js";
 
 type TodoSeriesRow = typeof todoSeries.$inferSelect;
-
-function toRepeatEnd(row: TodoSeriesRow): RepeatEnd {
-  if (row.repeatUntil != null) {
-    return { type: "UNTIL", date: toDateString(row.repeatUntil) };
-  }
-  if (row.repeatCount != null) {
-    return { type: "COUNT", count: row.repeatCount };
-  }
-  return { type: "NEVER" };
-}
-
-function isDayOfWeek(value: string): value is DayOfWeek {
-  return DAYS_OF_WEEK.some((weekday) => weekday === value);
-}
-
-function toInterval(value: number): TodoRepeatInterval {
-  return value === 2 ? 2 : 1;
-}
 
 function toDomain(row: TodoSeriesRow): TodoSeries {
   return TodoSeries.reconstitute({
@@ -47,13 +28,7 @@ function toDomain(row: TodoSeriesRow): TodoSeries {
     visibility: row.visibility,
     scheduledLocalTime: row.scheduledLocalTime,
     timezone: row.timezone,
-    rule: RepeatRule.reconstitute({
-      frequency: row.repeatFrequency,
-      interval: toInterval(row.repeatInterval),
-      weekdays: row.repeatWeekdays?.filter(isDayOfWeek) ?? null,
-      monthDay: row.repeatMonthDay,
-      end: toRepeatEnd(row),
-    }),
+    rule: toRepeatRule(row),
     startDate: toDateString(row.startDate),
     checklistTemplate: row.checklistTemplate,
     sortOrder: row.sortOrder,

@@ -1340,11 +1340,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
                 "type": "array",
               },
+              "occurrenceDate": {
+                "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+                "format": "date",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
               "recurrenceGroupId": {
                 "description": "반복 생성 그룹 ID (null이면 단일 생성)",
                 "type": [
                   "string",
                   "null",
+                ],
+              },
+              "repeat": {
+                "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "DAILY",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "WEEKLY",
+                        ],
+                        "type": "string",
+                      },
+                      "interval": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              1,
+                            ],
+                            "type": "number",
+                          },
+                          {
+                            "enum": [
+                              2,
+                            ],
+                            "type": "number",
+                          },
+                        ],
+                        "description": "1 = 매주, 2 = 격주",
+                      },
+                      "weekdays": {
+                        "description": "반복할 요일",
+                        "items": {
+                          "enum": [
+                            "MON",
+                            "TUE",
+                            "WED",
+                            "THU",
+                            "FRI",
+                            "SAT",
+                            "SUN",
+                          ],
+                          "type": "string",
+                        },
+                        "maxItems": 7,
+                        "minItems": 1,
+                        "type": "array",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "interval",
+                      "weekdays",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "MONTHLY",
+                        ],
+                        "type": "string",
+                      },
+                      "monthDay": {
+                        "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                        "maximum": 31,
+                        "minimum": 1,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "monthDay",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
                 ],
               },
               "scheduledTime": {
@@ -2437,11 +2728,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "type": "array",
             },
+            "occurrenceDate": {
+              "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+              "format": "date",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "type": "string",
+            },
             "recurrenceGroupId": {
               "description": "반복 생성 그룹 ID (null이면 단일 생성)",
               "type": [
                 "string",
                 "null",
+              ],
+            },
+            "repeat": {
+              "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+              "nullable": true,
+              "oneOf": [
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "DAILY",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "WEEKLY",
+                      ],
+                      "type": "string",
+                    },
+                    "interval": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            1,
+                          ],
+                          "type": "number",
+                        },
+                        {
+                          "enum": [
+                            2,
+                          ],
+                          "type": "number",
+                        },
+                      ],
+                      "description": "1 = 매주, 2 = 격주",
+                    },
+                    "weekdays": {
+                      "description": "반복할 요일",
+                      "items": {
+                        "enum": [
+                          "MON",
+                          "TUE",
+                          "WED",
+                          "THU",
+                          "FRI",
+                          "SAT",
+                          "SUN",
+                        ],
+                        "type": "string",
+                      },
+                      "maxItems": 7,
+                      "minItems": 1,
+                      "type": "array",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "interval",
+                    "weekdays",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "MONTHLY",
+                      ],
+                      "type": "string",
+                    },
+                    "monthDay": {
+                      "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                      "maximum": 31,
+                      "minimum": 1,
+                      "type": "integer",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "monthDay",
+                    "end",
+                  ],
+                  "type": "object",
+                },
               ],
             },
             "scheduledTime": {
@@ -3114,11 +3696,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
                 "type": "array",
               },
+              "occurrenceDate": {
+                "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+                "format": "date",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
               "recurrenceGroupId": {
                 "description": "반복 생성 그룹 ID (null이면 단일 생성)",
                 "type": [
                   "string",
                   "null",
+                ],
+              },
+              "repeat": {
+                "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "DAILY",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "WEEKLY",
+                        ],
+                        "type": "string",
+                      },
+                      "interval": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              1,
+                            ],
+                            "type": "number",
+                          },
+                          {
+                            "enum": [
+                              2,
+                            ],
+                            "type": "number",
+                          },
+                        ],
+                        "description": "1 = 매주, 2 = 격주",
+                      },
+                      "weekdays": {
+                        "description": "반복할 요일",
+                        "items": {
+                          "enum": [
+                            "MON",
+                            "TUE",
+                            "WED",
+                            "THU",
+                            "FRI",
+                            "SAT",
+                            "SUN",
+                          ],
+                          "type": "string",
+                        },
+                        "maxItems": 7,
+                        "minItems": 1,
+                        "type": "array",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "interval",
+                      "weekdays",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "MONTHLY",
+                        ],
+                        "type": "string",
+                      },
+                      "monthDay": {
+                        "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                        "maximum": 31,
+                        "minimum": 1,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "monthDay",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
                 ],
               },
               "scheduledTime": {
@@ -3776,11 +4649,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
                 "type": "array",
               },
+              "occurrenceDate": {
+                "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+                "format": "date",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
               "recurrenceGroupId": {
                 "description": "반복 생성 그룹 ID (null이면 단일 생성)",
                 "type": [
                   "string",
                   "null",
+                ],
+              },
+              "repeat": {
+                "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "DAILY",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "WEEKLY",
+                        ],
+                        "type": "string",
+                      },
+                      "interval": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              1,
+                            ],
+                            "type": "number",
+                          },
+                          {
+                            "enum": [
+                              2,
+                            ],
+                            "type": "number",
+                          },
+                        ],
+                        "description": "1 = 매주, 2 = 격주",
+                      },
+                      "weekdays": {
+                        "description": "반복할 요일",
+                        "items": {
+                          "enum": [
+                            "MON",
+                            "TUE",
+                            "WED",
+                            "THU",
+                            "FRI",
+                            "SAT",
+                            "SUN",
+                          ],
+                          "type": "string",
+                        },
+                        "maxItems": 7,
+                        "minItems": 1,
+                        "type": "array",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "interval",
+                      "weekdays",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "MONTHLY",
+                        ],
+                        "type": "string",
+                      },
+                      "monthDay": {
+                        "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                        "maximum": 31,
+                        "minimum": 1,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "monthDay",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
                 ],
               },
               "scheduledTime": {
@@ -5022,11 +6186,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "type": "array",
             },
+            "occurrenceDate": {
+              "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+              "format": "date",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "type": "string",
+            },
             "recurrenceGroupId": {
               "description": "반복 생성 그룹 ID (null이면 단일 생성)",
               "type": [
                 "string",
                 "null",
+              ],
+            },
+            "repeat": {
+              "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+              "nullable": true,
+              "oneOf": [
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "DAILY",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "WEEKLY",
+                      ],
+                      "type": "string",
+                    },
+                    "interval": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            1,
+                          ],
+                          "type": "number",
+                        },
+                        {
+                          "enum": [
+                            2,
+                          ],
+                          "type": "number",
+                        },
+                      ],
+                      "description": "1 = 매주, 2 = 격주",
+                    },
+                    "weekdays": {
+                      "description": "반복할 요일",
+                      "items": {
+                        "enum": [
+                          "MON",
+                          "TUE",
+                          "WED",
+                          "THU",
+                          "FRI",
+                          "SAT",
+                          "SUN",
+                        ],
+                        "type": "string",
+                      },
+                      "maxItems": 7,
+                      "minItems": 1,
+                      "type": "array",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "interval",
+                    "weekdays",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "MONTHLY",
+                      ],
+                      "type": "string",
+                    },
+                    "monthDay": {
+                      "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                      "maximum": 31,
+                      "minimum": 1,
+                      "type": "integer",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "monthDay",
+                    "end",
+                  ],
+                  "type": "object",
+                },
               ],
             },
             "scheduledTime": {
@@ -7318,6 +8773,291 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "email",
+      ],
+      "type": "object",
+    },
+    "FriendTodoListResponseDto": {
+      "properties": {
+        "items": {
+          "items": {
+            "example": {
+              "category": {
+                "color": "#FFB3B3",
+                "id": 1,
+                "name": "중요한 일",
+                "sortOrder": 0,
+              },
+              "commentCount": 0,
+              "completed": false,
+              "completedAt": null,
+              "createdAt": "2024-01-10T12:00:00.000Z",
+              "endDate": "2024-01-15",
+              "id": 1,
+              "isAllDay": false,
+              "itemStats": {
+                "completed": 0,
+                "total": 0,
+              },
+              "items": [],
+              "recurrenceGroupId": null,
+              "scheduledTime": "2024-01-15T09:00:00.000Z",
+              "sortOrder": 0,
+              "startDate": "2024-01-15",
+              "title": "운동하기",
+              "updatedAt": "2024-01-10T12:00:00.000Z",
+              "userId": "clz7x5p8k0010qz0z8z8z8z8z",
+              "visibility": "PUBLIC",
+            },
+            "properties": {
+              "category": {
+                "description": "카테고리 정보",
+                "properties": {
+                  "color": {
+                    "description": "카테고리 색상 (HEX 7자)",
+                    "type": "string",
+                  },
+                  "id": {
+                    "description": "카테고리 ID (양의 정수)",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  "name": {
+                    "description": "카테고리 이름",
+                    "type": "string",
+                  },
+                  "sortOrder": {
+                    "description": "카테고리 정렬 순서 (작을수록 위)",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "color",
+                  "sortOrder",
+                ],
+                "type": "object",
+              },
+              "commentCount": {
+                "description": "댓글 수 (삭제된 댓글 제외 — 목록 진입점 뱃지용)",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "completed": {
+                "description": "완료 상태",
+                "type": "boolean",
+              },
+              "completedAt": {
+                "description": "완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미완료 시 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "content": {
+                "description": "할 일 내용 (deprecated, 하위 호환용 — 항상 null)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "createdAt": {
+                "description": "생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "endDate": {
+                "description": "종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "id": {
+                "description": "할 일 고유 ID (양의 정수)",
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer",
+              },
+              "isAllDay": {
+                "description": "종일 일정 여부",
+                "type": "boolean",
+              },
+              "itemStats": {
+                "description": "하위 항목 진행 통계 (카운터 뱃지/진행률 바용)",
+                "properties": {
+                  "completed": {
+                    "description": "완료된 하위 항목 수",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  "total": {
+                    "description": "전체 하위 항목 수",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "total",
+                  "completed",
+                ],
+                "type": "object",
+              },
+              "items": {
+                "description": "하위 항목 목록 (체크리스트, sortOrder 오름차순)",
+                "items": {
+                  "properties": {
+                    "completed": {
+                      "description": "완료 상태",
+                      "type": "boolean",
+                    },
+                    "createdAt": {
+                      "description": "생성 시각 (ISO 8601 UTC)",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string",
+                    },
+                    "id": {
+                      "description": "하위 항목 고유 ID",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    "sortOrder": {
+                      "description": "정렬 순서 (작을수록 위)",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    "title": {
+                      "description": "하위 항목 제목",
+                      "type": "string",
+                    },
+                    "updatedAt": {
+                      "description": "수정 시각 (ISO 8601 UTC)",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "completed",
+                    "sortOrder",
+                    "createdAt",
+                    "updatedAt",
+                  ],
+                  "type": "object",
+                },
+                "type": "array",
+              },
+              "recurrenceGroupId": {
+                "description": "반복 생성 그룹 ID (null이면 단일 생성)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "scheduledTime": {
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "sortOrder": {
+                "description": "정렬 순서 (작을수록 위)",
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer",
+              },
+              "startDate": {
+                "description": "시작 날짜 (YYYY-MM-DD, 예: 2024-01-15)",
+                "type": "string",
+              },
+              "title": {
+                "description": "할 일 제목",
+                "type": "string",
+              },
+              "updatedAt": {
+                "description": "수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "userId": {
+                "description": "사용자 ID (CUID 25자)",
+                "format": "cuid",
+                "pattern": "^[cC][0-9a-z]{6,}$",
+                "type": "string",
+              },
+              "visibility": {
+                "description": "공개 범위 (PUBLIC | FRIENDS | PRIVATE)",
+                "enum": [
+                  "PUBLIC",
+                  "PRIVATE",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "userId",
+              "title",
+              "sortOrder",
+              "completed",
+              "completedAt",
+              "startDate",
+              "endDate",
+              "scheduledTime",
+              "isAllDay",
+              "visibility",
+              "recurrenceGroupId",
+              "category",
+              "items",
+              "itemStats",
+              "commentCount",
+              "createdAt",
+              "updatedAt",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "pagination": {
+          "properties": {
+            "hasNext": {
+              "type": "boolean",
+            },
+            "nextCursor": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "nullable": true,
+              "type": "integer",
+            },
+            "size": {
+              "type": "number",
+            },
+          },
+          "required": [
+            "nextCursor",
+            "hasNext",
+            "size",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "items",
+        "pagination",
       ],
       "type": "object",
     },
@@ -13296,11 +15036,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "type": "array",
             },
+            "occurrenceDate": {
+              "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+              "format": "date",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "type": "string",
+            },
             "recurrenceGroupId": {
               "description": "반복 생성 그룹 ID (null이면 단일 생성)",
               "type": [
                 "string",
                 "null",
+              ],
+            },
+            "repeat": {
+              "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+              "nullable": true,
+              "oneOf": [
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "DAILY",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "WEEKLY",
+                      ],
+                      "type": "string",
+                    },
+                    "interval": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            1,
+                          ],
+                          "type": "number",
+                        },
+                        {
+                          "enum": [
+                            2,
+                          ],
+                          "type": "number",
+                        },
+                      ],
+                      "description": "1 = 매주, 2 = 격주",
+                    },
+                    "weekdays": {
+                      "description": "반복할 요일",
+                      "items": {
+                        "enum": [
+                          "MON",
+                          "TUE",
+                          "WED",
+                          "THU",
+                          "FRI",
+                          "SAT",
+                          "SUN",
+                        ],
+                        "type": "string",
+                      },
+                      "maxItems": 7,
+                      "minItems": 1,
+                      "type": "array",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "interval",
+                    "weekdays",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "MONTHLY",
+                      ],
+                      "type": "string",
+                    },
+                    "monthDay": {
+                      "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                      "maximum": 31,
+                      "minimum": 1,
+                      "type": "integer",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "monthDay",
+                    "end",
+                  ],
+                  "type": "object",
+                },
               ],
             },
             "scheduledTime": {
@@ -18359,11 +20390,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
                 "type": "array",
               },
+              "occurrenceDate": {
+                "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+                "format": "date",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
               "recurrenceGroupId": {
                 "description": "반복 생성 그룹 ID (null이면 단일 생성)",
                 "type": [
                   "string",
                   "null",
+                ],
+              },
+              "repeat": {
+                "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+                "nullable": true,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "DAILY",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "WEEKLY",
+                        ],
+                        "type": "string",
+                      },
+                      "interval": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              1,
+                            ],
+                            "type": "number",
+                          },
+                          {
+                            "enum": [
+                              2,
+                            ],
+                            "type": "number",
+                          },
+                        ],
+                        "description": "1 = 매주, 2 = 격주",
+                      },
+                      "weekdays": {
+                        "description": "반복할 요일",
+                        "items": {
+                          "enum": [
+                            "MON",
+                            "TUE",
+                            "WED",
+                            "THU",
+                            "FRI",
+                            "SAT",
+                            "SUN",
+                          ],
+                          "type": "string",
+                        },
+                        "maxItems": 7,
+                        "minItems": 1,
+                        "type": "array",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "interval",
+                      "weekdays",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "end": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "description": "계속 반복",
+                                "enum": [
+                                  "NEVER",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "date": {
+                                "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                "type": "string",
+                              },
+                              "type": {
+                                "description": "날짜까지 반복",
+                                "enum": [
+                                  "UNTIL",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "date",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "count": {
+                                "description": "반복 횟수",
+                                "maximum": 365,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                              "type": {
+                                "description": "정한 횟수만큼 반복",
+                                "enum": [
+                                  "COUNT",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "type",
+                              "count",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "frequency": {
+                        "enum": [
+                          "MONTHLY",
+                        ],
+                        "type": "string",
+                      },
+                      "monthDay": {
+                        "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                        "maximum": 31,
+                        "minimum": 1,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "frequency",
+                      "monthDay",
+                      "end",
+                    ],
+                    "type": "object",
+                  },
                 ],
               },
               "scheduledTime": {
@@ -18665,11 +20987,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           },
           "type": "array",
         },
+        "occurrenceDate": {
+          "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+          "format": "date",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
         "recurrenceGroupId": {
           "description": "반복 생성 그룹 ID (null이면 단일 생성)",
           "type": [
             "string",
             "null",
+          ],
+        },
+        "repeat": {
+          "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+          "nullable": true,
+          "oneOf": [
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "DAILY",
+                  ],
+                  "type": "string",
+                },
+              },
+              "required": [
+                "frequency",
+                "end",
+              ],
+              "type": "object",
+            },
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "WEEKLY",
+                  ],
+                  "type": "string",
+                },
+                "interval": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        1,
+                      ],
+                      "type": "number",
+                    },
+                    {
+                      "enum": [
+                        2,
+                      ],
+                      "type": "number",
+                    },
+                  ],
+                  "description": "1 = 매주, 2 = 격주",
+                },
+                "weekdays": {
+                  "description": "반복할 요일",
+                  "items": {
+                    "enum": [
+                      "MON",
+                      "TUE",
+                      "WED",
+                      "THU",
+                      "FRI",
+                      "SAT",
+                      "SUN",
+                    ],
+                    "type": "string",
+                  },
+                  "maxItems": 7,
+                  "minItems": 1,
+                  "type": "array",
+                },
+              },
+              "required": [
+                "frequency",
+                "interval",
+                "weekdays",
+                "end",
+              ],
+              "type": "object",
+            },
+            {
+              "properties": {
+                "end": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "type": {
+                          "description": "계속 반복",
+                          "enum": [
+                            "NEVER",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "date": {
+                          "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "type": "string",
+                        },
+                        "type": {
+                          "description": "날짜까지 반복",
+                          "enum": [
+                            "UNTIL",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "date",
+                      ],
+                      "type": "object",
+                    },
+                    {
+                      "properties": {
+                        "count": {
+                          "description": "반복 횟수",
+                          "maximum": 365,
+                          "minimum": 1,
+                          "type": "integer",
+                        },
+                        "type": {
+                          "description": "정한 횟수만큼 반복",
+                          "enum": [
+                            "COUNT",
+                          ],
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "type",
+                        "count",
+                      ],
+                      "type": "object",
+                    },
+                  ],
+                },
+                "frequency": {
+                  "enum": [
+                    "MONTHLY",
+                  ],
+                  "type": "string",
+                },
+                "monthDay": {
+                  "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                  "maximum": 31,
+                  "minimum": 1,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "frequency",
+                "monthDay",
+                "end",
+              ],
+              "type": "object",
+            },
           ],
         },
         "scheduledTime": {
@@ -20424,11 +23037,302 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "type": "array",
             },
+            "occurrenceDate": {
+              "description": "소유자에게만 주는 반복 회차의 원래 날짜 (YYYY-MM-DD, 다른 날로 옮겨도 변하지 않는다. 단일 할 일은 null, 구버전 서버 응답에는 키가 없다)",
+              "format": "date",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "type": "string",
+            },
             "recurrenceGroupId": {
               "description": "반복 생성 그룹 ID (null이면 단일 생성)",
               "type": [
                 "string",
                 "null",
+              ],
+            },
+            "repeat": {
+              "description": "소유자에게만 주는 반복 규칙 (단일 할 일·규칙이 없는 옛 묶음은 null, 끝난 규칙도 그대로 준다. 구버전 서버 응답에는 키가 없다)",
+              "nullable": true,
+              "oneOf": [
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "DAILY",
+                      ],
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "WEEKLY",
+                      ],
+                      "type": "string",
+                    },
+                    "interval": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            1,
+                          ],
+                          "type": "number",
+                        },
+                        {
+                          "enum": [
+                            2,
+                          ],
+                          "type": "number",
+                        },
+                      ],
+                      "description": "1 = 매주, 2 = 격주",
+                    },
+                    "weekdays": {
+                      "description": "반복할 요일",
+                      "items": {
+                        "enum": [
+                          "MON",
+                          "TUE",
+                          "WED",
+                          "THU",
+                          "FRI",
+                          "SAT",
+                          "SUN",
+                        ],
+                        "type": "string",
+                      },
+                      "maxItems": 7,
+                      "minItems": 1,
+                      "type": "array",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "interval",
+                    "weekdays",
+                    "end",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "properties": {
+                    "end": {
+                      "oneOf": [
+                        {
+                          "properties": {
+                            "type": {
+                              "description": "계속 반복",
+                              "enum": [
+                                "NEVER",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "date": {
+                              "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "type": "string",
+                            },
+                            "type": {
+                              "description": "날짜까지 반복",
+                              "enum": [
+                                "UNTIL",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "date",
+                          ],
+                          "type": "object",
+                        },
+                        {
+                          "properties": {
+                            "count": {
+                              "description": "반복 횟수",
+                              "maximum": 365,
+                              "minimum": 1,
+                              "type": "integer",
+                            },
+                            "type": {
+                              "description": "정한 횟수만큼 반복",
+                              "enum": [
+                                "COUNT",
+                              ],
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "type",
+                            "count",
+                          ],
+                          "type": "object",
+                        },
+                      ],
+                    },
+                    "frequency": {
+                      "enum": [
+                        "MONTHLY",
+                      ],
+                      "type": "string",
+                    },
+                    "monthDay": {
+                      "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                      "maximum": 31,
+                      "minimum": 1,
+                      "type": "integer",
+                    },
+                  },
+                  "required": [
+                    "frequency",
+                    "monthDay",
+                    "end",
+                  ],
+                  "type": "object",
+                },
               ],
             },
             "scheduledTime": {
@@ -52311,7 +55215,7 @@ TODO_0842: 반복 할 일은 최대 30개까지 만들 수 있습니다.",
               "schema": {
                 "properties": {
                   "data": {
-                    "$ref": "#/components/schemas/TodoListResponseDto",
+                    "$ref": "#/components/schemas/FriendTodoListResponseDto",
                   },
                   "success": {
                     "example": true,

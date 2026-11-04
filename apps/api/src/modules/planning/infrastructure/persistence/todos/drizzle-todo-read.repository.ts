@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { FriendTodo, Todo as TodoResponse } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, count, eq, gte, isNotNull, isNull, or, sql } from "drizzle-orm";
@@ -21,7 +21,16 @@ import type { TodoReadRepositoryPort } from "../../../application/ports/todos/to
 import { todoDateCondition } from "./todo-date.filter.js";
 import { TodoMapper } from "./todo-response.mapper.js";
 
-const todoWith = {
+const todoSeriesRuleColumns = {
+  repeatFrequency: true,
+  repeatInterval: true,
+  repeatWeekdays: true,
+  repeatMonthDay: true,
+  repeatUntil: true,
+  repeatCount: true,
+} as const;
+
+const friendTodoWith = {
   category: { columns: { id: true, name: true, color: true, sortOrder: true } },
   items: {
     columns: {
@@ -35,6 +44,19 @@ const todoWith = {
     orderBy: { sortOrder: "asc" },
   },
 } as const;
+
+const todoWith = {
+  ...friendTodoWith,
+  series: { columns: todoSeriesRuleColumns },
+} as const;
+
+function orderByIds<Row extends { id: number }>(rows: Row[], ids: readonly number[]): Row[] {
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  return ids.flatMap((id) => {
+    const row = rowById.get(id);
+    return row == null ? [] : [row];
+  });
+}
 
 /** 조회 projection과 집계만 소유하며 활성 CLS transaction에 참여한다. */
 @Injectable()
@@ -51,14 +73,30 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
   }
 
   async findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]> {
-    return this.findPage(params);
+    const ids = await this.findPageIds(params, false);
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db.query.todo.findMany({
+      where: { id: { in: ids } },
+      with: todoWith,
+    });
+    return TodoMapper.toManyResponse(orderByIds(rows, ids));
   }
 
-  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<TodoResponse[]> {
-    return this.findPage({ ...params, userId: params.friendUserId }, true);
+  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]> {
+    const ids = await this.findPageIds({ ...params, userId: params.friendUserId }, true);
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db.query.todo.findMany({
+      where: { id: { in: ids } },
+      with: friendTodoWith,
+    });
+    return TodoMapper.toManyFriendResponse(orderByIds(rows, ids));
   }
 
-  private async findPage(params: FindTodosParams, publicOnly = false): Promise<TodoResponse[]> {
+  private async findPageIds(params: FindTodosParams, publicOnly: boolean): Promise<number[]> {
     const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
     let anchorCondition;
     if (cursor != null) {
@@ -90,21 +128,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       )
       .orderBy(asc(todoCategory.sortOrder), asc(todo.sortOrder), asc(todo.id))
       .limit(size + 1);
-    if (ids.length === 0) {
-      return [];
-    }
-
-    const rows = await this.db.query.todo.findMany({
-      where: { id: { in: ids.map((row) => row.id) } },
-      with: todoWith,
-    });
-    const rowById = new Map(rows.map((row) => [row.id, row]));
-    return TodoMapper.toManyResponse(
-      ids.flatMap(({ id }) => {
-        const row = rowById.get(id);
-        return row == null ? [] : [row];
-      }),
-    );
+    return ids.map((row) => row.id);
   }
 
   countCompletedByUser(userId: string): Promise<number> {

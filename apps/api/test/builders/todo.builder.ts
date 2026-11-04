@@ -153,6 +153,11 @@ export class TodoBuilder {
 
   // === 반복 생성 그룹 관련 ===
 
+  withOccurrenceDate(occurrenceDate: Date | null): TodoBuilder {
+    this.data.occurrenceDate = occurrenceDate;
+    return this;
+  }
+
   withSeriesId(seriesId: string | null): TodoBuilder {
     this.data.seriesId = seriesId;
     return this;

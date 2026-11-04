@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { FriendTodo, Todo as TodoResponse } from "@aido/api";
 
 import type { FindFriendTodosParams, FindTodosParams } from "../../models/todos/todo.types.js";
 
@@ -29,7 +29,7 @@ export interface TodoReadRepositoryPort {
 
   findManyByUserId(params: FindTodosParams): Promise<TodoResponse[]>;
 
-  findPublicTodosByUserId(params: FindFriendTodosParams): Promise<TodoResponse[]>;
+  findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodo[]>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
   countCategoryUsage(userId: string, categoryId: number): Promise<number>;

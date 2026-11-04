@@ -160,28 +160,6 @@ describe("RepeatRule — 반복 규칙", () => {
   });
 
   describe("변환·동등성", () => {
-    it.each<{ spec: RepeatSpec; expected: string }>([
-      { spec: { frequency: "DAILY", end: NEVER }, expected: "FREQ=DAILY" },
-      {
-        spec: {
-          frequency: "WEEKLY",
-          interval: 2,
-          weekdays: ["MON", "FRI"],
-          end: { type: "COUNT", count: 10 },
-        },
-        expected: "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,FR;COUNT=10",
-      },
-      {
-        spec: { frequency: "MONTHLY", monthDay: 15, end: { type: "UNTIL", date: "2026-12-31" } },
-        expected: "FREQ=MONTHLY;BYMONTHDAY=15;UNTIL=20261231",
-      },
-    ])("RRULE $expected", ({ spec, expected }) => {
-      // When
-      const rrule = RepeatRule.from(spec).toRRule();
-      // Then
-      expect(rrule).toBe(expected);
-    });
-
     it("요일 순서가 달라도 같은 규칙이고 간격이 다르면 다른 규칙이다", () => {
       // Given
       const rule = RepeatRule.weekly(["MON", "FRI"], 1, NEVER);

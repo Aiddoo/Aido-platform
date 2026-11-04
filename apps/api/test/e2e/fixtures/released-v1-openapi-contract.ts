@@ -302,8 +302,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: 반복 할 일 범위 수정. UpdateTodoDto에 optional scope·repeat·checklist만 추가. 생략하면 THIS_ONLY·변경 없음으로 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preTodoSeriesScopeSchemasFingerprint:
 		"09265fd250a568883c771f60696823e1dea865be4572785410714784fbd74fd6",
-	schemasFingerprint:
+	/** 1.15.0: 할 일 목록 반복 정보. 소유자가 보는 할 일 응답(TodoResponseDto·TodoListResponseDto·CreateTodoResponseDto 등 todo를 담은 응답)에 optional repeat·occurrenceDate만 추가했다. 구버전 Zod는 strip 모드라 모르는 키를 버리고, 친구에게 보이는 응답에는 넣지 않는다. test/e2e/todo-list-repeat.e2e-spec.ts가 출시 앱 응답 스키마 파싱으로 증명한다. */
+	preTodoListRepeatSchemasFingerprint:
 		"3aac5ad1ccef735e82558836423631077517f9017ea1f62906ce6858f2d30544",
+	schemasFingerprint:
+		"35ccdb921f3151cb1420e75f83483e115975071ff3a8997fb6af1fbaad4cff0f",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
@@ -334,6 +337,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: DELETE /todos/{id}에 선택 query scope(생략 시 THIS_ONLY), POST·PATCH·DELETE /todos 오류 응답 enum에 반복 코드(TODO_0813·0841~0846)만 추가. 생략한 요청의 동작·응답 shape는 같고, 구버전 앱은 모르는 코드를 서버 message로 보여 준다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
 	preTodoSeriesScopePathsFingerprint:
 		"acaf29b73c6284c5ee7122d51074301477f133fbf57fbfdcb7b532ce75b2ed0b",
-	pathsFingerprint:
+	/** 1.15.0: 친구의 할 일 목록(GET /todos/friends/{userId})의 응답 schema 이름만 TodoListResponseDto에서 FriendTodoListResponseDto로 나눴다. 소유자 응답에만 repeat·occurrenceDate를 더하려고 분리했고, 친구 응답의 필드·타입·상태 코드는 이전과 같다. */
+	preTodoListRepeatPathsFingerprint:
 		"db0449039f7686849cdcbee5ed817a12c90001dcdd3db5bb32b66e2f84cf355d",
+	pathsFingerprint:
+		"9809c76e5f1d18f098fed794b83597baac7323d09bd2cf6cc0ec9bd2f52b7e60",
 } as const;

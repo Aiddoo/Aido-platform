@@ -183,26 +183,6 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
     return new RepeatRule({ ...this.value, end: { type: "COUNT", count: Math.max(remaining, 1) } });
   }
 
-  toRRule(): string {
-    const { frequency, interval, weekdays, monthDay, end } = this.value;
-    const parts = [`FREQ=${frequency}`];
-    if (interval !== 1) {
-      parts.push(`INTERVAL=${interval}`);
-    }
-    if (weekdays != null) {
-      parts.push(`BYDAY=${weekdays.map((weekday) => weekday.slice(0, 2)).join(",")}`);
-    }
-    if (monthDay != null) {
-      parts.push(`BYMONTHDAY=${monthDay}`);
-    }
-    match(end)
-      .with({ type: "NEVER" }, () => undefined)
-      .with({ type: "UNTIL" }, ({ date }) => parts.push(`UNTIL=${date.replaceAll("-", "")}`))
-      .with({ type: "COUNT" }, ({ count }) => parts.push(`COUNT=${count}`))
-      .exhaustive();
-    return parts.join(";");
-  }
-
   *#walk(seriesStart: string, lower: string, upper: string): Generator<string> {
     yield* match(this.value.frequency)
       .with("DAILY", () => walkDaily(lower, upper))

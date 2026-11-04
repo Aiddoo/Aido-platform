@@ -11,6 +11,7 @@
  */
 import { TodoBuilder } from "#test/builders/index";
 
+import type { RepeatRuleRow } from "../series/repeat-rule-row.mapper.js";
 import { TodoMapper } from "./todo-response.mapper.js";
 import type { TodoItemData } from "./todo-row.types.js";
 
@@ -19,7 +20,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
     TodoBuilder.resetIdCounter();
   });
 
-  describe("toResponse", () => {
+  describe("toFriendResponse", () => {
     it("Todo 엔티티를 올바른 응답 형식으로 변환해야 한다", () => {
       // Given - 변환할 Todo 엔티티 준비
       const todo = TodoBuilder.create("user-123")
@@ -43,7 +44,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         .build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - 올바른 응답 형식으로 변환되었는지 검증
       expect(result).toEqual({
@@ -80,7 +81,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
       const todo = TodoBuilder.create("user-123").completed(completedAt).build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - 완료 상태가 올바르게 변환되었는지 검증
       expect(result.completed).toBe(true);
@@ -92,7 +93,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
       const todo = TodoBuilder.create("user-123").withEndDate(null).withScheduledTime(null).build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - null 값이 올바르게 유지되는지 검증
       expect(result.endDate).toBeNull();
@@ -104,7 +105,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
       const todo = TodoBuilder.create("user-123").asPrivate().build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - PRIVATE visibility가 올바르게 변환되었는지 검증
       expect(result.visibility).toBe("PRIVATE");
@@ -118,7 +119,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         .build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - 하루 종일 플래그가 올바르게 변환되었는지 검증
       expect(result.isAllDay).toBe(true);
@@ -132,7 +133,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         .build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - 카테고리 정보가 올바르게 변환되었는지 검증
       expect(result.category).toEqual({
@@ -148,7 +149,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
       const todo = TodoBuilder.create("user-123").withSortOrder(5).build();
 
       // When - Mapper 호출
-      const result = TodoMapper.toResponse(todo);
+      const result = TodoMapper.toFriendResponse(todo);
 
       // Then - sortOrder가 올바르게 변환되었는지 검증
       expect(result.sortOrder).toBe(5);
@@ -160,7 +161,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         const todo = TodoBuilder.create("user-123").withItems([]).build();
 
         // When - Mapper 호출
-        const result = TodoMapper.toResponse(todo);
+        const result = TodoMapper.toFriendResponse(todo);
 
         // Then - items가 빈 배열이고 itemStats가 0인지 검증
         expect(result.items).toEqual([]);
@@ -190,7 +191,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         const todo = TodoBuilder.create("user-123").withItems(items).build();
 
         // When - Mapper 호출
-        const result = TodoMapper.toResponse(todo);
+        const result = TodoMapper.toFriendResponse(todo);
 
         // Then - items가 올바르게 매핑되고 itemStats가 정확한지 검증
         expect(result.items).toHaveLength(2);
@@ -244,7 +245,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         const todo = TodoBuilder.create("user-123").withItems(items).build();
 
         // When - Mapper 호출
-        const result = TodoMapper.toResponse(todo);
+        const result = TodoMapper.toFriendResponse(todo);
 
         // Then - itemStats가 정확한지 검증
         expect(result.itemStats).toEqual({ total: 3, completed: 1 });
@@ -281,7 +282,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
         const todo = TodoBuilder.create("user-123").withItems(items).build();
 
         // When - Mapper 호출
-        const result = TodoMapper.toResponse(todo);
+        const result = TodoMapper.toFriendResponse(todo);
 
         // Then - itemStats가 전부 완료로 정확한지 검증
         expect(result.itemStats).toEqual({ total: 3, completed: 3 });
@@ -289,12 +290,12 @@ describe("TodoMapper — 할 일 매퍼", () => {
     });
   });
 
-  describe("toManyResponse", () => {
+  describe("toManyFriendResponse", () => {
     it("빈 배열을 올바르게 처리해야 한다", () => {
       // Given - 빈 배열 준비
 
       // When - Mapper 호출
-      const result = TodoMapper.toManyResponse([]);
+      const result = TodoMapper.toManyFriendResponse([]);
 
       // Then - 빈 배열이 반환되는지 검증
       expect(result).toEqual([]);
@@ -309,7 +310,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
       ];
 
       // When - Mapper 호출
-      const result = TodoMapper.toManyResponse(todos);
+      const result = TodoMapper.toManyFriendResponse(todos);
 
       // Then - 여러 Todo가 올바르게 변환되었는지 검증
       expect(result).toHaveLength(3);
@@ -326,7 +327,7 @@ describe("TodoMapper — 할 일 매퍼", () => {
       const todos = [TodoBuilder.create("user-123").build()];
 
       // When - Mapper 호출
-      const result = TodoMapper.toManyResponse(todos);
+      const result = TodoMapper.toManyFriendResponse(todos);
 
       // Then - 변환된 응답에 필수 필드가 포함되어 있는지 검증
       expect(result[0]).toHaveProperty("id");
@@ -362,11 +363,75 @@ describe("TodoMapper — 할 일 매퍼", () => {
       ];
 
       // When - Mapper 호출
-      const result = TodoMapper.toManyResponse(todos);
+      const result = TodoMapper.toManyFriendResponse(todos);
 
       // Then - 각 Todo의 카테고리 정보가 올바르게 변환되었는지 검증
       expect(result[0]?.category.name).toBe("중요한 일");
       expect(result[1]?.category.name).toBe("할 일");
+    });
+  });
+
+  describe("toResponse", () => {
+    const WEEKLY_RULE = {
+      repeatFrequency: "WEEKLY",
+      repeatInterval: 2,
+      repeatWeekdays: ["MON", "THU"],
+      repeatMonthDay: null,
+      repeatUntil: null,
+      repeatCount: null,
+    } satisfies RepeatRuleRow;
+
+    it("규칙이 없으면 repeat와 occurrenceDate가 null이다", () => {
+      // Given
+      const todo = TodoBuilder.create("user-123").build();
+      // When
+      const result = TodoMapper.toResponse({ ...todo, series: null });
+      // Then
+      expect(result).toMatchObject({ repeat: null, occurrenceDate: null });
+    });
+
+    it("규칙 행을 반복 규칙 응답으로 바꾸고 회차 날짜를 YYYY-MM-DD로 준다", () => {
+      // Given
+      const todo = TodoBuilder.create("user-123")
+        .withSeriesId("series-1")
+        .withOccurrenceDate(new Date("2026-11-02T00:00:00.000Z"))
+        .withStartDate(new Date("2026-11-04T00:00:00.000Z"))
+        .build();
+      // When
+      const result = TodoMapper.toResponse({ ...todo, series: WEEKLY_RULE });
+      // Then
+      expect(result).toMatchObject({
+        repeat: {
+          frequency: "WEEKLY",
+          interval: 2,
+          weekdays: ["MON", "THU"],
+          end: { type: "NEVER" },
+        },
+        occurrenceDate: "2026-11-02",
+        startDate: "2026-11-04",
+      });
+    });
+
+    it("끝난 규칙도 종료 조건을 그대로 준다", () => {
+      // Given
+      const todo = TodoBuilder.create("user-123").withSeriesId("series-1").build();
+      // When
+      const result = TodoMapper.toResponse({
+        ...todo,
+        series: { ...WEEKLY_RULE, repeatUntil: new Date("2026-12-31T00:00:00.000Z") },
+      });
+      // Then
+      expect(result.repeat).toMatchObject({ end: { type: "UNTIL", date: "2026-12-31" } });
+    });
+
+    it("친구에게 주는 응답에는 repeat와 occurrenceDate 키가 없다", () => {
+      // Given
+      const todo = TodoBuilder.create("user-123").withSeriesId("series-1").build();
+      // When
+      const result = TodoMapper.toFriendResponse(todo);
+      // Then
+      expect(result).not.toHaveProperty("repeat");
+      expect(result).not.toHaveProperty("occurrenceDate");
     });
   });
 });

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { TODO_COMMENT_LIMITS } from "../../../vocabulary/todo-comment.constants.js";
-import { todoSchema } from "../../todo/v1/todo.response.js";
+import { friendTodoSchema } from "../../todo/v1/todo.response.js";
 
 export const todoCommentAuthorSchema = z
   .object({
@@ -227,7 +227,7 @@ export const todoConversationResponseSchema = z
 
 export const todoDetailsResponseSchema = z
   .object({
-    todo: todoSchema.describe("댓글 화면에 표시할 할 일"),
+    todo: friendTodoSchema.describe("댓글 화면에 표시할 할 일"),
     owner: todoCommentAuthorSchema.omit({ isTodoOwner: true }).describe("할 일 작성자"),
     permissions: z
       .object({
