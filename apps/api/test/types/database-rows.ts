@@ -15,6 +15,7 @@ export type PushDeliveryAttempt = typeof tables.pushDeliveryAttempt.$inferSelect
 export type PushDispatch = typeof tables.pushDispatch.$inferSelect;
 export type PushDispatchOutbox = typeof tables.pushDispatchOutbox.$inferSelect;
 export type PushRateLimitReservation = typeof tables.pushRateLimitReservation.$inferSelect;
+export type PushDevice = typeof tables.pushDevice.$inferSelect;
 export type PushToken = typeof tables.pushToken.$inferSelect;
 export type RecurringSuggestion = typeof tables.recurringSuggestion.$inferSelect;
 export type ReminderNudge = typeof tables.reminderNudge.$inferSelect;

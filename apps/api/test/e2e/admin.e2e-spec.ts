@@ -160,8 +160,8 @@ describe("관리자 E2E", () => {
     it("접수 즉시 202와 캠페인 ID를 돌려주고 분배·발송 결과를 조회로 보여 준다", async () => {
       // Given
       const admin = await createAdminUser("admin-campaign@example.com", "Test1234!");
-      await registerRecipient("campaign-recipient-1@example.com", "device-one");
-      await registerRecipient("campaign-recipient-2@example.com", "device-two");
+      await registerRecipient("campaign-recipient-1@example.com", "ios_device-one");
+      await registerRecipient("campaign-recipient-2@example.com", "android_device-two");
       jobRuntime().enqueueCalls.splice(0);
 
       // When
@@ -198,7 +198,7 @@ describe("관리자 E2E", () => {
     it("같은 요청 ID로 다시 보내면 같은 캠페인을 돌려주고 분배 작업을 하나만 남긴다", async () => {
       // Given
       const admin = await createAdminUser("admin-replay@example.com", "Test1234!");
-      await registerRecipient("replay-recipient@example.com", "device-replay");
+      await registerRecipient("replay-recipient@example.com", "ios_device-replay");
       jobRuntime().enqueueCalls.splice(0);
       const send = () =>
         request(ctx.app.getHttpServer())
@@ -221,7 +221,7 @@ describe("관리자 E2E", () => {
     it("같은 요청 ID로 다른 내용을 보내면 409를 반환한다", async () => {
       // Given
       const admin = await createAdminUser("admin-conflict@example.com", "Test1234!");
-      await registerRecipient("conflict-recipient@example.com", "device-conflict");
+      await registerRecipient("conflict-recipient@example.com", "ios_device-conflict");
       await request(ctx.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)

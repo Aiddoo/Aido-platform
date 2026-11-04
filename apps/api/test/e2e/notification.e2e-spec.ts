@@ -1,15 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { notificationInboxResponseSchema, notificationListResponseSchema } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
-import request from "supertest";
-
 import {
-  MARKETING_PUSH_OPT_OUT_TOKEN,
-  type MarketingPushOptOutTokenPort,
-} from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
-import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
-import { requireRecord } from "#api/platform/database/database-error.util";
+  notificationInboxResponseSchema,
+  notificationListResponseSchema,
+  pushDeviceResponseSchema,
+} from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 /**
  * Notification E2E 테스트
  *
@@ -23,7 +19,21 @@ import { requireRecord } from "#api/platform/database/database-error.util";
  * 3. 읽지 않은 알림 수 조회
  * 4. 알림 읽음 처리
  */
-import { notification, userConsent } from "#api/platform/database/schema/index";
+import { eq } from "drizzle-orm";
+import request from "supertest";
+
+import {
+  MARKETING_PUSH_OPT_OUT_TOKEN,
+  type MarketingPushOptOutTokenPort,
+} from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
+import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
+import { requireRecord } from "#api/platform/database/database-error.util";
+import {
+  notification,
+  pushDevice,
+  pushToken,
+  userConsent,
+} from "#api/platform/database/schema/index";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -115,7 +125,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-            deviceId: "test-device-001",
+            deviceId: "ios_test-device-001",
           })
           .expect(201);
 
@@ -134,7 +144,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-            deviceId: "test-device-001",
+            deviceId: "ios_test-device-001",
           })
           .expect(201);
 
@@ -144,7 +154,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[yyyyyyyyyyyyyyyyyyyyyy]",
-            deviceId: "test-device-001",
+            deviceId: "ios_test-device-001",
           })
           .expect(201);
 
@@ -164,7 +174,7 @@ describe("알림 E2E", () => {
           .set("Accept-Language", "en-US,en;q=0.9")
           .send({
             token: "ExponentPushToken[locale-en-xxxxxxxxxxxx]",
-            deviceId: "test-device-locale-en",
+            deviceId: "ios_test-device-locale-en",
           })
           .expect(201);
 
@@ -185,7 +195,7 @@ describe("알림 E2E", () => {
           .set("Accept-Language", "en")
           .send({
             token: "ExponentPushToken[locale-none-xxxxxxxxxx]",
-            deviceId: "test-device-locale-none",
+            deviceId: "ios_test-device-locale-none",
           })
           .expect(201);
 
@@ -195,7 +205,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[locale-none-old-device]",
-            deviceId: "test-device-locale-none-old",
+            deviceId: "ios_test-device-locale-none-old",
           })
           .expect(201);
 
@@ -218,7 +228,7 @@ describe("알림 E2E", () => {
           .set("Accept-Language", "ja-JP")
           .send({
             token: "ExponentPushToken[locale-ja-xxxxxxxxxxxx]",
-            deviceId: "test-device-locale-ja",
+            deviceId: "ios_test-device-locale-ja",
           })
           .expect(201);
 
@@ -239,7 +249,7 @@ describe("알림 E2E", () => {
           .set("Accept-Language", "en")
           .send({
             token: "ExponentPushToken[locale-switch-xxxxxxxx]",
-            deviceId: "test-device-locale-switch",
+            deviceId: "ios_test-device-locale-switch",
           })
           .expect(201);
 
@@ -250,7 +260,7 @@ describe("알림 E2E", () => {
           .set("Accept-Language", "ko")
           .send({
             token: "ExponentPushToken[locale-switch-xxxxxxxx]",
-            deviceId: "test-device-locale-switch",
+            deviceId: "ios_test-device-locale-switch",
           })
           .expect(201);
 
@@ -272,7 +282,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "invalid-token-format",
-            deviceId: "test-device-002",
+            deviceId: "ios_test-device-002",
           })
           .expect(400);
 
@@ -295,6 +305,133 @@ describe("알림 E2E", () => {
       });
     });
 
+    describe("PUT /notifications/push-devices/:deviceId - 푸시 기기 보고", () => {
+      it("허용 권한과 토큰을 보고하면 계약 응답을 돌려주고 토큰을 플랫폼과 함께 저장한다", async () => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser("push-device-1@test.com", password);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .put("/v1/notifications/push-devices/android_e2e-1")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set("X-App-Version", "1.14.2")
+          .send({
+            permission: { status: "GRANTED", canAskAgain: false },
+            token: "ExponentPushToken[push-device-e2e-1]",
+            payloadVersion: 2,
+          })
+          .expect(200);
+
+        // Then
+        expect(pushDeviceResponseSchema.parse(response.body.data)).toMatchObject({
+          deviceId: "android_e2e-1",
+          platform: "ANDROID",
+          hasActiveToken: true,
+        });
+        const [row] = await ctx.testDatabase
+          .getClient()
+          .select()
+          .from(pushToken)
+          .where(eq(pushToken.userId, user.userId));
+        expect(row).toMatchObject({ platform: "ANDROID", payloadVersion: 2, appVersion: "1.14.2" });
+      });
+
+      it("권한을 거절하면 토큰을 지우고 권한 상태만 남긴다", async () => {
+        // Given 허용 상태로 보고한 기기
+        const user = await ctx.helpers.createVerifiedUser("push-device-2@test.com", password);
+        const report = (body: object) =>
+          request(ctx.app.getHttpServer())
+            .put("/v1/notifications/push-devices/ios_e2e-2")
+            .set("Authorization", `Bearer ${user.accessToken}`)
+            .send(body);
+        await report({
+          permission: { status: "GRANTED", canAskAgain: false },
+          token: "ExponentPushToken[push-device-e2e-2]",
+          payloadVersion: 2,
+        }).expect(200);
+
+        // When
+        const response = await report({
+          permission: { status: "DENIED", canAskAgain: false },
+          token: null,
+          payloadVersion: 2,
+        }).expect(200);
+
+        // Then
+        expect(response.body.data).toMatchObject({ hasActiveToken: false, platform: "IOS" });
+        expect(
+          await ctx.testDatabase.getClient().$count(pushToken, eq(pushToken.userId, user.userId)),
+        ).toBe(0);
+        const [device] = await ctx.testDatabase
+          .getClient()
+          .select()
+          .from(pushDevice)
+          .where(eq(pushDevice.userId, user.userId));
+        expect(device).toMatchObject({ permissionStatus: "DENIED", permissionCanAskAgain: false });
+      });
+
+      it("deviceId 접두어로 플랫폼을 알 수 없으면 400 NOTIFICATION_1006을 돌려준다", async () => {
+        const user = await ctx.helpers.createVerifiedUser("push-device-3@test.com", password);
+
+        const response = await request(ctx.app.getHttpServer())
+          .put("/v1/notifications/push-devices/web_e2e-3")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({
+            permission: { status: "NOT_DETERMINED", canAskAgain: true },
+            token: null,
+            payloadVersion: 2,
+          })
+          .expect(400);
+
+        expect(response.body.error.code).toBe(ErrorCode.NOTIFICATION_1006);
+      });
+    });
+
+    describe("1.14.1 이하 앱 호환", () => {
+      it("deviceId 없이 등록해도 X-Device-Type 헤더로 플랫폼을 정해 201을 돌려준다", async () => {
+        // Given deviceId를 보내지 않는 오래된 요청
+        const user = await ctx.helpers.createVerifiedUser("push-legacy-1@test.com", password);
+
+        // When
+        await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/token")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set("X-Device-Type", "ANDROID")
+          .send({ token: "ExponentPushToken[push-legacy-e2e-1]" })
+          .expect(201);
+
+        // Then
+        const [row] = await ctx.testDatabase
+          .getClient()
+          .select()
+          .from(pushToken)
+          .where(eq(pushToken.userId, user.userId));
+        expect(row).toMatchObject({ deviceId: "default", platform: "ANDROID" });
+      });
+
+      it("토큰 해제는 기기 권한 기록도 함께 지운다", async () => {
+        const user = await ctx.helpers.createVerifiedUser("push-legacy-2@test.com", password);
+        await request(ctx.app.getHttpServer())
+          .post("/v1/notifications/token")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({ token: "ExponentPushToken[push-legacy-e2e-2]", deviceId: "ios_legacy-2" })
+          .expect(201);
+
+        await request(ctx.app.getHttpServer())
+          .delete("/v1/notifications/token")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .query({ deviceId: "ios_legacy-2" })
+          .expect(200);
+
+        expect(
+          await ctx.testDatabase.getClient().$count(pushDevice, eq(pushDevice.userId, user.userId)),
+        ).toBe(0);
+        expect(
+          await ctx.testDatabase.getClient().$count(pushToken, eq(pushToken.userId, user.userId)),
+        ).toBe(0);
+      });
+    });
+
     describe("DELETE /notifications/token - 푸시 토큰 해제", () => {
       it("특정 deviceId의 토큰을 해제한다", async () => {
         // Given - 토큰이 등록된 deviceId
@@ -305,14 +442,14 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[deletetest1111111111]",
-            deviceId: "delete-test-device",
+            deviceId: "ios_delete-test-device",
           })
           .expect(201);
 
         // When - 특정 deviceId의 토큰 해제 API 호출
         const response = await request(ctx.app.getHttpServer())
           .delete("/v1/notifications/token")
-          .query({ deviceId: "delete-test-device" })
+          .query({ deviceId: "ios_delete-test-device" })
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
@@ -345,7 +482,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[multidevice111111111]",
-            deviceId: "multi-device-1",
+            deviceId: "ios_multi-device-1",
           })
           .expect(201);
 
@@ -354,7 +491,7 @@ describe("알림 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
             token: "ExponentPushToken[multidevice222222222]",
-            deviceId: "multi-device-2",
+            deviceId: "ios_multi-device-2",
           })
           .expect(201);
 

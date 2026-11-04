@@ -31,6 +31,7 @@ import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/p
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "#api/modules/notification/application/ports/delivery/push-delivery-job-enqueuer.port";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-delivery-lifecycle.repository.port";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-delivery-outbox.repository.port";
+import { PUSH_DEVICE_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-device.repository.port";
 import { PUSH_DISPATCH_STAGING } from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
 import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
 import { PUSH_RATE_LIMITER } from "#api/modules/notification/application/ports/delivery/push-rate-limiter.port";
@@ -52,7 +53,7 @@ import { MarkAsRead } from "#api/modules/notification/application/use-cases/deli
 import { MarkNotificationOpened } from "#api/modules/notification/application/use-cases/delivery/mark-notification-opened.use-case";
 import { OptOutMarketingPush } from "#api/modules/notification/application/use-cases/delivery/opt-out-marketing-push.use-case";
 import { ReconcilePushReceipts } from "#api/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case";
-import { RegisterPushToken } from "#api/modules/notification/application/use-cases/delivery/register-push-token.use-case";
+import { ReportPushDevice } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
 import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
 import { SendCheerNotification } from "#api/modules/notification/application/use-cases/delivery/send-cheer-notification.use-case";
 import { SendFollowAcceptedNotification } from "#api/modules/notification/application/use-cases/delivery/send-follow-accepted-notification.use-case";
@@ -60,7 +61,7 @@ import { SendFollowRequestNotification } from "#api/modules/notification/applica
 import { SendMilestoneNotification } from "#api/modules/notification/application/use-cases/delivery/send-milestone-notification.use-case";
 import { SendNotificationWithDedup } from "#api/modules/notification/application/use-cases/delivery/send-notification-with-dedup.use-case";
 import { SendNudgeNotification } from "#api/modules/notification/application/use-cases/delivery/send-nudge-notification.use-case";
-import { UnregisterPushToken } from "#api/modules/notification/application/use-cases/delivery/unregister-push-token.use-case";
+import { UnregisterPushDevice } from "#api/modules/notification/application/use-cases/delivery/unregister-push-device.use-case";
 import { CachedActivePushTokenReaderAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-active-push-token-reader.adapter";
 import { CachedNotificationRecipientPreferenceAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter";
 import { NotificationCacheAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-cache.adapter";
@@ -74,6 +75,7 @@ import { DrizzleNotificationReader } from "#api/modules/notification/infrastruct
 import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
 import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository";
+import { DrizzlePushDeviceRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-device.repository";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository";
 import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
@@ -278,8 +280,8 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: MarkAsRead, useValue: unexpectedUseCase },
     { provide: MarkNotificationOpened, useValue: unexpectedUseCase },
     { provide: MarkAllAsRead, useValue: unexpectedUseCase },
-    { provide: RegisterPushToken, useValue: unexpectedUseCase },
-    { provide: UnregisterPushToken, useValue: unexpectedUseCase },
+    { provide: ReportPushDevice, useValue: unexpectedUseCase },
+    { provide: UnregisterPushDevice, useValue: unexpectedUseCase },
     { provide: OptOutMarketingPush, useValue: unexpectedUseCase },
     sendNotificationProvider,
     { provide: SendNotificationWithDedup, useValue: unexpectedUseCase },
@@ -291,6 +293,8 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
     DrizzleNotificationTodoTargetReader,
     { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: DrizzleNotificationTodoTargetReader },
+    DrizzlePushDeviceRepository,
+    { provide: PUSH_DEVICE_REPOSITORY, useExisting: DrizzlePushDeviceRepository },
     DrizzlePushTokenRepository,
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
     DrizzlePushReceiptRepository,

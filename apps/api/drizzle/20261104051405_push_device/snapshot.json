@@ -1,0 +1,366 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "dfcff0ba-ddc5-47b4-a375-67dfb59d742f",
+  "prevIds": [
+    "009cef0c-3a51-4afc-bf24-2c7a8b29193b"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "PushPermissionStatus"
+      ],
+      "writes": [
+        "s|enum|public.PushPermissionStatus",
+        "n|enum|public.PushPermissionStatus",
+        "e|enum|public.PushPermissionStatus",
+        "n|type|public.PushPermissionStatus"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDevice"
+      ],
+      "writes": [
+        "s|tbl|public.PushDevice",
+        "n|tbl|public.PushDevice",
+        "e|tbl|public.PushDevice",
+        "n|rel|public.PushDevice",
+        "n|type|public.PushDevice",
+        "n|rel|public.PushDevice_pkey",
+        "n|rel|public.PushDevice_userId_deviceId_key"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.PushPermissionStatus",
+        "n|enum|public.Platform"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "PushDevice",
+        "PushDevice_deviceId_idx"
+      ],
+      "writes": [
+        "s|idx|public.PushDevice_deviceId_idx",
+        "n|idx|public.PushDevice_deviceId_idx",
+        "e|idx|public.PushDevice_deviceId_idx",
+        "n|rel|public.PushDevice_deviceId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.PushDevice",
+        "n|sch|public",
+        "n|col|public.PushDevice.deviceId"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDevice"
+      ],
+      "writes": [
+        "s|fk|public.PushDevice.PushDevice_userId_fkey",
+        "n|fk|public.PushDevice.PushDevice_userId_fkey",
+        "e|fk|public.PushDevice.PushDevice_userId_fkey",
+        "n|con|public.PushDevice.PushDevice_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.PushDevice",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.PushDevice.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "PushDevice",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "PushPermissionStatus",
+        "values": [
+          "GRANTED",
+          "PROVISIONAL",
+          "DENIED",
+          "NOT_DETERMINED"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "createdAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "deviceId",
+        "type": "varchar(255)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "deviceModel",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "osVersion",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "permissionCanAskAgain",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "permissionStatus",
+        "type": "PushPermissionStatus",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "platform",
+        "type": "Platform",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "reportedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "updatedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "PushDevice_deviceId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "deviceId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "PushDevice_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "PushDevice_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushDevice",
+        "name": "PushDevice_userId_deviceId_key",
+        "nameExplicit": true,
+        "columns": [
+          "userId",
+          "deviceId"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

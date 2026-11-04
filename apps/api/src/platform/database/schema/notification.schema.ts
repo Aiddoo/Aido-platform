@@ -27,6 +27,7 @@ import {
   pushDeliveryStatus,
   pushDispatchOutboxStatus,
   pushDispatchStatus,
+  pushPermissionStatus,
   pushRateLimitPhase,
   retentionExperimentStageName,
   retentionExperimentStageStatus,
@@ -118,6 +119,37 @@ export const notification = pgTable(
       "Notification_todo_comment_sender_check",
       sql`(((metadata ->> 'commentId'::text) IS NULL) OR COALESCE(((jsonb_typeof((metadata -> 'senderId'::text)) = 'string'::text) AND (length((metadata ->> 'senderId'::text)) > 0)), false))`,
     ),
+  ],
+);
+
+export const pushDevice = pgTable(
+  "PushDevice",
+  {
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    deviceId: varchar({ length: 255 }).notNull(),
+    deviceModel: varchar({ length: 40 }),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    osVersion: varchar({ length: 20 }),
+    permissionCanAskAgain: boolean().notNull(),
+    permissionStatus: pushPermissionStatus().notNull(),
+    platform: platform().notNull(),
+    reportedAt: timestamp({ precision: 3 }).notNull(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "PushDevice_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushDevice_deviceId_idx").using("btree", table.deviceId.asc().nullsLast()),
+    unique("PushDevice_userId_deviceId_key").on(table.userId, table.deviceId),
   ],
 );
 

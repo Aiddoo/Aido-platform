@@ -131,6 +131,9 @@ export const relations = defineRelations(schema, (r) => ({
       optional: false,
     }),
   },
+  pushDevice: {
+    user: r.one.user({ from: r.pushDevice.userId, to: r.user.id, optional: false }),
+  },
   pushToken: {
     user: r.one.user({ from: r.pushToken.userId, to: r.user.id, optional: false }),
     deliveryAttempts: r.many.pushDeliveryAttempt(),
@@ -246,6 +249,7 @@ export const relations = defineRelations(schema, (r) => ({
     notifications: r.many.notification(),
     pushDailyBudgets: r.many.pushDailyBudget(),
     pushDispatches: r.many.pushDispatch(),
+    pushDevices: r.many.pushDevice(),
     pushTokens: r.many.pushToken(),
     recurringSuggestions: r.many.recurringSuggestion(),
     retentionAssignments: r.many.retentionExperimentAssignment(),

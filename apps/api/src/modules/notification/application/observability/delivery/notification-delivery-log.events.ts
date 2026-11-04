@@ -34,11 +34,11 @@ export const NotificationDeliveryLogEvent = {
   PUBLISH_PUSH_DELIVERY_OUTBOX_PUBLISH_MARK_FAILED:
     "notification.delivery.publish-push-delivery-outbox.publish-mark-failed",
   RECONCILE_PUSH_RECEIPTS_RECONCILED: "notification.delivery.reconcile-push-receipts.reconciled",
-  REGISTER_PUSH_TOKEN_REGISTERED: "notification.delivery.register-push-token.registered",
-  REGISTER_PUSH_TOKEN_OWNER_TRANSFERRED:
-    "notification.delivery.register-push-token.owner-transferred",
-  REGISTER_PUSH_TOKEN_CONFLICT_RETRIED:
-    "notification.delivery.register-push-token.conflict-retried",
+  REPORT_PUSH_DEVICE_REPORTED: "notification.delivery.report-push-device.reported",
+  REPORT_PUSH_DEVICE_OWNER_TRANSFERRED:
+    "notification.delivery.report-push-device.owner-transferred",
+  REPORT_PUSH_DEVICE_TOKEN_CONFLICT_RETRIED:
+    "notification.delivery.report-push-device.token-conflict-retried",
   SEND_BILLING_ISSUE_NOTIFICATION_SENT:
     "notification.delivery.send-billing-issue-notification.sent",
   SEND_CHEER_NOTIFICATION_SENT: "notification.delivery.send-cheer-notification.sent",
@@ -70,8 +70,7 @@ export const NotificationDeliveryLogEvent = {
   SEND_NOTIFICATION_UNREAD_CACHE_FAILED:
     "notification.delivery.send-notification.unread-cache-failed",
   SEND_NUDGE_NOTIFICATION_SENT: "notification.delivery.send-nudge-notification.sent",
-  UNREGISTER_PUSH_TOKEN_UNREGISTERED: "notification.delivery.unregister-push-token.unregistered",
-  UNREGISTER_PUSH_TOKEN_NOT_FOUND: "notification.delivery.unregister-push-token.not-found",
-  UNREGISTER_PUSH_TOKEN_ALL_UNREGISTERED:
-    "notification.delivery.unregister-push-token.all-unregistered",
+  UNREGISTER_PUSH_DEVICE_UNREGISTERED: "notification.delivery.unregister-push-device.unregistered",
+  UNREGISTER_PUSH_DEVICE_ALL_UNREGISTERED:
+    "notification.delivery.unregister-push-device.all-unregistered",
 } as const;

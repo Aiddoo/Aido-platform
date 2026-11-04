@@ -24,6 +24,7 @@ import { PUSH_CAMPAIGN_OUTCOME_READER } from "./application/ports/delivery/push-
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/delivery/push-delivery-outbox.repository.port.js";
+import { PUSH_DEVICE_REPOSITORY } from "./application/ports/delivery/push-device.repository.port.js";
 import { PUSH_DISPATCH_STAGING } from "./application/ports/delivery/push-dispatch-staging.repository.port.js";
 import { PUSH_PROVIDER } from "./application/ports/delivery/push-provider.port.js";
 import { PUSH_QUIET_HOURS_READER } from "./application/ports/delivery/push-quiet-hours.reader.port.js";
@@ -55,6 +56,7 @@ import { DrizzleNotificationRepository } from "./infrastructure/persistence/deli
 import { DrizzlePushCampaignOutcomeReader } from "./infrastructure/persistence/delivery/drizzle-push-campaign-outcome.reader.js";
 import { DrizzlePushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository.js";
+import { DrizzlePushDeviceRepository } from "./infrastructure/persistence/delivery/drizzle-push-device.repository.js";
 import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/delivery/drizzle-push-receipt.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/delivery/drizzle-push-token.repository.js";
@@ -82,7 +84,7 @@ import {
   pushNotificationPayloadFactoryProvider,
   reconcilePushReceiptsProvider,
   recoverFailedPushDeliveriesProvider,
-  registerPushTokenProvider,
+  reportPushDeviceProvider,
   relayPushDeliveryOutboxProvider,
   sendBatchNotificationProvider,
   sendBillingIssueNotificationProvider,
@@ -94,7 +96,7 @@ import {
   sendNotificationProvider,
   sendNotificationWithDedupProvider,
   sendNudgeNotificationProvider,
-  unregisterPushTokenProvider,
+  unregisterPushDeviceProvider,
 } from "./notification-delivery-application.providers.js";
 import { NotificationInboxController } from "./presentation/controllers/delivery/v1/notification-inbox.controller.js";
 import { NotificationController } from "./presentation/controllers/delivery/v1/notification.controller.js";
@@ -111,8 +113,8 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     markAsReadProvider,
     markNotificationOpenedProvider,
     markAllAsReadProvider,
-    registerPushTokenProvider,
-    unregisterPushTokenProvider,
+    reportPushDeviceProvider,
+    unregisterPushDeviceProvider,
     optOutMarketingPushProvider,
     // 크로스모듈 발송/디스패치 use-cases
     sendNotificationProvider,
@@ -137,6 +139,8 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
     DrizzleNotificationTodoTargetReader,
     { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: DrizzleNotificationTodoTargetReader },
+    DrizzlePushDeviceRepository,
+    { provide: PUSH_DEVICE_REPOSITORY, useExisting: DrizzlePushDeviceRepository },
     DrizzlePushTokenRepository,
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
     DrizzlePushReceiptRepository,
