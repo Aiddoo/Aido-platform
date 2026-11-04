@@ -60,7 +60,7 @@ async function renderStart({
 }: {
   consent: Partial<Consent>;
   voiceNoteUsed?: number;
-  seenCoachmarks?: readonly ('ai-consent-notice' | 'ai-consent-renewal')[];
+  seenCoachmarks?: readonly 'ai-consent-renewal'[];
 }) {
   const httpClient = createMockHttpClient();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
@@ -148,21 +148,34 @@ describe('useVoiceNoteStart', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 
-  it('처음 쓰는 사람은 첫 안내를 닫은 뒤에야 마이크 권한을 묻는다', async () => {
+  it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 그 자리에서 멈춘다', async () => {
     // Given
     const { speechRecognizer } = await renderStart({ consent: {} });
+    await fireEvent.press(screen.getByText('시작'));
+    await screen.findByTestId('ai-consent-sheet');
+    expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
+
+    // When
+    await fireEvent.press(screen.getByTestId('ai-consent-later'));
+
+    // Then
+    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+    expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('처음 쓰는 사람이 나중에를 눌렀어도 다시 누르면 안내를 다시 띄운다', async () => {
+    // Given
+    await renderStart({ consent: {} });
+    await fireEvent.press(screen.getByText('시작'));
+    await fireEvent.press(await screen.findByTestId('ai-consent-later'));
+    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
 
     // When
     await fireEvent.press(screen.getByText('시작'));
-    await screen.findByTestId('ai-consent-sheet');
 
     // Then
-    expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
-    expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByTestId('ai-consent-later'));
-    await waitFor(() =>
-      expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note', 'ko-KR'),
-    );
+    expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
   });
 
   it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {

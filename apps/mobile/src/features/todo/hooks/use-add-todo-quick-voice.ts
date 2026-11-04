@@ -111,7 +111,10 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
       return;
     }
     Keyboard.dismiss();
-    const consent = await aiConsent.ensureAgreedOnce();
+    const consent = await aiConsent.ensureAgreedBeforeListening();
+    if (!consent.isAgreed) {
+      return;
+    }
     hasAskedConsentRef.current = consent.wasAsked;
     if (!(await ensureMicrophonePermission('quick', locale))) {
       return;

@@ -3,6 +3,8 @@ import { type Consent, ConsentPolicy } from '@src/features/auth/domains/auth.mod
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useTranslation } from '@src/shared/i18n';
 import { useOverlay } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -18,6 +20,8 @@ export interface AiConsentCheck {
  * 시트는 이 훅을 쓴 컴포넌트의 overlay에 뜨므로, 답을 기다리는 동안 마운트돼 있는 곳에서 쓴다.
  */
 export function useAiDataSharingConsentGate() {
+  const { t } = useTranslation('ai');
+  const toast = useAppToast();
   const overlay = useOverlay();
   const queryClient = useQueryClient();
   const coachmarkService = useCoachmarkService();
@@ -73,25 +77,26 @@ export function useAiDataSharingConsentGate() {
   };
 
   /**
-   * 계정마다 한 번만 동의 안내를 띄운다. 이미 한 번 봤거나 [나중에]를 눌렀다면 다시 묻지 않고 isAgreed는 false다.
-   * 거절해도 동의를 철회하지 않으므로 호출한 쪽은 기존 동작을 이어 가고, 서버가 AI_1311로 막을 때만 다시 안내한다.
-   * 내 정보를 아직 못 받았으면 여기서 기다려, 마이크 권한처럼 뒤에 오는 단계가 동의 안내를 앞지르지 않게 한다.
+   * 듣기 전에 동의를 받는다. 다 말한 뒤에 막히지 않게, 미응답이면 시작할 때마다 안내를 띄우고 [나중에]면 isAgreed는 false다.
+   * 호출한 쪽은 그 자리에서 멈춘다. 이전 안내에 동의한 사람은 재안내에서 [나중에]를 눌러도 이어 간다.
+   * 내 정보를 아직 못 받았으면 여기서 기다려, 마이크 권한처럼 뒤에 오는 단계가 안내를 앞지르지 않게 한다.
    */
-  const ensureAgreedOnce = async (): Promise<AiConsentCheck> => {
+  const ensureAgreedBeforeListening = async (): Promise<AiConsentCheck> => {
     const [consent, me] = await Promise.all([
       queryClient.ensureQueryData(consentQueryOptions).catch(() => null),
       queryClient.ensureQueryData(meQueryOptions).catch(() => null),
     ]);
-    if (consent == null || me == null) {
+    if (consent == null) {
       return { isAgreed: true, wasAsked: false };
     }
     if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
-      return { isAgreed: true, wasAsked: await showRenewalOnce(consent, me.id) };
+      return { isAgreed: true, wasAsked: await showRenewalOnce(consent, me?.id) };
     }
-    if (!coachmarkService.claim({ accountId: me.id, kind: 'ai-consent-notice' })) {
-      return { isAgreed: false, wasAsked: false };
+    const isAgreed = await requestAgreement();
+    if (!isAgreed) {
+      toast.toast(t('consent.notice.voice'));
     }
-    return { isAgreed: await requestAgreement(), wasAsked: true };
+    return { isAgreed, wasAsked: true };
   };
 
   /** 캐시 기준으로 동의가 필요한지. 서버가 AI_1311로 거절하면 AI mutation이 캐시를 미응답으로 되돌린다 */
@@ -100,5 +105,5 @@ export function useAiDataSharingConsentGate() {
     return consent != null && !ConsentPolicy.hasAgreedToAiDataSharing(consent);
   };
 
-  return { ensureAgreed, ensureAgreedOnce, requestAgreement, isAgreementRequired };
+  return { ensureAgreed, ensureAgreedBeforeListening, requestAgreement, isAgreementRequired };
 }

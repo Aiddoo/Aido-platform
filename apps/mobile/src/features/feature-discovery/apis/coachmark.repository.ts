@@ -10,7 +10,6 @@ export type CoachmarkKind =
   | 'voice-note-mark'
   | 'voice-key-point'
   | 'repeat-horizon'
-  | 'ai-consent-notice'
   | 'ai-consent-renewal';
 
 export interface CoachmarkInput {
@@ -38,7 +37,6 @@ export function coachmarkStorageKey({ accountId, kind }: CoachmarkInput): string
       'voice-note-mark',
       'voice-key-point',
       'repeat-horizon',
-      'ai-consent-notice',
       'ai-consent-renewal',
       () => `${KEY_PREFIX}:${accountId}:${kind}`,
     )

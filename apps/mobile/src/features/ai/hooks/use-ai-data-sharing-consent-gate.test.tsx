@@ -41,8 +41,10 @@ function ConsentGateProbe() {
       <Button onPress={async () => setResult(JSON.stringify(await gate.ensureAgreed()))}>
         시작
       </Button>
-      <Button onPress={async () => setResult(JSON.stringify(await gate.ensureAgreedOnce()))}>
-        계정당 한 번 시작
+      <Button
+        onPress={async () => setResult(JSON.stringify(await gate.ensureAgreedBeforeListening()))}
+      >
+        듣기 전 확인
       </Button>
       <Text>{result}</Text>
     </>
@@ -86,6 +88,22 @@ async function renderGate(
 }
 
 describe('useAiDataSharingConsentGate', () => {
+  test('듣기 전 확인에서 미응답이 나중에를 누르면 멈추라고 알리고 다시 물으면 또 안내한다', async () => {
+    // Given
+    const { authHttp } = await renderGate({});
+    fireEvent.press(screen.getByText('듣기 전 확인'));
+    fireEvent.press(await screen.findByTestId('ai-consent-later'));
+    await screen.findByText(JSON.stringify({ isAgreed: false, wasAsked: true }));
+    await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+
+    // When
+    fireEvent.press(screen.getByText('듣기 전 확인'));
+
+    // Then
+    expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
+    expect(authHttp.patch).not.toHaveBeenCalled();
+  });
+
   test('이전 안내에 동의한 사람에게는 바뀐 안내를 보여 주고 나중에를 눌러도 서버로 보내지 않고 이어 간다', async () => {
     // Given
     const { authHttp } = await renderGate({
@@ -130,7 +148,7 @@ describe('useAiDataSharingConsentGate', () => {
     userHttp.get.mockResolvedValue(ok(createCurrentUserDto()));
 
     // When
-    fireEvent.press(screen.getByText('계정당 한 번 시작'));
+    fireEvent.press(screen.getByText('듣기 전 확인'));
 
     // Then
     await screen.findByText(RENEWAL_NOTICE);
@@ -146,7 +164,7 @@ describe('useAiDataSharingConsentGate', () => {
     userHttp.get.mockRejectedValue(new Error('offline'));
 
     // When
-    fireEvent.press(screen.getByText('계정당 한 번 시작'));
+    fireEvent.press(screen.getByText('듣기 전 확인'));
 
     // Then
     await screen.findByText(JSON.stringify({ isAgreed: true, wasAsked: false }));

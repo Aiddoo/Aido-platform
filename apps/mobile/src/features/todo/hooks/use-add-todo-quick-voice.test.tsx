@@ -34,7 +34,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { useForm, useWatch } from 'react-hook-form';
-import { Pressable } from 'react-native';
+import { Pressable, TextInput } from 'react-native';
 
 import { TodoCategoryService } from '../apis/todo-category.service';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
@@ -107,6 +107,10 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Text testID="status">{state.status}</Text>
       <Text testID="consent-required">{String(quickVoice.isConsentRequired)}</Text>
       <Text testID="title">{title}</Text>
+      <TextInput
+        testID="title-input"
+        onChangeText={(text) => methods.setValue('title', text, { shouldDirty: true })}
+      />
       <Text testID="plan">
         {state.status === 'review'
           ? state.plan.actions.map((action) => action.title).join(',')
@@ -298,21 +302,37 @@ describe('useAddTodoQuickVoice', () => {
       );
     });
 
-    it('처음 쓰는 사람은 첫 안내를 닫은 뒤에야 마이크 권한을 묻는다', async () => {
+    it('처음 쓰는 사람이 나중에를 누르면 마이크 권한을 묻지 않고 그 자리에서 멈춘다', async () => {
       // Given
-      const { speechRecognizer } = await renderQuickVoice({ consent: {}, isCoachmarkSeen: false });
+      const { speechRecognizer } = await renderQuickVoice({ consent: {} });
+      await fireEvent.press(screen.getByTestId('start'));
+      await screen.findByTestId('ai-consent-sheet');
+      expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
+
+      // When
+      await fireEvent.press(screen.getByTestId('ai-consent-later'));
+
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
+      expect(speechRecognizer.start).not.toHaveBeenCalled();
+      expect(screen.getByTestId('status')).toHaveTextContent('idle');
+    });
+
+    it('처음 쓰는 사람이 나중에를 눌러도 입력하던 글자는 남고 다시 누르면 안내를 다시 띄운다', async () => {
+      // Given
+      await renderQuickVoice({ consent: {} });
+      await fireEvent.changeText(screen.getByTestId('title-input'), '우유 사기');
+      await fireEvent.press(screen.getByTestId('start'));
+      await fireEvent.press(await screen.findByTestId('ai-consent-later'));
+      await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
+      expect(screen.getByTestId('title')).toHaveTextContent('우유 사기');
 
       // When
       await fireEvent.press(screen.getByTestId('start'));
-      await screen.findByTestId('ai-consent-sheet');
 
       // Then
-      expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
-      expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
-      await fireEvent.press(screen.getByTestId('ai-consent-later'));
-      await waitFor(() =>
-        expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick', 'ko-KR'),
-      );
+      expect(await screen.findByTestId('ai-consent-sheet')).toBeTruthy();
     });
 
     it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {
@@ -334,18 +354,17 @@ describe('useAddTodoQuickVoice', () => {
   });
 
   describe('정리가 동의 때문에 막혔을 때', () => {
-    it('처음 안내에서 나중에를 눌렀어도 다시 정리하면 안내를 다시 띄우고 동의하면 이어서 정리한다', async () => {
+    it('듣는 동안 동의가 사라져 정리에서 나중에를 눌러도 다시 정리하면 안내를 다시 띄우고 동의하면 이어서 정리한다', async () => {
       // Given
       const { httpClient, speechRecognizer } = await renderQuickVoice({
-        consent: {},
-        isCoachmarkSeen: false,
+        consent: {
+          aiDataSharingDecision: 'AGREED',
+          aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+        },
       });
       httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
       await fireEvent.press(screen.getByTestId('start'));
-      await screen.findByTestId('ai-consent-sheet');
-      await fireEvent.press(screen.getByTestId('ai-consent-later'));
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
-      await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
       await act(async () => speechRecognizer.emit({ type: 'start' }));
       await act(async () =>
         speechRecognizer.emit({
@@ -357,6 +376,7 @@ describe('useAddTodoQuickVoice', () => {
       );
       await fireEvent.press(screen.getByTestId('finish'));
       await act(async () => speechRecognizer.emit({ type: 'end' }));
+      await fireEvent.press(await screen.findByTestId('ai-consent-later'));
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
       expect(screen.getByTestId('consent-required')).toHaveTextContent('true');
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();

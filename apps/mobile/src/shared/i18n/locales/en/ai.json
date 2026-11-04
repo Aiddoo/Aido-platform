@@ -150,6 +150,7 @@
     "agree": "Agree",
     "saveFailed": "Couldn't save your choice. Please try again.",
     "notice": {
+      "voice": "Agree first to use voice",
       "reports": "Agree to get AI reports",
       "suggestions": "Agree to get AI suggestions",
       "action": "Review"

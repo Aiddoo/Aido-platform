@@ -26,7 +26,10 @@ export function useVoiceNoteStart() {
     if (!gate.guard({ onSubscribe })) {
       return;
     }
-    await aiConsent.ensureAgreedOnce();
+    const consent = await aiConsent.ensureAgreedBeforeListening();
+    if (!consent.isAgreed) {
+      return;
+    }
     if (await ensureMicrophonePermission('note', locale)) {
       push(getRecordHref?.() ?? voiceNoteRecordHref());
     }
