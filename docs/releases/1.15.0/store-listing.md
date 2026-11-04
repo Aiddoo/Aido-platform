@@ -15,7 +15,7 @@
 
 **promotional_text** (170자 이내)
 
-> 말하면 AI가 할 일로 나눠 드려요. 녹음 파일은 폰에만 남고, 저장 전에 하나씩 확인할 수 있어요.
+> 말하면 AI가 할 일로 나눠 드려요. 녹음 파일은 Aido 서버로 보내지 않고, 저장 전에 하나씩 확인할 수 있어요.
 
 **description** (4000자 이내)
 
@@ -39,7 +39,7 @@
 - ‘다음 주 금요일’, ‘3일 후’, ‘월말’도 내 시간대의 오늘을 기준으로 정확하게
 - "매주 월수금 운동" 한마디로 반복 일정 자동 생성
 - 말로 메모하기: 긴 이야기를 말로 남기면 요약, 핵심 포인트, 할 일로 정리
-- 녹음 파일은 폰에만 남고, 서버로는 글자만 보내요
+- 녹음 파일은 Aido 서버로 보내지 않고, 글자만 보내요
 - 메모 한 장을 AI가 여러 개의 할 일로 정리
 - 내가 여러 번 해 온 할 일을 바탕으로 반복 루틴 자동 제안 (프리미엄)
 - 주간·월간 AI 리포트로 완료율·카테고리·요일별 패턴 분석 (프리미엄)
@@ -145,7 +145,7 @@
 
 **promotional_text**
 
-> Say it and Aido sorts it into to-dos. Recordings stay on your phone, and you can check each to-do before it's saved.
+> Say it and Aido sorts it into to-dos. Recordings are never sent to Aido's server, and you can check each to-do before it's saved.
 
 **description**
 
@@ -168,7 +168,7 @@ Just say it and it becomes a to-do.
 - Understands “next Friday” or “in 3 days” in your time zone
 - Say “work out every Mon, Wed, and Fri” for a repeating to-do
 - Voice notes: summaries, key points, and to-dos from longer talks
-- Recordings stay on your phone. Only text goes to the server.
+- Recordings are not sent to Aido's server. Only text is sent.
 - Turn one note into several to-dos with AI
 - Routine suggestions from to-dos you repeat (Premium)
 - Weekly and monthly AI reports on completion and patterns (Premium)
