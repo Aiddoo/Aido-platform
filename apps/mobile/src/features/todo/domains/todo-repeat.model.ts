@@ -4,6 +4,7 @@ import {
   DAYS_OF_WEEK,
   type DayOfWeek,
   TODO_EDIT_SCOPES,
+  TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
 import {
@@ -298,10 +299,23 @@ export function getLastRepeatOccurrenceDateKey(
   return [...walkOccurrenceDateKeys(repeat, startDate, limit)].at(-1) ?? null;
 }
 
+/** 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지 */
+export function isBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
+  return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
+}
+
+/** 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다 */
+export function isMonthBeyondRepeatHorizon(dateKey: string, todayKey: string): boolean {
+  const lastDay = String(getDaysInMonthOfDateKey(dateKey)).padStart(2, '0');
+  return isBeyondRepeatHorizon(`${dateKey.slice(0, 8)}${lastDay}`, todayKey);
+}
+
 export const TodoRepeatPolicy = {
   getKind: getRepeatKind,
   createWeeklyUntil: createWeeklyUntilRepeat,
   hasSameRepeat,
+  isBeyondHorizon: isBeyondRepeatHorizon,
+  isMonthBeyondHorizon: isMonthBeyondRepeatHorizon,
   getEditScopeDecision: getTodoEditScopeDecision,
   withStartDate: withRepeatStartDate,
   isMonthDayClamped: isRepeatMonthDayClamped,

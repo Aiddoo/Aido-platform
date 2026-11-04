@@ -99,7 +99,8 @@
       "countSuffix": "{{count}}회"
     },
     "spokenRule": "{{rule}} 반복",
-    "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요"
+    "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
+    "horizonHint": "반복 할 일은 3개월 앞까지 미리 보여요"
   },
   "scope": {
     "editTitle": "반복 할 일 수정",

@@ -290,3 +290,31 @@ describe('getEditScopeDecision', () => {
     expect(decision).toBe(expected);
   });
 });
+
+describe('isBeyondHorizon', () => {
+  const TODAY = '2026-11-05';
+
+  test.each([
+    ['2026-11-05', false],
+    ['2027-02-03', false],
+    ['2027-02-04', true],
+  ])('오늘 + 90일까지는 미리 만든다: %s → %s', (dateKey, expected) => {
+    // When
+    const result = TodoRepeatPolicy.isBeyondHorizon(dateKey, TODAY);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+
+  test.each([
+    ['2027-01-15', false],
+    ['2027-02-01', true],
+    ['2027-03-01', true],
+  ])('달의 마지막 날이 넘어가면 그 달은 넘어간 달이다: %s → %s', (dateKey, expected) => {
+    // When
+    const result = TodoRepeatPolicy.isMonthBeyondHorizon(dateKey, TODAY);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

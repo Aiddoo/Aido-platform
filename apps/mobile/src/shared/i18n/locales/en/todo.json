@@ -103,7 +103,8 @@
       "countSuffix_other": "{{count}} times"
     },
     "spokenRule": "Repeats {{rule}}",
-    "monthEndHint": "In shorter months, it repeats on the last day"
+    "monthEndHint": "In shorter months, it repeats on the last day",
+    "horizonHint": "Repeating to-dos appear up to 3 months ahead"
   },
   "scope": {
     "editTitle": "Edit repeating to-do",

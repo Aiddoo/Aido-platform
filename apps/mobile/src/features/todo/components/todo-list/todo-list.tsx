@@ -6,6 +6,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -19,6 +20,7 @@ import {
   QueryErrorActions,
   type QueryErrorFallbackProps,
   Result,
+  Text,
 } from '@src/shared/ui';
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
@@ -36,6 +38,7 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
+import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
@@ -65,7 +68,10 @@ import {
 } from '../todo-row';
 
 export function TodoList() {
+  const { t } = useTranslation('todo');
   const [selectedDate] = useFeedDate();
+  const selectedDateKey = useFeedDateKey();
+  const todayKey = useTodayKey();
   const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
@@ -93,6 +99,12 @@ export function TodoList() {
           <TodoReorderableList items={group.todos} updatedAt={dataUpdatedAt} />
         </Box>
       ))}
+      {todosByDate.todos.length === 0 &&
+        TodoRepeatPolicy.isBeyondHorizon(selectedDateKey, todayKey) && (
+          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+            {t('repeat.horizonHint')}
+          </Text>
+        )}
     </Box>
   );
 }
