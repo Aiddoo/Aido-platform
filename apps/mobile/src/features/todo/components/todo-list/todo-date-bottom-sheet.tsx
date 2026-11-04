@@ -77,10 +77,15 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
       value={editValues.startDate}
       onCancel={onClose}
       onChange={(startDate) => {
+        const startDateKey = formatDateKey(startDate, getDeviceTimezone());
+        if (startDateKey === todo.startDate) {
+          onClose();
+          return;
+        }
         updateSchedule.mutate({
           todoId: todo.id,
           input: {
-            startDate: formatDateKey(startDate, getDeviceTimezone()),
+            startDate: startDateKey,
             endDate: null,
             scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
             isAllDay: todo.isAllDay,

@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
@@ -19,12 +20,18 @@ import { toDeviceDateKey } from '@src/shared/utils/date-key';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { without, xor } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
-import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
+import { memo } from 'react';
+import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { TODO_REPEAT_WEEKDAYS, TODO_REPEAT_WEEKEND_DAYS } from '../constants/todo-repeat.constants';
-import type { TodoRepeatFormValues } from '../domains/todo-repeat-form.schema';
+import {
+  getTodoRepeatFormIssue,
+  toTodoRepeat,
+  todoRepeatFormSchema,
+  type TodoRepeatFormValues,
+} from '../domains/todo-repeat-form.schema';
 import {
   getMonthDayOfDateKey,
   type TodoRepeat,
@@ -33,8 +40,6 @@ import {
 import { useDatePicker } from '../hooks/use-date-picker';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import {
-  canConfirmTodoRepeatForm,
-  toTodoRepeat,
   toTodoRepeatFormValues,
   withTodoRepeatFormStartDate,
 } from '../utils/todo-repeat-form-values';
@@ -113,6 +118,9 @@ function DayOfWeekChip({ day, isSelected, onPress }: DayOfWeekChipProps) {
 const isSameWeekdays = (a: readonly DayOfWeek[], b: readonly DayOfWeek[]): boolean =>
   xor(a, b).length === 0;
 
+/** 값을 바꿀 때마다 스키마를 다시 돌려 확인 버튼(isValid)이 따라오게 한다 */
+const VALIDATE = { shouldValidate: true } as const;
+
 function DayOfWeekSelector() {
   const { t } = useTranslation('todo');
   const { control, getValues, setValue } = useFormContext<TodoRepeatFormValues>();
@@ -124,27 +132,32 @@ function DayOfWeekSelector() {
   const isWeeklyEveryWeek = !isMonthly && interval === 1;
 
   const handlePresetPress = (days: readonly DayOfWeek[]) => {
-    setValue('isMonthly', false);
-    setValue('interval', 1);
-    setValue('weekdays', isWeeklyEveryWeek && isSameWeekdays(weekdays, days) ? [] : [...days]);
+    setValue('isMonthly', false, VALIDATE);
+    setValue('interval', 1, VALIDATE);
+    setValue(
+      'weekdays',
+      isWeeklyEveryWeek && isSameWeekdays(weekdays, days) ? [] : [...days],
+      VALIDATE,
+    );
   };
 
   const handleBiweeklyPress = () => {
-    setValue('isMonthly', false);
-    setValue('interval', interval === 2 ? 1 : 2);
+    setValue('isMonthly', false, VALIDATE);
+    setValue('interval', interval === 2 ? 1 : 2, VALIDATE);
   };
 
   const handleMonthlyPress = () => {
-    setValue('isMonthly', !isMonthly);
-    setValue('interval', 1);
+    setValue('isMonthly', !isMonthly, VALIDATE);
+    setValue('interval', 1, VALIDATE);
   };
 
   const handleDayPress = (day: DayOfWeek) => {
     const current = getValues('weekdays');
-    setValue('isMonthly', false);
+    setValue('isMonthly', false, VALIDATE);
     setValue(
       'weekdays',
       isMonthly ? [day] : current.includes(day) ? without(current, day) : [...current, day],
+      VALIDATE,
     );
   };
 
@@ -196,12 +209,13 @@ function DayOfWeekSelector() {
 
 function RepeatSummary() {
   const { t } = useTranslation('todo');
-  const { weekdays, interval, isMonthly, startDate, ...values } = useRepeatFormValues();
-  const repeat = toTodoRepeat({ weekdays, interval, isMonthly, startDate, ...values });
+  const { control } = useFormContext<TodoRepeatFormValues>();
+  const [weekdays, interval, isMonthly, startDate] = useWatch({
+    control,
+    name: ['weekdays', 'interval', 'isMonthly', 'startDate'],
+  });
+  const issue = useWatch({ control, compute: getTodoRepeatFormIssue });
   const days = formatDaysOfWeek(weekdays);
-  const hasNoOccurrence =
-    repeat != null &&
-    TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(startDate)) == null;
   const summary = match({ weekdays, interval, isMonthly })
     .returnType<string | null>()
     .with({ isMonthly: true }, () =>
@@ -234,7 +248,7 @@ function RepeatSummary() {
     );
   }
 
-  return hasNoOccurrence ? (
+  return issue === 'no-occurrence' ? (
     <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
       * {t('picker.noOccurrence')}
     </Text>
@@ -262,7 +276,9 @@ export const TodoRepeatPickerContent = ({
   onCancel,
 }: TodoRepeatPickerContentProps) => {
   const methods = useForm<TodoRepeatFormValues>({
+    resolver: zodResolver(todoRepeatFormSchema),
     defaultValues: toTodoRepeatFormValues(value.startDate, value.repeat),
+    mode: 'onChange',
   });
   const picker = useDatePicker({ startDate: value.startDate });
 
@@ -278,16 +294,6 @@ export const TodoRepeatPickerContent = ({
   );
 };
 
-/** 렌더에서 쓰는 폼 값 전체. 렌더 중 getValues()는 React Compiler가 캐시해 갱신되지 않으므로 useWatch의 값을 쓴다 */
-function useRepeatFormValues(): TodoRepeatFormValues {
-  const { control } = useFormContext<TodoRepeatFormValues>();
-
-  return useWatch({
-    control,
-    compute: (values) => ({ ...values, weekdays: [...values.weekdays] }),
-  });
-}
-
 interface RepeatPickerHeaderProps {
   onChange: (value: RepeatPickerValue) => void;
   onCancel: () => void;
@@ -295,22 +301,19 @@ interface RepeatPickerHeaderProps {
 
 function RepeatPickerHeader({ onChange, onCancel }: RepeatPickerHeaderProps) {
   const { t } = useTranslation('todo');
-  const values = useRepeatFormValues();
-  const isConfirmDisabled = !canConfirmTodoRepeatForm(values);
+  const { control, handleSubmit } = useFormContext<TodoRepeatFormValues>();
+  const { isValid } = useFormState({ control });
 
-  const handleConfirm = () => {
-    if (isConfirmDisabled) {
-      return;
-    }
+  const handleConfirm = handleSubmit((values) => {
     onChange({ startDate: values.startDate, repeat: toTodoRepeat(values) });
-  };
+  });
 
   return (
     <PickerHeader
       title={t('picker.repeatTitle')}
       onCancel={onCancel}
-      onConfirm={handleConfirm}
-      isConfirmDisabled={isConfirmDisabled}
+      onConfirm={() => handleConfirm()}
+      isConfirmDisabled={!isValid}
     />
   );
 }
@@ -319,16 +322,24 @@ interface RepeatCalendarSectionProps {
   picker: ReturnType<typeof useDatePicker>;
 }
 
+/** 날짜 종료를 아직 안 골랐어도 첫 회차는 알 수 있으므로 끝이 없는 규칙으로 계산한다. 첫 할 일이 실제로 생기는 날이다 */
+function getFirstOccurrenceKey(values: TodoRepeatFormValues): string | null {
+  const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
+  return repeat == null
+    ? null
+    : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
+}
+
 function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
   const { control, getValues, setValue } = useFormContext<TodoRepeatFormValues>();
   const [startDate, endType, untilDate] = useWatch({
     control,
     name: ['startDate', 'endType', 'untilDate'],
   });
-  const values = useRepeatFormValues();
+  const repeat = useWatch({ control, compute: toTodoRepeat });
+  const firstOccurrenceKey = useWatch({ control, compute: getFirstOccurrenceKey });
   const today = useToday();
   const startDateKey = toDeviceDateKey(startDate);
-  const repeat = toTodoRepeat(values);
   const firstWeekDate = picker.weeks.at(0)?.at(0);
   const lastWeekDate = picker.weeks.at(-1)?.at(-1);
   const occurrenceKeys =
@@ -349,44 +360,45 @@ function RepeatCalendarSection({ picker }: RepeatCalendarSectionProps) {
     .with('COUNT', () => (lastOccurrenceKey == null ? null : toDate(lastOccurrenceKey)))
     .with('NEVER', () => null)
     .exhaustive();
-
-  // 종료일을 아직 안 골랐어도 첫 회차는 알 수 있으므로 끝이 없는 규칙으로 계산한다
-  const startRepeat = repeat ?? toTodoRepeat({ ...values, endType: 'NEVER' });
-  const firstOccurrenceKey =
-    startRepeat == null
-      ? null
-      : TodoRepeatPolicy.getFirstOccurrenceDateKey(startRepeat, startDateKey);
-  /** 첫 할 일이 실제로 생기는 날. 달력의 시작 원과 띠는 폼의 시작일이 아니라 이 날부터 그린다 */
+  /** 달력의 시작 원과 띠는 폼의 시작일이 아니라 첫 할 일이 생기는 날부터 그린다 */
   const displayStartDate = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);
 
   const changeStartDate = (date: Date) => {
     const next = withTodoRepeatFormStartDate(getValues(), date);
-    setValue('startDate', next.startDate);
-    setValue('weekdays', next.weekdays);
-    setValue('untilDate', next.untilDate);
+    setValue('startDate', next.startDate, VALIDATE);
+    setValue('weekdays', next.weekdays, VALIDATE);
+    setValue('untilDate', next.untilDate, VALIDATE);
   };
 
+  // 칸마다 넘기는 함수라 렌더 값에 기대지 않고 누른 순간의 폼 값을 읽어 항상 같은 함수로 둔다
   const handleCalendarPress = (date: Date) => {
     if (isBeforeDay(date, today)) {
       return;
     }
 
-    if (isSameDay(date, displayStartDate) && !isSameDay(date, startDate)) {
+    const values = getValues();
+    const firstKey = getFirstOccurrenceKey(values);
+
+    if (
+      firstKey != null &&
+      toDeviceDateKey(date) === firstKey &&
+      !isSameDay(date, values.startDate)
+    ) {
       changeStartDate(date);
-      setValue('untilDate', null);
+      setValue('untilDate', null, VALIDATE);
       return;
     }
 
-    if (endType === 'UNTIL' && untilDate != null) {
+    if (values.endType === 'UNTIL' && values.untilDate != null) {
       changeStartDate(date);
-      setValue('untilDate', null);
+      setValue('untilDate', null, VALIDATE);
       return;
     }
 
-    if (isAfterDay(date, startDate)) {
-      setValue('endType', 'UNTIL');
-      setValue('untilDate', date);
-    } else if (isBeforeDay(date, startDate)) {
+    if (isAfterDay(date, values.startDate)) {
+      setValue('endType', 'UNTIL', VALIDATE);
+      setValue('untilDate', date, VALIDATE);
+    } else if (isBeforeDay(date, values.startDate)) {
       changeStartDate(date);
     }
   };
@@ -411,22 +423,35 @@ interface RepeatPeriodFooterProps {
 
 function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const { setValue } = useFormContext<TodoRepeatFormValues>();
-  const values = useRepeatFormValues();
+  const { control, setValue } = useFormContext<TodoRepeatFormValues>();
+  const [startDate, endType, untilDate, count] = useWatch({
+    control,
+    name: ['startDate', 'endType', 'untilDate', 'count'],
+  });
+  const firstOccurrenceKey = useWatch({
+    control,
+    compute: (values) => {
+      const repeat = toTodoRepeat(values);
+      return repeat == null
+        ? null
+        : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
+    },
+  });
   const dateFormatContext = useDateFormatContext();
   const formatMonthDay = (date: Date) =>
     formatDateKeyLabel(toDeviceDateKey(date), 'monthDay', dateFormatContext);
-  const monthlyRepeat = values.isMonthly ? toTodoRepeat({ ...values, endType: 'NEVER' }) : null;
-  const repeat = toTodoRepeat(values);
-  const firstOccurrenceKey =
-    repeat == null
-      ? null
-      : TodoRepeatPolicy.getFirstOccurrenceDateKey(repeat, toDeviceDateKey(values.startDate));
-  const periodStart = firstOccurrenceKey == null ? values.startDate : toDate(firstOccurrenceKey);
+  const isMonthDayClamped = useWatch({
+    control,
+    compute: (values) => {
+      const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
+      return repeat != null && TodoRepeatPolicy.isMonthDayClamped(repeat);
+    },
+  });
+  const periodStart = firstOccurrenceKey == null ? startDate : toDate(firstOccurrenceKey);
 
   const handleForeverPress = () => {
-    setValue('endType', values.endType === 'NEVER' ? 'UNTIL' : 'NEVER');
-    setValue('untilDate', null);
+    setValue('endType', endType === 'NEVER' ? 'UNTIL' : 'NEVER', VALIDATE);
+    setValue('untilDate', null, VALIDATE);
   };
 
   return (
@@ -439,7 +464,7 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
           <Text size="b3" tone="neutral" shade={6}>
             •
           </Text>
-          {match(values.endType)
+          {match(endType)
             .with('NEVER', () => (
               <Text size="b3" tone="brand">
                 {t('picker.periodNever', { date: formatMonthDay(periodStart) })}
@@ -449,14 +474,14 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
               <Text size="b3" tone="brand">
                 {t('picker.periodCount', {
                   date: formatMonthDay(periodStart),
-                  count: values.count,
+                  count,
                 })}
               </Text>
             ))
             .with('UNTIL', () =>
-              values.untilDate != null && !isSameDay(periodStart, values.untilDate) ? (
+              untilDate != null && !isSameDay(periodStart, untilDate) ? (
                 <Text size="b3" tone="brand">
-                  {formatMonthDay(periodStart)} - {formatMonthDay(values.untilDate)}
+                  {formatMonthDay(periodStart)} - {formatMonthDay(untilDate)}
                 </Text>
               ) : (
                 <Text size="b3" tone="neutral" shade={5}>
@@ -469,7 +494,7 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
         <HStack gap={6} align="center">
           <PresetChip
             label={t('picker.repeatForever')}
-            isSelected={values.endType === 'NEVER'}
+            isSelected={endType === 'NEVER'}
             onPress={handleForeverPress}
           />
           {value.repeat != null && (
@@ -485,7 +510,7 @@ function RepeatPeriodFooter({ value, onChange }: RepeatPeriodFooterProps) {
           )}
         </HStack>
       </HStack>
-      {monthlyRepeat != null && TodoRepeatPolicy.isMonthDayClamped(monthlyRepeat) && (
+      {isMonthDayClamped && (
         <Text size="b4" tone="neutral" shade={6} lineBreakStrategyIOS="hangul-word">
           {t('repeat.monthEndHint')}
         </Text>
@@ -517,6 +542,7 @@ const RepeatCalendar = ({
 }: RepeatCalendarProps) => {
   const { displayMonth, weeks, goToPrevMonth, goToNextMonth } = picker;
   const dateFormatContext = useDateFormatContext();
+  const hasDistinctRange = isOpenEnded || (endDate != null && !isSameDay(startDate, endDate));
 
   return (
     <VStack gap={16}>
@@ -542,22 +568,35 @@ const RepeatCalendar = ({
         {weeks.map((week, weekIndex) => (
           // 주 순서는 고정되어 index가 안정적인 key다.
           <HStack key={weekIndex} px={8}>
-            {week.map((date) =>
-              isSameMonth(date, displayMonth) ? (
+            {week.map((date) => {
+              if (!isSameMonth(date, displayMonth)) {
+                return <Box key={date.toISOString()} className="h-[48px] flex-1" />;
+              }
+              const isStart = isSameDay(date, startDate);
+              const isEnd = endDate != null && isSameDay(date, endDate);
+              const isInRange =
+                hasDistinctRange &&
+                isAfterDay(date, startDate) &&
+                (isOpenEnded || (endDate != null && isBeforeDay(date, endDate)));
+              return (
                 <RepeatDateCell
                   key={date.toISOString()}
                   date={date}
                   today={today}
-                  startDate={startDate}
-                  endDate={endDate}
-                  isOpenEnded={isOpenEnded}
-                  occurrenceKeys={occurrenceKeys}
+                  isStart={isStart}
+                  isEnd={isEnd}
+                  isInRange={isInRange}
+                  isRangeStart={hasDistinctRange && isStart}
+                  isRangeEnd={!isOpenEnded && hasDistinctRange && isEnd}
+                  isDimmed={
+                    occurrenceKeys != null &&
+                    isInRange &&
+                    !occurrenceKeys.has(toDeviceDateKey(date))
+                  }
                   onPress={onDatePress}
                 />
-              ) : (
-                <Box key={date.toISOString()} className="h-[48px] flex-1" />
-              ),
-            )}
+              );
+            })}
           </HStack>
         ))}
       </VStack>
@@ -568,39 +607,32 @@ const RepeatCalendar = ({
 interface RepeatDateCellProps {
   date: Date;
   today: Date;
-  startDate: Date;
-  endDate: Date | null;
-  isOpenEnded: boolean;
-  occurrenceKeys: ReadonlySet<string> | null;
+  isStart: boolean;
+  isEnd: boolean;
+  isInRange: boolean;
+  isRangeStart: boolean;
+  isRangeEnd: boolean;
+  isDimmed: boolean;
   onPress: (date: Date) => void;
 }
 
-const RepeatDateCell = ({
+/** 달력은 칸이 많아 입력 하나로 전부 다시 그리지 않도록 값이 바뀐 칸만 그린다 */
+const RepeatDateCell = memo(function RepeatDateCell({
   date,
   today,
-  startDate,
-  endDate,
-  isOpenEnded,
-  occurrenceKeys,
+  isStart,
+  isEnd,
+  isInRange,
+  isRangeStart,
+  isRangeEnd,
+  isDimmed,
   onPress,
-}: RepeatDateCellProps) => {
+}: RepeatDateCellProps) {
   const dayOfMonth = date.getDate();
   const isDisabled = isBeforeDay(date, today);
-  const isStart = isSameDay(date, startDate);
-  const isEnd = endDate != null && isSameDay(date, endDate);
   const isSelected = isStart || isEnd;
   const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
   const shouldHighlightToday = !isDisabled && isTodayHighlighted({ date, isSelected, today });
-
-  const hasDistinctRange = isOpenEnded || (endDate != null && !isSameDay(startDate, endDate));
-  const isInRange =
-    hasDistinctRange &&
-    isAfterDay(date, startDate) &&
-    (isOpenEnded || (endDate != null && isBeforeDay(date, endDate)));
-  const isRangeStart = hasDistinctRange && isStart;
-  const isRangeEnd = !isOpenEnded && hasDistinctRange && isEnd;
-  const isDimmed =
-    occurrenceKeys != null && isInRange && !occurrenceKeys.has(toDeviceDateKey(date));
 
   return (
     <PressableFeedback
@@ -632,4 +664,4 @@ const RepeatDateCell = ({
       </Box>
     </PressableFeedback>
   );
-};
+});

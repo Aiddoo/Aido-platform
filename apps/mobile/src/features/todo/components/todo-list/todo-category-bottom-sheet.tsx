@@ -79,6 +79,10 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
         submitLabel={t('actions.changeSubmit')}
         isLoading={changeCategory.isPending}
         onChange={async (categoryId) => {
+          if (categoryId === todo.category.id) {
+            onClose();
+            return;
+          }
           const scope = TodoPolicy.isRecurring(todo)
             ? await selectEditScope(todo.startDate)
             : undefined;

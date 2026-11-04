@@ -86,6 +86,12 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
         }}
         onCancel={onClose}
         onChange={async ({ scheduledTime, isAllDay }) => {
+          const isUnchanged =
+            isAllDay === todo.isAllDay && (isAllDay || scheduledTime === editValues.scheduledTime);
+          if (isUnchanged) {
+            onClose();
+            return;
+          }
           const scope = TodoPolicy.isRecurring(todo)
             ? await selectEditScope(todo.startDate)
             : undefined;
