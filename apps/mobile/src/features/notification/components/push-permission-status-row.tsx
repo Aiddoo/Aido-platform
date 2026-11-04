@@ -1,7 +1,7 @@
 import { PUSH_PERMISSION_STATUS } from '@aido/api';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, HStack, Text, VStack } from '@src/shared/ui';
+import { Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { match } from 'ts-pattern';
@@ -68,9 +68,9 @@ export function PushPermissionStatusRow() {
     .exhaustive();
 
   return (
-    <>
+    <Box>
       <HStack align="center" gap={12}>
-        <VStack gap={2} className="flex-1">
+        <VStack gap={2} flex={1}>
           <Text size="b3" weight="medium">
             {t('permission.status.label')}
           </Text>
@@ -85,6 +85,6 @@ export function PushPermissionStatusRow() {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
       />
-    </>
+    </Box>
   );
 }

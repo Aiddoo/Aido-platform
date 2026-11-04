@@ -2,7 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { type PushPermissionPromptSource, useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { Button, CloseIcon, HStack, ListRow } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -80,7 +80,12 @@ PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps)
         title={t('permission.card.askTitle')}
         description={t('permission.card.askDescription')}
         action={
-          <Button size="small" variant="weak" onPress={() => setIsDialogOpen(true)}>
+          <Button
+            size="small"
+            variant="weak"
+            display="inline"
+            onPress={() => setIsDialogOpen(true)}
+          >
             {t('permission.card.allow')}
           </Button>
         }
@@ -108,6 +113,7 @@ PushPermissionCard.RequestSystem = function RequestSystem({
         <Button
           size="small"
           variant="weak"
+          display="inline"
           isLoading={requestPermission.isPending}
           onPress={() =>
             requestPermission.mutate(undefined, {
@@ -141,6 +147,7 @@ PushPermissionCard.OpenSettings = function OpenSettings({ className, onDismiss }
         <Button
           size="small"
           variant="weak"
+          display="inline"
           onPress={() =>
             openSettings.mutate(undefined, {
               onSuccess: () => trackEvent('push_permission_settings_opened', { source: SOURCE }),
@@ -168,6 +175,7 @@ PushPermissionCard.EnableInApp = function EnableInApp({ className, onDismiss }: 
         <Button
           size="small"
           variant="weak"
+          display="inline"
           onPress={() => navigate('/settings/notifications/push')}
         >
           {t('permission.card.turnOn')}
@@ -190,24 +198,32 @@ function Notice({ className, title, description, action, onDismiss }: NoticeProp
   const { t } = useTranslation('notification');
 
   return (
-    <HStack align="center" gap={12} className={cn('rounded-xl bg-gray-1 px-4 py-3.5', className)}>
-      <VStack gap={2} className="flex-1">
-        <Text size="b3" weight="medium">
-          {title}
-        </Text>
-        <Text size="e1" shade={6}>
-          {description}
-        </Text>
-      </VStack>
-      {action}
-      <PressableFeedback
-        onPress={onDismiss}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={t('permission.card.dismiss')}
-      >
-        <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
-      </PressableFeedback>
-    </HStack>
+    <ListRow
+      className={cn('rounded-xl bg-gray-1', className)}
+      horizontalPadding="medium"
+      verticalPadding="large"
+      contents={
+        <ListRow.Texts
+          type="2RowTypeA"
+          top={title}
+          topProps={{ size: 'b3', weight: 'medium' }}
+          bottom={description}
+          bottomProps={{ size: 'e1', shade: 6 }}
+        />
+      }
+      right={
+        <HStack align="center" gap={8}>
+          {action}
+          <PressableFeedback
+            onPress={onDismiss}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('permission.card.dismiss')}
+          >
+            <CloseIcon width={20} height={20} colorClassName="text-gray-6" />
+          </PressableFeedback>
+        </HStack>
+      }
+    />
   );
 }

@@ -1,7 +1,10 @@
 import { PermissionStatus } from 'expo';
 import * as Notifications from 'expo-notifications';
 
-import { expoPushNotificationGateway } from './expo-push-notification.gateway';
+import {
+  expoPushNotificationGateway,
+  PUSH_TOKEN_ISSUE_TIMEOUT_MS,
+} from './expo-push-notification.gateway';
 
 jest.mock('expo-notifications', () => ({
   IosAuthorizationStatus: {
@@ -12,11 +15,13 @@ jest.mock('expo-notifications', () => ({
     EPHEMERAL: 4,
   },
   getPermissionsAsync: jest.fn(),
+  getExpoPushTokenAsync: jest.fn(),
   addPushTokenListener: jest.fn(),
 }));
 
 const getPermissionsAsync = jest.mocked(Notifications.getPermissionsAsync);
 const addPushTokenListener = jest.mocked(Notifications.addPushTokenListener);
+const getExpoPushTokenAsync = jest.mocked(Notifications.getExpoPushTokenAsync);
 
 describe('expoPushNotificationGateway', () => {
   afterEach(() => {
@@ -77,5 +82,20 @@ describe('expoPushNotificationGateway', () => {
     // Then
     expect(listener).toHaveBeenCalledTimes(2);
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  test('APNs 등록이 끝나지 않아 토큰 발급이 멈추면 시간 제한 뒤 실패로 끝낸다', async () => {
+    // Given 응답하지 않는 발급
+    jest.useFakeTimers();
+    getExpoPushTokenAsync.mockReturnValue(new Promise(() => {}));
+    const issuing = expoPushNotificationGateway.getToken();
+    const failure = expect(issuing).rejects.toThrow();
+
+    // When
+    await jest.advanceTimersByTimeAsync(PUSH_TOKEN_ISSUE_TIMEOUT_MS);
+
+    // Then
+    await failure;
+    jest.useRealTimers();
   });
 });

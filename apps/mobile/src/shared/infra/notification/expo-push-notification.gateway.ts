@@ -3,11 +3,15 @@ import type {
   PushNotificationGateway,
   PushPermissionResponse,
 } from '@src/core/ports/push-notification-gateway';
+import { withTimeout } from 'es-toolkit';
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as Notifications from 'expo-notifications';
 
 const DEFAULT_CHANNEL_ID = 'default';
+
+/** APNs·FCM 등록이 끝나지 않으면 발급이 멈춘다. 다음 보고와 로그아웃이 기다리지 않게 끊는다 */
+export const PUSH_TOKEN_ISSUE_TIMEOUT_MS = 15_000;
 
 const IOS_AUTHORIZATION_STATUS = {
   [Notifications.IosAuthorizationStatus.NOT_DETERMINED]: 'NOT_DETERMINED',
@@ -41,7 +45,10 @@ export const expoPushNotificationGateway: PushNotificationGateway = {
   },
   getToken: async () => {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = await withTimeout(
+      () => Notifications.getExpoPushTokenAsync({ projectId }),
+      PUSH_TOKEN_ISSUE_TIMEOUT_MS,
+    );
     return token.data;
   },
   addTokenListener: (listener) => {
