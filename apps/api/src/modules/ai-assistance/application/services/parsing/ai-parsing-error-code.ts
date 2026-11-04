@@ -14,7 +14,7 @@ export function toParsingErrorCode(kind: AiProviderErrorKind): ErrorCodeType {
 }
 
 export interface ParsingFailure {
-  readonly errorKind: AiProviderErrorKind;
+  readonly errorType: AiProviderErrorKind;
   readonly statusCode: number | undefined;
   readonly upstream: AiUpstreamCause | undefined;
   readonly errorCode: ErrorCodeType;
@@ -23,5 +23,5 @@ export interface ParsingFailure {
 /** 공급자 오류가 아닌 실패는 서버 정규화·검증이 거절한 출력으로 본다. */
 export function describeParsingFailure(error: unknown): ParsingFailure {
   const failure = providerFailure(error);
-  return { ...failure, errorCode: toParsingErrorCode(failure.errorKind) };
+  return { ...failure, errorCode: toParsingErrorCode(failure.errorType) };
 }

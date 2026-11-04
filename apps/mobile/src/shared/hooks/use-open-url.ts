@@ -1,8 +1,10 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import { errorMessageOf } from '@src/shared/errors';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useRef } from 'react';
 
+import { OPEN_URL_LOG_EVENT } from './open-url-log-events';
 import { useSingleTap } from './use-single-tap';
 
 /**
@@ -24,7 +26,9 @@ export function useOpenUrl() {
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
     })
       .catch(() => Linking.openURL(url))
-      .catch((error) => logger.warn('web-browser.open.failed', { error }))
+      .catch((error: unknown) =>
+        logger.warn(OPEN_URL_LOG_EVENT.BROWSER_OPEN_FAILED, { error: errorMessageOf(error) }),
+      )
       .finally(() => {
         isBrowserOpenRef.current = false;
       });

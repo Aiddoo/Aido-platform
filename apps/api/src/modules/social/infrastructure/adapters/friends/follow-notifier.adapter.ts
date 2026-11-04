@@ -10,7 +10,7 @@ import type {
 } from "../../../application/ports/friends/follow-notifier.port.js";
 
 /**
- * FollowNotifierPort의 어댑터 — 레거시 NotificationQueueService(BullMQ)에 위임한다.
+ * FollowNotifierPort의 어댑터 — NotificationQueueService에 위임한다.
  * notification 모듈이 클린아키텍처로 이관되면 이 어댑터 내부만 교체하면 된다.
  */
 @Injectable()

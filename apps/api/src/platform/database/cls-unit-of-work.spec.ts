@@ -134,7 +134,10 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
     ).resolves.toBe("committed");
 
     expect(secondTask).toHaveBeenCalledTimes(1);
-    expect(Logger.prototype.error).toHaveBeenCalledWith("After-commit task failed (Error)");
+    expect(Logger.prototype.error).toHaveBeenCalledWith({
+      event: "database.after-commit-task.failed",
+      errorType: "Error",
+    });
   });
 
   it("동시에 실행되는 root transaction의 task scope를 서로 격리한다", async () => {
@@ -170,7 +173,10 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
     expect(task).toHaveBeenCalledTimes(1);
     await Promise.resolve();
 
-    expect(Logger.prototype.error).toHaveBeenCalledWith("After-commit task failed (Error)");
+    expect(Logger.prototype.error).toHaveBeenCalledWith({
+      event: "database.after-commit-task.failed",
+      errorType: "Error",
+    });
   });
 
   it("transaction 밖 task의 synchronous throw도 caller에 전파하지 않는다", () => {
@@ -179,7 +185,10 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
     });
 
     expect(() => registry.register(task)).not.toThrow();
-    expect(Logger.prototype.error).toHaveBeenCalledWith("After-commit task failed (Error)");
+    expect(Logger.prototype.error).toHaveBeenCalledWith({
+      event: "database.after-commit-task.failed",
+      errorType: "Error",
+    });
   });
 
   it("active transaction에 registry scope가 없으면 invariant 오류를 낸다", async () => {

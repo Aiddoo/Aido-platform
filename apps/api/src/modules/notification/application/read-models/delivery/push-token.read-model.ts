@@ -1,5 +1,4 @@
-/** 푸시 토큰 플랫폼 (DB `Platform` enum과 구조 동일) */
-export type PushTokenPlatform = "IOS" | "ANDROID";
+import type { PushDevicePlatform } from "@aido/api/vocabulary";
 
 /**
  * 푸시 토큰 읽기 레코드 (도메인 소유 뷰).
@@ -11,7 +10,7 @@ export interface PushTokenRecord {
   readonly userId: string;
   readonly token: string;
   readonly deviceId: string;
-  readonly platform: PushTokenPlatform;
+  readonly platform: PushDevicePlatform;
   readonly isActive: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;

@@ -44,7 +44,7 @@
 | 저녁 리마인더 +90분          | `SOCIAL_DIGEST`           |         O |               O | 직전 저녁 리마인더 알림 생성 대상 중 본인 미완료 + 완료 친구 존재. 같은 날 스트릭 위기 수신자는 제외                                |
 | 18:00 (초대받은 사람 시간대) | `INVITE_QUALIFY_REMINDER` |         O |               O | 초대 정비 작업(03:30 KST)이 예약. JOINED·할 일을 끝낸 날 1일·마감 3일 안·초대한 사람 보상 있음일 때 수락마다 1회(아래)              |
 
-월간 리포트와 주간 리포트는 같은 11:30 슬롯에서 동시에 보내지 않는다. 무료 주간 달성 요약은 프리미엄 리포트와 대상이 다르므로 별도로 집계한다. 일일 스케줄은 `notificationDate` 또는 전용 Redis 키로 중복 생성·예약을 제한한다.
+월간 리포트와 주간 리포트는 같은 11:30 슬롯에서 동시에 보내지 않는다. 무료 주간 달성 요약은 프리미엄 리포트와 대상이 다르므로 별도로 집계한다. 일일 스케줄은 `notificationDate`나 pg-boss `singletonKey`로 중복 생성·예약을 제한한다.
 
 AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시각 이후의 누락 실행을 보정한다. 대상은 활성·미삭제 프리미엄(`subscriptionStatus=ACTIVE`) 또는 관리자이며 최근 14일에 반복 그룹이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `canInTx(userId, "AI_SUGGESTION")`으로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. 할 일 파싱의 일일 quota와 제안·리포트의 premium 권한 검사는 별도 정책이다.
 
@@ -202,6 +202,29 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 - 같은 token을 다시 등록하는 ABA 등록 세대는 SHA256만으로 구별하지 못한다.
 - 앞 청크가 수락된 뒤 다음 청크 transport가 실패하면 전체 논리 배치 retry에서 중복 전달이 가능하다. 원문/token/body/credential은 로그에 남기지 않는다.
 - receipt는 외부 provider handoff 결과다. 기기 알림 표시·사용자 열람·운영 exactly-once를 보장하지 않는다.
+
+## 푸시 기기와 토큰
+
+앱은 기기마다 알림 권한과 Expo 토큰을 서버에 보고한다. 서버는 권한을 해석해 도달 가능 여부와 건너뜀 사유를 정하고, 앱은 OS 권한과 토큰을 읽어 보고만 한다.
+
+| 책임   | 서버                                                                                                                           | 앱                                                                                       |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| 권한   | 보고된 `PushPermission`(`GRANTED`·`PROVISIONAL`·`DENIED`·`NOT_DETERMINED`)을 저장한다. `PROVISIONAL`도 발송한다                | OS 권한을 읽어 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보고한다                       |
+| 플랫폼 | `deviceId` 접두어 `ios_`·`android_`로 정한다(`platformFromDeviceId`). 접두어가 없으면 `X-Device-Type`을 쓰고, 둘 다 없으면 400 | 접두어가 붙은 `deviceId`를 만든다                                                        |
+| 토큰   | 기기·로그인 세션에 묶어 저장하고 `DeviceNotRegistered`면 비활성화하고 소유권 이전·세션 폐기 때 지운다                          | Expo 토큰을 얻어 보고한다. 로그아웃 때 해제 요청을 보내도 서버가 세션 폐기로 다시 지운다 |
+| 사유   | 활성 토큰이 없으면 기기 권한으로 건너뜀 사유를 정한다                                                                          | 사유를 알지 못한다                                                                       |
+
+- 엔드포인트: `PUT /v1/notifications/push-devices/{deviceId}`(기기 보고, 1.14.2+). 1.14.1 이하 앱의 `POST`·`DELETE /v1/notifications/token`은 deprecated이며 같은 UseCase(`ReportPushDevice`·`UnregisterPushDevice`)로 위임한다. 이전 앱의 등록은 권한 `GRANTED`로 저장한다.
+- 세션 결속: `PushDevice`·`PushToken`의 `sessionId`는 `Session`을 참조하며 `ON DELETE CASCADE`다. identity가 세션을 폐기하면(로그아웃·전체 로그아웃·비밀번호 변경·재설정·원격 종료·토큰 재사용 감지·탈퇴) `SESSION_PUSH_DEVICE_RELEASER` Port로 notification의 `SESSION_PUSH_DEVICE_RELEASE` capability를 불러 그 세션의 기기와 토큰을 바로 지운다. 해제가 실패해도 세션 폐기는 막지 않고 `identity.session.push-device-release.failed`(warn)만 남긴다. 만료돼 정리되는 세션은 CASCADE로 함께 지워진다. `sessionId`가 없는 1.14.1 이하 등록은 그대로 둔다.
+- 건너뜀 사유: 활성 토큰이 없으면 최근 `PUSH_DEVICE_STALE_AFTER_DAYS`(90일) 안에 보고한 기기의 권한으로 정한다(`noActiveTokenSkipReason`).
+
+| 사유                            | 조건                                                                               |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| `NO_ACTIVE_TOKEN`               | 허용된 기기가 있거나, 보고한 기기가 없거나(1.14.1 이하 앱) 모든 보고가 90일을 넘음 |
+| `PUSH_PERMISSION_NOT_REQUESTED` | 허용된 기기가 없고 `NOT_DETERMINED` 기기가 있음. 거절보다 먼저 센다                |
+| `PUSH_PERMISSION_DENIED`        | 허용된 기기가 없고 `DENIED` 기기만 있음                                            |
+
+관리자 캠페인 조회(`GET /v2/admin/notifications/broadcasts/{campaignId}`)의 `dispatches`가 사유별 수 `skippedByReason`을 돌려준다(추가 필드).
 
 ## 큐와 작업 key
 

@@ -15,14 +15,11 @@ import type {
   RegisterPushTokenData,
 } from "../../../application/ports/delivery/notification-data.js";
 import {
-  PushTokenNotFoundError,
   PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
 } from "../../../application/ports/delivery/push-token.repository.port.js";
 import type { PushTokenRecord } from "../../../application/read-models/delivery/push-token.read-model.js";
 
-/** 구 앱은 deviceId 없이 등록한다. */
-const DEFAULT_DEVICE_ID = "default";
 const PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT = "PushToken_token_key";
 
 @Injectable()
@@ -34,48 +31,48 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
   }
 
   async releasePushTokenHeldElsewhere(
-    data: Pick<RegisterPushTokenData, "userId" | "token" | "deviceId">,
+    data: Parameters<PushTokenRepositoryPort["releasePushTokenHeldElsewhere"]>[0],
   ): Promise<{ readonly userIds: readonly string[] }> {
-    const deviceId = data.deviceId ?? DEFAULT_DEVICE_ID;
+    const sameDeviceOfOtherUser = and(
+      eq(pushToken.deviceId, data.deviceId),
+      ne(pushToken.userId, data.userId),
+    );
     // 해제 요청(unregister)과 같은 삭제다. 그 등록의 발송 시도 기록은 FK cascade로 함께 지워진다.
     const released = await this.db
       .delete(pushToken)
       .where(
-        and(
-          eq(pushToken.token, data.token),
-          or(ne(pushToken.userId, data.userId), ne(pushToken.deviceId, deviceId)),
-        ),
+        data.token == null
+          ? sameDeviceOfOtherUser
+          : or(
+              sameDeviceOfOtherUser,
+              and(
+                eq(pushToken.token, data.token),
+                or(ne(pushToken.userId, data.userId), ne(pushToken.deviceId, data.deviceId)),
+              ),
+            ),
       )
       .returning({ userId: pushToken.userId });
     return { userIds: released.map((row) => row.userId) };
   }
 
   async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
-    const deviceId = data.deviceId ?? DEFAULT_DEVICE_ID;
-    const platform = data.platform ?? "IOS";
-    const payloadVersion = data.payloadVersion ?? 1;
-
+    const { userId, token, deviceId, platform, sessionId, payloadVersion, appVersion } = data;
     try {
       const [row] = await this.db
         .insert(pushToken)
         .values({
-          userId: data.userId,
-          token: data.token,
+          userId,
+          token,
           deviceId,
           platform,
+          sessionId,
           isActive: true,
           payloadVersion,
-          appVersion: data.appVersion,
+          appVersion,
         })
         .onConflictDoUpdate({
           target: [pushToken.userId, pushToken.deviceId],
-          set: {
-            token: data.token,
-            platform,
-            isActive: true,
-            payloadVersion,
-            appVersion: data.appVersion,
-          },
+          set: { token, platform, sessionId, isActive: true, payloadVersion, appVersion },
         })
         .returning();
       return requireRecord(row);
@@ -110,15 +107,12 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .where(and(inArray(pushToken.userId, userIds), eq(pushToken.isActive, true)));
   }
 
-  async deletePushToken(userId: string, deviceId: string): Promise<PushTokenRecord> {
-    const [row] = await this.db
+  async deletePushTokensByDevice(userId: string, deviceId: string): Promise<{ count: number }> {
+    const deleted = await this.db
       .delete(pushToken)
       .where(and(eq(pushToken.userId, userId), eq(pushToken.deviceId, deviceId)))
-      .returning();
-    if (row == null) {
-      throw new PushTokenNotFoundError();
-    }
-    return row;
+      .returning({ id: pushToken.id });
+    return { count: deleted.length };
   }
 
   async deleteAllPushTokensByUser(userId: string): Promise<{ count: number }> {
@@ -127,6 +121,16 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .where(eq(pushToken.userId, userId))
       .returning({ id: pushToken.id });
     return { count: deleted.length };
+  }
+
+  async deletePushTokensBySessions(
+    sessionIds: readonly string[],
+  ): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.db
+      .delete(pushToken)
+      .where(inArray(pushToken.sessionId, [...sessionIds]))
+      .returning({ userId: pushToken.userId });
+    return { userIds: deleted.map((row) => row.userId) };
   }
 
   async deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }> {

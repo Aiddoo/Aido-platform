@@ -4,6 +4,8 @@ export * from "./marketing-push-opt-out.dto.js";
 export * from "./notification-id-param.request.dto.js";
 export * from "./notification-list.response.dto.js";
 export * from "./notification-opened.response.dto.js";
+export * from "./push-device.request.dto.js";
+export * from "./push-device.response.dto.js";
 export * from "./register-token.request.dto.js";
 export * from "./register-token.response.dto.js";
 export * from "./unread-count.response.dto.js";

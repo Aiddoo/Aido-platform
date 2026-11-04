@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
@@ -22,7 +22,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 
 import { GetInviteAvailability } from "../../../../application/use-cases/invites/get-invite-availability.use-case.js";
 import { GetInvitedFriends } from "../../../../application/use-cases/invites/get-invited-friends.use-case.js";
@@ -42,7 +42,11 @@ import {
   RedeemInviteResponseDto,
 } from "../../../schemas/invites/v1/index.js";
 
-const THROTTLED_DESCRIPTION = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+const INVITE_THROTTLE = {
+  ROTATE: { ttl: 3_600_000, limit: 3 },
+  PREVIEW: { ttl: 60_000, limit: 20 },
+  REDEEM: { ttl: 60_000, limit: 10 },
+} as const;
 
 // 정적 경로를 :code보다 먼저 선언해 me·availability가 코드로 해석되지 않게 한다
 @ApiTags(SWAGGER_TAGS.INVITES)
@@ -90,7 +94,7 @@ export class InviteController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ThrottleByUser()
-  @Throttle({ default: { ttl: 3_600_000, limit: 3 } })
+  @Throttle({ default: INVITE_THROTTLE.ROTATE })
   @ApiDoc({
     summary: "초대 링크 새로 만들기",
     operationId: "rotateInviteCode",
@@ -132,7 +136,7 @@ export class InviteController {
 
   @Get(":code")
   @Public()
-  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @Throttle({ default: INVITE_THROTTLE.PREVIEW })
   @ApiDoc({
     summary: "초대 미리보기",
     operationId: "getInvitePreview",
@@ -155,7 +159,13 @@ export class InviteController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ThrottleByUser()
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Throttle({ default: INVITE_THROTTLE.REDEEM })
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC). 초대 사용 시작일을 정하는 날짜 기준입니다.",
+    example: "Asia/Seoul",
+  })
   @ApiDoc({
     summary: "초대 수락",
     operationId: "redeemInvite",

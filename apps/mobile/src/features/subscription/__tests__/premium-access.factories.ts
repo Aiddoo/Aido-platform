@@ -1,5 +1,5 @@
-import { type CurrentUser, currentUserSchema } from '@aido/api';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
+import { type CurrentUserResponse, CurrentUserSchema } from '@src/features/user/apis/user.mapper';
 
 import type { PremiumAccess } from '../domains/premium-access.model';
 
@@ -15,8 +15,14 @@ export const createPremiumAccess = (overrides?: Partial<PremiumAccess>): Premium
 });
 
 /** 서버 /me 응답을 @aido/api 계약으로 검증해 만든다. 서버가 보낼 수 없는 모양은 여기서 실패한다 */
-const premiumMe = (overrides: Partial<CurrentUser>) =>
-  currentUserSchema.parse(createCurrentUserDto({ subscriptionStatus: 'ACTIVE', ...overrides }));
+const premiumMe = (overrides: Partial<CurrentUserResponse>) =>
+  CurrentUserSchema.parse(
+    createCurrentUserDto({
+      subscriptionStatus: 'ACTIVE',
+      isPremium: overrides.premiumSource != null,
+      ...overrides,
+    }),
+  );
 
 /**
  * 서버 PremiumAccessPolicy 예시 그대로의 /me 프리미엄 응답.
@@ -97,4 +103,4 @@ export const PREMIUM_ME_EXAMPLES = {
     bankedPremiumDays: 5,
     premiumGrantEndedAt: null,
   }),
-} as const satisfies Record<string, CurrentUser>;
+} as const satisfies Record<string, CurrentUserResponse>;

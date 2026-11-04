@@ -13,6 +13,8 @@ import { mock, type MockProxy } from "vitest-mock-extended";
  */
 
 import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
+import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 
 import { GetNotifications } from "../../../../application/use-cases/delivery/get-notifications.use-case.js";
 import { GetUnreadCount } from "../../../../application/use-cases/delivery/get-unread-count.use-case.js";
@@ -20,8 +22,8 @@ import { MarkAllAsRead } from "../../../../application/use-cases/delivery/mark-a
 import { MarkAsRead } from "../../../../application/use-cases/delivery/mark-as-read.use-case.js";
 import { MarkNotificationOpened } from "../../../../application/use-cases/delivery/mark-notification-opened.use-case.js";
 import { OptOutMarketingPush } from "../../../../application/use-cases/delivery/opt-out-marketing-push.use-case.js";
-import { RegisterPushToken } from "../../../../application/use-cases/delivery/register-push-token.use-case.js";
-import { UnregisterPushToken } from "../../../../application/use-cases/delivery/unregister-push-token.use-case.js";
+import { ReportPushDevice } from "../../../../application/use-cases/delivery/report-push-device.use-case.js";
+import { UnregisterPushDevice } from "../../../../application/use-cases/delivery/unregister-push-device.use-case.js";
 import type { RegisterPushTokenDto } from "../../../schemas/delivery/v1/index.js";
 import { NotificationController } from "./notification.controller.js";
 
@@ -30,7 +32,7 @@ describe("NotificationController — 알림 컨트롤러", () => {
   let getUnreadCountUseCase: MockProxy<GetUnreadCount>;
   let markAllAsReadUseCase: MockProxy<MarkAllAsRead>;
   let markAsReadUseCase: MockProxy<MarkAsRead>;
-  let registerPushTokenUseCase: MockProxy<RegisterPushToken>;
+  let reportPushDeviceUseCase: MockProxy<ReportPushDevice>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -43,15 +45,15 @@ describe("NotificationController — 알림 컨트롤러", () => {
     getUnreadCountUseCase = mock<GetUnreadCount>();
     markAllAsReadUseCase = mock<MarkAllAsRead>();
     markAsReadUseCase = mock<MarkAsRead>();
-    registerPushTokenUseCase = mock<RegisterPushToken>();
+    reportPushDeviceUseCase = mock<ReportPushDevice>();
     controller = new NotificationController(
       mock<GetNotifications>(),
       getUnreadCountUseCase,
       markAsReadUseCase,
       mock<MarkNotificationOpened>(),
       markAllAsReadUseCase,
-      registerPushTokenUseCase,
-      mock<UnregisterPushToken>(),
+      reportPushDeviceUseCase,
+      mock<UnregisterPushDevice>(),
       mock<OptOutMarketingPush>(),
     );
   });
@@ -82,53 +84,59 @@ describe("NotificationController — 알림 컨트롤러", () => {
   });
 
   describe("registerToken", () => {
-    it("푸시 토큰을 등록하고 성공 응답을 반환해야 한다", async () => {
-      // Given -푸시 토큰 등록 DTO가 준비되었을 때
+    it("1.14.1 이하 앱의 토큰 등록을 권한 허용 기기 보고로 바꿔 전달한다", async () => {
+      // Given 권한을 허용한 뒤 토큰을 보내는 구 앱 요청
       const dto: RegisterPushTokenDto = {
         token: "ExponentPushToken[xxxxxx]",
-        deviceId: "device-abc",
-        payloadVersion: 1,
+        deviceId: "android_abc",
+        payloadVersion: 2,
+        appVersion: "1.14.1",
       };
-      const tz = "Asia/Seoul";
-      const locale = "ko";
-      registerPushTokenUseCase.execute.mockResolvedValue(undefined);
 
-      // When -registerToken을 호출하면
-      const result = await controller.registerToken(mockUser, dto, tz, locale);
+      // When
+      const client = parseRequestClient(
+        { "x-timezone": "Asia/Seoul", "accept-language": "ko", "x-device-name": "SM-S931N" },
+        TEST_REQUEST_ID,
+      );
+      const result = await controller.registerToken(mockUser, dto, client);
 
-      // Then -use-case에 올바른 파라미터를 전달하고 성공 응답을 반환해야 한다
-      expect(registerPushTokenUseCase.execute).toHaveBeenCalledWith({
+      // Then 권한은 GRANTED, 결과 문구는 그대로다
+      expect(reportPushDeviceUseCase.execute).toHaveBeenCalledWith({
         userId: mockUser.userId,
+        sessionId: mockUser.sessionId,
+        deviceId: "android_abc",
+        platformHint: undefined,
+        deviceModel: "SM-S931N",
+        osVersion: null,
+        permission: { status: "GRANTED", canAskAgain: false },
         token: dto.token,
-        deviceId: dto.deviceId,
-        timezone: tz,
-        locale,
-        payloadVersion: 1,
-        appVersion: undefined,
+        payloadVersion: 2,
+        appVersion: "1.14.1",
+        timezone: "Asia/Seoul",
+        locale: "ko",
       });
-      expect(result).toEqual({
-        message: "푸시 토큰이 등록되었습니다.",
-        registered: true,
-      });
+      expect(result).toEqual({ message: "푸시 토큰이 등록되었습니다.", registered: true });
     });
 
-    it("타임존 헤더가 없으면 기존 설정을 보존하도록 timezone을 전달하지 않는다", async () => {
-      const dto: RegisterPushTokenDto = {
-        token: "ExponentPushToken[xxxxxx]",
-        payloadVersion: 1,
-      };
+    it("deviceId가 없으면 구 기본 기기로 보고하고 기기 타입 헤더를 플랫폼 힌트로 쓴다", async () => {
+      // Given deviceId 없이 보낸 요청
+      const dto: RegisterPushTokenDto = { token: "ExponentPushToken[xxxxxx]", payloadVersion: 1 };
 
-      await controller.registerToken(mockUser, dto, undefined, undefined);
+      // When
+      await controller.registerToken(
+        mockUser,
+        dto,
+        parseRequestClient({ "x-device-type": "android" }, TEST_REQUEST_ID),
+      );
 
-      expect(registerPushTokenUseCase.execute).toHaveBeenCalledWith({
-        userId: mockUser.userId,
-        token: dto.token,
-        deviceId: undefined,
-        timezone: undefined,
-        locale: undefined,
-        payloadVersion: 1,
-        appVersion: undefined,
-      });
+      // Then
+      expect(reportPushDeviceUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deviceId: "default",
+          platformHint: "ANDROID",
+          timezone: null,
+        }),
+      );
     });
   });
 

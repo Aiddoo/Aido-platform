@@ -346,7 +346,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
     expect(error).toMatchObject({
       kind: "UPSTREAM",
       statusCode: 503,
-      upstream: { errorName: "AI_APICallError", providerStatus: "UNAVAILABLE" },
+      upstream: { errorType: "AI_APICallError", providerStatus: "UNAVAILABLE" },
     });
     expect(JSON.stringify(Reflect.get(Object(error), "upstream"))).not.toContain("fixture");
     expect(fetchSpy).toHaveBeenCalledTimes(3);
@@ -476,7 +476,7 @@ describe("AiSdkAdapter — 실제 Google factory·설치 SDK, 외부 네트워�
       .catch((cause: unknown) => cause);
 
     // Then
-    expect(error).toMatchObject({ kind: "UPSTREAM", upstream: { errorCode: "ECONNRESET" } });
+    expect(error).toMatchObject({ kind: "UPSTREAM", upstream: { networkCode: "ECONNRESET" } });
     expect(JSON.stringify(Reflect.get(Object(error), "upstream"))).not.toContain("SECRET");
   });
 

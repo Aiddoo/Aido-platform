@@ -16,6 +16,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import { ReportContent } from "../../../../application/use-cases/reports/report-content.use-case.js";
@@ -24,6 +25,8 @@ import {
   CreateUserReportResponseDto,
 } from "../../../schemas/reports/v1/index.js";
 
+const REPORT_THROTTLE = { ttl: 60_000, limit: 10 } as const;
+
 @ApiTags(SWAGGER_TAGS.REPORTS)
 @ApiBearerAuth()
 @Controller("reports")
@@ -31,7 +34,8 @@ export class UserReportController {
   constructor(private readonly reportContentUseCase: ReportContent) {}
 
   @Post()
-  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @ThrottleByUser()
+  @Throttle({ default: REPORT_THROTTLE })
   @ApiDoc({
     summary: "사용자·콘텐츠 신고",
     operationId: "createUserReport",
@@ -57,6 +61,7 @@ export class UserReportController {
   @ApiBadRequestError(ErrorCode.REPORT_2253)
   @ApiNotFoundError(ErrorCode.REPORT_2252)
   @ApiTooManyRequestsError(ErrorCode.REPORT_2254)
+  @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async create(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateUserReportDto }) dto: CreateUserReportDto,

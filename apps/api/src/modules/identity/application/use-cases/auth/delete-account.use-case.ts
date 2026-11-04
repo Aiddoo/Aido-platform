@@ -22,6 +22,7 @@ import type {
   AuthSessionRepositoryPort,
   AuthUserRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../ports/auth/session-push-device-releaser.port.js";
 import type { DeleteAccountResult, RequestMetadata } from "../../types/auth/index.js";
 import { assertNotDeleted } from "../../utils/auth/auth-validation.utils.js";
 
@@ -40,6 +41,7 @@ interface DeleteAccountDependencies {
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession" | "invalidateUserProfile">;
+  readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly logger: ApplicationLogger;
 }
 
@@ -104,6 +106,7 @@ export class DeleteAccount {
         this.#dependencies.cacheService.invalidateSession(sessionId),
       ),
     );
+    await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id);
     this.#dependencies.logger.log({
       event: IdentityLogEvent.ACCOUNT_DELETION_REQUESTED,

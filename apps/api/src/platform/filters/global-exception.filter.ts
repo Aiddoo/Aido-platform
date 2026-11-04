@@ -1,5 +1,5 @@
 import type { RestErrorResponse } from "@aido/api";
-import { ErrorCode, Errors, toPublicErrorDetails } from "@aido/api/errors";
+import { ErrorCode, type ErrorCodeType, Errors, toPublicErrorDetails } from "@aido/api/errors";
 import {
   type ArgumentsHost,
   Catch,
@@ -19,9 +19,21 @@ import {
 } from "#api/platform/database/database-error.util";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
 import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+
+/**
+ * 카탈로그에 상태별 공통 코드가 400(SYS_0002)·500(SYS_0001)뿐이고 출시 앱은 모르는 코드를 SYS_0001로 바꾼다.
+ * 429는 "잠시 후 다시 시도" 안내를 유지하려고 출시 이후 응답해 온 SYS_0001로 둔다.
+ */
+function httpExceptionErrorCode(statusCode: number): ErrorCodeType {
+  return statusCode >= HttpStatus.INTERNAL_SERVER_ERROR ||
+    statusCode === HttpStatus.TOO_MANY_REQUESTS
+    ? ErrorCode.SYS_0001
+    : ErrorCode.SYS_0002;
+}
 
 /**
  * 전역 예외 필터
@@ -47,34 +59,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof ErrorCodedException) {
       ({ statusCode, errorResponse } = this.#toRestErrorResponse(exception));
     } else if (exception instanceof HttpException) {
-      // HTTP Exception 처리
       statusCode = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-
-      if (typeof exceptionResponse === "object" && "message" in exceptionResponse) {
-        errorResponse = {
-          success: false,
-          error: {
-            code: ErrorCode.SYS_0002,
-            message: Array.isArray(exceptionResponse.message)
+      const hasMessage = typeof exceptionResponse === "object" && "message" in exceptionResponse;
+      errorResponse = {
+        success: false,
+        error: {
+          code: httpExceptionErrorCode(statusCode),
+          message: hasMessage
+            ? Array.isArray(exceptionResponse.message)
               ? exceptionResponse.message.join(", ")
-              : String(exceptionResponse.message),
-            ...(this.configService.isDevelopment && {
+              : String(exceptionResponse.message)
+            : exception.message,
+          ...(hasMessage &&
+            this.configService.isDevelopment && {
               details: exceptionResponse,
             }),
-          },
-          timestamp: Date.now(),
-        };
-      } else {
-        errorResponse = {
-          success: false,
-          error: {
-            code: ErrorCode.SYS_0001,
-            message: exception.message,
-          },
-          timestamp: Date.now(),
-        };
-      }
+        },
+        timestamp: Date.now(),
+      };
     } else if (databaseSqlState(exception) != null || isRecordNotFoundError(exception)) {
       // Database 에러 처리
       const businessException = this.#mapDatabaseError(exception);
@@ -105,10 +108,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // 서버 에러(5xx)만 Sentry에 캡처 (4xx 클라이언트 에러는 노이즈 방지)
     if (statusCode >= 500) {
       Sentry.withScope((scope) => {
-        scope.setUser({
-          id: userId !== "anonymous" ? userId : undefined,
-          ip_address: "{{auto}}",
-        });
+        scope.setUser(userId === "anonymous" ? null : { id: userId });
         scope.setTags({
           [SENTRY_TAG.HTTP_METHOD]: request.method,
           [SENTRY_TAG.HTTP_URL]: requestPath,
@@ -190,16 +190,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       case "23505":
         return this.#mapUniqueConstraintError(error);
       case "23503":
-        this.logger.warn(
-          `PostgreSQL foreign key violation: ${databaseConstraint(error) ?? "unknown"}`,
-        );
+        this.logger.warn({
+          event: PlatformLogEvent.DATABASE_FOREIGN_KEY_VIOLATED,
+          constraint: databaseConstraint(error) ?? "unknown",
+        });
         return ApplicationExceptions.invalidParameter(
           this.configService.isDevelopment
             ? { reason: "Referenced record does not exist" }
             : undefined,
         );
       default:
-        this.logger.warn(`Unhandled database error: ${sqlState ?? "unknown"}`);
+        this.logger.warn({
+          event: PlatformLogEvent.DATABASE_ERROR_UNHANDLED,
+          sqlState: sqlState ?? "unknown",
+        });
         return ApplicationExceptions.internalServerError(
           this.configService.isDevelopment ? { sqlState } : undefined,
         );
@@ -240,7 +244,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // 알 수 없는 constraint → warn 로그 + SYS_0004 폴백
-    this.logger.warn(`Unknown database unique constraint: ${constraintKey}`);
+    this.logger.warn({
+      event: PlatformLogEvent.DATABASE_UNIQUE_CONSTRAINT_UNKNOWN,
+      constraint: constraintKey,
+    });
     return ApplicationExceptions.concurrentModification();
   }
 }

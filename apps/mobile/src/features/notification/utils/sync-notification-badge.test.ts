@@ -16,7 +16,7 @@ const createRecordingLogger = () => {
 };
 
 const createStubNotificationService = (syncBadgeCount: () => Promise<void>) => {
-  const calls = { sync: 0 };
+  const calls = { sync: 0, clear: 0 };
   return {
     calls,
     service: {
@@ -24,12 +24,51 @@ const createStubNotificationService = (syncBadgeCount: () => Promise<void>) => {
         calls.sync += 1;
         return syncBadgeCount();
       },
-      clearBadge: async () => {},
+      clearBadge: async () => {
+        calls.clear += 1;
+      },
     },
   };
 };
 
 describe('syncNotificationBadge', () => {
+  it.each(['loading', 'locked'] as const)(
+    '인증을 확인하는 중(%s)에는 배지를 지우지도 맞추지도 않는다',
+    async (authStatus) => {
+      // Given
+      const recorder = createRecordingLogger();
+      const stub = createStubNotificationService(async () => {});
+
+      // When
+      await syncNotificationBadge({
+        authStatus,
+        isOnline: true,
+        notificationService: stub.service,
+        logger: recorder.logger,
+      });
+
+      // Then
+      expect(stub.calls).toEqual({ sync: 0, clear: 0 });
+    },
+  );
+
+  it('로그아웃 상태로 확정되면 배지를 지운다', async () => {
+    // Given
+    const recorder = createRecordingLogger();
+    const stub = createStubNotificationService(async () => {});
+
+    // When
+    await syncNotificationBadge({
+      authStatus: 'unauthenticated',
+      isOnline: true,
+      notificationService: stub.service,
+      logger: recorder.logger,
+    });
+
+    // Then
+    expect(stub.calls).toEqual({ sync: 0, clear: 1 });
+  });
+
   it('오프라인이면 배지 조회를 건너뛰고 오류를 남기지 않는다', async () => {
     // Given
     const recorder = createRecordingLogger();
@@ -37,7 +76,7 @@ describe('syncNotificationBadge', () => {
 
     // When
     await syncNotificationBadge({
-      isAuthenticated: true,
+      authStatus: 'authenticated',
       isOnline: false,
       notificationService: stub.service,
       logger: recorder.logger,
@@ -57,7 +96,7 @@ describe('syncNotificationBadge', () => {
 
     // When
     await syncNotificationBadge({
-      isAuthenticated: true,
+      authStatus: 'authenticated',
       isOnline: true,
       notificationService: stub.service,
       logger: recorder.logger,
@@ -77,7 +116,7 @@ describe('syncNotificationBadge', () => {
 
     // When
     await syncNotificationBadge({
-      isAuthenticated: true,
+      authStatus: 'authenticated',
       isOnline: true,
       notificationService: stub.service,
       logger: recorder.logger,

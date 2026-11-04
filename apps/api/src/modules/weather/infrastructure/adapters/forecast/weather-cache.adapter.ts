@@ -177,7 +177,6 @@ export class WeatherCacheAdapter implements WeatherCachePort {
       this.cacheService.delByPattern(WeatherCacheKey.forecastPattern(gridX, gridY)),
       this.cacheService.del(WeatherCacheKey.latestForecast(gridX, gridY)),
       this.cacheService.delByPattern(WeatherCacheKey.conditionsPattern(gridX, gridY)),
-      this.cacheService.del(WeatherCacheKey.legacyConditions(gridX, gridY)),
     ]);
   }
 }

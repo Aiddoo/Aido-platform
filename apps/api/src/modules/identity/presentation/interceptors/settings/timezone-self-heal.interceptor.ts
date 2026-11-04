@@ -9,8 +9,8 @@ import {
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 
+import { RequestClientReader } from "#api/platform/http/request-client/index";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
-import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import { IdentitySettingsLogEvent } from "../../../application/observability/settings/identity-settings-log.events.js";
 import { RefreshPushTimezone } from "../../../application/use-cases/settings/refresh-push-timezone.use-case.js";
@@ -25,7 +25,10 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
 
   static readonly THROTTLE_MS = 60 * 60 * 1000;
 
-  constructor(private readonly refreshPushTimezoneUseCase: RefreshPushTimezone) {
+  constructor(
+    private readonly refreshPushTimezoneUseCase: RefreshPushTimezone,
+    private readonly requestClientReader: RequestClientReader,
+  ) {
     this.#cleanupInterval = setInterval(
       () => this.#cleanup(),
       TimezoneSelfHealInterceptor.THROTTLE_MS,
@@ -37,14 +40,13 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context
-      .switchToHttp()
-      .getRequest<{ user?: CurrentUserPayload; headers?: Record<string, unknown> }>();
-    const user = request.user;
-    const timezone = normalizeIanaTimezone(request.headers?.["x-timezone"]);
+    const user = context.switchToHttp().getRequest<{ user?: CurrentUserPayload }>().user;
 
-    if (user?.userId && timezone != null) {
-      this.#heal(user.userId, timezone);
+    if (user?.userId) {
+      const { timezone } = this.requestClientReader.current();
+      if (timezone != null) {
+        this.#heal(user.userId, timezone);
+      }
     }
 
     return next.handle();
@@ -69,7 +71,7 @@ export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDes
         event: IdentitySettingsLogEvent.TIMEZONE_HEAL_FAILED,
         userId,
         timezone,
-        errorName: toErrorType(error),
+        errorType: toErrorType(error),
       });
     });
   }

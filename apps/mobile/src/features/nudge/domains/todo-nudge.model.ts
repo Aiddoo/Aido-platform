@@ -1,4 +1,4 @@
-import { createNudgeSchema, type CreateNudgeInput, type CreateRemindNudgeInput } from '@aido/api';
+import { type CreateNudgeInput, type CreateRemindNudgeInput, NUDGE_LIMITS } from '@aido/api';
 import { isSameDay, todoOverlapsDate } from '@src/shared/utils/date';
 import { z } from 'zod';
 
@@ -36,7 +36,7 @@ const nudgeBannerStateSchema = z.discriminatedUnion('type', [
 ]);
 export type NudgeBannerState = z.infer<typeof nudgeBannerStateSchema>;
 
-const MAX_MESSAGE_LENGTH = createNudgeSchema.shape.message.unwrap().maxLength ?? 200;
+const MAX_MESSAGE_LENGTH = NUDGE_LIMITS.MAX_MESSAGE_LENGTH;
 
 const normalizeMessage = (message?: string | null): string | undefined => {
   if (message == null) {

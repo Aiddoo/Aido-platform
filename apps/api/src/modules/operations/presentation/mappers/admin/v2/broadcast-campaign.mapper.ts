@@ -40,6 +40,7 @@ export function toBroadcastCampaignDto({
       processing: dispatches("PROCESSING"),
       sent: dispatches("SENT"),
       skipped: dispatches("SKIPPED") + dispatches("HOLDOUT"),
+      skippedByReason: Object.fromEntries(outcome.skippedByReason),
       failed: dispatches("FAILED"),
     },
     deliveries: {

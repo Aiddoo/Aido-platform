@@ -32,10 +32,10 @@ export const userSchema = z.object({
   subscriptionExpiresAt: z.coerce.date().nullable(),
   providers: z.array(accountProviderSchema),
   premiumAccess: PremiumAccessSchema,
-  /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영). null은 이 필드 전 서버다 */
-  isPremium: z.boolean().nullable(),
-  /** 기능별 현재 권한. null은 이 필드 전 서버라 카탈로그로 정한다 */
-  entitlements: PremiumEntitlementsSchema.nullable(),
+  /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영) */
+  isPremium: z.boolean(),
+  /** 기능별 현재 권한 */
+  entitlements: PremiumEntitlementsSchema,
   createdAt: z.coerce.date(),
 });
 export type User = z.infer<typeof userSchema>;
@@ -48,22 +48,19 @@ export type UserTier = 'ADMIN' | 'PREMIUM' | 'BASIC';
 type PremiumDecisionUser = Pick<User, 'role' | 'isPremium' | 'premiumAccess'>;
 
 /**
- * 서버의 유효 프리미엄 판단(isPremium)을 따른다. 그 필드가 없는 구버전 서버는 프리미엄 출처로 판단한다.
+ * 서버의 유효 프리미엄 판단(isPremium)을 따른다.
  * 구독 상태가 ACTIVE여도 만료돼 효력이 없으면 프리미엄이 아니다
  */
 export function isPremiumUser(user: PremiumDecisionUser): boolean {
-  return user.role === USER_ROLE.ADMIN || (user.isPremium ?? user.premiumAccess.source != null);
+  return user.role === USER_ROLE.ADMIN || user.isPremium;
 }
 
 /** 기능의 지금 한도. null은 무제한이다 */
 export function getFeatureLimit(
-  user: PremiumDecisionUser & Pick<User, 'entitlements'>,
+  user: Pick<User, 'entitlements'>,
   feature: PremiumLimitFeatureKey,
 ): number | null {
-  return PremiumEntitlementPolicy.limit(
-    { entitlements: user.entitlements, isPremium: isPremiumUser(user) },
-    feature,
-  );
+  return PremiumEntitlementPolicy.limit(user, feature);
 }
 
 /** 무료로 쓸 수 있는 한도. 혜택 안내 문구에 쓴다 */

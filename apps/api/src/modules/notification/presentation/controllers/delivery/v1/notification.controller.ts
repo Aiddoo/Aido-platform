@@ -1,5 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import { NOTIFICATION_CATEGORY } from "@aido/api/vocabulary";
+import {
+  NOTIFICATION_CATEGORY,
+  PUSH_DEVICE_PLATFORM,
+  PUSH_PERMISSION_STATUS,
+} from "@aido/api/vocabulary";
 import {
   Body,
   Controller,
@@ -11,26 +15,30 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { match } from "ts-pattern";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
-import { Locale, Timezone } from "#api/platform/http/decorators/index";
+import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
-  ApiBadRequestError,
   ApiCreatedResponse,
+  ApiBadRequestError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import { GetNotifications } from "../../../../application/use-cases/delivery/get-notifications.use-case.js";
 import { GetUnreadCount } from "../../../../application/use-cases/delivery/get-unread-count.use-case.js";
@@ -38,9 +46,10 @@ import { MarkAllAsRead } from "../../../../application/use-cases/delivery/mark-a
 import { MarkAsRead } from "../../../../application/use-cases/delivery/mark-as-read.use-case.js";
 import { MarkNotificationOpened } from "../../../../application/use-cases/delivery/mark-notification-opened.use-case.js";
 import { OptOutMarketingPush } from "../../../../application/use-cases/delivery/opt-out-marketing-push.use-case.js";
-import { RegisterPushToken } from "../../../../application/use-cases/delivery/register-push-token.use-case.js";
-import { UnregisterPushToken } from "../../../../application/use-cases/delivery/unregister-push-token.use-case.js";
+import { ReportPushDevice } from "../../../../application/use-cases/delivery/report-push-device.use-case.js";
+import { UnregisterPushDevice } from "../../../../application/use-cases/delivery/unregister-push-device.use-case.js";
 import { NotificationMapper } from "../../../mappers/delivery/v1/notification.mapper.js";
+import { PushDeviceMapper } from "../../../mappers/delivery/v1/push-device.mapper.js";
 import {
   GetNotificationsQueryDto,
   MarketingPushOptOutDto,
@@ -49,11 +58,33 @@ import {
   NotificationIdParamDto,
   NotificationListResponseDto,
   NotificationOpenedResponseDto,
+  PushDeviceParamDto,
+  PushDeviceResponseDto,
   RegisterPushTokenDto,
   RegisterTokenResponseDto,
+  ReportPushDeviceDto,
   UnreadCountResponseDto,
   UnregisterPushTokenQueryDto,
 } from "../../../schemas/delivery/v1/index.js";
+
+/** 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값. */
+const LEGACY_DEFAULT_DEVICE_ID = "default";
+
+function pushDeviceContext(client: RequestClient) {
+  return {
+    deviceModel: client.deviceName,
+    osVersion: client.osVersion,
+    timezone: client.timezone,
+    locale: client.locale,
+  };
+}
+
+/** 1.14.1 이하 앱은 deviceId 없이 등록할 수 있어 X-Device-Type으로만 플랫폼을 알 수 있다. */
+function legacyPlatformHint(client: RequestClient) {
+  return match(client.platform)
+    .with(PUSH_DEVICE_PLATFORM.IOS, PUSH_DEVICE_PLATFORM.ANDROID, (platform) => platform)
+    .otherwise(() => undefined);
+}
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
 @ApiBearerAuth()
@@ -67,8 +98,8 @@ export class NotificationController {
     private readonly markAsReadUseCase: MarkAsRead,
     private readonly markNotificationOpenedUseCase: MarkNotificationOpened,
     private readonly markAllAsReadUseCase: MarkAllAsRead,
-    private readonly registerPushTokenUseCase: RegisterPushToken,
-    private readonly unregisterPushTokenUseCase: UnregisterPushToken,
+    private readonly reportPushDeviceUseCase: ReportPushDevice,
+    private readonly unregisterPushDeviceUseCase: UnregisterPushDevice,
     private readonly optOutMarketingPushUseCase: OptOutMarketingPush,
   ) {}
 
@@ -89,27 +120,86 @@ export class NotificationController {
     return { optedOut: true };
   }
 
-  @Post("token")
+  @Put("push-devices/:deviceId")
+  @HttpCode(HttpStatus.OK)
+  @ThrottleByUser()
+  @ApiParam({
+    name: "deviceId",
+    description: "앱이 만든 기기 식별자. ios_ 또는 android_로 시작",
+    schema: { type: "string", maxLength: 100 },
+    example: "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
+  })
   @ApiDoc({
-    summary: "푸시 토큰 등록",
-    operationId: "registerPushToken",
-    description: `Expo 푸시 토큰을 서버에 등록합니다.
+    summary: "푸시 기기 보고",
+    operationId: "reportPushDevice",
+    description: `기기 하나의 알림 권한과 Expo 푸시 토큰을 보고합니다. 1.14.2 이상 앱이 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보냅니다.
 
-**요청 필드**
-- \`token\` (필수): Expo 푸시 토큰
-- \`deviceId\` (선택): 기기 고유 ID
-
-동일 deviceId의 기존 토큰이 있으면 갱신됩니다.`,
+- 권한이 GRANTED·PROVISIONAL이고 \`token\`이 있으면 이 기기로 푸시를 보냅니다.
+- 권한이 없거나 \`token\`이 null이면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
+- 다른 계정이 쓰던 같은 기기·토큰은 이 사용자로 옮깁니다.
+- 플랫폼은 deviceId 접두어로, 시간대·언어는 헤더로 정합니다. 같은 값을 다시 보내도 결과는 같습니다.`,
   })
   @ApiHeader({
     name: "X-Timezone",
-    description: 'IANA 타임존 (e.g. "Asia/Seoul")',
+    description: '푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지',
     required: false,
     example: "Asia/Seoul",
   })
   @ApiHeader({
     name: "Accept-Language",
-    description: '푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko',
+    description: '푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko',
+    required: false,
+    example: "ko",
+  })
+  @ApiHeader({
+    name: "X-App-Version",
+    description: "토큰과 함께 저장해 앱 버전별 푸시 형식을 고를 때 쓰는 앱 버전",
+    required: false,
+    example: "1.14.2",
+  })
+  @ApiSuccessResponse({ type: PushDeviceResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [
+    ErrorCode.NOTIFICATION_1001,
+    ErrorCode.NOTIFICATION_1006,
+  ])
+  async reportPushDevice(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: PushDeviceParamDto }) params: PushDeviceParamDto,
+    @Body({ schema: ReportPushDeviceDto }) dto: ReportPushDeviceDto,
+    @CurrentRequestClient() client: RequestClient,
+  ): Promise<PushDeviceResponseDto> {
+    const report = await this.reportPushDeviceUseCase.execute({
+      ...pushDeviceContext(client),
+      userId: user.userId,
+      sessionId: user.sessionId,
+      deviceId: params.deviceId,
+      permission: dto.permission,
+      token: dto.token,
+      payloadVersion: dto.payloadVersion,
+      appVersion: client.appVersion,
+    });
+    return PushDeviceMapper.toDto(report);
+  }
+
+  @Post("token")
+  @ApiDoc({
+    summary: "푸시 토큰 등록 (1.14.1 이하 앱)",
+    operationId: "registerPushToken",
+    deprecated: true,
+    description: `1.14.1 이하 앱이 권한을 허용한 뒤 토큰을 등록합니다. 새 앱은 \`PUT /v1/notifications/push-devices/{deviceId}\`를 씁니다.
+
+권한은 허용(GRANTED)으로 저장하고, 플랫폼은 deviceId 접두어나 \`X-Device-Type\` 헤더로 정합니다. 둘 다 없으면 400 NOTIFICATION_1006입니다(출시된 앱은 항상 접두어를 보냅니다). 같은 deviceId의 토큰은 갱신됩니다. 최소 지원 버전이 1.14.2가 되면 제거합니다.`,
+  })
+  @ApiHeader({
+    name: "X-Timezone",
+    description: '푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지',
+    required: false,
+    example: "Asia/Seoul",
+  })
+  @ApiHeader({
+    name: "Accept-Language",
+    description: '푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko',
     required: false,
     example: "ko",
   })
@@ -119,22 +209,19 @@ export class NotificationController {
   async registerToken(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: RegisterPushTokenDto }) dto: RegisterPushTokenDto,
-    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
-    @Locale() locale: string | undefined,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<RegisterTokenResponseDto> {
-    this.#logger.debug(`푸시 토큰 등록: userId=${user.userId}`);
-
-    await this.registerPushTokenUseCase.execute({
+    await this.reportPushDeviceUseCase.execute({
+      ...pushDeviceContext(client),
       userId: user.userId,
+      sessionId: user.sessionId,
+      deviceId: dto.deviceId ?? LEGACY_DEFAULT_DEVICE_ID,
+      platformHint: legacyPlatformHint(client),
+      permission: { status: PUSH_PERMISSION_STATUS.GRANTED, canAskAgain: false },
       token: dto.token,
-      deviceId: dto.deviceId,
-      timezone: tz,
-      locale,
       payloadVersion: dto.payloadVersion,
-      appVersion: dto.appVersion,
+      appVersion: dto.appVersion ?? client.appVersion,
     });
-
-    this.#logger.log(`푸시 토큰 등록 완료: userId=${user.userId}`);
 
     return {
       message: "푸시 토큰이 등록되었습니다.",
@@ -145,12 +232,13 @@ export class NotificationController {
   @Delete("token")
   @HttpCode(HttpStatus.OK)
   @ApiDoc({
-    summary: "푸시 토큰 해제",
+    summary: "푸시 기기 해제",
     operationId: "unregisterPushToken",
-    description: `등록된 푸시 토큰을 해제합니다.
+    description: `로그아웃한 기기를 푸시 대상에서 뺍니다. 기기의 토큰과 권한 기록을 함께 지웁니다.
 
 **쿼리 파라미터**
-- \`deviceId\` (선택): 특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제`,
+- \`deviceId\` (선택): 이 기기만 해제. 없으면 사용자의 모든 기기를 해제
+- 등록되지 않은 기기여도 성공으로 응답합니다.`,
   })
   @ApiSuccessResponse({ type: RegisterTokenResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -158,12 +246,7 @@ export class NotificationController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: UnregisterPushTokenQueryDto }) query: UnregisterPushTokenQueryDto,
   ): Promise<RegisterTokenResponseDto> {
-    const { deviceId } = query;
-    this.#logger.debug(`푸시 토큰 해제: userId=${user.userId}, deviceId=${deviceId ?? "all"}`);
-
-    await this.unregisterPushTokenUseCase.execute(user.userId, deviceId);
-
-    this.#logger.log(`푸시 토큰 해제 완료: userId=${user.userId}, deviceId=${deviceId ?? "all"}`);
+    await this.unregisterPushDeviceUseCase.execute(user.userId, query.deviceId);
 
     return {
       message: "푸시 토큰이 해제되었습니다.",

@@ -11,6 +11,7 @@ import type {
   AuthSecurityLogRepositoryPort,
   AuthSessionRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../ports/auth/session-push-device-releaser.port.js";
 import type { RequestMetadata } from "../../types/auth/index.js";
 
 export interface LogoutAllInput {
@@ -22,6 +23,7 @@ interface LogoutAllDependencies {
   readonly sessionRepository: Pick<AuthSessionRepositoryPort, "revokeAllByUserId">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
+  readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly logger: ApplicationLogger;
 }
 
@@ -42,6 +44,7 @@ export class LogoutAll {
         this.#dependencies.cacheService.invalidateSession(sessionId),
       ),
     );
+    await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     const revokedCount = revokedSessionIds.length;
     await this.#dependencies.securityLogRepository.create({
       userId: input.userId,

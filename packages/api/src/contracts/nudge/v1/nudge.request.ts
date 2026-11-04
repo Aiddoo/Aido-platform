@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "../../../vocabulary/nudge.constants.js";
 import { nudgeReplyKindSchema } from "./nudge.common.js";
 
 export const createNudgeSchema = z.object({
@@ -13,9 +14,12 @@ export const createNudgeSchema = z.object({
     .describe("대상 할 일 ID (양의 정수, 예: 1)"),
   message: z
     .string()
-    .max(200, "메시지는 200자 이내여야 합니다")
+    .max(
+      NUDGE_LIMITS.MAX_MESSAGE_LENGTH,
+      `메시지는 ${NUDGE_LIMITS.MAX_MESSAGE_LENGTH}자 이내여야 합니다`,
+    )
     .optional()
-    .describe("응원 메시지 (선택, 최대 200자)"),
+    .describe(`응원 메시지 (선택, 최대 ${NUDGE_LIMITS.MAX_MESSAGE_LENGTH}자)`),
 });
 
 export type CreateNudgeInput = z.infer<typeof createNudgeSchema>;
@@ -62,9 +66,12 @@ export const createRemindNudgeSchema = z.object({
   receiverId: z.cuid("유효하지 않은 사용자 ID입니다").describe("받을 사용자 ID (CUID 25자)"),
   message: z
     .string()
-    .max(200, "메시지는 200자 이내여야 합니다")
+    .max(
+      REMIND_NUDGE_LIMITS.MAX_MESSAGE_LENGTH,
+      `메시지는 ${REMIND_NUDGE_LIMITS.MAX_MESSAGE_LENGTH}자 이내여야 합니다`,
+    )
     .optional()
-    .describe("독촉 메시지 (선택, 최대 200자)"),
+    .describe(`독촉 메시지 (선택, 최대 ${REMIND_NUDGE_LIMITS.MAX_MESSAGE_LENGTH}자)`),
 });
 
 export type CreateRemindNudgeInput = z.infer<typeof createRemindNudgeSchema>;
@@ -99,7 +106,7 @@ export const getNudgeThanksPreviewQuerySchema = z
   .refine(
     (query) => query.cursor == null || (query.limit != null && query.throughNudgeId != null),
     {
-      message: "다음 페이지 조회에는 페이지 크기와 미리보기 시점의 콕 ID가 필요합니다",
+      error: "다음 페이지 조회에는 페이지 크기와 미리보기 시점의 콕 ID가 필요합니다",
       path: ["cursor"],
     },
   );

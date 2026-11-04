@@ -60,9 +60,9 @@ export type AiProviderErrorKind = (typeof AI_PROVIDER_ERROR_KINDS)[number];
  * 네트워크 오류 코드(예: ECONNRESET)처럼 고정된 기호만 담고, 원문 message·응답 본문·프롬프트는 담지 않는다.
  */
 export interface AiUpstreamCause {
-  readonly errorName: string;
+  readonly errorType: string;
   readonly providerStatus?: string;
-  readonly errorCode?: string;
+  readonly networkCode?: string;
 }
 
 interface AiProviderErrorOptions extends ErrorOptions {

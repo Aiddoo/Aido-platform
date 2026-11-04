@@ -1,7 +1,9 @@
 import { Logger } from "@nestjs/common";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import type { DomainEvent } from "#api/shared/domain/aggregate-root";
 
 /**
@@ -24,10 +26,11 @@ export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
       const settled: Promise<unknown> = this.eventEmitter
         .emitAsync(event.eventName, event)
         .catch((error) => {
-          this.#logger.error(
-            `Failed to publish domain event ${event.eventName}: ${error}`,
-            error instanceof Error ? error.stack : undefined,
-          );
+          this.#logger.error({
+            event: PlatformLogEvent.DOMAIN_EVENT_PUBLISH_FAILED,
+            eventName: event.eventName,
+            errorType: toErrorType(error),
+          });
         })
         .finally(() => {
           this.#pending.delete(settled);

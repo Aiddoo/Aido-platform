@@ -8,7 +8,7 @@ export interface IReminderScheduler {
   /**
    * 리마인더 타이머 등록
    *
-   * scheduledTime 기준으로 REMINDER_LEAD_TIME_MS 전에 알림을 발송하도록 예약합니다.
+   * scheduledTime 기준으로 REMINDER_MAX_LEAD_TIME_MS 전에 알림을 발송하도록 예약합니다.
    * 같은 todoId로 재호출하면 기존 예약을 취소하고 새로 등록합니다.
    *
    * @param todoId 대상 투두 ID

@@ -60,7 +60,6 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "aido:v1:weather:forecast:60:127:20260401:0800:2026-04-02",
     );
     expect(WeatherCacheKey.latestForecast(60, 127)).toBe("aido:v1:weather:forecast-latest:60:127");
-    expect(WeatherCacheKey.legacyConditions(60, 127)).toBe("aido:v1:weather:conditions:60:127");
     expect(WeatherCacheKey.conditions(60, 127, "2026-04-01")).toBe(
       "aido:v1:weather:conditions:60:127:2026-04-01",
     );

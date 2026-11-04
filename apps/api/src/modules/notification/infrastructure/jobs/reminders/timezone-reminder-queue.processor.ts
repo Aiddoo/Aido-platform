@@ -6,9 +6,9 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import { TimezoneAwareReminderOrchestrator } from "../../../application/services/reminders/timezone-aware-reminder.orchestrator.js";
 import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 /**
- * 타임존 리마인더 BullMQ Processor (진입 어댑터).
+ * 타임존 리마인더 작업 Processor (진입 어댑터).
  *
- * BullMQ Job Scheduler가 매분 생성하는 잡을 받아 오케스트레이터에 위임한다.
+ * 작업 스케줄러가 매분 생성하는 잡을 받아 오케스트레이터에 위임한다.
  * - sweep-reminders: 매분 스윕
  * - reminder-hour-changed: 리마인더 시간 변경 catch-up
  * - social-digest: 저녁 리마인더 90분 후 소셜 다이제스트

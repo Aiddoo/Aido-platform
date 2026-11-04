@@ -22,8 +22,6 @@ export const WeatherCacheKey = {
     cacheKey("weather", "conditions", String(gridX), String(gridY), localDate),
   conditionsPattern: (gridX: number, gridY: number) =>
     cachePattern("weather", "conditions", String(gridX), String(gridY)),
-  legacyConditions: (gridX: number, gridY: number) =>
-    cacheKey("weather", "conditions", String(gridX), String(gridY)),
   forecastPattern: (gridX: number, gridY: number) =>
     cachePattern("weather", "forecast", String(gridX), String(gridY)),
 } as const;

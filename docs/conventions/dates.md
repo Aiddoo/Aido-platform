@@ -18,8 +18,18 @@
 
 ## 2. "오늘"과 시간대의 출처
 
-- **서버**: 요청의 `X-Timezone`(`@Timezone()` 데코레이터, `apps/api/src/platform/http/decorators/timezone.decorator.ts`)으로 사용자의 오늘·주·기간을 계산한다. 헤더가 없으면 저장된 사용자 시간대를 쓰는 경로가 있다(AI 파싱). 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `localDateInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다. 한 instant의 사용자 달력 날짜(`YYYY-MM-DD`)는 `localDateInTimezone(date, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`, 도메인 현재 시각은 `now()`다.
+- **서버**: 앱 헤더는 요청마다 한 번 `RequestClient`(`apps/api/src/platform/http/request-client`)로 정규화한다. Controller는 `@Headers("x-timezone")`로 직접 읽지 않고 `@Timezone()`·`@Locale()`·`@AppVersion()`·`@CurrentRequestClient()`를 쓴다([서버 코드 기준](../../apps/api/.claude/api-conventions.md#요청-헤더와-throttle)). `timezone`은 런타임이 지원하는 IANA 이름이거나 null이다. 헤더가 없거나 잘못됐을 때의 규칙은 `request-timezone.ts`의 두 함수뿐이고, 엔드포인트마다 아래 규칙 하나를 쓴다.
+
+  | 규칙                  | 함수·데코레이터                                                    | 헤더 없음·오류 | 쓰는 곳                                                                                      |
+  | --------------------- | ------------------------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------- |
+  | 날짜 경계             | `requestTimezoneOrUtc` · `@Timezone()`                             | `UTC`          | 할 일·메모·응원·찌르기·초대·`/v1/auth/me`, 활동일 기록(`LastActiveInterceptor`)              |
+  | 저장 시간대 사용·보존 | `requestTimezoneIfSent` · `@Timezone({ preserveIfMissing: true })` | `undefined`    | AI 파싱·제안·리포트(저장된 사용자 시간대로 대체), 푸시 기기 보고·토큰 등록(기존 저장값 유지) |
+  | 저장값 갱신           | `RequestClientReader.current().timezone`                           | 갱신하지 않음  | 시간대 자가 치유(`TimezoneSelfHealInterceptor`)                                              |
+
+  응답 형태는 규칙과 무관하다. 새 엔드포인트는 위 셋 중 하나를 고르고 `X-Timezone`을 직접 읽지 않는다. 배치는 사용자별 저장 시간대로 계산한다. 공용 helper는 `apps/api/src/shared/domain/date/utils`(`todayInTimezone`, `localDateInTimezone`, `parseDateOnly`, `parseLocalDateTime`)다. 한 instant의 사용자 달력 날짜(`YYYY-MM-DD`)는 `localDateInTimezone(date, timezone)`으로 구하고 `Intl.DateTimeFormat` 포매터를 새로 만들지 않는다. 사용자 기본 시간대 폴백은 `DEFAULT_DELIVERY_TIMEZONE`, 도메인 현재 시각은 `now()`다.
+
 - **모바일**: 시간대는 기기 달력(`expo-localization` `getCalendars()[0].timeZone`)에서만 온다. 앱 전체의 오늘 key·자정 전환은 `LocalDateProvider`(`apps/mobile/src/shared/providers/local-date-provider.tsx`)가 소유하고, Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 컴포넌트는 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다. 상대 시간처럼 분 단위로 바뀌는 표시는 `useMinuteNow()`를 쓴다. `Date`의 달력 날짜·요일은 `date-key.ts`의 `toDeviceDateKey`(같은 `getCalendars()` 시간대)로 key를 만든 뒤 계산하고, 하루 길이 상수는 `date-format.ts`의 `DAY_MS` 하나를 쓴다.
+- 서버의 요청 언어는 `RequestClient.locale`(`@Locale()`)이다. `Accept-Language`가 없으면 null(저장된 언어 유지, 날씨 특보 문구는 `en`), 지원하지 않는 언어는 `ko`다.
 - 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다(dayjs 전역 locale로 주 시작을 바꾸는 경로 포함).
 - 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 파싱 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. `/v1/auth/me`의 `entitlements.*.resetsAt`이 같은 규칙의 다음 초기화 instant다.
 - 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 일요일 시작 규칙 하나(`apps/mobile/src/shared/utils/calendar-week.ts`)이고, 서버 리포트 기간은 각 기능의 명시한 규칙(ISO 주 등)을 쓴다. 같은 화면에서 두 주 규칙을 섞지 않는다.

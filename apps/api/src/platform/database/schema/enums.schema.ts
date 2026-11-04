@@ -1,3 +1,4 @@
+import { PUSH_PERMISSION_STATUS } from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const accountProvider = pgEnum("AccountProvider", [
@@ -54,6 +55,7 @@ export const notificationType = pgEnum("NotificationType", [
 ]);
 export const nudgeReplyKind = pgEnum("NudgeReplyKind", ["STARTING", "THANKFUL", "LATER"]);
 export const platform = pgEnum("Platform", ["IOS", "ANDROID"]);
+export const pushPermissionStatus = pgEnum("PushPermissionStatus", PUSH_PERMISSION_STATUS);
 export const pushDeliveryMode = pgEnum("PushDeliveryMode", ["SINGLE", "BATCH"]);
 export const pushDeliveryStatus = pgEnum("PushDeliveryStatus", [
   "PENDING",
@@ -92,12 +94,6 @@ export const retentionExperimentStageStatus = pgEnum("RetentionExperimentStageSt
 export const retentionExperimentVariant = pgEnum("RetentionExperimentVariant", [
   "CONTROL",
   "TREATMENT",
-]);
-export const retentionOutboxStatus = pgEnum("RetentionOutboxStatus", [
-  "PENDING",
-  "PROCESSING",
-  "PUBLISHED",
-  "FAILED",
 ]);
 export const securityEvent = pgEnum("SecurityEvent", [
   "REGISTRATION",

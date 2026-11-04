@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { Injectable, Logger } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
 import type { ILockProvider } from "../interfaces/lock.interface.js";
 
@@ -61,11 +63,11 @@ export class RedisLockAdapter implements ILockProvider {
     }
 
     if (result !== "OK") {
-      this.#logger.debug(`LOCK_BUSY ${resource}`);
+      this.#logger.debug({ event: PlatformLogEvent.LOCK_BUSY, resource });
       return null;
     }
 
-    this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
+    this.#logger.debug({ event: PlatformLogEvent.LOCK_ACQUIRED, resource, ttlMs });
 
     const release = async (): Promise<void> => {
       let released: unknown;
@@ -78,9 +80,13 @@ export class RedisLockAdapter implements ILockProvider {
       }
 
       if (released === 1) {
-        this.#logger.debug(`LOCK_RELEASED ${resource}`);
+        this.#logger.debug({ event: PlatformLogEvent.LOCK_RELEASED, resource });
       } else {
-        this.#logger.warn(`LOCK_RELEASE_SKIPPED ${resource} (expired or stolen)`);
+        this.#logger.warn({
+          event: PlatformLogEvent.LOCK_RELEASE_SKIPPED,
+          resource,
+          reason: "expired-or-stolen",
+        });
       }
     };
 

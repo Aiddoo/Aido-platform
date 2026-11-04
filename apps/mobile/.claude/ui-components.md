@@ -129,6 +129,11 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 이미 존재하는 shared layout, 입력, 버튼, 날짜 유틸을 먼저 찾는다. 같은 역할의 wrapper나 util을
   다시 만들지 않는다.
 
+## 도메인 다이얼로그와 안내 카드
+
+- 도메인 다이얼로그는 `ConfirmDialog`를 감싸 `Omit<ComponentProps<typeof ConfirmDialog>, 'title' | 'description' | 'cancelButton' | 'confirmButton' | 'secondaryButton'>`로 확장한다. `isOpen`/`onOpenChange`는 원본 그대로 받고 문구·버튼은 안에서 채운다(`PushPermissionDialog`). 사용법은 [confirm-dialog.md](../src/shared/ui/confirm-dialog/confirm-dialog.md)를 본다.
+- 홈 안내 카드(`PushPermissionCard`, `MarketingPushOptInBanner`, `FeatureDiscoveryReentryCard`)는 같은 모양 `rounded-xl bg-gray-1 px-4 py-3.5`를 쓴다. 바깥 간격(`mx-4 mb-3`)은 컴포넌트가 아니라 Screen이 `className`으로 넘긴다.
+
 ## 상태·글꼴 배율·시트 규칙
 
 - **레이아웃 프리미티브**: raw RN `View`/`Pressable` 대신 `Box`/`HStack`/`VStack`/`Flex`/`Grid`/`Spacing`/`ListRow`와

@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -13,9 +14,12 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import { CreateInquiry } from "../../../../application/use-cases/inquiries/create-inquiry.use-case.js";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "../../../schemas/inquiries/v1/index.js";
+
+const INQUIRY_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
@@ -24,6 +28,8 @@ export class InquiryController {
   constructor(private readonly createInquiryUseCase: CreateInquiry) {}
 
   @Post()
+  @ThrottleByUser()
+  @Throttle({ default: INQUIRY_THROTTLE })
   @ApiDoc({
     summary: "문의 접수",
     operationId: "createInquiry",
@@ -36,7 +42,9 @@ export class InquiryController {
 **처리 흐름**
 1. 사용자가 문의를 작성하여 전송
 2. 관리자 이메일로 문의 내용이 발송됨
-3. 발송 실패 시 INQUIRY_1501 에러 반환`,
+3. 발송 실패 시 INQUIRY_1501(502) 에러 반환
+
+사용자마다 분당 5회까지 접수하며, 넘으면 429(SYS_0001)를 돌려줍니다.`,
   })
   @ApiCreatedResponse({ type: CreateInquiryResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })

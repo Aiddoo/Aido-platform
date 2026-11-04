@@ -1,13 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
+import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import {
   RETENTION_JOB_POLICY,
   RETENTION_QUEUE,
   RETENTION_STAGE_SWEEP_SCHEDULE,
-  RETIRED_RETENTION_OUTBOX_RELAY_SCHEDULE_KEY,
   RetentionJobName,
 } from "./retention-queue.constants.js";
 
@@ -30,7 +29,6 @@ export class RetentionQueueService implements OnModuleInit {
           { name: RetentionJobName.STAGE_SWEEP, data: {} },
           RETENTION_JOB_POLICY,
         );
-        await this.runtime.unschedule(RETIRED_RETENTION_OUTBOX_RELAY_SCHEDULE_KEY, RETENTION_QUEUE);
       },
     );
   }

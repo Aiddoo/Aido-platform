@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Get,
@@ -20,6 +19,7 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiConflictError,
   ApiCreatedResponse,
@@ -120,13 +120,13 @@ export class NudgeController {
     };
   }
 
+  @Get("received")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("received")
   @ApiDoc({
     summary: "받은 콕 찌름 목록 조회",
     operationId: "getReceivedNudges",
@@ -142,7 +142,7 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<ReceivedNudgesResponseDto> {
     const result = await this.getReceivedNudgesUseCase.execute({
       userId: user.userId,
@@ -158,13 +158,13 @@ export class NudgeController {
     };
   }
 
+  @Get("sent")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("sent")
   @ApiDoc({
     summary: "보낸 콕 찌름 목록 조회",
     operationId: "getSentNudges",
@@ -180,7 +180,7 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgesQueryDto }) query: GetNudgesQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<SentNudgesResponseDto> {
     const result = await this.getSentNudgesUseCase.execute({
       userId: user.userId,

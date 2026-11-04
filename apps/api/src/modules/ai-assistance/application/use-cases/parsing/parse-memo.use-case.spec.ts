@@ -185,7 +185,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
         event: "ai.generation.failed",
         task: "parse-memo",
         userId: fixture.userId,
-        errorKind: "INVALID_OUTPUT",
+        errorType: "INVALID_OUTPUT",
         errorCode: ErrorCode.AI_1302,
         quotaCharged: false,
         validationIssues: [{ path: ["todos", 0, "items"], code: "too_big" }],
@@ -236,7 +236,7 @@ describe("ParseMemo — v1 롤백 경로", () => {
     expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.generation.failed", errorKind: "RATE_LIMITED" }),
+      expect.objectContaining({ event: "ai.generation.failed", errorType: "RATE_LIMITED" }),
     );
   });
 });

@@ -90,7 +90,7 @@ export class OnTodoToggled {
       this.#dependencies.logger.error({
         event: IdentitySettingsLogEvent.STREAK_UPDATE_FAILED,
         userId: input.userId,
-        errorName: toErrorType(error),
+        errorType: toErrorType(error),
       });
     }
   }

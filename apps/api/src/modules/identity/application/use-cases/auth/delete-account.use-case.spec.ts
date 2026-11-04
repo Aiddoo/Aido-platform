@@ -13,6 +13,7 @@ import {
 import {
   StubAuthSecurityLogRepository,
   StubAuthSessionRepository,
+  StubSessionPushDeviceReleaser,
 } from "#test/mocks/ports/auth-session.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
@@ -63,7 +64,9 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     const securityLogRepository = new StubAuthSecurityLogRepository();
     const passwordService = new StubAccountPasswordVerifier();
     const logger = mock<ApplicationLogger>();
+    const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new DeleteAccount({
+      pushDevices,
       userRepository,
       accountRepository,
       sessionRepository,

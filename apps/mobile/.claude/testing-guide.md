@@ -71,7 +71,7 @@ UI에서 복잡한 계산이 필요하면 계산을 순수 util 또는 view-mode
 - `AbortSignal` 같은 호출 제어 값을 transport까지 전달하는지
 - 계약 파싱 실패와 서버 오류를 정해진 방식으로 전달하는지
 
-Service 테스트는 HTTP 포트만 mock한다. QueryClient, Router, 화면 컴포넌트를 함께 mount하지 않는다.
+Service 테스트는 HTTP 포트를 stub으로 둔다. QueryClient, Router, 화면 컴포넌트를 함께 mount하지 않는다.
 
 ### Pure util / view-model
 
@@ -85,13 +85,51 @@ React hook을 호출하지 않고 함수 입력과 출력만 검증할 수 있�
 
 ## 작성 규칙
 
-- 테스트 이름은 사용자 또는 제품 결과를 설명한다.
-- `Given / When / Then` 주석은 긴 테스트에서만 사용한다.
+- 테스트 이름은 한국 개발자가 바로 이해하는 자연스러운 한국어로 사용자 또는 제품 결과를 설명한다.
+- `// Given`, `// When`, `// Then` 주석을 각각 한 줄로 블록 위에 두고 빈 줄로 나눈다. `// When / Then` 합본이나 `// Given - 설명` 꼬리 설명은 쓰지 않는다. 그 밖의 주석은 달지 않는다.
 - 의미 있는 성공·실패·경계 분기만 남긴다. 모든 줄을 실행하기 위한 케이스는 만들지 않는다.
-- `jest.fn()`은 네트워크, 저장소, 시간, UUID처럼 실제 경계에만 둔다.
+- mock보다 포트를 구현한 stub/fake를 먼저 쓴다. `jest.fn()`·spy는 호출 자체가 계약일 때(요청 path, 토큰 해제 순서)와 시간·UUID 같은 실제 경계에만 둔다.
+- 외부 API(푸시, AI, 이메일, OAuth, 날씨)와 OS 모듈은 실제로 부르지 않고 stub으로 대체한다.
+- 모듈 `jest.mock`은 어댑터 경계 테스트(`expo-push-notification.gateway.test.ts`)에서만 쓴다.
 - 하나의 테스트에서 여러 프레임워크 mock을 조립하기 시작하면 순수 로직 추출을 먼저 검토한다.
 - 실제 타이머를 기다리지 말고 시간 값을 인자로 주거나 fake timer를 사용한다.
 - 테스트끼리 QueryClient, mock, 전역 상태를 공유하지 않는다.
+
+## Stub 우선 DI 테스트
+
+서비스·훅·컴포넌트가 포트에 기대면 실제 서비스에 stub 포트를 끼워 DI로 넣는다.
+
+| 도구                                                    | 용도                                                                           |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `features/{f}/__tests__/{f}.factories.ts`               | DTO·모델·포트 stub 팩토리(`createX(overrides)`). 필드가 늘면 이 한 곳만 고친다 |
+| `renderUi(ui, { di, queryClient })`                     | 실제 provider 위에 `di` 필드만 덮어써 렌더                                     |
+| `createMockDIContainer(overrides)` + `StaticDIProvider` | 훅 테스트용 컨테이너                                                           |
+| `createMemorySyncStorage()`                             | MMKV 대신 메모리 저장소(`createPushPromptRepository`에 주입)                   |
+| `createMockHttpClient()`                                | HTTP 포트 stub                                                                 |
+| `createTestQueryClient()`                               | 테스트용 QueryClient                                                           |
+
+```tsx
+// Given
+const gateway = createPushNotificationGatewayStub({
+  requestPermission: jest.fn(async () => createPushPermissionResponse({ status: 'granted' })),
+});
+const pushPromptService = new PushPromptService(
+  createPushPromptRepository(createMemorySyncStorage()),
+);
+
+// When
+await renderUi(<PushPermissionCard />, {
+  di: {
+    pushPromptService,
+    pushDeviceService: new PushDeviceService(gateway, deviceIdStub, httpClient, logger),
+  },
+  queryClient,
+});
+```
+
+예시: `features/notification/components/push-permission-card.test.tsx`(홈 안내 단계별 동작),
+`features/notification/hooks/use-push-device-sync.test.tsx`(보고 시점·debounce). 이 둘은 계약이 사용자
+결과로 이어지는 흐름이라 둔 것이다. 같은 방식의 컴포넌트·훅 테스트를 기본으로 늘리지 않는다.
 
 ## UI와 native 검증
 

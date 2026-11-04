@@ -1,6 +1,6 @@
 import { useLocationGateway, useLogger } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { toError } from '@src/shared/errors';
+import { errorMessageOf } from '@src/shared/errors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { match } from 'ts-pattern';
@@ -35,7 +35,7 @@ export function useWeatherLocation(): WeatherLocation {
       request: async () => {
         const permission = await gateway.requestPermission().catch((error) => {
           logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
-            error: toError(error).message,
+            error: errorMessageOf(error),
           });
           return null;
         });
@@ -50,7 +50,7 @@ export function useWeatherLocation(): WeatherLocation {
       openSettings: () =>
         Linking.openSettings().catch((error) => {
           logger.warn(WEATHER_LOG_EVENT.LOCATION_SETTINGS_OPEN_FAILED, {
-            error: toError(error).message,
+            error: errorMessageOf(error),
           });
         }),
     }))

@@ -1,9 +1,9 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { weeklyAchievement } from "#api/platform/database/schema/index";
-import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import type { WeeklyAchievementRepositoryPort } from "../../../application/ports/weekly-achievements/weekly-achievement.repository.port.js";
 import type {
@@ -22,11 +22,7 @@ const rowColumns = {
 
 @Injectable()
 export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepositoryPort {
-  constructor(
-    private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>,
-    @Inject(UNIT_OF_WORK)
-    private readonly uow: UnitOfWorkPort,
-  ) {}
+  constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
   private get db() {
     return this.txHost.tx;
@@ -81,20 +77,24 @@ export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepo
       return;
     }
 
-    await this.uow.run(async () => {
-      for (const snapshot of snapshots) {
-        await this.db
-          .insert(weeklyAchievement)
-          .values(snapshot)
-          .onConflictDoUpdate({
-            target: [weeklyAchievement.userId, weeklyAchievement.year, weeklyAchievement.week],
-            set: {
-              totalTodos: snapshot.totalTodos,
-              completedTodos: snapshot.completedTodos,
-              achievedAt: snapshot.achievedAt,
-            },
-          });
-      }
-    });
+    // 한 문장에 같은 키가 둘이면 ON CONFLICT DO UPDATE가 실패하므로 마지막 값만 남긴다
+    const latestByWeek = new Map(
+      snapshots.map((snapshot) => [
+        `${snapshot.userId}:${snapshot.year}:${snapshot.week}`,
+        snapshot,
+      ]),
+    );
+
+    await this.db
+      .insert(weeklyAchievement)
+      .values([...latestByWeek.values()])
+      .onConflictDoUpdate({
+        target: [weeklyAchievement.userId, weeklyAchievement.year, weeklyAchievement.week],
+        set: {
+          totalTodos: sql`excluded."totalTodos"`,
+          completedTodos: sql`excluded."completedTodos"`,
+          achievedAt: sql`excluded."achievedAt"`,
+        },
+      });
   }
 }

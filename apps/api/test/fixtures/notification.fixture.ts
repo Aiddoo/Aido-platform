@@ -3,6 +3,7 @@
  *
  * 타입 안전한 Notification 및 관련 엔티티 테스트 데이터 생성
  */
+import type { ReportPushDeviceCommand } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
 import type { Notification, NotificationType, PushToken } from "#test/types/database-rows";
 
 let notificationCounter = 0;
@@ -21,9 +22,6 @@ let pushTokenCounter = 0;
  * ```
  */
 export const NotificationFixture = {
-  /**
-   * Notification 엔티티 생성
-   */
   create: (overrides: Partial<Notification> = {}): Notification => {
     const id = ++notificationCounter;
     const now = new Date();
@@ -52,9 +50,6 @@ export const NotificationFixture = {
     };
   },
 
-  /**
-   * 읽은 Notification 생성
-   */
   createRead: (overrides: Partial<Notification> = {}): Notification => {
     return NotificationFixture.create({
       isRead: true,
@@ -63,9 +58,6 @@ export const NotificationFixture = {
     });
   },
 
-  /**
-   * 특정 타입의 Notification 생성
-   */
   createByType: (type: NotificationType, overrides: Partial<Notification> = {}): Notification => {
     return NotificationFixture.create({
       type,
@@ -73,28 +65,16 @@ export const NotificationFixture = {
     });
   },
 
-  /**
-   * 여러 Notification 생성
-   */
   createMany: (count: number, overrides: Partial<Notification> = {}): Notification[] => {
     return Array.from({ length: count }, () => NotificationFixture.create(overrides));
   },
 
-  /**
-   * 카운터 리셋
-   */
   reset: (): void => {
     notificationCounter = 0;
   },
 };
 
-/**
- * PushToken Fixture 팩토리
- */
 export const PushTokenFixture = {
-  /**
-   * PushToken 엔티티 생성
-   */
   create: (overrides: Partial<PushToken> = {}): PushToken => {
     const id = ++pushTokenCounter;
     const now = new Date();
@@ -104,7 +84,8 @@ export const PushTokenFixture = {
       userId: overrides.userId ?? `user-${id}`,
       token: overrides.token ?? `ExponentPushToken[${id}]`,
       platform: overrides.platform ?? "IOS",
-      deviceId: overrides.deviceId ?? `device-${id}`,
+      deviceId: overrides.deviceId ?? `ios_device-${id}`,
+      sessionId: overrides.sessionId ?? null,
       isActive: overrides.isActive ?? true,
       lastUsedAt: overrides.lastUsedAt ?? now,
       createdAt: overrides.createdAt ?? now,
@@ -114,9 +95,6 @@ export const PushTokenFixture = {
     };
   },
 
-  /**
-   * 비활성 PushToken 생성
-   */
   createInactive: (overrides: Partial<PushToken> = {}): PushToken => {
     return PushTokenFixture.create({
       isActive: false,
@@ -124,10 +102,25 @@ export const PushTokenFixture = {
     });
   },
 
-  /**
-   * 카운터 리셋
-   */
   reset: (): void => {
     pushTokenCounter = 0;
   },
+};
+
+/** 헤더에서 오는 값은 보내지 않은 상태(null)가 기본이다. */
+export const PushDeviceReportFixture = {
+  command: (overrides: Partial<ReportPushDeviceCommand> = {}): ReportPushDeviceCommand => ({
+    userId: "user-a",
+    sessionId: null,
+    deviceId: "ios_device-a",
+    permission: { status: "GRANTED", canAskAgain: false },
+    token: "ExponentPushToken[device-a]",
+    payloadVersion: 2,
+    appVersion: null,
+    deviceModel: null,
+    osVersion: null,
+    timezone: null,
+    locale: null,
+    ...overrides,
+  }),
 };

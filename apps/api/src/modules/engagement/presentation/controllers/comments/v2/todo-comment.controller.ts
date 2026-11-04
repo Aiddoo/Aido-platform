@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Controller, Get, Header, Headers, HttpStatus, Param, Query } from "@nestjs/common";
+import { Controller, Get, Header, HttpStatus, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -7,6 +7,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiErrorCodesResponse,
@@ -55,13 +56,13 @@ export class TodoCommentV2Controller {
     private readonly getTodoCommentReplies: GetTodoCommentReplies,
   ) {}
 
+  @Get()
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get()
   @ApiDoc({
     summary: "할 일 댓글 묶음 목록 조회",
     operationId: "getTodoCommentThreads",
@@ -83,7 +84,7 @@ export class TodoCommentV2Controller {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
     @Query({ schema: GetTodoCommentThreadsQueryDto }) query: GetTodoCommentThreadsQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoCommentThreadsResponseDto> {
     const result = await this.getTodoCommentThreads.execute({
       todoId: params.todoId,
@@ -95,13 +96,13 @@ export class TodoCommentV2Controller {
     return TodoCommentV2Mapper.toThreads(toTodoCommentThreadsResponse(result), appVersion);
   }
 
+  @Get(":commentId/replies")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get(":commentId/replies")
   @ApiDoc({
     summary: "댓글 묶음의 답글 목록 조회",
     operationId: "getTodoCommentReplies",
@@ -121,7 +122,7 @@ export class TodoCommentV2Controller {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
     @Query({ schema: GetTodoCommentRepliesQueryDto }) query: GetTodoCommentRepliesQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<TodoCommentRepliesResponseDto> {
     const result = await this.getTodoCommentReplies.execute({
       todoId: params.todoId,

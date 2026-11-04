@@ -27,10 +27,7 @@ export class EntitlementCacheAdapter
   constructor(private readonly cacheService: CacheService) {}
 
   async invalidateSubscription(userId: string): Promise<void> {
-    await Promise.all([
-      this.cacheService.del(EntitlementCacheKey.subscription(userId)),
-      this.cacheService.del(EntitlementCacheKey.legacySubscription(userId)),
-    ]);
+    await this.cacheService.del(EntitlementCacheKey.subscription(userId));
   }
 
   wrapSubscription(

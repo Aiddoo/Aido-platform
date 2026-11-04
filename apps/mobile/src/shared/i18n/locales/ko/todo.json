@@ -29,7 +29,6 @@
   "form": {
     "titleRequired": "제목을 입력해 주세요",
     "titleMaxLength": "제목은 200자까지 입력할 수 있어요",
-    "timeFormatInvalid": "시간은 HH:mm 형식으로 입력해 주세요",
     "repeatEndDateRequired": "반복 종료일을 선택해 주세요",
     "repeatDaysRequired": "반복할 요일을 선택해 주세요",
     "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"

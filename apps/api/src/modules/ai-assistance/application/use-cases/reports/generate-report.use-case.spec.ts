@@ -493,7 +493,7 @@ describe("GenerateReport", () => {
           event: "ai.generation.failed",
           task: "report",
           outcome: "FALLBACK",
-          errorKind: "RATE_LIMITED",
+          errorType: "RATE_LIMITED",
           quotaCharged: false,
         }),
       );

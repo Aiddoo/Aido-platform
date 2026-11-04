@@ -3,10 +3,6 @@ import { z } from "zod";
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
-// ============================================================================
-// AI 반복 제안
-// ============================================================================
-
 export const suggestionStatusSchema = z.enum(["PENDING", "ACCEPTED", "DISMISSED"]);
 
 export const recurringSuggestionSchema = z.object({
@@ -30,9 +26,7 @@ export const suggestionListResponseSchema = z.object({
 
 export type SuggestionListResponse = z.infer<typeof suggestionListResponseSchema>;
 
-// ============================================================================
 // 제안 액션 (수락/거절)
-// ============================================================================
 
 export const suggestionActionSchema = z.object({
   action: z.enum(["accept", "dismiss"]),
@@ -51,12 +45,8 @@ export const suggestionActionResponseSchema = z.object({
 
 export type SuggestionActionResponse = z.infer<typeof suggestionActionResponseSchema>;
 
-// ============================================================================
-// 제안 ID 파라미터
-// ============================================================================
-
 export const suggestionIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
+  id: z.coerce.number().int().positive().describe("AI 제안 고유 ID (양의 정수, 예: 1)"),
 });
 
 export type SuggestionIdParam = z.infer<typeof suggestionIdParamSchema>;

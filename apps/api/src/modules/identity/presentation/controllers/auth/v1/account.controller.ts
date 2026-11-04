@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Delete,
@@ -32,6 +31,11 @@ import {
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/v1/auth.mapper";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
+  AppVersion,
+  CurrentRequestClient,
+  type RequestClient,
+} from "#api/platform/http/request-client/index";
+import {
   ApiBadRequestError,
   ApiDoc,
   ApiErrorResponse,
@@ -40,6 +44,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import {
   CurrentUserDto,
@@ -52,6 +57,7 @@ import {
   UpdateProfileResponseDto,
 } from "../../../schemas/auth/v1/index.js";
 import { extractMetadata } from "./auth-controller.utils.js";
+import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
@@ -65,13 +71,13 @@ export class AccountController {
     private readonly deleteAccountUseCase: DeleteAccount,
   ) {}
 
+  @Get("me")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("me")
   @ApiDoc({
     summary: "내 정보 조회",
     operationId: "getCurrentUser",
@@ -96,7 +102,7 @@ export class AccountController {
   async getMe(
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() timezone: string,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.getCurrentUserQuery.execute({
       userId: user.userId,
@@ -106,14 +112,14 @@ export class AccountController {
     return AuthMapper.toCurrentUserResponse(result, appVersion);
   }
 
+  @Patch("profile")
+  @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Patch("profile")
-  @HttpCode(HttpStatus.OK)
   @ApiDoc({
     summary: "프로필 수정",
     operationId: "updateProfile",
@@ -135,7 +141,7 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateProfileDto }) dto: UpdateProfileDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ) {
     const result = await this.updateProfileUseCase.execute({ ...dto, userId: user.userId });
     return AuthMapper.toUpdateProfileResponse(result, appVersion);
@@ -217,8 +223,9 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UnlinkAccountDto }) params: UnlinkAccountDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.unlinkOAuthAccountUseCase.execute({
       userId: user.userId,
       provider: params.provider,
@@ -227,8 +234,9 @@ export class AccountController {
   }
 
   @Delete("account")
-  @Throttle({ default: { ttl: 3600000, limit: 3 } })
   @HttpCode(HttpStatus.OK)
+  @ThrottleByUser()
+  @Throttle({ default: AUTH_THROTTLE.DELETE_ACCOUNT })
   @ApiDoc({
     summary: "회원 탈퇴",
     operationId: "deleteAccount",
@@ -256,6 +264,8 @@ export class AccountController {
 - 이메일 계정: \`POST /auth/login\`
 - 소셜 계정: \`POST /auth/exchange\` (OAuth 플로우)
 - 복구 시 응답에 \`accountRestored: true\` 포함
+
+사용자마다 시간당 3회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		`,
   })
   @ApiSuccessResponse({ type: DeleteAccountResponseDto })
@@ -266,8 +276,9 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
     @Req() req: Request,
+    @CurrentRequestClient() client: RequestClient,
   ) {
-    const metadata = extractMetadata(req);
+    const metadata = extractMetadata(req, client);
     return this.deleteAccountUseCase.execute({
       userId: user.userId,
       password: dto.password,

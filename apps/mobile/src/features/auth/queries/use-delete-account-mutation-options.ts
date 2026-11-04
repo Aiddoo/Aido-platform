@@ -5,10 +5,10 @@ import {
   useAnalytics,
   useAuthService,
   useLogger,
-  useNotificationService,
+  usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
+import { errorMessageOf, isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
@@ -21,7 +21,7 @@ export const useDeleteAccountMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
-  const notificationService = useNotificationService();
+  const pushDeviceService = usePushDeviceService();
   const toast = useAppToast();
   const logger = useLogger();
   const { setStatus } = useAuth();
@@ -29,14 +29,14 @@ export const useDeleteAccountMutationOptions = () => {
   return mutationOptions({
     mutationFn: async (input: DeleteAccountInput) => {
       try {
-        const unregisterResult = await notificationService.unregisterPushToken();
+        const unregisterResult = await pushDeviceService.unregister();
         if (!unregisterResult.ok) {
           logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
-            error: unregisterResult.error,
+            error: errorMessageOf(unregisterResult.error),
           });
         }
       } catch (error) {
-        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error });
+        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error: errorMessageOf(error) });
       }
 
       const result = await authService.deleteAccount(input);

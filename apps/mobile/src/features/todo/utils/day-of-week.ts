@@ -1,15 +1,13 @@
-import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
+import { DAY_OF_WEEK_MAP, DAYS_OF_WEEK, type DayOfWeek } from '@aido/api';
 import {
   diffDateKeysInDays,
   getDayOfWeekOfDateKey,
   toDeviceDateKey,
 } from '@src/shared/utils/date-key';
 
-import { ALL_DAYS_OF_WEEK } from '../constants/day-of-week';
-
 export const getDayOfWeekFromDate = (date: Date): DayOfWeek | undefined => {
   const weekday = getDayOfWeekOfDateKey(toDeviceDateKey(date));
-  return ALL_DAYS_OF_WEEK.find((day) => DAY_OF_WEEK_MAP[day] === weekday);
+  return DAYS_OF_WEEK.find((day) => DAY_OF_WEEK_MAP[day] === weekday);
 };
 
 export const hasSelectedDayInRange = (

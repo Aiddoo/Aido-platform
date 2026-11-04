@@ -2,6 +2,7 @@ import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import { createMockTokenStore, runKyAfterResponseHook } from '@src/shared/__tests__';
 import { NetworkError } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
+import { logger } from '@src/shared/infra/logger/global-logger';
 
 import { createTokenRefreshHook, RETRY_MARKER_HEADER } from './token-refresh-hook';
 import type { RefreshOutcome } from './token-refresher';
@@ -165,8 +166,9 @@ describe('createTokenRefreshHook', () => {
     expect(endSession).not.toHaveBeenCalled();
   });
 
-  it('액세스 토큰 읽기가 실패해도 갱신 경로로 넘어간다 (세션 유지)', async () => {
+  it('액세스 토큰 읽기가 실패해도 경고를 남기고 갱신 경로로 넘어간다 (세션 유지)', async () => {
     // Given — 잠긴 키체인. 읽기 실패를 "토큰 없음"으로 오판하면 안 된다.
+    const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
     tokenStore.readAccessToken.mockRejectedValue(new Error('User interaction is not allowed.'));
     refresh.mockRejectedValue(new NetworkError());
     const response = createFakeResponse(401);
@@ -175,5 +177,8 @@ describe('createTokenRefreshHook', () => {
     await expect(invokeHook(createFakeRequest(), response)).rejects.toBeInstanceOf(NetworkError);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(endSession).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith('token-refresher.access-token-read.failed', {
+      error: 'User interaction is not allowed.',
+    });
   });
 });

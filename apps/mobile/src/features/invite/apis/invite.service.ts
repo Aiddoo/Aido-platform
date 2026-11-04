@@ -5,11 +5,14 @@ import {
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id';
+import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
+import { errorMessageOf } from '@src/shared/errors/to-error';
 import type { Page } from '@src/shared/types/page.types';
 
+import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import type { InvitePreview } from '../domains/invite-preview.model';
 import { type RedemptionResult, RedemptionResultSchema } from '../domains/invite-redemption.model';
 import {
@@ -44,6 +47,7 @@ interface InviteServiceDependencies {
   pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   installationIdGateway: InstallationIdGateway;
   allDoneBannerRepository: AllDoneBannerRepository;
+  logger: Pick<Logger, 'warn'>;
 }
 
 interface SavePendingRedemptionInput {
@@ -59,6 +63,7 @@ export class InviteService {
   readonly #pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   readonly #installationIdGateway: InstallationIdGateway;
   readonly #allDoneBannerRepository: AllDoneBannerRepository;
+  readonly #logger: Pick<Logger, 'warn'>;
 
   constructor({
     publicHttpClient,
@@ -68,6 +73,7 @@ export class InviteService {
     pawPrintCelebrationRepository,
     installationIdGateway,
     allDoneBannerRepository,
+    logger,
   }: InviteServiceDependencies) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
@@ -76,6 +82,7 @@ export class InviteService {
     this.#pawPrintCelebrationRepository = pawPrintCelebrationRepository;
     this.#installationIdGateway = installationIdGateway;
     this.#allDoneBannerRepository = allDoneBannerRepository;
+    this.#logger = logger;
   }
 
   getAvailability = async (signal?: AbortSignal): Promise<Result<boolean, ApiError>> => {
@@ -130,7 +137,12 @@ export class InviteService {
       return err(InviteErrors.invalidCode());
     }
 
-    const installationId = await this.#installationIdGateway.get().catch(() => null);
+    const installationId = await this.#installationIdGateway.get().catch((error: unknown) => {
+      this.#logger.warn(INVITE_LOG_EVENT.INSTALLATION_ID_READ_FAILED, {
+        error: errorMessageOf(error),
+      });
+      return null;
+    });
     const result = await this.#authHttpClient.post(
       `v1/invites/${inviteCode}/redeem`,
       installationId == null ? {} : { installationId },

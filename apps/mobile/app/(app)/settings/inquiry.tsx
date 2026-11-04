@@ -63,12 +63,8 @@ function InquiryScreen() {
     defaultValues: initialValues,
     mode: 'onChange',
   });
-  const {
-    control,
-    handleSubmit,
-    formState: { isValid },
-  } = formMethods;
-  const { isSubmitting } = useFormState({ control: control });
+  const { control, handleSubmit } = formMethods;
+  const { isSubmitting, isValid } = useFormState({ control });
 
   const handleSubmitInquiry = async (values: CreateInquiryInput) => {
     try {

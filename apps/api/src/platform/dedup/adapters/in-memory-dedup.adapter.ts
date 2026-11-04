@@ -1,5 +1,7 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+
 import type { IDedupProvider } from "../interfaces/dedup.interface.js";
 
 interface DedupEntry {
@@ -23,10 +25,7 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
 
   onModuleInit(): void {
     this.#cleanupInterval = setInterval(() => this.#cleanup(), 60_000);
-    this.#logger.warn(
-      "Using in-memory dedup provider — SINGLE INSTANCE ONLY. " +
-        "Set CACHE_TYPE=redis for multi-instance deployments.",
-    );
+    this.#logger.warn({ event: PlatformLogEvent.DEDUP_SINGLE_INSTANCE, provider: "memory" });
   }
 
   onModuleDestroy(): void {
@@ -61,7 +60,6 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
     entry.expiresAt = Date.now() + ttlMs;
   }
 
-  // === Private 헬퍼 ===
   #getValid(key: string): DedupEntry | undefined {
     const entry = this.#sets.get(key);
     if (!entry) {
@@ -88,7 +86,7 @@ export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, On
     }
 
     if (cleaned > 0) {
-      this.#logger.debug(`DEDUP_CLEANUP ${cleaned} expired entries`);
+      this.#logger.debug({ event: PlatformLogEvent.DEDUP_EXPIRED_CLEANED, count: cleaned });
     }
   }
 }

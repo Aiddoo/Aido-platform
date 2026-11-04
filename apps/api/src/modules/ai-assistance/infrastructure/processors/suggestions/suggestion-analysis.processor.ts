@@ -12,7 +12,6 @@ import { toSupportedLocale } from "#api/shared/domain/locale";
 import { AnalyzeAndCreateSuggestions } from "../../../application/use-cases/suggestions/analyze-and-create-suggestions.use-case.js";
 import type { SuggestionDispatcher } from "../../jobs/suggestions/ai-suggestion-queue.js";
 import {
-  AI_SUGGESTION_LEGACY_QUEUE,
   AI_SUGGESTION_QUEUE,
   AI_SUGGESTION_WORKER_POLICY,
   AiSuggestionJobName,
@@ -54,15 +53,6 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       async (jobs) => {
         for (const job of jobs) {
           await this.process(job.data);
-        }
-      },
-      AI_SUGGESTION_WORKER_POLICY,
-    );
-    await this.runtime.work(
-      AI_SUGGESTION_LEGACY_QUEUE,
-      async (jobs) => {
-        for (const job of jobs) {
-          await this.process({ name: job.name, data: job.data });
         }
       },
       AI_SUGGESTION_WORKER_POLICY,

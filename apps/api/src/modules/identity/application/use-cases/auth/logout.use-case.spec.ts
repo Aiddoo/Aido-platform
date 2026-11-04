@@ -7,6 +7,7 @@ import { SessionFixture } from "#test/fixtures/index";
 import {
   StubAuthSessionCache,
   StubAuthSessionRepository,
+  StubSessionPushDeviceReleaser,
   StubAuthSecurityLogRepository,
 } from "#test/mocks/ports/auth-session.stub";
 
@@ -34,7 +35,9 @@ describe("Logout — 현재 기기의 세션 종료", () => {
     ]);
     const cacheService = new StubAuthSessionCache([sessionId, "other-session"]);
     const securityLogRepository = new StubAuthSecurityLogRepository();
+    const pushDevices = new StubSessionPushDeviceReleaser();
     const useCase = new Logout({
+      pushDevices,
       sessionRepository,
       cacheService,
       securityLogRepository,

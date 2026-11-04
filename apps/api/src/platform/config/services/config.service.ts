@@ -13,37 +13,21 @@ import type { EnvConfig } from "../schemas/index.js";
 export class TypedConfigService {
   constructor(private configService: NestConfigService<EnvConfig, true>) {}
 
-  /**
-   * 환경변수 값을 타입 안전하게 가져옵니다.
-   */
   get<K extends keyof EnvConfig>(key: K): EnvConfig[K] {
     return this.configService.get(key, { infer: true });
   }
 
-  /**
-   * 현재 환경이 development인지 확인
-   */
   get isDevelopment(): boolean {
     return this.get("NODE_ENV") === "development";
   }
 
-  /**
-   * 현재 환경이 production인지 확인
-   */
   get isProduction(): boolean {
     return this.get("NODE_ENV") === "production";
   }
 
-  /**
-   * 현재 환경이 test인지 확인
-   */
   get isTest(): boolean {
     return this.get("NODE_ENV") === "test";
   }
-
-  // ============================================
-  // App Config Helpers
-  // ============================================
 
   get port(): number {
     return this.get("PORT");
@@ -69,17 +53,9 @@ export class TypedConfigService {
     return this.isProduction ? "production" : "development";
   }
 
-  // ============================================
-  // Database Config Helpers
-  // ============================================
-
   get databaseUrl(): string {
     return this.get("DATABASE_URL");
   }
-
-  // ============================================
-  // JWT Config Helpers
-  // ============================================
 
   get jwtSecret(): string {
     return this.get("JWT_SECRET");
@@ -97,10 +73,6 @@ export class TypedConfigService {
     return this.get("JWT_REFRESH_EXPIRES_IN");
   }
 
-  // ============================================
-  // Security Config Helpers
-  // ============================================
-
   get corsOrigins(): string[] {
     return this.get("CORS_ORIGINS");
   }
@@ -116,10 +88,6 @@ export class TypedConfigService {
   get tokenEncryptionKey(): string {
     return this.get("TOKEN_ENCRYPTION_KEY");
   }
-
-  // ============================================
-  // OAuth Config Helpers
-  // ============================================
 
   get googleOAuth() {
     return {
@@ -171,10 +139,6 @@ export class TypedConfigService {
     };
   }
 
-  // ============================================
-  // Email Config Helpers
-  // ============================================
-
   /** 외부에서 이 API에 닿는 기준 주소. 끝의 / 는 뗀다 */
   get apiPublicUrl(): string | undefined {
     return this.get("API_PUBLIC_URL")?.replace(/\/+$/, "");
@@ -189,10 +153,6 @@ export class TypedConfigService {
       supportEmail: this.get("SUPPORT_EMAIL"),
     };
   }
-
-  // ============================================
-  // External Services Helpers
-  // ============================================
 
   get expoAccessToken(): string | undefined {
     return this.get("EXPO_ACCESS_TOKEN");
@@ -248,10 +208,6 @@ export class TypedConfigService {
 
   // TODO: 서비스 스케일업 시 릴리스 버저닝 추가 (sentryRelease getter)
 
-  // ============================================
-  // AI Config Helpers
-  // ============================================
-
   get googleGenerativeAiApiKey(): string | undefined {
     return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
   }
@@ -277,10 +233,6 @@ export class TypedConfigService {
     return { teamId, keyId, serviceId, privateKey };
   }
 
-  // ============================================
-  // Cache Config Helpers
-  // ============================================
-
   get cache() {
     return {
       type: this.get("CACHE_TYPE"),
@@ -303,25 +255,15 @@ export class TypedConfigService {
 
   get job() {
     return {
-      backend: this.get("JOB_BACKEND"),
-      redisDrainEnabled: this.get("JOB_REDIS_DRAIN_ENABLED"),
       schema: this.get("JOB_SCHEMA"),
       shutdownTimeoutMs: this.get("JOB_SHUTDOWN_TIMEOUT_MS"),
       pollingIntervalSeconds: this.get("JOB_POLLING_INTERVAL_SECONDS"),
     };
   }
 
-  // ============================================
-  // Logger Config Helpers
-  // ============================================
-
   get logLevel(): string | undefined {
     return this.get("LOG_LEVEL");
   }
-
-  // ============================================
-  // Webhook Config Helpers
-  // ============================================
 
   get discordSignupWebhookUrl(): string | undefined {
     return this.get("DISCORD_SIGNUP_WEBHOOK_URL");

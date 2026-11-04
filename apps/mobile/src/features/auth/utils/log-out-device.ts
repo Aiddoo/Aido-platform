@@ -1,5 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
-import type { NotificationService } from '@src/features/notification/apis/notification.service';
+import type { PushDeviceService } from '@src/features/notification/apis/push-device.service';
 import { errorMessageOf } from '@src/shared/errors';
 
 import type { AuthService } from '../apis/auth.service';
@@ -11,7 +11,7 @@ export const LOGOUT_REQUEST_TIMEOUT_MS = 3_000;
 interface LogOutDeviceParams {
   isOnline: boolean;
   authService: Pick<AuthService, 'logout' | 'clearLocalSession'>;
-  notificationService: Pick<NotificationService, 'unregisterPushToken'>;
+  pushDeviceService: Pick<PushDeviceService, 'unregister'>;
   logger: Logger;
 }
 
@@ -22,7 +22,7 @@ interface LogOutDeviceParams {
 export const logOutDevice = async ({
   isOnline,
   authService,
-  notificationService,
+  pushDeviceService,
   logger,
 }: LogOutDeviceParams): Promise<void> => {
   if (!isOnline) {
@@ -34,7 +34,7 @@ export const logOutDevice = async ({
   const config = { timeout: LOGOUT_REQUEST_TIMEOUT_MS };
 
   try {
-    const unregisterResult = await notificationService.unregisterPushToken(config);
+    const unregisterResult = await pushDeviceService.unregister(config);
     if (!unregisterResult.ok) {
       logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, { code: unregisterResult.error.code });
     }

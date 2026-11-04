@@ -8,10 +8,7 @@ import { WeatherRescheduleTodo } from '@src/features/weather/components/weather-
 import { RESCHEDULE_COPY_KEYS } from '@src/features/weather/constants/weather-labels';
 import { WeatherBriefingPolicy } from '@src/features/weather/domains/weather-briefing.model';
 import { WeatherReportPolicy } from '@src/features/weather/domains/weather-report.model';
-import {
-  weatherRescheduleFormSchema,
-  type WeatherRescheduleFormValues,
-} from '@src/features/weather/domains/weather-reschedule-form.schema';
+import { weatherRescheduleFormSchema } from '@src/features/weather/domains/weather-reschedule-form.schema';
 import {
   useRescheduleReasonParam,
   useRescheduleTodoIdsParam,
@@ -70,7 +67,7 @@ export default function WeatherRescheduleSheetRoute() {
  */
 function WeatherRescheduleSheet() {
   const sheet = useSheetRoute(WEATHER_HREF);
-  const form = useForm<WeatherRescheduleFormValues>({
+  const form = useForm({
     resolver: zodResolver(weatherRescheduleFormSchema),
     defaultValues: { selections: {} },
     shouldUnregister: true,

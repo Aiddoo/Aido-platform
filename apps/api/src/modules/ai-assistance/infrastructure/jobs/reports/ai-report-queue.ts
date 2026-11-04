@@ -3,7 +3,6 @@ import { z } from "zod";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const AI_REPORT_QUEUE = "ai-report-generation.v1";
-export const AI_REPORT_LEGACY_QUEUE = "ai-report-generation";
 
 export const AiReportSchedulerName = {
   WEEKLY: "weekly-report-scheduler",
@@ -17,7 +16,6 @@ export const AiReportJobKey = {
     `report_${type}_${userId}_${periodId}`,
 } as const;
 
-/** 잡 이름 상수 */
 export const AiReportJobName = {
   DISPATCH: "dispatch-reports",
   GENERATE: "generate-report",
@@ -73,7 +71,6 @@ export interface AiReportGenerateData {
   reportType: "WEEKLY" | "MONTHLY";
 }
 
-/** 잡 이름 → 데이터 타입 매핑 */
 export interface AiReportJobMap {
   [AiReportJobName.DISPATCH]: AiReportDispatchData;
   [AiReportJobName.GENERATE]: AiReportGenerateData;

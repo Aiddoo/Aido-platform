@@ -52,7 +52,7 @@ describe("SendAdminNotification", () => {
     expect(adminNotifier.send).not.toHaveBeenCalled();
   });
 
-  it("send 실패 시 Error를 throw해야 한다 (BullMQ 재시도 트리거)", async () => {
+  it("send 실패 시 Error를 throw해야 한다 (작업 재시도 트리거)", async () => {
     adminNotifier.send.mockResolvedValue({
       success: false,
       error: "Webhook 404",

@@ -44,7 +44,7 @@ export function generationCompletedLog(
 }
 
 interface ProviderFailure {
-  readonly errorKind: AiProviderErrorKind;
+  readonly errorType: AiProviderErrorKind;
   readonly statusCode: number | undefined;
   readonly upstream: AiUpstreamCause | undefined;
 }
@@ -52,9 +52,9 @@ interface ProviderFailure {
 /** 실패 로그의 원인 필드. 공급자 오류가 아니면 서버 정규화·검증이 거절한 출력으로 본다. */
 export function providerFailure(error: unknown): ProviderFailure {
   if (error instanceof AiProviderError) {
-    return { errorKind: error.kind, statusCode: error.statusCode, upstream: error.upstream };
+    return { errorType: error.kind, statusCode: error.statusCode, upstream: error.upstream };
   }
-  return { errorKind: "INVALID_OUTPUT", statusCode: undefined, upstream: undefined };
+  return { errorType: "INVALID_OUTPUT", statusCode: undefined, upstream: undefined };
 }
 
 export function generationFailedLog(
@@ -71,7 +71,7 @@ export function generationFailedLog(
     promptVersion: base.promptVersion,
     latencyMs: base.latencyMs,
     outcome: base.outcome,
-    errorKind: base.errorKind,
+    errorType: base.errorType,
     statusCode: base.statusCode,
     ...(base.upstream != null && { upstream: base.upstream }),
     ...(base.errorCode != null && { errorCode: base.errorCode }),

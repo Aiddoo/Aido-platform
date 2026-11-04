@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
+import { PUSH_DEVICE_PLATFORM } from "../../../vocabulary/notification.constants.js";
 import { notificationTypeSchema } from "./notification.common.js";
 import { notificationBodySchema, notificationTitleSchema } from "./notification.content.js";
 import { notificationActionSchema, notificationContextSchema } from "./notification.payload.js";
+import { pushPermissionSchema } from "./notification.request.js";
 
 export const notificationMetadataSchema = z.record(z.string(), z.unknown()).nullable();
 
@@ -125,6 +127,28 @@ export const registerTokenResponseSchema = z
   });
 
 export type RegisterTokenResponse = z.infer<typeof registerTokenResponseSchema>;
+
+export const pushDeviceResponseSchema = z
+  .object({
+    deviceId: z.string().describe("기기 식별자"),
+    platform: z
+      .enum(PUSH_DEVICE_PLATFORM)
+      .describe("deviceId 접두어(ios_·android_)로 서버가 정한 플랫폼"),
+    permission: pushPermissionSchema,
+    hasActiveToken: z.boolean().describe("이 기기로 푸시를 보낼 수 있는 토큰이 있는지"),
+    reportedAt: datetimeSchema.describe("마지막 보고 시각 (ISO 8601 UTC)"),
+  })
+  .meta({
+    example: {
+      deviceId: "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
+      platform: "IOS",
+      permission: { status: "GRANTED", canAskAgain: false },
+      hasActiveToken: true,
+      reportedAt: "2026-11-04T03:41:40.598Z",
+    },
+  });
+
+export type PushDeviceResponse = z.infer<typeof pushDeviceResponseSchema>;
 
 export const markReadResponseSchema = z
   .object({

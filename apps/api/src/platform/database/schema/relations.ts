@@ -131,6 +131,9 @@ export const relations = defineRelations(schema, (r) => ({
       optional: false,
     }),
   },
+  pushDevice: {
+    user: r.one.user({ from: r.pushDevice.userId, to: r.user.id, optional: false }),
+  },
   pushToken: {
     user: r.one.user({ from: r.pushToken.userId, to: r.user.id, optional: false }),
     deliveryAttempts: r.many.pushDeliveryAttempt(),
@@ -175,14 +178,6 @@ export const relations = defineRelations(schema, (r) => ({
     assignment: r.one.retentionExperimentAssignment({
       from: r.retentionExperimentStage.assignmentId,
       to: r.retentionExperimentAssignment.id,
-      optional: false,
-    }),
-    outbox: r.one.retentionPushOutbox(),
-  },
-  retentionPushOutbox: {
-    stage: r.one.retentionExperimentStage({
-      from: r.retentionPushOutbox.stageId,
-      to: r.retentionExperimentStage.id,
       optional: false,
     }),
   },
@@ -254,6 +249,7 @@ export const relations = defineRelations(schema, (r) => ({
     notifications: r.many.notification(),
     pushDailyBudgets: r.many.pushDailyBudget(),
     pushDispatches: r.many.pushDispatch(),
+    pushDevices: r.many.pushDevice(),
     pushTokens: r.many.pushToken(),
     recurringSuggestions: r.many.recurringSuggestion(),
     retentionAssignments: r.many.retentionExperimentAssignment(),

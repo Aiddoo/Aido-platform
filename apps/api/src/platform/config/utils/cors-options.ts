@@ -1,6 +1,8 @@
 import type { CorsOptions } from "@nestjs/common/interfaces/external/cors-options.interface";
 import { uniq } from "es-toolkit";
 
+import { REQUEST_ID_HEADER } from "#api/platform/http/request-client/request-id";
+
 import type { EnvConfig } from "../schemas/index.js";
 
 const DEVELOPMENT_ORIGINS = [
@@ -28,13 +30,14 @@ export function createCorsOptions(
     allowedHeaders: [
       "Content-Type",
       "Authorization",
-      "X-Requested-With",
       "X-Timezone",
       "X-App-Version",
       "X-Device-Type",
       "X-Device-Name",
       "X-OS-Version",
       "X-App-Build",
+      REQUEST_ID_HEADER,
     ],
+    exposedHeaders: [REQUEST_ID_HEADER],
   };
 }

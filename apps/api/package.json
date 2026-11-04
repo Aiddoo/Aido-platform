@@ -1,6 +1,6 @@
 {
   "name": "@aido/server",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "private": true,
   "description": "Aido API Server",
   "license": "MIT",
@@ -62,9 +62,8 @@
     "@sentry/nestjs": "catalog:",
     "ai": "catalog:",
     "ai-fallback": "catalog:",
-    "argon2": "0.45.1",
+    "argon2": "0.45.2",
     "bowser": "catalog:",
-    "bullmq": "catalog:",
     "countries-and-timezones": "catalog:",
     "dayjs": "catalog:",
     "drizzle-orm": "catalog:drizzle1",

@@ -6,10 +6,11 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 import { SessionService } from "#api/modules/identity/application/services/auth/session.service";
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import { IdentityInfraLogEvent } from "#api/modules/identity/infrastructure/observability/auth/identity-infra-log.events";
 import { DrizzleSessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-session.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/infrastructure/persistence/auth/drizzle-user.repository";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -61,14 +62,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
    * - 무효화: 로그아웃/세션 폐기 시 즉시 삭제
    */
   async validate(payload: JwtPayload): Promise<CurrentUserPayload> {
-    // Access Token 타입 확인
     if (payload.type !== "access") {
       throw new ApplicationException(ErrorCode.AUTH_0101, {
         reason: "Not an access token",
       });
     }
 
-    // sessionId 필수 확인
     if (!payload.sessionId) {
       throw new ApplicationException(ErrorCode.AUTH_0101, {
         reason: "Missing sessionId",
@@ -79,7 +78,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     const cachedSession = await this.#getCachedSessionSafe(payload.sessionId);
 
     if (cachedSession) {
-      // 캐시 히트: 캐시된 데이터로 유효성 검증
       this.sessionService.assertSessionValid(cachedSession, payload.sessionId);
 
       // Defense in Depth: 캐시된 사용자 상태 검증
@@ -95,11 +93,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       };
     }
 
-    // 2. 캐시 미스: DB에서 세션 조회
     const session = await this.sessionRepository.findById(payload.sessionId);
     this.sessionService.assertSessionValid(session, payload.sessionId);
 
-    // 3. 사용자 상태 조회 (Defense in Depth)
     const user = await this.userRepository.findById(session.userId);
 
     const userStatus = user?.status;
@@ -138,7 +134,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     try {
       return await this.cacheService.getSession(sessionId);
     } catch (error) {
-      this.#logger.warn(`Session cache read failed — falling back to DB: ${toErrorMessage(error)}`);
+      this.#logger.warn({
+        event: IdentityInfraLogEvent.SESSION_CACHE_READ_FAILED,
+        errorType: toErrorType(error),
+      });
       return undefined;
     }
   }
@@ -150,7 +149,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     try {
       await this.cacheService.setSession(sessionId, session);
     } catch (error) {
-      this.#logger.warn(`Session cache write failed — skipping: ${toErrorMessage(error)}`);
+      this.#logger.warn({
+        event: IdentityInfraLogEvent.SESSION_CACHE_WRITE_FAILED,
+        errorType: toErrorType(error),
+      });
     }
   }
 

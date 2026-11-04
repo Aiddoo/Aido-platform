@@ -20,14 +20,16 @@ Sentry.init({
   integrations: [Sentry.httpIntegration({ ignoreRequestBody: isRequestBodyIgnored })],
 
   beforeSend(event) {
-    // 요청 헤더에서 민감 정보 제거
     if (event.request?.headers) {
       delete event.request.headers.authorization;
       delete event.request.headers.cookie;
       delete event.request.headers["x-forwarded-for"];
+      delete event.request.headers["x-real-ip"];
+    }
+    if (event.user) {
+      delete event.user.ip_address;
     }
 
-    // 쿼리스트링에서 token 파라미터 마스킹
     if (event.request?.query_string) {
       event.request.query_string = String(event.request.query_string).replace(
         /token=[^&]+/gi,

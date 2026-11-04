@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
-  Headers,
   Body,
   Controller,
   Get,
@@ -20,6 +19,7 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiBadRequestError,
   ApiConflictError,
@@ -113,13 +113,13 @@ export class CheerController {
     };
   }
 
+  @Get("received")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("received")
   @ApiDoc({
     summary: "받은 응원 목록 조회",
     operationId: "getReceivedCheers",
@@ -135,7 +135,7 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<ReceivedCheersResponseDto> {
     const result = await this.getReceivedCheersUseCase.execute({
       userId: user.userId,
@@ -151,13 +151,13 @@ export class CheerController {
     };
   }
 
+  @Get("sent")
   @Header("Vary", "Origin, X-App-Version")
   @ApiHeader({
     name: "x-app-version",
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @Get("sent")
   @ApiDoc({
     summary: "보낸 응원 목록 조회",
     operationId: "getSentCheers",
@@ -173,7 +173,7 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetCheersQueryDto }) query: GetCheersQueryDto,
 
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<SentCheersResponseDto> {
     const result = await this.getSentCheersUseCase.execute({
       userId: user.userId,

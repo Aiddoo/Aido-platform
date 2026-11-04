@@ -23,6 +23,8 @@ class CallbackController {
   }
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 describe("HTTP 로그 — 공식 Pino 연동과 인증 정보 비노출", () => {
   let app: INestApplication;
   let logs: string[];
@@ -72,7 +74,7 @@ describe("HTTP 로그 — 공식 Pino 연동과 인증 정보 비노출", () => 
         expect.objectContaining({
           event: "test.oauth.callback.received",
           userId: "user-1",
-          reqId: expect.any(Number),
+          reqId: expect.stringMatching(UUID_PATTERN),
         }),
       ]),
     );
@@ -80,6 +82,26 @@ describe("HTTP 로그 — 공식 Pino 연동과 인증 정보 비노출", () => 
       expect(logs.join("")).not.toContain(secret);
     }
   });
+  it("앱이 보낸 X-Request-Id를 로그의 reqId와 응답 헤더로 이어 쓴다", async () => {
+    // Given
+    const requestId = "3f2b8c1e-5d4a-4b6f-9e2d-1a7c8b9d0e1f";
+
+    // When
+    const response = await request(app.getHttpServer())
+      .get("/oauth/callback")
+      .set("X-Request-Id", requestId)
+      .expect(200);
+
+    // Then
+    expect(response.headers["x-request-id"]).toBe(requestId);
+    const records = logs.map((line: string): Record<string, unknown> => JSON.parse(line));
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: HttpLogEvent.REQUEST_COMPLETED, reqId: requestId }),
+      ]),
+    );
+  });
+
   it("4xx 응답은 HTTP 자동 로그를 생략해 예외 필터와 중복 기록하지 않는다", async () => {
     // Given
     const callback = request(app.getHttpServer());

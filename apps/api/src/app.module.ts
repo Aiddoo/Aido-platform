@@ -52,6 +52,10 @@ import { DedupModule } from "#api/platform/dedup/index";
 import { EncryptionModule } from "#api/platform/encryption/index";
 import { DomainEventsModule } from "#api/platform/events/index";
 import { HealthModule } from "#api/platform/health/index";
+import {
+  REQUEST_CLIENT_CLS_MIDDLEWARE,
+  RequestClientModule,
+} from "#api/platform/http/request-client/index";
 import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
 import { LockModule } from "#api/platform/lock/index";
 import { LoggerModule } from "#api/platform/logging/index";
@@ -77,6 +81,7 @@ import { AppService } from "./app.service.js";
     // UNIT_OF_WORK가 쓰는 TransactionHost를 전역 제공한다. nested 전파는 Drizzle savepoint로 처리된다.
     ClsModule.forRoot({
       global: true,
+      middleware: REQUEST_CLIENT_CLS_MIDDLEWARE,
       plugins: [
         new ClsPluginTransactional({
           imports: [DatabaseModule],
@@ -84,6 +89,7 @@ import { AppService } from "./app.service.js";
         }),
       ],
     }),
+    RequestClientModule,
     EncryptionModule,
     // 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), 전송은 EventEmitter2.
     // 와일드카드 off(기본값): 구독은 명시적 이벤트명(@OnEvent)만 사용한다.
@@ -156,7 +162,6 @@ import { AppService } from "./app.service.js";
       useExisting: ThrottlerGuard,
     },
 
-    // Global Interceptors
     {
       provide: APP_INTERCEPTOR,
       useExisting: LastActiveInterceptor,

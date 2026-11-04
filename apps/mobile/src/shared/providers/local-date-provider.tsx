@@ -118,7 +118,9 @@ export function LocalDateProvider({
               trigger,
             },
           });
-        } catch {}
+        } catch {
+          // 관측 어댑터 실패는 시간대 전환을 방해하면 안 된다.
+        }
       }
     },
     [errorReporter, recordLocalDateChange],

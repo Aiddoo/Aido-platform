@@ -57,6 +57,20 @@ import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
 | `confirmButton`   | `ReactNode`               | —           | 확인 버튼 (`ConfirmDialog.ConfirmButton` 권장)      |
 | `secondaryButton` | `ReactNode`               | `undefined` | 확인 아래 두 번째 행동. 있으면 버튼을 세로로 쌓는다 |
 
+## 도메인 다이얼로그로 확장
+
+문구와 동작이 정해진 다이얼로그는 `ConfirmDialog` props를 `Omit`으로 이어받아 만든다.
+열림 계약(`isOpen`/`onOpenChange`)은 그대로 받고, 안쪽 내용만 채운다(`PushPermissionDialog`).
+
+```tsx
+interface PushPermissionDialogProps extends Omit<
+  ComponentProps<typeof ConfirmDialog>,
+  'title' | 'description' | 'cancelButton' | 'confirmButton' | 'secondaryButton'
+> {
+  source: PushPermissionPromptSource;
+}
+```
+
 ## 버튼 레이아웃
 
 버튼에 `className="flex-1"`을 직접 지정하지 않습니다. ConfirmDialog 내부에서 자동으로 처리합니다.

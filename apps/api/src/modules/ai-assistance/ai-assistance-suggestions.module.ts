@@ -33,7 +33,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/v
  *
  * ### 주요 기능
  * - 대기 중인 제안 목록 조회 / 제안 수락(반복 할 일 자동 생성)·거절
- * - 매일 KST 07:30 크론 → per-user 패턴 분석(BullMQ) → 새 제안 생성 + 알림
+ * - 매일 KST 07:30 크론 → per-user 패턴 분석(pg-boss) → 새 제안 생성 + 알림
  *
  * ### 크로스모듈(전부 포트/어댑터로 역전)
  * - AiAssistanceParsingModule: AI_PROVIDER(Gemini)로 제안 생성

@@ -5,11 +5,7 @@ import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-case
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import {
-  ACCOUNT_PURGE_LEGACY_QUEUE,
-  ACCOUNT_PURGE_QUEUE,
-  type AccountPurgeJobData,
-} from "./account-purge-queue.constants.js";
+import { ACCOUNT_PURGE_QUEUE, type AccountPurgeJobData } from "./account-purge-queue.constants.js";
 
 @Injectable()
 export class AccountPurgeProcessor implements OnModuleInit {
@@ -22,13 +18,10 @@ export class AccountPurgeProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const handler = async () => this.process();
-    for (const queue of [ACCOUNT_PURGE_QUEUE, ACCOUNT_PURGE_LEGACY_QUEUE]) {
-      await this.runtime.work(queue, handler, {
-        teamSize: 1,
-        pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-      });
-    }
+    await this.runtime.work(ACCOUNT_PURGE_QUEUE, async () => this.process(), {
+      teamSize: 1,
+      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+    });
   }
 
   onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error): void {
@@ -37,7 +30,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
         event: IdentityLogEvent.ACCOUNT_PURGE_JOB_FAILED,
         jobId: job?.id,
         jobName: job?.name,
-        errorName: error.name,
+        errorType: error.name,
       },
       error.stack,
     );

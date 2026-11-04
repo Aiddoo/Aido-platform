@@ -19,6 +19,17 @@ const toSentryLevel: Record<LogLevel, Sentry.SeverityLevel> = {
   error: 'error',
 };
 
+const LOG_EVENT_KEY_PATTERN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+/** 이벤트 키(`<feature>.<subject>.<outcome>`)의 첫 마디를 Sentry `feature` 태그 값(snake_case)으로 바꾼다 */
+export const logEventFeature = (message: string): string | undefined => {
+  if (!LOG_EVENT_KEY_PATTERN.test(message)) {
+    return undefined;
+  }
+  const [feature = ''] = message.split('.', 1);
+  return feature.replace(/-/g, '_');
+};
+
 export const createSentryLogger = (): Logger => {
   const breadcrumb = (level: LogLevel, message: string, context?: LogContext): void => {
     const crumb: Sentry.Breadcrumb = {
@@ -42,9 +53,13 @@ export const createSentryLogger = (): Logger => {
     error(message: string, error?: Error, context?: LogContext): void {
       breadcrumb('error', message, context);
       if (error) {
+        const feature = logEventFeature(message);
         // 커스텀 메시지·컨텍스트를 extra로 첨부 → Sentry 이슈 상세에서 바로 확인 가능.
         Sentry.captureException(error, {
-          tags: { [SENTRY_TAGS.SOURCE]: 'logger' },
+          tags: {
+            [SENTRY_TAGS.SOURCE]: 'logger',
+            ...(feature != null && { [SENTRY_TAGS.FEATURE]: feature }),
+          },
           extra: { loggerMessage: message, ...context },
         });
       }

@@ -1,23 +1,20 @@
-import { type DayOfWeek, dayOfWeekSchema, todoVisibilitySchema } from '@aido/api';
+import { createTodoSchema, type DayOfWeek, dayOfWeekSchema } from '@aido/api';
 import { t } from '@src/shared/i18n';
 import { z } from 'zod';
+
+const { title, categoryId, scheduledTime, isAllDay, visibility } = createTodoSchema.shape;
 
 const todoSourceSchema = z.enum(['manual', 'ai']).default('manual');
 
 export const addTodoFormSchema = z
   .object({
-    title: z
-      .string()
-      .min(1, { error: () => t('todo:form.titleRequired') })
-      .max(200, { error: () => t('todo:form.titleMaxLength') }),
+    title,
     startDate: z.date(),
     endDate: z.date().nullable().default(null),
-    scheduledTime: z.iso
-      .time({ precision: -1, error: () => t('todo:form.timeFormatInvalid') })
-      .nullish(),
-    isAllDay: z.boolean().default(true),
-    visibility: todoVisibilitySchema.default('PUBLIC'),
-    categoryId: z.int(),
+    scheduledTime,
+    isAllDay,
+    visibility,
+    categoryId,
     isRecurring: z.boolean().default(false),
     repeatEndDate: z.date().nullable().default(null),
     daysOfWeek: z.array(dayOfWeekSchema).default([]),

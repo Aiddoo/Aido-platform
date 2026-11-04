@@ -9,7 +9,7 @@ import type { AdminNotification } from "../../read-models/notifications/admin-no
  * 관리자 알림 발송 유스케이스.
  *
  * 채널에 따라 관리자/결제 Discord 프로바이더를 선택해 발송한다.
- * 발송 실패 시 예외를 던져 BullMQ 재시도를 트리거한다.
+ * 발송 실패 시 예외를 던져 작업 재시도를 트리거한다.
  */
 interface SendAdminNotificationDependencies {
   readonly adminNotifier: Pick<AdminNotifier, "send">;

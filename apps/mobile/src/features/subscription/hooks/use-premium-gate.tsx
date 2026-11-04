@@ -41,7 +41,7 @@ export function usePremiumGate(feature: PremiumFeature) {
       /** 안내를 기록하고 프리미엄 다이얼로그를 띄운다 */
       open: ({ onSubscribe, description, ...options }: PremiumGateDialogOptions) => {
         trackShown();
-        const resetMessage = toQuotaResetMessage(getCachedMe(queryClient)?.entitlements?.[feature]);
+        const resetMessage = toQuotaResetMessage(getCachedMe(queryClient)?.entitlements[feature]);
         overlay.open(({ isOpen, close, exit }) => (
           <PremiumDialog
             {...options}

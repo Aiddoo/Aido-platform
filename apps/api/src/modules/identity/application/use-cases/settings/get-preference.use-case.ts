@@ -21,11 +21,10 @@ export class GetPreference {
   }
 
   async execute(input: GetPreferenceInput): Promise<PreferenceResponse> {
-    const snapshot = await this.#dependencies.preferenceReader.read(input.userId);
-    const canCustomizeReminder = await this.#dependencies.entitlement.can(
-      input.userId,
-      "CUSTOM_REMINDER_TIME",
-    );
+    const [snapshot, canCustomizeReminder] = await Promise.all([
+      this.#dependencies.preferenceReader.read(input.userId),
+      this.#dependencies.entitlement.can(input.userId, "CUSTOM_REMINDER_TIME"),
+    ]);
     return buildPreferenceView(snapshot, canCustomizeReminder);
   }
 }

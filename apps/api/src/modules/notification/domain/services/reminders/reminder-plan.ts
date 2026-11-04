@@ -2,7 +2,7 @@
  * 투두 리마인더 다단계 스케줄 정책 (순수 도메인).
  *
  * 마감 시각(scheduledTime) 기준으로 어떤 단계의 지연 잡을 언제 예약할지 계획한다.
- * 실제 큐 등록(BullMQ)은 인프라 어댑터가 이 계획을 실행만 한다.
+ * 실제 큐 등록은 인프라 어댑터가 이 계획을 실행만 한다.
  */
 
 export interface ReminderStage {
@@ -21,9 +21,6 @@ export const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 
 
 /** 즉시 발송 label */
 export const REMINDER_IMMEDIATE_LABEL = "immediate";
-
-/** 하위 호환: 기존 임포트 유지 */
-export const REMINDER_LEAD_TIME_MS = REMINDER_MAX_LEAD_TIME_MS;
 
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {

@@ -131,7 +131,7 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
         CROSS JOIN generate_series(1, ${THREAD_COUNT}) AS n
         RETURNING "id", "todoId", "createdAt"
       )
-      INSERT INTO ${todoComment} ("id", "todoId", "authorId", "clientRequestId", "content", "parentId", "replyToCommentId", "rootId", "path", "depth", "createdAt", "updatedAt")
+      INSERT INTO ${todoComment} ("id", "todoId", "authorId", "clientRequestId", "content", "parentId", "replyToCommentId", "createdAt", "updatedAt")
       SELECT
         heads."id" || 'r' || r,
         heads."todoId",
@@ -140,9 +140,6 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
         '답글 ' || r,
         heads."id",
         heads."id",
-        heads."id",
-        ARRAY[heads."id"],
-        1,
         heads."createdAt" + r * INTERVAL '1 second',
         heads."createdAt" + r * INTERVAL '1 second'
       FROM heads
@@ -167,9 +164,6 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
         deletedAt: index === DELETED_BUSY_REPLY_INDEX ? new Date("2026-08-25T05:00:00.000Z") : null,
         parentId: BUSY_THREAD,
         replyToCommentId: index === 0 ? BUSY_THREAD : busyReplyId(index - 1),
-        rootId: BUSY_THREAD,
-        path: [BUSY_THREAD],
-        depth: 1,
         createdAt: new Date(Date.UTC(2026, 7, 25, 1, index)),
       })),
     );

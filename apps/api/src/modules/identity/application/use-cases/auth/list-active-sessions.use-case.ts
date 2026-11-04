@@ -1,7 +1,8 @@
+import type { SessionInfo } from "@aido/api";
+
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import type { AuthSessionRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
-import type { SessionInfo } from "../../types/auth/index.js";
 
 export interface ListActiveSessionsInput {
   readonly userId: string;

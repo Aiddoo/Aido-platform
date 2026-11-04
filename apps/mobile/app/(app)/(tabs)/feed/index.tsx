@@ -6,6 +6,7 @@ import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
 import { InviteEntryBanner } from '@src/features/invite/components/invite-entry-banner';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
+import { PushPermissionCard } from '@src/features/notification/components/push-permission-card';
 import { PokeBanner } from '@src/features/nudge/components/poke-banner';
 import { invalidateNudges } from '@src/features/nudge/queries/nudge-cache';
 import { Calendar } from '@src/features/todo/components/calendar/calendar';
@@ -129,7 +130,8 @@ function MyFeed() {
 
         <QueryErrorBoundary fallback={() => null}>
           <Suspense fallback={null}>
-            <MarketingPushOptInBanner />
+            <PushPermissionCard className="mx-4 mb-3" />
+            <MarketingPushOptInBanner className="mx-4 mb-3" />
           </Suspense>
         </QueryErrorBoundary>
 

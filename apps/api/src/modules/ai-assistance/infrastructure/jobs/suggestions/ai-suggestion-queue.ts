@@ -3,11 +3,9 @@ import { z } from "zod";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const AI_SUGGESTION_QUEUE = "ai-suggestion-analysis.v1";
-export const AI_SUGGESTION_LEGACY_QUEUE = "ai-suggestion-analysis";
 
 export const AiSuggestionSchedulerName = {
   DAILY: "daily-suggestion-scheduler",
-  LEGACY_WEEKLY: "weekly-suggestion-scheduler",
 } as const;
 
 export const AiSuggestionJobKey = {
@@ -15,7 +13,6 @@ export const AiSuggestionJobKey = {
   analyze: (userId: string, date: string) => `suggestion_${userId}_${date}`,
 } as const;
 
-/** 잡 이름 상수 */
 export const AiSuggestionJobName = {
   DISPATCH: "dispatch-analysis",
   ANALYZE: "analyze-suggestion",
@@ -61,7 +58,6 @@ export interface AiSuggestionAnalyzeData {
   } | null;
 }
 
-/** 잡 이름 → 데이터 타입 매핑 */
 export interface AiSuggestionJobMap {
   [AiSuggestionJobName.DISPATCH]: Record<string, never>;
   [AiSuggestionJobName.ANALYZE]: AiSuggestionAnalyzeData;

@@ -19,6 +19,7 @@ import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notificati
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/delivery/push-delivery-outbox.repository.port.js";
+import { PUSH_DEVICE_REPOSITORY } from "./application/ports/delivery/push-device.repository.port.js";
 import { PUSH_DISPATCH_STAGING } from "./application/ports/delivery/push-dispatch-staging.repository.port.js";
 import { PUSH_PROVIDER } from "./application/ports/delivery/push-provider.port.js";
 import { PUSH_RATE_LIMITER } from "./application/ports/delivery/push-rate-limiter.port.js";
@@ -45,8 +46,9 @@ import { PersistBatchNotification } from "./application/use-cases/delivery/persi
 import { PublishPushDeliveryOutbox } from "./application/use-cases/delivery/publish-push-delivery-outbox.use-case.js";
 import { ReconcilePushReceipts } from "./application/use-cases/delivery/reconcile-push-receipts.use-case.js";
 import { RecoverFailedPushDeliveries } from "./application/use-cases/delivery/recover-failed-push-deliveries.use-case.js";
-import { RegisterPushToken } from "./application/use-cases/delivery/register-push-token.use-case.js";
 import { RelayPushDeliveryOutbox } from "./application/use-cases/delivery/relay-push-delivery-outbox.use-case.js";
+import { ReleaseSessionPushDevices } from "./application/use-cases/delivery/release-session-push-devices.use-case.js";
+import { ReportPushDevice } from "./application/use-cases/delivery/report-push-device.use-case.js";
 import { SendBatchNotification } from "./application/use-cases/delivery/send-batch-notification.use-case.js";
 import { SendBillingIssueNotification } from "./application/use-cases/delivery/send-billing-issue-notification.use-case.js";
 import { SendCheerNotification } from "./application/use-cases/delivery/send-cheer-notification.use-case.js";
@@ -57,7 +59,7 @@ import { SendMilestoneNotification } from "./application/use-cases/delivery/send
 import { SendNotificationWithDedup } from "./application/use-cases/delivery/send-notification-with-dedup.use-case.js";
 import { SendNotification } from "./application/use-cases/delivery/send-notification.use-case.js";
 import { SendNudgeNotification } from "./application/use-cases/delivery/send-nudge-notification.use-case.js";
-import { UnregisterPushToken } from "./application/use-cases/delivery/unregister-push-token.use-case.js";
+import { UnregisterPushDevice } from "./application/use-cases/delivery/unregister-push-device.use-case.js";
 
 export const notificationAccountCleanupProvider: FactoryProvider<NotificationAccountCleanup> = {
   provide: NotificationAccountCleanup,
@@ -123,11 +125,20 @@ export const pushDeliveryEligibilityServiceProvider: FactoryProvider<PushDeliver
 export const pushNotificationDeliveryServiceProvider: FactoryProvider<PushNotificationDeliveryService> =
   {
     provide: PushNotificationDeliveryService,
-    inject: [PUSH_TOKEN_REPOSITORY, PUSH_PROVIDER, ACTIVE_PUSH_TOKEN_READER, NOTIFICATION_CACHE],
+    inject: [
+      PUSH_TOKEN_REPOSITORY,
+      PUSH_DEVICE_REPOSITORY,
+      PUSH_PROVIDER,
+      ACTIVE_PUSH_TOKEN_READER,
+      NOTIFICATION_CACHE,
+    ],
     useFactory: (
       pushTokenRepository: ConstructorParameters<
         typeof PushNotificationDeliveryService
       >[0]["pushTokenRepository"],
+      pushDeviceRepository: ConstructorParameters<
+        typeof PushNotificationDeliveryService
+      >[0]["pushDeviceRepository"],
       pushProvider: ConstructorParameters<
         typeof PushNotificationDeliveryService
       >[0]["pushProvider"],
@@ -140,6 +151,7 @@ export const pushNotificationDeliveryServiceProvider: FactoryProvider<PushNotifi
     ) =>
       new PushNotificationDeliveryService({
         pushTokenRepository,
+        pushDeviceRepository,
         pushProvider,
         activePushTokenReader,
         notificationCache,
@@ -390,9 +402,32 @@ export const recoverFailedPushDeliveriesProvider: FactoryProvider<RecoverFailedP
   ) => new RecoverFailedPushDeliveries({ lifecycle, unitOfWork }),
 };
 
-export const registerPushTokenProvider: FactoryProvider<RegisterPushToken> = {
-  provide: RegisterPushToken,
+export const releaseSessionPushDevicesProvider: FactoryProvider<ReleaseSessionPushDevices> = {
+  provide: ReleaseSessionPushDevices,
+  inject: [PUSH_DEVICE_REPOSITORY, PUSH_TOKEN_REPOSITORY, UNIT_OF_WORK, NOTIFICATION_CACHE],
+  useFactory: (
+    pushDeviceRepository: ConstructorParameters<
+      typeof ReleaseSessionPushDevices
+    >[0]["pushDeviceRepository"],
+    pushTokenRepository: ConstructorParameters<
+      typeof ReleaseSessionPushDevices
+    >[0]["pushTokenRepository"],
+    unitOfWork: ConstructorParameters<typeof ReleaseSessionPushDevices>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof ReleaseSessionPushDevices>[0]["cache"],
+  ) =>
+    new ReleaseSessionPushDevices({
+      pushDeviceRepository,
+      pushTokenRepository,
+      unitOfWork,
+      cache,
+      logger: new Logger(ReleaseSessionPushDevices.name),
+    }),
+};
+
+export const reportPushDeviceProvider: FactoryProvider<ReportPushDevice> = {
+  provide: ReportPushDevice,
   inject: [
+    PUSH_DEVICE_REPOSITORY,
     PUSH_TOKEN_REPOSITORY,
     UNIT_OF_WORK,
     PUSH_PROVIDER,
@@ -400,19 +435,21 @@ export const registerPushTokenProvider: FactoryProvider<RegisterPushToken> = {
     NOTIFICATION_CACHE,
   ],
   useFactory: (
-    pushTokenRepository: ConstructorParameters<typeof RegisterPushToken>[0]["pushTokenRepository"],
-    unitOfWork: ConstructorParameters<typeof RegisterPushToken>[0]["unitOfWork"],
-    pushProvider: ConstructorParameters<typeof RegisterPushToken>[0]["pushProvider"],
-    userSettings: ConstructorParameters<typeof RegisterPushToken>[0]["userSettings"],
-    cache: ConstructorParameters<typeof RegisterPushToken>[0]["cache"],
+    pushDeviceRepository: ConstructorParameters<typeof ReportPushDevice>[0]["pushDeviceRepository"],
+    pushTokenRepository: ConstructorParameters<typeof ReportPushDevice>[0]["pushTokenRepository"],
+    unitOfWork: ConstructorParameters<typeof ReportPushDevice>[0]["unitOfWork"],
+    pushProvider: ConstructorParameters<typeof ReportPushDevice>[0]["pushProvider"],
+    userSettings: ConstructorParameters<typeof ReportPushDevice>[0]["userSettings"],
+    cache: ConstructorParameters<typeof ReportPushDevice>[0]["cache"],
   ) =>
-    new RegisterPushToken({
+    new ReportPushDevice({
+      pushDeviceRepository,
       pushTokenRepository,
       unitOfWork,
       pushProvider,
       userSettings,
       cache,
-      logger: new Logger(RegisterPushToken.name),
+      logger: new Logger(ReportPushDevice.name),
     }),
 };
 
@@ -673,19 +710,25 @@ export const sendNudgeNotificationProvider: FactoryProvider<SendNudgeNotificatio
     }),
 };
 
-export const unregisterPushTokenProvider: FactoryProvider<UnregisterPushToken> = {
-  provide: UnregisterPushToken,
-  inject: [PUSH_TOKEN_REPOSITORY, NOTIFICATION_CACHE],
+export const unregisterPushDeviceProvider: FactoryProvider<UnregisterPushDevice> = {
+  provide: UnregisterPushDevice,
+  inject: [PUSH_DEVICE_REPOSITORY, PUSH_TOKEN_REPOSITORY, UNIT_OF_WORK, NOTIFICATION_CACHE],
   useFactory: (
+    pushDeviceRepository: ConstructorParameters<
+      typeof UnregisterPushDevice
+    >[0]["pushDeviceRepository"],
     pushTokenRepository: ConstructorParameters<
-      typeof UnregisterPushToken
+      typeof UnregisterPushDevice
     >[0]["pushTokenRepository"],
-    cache: ConstructorParameters<typeof UnregisterPushToken>[0]["cache"],
+    unitOfWork: ConstructorParameters<typeof UnregisterPushDevice>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof UnregisterPushDevice>[0]["cache"],
   ) =>
-    new UnregisterPushToken({
+    new UnregisterPushDevice({
+      pushDeviceRepository,
       pushTokenRepository,
+      unitOfWork,
       cache,
-      logger: new Logger(UnregisterPushToken.name),
+      logger: new Logger(UnregisterPushDevice.name),
     }),
 };
 

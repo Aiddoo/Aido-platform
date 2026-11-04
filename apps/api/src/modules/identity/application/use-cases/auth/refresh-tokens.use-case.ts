@@ -19,6 +19,7 @@ import type {
   AuthSecurityLogRepositoryPort,
   AuthSessionRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../ports/auth/session-push-device-releaser.port.js";
 import type {
   RefreshTokensResult,
   RequestMetadata,
@@ -42,6 +43,7 @@ interface RefreshTokensDependencies {
   >;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
+  readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly logger: ApplicationLogger;
 }
 
@@ -85,6 +87,7 @@ export class RefreshTokens {
     await Promise.all(
       revokedSessionIds.map((id) => this.#dependencies.cacheService.invalidateSession(id)),
     );
+    await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
     await this.#dependencies.securityLogRepository.create({
       userId: authSession.userId,
       event: SECURITY_EVENT.SUSPICIOUS_ACTIVITY,

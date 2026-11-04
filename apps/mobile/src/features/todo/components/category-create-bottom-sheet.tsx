@@ -19,9 +19,7 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { type ComponentProps, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
 import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category-colors';
 import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
@@ -46,7 +44,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
     defaultValues: { name: '', color: DEFAULT_CATEGORY_COLOR },
   });
   const { control, handleSubmit } = formMethods;
-  const { isSubmitting } = useFormState({ control: control });
+  const { isSubmitting } = useFormState({ control });
 
   const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
     try {

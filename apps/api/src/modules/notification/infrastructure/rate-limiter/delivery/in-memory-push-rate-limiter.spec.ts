@@ -2,6 +2,8 @@ import { vi } from "vitest";
 
 import { InMemoryPushRateLimiter } from "./in-memory-push-rate-limiter.js";
 
+const USER_ID = "user-1";
+
 describe("InMemoryPushRateLimiter — 참여 알림 발송 한도 정책", () => {
   beforeEach(() => {
     vi.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00.000Z"));
@@ -9,159 +11,157 @@ describe("InMemoryPushRateLimiter — 참여 알림 발송 한도 정책", () =>
   afterEach(() => vi.useRealTimers());
 
   it("현지 하루 최대 2회, 최소 4시간 간격을 원자적으로 적용한다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(false);
-    expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(true);
+    const reserve = (dispatchId: number) =>
+      limiter.reserveEngagement({ userId: USER_ID, localDate: "2026-07-15", dispatchId });
 
+    // When & Then
+    expect(await reserve(1)).toBe(false);
+    expect(await reserve(2)).toBe(true);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
-    expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(false);
-
+    expect(await reserve(3)).toBe(false);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
-    expect(await limiter.isEngagementRateLimited("user-1", "2026-07-15")).toBe(true);
+    expect(await reserve(4)).toBe(true);
     limiter.destroy();
   });
 
   it("48시간 지난 날짜별 참여 유도 카운터를 주기 정리한다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    const localDate = "2026-07-15";
-    expect(await limiter.isEngagementRateLimited("user-1", localDate)).toBe(false);
+    const reserve = (dispatchId: number) =>
+      limiter.reserveEngagement({ userId: USER_ID, localDate: "2026-07-15", dispatchId });
+    expect(await reserve(1)).toBe(false);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
-    expect(await limiter.isEngagementRateLimited("user-1", localDate)).toBe(false);
+    expect(await reserve(2)).toBe(false);
 
+    // When
     vi.advanceTimersByTime(49 * 60 * 60 * 1000);
 
-    expect(await limiter.isEngagementRateLimited("user-1", localDate)).toBe(false);
+    // Then
+    expect(await reserve(3)).toBe(false);
     limiter.destroy();
   });
 
   it("배치 요청의 입력 순서를 보존하고 참여 유도 정책을 함께 적용한다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    const requests = [
-      { userId: "user-1", engagementLocalDate: "2026-07-15" },
-      { userId: "user-2" },
-    ] as const;
 
-    await expect(limiter.reserveBatch(requests)).resolves.toEqual([false, false]);
-    await expect(limiter.reserveBatch(requests)).resolves.toEqual([true, false]);
+    // When & Then
+    await expect(
+      limiter.reserveBatch([
+        { userId: USER_ID, dispatchId: 1, engagementLocalDate: "2026-07-15" },
+        { userId: "user-2", dispatchId: 2 },
+      ]),
+    ).resolves.toEqual([false, false]);
+    await expect(
+      limiter.reserveBatch([
+        { userId: USER_ID, dispatchId: 3, engagementLocalDate: "2026-07-15" },
+        { userId: "user-2", dispatchId: 4 },
+      ]),
+    ).resolves.toEqual([true, false]);
 
     limiter.destroy();
   });
 
   it("같은 dispatch 예약은 재시도와 새 publication generation에서도 한 번만 소비한다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    const request = {
-      userId: "user-1",
-      engagementLocalDate: "2026-07-15",
-      reservationId: "push-delivery-501",
-    } as const;
+    const request = { userId: USER_ID, engagementLocalDate: "2026-07-15", dispatchId: 501 };
 
+    // When & Then
     await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
     await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
-    await expect(
-      limiter.reserveBatch([{ ...request, reservationId: "push-delivery-502" }]),
-    ).resolves.toEqual([true]);
+    await expect(limiter.reserveBatch([{ ...request, dispatchId: 502 }])).resolves.toEqual([true]);
 
     limiter.destroy();
   });
 
   it("engagement 제한은 Redis 계약과 동일하게 general quota를 소비하지 않는다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
     const localDate = "2026-07-15";
-    await limiter.isEngagementRateLimited("user-1", localDate);
+    await limiter.reserveEngagement({ userId: USER_ID, localDate, dispatchId: 1 });
 
-    await expect(
-      limiter.reserveBatch([
-        {
-          userId: "user-1",
-          engagementLocalDate: localDate,
-          reservationId: "push-delivery-limited",
-        },
-      ]),
-    ).resolves.toEqual([true]);
+    // When
+    const limited = await limiter.reserveBatch([
+      { userId: USER_ID, engagementLocalDate: localDate, dispatchId: 2 },
+    ]);
+
+    // Then
+    expect(limited).toEqual([true]);
     for (let index = 0; index < 15; index += 1) {
-      await expect(limiter.isRateLimited("user-1")).resolves.toBe(false);
+      await expect(
+        limiter.reserveGeneral({ userId: USER_ID, dispatchId: 100 + index }),
+      ).resolves.toBe(false);
     }
-    await expect(limiter.isRateLimited("user-1")).resolves.toBe(true);
+    await expect(limiter.reserveGeneral({ userId: USER_ID, dispatchId: 200 })).resolves.toBe(true);
 
     limiter.destroy();
   });
 
   it("단건 일반·engagement 단계도 같은 dispatch 예약을 각각 재사용한다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    const reservationId = "push-delivery-601";
+    const general = { userId: USER_ID, dispatchId: 601 };
+    const engagement = { ...general, localDate: "2026-07-15" };
 
-    await expect(limiter.isRateLimited("user-1", reservationId)).resolves.toBe(false);
-    await expect(
-      limiter.isEngagementRateLimited("user-1", "2026-07-15", reservationId),
-    ).resolves.toBe(false);
-    await expect(limiter.isRateLimited("user-1", reservationId)).resolves.toBe(false);
-    await expect(
-      limiter.isEngagementRateLimited("user-1", "2026-07-15", reservationId),
-    ).resolves.toBe(false);
+    // When & Then
+    await expect(limiter.reserveGeneral(general)).resolves.toBe(false);
+    await expect(limiter.reserveEngagement(engagement)).resolves.toBe(false);
+    await expect(limiter.reserveGeneral(general)).resolves.toBe(false);
+    await expect(limiter.reserveEngagement(engagement)).resolves.toBe(false);
 
     limiter.destroy();
   });
 
   it("batch 예약 marker는 general window와 현지 날짜가 바뀌어도 같은 dispatch를 재사용한다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    const original = {
-      userId: "user-1",
-      engagementLocalDate: "2026-07-15",
-      reservationId: "push-delivery-midnight",
-    } as const;
-
+    const original = { userId: USER_ID, engagementLocalDate: "2026-07-15", dispatchId: 701 };
     await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
+
+    // When
     vi.advanceTimersByTime(5 * 60 * 60 * 1000);
     await expect(
-      limiter.reserveBatch([
-        {
-          ...original,
-          engagementLocalDate: "2026-07-16",
-          reservationId: "push-delivery-next-day-1",
-        },
-      ]),
+      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 702 }]),
     ).resolves.toEqual([false]);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     await expect(
-      limiter.reserveBatch([
-        {
-          ...original,
-          engagementLocalDate: "2026-07-16",
-          reservationId: "push-delivery-next-day-2",
-        },
-      ]),
+      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 703 }]),
     ).resolves.toEqual([false]);
 
+    // Then
     await expect(
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16" }]),
     ).resolves.toEqual([false]);
     await expect(
-      limiter.reserveBatch([
-        {
-          ...original,
-          engagementLocalDate: "2026-07-16",
-          reservationId: "push-delivery-next-day-blocked",
-        },
-      ]),
+      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 704 }]),
     ).resolves.toEqual([true]);
 
     limiter.destroy();
   });
 
   it("단건 general 예약 직후 crash한 재시도는 window가 지나도 quota를 다시 쓰지 않는다", async () => {
+    // Given
     const limiter = new InMemoryPushRateLimiter();
-    const reservationId = "push-delivery-general-phase";
-    await expect(limiter.isRateLimited("user-1", reservationId)).resolves.toBe(false);
+    const reserved = { userId: USER_ID, dispatchId: 801 };
+    await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
 
+    // When
     vi.advanceTimersByTime(2 * 60 * 60 * 1000);
     for (let index = 0; index < 15; index += 1) {
-      await expect(limiter.isRateLimited("user-1")).resolves.toBe(false);
+      await expect(
+        limiter.reserveGeneral({ userId: USER_ID, dispatchId: 900 + index }),
+      ).resolves.toBe(false);
     }
-    await expect(limiter.isRateLimited("user-1")).resolves.toBe(true);
-    await expect(limiter.isRateLimited("user-1", reservationId)).resolves.toBe(false);
-    await expect(
-      limiter.isEngagementRateLimited("user-1", "2026-07-16", reservationId),
-    ).resolves.toBe(false);
+
+    // Then
+    await expect(limiter.reserveGeneral({ userId: USER_ID, dispatchId: 999 })).resolves.toBe(true);
+    await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
+    await expect(limiter.reserveEngagement({ ...reserved, localDate: "2026-07-16" })).resolves.toBe(
+      false,
+    );
 
     limiter.destroy();
   });

@@ -27,6 +27,7 @@ import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/application
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-preference.reader.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
+import { PUSH_DEVICE_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-device.repository.port";
 import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
@@ -43,7 +44,7 @@ import { MarkAllAsRead } from "#api/modules/notification/application/use-cases/d
 import { MarkAsRead } from "#api/modules/notification/application/use-cases/delivery/mark-as-read.use-case";
 import { MarkNotificationOpened } from "#api/modules/notification/application/use-cases/delivery/mark-notification-opened.use-case";
 import { OptOutMarketingPush } from "#api/modules/notification/application/use-cases/delivery/opt-out-marketing-push.use-case";
-import { RegisterPushToken } from "#api/modules/notification/application/use-cases/delivery/register-push-token.use-case";
+import { ReportPushDevice } from "#api/modules/notification/application/use-cases/delivery/report-push-device.use-case";
 import { SendBatchNotification } from "#api/modules/notification/application/use-cases/delivery/send-batch-notification.use-case";
 import { SendNotificationWithDedup } from "#api/modules/notification/application/use-cases/delivery/send-notification-with-dedup.use-case";
 import { SendNotification } from "#api/modules/notification/application/use-cases/delivery/send-notification.use-case";
@@ -53,6 +54,7 @@ import { NotificationCacheAdapter } from "#api/modules/notification/infrastructu
 import { NotificationDedupLockAdapter } from "#api/modules/notification/infrastructure/adapters/delivery/notification-dedup-lock.adapter";
 import { DrizzleNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-notification.repository";
+import { DrizzlePushDeviceRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-device.repository";
 import { DrizzlePushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-receipt.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/drizzle-push-token.repository";
 import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
@@ -75,6 +77,7 @@ import {
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { NotificationBuilder, PushTokenBuilder, UserPreferenceBuilder } from "#test/builders/index";
+import { PushDeviceReportFixture } from "#test/fixtures/index";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -91,11 +94,11 @@ import {
   markNotificationOpenedProvider,
   optOutMarketingPushProvider,
   persistBatchNotificationProvider,
-  registerPushTokenProvider,
+  reportPushDeviceProvider,
   sendBatchNotificationProvider,
   sendNotificationProvider,
   sendNotificationWithDedupProvider,
-  unregisterPushTokenProvider,
+  unregisterPushDeviceProvider,
 } from "../../src/modules/notification/notification-delivery-application.providers.js";
 import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
 
@@ -111,14 +114,14 @@ function buildNotificationTestApi(module: TestingModule) {
   const markAsReadUseCase = module.get(MarkAsRead);
   const markNotificationOpenedUseCase = module.get(MarkNotificationOpened);
   const markAllAsReadUseCase = module.get(MarkAllAsRead);
-  const registerPushTokenUseCase = module.get(RegisterPushToken);
+  const reportPushDeviceUseCase = module.get(ReportPushDevice);
   const optOutMarketingPushUseCase = module.get(OptOutMarketingPush);
 
   return {
     publish: publisher.publish.bind(publisher),
     publishWithDeduplication: publisher.publishWithDeduplication.bind(publisher),
     publishBatch: publisher.publishBatch.bind(publisher),
-    registerPushToken: registerPushTokenUseCase.execute.bind(registerPushTokenUseCase),
+    reportPushDevice: reportPushDeviceUseCase.execute.bind(reportPushDeviceUseCase),
     getNotifications: getNotificationsUseCase.execute.bind(getNotificationsUseCase),
     getUnreadCount: getUnreadCountUseCase.execute.bind(getUnreadCountUseCase),
     markAsRead: markAsReadUseCase.execute.bind(markAsReadUseCase),
@@ -127,6 +130,8 @@ function buildNotificationTestApi(module: TestingModule) {
     optOutMarketingPush: optOutMarketingPushUseCase.execute.bind(optOutMarketingPushUseCase),
   };
 }
+
+const GRANTED_PERMISSION = { status: "GRANTED", canAskAgain: false } as const;
 
 describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   let module: TestingModule;
@@ -177,6 +182,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         DrizzleNotificationReader,
         { provide: NOTIFICATION_INBOX_READER, useExisting: DrizzleNotificationReader },
         { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
+        DrizzlePushDeviceRepository,
+        { provide: PUSH_DEVICE_REPOSITORY, useExisting: DrizzlePushDeviceRepository },
         DrizzlePushTokenRepository,
         { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
         DrizzlePushReceiptRepository,
@@ -246,8 +253,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         markAsReadProvider,
         markNotificationOpenedProvider,
         markAllAsReadProvider,
-        registerPushTokenProvider,
-        unregisterPushTokenProvider,
+        reportPushDeviceProvider,
+        unregisterPushDeviceProvider,
         optOutMarketingPushProvider,
         sendNotificationProvider,
         sendNotificationWithDedupProvider,
@@ -326,8 +333,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         {
           provide: PUSH_RATE_LIMITER,
           useValue: {
-            isRateLimited: vi.fn().mockResolvedValue(false),
-            isEngagementRateLimited: vi.fn().mockResolvedValue(false),
+            reserveGeneral: vi.fn().mockResolvedValue(false),
+            reserveEngagement: vi.fn().mockResolvedValue(false),
             reserveBatch: vi
               .fn()
               .mockImplementation(async (requests: unknown[]) => requests.map(() => false)),
@@ -423,20 +430,24 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     });
   });
 
-  describe("푸시 토큰 등록 통합 테스트", () => {
+  describe("푸시 기기 보고 통합 테스트", () => {
     it("새 푸시 토큰을 등록해야 함", async () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
 
       // When
-      const registration = facade.registerPushToken({
-        userId: mockUserId,
-        token: mockPushToken,
-        platform: "IOS",
-      });
+      const registration = facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          deviceId: "ios_device-1",
+          token: mockPushToken,
+        }),
+      );
 
       // Then
-      await expect(registration).resolves.toBeUndefined();
+      await expect(registration).resolves.toMatchObject({ hasActiveToken: true });
       expect(
         await client.query.pushToken.findFirst({
           where: { userId: mockUserId, token: mockPushToken },
@@ -447,53 +458,69 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("같은 사용자·기기가 다시 등록하면 한 행을 갱신한다", async () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
-      await facade.registerPushToken({
-        userId: mockUserId,
-        token: mockPushToken,
-        platform: "IOS",
-        deviceId: "device-1",
-        appVersion: "1.13.0",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+          appVersion: "1.13.0",
+        }),
+      );
 
       // When
-      await facade.registerPushToken({
-        userId: mockUserId,
-        token: mockPushToken,
-        platform: "IOS",
-        deviceId: "device-1",
-        appVersion: "1.14.0",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+          appVersion: "1.14.0",
+        }),
+      );
 
       // Then
       const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
       expect(rows).toEqual([
-        expect.objectContaining({ userId: mockUserId, deviceId: "device-1", appVersion: "1.14.0" }),
+        expect.objectContaining({
+          userId: mockUserId,
+          deviceId: "ios_device-1",
+          appVersion: "1.14.0",
+        }),
       ]);
     });
 
     it("이전 사용자의 해제가 실패한 기기에 다른 사용자가 등록하면 토큰 소유가 새 사용자로 옮겨진다", async () => {
       // Given 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
       mockPushProvider.validateToken.mockReturnValue(true);
-      await facade.registerPushToken({
-        userId: mockUserId,
-        token: mockPushToken,
-        platform: "IOS",
-        deviceId: "device-1",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+        }),
+      );
 
       // When 같은 기기에서 사용자 B가 로그인해 같은 토큰을 등록한다
-      const registration = facade.registerPushToken({
-        userId: "other-user",
-        token: mockPushToken,
-        platform: "IOS",
-        deviceId: "device-1",
-      });
+      const registration = facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: "other-user",
+          token: mockPushToken,
+          deviceId: "ios_device-1",
+        }),
+      );
 
       // Then
-      await expect(registration).resolves.toBeUndefined();
+      await expect(registration).resolves.toMatchObject({ hasActiveToken: true });
       const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
       expect(rows).toEqual([
-        expect.objectContaining({ userId: "other-user", deviceId: "device-1", isActive: true }),
+        expect.objectContaining({ userId: "other-user", deviceId: "ios_device-1", isActive: true }),
       ]);
       expect(await client.query.pushToken.findMany({ where: { userId: mockUserId } })).toEqual([]);
     });
@@ -501,24 +528,30 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("같은 사용자의 deviceId가 바뀌어도 같은 토큰은 새 기기 행 하나만 남는다", async () => {
       // Given
       mockPushProvider.validateToken.mockReturnValue(true);
-      await facade.registerPushToken({
-        userId: mockUserId,
-        token: mockPushToken,
-        platform: "IOS",
-        deviceId: "device-old",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-old",
+        }),
+      );
 
       // When
-      await facade.registerPushToken({
-        userId: mockUserId,
-        token: mockPushToken,
-        platform: "IOS",
-        deviceId: "device-new",
-      });
+      await facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          token: mockPushToken,
+          deviceId: "ios_device-new",
+        }),
+      );
 
       // Then
       const rows = await client.query.pushToken.findMany({ where: { token: mockPushToken } });
-      expect(rows).toEqual([expect.objectContaining({ deviceId: "device-new" })]);
+      expect(rows).toEqual([expect.objectContaining({ deviceId: "ios_device-new" })]);
     });
 
     it("유효하지 않은 토큰이면 예외를 발생시켜야 함", async () => {
@@ -526,11 +559,15 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       mockPushProvider.validateToken.mockReturnValue(false);
 
       // When
-      const registration = facade.registerPushToken({
-        userId: mockUserId,
-        token: "invalid-token",
-        platform: "IOS",
-      });
+      const registration = facade.reportPushDevice(
+        PushDeviceReportFixture.command({
+          permission: GRANTED_PERMISSION,
+          payloadVersion: 1,
+          userId: mockUserId,
+          deviceId: "ios_device-1",
+          token: "invalid-token",
+        }),
+      );
 
       // Then
       await expect(registration).rejects.toMatchObject({ errorCode: "NOTIFICATION_1001" });

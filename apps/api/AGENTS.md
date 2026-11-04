@@ -4,16 +4,17 @@
 
 ## 작업에 맞는 문서
 
-| 판단할 내용                     | 참고                                                     |
-| ------------------------------- | -------------------------------------------------------- |
-| 레이어·상태 소유·모듈 공개 경계 | [.claude/architecture.md](.claude/architecture.md)       |
-| Controller·UseCase·Port 작성    | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| Zod·HTTP 응답·구 앱 호환        | [.claude/rest-contracts.md](.claude/rest-contracts.md)   |
-| ORM·트랜잭션·마이그레이션       | [.claude/drizzle.md](.claude/drizzle.md)                 |
-| 검증 범위·격리된 테스트 실행    | [.claude/testing-guide.md](.claude/testing-guide.md)     |
-| 로그·개인정보·공급자 오류       | [.claude/logging-guide.md](.claude/logging-guide.md)     |
-| 파일·역할 명명                  | [docs/server/naming.md](../../docs/server/naming.md)     |
-| 배포 준비                       | [DEPLOYMENT.md](DEPLOYMENT.md)                           |
+| 판단할 내용                                      | 참고                                                     |
+| ------------------------------------------------ | -------------------------------------------------------- |
+| 레이어·상태 소유·모듈 공개 경계                  | [.claude/architecture.md](.claude/architecture.md)       |
+| Controller·UseCase·Port 작성, 요청 헤더·throttle | [.claude/api-conventions.md](.claude/api-conventions.md) |
+| Zod·HTTP 응답·구 앱 호환                         | [.claude/rest-contracts.md](.claude/rest-contracts.md)   |
+| ORM·트랜잭션·마이그레이션                        | [.claude/drizzle.md](.claude/drizzle.md)                 |
+| 검증 범위·격리된 테스트 실행                     | [.claude/testing-guide.md](.claude/testing-guide.md)     |
+| 로그 이벤트 키·개인정보·공급자 오류              | [.claude/logging-guide.md](.claude/logging-guide.md)     |
+| 푸시 기기·발송·큐                                | [docs/push-notifications.md](docs/push-notifications.md) |
+| 파일·역할 명명                                   | [docs/server/naming.md](../../docs/server/naming.md)     |
+| 배포 준비                                        | [DEPLOYMENT.md](DEPLOYMENT.md)                           |
 
 모든 문서를 작업마다 읽을 필요는 없다. 수정 대상의 실제 코드가 상세 사례이며, 아래 규칙과 다른 기존 구현은 완료된 전환으로 가정하지 않는다.
 
@@ -24,6 +25,7 @@
 - 상태 전이·값 검증이 있을 때만 Aggregate·Entity·VO를 사용한다. 조회·집계·렌더링에 형식적인 상태 모델이나 전달 전용 Facade를 만들지 않는다.
 - 외부 Context는 실제 필요한 capability만 `*-*.public.ts`로 소비한다. 내부 Repository·UseCase를 공개하거나 순환을 `forwardRef`로 덮기 전에 방향을 확인한다.
 - DTO는 `@aido/api`, 오류는 `@aido/api/errors`, 순수 공용 상수는 `@aido/api/vocabulary`를 쓴다. 상대 import는 `.js`, 서버 별칭은 `#api/*`, 테스트는 `#test/*`다.
+- 앱 헤더는 `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽고 Controller에서 `@Headers("x-…")`를 쓰지 않는다. job은 pg-boss만 쓴다.
 - 트랜잭션은 `UNIT_OF_WORK.run`과 활성 CLS transaction을 사용한다. 외부 발송은 DB transaction 밖에서 실행하고 기존 커밋·재시도·실패 격리 의미를 보존한다.
 - HTTP·DB·queue·cache 계약을 의도 없이 변경하지 않는다. 요청에 포함된 계약 변경은 소비자·배포 영향을 함께 처리한다.
 

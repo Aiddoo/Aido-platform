@@ -13,8 +13,8 @@ const createStubServices = ({ logout = async () => ok(undefined) } = {}) => {
     { unregister: [], logout: [], clearLocalSession: 0 };
   return {
     calls,
-    notificationService: {
-      unregisterPushToken: async (config?: TimeoutConfig) => {
+    pushDeviceService: {
+      unregister: async (config?: TimeoutConfig) => {
         calls.unregister.push(config);
         return ok(undefined);
       },

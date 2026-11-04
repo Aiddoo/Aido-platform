@@ -22,15 +22,14 @@ export class GetCheerLimit {
     readonly timezone: string;
   }): Promise<CheerLimitSnapshot> {
     const window = dayWindowInTimezone(now(), input.timezone);
-    const { dailyLimit } = await this.#dependencies.entitlementReader.getFeatureLimit(
-      input.userId,
-      Feature.CHEER,
-    );
-    const used = await this.#dependencies.cheerRepository.countSentSince(
-      input.userId,
-      window.startsAt,
-      window.endsAt,
-    );
+    const [{ dailyLimit }, used] = await Promise.all([
+      this.#dependencies.entitlementReader.getFeatureLimit(input.userId, Feature.CHEER),
+      this.#dependencies.cheerRepository.countSentSince(
+        input.userId,
+        window.startsAt,
+        window.endsAt,
+      ),
+    ]);
     return {
       dailyLimit,
       used,

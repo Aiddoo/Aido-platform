@@ -10,7 +10,7 @@ import {
   type WeatherLocationDependencies,
 } from '@src/features/weather/apis/weather-location.service';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { toError } from '@src/shared/errors';
+import { errorMessageOf } from '@src/shared/errors';
 import { type Query, type QueryClient, queryOptions, useQuery } from '@tanstack/react-query';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -36,7 +36,7 @@ async function readReportLocation(client: QueryClient, logger: Logger, revision:
   if (state?.data == null && state?.fetchStatus === 'fetching') {
     const report = await client.fetchQuery<WeatherReport>({ queryKey }).catch((error) => {
       logger.info(WEATHER_LOG_EVENT.REPORT_LOCATION_READ_FAILED, {
-        error: toError(error).message,
+        error: errorMessageOf(error),
       });
       return null;
     });

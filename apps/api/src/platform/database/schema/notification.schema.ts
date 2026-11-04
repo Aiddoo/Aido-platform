@@ -27,13 +27,13 @@ import {
   pushDeliveryStatus,
   pushDispatchOutboxStatus,
   pushDispatchStatus,
+  pushPermissionStatus,
   pushRateLimitPhase,
   retentionExperimentStageName,
   retentionExperimentStageStatus,
   retentionExperimentVariant,
-  retentionOutboxStatus,
 } from "./enums.schema.js";
-import { user } from "./identity.schema.js";
+import { session, user } from "./identity.schema.js";
 
 export const notification = pgTable(
   "Notification",
@@ -122,6 +122,46 @@ export const notification = pgTable(
   ],
 );
 
+export const pushDevice = pgTable(
+  "PushDevice",
+  {
+    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
+    deviceId: varchar({ length: 255 }).notNull(),
+    deviceModel: varchar({ length: 40 }),
+    id: text().primaryKey().$defaultFn(createEntityId),
+    osVersion: varchar({ length: 20 }),
+    permissionCanAskAgain: boolean().notNull(),
+    permissionStatus: pushPermissionStatus().notNull(),
+    platform: platform().notNull(),
+    reportedAt: timestamp({ precision: 3 }).notNull(),
+    sessionId: text(),
+    updatedAt: timestamp({ precision: 3 })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    userId: text().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "PushDevice_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [session.id],
+      name: "PushDevice_sessionId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    index("PushDevice_sessionId_idx").using("btree", table.sessionId.asc().nullsLast()),
+    index("PushDevice_deviceId_idx").using("btree", table.deviceId.asc().nullsLast()),
+    unique("PushDevice_userId_deviceId_key").on(table.userId, table.deviceId),
+  ],
+);
+
 export const pushToken = pgTable(
   "PushToken",
   {
@@ -133,6 +173,7 @@ export const pushToken = pgTable(
     lastUsedAt: timestamp({ precision: 3 }).defaultNow().notNull(),
     payloadVersion: integer().default(1).notNull(),
     platform: platform().notNull(),
+    sessionId: text(),
     token: varchar({ length: 255 }).notNull(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()
@@ -148,11 +189,19 @@ export const pushToken = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("cascade"),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [session.id],
+      name: "PushToken_sessionId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
     index("PushToken_userId_isActive_idx").using(
       "btree",
       table.userId.asc().nullsLast(),
       table.isActive.asc().nullsLast(),
     ),
+    index("PushToken_sessionId_idx").using("btree", table.sessionId.asc().nullsLast()),
     unique("PushToken_token_key").on(table.token),
     unique("PushToken_userId_deviceId_key").on(table.userId, table.deviceId),
   ],
@@ -461,49 +510,5 @@ export const retentionExperimentStage = pgTable(
     ),
     unique("RetentionExperimentStage_assignmentId_stage_key").on(table.assignmentId, table.stage),
     unique("RetentionExperimentStage_notificationId_key").on(table.notificationId),
-  ],
-);
-
-export const retentionPushOutbox = pgTable(
-  "RetentionPushOutbox",
-  {
-    attempts: integer().default(0).notNull(),
-    availableAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    createdAt: timestamp({ precision: 3 }).defaultNow().notNull(),
-    dispatchId: integer().notNull(),
-    id: text().primaryKey().$defaultFn(createEntityId),
-    lastError: varchar({ length: 500 }),
-    lockedAt: timestamp({ precision: 3 }),
-    notificationId: integer().notNull(),
-    publishedAt: timestamp({ precision: 3 }),
-    stageId: text().notNull(),
-    status: retentionOutboxStatus().default("PENDING").notNull(),
-    updatedAt: timestamp({ precision: 3 })
-      .notNull()
-      .$defaultFn(() => new Date())
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.stageId],
-      foreignColumns: [retentionExperimentStage.id],
-      name: "RetentionPushOutbox_stageId_fkey",
-    })
-      .onUpdate("cascade")
-      .onDelete("cascade"),
-    index("RetentionPushOutbox_status_availableAt_id_idx").using(
-      "btree",
-      table.status.asc().nullsLast(),
-      table.availableAt.asc().nullsLast(),
-      table.id.asc().nullsLast(),
-    ),
-    index("RetentionPushOutbox_status_lockedAt_idx").using(
-      "btree",
-      table.status.asc().nullsLast(),
-      table.lockedAt.asc().nullsLast(),
-    ),
-    unique("RetentionPushOutbox_dispatchId_key").on(table.dispatchId),
-    unique("RetentionPushOutbox_notificationId_key").on(table.notificationId),
-    unique("RetentionPushOutbox_stageId_key").on(table.stageId),
   ],
 );

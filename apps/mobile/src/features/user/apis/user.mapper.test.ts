@@ -86,40 +86,6 @@ describe('toUser', () => {
     expect(result.premiumAccess).toEqual(expected);
   });
 
-  test('지금 기간의 끝을 보내기 전 서버면 그 서버의 끝(premiumEndsAt)을 지금 기간의 끝으로 본다', () => {
-    // Given premiumPeriodEndsAt이 없는 1.12 서버 응답
-    const dto = createCurrentUserDto({
-      premiumSource: 'GRANT',
-      premiumEndsAt: '2026-11-01T05:30:00.000Z',
-      willRenew: false,
-      bankedPremiumDays: 0,
-    });
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.premiumAccess.periodEndsAt).toEqual(new Date('2026-11-01T05:30:00.000Z'));
-  });
-
-  test('구버전 서버가 프리미엄 출처를 보내지 않으면 출처 없음으로 본다', () => {
-    // Given
-    const dto = createCurrentUserDto();
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.premiumAccess).toEqual({
-      source: null,
-      endsAt: null,
-      periodEndsAt: null,
-      willRenew: false,
-      bankedDays: 0,
-      grantEndedAt: null,
-    });
-  });
-
   test('기능별 권한의 초기화 시각을 Date로 바꾸고 모르는 기능 키는 버린다', () => {
     // Given 새 서버가 앱이 모르는 기능을 더해 보냈다
     const dto = createCurrentUserDto({
@@ -137,25 +103,13 @@ describe('toUser', () => {
 
     // Then
     expect(result.isPremium).toBe(false);
-    expect(result.entitlements?.NUDGE).toEqual({
+    expect(result.entitlements.NUDGE).toEqual({
       allowed: true,
       limit: 3,
       used: 3,
       resetsAt: new Date('2026-11-01T15:00:00.000Z'),
     });
     expect(result.entitlements).not.toHaveProperty('FUTURE_FEATURE');
-  });
-
-  test('구버전 서버가 효력·권한을 보내지 않으면 null로 두어 정책이 대신 판단한다', () => {
-    // Given
-    const dto = createCurrentUserDto();
-
-    // When
-    const result = toUser(dto);
-
-    // Then
-    expect(result.isPremium).toBeNull();
-    expect(result.entitlements).toBeNull();
   });
 
   test('providers 배열 매핑', () => {

@@ -10,12 +10,6 @@ import { PUSH_RATE_LIMIT_POLICY } from "../../../domain/services/delivery/push-r
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 
-interface LegacyPushRateLimitRequest {
-  readonly userId: string;
-  readonly reservationId?: string;
-  readonly engagementLocalDate?: string;
-}
-
 /**
  * 인메모리 푸시 Rate Limiter
  *
@@ -38,18 +32,10 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
     return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
   }
 
-  /** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
-  async isRateLimited(userId: string, reservationId?: string): Promise<boolean> {
-    return this.#reserveGeneral(userId, reservationId);
-  }
-
-  async #reserveGeneral(userId: string, reservationId?: string): Promise<boolean> {
+  async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
     const now = Date.now();
     const windowStart = now - GENERAL.WINDOW_MS;
-    if (
-      reservationId &&
-      this.#hasReservation(this.generalReservations, userId, reservationId, now)
-    ) {
+    if (this.#hasReservation(this.generalReservations, userId, reservationId, now)) {
       return false;
     }
 
@@ -59,7 +45,6 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
       this.pushTimestamps.set(userId, timestamps);
     }
 
-    // 윈도우 밖 타임스탬프 제거
     const filtered = timestamps.filter((t) => t > windowStart);
     this.pushTimestamps.set(userId, filtered);
 
@@ -68,14 +53,12 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
     }
 
     filtered.push(now);
-    if (reservationId) {
-      this.#saveReservation(
-        this.generalReservations,
-        userId,
-        reservationId,
-        now + ENGAGEMENT.RETENTION_MS,
-      );
-    }
+    this.#saveReservation(
+      this.generalReservations,
+      userId,
+      reservationId,
+      now + ENGAGEMENT.RETENTION_MS,
+    );
     return false;
   }
 
@@ -87,26 +70,14 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
     );
   }
 
-  /** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
-  async isEngagementRateLimited(
-    userId: string,
-    localDate: string,
-    reservationId?: string,
-  ): Promise<boolean> {
-    return this.#reserveEngagement(userId, localDate, reservationId);
-  }
-
   async #reserveEngagement(
     userId: string,
     localDate: string,
-    reservationId?: string,
+    reservationId: string,
   ): Promise<boolean> {
     const key = `${userId}:${localDate}`;
     const now = Date.now();
-    if (
-      reservationId &&
-      this.#hasReservation(this.engagementReservations, userId, reservationId, now)
-    ) {
+    if (this.#hasReservation(this.engagementReservations, userId, reservationId, now)) {
       return false;
     }
     const timestamps = this.engagementTimestamps.get(key) ?? [];
@@ -119,35 +90,32 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
     }
     timestamps.push(now);
     this.engagementTimestamps.set(key, timestamps);
-    if (reservationId) {
-      this.#saveReservation(
-        this.engagementReservations,
-        userId,
-        reservationId,
-        now + ENGAGEMENT.RETENTION_MS,
-      );
-    }
+    this.#saveReservation(
+      this.engagementReservations,
+      userId,
+      reservationId,
+      now + ENGAGEMENT.RETENTION_MS,
+    );
     return false;
   }
 
-  async reserveBatch(
-    requests: readonly (PushRateLimitRequest | LegacyPushRateLimitRequest)[],
-  ): Promise<readonly boolean[]> {
+  async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
     const results: boolean[] = [];
     for (const request of requests) {
       const now = Date.now();
-      const reservationId =
-        "dispatchId" in request ? this.#reservationId(request.dispatchId) : request.reservationId;
+      const reservationId = this.#reservationId(request.dispatchId);
       const engagementKey = request.engagementLocalDate
         ? `${request.userId}:${request.engagementLocalDate}`
         : null;
-      const generalReserved =
-        reservationId != null &&
-        this.#hasReservation(this.generalReservations, request.userId, reservationId, now);
+      const generalReserved = this.#hasReservation(
+        this.generalReservations,
+        request.userId,
+        reservationId,
+        now,
+      );
       const engagementReserved =
         engagementKey == null ||
-        (reservationId != null &&
-          this.#hasReservation(this.engagementReservations, request.userId, reservationId, now));
+        this.#hasReservation(this.engagementReservations, request.userId, reservationId, now);
 
       const generalTimestamps = (this.pushTimestamps.get(request.userId) ?? []).filter(
         (timestamp) => timestamp > now - GENERAL.WINDOW_MS,
@@ -179,7 +147,7 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
         engagementTimestamps.push(now);
         this.engagementTimestamps.set(engagementKey, engagementTimestamps);
       }
-      if (!generalReserved && reservationId != null) {
+      if (!generalReserved) {
         this.#saveReservation(
           this.generalReservations,
           request.userId,
@@ -187,7 +155,7 @@ export class InMemoryPushRateLimiter implements PushRateLimiterPort, OnModuleDes
           now + ENGAGEMENT.RETENTION_MS,
         );
       }
-      if (engagementKey && !engagementReserved && reservationId != null) {
+      if (engagementKey && !engagementReserved) {
         this.#saveReservation(
           this.engagementReservations,
           request.userId,

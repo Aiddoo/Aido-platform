@@ -19,9 +19,9 @@ export const PremiumEntitlementsSchema = z.record(
 );
 export type PremiumEntitlements = z.infer<typeof PremiumEntitlementsSchema>;
 
-/** 한도를 정할 때 필요한 사용자 값. entitlements가 null이면 이 필드를 보내지 않는 구버전 서버다 */
+/** 한도를 정할 때 필요한 사용자 값 */
 export interface PremiumEntitlementSubject {
-  entitlements: PremiumEntitlements | null;
+  entitlements: PremiumEntitlements;
   isPremium: boolean;
 }
 
@@ -32,18 +32,17 @@ export type QuotaResetNotice =
   | { type: 'date'; date: Date };
 
 export const PremiumEntitlementPolicy = {
-  /** 지금 한도. null은 무제한이다. 서버 값이 없으면 카탈로그의 등급별 값으로 정한다 */
-  limit(subject: PremiumEntitlementSubject, feature: PremiumLimitFeatureKey): number | null {
-    if (subject.entitlements != null) {
-      return subject.entitlements[feature].limit;
-    }
-    const definition = PREMIUM_FEATURES[feature];
-    return subject.isPremium ? definition.premium : definition.free;
+  /** 지금 한도. null은 무제한이다 */
+  limit(
+    subject: Pick<PremiumEntitlementSubject, 'entitlements'>,
+    feature: PremiumLimitFeatureKey,
+  ): number | null {
+    return subject.entitlements[feature].limit;
   },
 
   /** 무료로 쓸 수 있는 한도(혜택 안내용). 무료 사용자는 초대로 늘어난 자리까지 반영한 서버 값을 쓴다 */
   freeLimit(subject: PremiumEntitlementSubject, feature: PremiumLimitFeatureKey): number {
-    const limit = subject.entitlements?.[feature].limit;
+    const { limit } = subject.entitlements[feature];
     return !subject.isPremium && limit != null ? limit : PREMIUM_FEATURES[feature].free;
   },
 

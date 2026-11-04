@@ -40,6 +40,7 @@ import {
 } from "./application/ports/auth/index.js";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "./application/ports/auth/oauth-identity-provider.port.js";
 import { RETENTION_ENROLLER } from "./application/ports/auth/retention-enroller.port.js";
+import { SESSION_PUSH_DEVICE_RELEASER } from "./application/ports/auth/session-push-device-releaser.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
 import {
@@ -85,6 +86,7 @@ import { AuthCacheAdapter } from "./infrastructure/adapters/auth/auth-cache.adap
 import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/auth/node-verification-code-security.adapter.js";
 import { PasswordService } from "./infrastructure/adapters/auth/password.service.js";
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/auth/retention-enroller.adapter.js";
+import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/auth/session-push-device-releaser.adapter.js";
 import { TokenService } from "./infrastructure/adapters/auth/token.service.js";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/auth/user-provisioning-seeder.adapter.js";
 import { JwtAuthGuard, JwtRefreshGuard } from "./infrastructure/guards/auth/index.js";
@@ -148,7 +150,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [
-    // Repositories
     DrizzleUserRepository,
     DrizzleAccountRepository,
     DrizzleSessionRepository,
@@ -185,9 +186,12 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
       provide: RETENTION_ENROLLER,
       useClass: RetentionEnrollerAdapter,
     },
+    {
+      provide: SESSION_PUSH_DEVICE_RELEASER,
+      useClass: SessionPushDeviceReleaserAdapter,
+    },
     accountNotificationCleanupProvider,
     accountTodoCommentCleanupProvider,
-    // Services
     PasswordService,
     sessionServiceProvider,
     TokenService,
@@ -249,14 +253,11 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
         http: HttpClient,
       ) => createOAuthProviderRegistry(configService, tokenVerifier, http),
     },
-    // Strategies
     JwtStrategy,
     JwtRefreshStrategy,
-    // Guards
     JwtAuthGuard,
     JwtRefreshGuard,
     LastActiveInterceptor,
-    // Jobs
     AccountPurgeJob,
     AccountPurgeProcessor,
   ],

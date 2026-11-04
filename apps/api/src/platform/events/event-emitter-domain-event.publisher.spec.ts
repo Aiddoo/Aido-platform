@@ -40,7 +40,7 @@ describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () =
     expect(settled).toBe(true);
   });
 
-  it("listener rejection을 문맥과 함께 한 번 기록하고 다음 이벤트를 계속 발행한다", async () => {
+  it("listener rejection을 이벤트 이름·오류 종류로 한 번 기록하고 다음 이벤트를 계속 발행한다", async () => {
     // Given - 첫 이벤트 실패, 두 번째 이벤트 정상
     const context = "Reminder cancellation failed: todoId=42, stage=60min, runtime=job-runtime";
     eventEmitter.on("todo.deleted", async () => {
@@ -55,9 +55,11 @@ describe("EventEmitterDomainEventPublisher — 비동기 이벤트 경계", () =
     ).resolves.toBeUndefined();
     expect(nextListener).toHaveBeenCalledTimes(1);
     expect(errorLogger).toHaveBeenCalledTimes(1);
-    expect(errorLogger).toHaveBeenCalledWith(
-      `Failed to publish domain event todo.deleted: Error: ${context}`,
-      expect.any(String),
-    );
+    expect(errorLogger).toHaveBeenCalledWith({
+      event: "events.domain-event.publish.failed",
+      eventName: "todo.deleted",
+      errorType: "Error",
+    });
+    expect(JSON.stringify(errorLogger.mock.calls)).not.toContain(context);
   });
 });

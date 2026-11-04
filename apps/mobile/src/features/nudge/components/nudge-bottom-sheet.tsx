@@ -21,6 +21,7 @@ import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { Image } from 'react-native';
 
 import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
+import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useRemindNudgeRouteParams } from '../hooks/use-remind-nudge-route-params';
 import { useSendRemindNudgeMutationOptions } from '../queries/use-send-remind-nudge-mutation-options';
 import { useSendTodoNudgeMutationOptions } from '../queries/use-send-todo-nudge-mutation-options';
@@ -161,7 +162,11 @@ function NudgeMessageSheet({
                   value={value ?? ''}
                   onChange={onChange}
                   className="z-10 min-h-0 h-[80px]"
-                  errorMessage={error?.message}
+                  errorMessage={
+                    error == null
+                      ? undefined
+                      : t('form.nudgeMessageMax', { count: TodoNudgePolicy.maxMessageLength })
+                  }
                 />
               )}
             </FormField>

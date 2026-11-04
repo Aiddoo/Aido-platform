@@ -18,7 +18,8 @@
 
 - Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다(`apps/api/src/shared/domain/exceptions`). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
 - 코드마다 `Errors[code].message`는 Swagger와 서버 기본 문구로 쓰는 **합니다체**다(`서버 내부 오류가 발생했습니다.`). endpoint는 던질 수 있는 코드마다 `@ApiErrorResponse({ errorCode })`를 붙인다.
-- 5xx만 Sentry로 보낸다. 로그에는 code·type만 남기고 원문 message·공급자 오류를 넣지 않는다([로깅](../../apps/api/.claude/logging-guide.md)).
+- `ErrorCode`가 없는 Nest `HttpException`(검증 파이프·없는 route·405·throttler)은 `GlobalExceptionFilter`가 상태로 정한다: 4xx → `SYS_0002`, 429·5xx → `SYS_0001`. 카탈로그에 상태별 공통 코드가 없고 출시 앱은 모르는 코드를 `SYS_0001`로 바꾸므로 이 경우를 위한 새 코드를 만들지 않는다. 앱은 이 경우 HTTP 상태(404·429)로만 분기한다.
+- 5xx만 Sentry로 보낸다. 요청에는 `request_id` 태그가 붙고 IP는 보내지 않는다. 로그에는 `errorCode`·`errorType`만 남기고 원문 message·공급자 오류를 넣지 않는다([로깅](../../apps/api/.claude/logging-guide.md)).
 
 ## 3. 모바일
 

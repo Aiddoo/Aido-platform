@@ -1,8 +1,10 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
+import { PlanningTodoLogEvent } from "../../../application/observability/todos/planning-todo-log.events.js";
 import { FRIEND_PORT, type FriendPort } from "../../../application/ports/todos/friend.port.js";
 import { STREAK_PORT, type StreakPort } from "../../../application/ports/todos/streak.port.js";
 import {
@@ -83,10 +85,11 @@ export class TodoToggledHandler {
     try {
       await this.streakPort.recordTodoToggle(userId, completed, timezone);
     } catch (error) {
-      this.#logger.error(
-        `Failed to record streak toggle: userId=${userId}, ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#logger.error({
+        event: PlanningTodoLogEvent.STREAK_RECORD_FAILED,
+        userId,
+        errorType: toErrorType(error),
+      });
     }
   }
 
@@ -112,20 +115,22 @@ export class TodoToggledHandler {
             timezone,
           });
 
-          this.#logger.log(`Friend completed event enqueued for ${friendIds.length} friends`);
+          this.#logger.log({
+            event: PlanningTodoLogEvent.FRIEND_COMPLETED_ENQUEUED,
+            userId,
+            count: friendIds.length,
+          });
         }
       }
     } catch (error) {
-      this.#logger.error(
-        `Failed to check/enqueue friend completed event: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#logger.error({
+        event: PlanningTodoLogEvent.FRIEND_COMPLETED_FAILED,
+        userId,
+        errorType: toErrorType(error),
+      });
     }
   }
 
-  /**
-   * 마일스톤 달성 여부 체크 및 알림 큐 등록
-   */
   async #checkAndEnqueueMilestone(userId: string): Promise<void> {
     try {
       const count = await this.todoReadRepository.countCompletedByUser(userId);
@@ -138,10 +143,11 @@ export class TodoToggledHandler {
         milestone,
       });
     } catch (error) {
-      this.#logger.error(
-        `Failed to check milestone event: userId=${userId}, ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#logger.error({
+        event: PlanningTodoLogEvent.MILESTONE_CHECK_FAILED,
+        userId,
+        errorType: toErrorType(error),
+      });
     }
   }
 }

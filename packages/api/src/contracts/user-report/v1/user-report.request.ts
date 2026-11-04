@@ -77,7 +77,9 @@ export const createUserReportSchema = z
 export type CreateUserReportInput = z.infer<typeof createUserReportSchema>;
 
 export const resolveUserReportParamSchema = z.object({
-  reportId: z.cuid("유효하지 않은 신고 ID입니다").describe("처리할 신고 ID (CUID 25자)"),
+  reportId: z
+    .cuid("유효하지 않은 신고 ID입니다")
+    .describe("처리할 신고 ID (CUID 25자, 신고 접수 이메일의 신고 ID)"),
 });
 
 export type ResolveUserReportParam = z.infer<typeof resolveUserReportParamSchema>;

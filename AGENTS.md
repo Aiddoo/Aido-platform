@@ -19,7 +19,7 @@ Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버�
 
 ## 기술 스택 (요약)
 
-NestJS 12.3 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · Expo SDK 58 · React Native 0.88 · React 19.3 · TypeScript 6.0 · Zod 4.6 · Oxlint 1.90 · Oxfmt 0.75 · Turbo 2.11 · pnpm 12.15 · Node 24.22.2
+NestJS 12.3 ESM · Drizzle ORM 1.0 RC · PostgreSQL 16 · Expo SDK 58.0.x · React Native 0.88 · React 19.3 · TypeScript 6.0 · Zod 4.6 · Oxlint 1.91 · Oxfmt 0.76 · Turbo 2.11 · pnpm 12.15 · Node 24.22.2
 
 상세: [README.md](./README.md)
 
@@ -57,20 +57,22 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 
 ## 작업 유형별 문서 네비게이션
 
-| 하려는 일                        | 읽을 문서                                                                                                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| API 기능 추가·Context 경계 변경  | [`apps/api/AGENTS.md`](apps/api/AGENTS.md), 필요에 따라 [구조](apps/api/.claude/architecture.md)·[코드 규칙](apps/api/.claude/api-conventions.md) |
-| Mobile 기능 추가 (Feature-based) | [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md)                   |
-| Zod 스키마 / DTO 추가            | [`apps/api/.claude/rest-contracts.md`](apps/api/.claude/rest-contracts.md)                                                                        |
-| DB 스키마·ORM 변경               | [`apps/api/.claude/drizzle.md`](apps/api/.claude/drizzle.md)                                                                                      |
-| 단위/통합/E2E 테스트             | `apps/{api,mobile}/.claude/testing-guide.md`                                                                                                      |
-| Mobile UI 컴포넌트               | [`apps/mobile/.claude/ui-components.md`](apps/mobile/.claude/ui-components.md)                                                                    |
-| Mobile 다국어 / 문자열 추가      | [`apps/mobile/.claude/i18n-guide.md`](apps/mobile/.claude/i18n-guide.md)                                                                          |
-| 홈 화면 위젯 (iOS/Android)       | [`apps/mobile/.claude/widgets.md`](apps/mobile/.claude/widgets.md)                                                                                |
-| OAuth / 소셜 로그인              | [`apps/mobile/.claude/oauth-client-guide.md`](apps/mobile/.claude/oauth-client-guide.md)                                                          |
-| 로깅 패턴                        | [`apps/api/.claude/logging-guide.md`](apps/api/.claude/logging-guide.md)                                                                          |
-| 응답·오류, 날짜·시간, 하위 호환  | [오류](docs/conventions/errors.md) · [날짜](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md)                                |
-| 배포                             | `apps/{api,mobile}/DEPLOYMENT.md`                                                                                                                 |
+| 하려는 일                            | 읽을 문서                                                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API 기능 추가·Context 경계 변경      | [`apps/api/AGENTS.md`](apps/api/AGENTS.md), 필요에 따라 [구조](apps/api/.claude/architecture.md)·[코드 규칙](apps/api/.claude/api-conventions.md) |
+| Mobile 기능 추가 (Feature-based)     | [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md)                   |
+| Zod 스키마 / DTO 추가                | [`apps/api/.claude/rest-contracts.md`](apps/api/.claude/rest-contracts.md)                                                                        |
+| DB 스키마·ORM 변경                   | [`apps/api/.claude/drizzle.md`](apps/api/.claude/drizzle.md)                                                                                      |
+| 단위/통합/E2E 테스트                 | `apps/{api,mobile}/.claude/testing-guide.md`                                                                                                      |
+| Mobile UI 컴포넌트                   | [`apps/mobile/.claude/ui-components.md`](apps/mobile/.claude/ui-components.md)                                                                    |
+| Mobile 다국어 / 문자열 추가          | [`apps/mobile/.claude/i18n-guide.md`](apps/mobile/.claude/i18n-guide.md)                                                                          |
+| 홈 화면 위젯 (iOS/Android)           | [`apps/mobile/.claude/widgets.md`](apps/mobile/.claude/widgets.md)                                                                                |
+| OAuth / 소셜 로그인                  | [`apps/mobile/.claude/oauth-client-guide.md`](apps/mobile/.claude/oauth-client-guide.md)                                                          |
+| 로깅 패턴 (서버 이벤트 키·오류 필드) | [`apps/api/.claude/logging-guide.md`](apps/api/.claude/logging-guide.md)                                                                          |
+| 요청 헤더·throttle (서버)            | [`apps/api/.claude/api-conventions.md`](apps/api/.claude/api-conventions.md#요청-헤더와-throttle)                                                 |
+| 푸시 기기·발송 (서버)                | [`apps/api/docs/push-notifications.md`](apps/api/docs/push-notifications.md)                                                                      |
+| 응답·오류, 날짜·시간, 하위 호환      | [오류](docs/conventions/errors.md) · [날짜](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md)                                |
+| 배포                                 | `apps/{api,mobile}/DEPLOYMENT.md`                                                                                                                 |
 
 ---
 
@@ -81,6 +83,8 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 - **타입**: `strict: true`. `as`(`as const` 제외)·`any`·`!`·`@ts-ignore`/`@ts-expect-error` 금지, 타입은 Zod·props·상수 튜플에서 유도
 - **DTO**: `@aido/api`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
 - **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
+- **서버 요청 헤더**: Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다
+- **서버 테스트**: 상태가 중요하면 깊은 mock 대신 작은 Port Stub/Fake, DB 의미는 실제 PostgreSQL(Testcontainers)로 검증
 - **비교·null/undefined**: 값 비교는 `===`, "없음"만 `== null`(Oxlint `eqeqeq`). 상세: [docs/conventions/nullish.md](docs/conventions/nullish.md)
 - **API 문서**: Swagger UI는 `http://localhost:8080/api/docs`
 - **AGENTS.md**: Claude/Codex 공통 지침의 단일 원본. 세션 컨텍스트에 포함되므로 _얇게 유지_. 상세는 `.claude/*.md`로 분리

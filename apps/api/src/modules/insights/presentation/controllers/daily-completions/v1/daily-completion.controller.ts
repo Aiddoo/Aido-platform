@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -15,7 +15,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import { InsightsLogEvent } from "../../../../application/observability/insights-log.events.js";
 import { GetDailyCompletions } from "../../../../application/use-cases/daily-completions/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletions } from "../../../../application/use-cases/daily-completions/get-friend-daily-completions.use-case.js";
 import type { DailyCompletionsRange } from "../../../../domain/records/daily-completions/daily-completion.record.js";
@@ -28,8 +27,6 @@ import {
 @ApiBearerAuth()
 @Controller("daily-completions")
 export class DailyCompletionController {
-  readonly #logger = new Logger(DailyCompletionController.name);
-
   constructor(
     private readonly readDailyCompletions: GetDailyCompletions,
     private readonly readFriendDailyCompletions: GetFriendDailyCompletions,
@@ -128,8 +125,6 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
   ): Promise<DailyCompletionsRangeResponseDto> {
-    this.#logger.debug({ event: InsightsLogEvent.DAILY_COMPLETIONS_READ, userId: user.userId });
-
     const result = await this.readDailyCompletions.execute({
       userId: user.userId,
       startDate: query.startDate,
@@ -192,12 +187,6 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
   ): Promise<DailyCompletionsRangeResponseDto> {
-    this.#logger.debug({
-      event: InsightsLogEvent.FRIEND_DAILY_COMPLETIONS_READ,
-      userId: user.userId,
-      friendUserId: params.userId,
-    });
-
     const result = await this.readFriendDailyCompletions.execute({
       userId: user.userId,
       friendUserId: params.userId,

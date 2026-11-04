@@ -1,9 +1,8 @@
-import { useActivationService } from '@src/bootstrap/providers/di-context';
-import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-cache';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
-import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
+import { PushPermissionStatusRow } from '@src/features/notification/components/push-permission-status-row';
+import { useUpdatePushEnabledMutationOptions } from '@src/features/notification/queries/use-update-push-enabled-mutation-options';
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
@@ -15,7 +14,7 @@ import {
   StyledSafeAreaView,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
+import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
@@ -27,9 +26,7 @@ function PushSettingsScreen() {
     queries: [useGetPreferenceQueryOptions(), useGetConsentQueryOptions()],
   });
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
-  const registerPushMutation = useMutation(useRegisterPushTokenMutationOptions());
-  const queryClient = useQueryClient();
-  const activationService = useActivationService();
+  const pushEnabledMutation = useMutation(useUpdatePushEnabledMutationOptions());
   const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
   const marketingPushMutation = useMutation(useUpdateMarketingPushConsentMutationOptions());
   const { t } = useTranslation(['notification', 'auth']);
@@ -37,30 +34,16 @@ function PushSettingsScreen() {
   return (
     <VStack gap={24}>
       <SettingsCard>
+        <PushPermissionStatusRow />
+      </SettingsCard>
+
+      <SettingsCard>
         <SettingsCard.Toggle
           label={t('settings.pushLabel')}
           description={t('settings.pushDescription')}
           isSelected={preference.pushEnabled}
-          onSelectedChange={(enabled) =>
-            updateMutation.mutate(
-              { pushEnabled: enabled },
-              {
-                onSuccess: () => {
-                  if (!enabled) {
-                    return;
-                  }
-                  const handledByAutomaticGate = unlockPushRegistrationForActivation({
-                    queryClient,
-                    service: activationService,
-                  });
-                  if (!handledByAutomaticGate) {
-                    registerPushMutation.mutate();
-                  }
-                },
-              },
-            )
-          }
-          isDisabled={updateMutation.isPending || registerPushMutation.isPending}
+          onSelectedChange={(enabled) => pushEnabledMutation.mutate({ pushEnabled: enabled })}
+          isDisabled={updateMutation.isPending || pushEnabledMutation.isPending}
         />
         <Separator className="bg-gray-2" />
         <SettingsCard.Toggle
@@ -72,7 +55,11 @@ function PushSettingsScreen() {
           }
           isSelected={preference.nightPushEnabled}
           onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
-          isDisabled={PreferencePolicy.isPushDisabled(preference) || updateMutation.isPending}
+          isDisabled={
+            PreferencePolicy.isPushDisabled(preference) ||
+            updateMutation.isPending ||
+            pushEnabledMutation.isPending
+          }
         />
       </SettingsCard>
 
@@ -101,6 +88,9 @@ function PushSettingsScreen() {
 PushSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
+      <SettingsCard>
+        <SettingsCard.ToggleSkeleton hasDescription />
+      </SettingsCard>
       <SettingsCard>
         <SettingsCard.ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />

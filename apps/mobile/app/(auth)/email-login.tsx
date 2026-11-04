@@ -45,7 +45,7 @@ function EmailLoginScreen() {
     mode: 'onTouched',
   });
   const { control, handleSubmit } = formMethods;
-  const { isSubmitting } = useFormState({ control: control });
+  const { isSubmitting } = useFormState({ control });
 
   const emailLoginMutation = useMutation(useEmailLoginMutationOptions());
 

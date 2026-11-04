@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import { Controller, Get, Logger, VERSION_NEUTRAL } from "@nestjs/common";
+import { Controller, Get, VERSION_NEUTRAL } from "@nestjs/common";
 import { ApiResponse, ApiTags, type SchemaObject } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
+import { SkipThrottle } from "@nestjs/throttler";
 
 import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -31,9 +32,9 @@ function describeHealthResponse(status: "ok" | "error"): SchemaObject {
 }
 
 @ApiTags(SWAGGER_TAGS.COMMON_HEALTH)
+@SkipThrottle()
 @Controller({ path: "health", version: VERSION_NEUTRAL })
 export class HealthController {
-  readonly #logger = new Logger(HealthController.name);
   readonly #instanceId: string;
 
   constructor(
@@ -118,12 +119,10 @@ curl https://api.aido.com/health
     },
   })
   async check(): Promise<HealthCheckResult & { instanceId: string }> {
-    this.#logger.debug("헬스 체크 요청");
     const result = await this.health.check([
       () => this.databaseHealth.isHealthy("database"),
       () => this.jobRuntimeHealth.isHealthy("queues"),
     ]);
-    this.#logger.log(`헬스 체크 완료: ${result.status}`);
     return { ...result, instanceId: this.#instanceId };
   }
 }

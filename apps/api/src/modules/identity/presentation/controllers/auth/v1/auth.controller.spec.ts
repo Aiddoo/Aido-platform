@@ -21,6 +21,8 @@ import {
   Register,
 } from "#api/modules/identity/application/use-cases/auth/index";
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
+import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 import { mockOf } from "#test/mocks/typed-mock";
 
 import type { LoginDto, RegisterDto } from "../../../schemas/auth/v1/index.js";
@@ -43,6 +45,7 @@ describe("AuthController — 인증 컨트롤러", () => {
     ip: "127.0.0.1",
     headers: { "user-agent": "test-agent" },
   });
+  const mockClient = parseRequestClient(mockReq.headers, TEST_REQUEST_ID);
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
@@ -75,7 +78,7 @@ describe("AuthController — 인증 컨트롤러", () => {
       registerUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - register를 호출하면
-      const result = await controller.register(dto, mockReq);
+      const result = await controller.register(dto, mockReq, mockClient);
 
       // Then - 서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
       expect(registerUseCase.execute).toHaveBeenCalledWith({
@@ -112,7 +115,7 @@ describe("AuthController — 인증 컨트롤러", () => {
       loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - login을 호출하면
-      const result = await controller.login(dto, mockReq);
+      const result = await controller.login(dto, mockReq, mockClient);
 
       // Then - 서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
       expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith({
@@ -140,7 +143,7 @@ describe("AuthController — 인증 컨트롤러", () => {
       });
 
       // When - logoutAll을 호출하면
-      const result = await controller.logoutAll(mockUser, mockReq);
+      const result = await controller.logoutAll(mockUser, mockReq, mockClient);
 
       // Then - 서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
       expect(logoutAllUseCase.execute).toHaveBeenCalledWith({

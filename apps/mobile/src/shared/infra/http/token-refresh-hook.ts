@@ -1,10 +1,13 @@
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
+import { errorMessageOf } from '@src/shared/errors';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
+import { logger } from '@src/shared/infra/logger/global-logger';
 import ky, { type AfterResponseHook } from 'ky';
 
 import { pathnameOf } from './error-handler';
 import type { TokenRefresher } from './token-refresher';
+import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 /** 갱신 후 재시도된 요청 표시 — 재시도가 다시 401이어도 갱신을 반복하지 않는다 */
 export const RETRY_MARKER_HEADER = 'x-retried-after-refresh';
@@ -65,7 +68,12 @@ export const createTokenRefreshHook = (deps: TokenRefreshHookDeps): AfterRespons
     }
 
     // 읽기 실패는 "토큰 없음"이 아니다 — 아래 갱신 경로가 처리하게 넘긴다.
-    const storedAccessToken = await tokenStore.readAccessToken().catch(() => null);
+    const storedAccessToken = await tokenStore.readAccessToken().catch((error: unknown) => {
+      logger.warn(TOKEN_REFRESHER_LOG_EVENT.ACCESS_TOKEN_READ_FAILED, {
+        error: errorMessageOf(error),
+      });
+      return null;
+    });
     const sentAuthorization = request.headers.get('Authorization');
     if (storedAccessToken && sentAuthorization !== `Bearer ${storedAccessToken}`) {
       return forceRetryWithToken(request, storedAccessToken);

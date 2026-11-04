@@ -6,6 +6,7 @@ export const SENTRY_TAG = {
   HTTP_URL: "http.url",
   HTTP_STATUS_CODE: "http.status_code",
   ERROR_CODE: "error.code",
+  REQUEST_ID: "request_id",
   WEBHOOK_EVENT_TYPE: "webhook.event_type",
   WEBHOOK_STORE: "webhook.store",
 } as const;

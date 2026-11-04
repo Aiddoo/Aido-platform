@@ -15,12 +15,6 @@ import { PushRateLimiterKeys } from "./push-rate-limiter.keys.js";
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const RESERVATION_TTL_MS = ENGAGEMENT.RETENTION_MS;
 
-interface LegacyPushRateLimitRequest {
-  readonly userId: string;
-  readonly reservationId?: string;
-  readonly engagementLocalDate?: string;
-}
-
 /**
  * Lua 스크립트: Sorted Set 기반 슬라이딩 윈도우 rate limit
  *
@@ -210,16 +204,9 @@ export class RedisPushRateLimiter implements PushRateLimiterPort {
     return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
   }
 
-  /** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
-  async isRateLimited(userId: string, reservationId?: string): Promise<boolean> {
-    return this.#reserveGeneral(userId, reservationId);
-  }
-
-  async #reserveGeneral(userId: string, reservationId?: string): Promise<boolean> {
+  async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
     const key = PushRateLimiterKeys.general(userId);
-    const reservationKey = reservationId
-      ? PushRateLimiterKeys.generalReservation(userId, reservationId)
-      : PushRateLimiterKeys.reservationPlaceholder("general");
+    const reservationKey = PushRateLimiterKeys.generalReservation(userId, reservationId);
     const now = Date.now();
     const windowStart = now - GENERAL.WINDOW_MS;
 
@@ -233,7 +220,7 @@ export class RedisPushRateLimiter implements PushRateLimiterPort {
         windowStart,
         GENERAL.MAX,
         GENERAL.WINDOW_MS,
-        reservationId ?? "",
+        reservationId,
         RESERVATION_TTL_MS,
       );
 
@@ -253,24 +240,13 @@ export class RedisPushRateLimiter implements PushRateLimiterPort {
     );
   }
 
-  /** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
-  async isEngagementRateLimited(
-    userId: string,
-    localDate: string,
-    reservationId?: string,
-  ): Promise<boolean> {
-    return this.#reserveEngagement(userId, localDate, reservationId);
-  }
-
   async #reserveEngagement(
     userId: string,
     localDate: string,
-    reservationId?: string,
+    reservationId: string,
   ): Promise<boolean> {
     const key = PushRateLimiterKeys.engagement(userId, localDate);
-    const reservationKey = reservationId
-      ? PushRateLimiterKeys.engagementReservation(userId, reservationId)
-      : PushRateLimiterKeys.reservationPlaceholder("engagement");
+    const reservationKey = PushRateLimiterKeys.engagementReservation(userId, reservationId);
     try {
       const result = await this.#redis.eval(
         ENGAGEMENT_LIMIT_SCRIPT,
@@ -281,7 +257,7 @@ export class RedisPushRateLimiter implements PushRateLimiterPort {
         ENGAGEMENT.MIN_INTERVAL_MS,
         ENGAGEMENT.DAILY_MAX,
         ENGAGEMENT.TTL_SECONDS,
-        reservationId ?? "",
+        reservationId,
         RESERVATION_TTL_MS,
       );
       return result === 1;
@@ -291,36 +267,25 @@ export class RedisPushRateLimiter implements PushRateLimiterPort {
     }
   }
 
-  async reserveBatch(
-    requests: readonly (PushRateLimitRequest | LegacyPushRateLimitRequest)[],
-  ): Promise<readonly boolean[]> {
+  async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
     if (requests.length === 0) {
       return [];
     }
 
     const now = Date.now();
+    const reservationIds = requests.map((request) => this.#reservationId(request.dispatchId));
     const keys = requests.flatMap((request, index) => {
-      const reservationId =
-        "dispatchId" in request ? this.#reservationId(request.dispatchId) : request.reservationId;
+      const reservationId = this.#reservationId(request.dispatchId);
       return [
         PushRateLimiterKeys.general(request.userId),
         request.engagementLocalDate
           ? PushRateLimiterKeys.engagement(request.userId, request.engagementLocalDate)
           : PushRateLimiterKeys.engagementPlaceholder(index),
-        reservationId
-          ? PushRateLimiterKeys.generalReservation(request.userId, reservationId)
-          : PushRateLimiterKeys.reservationPlaceholder("general", index),
-        reservationId
-          ? PushRateLimiterKeys.engagementReservation(request.userId, reservationId)
-          : PushRateLimiterKeys.reservationPlaceholder("engagement", index),
+        PushRateLimiterKeys.generalReservation(request.userId, reservationId),
+        PushRateLimiterKeys.engagementReservation(request.userId, reservationId),
       ];
     });
     const engagementFlags = requests.map((request) => (request.engagementLocalDate ? 1 : 0));
-    const reservationIds = requests.map((request) =>
-      "dispatchId" in request
-        ? this.#reservationId(request.dispatchId)
-        : (request.reservationId ?? ""),
-    );
 
     try {
       const result = await this.#redis.eval(

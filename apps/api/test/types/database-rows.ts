@@ -15,6 +15,7 @@ export type PushDeliveryAttempt = typeof tables.pushDeliveryAttempt.$inferSelect
 export type PushDispatch = typeof tables.pushDispatch.$inferSelect;
 export type PushDispatchOutbox = typeof tables.pushDispatchOutbox.$inferSelect;
 export type PushRateLimitReservation = typeof tables.pushRateLimitReservation.$inferSelect;
+export type PushDevice = typeof tables.pushDevice.$inferSelect;
 export type PushToken = typeof tables.pushToken.$inferSelect;
 export type RecurringSuggestion = typeof tables.recurringSuggestion.$inferSelect;
 export type ReminderNudge = typeof tables.reminderNudge.$inferSelect;
@@ -22,7 +23,6 @@ export type RetentionExperimentAssignment =
   typeof tables.retentionExperimentAssignment.$inferSelect;
 export type RetentionExperimentResult = typeof tables.retentionExperimentResult.$inferSelect;
 export type RetentionExperimentStage = typeof tables.retentionExperimentStage.$inferSelect;
-export type RetentionPushOutbox = typeof tables.retentionPushOutbox.$inferSelect;
 export type SecurityLog = typeof tables.securityLog.$inferSelect;
 export type Session = typeof tables.session.$inferSelect;
 export type Subscription = typeof tables.subscription.$inferSelect;
@@ -62,7 +62,6 @@ export type RetentionExperimentStageStatus =
   (typeof tables.retentionExperimentStageStatus.enumValues)[number];
 export type RetentionExperimentVariant =
   (typeof tables.retentionExperimentVariant.enumValues)[number];
-export type RetentionOutboxStatus = (typeof tables.retentionOutboxStatus.enumValues)[number];
 export type SecurityEvent = (typeof tables.securityEvent.enumValues)[number];
 export type SubscriptionStatus = (typeof tables.subscriptionStatus.enumValues)[number];
 export type SuggestionStatus = (typeof tables.suggestionStatus.enumValues)[number];

@@ -1,16 +1,14 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { useMarketingPushPromptService } from '@src/bootstrap/providers/di-context';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useToday } from '@src/shared/hooks/use-today';
-import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
-import {
-  readMarketingPushPromptState,
-  recordMarketingPushPrompt,
-} from '@src/shared/preferences/marketing-push-prompt.preference';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
+import { PUSH_PERMISSION_STEP, PushPermissionPolicy } from '../domains/push-permission.model';
+import { useGetPushPermissionQueryOptions } from '../queries/get-push-permission-query-options';
 import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet';
 
 interface MarketingPushOptInPrompt {
@@ -25,25 +23,32 @@ interface MarketingPushOptInPrompt {
 /**
  * 마케팅 푸시 옵트인 배너의 표시 여부·상호작용을 소유하는 view-model 훅.
  *
- * 노출 판단은 순수 정책(MarketingPushPromptPolicy)에, 저장은 preference 포트에
- * 위임한다 — 표현(배너)과 행동을 분리한다(SRP). storage를 주입받아 테스트에서
- * 대체할 수 있다(DIP). 부수효과는 명시적 액션(open/dismiss)에서만 발생한다.
+ * 노출 판단은 MarketingPushPromptPolicy에, 저장은 MarketingPushPromptService에 맡긴다.
+ * 부수효과는 명시적 액션(open/dismiss)에서만 일어난다.
  */
-export function useMarketingPushOptInPrompt(
-  storage: SyncStorage = mmkvSyncStorage,
-): MarketingPushOptInPrompt {
+export function useMarketingPushOptInPrompt(): MarketingPushOptInPrompt {
+  const marketingPushPromptService = useMarketingPushPromptService();
   const { trackEvent } = useTrack();
   const consentSheet = useMarketingPushConsentSheet();
-  const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
-  const [promptState] = useState(() => readMarketingPushPromptState(storage));
+  const [{ data: consent }, { data: permission }, { data: preference }] = useSuspenseQueries({
+    queries: [
+      useGetConsentQueryOptions(),
+      useGetPushPermissionQueryOptions(),
+      useGetPreferenceQueryOptions(),
+    ],
+  });
+  const [promptState] = useState(() => marketingPushPromptService.getState());
   const [dismissed, setDismissed] = useState(false);
   const today = useToday();
 
+  // 기기 권한이나 앱 푸시 설정이 꺼져 있으면 알림 안내가 먼저다. 동의를 받아도 푸시가 닿지 않는다
   const isVisible =
-    !dismissed && MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
+    !dismissed &&
+    PushPermissionPolicy.nextStep(permission, preference) === PUSH_PERMISSION_STEP.NONE &&
+    MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
 
   const dismiss = () => {
-    recordMarketingPushPrompt(storage, new Date());
+    marketingPushPromptService.recordPrompt(new Date());
     setDismissed(true);
     trackEvent('marketing_push_prompt_dismissed', { source: 'feed_banner' });
   };

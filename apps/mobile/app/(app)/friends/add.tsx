@@ -1,4 +1,4 @@
-import { userTagParamSchema } from '@aido/api';
+import { type UserTagParam, userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/queries/use-send-request-by-tag-mutation-options';
 import { useGetInviteAvailabilityQueryOptions } from '@src/features/invite/queries/get-invite-availability-query-options';
@@ -23,9 +23,6 @@ import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { ScrollView } from 'react-native';
-import type { z } from 'zod';
-
-type FormData = z.infer<typeof userTagParamSchema>;
 
 function AddFriendScreen() {
   const { showBoundary } = useErrorBoundary();
@@ -42,14 +39,10 @@ function AddFriendScreen() {
     defaultValues: { userTag: '' },
     mode: 'onChange',
   });
-  const {
-    control,
-    handleSubmit,
-    formState: { isValid },
-  } = formMethods;
-  const { isSubmitting } = useFormState({ control: control });
+  const { control, handleSubmit } = formMethods;
+  const { isSubmitting, isValid } = useFormState({ control });
 
-  const handleSubmitFriendRequest = async (values: FormData) => {
+  const handleSubmitFriendRequest = async (values: UserTagParam) => {
     try {
       await sendRequestMutation.mutateAsync(values.userTag, {
         onSuccess: () => goBack(),
@@ -95,7 +88,7 @@ function AddFriendScreen() {
                   onChange={(text) => onChange(text.toUpperCase())}
                   autoFocus
                   {...ASCII_CODE_TEXT_INPUT_PROPS}
-                  maxLength={8}
+                  maxLength={userTagParamSchema.shape.userTag.maxLength ?? undefined}
                   submitBehavior="submit"
                   returnKeyType="done"
                   isInvalid={!!error}

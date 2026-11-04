@@ -4,6 +4,8 @@ import { errorReporter } from '@src/shared/infra/error-reporter/global-error-rep
 import type { AfterResponseHook } from 'ky';
 import { z } from 'zod';
 
+import { REQUEST_ID_HEADER } from './request-headers';
+
 /**
  * 실패 응답 관측 훅.
  *
@@ -54,6 +56,7 @@ export const resolveMessage = (code: string, serverMessage: string): string => {
 /**
  * 실패한 API 응답을 Sentry breadcrumb(category: 'http')로 남긴다.
  * 이후 발생하는 에러 이벤트의 타임라인에 "어떤 요청이 어떤 코드로 실패했는지"가 붙는다.
+ * 요청 ID로 같은 요청의 서버 로그(`reqId`)·Sentry 이벤트(`request_id`)를 찾는다.
  */
 const recordFailureBreadcrumb = async (request: Request, response: Response): Promise<void> => {
   const parsed = errorEnvelopeSchema.safeParse(await readBody(response));
@@ -67,6 +70,7 @@ const recordFailureBreadcrumb = async (request: Request, response: Response): Pr
       path: pathnameOf(request.url),
       status: response.status,
       code,
+      requestId: request.headers.get(REQUEST_ID_HEADER),
     },
   });
 };

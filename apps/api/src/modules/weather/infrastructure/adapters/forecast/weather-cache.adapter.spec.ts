@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
@@ -7,7 +5,6 @@ import { FakeWeatherProvider } from "#test/mocks/fake-weather.provider";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { WeatherConditions } from "../../../application/ports/forecast/weather-provider.port.js";
-import { WeatherCacheKey } from "../../cache/forecast/weather-cache.keyspace.js";
 import { WeatherCacheAdapter } from "./weather-cache.adapter.js";
 
 const at = new Date("2026-07-23T00:00:00Z");
@@ -60,13 +57,6 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     await weather.setConditions(60, 127, before, conditions);
     // When / Then
     expect(await weather.getConditions(60, 127, after)).toBeUndefined();
-  });
-
-  it("날짜가 없는 legacy 조건 캐시는 읽지 않는다", async () => {
-    // Given
-    await cache.set(WeatherCacheKey.legacyConditions(60, 127), conditions);
-    // When / Then
-    expect(await weather.getConditions(60, 127, at)).toBeUndefined();
   });
 
   it("조건 1시간·정규 3시간·latest 24시간 TTL을 유지한다", async () => {
@@ -132,7 +122,6 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     await weather.saveForecast(60, 127, kmaTimingFixture(next), forecast);
     await weather.setConditions(60, 127, at, conditions);
     await weather.setConditions(60, 127, next, conditions);
-    await cache.set(WeatherCacheKey.legacyConditions(60, 127), conditions);
     await weather.setConditions(60, 128, at, conditions);
     // When
     await weather.invalidateGrid(60, 127);
@@ -142,7 +131,6 @@ describe("Weather 캐시 날짜·배치·TTL (실제 캐시 어댑터)", () => {
     expect(await weather.getLatestForecast(60, 127)).toBeUndefined();
     expect(await weather.getConditions(60, 127, at)).toBeUndefined();
     expect(await weather.getConditions(60, 127, next)).toBeUndefined();
-    expect(await cache.get(WeatherCacheKey.legacyConditions(60, 127), z.unknown())).toBeUndefined();
     expect(await weather.getConditions(60, 128, at)).toEqual(conditions);
   });
 });

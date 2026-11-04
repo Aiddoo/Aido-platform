@@ -13,4 +13,8 @@ export const PlanningTodoLogEvent = {
   ITEM_UPDATED: "planning.todo.item.updated",
   ITEM_DELETED: "planning.todo.item.deleted",
   ITEMS_REORDERED: "planning.todo.items.reordered",
+  STREAK_RECORD_FAILED: "planning.todo.streak-record.failed",
+  FRIEND_COMPLETED_ENQUEUED: "planning.todo.friend-completed.enqueued",
+  FRIEND_COMPLETED_FAILED: "planning.todo.friend-completed.failed",
+  MILESTONE_CHECK_FAILED: "planning.todo.milestone-check.failed",
 } as const;

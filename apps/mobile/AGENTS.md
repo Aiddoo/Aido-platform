@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.3.0 · **Last Updated**: 2026-10-14 · **Owner**: Aido Mobile Team
+> **Version**: 1.4.0 · **Last Updated**: 2026-11-04 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -21,12 +21,9 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)                 |
 | 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)             |
 | 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)             |
-| 1.14.1 할 일 댓글 한 화면(댓글·답글 2단계)·더블탭 하트         | [docs/releases/1.14.1-client.md](docs/releases/1.14.1-client.md) |
-| 1.14.0 날씨 화면 v2·Apple 날씨 표기·개발 빌드 분리·오프라인    | [docs/releases/1.14.0-client.md](docs/releases/1.14.0-client.md) |
-| 1.13.0 친구 초대 링크·보상·날짜·위젯 정비                      | [docs/releases/1.13.0-client.md](docs/releases/1.13.0-client.md) |
-| 1.12.1 Duo·Mac·SDK 58 정합성·구조 정비                         | [docs/releases/1.12.1-client.md](docs/releases/1.12.1-client.md) |
-| 1.10.1 변경 및 native QA                                       | [docs/releases/1.10.1-client.md](docs/releases/1.10.1-client.md) |
-| 1.10 클라이언트 변경 및 검증                                   | [docs/releases/1.10.0-client.md](docs/releases/1.10.0-client.md) |
+| 푸시 알림 클라이언트 (권한·토큰 보고·안내)                     | [docs/push-notifications.md](docs/push-notifications.md)         |
+| 현재 릴리스 1.14.2 변경                                        | [docs/releases/1.14.2-client.md](docs/releases/1.14.2-client.md) |
+| 지난 릴리스                                                    | [docs/releases/](docs/releases/)                                 |
 | EAS 빌드                                                       | [docs/eas-build-guide.md](docs/eas-build-guide.md)               |
 | EAS Secrets 관리                                               | [docs/EAS_SECRETS.md](docs/EAS_SECRETS.md)                       |
 | 배포 (EAS, App Store / Play)                                   | [DEPLOYMENT.md](DEPLOYMENT.md)                                   |
@@ -35,7 +32,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 기술 스택 (요약)
 
-Expo SDK 58.0.22 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.6 · HeroUI Native · Uniwind · `react-hook-form`
+Expo SDK 58.0.23 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.6 · HeroUI Native · Uniwind · `react-hook-form`
 
 ---
 
@@ -78,7 +75,10 @@ features/{feature}/   # 단수 kebab-case
 
 - **불필요한 훅 금지**: `react-hook-form`과 Query 훅은 사용처에서 직접 쓴다. 화면을 짧게 만들려고 조회·폼·저장·내비게이션을 포괄적인 커스텀 훅에 묶지 않는다. 추출은 독립적인 단일 책임을 기준으로 한다.
 - **코드 스타일**: 짧은 조기 반환도 `if (조건) { return; }`처럼 중괄호를 쓴다. Promise 호출에 `void` 연산자를 붙이지 않는다(Oxlint로 강제). 이벤트 핸들러는 Promise를 반환하고, 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부 `.catch`로 기록한다. 들여쓰기·공백·import 정렬은 Oxfmt를 따른다.
-- **컴포넌트 계약**: 추출은 추상화가 아니다. 입력 래퍼는 `Omit<ComponentProps<typeof X>, …>`로 원본 props(`value`/`onChange`, HeroUI의 `isSelected`/`isDisabled`)를 살린다. 화면 식별자는 Props 대신 컴포넌트가 route hook에서 읽고, 데이터는 쓰는 컴포넌트가 조회한다. 상세: [.claude/architecture.md#컴포넌트-계약](.claude/architecture.md)
+- **컴포넌트 계약**: 추출은 추상화가 아니다. 화면 식별자는 Props 대신 컴포넌트가 route hook에서 읽고, 데이터는 쓰는 컴포넌트가 조회한다. 상세: [.claude/architecture.md#컴포넌트-계약](.claude/architecture.md)
+  - 컴포넌트는 바깥 레이아웃(margin·폭)을 모른다. Screen이 `className`/간격을 넘긴다(`<PushPermissionCard className="mx-4 mb-3" />`).
+  - 문구·값이 제품 튜닝 대상이면 `map` 대신 경우마다 한 줄씩 나란히 쓴다(`CalculationResult`의 `Record`). 한 줄만 고쳐도 되게 한다.
+  - `Omit<ComponentProps<typeof X>, …>` 래퍼는 단위·포맷처럼 자기 역할이 있을 때만 만든다(`AmountInput`, 도메인 `PushPermissionDialog`). 역할이 없으면 HeroUI 원본을 쓴다. 원본 props 이름(`value`/`onChange`, `isSelected`)을 살린다.
 - **Screen 구성**: `app/`의 Screen에서 화면 순서·레이아웃·Suspense·Error 경계가 위에서 아래로 읽히게 유지한다. 피처는 의미 있는 UI 블록과 훅·쿼리·모델·정책을 관리한다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않으며, 한 화면에서만 쓰는 작은 컴포넌트는 Screen 아래에 둘 수 있다.
 - **Service 책임**: HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 모두 담당. Service는 서버 에러(ApiError)를 번역/변환하지 않고 pass-through.
 - **에러 분류**:
@@ -86,7 +86,8 @@ features/{feature}/   # 단수 kebab-case
   - 예측 불가 (5xx, 네트워크, Zod 파싱 실패) → `throw` → 조회는 QueryErrorBoundary fallback(다시 시도 + 문의하기), mutation은 기본 토스트
   - 한 오류는 토스트와 fallback 중 한 곳에서만 보인다
 - **Mapper·select**: 서버 스펙 변경은 Mapper(DTO → 클라이언트 모델, ISO 문자열 → `Date`)가 흡수하고 캐시에는 클라이언트 모델을 둔다. `select`는 화면별 필터·정렬·표시 모델만 만들며 참조가 안정적인 순수 함수를 쓴다.
-- **Model·Policy**: 클라이언트 모델은 `@aido/api` 스키마를 재사용·`extend`하고 모양이 다를 때만 독자 스키마를 둔다. Policy는 모델을 첫 인자로 받는 이름 있는 순수 함수를 `{Entity}Policy`로 묶은 Facade다.
+- **Model·Policy**: 클라이언트 모델은 `@aido/api` 스키마를 재사용·`extend`하고 모양이 다를 때만 독자 스키마를 둔다. 모델 파일 하나(`*.model.ts`)에 zod 모델·이름 있는 순수 함수(모델이 첫 인자)·`{Entity}Policy` Facade를 둔다. Policy는 비즈니스 규칙만 담고 문구·아이콘·레이아웃은 정하지 않는다. 예: `push-permission.model.ts`.
+- **Port·Adapter·DI**: 외부 경계(OS·네트워크·저장소)는 `core/ports`의 포트와 `shared/infra`의 어댑터로 나누고 `di-provider.tsx`에서 조립한다. 테스트는 포트를 구현한 stub을 DI로 넣고, 어댑터 경계 테스트 밖에서는 `jest.mock`을 쓰지 않는다. Mapper는 순수 함수라 DI에 넣지 않는다.
 - **공통 규칙(서버·모바일)**: 날짜·시간대·표시 언어 [dates](../../docs/conventions/dates.md), 응답·오류 [errors](../../docs/conventions/errors.md), 하위 호환 [compatibility](../../docs/conventions/compatibility.md)
 - **의존성 방향**: `Model ← Service/Mapper/UI` (단방향). Model이 다른 레이어를 알면 안 됨.
 - **UI 컴포넌트 우선순위**: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native.

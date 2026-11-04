@@ -1,4 +1,5 @@
-import { sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { and, eq, notExists, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { QueryBuilder } from "drizzle-orm/pg-core";
 
 import { userBlock } from "#api/platform/database/schema/index";
 
@@ -9,9 +10,15 @@ import { userBlock } from "#api/platform/database/schema/index";
  * NOT EXISTS로 처리한다. 차단 관계를 행마다 따로 조회하지 않는다.
  */
 export function hasNoBlockWith(userId: AnyColumn, viewerId: string): SQL {
-  return sql`NOT EXISTS (
-    SELECT 1 FROM ${userBlock}
-    WHERE (${userBlock.blockerId} = ${userId} AND ${userBlock.blockedId} = ${viewerId})
-       OR (${userBlock.blockerId} = ${viewerId} AND ${userBlock.blockedId} = ${userId})
-  )`;
+  return notExists(
+    new QueryBuilder()
+      .select({ one: sql`1` })
+      .from(userBlock)
+      .where(
+        or(
+          and(eq(userBlock.blockerId, userId), eq(userBlock.blockedId, viewerId)),
+          and(eq(userBlock.blockerId, viewerId), eq(userBlock.blockedId, userId)),
+        ),
+      ),
+  );
 }

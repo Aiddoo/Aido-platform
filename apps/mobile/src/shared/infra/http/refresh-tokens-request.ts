@@ -1,6 +1,7 @@
 import { ENV } from '@src/shared/config/env';
 import ky from 'ky';
 
+import { type AppHeaderSource, createAppHeaders, setPerRequestHeaders } from './request-headers';
 import type { RefreshTokensRequest } from './token-refresher';
 
 /**
@@ -11,16 +12,25 @@ import type { RefreshTokensRequest } from './token-refresher';
  */
 const REFRESH_TIMEOUT_MS = 8_000;
 
-/** `TokenRefresher`가 요구하는 HTTP 포트의 ky 구현. 벤더 의존은 이 파일에만 있다. */
-export const requestRefreshTokens: RefreshTokensRequest = (refreshToken) =>
-  ky.post('v1/auth/refresh', {
-    // v2: prefixUrl → prefix (append 시맨틱 동일)
-    prefix: ENV.API_URL,
-    retry: 0,
-    timeout: REFRESH_TIMEOUT_MS,
-    throwHttpErrors: false,
-    headers: {
+/**
+ * `TokenRefresher`가 요구하는 HTTP 포트의 ky 구현. 벤더 의존은 이 파일에만 있다.
+ * 갱신 요청도 일반 요청과 같은 앱·기기·시간대·언어·요청 ID 헤더를 보낸다.
+ */
+export const createRefreshTokensRequest =
+  (source: AppHeaderSource): RefreshTokensRequest =>
+  (refreshToken) => {
+    const headers = new Headers({
+      ...createAppHeaders(source),
       Authorization: `Bearer ${refreshToken}`,
       'Content-Type': 'application/json',
-    },
-  });
+    });
+    setPerRequestHeaders(headers);
+    return ky.post('v1/auth/refresh', {
+      // v2: prefixUrl → prefix (append 시맨틱 동일)
+      prefix: ENV.API_URL,
+      retry: 0,
+      timeout: REFRESH_TIMEOUT_MS,
+      throwHttpErrors: false,
+      headers,
+    });
+  };

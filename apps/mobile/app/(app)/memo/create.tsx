@@ -62,13 +62,8 @@ function MemoCreateScreen() {
     defaultValues: restoredMemoDraft ?? EMPTY_MEMO_VALUES,
     mode: 'onChange',
   });
-  const {
-    control,
-    handleSubmit,
-    subscribe,
-    formState: { isValid },
-  } = formMethods;
-  const { isSubmitting } = useFormState({ control: control });
+  const { control, handleSubmit, subscribe } = formMethods;
+  const { isSubmitting, isValid } = useFormState({ control });
   const discardMemoDraft = useFormDraftAutosave(subscribe, {
     initialValues: EMPTY_MEMO_VALUES,
     saveDraft: saveMemoDraft,

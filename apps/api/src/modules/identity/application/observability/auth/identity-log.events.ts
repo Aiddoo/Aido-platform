@@ -27,6 +27,7 @@ export const IdentityLogEvent = {
   ACCOUNT_PURGE_JOB_FAILED: "identity.account-purge.job.failed",
   SESSION_LOGGED_OUT: "identity.session.logged-out",
   ALL_SESSIONS_LOGGED_OUT: "identity.session.all-logged-out",
+  SESSION_PUSH_DEVICE_RELEASE_FAILED: "identity.session.push-device-release.failed",
   SESSION_REVOKED: "identity.session.revoked",
   SESSION_TOKENS_REFRESHED: "identity.session.tokens-refreshed",
   SESSION_ROTATION_CONFLICT: "identity.session.rotation.conflict",
@@ -42,4 +43,8 @@ export const IdentityLogEvent = {
   OAUTH_ACCOUNT_AUTO_LINKING: "identity.oauth.account.auto-linking",
   OAUTH_ACCOUNT_LINK_REQUIRED: "identity.oauth.account.link-required",
   OAUTH_EXISTING_USER_AUTHENTICATED: "identity.oauth.user.authenticated",
+  OAUTH_ERROR_REDIRECT_FAILED: "identity.oauth.error-redirect.failed",
+  OAUTH_CALLBACK_FAILED: "identity.oauth.callback.failed",
+  LAST_ACTIVE_UPDATE_FAILED: "identity.last-active.update.failed",
+  LAST_ACTIVE_THROTTLE_CLEANED: "identity.last-active.throttle.cleaned",
 } as const;

@@ -970,6 +970,15 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "minimum": 0,
               "type": "integer",
             },
+            "skippedByReason": {
+              "additionalProperties": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "description": "건너뛴 사용자 수를 이유별로. 없는 이유는 키가 없다. 1.14.1 이하 서버 응답에는 없다",
+              "type": "object",
+            },
           },
           "required": [
             "pending",
@@ -7418,6 +7427,74 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "PushDeviceResponseDto": {
+      "example": {
+        "deviceId": "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
+        "hasActiveToken": true,
+        "permission": {
+          "canAskAgain": false,
+          "status": "GRANTED",
+        },
+        "platform": "IOS",
+        "reportedAt": "2026-11-04T03:41:40.598Z",
+      },
+      "properties": {
+        "deviceId": {
+          "description": "기기 식별자",
+          "type": "string",
+        },
+        "hasActiveToken": {
+          "description": "이 기기로 푸시를 보낼 수 있는 토큰이 있는지",
+          "type": "boolean",
+        },
+        "permission": {
+          "description": "앱이 OS에서 읽은 알림 권한",
+          "properties": {
+            "canAskAgain": {
+              "description": "앱이 시스템 권한 창을 다시 띄울 수 있는지",
+              "type": "boolean",
+            },
+            "status": {
+              "description": "OS 알림 권한. iOS 임시 허용(provisional·ephemeral)은 PROVISIONAL",
+              "enum": [
+                "GRANTED",
+                "PROVISIONAL",
+                "DENIED",
+                "NOT_DETERMINED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "status",
+            "canAskAgain",
+          ],
+          "type": "object",
+        },
+        "platform": {
+          "description": "deviceId 접두어(ios_·android_)로 서버가 정한 플랫폼",
+          "enum": [
+            "IOS",
+            "ANDROID",
+          ],
+          "type": "string",
+        },
+        "reportedAt": {
+          "description": "마지막 보고 시각 (ISO 8601 UTC)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "deviceId",
+        "platform",
+        "permission",
+        "hasActiveToken",
+        "reportedAt",
+      ],
+      "type": "object",
+    },
     "ReceivedCheersResponseDto": {
       "example": {
         "cheers": [
@@ -8902,6 +8979,63 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "ReportPushDeviceDto": {
+      "description": "기기 하나의 알림 권한과 토큰. 플랫폼은 deviceId 접두어, 앱 버전·시간대·언어는 요청 헤더에서 읽는다",
+      "example": {
+        "payloadVersion": 2,
+        "permission": {
+          "canAskAgain": false,
+          "status": "DENIED",
+        },
+        "token": null,
+      },
+      "properties": {
+        "payloadVersion": {
+          "description": "앱이 해석할 수 있는 푸시 payload 버전",
+          "maximum": 2,
+          "minimum": 1,
+          "type": "integer",
+        },
+        "permission": {
+          "description": "앱이 OS에서 읽은 알림 권한",
+          "properties": {
+            "canAskAgain": {
+              "description": "앱이 시스템 권한 창을 다시 띄울 수 있는지",
+              "type": "boolean",
+            },
+            "status": {
+              "description": "OS 알림 권한. iOS 임시 허용(provisional·ephemeral)은 PROVISIONAL",
+              "enum": [
+                "GRANTED",
+                "PROVISIONAL",
+                "DENIED",
+                "NOT_DETERMINED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "status",
+            "canAskAgain",
+          ],
+          "type": "object",
+        },
+        "token": {
+          "description": "권한이 허용되고 발급에 성공했을 때의 Expo 푸시 토큰. 아니면 null",
+          "maxLength": 200,
+          "minLength": 1,
+          "nullable": true,
+          "pattern": "^ExponentPushToken\\[.+\\]$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "permission",
+        "token",
+        "payloadVersion",
+      ],
+      "type": "object",
+    },
     "ReportStatusResponseDto": {
       "properties": {
         "status": {
@@ -9431,20 +9565,6 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "note",
-      ],
-      "type": "object",
-    },
-    "ResolveUserReportParamDto": {
-      "properties": {
-        "reportId": {
-          "description": "처리할 신고 ID (CUID 25자)",
-          "format": "cuid",
-          "pattern": "^[cC][0-9a-z]{6,}$",
-          "type": "string",
-        },
-      },
-      "required": [
-        "reportId",
       ],
       "type": "object",
     },
@@ -17968,17 +18088,15 @@ SYS_0002: 잘못된 파라미터입니다.",
       "operationId": "resolveUserReport",
       "parameters": [
         {
-          "in": "path",
-          "required": true,
-          "schema": {},
-        },
-        {
           "description": "처리할 신고 ID (CUID 25자, 신고 접수 이메일의 신고 ID)",
           "in": "path",
           "name": "reportId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0123qz0z8z8z8z8z",
+            "description": "처리할 신고 ID (CUID 25자, 신고 접수 이메일의 신고 ID)",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
+            "type": "string",
           },
         },
       ],
@@ -18067,6 +18185,53 @@ SYS_0002: 잘못된 파라미터입니다.",
             },
           },
           "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
         },
         "403": {
           "content": {
@@ -19175,10 +19340,12 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
       "operationId": "getAiReports",
       "parameters": [
         {
+          "description": "리포트 종류 (WEEKLY | MONTHLY, 생략 시 전체)",
           "in": "query",
           "name": "type",
           "required": false,
           "schema": {
+            "description": "리포트 종류 (WEEKLY | MONTHLY, 생략 시 전체)",
             "enum": [
               "WEEKLY",
               "MONTHLY",
@@ -19187,11 +19354,13 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
           },
         },
         {
+          "description": "페이지 크기 (1-50, 기본값: 10)",
           "in": "query",
           "name": "limit",
           "required": false,
           "schema": {
             "default": 10,
+            "description": "페이지 크기 (1-50, 기본값: 10)",
             "exclusiveMinimum": true,
             "maximum": 50,
             "minimum": 0,
@@ -20200,23 +20369,34 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
 |------|------|------|-------|------|
 | \`action\` | string | ✅ | - | \`"accept"\` 또는 \`"dismiss"\` |
 | \`categoryId\` | number | ❌ | - | 수락 시 할 일을 추가할 카테고리 ID |
-| \`startDate\` | string | ❌ | 오늘 | 반복 시작일 (YYYY-MM-DD) |
-| \`endDate\` | string | ❌ | 4주 후 | 반복 종료일 (YYYY-MM-DD) |
+| \`startDate\` | string | ❌ | 사용자 로컬 오늘 | 반복 시작일 (YYYY-MM-DD) |
+| \`endDate\` | string | ❌ | 시작 기준 4주 후 | 반복 종료일 (YYYY-MM-DD) |
 
 ## ✅ accept 시 동작
 1. 지정된 카테고리에 반복 할 일이 자동 생성됩니다.
 2. 응답의 \`createdTodosCount\`에 생성된 할 일 개수가 반환됩니다.
 3. 제안 상태가 \`ACCEPTED\`로 변경됩니다.
+4. \`categoryId\`가 없으면 400(SYS_0002)입니다. 기본 날짜의 "오늘"은 \`X-Timezone\`, 없으면 저장된 사용자 시간대 기준입니다.
 
 ## ❌ dismiss 시 동작
-- 제안 상태가 \`DISMISSED\`로 변경되고, 더 이상 목록에 나타나지 않습니다.",
+- 제안 상태가 \`DISMISSED\`로 변경되고, 더 이상 목록에 나타나지 않습니다.
+
+## ⚠️ 오류
+| 코드 | 상태 | 상황 |
+|------|------|------|
+| AI_1305 | 404 | 제안이 없거나 내 제안이 아님 |
+| AI_1306 | 409 | 이미 처리한 제안 |
+| AI_1307 | 410 | 만료된 제안 |
+| AI_1309 | 403 | 프리미엄이 아님 |",
       "operationId": "handleAiSuggestion",
       "parameters": [
         {
+          "description": "AI 제안 고유 ID (양의 정수, 예: 1)",
           "in": "path",
           "name": "id",
           "required": true,
           "schema": {
+            "description": "AI 제안 고유 ID (양의 정수, 예: 1)",
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -20610,6 +20790,7 @@ if (limit !== null && used >= limit) {
   },
   "/v1/app-config/app-version": {
     "get": {
+      "description": "로그인 없이 iOS·Android 스토어에 공개된 최신 앱 버전을 돌려줍니다. 설정이 꺼져 있거나 한 플랫폼이라도 버전이 없으면 enabled: false만 보냅니다. 응답은 캐시하지 않습니다.",
       "operationId": "getAppVersionConfig",
       "parameters": [],
       "responses": {
@@ -20708,7 +20889,7 @@ if (limit !== null && used >= limit) {
           "description": "서버 내부 오류가 발생했습니다",
         },
       },
-      "summary": "Published app versions",
+      "summary": "스토어 최신 앱 버전 조회",
       "tags": [
         "App Config",
       ],
@@ -20716,7 +20897,7 @@ if (limit !== null && used >= limit) {
   },
   "/v1/app-config/feature-discovery": {
     "get": {
-      "description": "Public kill-switch configuration only. Campaign copy and user data are never returned.",
+      "description": "로그인 없이 기능 발견의 운영 kill switch 설정만 돌려줍니다. 캠페인 문구와 사용자 데이터는 담지 않습니다. 응답은 캐시하지 않습니다.",
       "operationId": "getFeatureDiscoveryConfig",
       "parameters": [],
       "responses": {
@@ -20816,7 +20997,7 @@ if (limit !== null && used >= limit) {
           "description": "서버 내부 오류가 발생했습니다",
         },
       },
-      "summary": "Feature discovery rollout configuration",
+      "summary": "기능 발견 배포 설정 조회",
       "tags": [
         "App Config",
       ],
@@ -20848,6 +21029,8 @@ if (limit !== null && used >= limit) {
 - 이메일 계정: \`POST /auth/login\`
 - 소셜 계정: \`POST /auth/exchange\` (OAuth 플로우)
 - 복구 시 응답에 \`accountRestored: true\` 포함
+
+사용자마다 시간당 3회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		",
       "operationId": "deleteAccount",
       "parameters": [],
@@ -22110,6 +22293,7 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
 ### 💡 참고
 - 보안상 등록되지 않은 이메일이어도 동일한 성공 응답을 반환합니다 (이메일 존재 여부 노출 방지)
 - 소셜 로그인 사용자가 비밀번호를 **새로 설정**하려면 → \`POST /auth/password/setup-code\` (로그인 필요)
+- IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		",
       "operationId": "forgotPassword",
       "parameters": [],
@@ -22595,6 +22779,14 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
 ### 💡 참고
 - Kakao API는 \`id\`를 숫자로 반환하지만, 백엔드에는 **문자열**로 전송 필수
 - 이메일은 사용자가 동의해야만 제공됨
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		",
       "operationId": "kakaoMobileCallback",
       "parameters": [
@@ -22952,6 +23144,8 @@ provider에 따라 필수 토큰이 다릅니다:
 
 ### 💡 교환 코드 방식
 웹 브라우저 OAuth 플로우를 사용하는 경우 \`POST /auth/link-with-code\` 엔드포인트를 사용하세요.
+
+사용자마다 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		",
       "operationId": "linkSocialAccount",
       "parameters": [],
@@ -23287,6 +23481,8 @@ NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
 | \`APPLE_0355\` | 409 | 이미 다른 계정에 연동된 애플 계정 |
 | \`GOOGLE_0405\` | 409 | 이미 다른 계정에 연동된 구글 계정 |
 | \`NAVER_0455\` | 409 | 이미 다른 계정에 연동된 네이버 계정 |
+
+사용자마다 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		",
       "operationId": "linkWithExchangeCode",
       "parameters": [],
@@ -24015,11 +24211,14 @@ USER_0610: 마지막 로그인 수단은 해제할 수 없습니다.",
 | Refresh Token | 7일 | Secure Storage |
 
 ### ⚠️ 에러 케이스
-| 코드 | 상황 | 클라이언트 처리 |
-|------|------|----------------|
-| USER_0602 | 이메일/비밀번호 불일치 | 재입력 요청 |
-| USER_0605 | 계정 잠금 (5회 실패) | 15분 대기 안내 |
-| USER_0608 | 이메일 미인증 | 인증 화면 이동 + resend-verification 호출 |
+| 코드 | 상태 | 상황 | 클라이언트 처리 |
+|------|------|------|----------------|
+| USER_0602 | 401 | 이메일/비밀번호 불일치 | 재입력 요청 |
+| USER_0605 | 403 | 정지된 계정 | 고객센터 안내 |
+| USER_0607 | 423 | 계정 잠금 (5회 실패) | 15분 대기 안내 |
+| USER_0608 | 401 | 이메일 미인증 | 인증 화면 이동 + resend-verification 호출 |
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 ### 🔄 탈퇴 유예 계정 복구
 탈퇴 후 **30일 이내**에 동일 이메일로 로그인하면 자동 복구됩니다.
@@ -24791,6 +24990,8 @@ USER_0608: 이메일 인증이 완료되지 않았습니다. 이메일을 확인
 - Naver는 토큰 교환 시 **client_secret 필수** (Kakao/Google과 다름)
 - client_secret을 앱에 직접 넣으면 보안 위험 → 프록시 서버 사용 권장
 - 동의 항목을 사용자가 거부하면 해당 정보는 null 반환
+
+IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		",
       "operationId": "naverMobileCallback",
       "parameters": [
@@ -25132,6 +25333,7 @@ USER_0608: 이메일 인증이 완료되지 않았습니다. 이메일을 확인
 ### 💡 참고
 - 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
 - 소셜 계정에 비밀번호를 **처음 설정**하려면 → \`POST /auth/password/setup-code\`
+- 사용자마다 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		",
       "operationId": "changePassword",
       "parameters": [],
@@ -25380,6 +25582,7 @@ USER_0602: 이메일 또는 비밀번호가 올바르지 않습니다.",
 
 ### 🔒 보안
 - 기존 세션이 유지됩니다 (재로그인 불필요)
+- 사용자마다 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		",
       "operationId": "setPassword",
       "parameters": [],
@@ -25688,6 +25891,7 @@ VERIFY_0751: 인증 코드가 올바르지 않습니다.",
 ### 💡 참고
 - 이미 비밀번호가 있는 사용자가 비밀번호를 **변경**하려면 → \`PATCH /auth/password\` (로그인 필요)
 - 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
+- 사용자마다 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		",
       "operationId": "requestPasswordSetupCode",
       "parameters": [],
@@ -26484,6 +26688,8 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 |------|------|----------------|
 | AUTH_0104 | 유효하지 않은 토큰 | 재로그인 |
 | SESSION_0704 | 토큰 재사용 감지 | 전체 세션 무효화, 재로그인 |
+
+IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 		",
       "operationId": "refreshTokens",
       "parameters": [],
@@ -26648,6 +26854,9 @@ SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다
 | 코드 | 상황 |
 |------|------|
 | EMAIL_0501 | 이미 가입된 이메일 |
+
+### ⏱️ 제한사항
+- IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		",
       "operationId": "register",
       "parameters": [],
@@ -26812,6 +27021,7 @@ SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다
 
 ### ⏱️ 제한사항
 - 마지막 발송 후 **1분 이내** 재요청 불가
+- IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 
 ### ⚠️ 에러 케이스
 | 코드 | 상황 |
@@ -27036,11 +27246,12 @@ SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다
 ### ⚠️ 에러 케이스
 | 코드 | 상황 | 클라이언트 처리 |
 |------|------|----------------|
-| VERIFY_0751 | 잘못된 인증 코드 | 재입력 요청 |
-| VERIFY_0752 | 만료된 인증 코드 | 코드 재발송 안내 |
+| VERIFY_0751 | 잘못되거나 만료·사용된 코드, 가입하지 않은 이메일 | 재입력 요청, 코드 재발송 안내 |
 | VERIFY_0754 | 인증 시도 횟수 초과 | 코드 재발송 안내 |
 | USER_0606 | 탈퇴한 계정 | 재가입 안내 |
 | USER_0613 | 소셜 전용 계정 | "소셜 로그인을 이용해주세요" 안내 |
+
+IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 ### 🔒 보안
 - 성공 시 모든 기존 세션이 무효화됩니다 (재로그인 필요)
@@ -27737,12 +27948,15 @@ VERIFY_0752: 인증 코드가 만료되었습니다.",
 | refreshToken | 7일 |
 
 ### ⚠️ 에러 케이스
-| 코드 | 상황 |
-|------|------|
-| EMAIL_0502 | 잘못된 인증 코드 |
-| EMAIL_0504 | 만료된 인증 코드 |
-| EMAIL_0505 | 인증 코드 시도 횟수 초과 |
-| USER_0604 | 이미 인증 완료된 사용자 |
+| 코드 | 상태 | 상황 |
+|------|------|------|
+| EMAIL_0502 | 404 | 가입하지 않은 이메일 |
+| VERIFY_0751 | 401 | 인증 코드가 틀렸거나 만료·사용된 코드 |
+| VERIFY_0754 | 429 | 인증 시도 5회 초과. 새 코드를 요청해야 합니다 |
+| USER_0604 | 409 | 이미 인증 완료된 사용자 |
+
+### ⏱️ 제한사항
+- IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다
 		",
       "operationId": "verifyEmail",
       "parameters": [
@@ -28364,6 +28578,53 @@ EMAIL_0505: 인증 코드가 만료되었습니다.",
           },
           "description": "인증이 필요합니다.",
         },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        },
         "500": {
           "content": {
             "application/json": {
@@ -28609,6 +28870,53 @@ SYS_0002: 잘못된 파라미터입니다.",
             },
           },
           "description": "차단할 사용자를 찾을 수 없습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
         },
         "500": {
           "content": {
@@ -32344,7 +32652,9 @@ SYS_0002: 잘못된 파라미터입니다.",
 
 상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).
 
-내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).",
+내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).
+
+사용자마다 분당 30회까지 보낼 수 있고, 넘으면 429(SYS_0001)를 돌려줍니다.",
       "operationId": "sendFriendRequest",
       "parameters": [
         {
@@ -32752,7 +33062,9 @@ FOLLOW_0902: 이미 친구 관계입니다.",
 **처리 흐름**
 1. 사용자가 문의를 작성하여 전송
 2. 관리자 이메일로 문의 내용이 발송됨
-3. 발송 실패 시 INQUIRY_1501 에러 반환",
+3. 발송 실패 시 INQUIRY_1501(502) 에러 반환
+
+사용자마다 분당 5회까지 접수하며, 넘으면 429(SYS_0001)를 돌려줍니다.",
       "operationId": "createInquiry",
       "parameters": [],
       "requestBody": {
@@ -33937,6 +34249,16 @@ FOLLOW_0902: 이미 친구 관계입니다.",
           "required": true,
           "schema": {
             "description": "초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)",
+            "type": "string",
+          },
+        },
+        {
+          "description": "사용자 타임존 (IANA, 기본값: UTC). 초대 사용 시작일을 정하는 날짜 기준입니다.",
+          "in": "header",
+          "name": "X-Timezone",
+          "required": false,
+          "schema": {
+            "example": "Asia/Seoul",
             "type": "string",
           },
         },
@@ -37011,14 +37333,6 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
             "type": "string",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -37178,14 +37492,6 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
             "type": "string",
           },
         },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
-          "schema": {
-            "type": "string",
-          },
-        },
       ],
       "responses": {
         "200": {
@@ -37304,14 +37610,6 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           "in": "header",
           "name": "X-App-Version",
           "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
-        {
-          "in": "header",
-          "name": "x-app-version",
-          "required": true,
           "schema": {
             "type": "string",
           },
@@ -37538,6 +37836,260 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
       ],
     },
   },
+  "/v1/notifications/push-devices/{deviceId}": {
+    "put": {
+      "description": "기기 하나의 알림 권한과 Expo 푸시 토큰을 보고합니다. 1.14.2 이상 앱이 로그인 직후·앱 복귀·토큰 변경·언어 변경 때 보냅니다.
+
+- 권한이 GRANTED·PROVISIONAL이고 \`token\`이 있으면 이 기기로 푸시를 보냅니다.
+- 권한이 없거나 \`token\`이 null이면 이 기기의 토큰을 지우고 권한 상태만 저장합니다.
+- 다른 계정이 쓰던 같은 기기·토큰은 이 사용자로 옮깁니다.
+- 플랫폼은 deviceId 접두어로, 시간대·언어는 헤더로 정합니다. 같은 값을 다시 보내도 결과는 같습니다.",
+      "operationId": "reportPushDevice",
+      "parameters": [
+        {
+          "description": "앱이 만든 기기 식별자. ios_ 또는 android_로 시작",
+          "in": "path",
+          "name": "deviceId",
+          "required": true,
+          "schema": {
+            "example": "ios_5F2C1E7A-0B9D-4C3E-8A11-2D4F6B8C9E01",
+            "maxLength": 100,
+            "type": "string",
+          },
+        },
+        {
+          "description": "토큰과 함께 저장해 앱 버전별 푸시 형식을 고를 때 쓰는 앱 버전",
+          "in": "header",
+          "name": "X-App-Version",
+          "required": false,
+          "schema": {
+            "example": "1.14.2",
+            "type": "string",
+          },
+        },
+        {
+          "description": "푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+        {
+          "description": "푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지",
+          "in": "header",
+          "name": "X-Timezone",
+          "required": false,
+          "schema": {
+            "example": "Asia/Seoul",
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ReportPushDeviceDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/PushDeviceResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "NOTIFICATION_1001": {
+                  "summary": "유효하지 않은 푸시 토큰입니다.",
+                  "value": {
+                    "error": {
+                      "code": "NOTIFICATION_1001",
+                      "details": null,
+                      "message": "유효하지 않은 푸시 토큰입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NOTIFICATION_1006": {
+                  "summary": "푸시를 받을 수 없는 기기입니다.",
+                  "value": {
+                    "error": {
+                      "code": "NOTIFICATION_1006",
+                      "details": null,
+                      "message": "푸시를 받을 수 없는 기기입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "NOTIFICATION_1001",
+                          "NOTIFICATION_1006",
+                          "SYS_0002",
+                        ],
+                        "example": "NOTIFICATION_1001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "유효하지 않은 푸시 토큰입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "NOTIFICATION_1001: 유효하지 않은 푸시 토큰입니다.
+
+NOTIFICATION_1006: 푸시를 받을 수 없는 기기입니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "푸시 기기 보고",
+      "tags": [
+        "Notifications",
+      ],
+    },
+  },
   "/v1/notifications/read-all": {
     "patch": {
       "description": "모든 읽지 않은 알림을 읽음 상태로 변경합니다.",
@@ -37653,10 +38205,11 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
   },
   "/v1/notifications/token": {
     "delete": {
-      "description": "등록된 푸시 토큰을 해제합니다.
+      "description": "로그아웃한 기기를 푸시 대상에서 뺍니다. 기기의 토큰과 권한 기록을 함께 지웁니다.
 
 **쿼리 파라미터**
-- \`deviceId\` (선택): 특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제",
+- \`deviceId\` (선택): 이 기기만 해제. 없으면 사용자의 모든 기기를 해제
+- 등록되지 않은 기기여도 성공으로 응답합니다.",
       "operationId": "unregisterPushToken",
       "parameters": [
         {
@@ -37811,23 +38364,20 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           "bearer": [],
         },
       ],
-      "summary": "푸시 토큰 해제",
+      "summary": "푸시 기기 해제",
       "tags": [
         "Notifications",
       ],
     },
     "post": {
-      "description": "Expo 푸시 토큰을 서버에 등록합니다.
+      "deprecated": true,
+      "description": "1.14.1 이하 앱이 권한을 허용한 뒤 토큰을 등록합니다. 새 앱은 \`PUT /v1/notifications/push-devices/{deviceId}\`를 씁니다.
 
-**요청 필드**
-- \`token\` (필수): Expo 푸시 토큰
-- \`deviceId\` (선택): 기기 고유 ID
-
-동일 deviceId의 기존 토큰이 있으면 갱신됩니다.",
+권한은 허용(GRANTED)으로 저장하고, 플랫폼은 deviceId 접두어나 \`X-Device-Type\` 헤더로 정합니다. 둘 다 없으면 400 NOTIFICATION_1006입니다(출시된 앱은 항상 접두어를 보냅니다). 같은 deviceId의 토큰은 갱신됩니다. 최소 지원 버전이 1.14.2가 되면 제거합니다.",
       "operationId": "registerPushToken",
       "parameters": [
         {
-          "description": "푸시 알림 언어 ("ko" | "en"). 미전송 시 기존 설정 유지, 미지원 언어는 ko",
+          "description": "푸시 알림 언어 ("ko" | "en"). 없으면 저장된 값을 유지, 지원하지 않는 언어는 ko",
           "in": "header",
           "name": "Accept-Language",
           "required": false,
@@ -37837,7 +38387,7 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           },
         },
         {
-          "description": "IANA 타임존 (e.g. "Asia/Seoul")",
+          "description": "푸시 발송 시간대로 쓸 IANA 시간대 (e.g. "Asia/Seoul"). 없으면 저장된 값을 유지",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -38028,7 +38578,7 @@ SYS_0002: 잘못된 파라미터입니다.",
           "bearer": [],
         },
       ],
-      "summary": "푸시 토큰 등록",
+      "summary": "푸시 토큰 등록 (1.14.1 이하 앱)",
       "tags": [
         "Notifications",
       ],
@@ -39150,17 +39700,9 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/interactions": {
     "get": {
+      "description": "받은 콕(received) 또는 보낸 콕(sent)을 커서로 조회합니다. 각 항목의 isAvailable은 지금 답장·감사를 할 수 있는지입니다. 기능이 꺼져 있으면 NUDGE_1105입니다.",
       "operationId": "getNudgeInteractions",
       "parameters": [
-        {
-          "description": "설치된 앱 버전",
-          "in": "header",
-          "name": "X-App-Version",
-          "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
         {
           "description": "조회할 개수 (1-50, 기본값: 20)",
           "in": "query",
@@ -39202,9 +39744,10 @@ SYS_0002: 잘못된 파라미터입니다.",
           },
         },
         {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
           "in": "header",
           "name": "x-app-version",
-          "required": true,
+          "required": false,
           "schema": {
             "type": "string",
           },
@@ -39404,18 +39947,9 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/interactions/availability": {
     "get": {
+      "description": "콕 답장·감사 기능이 켜져 있는지 반환합니다. 꺼져 있으면 앱은 답장·감사 진입점을 숨기고, 아래 콕 답장·감사 API는 NUDGE_1105로 응답합니다.",
       "operationId": "getNudgeInteractionAvailability",
-      "parameters": [
-        {
-          "description": "설치된 앱 버전",
-          "in": "header",
-          "name": "X-App-Version",
-          "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
-      ],
+      "parameters": [],
       "responses": {
         "200": {
           "content": {
@@ -40516,17 +41050,9 @@ SYS_0002: 잘못된 파라미터입니다.",
   },
   "/v1/nudges/todos/{todoId}/thanks": {
     "get": {
+      "description": "완료한 내 할 일에 콕을 보낸 현재 친구를 미리 봅니다. 할 일이 완료되지 않았으면 NUDGE_1110, 기능이 꺼져 있거나 throughNudgeId가 이 할 일에서 받은 콕이 아니면 NUDGE_1105입니다.",
       "operationId": "getNudgeThanksPreview",
       "parameters": [
-        {
-          "description": "설치된 앱 버전",
-          "in": "header",
-          "name": "X-App-Version",
-          "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
         {
           "description": "감사를 전할 할 일 ID",
           "in": "path",
@@ -40579,9 +41105,10 @@ SYS_0002: 잘못된 파라미터입니다.",
           },
         },
         {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
           "in": "header",
           "name": "x-app-version",
-          "required": true,
+          "required": false,
           "schema": {
             "type": "string",
           },
@@ -40861,15 +41388,6 @@ TODO_0801: Todo를 찾을 수 없습니다.",
       "description": "미리보기 시점까지 콕을 보낸 현재 친구에게 감사를 전합니다. 같은 할 일·친구에게 한 번만 보내며 재요청은 성공한 결과 sentCount: 0을 반환합니다.",
       "operationId": "sendNudgeThanks",
       "parameters": [
-        {
-          "description": "설치된 앱 버전",
-          "in": "header",
-          "name": "X-App-Version",
-          "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
         {
           "description": "감사를 전할 할 일 ID",
           "in": "path",
@@ -41175,6 +41693,53 @@ TODO_0801: Todo를 찾을 수 없습니다.",
 
 NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
         },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        },
         "500": {
           "content": {
             "application/json": {
@@ -41199,17 +41764,9 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
   },
   "/v1/nudges/{id}/interaction": {
     "get": {
+      "description": "콕 하나의 답장·감사 상태를 조회합니다. 내가 보내거나 받은 콕이 아니거나 기능이 꺼져 있으면 NUDGE_1105입니다.",
       "operationId": "getNudgeInteraction",
       "parameters": [
-        {
-          "description": "설치된 앱 버전",
-          "in": "header",
-          "name": "X-App-Version",
-          "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
         {
           "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
           "in": "path",
@@ -41224,9 +41781,10 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
           },
         },
         {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
           "in": "header",
           "name": "x-app-version",
-          "required": true,
+          "required": false,
           "schema": {
             "type": "string",
           },
@@ -41641,15 +42199,6 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
       "operationId": "replyToNudge",
       "parameters": [
         {
-          "description": "설치된 앱 버전",
-          "in": "header",
-          "name": "X-App-Version",
-          "required": false,
-          "schema": {
-            "type": "string",
-          },
-        },
-        {
           "description": "콕 찌름 고유 ID (양의 정수, 예: 1)",
           "in": "path",
           "name": "id",
@@ -41663,9 +42212,10 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
           },
         },
         {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
           "in": "header",
           "name": "x-app-version",
-          "required": true,
+          "required": false,
           "schema": {
             "type": "string",
           },
@@ -41897,6 +42447,53 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
             },
           },
           "description": "지금은 이 콕에 답장할 수 없습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
         },
         "500": {
           "content": {
@@ -42169,11 +42766,41 @@ SYS_0002: 잘못된 파라미터입니다.",
         "429": {
           "content": {
             "application/json": {
+              "examples": {
+                "REPORT_2254": {
+                  "summary": "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "REPORT_2254",
+                      "details": null,
+                      "message": "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0001": {
+                  "summary": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0001",
+                      "details": null,
+                      "message": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "REPORT_2254",
+                          "SYS_0001",
+                        ],
                         "example": "REPORT_2254",
                         "type": "string",
                       },
@@ -42211,7 +42838,9 @@ SYS_0002: 잘못된 파라미터입니다.",
               },
             },
           },
-          "description": "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
+          "description": "REPORT_2254: 오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.
+
+SYS_0001: 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
         },
         "500": {
           "content": {
@@ -48865,12 +49494,42 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
         "409": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0003": {
+                  "summary": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0003",
+                      "details": null,
+                      "message": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0833": {
+                  "summary": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0833",
+                      "details": null,
+                      "message": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
-                        "example": "TODO_0833",
+                        "enum": [
+                          "SYS_0003",
+                          "TODO_0833",
+                        ],
+                        "example": "SYS_0003",
                         "type": "string",
                       },
                       "details": {
@@ -48879,7 +49538,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+                        "example": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
                         "type": "string",
                       },
                     },
@@ -48907,7 +49566,9 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
               },
             },
           },
-          "description": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+          "description": "SYS_0003: 데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.
+
+TODO_0833: 삭제된 댓글에는 이 작업을 할 수 없습니다.",
         },
         "429": {
           "content": {
@@ -48981,7 +49642,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
   "/v1/todos/{todoId}/comments/overview": {
     "get": {
       "deprecated": true,
-      "description": "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 \`GET /v2/todos/{todoId}/comments\`와 \`…/comments/{commentId}/replies\`를 씁니다. 댓글·답글 2단계 값만 내려갑니다.",
+      "description": "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 \`GET /v2/todos/{todoId}/comments\`와 \`…/comments/{commentId}/replies\`를 씁니다. 댓글·답글 2단계 값만 내려갑니다. 1.14.0 이하 앱 사용자가 사라지면 제거합니다.",
       "operationId": "getTodoCommentOverview",
       "parameters": [
         {
@@ -49529,6 +50190,53 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
 
 TODO_0831: 댓글을 찾을 수 없습니다.",
         },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0003",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
+        },
         "429": {
           "content": {
             "application/json": {
@@ -49598,6 +50306,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
       ],
     },
     "patch": {
+      "description": "본인이 쓴 댓글의 내용을 고칩니다. 삭제된 댓글은 고칠 수 없습니다. 사용자마다 분당 30회까지입니다.",
       "operationId": "updateTodoComment",
       "parameters": [
         {
@@ -49897,12 +50606,42 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
         "409": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0003": {
+                  "summary": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0003",
+                      "details": null,
+                      "message": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0833": {
+                  "summary": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0833",
+                      "details": null,
+                      "message": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
-                        "example": "TODO_0833",
+                        "enum": [
+                          "SYS_0003",
+                          "TODO_0833",
+                        ],
+                        "example": "SYS_0003",
                         "type": "string",
                       },
                       "details": {
@@ -49911,7 +50650,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+                        "example": "데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.",
                         "type": "string",
                       },
                     },
@@ -49939,7 +50678,9 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
               },
             },
           },
-          "description": "삭제된 댓글에는 이 작업을 할 수 없습니다.",
+          "description": "SYS_0003: 데이터가 다른 사용자에 의해 수정되었습니다. 다시 시도해주세요.
+
+TODO_0833: 삭제된 댓글에는 이 작업을 할 수 없습니다.",
         },
         "429": {
           "content": {
@@ -50012,6 +50753,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
   },
   "/v1/todos/{todoId}/comments/{commentId}/likes": {
     "delete": {
+      "description": "누른 좋아요를 취소합니다. 누르지 않은 댓글도 성공합니다. 사용자마다 분당 120회까지입니다.",
       "operationId": "unlikeTodoComment",
       "parameters": [
         {
@@ -50358,6 +51100,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
       ],
     },
     "put": {
+      "description": "댓글에 좋아요를 누릅니다. 이미 눌렀어도 성공하고 좋아요 수는 늘지 않습니다. 차단 관계인 사용자의 댓글에는 누를 수 없습니다. 사용자마다 분당 120회까지입니다.",
       "operationId": "likeTodoComment",
       "parameters": [
         {
@@ -50754,7 +51497,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
   "/v1/todos/{todoId}/conversation": {
     "get": {
       "deprecated": true,
-      "description": "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 \`GET /v2/todos/{todoId}/comments\`와 \`…/comments/{commentId}/replies\`를 씁니다. 댓글·답글 2단계 값만 내려갑니다.",
+      "description": "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 \`GET /v2/todos/{todoId}/comments\`와 \`…/comments/{commentId}/replies\`를 씁니다. 댓글·답글 2단계 값만 내려갑니다. 1.14.0 이하 앱 사용자가 사라지면 제거합니다.",
       "operationId": "getTodoConversation",
       "parameters": [
         {
@@ -50968,11 +51711,41 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0831": {
+                  "summary": "댓글을 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0831",
+                      "details": null,
+                      "message": "댓글을 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_0831",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -51010,7 +51783,9 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
               },
             },
           },
-          "description": "Todo를 찾을 수 없습니다.",
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
+
+TODO_0831: 댓글을 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -51036,6 +51811,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
   },
   "/v1/todos/{todoId}/details": {
     "get": {
+      "description": "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다.",
       "operationId": "getTodoDetails",
       "parameters": [
         {
@@ -51257,7 +52033,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
     "get": {
       "deprecated": true,
       "description": "
-> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다. 1.13.1 이하 앱 사용자가 사라지면 제거합니다.
 체감온도, 자외선지수, 일출/일몰, 미세먼지 등 부가 정보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -51417,7 +52193,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
     "get": {
       "deprecated": true,
       "description": "
-> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다. 1.13.1 이하 앱 사용자가 사라지면 제거합니다.
 기상청 단기예보 기반 날씨 예보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -51593,7 +52369,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
     "put": {
       "deprecated": true,
       "description": "
-> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다.
+> **Deprecated** · 1.13.1 이하 앱 전용입니다. 1.14.0부터는 \`/v2/weather\`를 사용합니다. 1.13.1 이하 앱 사용자가 사라지면 제거합니다.
 GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)로 자동 변환됩니다.
 날씨 예보, 부가 정보 조회, 오전/오후 날씨 알림의 기준 위치로 사용됩니다.
 
@@ -52231,6 +53007,53 @@ GET /weekly-achievements/2026/10
           },
           "description": "잘못된 파라미터입니다.",
         },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
         "403": {
           "content": {
             "application/json": {
@@ -52534,6 +53357,53 @@ GET /weekly-achievements/2026/10
             },
           },
           "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
         },
         "403": {
           "content": {
@@ -53276,7 +54146,18 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
 | WEATHER_1901 | 503 | 공급자 호출이 실패했고 6시간 안의 이전 데이터도 없을 때 | 오류 화면에 다시 시도를 제공합니다 |
 ",
       "operationId": "getWeatherReport",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "특보 제목 언어 ("ko" | "en"). 미전송 시 영어, 지원하지 않는 언어는 한국어로 받습니다.",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+      ],
       "responses": {
         "200": {
           "content": {

@@ -3,7 +3,7 @@ import {
   useAnalytics,
   useAuthService,
   useLogger,
-  useNotificationService,
+  usePushDeviceService,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { notifyError } from '@src/shared/utils/haptics';
@@ -15,7 +15,7 @@ export const useLogoutMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
-  const notificationService = useNotificationService();
+  const pushDeviceService = usePushDeviceService();
   const logger = useLogger();
 
   const { setStatus } = useAuth();
@@ -27,7 +27,7 @@ export const useLogoutMutationOptions = () => {
       logOutDevice({
         isOnline: onlineManager.isOnline(),
         authService,
-        notificationService,
+        pushDeviceService,
         logger,
       }),
     onError: () => {

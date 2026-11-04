@@ -26,6 +26,8 @@ import {
 } from "#api/modules/identity/application/use-cases/auth/queries.public";
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/v1/auth.mapper";
+import { parseRequestClient } from "#api/platform/http/request-client/index";
+import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 import { mockOf } from "#test/mocks/typed-mock";
 
 import type { DeleteAccountDto, UpdateProfileDto } from "../../../schemas/auth/v1/index.js";
@@ -54,6 +56,7 @@ describe("AccountController — 계정 컨트롤러", () => {
       "x-device-type": "mobile",
     },
   });
+  const mockClient = parseRequestClient(mockRequest.headers, TEST_REQUEST_ID);
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(AccountController).compile();
@@ -177,7 +180,12 @@ describe("AccountController — 계정 컨트롤러", () => {
       unlinkOAuthAccountUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - unlinkAccount를 호출하면
-      const result = await controller.unlinkAccount(mockUser, { provider }, mockRequest);
+      const result = await controller.unlinkAccount(
+        mockUser,
+        { provider },
+        mockRequest,
+        mockClient,
+      );
 
       // Then - 서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
       expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith({
@@ -206,7 +214,7 @@ describe("AccountController — 계정 컨트롤러", () => {
       deleteAccountUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - deleteAccount를 호출하면
-      const result = await controller.deleteAccount(mockUser, dto, mockRequest);
+      const result = await controller.deleteAccount(mockUser, dto, mockRequest, mockClient);
 
       // Then - 서비스에 사용자 ID와 탈퇴 입력·요청 정보를 전달하고 결과를 반환해야 한다
       expect(deleteAccountUseCase.execute).toHaveBeenCalledWith({

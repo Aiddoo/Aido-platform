@@ -1,3 +1,4 @@
+export type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 
 /** delivery 작업 하나가 묶는 최대 dispatch 수. queue payload 검증도 같은 값을 쓴다. */
@@ -7,17 +8,6 @@ export interface PushDeliveryPublication {
   readonly dispatchId: number;
   readonly publishAttempt: number;
 }
-
-export type PushDispatchSkipReason =
-  | "PUSH_SETTINGS_MISSING"
-  | "PUSH_DISABLED"
-  | "MARKETING_CONSENT_REQUIRED"
-  | "MARKETING_QUIET_HOURS"
-  | "NIGHT_PUSH_DISABLED"
-  | "RATE_LIMITED"
-  | "ENGAGEMENT_RATE_LIMITED"
-  | "NO_ACTIVE_TOKEN"
-  | "UNSUPPORTED_APP_CAPABILITY";
 
 export interface PushDeliveryItem {
   readonly data: CreateNotificationData;

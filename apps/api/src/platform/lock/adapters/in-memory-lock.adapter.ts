@@ -1,5 +1,7 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 
+import { PlatformLogEvent } from "#api/platform/logging/platform-log.events";
+
 import type { ILockProvider } from "../interfaces/lock.interface.js";
 
 interface LockEntry {
@@ -27,10 +29,7 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
   }
 
   onModuleInit(): void {
-    this.#logger.warn(
-      "Using in-memory lock provider — SINGLE INSTANCE ONLY. " +
-        "Set LOCK_PROVIDER=redis for multi-instance deployments.",
-    );
+    this.#logger.warn({ event: PlatformLogEvent.LOCK_SINGLE_INSTANCE, provider: "memory" });
   }
 
   onModuleDestroy(): void {
@@ -41,16 +40,14 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
     const now = Date.now();
     const existing = this.#locks.get(resource);
 
-    // 이미 잠겨있고 아직 만료되지 않은 경우
     if (existing && now < existing.expiresAt) {
-      this.#logger.debug(`LOCK_BUSY ${resource}`);
+      this.#logger.debug({ event: PlatformLogEvent.LOCK_BUSY, resource });
       return null;
     }
 
-    // 잠금 획득
     const entry: LockEntry = { expiresAt: now + ttlMs };
     this.#locks.set(resource, entry);
-    this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
+    this.#logger.debug({ event: PlatformLogEvent.LOCK_ACQUIRED, resource, ttlMs });
 
     // TTL 만료 뒤 다른 소유자가 재획득한 잠금은 지우지 않는다 (Redis 어댑터의 compare-and-delete와 동일)
     const release = async (): Promise<void> => {
@@ -58,7 +55,7 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
         return;
       }
       this.#locks.delete(resource);
-      this.#logger.debug(`LOCK_RELEASED ${resource}`);
+      this.#logger.debug({ event: PlatformLogEvent.LOCK_RELEASED, resource });
     };
 
     return release;
@@ -71,7 +68,6 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
       return false;
     }
 
-    // 만료 체크
     if (Date.now() >= entry.expiresAt) {
       this.#locks.delete(resource);
       return false;
@@ -79,8 +75,6 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
 
     return true;
   }
-
-  // === Private 헬퍼 ===
 
   #cleanup(): void {
     const now = Date.now();
@@ -94,7 +88,7 @@ export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnMo
     }
 
     if (cleaned > 0) {
-      this.#logger.debug(`LOCK_CLEANUP ${cleaned} expired entries`);
+      this.#logger.debug({ event: PlatformLogEvent.LOCK_EXPIRED_CLEANED, count: cleaned });
     }
   }
 }

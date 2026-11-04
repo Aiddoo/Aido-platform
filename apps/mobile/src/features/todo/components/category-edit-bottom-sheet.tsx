@@ -25,9 +25,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 
 import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
 import { findSheetCategory } from '../utils/view-models/todo-sheet-target.view-model';
@@ -118,7 +116,7 @@ function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
     defaultValues: { name: category.name, color: category.color },
   });
   const { control, handleSubmit } = formMethods;
-  const { isSubmitting } = useFormState({ control: control });
+  const { isSubmitting } = useFormState({ control });
 
   const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
     try {

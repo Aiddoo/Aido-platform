@@ -33,7 +33,7 @@ import { router, useNavigation } from 'expo-router';
 import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useFormState, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
 
 interface InviteCodeForm {
@@ -49,11 +49,13 @@ function InviteCodeEntryScreen() {
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
-  const { control, handleSubmit, setValue, setError, clearErrors, formState } =
-    useForm<InviteCodeForm>({ defaultValues: { inviteCode: '' } });
+  const { control, handleSubmit, setValue, setError, clearErrors } = useForm<InviteCodeForm>({
+    defaultValues: { inviteCode: '' },
+  });
+  const { errors, submitCount, isSubmitting } = useFormState({ control });
   const inviteCodeInputRef = useRef<InputOTPRef>(null);
   const draft = useWatch({ control, name: 'inviteCode' });
-  const errorMessage = formState.errors.inviteCode?.message;
+  const errorMessage = errors.inviteCode?.message;
   // 오류는 값을 바꾸면 지워지므로, 오류가 있는 동안의 틀린 칸은 지금 값에서 다시 구해도 같다
   const invalidIndexes =
     errorMessage == null
@@ -151,7 +153,7 @@ function InviteCodeEntryScreen() {
                   // 틀린 글자가 있으면 그 칸만, 없는 코드처럼 전체가 틀렸으면 모든 칸을 빨갛게 그린다
                   isInvalid={errorMessage != null && invalidIndexes.length === 0}
                   invalidIndexes={invalidIndexes}
-                  submitCount={formState.submitCount}
+                  submitCount={submitCount}
                   textInputProps={{
                     autoFocus: true,
                     returnKeyType: 'done',
@@ -201,7 +203,7 @@ function InviteCodeEntryScreen() {
         testID="invite-code-submit"
         onPress={() => submitInviteCode()}
         isDisabled={!InviteCodePolicy.isFilled(draft)}
-        isLoading={formState.isSubmitting}
+        isLoading={isSubmitting}
       >
         {errorMessage == null ? t('codeEntry.submit') : t('codeEntry.retry')}
       </KeyboardAdaptiveButton>

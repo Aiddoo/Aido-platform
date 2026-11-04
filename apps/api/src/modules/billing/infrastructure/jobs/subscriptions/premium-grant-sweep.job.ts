@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
+import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { BillingLogEvent } from "../../../application/observability/subscriptions/billing-log.events.js";

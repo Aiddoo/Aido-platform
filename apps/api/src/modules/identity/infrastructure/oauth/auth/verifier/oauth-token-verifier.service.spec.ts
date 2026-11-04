@@ -172,9 +172,12 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
         errorCode: ErrorCode.SOCIAL_0203,
         details: { provider: "GOOGLE" },
       });
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        "Google token verification failed (expired): Error",
-      );
+      expect(loggerErrorSpy).toHaveBeenCalledWith({
+        event: "identity.oauth.token-verify.failed",
+        provider: "GOOGLE",
+        reason: "expired",
+        errorType: "Error",
+      });
       expect(JSON.stringify(loggerErrorSpy.mock.calls)).not.toContain(sensitiveSubject);
     });
 
@@ -288,6 +291,34 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
       // When & Then
       await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(ApplicationException);
+    });
+
+    it("검증 성공·실패 로그에 공급자 사용자 ID와 오류 원문을 남기지 않는다", async () => {
+      // Given
+      const logged = [
+        vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined),
+        vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined),
+      ];
+      asMock(global.fetch)
+        .mockResolvedValueOnce(
+          await responseFromFixture({ ok: true, json: () => Promise.resolve(mockKakaoResponse) }),
+        )
+        .mockResolvedValueOnce(await responseFromFixture({ ok: false, status: 401 }));
+
+      // When
+      await service.verifyKakaoToken("valid-kakao-token");
+      await service.verifyKakaoToken("expired-token").catch(() => undefined);
+
+      // Then
+      expect(logged[1]).toHaveBeenCalledWith({
+        event: "identity.oauth.token-verify.failed",
+        provider: "KAKAO",
+        errorType: "ApplicationException",
+        errorCode: ErrorCode.SOCIAL_0203,
+      });
+      const calls = JSON.stringify(logged.map((spy) => spy.mock.calls));
+      expect(calls).not.toContain(String(mockKakaoResponse.id));
+      expect(calls).not.toContain("test@kakao.com");
     });
 
     it("기타 에러 응답은 socialTokenInvalid 에러를 발생시킨다", async () => {

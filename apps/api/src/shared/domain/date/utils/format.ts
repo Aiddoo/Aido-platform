@@ -39,7 +39,7 @@ export function toDateStringOrNull(date: Date | null): string | null {
 /**
  * ISO 주번호 식별자 (예: "2026-W10")
  *
- * BullMQ jobId 중복 방지용으로 사용합니다.
+ * 작업 idempotency key 중복 방지용으로 사용합니다.
  * tz를 전달하면 해당 타임존 기준으로 주차를 계산합니다.
  *
  * @example toIsoWeekId(new Date("2026-03-04"))                    // "2026-W10" (UTC)
@@ -53,7 +53,7 @@ export function toIsoWeekId(date: Date = new Date(), tz?: string): string {
 /**
  * ISO 월 식별자 (예: "2026-M03")
  *
- * 월간 리포트 BullMQ jobId 중복 방지용으로 사용합니다.
+ * 월간 리포트 작업 idempotency key 중복 방지용으로 사용합니다.
  * tz를 전달하면 해당 타임존 기준으로 월을 계산합니다.
  *
  * @example toIsoMonthId(new Date("2026-03-08"))                    // "2026-M03" (UTC)

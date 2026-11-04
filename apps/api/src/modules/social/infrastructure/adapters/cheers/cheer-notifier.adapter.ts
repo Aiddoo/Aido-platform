@@ -8,7 +8,7 @@ import type {
 } from "../../../application/ports/cheers/cheer-notifier.port.js";
 
 /**
- * CheerNotifierPort의 어댑터 — 레거시 NotificationQueueService(BullMQ)에 위임한다.
+ * CheerNotifierPort의 어댑터 — NotificationQueueService에 위임한다.
  */
 @Injectable()
 export class CheerNotifierAdapter implements CheerNotifierPort {

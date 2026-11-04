@@ -1,20 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
-import {
-  Controller,
-  Get,
-  Header,
-  Headers,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Query,
-} from "@nestjs/common";
+import { Controller, Get, Header, HttpCode, HttpStatus, Patch, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { AppVersion } from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiSuccessResponse,
@@ -56,7 +48,7 @@ export class NotificationInboxController {
   async getInbox(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNotificationsQueryDto }) query: GetNotificationsQueryDto,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<NotificationInboxResponseDto> {
     const [page, unreadCount] = await Promise.all([
       this.getNotificationsUseCase.execute({
@@ -84,7 +76,7 @@ export class NotificationInboxController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getUnreadCount(
     @CurrentUser() user: CurrentUserPayload,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<UnreadCountResponseDto> {
     return { unreadCount: await this.getUnreadCountUseCase.execute(user.userId, appVersion) };
   }
@@ -96,7 +88,7 @@ export class NotificationInboxController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async markAllAsRead(
     @CurrentUser() user: CurrentUserPayload,
-    @Headers("x-app-version") appVersion?: string,
+    @AppVersion() appVersion?: string,
   ): Promise<MarkReadResponseDto> {
     const result = await this.markAllAsReadUseCase.execute(user.userId, appVersion);
     return { message: "모든 알림을 읽음 처리했습니다.", readCount: result.count };

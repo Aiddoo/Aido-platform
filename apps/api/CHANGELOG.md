@@ -1,5 +1,19 @@
 # @aido/server
 
+## 1.14.2
+
+### Minor Changes
+
+- a5b4352: 푸시 기기와 토큰을 보고한 로그인 세션에 묶는다. 로그아웃·전체 로그아웃·비밀번호 변경·재설정·원격 세션 종료·토큰 재사용 감지·탈퇴로 세션을 폐기하면 그 세션의 기기와 토큰을 바로 지우고, 만료돼 정리되는 세션은 FK CASCADE로 함께 지운다. 앱이 해제 요청을 보내지 못한 오프라인 로그아웃·세션 만료 뒤에도 로그아웃한 기기로 알림이 가지 않는다. 세션이 없는 구 등록(1.14.1 이하)은 그대로 둔다.
+- b020d1f: 푸시를 보내지 않은 이유를 기기 권한으로 나눈다. 활성 토큰이 없을 때 최근 90일 안에 보고한 기기가 거절이면 `PUSH_PERMISSION_DENIED`, 아직 묻지 않았으면 `PUSH_PERMISSION_NOT_REQUESTED`, 그 밖에는 `NO_ACTIVE_TOKEN`으로 기록한다. v2 관리자 캠페인 조회의 `dispatches`에 사유별 수 `skippedByReason`을 더한다(추가 필드).
+
+### Patch Changes
+
+- 22db28c: 1.14.1 전환용으로 남겨 둔 레거시를 지운다. migration `drop_legacy_comment_path_and_retention_outbox`가 `TodoComment.path`·`depth`·`rootId` 열과 `RetentionPushOutbox` 테이블·`RetentionOutboxStatus` enum을 지운다. Redis/BullMQ 작업 runtime, `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED` 설정, `.v1` 없는 이전 이름 queue worker, deprecated `jobKey`, 만료된 이전 캐시 키 삭제도 지운다. REST 계약은 그대로라 배포된 앱에는 영향이 없다. 1.14.1 이하 API 이미지는 지운 열에 쓰므로 이 migration 뒤 이미지만 롤백하면 댓글 작성이 실패한다.
+- 518a14e: 앱 요청 헤더를 요청마다 한 번 `RequestClient`로 정규화해 컨트롤러·guard·interceptor가 같은 값을 읽는다. 시간대 해석 규칙(UTC 폴백·보낸 값만 사용)을 한 곳의 함수로 모았고 엔드포인트별 동작과 응답 형태는 그대로다. 요청마다 `X-Request-Id`(앱이 보낸 UUID 또는 새 UUID)를 정해 응답 헤더·로그 `reqId`·Sentry `request_id` 태그로 남기고, CORS에서 `X-Request-Id`를 받고 노출하며 쓰지 않던 `X-Requested-With`는 뺀다.
+- Updated dependencies [b020d1f]
+  - @aido/api@1.14.2
+
 ## 1.14.1
 
 ### Minor Changes

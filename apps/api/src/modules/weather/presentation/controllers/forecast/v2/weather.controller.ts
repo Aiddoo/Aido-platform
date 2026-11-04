@@ -1,7 +1,7 @@
 import { type WeatherLocationResponse, type WeatherReportResponse } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Put } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
@@ -19,7 +19,7 @@ import {
   ApiTooManyRequestsError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
-import { ThrottleByUser } from "#api/platform/throttle/index";
+import { THROTTLED_DESCRIPTION, ThrottleByUser } from "#api/platform/throttle/index";
 import { now } from "#api/shared/domain/date/utils/core";
 
 import { resolveWeatherReportLanguage } from "../../../../application/models/forecast/weather-report-language.js";
@@ -40,8 +40,6 @@ export const WEATHER_V2_THROTTLE = {
   UPDATE_LOCATION: { default: { ttl: 60_000, limit: 10 } },
   GET_REPORT: { default: { ttl: 60_000, limit: 60 } },
 } as const;
-
-const THROTTLED_DESCRIPTION = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V2)
 @ApiBearerAuth()
@@ -99,6 +97,13 @@ export class WeatherV2Controller {
   @Get()
   @ThrottleByUser()
   @Throttle(WEATHER_V2_THROTTLE.GET_REPORT)
+  @ApiHeader({
+    name: "Accept-Language",
+    required: false,
+    description:
+      '특보 제목 언어 ("ko" | "en"). 미전송 시 영어, 지원하지 않는 언어는 한국어로 받습니다.',
+    example: "ko",
+  })
   @ApiDoc({
     summary: "날씨 리포트 조회",
     operationId: "getWeatherReport",

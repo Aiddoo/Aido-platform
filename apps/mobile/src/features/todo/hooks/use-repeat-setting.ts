@@ -1,9 +1,8 @@
-import type { DayOfWeek } from '@aido/api';
+import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api';
 import { without } from 'es-toolkit';
 import { useReducer } from 'react';
 import { match } from 'ts-pattern';
 
-import { ALL_DAYS_OF_WEEK } from '../constants/day-of-week';
 import { getDayOfWeekFromDate } from '../utils/day-of-week';
 
 const WEEKDAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
@@ -58,7 +57,7 @@ export const repeatSettingReducer = (
     }))
     .with({ type: 'toggleAllDays' }, () => ({
       ...state,
-      selectedDays: state.selectedDays.length === 7 ? [] : [...ALL_DAYS_OF_WEEK],
+      selectedDays: state.selectedDays.length === 7 ? [] : [...DAYS_OF_WEEK],
     }))
     .with({ type: 'toggleWeekdays' }, () => ({
       ...state,

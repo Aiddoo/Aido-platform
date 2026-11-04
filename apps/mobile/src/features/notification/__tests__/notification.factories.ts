@@ -1,10 +1,16 @@
 import type {
   MarkReadResponse,
   NotificationListResponse,
-  RegisterTokenResponse,
+  PushDeviceResponse,
   UnreadCountResponse,
 } from '@aido/api';
+import type {
+  PushNotificationGateway,
+  PushPermissionResponse,
+} from '@src/core/ports/push-notification-gateway';
 import { ApiError } from '@src/shared/errors/api-error';
+
+import type { PushPermission } from '../domains/push-permission.model';
 
 const generateNotificationListResponseDto = (): NotificationListResponse => ({
   notifications: [
@@ -45,15 +51,47 @@ export const createNotificationListResponseDto = (
   ...overrides,
 });
 
-const generateRegisterTokenResponseDto = (): RegisterTokenResponse => ({
-  message: '푸시 토큰이 등록되었습니다.',
-  registered: true,
+export const createPushPermission = (overrides?: Partial<PushPermission>): PushPermission => ({
+  status: 'GRANTED',
+  canAskAgain: false,
+  ...overrides,
 });
 
-export const createRegisterTokenResponseDto = (
-  overrides?: Partial<RegisterTokenResponse>,
-): RegisterTokenResponse => ({
-  ...generateRegisterTokenResponseDto(),
+export const createPushPermissionResponse = (
+  overrides?: Partial<PushPermissionResponse>,
+): PushPermissionResponse => ({
+  status: 'granted',
+  canAskAgain: false,
+  iosStatus: null,
+  ...overrides,
+});
+
+const generatePushDeviceResponseDto = (): PushDeviceResponse => ({
+  deviceId: 'ios_device-123',
+  platform: 'IOS',
+  permission: { status: 'GRANTED', canAskAgain: false },
+  hasActiveToken: true,
+  reportedAt: '2026-11-04T03:41:40.598Z',
+});
+
+export const createPushDeviceResponseDto = (
+  overrides?: Partial<PushDeviceResponse>,
+): PushDeviceResponse => ({
+  ...generatePushDeviceResponseDto(),
+  ...overrides,
+});
+
+/** 알림을 허용했고 토큰도 받는 기기가 기본값이다. 테스트마다 다른 부분만 덮어쓴다 */
+export const createPushNotificationGatewayStub = (
+  overrides?: Partial<jest.Mocked<PushNotificationGateway>>,
+): jest.Mocked<PushNotificationGateway> => ({
+  getPermission: jest.fn(async () => createPushPermissionResponse()),
+  requestPermission: jest.fn(async () => createPushPermissionResponse()),
+  ensureChannel: jest.fn(async () => {}),
+  getToken: jest.fn(async () => 'ExponentPushToken[device-123]'),
+  addTokenListener: jest.fn((_listener: () => void) => () => {}),
+  setBadgeCount: jest.fn(async (_count: number) => {}),
+  openSettings: jest.fn(async () => {}),
   ...overrides,
 });
 

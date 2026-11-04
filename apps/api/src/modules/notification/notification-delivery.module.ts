@@ -24,6 +24,7 @@ import { PUSH_CAMPAIGN_OUTCOME_READER } from "./application/ports/delivery/push-
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/delivery/push-delivery-outbox.repository.port.js";
+import { PUSH_DEVICE_REPOSITORY } from "./application/ports/delivery/push-device.repository.port.js";
 import { PUSH_DISPATCH_STAGING } from "./application/ports/delivery/push-dispatch-staging.repository.port.js";
 import { PUSH_PROVIDER } from "./application/ports/delivery/push-provider.port.js";
 import { PUSH_QUIET_HOURS_READER } from "./application/ports/delivery/push-quiet-hours.reader.port.js";
@@ -33,11 +34,13 @@ import {
 } from "./application/ports/delivery/push-rate-limiter.port.js";
 import { PUSH_RECEIPT_REPOSITORY } from "./application/ports/delivery/push-receipt.repository.port.js";
 import { PUSH_TOKEN_REPOSITORY } from "./application/ports/delivery/push-token.repository.port.js";
+import { SESSION_PUSH_DEVICE_RELEASE } from "./application/ports/delivery/session-push-device-release.port.js";
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/delivery/user-notification-settings.port.js";
 import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
 import { NotificationAccountCleanup } from "./application/services/delivery/notification-account-cleanup.js";
 import { PushQuietHoursReader } from "./application/services/delivery/push-quiet-hours.reader.js";
+import { ReleaseSessionPushDevices } from "./application/use-cases/delivery/release-session-push-devices.use-case.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/delivery/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/delivery/notification-cache.adapter.js";
@@ -55,6 +58,7 @@ import { DrizzleNotificationRepository } from "./infrastructure/persistence/deli
 import { DrizzlePushCampaignOutcomeReader } from "./infrastructure/persistence/delivery/drizzle-push-campaign-outcome.reader.js";
 import { DrizzlePushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-lifecycle.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/delivery/drizzle-push-delivery-outbox.repository.js";
+import { DrizzlePushDeviceRepository } from "./infrastructure/persistence/delivery/drizzle-push-device.repository.js";
 import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/delivery/drizzle-push-dispatch-staging.repository.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/delivery/drizzle-push-receipt.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/delivery/drizzle-push-token.repository.js";
@@ -82,7 +86,8 @@ import {
   pushNotificationPayloadFactoryProvider,
   reconcilePushReceiptsProvider,
   recoverFailedPushDeliveriesProvider,
-  registerPushTokenProvider,
+  releaseSessionPushDevicesProvider,
+  reportPushDeviceProvider,
   relayPushDeliveryOutboxProvider,
   sendBatchNotificationProvider,
   sendBillingIssueNotificationProvider,
@@ -94,7 +99,7 @@ import {
   sendNotificationProvider,
   sendNotificationWithDedupProvider,
   sendNudgeNotificationProvider,
-  unregisterPushTokenProvider,
+  unregisterPushDeviceProvider,
 } from "./notification-delivery-application.providers.js";
 import { NotificationInboxController } from "./presentation/controllers/delivery/v1/notification-inbox.controller.js";
 import { NotificationController } from "./presentation/controllers/delivery/v1/notification.controller.js";
@@ -111,10 +116,11 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     markAsReadProvider,
     markNotificationOpenedProvider,
     markAllAsReadProvider,
-    registerPushTokenProvider,
-    unregisterPushTokenProvider,
+    releaseSessionPushDevicesProvider,
+    { provide: SESSION_PUSH_DEVICE_RELEASE, useExisting: ReleaseSessionPushDevices },
+    reportPushDeviceProvider,
+    unregisterPushDeviceProvider,
     optOutMarketingPushProvider,
-    // 크로스모듈 발송/디스패치 use-cases
     sendNotificationProvider,
     sendNotificationWithDedupProvider,
     persistBatchNotificationProvider,
@@ -129,7 +135,6 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     sendFriendCompletionNotificationsProvider,
     sendMilestoneNotificationProvider,
     reconcilePushReceiptsProvider,
-    // 책임별 persistence 포트 바인딩
     DrizzleNotificationRepository,
     { provide: NOTIFICATION_REPOSITORY, useExisting: DrizzleNotificationRepository },
     DrizzleNotificationReader,
@@ -137,6 +142,8 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     { provide: NOTIFICATION_HISTORY_READER, useExisting: DrizzleNotificationReader },
     DrizzleNotificationTodoTargetReader,
     { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: DrizzleNotificationTodoTargetReader },
+    DrizzlePushDeviceRepository,
+    { provide: PUSH_DEVICE_REPOSITORY, useExisting: DrizzlePushDeviceRepository },
     DrizzlePushTokenRepository,
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: DrizzlePushTokenRepository },
     DrizzlePushReceiptRepository,
@@ -227,7 +234,6 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
       },
       inject: [TypedConfigService, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
     },
-    // 알림 큐 프로세서
     NotificationQueueProcessor,
   ],
   exports: [
@@ -240,6 +246,7 @@ import { NotificationController } from "./presentation/controllers/delivery/v1/n
     NotificationAccountCleanup,
     NotificationQueueModule,
     PUSH_CAMPAIGN_OUTCOME_READER,
+    SESSION_PUSH_DEVICE_RELEASE,
   ],
 })
 export class NotificationDeliveryModule {}

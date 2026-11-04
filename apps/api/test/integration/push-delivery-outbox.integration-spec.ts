@@ -924,8 +924,5 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const outboxIndexes = await indexNames("PushDispatchOutbox");
     expect(outboxIndexes).toContain("PushDispatchOutbox_status_availableAt_dispatchId_idx");
     expect(outboxIndexes).not.toContain("PushDispatchOutbox_status_publishedAt_idx");
-    const retentionIndexes = await indexNames("RetentionPushOutbox");
-    expect(retentionIndexes).toContain("RetentionPushOutbox_status_availableAt_id_idx");
-    expect(retentionIndexes).not.toContain("RetentionPushOutbox_status_availableAt_idx");
   });
 });

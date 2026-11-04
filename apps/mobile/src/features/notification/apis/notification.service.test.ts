@@ -1,138 +1,22 @@
-import type { Logger } from '@src/core/ports/logger';
 import { createMockHttpClient } from '@src/shared/__tests__';
 
 import {
   createMarkReadResponseDto,
   createNotificationApiError,
   createNotificationListResponseDto,
-  createRegisterTokenResponseDto,
+  createPushNotificationGatewayStub,
   createUnreadCountResponseDto,
   INVALID_DTO,
 } from '../__tests__/notification.factories';
-import { NotificationErrors } from '../domains/notification.error';
-import { DeviceIdRepository } from './device-id.repository';
-import { DeviceIdService } from './device-id.service';
 import { NotificationService } from './notification.service';
-import { PushTokenService } from './push-token.service';
-
-// expo-notifications mock
-jest.mock('expo-notifications', () => ({
-  setBadgeCountAsync: jest.fn(),
-}));
 
 describe('NotificationService', () => {
   let httpClient: ReturnType<typeof createMockHttpClient>;
-  let getExpoPushToken: jest.SpiedFunction<PushTokenService['getExpoPushToken']>;
-  let logger: jest.Mocked<Logger>;
   let service: NotificationService;
 
   beforeEach(() => {
     httpClient = createMockHttpClient();
-    const deviceIdService = new DeviceIdService(new DeviceIdRepository());
-    jest.spyOn(deviceIdService, 'get').mockResolvedValue('device-123');
-    jest.spyOn(deviceIdService, 'clear').mockResolvedValue();
-    const pushTokenService = new PushTokenService();
-    getExpoPushToken = jest
-      .spyOn(pushTokenService, 'getExpoPushToken')
-      .mockResolvedValue({ ok: true, value: 'ExponentPushToken[xxx]' });
-    jest.spyOn(pushTokenService, 'isPhysicalDevice').mockReturnValue(true);
-    jest.spyOn(pushTokenService, 'requestPermission').mockResolvedValue(false);
-    logger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-    };
-    service = new NotificationService(httpClient, deviceIdService, pushTokenService, logger);
-  });
-
-  // ── setupPushNotifications ───────────────────
-
-  describe('setupPushNotifications', () => {
-    test('정상 -> registerToken 호출 + 결과 반환', async () => {
-      // Given
-      const dto = createRegisterTokenResponseDto();
-      httpClient.post.mockResolvedValue({ ok: true, value: dto });
-
-      // When
-      const result = await service.setupPushNotifications();
-
-      // Then
-      expect(httpClient.post).toHaveBeenCalledWith('v1/notifications/token', {
-        token: 'ExponentPushToken[xxx]',
-        deviceId: 'device-123',
-        payloadVersion: 2,
-        appVersion: 'mock',
-      });
-      expect(result).toEqual({ ok: true, value: dto });
-    });
-
-    test('PushTokenService 실패 -> 에러 전파', async () => {
-      // Given
-      const error = NotificationErrors.permissionDenied();
-      getExpoPushToken.mockResolvedValue({ ok: false, error });
-
-      // When
-      const result = await service.setupPushNotifications();
-
-      // Then
-      expect(result).toEqual({ ok: false, error });
-      expect(httpClient.post).not.toHaveBeenCalled();
-    });
-
-    test('호환성 사전 등록에서는 OS 권한 요청을 허용하지 않는다', async () => {
-      // Given
-      const error = NotificationErrors.permissionDenied();
-      getExpoPushToken.mockResolvedValue({ ok: false, error });
-
-      // When
-      await service.setupPushNotifications({ requestPermission: false });
-
-      // Then
-      expect(getExpoPushToken).toHaveBeenCalledWith({
-        requestPermission: false,
-      });
-    });
-
-    test('Zod 검증 실패 -> ParseError throw', async () => {
-      // Given
-      httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When & Then
-      await expect(service.setupPushNotifications()).rejects.toThrow(
-        'Invalid registerToken response',
-      );
-    });
-  });
-
-  // ── unregisterPushToken ──────────────────────
-
-  describe('unregisterPushToken', () => {
-    test('deviceId와 함께 호출', async () => {
-      // Given
-      httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
-
-      // When
-      const result = await service.unregisterPushToken();
-
-      // Then
-      expect(httpClient.delete).toHaveBeenCalledWith('v1/notifications/token', {
-        params: { deviceId: 'device-123' },
-      });
-      expect(result).toEqual({ ok: true, value: undefined });
-    });
-
-    test('HTTP 에러 -> Result.err 반환', async () => {
-      // Given
-      const apiError = createNotificationApiError();
-      httpClient.delete.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.unregisterPushToken();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
+    service = new NotificationService(httpClient, createPushNotificationGatewayStub());
   });
 
   // ── getNotifications ─────────────────────────

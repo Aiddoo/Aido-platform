@@ -1,8 +1,9 @@
-import { toError } from '@src/shared/errors';
+import { errorMessageOf } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
+import { ACCESSIBILITY_LOG_EVENT } from './accessibility-log-events';
 import { createAccessibilitySettingStore } from './accessibility-setting-store';
 
 const reduceTransparency = createAccessibilitySettingStore({
@@ -12,8 +13,8 @@ const reduceTransparency = createAccessibilitySettingStore({
     return () => subscription.remove();
   },
   onReadError: (error) => {
-    logger.warn('accessibility.reduce-transparency-read.failed', {
-      error: toError(error).message,
+    logger.warn(ACCESSIBILITY_LOG_EVENT.REDUCE_TRANSPARENCY_READ_FAILED, {
+      error: errorMessageOf(error),
     });
   },
 });

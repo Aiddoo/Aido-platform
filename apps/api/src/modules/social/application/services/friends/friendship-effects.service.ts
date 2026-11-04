@@ -41,7 +41,7 @@ export class FriendshipEffects {
       this.#dependencies.logger.error({
         event: SocialFriendLogEvent.MILESTONE_CHECK_FAILED,
         userId,
-        errorName: toErrorType(error),
+        errorType: toErrorType(error),
       });
     }
   }
