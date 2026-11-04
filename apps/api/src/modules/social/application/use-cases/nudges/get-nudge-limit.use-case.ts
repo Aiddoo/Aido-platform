@@ -22,15 +22,14 @@ export class GetNudgeLimit {
     readonly timezone: string;
   }): Promise<NudgeLimitSnapshot> {
     const window = dayWindowInTimezone(now(), input.timezone);
-    const { dailyLimit } = await this.#dependencies.entitlementReader.getFeatureLimit(
-      input.userId,
-      Feature.NUDGE,
-    );
-    const used = await this.#dependencies.nudgeRepository.countSentSince(
-      input.userId,
-      window.startsAt,
-      window.endsAt,
-    );
+    const [{ dailyLimit }, used] = await Promise.all([
+      this.#dependencies.entitlementReader.getFeatureLimit(input.userId, Feature.NUDGE),
+      this.#dependencies.nudgeRepository.countSentSince(
+        input.userId,
+        window.startsAt,
+        window.endsAt,
+      ),
+    ]);
     return {
       dailyLimit,
       used,
