@@ -41,6 +41,8 @@ import { TransactionalEmailSender } from "#api/modules/notification/notification
 import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
+import { TodoSeriesMaterializationJob } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.job";
+import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.processor";
 import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
@@ -76,6 +78,7 @@ import { TrackingDomainEventPublisher } from "./tracking-domain-event-publisher.
 /* ── 백그라운드 작업 격리 대상 ────────────────────────── */
 
 const BACKGROUND_PROCESSORS = [
+  TodoSeriesMaterializationProcessor,
   AdminNotificationProcessor,
   EmailDeliveryQueueProcessor,
   TimezoneReminderProcessor,
@@ -93,6 +96,7 @@ const BACKGROUND_JOBS = [
   SuggestionAnalysisJob,
   ReportGenerationJob,
   AccountPurgeJob,
+  TodoSeriesMaterializationJob,
   RetentionQueueService,
 ];
 

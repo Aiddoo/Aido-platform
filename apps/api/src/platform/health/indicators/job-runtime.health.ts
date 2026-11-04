@@ -18,6 +18,7 @@ import {
   BROADCAST_FAN_OUT_QUEUE,
 } from "#api/modules/operations/operations-admin-jobs.public";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/operations-notifications-jobs.public";
+import { TODO_SERIES_MATERIALIZATION_QUEUE } from "#api/modules/planning/planning-todo-series-jobs.public";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
@@ -34,6 +35,7 @@ const MONITORED_QUEUES = [
   RETENTION_QUEUE,
   BROADCAST_FAN_OUT_QUEUE,
   BROADCAST_FAN_OUT_DEAD_LETTER_QUEUE,
+  TODO_SERIES_MATERIALIZATION_QUEUE,
 ] as const;
 
 /**

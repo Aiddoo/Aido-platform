@@ -1,12 +1,12 @@
 import { DAYS_OF_WEEK, type DayOfWeek, type TodoRepeatInterval } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, isNotNull, lte } from "drizzle-orm";
+import { and, asc, eq, gt, isNotNull, isNull, lte, ne } from "drizzle-orm";
 import { match } from "ts-pattern";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todoSeries } from "#api/platform/database/schema/index";
+import { todoSeries, user } from "#api/platform/database/schema/index";
 import { toDateString, toDateStringOrNull } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
@@ -144,12 +144,16 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
   }
 
   async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly string[]> {
+    // 정지·탈퇴 대기 계정은 건너뛴다. 커서가 그대로라 복구되면 빠진 회차를 이어서 만든다.
     const rows = await this.db
       .select({ id: todoSeries.id })
       .from(todoSeries)
+      .innerJoin(user, eq(user.id, todoSeries.userId))
       .where(
         and(
           isNotNull(todoSeries.nextOccurrenceDate),
+          isNull(user.deletedAt),
+          ne(user.status, "SUSPENDED"),
           lte(todoSeries.nextOccurrenceDate, parseDateOnly(query.through)),
           query.afterId == null ? undefined : gt(todoSeries.id, query.afterId),
         ),

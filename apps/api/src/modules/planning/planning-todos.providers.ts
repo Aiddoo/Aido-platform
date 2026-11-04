@@ -1,3 +1,5 @@
+import { TodoSeriesMaterializationJob } from "./infrastructure/jobs/series/todo-series-materialization.job.js";
+import { TodoSeriesMaterializationProcessor } from "./infrastructure/jobs/series/todo-series-materialization.processor.js";
 import { TodoCreatedHandler } from "./infrastructure/subscribers/todos/todo-created.handler.js";
 import { TodoDeletedHandler } from "./infrastructure/subscribers/todos/todo-deleted.handler.js";
 import { TodoRescheduledHandler } from "./infrastructure/subscribers/todos/todo-rescheduled.handler.js";
@@ -8,6 +10,7 @@ import {
   changeTodoCategoryProvider,
   createTodoProvider,
   todoOccurrenceMaterializerProvider,
+  materializeDueTodoSeriesProvider,
   todoCreationWriterProvider,
   todoCreationEffectsProvider,
   stagedTodoCreatorProvider,
@@ -33,6 +36,7 @@ export const TODO_PROVIDERS = [
   changeTodoCategoryProvider,
   createTodoProvider,
   todoOccurrenceMaterializerProvider,
+  materializeDueTodoSeriesProvider,
   todoCreationWriterProvider,
   todoCreationEffectsProvider,
   stagedTodoCreatorProvider,
@@ -51,6 +55,8 @@ export const TODO_PROVIDERS = [
   getFriendTodosProvider,
   getTodoResourceLimitProvider,
   getTodoSummaryProvider,
+  TodoSeriesMaterializationJob,
+  TodoSeriesMaterializationProcessor,
   TodoCreatedHandler,
   TodoDeletedHandler,
   TodoRescheduledHandler,

@@ -6,6 +6,7 @@ import {
   DOMAIN_EVENT_PUBLISHER,
   MUTATION_LOCK,
 } from "#api/shared/application/ports/index";
+import { OPERATIONAL_ALERT } from "#api/shared/application/ports/operational-alert.port";
 
 import { TODO_SERIES_REPOSITORY } from "./application/ports/series/todo-series.repository.port.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
@@ -19,6 +20,7 @@ import { TodoOccurrenceMaterializer } from "./application/services/series/todo-o
 import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
 import { TodoCreationWriter } from "./application/services/todos/todo-creation-writer.service.js";
+import { MaterializeDueTodoSeries } from "./application/use-cases/series/materialize-due-todo-series.use-case.js";
 import { AddTodoItem } from "./application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "./application/use-cases/todos/change-todo-category.use-case.js";
 import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
@@ -37,6 +39,35 @@ import { UpdateTodoSchedule } from "./application/use-cases/todos/update-todo-sc
 import { UpdateTodoTitle } from "./application/use-cases/todos/update-todo-title.use-case.js";
 import { UpdateTodoVisibility } from "./application/use-cases/todos/update-todo-visibility.use-case.js";
 import { UpdateTodo } from "./application/use-cases/todos/update-todo.use-case.js";
+
+export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTodoSeries> = {
+  provide: MaterializeDueTodoSeries,
+  inject: [
+    TODO_SERIES_REPOSITORY,
+    TodoOccurrenceMaterializer,
+    TodoCreationEffects,
+    UNIT_OF_WORK,
+    MUTATION_LOCK,
+    OPERATIONAL_ALERT,
+  ],
+  useFactory: (
+    seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
+    materializer: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["materializer"],
+    effects: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["effects"],
+    unitOfWork: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["unitOfWork"],
+    mutationLock: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["mutationLock"],
+    alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
+  ) =>
+    new MaterializeDueTodoSeries({
+      seriesRepository,
+      materializer,
+      effects,
+      unitOfWork,
+      mutationLock,
+      alert,
+      logger: new Logger(MaterializeDueTodoSeries.name),
+    }),
+};
 
 export const getFriendTodosProvider: FactoryProvider<GetFriendTodos> = {
   provide: GetFriendTodos,
