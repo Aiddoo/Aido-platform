@@ -4,6 +4,7 @@ import type {
   EmailDelivery,
   EmailDeliveryQueuePort,
 } from "../../ports/email/email-delivery-queue.port.js";
+import type { EmailDeliveryOutcome, EmailQuotaScope } from "../../ports/email/email-sender.port.js";
 import { TransactionalEmailSender } from "./transactional-email.sender.js";
 
 class StubQueue implements EmailDeliveryQueuePort {
@@ -20,9 +21,24 @@ class StubQueue implements EmailDeliveryQueuePort {
   }
 }
 
+class StubSender {
+  readonly messages: EmailMessage[] = [];
+  outcome: EmailDeliveryOutcome = { status: "sent", providerMessageId: "id-1" };
+
+  async send(message: EmailMessage): Promise<EmailDeliveryOutcome> {
+    this.messages.push(message);
+    return this.outcome;
+  }
+}
+
 class StubBudget {
   readonly reserved: string[] = [];
+  readonly settled: EmailQuotaScope[] = [];
   releases = 0;
+
+  async settleProviderQuotaExhausted(scope: EmailQuotaScope): Promise<void> {
+    this.settled.push(scope);
+  }
   reservation: EmailBudgetReservation = "reserved";
 
   async reserve(priority: string): Promise<EmailBudgetReservation> {
@@ -40,12 +56,14 @@ const noopLogger = { log: () => undefined, warn: () => undefined };
 describe("TransactionalEmailSender — 트랜잭션 이메일 발송 요청", () => {
   let queue: StubQueue;
   let budget: StubBudget;
+  let sender: StubSender;
   let emailSender: TransactionalEmailSender;
 
   beforeEach(() => {
     queue = new StubQueue();
     budget = new StubBudget();
-    emailSender = new TransactionalEmailSender({ queue, budget, logger: noopLogger });
+    sender = new StubSender();
+    emailSender = new TransactionalEmailSender({ queue, sender, budget, logger: noopLogger });
   });
 
   function queuedMessage(): EmailMessage {
@@ -86,23 +104,72 @@ describe("TransactionalEmailSender — 트랜잭션 이메일 발송 요청", ()
     expect(budget.reserved).toEqual(["critical", "critical"]);
   });
 
-  it("문의는 standard 예산으로 큐에 담는다", async () => {
-    // When
-    const result = await emailSender.sendInquiry("support@test.com", {
+  describe("문의 — 요청 안에서 한 번 보낸다", () => {
+    const data = {
       userEmail: "user@test.com",
       category: "OTHER",
       categoryLabel: "기타",
       content: "내용",
       submittedAt: "2026-03-09 10:00",
+    } as const;
+
+    it("standard 예산을 예약하고 큐 없이 바로 보내 sent로 답한다", async () => {
+      // When
+      const result = await emailSender.sendInquiry("support@test.com", data);
+
+      // Then
+      expect(result).toEqual({ status: "sent" });
+      expect(budget.reserved).toEqual(["standard"]);
+      expect(queue.deliveries).toEqual([]);
+      expect(sender.messages[0]?.tags).toEqual([
+        { name: "type", value: "inquiry" },
+        { name: "category", value: "OTHER" },
+      ]);
     });
 
-    // Then
-    expect(result).toEqual({ status: "queued" });
-    expect(budget.reserved).toEqual(["standard"]);
-    expect(queuedMessage().tags).toEqual([
-      { name: "type", value: "inquiry" },
-      { name: "category", value: "OTHER" },
-    ]);
+    it("예산이 없으면 보내지 않고 거절한다", async () => {
+      // Given
+      budget.reservation = "exhausted";
+
+      // When
+      const result = await emailSender.sendInquiry("support@test.com", data);
+
+      // Then
+      expect(result).toEqual({ status: "rejected", reason: "budget_exhausted" });
+      expect(sender.messages).toEqual([]);
+    });
+
+    it("일시 장애도 재시도 없이 한 번만 시도하고 예약을 돌려주며 거절해 사용자가 다시 보내게 한다", async () => {
+      // Given
+      sender.outcome = { status: "failed", reason: "unavailable", retryable: true };
+
+      // When
+      const result = await emailSender.sendInquiry("support@test.com", data);
+
+      // Then
+      expect(result).toEqual({ status: "rejected", reason: "delivery_failed" });
+      expect(sender.messages).toHaveLength(1);
+      expect(budget.releases).toBe(1);
+      expect(queue.deliveries).toEqual([]);
+    });
+
+    it("공급자 한도 초과면 예약을 돌려주지 않고 계량을 한도에 맞춘 뒤 거절한다", async () => {
+      // Given
+      sender.outcome = {
+        status: "failed",
+        reason: "quota_exhausted",
+        retryable: false,
+        scope: "daily",
+      };
+
+      // When
+      const result = await emailSender.sendInquiry("support@test.com", data);
+
+      // Then
+      expect(result).toEqual({ status: "rejected", reason: "delivery_failed" });
+      expect(budget.settled).toEqual(["daily"]);
+      expect(budget.releases).toBe(0);
+    });
   });
 
   it("신고는 신고 ID를 deliveryId로 써서 같은 신고가 큐에 한 번만 담기게 한다", async () => {

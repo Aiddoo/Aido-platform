@@ -32,13 +32,15 @@ export const emailBudgetProvider: FactoryProvider<EmailBudgetPort> = {
 
 export const transactionalEmailSenderProvider: FactoryProvider<TransactionalEmailSender> = {
   provide: TransactionalEmailSender,
-  inject: [EMAIL_DELIVERY_QUEUE_PORT, EMAIL_BUDGET_PORT],
+  inject: [EMAIL_DELIVERY_QUEUE_PORT, EMAIL_SENDER, EMAIL_BUDGET_PORT],
   useFactory: (
     queue: ConstructorParameters<typeof TransactionalEmailSender>[0]["queue"],
+    sender: ConstructorParameters<typeof TransactionalEmailSender>[0]["sender"],
     budget: ConstructorParameters<typeof TransactionalEmailSender>[0]["budget"],
   ) =>
     new TransactionalEmailSender({
       queue,
+      sender,
       budget,
       logger: new Logger(TransactionalEmailSender.name),
     }),

@@ -224,4 +224,45 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
       }),
     );
   });
+
+  describe("문의 — 요청 안에서 동기 발송", () => {
+    const inquiry = {
+      userEmail: "user@example.com",
+      category: "OTHER",
+      categoryLabel: "기타",
+      content: "문의 내용",
+      submittedAt: "2026-07-11 14:30 (KST)",
+    } as const;
+
+    it("큐를 거치지 않고 실제 HTTP 요청으로 바로 보내 sent로 답한다", async () => {
+      // Given
+      givenResponses([success]);
+
+      // When
+      const result = await sender.sendInquiry("support@example.com", inquiry);
+
+      // Then
+      expect(result).toEqual({ status: "sent" });
+      expect(runtime.enqueueCalls).toHaveLength(0);
+      expect(await http.request().json()).toEqual(
+        expect.objectContaining({
+          to: "support@example.com",
+          subject: expect.stringContaining("기타"),
+        }),
+      );
+    });
+
+    it("공급자 장애는 재시도 없이 한 번만 보내고 rejected로 돌려주며 큐에도 남기지 않는다", async () => {
+      // Given
+      givenResponses([unavailable]);
+
+      // When
+      const result = await sender.sendInquiry("support@example.com", inquiry);
+
+      // Then
+      expect(result).toEqual({ status: "rejected", reason: "delivery_failed" });
+      expect(http.requests).toHaveLength(1);
+      expect(runtime.enqueueCalls).toHaveLength(0);
+    });
+  });
 });

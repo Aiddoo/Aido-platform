@@ -88,6 +88,8 @@ nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한
 | RETENTION_ONBOARDING_V2_ENABLED                                   | 기본 false; treatment 배정은 별도 운영 설정                                                                       |
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL          | 운영 가입/결제 채널                                                                                               |
 
+운영 경보(이메일 발송 실패·한도 근접·회로 열림, 결제 웹훅 실패, AI 예산 등)는 Sentry 이슈로만 남고 사람에게 자동 전달되지 않는다. Sentry 알림 규칙에서 태그 `alert.key`가 `notification.email.*`·`billing.subscription.webhook.processing-failed`·`operations.admin-notification.rejected`인 이슈를 Discord·Slack·이메일로 전달하도록 설정해야 한다. 설정하지 않으면 인증 메일이 밀리거나 메일이 버려져도 아무도 알 수 없다.
+
 Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
 스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.

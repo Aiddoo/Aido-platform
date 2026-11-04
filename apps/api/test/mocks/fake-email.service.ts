@@ -3,6 +3,7 @@ import type { EmailKind } from "#api/modules/notification/domain/types/email/ema
 import type { EmailTag } from "#api/modules/notification/domain/value-objects/email/email-message.vo";
 import type {
   EmailDispatch,
+  EmailSendResult,
   InquiryTemplateData,
   UserReportTemplateData,
 } from "#api/modules/notification/notification-email.public";
@@ -60,13 +61,12 @@ export class FakeEmailService implements AuthEmailSenderPort {
     return this.#recordCode(to, data, "password-reset", idempotencyKey);
   }
 
-  async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailDispatch> {
-    const failure = this.#failureResult();
-    if (failure !== null) {
-      return failure;
+  async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
+    if (this.#failureResult() !== null) {
+      return { status: "rejected", reason: "delivery_failed" };
     }
     this.#sentInquiries.push({ to, data, sentAt: new Date() });
-    return { status: "queued" };
+    return { status: "sent" };
   }
 
   async sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailDispatch> {

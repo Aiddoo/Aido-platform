@@ -10,7 +10,7 @@ import { type CreateInquiryInput, CreateInquiry } from "./create-inquiry.use-cas
 
 class StubInquiryMailer implements InquiryMailerPort {
   readonly attempts: InquirySubmission[] = [];
-  result: InquiryDeliveryResult = { status: "queued" };
+  result: InquiryDeliveryResult = { status: "sent" };
 
   async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
     this.attempts.push({ ...submission });

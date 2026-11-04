@@ -18,7 +18,7 @@ export interface CreateInquiryInput {
 /**
  * 문의 접수 use-case
  *
- * 사용자 문의를 담당자 전달 큐에 올린다. 큐에 담지 못하거나 발송 예산이 없으면 INQUIRY_1501을 던진다.
+ * 사용자 문의를 담당자에게 전달한다. 문의는 DB에 남지 않으므로 전달 실패 시 INQUIRY_1501로 알려 다시 보내게 한다.
  */
 interface CreateInquiryDependencies {
   readonly mailer: Pick<InquiryMailerPort, "deliver">;
