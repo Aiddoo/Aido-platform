@@ -8,8 +8,12 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
-import { WaveformTimeline } from '@src/features/voice/components/note/waveform-timeline';
+import {
+  useLiveWaveform,
+  WaveformTimeline,
+} from '@src/features/voice/components/note/waveform-timeline';
 import { RecognitionLanguageToggle } from '@src/features/voice/components/quick-voice/recognition-language-toggle';
+import { VOICE_CLOCK_TICK_MS } from '@src/features/voice/constants/voice.constants';
 import {
   VoiceCapturePolicy,
   type VoiceCaptureState,
@@ -20,11 +24,7 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
-import {
-  appendLevelSample,
-  createLevelSampler,
-  getBarIndexAt,
-} from '@src/features/voice/utils/view-models/waveform.view-model';
+import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -56,8 +56,6 @@ import {
 } from 'react';
 import { ActivityIndicator, BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
-
-const CLOCK_TICK_MS = 1_000;
 
 function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
@@ -308,7 +306,7 @@ function RecordingClock({
       return;
     }
     setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    const timer = setInterval(() => setNow(Date.now()), VOICE_CLOCK_TICK_MS);
     return () => clearInterval(timer);
   }, [isListening]);
 
@@ -321,7 +319,7 @@ function RecordingClock({
   );
 }
 
-/** 음량을 직접 구독해 파형만 다시 그린다. 나머지 화면은 음량 이벤트(초당 20번)에 다시 그려지지 않는다 */
+/** 음량을 직접 구독해 UI 스레드 값만 바꾼다. 음량 이벤트(초당 20번)에 React가 다시 그리지 않는다 */
 function RecordingWaveform({
   isActive,
   bookmarksMs,
@@ -330,7 +328,8 @@ function RecordingWaveform({
   bookmarksMs: readonly number[];
 }) {
   const speechRecognizer = useSpeechRecognizer();
-  const [sampler, setSampler] = useState(createLevelSampler);
+  const waveform = useLiveWaveform();
+  const { pushLevel } = waveform;
 
   useEffect(() => {
     if (!isActive) {
@@ -338,17 +337,15 @@ function RecordingWaveform({
     }
     return speechRecognizer.subscribe((event: SpeechEvent) => {
       if (event.type === 'volume') {
-        setSampler((current) => appendLevelSample(current, event.level));
+        pushLevel(event.level);
       }
     });
-  }, [isActive, speechRecognizer]);
+  }, [isActive, pushLevel, speechRecognizer]);
 
   return (
     <WaveformTimeline
-      levels={sampler.levels}
-      cursorIndex={Math.max(0, sampler.levels.length - 1)}
+      waveform={waveform}
       flagIndexes={bookmarksMs.map(getBarIndexAt)}
-      isLive={isActive}
       className="self-stretch"
     />
   );

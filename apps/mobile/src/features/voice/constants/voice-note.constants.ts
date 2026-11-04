@@ -23,6 +23,8 @@ export const WAVEFORM_BAR = {
   /** 한 칸이 담는 소리 길이 */
   intervalMs: VOICE_NOTE_POSITION_INTERVAL_MS,
   minHeightRatio: 0.08,
+  /** 녹음 중 들고 있는 칸 수. 가장 넓은 화면의 왼쪽 절반을 채우고 남는 고정 길이다 */
+  maxLiveBars: 160,
 } as const;
 
 /** 이 값 이상이면 말한 구간으로 본다 */

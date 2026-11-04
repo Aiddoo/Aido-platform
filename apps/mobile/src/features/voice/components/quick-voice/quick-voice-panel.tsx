@@ -21,6 +21,7 @@ import Animated, {
 import {
   AUTO_FINISH_SILENCE_MS,
   LISTENING_PANEL_HEIGHT_RATIO,
+  VOICE_CLOCK_TICK_MS,
 } from '../../constants/voice.constants';
 import {
   createPlanReviewFormValues,
@@ -42,7 +43,6 @@ import { LiveTranscript } from './live-transcript';
 import { RecognitionLanguageToggle } from './recognition-language-toggle';
 
 const ORB_SIZE = 150;
-const CLOCK_TICK_MS = 1_000;
 
 interface ListeningProps {
   state: VoiceCaptureState;
@@ -77,6 +77,7 @@ QuickVoicePanel.Listening = function Listening({
   const fontScaledSize = useFontScaledSize();
   const { height: windowHeight } = useWindowDimensions();
   const isPaused = state.status === 'paused';
+  const isListening = state.status === 'listening';
   const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, Date.now());
   const canFinish = VoiceCapturePolicy.canFinish(state);
   const orbSize = Math.min(ORB_SIZE, windowHeight * 0.2);
@@ -88,7 +89,7 @@ QuickVoicePanel.Listening = function Listening({
       style={{ minHeight: windowHeight * LISTENING_PANEL_HEIGHT_RATIO }}
       testID="quick-voice-listening"
     >
-      <SheetEdgeGlow level={level} />
+      <SheetEdgeGlow level={level} isActive={isListening} />
       <VStack flex={1} gap={12}>
         <HStack align="center" justify="between">
           <ListeningClock state={state} />
@@ -100,8 +101,8 @@ QuickVoicePanel.Listening = function Listening({
         </Box>
 
         <VStack align="center" gap={8}>
-          <VoiceOrb level={level} size={orbSize} isActive={!isPaused} />
-          <Waveform level={level} isActive={!isPaused && !isQuiet} />
+          <VoiceOrb level={level} size={orbSize} isActive={isListening} />
+          <Waveform level={level} isActive={isListening && !isQuiet} />
         </VStack>
 
         {isOverLimit ? (
@@ -350,7 +351,7 @@ function ListeningClock({ state }: { state: VoiceCaptureState }) {
     if (!isListening) {
       return;
     }
-    const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    const timer = setInterval(() => setNow(Date.now()), VOICE_CLOCK_TICK_MS);
     return () => clearInterval(timer);
   }, [isListening]);
 

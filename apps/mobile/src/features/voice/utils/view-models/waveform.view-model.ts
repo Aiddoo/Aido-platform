@@ -1,17 +1,10 @@
-import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import { WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import type { VoiceNoteSentence } from '../../domains/voice-note.model';
 
 const QUIET_LEVEL = 0.06;
 const SPEECH_BASE_LEVEL = 0.35;
 const SPEECH_SWING = 0.55;
 const SPEECH_RIPPLE = { primary: 0.9, secondary: 0.37 } as const;
-
-export interface TimelineBar {
-  index: number;
-  /** 0..1. 아직 소리가 없는 자리(미래·시작 전)는 null */
-  level: number | null;
-  isSpeech: boolean;
-}
 
 function getBarCount(durationMs: number) {
   return Math.max(0, Math.ceil(durationMs / WAVEFORM_BAR.intervalMs));
@@ -49,22 +42,34 @@ export function createSpeechLevels(
 const SAMPLES_PER_BAR = 2;
 
 export interface LevelSampler {
-  levels: readonly number[];
   /** 아직 칸이 되지 않은 음량 중 가장 큰 값과 개수 */
   pendingMax: number;
   pendingCount: number;
 }
 
 export function createLevelSampler(): LevelSampler {
-  return { levels: [], pendingMax: 0, pendingCount: 0 };
+  return { pendingMax: 0, pendingCount: 0 };
 }
 
-export function appendLevelSample(sampler: LevelSampler, level: number): LevelSampler {
+/** 칸이 하나 찼으면 `bar`에 그 값을 준다 */
+export function appendLevelSample(
+  sampler: LevelSampler,
+  level: number,
+): { sampler: LevelSampler; bar: number | null } {
   const pendingMax = Math.max(sampler.pendingMax, level);
   const pendingCount = sampler.pendingCount + 1;
   return pendingCount >= SAMPLES_PER_BAR
-    ? { levels: [...sampler.levels, pendingMax], pendingMax: 0, pendingCount: 0 }
-    : { ...sampler, pendingMax, pendingCount };
+    ? { sampler: createLevelSampler(), bar: pendingMax }
+    : { sampler: { pendingMax, pendingCount }, bar: null };
+}
+
+/** 녹음 중 칸 목록에 한 칸을 더한다. 오래 녹음해도 길이는 그대로다 */
+export function appendTimelineBar(
+  bars: readonly number[],
+  bar: number,
+  maxBars: number = WAVEFORM_BAR.maxLiveBars,
+): readonly number[] {
+  return bars.length < maxBars ? [...bars, bar] : [...bars.slice(1), bar];
 }
 
 export function getFlagBarIndexes(sentences: readonly VoiceNoteSentence[]): number[] {
@@ -77,18 +82,18 @@ export function getBarIndexAt(positionMs: number): number {
   return Math.max(0, Math.floor(positionMs / WAVEFORM_BAR.intervalMs));
 }
 
-/** 재생선(가운데)을 기준으로 왼쪽 과거와 오른쪽 미래 `sideCount`칸씩, 모두 `2 * sideCount + 1`칸이다 */
-export function getTimelineWindow(
+/**
+ * 재생선(가운데)을 기준으로 왼쪽 과거와 오른쪽 미래 `sideCount`칸씩 모두 `2 * sideCount + 1`칸 중 `slot`칸의 소리 크기.
+ * 재생선은 `levels`의 마지막 칸을 가리키고, 아직 소리가 없는 자리는 null이다. UI 스레드에서 프레임마다 부른다.
+ */
+export function getTimelineLevel(
   levels: readonly number[],
-  cursorIndex: number,
+  slot: number,
   sideCount: number,
-): TimelineBar[] {
-  return Array.from({ length: sideCount * 2 + 1 }, (_, slot) => {
-    const index = cursorIndex - sideCount + slot;
-    const level = index >= 0 ? (levels[index] ?? null) : null;
-
-    return { index, level, isSpeech: level != null && level >= SPEECH_LEVEL_THRESHOLD };
-  });
+): number | null {
+  'worklet';
+  const index = levels.length - 1 - sideCount + slot;
+  return index >= 0 ? (levels[index] ?? null) : null;
 }
 
 /** 전체 길이를 `count`칸으로 줄여 스크러버에 맞춘다. 칸마다 구간의 가장 큰 값이다 */

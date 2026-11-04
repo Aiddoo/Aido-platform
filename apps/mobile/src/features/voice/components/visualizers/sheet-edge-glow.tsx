@@ -10,26 +10,31 @@ import {
   useSharedValue,
 } from 'react-native-reanimated';
 
-import { VOICE_EDGE_GLOW } from '../../constants/voice.constants';
+import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../../constants/voice.constants';
+import { useSkiaColor } from '../../hooks/use-skia-color';
 
-const GLOW_COLORS = ['#ff6b3d', '#ffb07a', '#ff5e7e', '#ffd0a8', '#ff6b3d'];
 const SHEET_RADIUS = 32;
+const FULL_TURN = 360;
 
 interface SheetEdgeGlowProps extends Omit<ComponentProps<typeof Canvas>, 'children'> {
   level: SharedValue<number>;
+  /** 듣지 않을 때는 프레임 콜백을 꺼 마지막 모양을 그대로 둔다 */
+  isActive: boolean;
 }
 
 /** 듣는 동안 시트 테두리를 따라 천천히 도는 빛. 밝기는 음량을 따르고 소리가 없으면 옅어진다 */
-export function SheetEdgeGlow({ level, style, ...canvasProps }: SheetEdgeGlowProps) {
+export function SheetEdgeGlow({ level, isActive, style, ...canvasProps }: SheetEdgeGlowProps) {
   const isReducedMotion = useReducedMotion();
+  const mainColor = useSkiaColor('text-main');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const angle = useSharedValue(0);
   const smoothed = useSharedValue(0);
 
   useFrameCallback((frame) => {
     smoothed.set(smoothed.get() + (level.get() - smoothed.get()) * 0.08);
-    angle.set((((frame.timeSinceFirstFrame ?? 0) / VOICE_EDGE_GLOW.rotationPeriodMs) % 1) * 360);
-  }, !isReducedMotion);
+    const turned = (frame.timeSincePreviousFrame ?? 0) / VOICE_EDGE_GLOW.rotationPeriodMs;
+    angle.set((angle.get() + turned * FULL_TURN) % FULL_TURN);
+  }, isActive && !isReducedMotion);
 
   const opacity = useDerivedValue(
     () => VOICE_EDGE_GLOW.minOpacity + (1 - VOICE_EDGE_GLOW.minOpacity) * smoothed.get(),
@@ -59,7 +64,18 @@ export function SheetEdgeGlow({ level, style, ...canvasProps }: SheetEdgeGlowPro
         strokeWidth={VOICE_EDGE_GLOW.strokeWidth}
         opacity={opacity}
       >
-        <SweepGradient c={center} colors={GLOW_COLORS} origin={center} transform={rotation} />
+        <SweepGradient
+          c={center}
+          colors={[
+            mainColor,
+            VOICE_GRADIENT_COLORS.glowApricot,
+            VOICE_GRADIENT_COLORS.glowRose,
+            VOICE_GRADIENT_COLORS.glowCream,
+            mainColor,
+          ]}
+          origin={center}
+          transform={rotation}
+        />
         <BlurMask blur={VOICE_EDGE_GLOW.blur} style="solid" />
       </RoundedRect>
     </Canvas>

@@ -1,10 +1,11 @@
 import { createVoiceNoteSentence } from '../../__tests__/voice-note.factories';
 import {
   appendLevelSample,
+  appendTimelineBar,
   createLevelSampler,
   createSpeechLevels,
   getFlagBarIndexes,
-  getTimelineWindow,
+  getTimelineLevel,
   resampleLevels,
 } from './waveform.view-model';
 
@@ -39,17 +40,31 @@ describe('getFlagBarIndexes', () => {
   });
 });
 
-describe('getTimelineWindow', () => {
-  test('시작 앞과 아직 소리가 없는 뒤쪽 칸은 level이 null이다', () => {
+describe('getTimelineLevel', () => {
+  test('재생선은 마지막 칸을 가리키고 시작 앞과 아직 소리가 없는 뒤쪽 칸은 null이다', () => {
     // Given
     const levels = [0.5, 0.6, 0.7];
 
     // When
-    const bars = getTimelineWindow(levels, 1, 2);
+    const window = [0, 1, 2, 3, 4, 5, 6].map((slot) => getTimelineLevel(levels, slot, 3));
 
     // Then
-    expect(bars.map((bar) => bar.level)).toEqual([null, 0.5, 0.6, 0.7, null]);
-    expect(bars.map((bar) => bar.index)).toEqual([-1, 0, 1, 2, 3]);
+    expect(window).toEqual([null, 0.5, 0.6, 0.7, null, null, null]);
+  });
+});
+
+describe('appendTimelineBar', () => {
+  test('오래 녹음해도 칸 수는 정한 길이를 넘지 않고 최근 칸을 남긴다', () => {
+    // Given
+    const bars = Array.from({ length: 18_000 }, (_, index) => index).reduce<readonly number[]>(
+      (current, bar) => appendTimelineBar(current, bar, 160),
+      [],
+    );
+
+    // Then
+    expect(bars).toHaveLength(160);
+    expect(bars.at(-1)).toBe(17_999);
+    expect(bars[0]).toBe(17_840);
   });
 });
 
@@ -83,9 +98,11 @@ describe('appendLevelSample', () => {
     const sampler = createLevelSampler();
 
     // When
-    const next = appendLevelSample(appendLevelSample(sampler, 0.2), 0.7);
+    const first = appendLevelSample(sampler, 0.2);
+    const second = appendLevelSample(first.sampler, 0.7);
 
     // Then
-    expect(next.levels).toEqual([0.7]);
+    expect(first.bar).toBeNull();
+    expect(second.bar).toBe(0.7);
   });
 });

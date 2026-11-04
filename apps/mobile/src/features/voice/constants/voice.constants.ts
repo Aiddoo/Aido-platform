@@ -31,8 +31,23 @@ export const SPEECH_CONTEXT_RECENT_TODO_LIMIT = 60;
 /** 서버가 아직 처리 중(AI_1314)이면 같은 키로 잠시 뒤 다시 묻는다. 차감은 한 번뿐이다 */
 export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
 
+/** 듣는 시간 시계를 다시 그리는 간격 */
+export const VOICE_CLOCK_TICK_MS = 1_000;
+
 /** 듣는 중 패널이 차지하는 화면 높이 비율 */
 export const LISTENING_PANEL_HEIGHT_RATIO = 0.56;
+
+/**
+ * 구와 테두리 빛의 그라데이션 중간색. 팔레트에 없는 장식용 색이라 토큰 대신 여기 모은다.
+ * 그라데이션 끝색은 토큰 `main`을 쓴다.
+ */
+export const VOICE_GRADIENT_COLORS = {
+  orbPeach: '#ffc2a3',
+  orbCoral: '#ff8a5c',
+  glowApricot: '#ffb07a',
+  glowRose: '#ff5e7e',
+  glowCream: '#ffd0a8',
+} as const;
 
 export const VOICE_ORB = {
   /** 원 반지름(R)에 대한 크기 비율. 음량에 따라 이 범위에서만 변한다 */
