@@ -61,7 +61,7 @@ const QUOTA_EXHAUSTED_ERROR: Readonly<Record<MeteredFeatureKey, ErrorCodeType>> 
   VOICE_NOTE: ErrorCode.AI_1313,
 };
 
-function meterOf(feature: MeteredFeatureKey): QuotaMeter {
+function resolveMeter(feature: MeteredFeatureKey): QuotaMeter {
   return PLAN_CATALOG[feature].meter;
 }
 
@@ -88,7 +88,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
         throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
       }
       const context = this.#decisionContext(input, await this.#findAccessState(input.userId));
-      const meter = meterOf(input.feature);
+      const meter = resolveMeter(input.feature);
       const requestHash = input.requestHash ?? null;
       const existing =
         input.idempotencyKey == null
@@ -125,7 +125,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     if (reservation.alreadyCommitted) {
       return false;
     }
-    const meter = meterOf(reservation.feature);
+    const meter = resolveMeter(reservation.feature);
     try {
       const { repository } = this.#dependencies;
       const charge = await repository.findCharge(reservation.chargeId);
@@ -161,7 +161,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     if (reservation.alreadyCommitted) {
       return false;
     }
-    const meter = meterOf(reservation.feature);
+    const meter = resolveMeter(reservation.feature);
     try {
       const refunded = await this.#refundLocked(
         { userId: reservation.userId, chargeId: reservation.chargeId },
@@ -348,7 +348,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
 
   async #addUsage(context: QuotaDecisionContext): Promise<void> {
     const { repository, logger } = this.#dependencies;
-    const meter = meterOf(context.feature);
+    const meter = resolveMeter(context.feature);
     const { limit } = resolveQuotaLimit(context.tier, context.feature);
     const added = await repository.addUsage(context.userId, meter, {
       window: context.window,
@@ -402,7 +402,11 @@ export class QuotaLedgerService implements QuotaLedgerPort {
     feature: MeteredFeatureKey,
     window: QuotaWindow,
   ): Promise<QuotaUsageReading> {
-    const used = await this.#dependencies.repository.readUsed(userId, meterOf(feature), window);
+    const used = await this.#dependencies.repository.readUsed(
+      userId,
+      resolveMeter(feature),
+      window,
+    );
     return { used, resetsAt: window.resetsAt };
   }
 

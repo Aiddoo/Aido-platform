@@ -31,7 +31,7 @@ interface FriendshipEstablisherDependencies {
     | "getMaxSortOrderForFriends"
     | "getUserDisplayName"
   >;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOfInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimitInTx">;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly effects: Pick<
     FriendshipEffects,
@@ -95,7 +95,7 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
 
   async #isAtFriendLimit(userId: string): Promise<boolean> {
     const [friendLimit, friendCount] = await Promise.all([
-      this.#dependencies.entitlementReader.limitOfInTx(userId, "FRIEND"),
+      this.#dependencies.entitlementReader.getLimitInTx(userId, "FRIEND"),
       this.#dependencies.followRepository.countMutualFriends(userId),
     ]);
     return hasReachedFriendLimit(friendLimit, friendCount);

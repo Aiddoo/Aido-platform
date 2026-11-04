@@ -45,8 +45,8 @@ describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스
       // When
       const snapshot = await fixture.service.getAccessSnapshot(fixture.userId);
       const limits = {
-        aiParse: await fixture.service.limitOf(fixture.userId, "AI_PARSE"),
-        friend: await fixture.service.limitOfInTx(fixture.userId, "FRIEND"),
+        aiParse: await fixture.service.getLimit(fixture.userId, "AI_PARSE"),
+        friend: await fixture.service.getLimitInTx(fixture.userId, "FRIEND"),
       };
       const canReport = {
         cached: await fixture.service.can(fixture.userId, "AI_REPORT"),
@@ -85,8 +85,8 @@ describe("EntitlementService — 세 주체 × 기능 종류 권한 매트릭스
     free.database.resourceBonuses.set(free.userId, { FRIEND: 2 });
 
     // When
-    const premiumCategory = await premium.service.limitOf(premium.userId, "TODO_CATEGORY");
-    const freeFriend = await free.service.limitOf(free.userId, "FRIEND");
+    const premiumCategory = await premium.service.getLimit(premium.userId, "TODO_CATEGORY");
+    const freeFriend = await free.service.getLimit(free.userId, "FRIEND");
 
     // Then
     expect(premiumCategory).toBe(30);

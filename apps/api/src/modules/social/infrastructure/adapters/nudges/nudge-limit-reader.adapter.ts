@@ -14,12 +14,12 @@ export class NudgeLimitReaderAdapter implements NudgeLimitReaderPort {
   constructor(
     @Inject(ENTITLEMENT_READER) private readonly entitlementReader: Pick<
       EntitlementReaderPort,
-      "limitOfInTx" | "featureQuotaInTx"
+      "getLimitInTx" | "featureQuotaInTx"
     >,
   ) {}
 
   async getDailyLimitInTx(userId: string): Promise<number | null> {
-    return this.entitlementReader.limitOfInTx(userId, "NUDGE");
+    return this.entitlementReader.getLimitInTx(userId, "NUDGE");
   }
 
   async readDailyQuotaInTx(userId: string, usage: DailySendUsage): Promise<FeatureQuota> {

@@ -41,7 +41,7 @@ interface SendFriendRequestDependencies {
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowNew">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOfInTx" | "featureQuotaInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimitInTx" | "featureQuotaInTx">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly effects: Pick<
     FriendshipEffects,
@@ -70,7 +70,7 @@ export class SendFriendRequest {
         MutationLockKeys.friendList(targetUserId),
       ]);
       const [friendLimit, friendCount] = await Promise.all([
-        this.#dependencies.entitlementReader.limitOfInTx(userId, "FRIEND"),
+        this.#dependencies.entitlementReader.getLimitInTx(userId, "FRIEND"),
         this.#dependencies.followRepository.countMutualFriends(userId),
       ]);
       if (hasReachedFriendLimit(friendLimit, friendCount)) {

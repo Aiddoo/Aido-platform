@@ -48,11 +48,11 @@ export class EntitlementService implements EntitlementReaderPort {
     return this.#featureAccess(await this.#freshAccess(userId), feature).allowed;
   }
 
-  async limitOf(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
+  async getLimit(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
     return this.#featureAccess(await this.#cachedAccess(userId), feature).limit;
   }
 
-  async limitOfInTx(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
+  async getLimitInTx(userId: string, feature: PlanLimitFeatureKey): Promise<number | null> {
     return this.#featureAccess(await this.#freshAccess(userId), feature).limit;
   }
 

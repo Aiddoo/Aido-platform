@@ -75,7 +75,7 @@ export class InMemoryQuotaLedgerRepository implements QuotaLedgerRepositoryPort 
       const user = this.users.get(userId);
       if (
         user === undefined ||
-        QuotaWindow.periodKeyOf(user.aiUsageResetAt) !== input.periodKey ||
+        QuotaWindow.resolvePeriodKey(user.aiUsageResetAt) !== input.periodKey ||
         user.aiUsageCount < input.amount
       ) {
         return false;

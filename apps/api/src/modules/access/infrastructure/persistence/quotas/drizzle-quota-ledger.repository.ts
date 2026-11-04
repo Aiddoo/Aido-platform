@@ -125,7 +125,7 @@ export class DrizzleQuotaLedgerRepository implements QuotaLedgerRepositoryPort {
     return match(meter)
       .with("AI_PLAN", async () => {
         const counter = await this.#findAiPlanCounter(userId);
-        if (counter == null || QuotaWindow.periodKeyOf(counter.resetAt) !== periodKey) {
+        if (counter == null || QuotaWindow.resolvePeriodKey(counter.resetAt) !== periodKey) {
           return false;
         }
         const updated = await this.txHost.tx

@@ -262,7 +262,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
     ]);
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.limitOfInTx(inviterId, "FRIEND")).toBeNull();
+    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
     const repository = context.module.get<InviteRedemptionRepositoryPort>(
       INVITE_REDEMPTION_REPOSITORY,
     );
@@ -498,7 +498,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         ?.role,
     ).toBe("ADMIN");
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    expect(await entitlement.limitOfInTx(inviterId, "FRIEND")).toBeNull();
+    expect(await entitlement.getLimitInTx(inviterId, "FRIEND")).toBeNull();
   });
 
   it("정비 작업은 마감이 지난 수락만 거절하고 남은 지급이 있는 수락의 작업을 다시 만든다", async () => {

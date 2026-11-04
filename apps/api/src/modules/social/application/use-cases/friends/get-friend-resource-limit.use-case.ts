@@ -13,7 +13,7 @@ export interface GetFriendResourceLimitResult {
 
 interface GetFriendResourceLimitDependencies {
   readonly reader: Pick<FollowReader, "countFriends">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOf">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
 }
 
 export class GetFriendResourceLimit {
@@ -25,7 +25,7 @@ export class GetFriendResourceLimit {
 
   async execute(input: GetFriendResourceLimitInput): Promise<GetFriendResourceLimitResult> {
     const [maxCount, friendCount] = await Promise.all([
-      this.#dependencies.entitlementReader.limitOf(input.userId, "FRIEND"),
+      this.#dependencies.entitlementReader.getLimit(input.userId, "FRIEND"),
       this.#dependencies.reader.countFriends(input.userId),
     ]);
     return { friendCount, maxCount };

@@ -10,7 +10,7 @@ import type { CheerRepositoryPort } from "../../ports/cheers/cheer.repository.po
 
 interface GetCheerLimitDependencies {
   readonly cheerRepository: Pick<CheerRepositoryPort, "countSentSince">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOf">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
 }
 
 export class GetCheerLimit {
@@ -26,7 +26,7 @@ export class GetCheerLimit {
   }): Promise<CheerLimitSnapshot> {
     const window = dayWindowInTimezone(now(), input.timezone);
     const [dailyLimit, used] = await Promise.all([
-      this.#dependencies.entitlementReader.limitOf(input.userId, "CHEER"),
+      this.#dependencies.entitlementReader.getLimit(input.userId, "CHEER"),
       this.#dependencies.cheerRepository.countSentSince(
         input.userId,
         window.startsAt,

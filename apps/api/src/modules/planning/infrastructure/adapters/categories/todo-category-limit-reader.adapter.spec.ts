@@ -8,7 +8,7 @@ describe("TodoCategoryLimitReaderAdapter", () => {
   it("잠금 안의 최신 권한으로 카테고리 한도를 읽는다", async () => {
     // Given
     const entitlementReader = mock<EntitlementReaderPort>();
-    entitlementReader.limitOfInTx.mockResolvedValue(3);
+    entitlementReader.getLimitInTx.mockResolvedValue(3);
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
@@ -16,7 +16,7 @@ describe("TodoCategoryLimitReaderAdapter", () => {
 
     // Then
     expect(result).toBe(3);
-    expect(entitlementReader.limitOfInTx).toHaveBeenCalledWith("user-123", "TODO_CATEGORY");
+    expect(entitlementReader.getLimitInTx).toHaveBeenCalledWith("user-123", "TODO_CATEGORY");
   });
 
   it("한도 오류 featureQuota는 현재 개수를 resource 사용량으로 넘겨 계산한다", async () => {

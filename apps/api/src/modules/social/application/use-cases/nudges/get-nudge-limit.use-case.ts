@@ -10,7 +10,7 @@ import type { NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.po
 
 interface GetNudgeLimitDependencies {
   readonly nudgeRepository: Pick<NudgeRepositoryPort, "countSentSince">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "limitOf">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getLimit">;
 }
 
 export class GetNudgeLimit {
@@ -26,7 +26,7 @@ export class GetNudgeLimit {
   }): Promise<NudgeLimitSnapshot> {
     const window = dayWindowInTimezone(now(), input.timezone);
     const [dailyLimit, used] = await Promise.all([
-      this.#dependencies.entitlementReader.limitOf(input.userId, "NUDGE"),
+      this.#dependencies.entitlementReader.getLimit(input.userId, "NUDGE"),
       this.#dependencies.nudgeRepository.countSentSince(
         input.userId,
         window.startsAt,

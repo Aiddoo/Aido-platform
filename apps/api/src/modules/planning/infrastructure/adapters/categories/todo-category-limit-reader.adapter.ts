@@ -16,12 +16,12 @@ export class TodoCategoryLimitReaderAdapter implements TodoCategoryLimitReaderPo
   constructor(
     @Inject(ENTITLEMENT_READER) private readonly entitlementReader: Pick<
       EntitlementReaderPort,
-      "limitOfInTx" | "featureQuotaInTx"
+      "getLimitInTx" | "featureQuotaInTx"
     >,
   ) {}
 
   async getMaxCountInTx(userId: string): Promise<number | null> {
-    return this.entitlementReader.limitOfInTx(userId, "TODO_CATEGORY");
+    return this.entitlementReader.getLimitInTx(userId, "TODO_CATEGORY");
   }
 
   async readQuotaInTx(userId: string, count: number): Promise<FeatureQuota> {

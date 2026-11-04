@@ -12,12 +12,12 @@ export class QuotaWindow {
 
   static monthAt(at: Date): QuotaWindow {
     return new QuotaWindow(
-      QuotaWindow.periodKeyOf(at),
+      QuotaWindow.resolvePeriodKey(at),
       firstOfNextMonthInTimezone(at, QUOTA_TIMEZONE).getTime(),
     );
   }
 
-  static periodKeyOf(at: Date): string {
+  static resolvePeriodKey(at: Date): string {
     return toIsoMonthId(at, QUOTA_TIMEZONE);
   }
 
@@ -28,6 +28,6 @@ export class QuotaWindow {
 
   /** 이 기간에 기록된 시각인지. 기록이 없으면(null) 이 기간 사용량은 0이다. */
   contains(recordedAt: Date | null): boolean {
-    return recordedAt != null && QuotaWindow.periodKeyOf(recordedAt) === this.periodKey;
+    return recordedAt != null && QuotaWindow.resolvePeriodKey(recordedAt) === this.periodKey;
   }
 }

@@ -107,7 +107,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     return row;
   }
 
-  async function storedVoiceUsage(periodKey = QuotaWindow.periodKeyOf(newMonthAt)) {
+  async function storedVoiceUsage(periodKey = QuotaWindow.resolvePeriodKey(newMonthAt)) {
     const [row] = await client
       .select({ used: quotaUsage.used })
       .from(quotaUsage)
@@ -453,14 +453,14 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       // Then
       expect(await storedAiUsage()).toEqual({ count: 1, resetAt: newMonthAt });
       expect(await storedVoiceUsage()).toBe(1);
-      expect(await storedVoiceUsage(QuotaWindow.periodKeyOf(oldMonthAt))).toBe(0);
+      expect(await storedVoiceUsage(QuotaWindow.resolvePeriodKey(oldMonthAt))).toBe(0);
     });
 
     it("AI_PLAN 카운터 차감은 같은 기간이고 남은 횟수가 있을 때만 적용한다", async () => {
       // Given
       await client.update(userTable).set({ aiUsageCount: 1 }).where(eq(userTable.id, userId));
-      const oldPeriod = QuotaWindow.periodKeyOf(oldMonthAt);
-      const currentPeriod = QuotaWindow.periodKeyOf(newMonthAt);
+      const oldPeriod = QuotaWindow.resolvePeriodKey(oldMonthAt);
+      const currentPeriod = QuotaWindow.resolvePeriodKey(newMonthAt);
 
       // When
       const wrongPeriod = await repository.subtractUsage(userId, "AI_PLAN", {
@@ -553,7 +553,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         const [charge] = await storedCharges();
         expect(takenOver.attempt).toBe(2);
         expect(quotaAfterTakeOver.used).toBe(1);
-        expect(charge?.periodKey).toBe(QuotaWindow.periodKeyOf(newMonthAt));
+        expect(charge?.periodKey).toBe(QuotaWindow.resolvePeriodKey(newMonthAt));
         expect(refunded).toBe(true);
         expect((await ledger.read(userId, feature)).used).toBe(0);
       },
@@ -668,7 +668,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           .update(userTable)
           .set({ role, subscriptionStatus, aiUsageCount: FREE_AI_LIMIT })
           .where(eq(userTable.id, userId));
-        expect(await entitlement.limitOf(userId, "AI_PARSE")).toBeNull();
+        expect(await entitlement.getLimit(userId, "AI_PARSE")).toBeNull();
         await client
           .update(userTable)
           .set({ role: "USER", subscriptionStatus: "FREE" })

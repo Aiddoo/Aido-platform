@@ -612,8 +612,8 @@ function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
   };
 }
 
-function createReaderEntitlement(dailyLimit: number): Pick<EntitlementReaderPort, "limitOf"> {
-  return { limitOf: async () => dailyLimit };
+function createReaderEntitlement(dailyLimit: number): Pick<EntitlementReaderPort, "getLimit"> {
+  return { getLimit: async () => dailyLimit };
 }
 
 function createTodoCategoryCache(): TodoCategoryCachePort {

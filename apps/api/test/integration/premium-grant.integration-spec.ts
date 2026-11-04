@@ -747,7 +747,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionExpiresAt: null,
     });
     expect(await entitlement.canInTx(userId, "AI_REPORT")).toBe(true);
-    expect(await entitlement.limitOfInTx(userId, "FRIEND")).toBeNull();
+    expect(await entitlement.getLimitInTx(userId, "FRIEND")).toBeNull();
   });
 
   it.each([
