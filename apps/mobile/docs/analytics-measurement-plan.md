@@ -1,6 +1,6 @@
 # Aido GA4(Firebase) 측정 계획
 
-**기준**: 앱 1.14.0 · Firebase 프로젝트 `aido-997b5` · 작성 2026-11-03
+**기준**: 앱 1.14.0 · Firebase 프로젝트 `aido-997b5` · 작성 2026-11-03 · 1.15.0 예정 항목(음성·한도)은 구현 전 정의이며 배포 후 검증한다
 **원칙**: 이벤트 정의의 단일 원본은 `src/shared/observability/telemetry-keys.ts`(`AppEventMap`). 이 문서는 "무엇을 보고 어떤 결정을 내리나"와 GA 콘솔 설정값을 정리한다. 규칙은 `.claude/observability.md`를 따른다.
 
 ---
@@ -152,6 +152,27 @@
 | `subscription_started`  | `product_id`(string)                                                                                                       | 클라 구매 성공 — RevenueCat `purchase`와 중복 ⚠ |
 | `subscription_restored` | –                                                                                                                          | 복원                                            |
 | `screen_view`           | `screen_name` = `screen_class` = 정규화된 pathname                                                                         | 모든 화면 ⚠ 동적 세그먼트 미치환                |
+
+**음성 (1.15.0 예정)**: 빠른 말하기(`quick`)와 긴 녹음(`note`)이 같은 이벤트를 쓰고 `mode`로 구분한다. 말한 내용·전사 글자·할 일 제목은 보내지 않고, 길이는 구간으로만 보낸다.
+
+| 이벤트                          | 파라미터                                                                                                                           | 발생 시점                  | 의미                 |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | -------------------- |
+| `voice_capture_started`         | `mode`: `quick`·`note` · `entry`: `add_todo_sheet`·`memo_tab`·`quick_voice_upgrade` · `locale` · `on_device`(bool)                 | 인식 시작                  | 음성 입력 시작       |
+| `voice_capture_finished`        | `mode` · `outcome`: `completed`·`cancelled`·`empty` · `duration_bucket`: `lt_30s`·`30s_3m`·`3m_10m`·`10m_30m` · `pause_count`(int) | 끝내기·취소                | 음성 입력 완료·이탈  |
+| `voice_capture_failed`          | `mode` · `reason`(인식 오류 코드)                                                                                                  | 복구 불가 오류             | 인식 실패            |
+| `voice_capture_resumed`         | `mode` · `cause`: `app_background`·`interrupted`                                                                                   | 이어 듣기                  | 중단 후 복귀         |
+| `voice_offline_model_requested` | `locale` · `result`                                                                                                                | Android 오프라인 모델 받기 | 온디바이스 인식 준비 |
+| `voice_plan_generated`          | `source`: `quick_voice`·`voice_note`·`memo` · `todo_count`(int) · `duplicate_count`(int) · `has_memo`(bool)                        | 계획 도착                  | AI 계획 결과         |
+| `voice_plan_failed`             | `source` · `error_code`                                                                                                            | 계획 실패                  |                      |
+| `voice_plan_applied`            | `source` · `selected_count`(int) · `edited_count`(int) · `deselected_count`(int) · `has_memo`(bool)                                | 저장                       | 핵심 전환            |
+| `voice_note_key_point_played`   | `position_bucket`                                                                                                                  | 핵심 포인트로 재생         | 유료 해자 사용도     |
+
+**한도·결제 유도 (1.15.0 예정)**: 같은 `feature`·`surface` 값을 `premium_gate_*`와 공유한다. `feature` 값은 `premium_gate_shown`의 값 집합에 `voice_note`(긴 녹음)를 더한다. 빠른 말하기는 `ai_parse`로 센다.
+
+| 이벤트                     | 파라미터                                               | 발생 시점        | 의미            |
+| -------------------------- | ------------------------------------------------------ | ---------------- | --------------- |
+| `limit_reached_shown`      | `feature` · `surface` · `trigger`: `precheck`·`server` | 한도 Dialog 노출 | 한도 도달 노출  |
+| `limit_reached_cta_tapped` | `feature` · `surface`                                  | "구독 보기" 탭   | 업그레이드 시도 |
 
 ### 1-3. 점검 결과
 
@@ -320,15 +341,19 @@
 
 ### (e) 유입경로 탐색 (정확한 단계)
 
-| 퍼널         | 단계                                                                                                                   | 설정                                            |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| 활성화       | 1 `auth_signup` → 2 `todo_created` → 3 `todo_completed` (`is_completed = true`) → 4 `activation_completed`             | 닫힌 퍼널, 7일 내, 분류 `method`                |
-| 초대(공유자) | 1 `invite_entry_tapped` → 2 `invite_link_shared`                                                                       | 닫힌 퍼널, 분류 `entry`·`channel`               |
-| 초대(수신자) | 1 `invite_link_opened` → 2 `auth_signup` 또는 `auth_login` → 3 `invite_redeemed`                                       | 열린 퍼널, 1일 내, 분류 `source`                |
-| 페이월       | 1 `premium_gate_shown` → 2 `screen_view` (`screen_name = /settings/subscription`) → 3 `rc_trial_start` 또는 `purchase` | 닫힌 퍼널, 1일 내, 분류 `feature`               |
-| 날씨 옮기기  | 1 `screen_view` (`/weather`) → 2 `weather_reschedule_opened` → 3 `weather_reschedule_applied`                          | 열린 퍼널, 분류 `reason`, 필터 앱 버전 ≥ 1.14.0 |
-| 날씨 위치    | 1 `screen_view` (`/weather`) → 2 `weather_location_permission_result` (`result = granted`)                             | 닫힌 퍼널                                       |
-| 기능 발견    | 1 `feature_hub_impression` → 2 `feature_card_cta` → 3 `feature_action_success`                                         | 닫힌 퍼널, 7일 내, 분류 `feature`               |
+| 퍼널               | 단계                                                                                                                               | 설정                                            |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 활성화             | 1 `auth_signup` → 2 `todo_created` → 3 `todo_completed` (`is_completed = true`) → 4 `activation_completed`                         | 닫힌 퍼널, 7일 내, 분류 `method`                |
+| 초대(공유자)       | 1 `invite_entry_tapped` → 2 `invite_link_shared`                                                                                   | 닫힌 퍼널, 분류 `entry`·`channel`               |
+| 초대(수신자)       | 1 `invite_link_opened` → 2 `auth_signup` 또는 `auth_login` → 3 `invite_redeemed`                                                   | 열린 퍼널, 1일 내, 분류 `source`                |
+| 페이월             | 1 `premium_gate_shown` → 2 `screen_view` (`screen_name = /settings/subscription`) → 3 `rc_trial_start` 또는 `purchase`             | 닫힌 퍼널, 1일 내, 분류 `feature`               |
+| 날씨 옮기기        | 1 `screen_view` (`/weather`) → 2 `weather_reschedule_opened` → 3 `weather_reschedule_applied`                                      | 열린 퍼널, 분류 `reason`, 필터 앱 버전 ≥ 1.14.0 |
+| 날씨 위치          | 1 `screen_view` (`/weather`) → 2 `weather_location_permission_result` (`result = granted`)                                         | 닫힌 퍼널                                       |
+| 기능 발견          | 1 `feature_hub_impression` → 2 `feature_card_cta` → 3 `feature_action_success`                                                     | 닫힌 퍼널, 7일 내, 분류 `feature`               |
+| 음성 (1.15.0 예정) | 1 `voice_capture_started` → 2 `voice_capture_finished` (`outcome = completed`) → 3 `voice_plan_generated` → 4 `voice_plan_applied` | 닫힌 퍼널, 1일 내(제안), 분류 `mode`            |
+| 결제 (1.15.0 예정) | 1 `limit_reached_shown` → 2 `limit_reached_cta_tapped` → 3 `purchase`                                                              | 닫힌 퍼널, 1일 내(제안), 분류 `feature`         |
+
+(1.15.0 예정 두 퍼널의 기간 1일은 제안값이며 페이월 퍼널과 맞췄다. 결제 3단계는 RevenueCat `purchase` 원본이다. GA 측정기준 등록과 `todo_count`·`selected_count` 측정항목은 배포 후 사용자 확인을 받아 추가한다.)
 
 (1.14.0부터 페이월 퍼널 2단계는 `premium_gate_cta_tapped` → `paywall_viewed`로 본다. 이전 버전 비교에만 `screen_view`를 쓴다.)
 
