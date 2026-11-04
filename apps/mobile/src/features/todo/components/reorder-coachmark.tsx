@@ -9,6 +9,8 @@ import { PressableFeedback } from 'heroui-native';
 import { useEffect, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { TODO_LOG_EVENT } from '../constants/todo-log-events';
+
 type ReorderCoachmarkKind = 'todo' | 'category';
 
 /**
@@ -23,7 +25,10 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
     if (error == null) {
       return;
     }
-    logger.warn('todo.reorder-coachmark.unavailable', { kind, error: errorMessageOf(error) });
+    logger.warn(TODO_LOG_EVENT.REORDER_COACHMARK_UNAVAILABLE, {
+      kind,
+      error: errorMessageOf(error),
+    });
   }, [error, kind, logger]);
 
   if (user == null) {

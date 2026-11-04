@@ -1,5 +1,6 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
+import { errorMessageOf } from '@src/shared/errors';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
@@ -36,7 +37,7 @@ export class RevenueCatSdkManager {
       this.#configured = true;
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
       return;
     }
@@ -54,7 +55,7 @@ export class RevenueCatSdkManager {
       await Purchases.logIn(userId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGIN_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
       return;
     }
@@ -76,7 +77,7 @@ export class RevenueCatSdkManager {
       await Purchases.logOut();
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGOUT_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
     }
   };
@@ -94,7 +95,7 @@ export class RevenueCatSdkManager {
       });
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
     }
   };
@@ -110,7 +111,7 @@ export class RevenueCatSdkManager {
       await Purchases.setFirebaseAppInstanceID(appInstanceId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
     }
   };

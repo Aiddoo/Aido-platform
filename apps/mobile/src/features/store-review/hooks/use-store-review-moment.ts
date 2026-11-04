@@ -1,6 +1,6 @@
 import { useLogger, useStoreReviewService } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
-import { toError } from '@src/shared/errors';
+import { errorMessageOf } from '@src/shared/errors';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from 'expo-router';
@@ -42,7 +42,7 @@ export function useStoreReviewMoment() {
     try {
       storeReviewService.recordActiveDay(accountId, currentLocalDateKey);
     } catch (error) {
-      logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, { error: toError(error).message });
+      logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, { error: errorMessageOf(error) });
     }
   }, [currentLocalDateKey, logger, queryClient, storeReviewService]);
 
@@ -69,7 +69,7 @@ export function useStoreReviewMoment() {
       } catch (error) {
         logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, {
           moment,
-          error: toError(error).message,
+          error: errorMessageOf(error),
         });
       } finally {
         if (pendingRequestRef.current === controller) {

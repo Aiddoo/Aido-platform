@@ -1,4 +1,5 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { errorMessageOf } from '@src/shared/errors';
 import { useEffect, useMemo, useRef } from 'react';
 
 import { ACTIVATION_LOG_EVENT } from '../constants/activation-log-events';
@@ -42,9 +43,11 @@ export function useAutomaticPushRegistration(): boolean {
     }
 
     preflightAttemptedRef.current = true;
-    notificationService
-      .setupPushNotifications({ requestPermission: false })
-      .catch((error) => logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_PREFLIGHT_SKIPPED, { error }));
+    notificationService.setupPushNotifications({ requestPermission: false }).catch((error) =>
+      logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_PREFLIGHT_SKIPPED, {
+        error: errorMessageOf(error),
+      }),
+    );
   }, [activation.isAuthenticated, logger, notificationService]);
 
   useEffect(() => {
@@ -58,7 +61,9 @@ export function useAutomaticPushRegistration(): boolean {
 
     attemptedKeyRef.current = registrationKey;
     notificationService.setupPushNotifications().catch((error) => {
-      logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_REGISTRATION_SKIPPED, { error });
+      logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_REGISTRATION_SKIPPED, {
+        error: errorMessageOf(error),
+      });
     });
   }, [logger, notificationService, registrationKey]);
 

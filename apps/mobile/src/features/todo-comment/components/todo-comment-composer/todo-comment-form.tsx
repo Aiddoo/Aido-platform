@@ -2,7 +2,7 @@ import { useDraftService, useLogger } from '@src/bootstrap/providers/di-context'
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { isApiError } from '@src/shared/errors';
+import { errorMessageOf, isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -198,7 +198,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
     draftService.remove(createTodoCommentDraftKey({ userId, todoId, mode }));
     reset(TodoCommentComposer.new());
     KeyboardController.dismiss().catch((error) =>
-      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error }),
+      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error: errorMessageOf(error) }),
     );
   };
 

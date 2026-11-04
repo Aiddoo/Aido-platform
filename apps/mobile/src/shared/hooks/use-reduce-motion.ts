@@ -1,9 +1,10 @@
-import { toError } from '@src/shared/errors';
+import { errorMessageOf } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { ACCESSIBILITY_LOG_EVENT } from './accessibility-log-events';
 import { createAccessibilitySettingStore } from './accessibility-setting-store';
 
 const reduceMotion = createAccessibilitySettingStore({
@@ -13,7 +14,9 @@ const reduceMotion = createAccessibilitySettingStore({
     return () => subscription.remove();
   },
   onReadError: (error) => {
-    logger.warn('accessibility.reduce-motion-read.failed', { error: toError(error).message });
+    logger.warn(ACCESSIBILITY_LOG_EVENT.REDUCE_MOTION_READ_FAILED, {
+      error: errorMessageOf(error),
+    });
   },
 });
 

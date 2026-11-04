@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+import { ENV_LOG_EVENT } from './env-log-events';
 import { resolveRevenueCatApiKey } from './revenuecat-api-key';
 
 // =============================================================================
@@ -84,12 +85,11 @@ const toDeviceUrl = (url: string, devMachineIp?: string): string => {
   const resolvedIp = devMachineIp || autoIp;
 
   if (!resolvedIp) {
-    logger.warn(
-      '[env] 실제 기기에서 개발 서버에 연결할 수 없습니다.\n' +
-        '- 개발 머신과 기기가 같은 Wi-Fi에 연결되어 있는지 확인하세요.\n' +
-        '- 또는 .env.local 파일에 EXPO_PUBLIC_DEV_MACHINE_IP를 수동으로 설정하세요.\n' +
-        '  예시: EXPO_PUBLIC_DEV_MACHINE_IP=192.168.1.100',
-    );
+    logger.warn(ENV_LOG_EVENT.DEV_MACHINE_IP_MISSING, {
+      hint:
+        '실제 기기에서 개발 서버에 연결할 수 없습니다. 개발 머신과 기기를 같은 Wi-Fi에 연결하거나 ' +
+        '.env.local에 EXPO_PUBLIC_DEV_MACHINE_IP(예: 192.168.1.100)를 설정하세요.',
+    });
     return url;
   }
 
@@ -119,7 +119,7 @@ const resolveApiUrl = (): string => {
 
   // 개발 환경에서 디버깅 로그 출력
   if (extra.env === 'development' && __DEV__) {
-    logger.debug('[env] API URL resolved', {
+    logger.debug(ENV_LOG_EVENT.API_URL_RESOLVED, {
       platform: context.platform,
       isPhysicalDevice: context.isPhysicalDevice,
       devMachineIp: context.devMachineIp || getAutoDetectedDevMachineIp() || 'auto-detect failed',

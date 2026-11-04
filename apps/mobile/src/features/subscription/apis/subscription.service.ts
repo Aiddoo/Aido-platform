@@ -1,4 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
+import { errorMessageOf } from '@src/shared/errors';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
@@ -42,7 +43,7 @@ export class SubscriptionService {
       return ok(result.offering);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.OFFERINGS_FETCH_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
       return err(toSubscriptionError('offerings', error));
     }
@@ -86,7 +87,7 @@ export class SubscriptionService {
       return CustomerInfoPolicy.findStoreProductId(customerInfo.entitlements, store);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessageOf(error),
       });
       return null;
     }

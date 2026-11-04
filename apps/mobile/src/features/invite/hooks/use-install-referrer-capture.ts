@@ -1,6 +1,6 @@
 import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { toError } from '@src/shared/errors';
+import { errorMessageOf } from '@src/shared/errors';
 import { useEffect } from 'react';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
@@ -21,7 +21,7 @@ export function useInstallReferrerCapture() {
       })
       .catch((error: unknown) => {
         logger.warn(INVITE_LOG_EVENT.INSTALL_REFERRER_READ_FAILED, {
-          error: toError(error).message,
+          error: errorMessageOf(error),
         });
       });
   }, [inviteService, logger, trackEvent]);

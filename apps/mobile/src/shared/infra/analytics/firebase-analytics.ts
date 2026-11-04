@@ -9,6 +9,7 @@ import {
 } from '@react-native-firebase/analytics';
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
+import { errorMessageOf } from '@src/shared/errors';
 import {
   CLEARED_USER_PROPERTIES,
   INTERNAL_TRAFFIC_EVENT_PARAMETERS,
@@ -25,7 +26,7 @@ const warn = (
 ) => {
   logger.warn(logEvent, {
     ...extra,
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessageOf(error),
   });
 };
 

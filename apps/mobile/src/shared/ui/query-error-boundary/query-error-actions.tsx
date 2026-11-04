@@ -11,6 +11,7 @@ import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
 import { Result } from '../result/result';
 import { TextButton } from '../text-button/text-button';
 import { VStack } from '../v-stack/v-stack';
+import { QUERY_ERROR_LOG_EVENT } from './query-error-log-events';
 
 /** 예상하지 못한 조회 오류에서 여는 문의. 오류 신고 분류를 미리 고른다 */
 export const BUG_REPORT_INQUIRY_HREF = {
@@ -38,7 +39,7 @@ export const openSupportMail = () => {
     body: t('common:errorBoundary.mailBody', { code }),
   });
   return Linking.openURL(url).catch((error: unknown) =>
-    logger.warn('support_mail.open_failed', { error: errorMessageOf(error) }),
+    logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, { error: errorMessageOf(error) }),
   );
 };
 

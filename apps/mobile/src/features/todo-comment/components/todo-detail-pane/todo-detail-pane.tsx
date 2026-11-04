@@ -6,7 +6,7 @@ import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
 import { useTrack } from '@src/shared/analytics';
-import { isApiError } from '@src/shared/errors';
+import { errorMessageOf, isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
@@ -265,7 +265,9 @@ function useDismissKeyboardOnBlur() {
     useCallback(
       () => () => {
         KeyboardController.dismiss().catch((error) =>
-          logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error }),
+          logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
+            error: errorMessageOf(error),
+          }),
         );
       },
       [logger],
