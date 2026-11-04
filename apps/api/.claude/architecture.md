@@ -10,14 +10,14 @@ Aido 서버는 PostgreSQL 기반 모듈러 모놀리스다. `modules/<context>`�
 HTTP → Guard/Interceptor → Controller → endpoint UseCase
                                      → Domain 규칙 + Application Port
                                                         ↑ 구현
-                                          Infrastructure → DB/Redis/queue/vendor
+                                          Infrastructure → DB/pg-boss/cache/vendor
 ```
 
 | 위치             | 소유하는 책임                                                  |
 | ---------------- | -------------------------------------------------------------- |
 | `domain`         | 상태 전이, 값의 검증·불변성, 순수 업무 판단                    |
 | `application`    | 흐름·권한·UoW 조정, Port, read model, 메시지·프롬프트 조립     |
-| `infrastructure` | ORM/SQL·Redis·queue·SDK I/O와 해당 표현의 변환                 |
+| `infrastructure` | ORM/SQL·pg-boss·cache·SDK I/O와 해당 표현의 변환               |
 | `presentation`   | HTTP DTO 검증, 입력 변환, Swagger·상태·응답 매핑               |
 | Context root     | Module, factory provider, 실제 소비하는 공개 capability        |
 | `platform`       | DB transaction runtime, HTTP filter, Nest logging 등 실행 기술 |
@@ -35,6 +35,7 @@ Aggregate는 함께 일관성을 지켜야 하는 단건 상태와 행동이 있
 
 - [Todo](../src/modules/planning/domain/aggregates/todos/todo.aggregate.ts)는 생성 계획·완료 등 업무 행동을 소유한다. DB 생성 ID를 얻기 전 `planCreation()`과 저장 상태의 `reconstitute()`를 구분한다.
 - [Notification](../src/modules/notification/domain/aggregates/delivery/notification.aggregate.ts)은 읽음 상태·소유권·멱등 행동을 소유한다. 조회 컬럼과 transport action은 [NotificationRecord](../src/modules/notification/application/read-models/delivery/notification.read-model.ts)로 분리한다.
+- [PushDevice](../src/modules/notification/domain/aggregates/delivery/push-device.aggregate.ts)는 기기별 알림 권한([PushPermission](../src/modules/notification/domain/value-objects/delivery/push-permission.vo.ts) VO)과 보고 시각을 소유한다. 플랫폼 판별·도달 가능 판단·건너뜀 사유·90일 stale 기준은 [push-device.policy.ts](../src/modules/notification/domain/policies/delivery/push-device.policy.ts)의 순수 함수다.
 - [AiReport](../src/modules/ai-assistance/domain/entities/reports/ai-report.entity.ts)는 저장 결과의 불변 snapshot이다. 상태 전이가 없는데 형식적으로 AggregateRoot를 상속하지 않는다. 표시 label과 응답은 [Application read-model의 toAiReportView](../src/modules/ai-assistance/application/read-models/reports/ai-report.read-model.ts)가 조립한다.
 - [Coordinate](../src/modules/weather/domain/value-objects/forecast/coordinate.vo.ts)의 전역 좌표 검증과 KMA의 한국 지원·투영 정책은 다르다. provider 정책/계산을 Domain 좌표에 섞지 않는다.
 
@@ -123,11 +124,11 @@ commit
 | 경계 직후 요청                              | Access 캐시는 기한을 함께 저장해 TTL 안에서도 경계를 넘기지 않고, /me 프로필 캐시 TTL은 다음 경계까지로 줄인다                              |
 | 정리 작업(`premium-grant-sweep`, 10분 주기) | 끝난 보상을 닫고, 만료 웹훅을 잃어 ACTIVE로 남은 projection을 다시 계산해 FREE로 저장한다. 그 전에도 판단은 위 규칙을 따른다                |
 
-## 댓글 읽기 모델의 현재 결정
+## 댓글 읽기 모델
 
-댓글 overview/conversation은 높은 변경성과 viewer 상태·cursor/focus 문맥 때문에 Redis 공유 payload를 사용하지 않는다. [DrizzleTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader.ts)는 root keyset, descendant 집계·DFS window를 SQL로 읽고 page 단위 like를 합친다. [Conversation presenter](../src/modules/engagement/application/presenters/comments/todo-conversation.presenter.ts)가 lane/focus 표시를 조립한다.
+댓글은 `parentId`·`replyCount`로 root와 답글을 구분한다(`path`·`depth`·`rootId` 열은 1.14.2에서 제거). overview/conversation은 변경이 잦고 viewer 상태·cursor 문맥이 있어 Redis 공유 payload를 쓰지 않는다. [DrizzleTodoCommentReader](../src/modules/engagement/infrastructure/persistence/comments/drizzle-todo-comment.reader.ts)가 root keyset을 SQL로 읽고 page 단위 like를 합치며, `application/presenters/comments/v1`·`v2`가 응답을 조립한다.
 
-상세 조회수는 unique key로 멱등 기록하며 별도 기록 endpoint를 만들지 않는다. 삭제된 부모는 살아 있는 후손의 문맥을 위해 묘비로 남을 수 있다. 서명 cursor는 todo/sort/thread/scope를 묶는다. POPULAR traversal은 보지 않은 root의 실시간 순위 변경까지 고정하는 snapshot이 아니다. 변경 시 해당 UseCase·reader·presenter와 구 앱/HTTP 계약을 함께 확인한다.
+상세 조회수는 unique key로 멱등 기록하며 별도 기록 endpoint를 만들지 않는다. 삭제된 root는 살아 있는 답글이 있으면(`replyCount > 0`) 묘비로 남는다. 서명 cursor는 todo/sort/thread/scope를 묶는다. 변경 시 UseCase·reader·presenter와 구 앱/HTTP 계약을 함께 확인한다.
 
 ## 검증과 현재 전환 범위
 

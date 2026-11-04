@@ -46,6 +46,30 @@ async create(
 
 이 경계는 `user.userId`, DATE `parseDateOnly`, 사용자 zone의 시각 `parseLocalDateTime`을 입력으로 만든다. `CurrentUser("id")`나 존재하지 않는 `scheduledAt` 예제를 새 코드의 계약으로 복사하지 않는다. shared schema의 optional/null/default는 [REST 계약](rest-contracts.md) 기준으로 유지한다.
 
+## 요청 헤더와 throttle
+
+앱 헤더는 요청마다 한 번 `RequestClient`(`#api/platform/http/request-client`)로 정규화한다. Controller·guard·interceptor는 같은 값을 읽는다.
+
+| 필요한 값                     | 사용                                                                                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 앱 버전(SemVer, 없으면 구 앱) | `@AppVersion()`. 비교는 `isSemanticVersionAtLeast`                                                                                        |
+| 플랫폼·빌드·OS·기기명·언어    | `@CurrentRequestClient()`(`RequestClient`), `@Locale()`                                                                                   |
+| 시간대                        | `@Timezone()` 또는 `requestTimezoneOrUtc`·`requestTimezoneIfSent`([날짜 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)) |
+| Controller 밖(guard 등)       | `RequestClientReader.current()`                                                                                                           |
+
+- Controller에서 `@Headers("x-…")`로 앱 헤더를 직접 읽지 않는다. 새 헤더는 `RequestClient`에 정규화 규칙과 함께 추가한다.
+- `X-Request-Id`는 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 헤더로 돌려준다. 로그 `reqId`와 Sentry `request_id`가 같은 값이다([logging-guide](logging-guide.md#http와-설정)).
+
+Throttle은 전역 `UserAwareThrottlerGuard`가 적용한다. 한도는 Controller 파일의 이름 있는 상수로 둔다(`AUTH_THROTTLE.LOGIN`, `INQUIRY_THROTTLE`처럼 `{ ttl, limit }`). 인라인 숫자를 쓰지 않는다.
+
+```ts
+@ThrottleByUser()
+@Throttle({ default: AUTH_THROTTLE.CHANGE_PASSWORD })
+```
+
+- 인증 전 요청은 IP, 사용자별 한도는 `@ThrottleByUser()`와 `@Throttle`을 함께 붙인다.
+- 출시된 앱의 OpenAPI fixture는 기존 operation에 상태 코드·파라미터를 더하는 것을 막는다. 출시된 endpoint의 새 한도는 `@ApiDoc` description에 문장으로 적는다.
+
 ## UseCase와 Domain
 
 UseCase는 `<Verb><Object>` 이름과 `execute` 진입점을 사용한다. 한 endpoint 또는 명확한 background workflow의 입력·권한·port 호출·transaction 순서를 조정한다. 유사 코드가 있다는 이유만으로 unrelated 흐름을 범용 executor에 합치지 않는다.
@@ -100,11 +124,11 @@ export const getMemoProvider: FactoryProvider<GetMemo> = {
 
 ## 저장·효과·캐시
 
-DB 접근은 Drizzle ORM(RQB·query builder)을 기본으로 하고 raw SQL은 [Drizzle 문서](drizzle.md#읽기쓰기와-transaction)처럼 ORM이 표현하지 못하는 원자성에만 쓴다. 목록·집계에서 행마다 다시 조회하는 N+1을 만들지 않는다. 필요한 id를 모아 한 번에 읽고(`where in`·relation projection) `keyBy`/`groupBy`로 붙인다.
+DB 접근은 Drizzle ORM(RQB·query builder)을 기본으로 하고 raw SQL은 [Drizzle 문서](drizzle.md#읽기쓰기와-transaction)처럼 ORM이 표현하지 못하는 원자성에만 쓴다. 목록·집계에서 행마다 다시 조회하는 N+1을 만들지 않는다. 필요한 id를 모아 `inArray` 한 번으로 읽고 `keyBy`/`groupBy`로 붙인다.
 
 업무 원자성은 UoW와 실제 DB lock/constraint/conditional write로 구현한다. 활성 transaction은 CLS에서 읽고 tx 인자를 계층마다 전달하지 않는다. 실패 기록, commit 뒤 publish/queue, best-effort cache settle은 각 흐름의 기존 의미를 따른다. 외부 AI·push·email 호출은 긴 DB transaction 밖에 둔다.
 
-캐시에는 의미 기반 Port를 사용한다. raw key·TTL·pattern·Redis command는 Infrastructure keyspace에 둔다. queue name/payload/attempt/backoff/재시도 의미도 소유 Context에 응집한다. 제거하거나 바꾸려면 실제 운영 소비자와 전환 범위를 함께 처리한다.
+캐시에는 의미 기반 Port를 사용한다. raw key·TTL·pattern·Redis command는 Infrastructure keyspace에 둔다. job은 pg-boss만 쓰며 queue name/payload/attempt/backoff/재시도 의미는 소유 Context에 응집한다. 제거하거나 바꾸려면 실제 운영 소비자와 전환 범위를 함께 처리한다.
 
 ## 순수 라이브러리와 표시
 

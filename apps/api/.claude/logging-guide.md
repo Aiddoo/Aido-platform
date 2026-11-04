@@ -6,7 +6,7 @@
 
 - Domain은 로그를 기록하지 않는다.
 - 순수 Application은 필요한 `Pick<ApplicationLogger, ...>`를 생성자로 받고 factory provider가 기존 Nest Logger를 연결한다.
-- Application 이벤트 상수는 Context의 `application/observability/<slice>/*.events.ts`, 공급자 이벤트는 `infrastructure/observability/<slice>`에 둔다. HTTP 이벤트는 `platform/logging/http-log.ts`가 소유한다.
+- Application 이벤트 상수는 Context의 `application/observability/<slice>/*.events.ts`, 공급자 이벤트는 `infrastructure/observability/<slice>`에 둔다. 예: [identity-log.events.ts](../src/modules/identity/application/observability/auth/identity-log.events.ts). HTTP 이벤트는 `platform/logging/http-log.ts`가 소유한다.
 - Infrastructure는 공급자 결과·재시도·작업 실패를, HTTP middleware/filter는 요청·HTTP 오류를 기록한다. Controller·UseCase·Repository에 같은 시작/종료 로그를 반복하지 않는다.
 
 `event`는 안정된 영어 key다. 식별자·channel·허용된 reason code·count·errorCode/errorType처럼 조회할 수 있는 필드를 구조화한다. 원문 message에 업무 상태를 의존시키지 않는다.

@@ -19,6 +19,11 @@
 - 상호작용 검증은 설치된 Vitest와 `vitest-mock-extended`를 재사용한다. 반환값만 필요한 의존성에 deep mock을 기본으로 쓰지 않는다. 특정 matcher helper나 새 mock 라이브러리를 의무화하지 않는다.
 - `createUnitOfWorkMock()`과 callback Stub은 실행 순서·실패 전달만 검증한다. CLS·DB rollback·row lock·durable attempt는 [실제 PG](./integration-test.md)에서 검증한다.
 
+상태가 결과를 정하는 Port는 작은 Stub/Fake로 대체한다. 호출 인자만 보는 mock으로는 저장 결과·소유권 이전을 확인하지 못한다.
+
+- [InMemoryPushDeviceStore](../test/mocks/in-memory-push-device.store.ts): 기기 기록과 토큰을 메모리에 두고 등록·소유권 이전·세션별 삭제를 상태로 확인한다.
+- [StubSessionPushDeviceReleaser](../test/mocks/ports/auth-session.stub.ts): 세션 폐기 뒤 해제를 요청한 sessionId를 순서대로 기록한다. 로그아웃·비밀번호 변경 등 UseCase가 폐기한 세션을 빠짐없이 해제했는지 확인한다.
+
 실제 예제:
 
 - [TransactionalEmailSender](../src/modules/notification/application/senders/email/transactional-email.sender.spec.ts): state Stub에 실제 템플릿·태그·결과를 기록한다.

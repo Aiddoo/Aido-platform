@@ -44,23 +44,21 @@ migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴�
 | Drizzle 기록이 있는 DB(운영)  | 아직 적용하지 않은 마이그레이션만 적용                                                        |
 | Drizzle 기록이 없는 오래된 DB | 지원하지 않는다. 로컬 개발 볼륨이면 `docker compose … down -v`로 지우고 빈 DB에서 다시 만든다 |
 
-운영 DB는 1.13.1 배포 때 baseline 기록이 생겼다. Prisma DB를 baseline으로 넘겨받던 `init` 경로는 전환이 끝나 지웠다.
+## Job과 종료
 
-## Job 전환과 잔존 작업
-
-durable job은 PostgreSQL(pg-boss)만 쓴다. Redis/BullMQ job runtime과 `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED`는 1.14.2에서 제거했고, 배포 env에 남은 두 값은 무시된다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
+durable job은 PostgreSQL(pg-boss)만 쓴다. 배포 env에 남은 `JOB_BACKEND`·`JOB_REDIS_DRAIN_ENABLED`는 무시된다. Redis는 `CACHE_TYPE=redis`·`PUSH_RATE_LIMIT_BACKEND=redis`를 고른 경우에만 연결한다.
 
 job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 
 [`push-notifications.md`](./docs/push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다.
 
-알림 Context의 legacy worker(`notification`·`retention`·`todo-reminder`·`timezone-reminder`)는 1.14.1에서, 계정 삭제·관리자 알림·AI 제안·AI 리포트의 이전 이름 queue worker(`.v1` 없는 이름)는 1.14.2에서 제거했다. 2026-07-22 pg-boss 전환 뒤 이 이름으로 enqueue하는 코드는 없다. 이전 이름의 worker는 Redis drain에서만 작업을 받았고, 1.14.1 배포 전 Redis job 미사용과 알림 이전 queue의 대기 작업 0건을 확인했다.
-
-리텐션 발송은 1.14.1부터 공용 push-delivery outbox를 쓴다. 1.14.2의 migration `drop_legacy_comment_path_and_retention_outbox`가 이전 `RetentionPushOutbox` 테이블과 `TodoComment.path`·`depth`·`rootId` 열을 지운다. 1.14.1 이하 API 이미지는 지운 열에 값을 쓰므로, 이 migration을 적용한 DB에서 이미지만 롤백하면 댓글 작성이 실패한다.
+리텐션 발송은 공용 push-delivery outbox를 쓴다.
 
 ## 롤백의 범위
 
 workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 application graph·marker·DDL·업무 데이터 rollback이 아니다.
+
+**1.14.2 migration 뒤에는 이미지를 1.14.1 이하로만 되돌리지 않는다.** `drop_legacy_comment_path_and_retention_outbox`가 `TodoComment.path`·`depth`·`rootId` 열과 `RetentionPushOutbox`를 지웠다. 이전 이미지는 지운 열에 값을 쓰므로 댓글 작성이 실패한다. API를 되돌려야 하면 1.14.2 이상 이미지를 쓴다.
 
 nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
 
@@ -91,6 +89,6 @@ Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. 
 
 스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 
-1.14.0 운영 env는 서버의 `~/apps/env-staging/1.14.0/apply.sh pre-deploy|store-release`로 단계별 반영한다(pre-deploy 적용됨). env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
+env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
 작업 PR과 릴리스 stack은 `main`으로 바로 머지한다(`develop`은 더 이상 쓰지 않는다). 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

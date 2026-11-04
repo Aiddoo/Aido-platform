@@ -20,6 +20,13 @@ DB adapter를 고칠 때는 "읽기·쓰기와 transaction"을 본다. 스키마
 
 - Repository는 `TransactionHost<DrizzleTransactionalAdapter>`를 받아 `this.txHost.tx`만 쓴다. 트랜잭션 경계는 Application의 `UNIT_OF_WORK.run`이 정한다. 중첩 `Propagation.Nested`는 Drizzle savepoint(`tx.transaction`)다.
 - 조회는 RQB v2(`tx.query.<table>.findFirst/findMany({ where, with, columns, orderBy, limit })`)나 query builder를 쓴다. 변경은 `insert/update/delete … returning()`, 충돌 처리는 `onConflictDoUpdate`/`onConflictDoNothing`을 쓴다.
+- 연산자 우선순위
+  - 조건은 `eq`·`and`·`inArray`·`gte` 등 ORM 연산자로 쓴다. 수동 `sql` 조건을 만들지 않는다.
+  - 개수는 `tx.$count(table, where)`, 존재 여부는 `exists`/`notExists` 서브쿼리를 쓴다.
+  - 여러 행 upsert는 `insert().values([...]).onConflictDoUpdate({ set: { col: sql`excluded.col` } })` 한 문장으로 쓴다. 반복문 안에서 행마다 upsert하지 않는다.
+- 쿼리 수와 병렬
+  - 운영은 API 1 인스턴스, 앱 풀 `DATABASE_POOL_MAX` 10에 pg-boss 풀 3이 따로 있다. 요청이나 배치 안에서 항목 수에 비례해 쿼리를 퍼뜨리지 않는다. N번 조회는 `inArray` 한 번으로 바꾼다.
+  - `Promise.all`은 트랜잭션 밖에서 서로 독립인 읽기 몇 개를 함께 실행할 때만 쓴다. 트랜잭션 안에서는 순서대로 `await`한다(한 연결에서 병렬 쿼리는 이득이 없다).
 - 행 타입은 `typeof table.$inferSelect`, 입력은 `$inferInsert`로 유도한다. 도메인 타입을 ORM 타입에 맞춰 바꾸지 않는다.
 - 생성 ID는 `$defaultFn(createEntityId)`, `updatedAt`은 `$onUpdate`가 채운다.
 - 단건 변경 결과가 없으면 `requireRecord`(`database-error.util.ts`)로 부재 오류를 낸다. `DrizzleQueryError` 안의 pg `DatabaseError` SQLSTATE는 `isUniqueConstraintViolation`·`isTransactionWriteConflict`·`uniqueConstraintTargets`로 읽는다.
@@ -43,5 +50,5 @@ DB adapter를 고칠 때는 "읽기·쓰기와 transaction"을 본다. 스키마
 ## 배포와 롤백
 
 - `db:deploy`(migrate 이미지)는 URL guard → pg-boss migrate → Drizzle migrate 순서로 실행한다. 원격 DB는 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하고, DDL lock 대기는 5초다.
-- migrate는 Drizzle 기록(`drizzle.__drizzle_migrations`)을 기준으로 남은 마이그레이션만 적용한다. 기록이 없는 오래된 로컬 DB는 볼륨을 지우고 빈 DB에서 다시 만든다(Prisma DB 인수 경로는 전환 완료로 제거).
+- migrate는 Drizzle 기록(`drizzle.__drizzle_migrations`)을 기준으로 남은 마이그레이션만 적용한다. 기록이 없는 오래된 로컬 DB는 볼륨을 지우고 빈 DB에서 다시 만든다.
 - 이미지 롤백은 DB를 되돌리지 않는다. 배포 스크립트는 migrate를 다시 실행하지 않고 이전 API만 복구한다.
