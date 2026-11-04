@@ -28,9 +28,9 @@ export function isSourceMemoMissingError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.MEMO_2001);
 }
 
-/** 이 오류 뒤에 다시 보낼 때는 처음 키를 쓰지 않고 새 키를 만든다 */
-export function shouldRenewPlanKey(error: unknown) {
-  return isPlanKeyExpiredError(error) || isPlanKeyConflictError(error);
+/** 아직 처리 중이다. 같은 키로 잠시 뒤 다시 물으면 처음 요청의 결과를 받는다 */
+export function isPlanInProgressError(error: unknown) {
+  return isApiError(error) && error.hasCode(ErrorCode.AI_1314);
 }
 
 export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause {

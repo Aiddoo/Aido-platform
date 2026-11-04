@@ -43,7 +43,7 @@
     },
     "key-expired": {
       "title": "We need to get the result again",
-      "description": "Trying again may count as another use."
+      "description": "Tap once more to try again."
     },
     "ai-unavailable": {
       "title": "Couldn't sort it out right now",

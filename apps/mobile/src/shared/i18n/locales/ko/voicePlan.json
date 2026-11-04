@@ -38,7 +38,7 @@
     },
     "key-expired": {
       "title": "결과를 다시 받아야 해요",
-      "description": "다시 정리하면 횟수가 한 번 더 차감될 수 있어요."
+      "description": "한 번 더 눌러 다시 정리해주세요."
     },
     "ai-unavailable": {
       "title": "지금은 정리하지 못했어요",

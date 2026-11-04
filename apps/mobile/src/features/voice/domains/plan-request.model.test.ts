@@ -49,12 +49,35 @@ describe('preparePlanRequest', () => {
 describe('getPlanRequestAfterFailure', () => {
   const previous = { fingerprint: 'a', idempotencyKey: 'key-1', input: 'a' };
 
-  test.each(['AI_1317', 'AI_1318'])('%s 뒤에는 다음에 누를 때 새 키를 만든다', (code) => {
+  test('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
     // Given
-    const error = new ApiError(code, '오류', 410);
+    const error = new ApiError('AI_1318', '오류', 422);
 
     // When
     const next = PlanRequestPolicy.getAfterFailure(previous, error);
+
+    // Then
+    expect(next).toBeNull();
+  });
+
+  test('AI_1317을 처음 받으면 추가 차감 없이 다시 만들도록 같은 키를 유지한다', () => {
+    // Given
+    const error = new ApiError('AI_1317', '오류', 410);
+
+    // When
+    const next = PlanRequestPolicy.getAfterFailure(previous, error);
+
+    // Then
+    expect(next?.idempotencyKey).toBe('key-1');
+  });
+
+  test('같은 키가 또 AI_1317이면 정리할 길이 막히지 않게 다음에 누를 때 새 키를 만든다', () => {
+    // Given
+    const error = new ApiError('AI_1317', '오류', 410);
+    const expired = PlanRequestPolicy.getAfterFailure(previous, error);
+
+    // When
+    const next = PlanRequestPolicy.getAfterFailure(expired, error);
 
     // Then
     expect(next).toBeNull();
