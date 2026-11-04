@@ -7,6 +7,8 @@ export const ANIMATION = {
     fast: 150,
     normal: 200,
     slow: 300,
+    /** 새 알림 종 흔들기처럼 한 번 눈길을 끄는 강조 */
+    emphasis: 600,
   },
   delay: {
     short: 50,

@@ -4,6 +4,7 @@ export {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpIcon,
+  BellFilledIcon,
   BellIcon,
   BlockIcon,
   CalendarIcon,

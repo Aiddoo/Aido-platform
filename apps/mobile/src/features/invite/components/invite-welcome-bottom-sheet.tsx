@@ -6,7 +6,7 @@ import { createFeedAddTodoHref, createFeedHref } from '@src/features/todo/utils/
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  BellIcon,
+  BellFilledIcon,
   BottomSheet,
   Box,
   Button,
@@ -247,7 +247,7 @@ function WelcomeNotificationPrompt() {
 
   return (
     <HStack gap={8} align="center" className="mt-4 w-full rounded-2xl bg-gray-1 px-4 py-3">
-      <BellIcon width={18} height={18} colorClassName="text-gray-7" />
+      <BellFilledIcon width={18} height={18} colorClassName="text-gray-7" />
       <Text
         size="b4"
         shade={7}

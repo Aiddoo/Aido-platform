@@ -97,5 +97,8 @@
       "denied": "꺼짐 · 기기 설정에서 켤 수 있어요",
       "notDetermined": "아직 선택하지 않았어요"
     }
+  },
+  "bell": {
+    "unreadLabel": "알림, 읽지 않은 알림 있음"
   }
 }

@@ -97,5 +97,8 @@
       "denied": "Off · Turn on in device settings",
       "notDetermined": "Not chosen yet"
     }
+  },
+  "bell": {
+    "unreadLabel": "Notifications, unread"
   }
 }
