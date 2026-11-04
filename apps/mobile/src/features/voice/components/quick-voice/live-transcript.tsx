@@ -1,6 +1,6 @@
-import { Text } from '@src/shared/ui';
+import { Box, Text } from '@src/shared/ui';
 import { type ComponentRef, useRef } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 
 import {
@@ -35,7 +35,7 @@ export function LiveTranscript({ transcript }: LiveTranscriptProps) {
       testID="live-transcript"
     >
       {isAnimated ? (
-        <View className="flex-row flex-wrap">
+        <Box className="flex-row flex-wrap">
           {finalWords.map((word, index) => (
             <Animated.View key={`${index}-${word}`} entering={FadeIn.duration(WORD_FADE_MS)}>
               <Text size="t2" weight="semibold" lineBreakStrategyIOS="hangul-word">
@@ -48,7 +48,7 @@ export function LiveTranscript({ transcript }: LiveTranscriptProps) {
               {interim}
             </Text>
           )}
-        </View>
+        </Box>
       ) : (
         <Text size="t2" weight="semibold" lineBreakStrategyIOS="hangul-word">
           {finalWords.join(' ')}

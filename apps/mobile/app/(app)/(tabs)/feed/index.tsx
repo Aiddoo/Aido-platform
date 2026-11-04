@@ -137,9 +137,7 @@ function MyFeed() {
 
         <Box px={16}>
           <QueryErrorBoundary fallback={SuggestionEntry.Error}>
-            <Suspense fallback={<SuggestionEntry.Loading />}>
-              <SuggestionEntry />
-            </Suspense>
+            <SuggestionEntry />
           </QueryErrorBoundary>
         </Box>
         <Spacing size={20} />

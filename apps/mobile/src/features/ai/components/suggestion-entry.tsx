@@ -5,8 +5,8 @@ import { subscriptionHref } from '@src/features/subscription/utils/navigation/su
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { ListRow, QueryErrorBoundary, type QueryErrorFallbackProps } from '@src/shared/ui';
-import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -16,23 +16,41 @@ import {
   useGetSuggestionsQueryOptions,
 } from '../queries/get-suggestions-query-options';
 
+/**
+ * 피드 맨 아래의 있어도 되고 없어도 되는 칸이라 조회 오류를 던지지 않고 이 칸 안에서 다시 시도하게 한다.
+ * 개발 빌드는 경계가 잡은 렌더 오류도 LogBox 전체 화면으로 보여 주므로 API 오류가 화면을 덮지 않게 한다.
+ */
 export function SuggestionEntry() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('todo');
-  const [{ data: user }, { data: entitlements }] = useSuspenseQueries({
-    queries: [useGetMeQueryOptions(), useGetEntitlementsQueryOptions()],
+  const userQuery = useQuery({ ...useGetMeQueryOptions(), throwOnError: false });
+  const entitlementsQuery = useQuery({
+    ...useGetEntitlementsQueryOptions(),
+    throwOnError: false,
   });
 
-  if (!EntitlementPolicy.hasFullAccess(entitlements)) {
+  if (userQuery.isPending || entitlementsQuery.isPending) {
+    return <SuggestionEntry.Loading />;
+  }
+
+  if (userQuery.data == null || entitlementsQuery.data == null) {
+    return (
+      <SuggestionEntry.Error
+        error={userQuery.error ?? entitlementsQuery.error}
+        reset={() => {
+          userQuery.refetch();
+          entitlementsQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  if (!EntitlementPolicy.hasFullAccess(entitlementsQuery.data)) {
     return <InfoCard label={t('feed.routineSuggestion')} onPress={() => push('/suggestions')} />;
   }
 
-  return (
-    <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
-      <PremiumSuggestionEntry name={user.name} />
-    </QueryErrorBoundary>
-  );
+  return <PremiumSuggestionEntry name={userQuery.data.name} />;
 }
 
 interface PremiumSuggestionEntryProps {
@@ -43,7 +61,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['todo', 'ai']);
-  const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
+  const suggestionsQuery = useQuery({ ...useGetSuggestionsQueryOptions(), throwOnError: false });
 
   if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
     return (

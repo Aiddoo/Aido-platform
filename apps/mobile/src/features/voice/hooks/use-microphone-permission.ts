@@ -2,21 +2,9 @@ import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechMode } from '@src/core/ports/speech-recognizer';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { useConfirmDialog } from '@src/shared/ui';
 import * as Linking from 'expo-linking';
 import { useCallback } from 'react';
-import { Alert } from 'react-native';
-import { match } from 'ts-pattern';
-
-function showPermissionDeniedAlert() {
-  Alert.alert(
-    t('common:permissions.microphone.title'),
-    t('common:permissions.microphone.message'),
-    [
-      { text: t('common:permissions.cancel'), style: 'cancel' },
-      { text: t('common:permissions.openSettings'), onPress: () => Linking.openSettings() },
-    ],
-  );
-}
 
 /**
  * 마이크·음성 인식 권한을 확인하고 필요하면 묻는다. 허용되면 true다.
@@ -25,6 +13,7 @@ function showPermissionDeniedAlert() {
 export function useMicrophonePermission() {
   const speechRecognizer = useSpeechRecognizer();
   const toast = useAppToast();
+  const confirmDialog = useConfirmDialog();
 
   return useCallback(
     async (mode: SpeechMode) => {
@@ -34,17 +23,24 @@ export function useMicrophonePermission() {
           ? current
           : await speechRecognizer.requestPermission(mode);
 
-      return match(permission)
-        .with({ isGranted: true }, () => true)
-        .with({ canAskAgain: false }, () => {
-          showPermissionDeniedAlert();
-          return false;
-        })
-        .otherwise(() => {
-          toast.error(t('common:permissions.microphone.denied'));
-          return false;
-        });
+      if (permission.isGranted) {
+        return true;
+      }
+      if (permission.canAskAgain) {
+        toast.error(t('common:permissions.microphone.denied'));
+        return false;
+      }
+      const shouldOpenSettings = await confirmDialog.open({
+        title: t('common:permissions.microphone.title'),
+        description: t('common:permissions.microphone.message'),
+        cancelLabel: t('common:permissions.cancel'),
+        confirmLabel: t('common:permissions.openSettings'),
+      });
+      if (shouldOpenSettings) {
+        await Linking.openSettings();
+      }
+      return false;
     },
-    [speechRecognizer, toast],
+    [speechRecognizer, toast, confirmDialog],
   );
 }

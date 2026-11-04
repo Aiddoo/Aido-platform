@@ -1,6 +1,7 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
 import type { FeatureDiscoveryCardId } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { TodoCheckbox, TodoLabel, TodoRow } from '@src/features/todo/components/todo-row';
+import { CATEGORY_COLORS } from '@src/features/todo/constants/todo-category-colors';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckIcon, HStack, LockIcon, MicIcon, PawIcon, Text, VStack } from '@src/shared/ui';
 import { Trans } from 'react-i18next';
@@ -45,11 +46,11 @@ function FriendInvitePreview() {
 
 /** 말한 구간마다 같은 색을 써서 아래 결과 할 일과 짝이 맞게 한다 */
 const SEGMENT_COLORS = {
-  vitamins: '#ff9a6b',
-  gym: '#7fb2ff',
-  trip: '#ffcf5c',
-  groceries: '#8fd4a8',
-  meeting: '#c9a7ff',
+  vitamins: CATEGORY_COLORS[3],
+  gym: CATEGORY_COLORS[9],
+  trip: CATEGORY_COLORS[4],
+  groceries: CATEGORY_COLORS[6],
+  meeting: CATEGORY_COLORS[11],
 } as const;
 
 function Underlined({ color, children }: { color: string; children?: React.ReactNode }) {
