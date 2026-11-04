@@ -47,6 +47,14 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 - 반복 표현: `DAILY`, `WEEKDAYS`, `WEEKENDS`, `WEEKLY_DAYS`(daysOfWeek), `BIWEEKLY_DAYS`(daysOfWeek, 격주), `MONTHLY_DAY`(monthDay 1~31), 기간형 `THIS_WEEK`·`NEXT_WEEK`·`WEEK_AFTER_NEXT`·`THIS_WEEKEND`·`NEXT_WEEKEND`·`THIS_WEEKDAYS`, 그 밖 `UNSUPPORTED`. 종료는 말했을 때만 `until`/`forDuration`이고 없으면 계속 반복(NEVER)이다. 출시 parse 응답(요일 + 종료일)은 격주·매월을 나타낼 수 없어 parse-todo schema는 이 둘을 받지 않고, resolver도 이 둘을 `UNSUPPORTED_RECURRENCE`로 다룬다.
 - 정규화(`application/services/planning/action-plan.normalizer.ts`): 할 일 앞의 `ACTION_PLAN_LIMITS.MAX_TODOS`(10)개·메모 1개, 하위 항목 `TODO_ITEM_LIMITS.MAX_PER_TODO`, 제목 200자, 모르는 카테고리·겹침 id → null, 반복이면 기간(endDate)을 버린다. 핵심 포인트는 5개, 문장 번호는 준 문장 범위 안의 값만 남긴다. 계획·요약·핵심 포인트가 모두 비면 빈 결과(`isEmptyActionPlan`·`isEmptyVoiceNoteDigest`)로 호출부가 환불한다.
 
+### 계획 생성과 적용(voice)
+
+- `ai-assistance-planning.public.ts`의 `ACTION_PLAN_GENERATOR`가 프롬프트·동의 범위·정규화·일정 계산을 맡고, 사용량·겹침 판정·저장은 `modules/voice`가 맡는다. 서버는 녹음도 전사 글자도 저장하지 않는다.
+- 사용량: `ChargedPlanRunner`가 호출 전 `reserve`, 할 일이 있으면 `commit`, 실패·할 일 0개면 `refund`를 부른다. 녹음 정리도 요약이 있어도 할 일 0개면 환불한다. 환불을 마친 실패만 `{ charged: false }`를 싣고, 환불에 실패하면 차감 여부를 말하지 않으며 성공 응답은 `charged: true`다. 확정 뒤 한도를 읽지 못하면 결과를 살리고 `featureQuota: null`이다.
+- 같은 `Idempotency-Key`: 처리 중이면 AI_1314, 내용(SHA-256 지문)이나 작업이 다르면 AI_1318, 확정된 요청은 AI를 부르지 않고 프로세스 메모리에 10분 둔 결과를 돌려주며 없으면 AI_1317이다. 결과를 Redis·DB에 두지 않으므로 재시작 뒤 재요청은 새 키로 다시 보내 한 번 더 차감된다.
+- 입력 상한: 녹음 글자 수(AI_1312)는 프롬프트에서 길어지는 글자(`<`·`>`·`&`·따옴표·줄바꿈)를 늘어난 길이로 세어 `maxInputChars`보다 먼저 막는다. 맥락의 카테고리는 `PLANNING_CATEGORY_LIMIT`(프리미엄 상한 30개)까지만 넣어 ADMIN도 상한 안에 들고, 저장된 제목의 이스케이프로 넘치면 겹침 후보를 뺀다.
+- 적용: `POST /v1/action-plans/apply`는 AI를 부르지 않고 차감하지 않는다. 한 UoW에서 잠금 → 멱등 기록(`PlanApplication`) → 원본 메모·카테고리 소유 확인 → `STAGED_TODO_CREATOR.stage` → 원본 메모 삭제 → 새 메모 → 기록 순서이고 하나라도 실패하면 전부 되돌린다. 재요청은 만든 id로 다시 읽어 준다. 응답의 `todos`는 반복이면 첫 회차만이다. 기록은 7일 뒤 `voice-plan-application-cleanup.v1` 작업이 지운다.
+
 ## 운영 설정 (env, 키 외 모두 선택)
 
 | 키                                                                      | 값                                            | 기본                                                        |

@@ -42,6 +42,7 @@ import {
   SocialReportsModule,
 } from "#api/modules/social/social-reports.public";
 import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
+import { VoiceModule } from "#api/modules/voice/voice.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
 import { AppConfigModule, TypedConfigService } from "#api/platform/config/index";
@@ -64,6 +65,7 @@ import { RedisModule } from "#api/platform/redis/index";
 import { ResilienceModule } from "#api/platform/resilience/index";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
 import {
+  DAILY_THROTTLER_OPTIONS,
   THROTTLER_STORAGE,
   ThrottleModule,
   UserAwareThrottlerGuard,
@@ -117,6 +119,7 @@ import { AppService } from "./app.service.js";
             ttl: config.throttleTtl,
             limit: config.throttleLimit,
           },
+          DAILY_THROTTLER_OPTIONS,
         ],
         ...(storage && { storage }),
       }),
@@ -128,6 +131,7 @@ import { AppService } from "./app.service.js";
     AiAssistanceParsingModule,
     AiAssistanceReportsModule,
     AiAssistanceSuggestionsModule,
+    VoiceModule,
     IdentityAuthModule,
     SocialBlocksModule,
     SocialCheersModule,

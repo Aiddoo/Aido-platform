@@ -649,6 +649,777 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "ApplyActionPlanRequestDto": {
+      "properties": {
+        "actions": {
+          "description": "사용자가 확인한 행동. 고친 내용을 그대로 저장한다",
+          "items": {
+            "oneOf": [
+              {
+                "properties": {
+                  "categoryId": {
+                    "description": "저장할 카테고리 id",
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "endDate": {
+                    "description": "기간의 끝 날짜. 하루짜리이거나 반복이면 null",
+                    "format": "date",
+                    "nullable": true,
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                    "type": "string",
+                  },
+                  "items": {
+                    "description": "하위 할 일 (최대 20개)",
+                    "items": {
+                      "properties": {
+                        "title": {
+                          "maxLength": 200,
+                          "minLength": 1,
+                          "type": "string",
+                        },
+                      },
+                      "required": [
+                        "title",
+                      ],
+                      "type": "object",
+                    },
+                    "maxItems": 20,
+                    "type": "array",
+                  },
+                  "key": {
+                    "description": "계획 안에서 행동을 가리키는 값 (앱의 선택·편집 상태에 쓴다)",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "repeat": {
+                    "description": "반복 규칙. 반복이 아니면 null",
+                    "nullable": true,
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "end": {
+                            "oneOf": [
+                              {
+                                "properties": {
+                                  "type": {
+                                    "description": "계속 반복",
+                                    "enum": [
+                                      "NEVER",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                ],
+                                "type": "object",
+                              },
+                              {
+                                "properties": {
+                                  "date": {
+                                    "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "type": "string",
+                                  },
+                                  "type": {
+                                    "description": "날짜까지 반복",
+                                    "enum": [
+                                      "UNTIL",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                  "date",
+                                ],
+                                "type": "object",
+                              },
+                              {
+                                "properties": {
+                                  "count": {
+                                    "description": "반복 횟수",
+                                    "maximum": 365,
+                                    "minimum": 1,
+                                    "type": "integer",
+                                  },
+                                  "type": {
+                                    "description": "정한 횟수만큼 반복",
+                                    "enum": [
+                                      "COUNT",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                  "count",
+                                ],
+                                "type": "object",
+                              },
+                            ],
+                          },
+                          "frequency": {
+                            "enum": [
+                              "DAILY",
+                            ],
+                            "type": "string",
+                          },
+                        },
+                        "required": [
+                          "frequency",
+                          "end",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "properties": {
+                          "end": {
+                            "oneOf": [
+                              {
+                                "properties": {
+                                  "type": {
+                                    "description": "계속 반복",
+                                    "enum": [
+                                      "NEVER",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                ],
+                                "type": "object",
+                              },
+                              {
+                                "properties": {
+                                  "date": {
+                                    "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "type": "string",
+                                  },
+                                  "type": {
+                                    "description": "날짜까지 반복",
+                                    "enum": [
+                                      "UNTIL",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                  "date",
+                                ],
+                                "type": "object",
+                              },
+                              {
+                                "properties": {
+                                  "count": {
+                                    "description": "반복 횟수",
+                                    "maximum": 365,
+                                    "minimum": 1,
+                                    "type": "integer",
+                                  },
+                                  "type": {
+                                    "description": "정한 횟수만큼 반복",
+                                    "enum": [
+                                      "COUNT",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                  "count",
+                                ],
+                                "type": "object",
+                              },
+                            ],
+                          },
+                          "frequency": {
+                            "enum": [
+                              "WEEKLY",
+                            ],
+                            "type": "string",
+                          },
+                          "interval": {
+                            "anyOf": [
+                              {
+                                "enum": [
+                                  1,
+                                ],
+                                "type": "number",
+                              },
+                              {
+                                "enum": [
+                                  2,
+                                ],
+                                "type": "number",
+                              },
+                            ],
+                            "description": "1 = 매주, 2 = 격주",
+                          },
+                          "weekdays": {
+                            "description": "반복할 요일",
+                            "items": {
+                              "enum": [
+                                "MON",
+                                "TUE",
+                                "WED",
+                                "THU",
+                                "FRI",
+                                "SAT",
+                                "SUN",
+                              ],
+                              "type": "string",
+                            },
+                            "maxItems": 7,
+                            "minItems": 1,
+                            "type": "array",
+                          },
+                        },
+                        "required": [
+                          "frequency",
+                          "interval",
+                          "weekdays",
+                          "end",
+                        ],
+                        "type": "object",
+                      },
+                      {
+                        "properties": {
+                          "end": {
+                            "oneOf": [
+                              {
+                                "properties": {
+                                  "type": {
+                                    "description": "계속 반복",
+                                    "enum": [
+                                      "NEVER",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                ],
+                                "type": "object",
+                              },
+                              {
+                                "properties": {
+                                  "date": {
+                                    "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "type": "string",
+                                  },
+                                  "type": {
+                                    "description": "날짜까지 반복",
+                                    "enum": [
+                                      "UNTIL",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                  "date",
+                                ],
+                                "type": "object",
+                              },
+                              {
+                                "properties": {
+                                  "count": {
+                                    "description": "반복 횟수",
+                                    "maximum": 365,
+                                    "minimum": 1,
+                                    "type": "integer",
+                                  },
+                                  "type": {
+                                    "description": "정한 횟수만큼 반복",
+                                    "enum": [
+                                      "COUNT",
+                                    ],
+                                    "type": "string",
+                                  },
+                                },
+                                "required": [
+                                  "type",
+                                  "count",
+                                ],
+                                "type": "object",
+                              },
+                            ],
+                          },
+                          "frequency": {
+                            "enum": [
+                              "MONTHLY",
+                            ],
+                            "type": "string",
+                          },
+                          "monthDay": {
+                            "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                            "maximum": 31,
+                            "minimum": 1,
+                            "type": "integer",
+                          },
+                        },
+                        "required": [
+                          "frequency",
+                          "monthDay",
+                          "end",
+                        ],
+                        "type": "object",
+                      },
+                    ],
+                  },
+                  "scheduledTime": {
+                    "description": "시각 (HH:mm). null이면 종일",
+                    "nullable": true,
+                    "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                    "type": "string",
+                  },
+                  "startDate": {
+                    "description": "시작 날짜 (사용자 시간대 YYYY-MM-DD)",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                    "type": "string",
+                  },
+                  "title": {
+                    "description": "할 일 제목 (말한 언어 그대로)",
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "type": {
+                    "enum": [
+                      "CREATE_TODO",
+                    ],
+                    "type": "string",
+                  },
+                  "visibility": {
+                    "description": "공개 범위. 말하지 않았으면 null(기본값)",
+                    "enum": [
+                      "PUBLIC",
+                      "PRIVATE",
+                      null,
+                    ],
+                    "nullable": true,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "type",
+                  "key",
+                  "title",
+                  "startDate",
+                  "endDate",
+                  "scheduledTime",
+                  "repeat",
+                  "visibility",
+                  "items",
+                  "categoryId",
+                ],
+                "type": "object",
+              },
+              {
+                "properties": {
+                  "content": {
+                    "description": "메모 내용 (최대 5000자)",
+                    "maxLength": 5000,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "key": {
+                    "description": "계획 안에서 행동을 가리키는 값 (앱의 선택·편집 상태에 쓴다)",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "title": {
+                    "description": "메모 제목 (비어 있을 수 있다)",
+                    "maxLength": 200,
+                    "type": "string",
+                  },
+                  "type": {
+                    "enum": [
+                      "CREATE_MEMO",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "type",
+                  "key",
+                  "title",
+                  "content",
+                ],
+                "type": "object",
+              },
+            ],
+          },
+          "maxItems": 11,
+          "minItems": 1,
+          "type": "array",
+        },
+        "source": {
+          "description": "계획을 만든 흐름",
+          "enum": [
+            "QUICK_VOICE",
+            "QUICK_TEXT",
+            "VOICE_NOTE",
+            "MEMO",
+          ],
+          "type": "string",
+        },
+        "sourceMemoId": {
+          "description": "source가 MEMO일 때만 필수인 원본 메모 id. 저장에 성공하면 이 메모를 지운다",
+          "exclusiveMinimum": true,
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "source",
+        "actions",
+      ],
+      "type": "object",
+    },
+    "ApplyActionPlanResponseDto": {
+      "properties": {
+        "memo": {
+          "description": "저장한 메모. 없으면 null",
+          "example": {
+            "content": "장보기: 우유, 계란, 빵",
+            "createdAt": "2026-01-17T10:00:00.000Z",
+            "id": 1,
+            "isPinned": false,
+            "sortOrder": 0,
+            "updatedAt": "2026-01-17T10:00:00.000Z",
+            "userId": "clz7x5p8k0001qz0z8z8z8z8z",
+          },
+          "nullable": true,
+          "properties": {
+            "content": {
+              "description": "메모 내용",
+              "type": "string",
+            },
+            "createdAt": {
+              "description": "생성 시각 (ISO 8601 UTC)",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "id": {
+              "description": "메모 ID (양의 정수)",
+              "exclusiveMinimum": true,
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "isPinned": {
+              "description": "고정 여부",
+              "type": "boolean",
+            },
+            "sortOrder": {
+              "description": "정렬 순서",
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer",
+            },
+            "updatedAt": {
+              "description": "수정 시각 (ISO 8601 UTC)",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "userId": {
+              "description": "사용자 ID (CUID 25자)",
+              "format": "cuid",
+              "pattern": "^[cC][0-9a-z]{6,}$",
+              "type": "string",
+            },
+          },
+          "required": [
+            "id",
+            "userId",
+            "content",
+            "isPinned",
+            "sortOrder",
+            "createdAt",
+            "updatedAt",
+          ],
+          "type": "object",
+        },
+        "todos": {
+          "description": "저장한 할 일. 반복이면 첫 회차만 담고 규칙은 recurrenceGroupId로 조회한다",
+          "items": {
+            "example": {
+              "category": {
+                "color": "#FFB3B3",
+                "id": 1,
+                "name": "중요한 일",
+                "sortOrder": 0,
+              },
+              "commentCount": 0,
+              "completed": false,
+              "completedAt": null,
+              "createdAt": "2024-01-10T12:00:00.000Z",
+              "endDate": "2024-01-15",
+              "id": 1,
+              "isAllDay": false,
+              "itemStats": {
+                "completed": 0,
+                "total": 0,
+              },
+              "items": [],
+              "recurrenceGroupId": null,
+              "scheduledTime": "2024-01-15T09:00:00.000Z",
+              "sortOrder": 0,
+              "startDate": "2024-01-15",
+              "title": "운동하기",
+              "updatedAt": "2024-01-10T12:00:00.000Z",
+              "userId": "clz7x5p8k0010qz0z8z8z8z8z",
+              "visibility": "PUBLIC",
+            },
+            "properties": {
+              "category": {
+                "description": "카테고리 정보",
+                "properties": {
+                  "color": {
+                    "description": "카테고리 색상 (HEX 7자)",
+                    "type": "string",
+                  },
+                  "id": {
+                    "description": "카테고리 ID (양의 정수)",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  "name": {
+                    "description": "카테고리 이름",
+                    "type": "string",
+                  },
+                  "sortOrder": {
+                    "description": "카테고리 정렬 순서 (작을수록 위)",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "color",
+                  "sortOrder",
+                ],
+                "type": "object",
+              },
+              "commentCount": {
+                "description": "댓글 수 (삭제된 댓글 제외 — 목록 진입점 뱃지용)",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "completed": {
+                "description": "완료 상태",
+                "type": "boolean",
+              },
+              "completedAt": {
+                "description": "완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미완료 시 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "content": {
+                "description": "할 일 내용 (deprecated, 하위 호환용 — 항상 null)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "createdAt": {
+                "description": "생성 시각 (ISO 8601 UTC, 예: 2024-01-10T12:00:00.000Z)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "endDate": {
+                "description": "종료 날짜 (YYYY-MM-DD, 예: 2024-01-31, 단일 날짜는 null)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "id": {
+                "description": "할 일 고유 ID (양의 정수)",
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer",
+              },
+              "isAllDay": {
+                "description": "종일 일정 여부",
+                "type": "boolean",
+              },
+              "itemStats": {
+                "description": "하위 항목 진행 통계 (카운터 뱃지/진행률 바용)",
+                "properties": {
+                  "completed": {
+                    "description": "완료된 하위 항목 수",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  "total": {
+                    "description": "전체 하위 항목 수",
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "total",
+                  "completed",
+                ],
+                "type": "object",
+              },
+              "items": {
+                "description": "하위 항목 목록 (체크리스트, sortOrder 오름차순)",
+                "items": {
+                  "properties": {
+                    "completed": {
+                      "description": "완료 상태",
+                      "type": "boolean",
+                    },
+                    "createdAt": {
+                      "description": "생성 시각 (ISO 8601 UTC)",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string",
+                    },
+                    "id": {
+                      "description": "하위 항목 고유 ID",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    "sortOrder": {
+                      "description": "정렬 순서 (작을수록 위)",
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    "title": {
+                      "description": "하위 항목 제목",
+                      "type": "string",
+                    },
+                    "updatedAt": {
+                      "description": "수정 시각 (ISO 8601 UTC)",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "completed",
+                    "sortOrder",
+                    "createdAt",
+                    "updatedAt",
+                  ],
+                  "type": "object",
+                },
+                "type": "array",
+              },
+              "recurrenceGroupId": {
+                "description": "반복 생성 그룹 ID (null이면 단일 생성)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "scheduledTime": {
+                "description": "예정 시각 (ISO 8601 UTC, 예: 2024-01-15T09:00:00.000Z, 종일 일정은 null)",
+                "format": "date-time",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "sortOrder": {
+                "description": "정렬 순서 (작을수록 위)",
+                "maximum": 9007199254740991,
+                "minimum": -9007199254740991,
+                "type": "integer",
+              },
+              "startDate": {
+                "description": "시작 날짜 (YYYY-MM-DD, 예: 2024-01-15)",
+                "type": "string",
+              },
+              "title": {
+                "description": "할 일 제목",
+                "type": "string",
+              },
+              "updatedAt": {
+                "description": "수정 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "userId": {
+                "description": "사용자 ID (CUID 25자)",
+                "format": "cuid",
+                "pattern": "^[cC][0-9a-z]{6,}$",
+                "type": "string",
+              },
+              "visibility": {
+                "description": "공개 범위 (PUBLIC | FRIENDS | PRIVATE)",
+                "enum": [
+                  "PUBLIC",
+                  "PRIVATE",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "userId",
+              "title",
+              "sortOrder",
+              "completed",
+              "completedAt",
+              "startDate",
+              "endDate",
+              "scheduledTime",
+              "isAllDay",
+              "visibility",
+              "recurrenceGroupId",
+              "category",
+              "items",
+              "itemStats",
+              "commentCount",
+              "createdAt",
+              "updatedAt",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "todos",
+        "memo",
+      ],
+      "type": "object",
+    },
     "AuthTokensDto": {
       "description": "인증 토큰 정보",
       "example": {
@@ -10493,6 +11264,649 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "QuickPlanRequestDto": {
+      "properties": {
+        "source": {
+          "description": "입력 경로 (VOICE: 기기가 전사한 말, TEXT: 글)",
+          "enum": [
+            "VOICE",
+            "TEXT",
+          ],
+          "type": "string",
+        },
+        "text": {
+          "description": "말하거나 적은 글자 (1-1000자)",
+          "maxLength": 1000,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "text",
+        "source",
+      ],
+      "type": "object",
+    },
+    "QuickPlanResponseDto": {
+      "properties": {
+        "charged": {
+          "description": "이 요청으로 횟수를 썼는지. 할 일을 찾지 못해 환불했으면 false다. 환불을 마치지 못했으면 true다",
+          "type": "boolean",
+        },
+        "featureQuota": {
+          "description": "이 요청을 반영한 AI_PARSE 한도·사용량. 결과는 주되 한도를 읽지 못했으면 null",
+          "example": {
+            "allowed": true,
+            "feature": "VOICE_NOTE",
+            "isFairUse": false,
+            "limit": 3,
+            "perUse": {
+              "maxCharacters": 4000,
+              "maxSeconds": 180,
+            },
+            "period": "month",
+            "remaining": 2,
+            "resetsAt": "2026-11-30T15:00:00.000Z",
+            "used": 1,
+          },
+          "nullable": true,
+          "properties": {
+            "allowed": {
+              "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+              "type": "boolean",
+            },
+            "feature": {
+              "description": "PLAN_CATALOG 기능 키",
+              "enum": [
+                "AI_PARSE",
+                "CHEER",
+                "NUDGE",
+                "FRIEND",
+                "TODO_CATEGORY",
+                "AI_REPORT",
+                "AI_SUGGESTION",
+                "CUSTOM_REMINDER_TIME",
+                "APP_ICON",
+                "VOICE_NOTE",
+              ],
+              "type": "string",
+            },
+            "isFairUse": {
+              "description": "프리미엄의 공정 사용 한도인지입니다. true면 앱은 '넉넉하게(월 N회까지)'로 보여 줍니다.",
+              "type": "boolean",
+            },
+            "limit": {
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "perUse": {
+              "description": "한 번 쓸 때의 길이 상한입니다. 길이 제한이 없는 기능은 null입니다.",
+              "nullable": true,
+              "properties": {
+                "maxCharacters": {
+                  "description": "한 번에 보낼 수 있는 최대 글자 수. 서버가 이 상한으로 다시 막는다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "maxSeconds": {
+                  "description": "말로 메모하기 한 번의 최대 길이(초). 앱 타이머가 이 시간에 멈춘다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "maxSeconds",
+                "maxCharacters",
+              ],
+              "type": "object",
+            },
+            "period": {
+              "description": "used가 다시 0이 되는 주기입니다. month는 KST 매월 1일 00:00, day는 요청 X-Timezone 자정입니다. 횟수 기능이 아니면 null입니다.",
+              "enum": [
+                "day",
+                "month",
+                null,
+              ],
+              "nullable": true,
+              "type": "string",
+            },
+            "remaining": {
+              "description": "limit - used (0 이상). limit이나 used가 null이면 null입니다.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "resetsAt": {
+              "description": "used가 0으로 돌아가는 다음 시각 (ISO 8601 UTC). period가 null이면 null입니다.",
+              "format": "date-time",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "used": {
+              "description": "지금 초기화 창(period)에서 쓴 횟수입니다. resource는 한도 오류 details에서만 현재 개수가 오고, 서버가 세지 않는 곳(GET /v1/entitlements의 resource·flag)은 null입니다.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "feature",
+            "allowed",
+            "limit",
+            "used",
+            "remaining",
+            "period",
+            "resetsAt",
+            "isFairUse",
+            "perUse",
+          ],
+          "type": "object",
+        },
+        "meta": {
+          "description": "AI 처리 메타데이터",
+          "properties": {
+            "model": {
+              "description": "응답한 AI 모델 (예: anthropic:claude-haiku-5-5)",
+              "type": "string",
+            },
+            "processingTimeMs": {
+              "description": "처리 시간 (밀리초)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "promptVersion": {
+              "description": "응답을 만든 프롬프트 버전 (예: quick-plan@1)",
+              "type": "string",
+            },
+            "tokenUsage": {
+              "properties": {
+                "input": {
+                  "description": "입력 토큰 수 (0 이상)",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "output": {
+                  "description": "출력 토큰 수 (0 이상)",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "input",
+                "output",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "model",
+            "processingTimeMs",
+            "tokenUsage",
+            "promptVersion",
+          ],
+          "type": "object",
+        },
+        "plan": {
+          "description": "실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다",
+          "properties": {
+            "actions": {
+              "description": "말한 순서의 행동 (할 일 최대 10개 + 메모 1개). 찾은 게 없으면 빈 배열",
+              "items": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "categoryId": {
+                        "description": "사용자 카테고리 id. AI가 고르지 못했으면 null(앱이 현재 카테고리를 쓴다)",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "nullable": true,
+                        "type": "integer",
+                      },
+                      "duplicateOfTodoId": {
+                        "description": "이미 있는 같은 할 일의 id. 있으면 앱은 기본으로 선택하지 않는다",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "nullable": true,
+                        "type": "integer",
+                      },
+                      "endDate": {
+                        "description": "기간의 끝 날짜. 하루짜리이거나 반복이면 null",
+                        "format": "date",
+                        "nullable": true,
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "items": {
+                        "description": "하위 할 일 (최대 20개)",
+                        "items": {
+                          "properties": {
+                            "title": {
+                              "maxLength": 200,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "title",
+                          ],
+                          "type": "object",
+                        },
+                        "maxItems": 20,
+                        "type": "array",
+                      },
+                      "key": {
+                        "description": "계획 안에서 행동을 가리키는 값 (앱의 선택·편집 상태에 쓴다)",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "repeat": {
+                        "description": "반복 규칙. 반복이 아니면 null",
+                        "nullable": true,
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "end": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "type": {
+                                        "description": "계속 반복",
+                                        "enum": [
+                                          "NEVER",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "date": {
+                                        "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                        "type": "string",
+                                      },
+                                      "type": {
+                                        "description": "날짜까지 반복",
+                                        "enum": [
+                                          "UNTIL",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "date",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "count": {
+                                        "description": "반복 횟수",
+                                        "maximum": 365,
+                                        "minimum": 1,
+                                        "type": "integer",
+                                      },
+                                      "type": {
+                                        "description": "정한 횟수만큼 반복",
+                                        "enum": [
+                                          "COUNT",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "count",
+                                    ],
+                                    "type": "object",
+                                  },
+                                ],
+                              },
+                              "frequency": {
+                                "enum": [
+                                  "DAILY",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "frequency",
+                              "end",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "end": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "type": {
+                                        "description": "계속 반복",
+                                        "enum": [
+                                          "NEVER",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "date": {
+                                        "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                        "type": "string",
+                                      },
+                                      "type": {
+                                        "description": "날짜까지 반복",
+                                        "enum": [
+                                          "UNTIL",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "date",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "count": {
+                                        "description": "반복 횟수",
+                                        "maximum": 365,
+                                        "minimum": 1,
+                                        "type": "integer",
+                                      },
+                                      "type": {
+                                        "description": "정한 횟수만큼 반복",
+                                        "enum": [
+                                          "COUNT",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "count",
+                                    ],
+                                    "type": "object",
+                                  },
+                                ],
+                              },
+                              "frequency": {
+                                "enum": [
+                                  "WEEKLY",
+                                ],
+                                "type": "string",
+                              },
+                              "interval": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      1,
+                                    ],
+                                    "type": "number",
+                                  },
+                                  {
+                                    "enum": [
+                                      2,
+                                    ],
+                                    "type": "number",
+                                  },
+                                ],
+                                "description": "1 = 매주, 2 = 격주",
+                              },
+                              "weekdays": {
+                                "description": "반복할 요일",
+                                "items": {
+                                  "enum": [
+                                    "MON",
+                                    "TUE",
+                                    "WED",
+                                    "THU",
+                                    "FRI",
+                                    "SAT",
+                                    "SUN",
+                                  ],
+                                  "type": "string",
+                                },
+                                "maxItems": 7,
+                                "minItems": 1,
+                                "type": "array",
+                              },
+                            },
+                            "required": [
+                              "frequency",
+                              "interval",
+                              "weekdays",
+                              "end",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "end": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "type": {
+                                        "description": "계속 반복",
+                                        "enum": [
+                                          "NEVER",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "date": {
+                                        "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                        "type": "string",
+                                      },
+                                      "type": {
+                                        "description": "날짜까지 반복",
+                                        "enum": [
+                                          "UNTIL",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "date",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "count": {
+                                        "description": "반복 횟수",
+                                        "maximum": 365,
+                                        "minimum": 1,
+                                        "type": "integer",
+                                      },
+                                      "type": {
+                                        "description": "정한 횟수만큼 반복",
+                                        "enum": [
+                                          "COUNT",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "count",
+                                    ],
+                                    "type": "object",
+                                  },
+                                ],
+                              },
+                              "frequency": {
+                                "enum": [
+                                  "MONTHLY",
+                                ],
+                                "type": "string",
+                              },
+                              "monthDay": {
+                                "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                                "maximum": 31,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                            },
+                            "required": [
+                              "frequency",
+                              "monthDay",
+                              "end",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "scheduledTime": {
+                        "description": "시각 (HH:mm). null이면 종일",
+                        "nullable": true,
+                        "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                        "type": "string",
+                      },
+                      "startDate": {
+                        "description": "시작 날짜 (사용자 시간대 YYYY-MM-DD)",
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "title": {
+                        "description": "할 일 제목 (말한 언어 그대로)",
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "type": {
+                        "enum": [
+                          "CREATE_TODO",
+                        ],
+                        "type": "string",
+                      },
+                      "visibility": {
+                        "description": "공개 범위. 말하지 않았으면 null(기본값)",
+                        "enum": [
+                          "PUBLIC",
+                          "PRIVATE",
+                          null,
+                        ],
+                        "nullable": true,
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "type",
+                      "key",
+                      "title",
+                      "startDate",
+                      "endDate",
+                      "scheduledTime",
+                      "repeat",
+                      "visibility",
+                      "items",
+                      "categoryId",
+                      "duplicateOfTodoId",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "content": {
+                        "description": "메모 내용 (최대 5000자)",
+                        "maxLength": 5000,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "key": {
+                        "description": "계획 안에서 행동을 가리키는 값 (앱의 선택·편집 상태에 쓴다)",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "title": {
+                        "description": "메모 제목 (비어 있을 수 있다)",
+                        "maxLength": 200,
+                        "type": "string",
+                      },
+                      "type": {
+                        "enum": [
+                          "CREATE_MEMO",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "type",
+                      "key",
+                      "title",
+                      "content",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
+              "type": "array",
+            },
+            "omittedTodoCount": {
+              "description": "상한 10개를 넘어 계획에 넣지 않은 할 일 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "actions",
+            "omittedTodoCount",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "plan",
+        "meta",
+        "featureQuota",
+        "charged",
+      ],
+      "type": "object",
+    },
     "ReceivedCheersResponseDto": {
       "example": {
         "cheers": [
@@ -19191,6 +20605,717 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "VoiceNoteDigestRequestDto": {
+      "properties": {
+        "durationSeconds": {
+          "description": "녹음 길이 (초)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "segments": {
+          "description": "문장 단위 전사 (최대 600개). 핵심 포인트의 시각을 이 값에서 찾는다. 없으면 빈 배열",
+          "items": {
+            "properties": {
+              "isBookmarked": {
+                "description": "녹음 중 중요 표시를 했는지",
+                "type": "boolean",
+              },
+              "startMs": {
+                "description": "녹음 시작부터 이 문장까지의 시간 (밀리초)",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "text": {
+                "description": "기기가 전사한 문장",
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "startMs",
+              "text",
+              "isBookmarked",
+            ],
+            "type": "object",
+          },
+          "maxItems": 600,
+          "type": "array",
+        },
+        "text": {
+          "description": "기기가 전사한 전체 글자. 등급별 상한(프리미엄 40,000자)을 넘으면 AI_1312",
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "text",
+        "durationSeconds",
+        "segments",
+      ],
+      "type": "object",
+    },
+    "VoiceNoteDigestResponseDto": {
+      "properties": {
+        "charged": {
+          "description": "이 요청으로 횟수를 썼는지. 할 일을 찾지 못해 환불했으면 false다. 환불을 마치지 못했으면 true다",
+          "type": "boolean",
+        },
+        "featureQuota": {
+          "description": "이 요청을 반영한 VOICE_NOTE 한도·사용량. 결과는 주되 한도를 읽지 못했으면 null",
+          "example": {
+            "allowed": true,
+            "feature": "VOICE_NOTE",
+            "isFairUse": false,
+            "limit": 3,
+            "perUse": {
+              "maxCharacters": 4000,
+              "maxSeconds": 180,
+            },
+            "period": "month",
+            "remaining": 2,
+            "resetsAt": "2026-11-30T15:00:00.000Z",
+            "used": 1,
+          },
+          "nullable": true,
+          "properties": {
+            "allowed": {
+              "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+              "type": "boolean",
+            },
+            "feature": {
+              "description": "PLAN_CATALOG 기능 키",
+              "enum": [
+                "AI_PARSE",
+                "CHEER",
+                "NUDGE",
+                "FRIEND",
+                "TODO_CATEGORY",
+                "AI_REPORT",
+                "AI_SUGGESTION",
+                "CUSTOM_REMINDER_TIME",
+                "APP_ICON",
+                "VOICE_NOTE",
+              ],
+              "type": "string",
+            },
+            "isFairUse": {
+              "description": "프리미엄의 공정 사용 한도인지입니다. true면 앱은 '넉넉하게(월 N회까지)'로 보여 줍니다.",
+              "type": "boolean",
+            },
+            "limit": {
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 정말 무제한(ADMIN, flag)일 때만입니다.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "perUse": {
+              "description": "한 번 쓸 때의 길이 상한입니다. 길이 제한이 없는 기능은 null입니다.",
+              "nullable": true,
+              "properties": {
+                "maxCharacters": {
+                  "description": "한 번에 보낼 수 있는 최대 글자 수. 서버가 이 상한으로 다시 막는다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "maxSeconds": {
+                  "description": "말로 메모하기 한 번의 최대 길이(초). 앱 타이머가 이 시간에 멈춘다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "maxSeconds",
+                "maxCharacters",
+              ],
+              "type": "object",
+            },
+            "period": {
+              "description": "used가 다시 0이 되는 주기입니다. month는 KST 매월 1일 00:00, day는 요청 X-Timezone 자정입니다. 횟수 기능이 아니면 null입니다.",
+              "enum": [
+                "day",
+                "month",
+                null,
+              ],
+              "nullable": true,
+              "type": "string",
+            },
+            "remaining": {
+              "description": "limit - used (0 이상). limit이나 used가 null이면 null입니다.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "resetsAt": {
+              "description": "used가 0으로 돌아가는 다음 시각 (ISO 8601 UTC). period가 null이면 null입니다.",
+              "format": "date-time",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "used": {
+              "description": "지금 초기화 창(period)에서 쓴 횟수입니다. resource는 한도 오류 details에서만 현재 개수가 오고, 서버가 세지 않는 곳(GET /v1/entitlements의 resource·flag)은 null입니다.",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "feature",
+            "allowed",
+            "limit",
+            "used",
+            "remaining",
+            "period",
+            "resetsAt",
+            "isFairUse",
+            "perUse",
+          ],
+          "type": "object",
+        },
+        "keyPoints": {
+          "description": "핵심 내용 (최대 5개)",
+          "items": {
+            "properties": {
+              "startMs": {
+                "description": "이 내용을 말한 시각 (앱이 보낸 segments의 값). 찾지 못했으면 null",
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "nullable": true,
+                "type": "integer",
+              },
+              "text": {
+                "description": "핵심 내용 한 문장 (앱 언어)",
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "text",
+              "startMs",
+            ],
+            "type": "object",
+          },
+          "maxItems": 5,
+          "type": "array",
+        },
+        "meta": {
+          "description": "AI 처리 메타데이터",
+          "properties": {
+            "model": {
+              "description": "응답한 AI 모델 (예: anthropic:claude-haiku-5-5)",
+              "type": "string",
+            },
+            "processingTimeMs": {
+              "description": "처리 시간 (밀리초)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "promptVersion": {
+              "description": "응답을 만든 프롬프트 버전 (예: quick-plan@1)",
+              "type": "string",
+            },
+            "tokenUsage": {
+              "properties": {
+                "input": {
+                  "description": "입력 토큰 수 (0 이상)",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "output": {
+                  "description": "출력 토큰 수 (0 이상)",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "input",
+                "output",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "model",
+            "processingTimeMs",
+            "tokenUsage",
+            "promptVersion",
+          ],
+          "type": "object",
+        },
+        "plan": {
+          "description": "실행 계획. 서버는 저장하지 않고 사용자가 확인한 행동만 적용 API로 받는다",
+          "properties": {
+            "actions": {
+              "description": "말한 순서의 행동 (할 일 최대 10개 + 메모 1개). 찾은 게 없으면 빈 배열",
+              "items": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "categoryId": {
+                        "description": "사용자 카테고리 id. AI가 고르지 못했으면 null(앱이 현재 카테고리를 쓴다)",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "nullable": true,
+                        "type": "integer",
+                      },
+                      "duplicateOfTodoId": {
+                        "description": "이미 있는 같은 할 일의 id. 있으면 앱은 기본으로 선택하지 않는다",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991,
+                        "nullable": true,
+                        "type": "integer",
+                      },
+                      "endDate": {
+                        "description": "기간의 끝 날짜. 하루짜리이거나 반복이면 null",
+                        "format": "date",
+                        "nullable": true,
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "items": {
+                        "description": "하위 할 일 (최대 20개)",
+                        "items": {
+                          "properties": {
+                            "title": {
+                              "maxLength": 200,
+                              "minLength": 1,
+                              "type": "string",
+                            },
+                          },
+                          "required": [
+                            "title",
+                          ],
+                          "type": "object",
+                        },
+                        "maxItems": 20,
+                        "type": "array",
+                      },
+                      "key": {
+                        "description": "계획 안에서 행동을 가리키는 값 (앱의 선택·편집 상태에 쓴다)",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "repeat": {
+                        "description": "반복 규칙. 반복이 아니면 null",
+                        "nullable": true,
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "end": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "type": {
+                                        "description": "계속 반복",
+                                        "enum": [
+                                          "NEVER",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "date": {
+                                        "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                        "type": "string",
+                                      },
+                                      "type": {
+                                        "description": "날짜까지 반복",
+                                        "enum": [
+                                          "UNTIL",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "date",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "count": {
+                                        "description": "반복 횟수",
+                                        "maximum": 365,
+                                        "minimum": 1,
+                                        "type": "integer",
+                                      },
+                                      "type": {
+                                        "description": "정한 횟수만큼 반복",
+                                        "enum": [
+                                          "COUNT",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "count",
+                                    ],
+                                    "type": "object",
+                                  },
+                                ],
+                              },
+                              "frequency": {
+                                "enum": [
+                                  "DAILY",
+                                ],
+                                "type": "string",
+                              },
+                            },
+                            "required": [
+                              "frequency",
+                              "end",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "end": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "type": {
+                                        "description": "계속 반복",
+                                        "enum": [
+                                          "NEVER",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "date": {
+                                        "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                        "type": "string",
+                                      },
+                                      "type": {
+                                        "description": "날짜까지 반복",
+                                        "enum": [
+                                          "UNTIL",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "date",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "count": {
+                                        "description": "반복 횟수",
+                                        "maximum": 365,
+                                        "minimum": 1,
+                                        "type": "integer",
+                                      },
+                                      "type": {
+                                        "description": "정한 횟수만큼 반복",
+                                        "enum": [
+                                          "COUNT",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "count",
+                                    ],
+                                    "type": "object",
+                                  },
+                                ],
+                              },
+                              "frequency": {
+                                "enum": [
+                                  "WEEKLY",
+                                ],
+                                "type": "string",
+                              },
+                              "interval": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      1,
+                                    ],
+                                    "type": "number",
+                                  },
+                                  {
+                                    "enum": [
+                                      2,
+                                    ],
+                                    "type": "number",
+                                  },
+                                ],
+                                "description": "1 = 매주, 2 = 격주",
+                              },
+                              "weekdays": {
+                                "description": "반복할 요일",
+                                "items": {
+                                  "enum": [
+                                    "MON",
+                                    "TUE",
+                                    "WED",
+                                    "THU",
+                                    "FRI",
+                                    "SAT",
+                                    "SUN",
+                                  ],
+                                  "type": "string",
+                                },
+                                "maxItems": 7,
+                                "minItems": 1,
+                                "type": "array",
+                              },
+                            },
+                            "required": [
+                              "frequency",
+                              "interval",
+                              "weekdays",
+                              "end",
+                            ],
+                            "type": "object",
+                          },
+                          {
+                            "properties": {
+                              "end": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "type": {
+                                        "description": "계속 반복",
+                                        "enum": [
+                                          "NEVER",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "date": {
+                                        "description": "마지막 날짜 (YYYY-MM-DD, 그 날 포함)",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                        "type": "string",
+                                      },
+                                      "type": {
+                                        "description": "날짜까지 반복",
+                                        "enum": [
+                                          "UNTIL",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "date",
+                                    ],
+                                    "type": "object",
+                                  },
+                                  {
+                                    "properties": {
+                                      "count": {
+                                        "description": "반복 횟수",
+                                        "maximum": 365,
+                                        "minimum": 1,
+                                        "type": "integer",
+                                      },
+                                      "type": {
+                                        "description": "정한 횟수만큼 반복",
+                                        "enum": [
+                                          "COUNT",
+                                        ],
+                                        "type": "string",
+                                      },
+                                    },
+                                    "required": [
+                                      "type",
+                                      "count",
+                                    ],
+                                    "type": "object",
+                                  },
+                                ],
+                              },
+                              "frequency": {
+                                "enum": [
+                                  "MONTHLY",
+                                ],
+                                "type": "string",
+                              },
+                              "monthDay": {
+                                "description": "매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)",
+                                "maximum": 31,
+                                "minimum": 1,
+                                "type": "integer",
+                              },
+                            },
+                            "required": [
+                              "frequency",
+                              "monthDay",
+                              "end",
+                            ],
+                            "type": "object",
+                          },
+                        ],
+                      },
+                      "scheduledTime": {
+                        "description": "시각 (HH:mm). null이면 종일",
+                        "nullable": true,
+                        "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                        "type": "string",
+                      },
+                      "startDate": {
+                        "description": "시작 날짜 (사용자 시간대 YYYY-MM-DD)",
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "title": {
+                        "description": "할 일 제목 (말한 언어 그대로)",
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "type": {
+                        "enum": [
+                          "CREATE_TODO",
+                        ],
+                        "type": "string",
+                      },
+                      "visibility": {
+                        "description": "공개 범위. 말하지 않았으면 null(기본값)",
+                        "enum": [
+                          "PUBLIC",
+                          "PRIVATE",
+                          null,
+                        ],
+                        "nullable": true,
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "type",
+                      "key",
+                      "title",
+                      "startDate",
+                      "endDate",
+                      "scheduledTime",
+                      "repeat",
+                      "visibility",
+                      "items",
+                      "categoryId",
+                      "duplicateOfTodoId",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "content": {
+                        "description": "메모 내용 (최대 5000자)",
+                        "maxLength": 5000,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "key": {
+                        "description": "계획 안에서 행동을 가리키는 값 (앱의 선택·편집 상태에 쓴다)",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string",
+                      },
+                      "title": {
+                        "description": "메모 제목 (비어 있을 수 있다)",
+                        "maxLength": 200,
+                        "type": "string",
+                      },
+                      "type": {
+                        "enum": [
+                          "CREATE_MEMO",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "type",
+                      "key",
+                      "title",
+                      "content",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
+              "type": "array",
+            },
+            "omittedTodoCount": {
+              "description": "상한 10개를 넘어 계획에 넣지 않은 할 일 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "actions",
+            "omittedTodoCount",
+          ],
+          "type": "object",
+        },
+        "summary": {
+          "description": "요약 (앱 언어)",
+          "maxLength": 1000,
+          "type": "string",
+        },
+        "title": {
+          "description": "녹음 제목 (앱 언어). 비어 있으면 앱이 기본 제목을 쓴다",
+          "maxLength": 100,
+          "type": "string",
+        },
+      },
+      "required": [
+        "title",
+        "summary",
+        "keyPoints",
+        "plan",
+        "meta",
+        "featureQuota",
+        "charged",
+      ],
+      "type": "object",
+    },
     "WeatherConditionsResponseDto": {
       "properties": {
         "feelsLikeTemperature": {
@@ -21153,6 +23278,306 @@ curl https://api.aido.com/health
       "summary": "서버 상태 확인",
       "tags": [
         "Common - Health",
+      ],
+    },
+  },
+  "/v1/action-plans/apply": {
+    "post": {
+      "description": "사용자가 확인한 행동만 손으로 만든 것과 같은 경로로 저장합니다(알림·위젯·카테고리 한도가 같게 동작합니다). 사용 횟수를 차감하지 않고 AI도 부르지 않습니다.
+
+\`source\`가 \`MEMO\`면 \`sourceMemoId\`가 필수이고 저장에 성공하면 그 메모를 지웁니다(없거나 내 메모가 아니면 MEMO_2001).
+
+하나라도 실패하면 아무것도 저장하지 않습니다. 같은 \`Idempotency-Key\`의 재요청은 새로 만들지 않고 처음 저장한 결과를 돌려주며, 내용이 다르면 AI_1318입니다.",
+      "operationId": "applyActionPlan",
+      "parameters": [
+        {
+          "description": "사용자 행동 한 번마다 새로 만드는 키(128자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 다시 보냅니다.",
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApplyActionPlanRequestDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/ApplyActionPlanResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1316": {
+                  "summary": "Idempotency-Key 헤더가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1316",
+                      "details": null,
+                      "message": "Idempotency-Key 헤더가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1316",
+                          "SYS_0002",
+                        ],
+                        "example": "AI_1316",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Idempotency-Key 헤더가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1316: Idempotency-Key 헤더가 필요합니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "MEMO_2001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "메모를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "메모를 찾을 수 없습니다.",
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1315",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "저장할 계획이 올바르지 않습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "저장할 계획이 올바르지 않습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "사용자가 확인한 계획 저장",
+      "tags": [
+        "Voice",
       ],
     },
   },
@@ -46379,6 +48804,580 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
       ],
     },
   },
+  "/v1/quick-plans": {
+    "post": {
+      "description": "기기가 전사한 말이나 적은 글을 할 일·메모 계획으로 정리합니다. 저장하지 않으며 사용자가 확인한 행동만 \`POST /v1/action-plans/apply\`로 저장합니다.
+
+## 🚫 사용량
+AI 할 일 만들기(글·말·메모 공통): 무료 월 10회, 프리미엄 넉넉하게(월 1,000회까지). 할 일을 찾지 못하거나 실패하면 차감하지 않습니다(\`charged\`).
+
+## 🔁 재시도
+같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 다시 보낼 수 없으면 AI_1317, 내용이 다르면 AI_1318입니다.",
+      "operationId": "createQuickPlan",
+      "parameters": [
+        {
+          "description": "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
+          "in": "header",
+          "name": "X-Timezone",
+          "required": false,
+          "schema": {
+            "example": "Asia/Seoul",
+            "type": "string",
+          },
+        },
+        {
+          "description": "요약·핵심 내용 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용합니다.",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+        {
+          "description": "사용자 행동 한 번마다 새로 만드는 키(128자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 다시 보냅니다.",
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QuickPlanRequestDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/QuickPlanResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1316": {
+                  "summary": "Idempotency-Key 헤더가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1316",
+                      "details": null,
+                      "message": "Idempotency-Key 헤더가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1316",
+                          "SYS_0002",
+                        ],
+                        "example": "AI_1316",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Idempotency-Key 헤더가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1316: Idempotency-Key 헤더가 필요합니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1311",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1314",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "같은 요청을 아직 처리하고 있습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "같은 요청을 아직 처리하고 있습니다.",
+        },
+        "410": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1317",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1302": {
+                  "summary": "입력한 내용으로 할 일을 만들지 못했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1302",
+                      "details": null,
+                      "message": "입력한 내용으로 할 일을 만들지 못했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1318": {
+                  "summary": "같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1318",
+                      "details": null,
+                      "message": "같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1302",
+                          "AI_1318",
+                        ],
+                        "example": "AI_1302",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "입력한 내용으로 할 일을 만들지 못했습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1302: 입력한 내용으로 할 일을 만들지 못했습니다.
+
+AI_1318: 같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1303": {
+                  "summary": "이번 달 AI 할 일 만들기를 다 썼습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1303",
+                      "details": null,
+                      "message": "이번 달 AI 할 일 만들기를 다 썼습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1310": {
+                  "summary": "지금 AI 요청이 너무 많습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1310",
+                      "details": null,
+                      "message": "지금 AI 요청이 너무 많습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1303",
+                          "AI_1310",
+                        ],
+                        "example": "AI_1303",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이번 달 AI 할 일 만들기를 다 썼습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1303: 이번 달 AI 할 일 만들기를 다 썼습니다.
+
+AI_1310: 지금 AI 요청이 너무 많습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+        "503": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1301",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금은 AI 기능을 쓸 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "지금은 AI 기능을 쓸 수 없습니다.",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "짧은 말·글을 실행 계획으로 정리",
+      "tags": [
+        "Voice",
+      ],
+    },
+  },
   "/v1/reports": {
     "post": {
       "description": "다른 사용자의 프로필이나 할 일·댓글·콕·응원 메시지를 신고합니다.
@@ -56465,6 +59464,598 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
       "summary": "댓글 화면용 할 일 상세 조회",
       "tags": [
         "Todos",
+      ],
+    },
+  },
+  "/v1/voice-notes/digest": {
+    "post": {
+      "description": "기기가 전사한 글자만 받습니다. 서버는 녹음도 전사 글자도 저장하지 않습니다.
+
+## 📏 길이
+한 번에 보낼 수 있는 글자 수는 무료 4,000자, 프리미엄 40,000자입니다(넘으면 AI_1312). 본문은 256KB까지입니다(넘으면 413). 프롬프트에서 길어지는 글자(\`<\`·\`>\`·\`&\`·따옴표·줄바꿈)는 늘어난 길이로 셉니다.
+
+## 🚫 사용량
+말로 메모하기: 무료 월 3회, 프리미엄 넉넉하게(월 100회까지, 넘으면 AI_1313). 할 일을 찾지 못하거나 실패하면 차감하지 않습니다(\`charged\`). 분당 4회, 하루 30회까지 보낼 수 있습니다.
+
+## 🔁 재시도
+같은 \`Idempotency-Key\`는 한 번만 차감합니다. 처리 중이면 AI_1314, 결과를 다시 보낼 수 없으면 AI_1317, 내용이 다르면 AI_1318입니다.",
+      "operationId": "digestVoiceNote",
+      "parameters": [
+        {
+          "description": "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
+          "in": "header",
+          "name": "X-Timezone",
+          "required": false,
+          "schema": {
+            "example": "Asia/Seoul",
+            "type": "string",
+          },
+        },
+        {
+          "description": "요약·핵심 내용 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용합니다.",
+          "in": "header",
+          "name": "Accept-Language",
+          "required": false,
+          "schema": {
+            "example": "ko",
+            "type": "string",
+          },
+        },
+        {
+          "description": "사용자 행동 한 번마다 새로 만드는 키(128자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 다시 보냅니다.",
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/VoiceNoteDigestRequestDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/VoiceNoteDigestResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1316": {
+                  "summary": "Idempotency-Key 헤더가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1316",
+                      "details": null,
+                      "message": "Idempotency-Key 헤더가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1316",
+                          "SYS_0002",
+                        ],
+                        "example": "AI_1316",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Idempotency-Key 헤더가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1316: Idempotency-Key 헤더가 필요합니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1311",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1314",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "같은 요청을 아직 처리하고 있습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "같은 요청을 아직 처리하고 있습니다.",
+        },
+        "410": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1317",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "이미 처리한 요청의 결과를 다시 보낼 수 없습니다.",
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1302": {
+                  "summary": "입력한 내용으로 할 일을 만들지 못했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1302",
+                      "details": null,
+                      "message": "입력한 내용으로 할 일을 만들지 못했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1312": {
+                  "summary": "녹음이 한 번에 정리할 수 있는 길이를 넘었습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1312",
+                      "details": null,
+                      "message": "녹음이 한 번에 정리할 수 있는 길이를 넘었습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1318": {
+                  "summary": "같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1318",
+                      "details": null,
+                      "message": "같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1302",
+                          "AI_1312",
+                          "AI_1318",
+                        ],
+                        "example": "AI_1302",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "입력한 내용으로 할 일을 만들지 못했습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1302: 입력한 내용으로 할 일을 만들지 못했습니다.
+
+AI_1312: 녹음이 한 번에 정리할 수 있는 길이를 넘었습니다.
+
+AI_1318: 같은 Idempotency-Key로 다른 요청을 보냈습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1310": {
+                  "summary": "지금 AI 요청이 너무 많습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1310",
+                      "details": null,
+                      "message": "지금 AI 요청이 너무 많습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1313": {
+                  "summary": "이번 달 말로 메모하기를 다 썼습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1313",
+                      "details": null,
+                      "message": "이번 달 말로 메모하기를 다 썼습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1310",
+                          "AI_1313",
+                        ],
+                        "example": "AI_1310",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금 AI 요청이 너무 많습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1310: 지금 AI 요청이 너무 많습니다.
+
+AI_1313: 이번 달 말로 메모하기를 다 썼습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+        "503": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1301",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금은 AI 기능을 쓸 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "지금은 AI 기능을 쓸 수 없습니다.",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "녹음 전사를 요약·핵심 내용·실행 계획으로 정리",
+      "tags": [
+        "Voice",
       ],
     },
   },

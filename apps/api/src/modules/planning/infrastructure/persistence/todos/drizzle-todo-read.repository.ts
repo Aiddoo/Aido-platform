@@ -1,17 +1,22 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import type {
   FindFriendTodosParams,
   FindTodosParams,
 } from "../../../application/models/todos/todo.types.js";
+import type {
+  TodoPlanReaderPort,
+  UpcomingTodoView,
+} from "../../../application/ports/todos/todo-plan.reader.port.js";
 import type { TodoReadRepositoryPort } from "../../../application/ports/todos/todo-read.repository.port.js";
 import { todoDateCondition } from "./todo-date.filter.js";
 import { TodoMapper } from "./todo-response.mapper.js";
@@ -33,7 +38,7 @@ const todoWith = {
 
 /** 조회 projection과 집계만 소유하며 활성 CLS transaction에 참여한다. */
 @Injectable()
-export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
+export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPlanReaderPort {
   constructor(private readonly txHost: TransactionHost<DrizzleTransactionalAdapter>) {}
 
   private get db() {
@@ -148,6 +153,54 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort {
   async findByIdAndUserId(id: number, userId: string): Promise<TodoResponse | null> {
     const row = await this.db.query.todo.findFirst({ where: { id, userId }, with: todoWith });
     return row == null ? null : TodoMapper.toResponse(row);
+  }
+
+  async findManyByIds(userId: string, ids: readonly number[]): Promise<TodoResponse[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.db.query.todo.findMany({
+      where: { userId, id: { in: [...ids] } },
+      with: todoWith,
+      orderBy: { sortOrder: "asc" },
+    });
+    return TodoMapper.toManyResponse(rows);
+  }
+
+  async findUpcoming(
+    userId: string,
+    input: { readonly fromDate: Date; readonly limit: number },
+  ): Promise<UpcomingTodoView[]> {
+    // 반복 할 일은 회차가 수십 개라도 다음 회차 하나만 맥락에 넣는다.
+    const groupKey = sql`coalesce(${todo.seriesId}, ${todo.id}::text)`;
+    const upcoming = this.db
+      .selectDistinctOn([groupKey], {
+        id: todo.id,
+        title: todo.title,
+        startDate: todo.startDate,
+        seriesId: todo.seriesId,
+      })
+      .from(todo)
+      .where(
+        and(
+          eq(todo.userId, userId),
+          eq(todo.completed, false),
+          or(gte(todo.startDate, input.fromDate), gte(todo.endDate, input.fromDate)),
+        ),
+      )
+      .orderBy(groupKey, asc(todo.startDate), asc(todo.id))
+      .as("upcoming");
+    const rows = await this.db
+      .select()
+      .from(upcoming)
+      .orderBy(asc(upcoming.startDate), asc(upcoming.id))
+      .limit(input.limit);
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      startDate: toDateString(row.startDate),
+      isRepeating: row.seriesId != null,
+    }));
   }
 
   async countCategoryUsage(userId: string, categoryId: number): Promise<number> {

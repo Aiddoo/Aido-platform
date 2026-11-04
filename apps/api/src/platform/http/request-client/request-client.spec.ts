@@ -31,6 +31,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
       deviceName: "iPhone 16 Pro",
       timezone: "America/New_York",
       locale: "en",
+      idempotencyKey: null,
     });
   });
 
@@ -51,6 +52,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
       deviceName: null,
       timezone: null,
       locale: null,
+      idempotencyKey: null,
     });
   });
 
@@ -126,5 +128,25 @@ describe("요청 시간대 규칙", () => {
   it("저장값을 쓰는 경로는 보낸 시간대만 넘기고 없으면 undefined로 저장값을 유지한다", () => {
     expect(requestTimezoneIfSent({ timezone: null })).toBeUndefined();
     expect(requestTimezoneIfSent({ timezone: "Asia/Seoul" })).toBe("Asia/Seoul");
+  });
+
+  it.each([
+    {
+      name: "UUID",
+      value: "6f1d2c3a-0d4e-4c55-9a2b-111111111111",
+      expected: "6f1d2c3a-0d4e-4c55-9a2b-111111111111",
+    },
+    { name: "128자", value: "a".repeat(128), expected: "a".repeat(128) },
+    { name: "129자", value: "a".repeat(129), expected: null },
+    { name: "공백이 든 값", value: "a b", expected: null },
+    { name: "ASCII가 아닌 값", value: "키", expected: null },
+    { name: "중복 헤더", value: ["a", "b"], expected: null },
+  ])("Idempotency-Key $name은 $expected로 읽는다", ({ value, expected }) => {
+    // Given
+    const headers = { "idempotency-key": value };
+    // When
+    const client = parseRequestClient(headers, "request-1");
+    // Then
+    expect(client.idempotencyKey).toBe(expected);
   });
 });

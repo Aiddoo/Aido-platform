@@ -11,3 +11,4 @@ export * from "./operations.schema.js";
 export * from "./outbound.schema.js";
 export * from "./planning.schema.js";
 export * from "./social.schema.js";
+export * from "./voice.schema.js";

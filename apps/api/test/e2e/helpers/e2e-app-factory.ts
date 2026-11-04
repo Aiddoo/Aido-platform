@@ -43,6 +43,8 @@ import { AdminNotificationProcessor } from "#api/modules/operations/infrastructu
 import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
 import { TodoSeriesMaterializationJob } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.job";
 import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/infrastructure/jobs/series/todo-series-materialization.processor";
+import { PlanApplicationCleanupJob } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.job";
+import { PlanApplicationCleanupProcessor } from "#api/modules/voice/infrastructure/jobs/plans/plan-application-cleanup.processor";
 import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
@@ -88,6 +90,7 @@ const BACKGROUND_PROCESSORS = [
   AccountPurgeProcessor,
   NotificationQueueProcessor,
   RetentionQueueProcessor,
+  PlanApplicationCleanupProcessor,
 ];
 
 const BACKGROUND_JOBS = [
@@ -97,6 +100,7 @@ const BACKGROUND_JOBS = [
   ReportGenerationJob,
   AccountPurgeJob,
   TodoSeriesMaterializationJob,
+  PlanApplicationCleanupJob,
   RetentionQueueService,
 ];
 

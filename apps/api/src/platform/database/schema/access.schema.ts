@@ -85,6 +85,8 @@ export const quotaCharge = pgTable(
     periodKey: varchar({ length: 16 }).notNull(),
     reason: varchar({ length: 64 }).notNull(),
     refundReason: varchar({ length: 64 }),
+    /** 같은 키가 같은 요청인지 가리는 SHA-256 지문. 사용자 글자는 저장하지 않는다. */
+    requestHash: varchar({ length: 64 }),
     status: quotaChargeStatus().notNull(),
     updatedAt: timestamp({ precision: 3 })
       .notNull()

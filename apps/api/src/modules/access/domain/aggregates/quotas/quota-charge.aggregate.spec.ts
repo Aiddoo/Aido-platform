@@ -6,6 +6,7 @@ const AT = new Date("2026-04-12T12:00:00Z");
 function charge(overrides: Partial<QuotaChargeProps> = {}): QuotaCharge {
   return QuotaCharge.reconstitute({
     ...QuotaCharge.planReservation({
+      requestHash: null,
       userId: "user",
       meter: "VOICE_NOTE",
       idempotencyKey: "key-1",
@@ -23,6 +24,7 @@ describe("QuotaCharge", () => {
   it("새 예약은 RESERVED 첫 시도로 한 회를 차감한다", () => {
     // Given
     const draft = QuotaCharge.planReservation({
+      requestHash: null,
       userId: "user",
       meter: "AI_PLAN",
       idempotencyKey: null,
@@ -113,8 +115,8 @@ describe("QuotaCharge", () => {
     // When
     const reservedAgain = fresh.reserveAgain({ reason: "x", periodKey: "2026-M04", at: AT });
     const committedAgain = committed.reserveAgain({ reason: "x", periodKey: "2026-M04", at: AT });
-    const freshTakeOver = fresh.takeOver(AT);
-    const staleTakeOver = stale.takeOver(later);
+    const freshTakeOver = fresh.takeOver({ periodKey: "2026-M04", at: AT });
+    const staleTakeOver = stale.takeOver({ periodKey: "2026-M04", at: later });
 
     // Then
     expect([reservedAgain, committedAgain, freshTakeOver, staleTakeOver]).toEqual([
@@ -166,5 +168,31 @@ describe("QuotaCharge", () => {
     // Then
     expect(refunded).toBe(false);
     expect(committed.status).toBe("COMMITTED");
+  });
+
+  it("같은 작업·같은 지문이어야 같은 요청이다", () => {
+    // Given
+    const charge = QuotaCharge.reconstitute({
+      ...QuotaCharge.planReservation({
+        userId: "user-1",
+        meter: "VOICE_NOTE",
+        idempotencyKey: "key",
+        requestHash: "hash-a",
+        reason: "voice-note-digest",
+        periodKey: "2026-M04",
+        at: AT,
+      }),
+      id: "charge-1",
+      createdAt: AT,
+    });
+    // When
+    const results = [
+      charge.isSameRequest({ reason: "voice-note-digest", requestHash: "hash-a" }),
+      charge.isSameRequest({ reason: "voice-note-digest", requestHash: "hash-b" }),
+      charge.isSameRequest({ reason: "quick-plan", requestHash: "hash-a" }),
+      charge.isSameRequest({ reason: "voice-note-digest", requestHash: null }),
+    ];
+    // Then
+    expect(results).toEqual([true, false, false, false]);
   });
 });

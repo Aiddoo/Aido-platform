@@ -11,6 +11,7 @@ import { STAGED_TODO_CREATOR } from "./application/ports/todos/staged-todo-creat
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todos/todo-cache.port.js";
 import { TODO_NOTIFICATION } from "./application/ports/todos/todo-notification.port.js";
+import { TODO_PLAN_READER } from "./application/ports/todos/todo-plan.reader.port.js";
 import {
   TODO_READ_REPOSITORY,
   type TodoReadRepositoryPort,
@@ -49,6 +50,7 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
     { provide: TODO_REPOSITORY, useExisting: DrizzleTodoRepository },
     { provide: TODO_SERIES_REPOSITORY, useClass: DrizzleTodoSeriesRepository },
     { provide: TODO_READ_REPOSITORY, useExisting: DrizzleTodoReadRepository },
+    { provide: TODO_PLAN_READER, useExisting: DrizzleTodoReadRepository },
     { provide: CATEGORY_OWNERSHIP, useClass: CategoryOwnershipAdapter },
     { provide: TODO_CACHE, useClass: TodoCacheAdapter },
     { provide: FRIEND_PORT, useClass: FriendAdapter },
@@ -68,6 +70,6 @@ import { TodoController } from "./presentation/controllers/todos/v1/todo.control
       useExisting: TodoViewCacheInvalidator,
     },
   ],
-  exports: [STAGED_TODO_CREATOR, TODO_VIEW_CACHE_INVALIDATOR],
+  exports: [STAGED_TODO_CREATOR, TODO_PLAN_READER, TODO_VIEW_CACHE_INVALIDATOR],
 })
 export class PlanningTodosModule {}

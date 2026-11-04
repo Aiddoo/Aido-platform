@@ -47,6 +47,9 @@ export const SWAGGER_TAGS = {
   /** AI - 자연어 파싱, 주간/월간 리포트, 반복 제안 */
   AI: "AI",
 
+  /** 음성 - 빠른 계획, 녹음 정리, 계획 적용 */
+  VOICE: "Voice",
+
   /** 권한·한도 - 플랜 기능별 한도와 사용량 */
   ENTITLEMENTS: "Entitlements",
 
@@ -146,6 +149,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
   [SWAGGER_TAGS.INVITES]:
     "초대 코드 발급·재발급, 공개 미리보기, 초대 수락, 초대한 친구 목록. INVITE_ENABLED가 꺼져 있으면 INVITE_2105",
+
+  [SWAGGER_TAGS.VOICE]:
+    "말·글을 할 일 계획으로 정리하고 사용자가 확인한 행동만 저장합니다. 서버는 녹음과 전사 글자를 저장하지 않습니다.",
 
   [SWAGGER_TAGS.AI]:
     "자연어 파싱 (스마트 시간 해석), 주간/월간 AI 리포트, 반복 패턴 제안. 리포트/제안은 프리미엄 전용",

@@ -541,4 +541,109 @@ describe("QuotaLedgerService", () => {
       expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: false, used: null });
     });
   });
+
+  describe("요청 지문과 달을 넘긴 이어받기", () => {
+    function reserveVoice(fixture: Fixture, requestHash = "hash-a", reason = "voice-note-digest") {
+      return fixture.ledger.reserve({
+        userId: fixture.userId,
+        feature: "VOICE_NOTE",
+        idempotencyKey: "key-1",
+        requestHash,
+        reason,
+      });
+    }
+
+    it.each([
+      { name: "내용이 다른 요청", requestHash: "hash-b", reason: "voice-note-digest" },
+      { name: "작업이 다른 요청", requestHash: "hash-a", reason: "other-task" },
+    ])("같은 키의 $name은 AI_1318이고 차감하지 않는다", async ({ requestHash, reason }) => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserveVoice(fixture);
+      // When
+      const reused = reserveVoice(fixture, requestHash, reason);
+      // Then
+      await expect(reused).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1318,
+        details: { charged: false },
+      });
+      expect((await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used).toBe(1);
+    });
+
+    it("환불한 요청도 내용이 다르면 같은 키를 다시 쓸 수 없다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await fixture.ledger.refund(await reserveVoice(fixture), "FAILED");
+      // When
+      const reused = reserveVoice(fixture, "hash-b");
+      // Then
+      await expect(reused).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
+    });
+
+    it("같은 달 이어받기는 사용량을 그대로 두고 시도만 올린다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserveVoice(fixture);
+      vi.setSystemTime(QUOTA_LEDGER_TIME.getTime() + QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+      // When
+      const takenOver = await reserveVoice(fixture);
+      // Then
+      expect(takenOver.attempt).toBe(2);
+      expect((await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used).toBe(1);
+    });
+
+    it("달을 넘겨 이어받으면 새 달 사용량으로 다시 잡고 지난달 몫을 돌려놓는다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserveVoice(fixture);
+      const nextMonth = new Date(NEXT_RESET);
+      vi.setSystemTime(nextMonth);
+      // When
+      const takenOver = await reserveVoice(fixture);
+      // Then
+      const [charge] = [...fixture.repository.charges.values()];
+      expect(takenOver.attempt).toBe(2);
+      expect(charge?.periodKey).toBe("2026-M05");
+      expect(fixture.repository.usage.get(`${fixture.userId}:VOICE_NOTE:2026-M05`)).toBe(1);
+      expect(fixture.repository.usage.get(`${fixture.userId}:VOICE_NOTE:2026-M04`)).toBe(0);
+    });
+
+    it("달을 넘겨 이어받은 뒤 환불은 새 달 사용량을 돌려준다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserveVoice(fixture);
+      vi.setSystemTime(new Date(NEXT_RESET));
+      const takenOver = await reserveVoice(fixture);
+      // When
+      const refunded = await fixture.ledger.refund(takenOver, "FAILED");
+      // Then
+      expect(refunded).toBe(true);
+      expect((await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used).toBe(0);
+    });
+
+    it("달을 넘겨 이어받을 때 새 달 한도가 다 찼으면 막고 지난달 예약은 그대로 둔다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture();
+      await reserveVoice(fixture);
+      vi.setSystemTime(new Date(NEXT_RESET));
+      fixture.repository.usage.set(`${fixture.userId}:VOICE_NOTE:2026-M05`, FREE_VOICE_LIMIT);
+      // When
+      const blocked = reserveVoice(fixture);
+      // Then
+      await expect(blocked).rejects.toMatchObject({ errorCode: ErrorCode.AI_1313 });
+      const [charge] = [...fixture.repository.charges.values()];
+      expect(charge?.status).toBe("RESERVED");
+    });
+
+    it("AI_PLAN도 달을 넘겨 이어받으면 새 달 사용량으로 다시 잡는다", async () => {
+      // Given
+      const fixture = createQuotaLedgerFixture({ aiUsageCount: 5 });
+      await reserve(fixture, { idempotencyKey: "key-1" });
+      vi.setSystemTime(new Date(NEXT_RESET));
+      // When
+      await reserve(fixture, { idempotencyKey: "key-1" });
+      // Then
+      expect((await fixture.ledger.read(fixture.userId, "AI_PARSE")).used).toBe(1);
+    });
+  });
 });

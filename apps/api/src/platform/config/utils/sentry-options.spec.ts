@@ -156,6 +156,9 @@ describe("isRequestBodyIgnored — 5xx 이벤트의 요청 본문", () => {
   it.each([
     ["https://api.aido.kr/v1/ai/parse-todo", true],
     ["https://api.aido.kr/v1/ai/parse-memo?x=1", true],
+    ["https://api.aido.kr/v1/quick-plans", true],
+    ["https://api.aido.kr/v1/voice-notes/digest", true],
+    ["https://api.aido.kr/v1/action-plans/apply", true],
     ["https://api.aido.kr/v1/todos", false],
   ])("%s 본문 제외 여부는 %s다", (url, expected) => {
     // Given / When / Then

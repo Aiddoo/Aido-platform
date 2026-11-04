@@ -9,7 +9,15 @@ import {
   AFTER_COMMIT_TASK_REGISTRY,
 } from "#api/shared/application/ports/index";
 
-import { MEMO_REPOSITORY } from "./application/ports/memos/memo.repository.port.js";
+import {
+  MEMO_REPOSITORY,
+  type MemoRepositoryPort,
+} from "./application/ports/memos/memo.repository.port.js";
+import {
+  PLAN_MEMO_WRITER,
+  type PlanMemoWriterPort,
+} from "./application/ports/memos/plan-memo-writer.port.js";
+import { toMemoView } from "./application/read-models/memos/memo.read-model.js";
 import { ConvertMemoToTodo } from "./application/use-cases/memos/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodos } from "./application/use-cases/memos/convert-memo-to-todos.use-case.js";
 import { CreateMemo } from "./application/use-cases/memos/create-memo.use-case.js";
@@ -157,4 +165,20 @@ export const updateMemoProvider: FactoryProvider<UpdateMemo> = {
     mutationLock: ConstructorParameters<typeof UpdateMemo>[0]["mutationLock"],
   ) =>
     new UpdateMemo({ repository, unitOfWork, mutationLock, logger: new Logger(UpdateMemo.name) }),
+};
+
+export const planMemoWriterProvider: FactoryProvider<PlanMemoWriterPort> = {
+  provide: PLAN_MEMO_WRITER,
+  inject: [CreateMemo, MEMO_REPOSITORY],
+  useFactory: (
+    createMemo: Pick<CreateMemo, "execute">,
+    repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">,
+  ) => ({
+    create: async (input) => (await createMemo.execute(input)).memo,
+    findById: async (memoId, userId) => {
+      const memo = await repository.findByIdAndUserId(memoId, userId);
+      return memo == null ? null : toMemoView(memo);
+    },
+    delete: (memoId) => repository.delete(memoId),
+  }),
 };

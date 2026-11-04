@@ -1,0 +1,267 @@
+import { voiceNoteDigestResponseSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+
+import { QUOTA_LEDGER_TIME } from "#test/fixtures/quota-ledger.fixture";
+import {
+  createPlanFlowFixture,
+  digestDraft,
+  InMemoryPlanResultReplay,
+  stubPlanningContextReader,
+  todoActionDraft,
+} from "#test/fixtures/voice-plan.fixture";
+import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
+
+import { DigestVoiceNote, type VoiceNoteDigestResult } from "./digest-voice-note.use-case.js";
+
+const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
+const NEXT_MONTH = new Date("2026-06-01T00:00:00.000Z");
+const FREE = { role: "USER", subscriptionStatus: "FREE", accessDeadline: null } as const;
+const PREMIUM = { role: "USER", subscriptionStatus: "ACTIVE", accessDeadline: NEXT_MONTH } as const;
+const ADMIN = { role: "ADMIN", subscriptionStatus: "FREE", accessDeadline: null } as const;
+
+const segments = [
+  { startMs: 0, text: "다음 주 일정을 정했습니다.", isBookmarked: false },
+  { startMs: 4_200, text: "회의록은 제가 보냅니다.", isBookmarked: true },
+];
+
+function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
+  const fixture = createPlanFlowFixture(ledgerInput);
+  const useCase = new DigestVoiceNote({
+    runner: fixture.runner,
+    quota: fixture.quota,
+    generator: fixture.generator,
+    contextReader: stubPlanningContextReader(),
+    localePreferenceReader: fixture.localePreferenceReader,
+    replay: new InMemoryPlanResultReplay<VoiceNoteDigestResult>(),
+    logger: fixture.logger,
+  });
+  const execute = (overrides: { text?: string; segments?: typeof segments } = {}) =>
+    useCase.execute({
+      userId: fixture.userId,
+      text: "다음 주 일정을 정했습니다. 회의록은 제가 보냅니다.",
+      durationSeconds: 60,
+      segments,
+      idempotencyKey: "key-1",
+      timezone: "Asia/Seoul",
+      locale: "ko",
+      ...overrides,
+    });
+  const used = async () => (await fixture.ledger.read(fixture.userId, "VOICE_NOTE")).used;
+  return { ...fixture, execute, used };
+}
+
+describe("DigestVoiceNote", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(QUOTA_LEDGER_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("핵심 내용의 시각은 AI가 고른 문장 번호로 앱이 보낸 값에서 찾는다", async () => {
+    // Given
+    const { aiGenerator, execute, used } = setup();
+    aiGenerator.setRawResponse(
+      digestDraft({
+        keyPoints: [
+          { text: "회의록", sentenceIndex: 1 },
+          { text: "번호 없음", sentenceIndex: null },
+          { text: "범위 밖", sentenceIndex: 99 },
+        ],
+      }),
+    );
+    // When
+    const response = await execute();
+    // Then
+    const parsed = voiceNoteDigestResponseSchema.parse(response);
+    expect(parsed.keyPoints).toEqual([
+      { text: "회의록", startMs: 4_200 },
+      { text: "번호 없음", startMs: null },
+      { text: "범위 밖", startMs: null },
+    ]);
+    expect(parsed.charged).toBe(true);
+    expect(await used()).toBe(1);
+  });
+
+  it("프롬프트에 시각을 보내지 않아 AI가 시간을 지어낼 수 없다", async () => {
+    // Given
+    const { aiGenerator, execute } = setup();
+    aiGenerator.setRawResponse(digestDraft());
+    // When
+    await execute();
+    // Then
+    expect(aiGenerator.getLastPrompt()).not.toContain("4200");
+  });
+
+  it("요약은 있고 할 일이 0개면 요약을 주되 환불해 charged:false다", async () => {
+    // Given
+    const { aiGenerator, execute, used } = setup();
+    aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+    // When
+    const response = await execute();
+    // Then
+    expect(response.charged).toBe(false);
+    expect(response.summary).not.toBe("");
+    expect(await used()).toBe(0);
+  });
+
+  it("돌려줄 내용이 전혀 없으면 환불하고 AI_1302다", async () => {
+    // Given
+    const { aiGenerator, execute, used } = setup();
+    aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
+    // When
+    const failure = execute();
+    // Then
+    await expect(failure).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1302,
+      details: { charged: false },
+    });
+    expect(await used()).toBe(0);
+  });
+
+  it("AI 실패는 정확히 한 번 환불하고 원장에 사유를 남긴다", async () => {
+    // Given
+    const { aiGenerator, execute, used, repository } = setup();
+    aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+    // When
+    const failure = execute();
+    // Then
+    await expect(failure).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1301,
+      details: { charged: false },
+    });
+    expect(await used()).toBe(0);
+    expect([...repository.charges.values()]).toEqual([
+      expect.objectContaining({
+        meter: "VOICE_NOTE",
+        status: "REFUNDED",
+        refundReason: "FAILED",
+        reason: "voice-note-digest",
+      }),
+    ]);
+  });
+
+  it("같은 키의 재요청은 AI를 다시 부르지 않고 같은 결과를 주며 한 번만 차감한다", async () => {
+    // Given
+    const { aiGenerator, execute, used } = setup();
+    aiGenerator.setRawResponse(digestDraft());
+    const first = await execute();
+    // When
+    const second = await execute();
+    // Then
+    expect(second.keyPoints).toEqual(first.keyPoints);
+    expect(aiGenerator.getCallCount()).toBe(1);
+    expect(await used()).toBe(1);
+  });
+
+  it("같은 키로 문장이 다르면 AI_1318이다", async () => {
+    // Given
+    const { aiGenerator, execute } = setup();
+    aiGenerator.setRawResponse(digestDraft());
+    await execute();
+    // When
+    const failure = execute({ segments: [] });
+    // Then
+    await expect(failure).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
+  });
+
+  describe("등급별 글자 상한", () => {
+    it.each([
+      { tier: "FREE", input: FREE, limit: maxCharacters.free },
+      { tier: "PREMIUM", input: PREMIUM, limit: maxCharacters.premium },
+      { tier: "ADMIN", input: ADMIN, limit: maxCharacters.premium },
+    ])("$tier은 $limit자까지 받고 넘으면 차감 전에 AI_1312다", async ({ input, limit }) => {
+      // Given
+      const { aiGenerator, execute, used } = setup(input);
+      aiGenerator.setRawResponse(digestDraft());
+      // When
+      const accepted = await execute({ text: "가".repeat(limit), segments: [] });
+      const rejected = execute({ text: "가".repeat(limit + 1), segments: [] });
+      // Then
+      expect(accepted.charged).toBe(true);
+      await expect(rejected).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1312,
+        details: {
+          charged: false,
+          characterCount: limit + 1,
+          maxCharacters: limit,
+          featureQuota: expect.objectContaining({ feature: "VOICE_NOTE" }),
+        },
+      });
+      expect(aiGenerator.getCallCount()).toBe(1);
+      expect(await used()).toBe(1);
+    });
+
+    it("이스케이프로 프롬프트가 길어지는 전사는 입력 상한 전에 AI_1312로 막는다", async () => {
+      // Given
+      const { aiGenerator, execute, used } = setup(PREMIUM);
+      const text = "<".repeat(Math.ceil(maxCharacters.premium / 6) + 1);
+      // When
+      const rejected = execute({ text, segments: [] });
+      // Then
+      await expect(rejected).rejects.toMatchObject({ errorCode: ErrorCode.AI_1312 });
+      expect(aiGenerator.getCallCount()).toBe(0);
+      expect(await used()).toBe(0);
+    });
+  });
+
+  describe("등급별 횟수 한도", () => {
+    it.each([
+      { tier: "FREE", input: FREE, count: PLAN_CATALOG.VOICE_NOTE.free, blocked: true },
+      { tier: "PREMIUM", input: PREMIUM, count: PLAN_CATALOG.VOICE_NOTE.free, blocked: false },
+      {
+        tier: "PREMIUM 공정 사용 상한",
+        input: PREMIUM,
+        count: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+        blocked: true,
+      },
+      {
+        tier: "ADMIN",
+        input: ADMIN,
+        count: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
+        blocked: false,
+      },
+    ])("$tier: $count회 쓴 뒤 막힘=$blocked", async ({ input, count, blocked }) => {
+      // Given
+      const { aiGenerator, execute, repository, userId } = setup(input);
+      repository.usage.set(`${userId}:VOICE_NOTE:2026-M04`, count);
+      aiGenerator.setRawResponse(digestDraft());
+      // When
+      const outcome = execute();
+      // Then
+      if (blocked) {
+        await expect(outcome).rejects.toMatchObject({
+          errorCode: ErrorCode.AI_1313,
+          details: { charged: false },
+        });
+        expect(aiGenerator.getCallCount()).toBe(0);
+      } else {
+        await expect(outcome).resolves.toMatchObject({ charged: true });
+      }
+    });
+  });
+
+  it("로그에 전사와 요약을 남기지 않고 길이와 개수만 남긴다", async () => {
+    // Given
+    const { aiGenerator, execute, logger } = setup();
+    aiGenerator.setRawResponse(
+      digestDraft({ summary: "비밀 요약", todos: [todoActionDraft({ title: "비밀 제목" })] }),
+    );
+    // When
+    await execute({ text: "비밀 전사" });
+    // Then
+    const logged = JSON.stringify([...logger.log.mock.calls, ...logger.warn.mock.calls]);
+    expect(logged).not.toContain("비밀");
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "voice.note-digest.completed",
+        segmentCount: 2,
+        durationSeconds: 60,
+        todoCount: 1,
+      }),
+    );
+  });
+});

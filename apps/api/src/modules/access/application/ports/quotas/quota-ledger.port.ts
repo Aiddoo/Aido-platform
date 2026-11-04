@@ -26,6 +26,8 @@ export interface QuotaReserveInput {
   readonly feature: MeteredFeatureKey;
   /** 사용자 행동 한 번을 가리키는 키(Idempotency-Key). 키가 없는 출시 앱 요청도 원장에 한 줄을 남긴다. */
   readonly idempotencyKey: string | null;
+  /** 같은 키가 같은 요청인지 가리는 요청 내용의 해시. 사용자 글자를 넘기지 않는다. */
+  readonly requestHash?: string;
   /** 차감한 작업 id (예: parse-todo). 고객 문의 때 원장에서 읽는다. */
   readonly reason: string;
 }
@@ -36,8 +38,8 @@ export interface QuotaReservation {
   readonly feature: MeteredFeatureKey;
   readonly attempt: number;
   /**
-   * 같은 키 요청이 이미 결과를 받아 확정된 차감이다. 이번 요청은 차감하지 않았으므로 AI를 다시 부르지 않고
-   * 저장한 응답을 돌려준다. commit·refund는 아무것도 바꾸지 않는다.
+   * 같은 키 요청이 이미 결과를 받아 확정된 차감이다. 이번 요청은 차감하지 않았고 AI를 다시 부르지 않는다.
+   * 원장은 결과를 저장하지 않으므로 돌려줄 결과는 호출 Context가 소유한다. commit·refund는 아무것도 바꾸지 않는다.
    */
   readonly alreadyCommitted: boolean;
 }
@@ -50,6 +52,7 @@ export interface QuotaLedgerPort {
   /**
    * 한도를 넘으면 기능별 ErrorCode(AI_PARSE: AI_1303, VOICE_NOTE: AI_1313)를, 같은 키가 처리 중이면 AI_1314를
    * 던진다. 두 오류 모두 차감하지 않았고 details는 `{ charged: false, featureQuota }`다.
+   * 같은 키로 작업이나 내용이 다른 요청이면 AI_1318(`{ charged: false }`)이다.
    */
   reserve(input: QuotaReserveInput): Promise<QuotaReservation>;
   /** 바뀌었으면 true. 이미 확정·환불된 예약이나 이전 시도면 false다. 저장 오류는 기록하고 삼킨다. */

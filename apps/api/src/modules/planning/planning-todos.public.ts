@@ -5,6 +5,11 @@ export {
   type StagedTodoCreatorPort,
 } from "./application/ports/todos/staged-todo-creator.port.js";
 export {
+  TODO_PLAN_READER,
+  type TodoPlanReaderPort,
+  type UpcomingTodoView,
+} from "./application/ports/todos/todo-plan.reader.port.js";
+export {
   TODO_VIEW_CACHE_INVALIDATOR,
   type TodoViewCacheInvalidatorPort,
 } from "./application/ports/todos/todo-view-cache-invalidator.port.js";

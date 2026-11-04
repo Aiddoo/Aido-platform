@@ -529,6 +529,54 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       ]);
     });
 
+    it.each([
+      { feature: "AI_PARSE", label: "AI_PLAN" },
+      { feature: "VOICE_NOTE", label: "VOICE_NOTE" },
+    ] as const)(
+      "$label 예약을 달을 넘겨 이어받으면 새 달 사용량으로 다시 잡고 환불도 새 달에 돌려준다",
+      async ({ feature }) => {
+        // Given
+        const reserveInput = input({ feature, idempotencyKey: "cross-month", requestHash: "hash" });
+        const stalledAt = new Date(newMonthAt.getTime() - QUOTA_RESERVATION_TAKEOVER_AFTER_MS);
+        vi.setSystemTime(stalledAt);
+        await client
+          .update(userTable)
+          .set({ aiUsageCount: 0, aiUsageResetAt: stalledAt })
+          .where(eq(userTable.id, userId));
+        await ledger.reserve(reserveInput);
+        vi.setSystemTime(newMonthAt);
+        // When
+        const takenOver = await ledger.reserve(reserveInput);
+        const quotaAfterTakeOver = await ledger.read(userId, feature);
+        const refunded = await ledger.refund(takenOver, "FAILED");
+        // Then
+        const [charge] = await storedCharges();
+        expect(takenOver.attempt).toBe(2);
+        expect(quotaAfterTakeOver.used).toBe(1);
+        expect(charge?.periodKey).toBe(QuotaWindow.periodKeyOf(newMonthAt));
+        expect(refunded).toBe(true);
+        expect((await ledger.read(userId, feature)).used).toBe(0);
+      },
+    );
+
+    it("같은 키로 내용이 다른 요청은 AI_1318이고 차감하지 않는다", async () => {
+      // Given
+      const reserveInput = input({
+        feature: "VOICE_NOTE",
+        idempotencyKey: "reused",
+        requestHash: "hash-a",
+      });
+      await ledger.reserve(reserveInput);
+      // When
+      const reused = ledger.reserve({ ...reserveInput, requestHash: "hash-b" });
+      // Then
+      await expect(reused).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1318,
+        details: { charged: false },
+      });
+      expect(await storedVoiceUsage()).toBe(1);
+    });
+
     it("키 없는 요청은 여러 행을 남기고 같은 사용자·계량기의 같은 키는 DB가 한 행만 허용한다", async () => {
       // Given
       await ledger.reserve(input());

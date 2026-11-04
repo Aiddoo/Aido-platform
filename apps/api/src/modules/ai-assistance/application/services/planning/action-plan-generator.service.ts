@@ -1,0 +1,172 @@
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { now } from "#api/shared/domain/date/utils/core";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { SupportedLocale } from "#api/shared/domain/locale";
+
+import {
+  resolveTodoSchedule,
+  type ScheduleClock,
+} from "../../../domain/services/parsing/resolve-todo-schedule.js";
+import type { NormalizedActionPlan } from "../../../domain/types/planning/action-plan-draft.types.js";
+import {
+  generationCompletedLog,
+  generationFailedLog,
+} from "../../observability/generation/ai-generation-log.events.js";
+import type { AiGeneratorPort } from "../../ports/generation/ai-generator.port.js";
+import type { AiDataSharingConsentDecisionReaderPort } from "../../ports/parsing/ai-data-sharing-consent.reader.port.js";
+import type {
+  ActionPlanGeneratorPort,
+  GeneratedActionPlan,
+  QuickPlanGeneration,
+  QuickPlanGenerationInput,
+  VoiceNoteDigestGeneration,
+  VoiceNoteDigestGenerationInput,
+} from "../../ports/planning/action-plan-generator.port.js";
+import {
+  type BuiltPrompt,
+  generateWithPrompt,
+  type PromptDefinition,
+  type PromptGeneration,
+} from "../../prompts/kit/prompt-definition.js";
+import { quickPlanPrompt } from "../../prompts/planning/quick-plan/index.js";
+import { voiceNoteDigestPrompt } from "../../prompts/planning/voice-note-digest/index.js";
+import { describeParsingFailure } from "../parsing/ai-parsing-error-code.js";
+import { isEmptyVoiceNoteDigest } from "./action-plan.normalizer.js";
+
+interface ActionPlanGeneratorDependencies {
+  readonly generator: Pick<AiGeneratorPort, "generate">;
+  readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
+  readonly logger: Pick<ApplicationLogger, "log" | "error">;
+}
+
+function toGeneratedPlan(plan: NormalizedActionPlan, clock: ScheduleClock): GeneratedActionPlan {
+  return {
+    todos: plan.todos.map((todo) => {
+      const { startDate, endDate, scheduledTime, repeat } = resolveTodoSchedule(
+        todo.schedule,
+        clock,
+      );
+      return {
+        title: todo.title,
+        categoryId: todo.categoryId,
+        startDate,
+        // 반복은 기간을 쓰지 않는다. 생성 포트가 함께 받으면 거절한다.
+        endDate: repeat == null ? endDate : null,
+        scheduledTime,
+        repeat,
+        visibility: todo.visibility,
+        items: todo.items,
+        duplicateOfTodoId: todo.duplicateOfTodoId,
+      };
+    }),
+    memo: plan.memo,
+    omittedTodoCount: plan.omittedTodoCount,
+  };
+}
+
+/**
+ * 맥락은 줄일 수 있지만 말한 내용은 줄일 수 없다. 저장된 제목의 이스케이프로 입력 상한을 넘으면 겹침 후보를
+ * 빼고 만든다(겹침은 서버 정책이 다시 판정한다). 그래도 넘으면 생성기가 업체를 부르지 않고 거절한다.
+ */
+function buildWithinLimit<I extends { readonly upcomingTodos: readonly unknown[] }, O, R, C>(
+  definition: PromptDefinition<I, O, R, C>,
+  input: I,
+  locale: SupportedLocale,
+): BuiltPrompt {
+  const built = definition.build(input, locale);
+  return built.prompt.length <= definition.maxInputChars
+    ? built
+    : definition.build({ ...input, upcomingTodos: [] }, locale);
+}
+
+function normalizeContext(input: QuickPlanGenerationInput | VoiceNoteDigestGenerationInput) {
+  return {
+    ownedCategoryIds: new Set(input.categories.map((category) => category.id)),
+    upcomingTodoIds: new Set(input.upcomingTodos.map((todo) => todo.id)),
+  };
+}
+
+export class ActionPlanGenerator implements ActionPlanGeneratorPort {
+  readonly #dependencies: ActionPlanGeneratorDependencies;
+
+  constructor(dependencies: ActionPlanGeneratorDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async generateQuickPlan(input: QuickPlanGenerationInput): Promise<QuickPlanGeneration> {
+    const at = now();
+    const definition = quickPlanPrompt;
+    const built = buildWithinLimit(definition, { ...input, now: at }, input.locale);
+    const { value, meta } = await this.#generate(
+      definition,
+      built,
+      normalizeContext(input),
+      input.userId,
+      (plan) => plan.todos.length > 0,
+    );
+    return {
+      plan: toGeneratedPlan(value, { now: at, timeZone: input.timezone }),
+      meta: { ...meta, promptVersion: definition.version },
+    };
+  }
+
+  async digestVoiceNote(input: VoiceNoteDigestGenerationInput): Promise<VoiceNoteDigestGeneration> {
+    const at = now();
+    const definition = voiceNoteDigestPrompt;
+    const built = buildWithinLimit(definition, { ...input, now: at }, input.locale);
+    const { value, meta } = await this.#generate(
+      definition,
+      built,
+      { ...normalizeContext(input), sentenceCount: input.sentences.length },
+      input.userId,
+      (digest) => digest.plan.todos.length > 0,
+    );
+    return {
+      title: value.title,
+      summary: value.summary,
+      keyPoints: value.keyPoints,
+      plan: toGeneratedPlan(value.plan, { now: at, timeZone: input.timezone }),
+      isEmpty: isEmptyVoiceNoteDigest(value),
+      meta: { ...meta, promptVersion: definition.version },
+    };
+  }
+
+  async #generate<I, O, R, C>(
+    definition: PromptDefinition<I, O, R, C>,
+    built: BuiltPrompt,
+    context: C,
+    userId: string,
+    hasTodos: (result: R) => boolean,
+  ): Promise<PromptGeneration<R>> {
+    const { generator, consentReader, logger } = this.#dependencies;
+    const startedAt = Date.now();
+    const logBase = { task: definition.id, promptVersion: definition.version, userId };
+    const { agreedVersion } = await consentReader.findAiDataSharingConsent(userId);
+    try {
+      const generation = await generateWithPrompt(generator, definition, built, context, {
+        agreedConsentVersion: agreedVersion,
+        userId,
+      });
+      const quotaCharged = hasTodos(generation.value);
+      logger.log(
+        generationCompletedLog(
+          { ...logBase, outcome: quotaCharged ? "SUCCESS" : "NO_ACTION", quotaCharged },
+          generation.meta,
+        ),
+      );
+      return generation;
+    } catch (error) {
+      const failure = describeParsingFailure(error);
+      logger.error(
+        generationFailedLog({
+          ...logBase,
+          outcome: "FAILED",
+          ...failure,
+          latencyMs: Date.now() - startedAt,
+          quotaCharged: false,
+        }),
+      );
+      throw new ApplicationException(failure.errorCode);
+    }
+  }
+}

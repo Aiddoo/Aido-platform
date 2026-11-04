@@ -89,6 +89,7 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       }
       const context = this.#decisionContext(input, await this.#findAccessState(input.userId));
       const meter = meterOf(input.feature);
+      const requestHash = input.requestHash ?? null;
       const existing =
         input.idempotencyKey == null
           ? null
@@ -100,12 +101,21 @@ export class QuotaLedgerService implements QuotaLedgerPort {
             userId: input.userId,
             meter,
             idempotencyKey: input.idempotencyKey,
+            requestHash,
             reason: input.reason,
             periodKey: context.window.periodKey,
             at: context.at,
           }),
         );
         return this.#reserved(context, charge, false);
+      }
+      if (!existing.isSameRequest({ reason: input.reason, requestHash })) {
+        this.#dependencies.logger.warn({
+          event: AccessQuotaLogEvent.KEY_REUSED,
+          chargeId: existing.id,
+          meter,
+        });
+        throw new ApplicationException(ErrorCode.AI_1318, { charged: false });
       }
       return this.#replay(context, existing, input.reason);
     });
@@ -295,9 +305,21 @@ export class QuotaLedgerService implements QuotaLedgerPort {
       .with("COMMITTED", () => this.#reserved(context, charge, true))
       .with("IN_FLIGHT", () => this.#rejectInFlight(context, charge))
       .with("TAKE_OVER", async () => {
-        charge.takeOver(context.at);
+        // 달을 넘겨 이어받으면 지난달 예약은 쓰이지 않았으므로 새 달 한도로 다시 잡고 지난달 몫을 돌려놓는다.
+        const previousPeriodKey = charge.periodKey;
+        const crossesPeriod = previousPeriodKey !== context.window.periodKey;
+        if (crossesPeriod) {
+          await this.#addUsage(context);
+        }
+        charge.takeOver({ periodKey: context.window.periodKey, at: context.at });
         if (!(await repository.updateCharge(charge, expected))) {
           return this.#rejectInFlight(context, charge);
+        }
+        if (crossesPeriod) {
+          await repository.subtractUsage(context.userId, charge.meter, {
+            periodKey: previousPeriodKey,
+            amount: charge.amount,
+          });
         }
         return this.#reserved(context, charge, false);
       })

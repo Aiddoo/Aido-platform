@@ -14,6 +14,8 @@ export interface QuotaChargeProps {
   readonly userId: string;
   readonly meter: QuotaMeter;
   readonly idempotencyKey: string | null;
+  /** 같은 키가 같은 요청인지 가리는 해시. 키가 없거나 지문을 주지 않은 요청은 null이다. */
+  readonly requestHash: string | null;
   readonly amount: number;
   status: QuotaChargeStatus;
   /** 같은 키로 다시 예약할 때마다 1씩 는다. 늦게 도착한 이전 시도의 확정·환불을 무시하는 기준이다. */
@@ -45,6 +47,7 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
     readonly userId: string;
     readonly meter: QuotaMeter;
     readonly idempotencyKey: string | null;
+    readonly requestHash: string | null;
     readonly reason: string;
     readonly periodKey: string;
     readonly at: Date;
@@ -53,6 +56,7 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
       userId: input.userId,
       meter: input.meter,
       idempotencyKey: input.idempotencyKey,
+      requestHash: input.requestHash,
       amount: QUOTA_CHARGE_AMOUNT,
       status: "RESERVED",
       attempt: 1,
@@ -111,6 +115,11 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
     return new Date(this.props.updatedAt);
   }
 
+  /** 같은 키라도 작업이나 내용이 다르면 다른 요청이다. 다시 차감하지도 결과를 돌려주지도 않는다. */
+  isSameRequest(input: { readonly reason: string; readonly requestHash: string | null }): boolean {
+    return this.props.reason === input.reason && this.props.requestHash === input.requestHash;
+  }
+
   replayAt(at: Date): QuotaChargeReplay {
     return match(this.props.status)
       .with("COMMITTED", () => "COMMITTED" as const)
@@ -141,13 +150,17 @@ export class QuotaCharge extends AggregateRoot<QuotaChargeProps> {
     return true;
   }
 
-  /** 멈춘 예약을 새 시도로 이어받는다. 이전 시도의 확정·환불은 attempt가 달라 무시된다. */
-  takeOver(at: Date): boolean {
-    if (this.replayAt(at) !== "TAKE_OVER") {
+  /**
+   * 멈춘 예약을 새 시도로 이어받는다. 이전 시도의 확정·환불은 attempt가 달라 무시된다.
+   * 달을 넘겼으면 호출부가 새 달 사용량을 잡고 새 periodKey를 넘긴다.
+   */
+  takeOver(input: { readonly periodKey: string; readonly at: Date }): boolean {
+    if (this.replayAt(input.at) !== "TAKE_OVER") {
       return false;
     }
     this.props.attempt += 1;
-    this.props.updatedAt = new Date(at);
+    this.props.periodKey = input.periodKey;
+    this.props.updatedAt = new Date(input.at);
     return true;
   }
 
