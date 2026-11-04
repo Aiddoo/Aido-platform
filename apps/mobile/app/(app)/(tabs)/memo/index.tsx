@@ -6,6 +6,8 @@ import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/
 import { invalidateMemos } from '@src/features/memo/queries/memo-cache';
 import { memoDetailHref } from '@src/features/memo/utils/navigation/memo-href';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
+import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
+import { VoiceNoteStartButton } from '@src/features/voice/components/note/voice-note-start-button';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -44,7 +46,7 @@ export default function MemoScreen() {
   const handleScroll = useAnimatedScrollHandler({
     onScroll: ({ contentOffset: { y }, contentSize, layoutMeasurement }) => {
       const scrollable = contentSize.height - layoutMeasurement.height;
-      progress.value = scrollable > 0 ? Math.min(Math.max(y / scrollable, 0), 1) : 0;
+      progress.set(scrollable > 0 ? Math.min(Math.max(y / scrollable, 0), 1) : 0);
     },
   });
 
@@ -62,10 +64,11 @@ export default function MemoScreen() {
   const memoListPane = (
     <Box className="flex-1">
       <StyledSafeAreaView edges={['left', 'right']}>
-        <HStack align="center" px={16} mb={16}>
+        <HStack align="center" gap={8} px={16} mb={16}>
           <Box flex={1}>
             <H3 shade={7}>{t('tab.addMemo')}</H3>
           </Box>
+          <VoiceNoteStartButton />
           <QueryErrorBoundary fallback={(props) => <MemoCreateButton.Error {...props} />}>
             <Suspense fallback={<MemoCreateButton.Loading />}>
               <MemoCreateButton />
@@ -88,6 +91,11 @@ export default function MemoScreen() {
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
           <Box px={12} style={{ flexGrow: 1 }}>
+            <QueryErrorBoundary fallback={() => null}>
+              <Suspense fallback={null}>
+                <VoiceNoteDraftList mb={16} />
+              </Suspense>
+            </QueryErrorBoundary>
             <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
               <Suspense fallback={<MemoList.Loading />}>
                 <MemoList />

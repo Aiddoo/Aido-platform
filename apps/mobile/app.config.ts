@@ -213,7 +213,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         CFBundleAllowMixedLocalizations: true,
         // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
         // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
-        NSMicrophoneUsageDescription: '말로 할 일을 입력할 때 마이크를 써요.',
+        NSMicrophoneUsageDescription: '말로 할 일을 입력하거나 메모할 때 마이크를 써요.',
         NSSpeechRecognitionUsageDescription:
           '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 기기에서 바로 인식할 수 없으면 음성이 Apple 음성 인식으로 처리될 수 있어요. 녹음 파일은 Aido 서버로 보내지 않아요.',
         // 앱이 사진을 직접 읽지 않아도 포함된 SDK가 사진 보관함 API를 참조해 App Store 업로드에 읽기 문구가 필요하다(ITMS-90683).
@@ -422,12 +422,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-speech-recognition',
         {
           // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
-          microphonePermission: '말로 할 일을 입력할 때 마이크를 써요.',
+          microphonePermission: '말로 할 일을 입력하거나 메모할 때 마이크를 써요.',
           speechRecognitionPermission:
             '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 기기에서 바로 인식할 수 없으면 음성이 Apple 음성 인식으로 처리될 수 있어요. 녹음 파일은 Aido 서버로 보내지 않아요.',
           androidSpeechServicePackages: [
             'com.google.android.googlequicksearchbox',
             'com.google.android.tts',
+            // 기기 안 인식(Android System Intelligence)
+            'com.google.android.as',
           ],
         },
       ],

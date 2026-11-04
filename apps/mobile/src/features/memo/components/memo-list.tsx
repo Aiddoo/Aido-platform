@@ -1,3 +1,4 @@
+import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -131,12 +132,19 @@ MemoList.Loading = function Loading() {
 
 MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
+  const { t: tVoiceNote } = useTranslation('voiceNote');
+  const startVoiceNote = useVoiceNoteStart();
   return (
     <Flex flex={1} justify="center" align="center">
       <Result
         icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
         title={t('list.emptyTitle')}
         description={t('list.emptyDescription')}
+        button={
+          <Result.Button onPress={() => startVoiceNote()}>
+            {tVoiceNote('start.label')}
+          </Result.Button>
+        }
       />
     </Flex>
   );

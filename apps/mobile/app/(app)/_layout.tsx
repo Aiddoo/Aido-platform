@@ -60,6 +60,11 @@ function AppLayout() {
           name="memo"
           options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
         />
+        {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
+        <Stack.Screen
+          name="voice-notes"
+          options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+        />
         {SHEET_ROUTES.map((name) => (
           <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
         ))}

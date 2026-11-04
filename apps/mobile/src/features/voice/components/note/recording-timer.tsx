@@ -39,7 +39,9 @@ export function RecordingTimer({
     RING.size - RING.strokeWidth,
   );
   const progress = limitMs != null && limitMs > 0 ? clamp(elapsedMs / limitMs, 0, 1) : 0;
-  const remainingMs = limitMs == null ? null : Math.max(0, limitMs - elapsedMs);
+  // 남은 시간은 올림한다. 시작하자마자 한 칸 줄어 보이거나 0:00에 아직 듣는 일이 없게 한다
+  const remainingMs =
+    limitMs == null ? null : Math.ceil(Math.max(0, limitMs - elapsedMs) / 1_000) * 1_000;
   const remainingTime = remainingMs == null ? null : formatMediaTime(remainingMs);
 
   const track = Skia.PathBuilder.Make().addArc(bounds, RING.startAngle, RING.fullSweep).build();

@@ -1,0 +1,213 @@
+import '@src/shared/i18n/init';
+import { createActivationProgressRepository } from '@src/features/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/activation/apis/activation.service';
+import { AuthService } from '@src/features/auth/apis/auth.service';
+import { CoachmarkService } from '@src/features/feature-discovery/apis/coachmark.service';
+import { PreferenceService } from '@src/features/preference/apis/preference.service';
+import { PREFERENCE_QUERY_KEYS } from '@src/features/preference/constants/preference-query-keys';
+import { createEntitlementSnapshot } from '@src/features/subscription/__tests__/entitlement.factories';
+import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
+import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
+import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
+import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
+import { UserService } from '@src/features/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import {
+  createErrorReporterStub,
+  createHapticsStub,
+  createMemorySyncStorage,
+  createMockAnalytics,
+  createMockHttpClient,
+  createMockStorage,
+  createMockTokenStore,
+  createVoiceNoteStorageServiceFake,
+} from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { ApiError } from '@src/shared/errors/api-error';
+import { err, ok } from '@src/shared/errors/result';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
+
+import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
+import { VoiceService } from '../apis/voice.service';
+import { createPlanReviewDraft } from '../domains/plan-review-form.schema';
+import { voicePlanSchema } from '../domains/voice-plan.model';
+import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.factories';
+
+// AuthService가 읽는 앱 설정(ENV)은 불러올 때 expo extra를 검사해서, 기존 인증 테스트처럼 설정 모듈만 대체한다
+jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
+jest.mock('expo-router', () => ({
+  router: { back: jest.fn(), replace: jest.fn(), setParams: jest.fn(), canGoBack: () => true },
+  Redirect: () => null,
+  useLocalSearchParams: jest.fn(),
+}));
+
+// expo-audio는 네이티브 플레이어라 계획대로 재생 훅 경계에서 대체한다
+jest.mock('@src/features/voice/hooks/use-voice-note-player', () => ({
+  useVoiceNotePlayer: () => ({
+    isLoaded: true,
+    isPlaying: false,
+    positionMs: 0,
+    durationMs: 178_000,
+    play: () => undefined,
+    pause: () => undefined,
+    togglePlay: () => Promise.resolve(),
+    seekTo: () => Promise.resolve(),
+    playFrom: () => Promise.resolve(),
+  }),
+}));
+
+const ACCOUNT_ID = 'user-1';
+const DRAFT_ID = 'draft-1';
+const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
+const emptyPlanDraft = createPlanReviewDraft(
+  voicePlanSchema.parse({
+    planId: DRAFT_ID,
+    source: 'voice-note',
+    sourceMemoId: null,
+    omittedTodoCount: 0,
+    actions: [],
+  }),
+);
+
+const createDigestDto = () => ({
+  title: '온보딩 회의',
+  summary: '요약이에요',
+  keyPoints: [],
+  plan: { actions: [], omittedTodoCount: 0 },
+  meta: {
+    model: 'm',
+    processingTimeMs: 1,
+    tokenUsage: { input: 1, output: 1 },
+    promptVersion: 'voice-note-digest@1',
+  },
+  featureQuota: null,
+  charged: true,
+});
+
+async function renderScreen(note: Parameters<typeof createVoiceNoteFixture>[0], tab?: string) {
+  jest.mocked(useLocalSearchParams).mockReturnValue({ draftId: DRAFT_ID, tab });
+  const httpClient = createMockHttpClient();
+  httpClient.get.mockReturnValue(new Promise(() => undefined));
+  const storage = createVoiceNoteStorageServiceFake();
+  storage.drafts.save(ACCOUNT_ID, createVoiceNoteFixture({ draftId: DRAFT_ID, ...note }));
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: Infinity } },
+  });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+  queryClient.setQueryData(ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot());
+  queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
+    categories: [{ id: 1, name: '기본', color: '#3B82F6', sortOrder: 0, todoCount: 0 }],
+  });
+  queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), { timeFormat: 'H12' });
+
+  await renderUi(
+    <LocalDateProvider>
+      <OverlayProvider>
+        <VoiceNoteRoute />
+      </OverlayProvider>
+    </LocalDateProvider>,
+    {
+      queryClient,
+      di: {
+        voiceService: new VoiceService(httpClient, logger),
+        activationService: new ActivationService(
+          createActivationProgressRepository(createMemorySyncStorage()),
+        ),
+        entitlementService: new EntitlementService(httpClient, logger),
+        userService: new UserService(httpClient),
+        todoCategoryService: new TodoCategoryService(httpClient),
+        preferenceService: new PreferenceService(httpClient),
+        authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
+        coachmarkService: new CoachmarkService({ isSeen: () => true, markSeen: jest.fn() }),
+        storage: createMockStorage(),
+        voiceNoteStorageService: storage,
+        analytics: createMockAnalytics(),
+        errorReporter: createErrorReporterStub(),
+        haptics: createHapticsStub(),
+        logger,
+      },
+    },
+  );
+
+  return { httpClient, storage };
+}
+
+describe('말로 메모 화면', () => {
+  test('정리 전에는 들은 글자와 정리하기, 쓰게 될 횟수를 보여 준다', async () => {
+    // Given
+    await renderScreen({});
+
+    // When
+    const button = await screen.findByText('정리하기');
+
+    // Then
+    expect(button).toBeTruthy();
+    expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
+      '1번 사용 · 이번 달 3번 남음',
+    );
+  });
+
+  test('정리에 실패하면 글자를 남기고 차감되지 않았을 때만 그렇게 말하며 다시 정리를 보인다', async () => {
+    // Given
+    const { httpClient } = await renderScreen({});
+    httpClient.post.mockResolvedValue(
+      err(new ApiError('AI_1301', '실패', 503, { charged: false })),
+    );
+
+    // When
+    await fireEvent.press(await screen.findByText('정리하기'));
+
+    // Then
+    expect(await screen.findByText('다시 정리')).toBeTruthy();
+    expect(screen.getByTestId('voice-note-digest-failure')).toHaveTextContent(
+      /횟수는 차감되지 않아요/,
+    );
+  });
+
+  test('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {
+    // Given
+    const { httpClient } = await renderScreen({});
+    httpClient.post.mockResolvedValue(ok(createDigestDto()));
+
+    // When
+    await fireEvent.press(await screen.findByText('정리하기'));
+
+    // Then
+    expect(await screen.findByText('요약이에요')).toBeTruthy();
+    expect(screen.getByTestId('voice-note-no-todos')).toHaveTextContent(
+      '할 일로 나눌 내용은 없었어요. 요약을 남겨뒀어요',
+    );
+  });
+
+  test('메모로 저장하면 요약을 메모로 보내고 저장했다고 바뀐다', async () => {
+    // Given
+    const { httpClient } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+    httpClient.post.mockResolvedValue(ok({ todos: [], memo: null }));
+
+    // When
+    await fireEvent.press(await screen.findByTestId('voice-note-save-memo'));
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('voice-note-memo-saved')).toBeTruthy());
+    expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/action-plans/apply');
+  });
+
+  test('이미 할 일을 추가한 메모는 할 일 탭에서 다시 추가하지 않게 안내한다', async () => {
+    // Given
+    const appliedAt = new Date('2026-11-02T00:00:00.000Z');
+
+    // When
+    await renderScreen({ digest: createVoiceNoteDigest(), planDraft: null, appliedAt }, 'todos');
+
+    // Then
+    expect(await screen.findByTestId('voice-note-applied')).toHaveTextContent('할 일을 추가했어요');
+  });
+});

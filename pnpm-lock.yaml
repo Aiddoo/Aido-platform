@@ -385,6 +385,9 @@ catalogs:
     expo-image:
       specifier: ~58.0.18
       version: 58.0.18
+    expo-keep-awake:
+      specifier: ~58.0.3
+      version: 58.0.3
     expo-linking:
       specifier: ~58.0.16
       version: 58.0.16
@@ -947,6 +950,9 @@ importers:
       expo-image:
         specifier: catalog:expo58
         version: 58.0.18(expo@58.0.23)(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      expo-keep-awake:
+        specifier: catalog:expo58
+        version: 58.0.3(expo@58.0.23)(react@19.3.0)
       expo-linking:
         specifier: catalog:expo58
         version: 58.0.16(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
