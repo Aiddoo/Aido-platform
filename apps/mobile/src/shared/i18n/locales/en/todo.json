@@ -44,26 +44,30 @@
     "allDay": "All day",
     "time": "Time",
     "selectTime": "Choose a time",
-    "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before"
+    "reminderInfo": "ⓘ We'll remind you 1 hour before and again 10 minutes before",
+    "repeatPeriod": "Repeat period",
+    "selectPeriod": "Please choose a period",
+    "periodNever": "From {{date}}, repeats forever",
+    "periodCount_one": "From {{date}}, {{count}} time",
+    "periodCount_other": "From {{date}}, {{count}} times",
+    "repeatDaily": "Repeats daily",
+    "repeatWeekdays": "Repeats on weekdays",
+    "repeatWeekends": "Repeats on weekends",
+    "repeatWeekly": "Repeats weekly on {{days}}",
+    "repeatBiweekly": "Repeats every 2 weeks on {{days}}",
+    "repeatMonthly": "Repeats monthly on day {{day}}",
+    "presetDaily": "Daily",
+    "presetWeekdays": "Weekdays",
+    "presetWeekends": "Weekends",
+    "presetBiweekly": "Every 2 weeks",
+    "presetMonthly": "Monthly on day {{day}}",
+    "endNever": "Forever",
+    "endUntil": "Until",
+    "endCount": "Count",
+    "selectDays": "Please choose days"
   },
   "repeat": {
-    "kind": {
-      "NONE": "Never",
-      "DAILY": "Daily",
-      "WEEKDAYS": "Weekdays",
-      "WEEKLY": "Weekly",
-      "BIWEEKLY": "Every 2 weeks",
-      "MONTHLY": "Monthly on day {{day}}"
-    },
-    "weekdayPreset": {
-      "ALL": "All",
-      "WEEKDAYS": "Weekdays",
-      "WEEKENDS": "Weekends"
-    },
     "end": {
-      "title": "Ends",
-      "NEVER": "Never",
-      "UNTIL": "On date",
       "COUNT_one": "After {{count}} time",
       "COUNT_other": "After {{count}} times",
       "countDecrease": "Decrease count",
@@ -79,8 +83,7 @@
       "countSuffix_one": "{{count}} time",
       "countSuffix_other": "{{count}} times"
     },
-    "monthEndHint": "In shorter months, it repeats on the last day",
-    "horizonHint": "Repeating to-dos appear up to 3 months ahead"
+    "monthEndHint": "In shorter months, it repeats on the last day"
   },
   "scope": {
     "editTitle": "Edit repeating to-do",

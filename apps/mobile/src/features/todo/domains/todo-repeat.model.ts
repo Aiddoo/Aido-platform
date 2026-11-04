@@ -7,20 +7,15 @@ import {
   TODO_REPEAT_COUNT,
   TODO_REPEAT_DEFAULT_UNTIL_DAYS,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
+  TODO_REPEAT_WEEKDAYS as WEEKDAYS,
+  TODO_REPEAT_WEEKEND_DAYS as WEEKEND_DAYS,
 } from '../constants/todo-repeat.constants';
 
 export const TODO_EDIT_SCOPES = ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'] as const;
 export const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
 
-export const TODO_REPEAT_KINDS = [
-  'NONE',
-  'DAILY',
-  'WEEKDAYS',
-  'WEEKLY',
-  'BIWEEKLY',
-  'MONTHLY',
-] as const;
+export const TODO_REPEAT_KINDS = ['DAILY', 'WEEKDAYS', 'WEEKLY', 'BIWEEKLY', 'MONTHLY'] as const;
 export type TodoRepeatKind = (typeof TODO_REPEAT_KINDS)[number];
 
 export const TODO_REPEAT_END_TYPES = ['NEVER', 'UNTIL', 'COUNT'] as const;
@@ -59,9 +54,6 @@ export const todoSeriesSchema = z.object({
 });
 export type TodoSeries = z.infer<typeof todoSeriesSchema>;
 
-const WEEKDAYS: readonly DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
-const WEEKEND_DAYS: readonly DayOfWeek[] = ['SAT', 'SUN'];
-
 const NEVER_END: TodoRepeatEnd = { type: 'NEVER' };
 
 function sortWeekdays(weekdays: readonly DayOfWeek[]): DayOfWeek[] {
@@ -85,11 +77,7 @@ export function getRepeatEndType(repeat: TodoRepeat): TodoRepeatEndType {
   return repeat.end.type;
 }
 
-export function getRepeatKind(repeat: TodoRepeat | null): TodoRepeatKind {
-  if (repeat == null) {
-    return 'NONE';
-  }
-
+export function getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
   return match(repeat)
     .returnType<TodoRepeatKind>()
     .with({ frequency: 'DAILY' }, () => 'DAILY')
@@ -119,12 +107,11 @@ export function withRepeatKind(
   repeat: TodoRepeat | null,
   kind: TodoRepeatKind,
   startDate: string,
-): TodoRepeat | null {
+): TodoRepeat {
   const end = repeat?.end ?? NEVER_END;
 
   return match(kind)
-    .returnType<TodoRepeat | null>()
-    .with('NONE', () => null)
+    .returnType<TodoRepeat>()
     .with('DAILY', () => ({ frequency: 'DAILY', end }))
     .with('WEEKDAYS', () => ({
       frequency: 'WEEKLY',
@@ -152,7 +139,7 @@ export function withRepeatKind(
     .exhaustive();
 }
 
-export function createRepeat(kind: TodoRepeatKind, startDate: string): TodoRepeat | null {
+export function createRepeat(kind: TodoRepeatKind, startDate: string): TodoRepeat {
   return withRepeatKind(null, kind, startDate);
 }
 

@@ -23,10 +23,10 @@ describe('TodoRepeatPolicy', () => {
       const biweekly = createWeekly({ interval: 2 });
 
       // When
-      const kinds = [weekdays, everyDay, biweekly, null].map(TodoRepeatPolicy.getKind);
+      const kinds = [weekdays, everyDay, biweekly].map(TodoRepeatPolicy.getKind);
 
       // Then
-      expect(kinds).toEqual(['WEEKDAYS', 'DAILY', 'BIWEEKLY', 'NONE']);
+      expect(kinds).toEqual(['WEEKDAYS', 'DAILY', 'BIWEEKLY']);
     });
   });
 
@@ -66,17 +66,6 @@ describe('TodoRepeatPolicy', () => {
 
       // Then
       expect(biweekly).toMatchObject({ interval: 2, weekdays: ['MON', 'FRI'] });
-    });
-
-    test('안 함으로 바꾸면 null이다', () => {
-      // Given
-      const repeat = createWeekly();
-
-      // When
-      const result = TodoRepeatPolicy.withKind(repeat, 'NONE', MONDAY);
-
-      // Then
-      expect(result).toBeNull();
     });
   });
 

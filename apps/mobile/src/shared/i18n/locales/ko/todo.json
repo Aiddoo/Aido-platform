@@ -42,26 +42,29 @@
     "allDay": "종일",
     "time": "시간",
     "selectTime": "시간 선택",
-    "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요"
+    "reminderInfo": "ⓘ 1시간 전, 10분 전에 알림을 보내드려요",
+    "repeatPeriod": "반복 기간",
+    "selectPeriod": "기간을 선택해주세요",
+    "periodNever": "{{date}}부터 계속 반복",
+    "periodCount": "{{date}}부터 {{count}}회",
+    "repeatDaily": "매일 반복",
+    "repeatWeekdays": "주중 반복",
+    "repeatWeekends": "주말 반복",
+    "repeatWeekly": "매주 {{days}} 반복",
+    "repeatBiweekly": "격주 {{days}} 반복",
+    "repeatMonthly": "매월 {{day}}일 반복",
+    "presetDaily": "매일",
+    "presetWeekdays": "주중",
+    "presetWeekends": "주말",
+    "presetBiweekly": "격주",
+    "presetMonthly": "매월 {{day}}일",
+    "endNever": "계속",
+    "endUntil": "날짜",
+    "endCount": "횟수",
+    "selectDays": "요일을 선택해주세요"
   },
   "repeat": {
-    "kind": {
-      "NONE": "반복 안 함",
-      "DAILY": "매일",
-      "WEEKDAYS": "평일",
-      "WEEKLY": "매주",
-      "BIWEEKLY": "격주",
-      "MONTHLY": "매월 {{day}}일"
-    },
-    "weekdayPreset": {
-      "ALL": "전체",
-      "WEEKDAYS": "평일",
-      "WEEKENDS": "주말"
-    },
     "end": {
-      "title": "종료",
-      "NEVER": "계속 반복",
-      "UNTIL": "날짜까지",
       "COUNT": "{{count}}회",
       "countDecrease": "횟수 줄이기",
       "countIncrease": "횟수 늘리기"
@@ -75,8 +78,7 @@
       "untilSuffix": "{{date}}까지",
       "countSuffix": "{{count}}회"
     },
-    "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
-    "horizonHint": "반복 할 일은 3개월 앞까지 미리 보여요"
+    "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요"
   },
   "scope": {
     "editTitle": "반복 할 일 수정",

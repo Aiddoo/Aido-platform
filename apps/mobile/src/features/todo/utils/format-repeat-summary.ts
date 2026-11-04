@@ -26,7 +26,6 @@ function formatFrequency(repeat: TodoRepeat): string {
         day: repeat.frequency === 'MONTHLY' ? repeat.monthDay : 0,
       }),
     )
-    .with('NONE', () => '')
     .exhaustive();
 }
 

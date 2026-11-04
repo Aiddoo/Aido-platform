@@ -356,33 +356,38 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   const handleRepeatChipPress = () => {
     Keyboard.dismiss();
-    let pickerResult: { value: TodoRepeat | null } | null = null;
-    overlay.open<{ value: TodoRepeat | null } | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet
-        isOpen={isOpen}
-        onOpenChange={() => close(null)}
-        onExit={() => {
-          exit();
-          if (pickerResult) {
-            methods.setValue('repeat', pickerResult.value);
-            if (pickerResult.value != null) {
-              methods.setValue('endDate', null);
+    let pickerResult: { startDate: Date; repeat: TodoRepeat | null } | null = null;
+    overlay.open<{ startDate: Date; repeat: TodoRepeat | null } | null>(
+      ({ isOpen, close, exit }) => (
+        <ModalBottomSheet
+          isOpen={isOpen}
+          onOpenChange={() => close(null)}
+          onExit={() => {
+            exit();
+            if (pickerResult) {
+              methods.setValue('startDate', pickerResult.startDate);
+              methods.setValue('repeat', pickerResult.repeat);
+              if (pickerResult.repeat != null) {
+                methods.setValue('endDate', null);
+              }
             }
-          }
-          focusTodoInput();
-        }}
-      >
-        <TodoRepeatPickerContent
-          startDate={methods.getValues('startDate')}
-          value={methods.getValues('repeat') ?? null}
-          onChange={(value) => {
-            pickerResult = { value };
-            close(pickerResult);
+            focusTodoInput();
           }}
-          onCancel={() => close(null)}
-        />
-      </ModalBottomSheet>
-    ));
+        >
+          <TodoRepeatPickerContent
+            value={{
+              startDate: methods.getValues('startDate'),
+              repeat: methods.getValues('repeat') ?? null,
+            }}
+            onChange={(value) => {
+              pickerResult = value;
+              close(value);
+            }}
+            onCancel={() => close(null)}
+          />
+        </ModalBottomSheet>
+      ),
+    );
   };
 
   const handleCategoryChipPress = () => {
