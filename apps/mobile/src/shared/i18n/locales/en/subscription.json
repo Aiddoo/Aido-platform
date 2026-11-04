@@ -28,38 +28,42 @@
   },
   "benefits": {
     "aiParsing": {
-      "title": "Unlimited AI to-dos",
-      "description": "Organize to-dos in natural language, without the {{limit}}-per-month limit"
+      "title": "More AI to-dos",
+      "description": "{{free}} a month on Free, up to {{premium}} a month with Premium"
+    },
+    "voiceNote": {
+      "title": "Voice notes: {{premium}} a month, {{premiumMinutes}} min each",
+      "description": "{{free}} a month, {{freeMinutes}} min each on Free. {{premium}} a month, {{premiumMinutes}} min each with Premium"
     },
     "nudge": {
       "title": "Unlimited nudges",
-      "description": "Nudge your friends freely, without the {{limit}}-per-day limit"
+      "description": "{{free}} a day on Free, unlimited with Premium"
     },
     "reminder": {
-      "title": "Custom reminder times",
-      "description": "Get notified when you want, not at fixed times"
+      "title": "Choose your reminder times",
+      "description": "Free uses set times. With Premium, get reminders when you want"
     },
     "appIcon": {
-      "title": "App icon customization",
-      "description": "Change the app icon to match your style"
+      "title": "Change the app icon",
+      "description": "Free uses the default icon. With Premium, pick the one you like"
     },
     "friends": {
       "title": "Unlimited friends",
-      "description": "Add friends freely, without the {{limit}}-friend limit"
+      "description": "{{free}} on Free, unlimited with Premium"
     },
     "categories": {
       "title": "Up to {{premium}} categories",
-      "description": "Grow from the {{free}}-category limit up to {{premium}}"
+      "description": "{{free}} on Free, up to {{premium}} with Premium"
     },
     "aiRepeat": {
       "title": "AI repeat suggestions",
-      "description": "AI automatically suggests recurring to-dos"
+      "description": "AI suggests the to-dos you keep repeating"
     },
     "aiReport": {
-      "title": "AI weekly/monthly reports",
+      "title": "AI weekly and monthly reports",
       "description": "See your completion rate and patterns at a glance"
     },
-    "future": "All future premium features"
+    "future": "All future Premium features"
   },
   "subscriber": {
     "benefitsTitle": "Your benefits",
@@ -70,7 +74,7 @@
   },
   "paywall": {
     "title": "Upgrade to Premium",
-    "subtitle": "Use every feature without limits",
+    "subtitle": "Get more out of every feature",
     "futureIncluded": "All future premium features are included too",
     "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
     "moreBenefits": "More premium benefits",

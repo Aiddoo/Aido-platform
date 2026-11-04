@@ -28,35 +28,39 @@
   },
   "benefits": {
     "aiParsing": {
-      "title": "AI 할 일 만들기 무제한",
-      "description": "월 {{limit}}회 제한 없이, 자연어로 할 일을 마음껏 정리해요"
+      "title": "AI 할 일 만들기 넉넉하게",
+      "description": "무료는 월 {{free}}회, 프리미엄은 월 {{premium}}회까지"
+    },
+    "voiceNote": {
+      "title": "말로 메모하기 월 {{premium}}회·회당 {{premiumMinutes}}분",
+      "description": "무료는 월 {{free}}회·회당 {{freeMinutes}}분, 프리미엄은 월 {{premium}}회·회당 {{premiumMinutes}}분까지"
     },
     "nudge": {
       "title": "콕 찌르기 무제한",
-      "description": "하루 {{limit}}회 제한 없이, 친구에게 마음껏 찔러요"
+      "description": "무료는 하루 {{free}}회, 프리미엄은 무제한"
     },
     "reminder": {
-      "title": "리마인더 시간 자유 설정",
-      "description": "고정 시간 대신, 내가 원하는 시간에 알림을 받아요"
+      "title": "리마인드 시간 자유롭게",
+      "description": "무료는 정해진 시간에, 프리미엄은 원하는 시간에 알림을 받아요"
     },
     "appIcon": {
-      "title": "앱 아이콘 커스터마이징",
-      "description": "나만의 스타일로 앱 아이콘을 바꿀 수 있어요"
+      "title": "앱 아이콘 바꾸기",
+      "description": "무료는 기본 아이콘, 프리미엄은 마음에 드는 아이콘으로 바꿔요"
     },
     "friends": {
-      "title": "친구 무제한 추가",
-      "description": "{{limit}}명 제한 없이, 친구를 자유롭게 추가해요"
+      "title": "친구 무제한",
+      "description": "무료는 {{free}}명, 프리미엄은 무제한"
     },
     "categories": {
       "title": "카테고리 최대 {{premium}}개",
-      "description": "{{free}}개 제한에서 최대 {{premium}}개까지 늘어나요"
+      "description": "무료는 {{free}}개, 프리미엄은 {{premium}}개까지"
     },
     "aiRepeat": {
       "title": "AI 반복 제안",
-      "description": "반복되는 할 일을 AI가 자동으로 제안해요"
+      "description": "반복되는 할 일을 AI가 알아서 제안해드려요"
     },
     "aiReport": {
-      "title": "AI 주간/월간 리포트",
+      "title": "AI 주간·월간 리포트",
       "description": "내 할 일 달성률과 패턴을 한눈에 확인해요"
     },
     "future": "향후 출시되는 모든 프리미엄 기능"
@@ -70,7 +74,7 @@
   },
   "paywall": {
     "title": "프리미엄으로 업그레이드",
-    "subtitle": "모든 기능을 제한 없이 사용해보세요",
+    "subtitle": "모든 기능을 넉넉하게 써보세요",
     "futureIncluded": "향후 출시되는 모든 프리미엄 기능도 포함돼요",
     "grantEnded": "초대 보상 프리미엄이 {{date}}에 끝났어요. 구독하면 다시 모든 기능을 쓸 수 있어요",
     "moreBenefits": "더 많은 프리미엄 혜택",

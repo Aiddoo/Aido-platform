@@ -25,6 +25,7 @@ import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-c
 import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
 import { getPremiumGateAnalyticsFeature } from '../utils/analytics/premium-gate-feature';
 import { subscriptionHref } from '../utils/navigation/subscription-href';
+import { toPremiumBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
 
 type BlockedDecision = 'limit-reached' | 'locked';
 
@@ -140,9 +141,6 @@ function getBlockedDecision({ feature, featureQuota }: LimitedFeature): BlockedD
   return PLAN_CATALOG[feature].kind === 'flag' ? 'locked' : 'limit-reached';
 }
 
-/** 말로 메모하기 한 번 길이는 초로 오고 안내는 분으로 한다 */
-const SECONDS_PER_MINUTE = 60;
-
 /** 기능별 한도·프리미엄 안내 문구. 경우마다 한 줄씩 두어 문구 하나만 고쳐도 되게 한다 */
 function useEntitlementGateCopy() {
   const { t } = useTranslation('subscription');
@@ -154,6 +152,7 @@ function useEntitlementGateCopy() {
       snapshot: EntitlementSnapshot | undefined,
     ): EntitlementGateCopy & { refill: string | null } => {
       const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
+      const premium = toPremiumBenefitAmounts();
 
       const getRefillSentence = () => {
         if (snapshot == null) {
@@ -195,7 +194,7 @@ function useEntitlementGateCopy() {
           title: t('gate.aiParseTitle'),
           ...withRefill(
             t('gate.aiParsePremium', {
-              amount: formatAmount(PLAN_CATALOG.AI_PARSE.fairUse.premium),
+              amount: formatAmount(premium.aiParse),
             }),
           ),
         }))
@@ -203,10 +202,8 @@ function useEntitlementGateCopy() {
           title: t('gate.voiceNoteTitle'),
           ...withRefill(
             t('gate.voiceNotePremium', {
-              amount: formatAmount(PLAN_CATALOG.VOICE_NOTE.fairUse.premium),
-              minutes: formatAmount(
-                PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium / SECONDS_PER_MINUTE,
-              ),
+              amount: formatAmount(premium.voiceNote),
+              minutes: formatAmount(premium.voiceNoteMinutes),
             }),
           ),
         }))
@@ -226,7 +223,7 @@ function useEntitlementGateCopy() {
           title: t('gate.categoryTitle'),
           ...withRefill(
             t('gate.categoryPremium', {
-              amount: formatAmount(PLAN_CATALOG.TODO_CATEGORY.premium),
+              amount: formatAmount(premium.category),
             }),
           ),
         }))
