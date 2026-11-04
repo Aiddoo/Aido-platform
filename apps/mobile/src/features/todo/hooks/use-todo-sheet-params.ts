@@ -25,6 +25,10 @@ const createPrefillSearchSchema = z.object({
   time: timeOfDaySchema.optional().catch(undefined),
 });
 
+const createVoiceHintSearchSchema = z.object({
+  voiceHint: z.literal('1').optional().catch(undefined),
+});
+
 type SheetDateParam = z.output<typeof sheetDateSearchSchema>['date'];
 type CreateCategoryParam = z.output<typeof createCategorySearchSchema>['categoryId'];
 
@@ -55,6 +59,11 @@ export function useTodoCreateCategoryParam(): readonly [CreateCategoryParam] {
 /** 다른 화면이 제안한 제목·시각. 잘못된 값은 버리고 빈 시트로 연다. */
 export function useTodoCreatePrefillParam(): readonly [z.output<typeof createPrefillSearchSchema>] {
   return [createPrefillSearchSchema.parse(useLocalSearchParams())] as const;
+}
+
+/** 기능 소개의 "지금 말해볼게요"로 왔으면 마이크 안내를 이미 봤어도 다시 띄운다 */
+export function useTodoCreateVoiceHintParam(): boolean {
+  return createVoiceHintSearchSchema.parse(useLocalSearchParams()).voiceHint != null;
 }
 
 export function useSubTodoScreenParams() {

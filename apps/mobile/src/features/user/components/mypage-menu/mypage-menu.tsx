@@ -105,6 +105,10 @@ export function MyPageMenu() {
         <MyPageMenuItem label={t('mypage.items.theme')} pathname="/settings/theme" />
         <MyPageMenuItem label={t('mypage.items.fontSize')} pathname="/settings/font-size" />
         <MyPageMenuItem label={t('settings:titles.language')} pathname="/settings/language" />
+        <MyPageMenuItem
+          label={t('settings:titles.voiceStorage')}
+          pathname="/settings/voice-storage"
+        />
       </SettingNavigation>
 
       <Spacing size={12} />

@@ -1,0 +1,124 @@
+import '@src/shared/i18n/init';
+import { UserService } from '@src/features/user/apis/user.service';
+import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import {
+  createErrorReporterStub,
+  createHapticsStub,
+  createLocalFileSystemFake,
+  createMemorySyncStorage,
+  createMockAnalytics,
+  createMockHttpClient,
+} from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/shared/__tests__/query-client';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+
+import VoiceStorageRoute from '../../../../app/(app)/settings/voice-storage';
+import { createVoiceNoteDraftRepository } from '../apis/voice-note-draft.repository';
+import { VoiceNoteStorageService } from '../apis/voice-note-storage.service';
+import { createVoiceRecordingRepository } from '../apis/voice-recording.repository';
+import { createVoiceNoteDigest, createVoiceNoteFixture } from './voice-note.factories';
+
+const ACCOUNT_ID = 'user-1';
+const OWNER_DIRECTORY = ['voice-notes', ACCOUNT_ID];
+
+async function renderScreen({ hasRecording = true }: { hasRecording?: boolean } = {}) {
+  const files = createLocalFileSystemFake();
+  const logger = { warn: jest.fn() };
+  const storage = new VoiceNoteStorageService(
+    createVoiceNoteDraftRepository({ storage: createMemorySyncStorage(), logger }),
+    createVoiceRecordingRepository(files, logger),
+  );
+  if (hasRecording) {
+    files.addFile(OWNER_DIRECTORY, 'draft-1-0.wav', { sizeBytes: 2_500_000 });
+    storage.drafts.save(
+      ACCOUNT_ID,
+      createVoiceNoteFixture({
+        digest: createVoiceNoteDigest({ title: '주간 회의' }),
+        recordings: [{ fileName: 'draft-1-0.wav', startMs: 0 }],
+      }),
+    );
+  }
+  const queryClient = createTestQueryClient({
+    defaultOptions: { queries: { staleTime: Infinity } },
+  });
+  queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: ACCOUNT_ID });
+
+  await renderUi(
+    <LocalDateProvider>
+      <OverlayProvider>
+        <VoiceStorageRoute />
+      </OverlayProvider>
+    </LocalDateProvider>,
+    {
+      queryClient,
+      di: {
+        userService: new UserService(createMockHttpClient()),
+        voiceNoteStorageService: storage,
+        analytics: createMockAnalytics(),
+        errorReporter: createErrorReporterStub(),
+        haptics: createHapticsStub(),
+      },
+    },
+  );
+
+  return { storage, files };
+}
+
+describe('말로 메모 저장 공간', () => {
+  test('전체 용량과 메모별 녹음 용량을 보여 준다', async () => {
+    // Given
+    await renderScreen();
+
+    // When
+    const total = await screen.findByTestId('voice-storage-total');
+
+    // Then
+    expect(total).toHaveTextContent('2.5MB');
+    expect(screen.getByText('주간 회의')).toBeTruthy();
+  });
+
+  test('녹음이 없으면 없다고 알리고 지우기 버튼을 숨긴다', async () => {
+    // Given
+    await renderScreen({ hasRecording: false });
+
+    // When
+    const empty = await screen.findByTestId('voice-storage-empty');
+
+    // Then
+    expect(empty).toBeTruthy();
+    expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
+  });
+
+  test('확인을 누르면 녹음만 지우고 글자와 요약은 남는다', async () => {
+    // Given
+    const { storage, files } = await renderScreen();
+    fireEvent.press(await screen.findByTestId('voice-storage-remove')).catch(jest.fn());
+
+    // When
+    await fireEvent.press(await screen.findByText('지우기'));
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0KB'));
+    const note = storage.drafts.find(ACCOUNT_ID, 'draft-1');
+    expect(note?.recordings).toEqual([]);
+    expect(note?.digest?.title).toBe('주간 회의');
+    expect(note?.sentences).toHaveLength(1);
+    expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(false);
+  });
+
+  test('확인 창에서 취소하면 아무것도 지우지 않는다', async () => {
+    // Given
+    const { files } = await renderScreen();
+    fireEvent.press(await screen.findByTestId('voice-storage-remove')).catch(jest.fn());
+
+    // When
+    await fireEvent.press(await screen.findByText('취소'));
+
+    // Then
+    expect(files.hasFile(OWNER_DIRECTORY, 'draft-1-0.wav')).toBe(true);
+    expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('2.5MB');
+  });
+});

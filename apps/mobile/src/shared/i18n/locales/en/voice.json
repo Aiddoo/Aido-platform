@@ -42,5 +42,11 @@
     "keptText": "We kept what we heard. Keep talking or fix it yourself.",
     "resume": "Keep talking",
     "retry": "Try again"
+  },
+  "limit": {
+    "title": "That's a long one",
+    "description": "Everything so far is saved. Turn it into to-dos now, or keep talking in a voice note.",
+    "finish": "Summarize now",
+    "continueAsNote": "Continue as a voice note"
   }
 }

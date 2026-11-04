@@ -22,7 +22,8 @@
   "captions": {
     "empty": "말씀하시면 여기에 글자로 나타나요",
     "marked": "중요 표시한 문장",
-    "playFrom": "{{time}}부터 듣기"
+    "playFrom": "{{time}}부터 듣기",
+    "lowConfidenceHint": "밑줄은 잘못 들었을 수 있는 말이에요"
   },
   "digest": {
     "steps": {

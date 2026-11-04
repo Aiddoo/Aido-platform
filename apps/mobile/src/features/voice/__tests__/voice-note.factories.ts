@@ -13,6 +13,7 @@ export const createVoiceNoteSentence = (
   startMs: 12_000,
   endMs: 16_000,
   isBookmarked: false,
+  lowConfidenceWords: [],
   ...overrides,
 });
 

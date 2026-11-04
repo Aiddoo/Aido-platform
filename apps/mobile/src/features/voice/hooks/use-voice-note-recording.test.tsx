@@ -11,12 +11,15 @@ import { OverlayProvider, Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.factories';
 import { useVoiceNoteRecording } from './use-voice-note-recording';
 
 const ACCOUNT_ID = 'user-1';
 const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
 interface ProbeProps {
+  seedDraftId?: string;
+  entry?: 'memo_tab' | 'quick_voice_upgrade';
   maxSeconds: number | null;
   onLimitReached: () => void;
   onFinished: (draftId: string) => void;
@@ -251,6 +254,57 @@ describe('useVoiceNoteRecording', () => {
     // Then
     expect(onEmpty).toHaveBeenCalledTimes(1);
     expect(storage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+  });
+
+  test('빠른 말하기에서 넘어온 초안은 글자와 시간을 이어 듣고 진입 경로를 남긴다', async () => {
+    // Given
+    const speechRecognizer = createSpeechRecognizerStub();
+    const storage = createVoiceNoteStorageServiceFake();
+    const analytics = createMockAnalytics();
+    const seed = createVoiceNoteFixture({
+      draftId: 'seed-1',
+      durationMs: 90_000,
+      recordings: [],
+      sentences: [createVoiceNoteSentence({ text: '앞에서 한 말.', startMs: 0, endMs: 90_000 })],
+    });
+    storage.drafts.save(ACCOUNT_ID, seed);
+    await renderUi(
+      <OverlayProvider>
+        <RecordingProbe
+          seedDraftId="seed-1"
+          entry="quick_voice_upgrade"
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={jest.fn()}
+          onEmpty={jest.fn()}
+        />
+      </OverlayProvider>,
+      {
+        di: {
+          speechRecognizer,
+          voiceNoteStorageService: storage,
+          analytics,
+          errorReporter: createErrorReporterStub(),
+          haptics: createHapticsStub(),
+          logger,
+        },
+      },
+    );
+
+    // When
+    await start(speechRecognizer);
+    await say(speechRecognizer, '이어서 한 말.');
+    await act(async () => jest.advanceTimersByTime(2_000));
+
+    // Then
+    expect(analytics.trackEvent).toHaveBeenCalledWith(
+      'voice_capture_started',
+      expect.objectContaining({ mode: 'note', entry: 'quick_voice_upgrade' }),
+    );
+    expect(screen.getByTestId('draft-id')).toHaveTextContent('seed-1');
+    const saved = storage.drafts.find(ACCOUNT_ID, 'seed-1');
+    expect(saved?.sentences.map(({ text }) => text)).toEqual(['앞에서 한 말.', '이어서 한 말.']);
+    expect(saved?.sentences[1]?.startMs).toBeGreaterThanOrEqual(90_000);
   });
 
   test('말한 내용은 분석에 싣지 않는다', async () => {

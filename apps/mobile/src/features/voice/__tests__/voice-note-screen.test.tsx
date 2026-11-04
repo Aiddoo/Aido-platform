@@ -200,6 +200,18 @@ describe('말로 메모 화면', () => {
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/action-plans/apply');
   });
 
+  test('녹음을 지운 메모는 글자와 요약이 남고 다시 들을 수 없다고 알린다', async () => {
+    // Given
+    const digest = createVoiceNoteDigest({ summary: '남아 있는 요약', keyPoints: [] });
+
+    // When
+    await renderScreen({ digest, planDraft: emptyPlanDraft, recordings: [] });
+
+    // Then
+    expect(await screen.findByText('남아 있는 요약')).toBeTruthy();
+    expect(screen.getByText('녹음 파일이 없어서 다시 들을 수 없어요')).toBeTruthy();
+  });
+
   test('이미 할 일을 추가한 메모는 할 일 탭에서 다시 추가하지 않게 안내한다', async () => {
     // Given
     const appliedAt = new Date('2026-11-02T00:00:00.000Z');

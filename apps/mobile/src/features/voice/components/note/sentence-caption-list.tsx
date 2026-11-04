@@ -8,6 +8,7 @@ import { match } from 'ts-pattern';
 
 import type { VoiceNoteSentence } from '../../domains/voice-note.model';
 import { formatMediaTime } from '../../utils/format-media-time';
+import { splitLowConfidenceText } from '../../utils/view-models/low-confidence-text.view-model';
 
 const AUTOSCROLL_THRESHOLD = 0.2;
 
@@ -45,47 +46,67 @@ export function SentenceCaptionList({
       : []),
   ];
 
+  const hasLowConfidenceWords = sentences.some(
+    ({ lowConfidenceWords }) => lowConfidenceWords.length > 0,
+  );
+
   return (
     <Box {...boxProps}>
-      <FlashList
-        data={items}
-        keyExtractor={(item) =>
-          match(item)
-            .with({ type: 'sentence' }, ({ sentence, index }) => `${index}:${sentence.startMs}`)
-            .with({ type: 'interim' }, () => 'interim')
-            .exhaustive()
-        }
-        getItemType={(item) => item.type}
-        maintainVisibleContentPosition={
-          isLive
-            ? { autoscrollToBottomThreshold: AUTOSCROLL_THRESHOLD, startRenderingFromBottom: true }
-            : undefined
-        }
-        ItemSeparatorComponent={() => <Box className="h-2" />}
-        ListEmptyComponent={
-          <Text size="b3" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-            {t('captions.empty')}
-          </Text>
-        }
-        renderItem={({ item }) =>
-          match(item)
-            .with({ type: 'sentence' }, ({ sentence, index }) => (
-              <SentenceCaptionList.Card
-                sentence={sentence}
-                isActive={index === activeSentenceIndex}
-                onPress={onPressSentence == null ? undefined : () => onPressSentence(sentence)}
-              />
-            ))
-            .with({ type: 'interim' }, ({ text }) => (
-              <Box className="rounded-xl bg-gray-1 px-3 py-2.5">
-                <Text size="b3" shade={5} lineBreakStrategyIOS="hangul-word">
-                  {text}
-                </Text>
-              </Box>
-            ))
-            .exhaustive()
-        }
-      />
+      {hasLowConfidenceWords && (
+        <Text
+          size="e1"
+          shade={6}
+          lineBreakStrategyIOS="hangul-word"
+          className="mb-2"
+          testID="caption-low-confidence-hint"
+        >
+          {t('captions.lowConfidenceHint')}
+        </Text>
+      )}
+      <Box className="flex-1">
+        <FlashList
+          data={items}
+          keyExtractor={(item) =>
+            match(item)
+              .with({ type: 'sentence' }, ({ sentence, index }) => `${index}:${sentence.startMs}`)
+              .with({ type: 'interim' }, () => 'interim')
+              .exhaustive()
+          }
+          getItemType={(item) => item.type}
+          maintainVisibleContentPosition={
+            isLive
+              ? {
+                  autoscrollToBottomThreshold: AUTOSCROLL_THRESHOLD,
+                  startRenderingFromBottom: true,
+                }
+              : undefined
+          }
+          ItemSeparatorComponent={() => <Box className="h-2" />}
+          ListEmptyComponent={
+            <Text size="b3" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+              {t('captions.empty')}
+            </Text>
+          }
+          renderItem={({ item }) =>
+            match(item)
+              .with({ type: 'sentence' }, ({ sentence, index }) => (
+                <SentenceCaptionList.Card
+                  sentence={sentence}
+                  isActive={index === activeSentenceIndex}
+                  onPress={onPressSentence == null ? undefined : () => onPressSentence(sentence)}
+                />
+              ))
+              .with({ type: 'interim' }, ({ text }) => (
+                <Box className="rounded-xl bg-gray-1 px-3 py-2.5">
+                  <Text size="b3" shade={5} lineBreakStrategyIOS="hangul-word">
+                    {text}
+                  </Text>
+                </Box>
+              ))
+              .exhaustive()
+          }
+        />
+      </Box>
     </Box>
   );
 }
@@ -127,7 +148,21 @@ function SentenceCard({
           {time}
         </Text>
         <Text size="b3" lineBreakStrategyIOS="hangul-word" className="shrink flex-1">
-          {sentence.text}
+          {splitLowConfidenceText(sentence.text, sentence.lowConfidenceWords).map(
+            ({ text, isLowConfidence }, index) =>
+              isLowConfidence ? (
+                <Text
+                  key={index}
+                  size="b3"
+                  style={{ textDecorationLine: 'underline' }}
+                  testID="caption-low-confidence-word"
+                >
+                  {text}
+                </Text>
+              ) : (
+                text
+              ),
+          )}
         </Text>
         {sentence.isBookmarked && (
           <FlagIcon

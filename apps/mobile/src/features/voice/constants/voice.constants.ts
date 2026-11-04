@@ -16,6 +16,9 @@ export const AUTO_FINISH_SILENCE_MS = 2_500;
 /** 이 음량(0..1)을 넘으면 말하는 중으로 본다 */
 export const SPEAKING_VOLUME_THRESHOLD = 0.18;
 
+/** 단어 신뢰도(0..1)가 이보다 낮으면 잘못 들었을 수 있다고 밑줄을 친다 */
+export const LOW_CONFIDENCE_THRESHOLD = 0.5;
+
 /** 인식기가 고유명사를 맞히도록 알려 주는 단어의 최대 개수(SDK 권장 상한) */
 export const SPEECH_CONTEXT_MAX_STRINGS = 100;
 

@@ -96,6 +96,19 @@ export function formatCount(value: number, locale: DateFormatContext['locale']):
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
+const BYTES_PER_UNIT = 1_000;
+
+/** 파일 크기(휴대폰 저장 공간과 같은 1,000 단위). 1MB 아래는 KB 정수, 그 위는 소수 한 자리다 */
+export function formatFileSize(bytes: number, locale: DateFormatContext['locale']): string {
+  const megabytes = bytes / BYTES_PER_UNIT ** 2;
+  if (megabytes < 1) {
+    return `${formatCount(Math.ceil(bytes / BYTES_PER_UNIT), locale)}KB`;
+  }
+  return megabytes < BYTES_PER_UNIT
+    ? `${formatDecimal(megabytes, locale)}MB`
+    : `${formatDecimal(megabytes / BYTES_PER_UNIT, locale)}GB`;
+}
+
 /** 소수를 앱 표시 언어의 소수점·자릿수 구분으로 자릿수를 맞춰 표시한다 (en 1.0, 1,234.5). */
 export function formatDecimal(
   value: number,

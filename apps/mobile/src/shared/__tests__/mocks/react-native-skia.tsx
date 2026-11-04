@@ -16,9 +16,12 @@ export const Circle = NothingToDraw;
 export const Group = NothingToDraw;
 export const LinearGradient = NothingToDraw;
 export const Path = NothingToDraw;
+export const RadialGradient = NothingToDraw;
 export const Rect = NothingToDraw;
+export const RoundedRect = NothingToDraw;
 export const BlurMask = NothingToDraw;
 export const SweepGradient = NothingToDraw;
+export const usePathValue = () => ({});
 export const vec = (x: number, y: number) => ({ x, y });
 export const Skia = {
   PathBuilder: { Make: createPathBuilder },

@@ -6,6 +6,17 @@ import {
 } from './feature-discovery.registry';
 
 describe('getBundledFeatureDiscoveryCampaign', () => {
+  it('마지막 음성 카드는 할 일 추가 시트를 마이크 안내와 함께 연다', () => {
+    // Given
+    const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
+
+    // When
+    const card = campaign?.cards.find(({ id }) => id === 'voice_facts');
+
+    // Then
+    expect(card?.route).toBe('/todo/new?voiceHint=1');
+  });
+
   it('2026-12 캠페인은 말로 할 일 만들기 카드 3장에 친구 초대 카드를 이어 반환한다', () => {
     // When
     const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);

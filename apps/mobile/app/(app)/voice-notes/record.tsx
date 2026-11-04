@@ -16,6 +16,7 @@ import {
 } from '@src/features/voice/domains/voice-capture.model';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
+import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import {
@@ -72,9 +73,13 @@ function VoiceNoteRecordScreen() {
     snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
   const limitMs = maxSeconds == null ? null : maxSeconds * 1_000;
 
+  const { draftId: seedDraftId, entry } = useVoiceNoteRecordParams();
+
   const recording = useVoiceNoteRecording({
     accountId: me.id,
     locale,
+    seedDraftId,
+    entry,
     maxSeconds,
     onLimitReached: () => {
       const minutes = Math.round((maxSeconds ?? 0) / 60);

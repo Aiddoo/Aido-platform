@@ -5,6 +5,7 @@ import {
   formatDecimal,
   formatPercent,
   formatPrice,
+  formatFileSize,
 } from './format';
 
 describe('formatPercent', () => {
@@ -104,5 +105,24 @@ describe('formatDecimal', () => {
   test('큰 수는 표시 언어의 자릿수 구분을 쓴다', () => {
     // Given / When / Then
     expect(formatDecimal(1234.56, 'en-US')).toBe('1,234.6');
+  });
+});
+
+describe('formatFileSize', () => {
+  test.each([
+    [0, '0KB'],
+    [1, '1KB'],
+    [999_000, '999KB'],
+    [2_500_000, '2.5MB'],
+    [1_200_000_000, '1.2GB'],
+  ])('%d바이트는 %s로 보인다', (bytes, expected) => {
+    // Given
+    const locale = 'ko-KR';
+
+    // When
+    const formatted = formatFileSize(bytes, locale);
+
+    // Then
+    expect(formatted).toBe(expected);
   });
 });

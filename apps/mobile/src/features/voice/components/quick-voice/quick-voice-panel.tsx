@@ -53,6 +53,8 @@ interface ListeningProps {
   onFinish: () => void;
   onCancel: () => void;
   onResume: () => void;
+  /** 들은 글자를 들고 말로 메모하기에서 이어 말한다 */
+  onContinueAsVoiceNote: () => void;
 }
 
 /** 빠른 말하기 패널. 시트 안에서 입력 칸 대신 보이고, 높이는 화면 비율로 키운다 */
@@ -69,11 +71,13 @@ QuickVoicePanel.Listening = function Listening({
   onFinish,
   onCancel,
   onResume,
+  onContinueAsVoiceNote,
 }: ListeningProps) {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
   const { height: windowHeight } = useWindowDimensions();
   const isPaused = state.status === 'paused';
+  const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, Date.now());
   const canFinish = VoiceCapturePolicy.canFinish(state);
   const orbSize = Math.min(ORB_SIZE, windowHeight * 0.2);
 
@@ -100,7 +104,39 @@ QuickVoicePanel.Listening = function Listening({
           <Waveform level={level} isActive={!isPaused && !isQuiet} />
         </VStack>
 
-        {isPaused ? (
+        {isOverLimit ? (
+          <VStack gap={8} testID="quick-voice-limit">
+            <VStack gap={2}>
+              <Text size="b3" weight="semibold" align="center" lineBreakStrategyIOS="hangul-word">
+                {t('limit.title')}
+              </Text>
+              <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+                {t('limit.description')}
+              </Text>
+            </VStack>
+            <HStack gap={8} align="center">
+              <CancelButton
+                onPress={onCancel}
+                label={t('listening.cancel')}
+                iconSize={fontScaledSize(18)}
+              />
+              <PillButton
+                label={t('limit.finish')}
+                onPress={onFinish}
+                isDisabled={!canFinish}
+                testID="quick-voice-finish"
+              />
+            </HStack>
+            <HStack>
+              <PillButton
+                label={t('limit.continueAsNote')}
+                onPress={onContinueAsVoiceNote}
+                isSecondary
+                testID="quick-voice-continue-as-note"
+              />
+            </HStack>
+          </VStack>
+        ) : isPaused ? (
           <VStack gap={8}>
             <Text size="b4" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
               {t('listening.pausedHint')}

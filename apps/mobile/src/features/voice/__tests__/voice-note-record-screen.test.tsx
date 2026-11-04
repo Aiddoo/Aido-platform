@@ -33,6 +33,7 @@ import { createRecognitionLanguageRepository } from '../apis/recognition-languag
 jest.mock('@src/shared/config/env', () => ({ ENV: { API_URL: 'http://localhost:3000' } }));
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), navigate: jest.fn(), canGoBack: () => true },
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 
 const ACCOUNT_ID = 'user-1';

@@ -1,5 +1,5 @@
 import { createTranscript } from '../__tests__/voice.factories';
-import { VoiceTranscriptPolicy } from './voice-transcript.model';
+import { getLowConfidenceWords, VoiceTranscriptPolicy } from './voice-transcript.model';
 
 describe('VoiceTranscriptPolicy', () => {
   describe('Android처럼 문장마다 final이 올 때', () => {
@@ -88,5 +88,36 @@ describe('VoiceTranscriptPolicy', () => {
 
     // Then
     expect(isEmpty).toBe(true);
+  });
+
+  describe('getLowConfidenceWords', () => {
+    const segment = (text: string, confidence: number) => ({
+      text,
+      startMs: 0,
+      endMs: 1,
+      confidence,
+    });
+
+    test('기준보다 낮은 단어만 고른다', () => {
+      // Given
+      const segments = [segment('높음', 0.9), segment('낮음', 0.2), segment('경계', 0.5)];
+
+      // When
+      const words = getLowConfidenceWords(segments);
+
+      // Then
+      expect(words).toEqual(['낮음']);
+    });
+
+    test.each([-1, 0])('신뢰도 %d은 값이 없는 것이라 고르지 않는다', (confidence) => {
+      // Given
+      const segments = [segment('단어', confidence)];
+
+      // When
+      const words = getLowConfidenceWords(segments);
+
+      // Then
+      expect(words).toEqual([]);
+    });
   });
 });

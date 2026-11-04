@@ -8,6 +8,7 @@ import type { SpeechEvent, SpeechLocale } from '@src/core/ports/speech-recognize
 import { useTrack } from '@src/shared/analytics';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
 import { useConfirmDialog } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
@@ -18,6 +19,7 @@ import { VOICE_RECORDING_SAVE_WAIT_MS } from '../constants/voice-note.constants'
 import {
   applyCaptionResult,
   commitProvisional,
+  createCaptionsFromNote,
   createVoiceNoteCaptions,
   getCaptionInterimText,
   getCaptionSentences,
@@ -31,11 +33,15 @@ import {
   withRecordings,
   withSentences,
 } from '../domains/voice-note.model';
+import { createVoiceTranscript } from '../domains/voice-transcript.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
 interface UseVoiceNoteRecordingOptions {
   accountId: string;
   locale: SpeechLocale;
+  /** 이어서 들을 초안(빠른 말하기에서 넘어온 글자). 없으면 새 녹음이다 */
+  seedDraftId?: string;
+  entry?: Extract<VoiceCaptureEntry, 'memo_tab' | 'quick_voice_upgrade'>;
   /** 서버 한도의 한 번 최대 길이(초). null이면 끝이 없다 */
   maxSeconds: number | null;
   onLimitReached: () => void;
@@ -52,6 +58,8 @@ interface UseVoiceNoteRecordingOptions {
 export function useVoiceNoteRecording({
   accountId,
   locale,
+  seedDraftId,
+  entry = 'memo_tab',
   maxSeconds,
   onLimitReached,
   onFinished,
@@ -65,10 +73,15 @@ export function useVoiceNoteRecording({
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
 
-  const [baseNote] = useState<VoiceNote>(() =>
-    createVoiceNote({ draftId: randomUUID(), locale, createdAt: new Date() }),
+  const [seedNote] = useState(() =>
+    seedDraftId == null ? undefined : storage.drafts.find(accountId, seedDraftId),
   );
-  const [captions, setCaptions] = useState<VoiceNoteCaptions>(createVoiceNoteCaptions);
+  const [baseNote] = useState<VoiceNote>(
+    () => seedNote ?? createVoiceNote({ draftId: randomUUID(), locale, createdAt: new Date() }),
+  );
+  const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
+    seedNote == null ? createVoiceNoteCaptions() : createCaptionsFromNote(seedNote),
+  );
   const captionsRef = useRef(captions);
   const recordingsRef = useRef<VoiceNoteRecording[]>([]);
   const pendingSavesRef = useRef<Promise<void>[]>([]);
@@ -107,7 +120,7 @@ export function useVoiceNoteRecording({
   };
 
   const session = useVoiceCaptureSession({
-    entry: 'memo_tab',
+    entry,
     mode: 'note',
     maxSeconds,
     onLimitReached,
@@ -259,6 +272,15 @@ export function useVoiceNoteRecording({
       locale: startLocale,
       contextualStrings,
       recordingDirectory: storage.recordings.prepareDirectory(accountId),
+      seed:
+        seedNote == null
+          ? undefined
+          : {
+              transcript: createVoiceTranscript({
+                sentences: seedNote.sentences.map(({ text }) => text),
+              }),
+              elapsedMs: seedNote.durationMs,
+            },
     });
     hasBegunRef.current = hasBegun;
   };

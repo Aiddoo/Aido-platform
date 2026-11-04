@@ -13,7 +13,10 @@ import type {
 } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
 import { errorMessageOf } from '@src/shared/errors';
-import type { VoiceCaptureEntry } from '@src/shared/observability/telemetry-keys';
+import type {
+  VoiceCaptureEntry,
+  VoiceCaptureOutcome,
+} from '@src/shared/observability/telemetry-keys';
 import { noop } from 'es-toolkit';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -31,6 +34,7 @@ import {
   createVoiceCaptureState,
   reduceVoiceCapture,
   type VoiceCaptureEvent,
+  type VoiceCaptureSeed,
   VoiceCapturePolicy,
   type VoiceCaptureState,
   type VoicePauseCause,
@@ -80,6 +84,8 @@ export interface BeginOptions {
   contextualStrings: readonly string[];
   /** `note`에서 녹음 파일을 남길 폴더 */
   recordingDirectory?: string | null;
+  /** 이어 받을 글자와 시간 */
+  seed?: VoiceCaptureSeed;
 }
 
 /**
@@ -145,7 +151,7 @@ export function useVoiceCaptureSession({
     }
   };
 
-  const trackFinished = (outcome: 'completed' | 'cancelled' | 'empty', at: VoiceCaptureState) => {
+  const trackFinished = (outcome: VoiceCaptureOutcome, at: VoiceCaptureState) => {
     const durationBucket = getDurationBucket(VoiceCapturePolicy.getElapsedMs(at, Date.now()));
     trackEvent('voice_capture_finished', {
       mode,
@@ -369,11 +375,12 @@ export function useVoiceCaptureSession({
     locale,
     contextualStrings,
     recordingDirectory = null,
+    seed,
   }: BeginOptions): Promise<boolean> => {
     if (getStatus() !== 'idle') {
       return false;
     }
-    dispatch({ type: 'prepare' });
+    dispatch({ type: 'prepare', seed });
     try {
       const capabilities = await speechRecognizer.getCapabilities(locale);
       if (getStatus() !== 'preparing') {
@@ -426,7 +433,7 @@ export function useVoiceCaptureSession({
     }
   };
 
-  const cancel = () => {
+  const reset = (outcome: 'cancelled' | 'upgraded') => {
     const previous = stateRef.current;
     clearTimers();
     dispatch({ type: 'cancel' });
@@ -434,9 +441,13 @@ export function useVoiceCaptureSession({
       speechRecognizer.abort();
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
-      trackFinished(isTranscriptEmpty(previous.transcript) ? 'empty' : 'cancelled', previous);
+      trackFinished(isTranscriptEmpty(previous.transcript) ? 'empty' : outcome, previous);
     }
   };
+
+  const cancel = () => reset('cancelled');
+  /** 들은 글자를 말로 메모하기로 넘겼다. 취소와 달리 이어 가는 것이라 따로 남긴다 */
+  const handOff = () => reset('upgraded');
 
   const retryPlanning = () => {
     dispatch({ type: 'retry-plan' });
@@ -467,6 +478,7 @@ export function useVoiceCaptureSession({
     pause: () => pause('user'),
     resume,
     cancel,
+    handOff,
     retryPlanning,
     changeLocale,
     getElapsedMs,

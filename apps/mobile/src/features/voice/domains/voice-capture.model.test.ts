@@ -386,4 +386,48 @@ describe('VoiceCapturePolicy', () => {
       expect(VoiceCapturePolicy.canFinish(failed)).toBe(false);
     });
   });
+
+  describe('90초 제안', () => {
+    const NOW = 1_000_000;
+
+    it('90초를 다 써서 멈췄으면 말로 메모하기를 제안한다', () => {
+      // Given
+      const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 90_000 });
+
+      // When
+      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, NOW);
+
+      // Then
+      expect(offers).toBe(true);
+    });
+
+    it('앱 이탈로 잠깐 멈춘 것은 제안하지 않는다', () => {
+      // Given
+      const paused = createCaptureState({
+        status: 'paused',
+        cause: 'app-background',
+        elapsedMs: 30_000,
+      });
+
+      // When
+      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, NOW);
+
+      // Then
+      expect(offers).toBe(false);
+    });
+
+    it('이어 받은 글자와 시간에서 듣기를 시작한다', () => {
+      // Given
+      const seed = { transcript: createTranscript({ sentences: ['앞 말'] }), elapsedMs: 90_000 };
+
+      // When
+      const next = reduceVoiceCapture(createCaptureState({ status: 'idle' }), {
+        type: 'prepare',
+        seed,
+      });
+
+      // Then
+      expect(next).toMatchObject({ status: 'preparing', ...seed });
+    });
+  });
 });

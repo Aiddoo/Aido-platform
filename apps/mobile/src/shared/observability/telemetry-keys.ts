@@ -346,7 +346,7 @@ export interface EntitlementEventMap {
 
 export type VoiceCaptureMode = 'quick' | 'note';
 export type VoiceCaptureEntry = 'add_todo_sheet' | 'memo_tab' | 'quick_voice_upgrade';
-export type VoiceCaptureOutcome = 'completed' | 'cancelled' | 'empty';
+export type VoiceCaptureOutcome = 'completed' | 'cancelled' | 'empty' | 'upgraded';
 export type VoiceDurationBucket = 'lt_30s' | '30s_3m' | '3m_10m' | '10m_30m';
 
 /** 말한 내용·전사 글자는 어떤 이벤트에도 싣지 않는다. 길이는 구간으로만 남긴다 */

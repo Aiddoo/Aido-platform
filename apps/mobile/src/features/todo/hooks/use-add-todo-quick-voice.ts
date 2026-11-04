@@ -1,3 +1,4 @@
+import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
@@ -9,12 +10,15 @@ import {
   type PreparedPlanRequest,
 } from '@src/features/voice/domains/plan-request.model';
 import type { CapturedPlan } from '@src/features/voice/domains/voice-capture.model';
+import { createVoiceNoteFromTranscript } from '@src/features/voice/domains/voice-note-caption.model';
 import { getTranscriptText } from '@src/features/voice/domains/voice-transcript.model';
 import { useMicrophonePermission } from '@src/features/voice/hooks/use-microphone-permission';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
+import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
+import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-note-href';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
@@ -46,6 +50,8 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   const hasAskedConsentRef = useRef(false);
   const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
   const planAbortRef = useRef<AbortController | null>(null);
+  const voiceNoteStorage = useVoiceNoteStorageService();
+  const startVoiceNote = useVoiceNoteStart();
 
   const onCaptured = async (text: string): Promise<CapturedPlan> => {
     const request = PlanRequestPolicy.prepare<CreateQuickPlanInput>({
@@ -76,7 +82,12 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     }
   };
 
-  const session = useVoiceCaptureSession({ entry: 'add_todo_sheet', onCaptured });
+  const session = useVoiceCaptureSession({
+    entry: 'add_todo_sheet',
+    onCaptured,
+    // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
+    onLimitReached: noop,
+  });
 
   useEffect(() => () => planAbortRef.current?.abort(), []);
 
@@ -114,10 +125,48 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     session.cancel();
   };
 
+  /** 들은 글자를 기기 초안에 먼저 저장하고 녹음 화면에서 이어 듣는다. 다음 화면이 실패해도 글자는 메모 탭에 남는다 */
+  const continueAsVoiceNote = () => {
+    if (me == null) {
+      session.finish();
+      return Promise.resolve();
+    }
+    return startVoiceNote({
+      onSubscribe: onExit,
+      getRecordHref: () => {
+        const { transcript, elapsedMs } = session.state;
+        const note = createVoiceNoteFromTranscript({
+          draftId: randomUUID(),
+          locale,
+          createdAt: new Date(),
+          transcript,
+          durationMs: elapsedMs,
+        });
+        if (note.sentences.length > 0) {
+          voiceNoteStorage.drafts.save(me.id, note);
+        }
+        session.handOff();
+        onExit();
+        return voiceNoteRecordHref({
+          draftId: note.sentences.length > 0 ? note.draftId : undefined,
+          entry: 'quick_voice_upgrade',
+        });
+      },
+    });
+  };
+
   const changeLocale = (nextLocale: SpeechLocale) => {
     setLocale(nextLocale);
     session.changeLocale(nextLocale).catch(noop);
   };
 
-  return { ...session, locale, setLocale: changeLocale, start, restart, typeInstead };
+  return {
+    ...session,
+    locale,
+    setLocale: changeLocale,
+    start,
+    restart,
+    typeInstead,
+    continueAsVoiceNote,
+  };
 }

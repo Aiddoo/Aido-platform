@@ -93,6 +93,8 @@ interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
     isAllDay?: boolean;
     endDate?: Date | null;
   };
+  /** 기능 소개에서 "지금 말해볼게요"로 왔다. 키보드를 올리지 않고 마이크 안내를 이미 봤어도 다시 띄운다 */
+  isVoiceHintForced?: boolean;
   onSuccess?: () => void;
 }
 
@@ -117,6 +119,9 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetCreateProps
   | AddTodoBottomSheetEditProps
   | AddTodoBottomSheetConvertMemoProps;
+
+/** 시트가 올라오는 동안에는 말풍선이 마이크 자리를 잘못 재므로 이만큼 뒤에 연다 */
+const COACHMARK_SHEET_SETTLE_MS = 450;
 
 function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormInput {
   return match(props)
@@ -198,6 +203,14 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   const { isSubmitting } = useFormState({ control: methods.control });
   const voice = useAddTodoQuickVoice({ methods, onExit });
+  const isVoiceHintRequested = props.mode === 'create' && props.isVoiceHintForced === true;
+  const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
+  const [isSheetSettled, setIsSheetSettled] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsSheetSettled(true), COACHMARK_SHEET_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmitTodo = methods.handleSubmit(async (values) => {
     try {
@@ -476,6 +489,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 onFinish={voice.finish}
                 onCancel={voice.cancel}
                 onResume={voice.resume}
+                onContinueAsVoiceNote={voice.continueAsVoiceNote}
               />
             ))
             .with({ status: 'planning' }, () => <QuickVoicePanel.Planning state={voice.state} />)
@@ -504,7 +518,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                   {({ onChange, value }) => (
                     <BottomSheetInput
                       ref={todoInputRef}
-                      autoFocus
+                      autoFocus={!isVoiceHintRequested}
                       placeholder={t('add.placeholder')}
                       value={value}
                       onChange={onChange}
@@ -545,8 +559,17 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                         kind="voice-quick-start"
                         title={tVoice('coach.quickStart.title')}
                         description={tVoice('coach.quickStart.description')}
+                        isEnabled={isSheetSettled}
+                        isForced={isVoiceHintForced}
+                        onDismiss={() => setIsVoiceHintForced(false)}
                       >
-                        <QuickVoiceButton onPress={voice.start} testID="todo-quick-voice-button" />
+                        <QuickVoiceButton
+                          onPress={() => {
+                            setIsVoiceHintForced(false);
+                            return voice.start();
+                          }}
+                          testID="todo-quick-voice-button"
+                        />
                       </CoachmarkPopover>
                     </>
                   )}

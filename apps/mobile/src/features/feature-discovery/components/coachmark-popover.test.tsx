@@ -40,6 +40,35 @@ async function renderCoachmark({ isSeen }: { isSeen: boolean }) {
 }
 
 describe('CoachmarkPopover', () => {
+  it('이미 본 안내도 기능 소개에서 왔으면 다시 열고 노출을 남긴다', async () => {
+    // Given
+    const httpClient = createMockHttpClient();
+    httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const coachmarkService = new CoachmarkService(
+      createCoachmarkRepository(createMemorySyncStorage()),
+    );
+    coachmarkService.complete({
+      accountId: createCurrentUserDto().userId,
+      kind: 'voice-quick-start',
+    });
+    const analytics = createMockAnalytics();
+
+    // When
+    await renderUi(
+      <CoachmarkPopover kind="voice-quick-start" title="안내 제목" description="안내 설명" isForced>
+        <Text testID="target">마이크</Text>
+      </CoachmarkPopover>,
+      { di: { coachmarkService, analytics, userService: new UserService(httpClient) } },
+    );
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
+        kind: 'voice-quick-start',
+      }),
+    );
+  });
+
   it('아직 못 본 안내는 자동으로 열고 노출을 한 번 남긴다', async () => {
     // When
     const { analytics } = await renderCoachmark({ isSeen: false });

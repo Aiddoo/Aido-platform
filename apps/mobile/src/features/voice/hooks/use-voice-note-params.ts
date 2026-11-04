@@ -13,6 +13,15 @@ export const voiceNoteParamsSchema = z.object({
   tab: voiceNoteTabSchema.catch('summary'),
 });
 
+export const voiceNoteRecordParamsSchema = z.object({
+  draftId: voiceNoteDraftIdSchema.optional().catch(undefined),
+  entry: z.enum(['memo_tab', 'quick_voice_upgrade']).catch('memo_tab'),
+});
+
+export function useVoiceNoteRecordParams() {
+  return voiceNoteRecordParamsSchema.parse(useLocalSearchParams());
+}
+
 export function useVoiceNoteParams() {
   return voiceNoteParamsSchema.parse(useLocalSearchParams());
 }

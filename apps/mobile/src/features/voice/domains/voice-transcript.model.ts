@@ -1,4 +1,7 @@
+import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
 import { z } from 'zod';
+
+import { LOW_CONFIDENCE_THRESHOLD } from '../constants/voice.constants';
 
 /**
  * 인식기가 주는 글자를 한 모양으로 모은다.
@@ -67,7 +70,22 @@ export function withInterimFinalized(transcript: VoiceTranscript): VoiceTranscri
   return appendFinalResult(transcript, transcript.interim);
 }
 
+/**
+ * 잘못 들었을 수 있는 단어(밑줄용). 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라
+ * 아무것도 고르지 않는다.
+ */
+export function getLowConfidenceWords(
+  segments: readonly SpeechSegment[],
+  threshold: number = LOW_CONFIDENCE_THRESHOLD,
+): string[] {
+  return segments
+    .filter(({ confidence }) => confidence > 0 && confidence < threshold)
+    .map(({ text }) => text.trim())
+    .filter((text) => text.length > 0);
+}
+
 export const VoiceTranscriptPolicy = {
+  getLowConfidenceWords,
   applyResult,
   appendFinalResult,
   replaceInterimResult,

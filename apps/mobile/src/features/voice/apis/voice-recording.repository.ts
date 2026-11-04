@@ -26,6 +26,10 @@ export interface VoiceRecordingRepository {
   findUri(accountId: string, fileName: string): string | undefined;
   remove(accountId: string, fileName: string): void;
   getTotalSizeBytes(accountId: string): number;
+  /** 파일 이름별 크기(바이트) */
+  getFileSizes(accountId: string): Record<string, number>;
+  /** 이 계정의 녹음 파일을 모두 지운다 */
+  removeOwned(accountId: string): void;
   /** 초안이 가리키지 않고 보관 기한이 지난 파일을 지우고 지운 파일 이름을 돌려준다 */
   removeExpired(accountId: string, now: Date, referencedFileNames: ReadonlySet<string>): string[];
   removeAllExceptOwner(accountId: string): void;
@@ -102,6 +106,19 @@ export function createVoiceRecordingRepository(
 
     getTotalSizeBytes: (accountId) =>
       listSafely(ownerDirectory(accountId)).reduce((total, file) => total + file.sizeBytes, 0),
+
+    getFileSizes: (accountId) =>
+      Object.fromEntries(
+        listSafely(ownerDirectory(accountId)).map((file) => [file.name, file.sizeBytes]),
+      ),
+
+    removeOwned: (accountId) => {
+      try {
+        files.removeDirectory(ownerDirectory(accountId));
+      } catch (error) {
+        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: errorMessageOf(error) });
+      }
+    },
 
     removeExpired: (accountId, now, referencedFileNames) => {
       const directory = ownerDirectory(accountId);

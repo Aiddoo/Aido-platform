@@ -1,7 +1,9 @@
 import {
   applyCaptionResult,
   commitProvisional,
+  createCaptionsFromNote,
   createVoiceNoteCaptions,
+  createVoiceNoteFromTranscript,
   getCaptionInterimText,
   getCaptionSentences,
   splitIntoSentences,
@@ -89,7 +91,13 @@ describe('applyCaptionResult', () => {
 
     // Then
     expect(sentences).toEqual([
-      { text: '아직 확정 안 된 말', startMs: 1_000, endMs: 5_000, isBookmarked: false },
+      {
+        text: '아직 확정 안 된 말',
+        startMs: 1_000,
+        endMs: 5_000,
+        isBookmarked: false,
+        lowConfidenceWords: [],
+      },
     ]);
   });
 
@@ -149,7 +157,13 @@ describe('commitProvisional', () => {
     // Then
     expect(next.provisional).toEqual([]);
     expect(next.sentences).toEqual([
-      { text: '들은 말', startMs: 1_000, endMs: 2_000, isBookmarked: false },
+      {
+        text: '들은 말',
+        startMs: 1_000,
+        endMs: 2_000,
+        isBookmarked: false,
+        lowConfidenceWords: [],
+      },
     ]);
   });
 });
@@ -168,5 +182,101 @@ describe('withBookmark', () => {
       false,
       true,
     ]);
+  });
+});
+
+describe('신뢰도 낮은 단어', () => {
+  test('final의 단어 신뢰도가 낮으면 그 단어가 속한 문장에만 표시한다', () => {
+    // Given
+    const segments = [
+      { text: '첫', startMs: 0, endMs: 100, confidence: 0.9 },
+      { text: '문장.', startMs: 100, endMs: 200, confidence: 0.2 },
+      { text: '둘째', startMs: 300, endMs: 400, confidence: 0.3 },
+      { text: '문장.', startMs: 400, endMs: 500, confidence: 0.9 },
+    ];
+
+    // When
+    const next = applyCaptionResult(
+      createVoiceNoteCaptions(),
+      final('첫 문장. 둘째 문장.', segments),
+      clock(1_000),
+    );
+
+    // Then
+    expect(next.sentences.map(({ lowConfidenceWords }) => lowConfidenceWords)).toEqual([
+      ['문장.'],
+      ['둘째'],
+    ]);
+  });
+
+  test('Android처럼 신뢰도가 -1이면 아무것도 표시하지 않는다', () => {
+    // Given
+    const segments = [{ text: '첫', startMs: 0, endMs: 100, confidence: -1 }];
+
+    // When
+    const next = applyCaptionResult(createVoiceNoteCaptions(), final('첫', segments), clock(100));
+
+    // Then
+    expect(next.sentences[0]?.lowConfidenceWords).toEqual([]);
+  });
+
+  test('단어 구간이 없는 인식기는 아무것도 표시하지 않는다', () => {
+    // Given
+    const captions = createVoiceNoteCaptions();
+
+    // When
+    const next = applyCaptionResult(captions, final('첫 문장.'), clock(100));
+
+    // Then
+    expect(next.sentences[0]?.lowConfidenceWords).toEqual([]);
+  });
+});
+
+describe('createVoiceNoteFromTranscript', () => {
+  const input = {
+    draftId: 'draft-1',
+    locale: 'ko-KR',
+    createdAt: new Date('2026-11-05T00:00:00.000Z'),
+  } as const;
+
+  test('확정 문장과 인식 중 꼬리까지 글자를 잃지 않고 들은 시간에 나눠 담는다', () => {
+    // Given
+    const transcript = { sentences: ['첫 문장.', '둘째 문장.'], interim: '셋째 말' };
+
+    // When
+    const note = createVoiceNoteFromTranscript({ ...input, transcript, durationMs: 90_000 });
+
+    // Then
+    expect(note.sentences.map(({ text }) => text)).toEqual(['첫 문장.', '둘째 문장.', '셋째 말']);
+    expect(note.durationMs).toBe(90_000);
+    expect(note.sentences[0]?.startMs).toBe(0);
+    expect(note.sentences.at(-1)?.endMs).toBe(90_000);
+  });
+
+  test('들은 글자가 없으면 문장이 없는 초안이다', () => {
+    // Given
+    const transcript = { sentences: [], interim: '' };
+
+    // When
+    const note = createVoiceNoteFromTranscript({ ...input, transcript, durationMs: 90_000 });
+
+    // Then
+    expect(note.sentences).toEqual([]);
+  });
+
+  test('저장된 초안에서 이어 가면 문장과 깃발이 그대로다', () => {
+    // Given
+    const note = createVoiceNoteFromTranscript({
+      ...input,
+      transcript: { sentences: ['첫 문장.'], interim: '' },
+      durationMs: 1_000,
+    });
+
+    // When
+    const captions = createCaptionsFromNote(note);
+
+    // Then
+    expect(captions.sentences).toEqual(note.sentences);
+    expect(captions.provisional).toEqual([]);
   });
 });

@@ -22,7 +22,8 @@
   "captions": {
     "empty": "What you say shows up here",
     "marked": "Marked sentence",
-    "playFrom": "Play from {{time}}"
+    "playFrom": "Play from {{time}}",
+    "lowConfidenceHint": "Underlined words may have been misheard"
   },
   "digest": {
     "steps": {

@@ -32,6 +32,8 @@ export const voiceNoteSentenceSchema = z.object({
   startMs: z.int().nonnegative(),
   endMs: z.int().nonnegative(),
   isBookmarked: z.boolean(),
+  /** 잘못 들었을 수 있는 단어(문장 안 순서대로). 신뢰도를 주지 않는 기기는 비어 있다 */
+  lowConfidenceWords: z.array(z.string()).default([]),
 });
 export type VoiceNoteSentence = z.infer<typeof voiceNoteSentenceSchema>;
 
@@ -218,6 +220,24 @@ export function hasNoPlannedTodos(note: VoiceNote): boolean {
   );
 }
 
+/** 정리한 제목. 정리 전이거나 서버가 비워 줬으면 null이라 화면이 기본 제목을 쓴다 */
+export function getDigestTitle(note: VoiceNote): string | null {
+  return note.digest == null || note.digest.title === '' ? null : note.digest.title;
+}
+
+/** 다시 듣기만 없앤 노트. 글자·요약·할 일은 그대로다 */
+export function withoutRecordings(note: VoiceNote): VoiceNote {
+  return { ...note, recordings: [] };
+}
+
+/** 이 노트의 녹음이 차지하는 크기. `sizes`는 파일 이름별 크기다 */
+export function getRecordingSizeBytes(
+  note: VoiceNote,
+  sizes: Readonly<Record<string, number>>,
+): number {
+  return note.recordings.reduce((total, { fileName }) => total + (sizes[fileName] ?? 0), 0);
+}
+
 export function hasText(note: VoiceNote): boolean {
   return note.sentences.some((sentence) => sentence.text.trim() !== '');
 }
@@ -281,6 +301,8 @@ export const VoiceNotePolicy = {
   canPlayRecording,
   findKeyPointAt,
   findRecordingIndexAt,
+  getDigestTitle,
+  getRecordingSizeBytes,
   isExpired,
   isRecordingFileExpired,
 } as const;

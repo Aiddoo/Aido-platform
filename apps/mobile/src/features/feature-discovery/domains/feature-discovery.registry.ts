@@ -16,7 +16,7 @@ export const FEATURE_DISCOVERY_CARD_IDS = [
 
 export type FeatureDiscoveryCardId = (typeof FEATURE_DISCOVERY_CARD_IDS)[number];
 
-export type FeatureDiscoveryRoute = '/friends/invite' | '/todo/new';
+export type FeatureDiscoveryRoute = '/friends/invite' | '/todo/new?voiceHint=1';
 
 export interface FeatureDiscoveryCard {
   id: FeatureDiscoveryCardId;
@@ -42,7 +42,7 @@ const FEATURE_DISCOVERY_CAMPAIGN: FeatureDiscoveryCampaign = {
   cards: [
     { id: 'voice_say', route: null, requires: null },
     { id: 'voice_plan', route: null, requires: null },
-    { id: 'voice_facts', route: '/todo/new', requires: null },
+    { id: 'voice_facts', route: '/todo/new?voiceHint=1', requires: null },
     FRIEND_INVITE_CARD,
   ],
 };

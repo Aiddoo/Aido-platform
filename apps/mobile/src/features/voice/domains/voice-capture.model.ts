@@ -9,6 +9,7 @@ import {
   createVoiceTranscript,
   isTranscriptEmpty,
   type SpeechResult,
+  type VoiceTranscript,
   voiceTranscriptSchema,
   withInterimFinalized,
 } from './voice-transcript.model';
@@ -52,8 +53,14 @@ export const voiceCaptureStateSchema = z.discriminatedUnion('status', [
 ]);
 export type VoiceCaptureState = z.infer<typeof voiceCaptureStateSchema>;
 
+export interface VoiceCaptureSeed {
+  transcript: VoiceTranscript;
+  elapsedMs: number;
+}
+
 export type VoiceCaptureEvent =
-  | { type: 'prepare' }
+  /** 이어 받을 글자와 시간이 있으면(빠른 말하기에서 넘어옴) 거기서부터 듣는다 */
+  | { type: 'prepare'; seed?: VoiceCaptureSeed }
   | { type: 'start'; at: number }
   | { type: 'result'; result: SpeechResult }
   | { type: 'pause'; cause: VoicePauseCause; at: number }
@@ -114,8 +121,9 @@ export function reduceVoiceCapture(
 ): VoiceCaptureState {
   return match([state, event] as const)
     .returnType<VoiceCaptureState>()
-    .with([{ status: 'idle' }, { type: 'prepare' }], ([current]) => ({
+    .with([{ status: 'idle' }, { type: 'prepare' }], ([current, { seed }]) => ({
       ...current,
+      ...seed,
       status: 'preparing',
     }))
     .with([{ status: P.union('paused', 'failed') }, { type: 'resume' }], ([current]) => ({
@@ -256,6 +264,11 @@ export function isOverQuickLimit(
   return getElapsedMs(state, now) >= maxSeconds * 1_000;
 }
 
+/** 빠른 말하기 길이를 다 써서 멈췄다. 들은 글자를 정리하거나 말로 메모하기로 이어 가게 한다 */
+export function shouldOfferVoiceNote(state: VoiceCaptureState, now: number): boolean {
+  return state.status === 'paused' && isOverQuickLimit(state, now);
+}
+
 export function getRemainingSeconds(
   state: VoiceCaptureState,
   maxSeconds: number,
@@ -272,6 +285,7 @@ export const VoiceCapturePolicy = {
   canRetryPlanning,
   shouldAutoFinish,
   isOverQuickLimit,
+  shouldOfferVoiceNote,
   getElapsedMs,
   getRemainingSeconds,
 } as const;

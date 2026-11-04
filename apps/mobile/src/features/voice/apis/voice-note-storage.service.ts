@@ -1,8 +1,14 @@
-import { partition } from 'es-toolkit';
+import { orderBy, partition } from 'es-toolkit';
 
-import { type VoiceNote, VoiceNotePolicy } from '../domains/voice-note.model';
+import { type VoiceNote, VoiceNotePolicy, withoutRecordings } from '../domains/voice-note.model';
 import type { VoiceNoteDraftRepository } from './voice-note-draft.repository';
 import type { VoiceRecordingRepository } from './voice-recording.repository';
+
+export interface VoiceNoteRecordingUsage {
+  totalBytes: number;
+  /** 녹음이 있는 메모(최근 순)와 그 크기 */
+  notes: { note: VoiceNote; bytes: number }[];
+}
 
 /** 기기 안에만 있는 말로 메모하기 초안과 녹음 파일. 둘은 항상 함께 지우고 사용자 범위를 지킨다 */
 export class VoiceNoteStorageService {
@@ -25,6 +31,37 @@ export class VoiceNoteStorageService {
     if (note != null) {
       this.#remove(accountId, note);
     }
+  };
+
+  getRecordingUsage = (accountId: string): VoiceNoteRecordingUsage => {
+    const sizes = this.recordings.getFileSizes(accountId);
+    const notes = this.drafts
+      .findAll(accountId)
+      .filter(VoiceNotePolicy.canPlayRecording)
+      .map((note) => ({ note, bytes: VoiceNotePolicy.getRecordingSizeBytes(note, sizes) }));
+
+    return {
+      totalBytes: this.recordings.getTotalSizeBytes(accountId),
+      notes: orderBy(notes, [({ note }) => note.createdAt.getTime()], ['desc']),
+    };
+  };
+
+  /** 녹음 파일만 지운다. 글자·요약·할 일은 남고 다시 듣기만 없어진다 */
+  removeRecordings = (accountId: string, draftId: string): void => {
+    const note = this.drafts.find(accountId, draftId);
+    if (note == null) {
+      return;
+    }
+    note.recordings.forEach(({ fileName }) => this.recordings.remove(accountId, fileName));
+    this.drafts.save(accountId, withoutRecordings(note));
+  };
+
+  removeAllRecordings = (accountId: string): void => {
+    this.recordings.removeOwned(accountId);
+    this.drafts
+      .findAll(accountId)
+      .filter((note) => note.recordings.length > 0)
+      .forEach((note) => this.drafts.save(accountId, withoutRecordings(note)));
   };
 
   /** 30일이 지난 초안과 그 녹음, 어느 초안에도 속하지 않고 기한이 지난 녹음 파일을 지운다 */

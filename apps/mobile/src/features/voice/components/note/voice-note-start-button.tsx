@@ -19,7 +19,7 @@ export function VoiceNoteStartButton() {
       description={t('coach.noteStart.description')}
     >
       <PressableFeedback
-        onPress={start}
+        onPress={() => start()}
         accessibilityRole="button"
         accessibilityLabel={t('start.label')}
         style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}

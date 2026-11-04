@@ -22,6 +22,9 @@ export default function SettingsLayout() {
       <Stack.Screen name="language" options={{ title: t('titles.language') }}>
         {backToolbar}
       </Stack.Screen>
+      <Stack.Screen name="voice-storage" options={{ title: t('titles.voiceStorage') }}>
+        {backToolbar}
+      </Stack.Screen>
       <Stack.Screen name="terms" options={{ title: t('titles.terms') }}>
         {backToolbar}
       </Stack.Screen>

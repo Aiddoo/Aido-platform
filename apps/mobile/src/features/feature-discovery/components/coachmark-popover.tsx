@@ -18,6 +18,9 @@ interface CoachmarkPopoverProps extends Omit<
   description: string;
   /** 지금 보여도 되는 상태인지. 다른 안내나 패널이 떠 있으면 false로 미룬다 */
   isEnabled?: boolean;
+  /** 이미 본 안내도 다시 연다(기능 소개에서 "지금 말해볼게요"를 눌러 온 경우). 닫으면 `onDismiss`로 알린다 */
+  isForced?: boolean;
+  onDismiss?: () => void;
   /** 말풍선이 가리킬 대상 */
   children: ReactNode;
 }
@@ -46,13 +49,15 @@ CoachmarkPopover.Contents = function Contents({
   title,
   description,
   isEnabled = true,
+  isForced = false,
+  onDismiss,
   children,
   ...popoverProps
 }: CoachmarkPopoverProps & { accountId: string }) {
   const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
-  const isOpen = isPending && isEnabled;
+  const isOpen = (isPending || isForced) && isEnabled;
 
   useEffect(() => {
     if (isOpen) {
@@ -61,9 +66,10 @@ CoachmarkPopover.Contents = function Contents({
   }, [isOpen, kind, trackEvent]);
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && isPending) {
+    if (!nextOpen && (isPending || isForced)) {
       trackEvent('coachmark_dismissed', { kind });
       complete();
+      onDismiss?.();
     }
   };
 

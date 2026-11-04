@@ -1,6 +1,7 @@
 import {
   useTodoCreateCategoryParam,
   useTodoCreatePrefillParam,
+  useTodoCreateVoiceHintParam,
   useTodoSheetDateParam,
 } from '@src/features/todo/hooks/use-todo-sheet-params';
 import { useTranslation } from '@src/shared/i18n';
@@ -37,6 +38,7 @@ TodoCreateBottomSheet.Form = function Form() {
   const [date] = useTodoSheetDateParam();
   const [requestedCategoryId] = useTodoCreateCategoryParam();
   const [prefill] = useTodoCreatePrefillParam();
+  const isVoiceHintForced = useTodoCreateVoiceHintParam();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const categoryId = resolveSheetCategoryId(requestedCategoryId, categoriesResult.categories);
 
@@ -55,6 +57,7 @@ TodoCreateBottomSheet.Form = function Form() {
       mode="create"
       selectedDate={toDate(date)}
       categoryId={categoryId}
+      isVoiceHintForced={isVoiceHintForced}
       initialValues={{
         title: prefill.title,
         scheduledTime: prefill.time ?? null,

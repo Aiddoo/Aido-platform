@@ -1,7 +1,13 @@
-import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
+import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
-import type { VoiceNoteSentence } from './voice-note.model';
+import {
+  createVoiceNote,
+  type VoiceNote,
+  type VoiceNoteSentence,
+  withSentences,
+} from './voice-note.model';
+import { getLowConfidenceWords, type VoiceTranscript } from './voice-transcript.model';
 
 /** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
 interface ProvisionalSentence {
@@ -75,6 +81,20 @@ function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number):
   return segments.at(-1)?.startMs ?? null;
 }
 
+/** 문장의 글자 범위(공백 제외)에 드는 단어 구간 */
+function findSegmentsWithin(
+  segments: readonly SpeechSegment[],
+  fromOffset: number,
+  toOffset: number,
+): SpeechSegment[] {
+  let consumed = 0;
+  return segments.filter((segment) => {
+    const startOffset = consumed;
+    consumed += removeSpaces(segment.text).length;
+    return startOffset >= fromOffset && startOffset < toOffset;
+  });
+}
+
 function toTimedSentences(
   pieces: readonly string[],
   {
@@ -92,23 +112,28 @@ function toTimedSentences(
   const total = pieces.reduce((sum, piece) => sum + removeSpaces(piece).length, 0);
   let offset = 0;
 
-  const starts = pieces.map((piece) => {
+  const ranges = pieces.map((piece) => {
     const segmentStart = findSegmentStartMs(segments, offset);
     const startMs =
       segmentStart == null
         ? fromMs + Math.round(((toMs - fromMs) * offset) / Math.max(total, 1))
         : segmentStartMs + segmentStart;
+    const fromOffset = offset;
     offset += removeSpaces(piece).length;
-    return startMs;
+    return { startMs, fromOffset, toOffset: offset };
   });
 
   return pieces.map((text, index) => {
-    const startMs = Math.max(0, Math.min(starts[index] ?? fromMs, toMs));
+    const range = ranges[index];
+    const startMs = Math.max(0, Math.min(range?.startMs ?? fromMs, toMs));
     return {
       text,
       startMs,
-      endMs: Math.max(startMs, starts[index + 1] ?? toMs),
+      endMs: Math.max(startMs, ranges[index + 1]?.startMs ?? toMs),
       isBookmarked: false,
+      lowConfidenceWords: getLowConfidenceWords(
+        findSegmentsWithin(segments, range?.fromOffset ?? 0, range?.toOffset ?? 0),
+      ),
     };
   });
 }
@@ -123,6 +148,7 @@ export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): V
     startMs,
     endMs: Math.max(startMs, captions.provisional[index + 1]?.startMs ?? nowMs),
     isBookmarked: false,
+    lowConfidenceWords: [],
   }));
 
   return { ...captions, sentences: [...captions.sentences, ...committed], provisional: [] };
@@ -215,6 +241,42 @@ export function getCaptionSentences(
 /** 아직 바뀔 수 있는 마지막 문장. 화면에서 회색으로 그린다 */
 export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
   return captions.provisional.at(-1)?.text ?? '';
+}
+
+interface CreateVoiceNoteFromTranscriptInput {
+  draftId: string;
+  locale: SpeechLocale;
+  createdAt: Date;
+  transcript: VoiceTranscript;
+  durationMs: number;
+}
+
+/** 빠른 말하기에서 들은 글자로 초안을 만든다. 문장 시각은 모르므로 들은 시간에 글자 수만큼 나눈다 */
+export function createVoiceNoteFromTranscript({
+  draftId,
+  locale,
+  createdAt,
+  transcript,
+  durationMs,
+}: CreateVoiceNoteFromTranscriptInput): VoiceNote {
+  const pieces = [...transcript.sentences, transcript.interim].flatMap((text) =>
+    splitIntoSentences(text),
+  );
+
+  return withSentences(
+    createVoiceNote({ draftId, locale, createdAt }),
+    toTimedSentences(pieces, { fromMs: 0, toMs: durationMs, segments: [], segmentStartMs: 0 }),
+    durationMs,
+  );
+}
+
+/** 저장된 초안에서 자막을 이어 간다 */
+export function createCaptionsFromNote({ sentences }: VoiceNote): VoiceNoteCaptions {
+  return {
+    sentences,
+    provisional: [],
+    bookmarksMs: sentences.filter(({ isBookmarked }) => isBookmarked).map(({ startMs }) => startMs),
+  };
 }
 
 export const VoiceNoteCaptionPolicy = {
