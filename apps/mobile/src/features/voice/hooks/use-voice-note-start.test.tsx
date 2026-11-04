@@ -11,6 +11,7 @@ import { EntitlementService } from '@src/features/subscription/apis/entitlement.
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/subscription/constants/entitlement-query-keys';
 import { UserService } from '@src/features/user/apis/user.service';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import {
   createErrorReporterStub,
   createMemorySyncStorage,
@@ -90,6 +91,8 @@ async function renderStart({
         authService: new AuthService(httpClient, httpClient, createMockTokenStore()),
         entitlementService: new EntitlementService(httpClient, logger),
         coachmarkService: new CoachmarkService(coachmarkRepository),
+        recognitionLanguageRepository:
+          createRecognitionLanguageRepository(createMemorySyncStorage()),
         speechRecognizer,
         analytics,
         errorReporter: createErrorReporterStub(),
@@ -139,7 +142,9 @@ describe('useVoiceNoteStart', () => {
     expect(screen.getByText(RENEWAL_SUBTITLE)).toBeOnTheScreen();
     expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByTestId('ai-consent-later'));
-    await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note'));
+    await waitFor(() =>
+      expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note', 'ko-KR'),
+    );
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 
@@ -155,7 +160,9 @@ describe('useVoiceNoteStart', () => {
     expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
     expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByTestId('ai-consent-later'));
-    await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note'));
+    await waitFor(() =>
+      expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note', 'ko-KR'),
+    );
   });
 
   it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {
@@ -169,7 +176,9 @@ describe('useVoiceNoteStart', () => {
     await fireEvent.press(screen.getByText('시작'));
 
     // Then
-    await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note'));
+    await waitFor(() =>
+      expect(speechRecognizer.getPermission).toHaveBeenCalledWith('note', 'ko-KR'),
+    );
     expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
   });
 });

@@ -88,12 +88,6 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
         testID="begin"
         onPress={() => quickVoice.begin({ locale: 'ko-KR', contextualStrings: [] })}
       />
-      <Pressable
-        testID="start"
-        onPress={() => {
-          quickVoice.start().catch(jest.fn());
-        }}
-      />
       <Pressable testID="finish" onPress={quickVoice.finish} />
       <Pressable testID="retry" onPress={quickVoice.retryPlanning} />
       <Pressable testID="type-instead" onPress={quickVoice.typeInstead} />
@@ -299,7 +293,9 @@ describe('useAddTodoQuickVoice', () => {
       expect(screen.getByText(RENEWAL_SUBTITLE)).toBeOnTheScreen();
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
       await fireEvent.press(screen.getByTestId('ai-consent-later'));
-      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
+      await waitFor(() =>
+        expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick', 'ko-KR'),
+      );
     });
 
     it('처음 쓰는 사람은 첫 안내를 닫은 뒤에야 마이크 권한을 묻는다', async () => {
@@ -314,7 +310,9 @@ describe('useAddTodoQuickVoice', () => {
       expect(screen.queryByText(RENEWAL_SUBTITLE)).toBeNull();
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
       await fireEvent.press(screen.getByTestId('ai-consent-later'));
-      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
+      await waitFor(() =>
+        expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick', 'ko-KR'),
+      );
     });
 
     it('재안내를 이미 본 계정은 안내 없이 바로 마이크 권한을 묻는다', async () => {
@@ -328,7 +326,9 @@ describe('useAddTodoQuickVoice', () => {
       await fireEvent.press(screen.getByTestId('start'));
 
       // Then
-      await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick'));
+      await waitFor(() =>
+        expect(speechRecognizer.getPermission).toHaveBeenCalledWith('quick', 'ko-KR'),
+      );
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
     });
   });
