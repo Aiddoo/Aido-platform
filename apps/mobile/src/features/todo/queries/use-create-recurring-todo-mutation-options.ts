@@ -38,9 +38,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: ({ series }, { input, source }) => {
-      if (series != null) {
-        queryClient.setQueryData(TODO_QUERY_KEYS.series({ seriesId: series.id }), series);
-      }
+      queryClient.setQueryData(TODO_QUERY_KEYS.series({ seriesId: series.id }), series);
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));

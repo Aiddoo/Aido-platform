@@ -13,10 +13,10 @@ import {
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
-import { ok, type Result } from '@src/shared/errors/result';
+import { err, ok, type Result } from '@src/shared/errors/result';
 
 import type { TodoEditScope, TodoSeries, TodoUpdateScope } from '../domains/todo-repeat.model';
-import { isTodoSeriesNotFoundError } from '../domains/todo-series.error';
+import { isTodoSeriesNotFoundError, TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import type {
   DailyCompletionsResult,
   Todo,
@@ -303,7 +303,7 @@ export class TodoService {
   /** 반복 할 일을 만들면 서버가 첫 회차와 규칙을 돌려준다. 나머지 회차는 목록을 다시 읽어 본다 */
   createRepeatingTodo = async (
     draft: RepeatingTodoDraft,
-  ): Promise<Result<{ todo: Todo; series: TodoSeries | null }, ApiError>> => {
+  ): Promise<Result<{ todo: Todo; series: TodoSeries }, ApiError | TodoSeriesNotCreatedError>> => {
     const result = await this.#httpClient.post('v1/todos', toCreateRepeatingTodoRequest(draft));
 
     if (!result.ok) {
@@ -317,13 +317,14 @@ export class TodoService {
       );
     }
 
-    return ok({
-      todo: toTodo(parsed.data.todo),
-      series: parsed.data.series == null ? null : toTodoSeries(parsed.data.series),
-    });
+    if (parsed.data.series == null) {
+      return err(new TodoSeriesNotCreatedError());
+    }
+
+    return ok({ todo: toTodo(parsed.data.todo), series: toTodoSeries(parsed.data.series) });
   };
 
-  /** 규칙이 없는 옛 묶음(TODO_0841)은 없는 규칙으로 본다. 그 회차는 이 할 일만 고칠 수 있다 */
+  /** 규칙이 없는 옛 묶음과 경로가 없는 옛 서버는 없는 규칙으로 본다. 그 회차는 이 할 일만 고칠 수 있다 */
   getTodoSeries = async (
     seriesId: string,
     signal?: AbortSignal,

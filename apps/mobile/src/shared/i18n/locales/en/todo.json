@@ -55,6 +55,10 @@
       "ended": {
         "title": "This repeat has already ended",
         "description": "We refreshed your list."
+      },
+      "not-created": {
+        "title": "We couldn't create the repeating to-do",
+        "description": "Only one to-do was saved. Please try again in a moment."
       }
     }
   },

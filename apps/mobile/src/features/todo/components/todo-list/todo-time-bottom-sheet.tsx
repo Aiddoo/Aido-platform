@@ -18,7 +18,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { TodoPolicy } from '../../domains/todo.model';
+import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
@@ -92,7 +92,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
             onClose();
             return;
           }
-          const scope = TodoPolicy.isRecurring(todo)
+          const scope = TodoRepeatPolicy.hasRule(todo)
             ? await selectEditScope(todo.startDate)
             : undefined;
           // nullish-strict: 생략은 범위를 묻지 않은 단일 할 일, null은 시트를 닫은 취소다

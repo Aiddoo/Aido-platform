@@ -1,3 +1,4 @@
+import { TODO_EDIT_SCOPES, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { createErrorReporterStub, createMockAnalytics } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
@@ -17,7 +18,12 @@ describe('TodoScopeSelectContent', () => {
     // Given
     const onChange = jest.fn();
     await renderScope(
-      <TodoScopeSelectContent action="edit" date="2026-11-04" onChange={onChange} />,
+      <TodoScopeSelectContent
+        action="edit"
+        date="2026-11-04"
+        scopes={TODO_UPDATE_SCOPES}
+        onChange={onChange}
+      />,
     );
 
     // When
@@ -37,7 +43,7 @@ describe('TodoScopeSelectContent', () => {
       <TodoScopeSelectContent
         action="edit"
         date="2026-11-04"
-        isFollowingOnly
+        scopes={['THIS_AND_FOLLOWING']}
         onChange={onChange}
       />,
     );
@@ -54,7 +60,12 @@ describe('TodoScopeSelectContent', () => {
     // Given
     const onChange = jest.fn();
     await renderScope(
-      <TodoScopeSelectContent action="delete" date="2026-11-04" onChange={onChange} />,
+      <TodoScopeSelectContent
+        action="delete"
+        date="2026-11-04"
+        scopes={TODO_EDIT_SCOPES}
+        onChange={onChange}
+      />,
     );
 
     // When
@@ -63,6 +74,27 @@ describe('TodoScopeSelectContent', () => {
     // Then
     expect(screen.getByText('11월 4일 할 일만 지워져요')).toBeTruthy();
     expect(screen.getByText('지난 할 일과 완료한 기록까지 모두 지워져요')).toBeTruthy();
+    expect(onChange).toHaveBeenCalledWith('ALL');
+  });
+
+  test('규칙 없는 묶음의 삭제는 이후 범위 없이 이 할 일만과 모든 반복 할 일을 보여준다', async () => {
+    // Given
+    const onChange = jest.fn();
+    await renderScope(
+      <TodoScopeSelectContent
+        action="delete"
+        date="2026-11-04"
+        scopes={['THIS_ONLY', 'ALL']}
+        onChange={onChange}
+      />,
+    );
+
+    // When
+    await fireEvent.press(screen.getByLabelText('모든 반복 할 일'));
+
+    // Then
+    expect(screen.queryByLabelText('이 할 일과 이후 할 일')).toBeNull();
+    expect(screen.getByLabelText('이 할 일만')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith('ALL');
   });
 });

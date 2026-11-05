@@ -160,6 +160,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   // 서버 재조회로 할 일이 바뀌어도 고치기 시작한 값과 비교한다. 사용자가 안 고친 칸을 덮어쓰지 않는다
   const [initialValues] = useState(() => toDefaultFormValues(props));
+  const canChangeRepeat =
+    props.mode !== 'edit' ||
+    TodoRepeatPolicy.canChangeRepeat({ ...props.todo, repeat: initialValues.repeat });
 
   const methods = useForm({
     resolver: zodResolver(addTodoFormSchema),
@@ -216,7 +219,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           }
           const scope = await match(
             TodoRepeatPolicy.getEditScopeDecision({
-              isSeries: TodoPolicy.isRecurring(todo),
+              isSeries: TodoRepeatPolicy.hasRule({ ...todo, repeat: initialValues.repeat }),
               repeat: changes.repeat,
               isDateOnly: hasOnlyDateChanges(changes),
             }),
@@ -533,7 +536,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               >
                 <DateChip onPress={handleDateChipPress} />
                 <TimeChip onPress={handleTimeChipPress} />
-                <RepeatChip onPress={handleRepeatChipPress} />
+                {canChangeRepeat && <RepeatChip onPress={handleRepeatChipPress} />}
                 <VisibilityChip />
                 {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
                 <QueryErrorBoundary fallback={() => null}>

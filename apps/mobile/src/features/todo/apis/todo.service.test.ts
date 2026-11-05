@@ -1,4 +1,5 @@
 import { createMockHttpClient } from '@src/shared/__tests__';
+import { ApiError } from '@src/shared/errors/api-error';
 
 import {
   createTodoApiError,
@@ -6,6 +7,7 @@ import {
   createTodoListResponseDto,
   INVALID_DTO,
 } from '../__tests__/todo.factories';
+import { TodoSeriesNotCreatedError } from '../domains/todo-series.error';
 import type { RepeatingTodoDraft } from './todo-series.mapper';
 import { TodoService } from './todo.service';
 
@@ -315,7 +317,25 @@ describe('TodoService', () => {
       // Given
       httpClient.post.mockResolvedValue({
         ok: true,
-        value: { message: '할 일이 생성되었습니다.', todo: createTodoDto({ id: 1 }) },
+        value: {
+          message: '할 일이 생성되었습니다.',
+          todo: createTodoDto({ id: 1 }),
+          series: {
+            id: 'series-1',
+            title: '반복 할일',
+            categoryId: 1,
+            visibility: 'PUBLIC',
+            scheduledTime: null,
+            timezone: 'Asia/Seoul',
+            repeat: draft.repeat,
+            startDate: '2026-03-09',
+            nextOccurrenceDate: '2026-03-11',
+            isActive: true,
+            checklist: [],
+            createdAt: '2026-03-01T00:00:00.000Z',
+            updatedAt: '2026-03-01T00:00:00.000Z',
+          },
+        },
       });
 
       // When
@@ -335,7 +355,7 @@ describe('TodoService', () => {
         }),
       );
       expect(result.ok && result.value.todo.id).toBe(1);
-      expect(result.ok && result.value.series).toBeNull();
+      expect(result.ok && result.value.series.id).toBe('series-1');
     });
 
     test('반복 제한 → TODO_0813 에러', async () => {
@@ -351,6 +371,20 @@ describe('TodoService', () => {
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    test('응답에 규칙이 없으면(옛 서버) 실패로 돌려준다', async () => {
+      // Given
+      httpClient.post.mockResolvedValue({
+        ok: true,
+        value: { todo: createTodoDto({ id: 1 }), message: '생성' },
+      });
+
+      // When
+      const result = await service.createRepeatingTodo(draft);
+
+      // Then
+      expect(result).toEqual({ ok: false, error: expect.any(TodoSeriesNotCreatedError) });
     });
 
     test('Zod 검증 실패 → ParseError throw', async () => {
@@ -473,6 +507,20 @@ describe('TodoService', () => {
       httpClient.get.mockResolvedValue({
         ok: false,
         error: createTodoApiError({ code: 'TODO_0841', message: '없음' }),
+      });
+
+      // When
+      const result = await service.getTodoSeries('series-1');
+
+      // Then
+      expect(result).toEqual({ ok: true, value: null });
+    });
+
+    test('옛 서버에 경로가 없어 404 SYS_0002면 null이다', async () => {
+      // Given
+      httpClient.get.mockResolvedValue({
+        ok: false,
+        error: new ApiError('SYS_0002', '경로 없음', 404),
       });
 
       // When

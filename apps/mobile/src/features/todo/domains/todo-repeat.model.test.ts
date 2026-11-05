@@ -331,3 +331,44 @@ describe('isBeyondHorizon', () => {
     expect(result).toBe(expected);
   });
 });
+
+describe('TodoRepeatPolicy 회차별 동작', () => {
+  const REPEAT = createWeekly();
+  const withRule = { recurrenceGroupId: 'series-1', repeat: REPEAT };
+  const ruleless = { recurrenceGroupId: 'old-group', repeat: null };
+  const single = { recurrenceGroupId: null, repeat: null };
+
+  test.each([
+    {
+      name: '규칙 있는 회차',
+      occurrence: withRule,
+      hasRule: true,
+      canChangeRepeat: true,
+      deleteScopes: ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'],
+    },
+    {
+      name: '규칙 없는 묶음',
+      occurrence: ruleless,
+      hasRule: false,
+      canChangeRepeat: false,
+      deleteScopes: ['THIS_ONLY', 'ALL'],
+    },
+    {
+      name: '단일 할 일',
+      occurrence: single,
+      hasRule: false,
+      canChangeRepeat: true,
+      deleteScopes: [],
+    },
+  ])('$name', ({ occurrence, hasRule, canChangeRepeat, deleteScopes }) => {
+    // When
+    const result = {
+      hasRule: TodoRepeatPolicy.hasRule(occurrence),
+      canChangeRepeat: TodoRepeatPolicy.canChangeRepeat(occurrence),
+      deleteScopes: TodoRepeatPolicy.getDeleteScopes(occurrence),
+    };
+
+    // Then
+    expect(result).toEqual({ hasRule, canChangeRepeat, deleteScopes });
+  });
+});

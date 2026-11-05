@@ -1,5 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors';
+import type { BusinessError } from '@src/shared/errors/result';
 import { match, P } from 'ts-pattern';
 
 /** 반복 할 일 요청이 거절된 이유. 이유마다 다음 행동이 다르다 */
@@ -11,9 +12,26 @@ export type TodoSeriesFailure =
   | 'invalid'
   | 'too-many-past'
   | 'category-full'
-  | 'ended';
+  | 'ended'
+  | 'not-created';
+
+/**
+ * 반복 생성 응답에 규칙이 없다. 옛 서버(롤백 중)는 repeat를 모르고 단일 할 일 하나만 만들고 201을 준다.
+ * 성공으로 처리하면 사용자는 반복이 만들어진 줄 안다.
+ */
+export class TodoSeriesNotCreatedError extends Error implements BusinessError {
+  override readonly name = 'TodoSeriesNotCreatedError';
+  readonly code = 'TODO_SERIES_NOT_CREATED';
+
+  constructor() {
+    super('Server created a single to-do instead of a repeating one');
+  }
+}
 
 export function getTodoSeriesFailure(error: unknown): TodoSeriesFailure | null {
+  if (error instanceof TodoSeriesNotCreatedError) {
+    return 'not-created';
+  }
   if (!isApiError(error)) {
     return null;
   }
@@ -43,9 +61,18 @@ export function shouldReopenRepeatPicker(error: unknown): boolean {
 
 /** 앱이 알던 반복 상태가 서버와 달라진 거절. 목록을 새로 불러온다 */
 export function shouldRefreshTodos(failure: TodoSeriesFailure): boolean {
-  return failure === 'not-found' || failure === 'not-repeating' || failure === 'ended';
+  return (
+    failure === 'not-found' ||
+    failure === 'not-repeating' ||
+    failure === 'ended' ||
+    failure === 'not-created'
+  );
 }
 
+/** 규칙 없음. 옛 서버(롤백 중)에는 이 경로가 없어 404 SYS_0002로 온다 */
 export function isTodoSeriesNotFoundError(error: unknown): boolean {
-  return getTodoSeriesFailure(error) === 'not-found';
+  return (
+    getTodoSeriesFailure(error) === 'not-found' ||
+    (isApiError(error) && error.status === 404 && error.hasCode(ErrorCode.SYS_0002))
+  );
 }

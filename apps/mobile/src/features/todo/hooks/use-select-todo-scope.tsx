@@ -1,3 +1,4 @@
+import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { Box, ModalBottomSheet, useOverlay } from '@src/shared/ui';
 import { type PropsWithChildren, useState } from 'react';
 import { Keyboard } from 'react-native';
@@ -8,6 +9,7 @@ import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.mode
 interface ScopeRequest {
   action: 'edit' | 'delete';
   date: string;
+  scopes: readonly TodoEditScope[];
   resolve: (scope: TodoEditScope | null) => void;
 }
 
@@ -18,10 +20,14 @@ interface ScopeRequest {
 export function useSelectTodoScope() {
   const [request, setRequest] = useState<ScopeRequest | null>(null);
 
-  const selectScope = (action: ScopeRequest['action'], date: string) =>
+  const selectScope = (
+    action: ScopeRequest['action'],
+    date: string,
+    scopes: readonly TodoEditScope[],
+  ) =>
     new Promise<TodoEditScope | null>((resolve) => {
       Keyboard.dismiss();
-      setRequest({ action, date, resolve });
+      setRequest({ action, date, scopes, resolve });
     });
 
   const settle = (scope: TodoEditScope | null) => {
@@ -31,10 +37,11 @@ export function useSelectTodoScope() {
 
   return {
     selectEditScope: async (date: string): Promise<TodoUpdateScope | null> => {
-      const scope = await selectScope('edit', date);
+      const scope = await selectScope('edit', date, TODO_UPDATE_SCOPES);
       return scope === 'ALL' ? null : scope;
     },
-    selectDeleteScope: (date: string) => selectScope('delete', date),
+    selectDeleteScope: (date: string, scopes: readonly TodoEditScope[]) =>
+      selectScope('delete', date, scopes),
     scopeRequest: request,
     settleScope: settle,
   };
@@ -57,6 +64,7 @@ export function TodoScopeStep({ step, children }: TodoScopeStepProps) {
         <TodoScopeSelectContent
           action={scopeRequest.action}
           date={scopeRequest.date}
+          scopes={scopeRequest.scopes}
           onChange={settleScope}
           onBack={() => settleScope(null)}
         />
@@ -94,7 +102,7 @@ export function useSelectTodoEditScopeInOverlay({ onBack }: { onBack: () => void
         <TodoScopeSelectContent
           action="edit"
           date={date}
-          isFollowingOnly={isFollowingOnly}
+          scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
           onChange={(scope) => {
             selectedScope = scope === 'ALL' ? null : scope;
             close(selectedScope);

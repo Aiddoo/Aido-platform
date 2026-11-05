@@ -36,6 +36,7 @@ import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
+import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { TodoScopeStep, useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
@@ -139,7 +140,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
       return;
     }
 
-    const scope = await selectDeleteScope(todo.startDate);
+    const scope = await selectDeleteScope(todo.startDate, TodoRepeatPolicy.getDeleteScopes(todo));
     if (scope == null) {
       return;
     }
@@ -283,7 +284,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
           />
         </PressableFeedback>
 
-        {TodoPolicy.isRecurring(todo) && (
+        {TodoRepeatPolicy.hasRule(todo) && (
           <PressableFeedback
             onPress={handleStopRepeat}
             isDisabled={deleteMutation.isPending || stopSeriesMutation.isPending}

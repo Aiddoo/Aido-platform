@@ -209,6 +209,33 @@ export function getTodoEditScopeDecision({
   return isDateOnly ? 'this-only' : 'ask';
 }
 
+/** 이 회차가 속한 묶음과 그 규칙. 할 일 모델의 두 칸이다 */
+export interface RepeatOccurrence {
+  recurrenceGroupId: string | null;
+  repeat: TodoRepeat | null;
+}
+
+/**
+ * 규칙이 있는 반복 회차인지. 묶음은 있는데 규칙이 없으면 옛 서버(롤백 중)가 만든 묶음이거나 이관에서 패턴을 알 수 없던
+ * 묶음이다. 서버는 이런 묶음의 범위 수정과 반복 끝내기를 받지 않아 "이 할 일만"으로 다룬다.
+ */
+export function hasRepeatRule({ recurrenceGroupId, repeat }: RepeatOccurrence): boolean {
+  return recurrenceGroupId != null && repeat != null;
+}
+
+/** 반복 칩으로 규칙을 고칠 수 있는지. 규칙 없는 묶음의 회차는 서버가 전환을 받지 않는다(TODO_0845) */
+export function canChangeRepeat(occurrence: RepeatOccurrence): boolean {
+  return occurrence.recurrenceGroupId == null || hasRepeatRule(occurrence);
+}
+
+/** 삭제 때 고를 수 있는 범위. 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다 */
+export function getDeleteScopes(occurrence: RepeatOccurrence): readonly TodoEditScope[] {
+  if (occurrence.recurrenceGroupId == null) {
+    return [];
+  }
+  return hasRepeatRule(occurrence) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
+}
+
 const DAYS_PER_WEEK = 7;
 
 function getMondayOfDateKey(dateKey: string): string {
@@ -332,6 +359,9 @@ export const TodoRepeatPolicy = {
   isMonthBeyondHorizon: isMonthBeyondRepeatHorizon,
   shouldShowRepeatHorizonHint,
   getEditScopeDecision: getTodoEditScopeDecision,
+  hasRule: hasRepeatRule,
+  canChangeRepeat,
+  getDeleteScopes,
   withStartDate: withRepeatStartDate,
   isMonthDayClamped: isRepeatMonthDayClamped,
   getOccurrenceDateKeys: getRepeatOccurrenceDateKeys,
