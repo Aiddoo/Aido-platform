@@ -167,6 +167,7 @@ export {
 export { Spacing, type SpacingProps } from './spacing';
 export {
   STACK_BACK_ICON,
+  STACK_CLOSE_ICON,
   STACK_MENU_ICON,
   STACK_MORE_ICON,
   useStackBackToolbar,
