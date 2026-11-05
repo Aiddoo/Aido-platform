@@ -1,4 +1,52 @@
-import { getAnnualDiscountPercent, getMonthlyEquivalent } from './subscription.model';
+import {
+  getAnnualDiscountPercent,
+  getMonthlyEquivalent,
+  getSelectedPlan,
+  type SubscriptionOffering,
+  type SubscriptionPlan,
+} from './subscription.model';
+
+function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
+  return {
+    identifier: 'monthly',
+    planType: 'monthly',
+    priceString: '₩8,900',
+    price: 8_900,
+    currencyCode: 'KRW',
+    title: '월간',
+    description: null,
+    ...overrides,
+  };
+}
+
+describe('getSelectedPlan', () => {
+  const monthly = createPlan({ identifier: 'monthly', planType: 'monthly' });
+  const annual = createPlan({ identifier: 'annual', planType: 'annual' });
+  const offering: SubscriptionOffering = { identifier: 'default', plans: [monthly, annual] };
+
+  test('고르지 않았으면 연간을 고른 것으로 본다', () => {
+    // When
+    const result = getSelectedPlan(offering, undefined);
+    // Then
+    expect(result).toBe(annual);
+  });
+
+  test('연간이 없으면 첫 요금제를 고른 것으로 본다', () => {
+    // When
+    const result = getSelectedPlan({ ...offering, plans: [monthly] }, undefined);
+    // Then
+    expect(result).toBe(monthly);
+  });
+
+  test('고른 요금제가 있으면 그것을 돌려주고 판매에서 빠졌으면 없는 값을 돌려준다', () => {
+    // When
+    const chosen = getSelectedPlan(offering, 'monthly');
+    const removed = getSelectedPlan(offering, 'old-plan');
+    // Then
+    expect(chosen).toBe(monthly);
+    expect(removed).toBeUndefined();
+  });
+});
 
 describe('구독 가격 계산', () => {
   test.each([

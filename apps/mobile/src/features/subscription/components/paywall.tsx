@@ -2,16 +2,13 @@ import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsin
 import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.webp';
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
-import { useTrack } from '@src/shared/analytics';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
-  Button,
   CalendarIcon,
   DashedDivider,
   DocsIcon,
@@ -20,131 +17,47 @@ import {
   ListIcon,
   MicIcon,
   PersonIcon,
-  ScallopedContainer,
   Spacing,
   type StyledIconType,
-  StyledSafeAreaView,
   Text,
   VStack,
 } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/format';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { useEffect, useState } from 'react';
-import { Image, type ImageSourcePropType, Platform, ScrollView } from 'react-native';
+import { Image, type ImageSourcePropType, Platform } from 'react-native';
 
-import type { SubscriptionOffering } from '../domains/subscription.model';
-import { useSubscriptionViewParam } from '../hooks/use-subscription-view-param';
 import { useGetEntitlementsQueryOptions } from '../queries/get-entitlements-query-options';
-import { usePurchaseMutationOptions } from '../queries/use-purchase-mutation-options';
 import { getSubscriptionStore, type SubscriptionStore } from '../utils/subscription-store';
 import { toPlanBenefitAmounts } from '../utils/view-models/plan-benefit.view-model';
-import { PremiumNotice } from './premium-notice';
-import { RestorePurchaseButton } from './restore-purchase-button';
-import { SubscriptionOfflineActionsNotice } from './subscription-offline-actions-notice';
-import { SubscriptionPlanInput } from './subscription-plan-input';
 
-interface PaywallProps {
-  offering: SubscriptionOffering;
-}
-
-/** 무료 사용자(또는 보상 기간에 구독을 이어 붙이려는 사람)의 요금제와 혜택, 결제 */
-export function Paywall({ offering }: PaywallProps) {
+/** 스토어 응답 없이 그리는 제목과 혜택. 요금제를 못 받아도 늘 같은 자리에 보인다 */
+export function Paywall() {
   const { t } = useTranslation('subscription');
-  const purchase = useMutation(usePurchaseMutationOptions());
-  const [view] = useSubscriptionViewParam();
-  const isOnline = useIsOnline();
-  const { trackEvent } = useTrack();
-  const [chosenPlanId, setChosenPlanId] = useState<string>();
-  const defaultPlan =
-    offering.plans.find((plan) => plan.planType === 'annual') ?? offering.plans[0];
-  const selectedPlanId = chosenPlanId ?? defaultPlan?.identifier;
-  const selectedPlan = offering.plans.find((plan) => plan.identifier === selectedPlanId);
-
-  // 요금제를 받아 페이월이 실제로 보였을 때 한 번 센다(게이트 → 구독하기 → 페이월 → 결제 퍼널)
-  useEffect(() => {
-    trackEvent('paywall_viewed', { view });
-  }, [trackEvent, view]);
-
-  const handlePurchase = () => {
-    if (!selectedPlan || purchase.isPending) {
-      return;
-    }
-    purchase.mutate(selectedPlan.identifier, {
-      // 보상 영수증에서 요금제로 들어왔으면 영수증으로 돌아가 결제한 영수증으로 바뀌는 것을 보여 준다
-      onSuccess: () => {
-        if (view === 'plans' && router.canGoBack()) {
-          router.back();
-        }
-      },
-    });
-  };
 
   return (
-    <Box className="flex-1" testID="subscription-paywall">
-      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Spacing size={16} />
+    <Box className="px-5 pt-5">
+      <VStack gap={4} className="items-center">
+        <H2>{t('paywall.title')}</H2>
 
-          <PremiumNotice.GrantEnded />
+        <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+          {t('paywall.subtitle')}
+        </Text>
+      </VStack>
 
-          <ScallopedContainer>
-            <Box className="px-5 pt-5">
-              <VStack gap={4} className="items-center">
-                <H2>{t('paywall.title')}</H2>
+      <DashedDivider className="my-6" />
 
-                <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
-                  {t('paywall.subtitle')}
-                </Text>
-              </VStack>
+      <Paywall.Benefits />
 
-              <DashedDivider className="my-6" />
+      <Spacing size={20} />
 
-              <Paywall.Benefits />
+      <Paywall.AdditionalBenefits />
 
-              <Spacing size={20} />
+      <Spacing size={8} />
 
-              <Paywall.AdditionalBenefits />
-
-              <Spacing size={8} />
-
-              <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
-                {t('paywall.futureIncluded')}
-              </Text>
-            </Box>
-
-            <DashedDivider className="my-5 mx-5" />
-
-            <Box className="px-5 pb-5">
-              <SubscriptionPlanInput value={selectedPlanId} onValueChange={setChosenPlanId} />
-            </Box>
-          </ScallopedContainer>
-
-          <Spacing size={24} />
-
-          <VStack gap={8} className="items-center">
-            <Paywall.RenewalNotice />
-            <Paywall.Terms />
-            <RestorePurchaseButton size="small" />
-          </VStack>
-        </StyledSafeAreaView>
-      </ScrollView>
-
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        {!isOnline && (
-          <Box className="pb-2">
-            <SubscriptionOfflineActionsNotice />
-          </Box>
-        )}
-        <Button
-          onPress={handlePurchase}
-          isLoading={purchase.isPending}
-          isDisabled={!selectedPlan || purchase.isPending || !isOnline}
-        >
-          {t('paywall.subscribeButton')}
-        </Button>
-      </StyledSafeAreaView>
+      <Text size="e2" shade={5} align="center" lineBreakStrategyIOS="hangul-word">
+        {t('paywall.futureIncluded')}
+      </Text>
     </Box>
   );
 }
