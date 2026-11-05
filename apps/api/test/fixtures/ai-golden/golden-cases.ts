@@ -9,6 +9,7 @@ import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/application/pro
 import { quickPlanDraftSchema } from "#api/modules/ai-assistance/application/prompts/planning/quick-plan/schema";
 import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/application/prompts/planning/voice-note-digest/schema";
 import {
+  resolvePlanSchedule,
   resolveTodoSchedule,
   type ScheduleClock,
 } from "#api/modules/ai-assistance/domain/services/parsing/resolve-todo-schedule";
@@ -132,11 +133,14 @@ export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClo
   return {
     todos: plan.todos.map((todo): PlannedTodoExpectation => {
       const { repeat } = todo.schedule;
-      const repeats = repeat.pattern !== "NONE" && repeat.pattern !== "UNSUPPORTED";
-      const resolved = resolveTodoSchedule(
-        { ...todo.schedule, repeat: repeatRefFixture({ pattern: "NONE" }) },
-        clock,
-      );
+      const planned = resolvePlanSchedule(todo.schedule, clock);
+      const repeats = planned.repeat != null;
+      const resolved = repeats
+        ? resolveTodoSchedule(
+            { ...todo.schedule, repeat: repeatRefFixture({ pattern: "NONE" }) },
+            clock,
+          )
+        : planned;
       const until =
         repeat.until == null || repeat.until.kind === "NONE"
           ? null

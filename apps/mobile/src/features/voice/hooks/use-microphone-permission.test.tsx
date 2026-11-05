@@ -33,7 +33,12 @@ async function renderBlocked(missing: MissingSpeechPermission) {
     <OverlayProvider>
       <PermissionProbe onResult={onResult} />
     </OverlayProvider>,
-    { di: { speechRecognizer } },
+    {
+      di: {
+        speechRecognizer,
+        logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+      },
+    },
   );
 
   return { speechRecognizer, onResult };

@@ -2,6 +2,7 @@ import { useAppFonts } from '@src/bootstrap/hooks/use-app-fonts';
 import { useEncryptedStorageBootstrap } from '@src/bootstrap/hooks/use-encrypted-storage-bootstrap';
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
+import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from '@src/bootstrap/root-error-boundary-log-events';
 import { errorMessageOf } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { logger } from '@src/shared/infra/logger/global-logger';
@@ -46,7 +47,7 @@ export default wrapRootComponent(AppBootstrapLayout);
 // OTA가 켜져 있으면 받아 둔 업데이트로, 아니면(개발 빌드) 같은 번들로 다시 띄운다
 const restartApp = () =>
   (Updates.isEnabled ? Updates.reloadAsync() : reloadAppAsync()).catch((error: unknown) =>
-    logger.warn('root_error_boundary.restart_failed', { error: errorMessageOf(error) }),
+    logger.warn(ROOT_ERROR_BOUNDARY_LOG_EVENT.RESTART_FAILED, { error: errorMessageOf(error) }),
   );
 
 /**

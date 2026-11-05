@@ -35,7 +35,7 @@ export const SCHEDULE_RULES_KO = {
 </category_rules>`,
   planRepeat: `<repeat_rules>
 - 반복이 없으면 pattern은 NONE이다.
-- 매일 → DAILY. 평일마다 → WEEKDAYS. 주말마다, 또는 "이번"·"다음" 없이 "주말에"라고 하면 → WEEKENDS다.
+- 매일 → DAILY. 평일마다 → WEEKDAYS. "주말마다", "매주 주말"처럼 되풀이를 말했을 때만 WEEKENDS다. 되풀이를 말하지 않은 "주말에"는 다가오는 주말 한 번이라 THIS_WEEKEND다.
 - "매주 월수금" → WEEKLY_DAYS, daysOfWeek ["MON","WED","FRI"]. 요일 없이 "매주"만 말하고 date에 요일이 있으면 그 요일 하나를 daysOfWeek에 쓴다.
 - "격주 화요일", "2주마다 화요일" → BIWEEKLY_DAYS, daysOfWeek ["TUE"].
 - "매달 15일", "매월 15일" → MONTHLY_DAY, monthDay 15. "매달 말일"은 monthDay 31이다.
@@ -84,7 +84,7 @@ export const SCHEDULE_RULES_EN = {
 </category_rules>`,
   planRepeat: `<repeat_rules>
 - Without repetition, pattern is NONE.
-- every day → DAILY. every weekday → WEEKDAYS. every weekend, or "on weekends" without "this" or "next" → WEEKENDS.
+- every day → DAILY. every weekday → WEEKDAYS. Use WEEKENDS only for a stated habit: "every weekend", "weekends", "on weekends". "this weekend", "on the weekend", and "over the weekend" mean the coming weekend once → THIS_WEEKEND.
 - "every Mon, Wed and Fri" → WEEKLY_DAYS with daysOfWeek ["MON","WED","FRI"]. For a bare "every week" with a weekday in date, put that one weekday in daysOfWeek.
 - "every other Tuesday", "every two weeks on Tuesday" → BIWEEKLY_DAYS with daysOfWeek ["TUE"].
 - "on the 15th of every month", "monthly on the 15th" → MONTHLY_DAY with monthDay 15. "the last day of every month" is monthDay 31.

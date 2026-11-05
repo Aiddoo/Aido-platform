@@ -20,6 +20,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { clamp } from 'es-toolkit';
 import { Skeleton, Spinner } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -31,6 +32,10 @@ import {
 } from '../../domains/nudge-interaction.model';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/get-nudge-thanks-preview-infinite-query-options';
 import { useSendNudgeThanksMutationOptions } from '../../queries/use-send-nudge-thanks-mutation-options';
+
+const RECIPIENT_ROW_HEIGHT = 64;
+const LIST_MIN_HEIGHT = 72;
+const LIST_MAX_HEIGHT_RATIO = 0.3;
 
 type NudgeThanksBottomSheetProps = Omit<
   ComponentProps<typeof ModalBottomSheet>,
@@ -110,7 +115,15 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
       <Text size="b3" shade={6}>
         {t('todo:interaction.thanksDescription', { count: preview.totalRecipients })}
       </Text>
-      <Box style={{ height: Math.min(height * 0.3, Math.max(72, recipients.length * 64)) }}>
+      <Box
+        style={{
+          height: clamp(
+            recipients.length * RECIPIENT_ROW_HEIGHT,
+            LIST_MIN_HEIGHT,
+            height * LIST_MAX_HEIGHT_RATIO,
+          ),
+        }}
+      >
         <FlashList
           data={recipients}
           keyExtractor={(recipient) => recipient.id}

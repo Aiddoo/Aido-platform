@@ -24,6 +24,8 @@ import { AddSubTodoBottomSheet } from './add-sub-todo-bottom-sheet';
 const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
 
+const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
 function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
   return {
     captureException: jest.fn(),
@@ -65,6 +67,7 @@ async function renderEditSheet() {
     {
       di: {
         subTodoService: new SubTodoService(httpClient),
+        logger,
         todoService: new TodoService(httpClient),
         analytics: createMockAnalytics(),
         errorReporter: createMockErrorReporter(),
@@ -168,6 +171,7 @@ describe('AddSubTodoBottomSheet 추가 모드', () => {
       {
         di: {
           subTodoService: new SubTodoService(httpClient),
+          logger,
           todoService: new TodoService(httpClient),
           analytics: createMockAnalytics(),
           errorReporter: createMockErrorReporter(),

@@ -149,6 +149,57 @@ describe('하위 할 일 낙관적 갱신', () => {
     await flush();
   });
 
+  it('완료한 할 일에 항목을 더하면 바로 미완료가 되고 달력도 함께 맞는다', async () => {
+    // Given
+    const { httpClient, queryClient, mutations, cachedTodo } = await renderMutations();
+    queryClient.setQueryData(
+      LIST_DAY_1,
+      toList([createParentTodo({ startDate: DAY_1, completed: true })]),
+    );
+    queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(1, 1));
+    const response = respondWith({ id: 1 });
+    httpClient.post.mockReturnValue(response.response);
+
+    // When
+    await act(async () => {
+      mutations().addSubTodo.mutate({ todoId: 1, title: '새 항목', date: DAY_1 });
+    });
+
+    // Then
+    expect(cachedTodo(LIST_DAY_1)).toMatchObject({
+      completed: false,
+      subTodoStats: { total: 1, completed: 0 },
+    });
+    expect(
+      queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0],
+    ).toEqual(expect.objectContaining({ completedTodos: 0, isComplete: false }));
+    response.settle();
+    await flush();
+  });
+
+  it('완료한 할 일에 더하기가 실패하면 완료로 되돌아간다', async () => {
+    // Given
+    const { httpClient, queryClient, mutations, cachedTodo } = await renderMutations();
+    queryClient.setQueryData(
+      LIST_DAY_1,
+      toList([createParentTodo({ startDate: DAY_1, completed: true })]),
+    );
+    httpClient.post.mockRejectedValue(new Error('network'));
+
+    // When
+    await act(async () => {
+      await mutations()
+        .addSubTodo.mutateAsync({ todoId: 1, title: '새 항목', date: DAY_1 })
+        .catch(() => undefined);
+    });
+
+    // Then
+    expect(cachedTodo(LIST_DAY_1)).toMatchObject({
+      completed: true,
+      subTodoStats: { total: 0, completed: 0 },
+    });
+  });
+
   it('응답이 오면 임시 id를 서버 id로 바꿔 다시 받기 전에도 행을 누를 수 있다', async () => {
     // Given
     const { httpClient, queryClient, mutations, cachedTodo } = await renderMutations();
@@ -531,7 +582,7 @@ describe('할 일 낙관적 갱신', () => {
     expect(completions()?.totalCompleteDays).toBe(0);
   });
 
-  it('달력 숫자는 서버처럼 시작일이 그날인 할 일만 센다', async () => {
+  it('달력 숫자는 그날 목록처럼 기간 안의 여러 날 할 일도 센다', async () => {
     // Given
     const { httpClient, queryClient, mutations } = await renderMutations();
     queryClient.setQueryData(
@@ -553,7 +604,7 @@ describe('할 일 낙관적 갱신', () => {
     // Then
     expect(
       queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0],
-    ).toEqual(expect.objectContaining({ totalTodos: 1, completedTodos: 1, isComplete: true }));
+    ).toEqual(expect.objectContaining({ totalTodos: 2, completedTodos: 1, isComplete: false }));
     pending.settle();
     await flush();
   });

@@ -80,8 +80,12 @@ export const SubTodoPolicy = {
     return withSubTodos(parent, toggleSubTodo(parent.subTodos, subTodoId, completed));
   },
 
-  withSubTodoAdded<T extends SubTodoParent>(parent: T, subTodo: SubTodo): T {
-    return withSubTodos(parent, addSubTodo(parent.subTodos, subTodo));
+  /** 서버와 같은 규칙이다. 끝낸 일에 항목을 더하면 남은 일이 생겨 완료가 풀린다 */
+  withSubTodoAdded<T extends SubTodoParent & { completed: boolean }>(
+    parent: T,
+    subTodo: SubTodo,
+  ): T {
+    return { ...withSubTodos(parent, addSubTodo(parent.subTodos, subTodo)), completed: false };
   },
 
   withSubTodoRemoved<T extends SubTodoParent>(parent: T, subTodoId: number): T {

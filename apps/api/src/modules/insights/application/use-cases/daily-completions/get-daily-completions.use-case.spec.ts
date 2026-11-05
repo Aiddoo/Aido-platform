@@ -42,6 +42,7 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
     expect(result).toEqual({
       dateRange: RANGE,
       totalCompleteDays: 1,
+      multiDayTodos: [],
       completions: [
         {
           date: "2028-02-28",
@@ -82,6 +83,26 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
     ).toBeUndefined();
   });
 
+  it("기간과 겹치는 여러 날 할 일을 집계와 따로 돌려준다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    const span = {
+      startDate: "2028-01-30",
+      endDate: "2028-02-02",
+      completed: false,
+      categoryColor: "#123456",
+    };
+    fixture.repository.ownMultiDayTodos.set(fixture.userId, [span]);
+    // When
+    const result = await new GetDailyCompletions(fixture).execute({
+      userId: fixture.userId,
+      ...RANGE,
+    });
+    // Then
+    expect(result.multiDayTodos).toEqual([span]);
+    expect(result.completions).toEqual([]);
+  });
+
   it("집계가 없으면 범위를 보존한 빈 완료 현황을 반환한다", async () => {
     // Given
     const fixture = createInsightsFixture();
@@ -91,7 +112,12 @@ describe("GetDailyCompletions — 일일 완료 조회", () => {
       ...RANGE,
     });
     // Then
-    expect(result).toEqual({ completions: [], totalCompleteDays: 0, dateRange: RANGE });
+    expect(result).toEqual({
+      completions: [],
+      totalCompleteDays: 0,
+      multiDayTodos: [],
+      dateRange: RANGE,
+    });
   });
 
   it("진행 중인 오래된 조회는 무효화 이후 캐시에 저장되지 않아 다음 조회가 새 완료 상태를 반환한다", async () => {

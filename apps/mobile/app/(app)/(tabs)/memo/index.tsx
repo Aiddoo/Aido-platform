@@ -32,7 +32,7 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useCallback, useRef } from 'react';
 import { RefreshControl } from 'react-native';
-import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import Animated, { clamp, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
@@ -46,7 +46,7 @@ export default function MemoScreen() {
   const handleScroll = useAnimatedScrollHandler({
     onScroll: ({ contentOffset: { y }, contentSize, layoutMeasurement }) => {
       const scrollable = contentSize.height - layoutMeasurement.height;
-      progress.set(scrollable > 0 ? Math.min(Math.max(y / scrollable, 0), 1) : 0);
+      progress.set(scrollable > 0 ? clamp(y / scrollable, 0, 1) : 0);
     },
   });
 

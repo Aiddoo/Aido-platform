@@ -1,7 +1,7 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
 import { errorMessageOf } from '@src/shared/errors/to-error';
-import { clamp, noop } from 'es-toolkit';
+import { clamp } from 'es-toolkit';
 import {
   type AudioPlaylist,
   type AudioPlaylistStatus,
@@ -117,7 +117,12 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
           playlist.play();
         }
       })
-      .catch(noop);
+      .catch((error: unknown) => {
+        logger.warn(VOICE_NOTE_LOG_EVENT.PLAYER_SEEK_FAILED, {
+          step: 'play-after-seek',
+          error: errorMessageOf(error),
+        });
+      });
   };
 
   const moveTo = async (target: number, shouldPlay: boolean) => {

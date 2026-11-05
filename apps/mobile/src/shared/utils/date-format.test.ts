@@ -3,6 +3,7 @@ import {
   formatClockTime,
   formatDateKey,
   formatDateKeyLabel,
+  formatDateKeyCompactRange,
   formatDateKeyRange,
   formatDateLabel,
   formatHourLabel,
@@ -159,6 +160,22 @@ describe('formatDateKeyRange', () => {
   it('해를 넘는 기간은 연도까지 표시한다', () => {
     expect(formatDateKeyRange('2026-12-28', '2027-01-03', KO_SEOUL)).toBe(
       '2026년 12월 28일 ~ 2027년 1월 3일',
+    );
+  });
+});
+
+describe('formatDateKeyCompactRange', () => {
+  it('같은 달이면 끝은 날만 쓴다', () => {
+    expect(formatDateKeyCompactRange('2026-11-05', '2026-11-07', KO_SEOUL)).toBe('11월 5일~7일');
+    expect(formatDateKeyCompactRange('2026-11-05', '2026-11-07', EN_SEOUL)).toBe('Nov 5~7');
+  });
+
+  it('달이 다르면 끝에도 달을 쓰고 해가 다르면 연도까지 쓴다', () => {
+    expect(formatDateKeyCompactRange('2026-11-30', '2026-12-02', KO_SEOUL)).toBe(
+      '11월 30일~12월 2일',
+    );
+    expect(formatDateKeyCompactRange('2026-12-30', '2027-01-02', KO_SEOUL)).toBe(
+      '2026년 12월 30일 ~ 2027년 1월 2일',
     );
   });
 });

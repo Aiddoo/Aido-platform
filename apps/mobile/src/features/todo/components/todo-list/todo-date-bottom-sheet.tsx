@@ -17,6 +17,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
+import { TodoPolicy } from '../../domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
@@ -86,7 +87,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
           changedField: 'date',
           input: {
             startDate: startDateKey,
-            endDate: null,
+            endDate: TodoPolicy.getShiftedEndDate(todo, startDateKey),
             scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
             isAllDay: todo.isAllDay,
           },

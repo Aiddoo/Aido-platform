@@ -137,6 +137,11 @@
     "deleteFollowingHint": "Deleted from {{date}} onward",
     "deleteAllHint": "Past and completed ones are deleted too"
   },
+  "multiDayDelete": {
+    "title": "Delete this to-do for all days?",
+    "description": "It will be deleted for all of {{period}}.",
+    "confirm": "Delete all"
+  },
   "chip": {
     "repeat": "Repeat",
     "allDay": "All day",

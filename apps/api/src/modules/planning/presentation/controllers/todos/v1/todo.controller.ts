@@ -903,6 +903,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 
 **동작**
 - 새 항목은 기존 항목 맨 뒤에 추가됩니다 (\`sortOrder\` 자동 증가)
+- 완료한 할 일에 추가하면 할 일이 미완료로 돌아갑니다
 - 투두당 최대 ${TODO_ITEM_LIMITS.MAX_PER_TODO}개까지 추가 가능
 
 **응답**
@@ -930,11 +931,13 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: CreateTodoItemDto }) dto: CreateTodoItemDto,
+    @Timezone() timezone: string,
   ): Promise<UpdateTodoResponseDto> {
     const todo = await this.addTodoItemUseCase.execute({
       todoId: params.id,
       userId: user.userId,
       title: dto.title,
+      timezone,
     });
 
     return {

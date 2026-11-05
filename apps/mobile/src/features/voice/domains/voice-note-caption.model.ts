@@ -1,4 +1,5 @@
 import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
+import { clamp } from 'es-toolkit';
 
 import { VOICE_NOTE_SENTENCE_MAX_LENGTH } from '../constants/voice-note.constants';
 import {
@@ -125,7 +126,7 @@ function toTimedSentences(
 
   return pieces.map((text, index) => {
     const range = ranges[index];
-    const startMs = Math.max(0, Math.min(range?.startMs ?? fromMs, toMs));
+    const startMs = clamp(range?.startMs ?? fromMs, 0, toMs);
     return {
       text,
       startMs,

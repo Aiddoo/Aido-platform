@@ -5,9 +5,9 @@ import type {
   SpeechMode,
 } from '@src/core/ports/speech-recognizer';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-url';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
-import * as Linking from 'expo-linking';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 
@@ -39,6 +39,7 @@ export function useMicrophonePermission() {
   const speechRecognizer = useSpeechRecognizer();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
+  const openAppSettings = useOpenAppSettings();
 
   return useCallback(
     async (mode: SpeechMode, locale: SpeechLocale) => {
@@ -63,10 +64,10 @@ export function useMicrophonePermission() {
         confirmLabel: t('common:permissions.openSettings'),
       });
       if (shouldOpenSettings) {
-        await Linking.openSettings();
+        await openAppSettings();
       }
       return false;
     },
-    [speechRecognizer, toast, confirmDialog],
+    [speechRecognizer, toast, confirmDialog, openAppSettings],
   );
 }

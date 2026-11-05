@@ -133,6 +133,11 @@
     "deleteFollowingHint": "{{date}}부터 쭉 삭제돼요",
     "deleteAllHint": "지난 할 일과 완료한 기록까지 모두 삭제돼요"
   },
+  "multiDayDelete": {
+    "title": "이 할 일을 모두 삭제할까요?",
+    "description": "{{period}} 전체가 삭제돼요",
+    "confirm": "모두 삭제"
+  },
   "chip": {
     "repeat": "반복",
     "allDay": "종일",

@@ -160,6 +160,26 @@ export function resolveTodoSchedule(
   };
 }
 
+const ONCE_ON_WEEKEND_PATTERNS: ReadonlySet<RepeatPattern> = new Set([
+  "THIS_WEEKEND",
+  "NEXT_WEEKEND",
+]);
+
+/**
+ * 계획(빠른 계획·녹음 정리)의 일정. "주말에 장보기", "this weekend"는 그 주말 토요일 한 번이고
+ * (일요일에 말한 이번 주말은 오늘) 되풀이는 "주말마다"(`WEEKENDS`)일 때만이다.
+ * 출시 parse 응답의 `recurrence`는 요일 + 종료일 그대로라 `resolveTodoSchedule`을 바꾸지 않는다.
+ */
+export function resolvePlanSchedule(
+  draft: ScheduleDraft<PlanRepeatRef>,
+  clock: ScheduleClock,
+): ResolvedSchedule {
+  const schedule = resolveTodoSchedule(draft, clock);
+  return ONCE_ON_WEEKEND_PATTERNS.has(draft.repeat.pattern)
+    ? { ...schedule, isRecurring: false, recurrence: null, repeat: null }
+    : schedule;
+}
+
 function resolveRepeat(
   repeat: RepeatRef | PlanRepeatRef,
   window: RecurrenceWindow | null,

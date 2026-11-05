@@ -63,6 +63,7 @@ async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
       di: {
         analytics: createMockAnalytics(),
         errorReporter: createErrorReporterStub(),
+        logger,
         memoService: new MemoService(httpClient),
         userService: new UserService(httpClient),
         entitlementService: new EntitlementService(httpClient, logger),

@@ -1,4 +1,4 @@
-import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
+import { useLogger, useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
 import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
@@ -19,6 +19,7 @@ import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capt
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
 import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-note-href';
+import { errorMessageOf } from '@src/shared/errors/to-error';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { randomUUID } from 'expo-crypto';
@@ -26,6 +27,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Keyboard } from 'react-native';
 
+import { TODO_LOG_EVENT } from '../constants/todo-log-events';
 import type { AddTodoFormValues } from '../domains/add-todo-form.schema';
 
 interface UseAddTodoQuickVoiceOptions {
@@ -40,6 +42,7 @@ interface UseAddTodoQuickVoiceOptions {
  * 실패하면 들은 글자를 입력 칸에 남기고, 다시 정리할 때 같은 키를 써서 두 번 차감되지 않는다.
  */
 export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOptions) {
+  const logger = useLogger();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
   const aiConsent = useAiDataSharingConsentGate();
   const ensureMicrophonePermission = useMicrophonePermission();
@@ -197,7 +200,12 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
   };
 
   const changeLocale = (nextLocale: SpeechLocale) => {
-    applyLocale(nextLocale).catch(noop);
+    applyLocale(nextLocale).catch((error: unknown) => {
+      logger.warn(TODO_LOG_EVENT.QUICK_VOICE_LOCALE_CHANGE_FAILED, {
+        locale: nextLocale,
+        error: errorMessageOf(error),
+      });
+    });
   };
 
   return {

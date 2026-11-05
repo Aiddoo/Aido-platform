@@ -1,3 +1,4 @@
+import { useClipboard } from '@src/bootstrap/providers/di-context';
 import type { AccessTier } from '@src/features/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/subscription/queries/get-entitlements-query-options';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -6,7 +7,6 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { setStringAsync } from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
@@ -24,9 +24,10 @@ export function ProfileCard() {
   });
   const toast = useAppToast();
   const { t } = useTranslation('user');
+  const clipboard = useClipboard();
 
   const handleCopyUserTag = async () => {
-    const copied = await setStringAsync(user.userTag).then(
+    const copied = await clipboard.setString(user.userTag).then(
       () => true,
       () => false,
     );
