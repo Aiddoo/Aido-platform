@@ -29,6 +29,16 @@ const errorEnvelopeSchema = z.object({
 });
 
 /**
+ * RN의 전역 fetch(expo/fetch)는 연결 실패를 TypeError가 아니라 `fetch failed: …` 일반 Error로 던지고 클래스를
+ * 내보내지 않아 ky도 알아보지 못한다. 사용자가 끊은 요청은 ky가 먼저 abort 사유로 던지므로 여기 오지 않는다.
+ */
+const EXPO_FETCH_FAILURE_PREFIX = 'fetch failed: ';
+
+function isExpoFetchFailure(error: unknown) {
+  return error instanceof Error && error.message.startsWith(EXPO_FETCH_FAILURE_PREFIX);
+}
+
+/**
  * Ky 기반 Result HttpClient — HTTP 결과 → 도메인 에러 분류의 **유일한 소유자**.
  * - 4xx 에러: Result.err(ApiError) 반환
  * - 5xx: throw ServerError (React Query가 자동 재시도)
@@ -128,7 +138,7 @@ export class KyHttpClient implements HttpClient {
 
       // ky v2는 네트워크 실패를 자체 `NetworkError`로 감싼다(원인은 `.cause`).
       // 방어적으로 raw TypeError도 함께 처리한다.
-      if (isNetworkError(error) || error instanceof TypeError) {
+      if (isNetworkError(error) || error instanceof TypeError || isExpoFetchFailure(error)) {
         throw new NetworkError();
       }
 

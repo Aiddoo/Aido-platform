@@ -227,6 +227,19 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     expect(endSession).not.toHaveBeenCalled();
   });
 
+  it('expo/fetch가 연결 실패를 일반 Error로 던져도 NetworkError로 표면화한다', async () => {
+    // Given
+    fetchMock.mockRejectedValue(
+      new Error('fetch failed: java.net.ConnectException: Failed to connect to /10.0.2.2:8090'),
+    );
+
+    // When
+    const request = http.post('v1/voice-notes/digest', {});
+
+    // Then
+    await expect(request).rejects.toBeInstanceOf(NetworkError);
+  });
+
   it('갱신이 일시 실패(서버 재시작·네트워크)하면 로그아웃 없이 NetworkError를 던진다', async () => {
     // Given — 콜드 스타트/배포 재시작: 원 요청은 401, 갱신 POST는 네트워크 실패(reject)
     fetchMock.mockResolvedValue(errorBody(401, 'AUTH_0101', 'access token invalid'));
