@@ -119,6 +119,17 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
 
   useEffect(() => () => planAbortRef.current?.abort(), []);
 
+  const moveTranscriptToTitle = () => {
+    methods.setValue(
+      'title',
+      VoiceTranscriptPolicy.mergeHeardTextIntoTitle(
+        methods.getValues('title'),
+        VoiceTranscriptPolicy.getTranscriptText(session.state.transcript),
+      ),
+      { shouldDirty: true },
+    );
+  };
+
   const start = async () => {
     const hasFailed = session.state.status === 'failed';
     if (!gate.guard({ onSubscribe: onExit })) {
@@ -133,8 +144,9 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     if (!(await ensureMicrophonePermission('quick', locale))) {
       return;
     }
-    // 실패한 세션에서 다시 누르면 처음부터 듣는다. 들은 글자는 이미 입력 칸에 옮겨 뒀다
+    // 실패한 세션에서 다시 누르면 처음부터 듣는다. 지우기 전에 들은 글자를 입력 칸에 옮겨 둔다
     if (hasFailed) {
+      moveTranscriptToTitle();
       session.cancel();
     }
     await session.begin({ locale, contextualStrings: getSpeechContext() });
@@ -150,12 +162,6 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
     } finally {
       setIsRestarting(false);
     }
-  };
-
-  const moveTranscriptToTitle = () => {
-    methods.setValue('title', VoiceTranscriptPolicy.getTranscriptText(session.state.transcript), {
-      shouldDirty: true,
-    });
   };
 
   /** 정리를 기다리다 그만둔다. 글자는 입력 칸에 남기고, 같은 글자를 다시 보내면 같은 키라 두 번 차감되지 않는다 */
