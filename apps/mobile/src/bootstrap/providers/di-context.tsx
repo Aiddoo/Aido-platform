@@ -42,6 +42,7 @@ import type { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import type { UserService } from '@src/features/user/apis/user.service';
+import type { OfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 import type { RecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import type { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
 import type { VoiceService } from '@src/features/voice/apis/voice.service';
@@ -84,6 +85,8 @@ export interface DIContainer {
   queryCacheStorage: QueryCacheStorage;
   /** 빠른 말하기 인식 언어(사용자 범위 로컬 상태) */
   recognitionLanguageRepository: RecognitionLanguageRepository;
+  /** 기기 음성 인식 모델 받기를 거절한 언어(사용자 범위 로컬 상태) */
+  offlineModelPromptRepository: OfflineModelPromptRepository;
 
   // Services
   achievementService: AchievementService;
@@ -166,6 +169,7 @@ export const usePushNotificationGateway = () => useDI().pushNotificationGateway;
 export const useDraftService = () => useDI().draftService;
 export const useQueryCacheStorage = () => useDI().queryCacheStorage;
 export const useRecognitionLanguageRepository = () => useDI().recognitionLanguageRepository;
+export const useOfflineModelPromptRepository = () => useDI().offlineModelPromptRepository;
 
 // Service Hooks
 export const useAchievementService = () => useDI().achievementService;

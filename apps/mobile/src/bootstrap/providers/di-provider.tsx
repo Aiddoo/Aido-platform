@@ -43,6 +43,7 @@ import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
+import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 import { createRecognitionLanguageRepository } from '@src/features/voice/apis/recognition-language.repository';
 import { createVoiceNoteDraftRepository } from '@src/features/voice/apis/voice-note-draft.repository';
 import { VoiceNoteStorageService } from '@src/features/voice/apis/voice-note-storage.service';
@@ -331,6 +332,9 @@ export function DIProvider({
       draftService,
       queryCacheStorage,
       recognitionLanguageRepository: createRecognitionLanguageRepository(
+        encryptedStorageBootstrap.draftStorage,
+      ),
+      offlineModelPromptRepository: createOfflineModelPromptRepository(
         encryptedStorageBootstrap.draftStorage,
       ),
       achievementService,

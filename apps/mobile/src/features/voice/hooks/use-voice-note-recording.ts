@@ -1,6 +1,7 @@
 import {
   useErrorReporter,
   useHaptics,
+  useOfflineModelPromptRepository,
   useSpeechRecognizer,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
@@ -72,6 +73,7 @@ export function useVoiceNoteRecording({
 }: UseVoiceNoteRecordingOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const storage = useVoiceNoteStorageService();
+  const offlineModelPrompt = useOfflineModelPromptRepository();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
   const errorReporter = useErrorReporter();
@@ -281,10 +283,10 @@ export function useVoiceNoteRecording({
     }
   }, [status]);
 
-  /** Android에 이 언어 모델이 없으면 받을지 묻는다. 거절해도 네트워크 인식으로 이어 간다 */
+  /** Android에 이 언어 모델이 없으면 받을지 묻는다. 거절하면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다 */
   const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
     const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(startLocale);
-    if (!canDownloadOnDeviceModel) {
+    if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
       return;
     }
     const shouldDownload = await confirmDialog.open({
@@ -294,6 +296,7 @@ export function useVoiceNoteRecording({
       cancelLabel: t('voiceNote:offlineModel.cancel'),
     });
     if (!shouldDownload) {
+      offlineModelPrompt.saveDeclined(accountId, startLocale);
       trackEvent('voice_offline_model_requested', { locale: startLocale, result: 'declined' });
       return;
     }

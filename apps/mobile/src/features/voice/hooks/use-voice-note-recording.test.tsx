@@ -3,6 +3,7 @@ import {
   createErrorReporterStub,
   createHapticsStub,
   createLocalFileSystemFake,
+  createMemorySyncStorage,
   createMockAnalytics,
   createSpeechRecognizerStub,
   createVoiceNoteStorageServiceFake,
@@ -13,6 +14,10 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import { createVoiceNoteFixture, createVoiceNoteSentence } from '../__tests__/voice-note.factories';
+import {
+  createOfflineModelPromptRepository,
+  type OfflineModelPromptRepository,
+} from '../apis/offline-model-prompt.repository';
 import { useVoiceNoteRecording } from './use-voice-note-recording';
 
 const ACCOUNT_ID = 'user-1';
@@ -56,10 +61,12 @@ async function renderRecording({
   maxSeconds = null,
   canDownloadOnDeviceModel = false,
   files = createLocalFileSystemFake(),
+  offlineModelPromptRepository = createOfflineModelPromptRepository(createMemorySyncStorage()),
 }: {
   maxSeconds?: number | null;
   canDownloadOnDeviceModel?: boolean;
   files?: ReturnType<typeof createLocalFileSystemFake>;
+  offlineModelPromptRepository?: OfflineModelPromptRepository;
 } = {}) {
   const speechRecognizer = createSpeechRecognizerStub();
   speechRecognizer.getCapabilities.mockResolvedValue({
@@ -85,6 +92,7 @@ async function renderRecording({
       di: {
         speechRecognizer,
         voiceNoteStorageService: storage,
+        offlineModelPromptRepository,
         analytics,
         errorReporter: createErrorReporterStub(),
         haptics: createHapticsStub(),
@@ -407,6 +415,54 @@ describe('useVoiceNoteRecording', () => {
       locale: 'ko-KR',
       result: 'declined',
     });
+  });
+
+  test('받기를 거절하면 이 사용자의 그 언어로 기억한다', async () => {
+    // Given
+    const offlineModelPromptRepository =
+      createOfflineModelPromptRepository(createMemorySyncStorage());
+    await renderRecording({ canDownloadOnDeviceModel: true, offlineModelPromptRepository });
+
+    // When
+    await fireEvent.press(screen.getByTestId('start'));
+    await fireEvent.press(await screen.findByText('나중에'));
+
+    // Then
+    await waitFor(() =>
+      expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(true),
+    );
+  });
+
+  test('이미 거절한 언어는 묻지 않고 바로 네트워크 인식으로 시작한다', async () => {
+    // Given
+    const offlineModelPromptRepository =
+      createOfflineModelPromptRepository(createMemorySyncStorage());
+    offlineModelPromptRepository.saveDeclined(ACCOUNT_ID, 'ko-KR');
+    const { speechRecognizer } = await renderRecording({
+      canDownloadOnDeviceModel: true,
+      offlineModelPromptRepository,
+    });
+
+    // When
+    await fireEvent.press(screen.getByTestId('start'));
+
+    // Then
+    await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('나중에')).toBeNull();
+  });
+
+  test('다른 언어를 거절했어도 이 언어는 한 번 묻는다', async () => {
+    // Given
+    const offlineModelPromptRepository =
+      createOfflineModelPromptRepository(createMemorySyncStorage());
+    offlineModelPromptRepository.saveDeclined(ACCOUNT_ID, 'en-US');
+    await renderRecording({ canDownloadOnDeviceModel: true, offlineModelPromptRepository });
+
+    // When
+    await fireEvent.press(screen.getByTestId('start'));
+
+    // Then
+    expect(await screen.findByText('나중에')).toBeTruthy();
   });
 
   test('화면이 사라지면 구독을 풀고 듣던 세션을 끊는다', async () => {

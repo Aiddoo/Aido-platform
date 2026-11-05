@@ -1,6 +1,8 @@
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
+import { createOfflineModelPromptRepository } from '@src/features/voice/apis/offline-model-prompt.repository';
 
 import { createHapticsStub } from './create-haptics-stub';
+import { createMemorySyncStorage } from './create-memory-sync-storage';
 import { createVoiceNoteStorageServiceFake } from './create-voice-note-storage-service-fake';
 
 /**
@@ -24,6 +26,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     haptics: createHapticsStub(),
     // 로그아웃·사용자 전환 정리가 부르는 저장소라 관심 없는 테스트에는 빈 메모리 저장소를 둔다
     voiceNoteStorageService: createVoiceNoteStorageServiceFake(),
+    // 말로 메모 녹음 훅이 항상 읽는다. 받기 안내를 보는 테스트만 override한다
+    offlineModelPromptRepository: createOfflineModelPromptRepository(createMemorySyncStorage()),
   };
   const dependencies: Partial<DIContainer> = { ...defaults, ...overrides };
 
@@ -89,6 +93,9 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     },
     get recognitionLanguageRepository() {
       return dependency('recognitionLanguageRepository');
+    },
+    get offlineModelPromptRepository() {
+      return dependency('offlineModelPromptRepository');
     },
     get achievementService() {
       return dependency('achievementService');
