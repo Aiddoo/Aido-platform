@@ -70,7 +70,7 @@ export default function MemoScreen() {
             <H3 maxLines={1}>{t('tab.title')}</H3>
           </Box>
           <VoiceNoteStartButton />
-          <QueryErrorBoundary fallback={(props) => <MemoCreateButton.Error {...props} />}>
+          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
             <Suspense fallback={<MemoCreateButton.Loading />}>
               <MemoCreateButton />
             </Suspense>
@@ -94,13 +94,14 @@ export default function MemoScreen() {
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
           <Box px={16} gap={16} style={{ flexGrow: 1 }}>
+            {/* 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */}
             <QueryErrorBoundary fallback={() => null}>
               <Suspense fallback={null}>
                 <VoiceNoteDraftList />
               </Suspense>
             </QueryErrorBoundary>
 
-            <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
+            <QueryErrorBoundary fallback={MemoList.Error}>
               <Suspense fallback={<MemoList.Loading />}>
                 <MemoList />
               </Suspense>

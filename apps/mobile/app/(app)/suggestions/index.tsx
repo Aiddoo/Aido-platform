@@ -42,7 +42,7 @@ function SuggestionsScreen() {
             .with(true, () => (
               <VStack gap={12}>
                 <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
-                <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
+                <QueryErrorBoundary fallback={SuggestionsList.Error}>
                   <Suspense fallback={<SuggestionsList.Loading />}>
                     <SuggestionsList />
                   </Suspense>

@@ -7,7 +7,7 @@ export default function VoiceNoteListRoute() {
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <QueryErrorBoundary>
-          <Suspense fallback={null}>
+          <Suspense fallback={<VoiceNoteDraftList.Loading />}>
             <VoiceNoteDraftList.All />
           </Suspense>
         </QueryErrorBoundary>

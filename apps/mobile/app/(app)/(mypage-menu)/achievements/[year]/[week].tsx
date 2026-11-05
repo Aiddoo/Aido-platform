@@ -53,7 +53,7 @@ export default function AchievementDetailScreen() {
         <StyledSafeAreaView edges={['left', 'right']} className="grow justify-center">
           <QueryErrorBoundary
             resetKeys={[parsed.data.year, parsed.data.week]}
-            fallback={(props) => <WeeklyAchievementCertificate.Error {...props} />}
+            fallback={WeeklyAchievementCertificate.Error}
           >
             <Suspense fallback={<WeeklyAchievementCertificate.Loading />}>
               <WeeklyAchievementCertificate />

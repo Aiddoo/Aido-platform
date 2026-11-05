@@ -10,10 +10,7 @@ export default function AchievementsScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
-      <QueryErrorBoundary
-        resetKeys={[today.getFullYear()]}
-        fallback={(props) => <WeeklyAchievementList.Error {...props} />}
-      >
+      <QueryErrorBoundary resetKeys={[today.getFullYear()]} fallback={WeeklyAchievementList.Error}>
         <Suspense
           fallback={
             <Box className="px-4">
@@ -29,9 +26,7 @@ export default function AchievementsScreen() {
             ListHeaderComponent={
               <>
                 <Spacing size={16} />
-                <QueryErrorBoundary
-                  fallback={(props) => <AchievementSummaryCard.Error {...props} />}
-                >
+                <QueryErrorBoundary fallback={AchievementSummaryCard.Error}>
                   <Suspense fallback={<AchievementSummaryCard.Loading />}>
                     <AchievementSummaryCard />
                   </Suspense>

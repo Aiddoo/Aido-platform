@@ -3,12 +3,22 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, MicIcon, Result, Text, TextButton, VStack } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  MicIcon,
+  Result,
+  Text,
+  TextButton,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
-import { Chip, PressableFeedback } from 'heroui-native';
-import { StyleSheet } from 'react-native';
+import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { VOICE_NOTE_PREVIEW_COUNT } from '../../constants/voice-note.constants';
 import { type VoiceNote, VoiceNotePolicy } from '../../domains/voice-note.model';
@@ -109,6 +119,29 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
         )}
       </HStack>
     </PressableFeedback>
+  );
+};
+
+/** 전용 화면의 로딩. `All`과 같은 안쪽 여백과 행 모양이라 목록이 와도 자리가 그대로다 */
+VoiceNoteDraftList.Loading = function Loading() {
+  return (
+    <ScrollView
+      contentContainerStyle={styles.allContent}
+      contentInsetAdjustmentBehavior="automatic"
+      scrollEnabled={false}
+    >
+      {times(VOICE_NOTE_PREVIEW_COUNT, (index) => (
+        <Box key={index} className="pb-2">
+          <HStack gap={12} align="center" className="rounded-2xl bg-gray-1 px-3 py-3">
+            <Skeleton className="size-10 rounded-full" />
+            <VStack flex={1} gap={4}>
+              <TextSkeleton size="b3" className="w-1/2" />
+              <TextSkeleton size="e1" className="w-1/3" />
+            </VStack>
+          </HStack>
+        </Box>
+      ))}
+    </ScrollView>
   );
 };
 

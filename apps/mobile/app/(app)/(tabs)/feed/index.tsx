@@ -128,6 +128,7 @@ function MyFeed() {
           </>
         )}
 
+        {/* 조회해야 보일지 아는 안내 카드라 로딩·실패 때 자리를 잡지 않는다. 대부분 안 보여 자리를 잡으면 아래가 밀린다 */}
         <QueryErrorBoundary fallback={() => null}>
           <Suspense fallback={null}>
             <PushPermissionCard className="mx-4 mb-3" />
@@ -223,7 +224,7 @@ function AddTodoRequestEntry() {
 
 function FriendFeed() {
   return (
-    <QueryErrorBoundary fallback={(props) => <FriendFeedTodos.Error {...props} />}>
+    <QueryErrorBoundary fallback={FriendFeedTodos.Error}>
       <Suspense fallback={<FriendFeedTodos.Loading />}>
         <FriendFeedTodos />
       </Suspense>
@@ -266,7 +267,7 @@ function FriendFeedTodos() {
 
           <Spacing size={8} />
 
-          <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
+          <QueryErrorBoundary fallback={PokeBanner.Error}>
             <Suspense fallback={<PokeBanner.Loading />}>
               <PokeBanner />
             </Suspense>
@@ -277,7 +278,7 @@ function FriendFeedTodos() {
           <Box px={16} pb={24} style={{ flexGrow: 1 }}>
             <QueryErrorBoundary
               resetKeys={[friend.id, selectedDateKey]}
-              fallback={(props) => <FriendTodoList.Error {...props} />}
+              fallback={FriendTodoList.Error}
             >
               <Suspense fallback={<FriendTodoList.Loading />}>
                 <FriendTodoList key={selectedDateKey} />
