@@ -78,8 +78,23 @@ export function getFlagBarIndexes(sentences: readonly VoiceNoteSentence[]): numb
     .map((sentence) => Math.floor(sentence.startMs / WAVEFORM_BAR.intervalMs));
 }
 
-export function getBarIndexAt(positionMs: number): number {
-  return Math.max(0, Math.floor(positionMs / WAVEFORM_BAR.intervalMs));
+/**
+ * 아직 칸이 없는 중요 표시에 지금 칸 번호를 매긴다. 녹음 중 칸은 음량 이벤트가 올 때 생겨(기기마다 간격이 다르고
+ * 이어 듣기는 0칸에서 시작한다) 시간으로 계산하면 아직 없는 칸을 가리켜 깃발이 그려지지 않는다.
+ */
+export function withFlagBars(
+  flagBars: ReadonlyMap<number, number>,
+  bookmarksMs: readonly number[],
+  currentBarIndex: number,
+): ReadonlyMap<number, number> {
+  const isUnchanged =
+    bookmarksMs.length === flagBars.size && bookmarksMs.every((ms) => flagBars.has(ms));
+  if (isUnchanged) {
+    return flagBars;
+  }
+  return new Map(
+    bookmarksMs.map((ms) => [ms, flagBars.get(ms) ?? Math.max(0, currentBarIndex)] as const),
+  );
 }
 
 /**

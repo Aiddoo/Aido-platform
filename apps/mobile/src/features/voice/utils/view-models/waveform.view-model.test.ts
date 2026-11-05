@@ -7,7 +7,60 @@ import {
   getFlagBarIndexes,
   getTimelineLevel,
   resampleLevels,
+  withFlagBars,
 } from './waveform.view-model';
+
+describe('withFlagBars', () => {
+  test('음량 이벤트가 느려 칸이 시간보다 적어도 표시한 순간의 칸에 깃발을 꽂는다', () => {
+    // Given 13초가 지났지만 칸은 40개다
+    const bookmarkMs = 13_000;
+
+    // When
+    const flagBars = withFlagBars(new Map(), [bookmarkMs], 39);
+
+    // Then
+    expect(flagBars.get(bookmarkMs)).toBe(39);
+  });
+
+  test('이미 꽂은 깃발은 칸이 늘어도 자리를 옮기지 않는다', () => {
+    // Given
+    const flagBars = new Map([[1_000, 10]]);
+
+    // When
+    const next = withFlagBars(flagBars, [1_000, 2_000], 30);
+
+    // Then
+    expect(next.get(1_000)).toBe(10);
+    expect(next.get(2_000)).toBe(30);
+  });
+
+  test('표시를 지우면 깃발도 지운다', () => {
+    // When
+    const next = withFlagBars(new Map([[1_000, 10]]), [], 30);
+
+    // Then
+    expect(next.size).toBe(0);
+  });
+
+  test('바뀐 게 없으면 같은 값을 돌려줘 다시 그리지 않는다', () => {
+    // Given
+    const flagBars = new Map([[1_000, 10]]);
+
+    // When
+    const next = withFlagBars(flagBars, [1_000], 30);
+
+    // Then
+    expect(next).toBe(flagBars);
+  });
+
+  test('칸이 아직 없으면 0번 칸에 꽂는다', () => {
+    // When
+    const next = withFlagBars(new Map(), [500], -1);
+
+    // Then
+    expect(next.get(500)).toBe(0);
+  });
+});
 
 describe('createSpeechLevels', () => {
   test('말한 구간은 높고 조용한 구간은 낮다', () => {

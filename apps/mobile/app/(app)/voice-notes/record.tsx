@@ -28,7 +28,6 @@ import { useSpeechContext } from '@src/features/voice/hooks/use-speech-context';
 import { useVoiceNoteRecordParams } from '@src/features/voice/hooks/use-voice-note-params';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
-import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.view-model';
 import { errorMessageOf } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -303,11 +302,7 @@ VoiceNoteRecordScreen.Waveform = function Waveform({
   bookmarksMs: readonly number[];
 }) {
   return (
-    <RecognizerWaveform
-      isActive={isActive}
-      flagIndexes={bookmarksMs.map(getBarIndexAt)}
-      className="self-stretch"
-    />
+    <RecognizerWaveform isActive={isActive} bookmarksMs={bookmarksMs} className="self-stretch" />
   );
 };
 
