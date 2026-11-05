@@ -584,6 +584,56 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     ]);
   });
 
+  it.each([
+    {
+      why: "until이 시작일과 같은 날",
+      repeat: { pattern: "DAILY", until: { kind: "TODAY" } },
+    },
+    {
+      why: "until이 시작일보다 앞선 날",
+      repeat: { pattern: "DAILY", until: { kind: "CALENDAR_DATE", year: 2026, month: 10, day: 1 } },
+    },
+    {
+      why: "기간이 하루뿐인 forDuration",
+      repeat: { pattern: "DAILY", forDuration: { unit: "DAY", amount: 1 } },
+    },
+  ] as const)("$why이면 말하지 않은 것으로 보고 계속 반복한다", ({ repeat }) => {
+    // Given
+    const input = draft({ repeat });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result.repeat).toEqual({ frequency: "DAILY", end: { type: "NEVER" } });
+    expect(result.recurrence?.endDate).toBe("2026-11-25");
+    expect(result.warnings).toContain("REPEAT_END_NOT_AFTER_START");
+  });
+
+  it("시작일 다음 날까지인 until은 말한 대로 끝낸다", () => {
+    // Given
+    const input = draft({
+      repeat: { pattern: "DAILY", until: { kind: "OFFSET_DAYS", amount: 1 } },
+    });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result.repeat).toEqual({
+      frequency: "DAILY",
+      end: { type: "UNTIL", date: "2026-10-29" },
+    });
+    expect(result.warnings).not.toContain("REPEAT_END_NOT_AFTER_START");
+  });
+
+  it("일요일에 말한 이번 주말은 기간을 말한 것이라 그날로 끝낸다", () => {
+    // Given
+    const sunday = { now: new Date("2026-11-01T01:00:00Z"), timeZone: "Asia/Seoul" };
+    const input = draft({ repeat: { pattern: "THIS_WEEKEND" } });
+    // When
+    const result = resolveTodoSchedule(input, sunday);
+    // Then
+    expect(result.repeat).toMatchObject({ end: { type: "UNTIL", date: "2026-11-01" } });
+    expect(result.warnings).not.toContain("REPEAT_END_NOT_AFTER_START");
+  });
+
   it("종료를 말하지 않아도 출시 앱용 recurrence는 기본 +4주를 유지한다", () => {
     // Given
     const input = draft({ repeat: { pattern: "DAILY" } });

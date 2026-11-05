@@ -66,7 +66,7 @@ describe("ParseMemo", () => {
       model: "fake:test-model",
       processingTimeMs: 0,
       tokenUsage: { input: 150, output: 50 },
-      promptVersion: "parse-memo@5",
+      promptVersion: "parse-memo@6",
     });
   });
 
@@ -431,7 +431,7 @@ describe("ParseMemo", () => {
       scheduledTime: "15:00",
       isAllDay: false,
     });
-    expect(result.meta.promptVersion).toBe("parse-memo@5");
+    expect(result.meta.promptVersion).toBe("parse-memo@6");
   });
 
   it("모든 할 일이 모델 대상 명령이면 안내 할 일 하나만 돌려주고 사용량을 차감하지 않는다", async () => {

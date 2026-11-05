@@ -66,8 +66,8 @@ describe("ParseTodo", () => {
       repeat: null,
       categoryId: 7,
     });
-    expect(result.meta.promptVersion).toBe("parse-todo@5");
-    expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@5");
+    expect(result.meta.promptVersion).toBe("parse-todo@6");
+    expect(fixture.generator.getLastRequest()?.promptVersion).toBe("parse-todo@6");
     expect((await fixture.quota.read(fixture.userId, "AI_PARSE")).used).toBe(1);
   });
 
@@ -337,13 +337,13 @@ describe("ParseTodo", () => {
       taskClass: "interactive",
       userId: fixture.input.userId,
       maxInputChars: 5_000,
-      promptVersion: "parse-todo@5",
+      promptVersion: "parse-todo@6",
       agreedConsentVersion: "2026-10-26",
     });
     expect(fixture.logger.log).toHaveBeenCalledWith({
       event: "ai.generation.completed",
       task: "parse-todo",
-      promptVersion: "parse-todo@5",
+      promptVersion: "parse-todo@6",
       provider: "google",
       model: "fake:test-model",
       attempts: 1,

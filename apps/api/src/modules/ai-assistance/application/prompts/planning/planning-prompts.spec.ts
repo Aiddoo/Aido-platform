@@ -200,6 +200,6 @@ describe("계획 프롬프트 (quick-plan·voice-note-digest)", () => {
     // When
     const versions = definitions.map(({ id, version }) => `${id}:${version}`);
     // Then
-    expect(versions).toEqual(["quick-plan:quick-plan@4", "voice-note-digest:voice-note-digest@4"]);
+    expect(versions).toEqual(["quick-plan:quick-plan@5", "voice-note-digest:voice-note-digest@5"]);
   });
 });

@@ -98,7 +98,9 @@ const repeatEnd = {
   forDuration: nullableLlmObject({
     unit: z.enum(["DAY", "WEEK", "MONTH"]),
     amount: llmInteger(),
-  }).describe("Only when a length is stated ('for a month' = MONTH 1), or null."),
+  }).describe(
+    "Only when the length of the repetition is stated ('for a month' = MONTH 1), or null. Never how long one occurrence takes ('30 minutes').",
+  ),
 };
 
 export const repeatRefSchema = llmObject({

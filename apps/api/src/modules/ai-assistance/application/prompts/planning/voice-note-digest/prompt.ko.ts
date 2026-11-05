@@ -27,7 +27,8 @@ export const VOICE_NOTE_DIGEST_SYSTEM_KO = composeSystem({
     "transcript를 정리해 title, summary, keyPoints, todos, memo를 스키마에 맞게 반환한다.",
   rules: [
     `<digest_rules>
-- title은 녹음 전체를 나타내는 짧은 제목이다(30자 안팎).
+- title, summary, keyPoints는 앱 언어인 한국어로 쓴다. transcript가 다른 언어여도 옮겨 쓴다. todos의 title·items와 memo는 말한 언어 그대로다.
+- title은 할 일 제목이 아니라 녹음 전체를 나타내는 짧은 제목이다(30자 안팎).
 - summary는 녹음에서 실제로 말한 내용만 2~4문장으로 쓴다.
 - keyPoints는 중요한 내용을 최대 ${ACTION_PLAN_LIMITS.DIGEST_MAX_KEY_POINTS}개, 각각 한 문장으로 쓴다. bookmarked가 true인 문장은 사용자가 중요하다고 표시한 것이므로 먼저 고른다.
 - sentenceIndex는 그 핵심 포인트가 나온 transcript 문장의 index를 그대로 쓴다. 문장 목록이 없거나 고를 문장이 없으면 null이다. 시각을 쓰거나 지어내지 않는다.

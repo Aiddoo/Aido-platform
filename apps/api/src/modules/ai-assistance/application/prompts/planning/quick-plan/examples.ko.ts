@@ -25,4 +25,8 @@ context: {"now":"2026-11-05T08:30","weekday":"목요일","categories":[],"upcomi
 
 context: {"now":"2026-11-05T08:30","weekday":"목요일","categories":[],"upcomingTodos":[]}
 입력: 아 오늘 진짜 피곤하다
-출력: {"todos":[],"memo":null}`;
+출력: {"todos":[],"memo":null}
+
+context: {"now":"2026-11-05T08:30","weekday":"목요일","categories":[],"upcomingTodos":[]}
+입력: 매일 아침 30분 운동하기, 주말에 가족 저녁 장보기
+출력: {"todos":[{"title":"30분 운동하기","categoryId":null,"date":{"kind":"NONE","amount":null,"weekday":null,"weekOffset":null,"month":null,"day":null,"year":null},"endDate":null,"time":{"hour":null,"minute":null,"meridiem":null,"partOfDay":"MORNING","relativeMinutes":null},"repeat":{"pattern":"DAILY","daysOfWeek":null,"monthDay":null,"until":null,"forDuration":null},"visibility":null,"items":[],"duplicateOfTodoId":null},{"title":"가족 저녁 장보기","categoryId":null,"date":{"kind":"NONE","amount":null,"weekday":null,"weekOffset":null,"month":null,"day":null,"year":null},"endDate":null,"time":null,"repeat":{"pattern":"WEEKENDS","daysOfWeek":null,"monthDay":null,"until":null,"forDuration":null},"visibility":null,"items":[],"duplicateOfTodoId":null}],"memo":null}`;

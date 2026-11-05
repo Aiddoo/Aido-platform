@@ -35,6 +35,7 @@ export type NormalizationWarning =
   | "INVALID_DATE"
   | "INVALID_TIME"
   | "END_BEFORE_START"
+  | "REPEAT_END_NOT_AFTER_START"
   | "UNSUPPORTED_RECURRENCE"
   | "EMPTY_RECURRENCE";
 

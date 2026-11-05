@@ -14,7 +14,7 @@ const SPLIT_RULES = `<split_rules>
 </split_rules>`;
 
 const TITLE_RULES = `<title_rules>
-- To-do and item titles keep the memo's own words and read like a person wrote them: short, sentence case. Remove date and time phrases, filler, and emojis. Keep stated objects and amounts.
+- To-do and item titles keep the memo's own words and read like a person wrote them: short, sentence case. Remove date and time phrases, filler, and emojis. Keep stated objects and amounts ("5 km", "30 minutes").
 - When the memo states an action, start with that verb in the imperative ("Return library books", "Email landlord about the leak"). When it only names a thing ("bank at 3", "dentist"), keep the name; never invent an action or detail.
 - Never add nouns that are not in the memo: "bank at 3" → "Bank" (not "Bank errands"), "dentist tomorrow" → "Dentist" (not "Dentist appointment"), "go to the store and buy milk" → "Go to the store and buy milk" (not "Grocery shopping").
 - Keep the memo's language. Never translate.
