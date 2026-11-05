@@ -107,7 +107,7 @@ export const createFirebaseAnalytics = (logger: Logger): Analytics => {
         resetAnalyticsData(firebaseAnalytics),
       );
     },
-    getAppInstanceId(): Promise<string | null> {
+    getAnalyticsId(): Promise<string | null> {
       return getAppInstanceId(firebaseAnalytics);
     },
   };

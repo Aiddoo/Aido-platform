@@ -11,7 +11,7 @@ export interface SubscriberAttributes {
   deviceModel: string | null;
 }
 
-interface RevenueCatSdkManagerDependencies {
+interface PurchasesSdkManagerDependencies {
   purchases: PurchasesGateway;
   logger: Logger;
   analytics: Analytics;
@@ -20,12 +20,12 @@ interface RevenueCatSdkManagerDependencies {
 }
 
 /**
- * RevenueCat SDK 라이프사이클 관리
+ * 결제 SDK 라이프사이클 관리
  *
  * SDK 초기화, 사용자 동기화만 담당.
  * RevenueCatProvider에서만 사용한다.
  */
-export class RevenueCatSdkManager {
+export class PurchasesSdkManager {
   readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;
   readonly #analytics: Analytics;
@@ -39,7 +39,7 @@ export class RevenueCatSdkManager {
     analytics,
     subscriberAttributes,
     isDebugLogEnabled,
-  }: RevenueCatSdkManagerDependencies) {
+  }: PurchasesSdkManagerDependencies) {
     this.#purchases = purchases;
     this.#logger = logger;
     this.#analytics = analytics;
@@ -63,7 +63,7 @@ export class RevenueCatSdkManager {
       return;
     }
 
-    this.#syncFirebaseAppInstanceId();
+    this.#syncAnalyticsId();
     this.#syncSubscriberAttributes();
   };
 
@@ -81,7 +81,7 @@ export class RevenueCatSdkManager {
       return;
     }
 
-    await Promise.all([this.#syncFirebaseAppInstanceId(), this.#syncSubscriberAttributes()]);
+    await Promise.all([this.#syncAnalyticsId(), this.#syncSubscriberAttributes()]);
   };
 
   logOut = async (): Promise<void> => {
@@ -119,14 +119,14 @@ export class RevenueCatSdkManager {
   };
 
   // RevenueCat Firebase 연동은 구독 이벤트를 앱 인스턴스 ID로 귀속하므로 configure·logIn 직후마다 다시 설정한다.
-  #syncFirebaseAppInstanceId = async (): Promise<void> => {
+  #syncAnalyticsId = async (): Promise<void> => {
     try {
-      const appInstanceId = await this.#analytics.getAppInstanceId();
-      if (!appInstanceId) {
+      const analyticsId = await this.#analytics.getAnalyticsId();
+      if (!analyticsId) {
         return;
       }
 
-      await this.#purchases.setAnalyticsId(appInstanceId);
+      await this.#purchases.setAnalyticsId(analyticsId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED, {
         error: getErrorMessage(error),

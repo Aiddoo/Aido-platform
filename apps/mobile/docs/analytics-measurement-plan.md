@@ -222,7 +222,7 @@
 
 ## 2. RevenueCat → GA 이벤트 (Firebase 연동)
 
-`RevenueCatSdkManager`가 `Analytics.getAppInstanceId()`를 읽어 `PurchasesGateway.setAnalyticsId`로 넘긴다. 어댑터가 `setFirebaseAppInstanceID`를 부른다. RevenueCat이 Measurement Protocol로 아래 이벤트를 보낸다(출처: RevenueCat Firebase 연동 문서, 2026-11 확인).
+`PurchasesSdkManager`가 `Analytics.getAnalyticsId()`를 읽어 `PurchasesGateway.setAnalyticsId`로 넘긴다. 어댑터가 `setFirebaseAppInstanceID`를 부른다. RevenueCat이 Measurement Protocol로 아래 이벤트를 보낸다(출처: RevenueCat Firebase 연동 문서, 2026-11 확인).
 
 | RevenueCat 이벤트              | GA 이벤트명              | 비고                                                        |
 | ------------------------------ | ------------------------ | ----------------------------------------------------------- |

@@ -20,7 +20,7 @@ import { screen } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../app/(app)/(mypage-menu)/settings/subscription';
 import { EntitlementService } from '../apis/entitlement.service';
-import { RevenueCatSdkManager } from '../apis/revenuecat-sdk-manager';
+import { PurchasesSdkManager } from '../apis/purchases-sdk-manager';
 import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.factories';
@@ -70,7 +70,7 @@ async function renderSubscriptionScreen(state: ScreenState | null) {
   // 요금제를 받는 중에 머물러 페이월 자리(요금제 요청)만 확인한다
   purchases.getOffering.mockReturnValue(new Promise(() => {}));
   const analytics = createMockAnalytics();
-  const sdkManager = new RevenueCatSdkManager({
+  const sdkManager = new PurchasesSdkManager({
     purchases,
     logger: silentLogger,
     analytics,
@@ -100,7 +100,7 @@ async function renderSubscriptionScreen(state: ScreenState | null) {
         analytics,
         errorReporter: createErrorReporterStub(),
         logger: silentLogger,
-        revenueCatSdkManager: sdkManager,
+        purchasesSdkManager: sdkManager,
         subscriptionService: new SubscriptionService(sdkManager, purchases, silentLogger),
         entitlementService: new EntitlementService(httpClient, silentLogger),
         userService: new UserService(httpClient),

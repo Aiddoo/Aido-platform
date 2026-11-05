@@ -15,11 +15,11 @@ import { debounce } from 'es-toolkit';
 import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 
 import { useAuth } from './auth-provider';
-import { useRevenueCatSdkManager, useSubscriptionService } from './di-context';
+import { usePurchasesSdkManager, useSubscriptionService } from './di-context';
 
 export function RevenueCatProvider({ children }: PropsWithChildren) {
   const { status } = useAuth();
-  const sdkManager = useRevenueCatSdkManager();
+  const sdkManager = usePurchasesSdkManager();
   const subscriptionService = useSubscriptionService();
   const queryClient = useQueryClient();
   const isAuthenticated = status === 'authenticated';

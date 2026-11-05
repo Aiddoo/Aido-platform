@@ -1,12 +1,12 @@
 import { initializeKakaoSDK } from '@react-native-kakao/core';
 import { shareFeedTemplate } from '@react-native-kakao/share';
-import type { KakaoShareGateway } from '@src/core/ports/kakao-share';
+import type { SocialShareGateway } from '@src/core/ports/social-share';
 
 /**
  * 카카오 SDK는 처음 공유할 때만 초기화한다(앱 시작 시간에 영향을 주지 않는다).
  * 카카오톡이 없으면 SDK가 웹 공유로 연다.
  */
-export function createKakaoShareClient(nativeAppKey: string | undefined): KakaoShareGateway {
+export function createKakaoShareClient(nativeAppKey: string | undefined): SocialShareGateway {
   let initialization: Promise<void> | null = null;
 
   const initialize = (appKey: string) => {

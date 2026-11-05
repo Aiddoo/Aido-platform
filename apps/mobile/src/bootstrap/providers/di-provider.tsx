@@ -36,7 +36,7 @@ import { PreferenceService } from '@src/features/preference/apis/preference.serv
 import { createStoreReviewRepository } from '@src/features/store-review/apis/store-review.repository';
 import { StoreReviewService } from '@src/features/store-review/apis/store-review.service';
 import { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
+import { PurchasesSdkManager } from '@src/features/subscription/apis/purchases-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
 import { createFriendStripHintRepository } from '@src/features/todo/apis/friend-strip-hint.repository';
@@ -228,7 +228,7 @@ export function DIProvider({
       logger,
     });
     const inviteShareService = new InviteShareService({
-      kakaoShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),
+      socialShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),
       systemShare: rnSystemShareGateway,
       clipboard: expoClipboardGateway,
       errorReporter,
@@ -290,7 +290,7 @@ export function DIProvider({
     const userService = new UserService(authHttpClient);
 
     // Subscription
-    const revenueCatSdkManager = new RevenueCatSdkManager({
+    const purchasesSdkManager = new PurchasesSdkManager({
       purchases: revenueCatPurchasesGateway,
       logger,
       analytics,
@@ -301,7 +301,7 @@ export function DIProvider({
       isDebugLogEnabled: __DEV__,
     });
     const subscriptionService = new SubscriptionService(
-      revenueCatSdkManager,
+      purchasesSdkManager,
       revenueCatPurchasesGateway,
       logger,
     );
@@ -376,7 +376,7 @@ export function DIProvider({
       friendStripHintService,
       storeReviewService,
       userService,
-      revenueCatSdkManager,
+      purchasesSdkManager,
       subscriptionService,
       entitlementService,
       weatherService,
