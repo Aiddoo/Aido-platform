@@ -24,7 +24,7 @@ import { renderUi } from '@src/shared/__tests__/render-ui';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 
 import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
 import { createRecognitionLanguageRepository } from '../apis/recognition-language.repository';
@@ -95,6 +95,21 @@ describe('녹음 화면', () => {
     // Then
     expect(screen.getByText('3:00 남음')).toBeTruthy();
     expect(screen.getByTestId('voice-note-pause')).toBeTruthy();
+  });
+
+  test('알림을 눌러 다른 화면이 올라오면 듣기를 멈추고 들은 내용을 남긴다', async () => {
+    // Given
+    const { speechRecognizer } = await renderRecordScreen();
+    await say(speechRecognizer, '첫 문장.');
+
+    // When
+    jest.mocked(useIsFocused).mockReturnValueOnce(false);
+    await say(speechRecognizer, '둘째 문장.');
+
+    // Then
+    expect(speechRecognizer.stop).toHaveBeenCalled();
+    expect(screen.getByTestId('voice-note-resume')).toBeTruthy();
+    expect(screen.getByText('첫 문장.')).toBeTruthy();
   });
 
   test('일시정지하면 들은 내용이 남아 있다고 알리고 이어서 녹음과 여기까지 정리를 보인다', async () => {

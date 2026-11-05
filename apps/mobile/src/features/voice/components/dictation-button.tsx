@@ -1,4 +1,5 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useTranslation } from '@src/shared/i18n';
 import { MicIcon, PauseIcon } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
@@ -23,6 +24,11 @@ export function DictationButton({ value, onChange, ...pressableProps }: Dictatio
   const baseTextRef = useRef('');
   const { isListening, start, stop } = useDictation({
     onResult: (transcript) => onChange(`${baseTextRef.current}${transcript}`),
+  });
+  useOnScreenBlur(() => {
+    if (isListening) {
+      stop();
+    }
   });
 
   const handlePress = () => {

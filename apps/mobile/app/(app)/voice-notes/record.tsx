@@ -32,6 +32,7 @@ import { getBarIndexAt } from '@src/features/voice/utils/view-models/waveform.vi
 import { errorMessageOf } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -109,6 +110,7 @@ function VoiceNoteRecordScreen() {
       router.back();
     },
   });
+  useOnScreenBlur(recording.interrupt);
   const { state } = recording;
 
   useEffect(() => {

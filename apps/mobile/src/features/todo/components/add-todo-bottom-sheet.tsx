@@ -10,6 +10,7 @@ import { SheetEdgeGlow } from '@src/features/voice/components/visualizers/sheet-
 import { VoiceCapturePolicy } from '@src/features/voice/domains/voice-capture.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -206,6 +207,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   const { isSubmitting } = useFormState({ control: methods.control });
   const voice = useAddTodoQuickVoice({ methods, onExit });
+  useOnScreenBlur(voice.interrupt);
   const isVoiceHintRequested = props.mode === 'create' && props.isVoiceHintForced === true;
   const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
 
