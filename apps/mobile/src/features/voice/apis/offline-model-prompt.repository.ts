@@ -12,7 +12,7 @@ export const offlineModelDeclinedStorageKey = (userId: string, locale: SpeechLoc
   `${KEY_PREFIX}:${encodeURIComponent(userId)}:${locale}`;
 
 /**
- * 기기 음성 인식 모델 받기를 거절한 언어. 사용자 범위 로컬 저장소(초안 저장소)에 두므로 로그아웃으로 그 저장소를
+ * 기기 음성 인식 모델을 다시 묻지 않을 언어(거절, 시스템 창 취소, 받을 수 없음). 사용자 범위 로컬 저장소(초안 저장소)에 두므로 로그아웃으로 그 저장소를
  * 비울 때 함께 지워진다. 값을 읽지 못하면 거절하지 않은 것으로 본다(한 번 더 묻는 게 전부다).
  */
 export function createOfflineModelPromptRepository(

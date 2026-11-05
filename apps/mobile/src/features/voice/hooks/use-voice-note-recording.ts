@@ -283,7 +283,10 @@ export function useVoiceNoteRecording({
     }
   }, [status]);
 
-  /** Android에 이 언어 모델이 없으면 받을지 묻는다. 거절하면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다 */
+  /**
+   * Android에 이 언어 모델이 없으면 받을지 한 번만 묻는다. 거절하거나 시스템 창에서 취소했거나(결과를 알려주지 않는다)
+   * 받을 수 없으면 그 언어는 다시 묻지 않고 네트워크 인식으로 이어 간다.
+   */
   const offerOnDeviceModel = async (startLocale: SpeechLocale) => {
     const { canDownloadOnDeviceModel } = await speechRecognizer.getCapabilities(startLocale);
     if (!canDownloadOnDeviceModel || offlineModelPrompt.hasDeclined(accountId, startLocale)) {
@@ -301,6 +304,9 @@ export function useVoiceNoteRecording({
       return;
     }
     const result = await speechRecognizer.requestOfflineModel(startLocale);
+    if (result !== 'downloaded') {
+      offlineModelPrompt.saveDeclined(accountId, startLocale);
+    }
     trackEvent('voice_offline_model_requested', { locale: startLocale, result });
     errorReporter.addBreadcrumb({
       category: 'voice',

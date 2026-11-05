@@ -433,6 +433,48 @@ describe('useVoiceNoteRecording', () => {
     );
   });
 
+  test.each(['dialog-opened', 'unavailable', 'scheduled'] as const)(
+    '받기를 고른 뒤 결과가 %s이면 다음 녹음에 다시 묻지 않는다',
+    async (result) => {
+      // Given
+      const offlineModelPromptRepository =
+        createOfflineModelPromptRepository(createMemorySyncStorage());
+      const { speechRecognizer } = await renderRecording({
+        canDownloadOnDeviceModel: true,
+        offlineModelPromptRepository,
+      });
+      speechRecognizer.requestOfflineModel.mockResolvedValue(result);
+
+      // When
+      await fireEvent.press(screen.getByTestId('start'));
+      await fireEvent.press(await screen.findByText('받기'));
+
+      // Then
+      await waitFor(() =>
+        expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(true),
+      );
+    },
+  );
+
+  test('받기가 끝났으면 거절로 기억하지 않는다', async () => {
+    // Given
+    const offlineModelPromptRepository =
+      createOfflineModelPromptRepository(createMemorySyncStorage());
+    const { speechRecognizer } = await renderRecording({
+      canDownloadOnDeviceModel: true,
+      offlineModelPromptRepository,
+    });
+    speechRecognizer.requestOfflineModel.mockResolvedValue('downloaded');
+
+    // When
+    await fireEvent.press(screen.getByTestId('start'));
+    await fireEvent.press(await screen.findByText('받기'));
+
+    // Then
+    await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+    expect(offlineModelPromptRepository.hasDeclined(ACCOUNT_ID, 'ko-KR')).toBe(false);
+  });
+
   test('이미 거절한 언어는 묻지 않고 바로 네트워크 인식으로 시작한다', async () => {
     // Given
     const offlineModelPromptRepository =
