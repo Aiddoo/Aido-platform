@@ -407,11 +407,8 @@ function SilenceFill({ isQuiet }: { isQuiet: boolean }) {
 
   useEffect(() => {
     progress.set(
-      isQuiet
-        ? withTiming(1, {
-            duration: isReducedMotion ? 0 : AUTO_FINISH_SILENCE_MS,
-            easing: Easing.linear,
-          })
+      isQuiet && !isReducedMotion
+        ? withTiming(1, { duration: AUTO_FINISH_SILENCE_MS, easing: Easing.linear })
         : 0,
     );
     return () => cancelAnimation(progress);

@@ -100,7 +100,7 @@ function KeyPointItem({
         </Text>
         {keyPoint.isBookmarked && (
           <FlagIcon
-            colorClassName="accent-main"
+            colorClassName="text-main"
             width={16}
             height={16}
             accessibilityLabel={t('keyPoints.marked')}

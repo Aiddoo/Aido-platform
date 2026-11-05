@@ -45,6 +45,10 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 </KeyboardBottomSheet>;
 ```
 
+내용이 안쪽 스크롤을 직접 두면(빠른 말하기 자막) `isContentPanEnabled={false}`로 내용을 끌어도 시트가 움직이지 않게 하고 손잡이로만
+움직이게 한다. 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다. 시트 테두리에 맞물리는 장식은 `backgroundDecoration`으로
+시트 면 뒤에 깐다.
+
 작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
 (키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
 
