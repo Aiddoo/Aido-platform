@@ -349,12 +349,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     }
   };
 
-  const voiceBackAction = VoiceCapturePolicy.getBackAction(voice.state);
-  const handleVoiceBackPress =
-    voiceBackAction == null
+  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+  const handleVoiceDismissRequest =
+    voiceDismissAction == null
       ? undefined
       : () => {
-          match(voiceBackAction)
+          match(voiceDismissAction)
             .with('cancel-capture', () => voice.cancel())
             .with('cancel-planning', () => voice.cancelPlanning())
             .with('confirm-discard', () => {
@@ -535,7 +535,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           voice.state.status !== 'planning' &&
           voice.state.status !== 'review'
         }
-        onBackPress={handleVoiceBackPress}
+        onDismissRequest={handleVoiceDismissRequest}
         footer={
           isFormStep ? (
             <VStack gap={12} onTouchStart={() => setHasTouchedForm(true)}>

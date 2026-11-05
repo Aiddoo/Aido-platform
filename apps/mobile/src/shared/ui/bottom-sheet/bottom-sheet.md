@@ -49,7 +49,8 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 움직이게 한다. 높이는 `useKeyboardSheetBodyMaxHeight()`를 넘지 않게 고정한다. 시트 테두리에 맞물리는 장식은 `backgroundDecoration`으로
 시트 면 뒤에 깐다. 내용 제스처를 꺼도 시트 면을 탭하면 뒤 backdrop까지 내려가지 않는다(시트 면이 터치를 받는다).
 
-뒤로 가기에서 닫기 전에 할 일이 있으면(빠른 말하기의 듣기 취소·계획 버리기 확인) `onBackPress`를 넘긴다. 없으면 닫는다.
+바깥 탭과 Android 뒤로 가기에서 닫기 전에 할 일이 있으면(빠른 말하기의 듣기 취소·계획 버리기 확인) `onDismissRequest`를 넘긴다. 없으면 닫는다.
+손잡이·내용 끌어내리기는 gorhom이 닫으므로 이 경로를 타지 않는다. 핸들러는 ref로 읽어 렌더마다 바뀌어도 backdrop이 다시 마운트되지 않는다.
 
 작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
 (키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.

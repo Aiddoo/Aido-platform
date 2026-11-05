@@ -6,6 +6,7 @@ interface GorhomSheetProps {
   onChange: (index: number) => void;
   onClose: () => void;
   backgroundComponent: ComponentType<{ pointerEvents: 'none' }>;
+  backdropComponent: unknown;
 }
 
 let lastProps: GorhomSheetProps | null = null;

@@ -610,7 +610,7 @@ describe('VoiceCapturePolicy', () => {
     });
   });
 
-  describe('시트의 Android 뒤로 가기', () => {
+  describe('시트의 바깥 탭과 Android 뒤로 가기', () => {
     const createReview = (actions: unknown[]) =>
       reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
         type: 'planned',
@@ -632,21 +632,23 @@ describe('VoiceCapturePolicy', () => {
 
       // When
       const actions = {
-        idle: VoiceCapturePolicy.getBackAction(createCaptureState({ status: 'idle' })),
-        failed: VoiceCapturePolicy.getBackAction(
+        idle: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'idle' })),
+        failed: VoiceCapturePolicy.getDismissAction(
           createCaptureState({ status: 'failed', reason: 'planning-failed' }),
         ),
-        preparing: VoiceCapturePolicy.getBackAction(createCaptureState({ status: 'preparing' })),
-        listening: VoiceCapturePolicy.getBackAction(
+        preparing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'preparing' })),
+        listening: VoiceCapturePolicy.getDismissAction(
           createCaptureState({ status: 'listening', listeningSince: NOW }),
         ),
-        paused: VoiceCapturePolicy.getBackAction(
+        paused: VoiceCapturePolicy.getDismissAction(
           createCaptureState({ status: 'paused', cause: 'user' }),
         ),
-        finalizing: VoiceCapturePolicy.getBackAction(createCaptureState({ status: 'finalizing' })),
-        planning: VoiceCapturePolicy.getBackAction(createCaptureState({ status: 'planning' })),
-        emptyReview: VoiceCapturePolicy.getBackAction(createReview([])),
-        review: VoiceCapturePolicy.getBackAction(createReview([memoAction])),
+        finalizing: VoiceCapturePolicy.getDismissAction(
+          createCaptureState({ status: 'finalizing' }),
+        ),
+        planning: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'planning' })),
+        emptyReview: VoiceCapturePolicy.getDismissAction(createReview([])),
+        review: VoiceCapturePolicy.getDismissAction(createReview([memoAction])),
       };
 
       // Then
