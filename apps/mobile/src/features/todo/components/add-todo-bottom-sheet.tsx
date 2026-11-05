@@ -42,7 +42,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { ActivityIndicator, Keyboard } from 'react-native';
+import { Keyboard } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -379,7 +379,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         }}
       >
         <QueryErrorBoundary>
-          <Suspense fallback={<ActivityIndicator />}>
+          <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
               date={methods.getValues('startDate')}
               value={{
@@ -451,7 +451,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
         }}
       >
         <QueryErrorBoundary>
-          <Suspense fallback={<ActivityIndicator />}>
+          <Suspense fallback={<CategorySelectInput.Loading />}>
             <CategorySelectInput
               value={methods.getValues('categoryId')}
               onChange={(categoryId) => {

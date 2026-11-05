@@ -1,9 +1,12 @@
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, CheckIcon, ListRow, Text, VStack } from '@src/shared/ui';
+import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
+import { times } from 'es-toolkit/compat';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
+
+const LOADING_ROW_COUNT = 3;
 
 interface CategorySelectInputProps {
   /** 처음 선택된 카테고리. 시트 안에서 고른 값은 제출할 때 onChange로 전달한다. */
@@ -67,3 +70,23 @@ export function CategorySelectInput({
     </VStack>
   );
 }
+
+CategorySelectInput.Loading = function Loading() {
+  return (
+    <VStack gap={20}>
+      <TextSkeleton size="b3" className="w-24" />
+      <VStack gap={8}>
+        {times(LOADING_ROW_COUNT, (index) => (
+          <ListRow
+            key={index}
+            left={<Skeleton className="size-2 rounded-full" />}
+            contents={<TextSkeleton size="b3" className="w-24" />}
+            horizontalPadding="medium"
+            className="bg-gray-1 rounded-xl"
+          />
+        ))}
+      </VStack>
+      <Skeleton className="h-12 w-full rounded-lg" />
+    </VStack>
+  );
+};

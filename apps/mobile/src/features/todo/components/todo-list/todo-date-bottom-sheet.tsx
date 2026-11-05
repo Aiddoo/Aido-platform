@@ -4,7 +4,6 @@ import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
-  Box,
   INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
@@ -15,7 +14,7 @@ import {
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Spinner } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
@@ -98,11 +97,7 @@ TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
 };
 
 TodoDateBottomSheet.Loading = function Loading() {
-  return (
-    <Box py={24} className="items-center">
-      <Spinner />
-    </Box>
-  );
+  return <Skeleton className="h-96 w-full rounded-xl" />;
 };
 
 TodoDateBottomSheet.Error = function ErrorFallback({

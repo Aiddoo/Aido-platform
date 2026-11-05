@@ -13,6 +13,7 @@ import {
   SettingsCard,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   TrashIcon,
   useConfirmDialog,
   VStack,
@@ -22,7 +23,7 @@ import { formatFileSize } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 
 function VoiceStorageScreen() {
   const { t } = useTranslation('settings');
@@ -128,13 +129,25 @@ function VoiceStorageScreen() {
   );
 }
 
+VoiceStorageScreen.Loading = function Loading() {
+  return (
+    <SettingsCard>
+      <VStack gap={4}>
+        <TextSkeleton size="b4" className="w-24" />
+        <TextSkeleton size="t2" className="w-32" />
+        <TextSkeleton size="b4" className="w-full" />
+      </VStack>
+    </SettingsCard>
+  );
+};
+
 export default function VoiceStorageRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
         <StyledSafeAreaView edges={['left', 'right']}>
           <QueryErrorBoundary>
-            <Suspense fallback={<ActivityIndicator className="mt-10" />}>
+            <Suspense fallback={<VoiceStorageScreen.Loading />}>
               <VoiceStorageScreen />
             </Suspense>
           </QueryErrorBoundary>

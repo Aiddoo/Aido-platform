@@ -28,6 +28,7 @@ import {
   STACK_BACK_ICON,
   StyledSafeAreaView,
   TextArea,
+  TextSkeleton,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
@@ -72,13 +73,32 @@ export function MemoDetailPane({ presentation }: MemoDetailPaneProps) {
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <QueryErrorBoundary resetKeys={[memoId]}>
-        <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+        <Suspense fallback={<MemoDetailPane.Loading presentation={presentation} />}>
           <MemoDetailContent presentation={presentation} />
         </Suspense>
       </QueryErrorBoundary>
     </StyledSafeAreaView>
   );
 }
+
+/** 받은 뒤에 본문이 밀리지 않게 pane은 버튼 줄 자리를 비워 두고, 첫 줄 시작선은 메모 입력칸과 맞춘다 */
+MemoDetailPane.Loading = function Loading({ presentation }: MemoDetailPaneProps) {
+  return (
+    <VStack flex={1} testID="memo-detail-loading">
+      {presentation === 'pane' && (
+        <Box className="bg-white">
+          <Box className="h-9" />
+          <Separator />
+        </Box>
+      )}
+      <VStack gap={8} px={16} py={12}>
+        <TextSkeleton size="b2" className="w-full" />
+        <TextSkeleton size="b2" className="w-full" />
+        <TextSkeleton size="b2" className="w-2/3" />
+      </VStack>
+    </VStack>
+  );
+};
 
 MemoDetailPane.Empty = function Empty() {
   const { t } = useTranslation('memo');

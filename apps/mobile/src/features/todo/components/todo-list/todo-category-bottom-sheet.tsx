@@ -4,7 +4,6 @@ import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
-  Box,
   INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
@@ -13,7 +12,6 @@ import {
   useSheetRoute,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
@@ -107,13 +105,7 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
   );
 };
 
-TodoCategoryBottomSheet.Loading = function Loading() {
-  return (
-    <Box py={24} className="items-center">
-      <Spinner />
-    </Box>
-  );
-};
+TodoCategoryBottomSheet.Loading = CategorySelectInput.Loading;
 
 TodoCategoryBottomSheet.Error = function ErrorFallback({
   reset,

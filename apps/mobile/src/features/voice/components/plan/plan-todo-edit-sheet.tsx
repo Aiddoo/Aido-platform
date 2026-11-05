@@ -38,7 +38,7 @@ import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { useForm, useFormState, useWatch } from 'react-hook-form';
-import { ActivityIndicator, Keyboard } from 'react-native';
+import { Keyboard } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import {
@@ -144,7 +144,7 @@ export function PlanTodoEditSheet({
         onExit={exit}
       >
         <QueryErrorBoundary>
-          <Suspense fallback={<ActivityIndicator />}>
+          <Suspense fallback={<TodoTimePickerContent.Loading />}>
             <TodoTimePickerContent
               date={todo.startDate}
               value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: !hasTime }}
@@ -167,7 +167,7 @@ export function PlanTodoEditSheet({
     overlay.open<number | null>(({ isOpen: isPickerOpen, close, exit }) => (
       <ModalBottomSheet isOpen={isPickerOpen} onOpenChange={() => close(null)} onExit={exit}>
         <QueryErrorBoundary>
-          <Suspense fallback={<ActivityIndicator />}>
+          <Suspense fallback={<CategorySelectInput.Loading />}>
             <CategorySelectInput
               value={categoryId}
               onChange={(nextCategoryId) => {

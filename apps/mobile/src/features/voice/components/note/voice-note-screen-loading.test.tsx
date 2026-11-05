@@ -12,15 +12,17 @@ describe('VoiceNoteScreenLoading', () => {
     jest.clearAllMocks();
   });
 
-  test('연결이 있으면 안내 없이 기다린다', async () => {
+  test('연결이 있으면 안내 없이 기다리되 닫을 수 있다', async () => {
     // Given
     onlineManager.setOnline(true);
+    await renderUi(<VoiceNoteScreenLoading />);
+    expect(screen.queryByTestId('voice-note-screen-offline')).toBeNull();
 
     // When
-    await renderUi(<VoiceNoteScreenLoading />);
+    await fireEvent.press(screen.getByTestId('voice-note-close'));
 
     // Then
-    expect(screen.queryByTestId('voice-note-screen-offline')).toBeNull();
+    expect(router.back).toHaveBeenCalledTimes(1);
   });
 
   test('오프라인이면 연결되면 이어진다고 안내하고 닫을 수 있게 한다', async () => {

@@ -15,19 +15,22 @@ import {
   type QueryErrorFallbackProps,
   Result,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { times } from 'es-toolkit/compat';
+import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { useSelectedMemo } from '../hooks/use-selected-memo';
 import { useGetMemosInfiniteQueryOptions } from '../queries/get-memos-infinite-query-options';
 import { distributeMemosIntoColumns, getMemoColumnCount } from '../utils/memo-list-layout';
+
+const LOADING_ITEMS_PER_COLUMN = 2;
 
 export function MemoList() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
@@ -117,18 +120,21 @@ MemoList.Item = function Item({
   );
 };
 
+/** 실제 목록과 같은 열 수·카드 모양이라 받은 뒤에 칸이 움직이지 않는다 */
 MemoList.Loading = function Loading() {
+  const columnCount = getMemoColumnCount(useWindowSizeClass());
+
   return (
-    <HStack gap={12} className="flex-wrap">
-      {range(4).map((i) => (
-        <VStack
-          key={`memo-skeleton-${i}`}
-          gap={8}
-          className="flex-1 min-w-[45%] rounded-xl bg-gray-1 p-4"
-        >
-          <Skeleton className="h-4 w-full rounded" />
-          <Skeleton className="h-4 w-3/4 rounded" />
-          <Skeleton className="h-3 w-1/2 rounded mt-2" />
+    <HStack gap={12} align="start">
+      {times(columnCount, (column) => (
+        <VStack key={column} flex={1} gap={12}>
+          {times(LOADING_ITEMS_PER_COLUMN, (row) => (
+            <VStack key={row} gap={8} p={16} className="rounded-xl bg-gray-1">
+              <TextSkeleton size="b3" className="w-full" />
+              <TextSkeleton size="b3" className="w-3/4" />
+              <TextSkeleton size="e1" className="w-1/2" />
+            </VStack>
+          ))}
         </VStack>
       ))}
     </HStack>

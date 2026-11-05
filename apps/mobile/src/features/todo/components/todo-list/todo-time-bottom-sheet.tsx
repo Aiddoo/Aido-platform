@@ -4,7 +4,6 @@ import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
-  Box,
   INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
@@ -15,7 +14,6 @@ import {
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
@@ -118,13 +116,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
   );
 };
 
-TodoTimeBottomSheet.Loading = function Loading() {
-  return (
-    <Box py={24} className="items-center">
-      <Spinner />
-    </Box>
-  );
-};
+TodoTimeBottomSheet.Loading = TodoTimePickerContent.Loading;
 
 TodoTimeBottomSheet.Error = function ErrorFallback({
   reset,

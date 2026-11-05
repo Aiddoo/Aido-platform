@@ -3,7 +3,16 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { Box, Flex, ListRow, SheetHeaderLayout, Spacing, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Flex,
+  ListRow,
+  SheetHeaderLayout,
+  Spacing,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import {
   formatTimeDisplay,
   getDateWithTime,
@@ -11,7 +20,7 @@ import {
   toHHmm,
 } from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback, Switch } from 'heroui-native';
+import { PressableFeedback, Skeleton, Switch } from 'heroui-native';
 import { useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -156,3 +165,24 @@ export function TodoTimePickerContent({
     </SheetHeaderLayout>
   );
 }
+
+TodoTimePickerContent.Loading = function Loading() {
+  return (
+    <SheetHeaderLayout gap={24} header={<TextSkeleton size="b2" className="w-24 self-center" />}>
+      <VStack className="overflow-hidden rounded-xl bg-gray-1" px={4} py={8} gap={8}>
+        <ListRow
+          contents={<TextSkeleton size="b1" className="w-16" />}
+          right={<Skeleton className="h-6 w-12 rounded-full" />}
+          horizontalPadding="medium"
+          verticalPadding="medium"
+        />
+        <ListRow
+          contents={<TextSkeleton size="b1" className="w-16" />}
+          right={<TextSkeleton size="b1" className="w-16" />}
+          horizontalPadding="medium"
+          verticalPadding="medium"
+        />
+      </VStack>
+    </SheetHeaderLayout>
+  );
+};

@@ -5,7 +5,6 @@ import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
-  Box,
   INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
@@ -15,7 +14,6 @@ import {
   useSheetRoute,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { useSuggestionScreenParams } from '../hooks/use-suggestion-screen-params';
@@ -101,13 +99,7 @@ SuggestionCategoryBottomSheet.Content = function Content({
   );
 };
 
-SuggestionCategoryBottomSheet.Loading = function Loading() {
-  return (
-    <Box py={24} className="items-center">
-      <Spinner />
-    </Box>
-  );
-};
+SuggestionCategoryBottomSheet.Loading = CategorySelectInput.Loading;
 
 SuggestionCategoryBottomSheet.Error = function ErrorFallback({
   reset,
