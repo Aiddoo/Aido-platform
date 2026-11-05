@@ -334,9 +334,10 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
     it("연결 실패가 이어져도 오류 코드는 그대로이고 공급자가 돌아오면 바로 로그인된다", async () => {
       // Given
       asMock(global.fetch).mockRejectedValue(new TypeError("fetch failed"));
-      const failures = await Promise.allSettled(
-        Array.from({ length: 6 }, () => service.verifyKakaoToken("token")),
-      );
+      const failures: unknown[] = [];
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        failures.push(await service.verifyKakaoToken("token").catch((error: unknown) => error));
+      }
       asMock(global.fetch).mockResolvedValue(
         await responseFromFixture({ ok: true, json: () => Promise.resolve(mockKakaoResponse) }),
       );
@@ -346,10 +347,7 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
       // Then
       for (const failure of failures) {
-        expect(failure).toMatchObject({
-          status: "rejected",
-          reason: { errorCode: ErrorCode.SOCIAL_0202 },
-        });
+        expect(failure).toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
       }
       expect(global.fetch).toHaveBeenCalledTimes(7);
       expect(profile.id).toBe(String(mockKakaoResponse.id));

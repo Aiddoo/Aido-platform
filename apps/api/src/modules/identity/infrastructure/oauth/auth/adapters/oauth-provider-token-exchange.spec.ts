@@ -81,17 +81,15 @@ describe("OAuth 공급자 토큰 교환 로그", () => {
       const provider = new create(config, verifier, logger, http, policies);
 
       // When
-      const failures = await Promise.allSettled(
-        Array.from({ length: 6 }, () => provider.exchangeCode("code")),
-      );
+      const failures: unknown[] = [];
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        failures.push(await provider.exchangeCode("code").catch((error: unknown) => error));
+      }
 
       // Then
       expect(fetch).toHaveBeenCalledTimes(6);
       for (const failure of failures) {
-        expect(failure).toMatchObject({
-          status: "rejected",
-          reason: expect.any(HttpNetworkError),
-        });
+        expect(failure).toBeInstanceOf(HttpNetworkError);
       }
     },
   );
