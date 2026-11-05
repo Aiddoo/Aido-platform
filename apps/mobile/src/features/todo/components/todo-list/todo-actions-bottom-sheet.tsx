@@ -120,6 +120,7 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
     updateScheduleMutation.mutate(
       {
         todoId: todo.id,
+        changedField: 'date',
         input: {
           startDate: formatDateKey(startDate, getDeviceTimezone()),
           endDate: endDate ? formatDateKey(endDate, getDeviceTimezone()) : null,

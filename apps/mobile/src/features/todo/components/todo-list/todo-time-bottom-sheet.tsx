@@ -101,6 +101,7 @@ TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => voi
           }
           updateSchedule.mutate({
             todoId: todo.id,
+            changedField: 'time',
             ...(scope != null && { scope }),
             input: {
               startDate: formatDateKey(editValues.startDate, getDeviceTimezone()),
