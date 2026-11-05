@@ -1,7 +1,7 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
   runOnJS,
@@ -16,6 +16,8 @@ import { useResolveClassNames } from 'uniwind';
 import { Box } from '../box';
 import { SHEET_DETACHED_MARGIN, SHARED_SHEET_STYLES } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
+import { SheetBodyHostContext } from './sheet-header-layout';
+import { SheetScrollArea } from './sheet-scroll-area';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useSheetLayout } from './use-sheet-layout';
 
@@ -32,6 +34,8 @@ interface ModalBottomSheetProps {
   children: ReactNode;
   /** 내용이 길어 스크롤돼도 시트 아래에 고정되는 영역. 주 동작 버튼을 둔다. */
   footer?: ReactNode;
+  /** 내용이 `SheetHeaderLayout`으로 머리글을 고정하고 본문 스크롤을 직접 둔다. 피커처럼 "확인"이 위에 있는 시트에 쓴다 */
+  hasFixedHeader?: boolean;
 }
 
 /**
@@ -47,6 +51,7 @@ export const ModalBottomSheet = ({
   onExit,
   children,
   footer,
+  hasFixedHeader = false,
 }: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -221,14 +226,15 @@ export const ModalBottomSheet = ({
           </GestureDetector>
 
           {/* Content */}
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={SHARED_SHEET_STYLES.content}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {children}
-          </ScrollView>
+          {hasFixedHeader ? (
+            <SheetBodyHostContext value>
+              <Box style={[SHARED_SHEET_STYLES.content, styles.fixedBody]}>{children}</Box>
+            </SheetBodyHostContext>
+          ) : (
+            <SheetScrollArea contentContainerStyle={SHARED_SHEET_STYLES.content}>
+              {children}
+            </SheetScrollArea>
+          )}
 
           {footer != null && <Box style={styles.footer}>{footer}</Box>}
         </Box>
@@ -239,6 +245,6 @@ export const ModalBottomSheet = ({
 
 const styles = StyleSheet.create({
   surface: { overflow: 'hidden', flexShrink: 1 },
-  scroll: { flexGrow: 0, flexShrink: 1 },
+  fixedBody: { flexShrink: 1 },
   footer: { paddingHorizontal: 20, paddingBottom: 20 },
 });

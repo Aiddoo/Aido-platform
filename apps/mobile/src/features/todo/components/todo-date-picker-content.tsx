@@ -1,7 +1,16 @@
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  Box,
+  HStack,
+  ListRow,
+  SheetHeaderLayout,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   getWeekdayLabels,
@@ -34,13 +43,18 @@ export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePic
   };
 
   return (
-    <VStack gap={20}>
-      <PickerHeader title={t('picker.dateTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
+    <SheetHeaderLayout
+      gap={20}
+      header={
+        <PickerHeader title={t('picker.dateTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
+      }
+    >
+      <VStack gap={20}>
+        <QuickDateOptions picker={picker} onSelect={onChange} />
 
-      <QuickDateOptions picker={picker} onSelect={onChange} />
-
-      <DatePickerCalendar picker={picker} onDatePress={picker.selectDate} />
-    </VStack>
+        <DatePickerCalendar picker={picker} onDatePress={picker.selectDate} />
+      </VStack>
+    </SheetHeaderLayout>
   );
 }
 

@@ -325,6 +325,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     let pickerResult: Date | null = null;
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
+        hasFixedHeader
         isOpen={isOpen}
         onOpenChange={() => close(null)}
         onCloseStart={focusTodoInput}
@@ -365,6 +366,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     let pickerResult: TodoTimeValue | null = null;
     overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
+        hasFixedHeader
         isOpen={isOpen}
         onOpenChange={() => close(null)}
         onCloseStart={focusTodoInput}
@@ -402,6 +404,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     overlay.open<{ startDate: Date; repeat: TodoRepeat | null } | null>(
       ({ isOpen, close, exit }) => (
         <ModalBottomSheet
+          hasFixedHeader
           isOpen={isOpen}
           onOpenChange={() => close(null)}
           onCloseStart={focusTodoInput}

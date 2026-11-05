@@ -116,7 +116,12 @@ export function PlanTodoEditSheet({
   const handleDateChipPress = () => {
     Keyboard.dismiss();
     overlay.open<Date | null>(({ isOpen: isPickerOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isPickerOpen} onOpenChange={() => close(null)} onExit={exit}>
+      <ModalBottomSheet
+        hasFixedHeader
+        isOpen={isPickerOpen}
+        onOpenChange={() => close(null)}
+        onExit={exit}
+      >
         <TodoDatePickerContent
           value={todo.startDate}
           onChange={(date) => {
@@ -132,7 +137,12 @@ export function PlanTodoEditSheet({
   const handleTimeChipPress = () => {
     Keyboard.dismiss();
     overlay.open<TodoTimeValue | null>(({ isOpen: isPickerOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isPickerOpen} onOpenChange={() => close(null)} onExit={exit}>
+      <ModalBottomSheet
+        hasFixedHeader
+        isOpen={isPickerOpen}
+        onOpenChange={() => close(null)}
+        onExit={exit}
+      >
         <QueryErrorBoundary>
           <Suspense fallback={<ActivityIndicator />}>
             <TodoTimePickerContent

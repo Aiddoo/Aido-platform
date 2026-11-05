@@ -88,6 +88,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `KeyboardBottomSheet`                                                | 키보드 연동 바텀시트 (폼용)                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `BottomSheet`                                                        | 키보드 불필요 바텀시트 (피커, 액션시트)                                     | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `ModalBottomSheet`                                                   | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                            | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
+| `SheetHeaderLayout`                                                  | `ModalBottomSheet`의 머리글(과 아래 줄)을 고정하고 본문만 스크롤            | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `SheetRouteScreen`, `useSheetRoute`                                  | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `useStackScreenOptions`, `useStackBackToolbar`                       | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기      | `src/shared/ui/stack-header/stack-header.md`                     |
 | `FormStepLayout`                                                     | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)            | `src/shared/ui/form-step-layout/form-step-layout.md`             |

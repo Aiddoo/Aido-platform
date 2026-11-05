@@ -4,7 +4,16 @@ import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  Box,
+  Button,
+  HStack,
+  SheetHeaderLayout,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
   formatDaysOfWeek,
@@ -280,12 +289,16 @@ export const TodoRepeatPickerContent = ({
 
   return (
     <FormProvider {...methods}>
-      <VStack gap={20}>
-        <RepeatPickerHeader onChange={onChange} onCancel={onCancel} />
-        <DayOfWeekSelector />
-        <RepeatCalendarSection picker={picker} />
-        <RepeatPeriodFooter value={value} onChange={onChange} />
-      </VStack>
+      <SheetHeaderLayout
+        gap={20}
+        header={<RepeatPickerHeader onChange={onChange} onCancel={onCancel} />}
+        footer={<RepeatPeriodFooter value={value} onChange={onChange} />}
+      >
+        <VStack gap={20}>
+          <DayOfWeekSelector />
+          <RepeatCalendarSection picker={picker} />
+        </VStack>
+      </SheetHeaderLayout>
     </FormProvider>
   );
 };

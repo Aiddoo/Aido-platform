@@ -3,7 +3,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { Box, Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
+import { Box, Flex, ListRow, SheetHeaderLayout, Spacing, Text, VStack } from '@src/shared/ui';
 import {
   formatTimeDisplay,
   getDateWithTime,
@@ -54,102 +54,105 @@ export function TodoTimePickerContent({
   };
 
   return (
-    <VStack>
-      <PickerHeader title={t('picker.timeTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
-
-      <Spacing size={24} />
-
-      <VStack className="overflow-hidden rounded-xl bg-gray-1" px={4} py={8} gap={8}>
-        <ListRow
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={t('picker.allDay')}
-              topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
-            />
-          }
-          right={<Switch isSelected={localIsAllDay} onSelectedChange={setLocalIsAllDay} />}
-          horizontalPadding="medium"
-          verticalPadding="medium"
-        />
-        <ListRow
-          contents={
-            <ListRow.Texts
-              type="1RowTypeA"
-              top={t('picker.time')}
-              topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
-            />
-          }
-          right={
-            localIsAllDay ? (
-              <PressableFeedback
-                onPress={() => setLocalIsAllDay(false)}
-                className="h-[34px] justify-center"
-              >
-                <Text size="b1" shade={7}>
-                  {t('picker.selectTime')}
-                </Text>
-              </PressableFeedback>
-            ) : isIOS ? (
-              <Text size="b1" tone="brand" weight="medium">
-                {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
-              </Text>
-            ) : (
-              <>
+    <SheetHeaderLayout
+      gap={24}
+      header={
+        <PickerHeader title={t('picker.timeTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
+      }
+    >
+      <VStack>
+        <VStack className="overflow-hidden rounded-xl bg-gray-1" px={4} py={8} gap={8}>
+          <ListRow
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('picker.allDay')}
+                topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
+              />
+            }
+            right={<Switch isSelected={localIsAllDay} onSelectedChange={setLocalIsAllDay} />}
+            horizontalPadding="medium"
+            verticalPadding="medium"
+          />
+          <ListRow
+            contents={
+              <ListRow.Texts
+                type="1RowTypeA"
+                top={t('picker.time')}
+                topProps={{ size: 'b1', weight: 'medium', shade: 8 }}
+              />
+            }
+            right={
+              localIsAllDay ? (
                 <PressableFeedback
-                  onPress={() => setShowAndroidPicker(true)}
+                  onPress={() => setLocalIsAllDay(false)}
                   className="h-[34px] justify-center"
                 >
-                  <Text size="b1" tone="brand" weight="medium">
-                    {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
+                  <Text size="b1" shade={7}>
+                    {t('picker.selectTime')}
                   </Text>
                 </PressableFeedback>
-                {showAndroidPicker && (
-                  <DateTimePicker
-                    value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
-                    mode="time"
-                    display="spinner"
-                    is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
-                    onChange={(_event, date) => {
-                      setShowAndroidPicker(false);
-                      if (date) {
-                        setLocalTime(toHHmm(date));
-                      }
-                    }}
-                  />
-                )}
-              </>
-            )
-          }
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          isDisabled={localIsAllDay}
-        />
-        {!localIsAllDay && isIOS && (
-          <Box className="items-center">
-            <DateTimePicker
-              value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
-              mode="time"
-              display="spinner"
-              locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
-              onChange={(_event, date) => {
-                if (date) {
-                  setLocalTime(toHHmm(date));
-                }
-              }}
-              style={{ height: 216 }}
-            />
-          </Box>
-        )}
+              ) : isIOS ? (
+                <Text size="b1" tone="brand" weight="medium">
+                  {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
+                </Text>
+              ) : (
+                <>
+                  <PressableFeedback
+                    onPress={() => setShowAndroidPicker(true)}
+                    className="h-[34px] justify-center"
+                  >
+                    <Text size="b1" tone="brand" weight="medium">
+                      {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
+                    </Text>
+                  </PressableFeedback>
+                  {showAndroidPicker && (
+                    <DateTimePicker
+                      value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
+                      mode="time"
+                      display="spinner"
+                      is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
+                      onChange={(_event, date) => {
+                        setShowAndroidPicker(false);
+                        if (date) {
+                          setLocalTime(toHHmm(date));
+                        }
+                      }}
+                    />
+                  )}
+                </>
+              )
+            }
+            horizontalPadding="medium"
+            verticalPadding="medium"
+            isDisabled={localIsAllDay}
+          />
+          {!localIsAllDay && isIOS && (
+            <Box className="items-center">
+              <DateTimePicker
+                value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
+                mode="time"
+                display="spinner"
+                locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}
+                onChange={(_event, date) => {
+                  if (date) {
+                    setLocalTime(toHHmm(date));
+                  }
+                }}
+                style={{ height: 216 }}
+              />
+            </Box>
+          )}
+        </VStack>
+
+        <Spacing size={8} />
+
+        <Flex px={4} justify="center" align="center">
+          <Text size="b3" shade={5}>
+            {t('picker.reminderInfo')}
+          </Text>
+        </Flex>
       </VStack>
-
-      <Spacing size={8} />
-
-      <Flex px={4} justify="center" align="center">
-        <Text size="b3" shade={5}>
-          {t('picker.reminderInfo')}
-        </Text>
-      </Flex>
-    </VStack>
+    </SheetHeaderLayout>
   );
 }

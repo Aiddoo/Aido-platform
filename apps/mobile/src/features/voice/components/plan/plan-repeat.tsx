@@ -27,7 +27,7 @@ export function PlanRepeatChip({ value, startDate, onChange }: PlanRepeatChipPro
 
   const handlePress = () => {
     overlay.open<void>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close()} onExit={exit}>
+      <ModalBottomSheet hasFixedHeader isOpen={isOpen} onOpenChange={() => close()} onExit={exit}>
         <TodoRepeatPickerContent
           value={{ startDate, repeat: value }}
           onChange={(picked) => {

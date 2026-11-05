@@ -86,6 +86,28 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 </ModalBottomSheet>
 ```
 
+내용이 넘치면 스크롤 막대와 아래쪽 흐림이 나타나 더 있다는 걸 알린다. 넘치지 않으면 평소 모양 그대로다.
+
+### 머리글 고정 (`hasFixedHeader`, `SheetHeaderLayout`)
+
+날짜·시간·반복 피커처럼 "확인"이 머리글에 있는 시트는 스크롤해도 머리글이 남아야 한다. 머리글이 내용 쪽 폼 상태를 읽으므로
+`footer`처럼 시트에 넘기지 않고, `ModalBottomSheet`에 `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다. 같은 내용을
+gorhom `BottomSheet`(할 일 메뉴의 날짜·시간 route)에 넣으면 머리글과 본문을 쌓기만 하고 시트 전체가 스크롤한다. 반복 기간처럼 늘 보여야 하는 아래 줄은
+`footer`로 넘기면 본문 아래에 함께 고정된다.
+
+```tsx
+<ModalBottomSheet
+  hasFixedHeader
+  isOpen={isOpen}
+  onOpenChange={handleOpenChange}
+  onExit={handleExit}
+>
+  <SheetHeaderLayout gap={20} header={<PickerHeader {...headerProps} />}>
+    {/* 달력 등 스크롤될 본문 */}
+  </SheetHeaderLayout>
+</ModalBottomSheet>
+```
+
 ### 시트 route (`SheetRouteScreen`, `useSheetRoute`)
 
 할 일·하위 항목·카테고리·제안처럼 대상이 있는 시트는 Overlay 대신 Expo Router route로 띄운다.
@@ -137,13 +159,14 @@ const sheet = useSheetRoute('/feed');
 
 ### ModalBottomSheet
 
-| Prop           | 타입                        | 기본값 | 설명                                                       |
-| -------------- | --------------------------- | ------ | ---------------------------------------------------------- |
-| `isOpen`       | `boolean`                   | -      | 시트 열림 상태                                             |
-| `onOpenChange` | `(isOpen: boolean) => void` | -      | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출 |
-| `onExit`       | `() => void`                | -      | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거    |
-| `children`     | `ReactNode`                 | -      | 시트 내용                                                  |
-| `footer`       | `ReactNode`                 | -      | 스크롤 영역 아래에 고정되는 영역 (주 동작 버튼, 선택)      |
+| Prop             | 타입                        | 기본값  | 설명                                                       |
+| ---------------- | --------------------------- | ------- | ---------------------------------------------------------- |
+| `isOpen`         | `boolean`                   | -       | 시트 열림 상태                                             |
+| `onOpenChange`   | `(isOpen: boolean) => void` | -       | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출 |
+| `onExit`         | `() => void`                | -       | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거    |
+| `children`       | `ReactNode`                 | -       | 시트 내용                                                  |
+| `footer`         | `ReactNode`                 | -       | 스크롤 영역 아래에 고정되는 영역 (주 동작 버튼, 선택)      |
+| `hasFixedHeader` | `boolean`                   | `false` | 내용이 `SheetHeaderLayout`으로 머리글을 고정한다 (선택)    |
 
 ## 파일 구조
 
@@ -152,6 +175,8 @@ bottom-sheet/
 ├── bottom-sheet.tsx                   # gorhom 기반 기본 바텀시트
 ├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
 ├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
+├── sheet-header-layout.tsx            # 머리글 고정 + 본문 스크롤 (hasFixedHeader 시트의 내용)
+├── sheet-scroll-area.tsx              # 넘칠 때 스크롤 막대·아래쪽 흐림을 보이는 시트 스크롤
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
 ├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
 ├── full-window-host-context.ts        # 시트가 내비게이터 위 전체 창(route·overlay)에 그려지는지
