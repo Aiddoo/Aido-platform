@@ -1,8 +1,11 @@
+import type { ComponentType } from 'react';
+
 const actual = require('@gorhom/bottom-sheet/mock');
 
 interface GorhomSheetProps {
   onChange: (index: number) => void;
   onClose: () => void;
+  backgroundComponent: ComponentType<{ pointerEvents: 'none' }>;
 }
 
 let lastProps: GorhomSheetProps | null = null;

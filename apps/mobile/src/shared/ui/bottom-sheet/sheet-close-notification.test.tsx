@@ -1,7 +1,7 @@
 import { getLastGorhomSheetProps } from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
-import { act } from '@testing-library/react-native';
+import { act, render, screen } from '@testing-library/react-native';
 
 import { BottomSheet } from './bottom-sheet';
 import { KeyboardBottomSheet } from './keyboard-bottom-sheet';
@@ -44,5 +44,23 @@ describe.each([
 
     // Then
     expect(onOpenChange).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('KeyboardBottomSheet 시트 면', () => {
+  it('gorhom이 pointerEvents none을 넘겨도 면이 터치를 받아 Android에서 뒤 backdrop까지 내려가지 않는다', async () => {
+    // Given
+    await renderUi(
+      <KeyboardBottomSheet isOpen onOpenChange={jest.fn()}>
+        <Text>내용</Text>
+      </KeyboardBottomSheet>,
+    );
+    const SheetBackground = getLastGorhomSheetProps().backgroundComponent;
+
+    // When
+    await render(<SheetBackground pointerEvents="none" />);
+
+    // Then
+    expect(screen.getByLabelText('Bottom Sheet').props.pointerEvents).toBeUndefined();
   });
 });
