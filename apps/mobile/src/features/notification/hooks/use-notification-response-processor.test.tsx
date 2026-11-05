@@ -2,6 +2,7 @@ import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { createMockDIContainer } from '@src/shared/__tests__';
+import { router, Slot } from 'expo-router';
 import { act, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { useState } from 'react';
 
@@ -20,7 +21,7 @@ const createResponse = (
   ...overrides,
 });
 
-async function setup() {
+async function setup({ initialUrl = '/feed' }: { initialUrl?: string } = {}) {
   const gateway = createPushNotificationGatewayStub();
   const handleNotificationResponse = jest.fn().mockResolvedValue('handled');
   let processResponse: (response: PushNotificationResponse) => void = () => {};
@@ -39,19 +40,20 @@ async function setup() {
       ...session,
       handleNotificationResponse,
     });
-    return null;
+    return <Slot />;
   }
 
   const container = createMockDIContainer({ logger, pushNotificationGateway: gateway });
   await renderRouter(
-    { index: Harness },
+    { _layout: Harness, loading: () => null, feed: () => null },
     {
+      initialUrl,
       wrapper: ({ children }) => (
         <StaticDIProvider container={container}>{children}</StaticDIProvider>
       ),
     },
   );
-  await waitFor(() => expect(screen).toHavePathname('/'));
+  await waitFor(() => expect(screen).toHavePathname(initialUrl));
 
   return {
     gateway,
@@ -82,6 +84,19 @@ describe('useNotificationResponseProcessor', () => {
         data: { notificationId: 7, type: 'FOLLOW_NEW', action: { type: 'NONE' } },
       }),
     );
+  });
+
+  it('시작 화면에서 받은 응답은 그 화면을 벗어난 뒤에 처리한다', async () => {
+    // Given
+    const { process, handleNotificationResponse } = await setup({ initialUrl: '/loading' });
+    await process(createResponse());
+    expect(handleNotificationResponse).not.toHaveBeenCalled();
+
+    // When
+    await act(() => router.replace('/feed'));
+
+    // Then
+    await waitFor(() => expect(handleNotificationResponse).toHaveBeenCalledTimes(1));
   });
 
   it('이미 처리한 응답 id가 다시 오면 처리하지 않는다', async () => {

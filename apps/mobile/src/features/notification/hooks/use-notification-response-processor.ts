@@ -1,7 +1,7 @@
 import { useLogger, usePushNotificationGateway } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage, toError } from '@src/shared/errors';
-import { useNavigationContainerRef } from 'expo-router';
+import { useNavigationContainerRef, usePathname } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -25,6 +25,8 @@ type PendingNotificationResponse = {
 const MAX_PENDING_RESPONSES = 20;
 const MAX_HANDLED_RESPONSES = 100;
 const PENDING_RESPONSE_LIFETIME = 10 * 60_000;
+/** 여기서 목적지를 열면 로딩이 끝날 때 라우트 가드가 `/`로 되돌려 목적지를 잃는다(꺼진 앱에서 알림을 누른 경우) */
+const STARTUP_PATHNAMES: ReadonlySet<string> = new Set(['/', '/loading']);
 
 export function useNotificationResponseProcessor({
   authStatus,
@@ -38,7 +40,9 @@ export function useNotificationResponseProcessor({
   const logger = useLogger();
   const gateway = usePushNotificationGateway();
   const navigationRef = useNavigationContainerRef();
-  const [isNavigationReady, setIsNavigationReady] = useState(() => navigationRef.isReady());
+  const pathname = usePathname();
+  const [isContainerReady, setIsContainerReady] = useState(() => navigationRef.isReady());
+  const isNavigationReady = isContainerReady && !STARTUP_PATHNAMES.has(pathname);
   const pendingResponses = useRef(new Map<string, PendingNotificationResponse>());
   const handledResponseIds = useRef(new Set<string>());
   const processingResponseIds = useRef(new Set<string>());
@@ -54,7 +58,7 @@ export function useNotificationResponseProcessor({
   }, []);
 
   useEffect(() => {
-    const updateReadiness = () => setIsNavigationReady(navigationRef.isReady());
+    const updateReadiness = () => setIsContainerReady(navigationRef.isReady());
     updateReadiness();
     const unsubscribeState = navigationRef.addListener('state', updateReadiness);
     return () => {
