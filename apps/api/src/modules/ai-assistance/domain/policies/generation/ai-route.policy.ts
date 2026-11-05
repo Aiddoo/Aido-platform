@@ -25,9 +25,9 @@ export function planAiRoute(input: AiRouteInput): readonly AiProviderId[] {
 }
 
 /**
- * 체인 제한 시간을 나눌 때 업체가 받는 몫의 비율. 2026-11 live eval p95(parse-todo·quick-plan·digest)는
- * Claude 2.0·1.8·4.6초, Gemini 1.4·2.7·9.7초, OpenAI 5.8·6.3·7.8초다. OpenAI만 두 배면 12·15·45초 체인을
- * 어떤 순서로 나눠도 세 업체 모두 자기 p95 이상을 받는다(OpenAI 6·7.5·22.5초, 나머지 3·3.75·11.25초).
+ * 체인 제한 시간을 나눌 때 업체가 받는 몫의 비율. 기준은 어떤 순서로 모두 멈춰도 각 업체가 자기 작업의 2026-11 live eval
+ * 최댓값(parse-todo·quick-plan·digest: Claude 2.3·4.9·5.0초, Gemini 1.8·4.9·6.8초, OpenAI 4.8·5.2·6.2초)의 1.2배를
+ * 받는 것이다. OpenAI만 두 배면 12·24·45초 체인에서 OpenAI 6·12·22.5초, 나머지 3·6·11.25초가 되어 이를 넘는다.
  */
 const PROVIDER_TIME_WEIGHTS: Readonly<Record<AiProviderId, number>> = {
   anthropic: 1,

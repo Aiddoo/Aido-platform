@@ -87,7 +87,7 @@ describe("toAiSettings — 업체·작업별 AI 설정", () => {
       "parse-memo": { thinking: "low", deadlineMs: 25_000 },
       report: { thinking: "low", deadlineMs: 60_000 },
       suggestion: { thinking: "low", deadlineMs: 60_000 },
-      "quick-plan": { thinking: "low", deadlineMs: 15_000 },
+      "quick-plan": { thinking: "low", deadlineMs: 24_000 },
       "voice-note-digest": { thinking: "low", deadlineMs: 45_000 },
     });
     expect(settings.breaker).toEqual({

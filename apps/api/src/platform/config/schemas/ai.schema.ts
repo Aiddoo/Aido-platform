@@ -73,7 +73,7 @@ export const aiSchema = z.object({
   AI_DEADLINE_PARSE_MEMO_MS: milliseconds(25_000),
   AI_DEADLINE_REPORT_MS: milliseconds(60_000),
   AI_DEADLINE_SUGGESTION_MS: milliseconds(60_000),
-  AI_DEADLINE_QUICK_PLAN_MS: milliseconds(15_000),
+  AI_DEADLINE_QUICK_PLAN_MS: milliseconds(24_000),
   AI_DEADLINE_VOICE_NOTE_DIGEST_MS: milliseconds(45_000),
   // 결제·인증 실패(크레딧 소진·키 오류)는 바로 열고, 사람이 고칠 시간을 준 뒤 한 번 다시 시도한다
   AI_BREAKER_BILLING_COOLDOWN_MS: milliseconds(15 * 60_000),

@@ -94,23 +94,25 @@ describe("resolveAttemptTime", () => {
     ["openai", "anthropic", "google"],
     ["openai", "google", "anthropic"],
   ];
+  /** 2026-11 live eval에서 잰 업체별 최댓값(parse-todo 36건, quick-plan 30건, digest 7건) */
   const MEASURED = [
     {
       task: "parse-todo",
       deadlineMs: 12_000,
-      p95: { anthropic: 1959, google: 1356, openai: 5800 },
+      slowestMs: { anthropic: 2336, google: 1756, openai: 4751 },
     },
     {
       task: "quick-plan",
-      deadlineMs: 15_000,
-      p95: { anthropic: 1839, google: 2748, openai: 6342 },
+      deadlineMs: 24_000,
+      slowestMs: { anthropic: 4909, google: 4929, openai: 5184 },
     },
     {
       task: "voice-note-digest",
       deadlineMs: 45_000,
-      p95: { anthropic: 4623, google: 9657, openai: 7759 },
+      slowestMs: { anthropic: 5049, google: 6822, openai: 6226 },
     },
   ] as const;
+  const SAFETY_MARGIN = 1.2;
 
   /** 업체가 모두 멈춰 시도마다 받은 시간을 다 쓰는 체인을 따라간다. */
   function stallThrough(route: readonly AiProviderId[], deadlineMs: number) {
@@ -129,13 +131,15 @@ describe("resolveAttemptTime", () => {
   }
 
   it.each(MEASURED.flatMap((measured) => ORDERS.map((order) => ({ ...measured, order }))))(
-    "$task($deadlineMs ms)는 $order 순서로 모두 멈춰도 세 업체가 p95 이상을 받는다",
-    ({ deadlineMs, p95, order }) => {
+    "$task($deadlineMs ms)는 $order 순서로 모두 멈춰도 세 업체가 실측 최댓값의 1.2배 이상을 받는다",
+    ({ deadlineMs, slowestMs, order }) => {
       // When
       const attempts = stallThrough(order, deadlineMs);
       // Then
       for (const attempt of attempts) {
-        expect(attempt.budgetMs).toBeGreaterThanOrEqual(p95[attempt.provider]);
+        expect(attempt.budgetMs).toBeGreaterThanOrEqual(
+          slowestMs[attempt.provider] * SAFETY_MARGIN,
+        );
         expect(attempt.hadFullShare).toBe(true);
       }
       expect(attempts.reduce((sum, attempt) => sum + attempt.budgetMs, 0)).toBeLessThanOrEqual(

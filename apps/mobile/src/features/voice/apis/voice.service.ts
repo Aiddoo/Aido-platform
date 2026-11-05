@@ -24,7 +24,11 @@ import {
 } from './voice-plan.mapper';
 
 const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
-/** 계획 만들기는 AI가 답할 때까지 기다린다. 기본 10초로는 긴 말을 정리하지 못한다 */
+/**
+ * 계획 만들기는 AI가 답할 때까지 기다린다. 기본 10초로는 긴 말을 정리하지 못한다.
+ * 서버 체인 제한(`AI_DEADLINE_QUICK_PLAN_MS` 24초, `AI_DEADLINE_VOICE_NOTE_DIGEST_MS` 45초)보다 길어야 앱이 먼저
+ * 끊지 않고 환불된 오류(`charged:false`)를 받는다.
+ */
 const QUICK_PLAN_TIMEOUT_MS = 30_000;
 const DIGEST_TIMEOUT_MS = 60_000;
 
