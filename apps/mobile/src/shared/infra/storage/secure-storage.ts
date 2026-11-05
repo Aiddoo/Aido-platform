@@ -1,5 +1,5 @@
 import type { Storage } from '@src/core/ports/storage';
-import { errorMessageOf, KeychainLockedError } from '@src/shared/errors';
+import { getErrorMessage, KeychainLockedError } from '@src/shared/errors';
 import * as ExpoSecureStore from 'expo-secure-store';
 import type { z } from 'zod';
 
@@ -29,7 +29,7 @@ const SECURE_STORE_OPTIONS: ExpoSecureStore.SecureStoreOptions = {
 const IOS_LOCKED_KEYCHAIN_MESSAGE = 'User interaction is not allowed.';
 
 const isLockedKeychain = (error: unknown): boolean =>
-  errorMessageOf(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
+  getErrorMessage(error).includes(IOS_LOCKED_KEYCHAIN_MESSAGE);
 
 export class SecureStorage implements Storage {
   async get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {

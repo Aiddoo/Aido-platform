@@ -1,4 +1,4 @@
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo } from 'react-native';
@@ -14,7 +14,7 @@ const reduceTransparency = createAccessibilitySettingStore({
   },
   onReadError: (error) => {
     logger.warn(ACCESSIBILITY_LOG_EVENT.REDUCE_TRANSPARENCY_READ_FAILED, {
-      error: errorMessageOf(error),
+      error: getErrorMessage(error),
     });
   },
 });

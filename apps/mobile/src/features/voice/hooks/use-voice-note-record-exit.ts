@@ -1,5 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useTranslation } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
 import { router } from 'expo-router';
@@ -66,7 +66,7 @@ export function useVoiceNoteRecordExit({
   const logActionFailure = (action: 'close' | 'finish') => (error: unknown) => {
     logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_ACTION_FAILED, {
       action,
-      error: errorMessageOf(error),
+      error: getErrorMessage(error),
     });
   };
   const requestClose = () => {

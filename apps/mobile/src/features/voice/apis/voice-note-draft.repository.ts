@@ -1,6 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import { debounce } from 'es-toolkit/compat';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
@@ -95,7 +95,7 @@ export function createVoiceNoteDraftRepository({
     } catch (error) {
       logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_RESTORE_FAILED, {
         reason: 'invalid-json',
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     }
 
@@ -109,7 +109,7 @@ export function createVoiceNoteDraftRepository({
       replaceInSnapshot(accountId, note);
       notifyListeners();
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_NOTE_LOG_EVENT.DRAFT_SAVE_FAILED, { error: getErrorMessage(error) });
     }
   };
 

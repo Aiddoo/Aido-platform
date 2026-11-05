@@ -37,7 +37,7 @@ const memo = (): PlannedMemo => ({
   content: '내용',
 });
 
-const planOf = (...actions: VoicePlan['actions']): VoicePlan => ({
+const createPlan = (...actions: VoicePlan['actions']): VoicePlan => ({
   planId: voicePlanIdSchema.parse('plan-1'),
   source: 'quick-voice',
   sourceMemoId: null,
@@ -48,7 +48,7 @@ const planOf = (...actions: VoicePlan['actions']): VoicePlan => ({
 describe('VoicePlanPolicy', () => {
   test('이미 있는 할 일은 기본으로 꺼 둔다', () => {
     // Given
-    const plan = planOf(
+    const plan = createPlan(
       todo({ actionId: 'a1', duplicateOfTodoId: 9 }),
       todo({ actionId: 'a2' }),
       memo(),
@@ -63,7 +63,7 @@ describe('VoicePlanPolicy', () => {
 
   test('고른 행동만 돌려주고 하나도 없으면 적용할 수 없다', () => {
     // Given
-    const plan = planOf(todo({ actionId: 'a1' }), todo({ actionId: 'a2' }));
+    const plan = createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2' }));
 
     // When
     const selected = getSelectedActions(plan, { a1: false, a2: true });
@@ -75,7 +75,7 @@ describe('VoicePlanPolicy', () => {
 
   test('메모는 할 일 개수에 세지 않는다', () => {
     // Given
-    const plan = planOf(todo(), memo());
+    const plan = createPlan(todo(), memo());
 
     // When & Then
     expect(countSelectedTodos(plan, { a1: true, m1: true })).toBe(1);
@@ -91,31 +91,31 @@ describe('계획 머리글', () => {
   }>([
     {
       name: '고른 할 일이 있으면 그 수를 말한다',
-      plan: planOf(todo({ actionId: 'a1' }), todo({ actionId: 'a2' })),
+      plan: createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2' })),
       selection: { a1: true, a2: false },
       expected: { kind: 'todos', count: 1 },
     },
     {
       name: '메모만 고르면 메모로 정리한 것이다',
-      plan: planOf(todo({ actionId: 'a1', duplicateOfTodoId: 9 }), memo()),
+      plan: createPlan(todo({ actionId: 'a1', duplicateOfTodoId: 9 }), memo()),
       selection: { a1: false, m1: true },
       expected: { kind: 'memo' },
     },
     {
       name: '할 일이 전부 겹쳐 꺼져 있으면 이미 있는 것이다',
-      plan: planOf(todo({ actionId: 'a1', duplicateOfTodoId: 9 })),
+      plan: createPlan(todo({ actionId: 'a1', duplicateOfTodoId: 9 })),
       selection: { a1: false },
       expected: { kind: 'already-added' },
     },
     {
       name: '사용자가 모두 끄면 나눈 수를 그대로 둔다',
-      plan: planOf(todo({ actionId: 'a1' }), todo({ actionId: 'a2', duplicateOfTodoId: 9 })),
+      plan: createPlan(todo({ actionId: 'a1' }), todo({ actionId: 'a2', duplicateOfTodoId: 9 })),
       selection: { a1: false, a2: false },
       expected: { kind: 'todos', count: 2 },
     },
     {
       name: '메모뿐인 계획은 메모를 꺼도 메모로 말한다',
-      plan: planOf(memo()),
+      plan: createPlan(memo()),
       selection: { m1: false },
       expected: { kind: 'memo' },
     },

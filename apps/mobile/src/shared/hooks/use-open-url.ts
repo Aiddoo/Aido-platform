@@ -1,5 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useRef } from 'react';
@@ -13,7 +13,7 @@ export function useOpenAppSettings() {
   return useCallback(
     () =>
       Linking.openSettings().catch((error: unknown) =>
-        logger.warn(OPEN_URL_LOG_EVENT.SETTINGS_OPEN_FAILED, { error: errorMessageOf(error) }),
+        logger.warn(OPEN_URL_LOG_EVENT.SETTINGS_OPEN_FAILED, { error: getErrorMessage(error) }),
       ),
     [logger],
   );
@@ -39,7 +39,7 @@ export function useOpenUrl() {
     })
       .catch(() => Linking.openURL(url))
       .catch((error: unknown) =>
-        logger.warn(OPEN_URL_LOG_EVENT.BROWSER_OPEN_FAILED, { error: errorMessageOf(error) }),
+        logger.warn(OPEN_URL_LOG_EVENT.BROWSER_OPEN_FAILED, { error: getErrorMessage(error) }),
       )
       .finally(() => {
         isBrowserOpenRef.current = false;

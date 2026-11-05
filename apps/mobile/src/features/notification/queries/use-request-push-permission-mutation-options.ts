@@ -1,5 +1,5 @@
 import { useLogger, usePushDeviceService } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -20,7 +20,7 @@ export const useRequestPushPermissionMutationOptions = () => {
     },
     onError: (error) => {
       logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUEST_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     },
   });

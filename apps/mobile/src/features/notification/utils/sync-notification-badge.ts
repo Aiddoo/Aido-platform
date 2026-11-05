@@ -1,5 +1,5 @@
 import type { Logger } from '@src/core/ports/logger';
-import { errorMessageOf, isConnectivityError, toError } from '@src/shared/errors';
+import { getErrorMessage, isConnectivityError, toError } from '@src/shared/errors';
 
 import type { NotificationService } from '../apis/notification.service';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
@@ -40,7 +40,7 @@ export const syncNotificationBadge = async ({
     await notificationService.syncBadgeCount();
   } catch (error) {
     if (isConnectivityError(error)) {
-      logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: errorMessageOf(error) });
+      logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error: getErrorMessage(error) });
       return;
     }
     logger.error(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, toError(error));

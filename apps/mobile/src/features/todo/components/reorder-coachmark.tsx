@@ -1,6 +1,6 @@
 import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
@@ -27,7 +27,7 @@ export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
     }
     logger.warn(TODO_LOG_EVENT.REORDER_COACHMARK_UNAVAILABLE, {
       kind,
-      error: errorMessageOf(error),
+      error: getErrorMessage(error),
     });
   }, [error, kind, logger]);
 

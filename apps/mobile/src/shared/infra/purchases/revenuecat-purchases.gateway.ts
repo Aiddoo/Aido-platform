@@ -7,7 +7,7 @@ import {
   PurchasesGatewayError,
   type PurchaseStore,
 } from '@src/core/ports/purchases';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import Purchases, {
   type CustomerInfo,
   LOG_LEVEL,
@@ -54,7 +54,7 @@ export function toPurchasesGatewayError(error: unknown) {
     .with(PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR, () => 'store-problem')
     .otherwise(() => 'other');
 
-  return new PurchasesGatewayError(kind, storeErrorCode, errorMessageOf(error));
+  return new PurchasesGatewayError(kind, storeErrorCode, getErrorMessage(error));
 }
 
 async function withGatewayError<T>(call: () => Promise<T>): Promise<T> {

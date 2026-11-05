@@ -39,7 +39,7 @@ const readMessage = (value: unknown): string | undefined => {
  *
  * `Error`가 아니어도 동작해야 한다 — 벤더 에러를 메시지로 판별하는 경계에서 쓴다.
  */
-export const errorMessageOf = (value: unknown): string => {
+export const getErrorMessage = (value: unknown): string => {
   if (value instanceof Error) {
     return value.message;
   }
@@ -60,7 +60,7 @@ export const toError = (value: unknown): Error => {
     return value;
   }
 
-  const error = new Error(errorMessageOf(value));
+  const error = new Error(getErrorMessage(value));
   // `new Error(msg, { cause })`는 Hermes가 무시할 수 있어 직접 대입한다.
   error.cause = value;
   return error;

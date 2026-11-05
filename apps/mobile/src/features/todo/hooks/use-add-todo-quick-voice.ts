@@ -24,7 +24,7 @@ import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capt
 import { useVoiceNoteStart } from '@src/features/voice/hooks/use-voice-note-start';
 import { useCreateQuickPlanMutationOptions } from '@src/features/voice/queries/use-create-quick-plan-mutation-options';
 import { voiceNoteRecordHref } from '@src/features/voice/utils/navigation/voice-note-href';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -209,7 +209,7 @@ export function useAddTodoQuickVoice({ methods, onExit }: UseAddTodoQuickVoiceOp
 
   const changeLocale = (nextLocale: SpeechLocale) => {
     applyLocale(nextLocale).catch((error: unknown) => {
-      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_LOG_EVENT.LANGUAGE_CHANGE_FAILED, { error: getErrorMessage(error) });
       toast.error(tVoice('listening.languageChangeFailed'));
     });
   };

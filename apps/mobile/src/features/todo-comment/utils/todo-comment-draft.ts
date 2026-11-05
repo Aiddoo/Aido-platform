@@ -32,7 +32,7 @@ export function createTodoCommentDraftKey({
   return createDraftKey({
     ownerId: userId,
     scope: 'todo-comment',
-    target: TodoCommentComposer.draftTargetOf(todoId, mode),
+    target: TodoCommentComposer.getDraftTarget(todoId, mode),
     schema: todoCommentDraftSchema,
   });
 }

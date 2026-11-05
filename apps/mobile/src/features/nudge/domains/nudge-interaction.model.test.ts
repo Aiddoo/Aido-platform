@@ -1,4 +1,7 @@
-import { getNudgeInteractionStatus, NudgeInteractionPolicy } from './nudge-interaction.model';
+import {
+  getNudgeInteractionStatusFromFlags,
+  NudgeInteractionPolicy,
+} from './nudge-interaction.model';
 
 describe('콕 상호작용 상태', () => {
   test.each([
@@ -25,7 +28,7 @@ describe('콕 상호작용 상태', () => {
       const context = { isAvailable, isTodoCompleted, hasReply, isThanked };
 
       // When
-      const status = getNudgeInteractionStatus(
+      const status = getNudgeInteractionStatusFromFlags(
         context.isAvailable,
         context.isTodoCompleted,
         context.hasReply,
@@ -47,7 +50,7 @@ describe('콕 상호작용 상태', () => {
     };
 
     // When
-    const status = NudgeInteractionPolicy.getStatus(nudge);
+    const status = NudgeInteractionPolicy.getNudgeInteractionStatus(nudge);
 
     // Then
     expect(status).toBe('COMPLETED');

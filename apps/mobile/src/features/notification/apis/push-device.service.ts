@@ -2,7 +2,7 @@ import { pushDeviceResponseSchema, type ReportPushDeviceInput } from '@aido/api'
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
@@ -68,7 +68,7 @@ export class PushDeviceService {
       },
       (error: unknown) =>
         this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         }),
     );
     return permission;
@@ -168,7 +168,7 @@ export class PushDeviceService {
       await this.#gateway.ensureChannel();
     } catch (error) {
       this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_CHANNEL_SETUP_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     }
   }
@@ -179,7 +179,7 @@ export class PushDeviceService {
       return await this.#gateway.getToken();
     } catch (error) {
       this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_ISSUE_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return null;
     }

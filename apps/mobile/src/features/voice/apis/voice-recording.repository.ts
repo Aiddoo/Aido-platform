@@ -1,6 +1,6 @@
 import type { LocalFileEntry, LocalFileSystem } from '@src/core/ports/local-file-system';
 import type { Logger } from '@src/core/ports/logger';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 
 import { VOICE_NOTE_LOG_EVENT } from '../constants/voice-note-log-events';
 import {
@@ -49,7 +49,7 @@ export function createVoiceRecordingRepository(
     try {
       files.removeFile(directory, name);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
     }
   };
 
@@ -57,7 +57,7 @@ export function createVoiceRecordingRepository(
     try {
       return files.listFiles(directory);
     } catch (error) {
-      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: errorMessageOf(error) });
+      logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, { error: getErrorMessage(error) });
       return [];
     }
   };
@@ -69,7 +69,7 @@ export function createVoiceRecordingRepository(
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'prepare',
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return null;
       }
@@ -84,7 +84,7 @@ export function createVoiceRecordingRepository(
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_SAVE_FAILED, {
           stage: 'move',
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return null;
       }
@@ -95,7 +95,7 @@ export function createVoiceRecordingRepository(
         return files.findFileUri(ownerDirectory(accountId), fileName);
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return undefined;
       }
@@ -112,7 +112,9 @@ export function createVoiceRecordingRepository(
       try {
         files.removeDirectory(ownerDirectory(accountId));
       } catch (error) {
-        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: errorMessageOf(error) });
+        logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_REMOVE_FAILED, {
+          error: getErrorMessage(error),
+        });
       }
     },
 
@@ -135,7 +137,7 @@ export function createVoiceRecordingRepository(
           .forEach((name) => files.removeDirectory([...ROOT, name]));
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
       }
     },
@@ -145,7 +147,7 @@ export function createVoiceRecordingRepository(
         files.removeDirectory(ROOT);
       } catch (error) {
         logger.warn(VOICE_NOTE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
       }
     },

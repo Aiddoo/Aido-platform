@@ -176,14 +176,14 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 
 ### 어느 쪽으로 남기나
 
-| 상황                               | 호출                                                  | Sentry                                     |
-| ---------------------------------- | ----------------------------------------------------- | ------------------------------------------ |
-| 운영 이벤트·격리된 실패            | `logger.info/warn(KEY, { error: errorMessageOf(e) })` | breadcrumb                                 |
-| 예측 못한 오류(경계 밖·백그라운드) | `logger.error(KEY, toError(e))`                       | 이벤트 `source=logger`·`feature=<첫 마디>` |
-| 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`       | 이벤트 `feature`(`SENTRY_FEATURES`)        |
+| 상황                               | 호출                                                   | Sentry                                     |
+| ---------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
+| 운영 이벤트·격리된 실패            | `logger.info/warn(KEY, { error: getErrorMessage(e) })` | breadcrumb                                 |
+| 예측 못한 오류(경계 밖·백그라운드) | `logger.error(KEY, toError(e))`                        | 이벤트 `source=logger`·`feature=<첫 마디>` |
+| 예측 못한 오류(경계·도메인 신호)   | `errorReporter.captureException/captureMessage`        | 이벤트 `feature`(`SENTRY_FEATURES`)        |
 
 - `logger.error(KEY, Error)`는 그 자체로 Sentry 이벤트다. 같은 오류를 `captureException`으로 한 번 더 보내지 않는다. 이벤트가 필요 없는 실패는 `warn`이다.
-- context의 오류는 `{ error: errorMessageOf(error) }` 한 모양이다. 원본 `error` 객체·`toError(error).message`·`instanceof` 분기를 넣지 않는다.
+- context의 오류는 `{ error: getErrorMessage(error) }` 한 모양이다. 원본 `error` 객체·`toError(error).message`·`instanceof` 분기를 넣지 않는다.
 
 ---
 

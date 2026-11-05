@@ -2,7 +2,7 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/todo/queries/get-todos-by-date-query-options';
 import { useTrack } from '@src/shared/analytics';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -76,7 +76,7 @@ export function WeatherRescheduleSubmitButton({ onDone }: { onDone: () => void }
         onPress: () => {
           handleUndo(moved).catch((error) => {
             logger.warn(WEATHER_LOG_EVENT.RESCHEDULE_UNDO_FAILED, {
-              error: errorMessageOf(error),
+              error: getErrorMessage(error),
             });
           });
         },

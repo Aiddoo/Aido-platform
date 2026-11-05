@@ -127,7 +127,7 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
   const openDetail = useSingleTap(() =>
     router.navigate({ pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } }),
   );
-  const status = match(NudgeInteractionPolicy.getStatus(nudge))
+  const status = match(NudgeInteractionPolicy.getNudgeInteractionStatus(nudge))
     .with('UNAVAILABLE', () => t('interaction.unavailable'))
     .with('THANKED', () => t('interaction.thanked'))
     .with('COMPLETED', () => t('interaction.completed'))

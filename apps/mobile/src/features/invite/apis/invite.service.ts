@@ -9,7 +9,7 @@ import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import type { Page } from '@src/shared/types/page.types';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
@@ -139,7 +139,7 @@ export class InviteService {
 
     const installationId = await this.#installationIdGateway.get().catch((error: unknown) => {
       this.#logger.warn(INVITE_LOG_EVENT.INSTALLATION_ID_READ_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return null;
     });

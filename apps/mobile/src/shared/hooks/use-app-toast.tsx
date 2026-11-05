@@ -1,4 +1,4 @@
-import { userFacingMessageOf } from '@src/shared/errors';
+import { getUserFacingMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { AppToast, type AppToastVariant } from '@src/shared/ui/toast';
 import { useToast } from 'heroui-native';
@@ -32,7 +32,7 @@ const extractErrorMessage = (
     return input.trim() ? input : fallback;
   }
 
-  return userFacingMessageOf(input) ?? fallback;
+  return getUserFacingMessage(input) ?? fallback;
 };
 
 /**

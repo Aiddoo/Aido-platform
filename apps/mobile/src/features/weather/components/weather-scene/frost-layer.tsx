@@ -142,15 +142,15 @@ FrostLayer.Spindrift = function Spindrift({
   const seeds = createParticleSeeds(count, SPINDRIFT_SEED);
   const { dot } = PARTICLE_SPRITES;
   const [minDepth, maxDepth] = SPINDRIFT.depth;
-  const depthOf = (index: number) =>
+  const getDepth = (index: number) =>
     minDepth + (seeds[index * PARTICLE_SEED_STRIDE + 3] ?? 0) * (maxDepth - minDepth);
   const sprites = range(count).map(() => Skia.XYWHRect(dot.x, dot.y, dot.width, dot.height));
   const colors = range(count).map((index) =>
     Skia.Color(
-      `rgba(255,255,255,${SPINDRIFT.alpha.base + SPINDRIFT.alpha.depth * depthOf(index)})`,
+      `rgba(255,255,255,${SPINDRIFT.alpha.base + SPINDRIFT.alpha.depth * getDepth(index)})`,
     ),
   );
-  const depths = range(count).map(depthOf);
+  const depths = range(count).map(getDepth);
   const anchor = { x: dot.width / 2, y: dot.height / 2 };
   const travelWidth = width + EDGE_MARGIN * 2;
 

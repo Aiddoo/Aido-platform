@@ -2,7 +2,7 @@ import { useDraftService, useLogger } from '@src/bootstrap/providers/di-context'
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { errorMessageOf, isApiError } from '@src/shared/errors';
+import { getErrorMessage, isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -80,7 +80,7 @@ export function TodoCommentForm({
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
   const submit = useTodoCommentSubmit({ userId });
-  const targetId = TodoCommentComposer.targetOf(mode)?.id;
+  const targetId = TodoCommentComposer.getComposerTarget(mode)?.id;
 
   const focusFieldAfterLayout = (index: number) => {
     if (pendingFocusFrameRef.current != null) {
@@ -198,12 +198,14 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
     draftService.remove(createTodoCommentDraftKey({ userId, todoId, mode }));
     reset(TodoCommentComposer.new());
     KeyboardController.dismiss().catch((error) =>
-      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error: errorMessageOf(error) }),
+      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
+        error: getErrorMessage(error),
+      }),
     );
   };
 
   return handleSubmit(async ({ mode, items }) => {
-    const contents = TodoCommentComposer.trimmedContentsOf(items);
+    const contents = TodoCommentComposer.getTrimmedContents(items);
     if (contents == null) {
       return;
     }
@@ -217,14 +219,14 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
           const submission = TodoCommentComposer.prepareSubmission({
             previousSubmission: preparedSubmissionRef.current,
             todoId,
-            parentId: TodoCommentComposer.replyParentIdOf(writeMode),
+            parentId: TodoCommentComposer.getReplyParentId(writeMode),
             contents,
             createClientRequestId: Crypto.randomUUID,
           });
           preparedSubmissionRef.current = submission;
           const chain = await createCommentChain.mutateAsync({
             input: submission.input,
-            target: TodoCommentComposer.targetOf(writeMode),
+            target: TodoCommentComposer.getComposerTarget(writeMode),
           });
           preparedSubmissionRef.current = null;
           const threadCommentId = chain.comments[0]?.threadCommentId;
@@ -258,7 +260,7 @@ function ComposerDraft({ userId, mode }: { userId: string; mode: TodoCommentComp
   const { subscribe, setValue } = useFormContext<TodoCommentComposerForm>();
   const draftKey = createTodoCommentDraftKey({ userId, todoId, mode });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(draftKey, {
-    sourceUpdatedAt: TodoCommentComposer.draftSourceUpdatedAtOf(mode),
+    sourceUpdatedAt: TodoCommentComposer.getDraftSourceUpdatedAt(mode),
     onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
   });
   const [initialValues] = useState(() =>

@@ -10,8 +10,8 @@ import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import type { TodoCommentThreadPages } from '../utils/todo-comment-cache-pages';
 import {
   INITIAL_TODO_COMMENT_PAGE_PARAM,
-  nextPageParamOf,
-  previousPageParamOf,
+  getNextTodoCommentPageParam,
+  getPreviousTodoCommentPageParam,
   toThreadsQuery,
 } from '../utils/todo-comment-page-params';
 
@@ -43,8 +43,8 @@ export function getTodoCommentThreadsInfiniteQueryOptions(
           signal,
         ),
       ),
-    getNextPageParam: (lastPage) => nextPageParamOf(lastPage.pagination),
-    getPreviousPageParam: (firstPage) => previousPageParamOf(firstPage.pagination),
+    getNextPageParam: (lastPage) => getNextTodoCommentPageParam(lastPage.pagination),
+    getPreviousPageParam: (firstPage) => getPreviousTodoCommentPageParam(firstPage.pagination),
     staleTime:
       sort === TODO_COMMENT_SORT.POPULAR
         ? TODO_COMMENT_QUERY_TIMING.popularStaleTime

@@ -1,6 +1,6 @@
 import {
-  nextPageParamOf,
-  previousPageParamOf,
+  getNextTodoCommentPageParam,
+  getPreviousTodoCommentPageParam,
   toRepliesQuery,
   toThreadsQuery,
 } from './todo-comment-page-params';
@@ -39,7 +39,10 @@ describe('todo-comment-page-params', () => {
     };
 
     // When
-    const params = [nextPageParamOf(pagination), previousPageParamOf(pagination)];
+    const params = [
+      getNextTodoCommentPageParam(pagination),
+      getPreviousTodoCommentPageParam(pagination),
+    ];
 
     // Then
     expect(params).toEqual([undefined, 'prev']);

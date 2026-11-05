@@ -1,5 +1,5 @@
 import { INQUIRY_CATEGORY } from '@aido/api';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { t, useTranslation } from '@src/shared/i18n';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { buildSupportMailUrl, createDiagnosticCode } from '@src/shared/utils/support-mail';
@@ -39,7 +39,7 @@ export const openSupportMail = () => {
     body: t('common:errorBoundary.mailBody', { code }),
   });
   return Linking.openURL(url).catch((error: unknown) =>
-    logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, { error: errorMessageOf(error) }),
+    logger.warn(QUERY_ERROR_LOG_EVENT.SUPPORT_MAIL_OPEN_FAILED, { error: getErrorMessage(error) }),
   );
 };
 

@@ -27,7 +27,7 @@ import { useVoiceNoteRecordExit } from '@src/features/voice/hooks/use-voice-note
 import { useVoiceNoteRecordLimit } from '@src/features/voice/hooks/use-voice-note-record-limit';
 import { useVoiceNoteRecording } from '@src/features/voice/hooks/use-voice-note-recording';
 import { voiceNoteHref } from '@src/features/voice/utils/navigation/voice-note-href';
-import { errorMessageOf } from '@src/shared/errors/to-error';
+import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
@@ -184,7 +184,7 @@ VoiceNoteRecordScreen.LanguageToggle = function LanguageToggle({
       onValueChange={(next) => {
         handleLocaleChange(next).catch((error: unknown) => {
           logger.warn(VOICE_NOTE_LOG_EVENT.RECORD_LANGUAGE_CHANGE_FAILED, {
-            error: errorMessageOf(error),
+            error: getErrorMessage(error),
           });
           toast.error(t('record.languageChangeFailed'));
         });

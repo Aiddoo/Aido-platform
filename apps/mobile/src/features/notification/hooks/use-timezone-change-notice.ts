@@ -6,7 +6,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { track } from '@src/shared/analytics';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { addDaysToDateKey } from '@src/shared/utils/date-key';
@@ -60,7 +60,7 @@ export function useTimezoneChangeNotice({
       DeviceTimezonePolicy.isOffsetChanged(change) &&
       (await hasUpcomingTimedTodo().catch((error: unknown) => {
         logger.warn(NOTIFICATION_LOG_EVENT.TIMEZONE_NOTICE_SKIPPED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return false;
       }));
@@ -85,7 +85,7 @@ export function useTimezoneChangeNotice({
     if (change != null) {
       announce(change).catch((error: unknown) =>
         logger.warn(NOTIFICATION_LOG_EVENT.TIMEZONE_NOTICE_SKIPPED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         }),
       );
     }

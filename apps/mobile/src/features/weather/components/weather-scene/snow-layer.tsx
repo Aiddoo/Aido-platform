@@ -106,7 +106,7 @@ export function SnowLayer({
   const dotAnchor = { x: dot.width / 2, y: dot.height / 2 };
   const crystalAnchor = { x: crystal.width / 2, y: crystal.height / 2 };
 
-  const positionOf = (flake: Flake, t: number) => {
+  const getPosition = (flake: Flake, t: number) => {
     'worklet';
     const fall = (FALL.base + FALL.speed * speed) * (FALL.near + flake.depth);
     const drift = fall * slope + wind * WIND_DRIFT * flake.depth;
@@ -124,7 +124,7 @@ export function SnowLayer({
     if (flake == null) {
       return;
     }
-    const { x, y } = positionOf(flake, time.get());
+    const { x, y } = getPosition(flake, time.get());
     placeSprite(transform, (flake.radius * DOT_SIZE_RATIO) / dot.width, 0, dotAnchor, x, y);
   });
 
@@ -135,7 +135,7 @@ export function SnowLayer({
       return;
     }
     const t = time.get();
-    const { x, y } = positionOf(flake, t);
+    const { x, y } = getPosition(flake, t);
     const rotation = flake.phase + (flake.swayFrequency - 0.75) * CRYSTAL_SPIN * 2 * t;
     const scale = (flake.radius * CRYSTAL_SIZE_RATIO) / crystal.width;
     placeSprite(

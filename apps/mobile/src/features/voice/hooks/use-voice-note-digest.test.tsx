@@ -107,8 +107,10 @@ const AGREED_CONSENT_DTO = {
   aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
 };
 
-const idempotencyKeyOf = (httpClient: ReturnType<typeof createMockHttpClient>, callIndex: number) =>
-  httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
+const getIdempotencyKey = (
+  httpClient: ReturnType<typeof createMockHttpClient>,
+  callIndex: number,
+) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
 describe('useVoiceNoteDigest', () => {
   test('정리에 성공하면 요약과 카드 초안을 기기 초안에 담는다', async () => {
@@ -256,8 +258,8 @@ describe('useVoiceNoteDigest', () => {
 
     // Then
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(2));
-    expect(savedKey).toBe(idempotencyKeyOf(httpClient, 0));
-    expect(idempotencyKeyOf(httpClient, 1)).toBe(idempotencyKeyOf(httpClient, 0));
+    expect(savedKey).toBe(getIdempotencyKey(httpClient, 0));
+    expect(getIdempotencyKey(httpClient, 1)).toBe(getIdempotencyKey(httpClient, 0));
   });
 });
 

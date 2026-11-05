@@ -12,7 +12,7 @@ import type {
   SpeechStartOptions,
 } from '@src/core/ports/speech-recognizer';
 import { useTrack } from '@src/shared/analytics';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import type {
   VoiceCaptureEntry,
   VoiceCaptureOutcome,
@@ -560,7 +560,7 @@ export function useVoiceCaptureSession({
       addBreadcrumb('capture.started', { mode, locale, on_device: isOnDevice });
       return true;
     } catch (error) {
-      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(errorMessageOf(error)), {
+      logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(getErrorMessage(error)), {
         speech_error: 'unknown',
       });
       handleError('unknown');

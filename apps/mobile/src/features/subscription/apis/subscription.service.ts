@@ -1,6 +1,6 @@
 import type { Logger } from '@src/core/ports/logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -46,7 +46,7 @@ export class SubscriptionService {
       return ok(toSubscriptionOffering(offering));
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.OFFERINGS_FETCH_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return err(toSubscriptionError('offerings', error));
     }
@@ -82,7 +82,7 @@ export class SubscriptionService {
       return CustomerInfoPolicy.findStoreProductId(customerInfo, store);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return null;
     }

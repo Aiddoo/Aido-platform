@@ -31,7 +31,7 @@ export {
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';
 
 // 던져진 값 정규화
-export { errorMessageOf, toError } from './to-error';
+export { getErrorMessage, toError } from './to-error';
 
 // 사용자 노출 문구 판정
-export { userFacingMessageOf } from './user-facing-message';
+export { getUserFacingMessage } from './user-facing-message';

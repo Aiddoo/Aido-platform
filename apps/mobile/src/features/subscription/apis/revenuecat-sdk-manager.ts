@@ -1,7 +1,7 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 
@@ -58,7 +58,7 @@ export class RevenueCatSdkManager {
       this.#configured = true;
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return;
     }
@@ -76,7 +76,7 @@ export class RevenueCatSdkManager {
       await this.#purchases.logIn(userId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGIN_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
       return;
     }
@@ -98,7 +98,7 @@ export class RevenueCatSdkManager {
       await this.#purchases.logOut();
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGOUT_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     }
   };
@@ -113,7 +113,7 @@ export class RevenueCatSdkManager {
       await this.#purchases.setAttributes({ ...this.#subscriberAttributes });
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     }
   };
@@ -129,7 +129,7 @@ export class RevenueCatSdkManager {
       await this.#purchases.setFirebaseAppInstanceId(appInstanceId);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_FIREBASE_APP_INSTANCE_ID_SYNC_FAILED, {
-        error: errorMessageOf(error),
+        error: getErrorMessage(error),
       });
     }
   };

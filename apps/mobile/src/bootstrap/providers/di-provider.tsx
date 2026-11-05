@@ -62,7 +62,7 @@ import { DEVICE_MODEL_NAME } from '@src/shared/config/device';
 import { ENV } from '@src/shared/config/env';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
-import { errorMessageOf, isKeychainLockedError, toError } from '@src/shared/errors';
+import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
@@ -151,7 +151,7 @@ export function DIProvider({
     if (storageFailure != null) {
       // 이번 실행은 초안·조회 캐시를 기기에 남기지 않는다. 앱은 서버 값만으로 동작한다
       logger.warn(QUERY_CACHE_LOG_EVENT.ENCRYPTED_STORAGE_UNAVAILABLE, {
-        error: errorMessageOf(storageFailure),
+        error: getErrorMessage(storageFailure),
       });
       // 잠금 해제 전 실행처럼 키체인을 잠시 못 읽는 것은 예상된 상태라 이벤트로 올리지 않는다
       if (!isKeychainLockedError(storageFailure)) {

@@ -1,5 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf } from '@src/shared/errors';
+import { getErrorMessage } from '@src/shared/errors';
 import { useCallback } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { KeyboardController } from 'react-native-keyboard-controller';
@@ -29,7 +29,7 @@ export function useTodoCommentBack() {
         .with('closeComposer', () => {
           KeyboardController.dismiss({ animated: false }).catch((error) =>
             logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
-              error: errorMessageOf(error),
+              error: getErrorMessage(error),
             }),
           );
           reset(TodoCommentComposer.new());

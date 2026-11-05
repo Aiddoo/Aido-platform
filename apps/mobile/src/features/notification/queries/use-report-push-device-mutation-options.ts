@@ -1,5 +1,5 @@
 import { useLogger, usePushDeviceService } from '@src/bootstrap/providers/di-context';
-import { errorMessageOf, isApiError, isConnectivityError, toError } from '@src/shared/errors';
+import { getErrorMessage, isApiError, isConnectivityError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -19,7 +19,7 @@ export const useReportPushDeviceMutationOptions = () => {
     onError: (error) => {
       if (isApiError(error) || isConnectivityError(error)) {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_DEVICE_REPORT_FAILED, {
-          error: errorMessageOf(error),
+          error: getErrorMessage(error),
         });
         return;
       }

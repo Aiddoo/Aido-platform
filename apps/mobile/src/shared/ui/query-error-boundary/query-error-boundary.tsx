@@ -1,7 +1,7 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import {
   classifyBoundaryError,
-  errorMessageOf,
+  getErrorMessage,
   isApiError,
   isConnectivityError,
   toError,
@@ -80,7 +80,7 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
                     category: 'network',
                     level: 'warning',
                     message: 'query_boundary_connectivity',
-                    data: { error: errorMessageOf(error) },
+                    data: { error: getErrorMessage(error) },
                   });
                   return;
                 }
