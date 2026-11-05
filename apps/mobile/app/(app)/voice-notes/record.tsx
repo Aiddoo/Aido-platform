@@ -54,9 +54,12 @@ import { Suspense, useEffect, useEffectEvent, useState } from 'react';
 import { ActivityIndicator, BackHandler } from 'react-native';
 import { match, P } from 'ts-pattern';
 
+/** Android는 Activity가 사라진 뒤 풀면 거절한다. 켜둘 화면이 이미 없으니 알릴 일이 아니다 */
+const KEEP_AWAKE_OPTIONS = { suppressDeactivateWarnings: true };
+
 function VoiceNoteRecordScreen() {
   const { t } = useTranslation('voiceNote');
-  useKeepAwake();
+  useKeepAwake(undefined, KEEP_AWAKE_OPTIONS);
   const isCompact = useWindowSizeClass() === 'compact';
   const fontScaledSize = useFontScaledSize();
   const controlIconSize = fontScaledSize(RECORD_CONTROL_ICON_SIZE);
