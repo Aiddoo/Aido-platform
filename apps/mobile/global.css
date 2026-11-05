@@ -7,6 +7,21 @@
 
 @layer theme {
   :root {
+    /* Android는 음수 자간이면 잰 폭보다 줄바꿈 폭이 커져 마지막 글자가 다음 줄로 밀려 사라진다(QA #27: "계속"→"계") */
+    @variant android {
+      --text-display--letter-spacing: 0px;
+      --text-h1--letter-spacing: 0px;
+      --text-t1--letter-spacing: 0px;
+      --text-t2--letter-spacing: 0px;
+      --text-t3--letter-spacing: 0px;
+      --text-b1--letter-spacing: 0px;
+      --text-b2--letter-spacing: 0px;
+      --text-b3--letter-spacing: 0px;
+      --text-b4--letter-spacing: 0px;
+      --text-e1--letter-spacing: 0px;
+      --text-e2--letter-spacing: 0px;
+    }
+
     @variant light {
       --background: oklch(1 0 0);
       --foreground: oklch(0.32 0 0);
