@@ -48,7 +48,10 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
   it("현재 발표 cache가 있으면 공급자에 접근하지 않고 값을 반환한다", async () => {
     // Given
     const cached = weatherForecastFixture({ temperatureMax: 17 });
-    await cache.saveForecast(60, 127, kmaTimingFixture(date), cached);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: cached }],
+      kmaTimingFixture(date),
+    );
     // When
     const result = await reader.fetchForLocation(weatherLocationFixture(), date);
     // Then
@@ -72,7 +75,10 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     // Given
     const previous = new Date("2026-07-22T00:00:00.000Z");
     const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
-    await cache.saveForecast(60, 127, kmaTimingFixture(previous), saved);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: saved }],
+      kmaTimingFixture(previous),
+    );
     weatherProvider.failure = new Error("provider down");
     // When
     const result = await reader.fetchForLocation(weatherLocationFixture(), date);
@@ -100,7 +106,10 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     // Given
     const previous = new Date("2026-07-22T00:00:00.000Z");
     const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
-    await cache.saveForecast(60, 127, kmaTimingFixture(previous), saved);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: saved }],
+      kmaTimingFixture(previous),
+    );
     weatherProvider.failure = new Error("provider down");
     await reader.fetchForLocation(weatherLocationFixture(), date);
     // When
@@ -139,8 +148,14 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
       date: new Date("2026-07-22T00:00:00.000Z"),
       temperatureMax: 33,
     });
-    await cache.saveForecast(60, 127, kmaTimingFixture(date), hit);
-    await cache.saveForecast(52, 38, kmaTimingFixture(latest.date), latest);
+    await cache.saveForecastBatch(
+      [{ gridX: 60, gridY: 127, forecast: hit }],
+      kmaTimingFixture(date),
+    );
+    await cache.saveForecastBatch(
+      [{ gridX: 52, gridY: 38, forecast: latest }],
+      kmaTimingFixture(latest.date),
+    );
     weatherProvider.results.set("35.1796:129.0756", fresh);
     weatherProvider.results.set("33.4996:126.5312", new Error("jeju down"));
     weatherProvider.results.set("35.8:128.6", new Error("no fallback"));

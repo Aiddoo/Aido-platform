@@ -22,14 +22,6 @@ export interface WeatherCachePort {
     timing: KmaForecastTiming,
   ): Promise<WeatherForecast | undefined>;
 
-  /** 예보 단건 저장 (정규 3h + latest 24h). */
-  saveForecast(
-    gridX: number,
-    gridY: number,
-    timing: KmaForecastTiming,
-    forecast: WeatherForecast,
-  ): Promise<void>;
-
   /**
    * 정규 예보가 없으면 load로 한 번만 불러 정규·latest에 저장한다. 같은 격자를 동시에 물으면
    * 공급자 호출 하나를 나눠 쓴다.
