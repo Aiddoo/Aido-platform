@@ -88,6 +88,7 @@ export interface HttpClient {
 | `PurchasesGateway`        | `revenueCatPurchasesGateway`(react-native-purchases)      | `shared/infra/purchases/`                    |
 | `HapticsGateway`          | `expoHapticsGateway`(expo-haptics)                        | `shared/infra/haptics/`                      |
 
+> 위 표는 대표 포트이고 전체 목록은 `core/ports/`에 있다.
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`·`expo-speech-recognition`·`react-native-purchases`·`expo-haptics`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 > 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
 
@@ -928,39 +929,94 @@ export function {Feature}List() {
 ## Port·Adapter·DI
 
 ```
-core/ports (인터페이스) ← shared/infra (어댑터) ← di-provider (조립) → di-context (use{X}Service 훅)
+core/ports (인터페이스) ← shared/infra (어댑터) ← di-provider (조립) → di-context (use{X} 훅) → 컴포넌트·쿼리
 ```
 
-- **포트**: OS·네트워크·저장소 같은 외부 경계는 `core/ports/`에 인터페이스로 정의한다.
-- **어댑터**: 벤더·Expo 모듈 호출은 `shared/infra/`의 어댑터에만 둔다. 서비스와 컴포넌트는 포트만 안다.
-- **조립**: `bootstrap/providers/di-provider.tsx`(composition root)가 어댑터와 서비스를 만들고, `di-context.tsx`의
-  `DIContainer`와 `use{X}Service` 훅으로 내보낸다. 사용처는 훅으로만 서비스를 받는다.
-- **Mapper는 DI에 넣지 않는다.** DTO·OS 값을 모델로 바꾸는 순수 함수라 서비스가 직접 import한다.
-- **테스트**: 포트를 구현한 stub을 DI로 주입한다(`createSpeechRecognizerStub`·`createPurchasesGatewayStub`·`createHapticsStub`).
-  SDK `jest.mock`은 어댑터 경계 테스트(`shared/infra/**/*.test.ts`)에만 쓴다([testing-guide](./testing-guide.md)).
+### 왜 이렇게 하나
 
-예: `PushNotificationGateway`(포트) → `expoPushNotificationGateway`(어댑터) → `PushDeviceService`.
+1. **라이브러리를 쉽게 바꾼다.** 앱 코드는 포트만 안다. `expo-clipboard`를 다른 라이브러리로 바꿀 때 어댑터 하나를 새로 만들고 `di-provider`의 조립만 바꾼다. 컴포넌트·서비스·테스트는 그대로다.
+2. **실제와 가깝게 테스트한다.** 모듈을 `jest.mock`으로 가로채지 않고 포트의 stub만 끼운다. 서비스·모델·화면은 실제 코드가 돈다. 파일 경로를 옮겨도 테스트가 깨지지 않는다.
+3. **기기에 없는 상황을 만든다.** 마이크 없는 시뮬레이터, 전화로 끊긴 인식, 결제 실패를 구현체 교체만으로 재현한다.
+
+stub 테스트가 통과해도 실제 SDK·OS 동작은 보장하지 않는다(예: Hermes에 없는 메서드, 기기별 인식기 차이). 그 부분은 실기기 QA로 확인한다.
+
+### 규칙
+
+- **SDK는 `shared/infra`에서만 import한다.** 네이티브·외부 SDK는 한 줄짜리 호출이어도 어댑터를 거친다. 쓰는 쪽은 `use{X}` 훅으로 받는다.
+- **예외는 두 가지뿐이다.**
+  - 라이브러리 자체가 React 훅이면(`expo-audio`) 경계 훅 파일 하나에서만 import한다(`use-voice-note-player.ts`).
+  - React 밖 코드(시작 시 값, 위젯 진입점, 부트스트랩)는 DI 훅을 부를 수 없으니 `shared/infra`의 함수를 직접 import한다.
+- **포트에는 앱이 필요한 기능만 둔다.** SDK 타입을 밖으로 내보내지 않고 plain 값으로 넘긴다.
+- **조립은 `bootstrap/providers/di-provider.tsx` 한 곳이다.** 서비스·저장소를 다른 곳에서 `new` 하지 않는다.
+- **Mapper는 DI에 넣지 않는다.** DTO·OS 값을 모델로 바꾸는 순수 함수라 서비스가 직접 import한다.
+
+### 케이스별 사용법
+
+| 필요한 것            | 방식                               | 꺼내는 훅 예시                       |
+| -------------------- | ---------------------------------- | ------------------------------------ |
+| 일회성 네이티브 기능 | 포트 + 어댑터                      | `useClipboard()`, `useHaptics()`     |
+| 서버 데이터          | `HttpClient` → 서비스 → 쿼리 옵션  | `useGetMemoQueryOptions()`           |
+| 로컬 저장값          | `SyncStorage` → 저장소             | `useRecognitionLanguageRepository()` |
+| 이벤트 스트림        | 포트의 `subscribe`, 해제 함수 반환 | `useSpeechRecognizer()`              |
+| 관측                 | 포트                               | `useLogger()`, `useAnalytics()`      |
+
+### 예: 클립보드
 
 ```typescript
-// core/ports/push-notification-gateway.ts
-export interface PushNotificationGateway {
-  getPermission(): Promise<PushPermissionResponse>;
-  ensureChannel(): Promise<void>;
-  getToken(): Promise<string>;
-  // …
+// core/ports/clipboard.ts
+export interface ClipboardGateway {
+  hasString(): Promise<boolean>;
+  getString(): Promise<string>;
+  setString(text: string): Promise<void>;
 }
 
-// di-provider.tsx
-const pushDeviceService = new PushDeviceService(
-  expoPushNotificationGateway,
-  deviceIdService,
-  authHttpClient,
-  logger,
-);
+// shared/infra/clipboard/expo-clipboard.gateway.ts
+import * as Clipboard from 'expo-clipboard';
 
-// di-context.tsx
-export const usePushDeviceService = () => useDI().pushDeviceService;
+export const expoClipboardGateway: ClipboardGateway = {
+  hasString: () => Clipboard.hasStringAsync(),
+  getString: () => Clipboard.getStringAsync(),
+  setString: async (text) => {
+    await Clipboard.setStringAsync(text);
+  },
+};
+
+// bootstrap/providers/di-provider.tsx
+clipboard: expoClipboardGateway,
+
+// bootstrap/providers/di-context.tsx
+export const useClipboard = () => useDI().clipboard;
+
+// 컴포넌트
+const clipboard = useClipboard();
+await clipboard.setString(comment.content ?? '');
 ```
+
+라이브러리를 바꾸면 어댑터 파일과 `di-provider`의 조립만 바뀐다. 테스트 방법은 [testing-guide](./testing-guide.md#stub-우선-di-테스트)를 본다.
+
+### 예: 서버 데이터
+
+```typescript
+// di-provider.tsx: 서비스는 HttpClient 포트를 받는다
+const memoService = new MemoService(authHttpClient);
+
+// queries/get-memo-query-options.ts
+export function getMemoQueryOptions(service: MemoService, { memoId }: { memoId: number }) {
+  return queryOptions({
+    queryKey: MEMO_QUERY_KEYS.detail({ memoId }),
+    queryFn: async ({ signal }) => unwrap(await service.getMemo(memoId, signal)),
+  });
+}
+
+export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
+  return getMemoQueryOptions(useMemoService(), { memoId });
+}
+
+// 컴포넌트
+const { data: memo } = useQuery(useGetMemoQueryOptions({ memoId }));
+```
+
+### 포트별 참고
 
 - **음성 인식**: 화면은 `SpeechRecognizer`의 `mode`(`dictation`·`quick`·`note`)만 고른다. 연속 인식·기기 안 인식·문장부호·
   `iosTaskHint`·Android intent·음량(0..1로 정규화)·녹음 파일(16kHz Int16) 옵션은 어댑터가 `mode`에 따라 정한다.

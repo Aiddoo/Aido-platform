@@ -90,7 +90,7 @@ React hook을 호출하지 않고 함수 입력과 출력만 검증할 수 있�
 - 의미 있는 성공·실패·경계 분기만 남긴다. 모든 줄을 실행하기 위한 케이스는 만들지 않는다.
 - mock보다 포트를 구현한 stub/fake를 먼저 쓴다. `jest.fn()`·spy는 호출 자체가 계약일 때(요청 path, 토큰 해제 순서)와 시간·UUID 같은 실제 경계에만 둔다.
 - 외부 API(푸시, AI, 이메일, OAuth, 날씨)와 OS 모듈은 실제로 부르지 않고 stub으로 대체한다.
-- 모듈 `jest.mock`은 어댑터 경계 테스트(`expo-push-notification.gateway.test.ts`)에서만 쓴다.
+- 새 테스트에서 모듈 `jest.mock`은 어댑터 경계 테스트(`expo-push-notification.gateway.test.ts`)에서만 쓴다. 기존 테스트에 남은 `jest.mock`은 일괄로 바꾸지 않는다.
 - 하나의 테스트에서 여러 프레임워크 mock을 조립하기 시작하면 순수 로직 추출을 먼저 검토한다.
 - 실제 타이머를 기다리지 말고 시간 값을 인자로 주거나 fake timer를 사용한다.
 - 테스트끼리 QueryClient, mock, 전역 상태를 공유하지 않는다.
@@ -98,6 +98,38 @@ React hook을 호출하지 않고 함수 입력과 출력만 검증할 수 있�
 ## Stub 우선 DI 테스트
 
 서비스·훅·컴포넌트가 포트에 기대면 실제 서비스에 stub 포트를 끼워 DI로 넣는다.
+
+|                                     | `jest.mock`(모킹)           | stub·fake(우리 방식)                       |
+| ----------------------------------- | --------------------------- | ------------------------------------------ |
+| 바꾸는 것                           | 모듈 경로를 통째로 가로챈다 | 포트 구현체 하나를 넣는다                  |
+| 타입                                | 포트와 어긋나도 모른다      | 포트를 구현하므로 어긋나면 컴파일 오류다   |
+| 실행되는 코드                       | 가로챈 만큼 가짜다          | 포트 안쪽의 서비스·모델·화면은 실제 코드다 |
+| 파일을 옮기거나 라이브러리를 바꾸면 | 테스트가 깨진다             | 그대로다                                   |
+
+호출 여부보다 결과 상태를 확인한다.
+
+```tsx
+function createClipboardFake(): ClipboardGateway {
+  let copiedText = '';
+  return {
+    hasString: async () => copiedText !== '',
+    getString: async () => copiedText,
+    setString: async (text) => {
+      copiedText = text;
+    },
+  };
+}
+
+// Given
+const clipboard = createClipboardFake();
+await renderUi(<CopyTagButton tag="aido#1234" />, { di: { clipboard } });
+
+// When
+fireEvent.press(screen.getByRole('button'));
+
+// Then
+await waitFor(async () => expect(await clipboard.getString()).toBe('aido#1234'));
+```
 
 | 도구                                                    | 용도                                                                           |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
