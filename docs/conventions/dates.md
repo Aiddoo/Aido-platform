@@ -30,8 +30,12 @@
 
 - **모바일**: 시간대는 기기 달력(`expo-localization` `getCalendars()[0].timeZone`)에서만 온다. 앱 전체의 오늘 key·자정 전환은 `LocalDateProvider`(`apps/mobile/src/shared/providers/local-date-provider.tsx`)가 소유하고, Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 컴포넌트는 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다. 상대 시간처럼 분 단위로 바뀌는 표시는 `useMinuteNow()`를 쓴다. `Date`의 달력 날짜·요일은 `date-key.ts`의 `toDeviceDateKey`(같은 `getCalendars()` 시간대)로 key를 만든 뒤 계산하고, 하루 길이 상수는 `date-format.ts`의 `DAY_MS` 하나를 쓴다.
 - 서버의 요청 언어는 `RequestClient.locale`(`@Locale()`)이다. `Accept-Language`가 없으면 null(저장된 언어 유지, 날씨 특보 문구는 `en`), 지원하지 않는 언어는 `ko`다.
+- 음성 인식 언어는 사용자가 고른 값이고 없으면 앱 언어다(`useRecognitionLanguage`). 기기 언어와 달라도 된다.
+- AI 출력은 `language-policy.ts` 한 곳이다. 할 일 제목은 말한 언어 그대로, 요약·핵심 포인트는 요청 언어(없으면 저장된 사용자 언어)다.
+- 푸시 문구(`series-paused` 포함)는 저장된 `UserPreference.locale`이다. 앱이 언어를 바꿀 때 보고한다.
 - 표시 언어는 글자 모양만 바꾼다. 언어로 시간대·오늘·주 시작·날짜 key를 바꾸지 않는다(dayjs 전역 locale로 주 시작을 바꾸는 경로 포함).
 - 유료 기능 사용량 창: 응원·찌르기 일간 한도는 요청 `X-Timezone`의 하루(자정 초기화), AI 파싱 월간 한도는 계약에 고정된 KST 달력 월(매월 1일 00:00 KST)이다. `/v1/auth/me`의 `entitlements.*.resetsAt`이 같은 규칙의 다음 초기화 instant다.
+- 반복 할 일의 시간을 고치면 고른 시각을 요청의 `X-Timezone`으로 해석하고 규칙의 시간대도 그 값으로 저장한다. 반복을 만들 때도 같다. 이관에서 사용자 시간대가 없거나 잘못되면 `Asia/Seoul`이고 저장된 `UTC`는 유지한다.
 - 주 시작은 사용자 설정을 따른다. 현재는 설정이 없어 일요일 시작 규칙 하나(`apps/mobile/src/shared/utils/calendar-week.ts`)이고, 서버 리포트 기간은 각 기능의 명시한 규칙(ISO 주 등)을 쓴다. 같은 화면에서 두 주 규칙을 섞지 않는다.
 
 ## 3. 표시

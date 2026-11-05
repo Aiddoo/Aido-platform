@@ -5967,7 +5967,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "string",
             },
             "timezone": {
-              "description": "규칙의 시간대 (IANA). 반복을 만들거나 시간을 고친 기기의 시간대이고 여행만으로는 바뀌지 않는다",
+              "description": "규칙의 시간대 (IANA). 벽시계 시각을 회차의 순간으로 바꿀 때 쓴다",
               "type": "string",
             },
             "title": {
@@ -21714,7 +21714,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "string",
         },
         "timezone": {
-          "description": "규칙의 시간대 (IANA). 반복을 만들거나 시간을 고친 기기의 시간대이고 여행만으로는 바뀌지 않는다",
+          "description": "규칙의 시간대 (IANA). 벽시계 시각을 회차의 순간으로 바꿀 때 쓴다",
           "type": "string",
         },
         "title": {

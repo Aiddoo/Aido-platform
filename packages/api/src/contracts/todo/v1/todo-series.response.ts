@@ -19,9 +19,7 @@ export const todoSeriesResponseSchema = z
       .describe("규칙 시간대의 시각 (HH:mm, 종일 반복은 null)"),
     timezone: z
       .string()
-      .describe(
-        "규칙의 시간대 (IANA). 반복을 만들거나 시간을 고친 기기의 시간대이고 여행만으로는 바뀌지 않는다",
-      ),
+      .describe("규칙의 시간대 (IANA). 벽시계 시각을 회차의 순간으로 바꿀 때 쓴다"),
     repeat: todoRepeatSchema,
     startDate: dateSchema.describe("반복 시작일 (YYYY-MM-DD)"),
     nextOccurrenceDate: nullableDateSchema.describe(

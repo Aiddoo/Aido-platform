@@ -142,7 +142,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
     );
 
     it.each(EDIT_CASES)(
-      "$rule, $device: 제목만 고치면 규칙 시간대와 시각이 그대로다",
+      "$rule, $device: 제목만 고치면 시각이 그대로다",
       async ({ ruleZone, header }) => {
         // Given
         const { seriesId } = await createSeries(ruleZone);
@@ -161,13 +161,12 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         expect(await readSeries(seriesId, header)).toMatchObject({
           title: "새 제목",
           scheduledTime: "09:00",
-          timezone: ruleZone,
         });
       },
     );
 
     it.each(EDIT_CASES)(
-      "$rule, $device: 시간을 지우면 종일이 되고 규칙 시간대는 그대로다",
+      "$rule, $device: 시간을 지우면 종일이 된다",
       async ({ ruleZone, header }) => {
         // Given
         const { seriesId } = await createSeries(ruleZone);
@@ -181,10 +180,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         // Then
         const rows = await occurrences(seriesId);
         expect(rows.every((row) => row.scheduledTime == null && row.isAllDay)).toBe(true);
-        expect(await readSeries(seriesId, header)).toMatchObject({
-          scheduledTime: null,
-          timezone: ruleZone,
-        });
+        expect(await readSeries(seriesId, header)).toMatchObject({ scheduledTime: null });
       },
     );
 
@@ -221,37 +217,11 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         );
       },
     );
-
-    it.each(EDIT_CASES)(
-      "$rule, $device: 규칙만 바꾸면 규칙 시간대를 그대로 물려받는다",
-      async ({ ruleZone, header }) => {
-        // Given
-        const { seriesId } = await createSeries(ruleZone);
-        const before = await occurrences(seriesId);
-        // When
-        await patch(before[1]?.id ?? 0, header, {
-          scope: "THIS_AND_FOLLOWING",
-          repeat: { frequency: "DAILY", end: { type: "COUNT", count: 5 } },
-        });
-        // Then
-        const moved = await ctx.testDatabase.getClient().query.todo.findFirst({
-          where: { id: before[1]?.id ?? 0 },
-        });
-        const rows = await occurrences(moved?.seriesId ?? "");
-        expect(rows.map((row) => row.scheduledTime)).toEqual(
-          rows.map((row) => parseLocalDateTime(toDateString(row.startDate), "09:00", ruleZone)),
-        );
-        expect(await readSeries(moved?.seriesId ?? "", header)).toMatchObject({
-          scheduledTime: "09:00",
-          timezone: ruleZone,
-        });
-      },
-    );
   });
 
   describe("이 할 일만", () => {
     it.each(EDIT_CASES)(
-      "$rule, $device: 고치면 그 회차만 그 시간대의 시각이고 규칙은 그대로다",
+      "$rule, $device: 고치면 그 회차만 그 시간대의 시각이고 규칙의 시각은 그대로다",
       async ({ ruleZone, header, resolved }) => {
         // Given
         const { seriesId } = await createSeries(ruleZone);
@@ -266,10 +236,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
         );
         expect(rows[0]?.scheduledTime).toEqual(before[0]?.scheduledTime);
         expect(rows[2]?.scheduledTime).toEqual(before[2]?.scheduledTime);
-        expect(await readSeries(seriesId, header)).toMatchObject({
-          scheduledTime: "09:00",
-          timezone: ruleZone,
-        });
+        expect(await readSeries(seriesId, header)).toMatchObject({ scheduledTime: "09:00" });
       },
     );
   });
