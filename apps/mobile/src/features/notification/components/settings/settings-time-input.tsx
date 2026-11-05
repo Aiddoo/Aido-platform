@@ -93,7 +93,7 @@ function SettingsTimeRow({
               {formatTimeOfDay({ hour, minute }, timeFormat, dateFormatContext)}
             </Text>
           </HStack>
-          <Text size="b3" shade={6}>
+          <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
             {description}
           </Text>
         </VStack>
