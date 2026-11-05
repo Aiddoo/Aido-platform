@@ -437,3 +437,36 @@ test('옮긴 클라이언트 모델이 요청·응답 계약을 import하면 거
     },
   );
 });
+
+test('앱 Hermes에 없는 toSorted와 Array.fromAsync는 src와 app 모두에서 거부한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo/domains/sorted.ts': `
+        export const sorted = [3, 1].toSorted();
+        export const collected = Array.fromAsync(source());
+      `,
+      'apps/mobile/app/(app)/index.tsx': `
+        export const dates = dates.toSorted((a, b) => a - b);
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 3);
+      assert.ok(errors.every((error) => error.includes('Hermes')));
+    },
+  );
+});
+
+test('Hermes에 있는 toReversed와 다른 객체의 fromAsync는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo/domains/reversed.ts': `
+        export const reversed = [3, 1].toReversed();
+        export const last = [3, 1].findLastIndex((value) => value === 1);
+        export const other = stream.fromAsync(source());
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});

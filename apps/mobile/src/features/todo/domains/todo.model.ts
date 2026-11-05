@@ -5,7 +5,7 @@ import {
   type DailyCompletionsRangeResponse,
   type TodoSummaryResponse,
 } from '@aido/api';
-import { uniq } from 'es-toolkit';
+import { sortBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
@@ -116,17 +116,20 @@ export function withDailyCompletionFromTodos(
   const completions =
     totalTodos === 0
       ? others
-      : [
-          ...others,
-          {
-            date,
-            totalTodos,
-            completedTodos,
-            isComplete: totalTodos === completedTodos,
-            completionRate: Math.round((completedTodos / totalTodos) * 100),
-            categoryColors: uniq(dayTodos.map((todo) => todo.category.color)),
-          },
-        ].toSorted((a, b) => a.date.localeCompare(b.date));
+      : sortBy(
+          [
+            ...others,
+            {
+              date,
+              totalTodos,
+              completedTodos,
+              isComplete: totalTodos === completedTodos,
+              completionRate: Math.round((completedTodos / totalTodos) * 100),
+              categoryColors: uniq(dayTodos.map((todo) => todo.category.color)),
+            },
+          ],
+          [(completion) => completion.date],
+        );
 
   return {
     ...result,

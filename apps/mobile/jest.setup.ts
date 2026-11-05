@@ -12,6 +12,11 @@ if (isFetch(originalFetch)) {
   globalThis.fetch = originalFetch;
 }
 
+// jest는 Node에서 돌아 앱의 Hermes에 없는 메서드도 그냥 통과한다. 앱에서 실측한 빈칸을 Node에서도 비운다.
+// 같은 목록을 scripts/check-mobile-conventions.mjs의 HERMES_MISSING_METHODS가 소스에서도 막는다.
+Reflect.deleteProperty(Array.prototype, 'toSorted');
+Reflect.deleteProperty(Array, 'fromAsync');
+
 // Reanimated 4.7 requires its web resolver for CSS initialization in Jest.
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
 // 네이티브 모듈이 없으면 randomUUID가 undefined를 준다. 멱등 키처럼 호출마다 달라야 하는 값을 테스트한다.

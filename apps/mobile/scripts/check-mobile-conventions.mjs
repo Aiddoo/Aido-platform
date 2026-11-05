@@ -617,6 +617,32 @@ function checkStrictNullishComparisons(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+// 앱의 Hermes(260318099.0.5)에서 실측해 없는 표준 메서드. TS lib에는 있어 typecheck를 통과하고 호출한 순간 앱에서만 죽는다.
+// 같은 시대의 toReversed·toSpliced·with·findLast·findLastIndex는 있다. jest.setup.ts도 같은 목록을 Node에서 지운다.
+const HERMES_MISSING_METHODS = new Map([
+  ['toSorted', 'es-toolkit의 sortBy'],
+  ['fromAsync', 'for await'],
+]);
+
+function checkHermesMissingMethods(sourceFile, repositoryRoot, errors) {
+  function visit(node) {
+    if (ts.isPropertyAccessExpression(node)) {
+      const replacement = HERMES_MISSING_METHODS.get(node.name.text);
+      const isTarget =
+        node.name.text !== 'fromAsync' ||
+        (ts.isIdentifier(node.expression) && node.expression.text === 'Array');
+      if (replacement != null && isTarget) {
+        errors.push(
+          `${getLocation(sourceFile, node.name, repositoryRoot)} ${node.name.text}는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. ${replacement}를 쓰세요.`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   const errors = [];
 
@@ -669,6 +695,19 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
     checkTestQueryClientFactory(sourceFile, repositoryRoot, errors);
     checkClientOwnedModelImports(sourceFile, repositoryRoot, errors);
+  }
+
+  for (const file of ['apps/mobile/src', 'apps/mobile/app'].flatMap((root) =>
+    getSourceFiles(repositoryRoot, root),
+  )) {
+    const sourceFile = ts.createSourceFile(
+      file,
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+    checkHermesMissingMethods(sourceFile, repositoryRoot, errors);
   }
 
   const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];

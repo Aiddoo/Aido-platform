@@ -1,3 +1,7 @@
+import { createParentTodo } from '@src/features/todo/__tests__/sub-todo.factories';
+import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
+import type { DailyCompletionsResult, TodoListResult } from '@src/features/todo/domains/todo.model';
+import { syncDailyCompletionWithList } from '@src/features/todo/queries/todo-cache';
 import { createMemorySyncStorage } from '@src/shared/__tests__';
 import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
@@ -149,6 +153,31 @@ describe('serializeQueryCache', () => {
     // Then
     expect(restored).toEqual(client);
   });
+
+  it('달력 날짜와 벽시계 시각 문자열은 복원 뒤에도 문자열 그대로다', () => {
+    // Given
+    const todo = {
+      startDate: '2026-11-06',
+      endDate: '2026-11-08',
+      localTime: '10:00',
+      occurrenceDate: '2026-11-07',
+      scheduledLocalTime: '10:00',
+      repeat: { until: '2027-02-03' },
+    };
+    const client = {
+      timestamp: 1,
+      buster: '1:1.15.0',
+      clientState: { mutations: [], queries: [] },
+      todo,
+      completions: [{ date: '2026-11-06' }],
+    };
+
+    // When
+    const restored = deserializeQueryCache(serializeQueryCache(client));
+
+    // Then
+    expect(restored).toEqual(client);
+  });
 });
 
 describe('createQueryPersistOptions', () => {
@@ -187,6 +216,53 @@ describe('createQueryPersistOptions', () => {
 
     // Then
     expect(restored).toEqual({ savedAt: new Date('2026-11-02T00:00:00.000Z') });
+  });
+
+  it('실제 저장·복원을 거친 달력 요약과 목록에도 체크 결과를 날짜 순서대로 반영한다', async () => {
+    // Given
+    const date = '2026-11-05';
+    const listKey = TODO_QUERY_KEYS.listByDate({ date });
+    const rangeKey = TODO_QUERY_KEYS.completionsByRange({
+      startDate: '2026-11-01',
+      endDate: '2026-11-07',
+    });
+    const storage = createQueryCacheStorage(createMemorySyncStorage());
+    storage.setOwner('user-1');
+    const options = createQueryPersistOptions({ storage, buster: '3:1.15.0:ko' });
+    const source = createClient();
+    source.getQueryCache().build(source, { queryKey: listKey, ...PERSISTED_QUERY_OPTIONS });
+    source.getQueryCache().build(source, { queryKey: rangeKey, ...PERSISTED_QUERY_OPTIONS });
+    source.setQueryData<TodoListResult>(listKey, {
+      todos: [createParentTodo({ startDate: date, completed: true })],
+      hasNext: false,
+      nextCursor: null,
+    });
+    source.setQueryData<DailyCompletionsResult>(rangeKey, {
+      completions: [
+        {
+          date: '2026-11-07',
+          totalTodos: 1,
+          completedTodos: 0,
+          isComplete: false,
+          completionRate: 0,
+          categoryColors: ['#FF0000'],
+        },
+      ],
+      totalCompleteDays: 0,
+      dateRange: { startDate: '2026-11-01', endDate: '2026-11-07' },
+    });
+    await persistQueryClientSave({ queryClient: source, ...options });
+    await jest.runAllTimersAsync();
+    const restored = createClient();
+    await persistQueryClientRestore({ queryClient: restored, ...options });
+
+    // When
+    syncDailyCompletionWithList(restored, { date });
+
+    // Then
+    const synced = restored.getQueryData<DailyCompletionsResult>(rangeKey);
+    expect(synced?.completions.map((completion) => completion.date)).toEqual([date, '2026-11-07']);
+    expect(synced?.totalCompleteDays).toBe(1);
   });
 
   it('앱 버전이 바뀌면 이전 캐시를 복원하지 않는다', async () => {
