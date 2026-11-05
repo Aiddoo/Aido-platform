@@ -7,7 +7,7 @@ import { Box, HStack, MicIcon, Result, Text, TextButton, VStack } from '@src/sha
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
+import { Chip, PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -91,7 +91,9 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
       testID="voice-note-draft"
     >
       <HStack gap={12} align="center">
-        <MicIcon width={20} height={20} colorClassName="text-gray-6" />
+        <Box className="size-10 items-center justify-center rounded-full bg-gray-2">
+          <MicIcon width={20} height={20} colorClassName="text-gray-7" />
+        </Box>
         <VStack flex={1} gap={4}>
           <Text size="b3" weight="medium" maxLines={1}>
             {title}
@@ -103,9 +105,11 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
             })}
           </Text>
         </VStack>
-        <Text size="e1" shade={note.digest == null ? 7 : 5} maxLines={1}>
-          {note.digest == null ? t('drafts.notDigested') : t('drafts.digested')}
-        </Text>
+        {note.digest == null && (
+          <Chip size="sm" variant="soft" color="accent">
+            <Chip.Label>{t('drafts.notDigested')}</Chip.Label>
+          </Chip>
+        )}
       </HStack>
     </PressableFeedback>
   );

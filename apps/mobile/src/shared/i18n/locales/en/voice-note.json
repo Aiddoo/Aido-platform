@@ -51,7 +51,8 @@
     "kept": "What we heard is still here."
   },
   "start": {
-    "label": "Make a voice note"
+    "label": "Make a voice note",
+    "shortLabel": "Voice note"
   },
   "coach": {
     "noteStart": {
@@ -151,7 +152,6 @@
   "drafts": {
     "title": "Voice notes",
     "notDigested": "Not summarized",
-    "digested": "Summarized",
     "viewAll": "View all {{amount}}",
     "empty": "No voice notes yet"
   }

@@ -1,12 +1,12 @@
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { MicIcon } from '@src/shared/ui';
+import { HStack, MicIcon, Text } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 
 import { useVoiceNoteStart } from '../../hooks/use-voice-note-start';
 
-/** 메모 탭 위쪽의 마이크. 메모 추가 버튼과 같은 크기로 나란히 둔다. 화면 맨 위라 안내는 아래로 연다 */
+/** 메모 탭 위쪽의 말로 메모 버튼. 메모 추가 버튼과 같은 높이로 나란히 둔다. 화면 맨 위라 안내는 아래로 연다 */
 export function VoiceNoteStartButton() {
   const { t } = useTranslation('voiceNote');
   const fontScaledSize = useFontScaledSize();
@@ -24,11 +24,16 @@ export function VoiceNoteStartButton() {
         onPress={() => start()}
         accessibilityRole="button"
         accessibilityLabel={t('start.label')}
-        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-        className="items-center justify-center rounded-full bg-gray-2"
+        style={{ height: fontScaledSize(44) }}
+        className="justify-center rounded-full bg-gray-2 px-4"
         testID="voice-note-start"
       >
-        <MicIcon width={24} height={24} colorClassName="text-gray-7" />
+        <HStack gap={6} align="center">
+          <MicIcon width={20} height={20} colorClassName="text-gray-8" />
+          <Text size="b4" weight="semibold" shade={8} maxLines={1}>
+            {t('start.shortLabel')}
+          </Text>
+        </HStack>
       </PressableFeedback>
     </CoachmarkPopover>
   );

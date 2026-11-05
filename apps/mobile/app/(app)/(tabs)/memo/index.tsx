@@ -66,7 +66,7 @@ export default function MemoScreen() {
       <StyledSafeAreaView edges={['left', 'right']}>
         <HStack align="center" gap={8} px={16} mb={16}>
           <Box flex={1}>
-            <H3 shade={7}>{t('tab.addMemo')}</H3>
+            <H3 maxLines={1}>{t('tab.title')}</H3>
           </Box>
           <VoiceNoteStartButton />
           <QueryErrorBoundary fallback={(props) => <MemoCreateButton.Error {...props} />}>
@@ -90,7 +90,7 @@ export default function MemoScreen() {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
-          <Box px={12} style={{ flexGrow: 1 }}>
+          <Box px={16} style={{ flexGrow: 1 }}>
             <QueryErrorBoundary fallback={() => null}>
               <Suspense fallback={null}>
                 <VoiceNoteDraftList mb={16} />

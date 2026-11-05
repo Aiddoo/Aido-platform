@@ -7,7 +7,7 @@ import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
   Button,
-  CheckboxIcon,
+  CheckmarkIcon,
   H4,
   HStack,
   LockIcon,
@@ -126,7 +126,7 @@ export function AiConsentBottomSheet({
           />
           <ConsentItem
             icon={
-              <CheckboxIcon
+              <CheckmarkIcon
                 width={ITEM_ICON_SIZE}
                 height={ITEM_ICON_SIZE}
                 colorClassName="text-gray-7"

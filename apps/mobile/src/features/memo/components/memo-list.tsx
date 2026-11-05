@@ -26,6 +26,7 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
+import { MemoPolicy } from '../domains/memo.model';
 import { useSelectedMemo } from '../hooks/use-selected-memo';
 import { useGetMemosInfiniteQueryOptions } from '../queries/get-memos-infinite-query-options';
 import { distributeMemosIntoColumns, getMemoColumnCount } from '../utils/memo-list-layout';
@@ -33,6 +34,7 @@ import { distributeMemosIntoColumns, getMemoColumnCount } from '../utils/memo-li
 const LOADING_ITEMS_PER_COLUMN = 2;
 
 export function MemoList() {
+  const { t } = useTranslation('memo');
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
@@ -46,32 +48,41 @@ export function MemoList() {
     return hasVoiceNotes ? null : <MemoList.Empty />;
   }
 
-  const columns = distributeMemosIntoColumns(memos, getMemoColumnCount(windowSizeClass));
+  // 메모가 하나면 옆 칸이 비지 않게 한 열로 보여 준다
+  const columnCount = Math.min(getMemoColumnCount(windowSizeClass), memos.length);
+  const columns = distributeMemosIntoColumns(memos, columnCount);
 
   return (
     <VStack gap={20}>
-      <HStack gap={12} align="start">
-        {columns.map((column, colIndex) => (
-          <VStack key={column.key} flex={1} gap={12}>
-            {column.items.map((item, rowIndex) => (
-              <Animated.View
-                key={item.id}
-                layout={LinearTransition.springify().damping(18).stiffness(120)}
-                entering={FadeInDown.delay(Math.min(rowIndex * 2 + colIndex, 8) * 40)
-                  .duration(400)
-                  .damping(15)}
-              >
-                <MemoList.Item
-                  id={item.id}
-                  content={item.content}
-                  isPinned={item.isPinned}
-                  date={formatDateLabel(item.createdAt, 'monthDay', dateFormatContext)}
-                />
-              </Animated.View>
-            ))}
-          </VStack>
-        ))}
-      </HStack>
+      <VStack gap={8}>
+        {hasVoiceNotes && (
+          <Text size="b4" weight="semibold" shade={6}>
+            {t('list.savedTitle')}
+          </Text>
+        )}
+        <HStack gap={12} align="start">
+          {columns.map((column, colIndex) => (
+            <VStack key={column.key} flex={1} gap={12}>
+              {column.items.map((item, rowIndex) => (
+                <Animated.View
+                  key={item.id}
+                  layout={LinearTransition.springify().damping(18).stiffness(120)}
+                  entering={FadeInDown.delay(Math.min(rowIndex * 2 + colIndex, 8) * 40)
+                    .duration(400)
+                    .damping(15)}
+                >
+                  <MemoList.Item
+                    id={item.id}
+                    content={item.content}
+                    isPinned={item.isPinned}
+                    date={formatDateLabel(item.createdAt, 'monthDay', dateFormatContext)}
+                  />
+                </Animated.View>
+              ))}
+            </VStack>
+          ))}
+        </HStack>
+      </VStack>
       {hasNextPage && (
         <MemoList.More
           onPress={() => fetchNextPage({ cancelRefetch: false })}
@@ -97,21 +108,35 @@ MemoList.Item = function Item({
 }) {
   const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
   const selectMemo = useSingleTap(setSelectedMemoId);
+  const { title, body } = MemoPolicy.getPreview(content);
 
   return (
-    <PressableFeedback onPress={() => selectMemo(id)}>
+    <PressableFeedback onPress={() => selectMemo(id)} className="rounded-2xl">
       <VStack
         gap={8}
         p={16}
-        className={cn('rounded-xl', selectedMemoId === id ? 'bg-gray-3' : 'bg-gray-1')}
+        className={cn(
+          'rounded-2xl border bg-gray-1',
+          selectedMemoId === id ? 'border-main' : 'border-transparent',
+        )}
       >
-        <HStack align="start">
-          <Text className="flex-1" size="b3" shade={8} weight="semibold" numberOfLines={4}>
-            {content}
+        <HStack align="start" gap={8}>
+          <Text
+            className="flex-1"
+            size="b3"
+            weight="semibold"
+            maxLines={body.length > 0 ? 2 : 4}
+            lineBreakStrategyIOS="hangul-word"
+          >
+            {title}
           </Text>
           {isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
         </HStack>
-
+        {body.length > 0 && (
+          <Text size="b4" shade={6} maxLines={3} lineBreakStrategyIOS="hangul-word">
+            {body}
+          </Text>
+        )}
         <Text size="e1" shade={5}>
           {date}
         </Text>
@@ -129,7 +154,7 @@ MemoList.Loading = function Loading() {
       {times(columnCount, (column) => (
         <VStack key={column} flex={1} gap={12}>
           {times(LOADING_ITEMS_PER_COLUMN, (row) => (
-            <VStack key={row} gap={8} p={16} className="rounded-xl bg-gray-1">
+            <VStack key={row} gap={8} p={16} className="rounded-2xl bg-gray-1">
               <TextSkeleton size="b3" className="w-full" />
               <TextSkeleton size="b3" className="w-3/4" />
               <TextSkeleton size="e1" className="w-1/2" />

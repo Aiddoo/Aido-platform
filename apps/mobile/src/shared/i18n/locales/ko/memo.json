@@ -4,9 +4,10 @@
     "aiReview": "메모를 할 일로 나누기"
   },
   "tab": {
-    "addMemo": "메모 추가"
+    "title": "메모"
   },
   "list": {
+    "savedTitle": "저장한 메모",
     "emptyTitle": "아직 메모가 없어요",
     "emptyDescription": "애매한 할 일은 여기에 메모해두고\n나중에 할 일로 옮겨보세요",
     "loadFailed": "메모를 불러오지 못했어요",

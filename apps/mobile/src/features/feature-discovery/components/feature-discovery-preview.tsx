@@ -3,7 +3,16 @@ import type { FeatureDiscoveryCardId } from '@src/features/feature-discovery/dom
 import { TodoCheckbox, TodoLabel, TodoRow } from '@src/features/todo/components/todo-row';
 import { CATEGORY_COLORS } from '@src/features/todo/constants/todo-category-colors';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, CheckIcon, HStack, LockIcon, MicIcon, PawIcon, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  CheckmarkIcon,
+  HStack,
+  LockIcon,
+  MicIcon,
+  PawIcon,
+  Text,
+  VStack,
+} from '@src/shared/ui';
 import { Trans } from 'react-i18next';
 import { Image } from 'react-native';
 import { match } from 'ts-pattern';
@@ -172,9 +181,7 @@ function VoicePlanPreview() {
 function FactRow({ title, description }: { title: string; description: string }) {
   return (
     <HStack gap={10} align="start">
-      <Box className="size-7 items-center justify-center rounded-full bg-main/10">
-        <CheckIcon width={14} height={14} colorClassName="text-main" />
-      </Box>
+      <CheckmarkIcon width={20} height={20} colorClassName="text-main" />
       <VStack flex={1} gap={2}>
         <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
           {title}

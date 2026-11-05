@@ -57,7 +57,7 @@ jest.mock('@src/shared/ui', () => {
     TextButton: Button,
     ModalBottomSheet: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
       isOpen ? React.createElement(View, { testID: 'modal-sheet' }, children) : null,
-    CheckIcon: () => null,
+    CheckmarkIcon: () => null,
     PawIcon: () => null,
     ArrowUpIcon: () => null,
     CalendarIcon: () => null,

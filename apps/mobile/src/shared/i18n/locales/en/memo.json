@@ -4,9 +4,10 @@
     "aiReview": "Turn memo into to-dos"
   },
   "tab": {
-    "addMemo": "Add memo"
+    "title": "Memos"
   },
   "list": {
+    "savedTitle": "Saved memos",
     "emptyTitle": "No memos yet",
     "emptyDescription": "Jot down rough ideas here\nand turn them into to-dos later",
     "loadFailed": "Couldn't load your memos",

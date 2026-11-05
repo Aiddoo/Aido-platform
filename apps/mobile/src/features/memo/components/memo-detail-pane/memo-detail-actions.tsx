@@ -65,8 +65,14 @@ export function MemoSaveButton({ isHighlighted, className, ...props }: MemoSaveB
   return (
     <MemoActionButton
       accessibilityLabel={t('actions.save')}
-      className={cn('rounded-full', isHighlighted ? 'bg-main' : 'bg-gray-4', className)}
-      icon={<CheckmarkIcon width={20} height={20} colorClassName="text-white dark:text-gray-9" />}
+      className={cn('rounded-full', isHighlighted && 'bg-main', className)}
+      icon={
+        <CheckmarkIcon
+          width={20}
+          height={20}
+          colorClassName={isHighlighted ? 'text-white dark:text-gray-9' : 'text-gray-5'}
+        />
+      }
       {...props}
     />
   );

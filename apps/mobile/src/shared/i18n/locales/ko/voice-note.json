@@ -50,7 +50,8 @@
     "kept": "들은 내용은 그대로 남아 있어요."
   },
   "start": {
-    "label": "말로 메모하기"
+    "label": "말로 메모하기",
+    "shortLabel": "말로 메모"
   },
   "coach": {
     "noteStart": {
@@ -150,7 +151,6 @@
   "drafts": {
     "title": "말로 남긴 메모",
     "notDigested": "정리 전",
-    "digested": "정리함",
     "viewAll": "전체 보기 {{amount}}개",
     "empty": "말로 남긴 메모가 없어요"
   }

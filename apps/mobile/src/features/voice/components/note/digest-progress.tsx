@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { Box, CheckIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { toDateFormatLocale } from '@src/shared/utils/date-format';
 import { formatCount } from '@src/shared/utils/format';
@@ -68,7 +68,7 @@ function DigestStep({ label, status, detail }: DigestStepProps) {
           status === 'done' ? 'border-main bg-main' : 'border-gray-3',
         )}
       >
-        {status === 'done' && <CheckIcon colorClassName="accent-white" width={12} height={12} />}
+        {status === 'done' && <CheckmarkIcon colorClassName="text-white" width={14} height={14} />}
         {status === 'doing' && <Spinner size="sm" color="accent" />}
       </Box>
       <Text
