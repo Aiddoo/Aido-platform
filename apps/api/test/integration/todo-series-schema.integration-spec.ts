@@ -16,6 +16,10 @@ import {
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
+import {
+  DEFAULT_DELIVERY_TIMEZONE,
+  parseLocalDateTime,
+} from "#api/shared/domain/date/utils/timezone";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -34,7 +38,7 @@ function readMigrationStatements(suffix: string): string[] {
 
 function readDataMigrationStatements(): string[] {
   return readMigrationStatements("_todo_series").filter((statement) =>
-    /^(-- [^\n]*\n)?(UPDATE "Todo"|INSERT INTO "TodoSeries")/.test(statement),
+    /^(-- [^\n]*\n)*(UPDATE "Todo"|INSERT INTO "TodoSeries")/.test(statement),
   );
 }
 
@@ -128,18 +132,24 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       expect(byId.get(single.id)).toMatchObject({ seriesId: null, occurrenceDate: null });
     });
 
-    it("묶음마다 끝난 규칙을 만들고 첫 행의 내용과 실제 날짜 요일을 옮긴다", async () => {
+    it("묶음마다 끝난 규칙을 만들고 내용과 실제 날짜 요일을 옮긴다", async () => {
       // Given
       await client.insert(userPreference).values({ userId, timezone: "Asia/Seoul" });
       const first = await seedLegacy("group-b", "2026-03-02", {
         title: "월수 반복",
-        visibility: "PRIVATE",
+        visibility: "PUBLIC",
         sortOrder: 7,
         scheduledTime: new Date("2026-03-02T00:30:00.000Z"),
         isAllDay: false,
         createdAt: new Date("2026-03-01T00:00:00.000Z"),
       });
-      await seedLegacy("group-b", "2026-03-04", { sortOrder: 8 });
+      await seedLegacy("group-b", "2026-03-04", {
+        title: "월수 반복",
+        visibility: "PUBLIC",
+        sortOrder: 8,
+        scheduledTime: new Date("2026-03-04T00:30:00.000Z"),
+        isAllDay: false,
+      });
       await client.insert(todoItem).values([
         { todoId: first.id, title: "둘째", sortOrder: 1 },
         { todoId: first.id, title: "첫째", sortOrder: 0 },
@@ -152,7 +162,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         userId,
         categoryId,
         title: "월수 반복",
-        visibility: "PRIVATE",
+        visibility: "PUBLIC",
         scheduledLocalTime: "09:30",
         timezone: "Asia/Seoul",
         repeatFrequency: "WEEKLY",
@@ -184,21 +194,251 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         repeatWeekdays: null,
         generatedCount: 7,
         scheduledLocalTime: null,
-        timezone: "UTC",
       });
     });
+  });
 
-    it("사용자 시간대가 잘못 저장돼 있어도 UTC로 이관한다", async () => {
+  describe("이관 규칙의 시간대", () => {
+    it.each([
+      { name: "설정 없음", stored: null, zone: DEFAULT_DELIVERY_TIMEZONE, time: "09:30" },
+      { name: "잘못된 값", stored: "Mars/Olympus", zone: DEFAULT_DELIVERY_TIMEZONE, time: "09:30" },
+      { name: "진짜 UTC", stored: "UTC", zone: "UTC", time: "00:30" },
+      { name: "뉴욕", stored: "America/New_York", zone: "America/New_York", time: "09:30" },
+      { name: "서울", stored: "Asia/Seoul", zone: "Asia/Seoul", time: "09:30" },
+    ])("$name: 규칙 시간대 $zone, 벽시계 $time", async ({ stored, zone, time }) => {
       // Given
-      await client.insert(userPreference).values({ userId, timezone: "Mars/Olympus" });
-      await seedLegacy("group-d", "2026-03-02", {
-        scheduledTime: new Date("2026-03-02T00:30:00.000Z"),
+      if (stored != null) {
+        await client.insert(userPreference).values({ userId, timezone: stored });
+      }
+      const row = await seedLegacy("group-zone", "2026-03-02", {
+        scheduledTime: parseLocalDateTime("2026-03-02", time, zone),
+        isAllDay: false,
       });
       // When
       await runDataMigration();
       // Then
-      const series = await client.query.todoSeries.findFirst({ where: { id: "group-d" } });
-      expect(series).toMatchObject({ timezone: "UTC", scheduledLocalTime: "00:30" });
+      const series = await client.query.todoSeries.findFirst({ where: { id: "group-zone" } });
+      expect(series).toMatchObject({ timezone: zone, scheduledLocalTime: time });
+      const migrated = await client.query.todo.findFirst({ where: { id: row.id } });
+      expect(migrated?.scheduledTime).toEqual(row.scheduledTime);
+      expect(
+        parseLocalDateTime("2026-03-02", series?.scheduledLocalTime ?? "", series?.timezone ?? ""),
+      ).toEqual(row.scheduledTime);
+    });
+
+    it("규칙 시간대에서 벽시계가 같으면 DST로 순간이 달라도 한 시각이다", async () => {
+      // Given
+      await client.insert(userPreference).values({ userId, timezone: "America/New_York" });
+      for (const date of ["2026-03-02", "2026-03-09", "2026-03-16"]) {
+        await seedLegacy("group-dst", date, {
+          scheduledTime: parseLocalDateTime(date, "09:00", "America/New_York"),
+          isAllDay: false,
+        });
+      }
+      // When
+      await runDataMigration();
+      // Then
+      const series = await client.query.todoSeries.findFirst({ where: { id: "group-dst" } });
+      expect(series).toMatchObject({ scheduledLocalTime: "09:00", timezone: "America/New_York" });
+    });
+  });
+
+  describe("이관 규칙 유추", () => {
+    const CREATED_AT = new Date("2026-02-01T00:00:00.000Z");
+    const UNTOUCHED = { createdAt: CREATED_AT, updatedAt: new Date(CREATED_AT.getTime() + 1) };
+    const TOUCHED = {
+      createdAt: CREATED_AT,
+      updatedAt: new Date(CREATED_AT.getTime() + 24 * 60 * 60 * 1000),
+    };
+
+    type LegacyRow = readonly [date: string, overrides?: Partial<typeof todo.$inferInsert>];
+
+    async function migrateGroup(rows: readonly LegacyRow[]) {
+      for (const [date, overrides] of rows) {
+        await seedLegacy("group", date, { ...UNTOUCHED, ...overrides });
+      }
+      await runDataMigration();
+      return client.query.todoSeries.findFirst({ where: { id: "group" } });
+    }
+
+    it("첫 회차만 바꾼 제목·카테고리·시간은 규칙이 되지 않는다 (G9, G13)", async () => {
+      // Given
+      await client.insert(userPreference).values({ userId, timezone: "Asia/Seoul" });
+      const [other] = await client
+        .insert(todoCategory)
+        .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+        .returning();
+      // When
+      const series = await migrateGroup([
+        [
+          "2026-03-02",
+          {
+            ...TOUCHED,
+            title: "첫 회차만 바꾼 제목",
+            categoryId: other?.id ?? 0,
+            scheduledTime: new Date("2026-03-01T22:15:00.000Z"),
+            isAllDay: false,
+          },
+        ],
+        ["2026-03-09"],
+        ["2026-03-16"],
+        ["2026-03-23"],
+      ]);
+      // Then
+      expect(series).toMatchObject({
+        title: "옛 반복",
+        categoryId,
+        scheduledLocalTime: null,
+        repeatWeekdays: ["MON"],
+      });
+    });
+
+    it("제목·카테고리·시간이 동률이면 가장 최근 회차 값이다", async () => {
+      // Given
+      await client.insert(userPreference).values({ userId, timezone: "Asia/Seoul" });
+      const [other] = await client
+        .insert(todoCategory)
+        .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+        .returning();
+      // When
+      const series = await migrateGroup([
+        [
+          "2026-03-02",
+          {
+            title: "앞",
+            scheduledTime: new Date("2026-03-02T00:00:00.000Z"),
+            isAllDay: false,
+          },
+        ],
+        [
+          "2026-03-09",
+          {
+            title: "뒤",
+            categoryId: other?.id ?? 0,
+            scheduledTime: new Date("2026-03-09T01:00:00.000Z"),
+            isAllDay: false,
+          },
+        ],
+      ]);
+      // Then
+      expect(series).toMatchObject({
+        title: "뒤",
+        categoryId: other?.id,
+        scheduledLocalTime: "10:00",
+      });
+    });
+
+    it.each([
+      { name: "첫 행만 비공개", first: "PRIVATE", rest: "PUBLIC", last: "PUBLIC" },
+      { name: "첫 행만 공개", first: "PUBLIC", rest: "PRIVATE", last: "PRIVATE" },
+      { name: "한 행만 비공개", first: "PUBLIC", rest: "PUBLIC", last: "PRIVATE" },
+    ] as const)("$name: 새 회차는 비공개다", async ({ first, rest, last }) => {
+      // When
+      const series = await migrateGroup([
+        ["2026-03-02", { visibility: first }],
+        ["2026-03-09", { visibility: rest }],
+        ["2026-03-16", { visibility: last }],
+      ]);
+      // Then
+      expect(series?.visibility).toBe("PRIVATE");
+    });
+
+    it("모두 공개면 공개다", async () => {
+      // When
+      const series = await migrateGroup([
+        ["2026-03-02", { visibility: "PUBLIC" }],
+        ["2026-03-09", { visibility: "PUBLIC" }],
+      ]);
+      // Then
+      expect(series?.visibility).toBe("PUBLIC");
+    });
+
+    it.each([
+      {
+        name: "월요일 묶음에서 하나를 화요일로 옮김 (G5)",
+        rows: [
+          ["2026-11-02"],
+          ["2026-11-10", TOUCHED],
+          ["2026-11-16"],
+          ["2026-11-23"],
+          ["2026-11-30"],
+          ["2026-12-07"],
+          ["2026-12-14"],
+        ],
+        weekdays: ["MON"],
+      },
+      {
+        name: "월~토에서 마지막 토요일을 일요일로 옮김 (G6)",
+        rows: [
+          ["2026-11-02"],
+          ["2026-11-03"],
+          ["2026-11-04"],
+          ["2026-11-05"],
+          ["2026-11-06"],
+          ["2026-11-07"],
+          ["2026-11-09"],
+          ["2026-11-10"],
+          ["2026-11-11"],
+          ["2026-11-12"],
+          ["2026-11-13"],
+          ["2026-11-15", TOUCHED],
+        ],
+        weekdays: ["MON", "TUE", "WED", "THU", "FRI", "SAT"],
+      },
+      {
+        name: "두 주 월요일에서 둘째를 화요일로 옮김",
+        rows: [["2026-11-02"], ["2026-11-10", TOUCHED]],
+        weekdays: ["MON"],
+      },
+      {
+        name: "한 주 안에서 끝나는 월·수·금 (기간 때문에 건수가 다름)",
+        rows: [["2026-11-04"], ["2026-11-06"], ["2026-11-09"], ["2026-11-11"]],
+        weekdays: ["MON", "WED", "FRI"],
+      },
+      {
+        name: "모두 손댔어도 건수가 충분한 요일은 남고 옮긴 하나는 빠짐",
+        rows: [
+          ["2026-11-02", TOUCHED],
+          ["2026-11-09", TOUCHED],
+          ["2026-11-17", TOUCHED],
+          ["2026-11-23", TOUCHED],
+          ["2026-11-30", TOUCHED],
+        ],
+        weekdays: ["MON"],
+      },
+      {
+        name: "완료로 손댄 수요일도 건수가 충분하면 남음",
+        rows: [
+          ["2026-11-02"],
+          ["2026-11-04", { ...TOUCHED, completed: true }],
+          ["2026-11-09"],
+          ["2026-11-11", { ...TOUCHED, completed: true }],
+        ],
+        weekdays: ["MON", "WED"],
+      },
+    ] satisfies readonly { name: string; rows: readonly LegacyRow[]; weekdays: string[] }[])(
+      "$name: 요일 $weekdays",
+      async ({ rows, weekdays }) => {
+        // When
+        const series = await migrateGroup(rows);
+        // Then
+        expect(series).toMatchObject({ repeatFrequency: "WEEKLY", repeatWeekdays: weekdays });
+      },
+    );
+
+    it("요일을 정할 수 없는 묶음은 규칙을 만들지 않아 틀린 라벨이 보이지 않는다", async () => {
+      // Given
+      const rows: readonly LegacyRow[] = [
+        ["2026-11-02", TOUCHED],
+        ["2026-11-10", TOUCHED],
+      ];
+      // When
+      const series = await migrateGroup(rows);
+      // Then
+      expect(series).toBeUndefined();
+      const migrated = await client.query.todo.findMany({ where: { seriesId: "group" } });
+      expect(migrated).toHaveLength(2);
+      expect(migrated.every((row) => row.occurrenceDate == null)).toBe(true);
     });
   });
 
