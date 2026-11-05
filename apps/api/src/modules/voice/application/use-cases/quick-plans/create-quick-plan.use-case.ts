@@ -2,6 +2,7 @@ import type { QuickPlanResponse } from "@aido/api";
 import type { QuickPlanSource } from "@aido/api/vocabulary";
 
 import {
+  fingerprintRequest,
   resolveRequestLocale,
   type UserLocalePreferenceReaderPort,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
@@ -19,7 +20,6 @@ import {
   toActionPlanView,
 } from "../../read-models/plans/action-plan.read-model.js";
 import type { ChargedPlanRunner } from "../../services/plans/charged-plan-runner.js";
-import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
 /** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
 export type QuickPlanResult = Pick<QuickPlanResponse, "plan"> & { readonly model: string };

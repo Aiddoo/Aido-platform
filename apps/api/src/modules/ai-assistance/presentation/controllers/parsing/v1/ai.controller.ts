@@ -1,5 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
-import { AI_PARSE_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
+import {
+  AI_PARSE_LIMITS,
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_KEY_MAX_LENGTH,
+  PLAN_CATALOG,
+} from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -9,6 +14,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { ClientAbortSignal, Locale, Timezone } from "#api/platform/http/decorators/index";
+import { CurrentRequestClient, type RequestClient } from "#api/platform/http/request-client/index";
 import {
   ApiDoc,
   ApiErrorCodesResponse,
@@ -318,6 +324,11 @@ if (confirmed) {
     required: false,
     example: "ko",
   })
+  @ApiHeader({
+    name: IDEMPOTENCY_KEY_HEADER,
+    required: false,
+    description: `사용자 행동 한 번마다 새로 만드는 키(${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 보내면 한 번만 차감합니다. 처리 중이면 AI_1314, 내용이 다르면 AI_1318입니다. 미전송 시 요청마다 차감합니다.`,
+  })
   @ApiDoc({
     summary: "메모 내용을 다중 할 일 + 서브투두로 파싱",
     operationId: "parseMemoToTodos",
@@ -384,6 +395,7 @@ ${AI_PARSE_QUOTA_DOC}`,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
     @Locale() locale: SupportedLocale | undefined,
     @ClientAbortSignal() signal: AbortSignal,
+    @CurrentRequestClient() client: RequestClient,
   ): Promise<ParseMemoResponseDto> {
     const result = await this.parseMemoUseCase.execute({
       content: dto.content,
@@ -391,6 +403,7 @@ ${AI_PARSE_QUOTA_DOC}`,
       timezone: tz,
       categoryId: dto.categoryId,
       locale,
+      idempotencyKey: client.idempotencyKey,
       signal,
     });
 

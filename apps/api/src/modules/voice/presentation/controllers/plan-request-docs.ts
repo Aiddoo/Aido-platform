@@ -1,11 +1,11 @@
-import { IDEMPOTENCY_KEY_MAX_LENGTH } from "@aido/api/vocabulary";
+import { IDEMPOTENCY_KEY_HEADER, IDEMPOTENCY_KEY_MAX_LENGTH } from "@aido/api/vocabulary";
 import { applyDecorators } from "@nestjs/common";
 import { ApiHeader } from "@nestjs/swagger";
 
 /** 계획 API 공통 헤더 문서 */
 export const ApiIdempotencyKeyHeader = () =>
   ApiHeader({
-    name: "Idempotency-Key",
+    name: IDEMPOTENCY_KEY_HEADER,
     required: true,
     description: `사용자 행동 한 번마다 새로 만드는 키(${IDEMPOTENCY_KEY_MAX_LENGTH}자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 다시 보냅니다.`,
   });

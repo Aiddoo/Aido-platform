@@ -33,6 +33,7 @@ function createFixture() {
     timezone: "Asia/Seoul",
     categoryId: 1,
     locale: "ko",
+    idempotencyKey: null,
   };
   return { ...fixture, useCase, input };
 }
@@ -144,6 +145,64 @@ describe("ParseMemo", () => {
       processingTimeMs: 0,
       tokenUsage: { input: 150, output: 50 },
       promptVersion: "parse-memo@6",
+    });
+  });
+
+  describe("Idempotency-Key 차감 규칙", () => {
+    const todos = { todos: [draftTodo("팀 미팅")] };
+
+    it("키가 없는 출시 앱 요청은 요청마다 차감한다", async () => {
+      // Given
+      const fixture = createFixture();
+      fixture.generator.setRawResponse(todos);
+      await fixture.useCase.execute(fixture.input);
+      fixture.generator.setRawResponse(todos);
+      // When
+      const second = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(second.featureQuota).toMatchObject({ used: 2 });
+    });
+
+    it("같은 키로 다시 보내면 결과를 다시 만들어 주되 한 번만 차감한다", async () => {
+      // Given
+      const fixture = createFixture();
+      fixture.generator.setRawResponse(todos);
+      const input = { ...fixture.input, idempotencyKey: "memo-key" };
+      await fixture.useCase.execute(input);
+      fixture.generator.setRawResponse(todos);
+      // When
+      const retried = await fixture.useCase.execute(input);
+      // Then
+      expect(retried.data.todos).toMatchObject([{ title: "팀 미팅" }]);
+      expect(retried.featureQuota).toMatchObject({ used: 1 });
+    });
+
+    it("같은 키로 내용이 다르면 AI_1318로 거절하고 차감하지 않는다", async () => {
+      // Given
+      const fixture = createFixture();
+      fixture.generator.setRawResponse(todos);
+      const input = { ...fixture.input, idempotencyKey: "memo-key" };
+      await fixture.useCase.execute(input);
+      // When
+      const pending = fixture.useCase.execute({ ...input, content: "다른 메모" });
+      // Then
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
+      expect(await fixture.quota.read(fixture.userId, "AI_PARSE")).toMatchObject({ used: 1 });
+    });
+
+    it("실패해 환불한 키로 다시 보내면 성공한 한 번만 차감한다", async () => {
+      // Given
+      const fixture = createFixture();
+      const input = { ...fixture.input, idempotencyKey: "memo-key" };
+      fixture.generator.setRawResponse({ wrong: true });
+      await expect(fixture.useCase.execute(input)).rejects.toMatchObject({
+        errorCode: ErrorCode.AI_1302,
+      });
+      fixture.generator.setRawResponse(todos);
+      // When
+      const retried = await fixture.useCase.execute(input);
+      // Then
+      expect(retried.featureQuota).toMatchObject({ used: 1 });
     });
   });
 

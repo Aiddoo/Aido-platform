@@ -4,6 +4,7 @@ import { omit } from "es-toolkit";
 
 import type { QuotaLedgerPort } from "#api/modules/access/access-quota.public";
 import {
+  fingerprintRequest,
   resolveRequestLocale,
   type ChargedGeneration,
   type ChargeOutcome,
@@ -31,7 +32,6 @@ import {
   toActionPlanView,
 } from "../../read-models/plans/action-plan.read-model.js";
 import type { ChargedPlanRunner } from "../../services/plans/charged-plan-runner.js";
-import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
 /** `model`은 다시 보낸 응답의 로그에도 남기려고 함께 보관하고, 응답에는 싣지 않는다. */
 export type VoiceNoteDigestResult = Omit<VoiceNoteDigestResponse, "featureQuota" | "charged"> & {

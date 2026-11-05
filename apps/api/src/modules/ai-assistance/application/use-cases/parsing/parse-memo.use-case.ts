@@ -22,6 +22,7 @@ import { parseMemoPrompt } from "../../prompts/parsing/parse-memo/index.js";
 import { buildWithinLimit } from "../../prompts/planning/planning-context.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { settleChargedGeneration } from "../../services/parsing/charged-generation.js";
+import { fingerprintRequest } from "../../services/parsing/request-fingerprint.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
@@ -50,6 +51,8 @@ export interface ParseMemoInput {
   categoryId: number;
   /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
   locale: SupportedLocale | undefined;
+  /** Idempotency-Key 헤더. 출시 앱은 보내지 않아 요청마다 차감한다. */
+  idempotencyKey: string | null;
   /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
   signal?: AbortSignal;
 }
@@ -70,7 +73,7 @@ interface ParseMemoDependencies {
   readonly consentReader: Pick<AiDataSharingConsentDecisionReaderPort, "findAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly upcomingTodoReader: Pick<UpcomingTodoReaderPort, "findByUserId">;
-  readonly quota: Pick<QuotaLedgerPort, "reserve" | "commit" | "refund" | "read">;
+  readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen" | "commit" | "refund" | "read">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
@@ -83,7 +86,7 @@ export class ParseMemo {
   }
 
   async execute(input: ParseMemoInput): Promise<ParseMemoResult> {
-    const { userId } = input;
+    const { userId, content, categoryId, idempotencyKey } = input;
     const startTime = Date.now();
 
     const { timezone, locale } = await resolveRequestLocale(
@@ -95,11 +98,15 @@ export class ParseMemo {
     const reservation = await quota.reserve({
       userId,
       feature: "AI_PARSE",
-      idempotencyKey: null,
+      idempotencyKey,
+      ...(idempotencyKey != null && {
+        requestHash: fingerprintRequest(userId, { content, categoryId }),
+      }),
       reason: "parse-memo",
     });
     const { result, featureQuota } = await settleChargedGeneration(this.#dependencies, {
-      reservation,
+      // 확정 뒤 응답을 받지 못한 재시도다. 메모 결과는 서버에 남기지 않아 추가 차감 없이 다시 만든다.
+      reservation: reservation.alreadyCommitted ? await quota.reopen(reservation) : reservation,
       userId,
       feature: "AI_PARSE",
       task: parseMemoPrompt.id,

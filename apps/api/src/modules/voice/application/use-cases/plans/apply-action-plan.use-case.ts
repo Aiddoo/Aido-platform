@@ -2,6 +2,7 @@ import type { ApplyActionPlanResponse, Memo, Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import type { ActionPlanSource } from "@aido/api/vocabulary";
 
+import { fingerprintRequest } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   type AfterCommitTaskRegistryPort,
@@ -25,7 +26,6 @@ import type { PlanMemoWriterPort } from "../../ports/plans/plan-memo-writer.port
 import type { PlanTodoCreatorPort } from "../../ports/plans/plan-todo-creator.port.js";
 import type { PlanTodoReaderPort } from "../../ports/plans/plan-todo-reader.port.js";
 import type { PlanningContextReaderPort } from "../../ports/plans/planning-context.reader.port.js";
-import { fingerprintRequest } from "../../services/plans/request-fingerprint.js";
 
 export interface ApplyActionPlanInput {
   readonly userId: string;

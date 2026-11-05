@@ -349,6 +349,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.0: 할 일 응답에 들어가는 선택 칸 scheduledLocalTime과 메모 변환 403 enum에 TODO_0813 추가. 이 경로는 옛 서버도 카테고리 한도로 TODO_0813을 보냈고 문서만 빠져 있었다. 진행 중 반복 300개 상한(옛 경로)도 같은 코드로 거절한다. 응답 shape·상태 코드는 같다. */
 	preFloatingTimePathsFingerprint:
 		"9809c76e5f1d18f098fed794b83597baac7323d09bd2cf6cc0ec9bd2f52b7e60",
-	pathsFingerprint:
+	/** 1.15.0: parse-memo에 선택 Idempotency-Key 헤더만 추가. 생략 시 기존과 같이 요청마다 차감해 출시 앱은 영향이 없다. */
+	preMemoIdempotencyPathsFingerprint:
 		"873a009001b7bf72246c5a62f5d3d4ba92dc89edeeea9003d7bc559ada98c14d",
+	pathsFingerprint:
+		"2a18ce7a5e5781a06d09e3f61be42b73a0b95932ff8dbf0e1e3f79e2070fc930",
 } as const;
