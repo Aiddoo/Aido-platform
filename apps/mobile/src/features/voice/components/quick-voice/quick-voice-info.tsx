@@ -17,6 +17,9 @@ export function QuickVoiceInfo() {
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
   const [isOpen, setIsOpen] = useState(false);
+  // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
+  const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
+  const getRefillSentence = useRefillSentence();
 
   return (
     <HStack gap={8} align="center">
@@ -42,7 +45,12 @@ export function QuickVoiceInfo() {
           </PressableFeedback>
         </Popover.Trigger>
         <HintPopoverContent icon={MicIcon} title={t('info.title')}>
-          <QuickVoiceInfo.Contents />
+          <QuickVoiceInfo.Contents
+            remaining={
+              snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')
+            }
+            refill={getRefillSentence(snapshot, 'AI_PARSE')}
+          />
         </HintPopoverContent>
       </Popover>
       <QuotaChip feature="AI_PARSE" />
@@ -50,14 +58,15 @@ export function QuickVoiceInfo() {
   );
 }
 
-QuickVoiceInfo.Contents = function Contents() {
+QuickVoiceInfo.Contents = function Contents({
+  remaining,
+  refill,
+}: {
+  remaining: number | null;
+  refill: string | null;
+}) {
   const { t } = useTranslation('voice');
   const locale = toDateFormatLocale(useLanguage().resolvedLanguage);
-  const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
-  const getRefillSentence = useRefillSentence();
-  const remaining =
-    snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE');
-  const refill = getRefillSentence(snapshot, 'AI_PARSE');
 
   return (
     <VStack gap={8}>
