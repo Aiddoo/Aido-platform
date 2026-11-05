@@ -32,6 +32,9 @@ import {
   toReportStatus,
 } from './ai.mapper';
 
+// 서버 업체 체인 제한(AI_DEADLINE_PARSE_MEMO_MS 25초)보다 길게 기다려야 앱이 먼저 끊어 차감된 결과를 잃지 않는다
+const PARSE_MEMO_TIMEOUT_MS = 30_000;
+
 export class AiService {
   readonly #httpClient: HttpClient;
   readonly #logger: Logger;
@@ -128,10 +131,11 @@ export class AiService {
     categoryId: number,
     planId: string,
   ): Promise<Result<ParsedMemoPlan, ApiError>> => {
-    const result = await this.#httpClient.post('v1/ai/parse-memo', {
-      content,
-      categoryId,
-    });
+    const result = await this.#httpClient.post(
+      'v1/ai/parse-memo',
+      { content, categoryId },
+      { timeout: PARSE_MEMO_TIMEOUT_MS },
+    );
 
     if (!result.ok) {
       return result;
