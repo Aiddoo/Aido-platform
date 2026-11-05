@@ -4,6 +4,7 @@ import GorhomBottomSheet, {
   BottomSheetFooter,
   type BottomSheetFooterProps,
   BottomSheetScrollView,
+  useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -12,6 +13,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import {
   HANDLE_HEIGHT,
+  SHEET_ANIMATION_DURATION,
   SHEET_DETACHED_MARGIN,
   SHEET_INDEX,
   SHARED_SHEET_STYLES,
@@ -47,6 +49,7 @@ export const BottomSheet = ({
   const prevIsOpenRef = useRef(isOpen);
   useAndroidSheetBackHandler(isOpen, () => sheetRef.current?.close());
   const insets = useSafeAreaInsets();
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
   const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -182,6 +185,7 @@ export const BottomSheet = ({
     <GorhomBottomSheet
       ref={sheetRef}
       accessible={false}
+      animationConfigs={animationConfigs}
       index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
       enableDynamicSizing
       maxDynamicContentSize={maxDynamicContentSize}

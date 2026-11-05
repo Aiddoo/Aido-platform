@@ -5,6 +5,7 @@ import GorhomBottomSheet, {
   BottomSheetFooter,
   type BottomSheetFooterProps,
   BottomSheetScrollView,
+  useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
 import {
   type ComponentRef,
@@ -34,7 +35,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
-import { HANDLE_HEIGHT, SHEET_CONTENT_PADDING, SHEET_INDEX, SHEET_RADIUS } from './constants';
+import {
+  HANDLE_HEIGHT,
+  SHEET_ANIMATION_DURATION,
+  SHEET_CONTENT_PADDING,
+  SHEET_INDEX,
+  SHEET_RADIUS,
+} from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
@@ -81,6 +88,7 @@ export const KeyboardBottomSheet = ({
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: SHEET_ANIMATION_DURATION });
   const { margins, topInset } = useSheetLayout({ minMargin: 0 });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
@@ -314,6 +322,7 @@ export const KeyboardBottomSheet = ({
         ref={sheetRef}
         animatedPosition={animatedPosition}
         accessible={false}
+        animationConfigs={animationConfigs}
         index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
         enableDynamicSizing
         maxDynamicContentSize={maxDynamicContentSize}
