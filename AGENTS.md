@@ -1,6 +1,6 @@
 # Aido
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-08-14 · **Owner**: Aido Platform Team
+> **Version**: 1.2.0 · **Last Updated**: 2026-11-06 · **Owner**: Aido Platform Team
 
 Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버와 모바일 앱을 포함.
 
@@ -73,6 +73,21 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 | 푸시 기기·발송 (서버)                | [`apps/api/docs/push-notifications.md`](apps/api/docs/push-notifications.md)                                                                      |
 | 응답·오류, 날짜·시간, 하위 호환      | [오류](docs/conventions/errors.md) · [날짜](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md)                                |
 | 배포                                 | `apps/{api,mobile}/DEPLOYMENT.md`                                                                                                                 |
+
+---
+
+## 공통 코드 규칙
+
+서버·앱 공통이다. 앱·서버 문서는 여기로 링크하고 되풀이하지 않는다.
+
+- **책임**: SOLID와 단일 책임을 지킨다. 계산·변환은 부수효과 없는 순수 함수로 두고 훅·클래스는 그것을 감싼다.
+- **이름**: 실무에서 흔하고 직관적으로 짓는다. 파일·변수·메서드를 같은 규칙으로 맞춘다. 포트 이름에는 SDK·공급자 이름을 쓰지 않는다.
+- **주석**: 코드만 봐서는 알 수 없는 이유(제약, 버전 사유, 정책, QA 근거)만 남긴다. 코드를 되풀이하는 주석은 쓰지 않는다.
+- **제어문**: 한 줄 `if`도 `if (조건) { return; }`처럼 중괄호를 쓴다.
+- **라이브러리**: 라이브러리·프레임워크가 주는 기능을 다시 만들지 않는다(es-toolkit, ts-pattern 등). 공식 문서의 권장 방식을 먼저 본다.
+- **테스트**: 새 테스트는 중요한 비즈니스 로직과 공용 유틸에만 쓴다. `// Given`·`// When`·`// Then` 한 줄 주석과 한국어 제목을 쓴다. mock보다 포트 stub을 쓰고 외부 API는 부르지 않는다. 기존 테스트를 일괄 교체하지 않는다.
+- **정리**: 안 쓰는 코드·파일과 레거시를 지운다. 출시 앱이 쓰는 계약만 남긴다([호환](docs/conventions/compatibility.md)).
+- **비밀**: env 값·토큰·키를 로그·문서·커밋에 쓰지 않는다.
 
 ---
 
