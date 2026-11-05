@@ -1,144 +1,79 @@
 # Mobile Testing Guide
 
-> 모바일 테스트는 제품 규칙과 계약 경계를 작게 검증한다. React Native 프레임워크 배선이나 화면
-> 모양을 테스트 코드로 복제하지 않는다.
+모바일 테스트는 제품 규칙과 계약 경계를 작게 검증한다. React Native 프레임워크 배선이나 화면 모양을 테스트 코드로 복제하지 않는다.
 
-## 기본 원칙
+공통 규칙(범위, `// Given`·`// When`·`// Then`, 한국어 제목, stub 우선, 외부 API 금지, 일괄 교체 금지)은 [루트 공통 코드 규칙](../../../AGENTS.md#공통-코드-규칙)에 있다. 이 문서는 앱에만 해당하는 내용을 담는다. 왜 이 범위인지는 [테스트 전략](../docs/testing-strategy.md)을 본다.
 
-새 테스트는 다음 세 범위에 집중한다.
+## 무엇을 테스트하나
 
-1. **Model / Policy** — 상태 판정, 권한, 입력 정규화처럼 제품 규칙이 있는 순수 로직
-2. **Service / Mapper** — HTTP 요청, 공유 Zod 계약 검증, DTO→Domain 변환, 오류 전달
-3. **Pure util / view-model** — 여러 분기나 경계값이 있는 순수 계산과 캐시 구조 변환
+| 대상                           | 검증하는 것                                                                            |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| Model·Policy                   | 상태 조합의 허용·거부, 입력 정규화, 날짜·수치 경계                                     |
+| Service·Mapper                 | method·path·query·body, 응답 스키마 검증, DTO→모델 변환, `AbortSignal` 전달, 오류 전달 |
+| 순수 util·view-model·공용 유틸 | 경계값과 분기별 입출력, 캐시 변환의 identity, 정렬·중복 제거·평탄화                    |
 
-테스트 개수나 커버리지 수치를 목표로 삼지 않는다. 구현을 그대로 다시 쓰는 테스트보다, 잘못되면
-사용자 결과가 달라지는 규칙 하나를 명확히 잠그는 테스트가 낫다.
+경계(오늘·자정·DST·언어, 라우트·푸시·위젯 URI 해석, 저장 JSON 버전)는 순수 함수 테스트로 고정한다([날짜 경계](../../../docs/conventions/dates.md#4-테스트할-경계)).
 
-## 기본적으로 만들지 않는 테스트
+## 만들지 않는 테스트
 
-다음 테스트는 새 기능의 기본 산출물이 아니다.
-
-- 컴포넌트 렌더, snapshot, className 또는 prop 전달 확인
-- hook, Provider, Query Options의 호출 순서와 라이브러리 wiring
-- Router, Keyboard, FlashList, 애니메이션 라이브러리 동작을 mock으로 재현하는 테스트
-- 번역 문자열 존재 여부, 아이콘 이름, 고정 레이블처럼 정적 검사로 확인 가능한 내용
-- getter, 상수, 한 줄 위임 함수처럼 실패 가능성이 없는 구현
+- 컴포넌트 렌더, snapshot, className·prop 전달 확인
+- hook, Provider, Query Options의 호출 순서와 라이브러리 배선
+- Router, Keyboard, FlashList, 애니메이션 동작을 mock으로 재현하는 테스트
+- 번역 문자열 존재, 아이콘 이름, 고정 라벨처럼 정적 검사로 확인할 수 있는 내용
+- getter, 상수, 한 줄 위임 함수, 값을 넘기기만 하는 래퍼
 - 같은 시나리오를 여러 레이어에서 반복하는 테스트
 
-UI에서 복잡한 계산이 필요하면 계산을 순수 util 또는 view-model로 분리하고 그 함수만 테스트한다.
-키보드, 스크롤, 레이아웃 시프트, 큰 글꼴, light/dark, 접근성, frame 성능은 실제 native 화면에서
-확인한다.
-
 컴포넌트·hook 회귀가 걱정되면 그 판단을 순수 함수(model·policy·view-model·resolver)로 빼서 그 함수를 테스트한다.
-컴포넌트·hook·snapshot 테스트, 값을 넘기기만 하는 래퍼의 테스트는 새로 만들지 않는다. 경계(오늘·자정·DST·언어,
-라우트·푸시·위젯 URI 해석, 저장 JSON 버전)는 순수 함수 테스트로 고정한다([날짜 경계](../../../docs/conventions/dates.md#4-테스트할-경계)).
-
-기존 테스트가 있다는 이유만으로 새 테스트를 같은 방식으로 추가하지 않는다. 무관한 작업에서 기존
-테스트를 일괄 삭제하지도 않는다.
 
 ## 파일 위치
 
-| 대상                 | 권장 위치와 이름                                     |
+| 대상                 | 위치와 이름                                          |
 | -------------------- | ---------------------------------------------------- |
-| Model / Policy       | `domains/{entity}.model.test.ts`                     |
+| Model·Policy         | `domains/{entity}.model.test.ts`                     |
 | Mapper               | `apis/{entity}.mapper.test.ts`                       |
 | Service              | `apis/{feature}.service.test.ts`                     |
-| Feature pure util    | `utils/{name}.test.ts`                               |
-| 순수 UI 데이터 변환  | `utils/view-models/{name}.view-model.test.ts`        |
-| Shared pure util     | `shared/utils/{name}.test.ts`                        |
+| 피처 순수 util       | `utils/{name}.test.ts`                               |
+| view-model           | `utils/view-models/{name}.view-model.test.ts`        |
+| 공용 유틸            | `shared/utils/{name}.test.ts`                        |
 | 테스트 데이터 팩토리 | `features/{feature}/__tests__/{entity}.factories.ts` |
 
-테스트 파일은 구현 파일 옆에 둔다. `.test.ts`를 기본으로 사용하고, JSX가 꼭 필요한 예외에만
-`.test.tsx`를 사용한다. feature 내부 테스트 값을 다른 파일에서 다시 export하지 않는다.
-
-## 무엇을 검증하는가
-
-### Model / Policy
-
-- 상태 조합에 따른 허용/거부 결과
-- 입력 정규화와 경계값
-- 서버 응답에서 파생되는 제품 의미
-- 날짜나 수치 경계처럼 회귀 가능성이 높은 규칙
-
-단순 타입 별칭이나 Zod 계약 자체를 모바일에서 다시 시험하지 않는다. 모바일 고유 policy가 공유
-계약 위에 있을 때만 그 결과를 검증한다.
-
-### Mapper / Service
-
-- 올바른 method, path, query, body를 전송하는지
-- `@aido/api` 스키마로 응답을 검증하는지
-- ISO 문자열을 `Date` 등 Domain 값으로 한 번만 변환하는지
-- `AbortSignal` 같은 호출 제어 값을 transport까지 전달하는지
-- 계약 파싱 실패와 서버 오류를 정해진 방식으로 전달하는지
-
-Service 테스트는 HTTP 포트를 stub으로 둔다. QueryClient, Router, 화면 컴포넌트를 함께 mount하지 않는다.
-
-### Pure util / view-model
-
-- 경계값과 분기별 입력→출력
-- 원본 객체 identity를 보존해야 하는 캐시 변환
-- 정렬, 중복 제거, 페이지 평탄화, 레이아웃 위치 계산
-- 멱등 key 재사용이나 같은 frame 중복 실행 차단 같은 상태 기계
-
-React hook을 호출하지 않고 함수 입력과 출력만 검증할 수 있어야 한다. React 생명주기가 꼭 필요하면
-우선 책임 분리가 덜 된 것은 아닌지 살핀다.
+테스트 파일은 구현 파일 옆에 둔다. `.test.ts`가 기본이고 JSX가 꼭 필요할 때만 `.test.tsx`다.
 
 ## 작성 규칙
 
-- 테스트 이름은 한국 개발자가 바로 이해하는 자연스러운 한국어로 사용자 또는 제품 결과를 설명한다.
-- `// Given`, `// When`, `// Then` 주석을 각각 한 줄로 블록 위에 두고 빈 줄로 나눈다. `// When / Then` 합본이나 `// Given - 설명` 꼬리 설명은 쓰지 않는다. 그 밖의 주석은 달지 않는다.
-- 의미 있는 성공·실패·경계 분기만 남긴다. 모든 줄을 실행하기 위한 케이스는 만들지 않는다.
-- mock보다 포트를 구현한 stub/fake를 먼저 쓴다. `jest.fn()`·spy는 호출 자체가 계약일 때(요청 path, 토큰 해제 순서)와 시간·UUID 같은 실제 경계에만 둔다.
-- 외부 API(푸시, AI, 이메일, OAuth, 날씨)와 OS 모듈은 실제로 부르지 않고 stub으로 대체한다.
-- 새 테스트에서 모듈 `jest.mock`은 어댑터 경계 테스트(`expo-push-notification.gateway.test.ts`)에서만 쓴다. 기존 테스트에 남은 `jest.mock`은 일괄로 바꾸지 않는다.
-- 하나의 테스트에서 여러 프레임워크 mock을 조립하기 시작하면 순수 로직 추출을 먼저 검토한다.
-- 실제 타이머를 기다리지 말고 시간 값을 인자로 주거나 fake timer를 사용한다.
+- `// When / Then` 합본이나 `// Given - 설명` 꼬리 설명을 쓰지 않는다.
+- 의미 있는 성공·실패·경계 분기만 남긴다. 줄을 실행하기 위한 케이스를 만들지 않는다.
+- `jest.fn()`·spy는 호출 자체가 계약일 때(요청 path, 토큰 해제 순서)와 시간·UUID 같은 실제 경계에만 둔다.
+- 새 테스트의 모듈 `jest.mock`은 어댑터 경계 테스트(`expo-push-notification.gateway.test.ts`)에서만 쓴다. 공용 jest 설정이 처리하는 RN·Expo 런타임은 예외다.
+- 여러 프레임워크 mock을 조립하기 시작하면 순수 로직 추출을 먼저 검토한다.
+- 실제 타이머를 기다리지 않는다. 시간 값을 인자로 주거나 fake timer를 쓴다.
 - 테스트끼리 QueryClient, mock, 전역 상태를 공유하지 않는다.
+- 픽스처는 `createX(overrides)` 한 패턴이다. 필드가 늘면 한 곳만 고친다. Mapper 픽스처는 계약 스키마로 검증해 만든다.
+- 타임존 테스트는 윤년과 다른 국가(서울·LA) 경계 정도만 본다.
 
 ## Stub 우선 DI 테스트
 
-서비스·훅·컴포넌트가 포트에 기대면 실제 서비스에 stub 포트를 끼워 DI로 넣는다.
+서비스가 포트에 기대면 실제 서비스에 stub 포트를 끼운다. 호출 여부보다 결과 상태를 확인한다.
 
-|                                     | `jest.mock`(모킹)           | stub·fake(우리 방식)                       |
+|                                     | `jest.mock`                 | stub·fake                                  |
 | ----------------------------------- | --------------------------- | ------------------------------------------ |
 | 바꾸는 것                           | 모듈 경로를 통째로 가로챈다 | 포트 구현체 하나를 넣는다                  |
-| 타입                                | 포트와 어긋나도 모른다      | 포트를 구현하므로 어긋나면 컴파일 오류다   |
+| 타입                                | 포트와 어긋나도 모른다      | 어긋나면 컴파일 오류다                     |
 | 실행되는 코드                       | 가로챈 만큼 가짜다          | 포트 안쪽의 서비스·모델·화면은 실제 코드다 |
 | 파일을 옮기거나 라이브러리를 바꾸면 | 테스트가 깨진다             | 그대로다                                   |
 
-호출 여부보다 결과 상태를 확인한다.
-
-```tsx
-function createClipboardFake(): ClipboardGateway {
-  let copiedText = '';
-  return {
-    hasContent: async () => copiedText !== '',
-    paste: async () => copiedText,
-    copy: async (text) => {
-      copiedText = text;
-    },
-  };
-}
-
-// Given
-const clipboard = createClipboardFake();
-await renderUi(<CopyTagButton tag="aido#1234" />, { di: { clipboard } });
-
-// When
-fireEvent.press(screen.getByRole('button'));
-
-// Then
-await waitFor(async () => expect(await clipboard.paste()).toBe('aido#1234'));
-```
-
-| 도구                                                    | 용도                                                                           |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `features/{f}/__tests__/{f}.factories.ts`               | DTO·모델·포트 stub 팩토리(`createX(overrides)`). 필드가 늘면 이 한 곳만 고친다 |
-| `renderUi(ui, { di, queryClient })`                     | 실제 provider 위에 `di` 필드만 덮어써 렌더                                     |
-| `createMockDIContainer(overrides)` + `StaticDIProvider` | 훅 테스트용 컨테이너                                                           |
-| `createMemorySyncStorage()`                             | MMKV 대신 메모리 저장소(`createPushPromptRepository`에 주입)                   |
-| `createMockHttpClient()`                                | HTTP 포트 stub                                                                 |
-| `createTestQueryClient()`                               | 테스트용 QueryClient                                                           |
+| 도구                                                    | 용도                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------ |
+| `features/{f}/__tests__/{f}.factories.ts`               | DTO·모델·포트 stub 팩토리(`createX(overrides)`)              |
+| `renderUi(ui, { di, queryClient })`                     | 실제 provider 위에 `di` 필드만 덮어써 렌더                   |
+| `createMockDIContainer(overrides)` + `StaticDIProvider` | 훅 테스트용 컨테이너. 넣지 않은 것에 손대면 이름을 대며 실패 |
+| `createMemorySyncStorage()`                             | MMKV 대신 메모리 저장소. 저장소 주입에 쓴다                  |
+| `createMockHttpClient()`                                | HTTP 포트 stub                                               |
+| `createTestQueryClient()`                               | 테스트용 QueryClient                                         |
+| `createPurchasesGatewayStub()`                          | 결제 포트 stub                                               |
+| `createSpeechRecognizerStub()`                          | 음성 인식 포트 stub                                          |
+| `createLocalFileSystemFake()`                           | 파일 시스템 fake                                             |
+| `createHapticsStub()`, `createErrorReporterStub()`      | 햅틱·오류 보고 stub                                          |
 
 ```tsx
 // Given
@@ -151,21 +86,30 @@ const pushPromptService = new PushPromptService(
 
 // When
 await renderUi(<PushPermissionCard />, {
-  di: {
-    pushPromptService,
-    pushDeviceService: new PushDeviceService(gateway, deviceIdStub, httpClient, logger),
-  },
+  di: { pushPromptService, pushDeviceService: new PushDeviceService(gateway /* … */) },
   queryClient,
 });
 ```
 
-예시: `features/notification/components/push-permission-card.test.tsx`(홈 안내 단계별 동작),
-`features/notification/hooks/use-push-device-sync.test.tsx`(보고 시점·debounce). 이 둘은 계약이 사용자
-결과로 이어지는 흐름이라 둔 것이다. 같은 방식의 컴포넌트·훅 테스트를 기본으로 늘리지 않는다.
+예시: `push-permission-card.test.tsx`(홈 안내 단계별 동작), `use-push-device-sync.test.tsx`(보고 시점·debounce). 계약이 사용자 결과로 이어지는 흐름이라 둔 것이다. 이 방식을 기본으로 늘리지 않는다.
+
+## QueryClient와 종료
+
+- QueryClient는 `createTestQueryClient()`로만 만든다(`retry: false`, `gcTime: Infinity`). `check:conventions`가 테스트의 `new QueryClient`를 막는다. 각 테스트가 만들면 정리 타이머가 남아 Jest 종료를 붙잡는다.
+- `jest.setup.ts`의 `afterEach`가 `cleanup()`으로 화면을 먼저 unmount한 뒤 클라이언트를 비운다. 순서가 반대면 unmount 때 `gcTime` 타이머가 다시 걸린다. 테스트 안에서 `queryClient.clear()`를 부르지 않는다.
+- 구독·대기 중인 idle callback을 해제한다. `--forceExit`로 감추지 않는다.
+
+## 함정
+
+- `jest.setup.ts`는 Hermes에 없는 `toSorted`·`Array.fromAsync`를 Node에서 지운다. 앱에서만 죽는 호출을 테스트에서도 드러내기 위해서다.
+- jest는 React Compiler 없이 돈다. 렌더 중 `getValues()` 같은 컴파일러 버그는 시뮬레이터에서만 보인다.
+- `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다. 공식 문서: [Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/).
+- `renderUi`는 실제 HeroUI provider를 유지하고 config로 애니메이션만 끈다. 경로 이동은 `expo-router` 경계에서 대체한다. 실제 내비게이션은 앱에서 확인한다.
+- 시뮬레이터 영상은 동작과 레이아웃 증거일 뿐 60/120 FPS를 증명하지 않는다. 성능 수치는 Release 실기기에서 잰다.
 
 ## UI와 native 검증
 
-자동 단위 테스트가 대신할 수 없는 항목은 실제 앱에서 확인한다.
+단위 테스트가 대신할 수 없는 항목은 실제 앱에서 확인한다.
 
 | 영역    | 확인 항목                                                             |
 | ------- | --------------------------------------------------------------------- |
@@ -176,23 +120,18 @@ await renderUi(<PushPermissionCard />, {
 | 테마    | light/dark semantic color와 대비                                      |
 | 성능    | Release 실기기의 JS/UI frame time, keyboard animation, 긴 목록 메모리 |
 
-시뮬레이터 영상은 동작과 레이아웃 증거로 사용할 수 있지만 실제 60/120 FPS를 증명하지는 않는다.
-성능 수치는 Release 실기기에서 측정한다.
-
 ## 실행 명령
 
 ```bash
 # 모바일 전체 단위 테스트
 pnpm --filter @aido/mobile test --runInBand
 
-# 특정 model/service/util
+# 특정 파일
 pnpm --filter @aido/mobile test --runInBand todo-comment.service.test.ts
 
-# 열린 handle 확인이 필요한 순수 테스트 묶음
-pnpm --filter @aido/mobile test --runInBand --detectOpenHandles \
-  src/features/todo-comment/domains \
-  src/features/todo-comment/apis \
-  src/features/todo-comment/utils
+# 재현 순서·종료 핸들
+pnpm --filter @aido/mobile test --runInBand --randomize --seed <number> --showSeed
+pnpm --filter @aido/mobile test --runInBand --detectOpenHandles
 
 # 정적 검증
 pnpm --filter @aido/mobile lint
@@ -202,17 +141,4 @@ pnpm --filter @aido/mobile check:conventions
 pnpm --filter @aido/mobile test:conventions
 ```
 
-작업을 마칠 때는 변경한 Model/Service/util 테스트와 정적 검증을 먼저 실행한다. 전체 모바일 테스트는
-공유 코드나 공통 설정을 바꿨거나 릴리스 전 회귀 확인이 필요할 때 실행한다.
-
-## SDK 58 native test runtime
-
-Reanimated 4.7의 공식 Jest resolver와 `setUpTests()`를 사용한다. `jest.resolver.cjs`는 React Native 0.88 preset의 내부 경로 해석을 유지하면서, 실제 Reanimated/Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 들어 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다.
-
-SVG는 Reanimated가 제공하는 SVG mock을 사용한다. 공용 `renderUi`는 실제 HeroUI provider를 유지하고, provider의 원본 config prop으로 테스트에서만 애니메이션을 끈다. 모바일 단위 테스트에는 DOM 레이아웃·네이티브 네비게이터를 만들지 않는다. 경로 이동은 테스트 harness의 router 경계에서 대체하며, 실제 Expo Router/Native Tabs 동작은 Android/iOS 앱에서 확인한다.
-
-QueryClient는 `@src/shared/__tests__/query-client`의 `createTestQueryClient()`로만 만든다(TanStack Query 테스트 가이드 권장값 `retry: false`, `gcTime: Infinity`). `jest.setup.ts`의 `afterEach`가 Testing Library `cleanup()`으로 화면을 먼저 unmount한 뒤 팩토리가 만든 클라이언트를 `clear()`하므로, 테스트 안에서 `queryClient.clear()`를 따로 부르지 않는다. 순서가 반대면 unmount 때 쿼리별 `gcTime` 타이머가 다시 걸려 Jest 종료를 붙잡는다. 의존성은 `createMockDIContainer`에 스텁으로 넣는다. `check:conventions`가 테스트의 `new QueryClient`를 막는다.
-
-테스트 종료 시 구독·대기 중인 idle callback을 해제한다. `--forceExit`로 미정리 타이머를 감추지 않는다. 재현 순서 검증은 `--runInBand --randomize --seed <number> --showSeed`, 종료 핸들 검증은 `--detectOpenHandles`로 실행한다.
-
-공식 문서: [Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/).
+작업을 마칠 때는 바꾼 파일의 테스트와 정적 검증을 먼저 실행한다. 전체 테스트는 공유 코드나 공통 설정을 바꿨거나 릴리스 전 회귀 확인이 필요할 때 실행한다.
