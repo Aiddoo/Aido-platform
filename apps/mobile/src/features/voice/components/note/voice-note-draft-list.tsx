@@ -8,7 +8,6 @@ import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
-import type { ComponentProps } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { VOICE_NOTE_PREVIEW_COUNT } from '../../constants/voice-note.constants';
@@ -17,10 +16,8 @@ import { useVoiceNotes } from '../../hooks/use-voice-notes';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { voiceNoteHref, voiceNoteListHref } from '../../utils/navigation/voice-note-href';
 
-type VoiceNoteDraftListProps = Omit<ComponentProps<typeof VStack>, 'children'>;
-
 /** 기기에 남아 있는 말로 메모. 녹음을 끝내거나 앱이 꺼져도 글자는 여기서 다시 연다 */
-export function VoiceNoteDraftList(stackProps: VoiceNoteDraftListProps) {
+export function VoiceNoteDraftList() {
   const { t } = useTranslation('voiceNote');
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const notes = useVoiceNotes(me.id);
@@ -31,7 +28,7 @@ export function VoiceNoteDraftList(stackProps: VoiceNoteDraftListProps) {
   }
 
   return (
-    <VStack gap={8} {...stackProps}>
+    <VStack gap={8}>
       <HStack align="center" justify="between" gap={8}>
         <Text size="b4" weight="semibold" shade={6}>
           {t('drafts.title')}
