@@ -48,13 +48,13 @@ function InquiryScreen() {
   useKeyboardHandler({
     onStart: () => {
       'worklet';
-      hasScrolled.value = false;
+      hasScrolled.set(false);
     },
     onMove: (event) => {
       'worklet';
-      if (event.height > 0 && !hasScrolled.value) {
-        hasScrolled.value = true;
-        scrollTo(scrollViewRef, 0, contentHeight.value, true);
+      if (event.height > 0 && !hasScrolled.get()) {
+        hasScrolled.set(true);
+        scrollTo(scrollViewRef, 0, contentHeight.get(), true);
       }
     },
   });
@@ -83,7 +83,7 @@ function InquiryScreen() {
         <AnimatedScrollView
           ref={scrollViewRef}
           onContentSizeChange={(_w, h) => {
-            contentHeight.value = h;
+            contentHeight.set(h);
           }}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
           keyboardShouldPersistTaps="always"

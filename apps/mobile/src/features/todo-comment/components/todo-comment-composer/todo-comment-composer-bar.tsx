@@ -51,11 +51,11 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
     {
       onMove: (event) => {
         'worklet';
-        keyboardProgress.value = event.progress;
+        keyboardProgress.set(event.progress);
       },
       onEnd: (event) => {
         'worklet';
-        keyboardProgress.value = event.progress;
+        keyboardProgress.set(event.progress);
       },
     },
     [],
@@ -63,7 +63,7 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
 
   const bottomSpacerStyle = useAnimatedStyle(() => ({
     height: interpolate(
-      keyboardProgress.value,
+      keyboardProgress.get(),
       [0, KEYBOARD_OPEN_PROGRESS],
       [closedBottomPadding, OPENED_BOTTOM_PADDING],
     ),
@@ -71,10 +71,12 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
 
   const setExtraContentPadding = useCallback(
     (padding: number) => {
-      extraContentPadding.value = withTiming(padding, {
-        duration: EXTRA_PADDING_DURATION_MS,
-        reduceMotion: ReduceMotion.System,
-      });
+      extraContentPadding.set(
+        withTiming(padding, {
+          duration: EXTRA_PADDING_DURATION_MS,
+          reduceMotion: ReduceMotion.System,
+        }),
+      );
     },
     [extraContentPadding],
   );
@@ -82,7 +84,7 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
   const handleContentLayout = useCallback(
     (event: LayoutChangeEvent) => {
       const { height } = event.nativeEvent.layout;
-      if (keyboardProgress.value < KEYBOARD_OPEN_PROGRESS) {
+      if (keyboardProgress.get() < KEYBOARD_OPEN_PROGRESS) {
         baselineHeightRef.current = height;
         setExtraContentPadding(0);
         return;
@@ -94,7 +96,7 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
 
   useEffect(
     () => () => {
-      extraContentPadding.value = 0;
+      extraContentPadding.set(0);
     },
     [extraContentPadding],
   );

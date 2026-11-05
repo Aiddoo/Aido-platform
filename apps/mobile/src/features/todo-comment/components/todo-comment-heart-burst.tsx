@@ -79,52 +79,64 @@ export function playTodoCommentHeartBurst(
   { x, y, isReducedMotion }: { x: number; y: number; isReducedMotion: boolean },
 ) {
   'worklet';
-  burst.originX.value = x;
-  burst.originY.value = y;
-  burst.bigRise.value = 0;
-  burst.bigRotate.value = 0;
+  burst.originX.set(x);
+  burst.originY.set(y);
+  burst.bigRise.set(0);
+  burst.bigRotate.set(0);
 
   if (isReducedMotion) {
-    burst.bigScale.value = 1;
-    burst.ring.value = 1;
-    burst.dots.value = 1;
-    burst.bigOpacity.value = withSequence(
-      withTiming(1, { duration: BIG_HEART.appearMs }),
-      withDelay(BIG_HEART.reducedHoldMs, withTiming(0, { duration: BIG_HEART.reducedFadeMs })),
+    burst.bigScale.set(1);
+    burst.ring.set(1);
+    burst.dots.set(1);
+    burst.bigOpacity.set(
+      withSequence(
+        withTiming(1, { duration: BIG_HEART.appearMs }),
+        withDelay(BIG_HEART.reducedHoldMs, withTiming(0, { duration: BIG_HEART.reducedFadeMs })),
+      ),
     );
     return;
   }
 
   const fade = { duration: BIG_HEART.fadeMs, easing: Easing.in(Easing.quad) };
-  burst.bigScale.value = withSequence(
-    withTiming(0, { duration: 0 }),
-    withSpring(BIG_HEART.peakScale, SPRING),
-    withSpring(BIG_HEART.reboundScale, SPRING),
-    withSpring(1, SPRING),
-    withDelay(
-      BIG_HEART.holdUntilMs - BIG_HEART.appearMs * 3,
-      withTiming(BIG_HEART.fadeScale, fade),
+  burst.bigScale.set(
+    withSequence(
+      withTiming(0, { duration: 0 }),
+      withSpring(BIG_HEART.peakScale, SPRING),
+      withSpring(BIG_HEART.reboundScale, SPRING),
+      withSpring(1, SPRING),
+      withDelay(
+        BIG_HEART.holdUntilMs - BIG_HEART.appearMs * 3,
+        withTiming(BIG_HEART.fadeScale, fade),
+      ),
     ),
   );
-  burst.bigRotate.value = withSequence(
-    withTiming(BIG_HEART.startRotateDeg, { duration: 0 }),
-    withTiming(BIG_HEART.overshootRotateDeg, { duration: BIG_HEART.rotateMs }),
-    withSpring(0, SPRING),
+  burst.bigRotate.set(
+    withSequence(
+      withTiming(BIG_HEART.startRotateDeg, { duration: 0 }),
+      withTiming(BIG_HEART.overshootRotateDeg, { duration: BIG_HEART.rotateMs }),
+      withSpring(0, SPRING),
+    ),
   );
-  burst.bigOpacity.value = withSequence(
-    withTiming(1, { duration: BIG_HEART.appearMs }),
-    withDelay(BIG_HEART.holdUntilMs - BIG_HEART.appearMs, withTiming(0, fade)),
+  burst.bigOpacity.set(
+    withSequence(
+      withTiming(1, { duration: BIG_HEART.appearMs }),
+      withDelay(BIG_HEART.holdUntilMs - BIG_HEART.appearMs, withTiming(0, fade)),
+    ),
   );
-  burst.bigRise.value = withDelay(BIG_HEART.holdUntilMs, withTiming(-BIG_HEART.riseDistance, fade));
-  burst.ring.value = withSequence(
-    withTiming(0, { duration: 0 }),
-    withTiming(1, { duration: RING.durationMs, easing: Easing.out(Easing.quad) }),
+  burst.bigRise.set(withDelay(BIG_HEART.holdUntilMs, withTiming(-BIG_HEART.riseDistance, fade)));
+  burst.ring.set(
+    withSequence(
+      withTiming(0, { duration: 0 }),
+      withTiming(1, { duration: RING.durationMs, easing: Easing.out(Easing.quad) }),
+    ),
   );
-  burst.dots.value = withSequence(
-    withTiming(0, { duration: 0 }),
-    withDelay(
-      DOTS.delayMs,
-      withTiming(1, { duration: DOTS.durationMs, easing: Easing.bezier(0.15, 0.8, 0.3, 1) }),
+  burst.dots.set(
+    withSequence(
+      withTiming(0, { duration: 0 }),
+      withDelay(
+        DOTS.delayMs,
+        withTiming(1, { duration: DOTS.durationMs, easing: Easing.bezier(0.15, 0.8, 0.3, 1) }),
+      ),
     ),
   );
 }
@@ -132,28 +144,30 @@ export function playTodoCommentHeartBurst(
 /** 좋아요 버튼 하트가 0.6 → 1.35 → 1로 튄다 */
 export function popTodoCommentLikeButton(scale: SharedValue<number>) {
   'worklet';
-  scale.value = withSequence(
-    withTiming(BUTTON_POP.fromScale, { duration: 0 }),
-    withSpring(BUTTON_POP.peakScale, SPRING),
-    withSpring(1, SPRING),
+  scale.set(
+    withSequence(
+      withTiming(BUTTON_POP.fromScale, { duration: 0 }),
+      withSpring(BUTTON_POP.peakScale, SPRING),
+      withSpring(1, SPRING),
+    ),
   );
 }
 
 export function TodoCommentHeartBurst({ burst }: { burst: TodoCommentHeartBurstValues }) {
   const originStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: burst.originX.value }, { translateY: burst.originY.value }],
+    transform: [{ translateX: burst.originX.get() }, { translateY: burst.originY.get() }],
   }));
   const bigStyle = useAnimatedStyle(() => ({
-    opacity: burst.bigOpacity.value,
+    opacity: burst.bigOpacity.get(),
     transform: [
-      { translateY: burst.bigRise.value },
-      { scale: burst.bigScale.value },
-      { rotate: `${burst.bigRotate.value}deg` },
+      { translateY: burst.bigRise.get() },
+      { scale: burst.bigScale.get() },
+      { rotate: `${burst.bigRotate.get()}deg` },
     ],
   }));
   const ringStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(burst.ring.value, [0, 1], [RING.startOpacity, 0]),
-    transform: [{ scale: interpolate(burst.ring.value, [0, 1], [RING.startScale, RING.endScale]) }],
+    opacity: interpolate(burst.ring.get(), [0, 1], [RING.startOpacity, 0]),
+    transform: [{ scale: interpolate(burst.ring.get(), [0, 1], [RING.startScale, RING.endScale]) }],
   }));
 
   return (
@@ -197,17 +211,17 @@ function BurstDot({
   colorClassName: (typeof DOT_COLOR_CLASS_NAMES)[number];
 }) {
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, DOT_PEAK_PROGRESS, 1], [1, 1, 0]),
+    opacity: interpolate(progress.get(), [0, DOT_PEAK_PROGRESS, 1], [1, 1, 0]),
     transform: [
       { rotate: `${angleDeg}deg` },
       {
         translateY: interpolate(
-          progress.value,
+          progress.get(),
           [0, DOT_PEAK_PROGRESS, 1],
           [0, -DOT_FLIGHT_DISTANCE, -DOT_FADE_DISTANCE],
         ),
       },
-      { scale: interpolate(progress.value, [0, DOT_PEAK_PROGRESS, 1], [0.4, 1, 0.2]) },
+      { scale: interpolate(progress.get(), [0, DOT_PEAK_PROGRESS, 1], [0.4, 1, 0.2]) },
     ],
   }));
 
