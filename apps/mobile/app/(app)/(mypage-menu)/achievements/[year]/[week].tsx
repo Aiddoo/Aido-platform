@@ -45,7 +45,7 @@ export default function AchievementDetailScreen() {
   }
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <ScrollView
         contentContainerClassName="px-4"
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
@@ -182,7 +182,7 @@ WeeklyAchievementCertificate.Loading = function Loading() {
       <Spacing size={16} />
 
       <VStack align="center">
-        <Skeleton className="size-20 rounded-full" />
+        <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
       </VStack>
 
       <Spacing size={16} />
@@ -192,8 +192,8 @@ WeeklyAchievementCertificate.Loading = function Loading() {
       <Spacing size={16} />
 
       <VStack align="center" gap={4}>
-        <Skeleton className="w-10 rounded" style={{ height: fontScaledSize(17) }} />
-        <Skeleton className="w-32 rounded" style={{ height: fontScaledSize(28) }} />
+        <Skeleton className="w-10 rounded dark:bg-gray-2" style={{ height: fontScaledSize(17) }} />
+        <Skeleton className="w-32 rounded dark:bg-gray-2" style={{ height: fontScaledSize(28) }} />
       </VStack>
 
       <Spacing size={16} />
@@ -211,7 +211,7 @@ WeeklyAchievementCertificate.Loading = function Loading() {
       <Spacing size={14} />
 
       <VStack align="center">
-        <Skeleton className="w-40 rounded" style={{ height: fontScaledSize(17) }} />
+        <Skeleton className="w-40 rounded dark:bg-gray-2" style={{ height: fontScaledSize(17) }} />
       </VStack>
     </Certificate>
   );

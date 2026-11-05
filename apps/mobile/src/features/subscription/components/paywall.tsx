@@ -212,13 +212,13 @@ Paywall.AdditionalBenefits = function AdditionalBenefits() {
           premiumMinutes: formatAmount(premium.voiceNoteMinutes),
         })}
       />
-      <Separator className="bg-gray-2 dark:bg-gray-3" />
+      <Separator className="bg-gray-3" />
       <AdditionalBenefit
         Icon={PersonIcon}
         title={t('benefits.friends.title')}
         description={t('benefits.friends.description', { free: formatAmount(free.friend) })}
       />
-      <Separator className="bg-gray-2 dark:bg-gray-3" />
+      <Separator className="bg-gray-3" />
       <AdditionalBenefit
         Icon={ListIcon}
         title={t('benefits.categories.title', { premium: formatAmount(premium.category) })}
@@ -227,13 +227,13 @@ Paywall.AdditionalBenefits = function AdditionalBenefits() {
           premium: formatAmount(premium.category),
         })}
       />
-      <Separator className="bg-gray-2 dark:bg-gray-3" />
+      <Separator className="bg-gray-3" />
       <AdditionalBenefit
         Icon={CalendarIcon}
         title={t('benefits.aiRepeat.title')}
         description={t('benefits.aiRepeat.description')}
       />
-      <Separator className="bg-gray-2 dark:bg-gray-3" />
+      <Separator className="bg-gray-3" />
       <AdditionalBenefit
         Icon={DocsIcon}
         title={t('benefits.aiReport.title')}

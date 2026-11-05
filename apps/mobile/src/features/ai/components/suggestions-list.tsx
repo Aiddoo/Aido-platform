@@ -206,7 +206,7 @@ SuggestionsList.Empty = function Empty() {
       <Spacing size={20} />
 
       <Box className="px-4 pb-4">
-        <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
+        <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-4 py-8">
           <VStack gap={4} align="center">
             <Text size="b3" weight="semibold" shade={8} align="center">
               {t('suggestions.list.emptyNoPending')}
@@ -279,9 +279,9 @@ SuggestionsList.Loading = function Loading() {
           resizeMode="contain"
         />
         <Spacing size={8} />
-        <Skeleton className="w-48 rounded" style={{ height: fontScaledSize(28) }} />
+        <Skeleton className="w-48 rounded dark:bg-gray-2" style={{ height: fontScaledSize(28) }} />
         <Spacing size={4} />
-        <Skeleton className="w-56 rounded" style={{ height: fontScaledSize(19) }} />
+        <Skeleton className="w-56 rounded dark:bg-gray-2" style={{ height: fontScaledSize(19) }} />
       </Box>
 
       <Spacing size={20} />
@@ -292,12 +292,24 @@ SuggestionsList.Loading = function Loading() {
             <VStack gap={8}>
               <VStack gap={4}>
                 <HStack justify="between" align="center">
-                  <Skeleton className="w-32 rounded" style={{ height: fontScaledSize(23) }} />
-                  <Skeleton className="w-16 rounded" style={{ height: fontScaledSize(17) }} />
+                  <Skeleton
+                    className="w-32 rounded dark:bg-gray-2"
+                    style={{ height: fontScaledSize(23) }}
+                  />
+                  <Skeleton
+                    className="w-16 rounded dark:bg-gray-2"
+                    style={{ height: fontScaledSize(17) }}
+                  />
                 </HStack>
-                <Skeleton className="w-40 rounded" style={{ height: fontScaledSize(19) }} />
+                <Skeleton
+                  className="w-40 rounded dark:bg-gray-2"
+                  style={{ height: fontScaledSize(19) }}
+                />
               </VStack>
-              <Skeleton className="w-full rounded" style={{ height: fontScaledSize(19) }} />
+              <Skeleton
+                className="w-full rounded dark:bg-gray-2"
+                style={{ height: fontScaledSize(19) }}
+              />
             </VStack>
             {index < SUGGESTION_LOADING_COUNT - 1 && <DashedDivider className="mt-5" />}
           </Box>

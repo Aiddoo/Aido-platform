@@ -263,7 +263,7 @@ NudgeDetailScreen.ReplyButton = function ReplyButton({
       color={isSelected ? 'primary' : 'dark'}
       variant="weak"
       size="large"
-      className={cn('border', isSelected ? 'border-main' : 'border-gray-2 bg-background')}
+      className={cn('border', isSelected ? 'border-main' : 'border-gray-2 bg-white')}
       accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
     >
       <HStack gap={12} align="center" className={cn('w-full', props.isDisabled && 'opacity-40')}>
@@ -324,7 +324,7 @@ export default function NudgeDetailRoute() {
   const { t } = useTranslation('todo');
 
   return (
-    <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-background">
+    <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-white">
       <ReadableContent flex={1}>
         {params.success ? (
           <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>

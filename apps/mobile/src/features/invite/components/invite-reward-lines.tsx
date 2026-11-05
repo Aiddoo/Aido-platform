@@ -28,7 +28,7 @@ export function InviteRewardLines({ className, ...props }: ComponentProps<typeof
   return (
     <VStack
       gap={14}
-      className={cn('rounded-3xl border border-gray-2 bg-white px-[18px] py-4', className)}
+      className={cn('rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-4', className)}
       {...props}
     >
       {lines.map((line) => (

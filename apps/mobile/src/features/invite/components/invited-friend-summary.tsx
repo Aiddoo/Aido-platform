@@ -75,7 +75,7 @@ InvitedFriendSummary.Empty = function Empty() {
   const { t } = useTranslation('invite');
 
   return (
-    <Box className="mx-4 rounded-[20px] border border-dashed border-gray-3 bg-white px-5 py-7">
+    <Box className="mx-4 rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
       <Result
         icon={<PawIcon width={36} height={36} colorClassName="text-gray-3" />}
         title={t('friendList.emptyTitle')}

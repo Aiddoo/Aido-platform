@@ -4,13 +4,13 @@ import type { NativeStackNavigationOptions } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 interface UseStackScreenOptionsParams {
-  background?: 'bg-gray-1' | 'bg-white' | 'bg-background';
+  background?: 'bg-white';
   fillContent?: boolean;
 }
 
 /** 네이티브 Stack 헤더의 공통 screenOptions. 버튼·제목 배치는 iOS(iPhone Duo 레일 포함)에 맡긴다. */
 export function useStackScreenOptions({
-  background = 'bg-gray-1',
+  background = 'bg-white',
   fillContent = false,
 }: UseStackScreenOptionsParams = {}): NativeStackNavigationOptions {
   const { backgroundColor } = useResolveClassNames(background);

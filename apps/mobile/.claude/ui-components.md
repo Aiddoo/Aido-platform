@@ -103,7 +103,7 @@ AI 정리·녹음 정리 등 기능 한도에 닿았을 때는 기존 `PremiumDi
 | `ScrollProgressWidget`                                                                     | 스크롤 진행률 플로팅 위젯                                                    | `src/shared/ui/scroll-progress-widget/scroll-progress-widget.md` |
 | `AppToast`                                                                                 | 토스트 본문 (`useAppToast`로 사용)                                           | `src/shared/ui/toast/toast.md`                                   |
 | `StyledSafeAreaView`                                                                       | className을 받는 SafeAreaView                                                | `src/shared/ui/styled-safe-area-view/styled-safe-area-view.md`   |
-| `ScallopedContainer`                                                                       | 위아래 물결 가장자리의 흰 카드 (AI 리포트·제안, 구독 혜택)                   | `src/shared/ui/scalloped-container/scalloped-container.md`       |
+| `ScallopedContainer`                                                                       | 위아래 물결 가장자리의 카드 (AI 리포트·제안, 구독 혜택)                      | `src/shared/ui/scalloped-container/scalloped-container.md`       |
 | `TextSkeleton`                                                                             | Text 크기별 줄 높이를 따르는 글자 스켈레톤                                   | `src/shared/ui/text/text.md`                                     |
 | `Barcode`                                                                                  | 영수증 톤 카드 아래쪽 바코드 장식 (구독 영수증, 초대 혜택)                   | `src/shared/ui/barcode/barcode.md`                               |
 
@@ -215,7 +215,7 @@ import { cn } from '@src/shared/utils/cn';
 // StyledSafeAreaView - withUniwind로 래핑됨
 import { StyledSafeAreaView } from '@src/shared/ui/styled-safe-area-view';
 
-<StyledSafeAreaView className="flex-1 bg-gray-1">{children}</StyledSafeAreaView>;
+<StyledSafeAreaView className="flex-1 bg-white">{children}</StyledSafeAreaView>;
 ```
 
 **새로운 외부 컴포넌트 래핑:**
@@ -254,19 +254,22 @@ className = 'text-gray-5';
 
 ### 사용 가능한 색상 변수
 
-| 변수                           | 용도                                    |
-| ------------------------------ | --------------------------------------- |
-| `bg-white`                     | 카드, 섹션 배경 (다크 모드에서 #121212) |
-| `bg-gray-1` ~ `bg-gray-10`     | 배경색 계열                             |
-| `text-gray-1` ~ `text-gray-10` | 텍스트 색상 계열                        |
-| `bg-main`, `text-main`         | 메인 브랜드 색상                        |
-| `bg-error`, `text-error`       | 에러 색상                               |
-| `bg-success`, `text-success`   | 성공 색상                               |
-| `bg-warning`, `text-warning`   | 경고 색상                               |
-| `bg-background`                | 전체 화면 배경                          |
-| `bg-surface`                   | 컴포넌트 표면                           |
-| `text-foreground`              | 기본 텍스트                             |
-| `text-muted`                   | 보조 텍스트                             |
+화면 배경은 `bg-white`, 카드는 `bg-gray-1`이다. 다크 모드 바텀시트 면은 `bg-gray-1`이라 시트 안 카드는 `dark:bg-gray-2`를 함께 쓴다. 날씨 화면만 하늘 장면을 배경으로 둔다.
+
+| 변수                           | 용도                              |
+| ------------------------------ | --------------------------------- |
+| `bg-white`                     | 화면 배경 (다크 모드에서 #121212) |
+| `bg-gray-1`                    | 화면 위 카드·묶음 배경            |
+| `bg-gray-2` ~ `bg-gray-10`     | 배경색 계열                       |
+| `text-gray-1` ~ `text-gray-10` | 텍스트 색상 계열                  |
+| `bg-main`, `text-main`         | 메인 브랜드 색상                  |
+| `bg-error`, `text-error`       | 에러 색상                         |
+| `bg-success`, `text-success`   | 성공 색상                         |
+| `bg-warning`, `text-warning`   | 경고 색상                         |
+| `bg-background`                | 전체 화면 배경                    |
+| `bg-surface`                   | 컴포넌트 표면                     |
+| `text-foreground`              | 기본 텍스트                       |
+| `text-muted`                   | 보조 텍스트                       |
 
 ### className으로 색상 적용 (권장)
 

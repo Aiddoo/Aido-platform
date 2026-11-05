@@ -103,7 +103,7 @@ export function TodoCommentComposerBar({ extraContentPadding }: TodoCommentCompo
 
   return (
     <KeyboardStickyView offset={{ closed: 0, opened: keyboardBottomGap }} enabled={isScreenFocused}>
-      <Box px={12} pt={8} className="bg-background" testID="todo-comment-composer">
+      <Box px={12} pt={8} className="bg-white" testID="todo-comment-composer">
         <Box ref={composerRef} collapsable={false} onLayout={handleContentLayout}>
           <Suspense fallback={<TodoCommentComposerBar.Loading />}>
             <ComposerContent />

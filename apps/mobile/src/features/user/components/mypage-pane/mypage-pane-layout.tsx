@@ -16,7 +16,7 @@ export function MyPagePaneLayout({ isSplit, children }: MyPagePaneLayoutProps) {
 
   return (
     <StyledSafeAreaView
-      className="flex-1 bg-gray-1"
+      className="flex-1 bg-white"
       edges={['bottom']}
       style={isSplit ? { paddingTop: topInset } : undefined}
     >

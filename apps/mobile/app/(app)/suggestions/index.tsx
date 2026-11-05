@@ -59,7 +59,7 @@ function SuggestionsScreen() {
 
 export default function SuggestionsRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <QueryErrorBoundary>
         <Suspense
           fallback={

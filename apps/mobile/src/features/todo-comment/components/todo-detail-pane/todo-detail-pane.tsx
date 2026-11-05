@@ -84,7 +84,7 @@ TodoDetailPane.Empty = function Empty() {
   const { t } = useTranslation('todo');
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background px-8">
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
       <Result
         icon={<DocsIcon width={72} height={72} />}
         title={t('detail.emptyTitle')}
@@ -101,7 +101,7 @@ TodoDetailPane.Unavailable = function Unavailable({ onClose }: { onClose: () => 
   return (
     <StyledSafeAreaView
       edges={['left', 'right']}
-      className="flex-1 bg-background px-8"
+      className="flex-1 bg-white px-8"
       testID="todo-unavailable"
     >
       <Result
@@ -168,7 +168,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
       <KeyboardBottomGapProvider>
         <StyledSafeAreaView
           edges={['left', 'right']}
-          className="flex-1 bg-background"
+          className="flex-1 bg-white"
           testID="todo-detail"
         >
           {content}
@@ -182,7 +182,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
       {/* 작성기가 열려 있으면 swipe가 화면을 닫지 않고 뒤로가기가 작성기부터 닫는다 */}
       <Stack.Screen options={{ gestureEnabled: backResult === 'native' }} />
       <StyledSafeAreaView
-        className="flex-1 bg-background"
+        className="flex-1 bg-white"
         edges={['left', 'right']}
         testID="todo-detail"
       >

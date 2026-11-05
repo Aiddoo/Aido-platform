@@ -79,7 +79,7 @@ function InquiryScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <Box className="flex-1 bg-gray-1">
+      <Box className="flex-1 bg-white">
         <AnimatedScrollView
           ref={scrollViewRef}
           onContentSizeChange={(_w, h) => {
@@ -99,7 +99,7 @@ function InquiryScreen() {
                   <RadioGroup
                     value={value}
                     onValueChange={onChange}
-                    className="bg-white rounded-2xl overflow-hidden gap-0"
+                    className="bg-gray-1 rounded-2xl overflow-hidden gap-0"
                   >
                     {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
                       <IconRadioItem
@@ -131,7 +131,7 @@ function InquiryScreen() {
                       byType: { too_big: 'inquiryContent.tooLong' },
                     })}
                     maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
-                    className="min-h-40 bg-white border-gray-2"
+                    className="min-h-40"
                   />
                   <HStack justify="end" className="-mt-4">
                     <Text size="e1" weight="medium" className="text-gray-5">
@@ -161,7 +161,7 @@ function InquiryScreen() {
 /** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
 export default function InquiryRoute() {
   return (
-    <Box className="flex-1 bg-gray-1">
+    <Box className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <QueryErrorBoundary>
           <InquiryScreen />

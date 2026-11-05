@@ -86,7 +86,7 @@ function GrantEnded() {
         shade={7}
         align="center"
         lineBreakStrategyIOS="hangul-word"
-        className="rounded-2xl bg-white px-4 py-3 dark:bg-gray-2"
+        className="rounded-2xl bg-gray-1 px-4 py-3"
       >
         {t('paywall.grantEnded', {
           date: formatDateLabel(grantEndedAt, 'monthDay', dateFormatContext),

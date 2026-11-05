@@ -70,7 +70,12 @@ export function TodoTimePickerContent({
       }
     >
       <VStack>
-        <VStack className="overflow-hidden rounded-xl bg-gray-1" px={4} py={8} gap={8}>
+        <VStack
+          className="overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2"
+          px={4}
+          py={8}
+          gap={8}
+        >
           <ListRow
             contents={
               <ListRow.Texts
@@ -169,7 +174,7 @@ export function TodoTimePickerContent({
 TodoTimePickerContent.Loading = function Loading() {
   return (
     <SheetHeaderLayout gap={24} header={<TextSkeleton size="b2" className="w-24 self-center" />}>
-      <VStack className="overflow-hidden rounded-xl bg-gray-1" px={4} py={8} gap={8}>
+      <VStack className="overflow-hidden rounded-xl bg-gray-1 dark:bg-gray-2" px={4} py={8} gap={8}>
         <ListRow
           contents={<TextSkeleton size="b1" className="w-16" />}
           right={<Skeleton className="h-6 w-12 rounded-full" />}

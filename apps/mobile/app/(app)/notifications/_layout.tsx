@@ -3,7 +3,7 @@ import { useStackBackToolbar, useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 function NotificationsLayout() {
-  const screenOptions = useStackScreenOptions({ background: 'bg-white' });
+  const screenOptions = useStackScreenOptions();
   const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
   const { t } = useTranslation('notification');
 

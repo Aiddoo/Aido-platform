@@ -1,6 +1,6 @@
 # SettingsCard
 
-설정 화면의 흰 카드와 행을 한 모양으로 맞추는 Compound Component예요. heroui-native `ListGroup`·`ControlField`·`Separator` 위에 글자 크기 설정(`Text`)과 선택·비활성 표시만 더해요. `SettingsScreenLayout`은 설정 화면의 스크롤 틀이에요.
+설정 화면의 카드와 행을 한 모양으로 맞추는 Compound Component예요. heroui-native `ListGroup`·`ControlField`·`Separator` 위에 글자 크기 설정(`Text`)과 선택·비활성 표시만 더해요. `SettingsScreenLayout`은 설정 화면의 스크롤 틀이에요.
 
 ## 사용법
 

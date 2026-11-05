@@ -188,7 +188,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
 
       <InvitePawPrintBoard.Caption board={board} />
 
-      <Box className="rounded-2xl bg-gray-1 px-3.5 py-3">
+      <Box className="rounded-2xl bg-white px-3.5 py-3">
         <InviteProgressMessage />
       </Box>
     </VStack>
@@ -378,7 +378,7 @@ InvitePawPrintBoard.Loading = function Loading() {
         ))}
       </VStack>
       <Box className="h-5" />
-      <Skeleton className="h-[66px] rounded-2xl" />
+      <Skeleton className="h-[66px] rounded-2xl dark:bg-gray-2" />
     </VStack>
   );
 };

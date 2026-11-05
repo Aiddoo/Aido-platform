@@ -45,7 +45,7 @@ function TodoCategorySettingsScreen() {
   const [view, setView] = useView();
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <ReadableContent flex={1} className="px-4">
         <VStack gap={8} flex={1}>
           <H3 className="my-4">{t('categorySettings.header')}</H3>

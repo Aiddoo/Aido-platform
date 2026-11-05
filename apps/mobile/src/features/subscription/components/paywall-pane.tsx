@@ -66,7 +66,7 @@ PaywallPane.Loading = function Loading() {
               </VStack>
               {times(BENEFIT_ROW_COUNT, (index) => (
                 <HStack key={index} gap={16} align="center">
-                  <Skeleton className="size-14 rounded-xl" />
+                  <Skeleton className="size-14 rounded-xl dark:bg-gray-2" />
                   <VStack flex={1} gap={4}>
                     <TextSkeleton size="b3" className="w-2/3" />
                     <TextSkeleton size="b4" className="w-full" />
@@ -81,7 +81,7 @@ PaywallPane.Loading = function Loading() {
         </StyledSafeAreaView>
       </ScrollView>
       <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-        <Skeleton className="h-14 rounded-2xl" />
+        <Skeleton className="h-14 rounded-2xl dark:bg-gray-2" />
       </StyledSafeAreaView>
     </Box>
   );

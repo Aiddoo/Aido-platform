@@ -156,7 +156,7 @@ function PawPrintBoardSection({ children }: { children: ReactNode }) {
   const { t } = useTranslation('invite');
 
   return (
-    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-white px-[18px] py-5">
+    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-gray-1 px-[18px] py-5">
       <H4>{t('pawPrintBoard.title')}</H4>
       {children}
     </VStack>

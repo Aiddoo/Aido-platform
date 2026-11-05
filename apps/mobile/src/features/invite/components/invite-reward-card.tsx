@@ -48,7 +48,7 @@ export function InviteRewardCard({ className, ...props }: InviteRewardCardProps)
       onPress={() => openMyInvite('mypage_card', navigate)}
       className={cn(
         'rounded-[20px] p-4',
-        isSelected(myInviteHref().pathname) ? 'bg-gray-2' : 'bg-white',
+        isSelected(myInviteHref().pathname) ? 'bg-gray-3 dark:bg-gray-2' : 'bg-gray-1',
         className,
       )}
       {...props}
@@ -101,14 +101,14 @@ InviteRewardCard.Loading = function Loading({ className }: { className?: string 
   return (
     <VStack
       gap={12}
-      className={cn('rounded-[20px] bg-white p-4', className)}
+      className={cn('rounded-[20px] bg-gray-1 p-4', className)}
       accessibilityState={{ busy: true }}
     >
       <VStack gap={2}>
         <TextSkeleton size="b2" className="w-40" />
         <TextSkeleton size="b4" className="w-32" />
       </VStack>
-      <Skeleton className="h-9 rounded-full" />
+      <Skeleton className="h-9 rounded-full dark:bg-gray-2" />
     </VStack>
   );
 };
@@ -118,7 +118,7 @@ InviteRewardCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
   const { t } = useTranslation(['invite', 'common']);
 
   return (
-    <VStack gap={12} className="rounded-[20px] bg-white p-4">
+    <VStack gap={12} className="rounded-[20px] bg-gray-1 p-4">
       <VStack gap={2}>
         <Text size="b2" weight="bold">
           {t('invite:result.loadFailed.title')}

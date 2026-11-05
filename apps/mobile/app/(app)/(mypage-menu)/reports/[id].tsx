@@ -30,7 +30,7 @@ function ReportDetailScreen() {
   const gate = useEntitlementGate('AI_REPORT', { surface: 'report_detail' });
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       {match(report)
         .with({ kind: 'sample' }, ({ id }) => (
           <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8 pt-2">

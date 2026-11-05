@@ -11,7 +11,7 @@ export function ReportStatusBanner() {
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
 
   return (
-    <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-2 py-3">
+    <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-2 py-3">
       <HStack className="items-stretch">
         <VStack gap={4} align="center" className="flex-1">
           <Text size="b4" shade={6}>
@@ -39,7 +39,7 @@ export function ReportStatusBanner() {
 
 ReportStatusBanner.Loading = function Loading() {
   return (
-    <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-2 py-3">
+    <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-2 py-3">
       <SkeletonGroup isLoading>
         <HStack className="items-stretch">
           <VStack gap={4} align="center" className="flex-1">

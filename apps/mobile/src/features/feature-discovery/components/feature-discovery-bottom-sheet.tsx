@@ -140,7 +140,7 @@ function FeatureCard({ card, onCta }: { card: FeatureDiscoveryCard; onCta: () =>
   const copy = CARD_COPY[card.id];
 
   return (
-    <VStack gap={12} p={16} className="rounded-2xl bg-gray-1">
+    <VStack gap={12} p={16} className="rounded-2xl bg-gray-1 dark:bg-gray-2">
       <FeatureDiscoveryPreview cardId={card.id} />
       <VStack gap={4}>
         <Text size="b2" weight="semibold" shade={9} className="shrink">

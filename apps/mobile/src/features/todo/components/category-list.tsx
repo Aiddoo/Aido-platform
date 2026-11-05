@@ -37,7 +37,7 @@ interface CategoryListProps {
 }
 
 export function CategoryList({ mode }: CategoryListProps) {
-  const containerBgStyle = useResolveClassNames('bg-white');
+  const containerBgStyle = useResolveClassNames('bg-gray-1');
   const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
   const reorderableList = useReorderableList({
@@ -157,15 +157,15 @@ CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
 
 CategoryList.Loading = function Loading() {
   return (
-    <VStack className="bg-white rounded-2xl p-2">
+    <VStack className="bg-gray-1 rounded-2xl p-2">
       {times(2, (index) => (
         <ListRow
           key={index}
-          left={<Skeleton className="size-2 rounded-full" />}
+          left={<Skeleton className="size-2 rounded-full dark:bg-gray-2" />}
           contents={<TextSkeleton size="b3" className="w-20" />}
           right={
             <Box className="h-9 justify-center">
-              <Skeleton className="h-8 w-12 rounded-xl" />
+              <Skeleton className="h-8 w-12 rounded-xl dark:bg-gray-2" />
             </Box>
           }
           horizontalPadding="medium"

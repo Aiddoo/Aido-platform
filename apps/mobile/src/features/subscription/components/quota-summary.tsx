@@ -22,7 +22,7 @@ export function QuotaSummary({ className, ...stackProps }: QuotaSummaryProps) {
     <VStack
       gap={12}
       p={16}
-      className={cn('rounded-2xl bg-white', className)}
+      className={cn('rounded-2xl bg-gray-1', className)}
       testID="quota-summary"
       {...stackProps}
     >

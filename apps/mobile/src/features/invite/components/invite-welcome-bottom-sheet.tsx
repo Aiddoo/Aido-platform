@@ -246,7 +246,11 @@ function WelcomeNotificationPrompt() {
   }
 
   return (
-    <HStack gap={8} align="center" className="mt-4 w-full rounded-2xl bg-gray-1 px-4 py-3">
+    <HStack
+      gap={8}
+      align="center"
+      className="mt-4 w-full rounded-2xl bg-gray-1 px-4 py-3 dark:bg-gray-2"
+    >
       <BellFilledIcon width={18} height={18} colorClassName="text-gray-7" />
       <Text
         size="b4"

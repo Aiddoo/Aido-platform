@@ -3,7 +3,7 @@ import { useStackBackToolbar, useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
 export default function NudgeLayout() {
-  const screenOptions = useStackScreenOptions({ background: 'bg-background' });
+  const screenOptions = useStackScreenOptions();
   const backToolbar = useStackBackToolbar({ fallbackHref: '/notifications' });
   const { t } = useTranslation('todo');
 

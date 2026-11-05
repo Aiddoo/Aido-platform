@@ -74,7 +74,7 @@ SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFa
 
 export default function SubscriptionRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <QueryErrorBoundary fallback={SubscriptionScreen.Error}>
         <Suspense fallback={<SubscriptionScreen.Loading />}>
           <SubscriptionScreen />

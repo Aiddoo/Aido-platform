@@ -9,7 +9,7 @@ export default function AchievementsScreen() {
   const today = useToday();
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <QueryErrorBoundary resetKeys={[today.getFullYear()]} fallback={WeeklyAchievementList.Error}>
         <Suspense
           fallback={
