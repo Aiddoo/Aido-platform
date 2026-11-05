@@ -14,13 +14,13 @@ const LAST_MOVED_AT = new Date("2026-06-01T00:00:00.000Z");
 
 describe("복귀 회차 채우기", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
-  let dueRun: TodoSeriesDueRunner;
+  let dueRunner: TodoSeriesDueRunner;
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
     fixture = createPlanningTodoFixture();
-    dueRun = new TodoSeriesDueRunner({
+    dueRunner = new TodoSeriesDueRunner({
       seriesRepository: fixture.todoSeriesRepository,
       materializer: fixture.occurrenceMaterializer,
       effects: new TodoCreationEffects(fixture),
@@ -36,7 +36,7 @@ describe("복귀 회차 채우기", () => {
     return new TodoSeriesCatchUp({
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
-      dueRunner: dueRun,
+      dueRunner,
       logger: fixture.logger,
       ...overrides,
     });
@@ -124,7 +124,7 @@ describe("복귀 회차 채우기", () => {
   it("같은 사용자의 동시 요청은 한 번의 복귀를 함께 기다린다", async () => {
     // Given
     await seedStale("series-1");
-    const materialize = vi.spyOn(dueRun, "materialize");
+    const materialize = vi.spyOn(dueRunner, "materialize");
     const service = catchUp();
     // When
     await Promise.all([

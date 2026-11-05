@@ -25,7 +25,7 @@ export interface ConvertMemoToSingleTodoData {
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
   readonly repeat?: TodoRepeat | null;
-  readonly legacySeriesLimit?: boolean;
+  readonly usesLegacySeriesLimit?: boolean;
   readonly items?: { title: string }[];
 }
 
@@ -78,22 +78,22 @@ export class ConvertMemoToTodos {
         throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       }
       const todos: Todo[] = [];
-      for (const todoData of data.todos) {
+      for (const todoDraft of data.todos) {
         try {
           const staged = await this.#dependencies.savepointRunner.run(() =>
             this.#dependencies.todoCreator.stage({
               userId,
-              title: todoData.title,
-              categoryId: todoData.categoryId,
-              startDate: todoData.startDate,
-              endDate: todoData.endDate,
-              scheduledTime: todoData.scheduledTime,
+              title: todoDraft.title,
+              categoryId: todoDraft.categoryId,
+              startDate: todoDraft.startDate,
+              endDate: todoDraft.endDate,
+              scheduledTime: todoDraft.scheduledTime,
               timezone,
-              isAllDay: todoData.isAllDay ?? true,
-              visibility: todoData.visibility ?? "PUBLIC",
-              items: todoData.items,
-              repeat: todoData.repeat,
-              legacySeriesLimit: todoData.legacySeriesLimit,
+              isAllDay: todoDraft.isAllDay ?? true,
+              visibility: todoDraft.visibility ?? "PUBLIC",
+              items: todoDraft.items,
+              repeat: todoDraft.repeat,
+              usesLegacySeriesLimit: todoDraft.usesLegacySeriesLimit,
             }),
           );
           this.#dependencies.afterCommit.register(staged.afterCommit);

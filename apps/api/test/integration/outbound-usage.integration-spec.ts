@@ -83,7 +83,7 @@ describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
     );
 
     // Then
-    expect(results.filter((result) => result.accepted)).toHaveLength(10);
+    expect(results.filter((result) => result.isAccepted)).toHaveLength(10);
     expect(await meter.read([KEY])).toEqual([10]);
     await context.reset();
   });

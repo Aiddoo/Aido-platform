@@ -269,10 +269,10 @@ export class AiSdkGenerator implements AiGeneratorPort {
         }
         last = { provider, failure: attempt.failure };
         const rule = resolveAiFailureRule(attempt.failure.kind);
-        if (!rule.fallback || signal.aborted) {
+        if (!rule.shouldFallback || signal.aborted) {
           throw this.#failed(last, { attempts, route, cost });
         }
-        if (!rule.retrySameProvider) {
+        if (!rule.shouldRetrySameProvider) {
           break;
         }
       }

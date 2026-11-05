@@ -313,11 +313,11 @@ export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
     oauthStateRepository: ConstructorParameters<
       typeof ExchangeOAuthCode
     >[0]["oauthStateRepository"],
-    notifyOAuthSignup: ConstructorParameters<typeof ExchangeOAuthCode>[0]["oauthSignupNotifier"],
+    oauthSignupNotifier: ConstructorParameters<typeof ExchangeOAuthCode>[0]["oauthSignupNotifier"],
   ) =>
     new ExchangeOAuthCode({
       oauthStateRepository,
-      oauthSignupNotifier: notifyOAuthSignup,
+      oauthSignupNotifier,
       logger: new Logger(ExchangeOAuthCode.name),
     }),
 };
@@ -483,11 +483,10 @@ export const loginWithMobileOAuthTokenProvider: FactoryProvider<LoginWithMobileO
     loginWithOAuthToken: ConstructorParameters<
       typeof LoginWithMobileOAuthToken
     >[0]["loginWithOAuthToken"],
-    notifyOAuthSignup: ConstructorParameters<
+    oauthSignupNotifier: ConstructorParameters<
       typeof LoginWithMobileOAuthToken
     >[0]["oauthSignupNotifier"],
-  ) =>
-    new LoginWithMobileOAuthToken({ loginWithOAuthToken, oauthSignupNotifier: notifyOAuthSignup }),
+  ) => new LoginWithMobileOAuthToken({ loginWithOAuthToken, oauthSignupNotifier }),
 };
 
 export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {

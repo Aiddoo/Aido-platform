@@ -24,11 +24,11 @@ const data: AggregatedReportData = {
   hasActivity: true,
 };
 const input: ReportPromptInput = {
-  data,
+  reportData: data,
   periodLabel: "2026년 43주차",
   type: "WEEKLY",
   period: { start: "2026-10-19", end: "2026-10-25" },
-  prevTips: [injected],
+  previousTips: [injected],
 };
 
 function readReportData(prompt: string) {
@@ -76,7 +76,7 @@ describe("리포트 프롬프트", () => {
 
   it("이전 달성률이 없으면 차이를 null로 둔다", () => {
     // Given
-    const withoutPrevious = { ...input, data: { ...data, prevCompletionRate: null } };
+    const withoutPrevious = { ...input, reportData: { ...data, prevCompletionRate: null } };
     // When
     const { prompt } = reportPrompt.build(withoutPrevious, "en");
     // Then

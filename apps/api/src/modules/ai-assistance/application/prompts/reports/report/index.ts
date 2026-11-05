@@ -55,7 +55,7 @@ function buildNumberEvidence(input: ReportPromptInput, locale: SupportedLocale) 
       // 주간 리포트는 "다음 7일"을 말하도록 지시한다.
       ...(input.type === "WEEKLY" ? [7] : []),
     ],
-    quotedTexts: [period.label, ...input.data.categoryBreakdown.map(({ name }) => name)],
+    quotedTexts: [period.label, ...input.reportData.categoryBreakdown.map(({ name }) => name)],
   };
 }
 

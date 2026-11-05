@@ -38,11 +38,11 @@ export type AiSpendDecision =
 export function decideAiSpend(input: {
   readonly taskClass: AiTaskClass;
   /** 킬 스위치(AI_GENERATION_MODE)가 이 분류의 생성을 켜 두었는지 */
-  readonly enabled: boolean;
+  readonly isEnabled: boolean;
   readonly spend: AiSpend;
   readonly limits: AiSpendLimits;
 }): AiSpendDecision {
-  const { taskClass, enabled, spend, limits } = input;
+  const { taskClass, isEnabled: enabled, spend, limits } = input;
   if (!enabled) {
     return { type: "halted", reason: "kill-switch" };
   }

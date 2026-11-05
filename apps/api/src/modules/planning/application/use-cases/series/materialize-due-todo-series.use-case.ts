@@ -61,7 +61,7 @@ export class MaterializeDueTodoSeries {
   }
 
   async execute(): Promise<MaterializeDueTodoSeriesResult> {
-    const { logger, alert, seriesRepository, seriesOwner, dueRunner: dueRun } = this.#dependencies;
+    const { logger, alert, seriesRepository, seriesOwner, dueRunner } = this.#dependencies;
     const batchSize = this.#dependencies.batchSize ?? TODO_SERIES_MATERIALIZATION_BUDGET.BATCH_SIZE;
     const deadlineMs =
       this.#dependencies.deadlineMs ?? TODO_SERIES_MATERIALIZATION_BUDGET.DEADLINE_MS;
@@ -105,7 +105,7 @@ export class MaterializeDueTodoSeries {
         processedCount += 1;
         try {
           // 사용자 수정이나 다른 실행이 규칙 행을 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
-          createdCount += await dueRun.materialize(due, { skipLocked: true });
+          createdCount += await dueRunner.materialize(due, { skipLocked: true });
         } catch (error) {
           failedCount += 1;
           logger.warn({

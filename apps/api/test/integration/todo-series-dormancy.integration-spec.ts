@@ -106,7 +106,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     return { userId: user.id, categoryId: category.id };
   }
 
-  function dueRun() {
+  function dueRunner() {
     const todoRepository = new DrizzleTodoRepository(fixture.txHost);
     return new TodoSeriesDueRunner({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
@@ -144,7 +144,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     return new TodoSeriesCatchUp({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
-      dueRunner: dueRun(),
+      dueRunner: dueRunner(),
       logger: new Logger("DormancyIntegration"),
     });
   }
@@ -153,7 +153,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     return new MaterializeDueTodoSeries({
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost),
       seriesOwner: seriesOwner(),
-      dueRunner: dueRun(),
+      dueRunner: dueRunner(),
       alert: mock<OperationalAlertPort>(),
       logger: new Logger("DormancyIntegration"),
     });

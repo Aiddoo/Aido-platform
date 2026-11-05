@@ -175,7 +175,7 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
         options,
       );
       // golden은 출시 응답 칸만 기대값으로 갖는다. 새 선택 칸 repeat은 비교하지 않는다.
-      const { title, categoryId: _categoryId, repeat: _repeat, ...schedule } = value.data;
+      const { title, categoryId: _categoryId, repeat: _repeat, ...schedule } = value.parsedTodo;
       const {
         title: expectedTitle,
         categoryId: _expectedCategoryId,
@@ -190,7 +190,7 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
         score: {
           metrics: { date, title: titleOk, ...(noAction && { noAction: intentOk }) },
           ...(!(date && titleOk && intentOk) && {
-            diff: { expected: golden.expected, actual: value.data, intent: value.intent },
+            diff: { expected: golden.expected, actual: value.parsedTodo, intent: value.intent },
           }),
         },
       };

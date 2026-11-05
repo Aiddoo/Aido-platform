@@ -64,7 +64,7 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
   async tryReserve(key: UsageKey, amount: number, limit: number): Promise<UsageReservation> {
     if (amount > limit) {
       const [current] = await this.read([key]);
-      return { accepted: false, total: current ?? 0 };
+      return { isAccepted: false, total: current ?? 0 };
     }
     const at = now();
     const [reserved] = await this.txHost.tx
@@ -77,10 +77,10 @@ export class DrizzleUsageMeterAdapter implements UsageMeterPort {
       })
       .returning({ used: outboundUsage.used });
     if (reserved != null) {
-      return { accepted: true, total: reserved.used };
+      return { isAccepted: true, total: reserved.used };
     }
     const [current] = await this.read([key]);
-    return { accepted: false, total: current ?? 0 };
+    return { isAccepted: false, total: current ?? 0 };
   }
 
   async release(key: UsageKey, amount: number): Promise<void> {

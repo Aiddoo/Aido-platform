@@ -45,12 +45,12 @@ export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
     const { day, month } = this.#keys();
     try {
       const daily = await this.#dependencies.meter.tryReserve(day, 1, limits.daily);
-      if (!daily.accepted) {
+      if (!daily.isAccepted) {
         await this.#alertExhausted("daily", day);
         return "exhausted";
       }
       const monthly = await this.#dependencies.meter.tryReserve(month, 1, limits.monthly);
-      if (!monthly.accepted) {
+      if (!monthly.isAccepted) {
         await this.#dependencies.meter.release(day, 1);
         await this.#alertExhausted("monthly", month);
         return "exhausted";
@@ -144,7 +144,7 @@ export class MeteredEmailBudgetAdapter implements EmailBudgetPort {
       1,
       1,
     );
-    if (once.accepted) {
+    if (once.isAccepted) {
       this.#dependencies.alert.raise({
         key: EmailAlertKey.BUDGET_EXHAUSTED,
         severity: "warning",

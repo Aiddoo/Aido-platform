@@ -17,7 +17,7 @@ export interface UsageIncrement {
 }
 
 export interface UsageReservation {
-  readonly accepted: boolean;
+  readonly isAccepted: boolean;
   /** 예약 뒤(거절이면 현재) 누적값 */
   readonly total: number;
 }

@@ -160,22 +160,22 @@ export function normalizeMemoDraft(
     readonly upcomingTodos: readonly ExistingTodo[];
   },
 ): {
-  data: ParsedMemoData;
-  noAction: boolean;
+  parsedMemo: ParsedMemoData;
+  hasNoAction: boolean;
   omittedTodoCount: number;
   warnings: NormalizationWarning[];
 } {
   const warnings: NormalizationWarning[] = [];
   const tasks = memo.todos.filter((todo) => todo.intent === "TASK");
   const kept = tasks.slice(0, AI_PARSE_LIMITS.MEMO_MAX_TODOS);
-  const noAction = kept.length === 0;
-  const totalTaskCount = noAction
+  const hasNoAction = kept.length === 0;
+  const totalTaskCount = hasNoAction
     ? 0
     : Math.min(Math.max(tasks.length, memo.totalTaskCount ?? 0), MEMO_TOTAL_TASK_COUNT_MAX);
   if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) {
     warnings.push("TODOS_TRUNCATED");
   }
-  const drafts = noAction ? [{ ...noActionDraft(), items: [], duplicateOfTodoId: null }] : kept;
+  const drafts = hasNoAction ? [{ ...noActionDraft(), items: [], duplicateOfTodoId: null }] : kept;
 
   const parsed = drafts.map((draft) => {
     const normalized = normalizeTodoDraft(draft, context);
@@ -195,7 +195,7 @@ export function normalizeMemoDraft(
       ...normalized.todo,
       categoryId: normalized.todo.categoryId ?? context.defaultCategoryId,
       items: items.titles.map((itemTitle) => ({ title: itemTitle })),
-      duplicateOfTodoId: noAction
+      duplicateOfTodoId: hasNoAction
         ? null
         : findDuplicateTodoId(
             {
@@ -208,8 +208,8 @@ export function normalizeMemoDraft(
     };
   });
   return {
-    data: parsedMemoDataSchema.parse({ todos: parsed }),
-    noAction,
+    parsedMemo: parsedMemoDataSchema.parse({ todos: parsed }),
+    hasNoAction,
     omittedTodoCount: totalTaskCount - kept.length,
     warnings,
   };

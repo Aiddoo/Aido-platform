@@ -34,7 +34,7 @@ export interface ParseTodoNormalizeContext {
 }
 
 export interface ParseTodoOutcome {
-  readonly data: ParsedTodoData;
+  readonly parsedTodo: ParsedTodoData;
   /** 실행할 행동 없이 모델 대상 명령만 있었는지. 이 경우 사용량을 차감하지 않는다. */
   readonly intent: TodoDraft["intent"];
   readonly warnings: readonly string[];
@@ -75,7 +75,7 @@ export const parseTodoPrompt: PromptDefinition<
       fallbackTitle: context.text,
     });
     return {
-      data: { ...todo, categoryId: context.requestedCategoryId ?? todo.categoryId },
+      parsedTodo: { ...todo, categoryId: context.requestedCategoryId ?? todo.categoryId },
       intent,
       warnings,
     };

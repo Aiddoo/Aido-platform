@@ -8,7 +8,7 @@ import type {
 
 /** 폴백 문구에 필요한 리포트 입력. 프롬프트 입력(ReportPromptInput)을 그대로 넘길 수 있다. */
 export interface ReportFallbackInput {
-  readonly data: AggregatedReportData;
+  readonly reportData: AggregatedReportData;
   readonly periodLabel: string;
   readonly type: ReportType;
 }
@@ -60,7 +60,7 @@ function mostCompletedCategory(data: AggregatedReportData): string | null {
 
 /** 활동이 없는 기간은 LLM 없이 이 템플릿을 저장한다. */
 export function buildNoActivityContent(
-  input: Omit<ReportFallbackInput, "data">,
+  input: Omit<ReportFallbackInput, "reportData">,
   locale: SupportedLocale,
 ): ReportContent {
   const copy = reportFallbackCopy[locale];
@@ -85,14 +85,14 @@ export function buildFallbackContent(
   input: ReportFallbackInput,
   locale: SupportedLocale,
 ): ReportContent {
-  if (!input.data.hasActivity) {
+  if (!input.reportData.hasActivity) {
     return { ...buildNoActivityContent(input, locale), contentSource: "FALLBACK" };
   }
   const copy = reportFallbackCopy[locale];
   const next = copy.nextPeriod[input.type];
-  const category = mostCompletedCategory(input.data);
+  const category = mostCompletedCategory(input.reportData);
   return {
-    aiSummary: copy.activeSummary(input.periodLabel, input.data),
+    aiSummary: copy.activeSummary(input.periodLabel, input.reportData),
     aiTips: [category == null ? copy.activeTip(next) : copy.categoryTip(category, next)],
     contentSource: "FALLBACK",
     promptVersion: null,

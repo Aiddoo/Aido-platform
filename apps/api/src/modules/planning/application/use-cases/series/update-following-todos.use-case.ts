@@ -58,7 +58,7 @@ export interface UpdateFollowingTodosInput {
 export interface AppliedFollowingEdit {
   readonly source: TodoSeries;
   readonly target: TodoSeries;
-  readonly split: boolean;
+  readonly isSplit: boolean;
   readonly responseTodoId: number;
 }
 
@@ -156,7 +156,7 @@ export class UpdateFollowingTodos {
       seriesId: edited.target.getId(),
       userId,
     });
-    if (edited.split) {
+    if (edited.isSplit) {
       this.#dependencies.logger.log({
         event: PlanningTodoSeriesLogEvent.SPLIT,
         seriesId: edited.source.getId(),
@@ -277,7 +277,7 @@ export class UpdateFollowingTodos {
     await todoReminder.cancelReminders(uniq(cancelledTodoIds));
     await todoReminder.scheduleReminders(uniqBy(reminders, ({ todoId }) => todoId));
 
-    return { source: series, target, split, responseTodoId };
+    return { source: series, target, isSplit: split, responseTodoId };
   }
 
   /** 뒤 구간의 규칙 값과 이미 있는 미완료 회차를 함께 고친다. 시각을 다시 계산했으면 그 회차들을 돌려준다. */

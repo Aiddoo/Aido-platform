@@ -117,12 +117,12 @@ export const todoSeriesCatchUpProvider: FactoryProvider<TodoSeriesCatchUp> = {
   useFactory: (
     seriesRepository: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesRepository"],
     seriesOwner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["seriesOwner"],
-    dueRun: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRunner"],
+    dueRunner: ConstructorParameters<typeof TodoSeriesCatchUp>[0]["dueRunner"],
   ) =>
     new TodoSeriesCatchUp({
       seriesRepository,
       seriesOwner,
-      dueRunner: dueRun,
+      dueRunner,
       logger: new Logger(TodoSeriesCatchUp.name),
     }),
 };
@@ -133,13 +133,13 @@ export const materializeDueTodoSeriesProvider: FactoryProvider<MaterializeDueTod
   useFactory: (
     seriesRepository: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesRepository"],
     seriesOwner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["seriesOwner"],
-    dueRun: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRunner"],
+    dueRunner: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["dueRunner"],
     alert: ConstructorParameters<typeof MaterializeDueTodoSeries>[0]["alert"],
   ) =>
     new MaterializeDueTodoSeries({
       seriesRepository,
       seriesOwner,
-      dueRunner: dueRun,
+      dueRunner,
       alert,
       logger: new Logger(MaterializeDueTodoSeries.name),
     }),

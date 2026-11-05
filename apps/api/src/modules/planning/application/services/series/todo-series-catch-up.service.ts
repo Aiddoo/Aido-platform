@@ -103,7 +103,7 @@ export class TodoSeriesCatchUp {
   }
 
   async #materializeAll(userId: string, seriesIds: readonly string[]) {
-    const { dueRunner: dueRun, logger } = this.#dependencies;
+    const { dueRunner, logger } = this.#dependencies;
     const deadlineMs = this.#dependencies.deadlineMs ?? TODO_SERIES_CATCH_UP_BUDGET.DEADLINE_MS;
     const startedAt = Date.now();
     let createdCount = 0;
@@ -114,7 +114,7 @@ export class TodoSeriesCatchUp {
       }
       try {
         // 다른 기기의 복귀가 먼저 잡았으면 기다려야 이 요청의 목록에도 오늘 회차가 있다.
-        createdCount += await dueRun.materialize({ id, userId }, { skipLocked: false });
+        createdCount += await dueRunner.materialize({ id, userId }, { skipLocked: false });
       } catch (error) {
         failedCount += 1;
         logger.warn({

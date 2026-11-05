@@ -42,7 +42,7 @@ export interface QuotaReservation {
    * 원장은 결과를 저장하지 않으므로 돌려줄 결과는 호출 Context가 소유한다. commit·refund는 아무것도 바꾸지 않고,
    * 결과를 잃었으면 reopen으로 같은 행에서 다시 만든다.
    */
-  readonly alreadyCommitted: boolean;
+  readonly isAlreadyCommitted: boolean;
 }
 
 /**

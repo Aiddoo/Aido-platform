@@ -168,7 +168,7 @@ export class ParseTodo {
       });
       return {
         result: {
-          data: value.data,
+          data: value.parsedTodo,
           meta: toParseMeta(meta, definition.version, Date.now() - startTime),
         },
         charge,

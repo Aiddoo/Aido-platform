@@ -203,10 +203,10 @@ export class GenerateReport {
 
     const content = await this.#generateContent(
       {
-        data: aggregatedData,
+        reportData: aggregatedData,
         type,
         periodLabel,
-        prevTips,
+        previousTips: prevTips,
         period: { start: window.periodStart, end: window.periodEnd },
       },
       { userId, locale, isFinalAttempt },
@@ -286,7 +286,7 @@ export class GenerateReport {
     options: { userId: string; locale: SupportedLocale; isFinalAttempt: boolean },
   ): Promise<ReportContent> {
     const { userId, locale, isFinalAttempt } = options;
-    if (!input.data.hasActivity) {
+    if (!input.reportData.hasActivity) {
       return buildNoActivityContent(input, locale);
     }
 

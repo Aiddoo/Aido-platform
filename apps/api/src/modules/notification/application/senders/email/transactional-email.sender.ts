@@ -49,24 +49,33 @@ export class TransactionalEmailSender {
     this.#dependencies = dependencies;
   }
 
-  sendVerificationCode(to: string, data: VerificationCodeTemplateData): Promise<EmailDispatch> {
-    return this.#dispatch(createVerificationCodeEmail(to, data));
+  sendVerificationCode(
+    to: string,
+    templateData: VerificationCodeTemplateData,
+  ): Promise<EmailDispatch> {
+    return this.#dispatch(createVerificationCodeEmail(to, templateData));
   }
 
-  sendPasswordResetCode(to: string, data: PasswordResetTemplateData): Promise<EmailDispatch> {
-    return this.#dispatch(createPasswordResetEmail(to, data));
+  sendPasswordResetCode(
+    to: string,
+    templateData: PasswordResetTemplateData,
+  ): Promise<EmailDispatch> {
+    return this.#dispatch(createPasswordResetEmail(to, templateData));
   }
 
-  sendPasswordSetupCode(to: string, data: PasswordSetupTemplateData): Promise<EmailDispatch> {
-    return this.#dispatch(createPasswordSetupEmail(to, data));
+  sendPasswordSetupCode(
+    to: string,
+    templateData: PasswordSetupTemplateData,
+  ): Promise<EmailDispatch> {
+    return this.#dispatch(createPasswordSetupEmail(to, templateData));
   }
 
   /**
    * 문의는 DB에 남지 않아 메일이 유일한 전달 경로다. 큐로 미루면 재시도를 다 쓴 문의가 말없이
    * 사라지므로 요청 안에서 한 번만 보내고, 실패는 그대로 돌려줘 사용자가 다시 보내게 한다.
    */
-  async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
-    const message = createInquiryEmail(to, data);
+  async sendInquiry(to: string, templateData: InquiryTemplateData): Promise<EmailSendResult> {
+    const message = createInquiryEmail(to, templateData);
     const reservation = await this.#dependencies.budget.reserve(resolveEmailPriority(message.kind));
     if (reservation === "exhausted") {
       this.#dependencies.logger.warn({
@@ -94,8 +103,8 @@ export class TransactionalEmailSender {
     return { status: "rejected", reason: "delivery_failed" };
   }
 
-  sendUserReport(to: string, data: UserReportTemplateData): Promise<EmailDispatch> {
-    return this.#dispatch(createUserReportEmail(to, data));
+  sendUserReport(to: string, templateData: UserReportTemplateData): Promise<EmailDispatch> {
+    return this.#dispatch(createUserReportEmail(to, templateData));
   }
 
   async #dispatch(message: EmailMessage): Promise<EmailDispatch> {

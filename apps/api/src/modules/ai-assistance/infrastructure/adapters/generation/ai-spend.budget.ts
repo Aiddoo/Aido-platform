@@ -91,7 +91,7 @@ export class AiSpendBudget implements OnModuleInit {
     const spend = enabled ? await this.#readSpend(input.userId) : EMPTY_SPEND;
     const decision = decideAiSpend({
       taskClass: input.taskClass,
-      enabled,
+      isEnabled: enabled,
       spend,
       limits: ai.budget,
     });

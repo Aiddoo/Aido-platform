@@ -325,7 +325,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         await sweep();
 
         // Then
-        expect(reservation).toMatchObject({ alreadyCommitted: false, attempt: 2 });
+        expect(reservation).toMatchObject({ isAlreadyCommitted: false, attempt: 2 });
         expect(lateCommit).toBe(false);
         expect(committed).toBe(true);
         expect(await storedCharges()).toEqual([
@@ -346,7 +346,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
         const committed = await ledger.commit(reservation);
 
         // Then
-        expect(reservation).toMatchObject({ alreadyCommitted: false, attempt: 2 });
+        expect(reservation).toMatchObject({ isAlreadyCommitted: false, attempt: 2 });
         expect(stored).toEqual([
           expect.objectContaining({ status: "RESERVED", attempt: 2, refundReason: null }),
         ]);
@@ -553,7 +553,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       const replay = await ledger.reserve(input({ feature: "VOICE_NOTE", idempotencyKey: "k-1" }));
 
       // Then
-      expect(replay).toMatchObject({ chargeId: first.chargeId, alreadyCommitted: true });
+      expect(replay).toMatchObject({ chargeId: first.chargeId, isAlreadyCommitted: true });
       expect(await storedVoiceUsage()).toBe(1);
       expect(await storedCharges()).toHaveLength(1);
     });
@@ -587,7 +587,9 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
       const reopened = outcomes.flatMap((outcome) =>
         outcome.status === "fulfilled" ? [outcome.value] : [],
       );
-      expect(reopened).toEqual([expect.objectContaining({ attempt: 2, alreadyCommitted: false })]);
+      expect(reopened).toEqual([
+        expect.objectContaining({ attempt: 2, isAlreadyCommitted: false }),
+      ]);
       expect(outcomes.filter(({ status }) => status === "rejected")).toEqual([
         expect.objectContaining({
           reason: expect.objectContaining({ errorCode: ErrorCode.AI_1314 }),

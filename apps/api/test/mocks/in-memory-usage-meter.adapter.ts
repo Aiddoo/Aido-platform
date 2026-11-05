@@ -30,9 +30,9 @@ export class InMemoryUsageMeterAdapter implements UsageMeterPort {
   async tryReserve(key: UsageKey, amount: number, limit: number): Promise<UsageReservation> {
     const current = this.#entries.get(keyOf(key))?.used ?? 0;
     if (current + amount > limit) {
-      return { accepted: false, total: current };
+      return { isAccepted: false, total: current };
     }
-    return { accepted: true, total: this.#increase(key, amount) };
+    return { isAccepted: true, total: this.#increase(key, amount) };
   }
 
   async release(key: UsageKey, amount: number): Promise<void> {
