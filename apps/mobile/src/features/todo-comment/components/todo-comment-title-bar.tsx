@@ -51,7 +51,7 @@ export function TodoCommentTitleBar() {
 
 /** `/todo/[todoId]` 전체 화면의 네이티브 헤더. 조회수를 함께 보이려고 제목만 커스텀 뷰로 둔다. */
 TodoCommentTitleBar.StackHeader = function StackHeader() {
-  const screenOptions = useStackScreenOptions({ background: 'bg-background' });
+  const screenOptions = useStackScreenOptions();
   const { t } = useTranslation(['common', 'moderation', 'todoComment']);
   const { todoId } = useTodoScreenParams();
   const moderation = useTodoModerationActions({ todoId });

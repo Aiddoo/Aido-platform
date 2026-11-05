@@ -11,8 +11,8 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Skeleton } from 'heroui-native';
-import { Image, Pressable } from 'react-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Image } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
@@ -70,8 +70,12 @@ export function PokeBanner() {
     .exhaustive();
 
   return (
-    <Pressable onPress={() => gate.guard()} disabled={!isLimitReached}>
-      <HStack mx={16} px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
+    <PressableFeedback
+      onPress={() => gate.guard()}
+      isDisabled={!isLimitReached}
+      className="mx-4 rounded-xl"
+    >
+      <HStack px={12} className="rounded-xl bg-gray-1" align="center" gap={12}>
         <Image
           source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}
           className="size-[72px]"
@@ -84,7 +88,7 @@ export function PokeBanner() {
           {bannerText.description}
         </VStack>
       </HStack>
-    </Pressable>
+    </PressableFeedback>
   );
 }
 

@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 function AuthLayout() {
-  const screenOptions = useStackScreenOptions({ background: 'bg-background' });
+  const screenOptions = useStackScreenOptions();
   const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (

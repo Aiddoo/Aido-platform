@@ -22,8 +22,8 @@ import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
-import { ActivityIndicator, Pressable, RefreshControl } from 'react-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import { ActivityIndicator, RefreshControl } from 'react-native';
 
 import { AchievementPolicy, type WeeklyAchievement } from '../domains/achievement.model';
 import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
@@ -98,7 +98,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   };
 
   return (
-    <Pressable onPress={handlePress}>
+    <PressableFeedback onPress={handlePress}>
       <ListRow
         left={<BadgeIcon type={badgeType} size="small" />}
         contents={
@@ -127,7 +127,7 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
         }
         verticalPadding="medium"
       />
-    </Pressable>
+    </PressableFeedback>
   );
 };
 

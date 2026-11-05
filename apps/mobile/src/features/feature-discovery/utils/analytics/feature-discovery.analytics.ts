@@ -1,8 +1,11 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { track } from '@src/shared/analytics/track';
+import { getErrorMessage } from '@src/shared/errors';
+import { logger } from '@src/shared/infra/logger/global-logger';
 import type { FeatureHubSource, FeatureKey } from '@src/shared/observability/telemetry-keys';
 
+import { FEATURE_DISCOVERY_LOG_EVENT } from '../../constants/feature-discovery-log-events';
 import type { FeatureDiscoveryCardId } from '../../domains/feature-discovery.registry';
 
 const CARD_FEATURE_KEYS = {
@@ -25,8 +28,11 @@ interface FeatureDiscoveryCardCtaInput extends FeatureDiscoveryHubEventInput {
 function recordBestEffort(record: () => void): void {
   try {
     record();
-  } catch {
+  } catch (error) {
     // 분석은 사용자 흐름보다 우선하지 않는다. 동기 어댑터 실패도 화면 동작에서 격리한다.
+    logger.warn(FEATURE_DISCOVERY_LOG_EVENT.ANALYTICS_RECORD_FAILED, {
+      error: getErrorMessage(error),
+    });
   }
 }
 

@@ -13,7 +13,7 @@ export default function SearchFriendScreen() {
   usePrefetchQuery(useGetInviteAvailabilityQueryOptions());
 
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background">
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <Box px={16} py={12}>
         <Input
           testID="friend-search-input"

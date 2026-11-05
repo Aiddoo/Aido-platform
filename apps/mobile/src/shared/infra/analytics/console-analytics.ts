@@ -24,7 +24,7 @@ export const createConsoleAnalytics = (): Analytics => ({
   resetData(): void {
     console.info('[Analytics] resetData');
   },
-  getAppInstanceId(): Promise<string | null> {
+  getAnalyticsId(): Promise<string | null> {
     return Promise.resolve(null);
   },
 });

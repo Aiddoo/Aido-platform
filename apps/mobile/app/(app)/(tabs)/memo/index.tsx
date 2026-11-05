@@ -23,6 +23,7 @@ import {
   QueryErrorBoundary,
   RefreshIcon,
   ScrollProgressWidget,
+  Spacing,
   StyledSafeAreaView,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -64,17 +65,19 @@ export default function MemoScreen() {
   const memoListPane = (
     <Box className="flex-1">
       <StyledSafeAreaView edges={['left', 'right']}>
-        <HStack align="center" gap={8} px={16} mb={16}>
+        <HStack align="center" gap={8} px={16}>
           <Box flex={1}>
             <H3 maxLines={1}>{t('tab.title')}</H3>
           </Box>
           <VoiceNoteStartButton />
-          <QueryErrorBoundary fallback={(props) => <MemoCreateButton.Error {...props} />}>
+          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
             <Suspense fallback={<MemoCreateButton.Loading />}>
               <MemoCreateButton />
             </Suspense>
           </QueryErrorBoundary>
         </HStack>
+
+        <Spacing size={16} />
       </StyledSafeAreaView>
 
       <Animated.ScrollView
@@ -90,13 +93,15 @@ export default function MemoScreen() {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
-          <Box px={16} style={{ flexGrow: 1 }}>
+          <Box px={16} gap={16} style={{ flexGrow: 1 }}>
+            {/* 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */}
             <QueryErrorBoundary fallback={() => null}>
               <Suspense fallback={null}>
-                <VoiceNoteDraftList mb={16} />
+                <VoiceNoteDraftList />
               </Suspense>
             </QueryErrorBoundary>
-            <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
+
+            <QueryErrorBoundary fallback={MemoList.Error}>
               <Suspense fallback={<MemoList.Loading />}>
                 <MemoList />
               </Suspense>

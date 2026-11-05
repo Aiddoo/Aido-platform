@@ -115,7 +115,7 @@ InviteLinkCard.Loading = function Loading() {
       <TextSkeleton size="b4" className="w-20" />
       <HStack align="center" justify="between">
         <TextSkeleton size="h1" className="w-44" />
-        <Skeleton className="h-10 w-[72px] rounded-lg" />
+        <Skeleton className="h-10 w-[72px] rounded-lg dark:bg-gray-2" />
       </HStack>
       <TextSkeleton size="b3" className="w-36" />
     </InviteLinkCardFrame>
@@ -141,7 +141,7 @@ function InviteLinkCardFrame({ className, ...props }: ComponentProps<typeof VSta
   return (
     <VStack
       gap={10}
-      className={cn('rounded-[20px] border border-gray-2 bg-white px-[18px] py-4', className)}
+      className={cn('rounded-[20px] border border-gray-2 bg-gray-1 px-[18px] py-4', className)}
       {...props}
     />
   );

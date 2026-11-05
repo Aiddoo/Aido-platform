@@ -27,3 +27,11 @@ export function getAnnualDiscountPercent(monthlyPrice: number, annualPrice: numb
 export function getMonthlyEquivalent(annualPrice: number) {
   return Math.round((annualPrice / 12) * 100) / 100;
 }
+
+/** 고른 요금제. 아직 고르지 않았으면 연간을, 연간이 없으면 첫 요금제를 고른 것으로 본다 */
+export function getSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {
+  if (chosenPlanId != null) {
+    return offering.plans.find((plan) => plan.identifier === chosenPlanId);
+  }
+  return offering.plans.find((plan) => plan.planType === 'annual') ?? offering.plans[0];
+}

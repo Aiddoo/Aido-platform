@@ -50,7 +50,7 @@ function PlanOption({ plan, discountPercent }: PlanOptionProps) {
       {({ isSelected }) => (
         <Card
           className={cn(
-            'flex-1 border-2 dark:bg-gray-2',
+            'flex-1 border-2 bg-white dark:bg-gray-2',
             isSelected ? 'border-main' : 'border-gray-2',
           )}
         >

@@ -22,7 +22,7 @@ export function AiConsentNotice({ children }: PropsWithChildren) {
   }
 
   return (
-    <HStack gap={12} align="center" className="rounded-2xl bg-white px-4 py-3">
+    <HStack gap={12} align="center" className="rounded-2xl bg-gray-1 px-4 py-3">
       <Text size="b3" weight="medium" shade={8} className="flex-1">
         {children}
       </Text>

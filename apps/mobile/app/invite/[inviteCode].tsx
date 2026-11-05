@@ -42,7 +42,7 @@ export default function InviteCardScreen() {
   useTrackInviteLinkOpened();
 
   return (
-    <Box flex={1} className="bg-gray-1">
+    <Box flex={1} className="bg-white">
       <QueryErrorBoundary fallback={InvitePreviewCard.Error}>
         <Suspense fallback={<InviteCardScreenLoading />}>
           <ScrollView
@@ -265,7 +265,7 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
       <ReadableContent px={20} pt={12} pb={12} gap={12}>
         {!isRewardExpected && (
-          <Box className="rounded-2xl bg-white px-4 py-3">
+          <Box className="rounded-2xl bg-gray-1 px-4 py-3">
             <Text size="b4" shade={7} align="center">
               {t('card.existingAccountNote')}
             </Text>

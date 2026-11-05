@@ -24,6 +24,7 @@ import { Button, Text } from '@src/shared/ui';
 import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { useState } from 'react';
 
 import {
@@ -99,7 +100,7 @@ describe('readWithoutBlocking', () => {
   test('연결이 있어도 응답이 오지 않으면 제한 시간 뒤 없는 값으로 이어 간다', async () => {
     // Given
     jest.useFakeTimers();
-    const result = readWithoutBlocking(undefined, () => new Promise(() => undefined));
+    const result = readWithoutBlocking(undefined, () => new Promise(() => undefined), noop);
 
     // When
     await jest.advanceTimersByTimeAsync(AI_CONSENT_CHECK_TIMEOUT_MS);

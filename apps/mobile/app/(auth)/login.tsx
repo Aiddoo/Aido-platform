@@ -41,7 +41,7 @@ function LoginScreen() {
   const googleLoginMutation = useMutation(useOpenGoogleLoginMutationOptions());
 
   // 교환에 성공하면 AuthProvider가 인증 상태로 바꾸고 Stack.Protected가 (app)으로 보낸다.
-  const exchangeCodeOf = (provider: OAuthStartProvider) => ({
+  const createExchangeCodeCallbacks = (provider: OAuthStartProvider) => ({
     onSuccess: (code: string | null) => {
       if (code) {
         exchangeCodeMutation.mutate({ code, provider });
@@ -89,7 +89,9 @@ function LoginScreen() {
           <SocialLoginButton
             icon={<KakaoIcon width={20} height={20} />}
             label={t('login.continueWith', { provider: t('providers.KAKAO') })}
-            onPress={() => kakaoLoginMutation.mutate(undefined, exchangeCodeOf('kakao'))}
+            onPress={() =>
+              kakaoLoginMutation.mutate(undefined, createExchangeCodeCallbacks('kakao'))
+            }
             isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-kakao"
             labelClassName="dark:text-gray-1"
@@ -97,7 +99,9 @@ function LoginScreen() {
           <SocialLoginButton
             icon={<GoogleIcon width={20} height={20} />}
             label={t('login.continueWith', { provider: t('providers.GOOGLE') })}
-            onPress={() => googleLoginMutation.mutate(undefined, exchangeCodeOf('google'))}
+            onPress={() =>
+              googleLoginMutation.mutate(undefined, createExchangeCodeCallbacks('google'))
+            }
             isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
             labelClassName="dark:text-gray-9"
@@ -105,7 +109,9 @@ function LoginScreen() {
           <SocialLoginButton
             icon={<NaverIcon width={16} height={16} colorClassName="text-white" />}
             label={t('login.continueWith', { provider: t('providers.NAVER') })}
-            onPress={() => naverLoginMutation.mutate(undefined, exchangeCodeOf('naver'))}
+            onPress={() =>
+              naverLoginMutation.mutate(undefined, createExchangeCodeCallbacks('naver'))
+            }
             isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-naver"
             labelClassName="text-white dark:text-gray-9"

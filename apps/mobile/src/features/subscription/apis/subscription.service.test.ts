@@ -2,7 +2,7 @@ import type { Logger } from '@src/core/ports/logger';
 import { createMockAnalytics, createPurchasesGatewayStub } from '@src/shared/__tests__';
 
 import { SubscriptionErrorCode } from '../domains/subscription.error';
-import { RevenueCatSdkManager } from './revenuecat-sdk-manager';
+import { PurchasesSdkManager } from './purchases-sdk-manager';
 import { SubscriptionService } from './subscription.service';
 
 const createLogger = (): jest.Mocked<Logger> => ({
@@ -15,7 +15,7 @@ const createLogger = (): jest.Mocked<Logger> => ({
 function createConfiguredService() {
   const purchases = createPurchasesGatewayStub();
   const logger = createLogger();
-  const sdkManager = new RevenueCatSdkManager({
+  const sdkManager = new PurchasesSdkManager({
     purchases,
     logger,
     analytics: createMockAnalytics(),

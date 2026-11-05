@@ -73,7 +73,7 @@ function SignUpScreen() {
   });
 
   return (
-    <Box className="flex-1 bg-background">
+    <Box className="flex-1 bg-white">
       <Stack.Screen options={{ title: t(SIGN_UP_STEP_TITLE_KEYS[step]) }} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button

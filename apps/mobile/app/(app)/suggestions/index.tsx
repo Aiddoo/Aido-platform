@@ -42,7 +42,7 @@ function SuggestionsScreen() {
             .with(true, () => (
               <VStack gap={12}>
                 <AiConsentNotice>{t('consent.notice.suggestions')}</AiConsentNotice>
-                <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
+                <QueryErrorBoundary fallback={SuggestionsList.Error}>
                   <Suspense fallback={<SuggestionsList.Loading />}>
                     <SuggestionsList />
                   </Suspense>
@@ -59,7 +59,7 @@ function SuggestionsScreen() {
 
 export default function SuggestionsRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <QueryErrorBoundary>
         <Suspense
           fallback={

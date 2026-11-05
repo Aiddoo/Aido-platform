@@ -58,7 +58,7 @@ export function Certificate({ subtitle, children }: { subtitle?: string; childre
   const { t } = useTranslation('achievement');
 
   return (
-    <Box className="bg-white rounded-sm overflow-hidden p-3">
+    <Box className="bg-gray-1 rounded-sm overflow-hidden p-3">
       <CertificateBorder>
         <Box className="px-5 pt-7 pb-5">
           <VStack align="center" gap={4}>

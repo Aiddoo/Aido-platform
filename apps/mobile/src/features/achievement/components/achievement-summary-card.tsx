@@ -244,8 +244,8 @@ AchievementSummaryCard.Loading = function Loading() {
       <Spacing size={16} />
 
       <VStack align="center" gap={4}>
-        <Skeleton className="w-10 rounded" style={{ height: fontScaledSize(17) }} />
-        <Skeleton className="w-32 rounded" style={{ height: fontScaledSize(28) }} />
+        <Skeleton className="w-10 rounded dark:bg-gray-2" style={{ height: fontScaledSize(17) }} />
+        <Skeleton className="w-32 rounded dark:bg-gray-2" style={{ height: fontScaledSize(28) }} />
       </VStack>
 
       <Spacing size={16} />
@@ -263,8 +263,11 @@ AchievementSummaryCard.Loading = function Loading() {
       <Spacing size={14} />
 
       <HStack align="center" gap={12}>
-        <Skeleton className="size-20 rounded-full" />
-        <Skeleton className="flex-1 rounded" style={{ height: fontScaledSize(40) }} />
+        <Skeleton className="size-20 rounded-full dark:bg-gray-2" />
+        <Skeleton
+          className="flex-1 rounded dark:bg-gray-2"
+          style={{ height: fontScaledSize(40) }}
+        />
       </HStack>
     </Certificate>
   );

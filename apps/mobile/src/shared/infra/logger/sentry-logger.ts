@@ -1,6 +1,10 @@
 import * as Sentry from '@sentry/react-native';
 import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
-import { SENTRY_TAGS } from '@src/shared/observability/telemetry-keys';
+import {
+  SENTRY_FEATURES,
+  SENTRY_TAGS,
+  type SentryFeature,
+} from '@src/shared/observability/telemetry-keys';
 
 /**
  * Sentry 기반 Logger 어댑터.
@@ -21,13 +25,14 @@ const toSentryLevel: Record<LogLevel, Sentry.SeverityLevel> = {
 
 const LOG_EVENT_KEY_PATTERN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
-/** 이벤트 키(`<feature>.<subject>.<outcome>`)의 첫 마디를 Sentry `feature` 태그 값(snake_case)으로 바꾼다 */
-export const logEventFeature = (message: string): string | undefined => {
+/** 이벤트 키(`<feature>.<subject>.<outcome>`)의 첫 마디를 Sentry `feature` 태그 값으로 바꾼다. 목록 밖 값은 보내지 않는다 */
+export const logEventFeature = (message: string): SentryFeature | undefined => {
   if (!LOG_EVENT_KEY_PATTERN.test(message)) {
     return undefined;
   }
   const [feature = ''] = message.split('.', 1);
-  return feature.replace(/-/g, '_');
+  const featureTag = feature.replace(/-/g, '_');
+  return SENTRY_FEATURES.find((known) => known === featureTag);
 };
 
 export const createSentryLogger = (): Logger => {

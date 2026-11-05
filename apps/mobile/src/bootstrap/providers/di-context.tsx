@@ -36,7 +36,7 @@ import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.servi
 import type { PreferenceService } from '@src/features/preference/apis/preference.service';
 import type { StoreReviewService } from '@src/features/store-review/apis/store-review.service';
 import type { EntitlementService } from '@src/features/subscription/apis/entitlement.service';
-import type { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
+import type { PurchasesSdkManager } from '@src/features/subscription/apis/purchases-sdk-manager';
 import type { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import type { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
 import type { FriendStripHintService } from '@src/features/todo/apis/friend-strip-hint.service';
@@ -122,7 +122,7 @@ export interface DIContainer {
   friendStripHintService: FriendStripHintService;
   storeReviewService: StoreReviewService;
   userService: UserService;
-  revenueCatSdkManager: RevenueCatSdkManager;
+  purchasesSdkManager: PurchasesSdkManager;
   subscriptionService: SubscriptionService;
   entitlementService: EntitlementService;
   weatherService: WeatherService;
@@ -205,7 +205,7 @@ export const useCoachmarkService = () => useDI().coachmarkService;
 export const useFriendStripHintService = () => useDI().friendStripHintService;
 export const useStoreReviewService = () => useDI().storeReviewService;
 export const useUserService = () => useDI().userService;
-export const useRevenueCatSdkManager = () => useDI().revenueCatSdkManager;
+export const usePurchasesSdkManager = () => useDI().purchasesSdkManager;
 export const useSubscriptionService = () => useDI().subscriptionService;
 export const useEntitlementService = () => useDI().entitlementService;
 export const useWeatherIntroductionService = () => useDI().weatherIntroductionService;

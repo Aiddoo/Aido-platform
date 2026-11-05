@@ -43,7 +43,7 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
     <ActivationChecklistCollapse isOpen={isVisible} onCollapsed={handleCollapsed}>
       <VStack
         gap={12}
-        className={cn('rounded-2xl border border-gray-2 bg-white p-4', className)}
+        className={cn('rounded-2xl border border-gray-2 bg-gray-1 p-4', className)}
         accessibilityLabel={t('activation.accessibilityLabel')}
       >
         <VStack gap={2}>

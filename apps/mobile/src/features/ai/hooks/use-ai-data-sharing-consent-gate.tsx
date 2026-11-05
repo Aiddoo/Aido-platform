@@ -1,8 +1,9 @@
-import { useCoachmarkService } from '@src/bootstrap/providers/di-context';
+import { useCoachmarkService, useLogger } from '@src/bootstrap/providers/di-context';
 import { type Consent, ConsentPolicy } from '@src/features/auth/domains/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { getErrorMessage } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { useOverlay } from '@src/shared/ui';
@@ -10,6 +11,7 @@ import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { withTimeout } from 'es-toolkit';
 
 import { AiConsentBottomSheet } from '../components/ai-consent-bottom-sheet';
+import { AI_LOG_EVENT } from '../constants/ai-log-events';
 
 /** 마이크를 누른 뒤 아무 표시 없이 기다릴 수 있는 시간. 넘기면 서버 판단에 맡기고 응답은 캐시에 쌓인다 */
 export const AI_CONSENT_CHECK_TIMEOUT_MS = 3_000;
@@ -23,14 +25,21 @@ export interface AiConsentCheck {
  * 시작을 막지 않고 값을 읽는다. 오프라인이면 TanStack Query가 요청을 멈춰 두어 `ensureQueryData`가 연결될 때까지
  * 끝나지 않으므로(`networkMode`를 바꿔도 이미 멈춘 조회의 약속을 받는다) 캐시만 보고, 온라인이면 제한 시간까지만 기다린다.
  */
-export async function readWithoutBlocking<T>(cached: T | undefined, fetch: () => Promise<T>) {
+export async function readWithoutBlocking<T>(
+  cached: T | undefined,
+  fetch: () => Promise<T>,
+  onFailure: (error: unknown) => void,
+) {
   if (cached != null) {
     return cached;
   }
   if (!onlineManager.isOnline()) {
     return null;
   }
-  return withTimeout(fetch, AI_CONSENT_CHECK_TIMEOUT_MS).catch(() => null);
+  return withTimeout(fetch, AI_CONSENT_CHECK_TIMEOUT_MS).catch((error: unknown) => {
+    onFailure(error);
+    return null;
+  });
 }
 
 /**
@@ -43,12 +52,18 @@ export function useAiDataSharingConsentGate() {
   const overlay = useOverlay();
   const queryClient = useQueryClient();
   const coachmarkService = useCoachmarkService();
+  const logger = useLogger();
   const consentQueryOptions = useGetConsentQueryOptions();
   const meQueryOptions = useGetMeQueryOptions();
 
+  const logConsentCheckFailure = (error: unknown) =>
+    logger.warn(AI_LOG_EVENT.CONSENT_CHECK_FAILED, { error: getErrorMessage(error) });
+
   const readConsent = () =>
-    readWithoutBlocking(queryClient.getQueryData(consentQueryOptions.queryKey), () =>
-      queryClient.ensureQueryData(consentQueryOptions),
+    readWithoutBlocking(
+      queryClient.getQueryData(consentQueryOptions.queryKey),
+      () => queryClient.ensureQueryData(consentQueryOptions),
+      logConsentCheckFailure,
     );
 
   /** 동의 안내를 띄우고 동의했는지 돌려준다. [나중에]나 바깥을 눌러 닫으면 false다 */
@@ -107,8 +122,10 @@ export function useAiDataSharingConsentGate() {
   const ensureAgreedBeforeListening = async (): Promise<AiConsentCheck> => {
     const [consent, me] = await Promise.all([
       readConsent(),
-      readWithoutBlocking(getCachedMe(queryClient), () =>
-        queryClient.ensureQueryData(meQueryOptions),
+      readWithoutBlocking(
+        getCachedMe(queryClient),
+        () => queryClient.ensureQueryData(meQueryOptions),
+        logConsentCheckFailure,
       ),
     ]);
     if (consent == null) {

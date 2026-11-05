@@ -1,3 +1,4 @@
+import { FlashList } from '@shopify/flash-list';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
@@ -6,23 +7,28 @@ import { useTrack } from '@src/shared/analytics';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   Button,
   HStack,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  ReadableContent,
   Result,
   SettingsCard,
   SettingsScreenLayout,
+  StyledSafeAreaView,
   Text,
   TextSkeleton,
   TrashIcon,
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { formatFileSize } from '@src/shared/utils/format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { Fragment, Suspense, useState } from 'react';
+import { type PropsWithChildren, Suspense, useState } from 'react';
 
 function VoiceStorageScreen() {
   const { t } = useTranslation('settings');
@@ -64,51 +70,79 @@ function VoiceStorageScreen() {
   };
 
   return (
-    <>
-      <SettingsCard>
-        <SettingsCard.Content gap={4}>
-          <Text size="b4" shade={6}>
-            {t('voiceStorage.totalLabel')}
-          </Text>
-          <Text size="t2" weight="bold" className="tabular-nums" testID="voice-storage-total">
-            {formatFileSize(usage.totalBytes, dateFormatContext.locale)}
-          </Text>
-          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-            {t('voiceStorage.description')}
-          </Text>
-        </SettingsCard.Content>
-      </SettingsCard>
-
-      {usage.notes.length === 0 ? (
-        <Result title={t('voiceStorage.empty')} className="py-10" testID="voice-storage-empty" />
-      ) : (
-        <SettingsCard>
-          {usage.notes.map(({ note, bytes }, index) => (
-            <Fragment key={note.draftId}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
+      <FlashList
+        data={usage.notes}
+        keyExtractor={({ note }) => note.draftId}
+        contentInsetAdjustmentBehavior="automatic"
+        ListHeaderComponent={
+          <VoiceStorageScreen.Gutter className="pt-5 pb-3">
+            <SettingsCard>
+              <SettingsCard.Content gap={4}>
+                <Text size="b4" shade={6}>
+                  {t('voiceStorage.totalLabel')}
+                </Text>
+                <Text size="t2" weight="bold" className="tabular-nums" testID="voice-storage-total">
+                  {formatFileSize(usage.totalBytes, dateFormatContext.locale)}
+                </Text>
+                <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
+                  {t('voiceStorage.description')}
+                </Text>
+              </SettingsCard.Content>
+            </SettingsCard>
+          </VoiceStorageScreen.Gutter>
+        }
+        ListEmptyComponent={
+          <Result title={t('voiceStorage.empty')} className="py-10" testID="voice-storage-empty" />
+        }
+        renderItem={({ item: { note, bytes }, index }) => (
+          <VoiceStorageScreen.Gutter>
+            <Box
+              className={cn(
+                'bg-gray-1',
+                index === 0 && 'rounded-t-2xl',
+                index === usage.notes.length - 1 && 'rounded-b-2xl',
+              )}
+            >
               {index > 0 && <SettingsCard.Separator />}
               <VoiceStorageScreen.Row
                 note={note}
                 bytes={bytes}
                 onRemove={() => handleRemoveOne(note.draftId)}
               />
-            </Fragment>
-          ))}
-        </SettingsCard>
-      )}
-
-      {usage.notes.length > 0 && (
-        <Button
-          variant="weak"
-          color="danger"
-          onPress={handleRemoveAll}
-          testID="voice-storage-remove-all"
-        >
-          {t('voiceStorage.removeAll')}
-        </Button>
-      )}
-    </>
+            </Box>
+          </VoiceStorageScreen.Gutter>
+        )}
+        ListFooterComponent={
+          usage.notes.length > 0 ? (
+            <VoiceStorageScreen.Gutter className="pt-3 pb-4">
+              <Button
+                variant="weak"
+                color="danger"
+                onPress={handleRemoveAll}
+                testID="voice-storage-remove-all"
+              >
+                {t('voiceStorage.removeAll')}
+              </Button>
+            </VoiceStorageScreen.Gutter>
+          ) : undefined
+        }
+      />
+    </StyledSafeAreaView>
   );
 }
+
+/** 가상 목록은 헤더·행·꼬리가 따로 그려져 행마다 `SettingsScreenLayout`과 같은 안쪽 여백을 둔다 */
+VoiceStorageScreen.Gutter = function Gutter({
+  className,
+  children,
+}: PropsWithChildren<{ className?: string }>) {
+  return (
+    <StyledSafeAreaView edges={['left', 'right']}>
+      <ReadableContent className={cn('px-4', className)}>{children}</ReadableContent>
+    </StyledSafeAreaView>
+  );
+};
 
 VoiceStorageScreen.Row = function Row({
   note,
@@ -154,24 +188,32 @@ VoiceStorageScreen.Row = function Row({
 
 VoiceStorageScreen.Loading = function Loading() {
   return (
-    <SettingsCard>
-      <SettingsCard.Content gap={4}>
-        <TextSkeleton size="b4" className="w-24" />
-        <TextSkeleton size="t2" className="w-32" />
-        <TextSkeleton size="b4" className="w-full" />
-      </SettingsCard.Content>
-    </SettingsCard>
+    <SettingsScreenLayout scrollEnabled={false}>
+      <SettingsCard>
+        <SettingsCard.Content gap={4}>
+          <TextSkeleton size="b4" className="w-24" />
+          <TextSkeleton size="t2" className="w-32" />
+          <TextSkeleton size="b4" className="w-full" />
+        </SettingsCard.Content>
+      </SettingsCard>
+    </SettingsScreenLayout>
+  );
+};
+
+VoiceStorageScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
+  return (
+    <SettingsScreenLayout>
+      <SettingsCard.Error {...props} />
+    </SettingsScreenLayout>
   );
 };
 
 export default function VoiceStorageRoute() {
   return (
-    <SettingsScreenLayout>
-      <QueryErrorBoundary fallback={SettingsCard.Error}>
-        <Suspense fallback={<VoiceStorageScreen.Loading />}>
-          <VoiceStorageScreen />
-        </Suspense>
-      </QueryErrorBoundary>
-    </SettingsScreenLayout>
+    <QueryErrorBoundary fallback={VoiceStorageScreen.Error}>
+      <Suspense fallback={<VoiceStorageScreen.Loading />}>
+        <VoiceStorageScreen />
+      </Suspense>
+    </QueryErrorBoundary>
   );
 }

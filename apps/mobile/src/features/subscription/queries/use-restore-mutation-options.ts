@@ -8,6 +8,7 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
@@ -58,7 +59,7 @@ export const useRestoreMutationOptions = () => {
         // 복원 버튼은 화면에 그대로 남아 다시 누를 수 있으니 토스트에서 문의로만 잇는다
         .with({ type: 'contactSupport' }, (failure) => {
           haptics.notify('error');
-          errorReporter.captureMessage('subscription_restore_failed', {
+          errorReporter.captureMessage(SENTRY_MESSAGES.SUBSCRIPTION_RESTORE_FAILED, {
             feature: 'subscription',
             severity: 'warning',
             errorCode: failure.diagnosticCode,

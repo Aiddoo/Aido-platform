@@ -25,7 +25,7 @@ export class SentryOperationalAlertAdapter implements OperationalAlertPort {
         scope.setTag(SENTRY_TAG.ALERT_KEY, alert.key);
         scope.setTags(alert.tags ?? {});
         scope.setExtras(alert.details ?? {});
-        if (alert.cause === undefined) {
+        if (alert.cause == null) {
           Sentry.captureMessage(alert.message, alert.severity);
           return;
         }

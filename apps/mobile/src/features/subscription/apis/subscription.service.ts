@@ -13,21 +13,21 @@ import {
 } from '../domains/customer-info.model';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
 import type { SubscriptionOffering } from '../domains/subscription.model';
-import type { RevenueCatSdkManager } from './revenuecat-sdk-manager';
+import type { PurchasesSdkManager } from './purchases-sdk-manager';
 import { toSubscriptionError } from './subscription-error.mapper';
 import { toCustomerInfo, toSubscriptionOffering } from './subscription.mapper';
 
 /**
  * 구독 비즈니스 로직 (offerings 조회, 구매, 복원)
  *
- * SDK 라이프사이클(configure/logIn/logOut)은 RevenueCatSdkManager가 담당.
+ * SDK 라이프사이클(configure/logIn/logOut)은 PurchasesSdkManager가 담당.
  */
 export class SubscriptionService {
-  readonly #sdkManager: RevenueCatSdkManager;
+  readonly #sdkManager: PurchasesSdkManager;
   readonly #purchases: PurchasesGateway;
   readonly #logger: Logger;
 
-  constructor(sdkManager: RevenueCatSdkManager, purchases: PurchasesGateway, logger: Logger) {
+  constructor(sdkManager: PurchasesSdkManager, purchases: PurchasesGateway, logger: Logger) {
     this.#sdkManager = sdkManager;
     this.#purchases = purchases;
     this.#logger = logger;

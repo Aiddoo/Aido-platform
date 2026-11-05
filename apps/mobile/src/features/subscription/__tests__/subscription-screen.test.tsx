@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import type { AccessTier } from '@aido/api';
+import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases';
 import { AppVersionService } from '@src/features/app-version/apis/app-version.service';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
 import { type CurrentUserResponse, toUser } from '@src/features/user/apis/user.mapper';
@@ -15,12 +16,13 @@ import { createTestQueryClient } from '@src/shared/__tests__/query-client';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
 import { onlineManager } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
 import SubscriptionRoute from '../../../../app/(app)/(mypage-menu)/settings/subscription';
 import { EntitlementService } from '../apis/entitlement.service';
-import { RevenueCatSdkManager } from '../apis/revenuecat-sdk-manager';
+import { PurchasesSdkManager } from '../apis/purchases-sdk-manager';
 import { SubscriptionService } from '../apis/subscription.service';
 import { ENTITLEMENT_QUERY_KEYS } from '../constants/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.factories';
@@ -65,12 +67,15 @@ function createEndingRewardState(): ScreenState {
   };
 }
 
-async function renderSubscriptionScreen(state: ScreenState | null) {
+// 요금제를 받는 중에 머물러 페이월 자리(요금제 요청)만 확인하는 것이 기본이다
+async function renderSubscriptionScreen(
+  state: ScreenState | null,
+  getOffering: () => Promise<PurchaseOffering | null> = () => new Promise(() => {}),
+) {
   const purchases = createPurchasesGatewayStub();
-  // 요금제를 받는 중에 머물러 페이월 자리(요금제 요청)만 확인한다
-  purchases.getOffering.mockReturnValue(new Promise(() => {}));
+  purchases.getOffering.mockImplementation(getOffering);
   const analytics = createMockAnalytics();
-  const sdkManager = new RevenueCatSdkManager({
+  const sdkManager = new PurchasesSdkManager({
     purchases,
     logger: silentLogger,
     analytics,
@@ -93,14 +98,16 @@ async function renderSubscriptionScreen(state: ScreenState | null) {
 
   await renderUi(
     <LocalDateProvider>
-      <SubscriptionRoute />
+      <OverlayProvider>
+        <SubscriptionRoute />
+      </OverlayProvider>
     </LocalDateProvider>,
     {
       di: {
         analytics,
         errorReporter: createErrorReporterStub(),
         logger: silentLogger,
-        revenueCatSdkManager: sdkManager,
+        purchasesSdkManager: sdkManager,
         subscriptionService: new SubscriptionService(sdkManager, purchases, silentLogger),
         entitlementService: new EntitlementService(httpClient, silentLogger),
         userService: new UserService(httpClient),
@@ -114,7 +121,7 @@ async function renderSubscriptionScreen(state: ScreenState | null) {
     },
   );
 
-  return { purchases };
+  return { purchases, analytics };
 }
 
 describe('구독 화면', () => {
@@ -213,6 +220,70 @@ describe('구독 화면', () => {
       benefitTexts.indexOf('AI 할 일 만들기 넉넉하게') + 1,
     );
     expect(voiceNote).toBeTruthy();
+  });
+
+  it('요금제를 받으면 고를 수 있게 보여 주고 페이월을 본 것으로 센다', async () => {
+    // Given
+    const offering: PurchaseOffering = {
+      identifier: 'default',
+      packages: [
+        {
+          identifier: 'annual',
+          packageType: 'ANNUAL',
+          product: {
+            priceString: '₩68,000',
+            price: 68_000,
+            currencyCode: 'KRW',
+            title: '연간',
+            description: null,
+          },
+        },
+      ],
+    };
+
+    // When
+    const { analytics } = await renderSubscriptionScreen(FREE, () => Promise.resolve(offering));
+
+    // Then
+    expect(await screen.findByText('₩68,000')).toBeTruthy();
+    expect(
+      screen.getByTestId('subscription-purchase').props.accessibilityState.disabled,
+    ).toBeFalsy();
+    expect(analytics.trackEvent).toHaveBeenCalledWith('paywall_viewed', expect.anything());
+  });
+
+  it.each([
+    ['스토어를 쓸 수 없으면', new PurchasesGatewayError('store-setup', null, 'setup')],
+    ['요금제를 받지 못하면', new PurchasesGatewayError('other', null, 'other')],
+  ])(
+    '%s 혜택은 그대로 두고 요금제 자리에서 안내하며 페이월을 세지 않는다',
+    async (_case, error) => {
+      // Given
+      const state = FREE;
+
+      // When
+      const { analytics } = await renderSubscriptionScreen(state, () => Promise.reject(error));
+
+      // Then
+      expect(await screen.findByTestId('subscription-load-failure')).toBeTruthy();
+      expect(screen.getByTestId('subscription-paywall')).toBeTruthy();
+      expect(screen.getByTestId('subscription-purchase').props.accessibilityState.disabled).toBe(
+        true,
+      );
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith('paywall_viewed', expect.anything());
+    },
+  );
+
+  it('오프라인에서 요금제를 못 받으면 요금제 자리에서 연결되면 보여 준다고 알린다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+
+    // When
+    await renderSubscriptionScreen(FREE);
+
+    // Then
+    expect(await screen.findByTestId('subscription-offline')).toBeTruthy();
+    expect(screen.getByTestId('subscription-paywall')).toBeTruthy();
   });
 
   it('오프라인에서 내 정보가 없으면 영수증 자리에서 연결되면 보여 준다고 알린다', async () => {

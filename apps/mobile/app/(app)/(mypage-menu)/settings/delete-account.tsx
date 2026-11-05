@@ -99,7 +99,7 @@ function DeleteAccountScreen() {
 
 export default function DeleteAccountRoute() {
   return (
-    <Box className="flex-1 bg-gray-1">
+    <Box className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <QueryErrorBoundary>
           <Suspense fallback={<Box className="flex-1" />}>

@@ -4,13 +4,13 @@ import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
-  runOnJS,
   ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
 
 import { Box } from '../box';
@@ -108,35 +108,43 @@ export const ModalBottomSheet = ({
   useEffect(() => {
     if (isOpen) {
       // Animate in
-      isAnimatingOut.value = false;
-      dragY.value = 0;
-      translateY.value = withTiming(0, {
-        duration: enterDuration,
-        reduceMotion: ReduceMotion.System,
-      });
-      backdropOpacity.value = withTiming(0.5, {
-        duration: enterDuration,
-        reduceMotion: ReduceMotion.System,
-      });
-    } else {
-      // Animate out (한 번만 실행)
-      if (!isAnimatingOut.value) {
-        isAnimatingOut.value = true;
-        onCloseStartRef.current?.();
-        translateY.value = withTiming(
-          windowHeight,
-          { duration: enterDuration, reduceMotion: ReduceMotion.System },
-          (finished) => {
-            // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
-            if (finished) {
-              runOnJS(callOnExit)();
-            }
-          },
-        );
-        backdropOpacity.value = withTiming(0, {
+      isAnimatingOut.set(false);
+      dragY.set(0);
+      translateY.set(
+        withTiming(0, {
           duration: enterDuration,
           reduceMotion: ReduceMotion.System,
-        });
+        }),
+      );
+      backdropOpacity.set(
+        withTiming(0.5, {
+          duration: enterDuration,
+          reduceMotion: ReduceMotion.System,
+        }),
+      );
+    } else {
+      // Animate out (한 번만 실행)
+      if (!isAnimatingOut.get()) {
+        isAnimatingOut.set(true);
+        onCloseStartRef.current?.();
+        translateY.set(
+          withTiming(
+            windowHeight,
+            { duration: enterDuration, reduceMotion: ReduceMotion.System },
+            (finished) => {
+              // withTiming 콜백은 UI thread에서 실행 — JS 호출에 scheduleOnRN 필요
+              if (finished) {
+                scheduleOnRN(callOnExit);
+              }
+            },
+          ),
+        );
+        backdropOpacity.set(
+          withTiming(0, {
+            duration: enterDuration,
+            reduceMotion: ReduceMotion.System,
+          }),
+        );
       }
     }
     // 콜백은 ref로 안정화하며 windowHeight는 열림 애니메이션의 초기값만 사용한다.
@@ -156,28 +164,30 @@ export const ModalBottomSheet = ({
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       if (event.translationY > 0) {
-        dragY.value = event.translationY;
+        dragY.set(event.translationY);
       }
     })
     .onEnd((event) => {
       if (event.translationY > DISMISS_DISPLACEMENT || event.velocityY > DISMISS_VELOCITY) {
         // dismiss — dragY를 유지한 채로 닫기 (올라갔다 내려가는 현상 방지)
-        runOnJS(callOnClose)();
+        scheduleOnRN(callOnClose);
       } else {
         // snap back
-        dragY.value = withTiming(0, {
-          duration: snapDuration,
-          reduceMotion: ReduceMotion.System,
-        });
+        dragY.set(
+          withTiming(0, {
+            duration: snapDuration,
+            reduceMotion: ReduceMotion.System,
+          }),
+        );
       }
     });
 
   const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value + dragY.value }],
+    transform: [{ translateY: translateY.get() + dragY.get() }],
   }));
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
+    opacity: backdropOpacity.get(),
   }));
 
   return (

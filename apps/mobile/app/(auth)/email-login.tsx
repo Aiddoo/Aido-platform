@@ -66,7 +66,7 @@ function EmailLoginScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <Box className="flex-1 overflow-hidden bg-background">
+      <Box className="flex-1 overflow-hidden bg-white">
         <Image
           source={idoCatHiImage}
           className="absolute right-0 top-0 z-10 h-[100px] w-[100px]"

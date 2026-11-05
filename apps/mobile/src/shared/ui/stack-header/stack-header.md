@@ -20,10 +20,10 @@ const screenOptions = useStackScreenOptions({ background: 'bg-white', fillConten
 </Stack>;
 ```
 
-| 옵션          | 타입                                           | 기본값      | 설명                         |
-| ------------- | ---------------------------------------------- | ----------- | ---------------------------- |
-| `background`  | `'bg-gray-1' \| 'bg-white' \| 'bg-background'` | `bg-gray-1` | 헤더 배경                    |
-| `fillContent` | `boolean`                                      | `false`     | 화면 배경도 같은 색으로 채움 |
+| 옵션          | 타입         | 기본값     | 설명                         |
+| ------------- | ------------ | ---------- | ---------------------------- |
+| `background`  | `'bg-white'` | `bg-white` | 헤더 배경                    |
+| `fillContent` | `boolean`    | `false`    | 화면 배경도 같은 색으로 채움 |
 
 ## useStackBackToolbar
 

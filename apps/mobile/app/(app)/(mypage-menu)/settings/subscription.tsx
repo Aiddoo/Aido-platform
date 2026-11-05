@@ -11,6 +11,7 @@ import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import {
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
+  ReadableContent,
   Spacing,
   StyledSafeAreaView,
 } from '@src/shared/ui';
@@ -32,13 +33,7 @@ function SubscriptionScreen() {
     canSubscribe: receipt.primaryAction === 'subscribe',
     view,
   })
-    .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => (
-      <QueryErrorBoundary fallback={PaywallPane.Error}>
-        <Suspense fallback={<PaywallPane.Loading />}>
-          <PaywallPane />
-        </Suspense>
-      </QueryErrorBoundary>
-    ))
+    .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => <PaywallPane />)
     .with({ hasFullAccess: true }, () => <SubscriberPane />)
     .exhaustive();
 }
@@ -49,7 +44,13 @@ SubscriptionScreen.Loading = function Loading() {
 
   // 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 화면을 채운다
   if (!isOnline) {
-    return <SubscriptionResult.Offline target="receipt" />;
+    return (
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+        <ReadableContent className="flex-1 px-6">
+          <SubscriptionResult.Offline target="receipt" />
+        </ReadableContent>
+      </StyledSafeAreaView>
+    );
   }
 
   return (
@@ -65,16 +66,20 @@ SubscriptionScreen.Loading = function Loading() {
 /** 내 정보·권한을 불러오지 못하면 영수증도 요금제도 정할 수 없어 화면 전체에서 안내한다 */
 SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   return (
-    <SubscriptionResult.Failure
-      failure={toSubscriptionLoadFailure('receipt', error)}
-      onRetry={reset}
-    />
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+      <ReadableContent className="flex-1 px-6">
+        <SubscriptionResult.Failure
+          failure={toSubscriptionLoadFailure('receipt', error)}
+          onRetry={reset}
+        />
+      </ReadableContent>
+    </StyledSafeAreaView>
   );
 };
 
 export default function SubscriptionRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <QueryErrorBoundary fallback={SubscriptionScreen.Error}>
         <Suspense fallback={<SubscriptionScreen.Loading />}>
           <SubscriptionScreen />

@@ -2,7 +2,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
-import { Pressable } from 'react-native';
 
 import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-prompt';
 
@@ -25,7 +24,7 @@ export function MarketingPushOptInBanner({ className }: MarketingPushOptInBanner
 
   return (
     <HStack align="center" gap={12} className={cn('rounded-xl bg-gray-1 px-4 py-3.5', className)}>
-      <Pressable onPress={open} className="flex-1">
+      <PressableFeedback onPress={open} className="flex-1">
         <VStack gap={2}>
           <Text size="b3" weight="medium">
             {t('marketingOptIn.bannerTitle')}
@@ -34,7 +33,7 @@ export function MarketingPushOptInBanner({ className }: MarketingPushOptInBanner
             {t('marketingOptIn.bannerDescription')}
           </Text>
         </VStack>
-      </Pressable>
+      </PressableFeedback>
 
       <PressableFeedback onPress={dismiss} hitSlop={8}>
         <CloseIcon width={20} height={20} colorClassName="text-gray-6" />

@@ -3,4 +3,5 @@ export const TODO_COMMENT_LOG_EVENT = {
   COPY_FAILED: 'todo-comment.copy.failed',
   HAPTICS_FAILED: 'todo-comment.haptics.failed',
   SUBMIT_FAILED: 'todo-comment.submit.failed',
+  SORT_CHANGE_FAILED: 'todo-comment.sort-change.failed',
 } as const;

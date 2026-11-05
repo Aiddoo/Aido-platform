@@ -24,7 +24,7 @@ export type SubscriptionFailureCause =
   | 'purchaseFailed'
   | 'restoreFailed';
 
-function causeOfSubscriptionError(error: SubscriptionError): SubscriptionFailureCause {
+function getSubscriptionErrorCause(error: SubscriptionError): SubscriptionFailureCause {
   return match(error.code)
     .with(SubscriptionErrorCode.NETWORK, () => 'network' as const)
     .with(
@@ -50,49 +50,53 @@ export interface StoreUnavailable {
   diagnosticCode: string;
 }
 
+/** 던져진 값이 무엇이든 사용자가 할 수 있는 일이 같은 원인으로 묶는다 */
+export function getFailureCause(error: unknown): SubscriptionFailureCause {
+  return match(error)
+    .with(P.instanceOf(SubscriptionError), getSubscriptionErrorCause)
+    .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network' as const)
+    .otherwise(() => 'server' as const);
+}
+
+/**
+ * 문의에 붙일 짧은 오류 코드. 메시지·사용자 정보 없이 원인을 찾을 만큼만 담는다.
+ * 스토어 SDK 코드가 있으면 괄호로 덧붙인다.
+ */
+export function getDiagnosticCode(error: unknown): string {
+  return match(error)
+    .with(P.instanceOf(SubscriptionError), ({ code, storeErrorCode }) =>
+      storeErrorCode == null ? code : `${code} (${storeErrorCode})`,
+    )
+    .with(P.when(isApiError), ({ code }) => code)
+    .with(P.instanceOf(NetworkError), () => 'NETWORK')
+    .with(P.instanceOf(TimeoutError), () => 'TIMEOUT')
+    .with(P.instanceOf(ServerError), ({ statusCode }) => `SERVER_${statusCode}`)
+    .with(P.instanceOf(ParseError), () => 'INVALID_RESPONSE')
+    .otherwise(() => 'UNKNOWN');
+}
+
+/** 스토어를 쓸 수 없는 상태면 그 종류를, 그 밖의 오류면 null을 준다 */
+export function getStoreUnavailable(error: unknown): StoreUnavailable | null {
+  return match(error)
+    .with(
+      P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_UNAVAILABLE }),
+      (storeError) => ({
+        kind: 'setup' as const,
+        diagnosticCode: getDiagnosticCode(storeError),
+      }),
+    )
+    .with(
+      P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_PROBLEM }),
+      (storeError) => ({
+        kind: 'temporary' as const,
+        diagnosticCode: getDiagnosticCode(storeError),
+      }),
+    )
+    .otherwise(() => null);
+}
+
 export const SubscriptionFailurePolicy = {
-  /** 던져진 값이 무엇이든 사용자가 할 수 있는 일이 같은 원인으로 묶는다 */
-  causeOf(error: unknown): SubscriptionFailureCause {
-    return match(error)
-      .with(P.instanceOf(SubscriptionError), causeOfSubscriptionError)
-      .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network' as const)
-      .otherwise(() => 'server' as const);
-  },
-
-  /** 스토어를 쓸 수 없는 상태면 그 종류를, 그 밖의 오류면 null을 준다 */
-  storeUnavailableOf(error: unknown): StoreUnavailable | null {
-    return match(error)
-      .with(
-        P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_UNAVAILABLE }),
-        (storeError) => ({
-          kind: 'setup' as const,
-          diagnosticCode: SubscriptionFailurePolicy.diagnosticCodeOf(storeError),
-        }),
-      )
-      .with(
-        P.instanceOf(SubscriptionError).and({ code: SubscriptionErrorCode.STORE_PROBLEM }),
-        (storeError) => ({
-          kind: 'temporary' as const,
-          diagnosticCode: SubscriptionFailurePolicy.diagnosticCodeOf(storeError),
-        }),
-      )
-      .otherwise(() => null);
-  },
-
-  /**
-   * 문의에 붙일 짧은 오류 코드. 메시지·사용자 정보 없이 원인을 찾을 만큼만 담는다.
-   * 스토어 SDK 코드가 있으면 괄호로 덧붙인다.
-   */
-  diagnosticCodeOf(error: unknown): string {
-    return match(error)
-      .with(P.instanceOf(SubscriptionError), ({ code, storeErrorCode }) =>
-        storeErrorCode == null ? code : `${code} (${storeErrorCode})`,
-      )
-      .with(P.when(isApiError), ({ code }) => code)
-      .with(P.instanceOf(NetworkError), () => 'NETWORK')
-      .with(P.instanceOf(TimeoutError), () => 'TIMEOUT')
-      .with(P.instanceOf(ServerError), ({ statusCode }) => `SERVER_${statusCode}`)
-      .with(P.instanceOf(ParseError), () => 'INVALID_RESPONSE')
-      .otherwise(() => 'UNKNOWN');
-  },
-};
+  getFailureCause,
+  getStoreUnavailable,
+  getDiagnosticCode,
+} as const;

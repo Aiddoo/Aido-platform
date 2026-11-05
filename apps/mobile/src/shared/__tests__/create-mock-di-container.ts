@@ -199,8 +199,8 @@ export function createMockDIContainer(overrides: Partial<DIContainer> = {}): DIC
     get userService() {
       return dependency('userService');
     },
-    get revenueCatSdkManager() {
-      return dependency('revenueCatSdkManager');
+    get purchasesSdkManager() {
+      return dependency('purchasesSdkManager');
     },
     get subscriptionService() {
       return dependency('subscriptionService');

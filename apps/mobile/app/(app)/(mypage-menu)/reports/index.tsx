@@ -213,7 +213,7 @@ function PremiumPendingPreview() {
 
 export default function ReportsRoute() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
       <QueryErrorBoundary>
         <Suspense fallback={<ReportCard.Loading />}>
           <ReportsScreen />

@@ -32,7 +32,7 @@ export default function NotificationsScreen() {
   const visibleDirection: NudgeDirection = isDirectionSelectable ? direction : 'received';
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-background" edges={['left', 'right', 'bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right', 'bottom']}>
       <ReadableContent flex={1}>
         <Tabs
           value={category}

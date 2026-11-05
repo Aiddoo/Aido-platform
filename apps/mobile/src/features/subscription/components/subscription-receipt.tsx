@@ -137,7 +137,7 @@ SubscriptionReceipt.Loading = function Loading() {
     <ScallopedContainer>
       <Box className="px-5 pt-5">
         <HStack gap={16} className="items-center">
-          <Skeleton className="size-10 rounded-lg" />
+          <Skeleton className="size-10 rounded-lg dark:bg-gray-2" />
           <VStack gap={2} className="flex-1">
             <TextSkeleton size="t3" className="w-40" />
             <TextSkeleton size="b4" className="w-52" />
@@ -163,7 +163,7 @@ SubscriptionReceipt.Loading = function Loading() {
         <VStack gap={10}>
           {times(4, (index) => (
             <HStack key={index} gap={12} align="center">
-              <Skeleton className="size-5 rounded-full" />
+              <Skeleton className="size-5 rounded-full dark:bg-gray-2" />
               <TextSkeleton size="b3" className="w-44" />
             </HStack>
           ))}

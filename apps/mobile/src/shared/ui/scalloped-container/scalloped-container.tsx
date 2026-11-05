@@ -13,7 +13,7 @@ export interface ScallopedContainerProps {
 
 export function ScallopedContainer({ children }: ScallopedContainerProps) {
   const [width, setWidth] = useState(0);
-  const { backgroundColor: fill } = useResolveClassNames('bg-white');
+  const { backgroundColor: fill } = useResolveClassNames('bg-gray-1');
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setWidth(e.nativeEvent.layout.width);

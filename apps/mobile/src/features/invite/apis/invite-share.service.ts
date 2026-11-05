@@ -1,6 +1,6 @@
 import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { KakaoShareGateway } from '@src/core/ports/kakao-share';
+import type { SocialShareGateway } from '@src/core/ports/social-share';
 import type { SystemShareGateway } from '@src/core/ports/system-share';
 import { t } from '@src/shared/i18n';
 
@@ -13,7 +13,7 @@ import type {
 } from '../domains/invite-share.model';
 
 interface InviteShareServiceDependencies {
-  kakaoShare: KakaoShareGateway;
+  socialShare: SocialShareGateway;
   systemShare: SystemShareGateway;
   clipboard: ClipboardGateway;
   errorReporter: ErrorReporter;
@@ -24,7 +24,7 @@ interface InviteShareServiceDependencies {
  * 카카오톡을 못 쓰면 OS 공유로, 그것도 안 되면 링크 복사로 이어서 사용자가 빈손으로 끝나지 않게 한다.
  */
 export class InviteShareService {
-  readonly #kakaoShare: KakaoShareGateway;
+  readonly #socialShare: SocialShareGateway;
   readonly #systemShare: SystemShareGateway;
   readonly #clipboard: ClipboardGateway;
   readonly #errorReporter: ErrorReporter;
@@ -39,12 +39,12 @@ export class InviteShareService {
   };
 
   constructor({
-    kakaoShare,
+    socialShare,
     systemShare,
     clipboard,
     errorReporter,
   }: InviteShareServiceDependencies) {
-    this.#kakaoShare = kakaoShare;
+    this.#socialShare = socialShare;
     this.#systemShare = systemShare;
     this.#clipboard = clipboard;
     this.#errorReporter = errorReporter;
@@ -54,12 +54,12 @@ export class InviteShareService {
     this.#channels[channel](content);
 
   async #shareToKakao(content: InviteShareContent): Promise<InviteShareResult> {
-    if (!this.#kakaoShare.isAvailable()) {
+    if (!this.#socialShare.isAvailable()) {
       return this.#shareToSystem(content);
     }
 
     try {
-      await this.#kakaoShare.shareFeed({
+      await this.#socialShare.shareFeed({
         title: t('invite:share.kakaoTitle', { name: content.inviterName }),
         description: t('invite:share.kakaoDescription', {
           days: InviteRewardPolicy.welcomePremiumDays(),

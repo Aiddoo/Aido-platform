@@ -13,8 +13,9 @@ import {
 } from '@src/shared/ui';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
+import { PressableFeedback } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { Platform, Pressable } from 'react-native';
+import { Platform } from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -51,10 +52,10 @@ export function NotificationBell() {
   const swingCount = useSwingCountOnNewUnread(unreadCount);
 
   return (
-    <Pressable
+    <PressableFeedback
       onPress={() => navigate('/notifications')}
       hitSlop={8}
-      className="p-2"
+      className="rounded-xl p-2"
       accessibilityRole="button"
       accessibilityLabel={hasUnread ? t('bell.unreadLabel') : t('titles.notifications')}
     >
@@ -72,7 +73,7 @@ export function NotificationBell() {
       {hasUnread && (
         <Box className="absolute top-1 right-1 size-3 rounded-full border-2 border-background bg-main" />
       )}
-    </Pressable>
+    </PressableFeedback>
   );
 }
 
@@ -101,10 +102,10 @@ NotificationBell.Loading = function Loading() {
 
 NotificationBell.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   return (
-    <Pressable onPress={reset} hitSlop={8} className="p-2">
+    <PressableFeedback onPress={reset} hitSlop={8} className="rounded-xl p-2">
       <BellIcon width={24} height={24} colorClassName="text-gray-4" />
       <Box className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger" />
-    </Pressable>
+    </PressableFeedback>
   );
 };
 

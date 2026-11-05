@@ -8,6 +8,7 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { SENTRY_MESSAGES } from '@src/shared/observability/telemetry-keys';
 import { useConfirmDialog } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
@@ -62,11 +63,11 @@ export const usePurchaseMutationOptions = () => {
         // 돈이 빠져나갔을 수도 있어 지나가는 토스트 대신 다이얼로그로 문의할 길을 남긴다
         .with({ type: 'contactSupport' }, async (failure) => {
           haptics.notify('error');
-          const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.causeOf(error));
+          const reason = toPurchaseFailedReason(SubscriptionFailurePolicy.getFailureCause(error));
           if (reason != null) {
             trackEvent('purchase_failed', { reason });
           }
-          errorReporter.captureMessage('subscription_purchase_failed', {
+          errorReporter.captureMessage(SENTRY_MESSAGES.SUBSCRIPTION_PURCHASE_FAILED, {
             feature: 'subscription',
             severity: 'warning',
             errorCode: failure.diagnosticCode,

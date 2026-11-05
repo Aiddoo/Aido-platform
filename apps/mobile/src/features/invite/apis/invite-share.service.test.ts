@@ -1,6 +1,6 @@
 import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import type { KakaoShareGateway } from '@src/core/ports/kakao-share';
+import type { SocialShareGateway } from '@src/core/ports/social-share';
 import type { SystemShareGateway } from '@src/core/ports/system-share';
 
 import { InviteShareService } from './invite-share.service';
@@ -16,7 +16,7 @@ function createService({
   kakaoShareFeed?: jest.Mock;
   systemShare?: jest.Mock;
 } = {}) {
-  const kakaoShare: KakaoShareGateway = {
+  const socialShare: SocialShareGateway = {
     isAvailable: () => isKakaoAvailable,
     shareFeed: kakaoShareFeed,
   };
@@ -37,7 +37,7 @@ function createService({
 
   return {
     service: new InviteShareService({
-      kakaoShare,
+      socialShare,
       systemShare: systemShareGateway,
       clipboard,
       errorReporter,

@@ -7,7 +7,7 @@
 ```tsx
 import { StyledSafeAreaView } from '@src/shared/ui';
 
-<StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+<StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
   <ScrollView>
     <StyledSafeAreaView edges={['left', 'right']}>{children}</StyledSafeAreaView>
   </ScrollView>

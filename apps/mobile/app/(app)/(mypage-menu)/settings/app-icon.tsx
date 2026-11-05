@@ -187,7 +187,7 @@ function AppIconErrorDialog({ isOpen, onOpenChange }: AppIconErrorDialogProps) {
 
 export default function AppIconRoute() {
   return (
-    <QueryErrorBoundary fallback={(props) => <AppIconPicker.Error {...props} />}>
+    <QueryErrorBoundary fallback={AppIconPicker.Error}>
       <Suspense fallback={<AppIconScreen.Loading />}>
         <AppIconScreen />
       </Suspense>

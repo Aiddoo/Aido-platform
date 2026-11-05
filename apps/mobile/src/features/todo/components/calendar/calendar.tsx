@@ -73,7 +73,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   const handleNext = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, 1));
 
   return (
-    <VStack className="bg-background" gap={8}>
+    <VStack className="bg-white" gap={8}>
       {/* 좁은 pane·큰 글자에서는 보기 전환·이동 버튼을 다음 줄 오른쪽으로 내려 잘리지 않게 한다 */}
       <HStack className="flex-wrap gap-y-2 px-4 py-2" justify="between" align="center">
         <HStack gap={8} align="center" className="min-w-0 shrink">

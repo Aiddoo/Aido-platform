@@ -7,5 +7,5 @@ export const createMockAnalytics = (): jest.Mocked<Analytics> => ({
   setUserProperties: jest.fn(),
   clearUser: jest.fn(),
   resetData: jest.fn(),
-  getAppInstanceId: jest.fn().mockResolvedValue(null),
+  getAnalyticsId: jest.fn().mockResolvedValue(null),
 });

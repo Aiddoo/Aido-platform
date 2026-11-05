@@ -220,12 +220,12 @@ LinkedAccountsList.Loading = function Loading() {
 function SkeletonRow() {
   return (
     <HStack align="center" gap={12} className="px-4 py-4">
-      <Skeleton className="size-10 rounded-full" />
+      <Skeleton className="size-10 rounded-full dark:bg-gray-2" />
       <VStack flex={1} gap={2}>
-        <Skeleton className="h-5 w-16 rounded" />
-        <Skeleton className="h-4 w-12 rounded" />
+        <Skeleton className="h-5 w-16 rounded dark:bg-gray-2" />
+        <Skeleton className="h-4 w-12 rounded dark:bg-gray-2" />
       </VStack>
-      <Skeleton className="h-8 w-16 rounded-lg" />
+      <Skeleton className="h-8 w-16 rounded-lg dark:bg-gray-2" />
     </HStack>
   );
 }

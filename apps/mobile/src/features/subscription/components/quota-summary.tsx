@@ -1,15 +1,11 @@
 import { useTranslation } from '@src/shared/i18n';
 import { AiIcon, HStack, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import type { ComponentProps } from 'react';
 
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { QuotaChip } from './quota-chip';
 
-type QuotaSummaryProps = Omit<ComponentProps<typeof VStack>, 'children'>;
-
 /** 이번 달 남은 AI 횟수를 한곳에서 본다. 프리미엄·관리자는 셀 일이 없어 그리지 않는다 */
-export function QuotaSummary({ className, ...stackProps }: QuotaSummaryProps) {
+export function QuotaSummary() {
   const { t } = useTranslation('subscription');
   const aiParse = useQuotaStatus('AI_PARSE');
   const voiceNote = useQuotaStatus('VOICE_NOTE');
@@ -19,13 +15,7 @@ export function QuotaSummary({ className, ...stackProps }: QuotaSummaryProps) {
   }
 
   return (
-    <VStack
-      gap={12}
-      p={16}
-      className={cn('rounded-2xl bg-white', className)}
-      testID="quota-summary"
-      {...stackProps}
-    >
+    <VStack gap={12} p={16} className="rounded-2xl bg-gray-1" testID="quota-summary">
       <HStack gap={6} align="center">
         <AiIcon width={16} height={16} colorClassName="text-main" />
         <Text size="b4" weight="semibold" shade={7}>

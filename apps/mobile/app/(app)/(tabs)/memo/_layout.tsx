@@ -4,8 +4,8 @@ import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 export default function MemoLayout() {
-  const indexScreenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
-  const bg = useResolveClassNames('bg-gray-1');
+  const indexScreenOptions = useStackScreenOptions({ fillContent: true });
+  const bg = useResolveClassNames('bg-white');
 
   return (
     <Stack
