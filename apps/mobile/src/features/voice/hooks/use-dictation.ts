@@ -34,6 +34,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const isMountedRef = useRef(false);
   const isSessionOwnerRef = useRef(false);
   const hasFailedRef = useRef(false);
+  const isStopRequestedRef = useRef(false);
 
   const handleEvent = useEffectEvent((event: SpeechEvent) => {
     if (!isSessionOwnerRef.current) {
@@ -47,6 +48,10 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
         }
       })
       .with({ type: 'error' }, ({ code }) => {
+        // Android 인식기는 stop 뒤에 마지막 결과 대신 client를 줄 수 있다. 내가 멈춘 것이라 실패가 아니다
+        if (code === 'client' && isStopRequestedRef.current) {
+          return;
+        }
         if (!hasFailedRef.current) {
           hasFailedRef.current = true;
           toast.error(getSpeechErrorMessage(code));
@@ -81,6 +86,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   /** 실패는 안에서 토스트로 알리므로 기다리지 않고 불러도 된다 */
   const start = async () => {
     hasFailedRef.current = false;
+    isStopRequestedRef.current = false;
     try {
       const locale = APP_LANGUAGE_SPEECH_LOCALE[resolvedLanguage];
       const isGranted = await ensureMicrophonePermission('dictation', locale);
@@ -103,6 +109,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   };
 
   const stop = () => {
+    isStopRequestedRef.current = true;
     speechRecognizer.stop();
   };
 

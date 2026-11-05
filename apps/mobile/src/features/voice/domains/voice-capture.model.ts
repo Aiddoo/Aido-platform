@@ -67,7 +67,8 @@ export type VoiceCaptureEvent =
   | { type: 'resume' }
   | { type: 'finish'; at: number }
   | { type: 'end' }
-  | { type: 'error'; code: SpeechErrorCode; at: number }
+  /** `isStopRequested`: 이 구간은 앱이 이미 stop을 불렀다 */
+  | { type: 'error'; code: SpeechErrorCode; at: number; isStopRequested?: boolean }
   /** 글자를 넘겨받은 쪽이 일을 마쳤다. 고를 계획이 있으면 review로, 없으면 처음으로 돌아간다 */
   | { type: 'planned'; result: CapturedPlan | null }
   | { type: 'plan-failed' }
@@ -113,6 +114,21 @@ function toFinalized(state: VoiceCaptureState): VoiceCaptureState {
     pauseCount,
     status: isTranscriptEmpty(transcript) ? 'idle' : 'planning',
   };
+}
+
+/**
+ * Android 인식기는 stop 뒤에 마지막 결과 대신 ERROR_CLIENT를 줄 수 있고, 어느 쪽이든 이어서 end가 온다.
+ * 앱이 스스로 멈춘 구간의 client는 실패가 아니라 정상 종료이고, 글자 확정은 end가 맡는다.
+ */
+export function isStopAcknowledgement(
+  state: VoiceCaptureState,
+  code: SpeechErrorCode,
+  isStopRequested: boolean = false,
+): boolean {
+  return (
+    code === 'client' &&
+    (isStopRequested || state.status === 'finalizing' || state.status === 'paused')
+  );
 }
 
 export function reduceVoiceCapture(
@@ -173,10 +189,15 @@ export function reduceVoiceCapture(
       .with([{ status: 'finalizing' }, { type: 'end' }], ([current]) => toFinalized(current))
       .with(
         [{ status: P.union('preparing', 'listening', 'finalizing') }, { type: 'error' }],
-        ([current, { code, at }]) =>
+        ([current, { code, at, isStopRequested }]) =>
           match(code)
             .returnType<VoiceCaptureState>()
             .with('no-speech', 'speech-timeout', 'aborted', () => current)
+            .with('client', () =>
+              isStopAcknowledgement(current, code, isStopRequested)
+                ? current
+                : toFailed(current, code, at),
+            )
             .with('interrupted', () =>
               current.status === 'listening'
                 ? {
@@ -288,6 +309,7 @@ export function getRemainingSeconds(
 }
 
 export const VoiceCapturePolicy = {
+  isStopAcknowledgement,
   shouldRestartSegment,
   isActive,
   canFinish,

@@ -175,6 +175,66 @@ describe('reduceVoiceCapture', () => {
     expect(state.transcript.sentences).toEqual(['장보기']);
   });
 
+  it('앱이 멈춘 뒤 인식기가 client를 주면 실패로 가지 않고 end에서 듣던 글자까지 확정해 넘긴다', () => {
+    // Given
+    const finalizing = createCaptureState({
+      status: 'finalizing',
+      transcript: createTranscript({ interim: '내일 아침 8시에 영양제 먹기' }),
+    });
+
+    // When
+    const afterError = reduceVoiceCapture(finalizing, { type: 'error', code: 'client', at: NOW });
+    const afterEnd = reduceVoiceCapture(afterError, { type: 'end' });
+
+    // Then
+    expect(afterError.status).toBe('finalizing');
+    expect(afterEnd).toMatchObject({
+      status: 'planning',
+      transcript: { sentences: ['내일 아침 8시에 영양제 먹기'], interim: '' },
+    });
+  });
+
+  it('앱이 멈춘 적 없이 듣는 중에 오는 client는 실패다', () => {
+    // Given
+    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
+
+    // When
+    const state = reduceVoiceCapture(listening, { type: 'error', code: 'client', at: NOW });
+
+    // Then
+    expect(state).toMatchObject({ status: 'failed', reason: 'client' });
+  });
+
+  it('앱이 구간을 닫으려고 멈춘 뒤 듣는 중이나 준비 중에 오는 client는 실패가 아니다', () => {
+    // Given
+    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
+    const preparing = createCaptureState({ status: 'preparing' });
+    const error = { type: 'error', code: 'client', at: NOW, isStopRequested: true } as const;
+
+    // When
+    const states = [reduceVoiceCapture(listening, error), reduceVoiceCapture(preparing, error)];
+
+    // Then
+    expect(states.map(({ status }) => status)).toEqual(['listening', 'preparing']);
+  });
+
+  it('앱이 멈춘 뒤 오는 client만 정상 종료로 본다', () => {
+    // Given
+    const listening = createCaptureState({ status: 'listening', listeningSince: NOW });
+    const paused = createCaptureState({ status: 'paused', cause: 'user' });
+
+    // When
+    const results = [
+      VoiceCapturePolicy.isStopAcknowledgement(listening, 'client', true),
+      VoiceCapturePolicy.isStopAcknowledgement(paused, 'client', false),
+      VoiceCapturePolicy.isStopAcknowledgement(listening, 'client', false),
+      VoiceCapturePolicy.isStopAcknowledgement(listening, 'audio-capture', true),
+    ];
+
+    // Then
+    expect(results).toEqual([true, true, false, false]);
+  });
+
   it('계획에 실패해도 글자는 그대로 두고 다시 시도할 수 있다', () => {
     // Given
     const planning = createCaptureState({

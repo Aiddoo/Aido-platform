@@ -222,6 +222,44 @@ describe('useVoiceNoteRecording', () => {
     expect(storage.drafts.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
   });
 
+  test('끝낼 때 인식기가 final 대신 client로 답해도 듣던 글자까지 초안에 남겨 넘긴다', async () => {
+    // Given
+    const { speechRecognizer, storage, onFinished } = await renderRecording();
+    await start(speechRecognizer);
+    await say(speechRecognizer, '첫 문장.');
+    await say(speechRecognizer, '두 번째 문장', false);
+
+    // When
+    await fireEvent.press(screen.getByTestId('finish'));
+    await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await act(async () => jest.advanceTimersByTimeAsync(0));
+
+    // Then
+    await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
+    const draftId = screen.getByTestId('draft-id').props.children;
+    expect(storage.drafts.find(ACCOUNT_ID, draftId)?.sentences.map(({ text }) => text)).toEqual([
+      '첫 문장.',
+      '두 번째 문장',
+    ]);
+  });
+
+  test('일시정지 뒤 인식기가 client로 답해도 실패가 아니고 들은 글자를 그대로 둔다', async () => {
+    // Given
+    const { speechRecognizer } = await renderRecording();
+    await start(speechRecognizer);
+    await say(speechRecognizer, '첫 문장', false);
+
+    // When
+    await fireEvent.press(screen.getByTestId('pause'));
+    await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // Then
+    expect(screen.getByTestId('status')).toHaveTextContent('paused');
+    expect(screen.getByTestId('captions')).toHaveTextContent('첫 문장');
+  });
+
   test('녹음 파일을 쓰지 않은 구간(Android 12 이하)은 기다리지 않고 글자를 넘긴다', async () => {
     // Given
     const { speechRecognizer, onFinished } = await renderRecording();

@@ -116,6 +116,8 @@ export function useVoiceCaptureSession({
   const deferredStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
   const isRecognizerRunningRef = useRef(false);
+  /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
+  const isStopRequestedRef = useRef(false);
   const isQuietRef = useRef(false);
   const lastStartedAtRef = useRef(0);
   const quickEndCountRef = useRef(0);
@@ -134,6 +136,11 @@ export function useVoiceCaptureSession({
 
   const addBreadcrumb = (message: string, data?: Record<string, unknown>) => {
     errorReporter.addBreadcrumb({ category: 'voice', message, data });
+  };
+
+  const stopRecognizer = () => {
+    isStopRequestedRef.current = true;
+    speechRecognizer.stop();
   };
 
   const clearQuiet = () => {
@@ -191,7 +198,7 @@ export function useVoiceCaptureSession({
       return;
     }
     if (next.status === 'finalizing') {
-      speechRecognizer.stop();
+      stopRecognizer();
       finalizeTimerRef.current = setTimeout(() => {
         finalizeTimerRef.current = null;
         handleFinalized();
@@ -220,11 +227,15 @@ export function useVoiceCaptureSession({
   };
 
   const handleError = (code: SpeechErrorCode) => {
-    const { previous, next } = dispatch({ type: 'error', code, at: Date.now() });
+    const isStopRequested = isStopRequestedRef.current;
+    const { previous, next } = dispatch({ type: 'error', code, at: Date.now(), isStopRequested });
     const startOptions = startOptionsRef.current;
     const context = { speech_error: code, on_device: startOptions?.isOnDevice };
 
-    if (FAILURE_CODES.has(code)) {
+    if (
+      FAILURE_CODES.has(code) &&
+      !VoiceCapturePolicy.isStopAcknowledgement(previous, code, isStopRequested)
+    ) {
       logger.error(VOICE_LOG_EVENT.RECOGNIZER_FAILED, new Error(code), context);
     } else {
       logger.info(VOICE_LOG_EVENT.RECOGNIZER_EXPECTED_STOP, context);
@@ -256,6 +267,7 @@ export function useVoiceCaptureSession({
     }
     lastStartedAtRef.current = now;
     isRecognizerRunningRef.current = true;
+    isStopRequestedRef.current = false;
     speechRecognizer.start(startOptions);
   };
 
@@ -277,12 +289,14 @@ export function useVoiceCaptureSession({
     lastStartedAtRef.current = Date.now();
     quickEndCountRef.current = 0;
     isRecognizerRunningRef.current = true;
+    isStopRequestedRef.current = false;
     speechRecognizer.start(startOptions);
   }
 
   const handleEvent = useEffectEvent((event: SpeechEvent) => {
     if (event.type === 'end') {
       isRecognizerRunningRef.current = false;
+      isStopRequestedRef.current = false;
     }
     if (!VoiceCapturePolicy.isActive(stateRef.current)) {
       return;
@@ -327,7 +341,7 @@ export function useVoiceCaptureSession({
       return;
     }
     clearTimers();
-    speechRecognizer.stop();
+    stopRecognizer();
     addBreadcrumb('capture.paused', { mode, cause });
   };
 
@@ -404,6 +418,7 @@ export function useVoiceCaptureSession({
   const failPreparing = useEffectEvent(() => {
     speechRecognizer.abort();
     isRecognizerRunningRef.current = false;
+    isStopRequestedRef.current = false;
     handleError('client');
   });
 
@@ -489,6 +504,7 @@ export function useVoiceCaptureSession({
       speechRecognizer.abort();
       // abort는 바로 끝난 것으로 본다. 다음 시작은 어댑터가 abort 뒤에 차례로 처리한다
       isRecognizerRunningRef.current = false;
+      isStopRequestedRef.current = false;
     }
     if (previous.status !== 'idle' && previous.status !== 'review') {
       trackFinished(isTranscriptEmpty(previous.transcript) ? 'empty' : outcome, previous);
@@ -512,7 +528,7 @@ export function useVoiceCaptureSession({
     const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale);
     startOptionsRef.current = { ...startOptions, locale, isOnDevice: canRecognizeOnDevice };
     if (getStatus() === 'listening') {
-      speechRecognizer.stop();
+      stopRecognizer();
     }
   };
 

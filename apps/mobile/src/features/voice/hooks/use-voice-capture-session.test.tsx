@@ -6,7 +6,7 @@ import {
 } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
 import { Text } from '@src/shared/ui';
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import type { CapturedPlan } from '../domains/voice-capture.model';
@@ -28,6 +28,9 @@ function SessionProbe({
         onPress={() => session.begin({ locale: 'ko-KR', contextualStrings: ['기획팀'] })}
       />
       <Pressable testID="finish" onPress={session.finish} />
+      <Pressable testID="pause" onPress={session.pause} />
+      <Pressable testID="resume" onPress={session.resume} />
+      <Pressable testID="change-locale" onPress={() => session.changeLocale('en-US')} />
       <Pressable testID="cancel" onPress={session.cancel} />
       <Text testID="status">{session.state.status}</Text>
     </>
@@ -102,6 +105,124 @@ describe('useVoiceCaptureSession', () => {
     // Then
     expect(onCaptured).not.toHaveBeenCalled();
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
+  });
+
+  describe('앱이 멈춘 뒤 Android 인식기가 client로 답할 때', () => {
+    const beginListening = async () => {
+      const session = await renderSession();
+      logger.error.mockClear();
+      await fireEvent.press(screen.getByTestId('begin'));
+      await act(async () => session.speechRecognizer.emit({ type: 'start' }));
+      await act(async () =>
+        session.speechRecognizer.emit({
+          type: 'result',
+          transcript: '내일 아침 8시에 영양제 먹기',
+          isFinal: false,
+          segments: [],
+        }),
+      );
+      return session;
+    };
+
+    it('끝내기는 실패가 아니라 final 없이도 들은 글자를 넘기고 오류를 남기지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics, onCaptured } = await beginListening();
+
+      // When
+      await fireEvent.press(screen.getByTestId('finish'));
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // Then
+      expect(onCaptured).toHaveBeenCalledWith('내일 아침 8시에 영양제 먹기');
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'voice_capture_failed',
+        expect.anything(),
+      );
+    });
+
+    it('일시정지는 멈춘 채로 있고 오류를 남기지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await beginListening();
+
+      // When
+      await fireEvent.press(screen.getByTestId('pause'));
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('paused');
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+        'voice_capture_failed',
+        expect.anything(),
+      );
+    });
+
+    it('일시정지 직후 이어 듣기를 눌러도 늦게 온 client가 실패로 만들지 않고 end 뒤에 다시 듣는다', async () => {
+      // Given
+      const { speechRecognizer } = await beginListening();
+      await fireEvent.press(screen.getByTestId('pause'));
+      await fireEvent.press(screen.getByTestId('resume'));
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('preparing');
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it('언어를 바꾸려고 구간을 닫을 때도 실패가 아니고 새 언어로 이어 듣는다', async () => {
+      // Given
+      const { speechRecognizer } = await beginListening();
+      await fireEvent.press(screen.getByTestId('change-locale'));
+      await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('listening');
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(
+        expect.objectContaining({ locale: 'en-US' }),
+      );
+      expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it('앱이 멈춘 적 없이 듣는 중에 오는 client는 실패로 남긴다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await beginListening();
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'voice_capture_failed',
+        expect.objectContaining({ reason: 'client' }),
+      );
+    });
+
+    it('앞 구간이 끝나 새 구간을 듣는 중에 오는 client는 다시 실패로 본다', async () => {
+      // Given
+      const { speechRecognizer } = await beginListening();
+      await fireEvent.press(screen.getByTestId('change-locale'));
+      await waitFor(() => expect(speechRecognizer.stop).toHaveBeenCalledTimes(1));
+      await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'error', code: 'client' }));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+    });
   });
 
   it('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
