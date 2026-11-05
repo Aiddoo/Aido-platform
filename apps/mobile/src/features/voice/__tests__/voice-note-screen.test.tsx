@@ -30,7 +30,7 @@ import { err, ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
 import { VoiceService } from '../apis/voice.service';
@@ -196,7 +196,7 @@ describe('말로 메모 화면', () => {
       /한 번에 정리할 수 있는 길이를 넘었어요/,
     );
     expect(screen.queryByText('다시 정리')).toBeNull();
-    expect(screen.getByTestId('voice-note-more')).toBeTruthy();
+    expect(screen.getByLabelText('더 보기')).toBeTruthy();
   });
 
   test('정리가 끝나면 결과로 바뀌고 할 일이 없으면 요약을 남겼다고 알린다', async () => {
@@ -223,11 +223,30 @@ describe('말로 메모 화면', () => {
     httpClient.post.mockResolvedValue(ok({ todos: [], memo: null }));
 
     // When
-    await fireEvent.press(await screen.findByTestId('voice-note-save-memo'));
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
 
     // Then
-    await waitFor(() => expect(screen.getByTestId('voice-note-memo-saved')).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText('메모로 저장했어요')).toBeDisabled());
     expect(httpClient.post.mock.calls[0]?.[0]).toBe('v1/action-plans/apply');
+  });
+
+  test('삭제를 확인하면 기기에서 지우고 화면을 닫는다', async () => {
+    // Given
+    const { storage } = await renderScreen({
+      digest: createVoiceNoteDigest({ keyPoints: [] }),
+      planDraft: emptyPlanDraft,
+    });
+
+    // When
+    await act(async () => {
+      fireEvent.press(await screen.findByText('이 메모 삭제')).catch(jest.fn());
+    });
+    await screen.findByText('이 메모를 삭제할까요?');
+    await fireEvent.press(screen.getByText('삭제'));
+
+    // Then
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)).toBeUndefined();
   });
 
   test('녹음을 지운 메모는 글자와 요약이 남고 다시 들을 수 없다고 알린다', async () => {
@@ -312,7 +331,7 @@ describe('말로 메모 화면', () => {
         respond = () => resolve(ok({ todos: [], memo: null }));
       }),
     );
-    await fireEvent.press(await screen.findByTestId('voice-note-save-memo'));
+    await fireEvent.press(await screen.findByLabelText('메모로 저장'));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));
     expect(storage.drafts.find(ACCOUNT_ID, DRAFT_ID)?.memoSaveRequest?.idempotencyKey).toBe(
       httpClient.post.mock.calls[0]?.[2]?.headers?.['Idempotency-Key'],

@@ -42,10 +42,10 @@ import {
 import { isTranscriptEmpty } from '../../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { formatMediaTime } from '../../utils/format-media-time';
-import { VoiceNoteHeader } from '../note/voice-note-header';
 import { PlanReview } from '../plan/plan-review';
 import { VoiceVisual } from '../visualizers/voice-visual';
 import { LiveTranscript } from './live-transcript';
+import { QuickVoiceHeader } from './quick-voice-header';
 import { RecognitionLanguageToggle } from './recognition-language-toggle';
 
 interface ListeningProps {
@@ -352,7 +352,6 @@ interface PanelFrameProps {
 
 /** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
 function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProps) {
-  const { t } = useTranslation('voice');
   const { height: windowHeight } = useWindowDimensions();
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
   const height = Math.min(
@@ -368,13 +367,7 @@ function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProp
       testID={testID}
     >
       <VStack flex={1} gap={16}>
-        <VoiceNoteHeader
-          center={center}
-          right={right}
-          onClose={onClose}
-          closeLabel={t('listening.cancel')}
-          closeTestID="quick-voice-cancel"
-        />
+        <QuickVoiceHeader center={center} right={right} onClose={onClose} />
         {children}
       </VStack>
     </Animated.View>

@@ -40,6 +40,7 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
 ```
 
 `fallbackHref`는 돌아갈 화면이 없을 때(푸시·딥링크로 바로 연 경우) `router.replace`로 여는 화면입니다.
+아래로 닫는 화면은 `icon={STACK_CLOSE_ICON}`과 `accessibilityLabel`로 닫기 모양을 줍니다.
 
 ## 화면별 버튼
 
@@ -75,6 +76,7 @@ stack-header/
 ├── use-stack-screen-options.ts   # 공통 네이티브 헤더 옵션
 ├── use-stack-back-toolbar.tsx    # 중첩 Stack 첫 화면의 뒤로가기
 ├── stack-back-icon.ts            # 플랫폼별 뒤로가기 아이콘
+├── stack-close-icon.ts           # 플랫폼별 닫기 아이콘
 ├── stack-header.md               # 이 문서
 └── index.ts                      # 배럴
 ```

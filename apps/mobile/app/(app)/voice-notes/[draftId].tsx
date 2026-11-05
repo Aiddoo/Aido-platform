@@ -1,14 +1,14 @@
+import Check from '@expo/material-symbols/check.xml';
+import Delete from '@expo/material-symbols/delete.xml';
+import NoteAdd from '@expo/material-symbols/note_add.xml';
 import { useVoiceNoteStorageService } from '@src/bootstrap/providers/di-context';
 import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
 import { DigestScanPreview } from '@src/features/voice/components/note/digest-scan-preview';
 import { KeyPointList } from '@src/features/voice/components/note/key-point-list';
 import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
 import { VoiceNoteDigestButton } from '@src/features/voice/components/note/voice-note-digest-button';
-import { VoiceNoteHeader } from '@src/features/voice/components/note/voice-note-header';
-import { VoiceNoteMoreMenu } from '@src/features/voice/components/note/voice-note-more-menu';
 import { VoiceNotePlanTodos } from '@src/features/voice/components/note/voice-note-plan-todos';
 import { VoiceNotePlayerBar } from '@src/features/voice/components/note/voice-note-player-bar';
-import { VoiceNoteSaveMemoButton } from '@src/features/voice/components/note/voice-note-save-memo-button';
 import { VoiceNoteScreenLoading } from '@src/features/voice/components/note/voice-note-screen-loading';
 import { PlanReview } from '@src/features/voice/components/plan/plan-review';
 import { type VoiceNote, VoiceNotePolicy } from '@src/features/voice/domains/voice-note.model';
@@ -29,6 +29,7 @@ import {
   useVoiceNotePlayer,
   type VoiceNotePlayer,
 } from '@src/features/voice/hooks/use-voice-note-player';
+import { useVoiceNoteSaveMemo } from '@src/features/voice/hooks/use-voice-note-save-memo';
 import { getDurationBucket } from '@src/features/voice/utils/analytics/duration-bucket';
 import { formatMediaTime } from '@src/features/voice/utils/format-media-time';
 import {
@@ -47,17 +48,19 @@ import {
   READABLE_CONTENT_MAX_WIDTH,
   Result,
   ScreenScrollShadow,
+  STACK_MORE_ICON,
   StyledSafeAreaView,
   Text,
+  useConfirmDialog,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { noop } from 'es-toolkit';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { type ComponentProps, Suspense, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { Platform, ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -65,6 +68,13 @@ import { match } from 'ts-pattern';
 const SCAN_PREVIEW_SENTENCES = 12;
 
 const PLAN_TODOS_CLASS_NAME = 'flex-1 pb-3';
+
+/** 네이티브 헤더 버튼 아이콘. iOS는 SF Symbol, Android는 Material Symbol을 쓴다. */
+const VOICE_NOTE_TOOLBAR_ICON = {
+  saveMemo: Platform.OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,
+  memoSaved: Platform.OS === 'ios' ? 'checkmark' : Check,
+  delete: Platform.OS === 'ios' ? 'trash' : Delete,
+} as const;
 
 const closeScreen = () => {
   if (router.canGoBack()) {
@@ -81,7 +91,7 @@ function VoiceNoteScreen() {
   if (note == null) {
     return (
       <VStack flex={1} className="px-4 pt-2">
-        <VoiceNoteHeader onClose={closeScreen} />
+        <Stack.Screen options={{ title: '' }} />
         <Result title={t('result.notFound')} testID="voice-note-not-found" />
       </VStack>
     );
@@ -92,6 +102,53 @@ function VoiceNoteScreen() {
 
 interface VoiceNoteDigestProps {
   note: VoiceNote;
+}
+
+/** 메모로 저장은 정리한 뒤에만 보인다. 저장했으면 다시 저장하지 않게 체크로 바뀐다 */
+function VoiceNoteToolbar({ note }: { note: VoiceNote }) {
+  const { t } = useTranslation('voiceNote');
+  const { accountId, draftId } = useCurrentVoiceNote();
+  const storage = useVoiceNoteStorageService();
+  const confirmDialog = useConfirmDialog();
+  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo(note);
+  const saveMemoLabel = isMemoSaved ? t('result.memoSaved') : t('result.saveMemo');
+
+  const handleDelete = async () => {
+    const isConfirmed = await confirmDialog.open({
+      title: t('result.deleteTitle'),
+      description: t('result.deleteDescription'),
+      confirmLabel: t('result.deleteConfirm'),
+      confirmColor: 'danger',
+      cancelLabel: t('result.deleteCancel'),
+    });
+    if (isConfirmed) {
+      storage.discard(accountId, draftId);
+      closeScreen();
+    }
+  };
+
+  return (
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Button
+        hidden={!isMemoSaved && !canSaveMemo}
+        icon={isMemoSaved ? VOICE_NOTE_TOOLBAR_ICON.memoSaved : VOICE_NOTE_TOOLBAR_ICON.saveMemo}
+        accessibilityLabel={saveMemoLabel}
+        disabled={isMemoSaved || isSavingMemo}
+        onPress={saveMemo}
+      >
+        {saveMemoLabel}
+      </Stack.Toolbar.Button>
+      <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('result.more')}>
+        <Stack.Toolbar.MenuAction
+          icon={VOICE_NOTE_TOOLBAR_ICON.delete}
+          destructive
+          onPress={handleDelete}
+        >
+          {t('result.delete')}
+        </Stack.Toolbar.MenuAction>
+      </Stack.Toolbar.Menu>
+    </Stack.Toolbar>
+  );
 }
 
 /** 정리 전: 들은 글자를 보여 주고, 누르면 정리한다. 실패해도 글자는 그대로 있고 다시 정리할 수 있다 */
@@ -106,11 +163,8 @@ function VoiceNoteDigest({ note }: VoiceNoteDigestProps) {
 
   return (
     <VStack flex={1} gap={12} className="px-4 pb-3 pt-2">
-      <VoiceNoteHeader
-        title={t('digest.readyTitle')}
-        onClose={closeScreen}
-        right={<VoiceNoteMoreMenu onDeleted={closeScreen} />}
-      />
+      <Stack.Screen options={{ title: t('digest.readyTitle') }} />
+      <VoiceNoteToolbar note={note} />
       <SentenceCaptionList sentences={note.sentences} className="min-h-24 flex-1" />
       {failure != null && <VoiceNoteDigest.Failure failure={failure} />}
       {(failure == null || canRetryPlanFailure(failure.cause)) && (
@@ -129,7 +183,7 @@ VoiceNoteDigest.Progress = function Progress({ note }: VoiceNoteDigestProps) {
 
   return (
     <VStack flex={1} gap={16} className="px-4 pb-3 pt-2" testID="voice-note-digesting">
-      <VoiceNoteHeader title={t('digest.title')} onClose={closeScreen} />
+      <Stack.Screen options={{ title: t('digest.title') }} />
       <DigestScanPreview
         paragraphs={note.sentences.slice(0, SCAN_PREVIEW_SENTENCES).map(({ text }) => text)}
         className="max-h-[50%]"
@@ -174,15 +228,8 @@ function VoiceNoteResult({ note }: { note: VoiceNote }) {
 
   return (
     <VStack flex={1} gap={12} className="px-4 pt-2">
-      <VoiceNoteHeader
-        onClose={closeScreen}
-        right={
-          <HStack gap={12} align="center" className="shrink">
-            <VoiceNoteSaveMemoButton note={note} />
-            <VoiceNoteMoreMenu onDeleted={closeScreen} />
-          </HStack>
-        }
-      />
+      <Stack.Screen options={{ title: '' }} />
+      <VoiceNoteToolbar note={note} />
       <VoiceNoteResult.Title note={note} />
       <VoiceNotePlayerBar
         player={player}
@@ -412,7 +459,7 @@ export default function VoiceNoteRoute() {
   }
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-white">
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
       <QueryErrorBoundary resetKeys={[params.data.draftId]}>
         <Suspense fallback={<VoiceNoteScreenLoading />}>
           <VoiceNoteScreen key={params.data.draftId} />

@@ -14,6 +14,7 @@ import { createTestQueryClient } from './query-client';
 export { createTestQueryClient } from './query-client';
 
 jest.mock('expo-router', () => {
+  const { Pressable, Text, View } = require('react-native');
   const router = {
     push: jest.fn(),
     replace: jest.fn(),
@@ -22,7 +23,54 @@ jest.mock('expo-router', () => {
     setParams: jest.fn(),
     canGoBack: jest.fn(() => true),
   };
+  // 네이티브 헤더는 Jest에서 그려지지 않는다. 눌러 볼 수 있게 접근성 이름이 있는 버튼으로 바꾼다
+  const Toolbar = ({ children }: { children: ReactNode }) => children;
+  Toolbar.Button = ({
+    hidden,
+    disabled,
+    accessibilityLabel,
+    onPress,
+  }: {
+    hidden?: boolean;
+    disabled?: boolean;
+    accessibilityLabel?: string;
+    onPress?: () => void;
+  }) =>
+    hidden ? null : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{ disabled: Boolean(disabled) }}
+        disabled={disabled}
+        onPress={onPress}
+      />
+    );
+  Toolbar.Menu = ({
+    hidden,
+    accessibilityLabel,
+    children,
+  }: {
+    hidden?: boolean;
+    accessibilityLabel?: string;
+    children: ReactNode;
+  }) =>
+    hidden ? null : (
+      <View accessibilityRole="menu" accessibilityLabel={accessibilityLabel}>
+        {children}
+      </View>
+    );
+  Toolbar.MenuAction = ({ children, onPress }: { children: ReactNode; onPress?: () => void }) => (
+    <Pressable accessibilityRole="menuitem" onPress={onPress}>
+      <Text>{children}</Text>
+    </Pressable>
+  );
+  const Stack = {
+    Toolbar,
+    Screen: ({ options }: { options?: { title?: string; headerTitle?: () => ReactNode } }) =>
+      options?.headerTitle?.() ?? <Text>{options?.title}</Text>,
+  };
   return {
+    Stack,
     router,
     useRouter: () => router,
     useLocalSearchParams: jest.fn(() => ({})),
