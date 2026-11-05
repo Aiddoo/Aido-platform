@@ -106,15 +106,7 @@ export class TodoCreationWriter {
     });
     series.assertWithinPastLimit(at);
     await this.#dependencies.categoryOwnership.validateOwnership(categoryId, userId);
-    if (data.exemptFromSeriesLimit !== true) {
-      const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
-      if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
-        throw new ApplicationException(ErrorCode.TODO_0842, {
-          limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
-          activeCount,
-        });
-      }
-    }
+    await this.#assertSeriesLimit(userId, data.legacySeriesLimit === true);
     const activeInCategory = await this.#dependencies.todoRepository.countCategoryUsage(
       userId,
       categoryId,
@@ -130,5 +122,24 @@ export class TodoCreationWriter {
     await this.#dependencies.todoSeriesRepository.insert(series);
     const occurrences = await this.#dependencies.occurrenceMaterializer.persist(series, drafts);
     return { series, occurrences };
+  }
+
+  async #assertSeriesLimit(userId: string, legacy: boolean): Promise<void> {
+    const limit = legacy
+      ? TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY
+      : TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER;
+    const activeCount = await this.#dependencies.todoSeriesRepository.countActiveByUserId(userId);
+    if (activeCount < limit) {
+      return;
+    }
+    if (legacy) {
+      // 출시 앱은 TODO_0842를 몰라 SYS_0001로 보인다. 이 경로에서 이미 받는 한도 거절로 돌려준다.
+      throw new ApplicationException(ErrorCode.TODO_0813, {
+        activeInCategory: activeCount,
+        batchSize: 1,
+        maxPerCategory: limit,
+      });
+    }
+    throw new ApplicationException(ErrorCode.TODO_0842, { limit, activeCount });
   }
 }

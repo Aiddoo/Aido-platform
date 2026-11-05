@@ -557,27 +557,78 @@ describe("반복 할 일 생성 E2E", () => {
       expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
     });
 
+    const seedActiveSeries = (count: number) =>
+      ctx.testDatabase
+        .getClient()
+        .insert(todoSeries)
+        .values(
+          Array.from({ length: count }, () => {
+            const id = createEntityId();
+            return {
+              id,
+              originSeriesId: id,
+              userId,
+              categoryId,
+              title: "시드",
+              timezone: "UTC",
+              repeatFrequency: "DAILY" as const,
+              startDate: new Date(),
+              nextOccurrenceDate: new Date(),
+            };
+          }),
+        );
+
+    describe("옛 경로 상한까지 찬 사용자", () => {
+      beforeEach(async () => {
+        await seedActiveSeries(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY);
+      });
+
+      it("POST /v1/todos/recurring은 옛 앱이 아는 TODO_0813으로 거절한다", async () => {
+        // When
+        const response = await post("/v1/todos/recurring", {
+          title: "옛 앱 반복",
+          categoryId,
+          startDate: dateAfter(1),
+          endDate: dateAfter(8),
+          daysOfWeek: ["MON"],
+        });
+        // Then
+        expect(response.status).toBe(403);
+        expect(response.body.error.code).toBe(ErrorCode.TODO_0813);
+      });
+
+      it("출시 앱의 메모 변환(isRecurring)도 TODO_0813으로 거절하고 메모를 지키며 제목을 남기지 않는다", async () => {
+        // Given
+        const created = await ctx.testDatabase
+          .getClient()
+          .insert(memo)
+          .values({ userId, content: "메모", sortOrder: 0 })
+          .returning();
+        // When
+        const response = await post(`/v1/memos/${created[0]?.id}/convert-to-todos`, {
+          todos: [
+            {
+              title: "옛 앱 메모 반복",
+              categoryId,
+              startDate: dateAfter(1),
+              isRecurring: true,
+              recurrence: { daysOfWeek: ["MON"], endDate: dateAfter(8) },
+            },
+          ],
+        });
+        // Then
+        expect(response.status).toBe(403);
+        expect(response.body.error.code).toBe(ErrorCode.TODO_0813);
+        const memoRow = await ctx.testDatabase
+          .getClient()
+          .query.memo.findFirst({ where: { id: created[0]?.id ?? 0 } });
+        expect(memoRow).toBeDefined();
+      });
+    });
+
     describe("진행 중 반복이 상한에 찬 사용자", () => {
       beforeEach(async () => {
-        await ctx.testDatabase
-          .getClient()
-          .insert(todoSeries)
-          .values(
-            Array.from({ length: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER }, () => {
-              const id = createEntityId();
-              return {
-                id,
-                originSeriesId: id,
-                userId,
-                categoryId,
-                title: "시드",
-                timezone: "UTC",
-                repeatFrequency: "DAILY" as const,
-                startDate: new Date(),
-                nextOccurrenceDate: new Date(),
-              };
-            }),
-          );
+        await seedActiveSeries(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER);
       });
 
       it("POST /v1/todos/recurring은 옛 서버처럼 만든다", async () => {

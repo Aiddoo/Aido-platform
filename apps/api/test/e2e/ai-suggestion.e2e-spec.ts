@@ -1,3 +1,5 @@
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
@@ -18,7 +20,12 @@ import { STAGED_TODO_CREATOR } from "#api/modules/planning/planning-todos.public
  * - 인증 에러 (401)
  */
 import { CacheService } from "#api/platform/cache/cache.service";
-import { recurringSuggestion, user as userTable } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/platform/database/entity-id";
+import {
+  recurringSuggestion,
+  todoSeries,
+  user as userTable,
+} from "#api/platform/database/schema/index";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -135,6 +142,43 @@ describe("AI 제안 E2E", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.suggestion.status).toBe("ACCEPTED");
       expect(response.body.data.createdTodosCount).toBeGreaterThan(0);
+    });
+
+    it("403(accept): 옛 경로 상한까지 찬 사용자는 옛 앱이 아는 TODO_0813으로 거절한다", async () => {
+      // Given
+      const user = await createPremiumUser("ai-suggestion-cap@example.com", "Test1234!");
+      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const suggestionId = await seedPendingSuggestion(user.userId);
+      await ctx.testDatabase
+        .getClient()
+        .insert(todoSeries)
+        .values(
+          Array.from({ length: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY }, () => {
+            const id = createEntityId();
+            return {
+              id,
+              originSeriesId: id,
+              userId: user.userId,
+              categoryId,
+              title: "시드",
+              timezone: "UTC",
+              repeatFrequency: "DAILY" as const,
+              startDate: new Date(),
+              nextOccurrenceDate: new Date(),
+            };
+          }),
+        );
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .patch(`/v1/ai/suggestions/${suggestionId}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", "Asia/Seoul")
+        .send({ action: "accept", categoryId });
+
+      // Then
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe(ErrorCode.TODO_0813);
     });
 
     it("200(dismiss): 제안 거절 시 DISMISSED로 전이되고 할 일은 생성되지 않는다", async () => {

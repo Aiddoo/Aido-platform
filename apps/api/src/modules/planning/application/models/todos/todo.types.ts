@@ -19,10 +19,10 @@ export interface CreateTodoData {
   readonly items?: readonly { title: string }[];
   readonly repeat?: TodoRepeat | null;
   /**
-   * 출시 앱(1.14.x까지)의 기간이 정해진 경로 전용. 옛 서버에 없던 거절을 더하지 않으려고
-   * 진행 중 반복 상한을 보지 않는다. 호환 범위는 docs/conventions/compatibility.md에 적는다.
+   * 출시 앱(1.14.x까지)의 기간이 정해진 경로 전용. 새 경로보다 넉넉한 상한을 보고, 거절은 옛 앱이
+   * 아는 코드로 한다. 호환 범위는 docs/conventions/compatibility.md에 적는다.
    */
-  readonly exemptFromSeriesLimit?: boolean;
+  readonly legacySeriesLimit?: boolean;
 }
 
 /** 시간대를 해석한 뒤의 생성 입력. 쓰기 경로는 이 값만 받는다. */

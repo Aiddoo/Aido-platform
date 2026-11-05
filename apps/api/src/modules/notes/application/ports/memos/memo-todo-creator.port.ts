@@ -16,7 +16,7 @@ export interface MemoTodoDraft {
   readonly items?: readonly { title: string }[];
   readonly repeat?: TodoRepeat | null;
   /** 출시 앱의 isRecurring 변환 전용. 옛 서버에 없던 상한으로 거절하지 않는다. */
-  readonly exemptFromSeriesLimit?: boolean;
+  readonly legacySeriesLimit?: boolean;
 }
 
 /** 메모를 할 일로 바꾼다. 활성 UoW 안에서 저장하고 afterCommit은 커밋 뒤에만 실행되게 등록한다. */

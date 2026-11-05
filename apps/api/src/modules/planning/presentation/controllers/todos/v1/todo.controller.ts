@@ -293,7 +293,8 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`count\`: 이번에 만든 할 일 수
 
 **제한사항**
-- 카테고리 한도를 초과하면 전체 요청 거부`,
+- 카테고리 한도를 초과하면 전체 요청 거부
+- 진행 중인 반복이 ${TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY}개면 \`TODO_0813\`으로 거부`,
   })
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -321,7 +322,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           weekdays: dto.daysOfWeek,
           end: { type: "UNTIL", date: dto.endDate },
         },
-        exemptFromSeriesLimit: true,
+        legacySeriesLimit: true,
       })
       .catch((error: unknown) => {
         // 출시 앱 계약: 이 경로의 날짜 없음은 SYS_0002다. TODO_0843은 새 경로의 코드다.
