@@ -14,7 +14,7 @@ import { screen } from '@testing-library/react-native';
 import { AiService } from '../apis/ai.service';
 import { SuggestionEntry } from './suggestion-entry';
 
-const RETRY_LABEL = '맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해 주세요';
+const RETRY_LABEL = '맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요';
 const silentLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
 const serverError = () => err(new ApiError('SYS_0001', '서버 오류', 500));
 

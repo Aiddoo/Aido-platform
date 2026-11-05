@@ -27,20 +27,20 @@
   "listening": {
     "cancel": "Cancel",
     "done": "Done",
-    "resume": "Keep listening",
-    "pausedHint": "Paused for a moment. Keep listening?",
+    "resume": "Keep talking",
+    "pausedHint": "Paused for a moment. Keep talking?",
     "autoFinishHint": "We'll wrap up when you pause"
   },
   "planning": {
-    "cancel": "Stop and type instead",
+    "cancel": "Cancel and type",
     "title": "Splitting into to-dos…"
   },
   "review": {
     "restart": "Say it again",
-    "typeInstead": "Type it"
+    "typeInstead": "Type instead"
   },
   "failed": {
-    "keptText": "We kept what we heard. Keep talking or fix it yourself.",
+    "keptText": "We kept what we heard. Keep talking or edit it yourself.",
     "consentRequired": "AI consent is needed to sort this out. Try again to see the notice.",
     "resume": "Keep talking",
     "retry": "Try again"
@@ -48,7 +48,7 @@
   "limit": {
     "title": "That's a long one",
     "description": "Everything so far is saved. Turn it into to-dos now, or keep talking in a voice note.",
-    "finish": "Summarize now",
+    "finish": "Make to-dos now",
     "continueAsNote": "Continue as a voice note"
   }
 }

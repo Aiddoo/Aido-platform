@@ -17,7 +17,7 @@
     "pause": "Pause",
     "position": "Playback position",
     "positionValue": "{{position}} of {{duration}}",
-    "unavailable": "This recording is no longer on your phone"
+    "unavailable": "This recording is no longer on this device"
   },
   "captions": {
     "empty": "What you say shows up here",
@@ -27,7 +27,7 @@
   },
   "digest": {
     "steps": {
-      "transcript": "Cleaning up text",
+      "transcript": "Speech to text",
       "keyPoints": "Picking key points",
       "todos": "Finding to-dos"
     },
@@ -38,17 +38,17 @@
     "characters_one": "{{amount}} character",
     "characters_other": "{{amount}} characters",
     "marks": "{{count}} marked",
-    "hint": "Usually done in 10 seconds. Your text is kept if you leave.",
+    "hint": "Usually done within a minute. What we heard is kept if you leave.",
     "title": "Summarizing",
     "readyTitle": "What we heard",
     "action": "Summarize",
-    "retry": "Summarize again",
+    "retry": "Try again",
     "cost": "Uses 1 · {{amount}} left this month",
     "usedUp": "Used up this month",
-    "notCharged": "This won't count",
-    "tooLong": "This is too long to summarize at once.",
-    "offline": "You can summarize again once you're online.",
-    "kept": "Your text is still here."
+    "notCharged": "This didn't count",
+    "tooLong": "It's over the length we can summarize at once.",
+    "offline": "You can try again once you're connected to the internet.",
+    "kept": "What we heard is still here."
   },
   "start": {
     "label": "Make a voice note"
@@ -78,33 +78,33 @@
     "markInfo": "About marking",
     "privacy": "Audio files aren't sent to Aido's servers",
     "pausedLabel": "Paused",
-    "pausedTitle": "We paused for you",
+    "pausedTitle": "Recording paused",
     "pausedDescription": {
       "app-background": "You switched apps, so we paused. Everything so far is saved.",
-      "interrupted": "A call or another sound paused us. Everything so far is saved.",
+      "interrupted": "A call or another sound paused recording. Everything so far is saved.",
       "user": "Everything so far is saved.",
-      "limit": "You've used the time for one recording. Everything so far is saved."
+      "limit": "You've reached the time limit for one recording. Everything so far is saved."
     },
     "resume": "Resume",
     "summarize": "Summarize now",
-    "failedTitle": "Listening stopped",
-    "failedDescription": "Everything so far is saved. Resume or summarize what we have.",
+    "failedTitle": "Recording stopped",
+    "failedDescription": "Everything so far is saved. Resume recording or summarize what we have.",
     "failedPermission": "We can't use the microphone or speech recognition. Check the permission in Settings.",
     "leaveTitle": "Finish recording?",
-    "leaveDescription": "What we heard stays in Notes.",
+    "leaveDescription": "What we heard stays in the Memos tab.",
     "leaveConfirm": "Finish",
-    "leaveCancel": "Keep listening",
+    "leaveCancel": "Keep recording",
     "empty": "We didn't hear anything"
   },
   "limit": {
-    "title": "Free plan stops at {{minutes}} minutes",
-    "description": "We'll summarize what we have so far. Premium keeps listening for up to {{premiumMinutes}} minutes.",
-    "summarize": "Summarize what I have",
-    "premium": "One recording is up to {{minutes}} minutes. We've kept what we heard."
+    "title": "Free recordings stop at {{minutes}} minutes",
+    "description": "We'll summarize what we have so far. With Premium, record up to {{premiumMinutes}} minutes at a time.",
+    "summarize": "Summarize now",
+    "premium": "You can record up to {{minutes}} minutes at a time. We've kept what we heard."
   },
   "offlineModel": {
-    "title": "Download on-device recognition?",
-    "description": "Speech is turned into text on your device. Without it, recognition uses the internet.",
+    "title": "Download speech-to-text?",
+    "description": "It turns speech into text on your device. Without it, we use the internet.",
     "confirm": "Download",
     "cancel": "Not now",
     "scheduled": "Using the internet until the download finishes"
@@ -118,14 +118,14 @@
       "todos": "To-dos {{amount}}",
       "transcript": "Transcript"
     },
-    "planLost": "We couldn't load the to-do cards. Your summary and text are still here.",
+    "planLost": "We couldn't load the to-do cards. Your summary and transcript are still here.",
     "noTodos": "There was nothing to turn into to-dos. We kept the summary.",
     "applied": "To-dos added",
-    "saveMemo": "Save note",
-    "memoSaved": "Saved as a note",
-    "delete": "Delete this voice note",
+    "saveMemo": "Save as memo",
+    "memoSaved": "Saved as a memo",
+    "delete": "Delete voice note",
     "deleteTitle": "Delete this voice note?",
-    "deleteDescription": "The text and audio file will be removed from this device. This can't be undone.",
+    "deleteDescription": "Deletes the summary, what we heard, and the audio from this device. This can't be undone.",
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
     "notFound": "We can't find this voice note",

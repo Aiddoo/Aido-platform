@@ -170,7 +170,7 @@ describe('말로 메모 화면', () => {
     // Then
     expect(await screen.findByText('다시 정리')).toBeTruthy();
     expect(screen.getByTestId('voice-note-digest-failure')).toHaveTextContent(
-      /횟수는 차감되지 않아요/,
+      /횟수는 차감되지 않았어요/,
     );
   });
 
@@ -199,7 +199,7 @@ describe('말로 메모 화면', () => {
 
     // Then
     expect(await screen.findByTestId('voice-note-digest-failure')).toHaveTextContent(
-      /한 번에 정리하기엔 너무 길어요/,
+      /한 번에 정리할 수 있는 길이를 넘었어요/,
     );
     expect(screen.queryByText('다시 정리')).toBeNull();
     expect(screen.getByTestId('voice-note-delete')).toBeTruthy();
@@ -216,7 +216,7 @@ describe('말로 메모 화면', () => {
     // Then
     expect(await screen.findByText('요약이에요')).toBeTruthy();
     expect(screen.getByTestId('voice-note-no-todos')).toHaveTextContent(
-      '할 일로 나눌 내용은 없었어요. 요약을 남겨뒀어요',
+      '할 일로 나눌 내용은 없었어요. 요약을 남겨뒀어요.',
     );
   });
 

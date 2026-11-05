@@ -7,8 +7,8 @@
     "label": "말로 할 일 만들기"
   },
   "dictation": {
-    "start": "음성으로 입력",
-    "stop": "음성 입력 멈추기"
+    "start": "말로 입력",
+    "stop": "말로 입력 멈추기"
   },
   "info": {
     "label": "AI로 할 일 만들기",
@@ -27,12 +27,12 @@
   "listening": {
     "cancel": "취소",
     "done": "다 말했어요",
-    "resume": "이어서 듣기",
-    "pausedHint": "잠시 멈췄어요. 이어서 들을까요?",
+    "resume": "이어서 말하기",
+    "pausedHint": "잠시 멈췄어요. 이어서 말할까요?",
     "autoFinishHint": "말이 멈추면 알아서 정리할게요"
   },
   "planning": {
-    "cancel": "그만두고 직접 입력",
+    "cancel": "취소하고 직접 입력",
     "title": "할 일로 나누는 중…"
   },
   "review": {
@@ -40,10 +40,10 @@
     "typeInstead": "직접 입력"
   },
   "failed": {
-    "keptText": "들은 데까지는 남겨뒀어요. 이어서 말하거나 직접 고쳐주세요.",
-    "consentRequired": "정리하려면 AI 동의가 필요해요. 다시 정리하기를 누르면 안내를 볼 수 있어요.",
+    "keptText": "들은 내용은 남겨뒀어요. 이어서 말하거나 직접 고쳐주세요.",
+    "consentRequired": "정리하려면 AI 동의가 필요해요. 다시 정리를 누르면 안내를 볼 수 있어요.",
     "resume": "이어서 말하기",
-    "retry": "다시 정리하기"
+    "retry": "다시 정리"
   },
   "limit": {
     "title": "이야기가 길어졌어요",

@@ -32,7 +32,7 @@ describe('TodoScopeSelectContent', () => {
     // Then
     expect(screen.getByText('11월 4일 할 일만 바뀌어요')).toBeTruthy();
     expect(screen.getByText('11월 4일부터 쭉 바뀌어요')).toBeTruthy();
-    expect(screen.queryByLabelText('모든 반복 할 일')).toBeNull();
+    expect(screen.queryByLabelText('이 반복 전체')).toBeNull();
     expect(onChange).toHaveBeenCalledWith('THIS_AND_FOLLOWING');
   });
 
@@ -69,11 +69,11 @@ describe('TodoScopeSelectContent', () => {
     );
 
     // When
-    await fireEvent.press(screen.getByLabelText('모든 반복 할 일'));
+    await fireEvent.press(screen.getByLabelText('이 반복 전체'));
 
     // Then
-    expect(screen.getByText('11월 4일 할 일만 지워져요')).toBeTruthy();
-    expect(screen.getByText('지난 할 일과 완료한 기록까지 모두 지워져요')).toBeTruthy();
+    expect(screen.getByText('11월 4일 할 일만 삭제돼요')).toBeTruthy();
+    expect(screen.getByText('지난 할 일과 완료한 기록까지 모두 삭제돼요')).toBeTruthy();
     expect(onChange).toHaveBeenCalledWith('ALL');
   });
 

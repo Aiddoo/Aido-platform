@@ -72,13 +72,13 @@
   },
   "permission": {
     "card": {
-      "askTitle": "할 일 알림을 받아 보세요",
-      "askDescription": "리마인더와 친구의 응원을 제때 알려드려요",
+      "askTitle": "할 일 알림을 받아보세요",
+      "askDescription": "리마인드 알림과 친구의 응원을 제때 알려드려요",
       "deniedTitle": "알림이 꺼져 있어요",
-      "requestDescription": "다시 허용하면 리마인더를 받을 수 있어요",
-      "settingsDescription": "설정에서 켜면 리마인더를 받을 수 있어요",
+      "requestDescription": "다시 허용하면 리마인드 알림을 받을 수 있어요",
+      "settingsDescription": "설정에서 켜면 리마인드 알림을 받을 수 있어요",
       "appOffTitle": "푸시 알림이 꺼져 있어요",
-      "appOffDescription": "알림 설정에서 푸시 알림을 켜 주세요",
+      "appOffDescription": "알림 설정에서 푸시 알림을 켜주세요",
       "continue": "계속",
       "openSettings": "설정 열기",
       "turnOn": "켜기",
@@ -86,7 +86,7 @@
     },
     "dialog": {
       "title": "알림을 보내드려도 될까요?",
-      "description": "할 일 리마인더, 친구의 응원·콕, 연속 기록 소식을 놓치지 않게 알려드려요. 언제든 설정에서 바꿀 수 있어요.",
+      "description": "할 일 리마인드, 친구의 응원·콕, 연속 기록 소식을 놓치지 않게 알려드려요. 언제든 설정에서 바꿀 수 있어요.",
       "continue": "계속",
       "later": "나중에"
     },

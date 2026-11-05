@@ -116,6 +116,6 @@ describe('QuickVoicePanel.Failed', () => {
     );
 
     // Then
-    expect(screen.getByText(/들은 데까지는 남겨뒀어요/)).toBeTruthy();
+    expect(screen.getByText(/들은 내용은 남겨뒀어요/)).toBeTruthy();
   });
 });

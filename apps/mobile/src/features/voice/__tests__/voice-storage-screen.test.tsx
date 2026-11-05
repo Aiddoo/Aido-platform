@@ -67,7 +67,7 @@ async function renderScreen({ hasRecording = true }: { hasRecording?: boolean } 
   return { storage, files };
 }
 
-describe('말로 메모 저장 공간', () => {
+describe('녹음 저장 공간', () => {
   test('전체 용량과 메모별 녹음 용량을 보여 준다', async () => {
     // Given
     await renderScreen();
@@ -80,7 +80,7 @@ describe('말로 메모 저장 공간', () => {
     expect(screen.getByText('주간 회의')).toBeTruthy();
   });
 
-  test('녹음이 없으면 없다고 알리고 지우기 버튼을 숨긴다', async () => {
+  test('녹음이 없으면 없다고 알리고 삭제 버튼을 숨긴다', async () => {
     // Given
     await renderScreen({ hasRecording: false });
 
@@ -92,13 +92,13 @@ describe('말로 메모 저장 공간', () => {
     expect(screen.queryByTestId('voice-storage-remove-all')).toBeNull();
   });
 
-  test('확인을 누르면 녹음만 지우고 글자와 요약은 남는다', async () => {
+  test('확인을 누르면 녹음만 삭제하고 들은 내용과 요약은 남는다', async () => {
     // Given
     const { storage, files } = await renderScreen();
     fireEvent.press(await screen.findByTestId('voice-storage-remove')).catch(jest.fn());
 
     // When
-    await fireEvent.press(await screen.findByText('지우기'));
+    await fireEvent.press(await screen.findByText('삭제'));
 
     // Then
     await waitFor(() => expect(screen.getByTestId('voice-storage-total')).toHaveTextContent('0KB'));

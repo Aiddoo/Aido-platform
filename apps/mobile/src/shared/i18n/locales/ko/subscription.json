@@ -8,10 +8,10 @@
     "monthlyEquivalent": "월 {{price}} 상당"
   },
   "toast": {
-    "purchaseSuccess": "구독이 완료되었어요!",
+    "purchaseSuccess": "구독을 시작했어요!",
     "purchaseSyncPending": "결제가 반영되기까지 잠시 걸릴 수 있어요",
     "paymentPending": "결제 승인 대기 중이에요. 승인 후 자동으로 반영돼요.",
-    "restoreSuccess": "구매가 복원되었어요!",
+    "restoreSuccess": "구매를 복원했어요!",
     "restoreEmpty": "복원할 구매 내역이 없어요",
     "purchaseSuccessWithReward": "구독을 시작했어요. 남은 초대 보상은 구독이 끝나면 이어져요",
     "restoreEmptyWithReward": "복원할 구매가 없어요. 초대 보상은 그대로 유지돼요"
@@ -21,10 +21,10 @@
     "storeProblem": "스토어가 잠시 응답하지 않아요",
     "offeringsUnavailable": "구독 상품을 불러오지 못했어요",
     "network": "스토어에 연결하지 못했어요",
-    "purchaseCancelled": "구매가 취소되었어요",
+    "purchaseCancelled": "구매를 취소했어요",
     "paymentPending": "결제 승인 대기 중이에요",
-    "purchaseFailed": "구매에 실패했어요",
-    "restoreFailed": "구매 복원에 실패했어요"
+    "purchaseFailed": "구매를 마치지 못했어요",
+    "restoreFailed": "구매를 복원하지 못했어요"
   },
   "benefits": {
     "aiParsing": {
@@ -68,7 +68,7 @@
   "subscriber": {
     "benefitsTitle": "이용 중인 혜택",
     "manageButton": "구독 관리 (스토어 설정)",
-    "manageOpenFailed": "스토어 구독 관리를 열지 못했어요. 스토어 앱의 구독 메뉴에서 확인해 주세요",
+    "manageOpenFailed": "스토어 구독 관리를 열지 못했어요. 스토어 앱의 구독 메뉴에서 확인해주세요",
     "restoreButton": "이전 구매 복원",
     "subscribeAfterGrantButton": "구독하고 계속 쓰기"
   },
@@ -149,7 +149,7 @@
       "store": "스토어에 연결하지 못했어요. 잠시 후 다시 시도해주세요",
       "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요",
       "restore": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
-      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주시면 빠르게 확인할게요",
+      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주세요. 빠르게 확인할게요",
       "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 후 다시 시도하거나 문의를 남겨주세요"
     },
     "contactSupport": "문의하기"

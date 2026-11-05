@@ -6,7 +6,7 @@
     "closeLabel": "Close feature guide"
   },
   "entry": {
-    "mypage": "Aido Feature Guide",
+    "mypage": "Aido feature guide",
     "feedTitle": "See what's new again",
     "feedDescription": "You can reopen this guide anytime for 14 days",
     "openLabel": "Open Aido feature guide",
@@ -25,10 +25,10 @@
     },
     "voicePlan": {
       "title": "AI fills in dates\nand repeats for you",
-      "description": "Repeats, date ranges, times, sub-tasks, and \"only me\" are picked up and filled in."
+      "description": "Repeats, date ranges, times, subtasks, and private to-dos are picked up and filled in."
     },
     "voiceFacts": {
-      "title": "Audio files never\nleave for our servers",
+      "title": "Audio files aren't sent\nto Aido's servers",
       "description": "Try it free {{freeCount}} times a month. If it fails, it doesn't count.",
       "cta": "Try it now",
       "ctaLabel": "Speak to add from the new to-do sheet"
@@ -52,25 +52,25 @@
       },
       "groceries": {
         "title": "Groceries",
-        "detail": "3 sub-tasks · milk, eggs, tofu"
+        "detail": "3 subtasks · milk, eggs, tofu"
       },
       "meeting": {
         "title": "Prep team meeting",
-        "detail": "Fri 3:00 PM · Only me"
+        "detail": "Fri 3:00 PM · Private"
       }
     },
     "facts": {
       "privacy": {
-        "title": "Audio files aren't sent to Aido servers",
-        "description": "Only the text is used. If your device can't recognize speech itself, Apple or Google speech recognition may be used."
+        "title": "Audio files aren't sent to Aido's servers",
+        "description": "Only the text is used. If your device can't turn speech into text itself, Apple or Google speech recognition may be used."
       },
       "free": {
         "title": "Free to try",
-        "description": "Failed tries don't count. You'll see what's left next to the mic."
+        "description": "If it fails, it doesn't count. You'll see what's left next to the mic."
       },
       "same": {
         "title": "Just like to-dos you type",
-        "description": "Reminders, repeats, and sub-tasks work the same."
+        "description": "Reminders, repeats, and subtasks work the same."
       }
     }
   }

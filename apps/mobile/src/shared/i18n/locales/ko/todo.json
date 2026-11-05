@@ -3,25 +3,25 @@
     "todoAdded": "할 일을 추가했어요!",
     "todoUpdated": "할 일을 수정했어요",
     "todoDeleted": "할 일을 삭제했어요",
-    "scheduleChanged": "일정을 변경했어요",
+    "scheduleChanged": "날짜와 시간을 변경했어요",
     "categoryChanged": "카테고리를 변경했어요",
     "categoryAdded": "카테고리를 추가했어요",
     "categoryUpdated": "카테고리를 수정했어요",
     "categoryDeleted": "카테고리를 삭제했어요",
     "recurringAdded": "반복 할 일을 추가했어요!",
-    "recurringCategoryLimit": "반복 할 일을 생성하면 카테고리 한도를 초과해요. 날짜 범위를 줄여주세요.",
-    "categoryLimitReached": "이 카테고리의 할 일이 최대 한도에 도달했어요. 완료하거나 다른 카테고리로 이동해 주세요.",
-    "subTodoAddFailed": "항목 추가에 실패했어요",
-    "subTodoUpdateFailed": "항목 수정에 실패했어요",
-    "subTodoDeleteFailed": "항목 삭제에 실패했어요",
-    "parseFailed": "할 일을 제대로 이해하지 못했어요. 다시 시도해주세요.",
+    "recurringCategoryLimit": "반복 할 일을 만들면 카테고리 한도를 넘어요. 기간을 줄여주세요.",
+    "categoryLimitReached": "이 카테고리에 할 일을 더 추가할 수 없어요. 완료하거나 다른 카테고리로 옮겨주세요.",
+    "subTodoAddFailed": "하위 할 일을 추가하지 못했어요",
+    "subTodoUpdateFailed": "하위 할 일을 수정하지 못했어요",
+    "subTodoDeleteFailed": "하위 할 일을 삭제하지 못했어요",
+    "parseFailed": "입력한 내용으로 할 일을 만들지 못했어요. 내용을 바꿔서 다시 시도해주세요.",
     "nudgeSent": "콕 찔렀어요!",
     "remindNudgeSent": "함께 시작하자고 콕 찔렀어요!",
-    "addFailedRetry": "잠시 후 다시 추가해 보세요",
-    "updateFailedRetry": "잠시 후 다시 수정해 보세요",
-    "deleteFailedRetry": "잠시 후 다시 삭제해 보세요",
-    "changeFailedRetry": "잠시 후 다시 변경해 보세요",
-    "retryLater": "잠시 후 다시 시도해 주세요",
+    "addFailedRetry": "잠시 후 다시 추가해보세요",
+    "updateFailedRetry": "잠시 후 다시 수정해보세요",
+    "deleteFailedRetry": "잠시 후 다시 삭제해보세요",
+    "changeFailedRetry": "잠시 후 다시 변경해보세요",
+    "retryLater": "잠시 후 다시 시도해주세요",
     "seriesStopped": "반복을 끝냈어요",
     "series": {
       "not-found": {
@@ -30,7 +30,7 @@
       },
       "limit": {
         "title": "반복 할 일은 최대 {{limit}}개까지 만들 수 있어요",
-        "description": "쓰지 않는 반복을 끝내거나 지운 뒤 다시 추가해주세요."
+        "description": "쓰지 않는 반복을 끝내거나 삭제한 뒤 다시 추가해주세요."
       },
       "no-dates": {
         "title": "선택한 반복에 맞는 날짜가 없어요",
@@ -46,10 +46,10 @@
       },
       "too-many-past": {
         "title": "시작일이 너무 오래전이에요",
-        "description": "지난 회차가 너무 많아요. 시작일을 더 가까운 날로 골라주세요."
+        "description": "지난 날짜가 너무 많아요. 시작일을 더 가까운 날로 골라주세요."
       },
       "category-full": {
-        "title": "이 카테고리의 할 일이 가득 찼어요",
+        "title": "이 카테고리에 할 일을 더 추가할 수 없어요",
         "description": "할 일을 완료하거나 다른 카테고리를 골라주세요. 고친 내용은 저장되지 않았어요."
       },
       "ended": {
@@ -58,7 +58,7 @@
       },
       "not-created": {
         "title": "반복 할 일을 만들지 못했어요",
-        "description": "할 일 하나만 저장됐어요. 잠시 뒤 다시 시도해주세요."
+        "description": "할 일 하나만 저장됐어요. 잠시 후 다시 시도해주세요."
       }
     }
   },
@@ -66,7 +66,7 @@
     "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
   },
   "form": {
-    "titleRequired": "제목을 입력해 주세요",
+    "titleRequired": "제목을 입력해주세요",
     "titleMaxLength": "제목은 200자까지 입력할 수 있어요",
     "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"
   },
@@ -124,12 +124,12 @@
     "deleteTitle": "반복 할 일 삭제",
     "thisOnly": "이 할 일만",
     "thisAndFollowing": "이 할 일과 이후 할 일",
-    "allRepeats": "모든 반복 할 일",
+    "allRepeats": "이 반복 전체",
     "editThisOnlyHint": "{{date}} 할 일만 바뀌어요",
     "editFollowingHint": "{{date}}부터 쭉 바뀌어요",
-    "deleteThisOnlyHint": "{{date}} 할 일만 지워져요",
-    "deleteFollowingHint": "{{date}}부터 쭉 지워져요",
-    "deleteAllHint": "지난 할 일과 완료한 기록까지 모두 지워져요"
+    "deleteThisOnlyHint": "{{date}} 할 일만 삭제돼요",
+    "deleteFollowingHint": "{{date}}부터 쭉 삭제돼요",
+    "deleteAllHint": "지난 할 일과 완료한 기록까지 모두 삭제돼요"
   },
   "chip": {
     "repeat": "반복",
@@ -139,15 +139,15 @@
     "category": "카테고리"
   },
   "add": {
-    "placeholder": "무엇을 하고 싶으신가요?",
+    "placeholder": "무엇을 하고 싶나요?",
     "submit": "선택하기"
   },
   "subTodo": {
-    "addItem": "항목 추가",
-    "placeholder": "항목을 입력하세요",
-    "voiceInput": "음성 입력",
-    "voiceTitle": "음성으로 입력해요",
-    "voiceHint": "마이크 버튼을 누르고 말하면\n음성이 텍스트로 입력돼요"
+    "addItem": "하위 할 일 추가",
+    "placeholder": "하위 할 일을 입력해주세요",
+    "voiceInput": "말로 입력",
+    "voiceTitle": "말로 입력해요",
+    "voiceHint": "마이크 버튼을 누르고 말하면\n글자로 입력돼요"
   },
   "actions": {
     "edit": "수정하기",
@@ -156,8 +156,8 @@
     "changeDate": "날짜 변경",
     "changeTime": "시간 변경",
     "changeCategory": "카테고리 변경",
-    "doToday": "오늘하기",
-    "doTomorrow": "내일하기",
+    "doToday": "오늘 하기",
+    "doTomorrow": "내일 하기",
     "changeSubmit": "변경하기",
     "more": "더보기",
     "complete": "완료하기",
@@ -169,7 +169,7 @@
   },
   "friendTodo": {
     "emptyTitle": "친구가 아직 할 일을 만들지 않았어요",
-    "emptyDescription": "콕 눌러 오늘의 시작을 응원해 보세요",
+    "emptyDescription": "콕 눌러 오늘의 시작을 응원해보세요",
     "nudge": "콕 찌르기",
     "alreadyNudged": "이미 콕 찔렀어요"
   },
@@ -181,7 +181,7 @@
     "promptSuffix": "응원을 보내볼까요?",
     "hintPrefix": "오늘을 함께하고 싶다면",
     "hintHighlight": "콕",
-    "hintSuffix": "을 눌러 마음을 전해 보세요",
+    "hintSuffix": "을 눌러 마음을 전해보세요",
     "remaining": "오늘 {{count}}번 남았어요 (구독하면 무제한)",
     "sheetTitle": "친구에게 콕 응원 보내기",
     "whenTodo": "이 할 일을 함께 응원해요: {{title}}",
@@ -196,7 +196,7 @@
   },
   "category": {
     "nameLabel": "카테고리 이름",
-    "namePlaceholder": "카테고리 이름을 입력해 주세요",
+    "namePlaceholder": "카테고리 이름을 입력해주세요",
     "deleteTitle": "{{name}} 카테고리를 삭제할까요?",
     "deleteDescription": "삭제하면 되돌릴 수 없어요",
     "todoCount": "할 일 {{count}}개가 포함되어 있어요",
@@ -212,10 +212,10 @@
   "feed": {
     "loading": "불러오는 중...",
     "suggestionsLoading": "제안을 불러오는 중...",
-    "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
-    "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요 !",
+    "routineSuggestion": "딱 맞는 루틴을 제안해드려요!",
+    "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요!",
     "preparing": "이번 주 제안을 준비 중이에요",
-    "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해 주세요"
+    "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요"
   },
   "friendStrip": {
     "me": "나",
@@ -226,7 +226,7 @@
     "loadMoreFailedLabel": "친구를 더 불러오지 못했어요. 다시 시도",
     "emptyInvite": "초대하기",
     "emptyInviteHint": "친구를 초대하면 서로의 할 일을 보고 응원할 수 있어요",
-    "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해 보세요",
+    "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해보세요",
     "hintDismiss": "친구 안내 닫기"
   },
   "activation": {
@@ -248,7 +248,7 @@
     "emptyTitle": "선택한 할 일이 없어요",
     "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
     "unavailableTitle": "지금은 볼 수 없는 할 일이에요",
-    "unavailableDescription": "할 일이 지워졌거나 친구 관계가 바뀌었을 수 있어요",
+    "unavailableDescription": "할 일이 삭제됐거나 친구 관계가 바뀌었을 수 있어요",
     "title": "할 일",
     "open": "댓글",
     "pageTitle": "할 일 상세",
@@ -301,24 +301,24 @@
     "replyStatus": "답장: {{reply}}",
     "waiting": "답장을 기다리고 있어요",
     "thanked": "완료 소식과 고마운 마음을 전했어요",
-    "thanksPendingTitle": "콕 찔러 준 친구 {{count}}명",
+    "thanksPendingTitle": "콕 찔러준 친구 {{count}}명",
     "thanksPendingDescription": "완료 소식과 함께 고마움을 전해요",
     "thanksLoadFailed": "고마움 현황을 불러오지 못했어요",
-    "thanksNewPendingDescription": "새로 콕 찔러 준 친구 {{count}}명이 있어요",
+    "thanksNewPendingDescription": "새로 콕 찔러준 친구 {{count}}명이 있어요",
     "thanksSentTitle": "친구 {{count}}명에게 고마움을 전했어요",
     "thanksQuickAction": "고마워요",
     "thanksSendMore": "더 전하기",
-    "thanksQuickActionLabel": "콕 찔러 준 친구 {{count}}명에게 고마움 전하기",
+    "thanksQuickActionLabel": "콕 찔러준 친구 {{count}}명에게 고마움 전하기",
     "thanksTitle": "친구에게 고마움을 전해요",
-    "thanksDescription": "응원해 준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
+    "thanksDescription": "응원해준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
     "thanksEmpty": "지금은 고마움을 전할 친구가 없어요",
     "thanksEmptyDescription": "이미 고마움을 전했거나 친구 관계가 바뀌었을 수 있어요",
     "thanksSent": "친구에게 고마운 마음을 전했어요",
     "alreadyThanked": "이미 고마운 마음을 전했어요",
-    "thanksLoadError": "응원해 준 친구들을 불러오지 못했어요",
+    "thanksLoadError": "응원해준 친구들을 불러오지 못했어요",
     "encouragementTitle": "오늘도 네 속도로, 응원할게!",
     "replyCompletionHint": "답장으로 할 일이 완료되지는 않아요",
-    "completedThanksHint": "해냈네요! 응원해 준 친구에게 고마움을 전해볼까요?",
+    "completedThanksHint": "해냈네요! 응원해준 친구에게 고마움을 전해볼까요?",
     "thanksSelectionHint": "이 목록의 친구 모두에게 전해요. 이후 받은 콕에는 따로 고마움을 전할 수 있어요",
     "thanksSendCount": "{{count}}명에게 고마움 전하기"
   }

@@ -1,10 +1,10 @@
 {
   "titles": {
-    "create": "New Memo",
-    "aiReview": "Turn note into to-dos"
+    "create": "New memo",
+    "aiReview": "Turn memo into to-dos"
   },
   "tab": {
-    "addMemo": "Add Memo"
+    "addMemo": "Add memo"
   },
   "list": {
     "emptyTitle": "No memos yet",
@@ -21,21 +21,21 @@
     "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",
     "unpin": "Unpin memo",
-    "convertToTodo": "Convert to to-do",
+    "convertToTodo": "Turn into to-dos",
     "deleteConfirmTitle": "Delete this memo?",
-    "deleteConfirmDescription": "Deleted memos can't be recovered"
+    "deleteConfirmDescription": "This can't be undone"
   },
   "toasts": {
-    "convertedOne": "Converted the memo into a to-do",
+    "convertedOne": "Turned your memo into to-dos",
     "deleted": "Memo deleted",
     "retryLater": "Please try again later",
-    "reorderFailed": "Failed to change the order",
+    "reorderFailed": "Couldn't change the order",
     "deleteRetry": "Please try deleting again later",
-    "limitReached": "You've reached the memo limit",
+    "limitReached": "You can't add more memos",
     "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
   },
   "aiReview": {
-    "draftLost": "We couldn't load the split to-dos. Please split the note again.",
+    "draftLost": "We couldn't load the split to-dos. Please split the memo again",
     "goBack": "Go back",
     "noCategory": "Couldn't find a category"
   }

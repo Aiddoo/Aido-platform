@@ -102,7 +102,7 @@ describe('PushPermissionCard — 홈 알림 안내', () => {
     fireEvent.press(screen.getByText('설정 열기'));
 
     // Then
-    expect(screen.getByText('설정에서 켜면 리마인더를 받을 수 있어요')).toBeTruthy();
+    expect(screen.getByText('설정에서 켜면 리마인드 알림을 받을 수 있어요')).toBeTruthy();
     await waitFor(() => {
       expect(gateway.openSettings).toHaveBeenCalledTimes(1);
     });

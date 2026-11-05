@@ -1,34 +1,34 @@
 {
   "mypage": {
-    "header": "My Account",
+    "header": "My account",
     "sections": {
       "activity": "Activity",
       "subscription": "Subscription",
       "settings": "Settings"
     },
     "items": {
-      "friends": "Manage Friends",
-      "categories": "Manage Categories",
-      "achievements": "Achievement Badges",
-      "aiReports": "AI Reports",
+      "friends": "Manage friends",
+      "categories": "Manage categories",
+      "achievements": "Achievement badges",
+      "aiReports": "AI reports",
       "notifications": "Notifications",
       "theme": "Theme",
-      "fontSize": "Font Size",
-      "appIcon": "App Icon",
-      "subscription": "Manage Subscription",
-      "inquiry": "Contact Us",
-      "terms": "Terms & Policies",
+      "fontSize": "Font size",
+      "appIcon": "App icon",
+      "subscription": "Manage subscription",
+      "inquiry": "Contact us",
+      "terms": "Terms & policies",
       "blockedUsers": "Blocked users"
     }
   },
   "logout": {
-    "action": "Sign Out",
-    "confirmTitle": "Sign Out",
+    "action": "Sign out",
+    "confirmTitle": "Sign out",
     "confirmDescription": "Are you sure you want to sign out?"
   },
   "withdraw": {
-    "action": "Delete Account",
-    "confirmTitle": "Delete Account",
+    "action": "Delete account",
+    "confirmTitle": "Delete account",
     "confirmDescription": "You can restore your account within 30 days.\nAre you sure you want to delete it?",
     "confirmAction": "Delete"
   },
@@ -44,7 +44,7 @@
       "basic": "Basic"
     },
     "imageSheet": {
-      "title": "Choose Profile Image",
+      "title": "Choose profile image",
       "selectedAlt": "Selected profile image",
       "clear": "Clear",
       "save": "Save"
@@ -54,7 +54,7 @@
     "header": "Enter your name",
     "label": "Name",
     "placeholder": "Enter your name",
-    "submit": "Change Name",
+    "submit": "Change name",
     "required": "Please enter your name",
     "maxLength": "Name must be 20 characters or fewer"
   }

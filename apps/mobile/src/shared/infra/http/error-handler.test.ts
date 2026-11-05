@@ -149,6 +149,6 @@ describe('resolveMessage (KyHttpClient의 4xx → ApiError 분기에서 사용)'
 
   it('미지 코드는 서버 메시지, 그것도 없으면 폴백을 사용한다', () => {
     expect(resolveMessage('UNKNOWN_9999', '서버가 내려준 메시지')).toBe('서버가 내려준 메시지');
-    expect(resolveMessage('UNKNOWN_9999', '')).toBe('알 수 없는 오류가 발생했어요');
+    expect(resolveMessage('UNKNOWN_9999', '')).toBe('문제가 생겼어요');
   });
 });

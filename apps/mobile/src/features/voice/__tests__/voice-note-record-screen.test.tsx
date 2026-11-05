@@ -97,7 +97,7 @@ describe('녹음 화면', () => {
     expect(screen.getByTestId('voice-note-pause')).toBeTruthy();
   });
 
-  test('일시정지하면 들은 내용이 남아 있다고 알리고 이어서 듣기와 여기까지 정리를 보인다', async () => {
+  test('일시정지하면 들은 내용이 남아 있다고 알리고 이어서 녹음과 여기까지 정리를 보인다', async () => {
     // Given
     const { speechRecognizer } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -106,7 +106,7 @@ describe('녹음 화면', () => {
     await fireEvent.press(screen.getByTestId('voice-note-pause'));
 
     // Then
-    expect(screen.getByText('잠깐 멈췄어요')).toBeTruthy();
+    expect(screen.getByText('잠시 멈췄어요')).toBeTruthy();
     expect(screen.getByTestId('voice-note-resume')).toBeTruthy();
     expect(screen.getByTestId('voice-note-summarize')).toBeTruthy();
     expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
@@ -161,7 +161,7 @@ describe('녹음 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  test('이어 듣기를 누른 직후 닫아도 글자가 있으면 지우지 않고 묻는다', async () => {
+  test('이어서 녹음을 누른 직후 닫아도 글자가 있으면 지우지 않고 묻는다', async () => {
     // Given
     const { speechRecognizer, storage } = await renderRecordScreen();
     await say(speechRecognizer, '첫 문장.');
@@ -193,7 +193,7 @@ describe('녹음 화면', () => {
 
     // When
     await screen.findByText('녹음을 끝낼까요?');
-    await fireEvent.press(screen.getAllByText('끝내기').at(-1) ?? screen.getByText('계속 듣기'));
+    await fireEvent.press(screen.getAllByText('끝내기').at(-1) ?? screen.getByText('계속 녹음'));
     await act(async () => speechRecognizer.emit({ type: 'end' }));
 
     // Then

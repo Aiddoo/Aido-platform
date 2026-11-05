@@ -24,7 +24,7 @@
       "aiTips": "AI 팁"
     },
     "dday": {
-      "today": "오늘 생성!",
+      "today": "오늘 도착!",
       "inDays": "D-{{count}}"
     },
     "statusBanner": {
@@ -52,7 +52,7 @@
     },
     "unavailable": {
       "title": "리포트를 찾을 수 없어요",
-      "description": "지워졌거나 더는 볼 수 없는 리포트예요",
+      "description": "삭제됐거나 더는 볼 수 없는 리포트예요",
       "backToList": "리포트 목록으로"
     }
   },
@@ -71,20 +71,20 @@
       "accept": "수락"
     },
     "paywall": {
-      "title": "AI가 투두를 제안해드려요",
-      "description": "반복 패턴을 분석해서 맞춤 투두를 추천받을 수 있어요",
+      "title": "AI가 할 일을 제안해드려요",
+      "description": "반복 패턴을 분석해서 맞춤 할 일을 추천받을 수 있어요",
       "sampleTitle": "매일 아침 스트레칭",
       "sampleConfidence": "신뢰도 92%",
       "sampleSchedule": "월, 화, 수, 목, 금 · 07:30",
-      "sampleReason": "최근 2주간 아침 운동 패턴이 감지되었어요",
+      "sampleReason": "최근 2주간 아침 운동 패턴이 보여요",
       "subscribeCta": "구독하고 제안 받기"
     },
     "category": {
-      "submit": "생성하기"
+      "submit": "만들기"
     },
     "toasts": {
       "premiumOnly": "AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요",
-      "retryLater": "잠시 후 다시 시도해 주세요",
+      "retryLater": "잠시 후 다시 시도해주세요",
       "accepted": "제안을 수락해서 반복 할 일을 만들었어요.",
       "rejected": "제안을 거절했어요."
     }

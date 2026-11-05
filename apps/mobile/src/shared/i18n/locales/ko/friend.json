@@ -24,7 +24,7 @@
   "list": {
     "friendCount": "총 {{count}}명",
     "requestCount": "총 {{count}}개 요청",
-    "emptyTitle": "친구를 추가해 보세요",
+    "emptyTitle": "친구를 추가해보세요",
     "emptyDescription": "검색 아이콘을 눌러 친구를 찾을 수 있어요",
     "emptyReceived": "아직 받은 요청이 없어요",
     "emptySent": "아직 보낸 요청이 없어요",
@@ -35,7 +35,7 @@
     "loadFailed": "친구 목록을 불러오지 못했어요"
   },
   "add": {
-    "title": "친구를 추가해 보세요",
+    "title": "친구를 추가해보세요",
     "description": "친구와 할 일을 공유하고 콕 찔러줄 수 있어요",
     "tagLabel": "친구 해시태그",
     "submit": "친구 추가하기"

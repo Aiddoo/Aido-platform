@@ -1,36 +1,36 @@
 {
   "titles": {
     "theme": "Theme",
-    "fontSize": "Font Size",
+    "fontSize": "Font size",
     "language": "Language",
-    "terms": "Terms & Policies",
-    "inquiry": "Contact Us",
-    "linkedAccounts": "Linked Accounts",
-    "appIcon": "App Icon",
+    "terms": "Terms & policies",
+    "inquiry": "Contact us",
+    "linkedAccounts": "Linked accounts",
+    "appIcon": "App icon",
     "profile": "Profile",
-    "editName": "Edit Name",
-    "changePassword": "Change Password",
-    "deleteAccount": "Delete Account",
-    "subscription": "Manage Subscription",
+    "editName": "Edit name",
+    "changePassword": "Change password",
+    "deleteAccount": "Delete account",
+    "subscription": "Manage subscription",
     "categorySettings": "Categories",
     "blockedUsers": "Blocked users",
-    "voiceStorage": "Voice Note Storage"
+    "voiceStorage": "Recording storage"
   },
   "language": {
     "system": "System default",
     "systemDescription": "Follows your device language"
   },
   "theme": {
-    "light": "Light Mode",
-    "dark": "Dark Mode",
+    "light": "Light mode",
+    "dark": "Dark mode",
     "system": "System default"
   },
   "fontSize": {
-    "xsmall": "Extra Small",
+    "xsmall": "Extra small",
     "small": "Small",
     "medium": "Medium",
     "large": "Large",
-    "xlarge": "Extra Large",
+    "xlarge": "Extra large",
     "sample": "The quick brown fox 123"
   },
   "terms": {
@@ -39,13 +39,13 @@
     "agreedAt": "Agreed on: {{date}}",
     "version": "Version: {{version}}",
     "notAgreed": "Not agreed",
-    "marketing": "Marketing Emails",
+    "marketing": "Marketing emails",
     "marketingDescription": "Receive events and promotional updates",
     "marketingPush": "Promotional push notifications",
     "marketingPushDescription": "Receive recommendations and return reminders by push",
     "aiDataSharing": {
       "label": "AI data sharing",
-      "description": "Sends what you type and your speech turned into text to Anthropic, Google, and OpenAI to organize it into to-dos. If your device can't recognize speech on its own, Apple or Google speech recognition may turn your voice into text. Audio files are never sent to Aido servers.",
+      "description": "Sends what you type and your speech turned into text to Anthropic, Google, and OpenAI to organize it into to-dos. If your device can't recognize speech on its own, Apple or Google speech recognition may turn your voice into text. Audio files are never sent to Aido's servers.",
       "descriptionGoogleOnly": "Sends what you type to Google Gemini to organize it into to-dos",
       "agreedOn": "Agreed on {{date}}",
       "withdrawTitle": "Withdraw consent?",
@@ -58,17 +58,17 @@
   },
   "categorySettings": {
     "header": "Edit your categories\nor change their order",
-    "editTab": "Edit Categories",
+    "editTab": "Edit categories",
     "reorderTab": "Reorder",
-    "add": "Add Category"
+    "add": "Add category"
   },
   "voiceStorage": {
     "totalLabel": "Recordings on this device",
-    "description": "Audio files are never sent to Aido servers. Voice notes and their audio are removed automatically after 30 days.",
+    "description": "Audio files aren't sent to Aido's servers. Voice notes and their audio are deleted automatically after 30 days.",
     "empty": "No saved recordings",
     "removeOneTitle": "Delete this recording?",
     "removeAllTitle": "Delete all recordings?",
-    "removeDescription": "The text and summary stay. Only playback goes away. This can't be undone.",
+    "removeDescription": "The text and summary stay. Only the audio is deleted, so you can't play it back. This can't be undone.",
     "removeConfirm": "Delete",
     "removeCancel": "Cancel",
     "removeAll": "Delete all recordings"

@@ -15,12 +15,12 @@
     "chooseIcon": "Choose the app icon shown on your home screen"
   },
   "restartDialog": {
-    "title": "Change App Icon",
+    "title": "Change app icon",
     "description": "Changing the icon will restart the app.",
     "confirm": "Change"
   },
   "errorDialog": {
-    "title": "Couldn't Change Icon",
+    "title": "Couldn't change icon",
     "description": "Could not change the icon. Please try again in a moment."
   }
 }

@@ -23,8 +23,8 @@
     "network": "Couldn't connect to the store",
     "purchaseCancelled": "Purchase canceled",
     "paymentPending": "Payment approval is pending",
-    "purchaseFailed": "Purchase failed",
-    "restoreFailed": "Failed to restore purchases"
+    "purchaseFailed": "Couldn't complete your purchase",
+    "restoreFailed": "Couldn't restore purchases"
   },
   "benefits": {
     "aiParsing": {
@@ -75,9 +75,9 @@
   "paywall": {
     "title": "Upgrade to Premium",
     "subtitle": "Get more out of every feature",
-    "futureIncluded": "All future premium features are included too",
+    "futureIncluded": "All future Premium features are included too",
     "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
-    "moreBenefits": "More premium benefits",
+    "moreBenefits": "More Premium benefits",
     "subscribeButton": "Subscribe",
     "renewalNotice": {
       "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
@@ -100,7 +100,7 @@
   "receipt": {
     "paid": {
       "title": "Premium active",
-      "description": "You're enjoying all premium features"
+      "description": "You're enjoying all Premium features"
     },
     "reward": {
       "title": "Premium from an invite reward",

@@ -2,24 +2,24 @@
   "plan": {
     "title_one": "Found {{count}} to-do",
     "title_other": "Found {{count}} to-dos",
-    "titleMemoOnly": "Saved as a note",
+    "titleMemoOnly": "Sorted into a memo",
     "hint": "Pick the ones to add on the right. Tap to edit.",
     "omitted_one": "{{count}} to-do couldn't be included here.",
     "omitted_other": "{{count}} to-dos couldn't be included here.",
     "empty": "No to-dos found",
     "duplicate": "Already added",
     "select": "Add {{title}}",
-    "memoCaption": "Saved as a note",
+    "memoCaption": "Saves as a memo",
     "apply_one": "Add {{count}} to-do",
     "apply_other": "Add {{count}} to-dos",
-    "applyMemo": "Save note"
+    "applyMemo": "Save memo"
   },
   "applied": {
     "todos_one": "Added {{count}} to-do",
     "todos_other": "Added {{count}} to-dos",
-    "todosAndMemo_one": "Saved {{count}} to-do and a note",
-    "todosAndMemo_other": "Saved {{count}} to-dos and a note",
-    "memo": "Saved your note"
+    "todosAndMemo_one": "Saved {{count}} to-do and a memo",
+    "todosAndMemo_other": "Saved {{count}} to-dos and a memo",
+    "memo": "Saved your memo"
   },
   "edit": {
     "confirm": "Done",
@@ -35,8 +35,8 @@
       "description": "Check your connection and try again."
     },
     "limit": {
-      "title": "You've used all your tries",
-      "description": "Check your limit."
+      "title": "You're out of tries this month",
+      "description": "More on the 1st of next month."
     },
     "too-long": {
       "title": "That's too long",
@@ -48,11 +48,11 @@
     },
     "ai-unavailable": {
       "title": "Couldn't sort it out right now",
-      "description": "Please try again later."
+      "description": "Please try again in a moment."
     },
     "unknown": {
       "title": "Something went wrong",
-      "description": "Please try again later."
+      "description": "Please try again in a moment."
     },
     "rejected": {
       "title": "Some cards can't be saved",
@@ -63,7 +63,7 @@
       "description": "Tap again to save the current version."
     },
     "memo-limit": {
-      "title": "Your memos are full",
+      "title": "You can't add more memos",
       "description": "Delete a memo you don't need, then save again."
     },
     "source-memo-missing": {
