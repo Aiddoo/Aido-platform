@@ -47,6 +47,7 @@
     "usedUp": "Used up this month",
     "notCharged": "This won't count",
     "tooLong": "This is too long to summarize at once.",
+    "offline": "You can summarize again once you're online.",
     "kept": "Your text is still here."
   },
   "start": {

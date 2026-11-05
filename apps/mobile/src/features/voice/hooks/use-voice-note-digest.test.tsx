@@ -199,6 +199,20 @@ describe('useVoiceNoteDigest', () => {
     onlineManager.setOnline(true);
   });
 
+  test('오프라인이 확실하면 서버에 보내지 않고 바로 네트워크 실패로 알린다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const { httpClient } = await renderDigest();
+
+    // When
+    await fireEvent.press(screen.getByTestId('digest'));
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('failure')).toHaveTextContent('network:false'));
+    expect(httpClient.post).not.toHaveBeenCalled();
+    onlineManager.setOnline(true);
+  });
+
   test('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {
     // Given
     const { httpClient, storage } = await renderDigest();

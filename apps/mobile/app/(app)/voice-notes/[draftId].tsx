@@ -156,6 +156,7 @@ function VoiceNoteDigestScreen({ note }: { note: VoiceNote }) {
           </Text>
           <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
             {failure.cause === 'too-long' ? `${t('voiceNote:digest.tooLong')} ` : ''}
+            {failure.cause === 'network' ? `${t('voiceNote:digest.offline')} ` : ''}
             {t('voiceNote:digest.kept')}
             {failure.isNotCharged ? ` ${t('voiceNote:digest.notCharged')}` : ''}
           </Text>

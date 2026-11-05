@@ -1,7 +1,8 @@
 import { useVoiceService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
+import { NetworkError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
@@ -32,8 +33,13 @@ export const useCreateVoiceNoteDigestMutationOptions = () => {
     ...planInProgressRetryOptions,
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
-    mutationFn: async ({ input, idempotencyKey, signal }: CreateVoiceNoteDigestVariables) =>
-      unwrap(await voiceService.createVoiceNoteDigest(input, idempotencyKey, signal)),
+    mutationFn: async ({ input, idempotencyKey, signal }: CreateVoiceNoteDigestVariables) => {
+      // 오프라인이 확실하면 연결 시도를 기다리지 않는다
+      if (!onlineManager.isOnline()) {
+        throw new NetworkError();
+      }
+      return unwrap(await voiceService.createVoiceNoteDigest(input, idempotencyKey, signal));
+    },
     onSuccess: ({ plan, featureQuota, charged }) => {
       reflectFeatureQuota(queryClient, featureQuota);
       trackEvent('voice_plan_generated', {

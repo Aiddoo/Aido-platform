@@ -174,6 +174,21 @@ describe('말로 메모 화면', () => {
     );
   });
 
+  test('연결이 안 돼 정리하지 못하면 연결되면 다시 정리할 수 있다고 알린다', async () => {
+    // Given
+    const { httpClient } = await renderScreen({});
+    httpClient.post.mockRejectedValue(new NetworkError());
+
+    // When
+    await fireEvent.press(await screen.findByText('정리하기'));
+
+    // Then
+    const failure = await screen.findByTestId('voice-note-digest-failure');
+    expect(failure).toHaveTextContent(/인터넷에 연결되지 않았어요/);
+    expect(failure).toHaveTextContent(/인터넷에 연결되면 다시 정리할 수 있어요/);
+    expect(screen.getByText('다시 정리')).toBeTruthy();
+  });
+
   test('너무 길어 정리하지 못하면 이유를 알리고 소용없는 다시 정리를 보이지 않는다', async () => {
     // Given
     const { httpClient } = await renderScreen({});
