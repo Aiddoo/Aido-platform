@@ -583,6 +583,9 @@ export function useVoiceCaptureSession({
     }
     const { canRecognizeOnDevice } = await speechRecognizer.getCapabilities(locale);
     startOptionsRef.current = { ...startOptions, locale, isOnDevice: canRecognizeOnDevice };
+    if (VoiceCapturePolicy.isActive(stateRef.current)) {
+      trackEvent('voice_capture_locale_changed', { mode, locale, on_device: canRecognizeOnDevice });
+    }
     if (getStatus() === 'listening') {
       stopRecognizer();
     }

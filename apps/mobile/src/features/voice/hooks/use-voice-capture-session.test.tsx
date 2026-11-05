@@ -369,6 +369,25 @@ describe('useVoiceCaptureSession', () => {
     });
   });
 
+  it('듣는 중에 언어를 바꾸면 바뀐 언어를 분석에 남긴다', async () => {
+    // Given
+    const { speechRecognizer, analytics } = await renderSession();
+    await fireEvent.press(screen.getByTestId('begin'));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+    // When
+    await fireEvent.press(screen.getByTestId('change-locale'));
+
+    // Then
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_locale_changed', {
+        mode: 'quick',
+        locale: 'en-US',
+        on_device: true,
+      }),
+    );
+  });
+
   it('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
