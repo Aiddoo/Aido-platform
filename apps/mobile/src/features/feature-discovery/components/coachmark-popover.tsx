@@ -33,6 +33,8 @@ interface CoachmarkPopoverProps
    * 읽을 틈 없이 지나갔으면 본 것으로 남기지 않고, 멈춘 뒤 새 자리에서 다시 연다.
    */
   dismissKey?: string;
+  /** true가 되면 사용자가 다른 일을 시작한 것으로 보고 끝낸다. 바깥을 막지 않는 `isPassThrough`와 함께 쓴다 */
+  isDismissed?: boolean;
   /** 말풍선이 가리킬 대상 */
   children: ReactNode;
 }
@@ -53,6 +55,7 @@ export function CoachmarkPopover({
   onDismiss,
   isTargetDisabled = false,
   dismissKey,
+  isDismissed = false,
   icon = MicIcon,
   placement,
   align,
@@ -108,6 +111,13 @@ export function CoachmarkPopover({
     shownDismissKeyRef.current = dismissKey;
     closeForMovedTarget();
   }, [dismissKey]);
+
+  const dismissForUserAction = useEffectEvent(() => handleOpenChange(false));
+  useEffect(() => {
+    if (isDismissed) {
+      dismissForUserAction();
+    }
+  }, [isDismissed]);
 
   return (
     <Popover {...popoverProps} isOpen={isOpen} onOpenChange={handleOpenChange}>

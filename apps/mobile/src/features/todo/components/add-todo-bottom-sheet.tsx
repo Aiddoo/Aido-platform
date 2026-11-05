@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CoachmarkPopover } from '@src/features/feature-discovery/components/coachmark-popover';
+import { useMyPendingCoachmark } from '@src/features/feature-discovery/hooks/use-my-pending-coachmark';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
@@ -208,6 +209,10 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const voice = useAddTodoQuickVoice({ methods, onExit });
   const isVoiceHintRequested = props.mode === 'create' && props.isVoiceHintForced === true;
   const [isVoiceHintForced, setIsVoiceHintForced] = useState(isVoiceHintRequested);
+  const [isVoiceHintPending] = useMyPendingCoachmark('voice-quick-start');
+  const hasVoiceHint = props.mode === 'create' && isVoiceHintPending;
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+  const [hasTouchedForm, setHasTouchedForm] = useState(false);
 
   const handleSubmitTodo = methods.handleSubmit(async (values) => {
     try {
@@ -513,7 +518,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             />
           ))
           .otherwise(() => (
-            <VStack gap={12} testID="todo-add-sheet">
+            <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
               <QuickVoicePanel.Failed
                 state={voice.state}
                 isConsentRequired={voice.isConsentRequired}
@@ -524,7 +529,10 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 {({ onChange, value }) => (
                   <BottomSheetInput
                     ref={todoInputRef}
-                    autoFocus={!isVoiceHintRequested && !voice.isRestarting}
+                    // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
+                    autoFocus={!isVoiceHintRequested && !hasVoiceHint && !voice.isRestarting}
+                    onFocus={() => setIsTitleFocused(true)}
+                    onBlur={() => setIsTitleFocused(false)}
                     placeholder={t('add.placeholder')}
                     value={value}
                     onChange={onChange}
@@ -569,6 +577,9 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                       description={tVoice('coach.quickStart.description')}
                       placement="left"
                       align="center"
+                      isEnabled={!isTitleFocused}
+                      isPassThrough
+                      isDismissed={hasTouchedForm}
                       isForced={isVoiceHintForced}
                       onDismiss={() => setIsVoiceHintForced(false)}
                     >
