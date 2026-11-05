@@ -373,7 +373,8 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("이미 울린 단계는 하루가 넘게 지나 다시 돌아도 알림을 또 남기지 않는다", async () => {
     // Given
-    const id = await seedTodo(addDaysToDateKey(today, 1), "10:00");
+    const date = addDaysToDateKey(today, 1);
+    const id = await seedTodo(date, "10:00");
     const insert = () =>
       client
         .insert(notification)
@@ -384,6 +385,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
           body: "b",
           todoId: id,
           metadata: { stage: "60min" },
+          reminderOccurrenceKey: `${date}T10:00`,
           createdAt: new Date(Date.now() - 30 * HOUR_MS),
         })
         .onConflictDoNothing()

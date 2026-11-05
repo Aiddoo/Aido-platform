@@ -109,6 +109,8 @@ COMMIT;
 
 **1.15.0 떠 있는 시각(`todo_scheduled_local_time`)도 1.14.2로 되돌릴 수 있다.** `Todo.scheduledLocalTime`은 NOT NULL·CHECK가 없는 추가 칸이라 옛 서버가 몰라도 쓰기가 깨지지 않는다. 다만 되돌린 동안 옛 서버는 이 칸을 채우거나 고치지 않는다. 그동안 새 앱은 칸이 비면 `scheduledTime`을 기기 시간대로 보여 주고, 칸이 낡은 행은 옛 값을 보여 준다. 재계산은 칸이 빈 행을 건너뛴다. `todo-timezone-rebase.v1`의 대기 작업은 옛 서버가 소비하지 않으므로 쌓이기만 하고, 다시 올리면 보관 시간(24시간) 안의 것은 그대로 돈다.
 
+**1.15.0 알림 회차(`notification_reminder_occurrence`)도 되돌릴 수 있다.** `Notification.reminderOccurrenceKey`는 빈 값을 허용하고 옛 서버는 비운 채로 쓴다. 인덱스가 비운 값끼리 예전처럼 할 일 + 단계로 막는다. 응답과 푸시에는 실리지 않는다.
+
 다시 1.15.0 이상으로 올릴 때는 위 FK SQL과 함께 새 API로 교체한 직후 아래의 다시 채우는 SQL을 한 번 실행한다. `rollback_started_at`은 옛 이미지로 교체한 UTC 시각이다. `updatedAt`으로 롤백 중 옛 서버가 쓴 행만 고치고 그 전의 지난 행은 벽시계를 지킨다. 칸이 빈 행은 시각과 상관없이 채운다. 여러 번 돌려도 결과가 같고 `updatedAt`을 바꾸지 않는다. 앱 쓰기를 막지 않도록 행 잠금만 잡는다. 실행 전 건수는 `WHERE`만 `SELECT count(*)`로 바꿔 확인한다.
 
 ```sql
@@ -158,6 +160,13 @@ SELECT count(*) FROM "Todo" WHERE "scheduledTime" IS NOT NULL;
 ```
 
 나눠 채우는 법: 먼저 `ALTER TABLE "Todo" ADD COLUMN IF NOT EXISTS "scheduledLocalTime" varchar(5);`을 실행하고, 마이그레이션의 `UPDATE`에 `AND t."id" BETWEEN :from AND :to`를 붙여 1만 행씩 커밋한다. 옛 서버가 새 칸을 몰라도 쓰기는 깨지지 않는다. 마이그레이션은 빈 칸만 다시 채우므로 그 뒤 배포하면 잠금이 짧다.
+
+**`notification_reminder_occurrence` 배포 전 확인**: 같은 트랜잭션에서 `Notification`을 잠근다. 일회용 PostgreSQL에서 알림 200만 행 중 44만 행을 채우는 데 7.2~7.7초, 인덱스 만들기 0.2초였다(약 17µs/행, 2회). 채우는 행은 그제 이후 할 일의 알림뿐이라 보통 훨씬 적다. 앞의 이관과 시간이 더해지므로 아래 건수가 10만을 넘으면 알리고 한가한 시간에 배포한다.
+
+```sql
+SELECT count(*) FROM "Notification" AS n JOIN "Todo" AS t ON t."id" = n."todoId"
+WHERE n."type" = 'TODO_REMINDER' AND t."startDate" >= CURRENT_DATE - 2;
+```
 
 nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
 

@@ -38,6 +38,7 @@ function toNotificationInsert(data: CreateNotificationData): NotificationInsert 
     campaignKey: data.campaignKey,
     variantId: data.variantId,
     purpose: data.purpose ?? "TRANSACTIONAL",
+    reminderOccurrenceKey: data.reminderOccurrenceKey,
   };
 }
 

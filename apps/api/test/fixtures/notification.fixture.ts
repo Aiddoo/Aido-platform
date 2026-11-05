@@ -47,6 +47,7 @@ export const NotificationFixture = {
       variantId: overrides.variantId ?? null,
       purpose: overrides.purpose ?? "TRANSACTIONAL",
       openedAt: overrides.openedAt ?? null,
+      reminderOccurrenceKey: overrides.reminderOccurrenceKey ?? null,
     };
   },
 

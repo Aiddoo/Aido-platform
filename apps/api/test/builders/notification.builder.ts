@@ -47,6 +47,7 @@ export class NotificationBuilder {
       variantId: null,
       purpose: "TRANSACTIONAL",
       openedAt: null,
+      reminderOccurrenceKey: null,
     };
   }
 

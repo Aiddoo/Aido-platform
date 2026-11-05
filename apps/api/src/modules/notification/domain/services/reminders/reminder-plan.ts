@@ -59,3 +59,16 @@ export function planReminderJobs(scheduledMs: number, nowMs: number): PlannedRem
 export function allReminderLabels(): string[] {
   return [...REMINDER_STAGES.map((s) => s.label), REMINDER_IMMEDIATE_LABEL];
 }
+
+/**
+ * 같은 할 일의 같은 단계를 한 번만 보내는 회차 값. 날짜와 벽시계로 만든다.
+ *
+ * 시간대 재계산은 날짜와 벽시계를 바꾸지 않아 값이 그대로이고, 사용자가 날짜나 시간을 고치면 값이 달라진다.
+ * 벽시계가 빈 행(롤백 중 옛 서버가 쓴 행)은 날짜만 쓴다.
+ */
+export function createReminderOccurrenceKey(
+  startDate: string,
+  scheduledLocalTime: string | null,
+): string {
+  return scheduledLocalTime == null ? startDate : `${startDate}T${scheduledLocalTime}`;
+}

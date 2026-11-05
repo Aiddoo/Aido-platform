@@ -30,6 +30,7 @@ import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 
 const USER_ID = "user-1";
 const TODO_TITLE = "Test Todo";
+const SCHEDULE = { startDate: "2026-11-05", scheduledLocalTime: "10:00" };
 
 const makeJob = (data: Partial<ReminderJobData> = {}) => ({
   name: TODO_REMINDER_JOB_NAME,
@@ -62,16 +63,14 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
   const setupMocks = (
     options: {
       todoExists?: boolean;
-      notificationExists?: boolean;
       todoTitle?: string;
     } = {},
   ) => {
-    const { todoExists = true, notificationExists = false, todoTitle = TODO_TITLE } = options;
+    const { todoExists = true, todoTitle = TODO_TITLE } = options;
 
     reader.findActiveTodo.mockResolvedValue(
-      todoExists ? { id: 1, title: todoTitle, seriesId: null } : null,
+      todoExists ? { id: 1, title: todoTitle, seriesId: null, ...SCHEDULE } : null,
     );
-    reader.existsRecentReminderNotification.mockResolvedValue(notificationExists);
   };
 
   describe("반복 회차와 휴면", () => {
@@ -80,7 +79,12 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     it("소유자가 휴면이면 보내지 않고 내용 없이 로그 키로 남긴다", async () => {
       // Given
       setupMocks();
-      reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
+      reader.findActiveTodo.mockResolvedValue({
+        id: 1,
+        title: TODO_TITLE,
+        seriesId: "series-1",
+        ...SCHEDULE,
+      });
       seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
       const log = logSpy();
       // When
@@ -108,7 +112,12 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
         runtime,
       );
       setupMocks();
-      reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
+      reader.findActiveTodo.mockResolvedValue({
+        id: 1,
+        title: TODO_TITLE,
+        seriesId: "series-1",
+        ...SCHEDULE,
+      });
       seriesOwnerDormancy.findDormantSince.mockResolvedValue("2026-08-01");
       // When
       await withRuntime.process(makeJob({ stageLabel: "60min" }));
@@ -166,7 +175,12 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     it("소유자가 활동 중이면 반복 회차도 그대로 보낸다", async () => {
       // Given
       setupMocks();
-      reader.findActiveTodo.mockResolvedValue({ id: 1, title: TODO_TITLE, seriesId: "series-1" });
+      reader.findActiveTodo.mockResolvedValue({
+        id: 1,
+        title: TODO_TITLE,
+        seriesId: "series-1",
+        ...SCHEDULE,
+      });
       seriesOwnerDormancy.findDormantSince.mockResolvedValue(null);
       // When
       await processor.process(makeJob());
@@ -189,7 +203,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
   describe("정상 처리", () => {
     it("유효한 투두에 대해 알림을 발송한다", async () => {
       // Given
-      setupMocks({ todoExists: true, notificationExists: false });
+      setupMocks({ todoExists: true });
       notificationPublisher.publish.mockResolvedValue(null);
 
       // When
@@ -211,7 +225,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
     it("10min 단계 알림을 발송한다", async () => {
       // Given
-      setupMocks({ todoExists: true, notificationExists: false });
+      setupMocks({ todoExists: true });
       notificationPublisher.publish.mockResolvedValue(null);
 
       // When
@@ -225,7 +239,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
     it("immediate 단계 알림을 발송한다", async () => {
       // Given
-      setupMocks({ todoExists: true, notificationExists: false });
+      setupMocks({ todoExists: true });
       notificationPublisher.publish.mockResolvedValue(null);
 
       // When
@@ -241,7 +255,6 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Given — DB에는 변경된 제목
       setupMocks({
         todoExists: true,
-        notificationExists: false,
         todoTitle: "밥먹고 약먹기",
       });
       notificationPublisher.publish.mockResolvedValue(null);
@@ -280,35 +293,51 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
   });
 
-  describe("DB 중복 방지", () => {
-    it("24시간 내 동일 알림이 있으면 스킵한다", async () => {
-      // Given — 투두는 존재하지만 동일 알림이 이미 발송됨
-      setupMocks({ todoExists: true, notificationExists: true });
-
+  describe("회차 중복 방지", () => {
+    it.each([
+      { name: "시간 일정은 날짜와 벽시계", scheduledLocalTime: "10:00", key: "2026-11-05T10:00" },
+      { name: "벽시계가 빈 행은 날짜만", scheduledLocalTime: null, key: "2026-11-05" },
+    ])("$name로 회차를 넘긴다", async ({ scheduledLocalTime, key }) => {
+      // Given
+      reader.findActiveTodo.mockResolvedValue({
+        id: 1,
+        title: TODO_TITLE,
+        seriesId: null,
+        startDate: "2026-11-05",
+        scheduledLocalTime,
+      });
+      notificationPublisher.publish.mockResolvedValue(null);
       // When
       await processor.process(makeJob());
-
       // Then
-      expect(notificationPublisher.publish).not.toHaveBeenCalled();
+      expect(notificationPublisher.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ reminderOccurrenceKey: key, metadata: { stage: "60min" } }),
+      );
     });
 
-    it("동일 알림이 없으면 정상 발송한다", async () => {
+    it("이미 울린 회차면 건너뛴 것으로 남기고 완료로 세지 않는다", async () => {
       // Given
-      setupMocks({ todoExists: true, notificationExists: false });
+      setupMocks({ todoExists: true });
       notificationPublisher.publish.mockResolvedValue(null);
-
+      const debug = vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined);
+      const log = vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
       // When
       await processor.process(makeJob());
-
       // Then
-      expect(notificationPublisher.publish).toHaveBeenCalledTimes(1);
+      expect(debug).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: NotificationProviderLogEvent.JOB_SKIPPED,
+          reason: "ALREADY_NOTIFIED",
+        }),
+      );
+      expect(log).not.toHaveBeenCalled();
     });
   });
 
   describe("에러 처리", () => {
     it("알림 발송 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
-      setupMocks({ todoExists: true, notificationExists: false });
+      setupMocks({ todoExists: true });
       notificationPublisher.publish.mockRejectedValue(new Error("Push failed"));
 
       // When & Then

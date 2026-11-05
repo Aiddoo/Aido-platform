@@ -17,6 +17,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
@@ -537,28 +538,16 @@ export class DrizzleSchedulerReader
 
   async findActiveTodo(todoId: number): Promise<ActiveTodo | null> {
     const row = await this.db.query.todo.findFirst({
-      columns: { id: true, title: true, seriesId: true },
+      columns: {
+        id: true,
+        title: true,
+        seriesId: true,
+        startDate: true,
+        scheduledLocalTime: true,
+      },
       where: { id: todoId, completed: false },
     });
-    return row ?? null;
-  }
-
-  async existsRecentReminderNotification(params: {
-    todoId: number;
-    since: Date;
-    stage: string;
-  }): Promise<boolean> {
-    const { todoId, since, stage } = params;
-    const existing = await this.db.query.notification.findFirst({
-      columns: { id: true },
-      where: {
-        todoId,
-        type: "TODO_REMINDER",
-        createdAt: { gte: since },
-        RAW: (table) => sql`${table.metadata} ->> 'stage' = ${stage}`,
-      },
-    });
-    return existing != null;
+    return row == null ? null : { ...row, startDate: toDateString(row.startDate) };
   }
 
   // ─────────────────────────────────────────────────────────────
