@@ -1,4 +1,4 @@
-import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api';
+import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api/vocabulary';
 import {
   PremiumAccessPolicy,
   PremiumAccessSchema,

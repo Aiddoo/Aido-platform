@@ -2,7 +2,7 @@ import {
   WEATHER_BRIEFING_RULES,
   type WeatherCondition,
   type WeatherRescheduleReason,
-} from '@aido/api';
+} from '@aido/api/vocabulary';
 import { toDate } from '@src/shared/utils/date';
 import { formatDateKey, getZonedHour } from '@src/shared/utils/date-format';
 import { addDaysToDateKey } from '@src/shared/utils/date-key';

@@ -1,5 +1,8 @@
-import { aiDataSharingDecisionSchema, PASSWORD_RULES } from '@aido/api';
-import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
+import {
+  AI_DATA_SHARING_CONSENT,
+  AI_DATA_SHARING_DECISIONS,
+  PASSWORD_RULES,
+} from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({
@@ -19,7 +22,7 @@ export const consentSchema = z.object({
   agreedTermsVersion: z.string().nullable(),
   marketingAgreedAt: z.coerce.date().nullable(),
   marketingPushAgreedAt: z.coerce.date().nullable(),
-  aiDataSharingDecision: aiDataSharingDecisionSchema,
+  aiDataSharingDecision: z.enum(AI_DATA_SHARING_DECISIONS),
   aiDataSharingAgreedAt: z.coerce.date().nullable(),
   /** 마지막으로 답한 안내 버전. 답한 적이 없거나 서버가 주지 않으면 null */
   aiDataSharingConsentVersion: z.string().nullable(),

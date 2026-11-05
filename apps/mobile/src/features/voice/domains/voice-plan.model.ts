@@ -1,4 +1,4 @@
-import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS } from '@aido/api/vocabulary';
+import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import type { FeatureQuota } from '@src/features/subscription/domains/entitlement.model';
 import {
   type TodoRepeat,
@@ -20,7 +20,7 @@ const plannedTodoShape = {
   /** null이면 종일 */
   scheduledTime: z.iso.time({ precision: -1 }).nullable(),
   repeat: todoRepeatSchema.nullable(),
-  visibility: z.enum(['PUBLIC', 'PRIVATE']).nullable(),
+  visibility: z.enum(TODO_VISIBILITIES).nullable(),
   items: z
     .array(
       z.object({ title: z.string().trim().min(1).max(ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH) }),

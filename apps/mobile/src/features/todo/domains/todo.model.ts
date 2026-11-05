@@ -1,10 +1,4 @@
-import {
-  dateSchema,
-  todoVisibilitySchema,
-  type DailyCompletionSummary as DailyCompletionSummaryResponse,
-  type DailyCompletionsRangeResponse,
-  type TodoSummaryResponse,
-} from '@aido/api';
+import { TODO_VISIBILITIES } from '@aido/api/vocabulary';
 import { sortBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -12,6 +6,8 @@ import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
 import { todoCategorySchema as categorySchema } from './todo-category.model';
 import { todoRepeatSchema } from './todo-repeat.model';
 
+const dateSchema = z.iso.date();
+const todoVisibilitySchema = z.enum(TODO_VISIBILITIES);
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 
 export const todoCategorySchema = categorySchema.pick({ id: true, name: true, color: true });
@@ -53,9 +49,40 @@ export const todoExistenceSchema = z.object({
 });
 export type TodoExistence = z.infer<typeof todoExistenceSchema>;
 
-export type DailyCompletionSummary = DailyCompletionSummaryResponse;
-export type DailyCompletionsResult = DailyCompletionsRangeResponse;
-export type TodoSummary = TodoSummaryResponse;
+export const dailyCompletionSummarySchema = z.object({
+  date: z.string(),
+  totalTodos: z.int().min(0),
+  completedTodos: z.int().min(0),
+  isComplete: z.boolean(),
+  completionRate: z.number().min(0).max(100),
+  categoryColors: z.array(z.string()),
+});
+export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema>;
+
+export const dailyCompletionsResultSchema = z.object({
+  completions: z.array(dailyCompletionSummarySchema),
+  totalCompleteDays: z.int().min(0),
+  dateRange: z.object({ startDate: z.string(), endDate: z.string() }),
+});
+export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
+
+export const todoSummarySchema = z.object({
+  date: z.string(),
+  totalTodos: z.int().min(0),
+  completedTodos: z.int().min(0),
+  completionRate: z.number().min(0).max(100),
+  isComplete: z.boolean(),
+  currentStreak: z.int().min(0),
+  topTodos: z.array(
+    z.object({
+      id: z.int(),
+      title: z.string(),
+      completed: z.boolean(),
+      categoryColor: z.string(),
+    }),
+  ),
+});
+export type TodoSummary = z.infer<typeof todoSummarySchema>;
 
 export const todoDetailsSchema = z.object({
   todo: todoSchema,
