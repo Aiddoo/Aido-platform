@@ -97,7 +97,7 @@ export const useApplyActionPlanMutationOptions = ({
         });
       }
       const accountId = getCachedMe(queryClient)?.id;
-      if (accountId) {
+      if (accountId != null) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
         if (source === 'memo') {
           trackAttributedFeatureSuccess({ accountId, feature: 'memo_ai' });

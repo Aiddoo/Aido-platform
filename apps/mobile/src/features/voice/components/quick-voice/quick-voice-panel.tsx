@@ -62,11 +62,7 @@ interface ListeningProps {
 }
 
 /** 빠른 말하기 패널. 시트 안에서 입력 칸 대신 보이고, 높이는 화면 비율로 키운다 */
-export function QuickVoicePanel(props: ListeningProps) {
-  return <QuickVoicePanel.Listening {...props} />;
-}
-
-QuickVoicePanel.Listening = function Listening({
+export function QuickVoicePanel({
   state,
   level,
   isQuiet,
@@ -184,7 +180,7 @@ QuickVoicePanel.Listening = function Listening({
       )}
     </PanelFrame>
   );
-};
+}
 
 QuickVoicePanel.Planning = function Planning({
   state,
