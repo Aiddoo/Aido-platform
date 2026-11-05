@@ -86,7 +86,7 @@ PushPermissionCard.Ask = function Ask({ className, onDismiss }: StepNoticeProps)
             display="inline"
             onPress={() => setIsDialogOpen(true)}
           >
-            {t('permission.card.allow')}
+            {t('permission.card.continue')}
           </Button>
         }
         onDismiss={onDismiss}
@@ -125,7 +125,7 @@ PushPermissionCard.RequestSystem = function RequestSystem({
             })
           }
         >
-          {t('permission.card.allow')}
+          {t('permission.card.continue')}
         </Button>
       }
       onDismiss={onDismiss}

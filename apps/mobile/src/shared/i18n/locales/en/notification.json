@@ -79,7 +79,7 @@
       "settingsDescription": "Turn them on in Settings to get reminders",
       "appOffTitle": "Push notifications are off",
       "appOffDescription": "Turn on push notifications in notification settings",
-      "allow": "Allow",
+      "continue": "Continue",
       "openSettings": "Open settings",
       "turnOn": "Turn on",
       "dismiss": "Dismiss notification notice"
@@ -87,7 +87,7 @@
     "dialog": {
       "title": "Can we send you notifications?",
       "description": "We'll remind you about to-dos, cheers and nudges from friends, and your streak. You can change this anytime in settings.",
-      "allow": "Get notifications",
+      "continue": "Continue",
       "later": "Not now"
     },
     "status": {

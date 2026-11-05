@@ -59,11 +59,11 @@ export function PushPermissionDialog({
       }
       confirmButton={
         <ConfirmDialog.ConfirmButton
-          testID="push-permission-allow"
+          testID="push-permission-continue"
           isLoading={requestPermission.isPending}
           onPress={allow}
         >
-          {t('permission.dialog.allow')}
+          {t('permission.dialog.continue')}
         </ConfirmDialog.ConfirmButton>
       }
     />

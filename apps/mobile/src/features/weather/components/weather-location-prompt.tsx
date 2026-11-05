@@ -45,7 +45,7 @@ export function WeatherLocationPrompt({ onRecovered }: WeatherLocationPromptProp
         footnote={t('weather:locationPrompt.footnote')}
       >
         <WeatherResult.Action tone="primary" onPress={request}>
-          {t('weather:locationPrompt.allow')}
+          {t('weather:locationPrompt.continue')}
         </WeatherResult.Action>
       </WeatherResult>
     ))

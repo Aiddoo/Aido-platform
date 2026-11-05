@@ -31,7 +31,7 @@ export function PushPermissionStatusRow() {
   const action = match(PushPermissionPolicy.nextStep(permission, { pushEnabled: true }))
     .with(PUSH_PERMISSION_STEP.ASK, () => (
       <Button size="small" variant="weak" display="inline" onPress={() => setIsDialogOpen(true)}>
-        {t('permission.card.allow')}
+        {t('permission.card.continue')}
       </Button>
     ))
     .with(PUSH_PERMISSION_STEP.REQUEST_SYSTEM, () => (
@@ -47,7 +47,7 @@ export function PushPermissionStatusRow() {
           })
         }
       >
-        {t('permission.card.allow')}
+        {t('permission.card.continue')}
       </Button>
     ))
     .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => (

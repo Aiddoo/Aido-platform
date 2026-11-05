@@ -274,7 +274,7 @@
     "subtitle": "See your local weather and when to dodge the rain",
     "register": "Register location",
     "permissionDenied": "Turn on location access in Settings",
-    "allow": "Allow location",
+    "continue": "Continue",
     "permissionDeniedDescription": "Come back after turning it on and we'll show the weather right away",
     "openSettings": "Open Settings",
     "unavailableTitle": "Couldn't find your location",

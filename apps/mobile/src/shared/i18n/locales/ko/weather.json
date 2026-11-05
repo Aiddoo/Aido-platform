@@ -270,7 +270,7 @@
     "subtitle": "지금 있는 곳 날씨와\n비 피할 시간을 알려드려요",
     "register": "위치 등록하기",
     "permissionDenied": "설정에서 위치 권한을\n켜주세요",
-    "allow": "위치 허용하기",
+    "continue": "계속",
     "permissionDeniedDescription": "권한을 켜고 돌아오면\n바로 날씨를 보여드려요",
     "openSettings": "설정 열기",
     "unavailableTitle": "위치를 찾지 못했어요",

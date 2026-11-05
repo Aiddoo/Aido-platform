@@ -82,14 +82,14 @@ describe('PushPermissionCard — 홈 알림 안내', () => {
     expect(screen.queryByText('알림이 꺼져 있어요')).toBeNull();
   });
 
-  it('아직 묻지 않았으면 허용하기를 눌렀을 때 앱 안 안내를 먼저 띄운다', async () => {
+  it('아직 묻지 않았으면 계속을 눌렀을 때 앱 안 안내를 먼저 띄운다', async () => {
     // Given
     const { gateway } = await renderCard({ status: 'NOT_DETERMINED', canAskAgain: true });
 
     // When
-    fireEvent.press(screen.getByText('허용하기'));
+    fireEvent.press(screen.getByText('계속'));
 
-    // Then 시스템 창은 안내에서 알림 받기를 눌러야 뜬다
+    // Then 시스템 창은 안내에서 계속을 눌러야 뜬다
     expect(await screen.findByText('알림을 보내드려도 될까요?')).toBeTruthy();
     expect(gateway.requestPermission).not.toHaveBeenCalled();
   });
