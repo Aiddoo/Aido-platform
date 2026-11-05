@@ -14,7 +14,7 @@
 | `POST /v1/todos/recurring`, 회차 채우기              | `TodoSeries`의 회차 초안                                                  |
 | `PATCH /v1/todos/:id`(시간·날짜·완료 되돌리기)       | `Todo.updateDetails` → `TodoSchedule.patch`                               |
 | `PATCH /v1/todos/:id/schedule`                       | `TodoSchedule.create`                                                     |
-| `PATCH /v1/todos/:id/complete`(되돌리기)             | `Todo.toggleComplete` → `TodoSchedule.rederivedIn`                        |
+| `PATCH /v1/todos/:id/complete`(되돌리기)             | `Todo.toggleComplete` → `TodoSchedule.rederiveIn`                         |
 | 이후 모두·규칙 변경·반복 전환                        | `UpdateFollowingTodos`, `StartSeriesFromTodo`의 `resolveScheduledInstant` |
 
 날짜·시간을 건드리지 않는 수정(제목·공개·카테고리)은 순간을 바꾸지 않는다. 앞으로 할 일의 순간은 재계산이 맞춘다.

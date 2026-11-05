@@ -164,7 +164,7 @@ export class Todo extends AggregateRoot<TodoProps> {
 
   /** 완료한 할 일은 재계산에서 빠지고 예약도 지워졌으므로 되돌릴 때 순간과 예약을 다시 맞춘다. */
   #restoreSchedule(timezone: string): void {
-    this.props.schedule = this.props.schedule.rederivedIn(timezone);
+    this.props.schedule = this.props.schedule.rederiveIn(timezone);
     const scheduledTime = this.props.schedule.getScheduledTime();
     if (scheduledTime != null) {
       this.raise(

@@ -31,7 +31,7 @@ describe("시간대 재계산", () => {
     fixture.ownerTimezone.timezones.set(fixture.userId, timezone);
     return new RebaseTodoTimezone({ ...fixture, batchSize });
   };
-  const instantOf = (id: number) => fixture.records.get(id)?.scheduledTime?.toISOString();
+  const readInstant = (id: number) => fixture.records.get(id)?.scheduledTime?.toISOString();
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -74,7 +74,7 @@ describe("시간대 재계산", () => {
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result).toMatchObject({ outcome: "COMPLETED", rebasedCount: 1 });
-    expect(instantOf(1)).toBe(instant);
+    expect(readInstant(1)).toBe(instant);
     expect(fixture.records.get(1)?.scheduledLocalTime).toBe("10:00");
     expect(fixture.todoReminder.cancelled).toContain(1);
   });
@@ -98,7 +98,7 @@ describe("시간대 재계산", () => {
     // When
     await useCase.execute({ userId: "planning-user" });
     // Then
-    expect(instantOf(1)).toBe(instant);
+    expect(readInstant(1)).toBe(instant);
     expect(fixture.records.get(1)?.scheduledLocalTime).toBe(localTime);
   });
 
@@ -124,11 +124,11 @@ describe("시간대 재계산", () => {
     expect(fixture.records.get(2)?.scheduledTime).toEqual(todos[1]?.scheduledTime);
     expect(fixture.records.get(4)?.scheduledTime).toEqual(todos[3]?.scheduledTime);
     expect(fixture.records.get(7)?.scheduledTime).toEqual(todos[6]?.scheduledTime);
-    expect(instantOf(5)).toBe("2026-11-04T15:00:00.000Z");
-    expect(instantOf(6)).toBe("2026-11-10T15:00:00.000Z");
+    expect(readInstant(5)).toBe("2026-11-04T15:00:00.000Z");
+    expect(readInstant(6)).toBe("2026-11-10T15:00:00.000Z");
   });
 
-  it("어제 날짜의 시각이 다시 미래가 되면 다시 예약하고 지난 시각은 예약하지 않는다", async () => {
+  it("서쪽으로 가면 어제 날짜까지 다시 계산해 예약 대상으로 넘긴다", async () => {
     // Given
     const useCase = setUp(
       [
@@ -169,14 +169,14 @@ describe("시간대 재계산", () => {
     const useCase = setUp([timedTodo(1, "2026-11-10")], NEW_YORK);
     // When
     await useCase.execute({ userId: "planning-user" });
-    const away = instantOf(1);
+    const away = readInstant(1);
     const again = await useCase.execute({ userId: "planning-user" });
     fixture.ownerTimezone.timezones.set(fixture.userId, SEOUL);
     await useCase.execute({ userId: "planning-user" });
     // Then
     expect(away).toBe("2026-11-10T15:00:00.000Z");
     expect(again.rebasedCount).toBe(0);
-    expect(instantOf(1)).toBe(before);
+    expect(readInstant(1)).toBe(before);
   });
 
   it("이 할 일만 바꾼 회차의 벽시계를 규칙 값으로 덮어쓰지 않는다", async () => {
@@ -196,7 +196,7 @@ describe("시간대 재계산", () => {
     await useCase.execute({ userId: "planning-user" });
     // Then
     expect(fixture.records.get(2)?.scheduledLocalTime).toBe("15:00");
-    expect(instantOf(2)).toBe("2026-11-11T20:00:00.000Z");
+    expect(readInstant(2)).toBe("2026-11-11T20:00:00.000Z");
   });
 
   it("규칙 시간대를 바꿔 이후 회차가 현지 시각으로 만들어진다", async () => {
@@ -233,7 +233,7 @@ describe("시간대 재계산", () => {
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result).toMatchObject({ skippedCount: 1, rebasedCount: 0 });
-    expect(instantOf(1)).toBe("2026-11-10T01:00:00.000Z");
+    expect(readInstant(1)).toBe("2026-11-10T01:00:00.000Z");
   });
 
   it("묶음을 나눠도 모든 행을 처리한다", async () => {
@@ -269,7 +269,7 @@ describe("시간대 재계산", () => {
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result).toMatchObject({ outcome: "SUPERSEDED", scannedCount: 1 });
-    expect(instantOf(3)).toBe("2026-11-10T01:00:00.000Z");
+    expect(readInstant(3)).toBe("2026-11-10T01:00:00.000Z");
   });
 
   it("설정 행이 없으면(탈퇴) 조용히 끝난다", async () => {
@@ -280,7 +280,7 @@ describe("시간대 재계산", () => {
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result.outcome).toBe("NO_PREFERENCE");
-    expect(instantOf(1)).toBe("2026-11-10T01:00:00.000Z");
+    expect(readInstant(1)).toBe("2026-11-10T01:00:00.000Z");
   });
 
   it("저장된 시간대가 잘못됐으면 기본값으로 계산한다", async () => {
@@ -292,7 +292,7 @@ describe("시간대 재계산", () => {
     // When
     await useCase.execute({ userId: "planning-user" });
     // Then
-    expect(instantOf(1)).toBe("2026-11-10T01:00:00.000Z");
+    expect(readInstant(1)).toBe("2026-11-10T01:00:00.000Z");
   });
 
   it("로그에 건수만 남기고 제목을 남기지 않는다", async () => {

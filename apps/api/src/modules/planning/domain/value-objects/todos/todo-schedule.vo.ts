@@ -116,7 +116,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
   }
 
   /** 시간대가 바뀌는 동안 재계산에서 빠졌던 일정을 지금 시간대로 다시 맞춘다. */
-  rederivedIn(timezone: string): TodoSchedule {
+  rederiveIn(timezone: string): TodoSchedule {
     const scheduledLocalTime = this.getLocalTimeIn(timezone);
     return new TodoSchedule({
       ...this.value,

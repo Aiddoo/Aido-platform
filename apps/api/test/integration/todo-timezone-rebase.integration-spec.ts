@@ -191,6 +191,24 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     expect(row?.scheduledLocalTime).toBe("10:00");
   });
 
+  it("새 시간대에서 이미 지난 시각은 옛 예약을 지우고 다시 예약하지 않는다", async () => {
+    // Given
+    const yesterday = addDaysToDateKey(today, -1);
+    const id = await seedTodo(yesterday, "00:00", {
+      scheduledTime: new Date(Date.now() + 5 * HOUR_MS),
+    });
+    await reminderAdapter.scheduleReminders([
+      { todoId: id, scheduledTime: new Date(Date.now() + 5 * HOUR_MS), userId },
+    ]);
+    // When
+    const result = await useCase.execute({ userId });
+    // Then
+    expect(result.rebasedCount).toBe(1);
+    expect(await queuedStarts(id, "60min")).toEqual([]);
+    expect(await queuedStarts(id, "10min")).toEqual([]);
+    expect(await queuedStarts(id, "immediate")).toEqual([]);
+  });
+
   it("왕복 여행과 중복 실행 뒤에도 예약은 회차·단계마다 하나다", async () => {
     // Given
     const date = addDaysToDateKey(today, 3);

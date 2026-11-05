@@ -163,7 +163,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
       timezone: "Asia/Seoul",
     });
     // When
-    const rederived = schedule.rederivedIn("America/New_York");
+    const rederived = schedule.rederiveIn("America/New_York");
     // Then
     expect(rederived.getScheduledLocalTime()).toBe("10:00");
     expect(rederived.getScheduledTime()).toEqual(new Date("2026-11-10T15:00:00.000Z"));
