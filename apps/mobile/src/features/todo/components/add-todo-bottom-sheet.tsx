@@ -558,6 +558,8 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                       kind="voice-quick-start"
                       title={tVoice('coach.quickStart.title')}
                       description={tVoice('coach.quickStart.description')}
+                      placement="left"
+                      align="center"
                       isForced={isVoiceHintForced}
                       onDismiss={() => setIsVoiceHintForced(false)}
                     >

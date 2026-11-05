@@ -71,6 +71,29 @@ export function getHintPlacement({
   return placement === 'top' ? 'bottom' : 'top';
 }
 
+interface HintWidthInput {
+  placement: NonNullable<PopoverContentProps['placement']>;
+  trigger: { pageX: number } | null | undefined;
+  windowWidth: number;
+  leftInset: number;
+  offset: number;
+}
+
+/** 말풍선 폭. 대상 왼쪽에 뜨면 대상과 화면 왼쪽 끝 사이에 들어가게 줄인다 */
+export function getHintWidth({
+  placement,
+  trigger,
+  windowWidth,
+  leftInset,
+  offset,
+}: HintWidthInput): number {
+  const widest = Math.min(windowWidth - HINT_SCREEN_INSET * 2, HINT_MAX_WIDTH);
+  if (placement !== 'left' || trigger == null) {
+    return widest;
+  }
+  return Math.min(trigger.pageX - offset - HINT_SCREEN_INSET - leftInset, widest);
+}
+
 /**
  * 앱의 모든 안내 말풍선 모양. `Popover` 안에 `Popover.Trigger`와 나란히 둔다.
  * 아이콘·제목·작은 X가 한 줄이고 그 아래에 설명이 온다. 안전 영역과 겹치면 반대쪽으로 뒤집는다.
@@ -92,7 +115,7 @@ export function HintPopoverContent({
   const { t } = useTranslation('common');
   const fontScaledSize = useFontScaledSize();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
+  const { top: topInset, bottom: bottomInset, left: leftInset } = useSafeAreaInsets();
   const { triggerPosition, contentLayout } = usePopover();
 
   const resolvedPlacement = getHintPlacement({
@@ -141,7 +164,16 @@ export function HintPopoverContent({
         align={align}
         avoidCollisions={avoidCollisions}
         offset={offset}
-        width={width ?? Math.min(windowWidth - HINT_SCREEN_INSET * 2, HINT_MAX_WIDTH)}
+        width={
+          width ??
+          getHintWidth({
+            placement: resolvedPlacement,
+            trigger: triggerPosition,
+            windowWidth,
+            leftInset,
+            offset,
+          })
+        }
         className={className ?? 'rounded-2xl border border-border px-4 py-3'}
         testID="hint-popover"
         {...contentProps}

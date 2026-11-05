@@ -47,3 +47,5 @@ hint-popover/
 ## 자리
 
 `placement` 쪽에 자리가 없어 상태바나 홈 표시줄과 겹치면 반대쪽으로 뒤집는다. 양쪽 다 모자라면 자리가 더 많은 쪽이다. 판단은 `getHintPlacement` 한 곳이다.
+
+위아래로 열면 입력 칸을 덮는 대상(시트 아래쪽 줄의 버튼)은 `placement="left"`, `align="center"`로 연다. 폭은 대상과 화면 왼쪽 끝 사이로 줄어든다(`getHintWidth`). 키보드는 Android에서 말풍선 위에 그려지므로 아래로 열면 가려진다.
