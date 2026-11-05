@@ -15,6 +15,13 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { createVoiceNoteDigest } from '../../__tests__/voice-note.factories';
 import { KeyPointList } from './key-point-list';
 
+function createSameTimeKeyPoints() {
+  return [
+    { id: 'first', text: '첫 포인트', startMs: 1_200, isBookmarked: false },
+    { id: 'second', text: '둘째 포인트', startMs: 1_900, isBookmarked: false },
+  ];
+}
+
 describe('KeyPointList', () => {
   it('시간 안내를 붙여도 첫 포인트를 누르면 그 지점부터 듣는다', async () => {
     // Given
@@ -46,6 +53,21 @@ describe('KeyPointList', () => {
 
     // Then
     expect(onPressKeyPoint).toHaveBeenCalledWith(keyPoints[0]);
+  });
+
+  it('같은 초의 포인트가 이어지면 시간 칩은 첫 포인트에만 보이고 둘 다 눌러서 들을 수 있다', async () => {
+    // Given
+    const onPressKeyPoint = jest.fn();
+    await renderUi(
+      <KeyPointList keyPoints={createSameTimeKeyPoints()} onPressKeyPoint={onPressKeyPoint} />,
+    );
+
+    // When
+    fireEvent.press(screen.getByText('둘째 포인트'));
+
+    // Then
+    expect(screen.getAllByText('0:01')).toHaveLength(1);
+    expect(onPressKeyPoint).toHaveBeenCalledWith(expect.objectContaining({ id: 'second' }));
   });
 
   it('핵심 포인트를 누르면 그 포인트를 알려 그 지점부터 듣게 한다', async () => {
