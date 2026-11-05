@@ -124,11 +124,11 @@
       },
       "processor": {
         "title": "받는 곳",
-        "description": "Anthropic(Claude)·Google(Gemini)·OpenAI가 글자만 받아 할 일 형태로 정리해요. 기기에서 바로 인식할 수 없으면 Apple·Google 음성 인식 서비스가 말을 글자로 바꿀 수 있어요."
+        "description": "Anthropic(Claude)·Google(Gemini)·OpenAI가 글자만 받아 할 일 형태로 정리하고 요약해요. 기기에서 글자로 바꿀 수 없으면 Apple·Google 음성 인식 서비스가 말을 글자로 바꿀 수 있어요."
       },
       "usage": {
         "title": "쓰는 곳",
-        "description": "할 일 정리·리포트·제안에만 써요. 광고에는 쓰지 않아요."
+        "description": "할 일 정리·요약·리포트·제안에만 써요. 광고에는 쓰지 않아요."
       },
       "retention": {
         "title": "보관",

@@ -125,15 +125,15 @@
     "items": {
       "sentData": {
         "title": "What we send",
-        "description": "The sentence or memo you entered, your speech turned into text, category names, and today's date and time zone. Audio files are never sent to Aido's servers. For reports and suggestions, to-do titles and completion history for that period. We never send your name, email, or friends."
+        "description": "The sentence or memo you entered, your speech turned into text, category names, and today's date and time zone. Audio files aren't sent to Aido's servers. For reports and suggestions, to-do titles and completion history for that period. We never send your name, email, or friends."
       },
       "processor": {
         "title": "Who processes it",
-        "description": "Anthropic (Claude), Google (Gemini), and OpenAI receive only the text and organize it into to-dos. If your device can't recognize speech on its own, Apple or Google speech recognition may turn your voice into text."
+        "description": "Anthropic (Claude), Google (Gemini), and OpenAI receive only the text, organize it into to-dos, and summarize it. If your device can't turn speech into text itself, Apple or Google speech recognition may do it."
       },
       "usage": {
         "title": "How it's used",
-        "description": "Only for organizing to-dos, reports, and suggestions. Never for ads."
+        "description": "Only for organizing to-dos, summaries, reports, and suggestions. Never for ads."
       },
       "retention": {
         "title": "How long we keep it",

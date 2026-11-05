@@ -45,11 +45,11 @@
     "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받아요",
     "aiDataSharing": {
       "label": "AI 기능 데이터 제공",
-      "description": "입력한 글자와 말을 글자로 바꾼 내용을 Anthropic·Google·OpenAI로 보내 할 일로 정리해요. 기기에서 바로 인식할 수 없으면 Apple·Google 음성 인식이 말을 글자로 바꿀 수 있어요. 녹음 파일은 아이두 서버로 보내지 않아요.",
+      "description": "입력한 글과 말을 글자로 바꾼 내용을 Anthropic·Google·OpenAI로 보내 할 일로 정리하고 요약해요. 기기에서 글자로 바꿀 수 없으면 Apple·Google 음성 인식이 말을 글자로 바꿀 수 있어요. 녹음 파일은 아이두 서버로 보내지 않아요.",
       "descriptionGoogleOnly": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",
       "agreedOn": "{{date}} 동의",
       "withdrawTitle": "동의를 철회할까요?",
-      "withdrawDescription": "AI로 할 일 정리·리포트·제안을 쓸 수 없어요. 이미 만든 할 일은 그대로 남아요.",
+      "withdrawDescription": "AI로 할 일 정리·요약·리포트·제안을 쓸 수 없어요. 이미 만든 할 일은 그대로 남아요.",
       "withdrawConfirm": "철회하기",
       "declinedStatus": "사용 안 함으로 설정했어요. 켜면 AI 기능을 다시 쓸 수 있어요.",
       "undecidedStatus": "아직 선택하지 않았어요. AI 기능을 처음 쓸 때 물어봐요.",
