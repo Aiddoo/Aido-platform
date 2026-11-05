@@ -19,6 +19,13 @@ export const AUTO_FINISH_SILENCE_MS = 2_500;
 /** 이 음량(0..1)을 넘으면 말하는 중으로 본다 */
 export const SPEAKING_VOLUME_THRESHOLD = 0.18;
 
+/**
+ * 말소리 크기의 음량이 들리는데 글자 없는 구간만 이어지면 인식기가 멈춘 것으로 보고 다시 연다.
+ * Android는 이때 `end`가 오지 않아 앱이 달리 알 수 없다. 구간은 약 3초마다 닫히므로(QA 로그) 두 번이면 약 6초다.
+ * 시끄러운 곳에서도 녹음 파일이 잘게 쪼개지지 않게 간격을 둔다.
+ */
+export const VOICE_STALL_RESTART = { emptySegmentLimit: 2, minIntervalMs: 30_000 } as const;
+
 /** 단어 신뢰도(0..1)가 이보다 낮으면 잘못 들었을 수 있다고 밑줄을 친다 */
 export const LOW_CONFIDENCE_THRESHOLD = 0.5;
 

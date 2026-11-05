@@ -65,7 +65,13 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
           onEnd?.();
         }
       })
-      .with({ type: 'volume' }, { type: 'recording-started' }, { type: 'recording-saved' }, noop)
+      .with(
+        { type: 'volume' },
+        { type: 'no-match' },
+        { type: 'recording-started' },
+        { type: 'recording-saved' },
+        noop,
+      )
       .exhaustive();
   });
 

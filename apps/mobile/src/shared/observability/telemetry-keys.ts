@@ -374,6 +374,8 @@ export interface VoiceEventMap {
     mode: VoiceCaptureMode;
     cause: 'app_background' | 'interrupted' | 'user' | 'limit';
   };
+  /** 말소리는 들리는데 글자 없는 구간만 이어져 인식기를 다시 열었다 */
+  voice_recognizer_stalled: { mode: VoiceCaptureMode; on_device: boolean };
   /** Android 기기 인식 언어 모델 받기를 물었다. 거절이면 declined다 */
   voice_offline_model_requested: {
     locale: SpeechLocale;

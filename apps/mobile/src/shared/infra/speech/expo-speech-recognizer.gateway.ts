@@ -23,8 +23,6 @@ const ANDROID_CONTINUOUS_API_LEVEL = 33;
 /** SDK가 주는 음량 범위. 0 이하는 들리지 않는 소리다 */
 const VOLUME_RANGE = { min: -2, max: 10 } as const;
 const VOLUME_INTERVAL_MS = 50;
-/** 긴 녹음은 생각하며 말하므로 Android 기본(약 2초)보다 오래 기다려야 말 사이 침묵에 끊기지 않는다 */
-const NOTE_COMPLETE_SILENCE_MS = 10_000;
 /** 16kHz 16bit mono WAV(약 1.9MB/분). Android는 이 형식으로만 저장한다 */
 const RECORDING_SAMPLE_RATE = 16_000;
 
@@ -130,10 +128,9 @@ function toRecognitionOptions({
       continuous: true,
       addsPunctuation: true,
       iosTaskHint: 'dictation',
-      androidIntentOptions: {
-        EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: NOTE_COMPLETE_SILENCE_MS,
-        EXTRA_MASK_OFFENSIVE_WORDS: false,
-      },
+      // 침묵 길이는 넘기지 않는다. continuous면 SDK가 Android 13+은 오디오 소스가 닫힐 때까지 듣는 세션을,
+      // 12 이하는 10분 침묵을 잡는다. 공식 문서상 이 값은 세션을 끝내는 침묵이라 넘기면 오히려 짧아진다
+      androidIntentOptions: { EXTRA_MASK_OFFENSIVE_WORDS: false },
       volumeChangeEventOptions,
       ...(recordingDirectory != null &&
         ExpoSpeechRecognitionModule.supportsRecording() && {
@@ -222,6 +219,7 @@ export const expoSpeechRecognizerGateway: SpeechRecognizer = {
     const subscriptions = [
       ExpoSpeechRecognitionModule.addListener('start', () => listener({ type: 'start' })),
       ExpoSpeechRecognitionModule.addListener('end', () => listener({ type: 'end' })),
+      ExpoSpeechRecognitionModule.addListener('nomatch', () => listener({ type: 'no-match' })),
       ExpoSpeechRecognitionModule.addListener('result', ({ isFinal, results }) => {
         const [best] = results;
         if (best == null) {

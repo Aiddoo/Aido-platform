@@ -9,6 +9,7 @@ import { Text } from '@src/shared/ui';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
+import { SPEAKING_VOLUME_THRESHOLD } from '../constants/voice.constants';
 import type { CapturedPlan } from '../domains/voice-capture.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
@@ -16,10 +17,17 @@ const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest
 
 function SessionProbe({
   onCaptured,
+  mode = 'quick',
 }: {
   onCaptured: (transcript: string) => Promise<CapturedPlan | null>;
+  mode?: 'quick' | 'note';
 }) {
-  const session = useVoiceCaptureSession({ entry: 'add_todo_sheet', onCaptured });
+  const session = useVoiceCaptureSession({
+    entry: 'add_todo_sheet',
+    mode,
+    maxSeconds: null,
+    onCaptured,
+  });
 
   return (
     <>
@@ -37,11 +45,11 @@ function SessionProbe({
   );
 }
 
-async function renderSession() {
+async function renderSession({ mode }: { mode?: 'quick' | 'note' } = {}) {
   const speechRecognizer = createSpeechRecognizerStub();
   const analytics = createMockAnalytics();
   const onCaptured = jest.fn().mockResolvedValue(null);
-  await renderUi(<SessionProbe onCaptured={onCaptured} />, {
+  await renderUi(<SessionProbe onCaptured={onCaptured} mode={mode} />, {
     di: { speechRecognizer, analytics, logger, errorReporter: createErrorReporterStub() },
   });
   return { speechRecognizer, analytics, onCaptured };
@@ -222,6 +230,142 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       expect(screen.getByTestId('status')).toHaveTextContent('failed');
+    });
+  });
+
+  describe('긴 녹음에서 인식기가 멈췄을 때', () => {
+    const emit = (
+      speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
+      event: Parameters<typeof speechRecognizer.emit>[0],
+    ) => act(async () => speechRecognizer.emit(event));
+
+    const beginNote = async () => {
+      const session = await renderSession({ mode: 'note' });
+      await fireEvent.press(screen.getByTestId('begin'));
+      await emit(session.speechRecognizer, { type: 'start' });
+      return session;
+    };
+
+    const emitEmptySegmentWithVoice = async (
+      speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>,
+    ) => {
+      await emit(speechRecognizer, { type: 'volume', level: SPEAKING_VOLUME_THRESHOLD });
+      await emit(speechRecognizer, { type: 'no-match' });
+    };
+
+    it('침묵 끝에 세션이 끝나면 같은 옵션으로 몇 번이든 이어 듣고 글자를 모은다', async () => {
+      // Given
+      const { speechRecognizer, onCaptured } = await beginNote();
+      const firstOptions = speechRecognizer.start.mock.calls[0]?.[0];
+      await emit(speechRecognizer, {
+        type: 'result',
+        transcript: '첫 문장',
+        isFinal: true,
+        segments: [],
+      });
+
+      // When
+      await emit(speechRecognizer, { type: 'end' });
+      await emit(speechRecognizer, { type: 'start' });
+      await emit(speechRecognizer, {
+        type: 'result',
+        transcript: '둘째 문장',
+        isFinal: true,
+        segments: [],
+      });
+      await emit(speechRecognizer, { type: 'end' });
+      await emit(speechRecognizer, { type: 'start' });
+      await fireEvent.press(screen.getByTestId('finish'));
+      await emit(speechRecognizer, { type: 'end' });
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(3);
+      expect(speechRecognizer.start).toHaveBeenLastCalledWith(firstOptions);
+      expect(onCaptured).toHaveBeenCalledWith('첫 문장 둘째 문장');
+    });
+
+    it('말소리는 들리는데 글자 없는 구간만 이어지면 닫고 end 뒤에 다시 듣는다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await beginNote();
+      await emitEmptySegmentWithVoice(speechRecognizer);
+
+      // When
+      await emitEmptySegmentWithVoice(speechRecognizer);
+      await emit(speechRecognizer, { type: 'error', code: 'client' });
+      await emit(speechRecognizer, { type: 'end' });
+
+      // Then
+      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('status')).toHaveTextContent('listening');
+      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_recognizer_stalled', {
+        mode: 'note',
+        on_device: true,
+      });
+    });
+
+    it('stop에 end로 답하지 않아도 잠시 뒤 새로 열고 듣는 상태를 유지한다', async () => {
+      // Given
+      const { speechRecognizer } = await beginNote();
+      jest.useFakeTimers({ advanceTimers: true });
+      await emitEmptySegmentWithVoice(speechRecognizer);
+      await emitEmptySegmentWithVoice(speechRecognizer);
+
+      // When
+      await act(async () => jest.advanceTimersByTime(1_600));
+      jest.useRealTimers();
+
+      // Then
+      expect(speechRecognizer.start).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('status')).toHaveTextContent('listening');
+    });
+
+    it('조용한 구간은 글자가 없어도 다시 열지 않는다', async () => {
+      // Given
+      const { speechRecognizer } = await beginNote();
+
+      // When
+      await emit(speechRecognizer, { type: 'volume', level: 0 });
+      await emit(speechRecognizer, { type: 'no-match' });
+      await emit(speechRecognizer, { type: 'no-match' });
+      await emit(speechRecognizer, { type: 'no-match' });
+
+      // Then
+      expect(speechRecognizer.stop).not.toHaveBeenCalled();
+    });
+
+    it('글자가 오면 인식기가 살아 있는 것이라 빈 구간을 처음부터 다시 센다', async () => {
+      // Given
+      const { speechRecognizer } = await beginNote();
+      await emitEmptySegmentWithVoice(speechRecognizer);
+
+      // When
+      await emit(speechRecognizer, {
+        type: 'result',
+        transcript: '듣고 있어요',
+        isFinal: false,
+        segments: [],
+      });
+      await emitEmptySegmentWithVoice(speechRecognizer);
+
+      // Then
+      expect(speechRecognizer.stop).not.toHaveBeenCalled();
+    });
+
+    it('시끄러운 곳에서 빈 구간이 계속돼도 간격 안에서는 한 번만 다시 연다', async () => {
+      // Given
+      const { speechRecognizer } = await beginNote();
+      await emitEmptySegmentWithVoice(speechRecognizer);
+      await emitEmptySegmentWithVoice(speechRecognizer);
+      await emit(speechRecognizer, { type: 'end' });
+      await emit(speechRecognizer, { type: 'start' });
+
+      // When
+      await emitEmptySegmentWithVoice(speechRecognizer);
+      await emitEmptySegmentWithVoice(speechRecognizer);
+
+      // Then
+      expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
     });
   });
 

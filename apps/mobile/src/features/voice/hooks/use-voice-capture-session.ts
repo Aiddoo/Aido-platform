@@ -29,6 +29,7 @@ import {
   QUICK_CAPTURE_MAX_SECONDS,
   SPEAKING_VOLUME_THRESHOLD,
   VOICE_PREPARING_TIMEOUT_MS,
+  VOICE_STALL_RESTART,
 } from '../constants/voice.constants';
 import {
   type CapturedPlan,
@@ -114,6 +115,7 @@ export function useVoiceCaptureSession({
   const quietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stallRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
   const isRecognizerRunningRef = useRef(false);
   /** 지금 구간에 앱이 stop을 불렀다. 그 구간의 `end`나 다음 시작까지 유지한다 */
@@ -121,6 +123,10 @@ export function useVoiceCaptureSession({
   const isQuietRef = useRef(false);
   const lastStartedAtRef = useRef(0);
   const quickEndCountRef = useRef(0);
+  /** 마지막 글자 뒤로 말소리 크기의 음량을 들었는데 글자 없이 닫힌 구간 수 */
+  const emptyVoiceSegmentCountRef = useRef(0);
+  const hasHeardVoiceRef = useRef(false);
+  const lastStallRestartAtRef = useRef<number | null>(null);
 
   const dispatch = useCallback((event: VoiceCaptureEvent) => {
     const previous = stateRef.current;
@@ -161,9 +167,17 @@ export function useVoiceCaptureSession({
     }
   };
 
+  const clearStallRestart = () => {
+    if (stallRestartTimerRef.current != null) {
+      clearTimeout(stallRestartTimerRef.current);
+      stallRestartTimerRef.current = null;
+    }
+  };
+
   const clearTimers = () => {
     clearQuiet();
     clearDeferredStart();
+    clearStallRestart();
     if (finalizeTimerRef.current != null) {
       clearTimeout(finalizeTimerRef.current);
       finalizeTimerRef.current = null;
@@ -271,6 +285,40 @@ export function useVoiceCaptureSession({
     speechRecognizer.start(startOptions);
   };
 
+  /**
+   * 파형은 움직이는데 글자가 오지 않는 세션을 닫고 이어 듣는다. 일시정지·이어 듣기와 같은 길이고 사용자는 할 일이 없다.
+   * 멈춘 인식기는 stop에 답하지 않을 수 있어 `end`가 오지 않으면 잠시 뒤 새로 연다.
+   */
+  const restartStalledRecognizer = () => {
+    emptyVoiceSegmentCountRef.current = 0;
+    lastStallRestartAtRef.current = Date.now();
+    const isOnDevice = startOptionsRef.current?.isOnDevice ?? false;
+    trackEvent('voice_recognizer_stalled', { mode, on_device: isOnDevice });
+    addBreadcrumb('capture.recognizer-stalled', { mode, on_device: isOnDevice });
+    stopRecognizer();
+    stallRestartTimerRef.current = setTimeout(() => {
+      stallRestartTimerRef.current = null;
+      if (VoiceCapturePolicy.shouldRestartSegment(stateRef.current)) {
+        restartSegment();
+      }
+    }, FINALIZE_TIMEOUT_MS);
+  };
+
+  const handleEmptySegment = () => {
+    if (hasHeardVoiceRef.current) {
+      emptyVoiceSegmentCountRef.current += 1;
+    }
+    hasHeardVoiceRef.current = false;
+    const lastRestartAt = lastStallRestartAtRef.current;
+    if (
+      getStatus() === 'listening' &&
+      emptyVoiceSegmentCountRef.current >= VOICE_STALL_RESTART.emptySegmentLimit &&
+      (lastRestartAt == null || Date.now() - lastRestartAt >= VOICE_STALL_RESTART.minIntervalMs)
+    ) {
+      restartStalledRecognizer();
+    }
+  };
+
   /** 앞 구간이 끝나지 않았는데 다시 열면 Android가 파일을 마무리하지 않고 버린다. `end`까지 미룬다 */
   const startAfterRecognizerEnds = () => {
     if (!isRecognizerRunningRef.current) {
@@ -288,6 +336,9 @@ export function useVoiceCaptureSession({
     }
     lastStartedAtRef.current = Date.now();
     quickEndCountRef.current = 0;
+    emptyVoiceSegmentCountRef.current = 0;
+    hasHeardVoiceRef.current = false;
+    lastStallRestartAtRef.current = null;
     isRecognizerRunningRef.current = true;
     isStopRequestedRef.current = false;
     speechRecognizer.start(startOptions);
@@ -297,6 +348,7 @@ export function useVoiceCaptureSession({
     if (event.type === 'end') {
       isRecognizerRunningRef.current = false;
       isStopRequestedRef.current = false;
+      clearStallRestart();
     }
     if (!VoiceCapturePolicy.isActive(stateRef.current)) {
       return;
@@ -309,11 +361,15 @@ export function useVoiceCaptureSession({
         dispatch({ type: 'result', result: { transcript, isFinal } });
         if (transcript.trim().length > 0) {
           markSpeaking();
+          emptyVoiceSegmentCountRef.current = 0;
+          hasHeardVoiceRef.current = false;
         }
       })
+      .with({ type: 'no-match' }, handleEmptySegment)
       .with({ type: 'volume' }, ({ level: nextLevel }) => {
         level.set(nextLevel);
         if (nextLevel >= SPEAKING_VOLUME_THRESHOLD) {
+          hasHeardVoiceRef.current = true;
           markSpeaking();
         } else {
           markSilence();

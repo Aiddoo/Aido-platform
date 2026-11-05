@@ -249,7 +249,7 @@ export function useVoiceNoteRecording({
         updateCaptions(commitProvisional(captionsRef.current, session.getElapsedMs()));
       })
       .with({ type: 'recording-saved' }, ({ uri }) => receiveRecording(uri))
-      .with({ type: 'volume' }, { type: 'error' }, noop)
+      .with({ type: 'volume' }, { type: 'error' }, { type: 'no-match' }, noop)
       .exhaustive();
   });
 

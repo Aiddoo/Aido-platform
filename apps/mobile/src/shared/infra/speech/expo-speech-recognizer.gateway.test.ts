@@ -103,7 +103,8 @@ describe('expoSpeechRecognizerGateway', () => {
         addsPunctuation: true,
         contextualStrings: ['기획팀', '민지'],
         iosTaskHint: 'dictation',
-        androidIntentOptions: expect.objectContaining({ EXTRA_MASK_OFFENSIVE_WORDS: false }),
+        // 침묵 길이는 SDK의 continuous에 맡긴다. 넘기면 12 이하의 10분 침묵을 덮어 세션이 짧아진다
+        androidIntentOptions: { EXTRA_MASK_OFFENSIVE_WORDS: false },
         volumeChangeEventOptions: { enabled: true, intervalMillis: 50 },
         recordingOptions: {
           persist: true,
@@ -113,6 +114,18 @@ describe('expoSpeechRecognizerGateway', () => {
         },
       }),
     );
+  });
+
+  test('글자 없이 닫힌 구간은 세션 끝과 나눠 알린다', () => {
+    // Given
+    const events: SpeechEvent[] = [];
+    expoSpeechRecognizerGateway.subscribe((event) => events.push(event));
+
+    // When
+    emitNative('nomatch', {});
+
+    // Then
+    expect(events).toEqual([{ type: 'no-match' }]);
   });
 
   test('음량은 SDK 범위(-2..10)를 0..1로 바꾸고 범위 밖 값은 자른다', () => {

@@ -39,6 +39,8 @@ export type SpeechEvent =
   | { type: 'start' }
   | { type: 'end' }
   | { type: 'result'; transcript: string; isFinal: boolean; segments: readonly SpeechSegment[] }
+  /** 인식기가 한 구간을 글자 없이 닫았다. 세션은 끝나지 않고 이어진다 */
+  | { type: 'no-match' }
   /** 0(조용함)..1(큼) */
   | { type: 'volume'; level: number }
   /** 이 구간의 녹음 파일을 쓰기 시작했다. 같은 `uri`로 `recording-saved`가 온다 */
