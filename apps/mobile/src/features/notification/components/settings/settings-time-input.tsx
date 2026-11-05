@@ -5,7 +5,16 @@ import DateTimePicker, {
 import { PickerHeader } from '@src/features/todo/components/picker-header';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { ArrowRightIcon, BottomSheet, Box, HStack, Text, useOverlay, VStack } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  BottomSheet,
+  Box,
+  HStack,
+  Text,
+  useOverlay,
+  VStack,
+  WordWrapText,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatTimeOfDay } from '@src/shared/utils/date-format';
 import { getPickerLocale, timeToDate, type TimeFormat } from '@src/shared/utils/time';
@@ -93,9 +102,9 @@ function SettingsTimeRow({
               {formatTimeOfDay({ hour, minute }, timeFormat, dateFormatContext)}
             </Text>
           </HStack>
-          <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+          <WordWrapText size="b3" shade={6}>
             {description}
-          </Text>
+          </WordWrapText>
         </VStack>
         <ArrowRightIcon colorClassName="text-gray-6" />
       </HStack>
