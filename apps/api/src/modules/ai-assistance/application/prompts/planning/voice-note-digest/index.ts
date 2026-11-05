@@ -58,7 +58,7 @@ export const voiceNoteDigestPrompt: PromptDefinition<
   VoiceNoteDigestNormalizeContext
 > = {
   id: "voice-note-digest",
-  version: "voice-note-digest@7",
+  version: "voice-note-digest@8",
   taskClass: "interactive",
   // 프리미엄 40,000자 전사를 문장 600개로 나눈 최대 user 턴이 약 94,000자다.
   maxInputChars: 100_000,

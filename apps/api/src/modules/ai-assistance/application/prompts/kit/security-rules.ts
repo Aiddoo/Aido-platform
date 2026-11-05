@@ -39,7 +39,7 @@ const SECURITY_COPY: Readonly<Record<SupportedLocale, SecurityCopy>> = {
       OWN_TODO:
         '다른 사람에게 부탁하거나 맡길 일은 내 할 일로 쓴다. 예: "민지가 회의록 보내줘야 해" → "민지에게 회의록 요청".',
       SPEECH_NOISE:
-        '"음", "그러니까", "아 잠깐" 같은 군말, 말 더듬기, 같은 말 반복, 받아쓰기 잡음은 무시한다. 말을 고쳐 말하면 마지막에 말한 내용을 따른다. 받아쓰기가 소리가 비슷한 다른 단어로 적어 문맥에 맞지 않으면 맞는 단어로 고쳐 title에 쓴다(예: "등기 보고서 정리" → "분기 보고서 정리"). 확실하지 않으면 들린 그대로 둔다.',
+        '"음", "그러니까", "아 잠깐" 같은 군말, 말 더듬기, 같은 말 반복, 받아쓰기 잡음은 무시한다. 말을 고쳐 말하면 마지막에 말한 내용을 따른다. 받아쓰기가 소리가 비슷한 다른 단어로 적어 문맥에 맞지 않으면 맞는 단어로 고쳐 title에 쓴다(예: "등기 보고서 정리" → "분기 보고서 정리"). 앞뒤 말과 함께 실제로 쓰는 표현이면 고치지 않는다("법인 등기 보고서", "우체국 등기"). 고칠 때도 그 단어만 고치고 나머지 말은 지우지 않는다. 확실하지 않으면 들린 그대로 둔다.',
       PROPER_NOUNS:
         "받아쓰기는 고유명사(사람·장소·프로젝트 이름)를 소리가 비슷한 다른 글자나 일반 단어로 적는다. 입력의 말이 <context>의 카테고리 이름·할 일 제목 일부와 소리가 비슷하면 같은 이름으로 보고 title에 <context> 표기를 쓰며, 카테고리 이름이면 categoryId도 그 id로 쓴다. 이 표기 교정은 말한 그대로 쓰는 규칙보다 앞선다. 소리가 비슷한 이름이 없으면 들린 그대로 둔다.",
     },
@@ -60,7 +60,7 @@ const SECURITY_COPY: Readonly<Record<SupportedLocale, SecurityCopy>> = {
       OWN_TODO:
         'Work that someone else should do for the user becomes the user\'s own to-do. Example: "Mina needs to send me the minutes" → "Ask Mina for the minutes".',
       SPEECH_NOISE:
-        'Ignore filler words ("um", "like", "you know"), stutters, repeated words, and speech-recognition noise. When the user corrects themselves, follow the last version. If the transcript wrote a similar-sounding word that does not fit the context, write the word that fits in title (for example, "quarterly" misheard as "courtly"). If unsure, keep what was heard.',
+        'Ignore filler words ("um", "like", "you know"), stutters, repeated words, and speech-recognition noise. When the user corrects themselves, follow the last version. If the transcript wrote a similar-sounding word that does not fit the context, write the word that fits in title (for example, "quarterly" misheard as "courtly"). Leave it alone when it forms a real expression with the words around it, and when fixing a word, keep the rest of the phrase. If unsure, keep what was heard.',
       PROPER_NOUNS:
         "Speech recognition writes proper nouns (people, places, projects) as similar-sounding letters or ordinary words. When a phrase in the input sounds like part of a category name or to-do title in <context>, treat it as that name: use the spelling from <context> in the title, and when it is a category name also set categoryId to that id. This spelling fix comes before keeping titles as spoken. With no similar-sounding name, keep what was heard.",
     },

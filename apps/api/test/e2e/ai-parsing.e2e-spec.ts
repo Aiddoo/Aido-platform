@@ -120,7 +120,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     });
     expect(response.body.data.meta).toMatchObject({
       model: "fake:test-model",
-      promptVersion: "parse-todo@6",
+      promptVersion: "parse-todo@7",
       tokenUsage: { input: 150, output: 50 },
     });
     expect(response.body.data.meta.tokenUsage).not.toHaveProperty("reasoning");
@@ -196,7 +196,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
       new Set([1]),
     );
     expect(response.body.data.meta).toMatchObject({
-      promptVersion: "parse-memo@6",
+      promptVersion: "parse-memo@7",
       omittedTodoCount: 1,
     });
     expect(await usage()).toBe(1);
