@@ -7,7 +7,6 @@ import type { ComponentProps, ReactNode } from 'react';
 
 interface VoiceNoteHeaderProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
   title?: string;
-  /** 제목 대신 가운데에 둘 내용(시계·진행 상태) */
   center?: ReactNode;
   onClose: () => void;
   closeLabel?: string;

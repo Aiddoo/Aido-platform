@@ -33,7 +33,6 @@ const BAR_VERTICAL_SHARE = 0.8;
 const FLAG = { poleWidth: 2, top: 2, width: 8, height: 8, heightShare: 0.2 } as const;
 const IDLE_DASH_HEIGHT = 2;
 const RADIUS = WAVEFORM_BAR.width / 2;
-const NO_FLAGS: readonly number[] = [];
 
 export interface LiveWaveform {
   /** 재생선 왼쪽에 그릴 최근 칸(오래된 순). 길이는 `WAVEFORM_BAR.maxLiveBars`를 넘지 않는다 */
@@ -125,13 +124,13 @@ function addLevelBars(
 interface WaveformTimelineProps extends Omit<ComponentProps<typeof Box>, 'children' | 'onLayout'> {
   waveform: LiveWaveform;
   /** 깃발이 꽂힌 칸. `getBarIndexAt`으로 구한 전체 칸 번호다 */
-  flagIndexes?: readonly number[];
+  flagIndexes: readonly number[];
 }
 
 /** 가운데 고정 재생선을 지나 왼쪽으로 흐르는 파형. 말한 구간은 main, 조용한 구간은 gray, 중요 표시는 깃발이다 */
 export function WaveformTimeline({
   waveform,
-  flagIndexes = NO_FLAGS,
+  flagIndexes,
   className,
   ...boxProps
 }: WaveformTimelineProps) {

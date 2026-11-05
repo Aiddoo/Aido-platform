@@ -31,10 +31,7 @@ interface SheetEdgeGlowProps {
   level: SharedValue<number>;
 }
 
-/**
- * 시트 테두리 바깥으로 번지는 빛. `KeyboardBottomSheet`의 `backgroundDecoration`으로 시트 면 뒤에 깔려 내용과 겹치지 않는다.
- * 듣는 동안에만 마운트한다. 밝기와 도는 속도는 실제 음량만 따라서 조용하면 멈춰 옅어진다.
- */
+/** `KeyboardBottomSheet`의 `backgroundDecoration`으로 시트 면 뒤에 깐다 */
 export function SheetEdgeGlow({ level }: SheetEdgeGlowProps) {
   const isReducedMotion = useReduceMotion();
   const mainColor = useSkiaColor('text-main');

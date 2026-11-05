@@ -41,10 +41,9 @@ export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
 /** 듣는 시간 시계를 다시 그리는 간격 */
 export const VOICE_CLOCK_TICK_MS = 1_000;
 
-/** 듣는 중 패널의 높이. 글자가 늘어도 커지지 않고 자막만 안쪽에서 스크롤한다. 시트에 들어가는 높이를 넘지 않는다 */
 export const LISTENING_PANEL_HEIGHT = { windowRatio: 0.56, min: 420 } as const;
 
-/** 음량 이벤트가 이만큼 끊기면 소리가 없는 것으로 본다. 말이 끝나면 음량을 보내지 않는 인식기가 있다 */
+/** Android 일부 인식기는 말이 끝나면 음량 이벤트를 보내지 않는다(QA 로그). 이만큼 끊기면 소리 없음으로 본다 */
 export const VOICE_NO_VOLUME_GAP_MS = 300;
 
 /**
@@ -59,35 +58,43 @@ export const VOICE_GRADIENT_COLORS = {
   glowCream: '#ffd0a8',
 } as const;
 
-export const VOICE_ORB = {
-  /** 캔버스 크기. 화면 높이에 맞춰 줄어든다 */
-  maxSize: 132,
-  windowHeightRatio: 0.16,
-  /** 원 반지름(R)에 대한 크기 비율. 음량에 따라 이 범위에서만 변한다 */
-  minRadiusRatio: 0.4,
-  maxRadiusRatio: 0.62,
-  /** 소리가 커질 때와 잦아들 때 음량을 따라가는 시간. 잦아들 때가 길어 말이 멈추면 천천히 가라앉는다 */
+export const VOICE_VISUAL = {
+  height: 84,
+  orbSize: 72,
   attackMs: 70,
   releaseMs: 520,
-  /** 말소리 크기가 가장 클 때 고리가 한 번 퍼지는 시간 */
-  ringPeriodMs: 1_100,
-  ringGrowRatio: 0.55,
-  ringMaxOpacity: 0.7,
-  /** 소리가 조금만 있어도 고리가 움직이게 하는 최소 속도 */
-  ringMinSpeed: 0.2,
-  haloRadiusRatio: 1.15,
-  haloBlurRatio: 0.12,
-  haloMaxOpacity: 0.55,
-  /** 조용할 때 원 밝기 */
-  quietOpacity: 0.72,
+  maxFrameMs: 50,
+  settleMs: 400,
+} as const;
+
+export const VOICE_VISUAL_BARS = {
+  /** 560pt 시트의 한쪽을 채우는 칸 수 */
+  maxCount: 40,
+  width: 3,
+  step: 6,
+  startOffset: 38,
+  minHeight: 3,
+  heightMargin: 22,
+  falloff: 0.45,
+  intervalMs: 70,
+  followMs: 37,
+  reducedMotionLevel: 0.12,
+  edgeOpacity: 0.35,
+} as const;
+
+export const VOICE_LIGHT_ORB = { radius: 22, growRatio: 0.22 } as const;
+
+export const VOICE_FRAME_BUDGET = {
+  /** 30fps 아래 */
+  slowFrameMs: 34,
+  sustainedSlowMs: 2_000,
+  /** 앱을 다녀오면 프레임이 크게 벌어진다. 기기 성능이 아니므로 세지 않는다 */
+  ignoreFrameMs: 500,
 } as const;
 
 export const VOICE_EDGE_GLOW = {
-  /** 빛이 시트 바깥으로 번지는 정도. 캔버스는 이 값의 3배만큼 시트보다 크다 */
   blur: 14,
-  /** 시트 테두리에 붙는 또렷한 선 굵기 */
   rimWidth: 1.5,
-  /** 말소리 크기가 가장 클 때 한 바퀴 도는 시간 */
   rotationPeriodMs: 5_000,
   minOpacity: 0.35,
   attackMs: 90,

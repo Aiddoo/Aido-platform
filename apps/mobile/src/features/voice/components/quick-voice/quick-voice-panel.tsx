@@ -28,11 +28,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import {
-  AUTO_FINISH_SILENCE_MS,
-  LISTENING_PANEL_HEIGHT,
-  VOICE_ORB,
-} from '../../constants/voice.constants';
+import { AUTO_FINISH_SILENCE_MS, LISTENING_PANEL_HEIGHT } from '../../constants/voice.constants';
 import {
   createPlanReviewFormValues,
   type PlanReviewFormValues,
@@ -47,9 +43,8 @@ import { isTranscriptEmpty } from '../../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../../hooks/use-capture-elapsed-ms';
 import { formatMediaTime } from '../../utils/format-media-time';
 import { VoiceNoteHeader } from '../note/voice-note-header';
-import { RecognizerWaveform } from '../note/waveform-timeline';
 import { PlanReview } from '../plan/plan-review';
-import { VoiceOrb } from '../visualizers/voice-orb';
+import { VoiceVisual } from '../visualizers/voice-visual';
 import { LiveTranscript } from './live-transcript';
 import { RecognitionLanguageToggle } from './recognition-language-toggle';
 
@@ -83,12 +78,10 @@ QuickVoicePanel.Listening = function Listening({
   onContinueAsVoiceNote,
 }: ListeningProps) {
   const { t } = useTranslation('voice');
-  const { height: windowHeight } = useWindowDimensions();
   const isPaused = state.status === 'paused';
   const isListening = state.status === 'listening';
   const isOverLimit = VoiceCapturePolicy.shouldOfferVoiceNote(state, Date.now());
   const canFinish = VoiceCapturePolicy.canFinish(state);
-  const orbSize = Math.min(VOICE_ORB.maxSize, windowHeight * VOICE_ORB.windowHeightRatio);
 
   return (
     <PanelFrame
@@ -105,10 +98,9 @@ QuickVoicePanel.Listening = function Listening({
       </Box>
 
       {!isOverLimit && (
-        <VStack align="center" className={cn(isPaused && 'opacity-60')}>
-          <VoiceOrb level={level} size={orbSize} isActive={isListening} />
-          <RecognizerWaveform isActive={isListening} className="h-14 self-stretch" />
-        </VStack>
+        <Box className={cn(isPaused && 'opacity-60')}>
+          <VoiceVisual level={level} isActive={isListening} />
+        </Box>
       )}
 
       {isOverLimit ? (
@@ -359,10 +351,7 @@ interface PanelFrameProps {
   children: ReactNode;
 }
 
-/**
- * 듣기와 정리 중이 함께 쓰는 틀. 머리글 자리와 높이가 같아 상태가 바뀌어도 시트가 튀지 않는다.
- * 높이가 정해져 있어 글자가 늘어도 시트가 커지지 않고, 머리글과 아래 조작은 그대로 보인 채 자막만 스크롤한다.
- */
+/** 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
 function PanelFrame({ center, right, onClose, testID, children }: PanelFrameProps) {
   const { t } = useTranslation('voice');
   const { height: windowHeight } = useWindowDimensions();
